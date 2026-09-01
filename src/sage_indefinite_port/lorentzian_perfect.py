@@ -1,14 +1,8 @@
 """
 TASK-04-1: Lorentzian Perfect-Domain Base Engine and Component Groups.
 
-All computation uses the preamble lattice API:
-  L.b(v, w)              — bilinear pairing
-  L.q(v)                 — quadratic form
-  L.module_generator(i)  — i-th basis vector
-  L.signature_pair()     — (p, q)
-  L.rank()               — rank
-
-NEVER bypass the preamble to use raw Sage matrices.
+All lattice operations use the preamble API.
+Isometries are preamble morphisms (L.Hom(L) elements).
 """
 
 import sys
@@ -16,24 +10,14 @@ import os
 sys.path.insert(0, os.path.expanduser("~/research/src"))
 
 from sage.all import ZZ, QQ, matrix, identity_matrix, vector as sage_vector
-from . import make_lattice, from_sage_matrix
+from . import make_lattice, matrix_to_morphism, unique_morphisms
 
-
-# ---------------------------------------------------------------------------
-# Attack scheme: compute Witt index h and sign-adjusted matrix
-# ---------------------------------------------------------------------------
 
 def get_attack_scheme(gram):
     """
-    Compute Witt index h and sign-adjusted Gram matrix.
+    Compute Witt index h via preamble L.signature_pair().
 
-    Uses preamble L.signature_pair() — NOT raw QuadraticForm.
-
-    INPUT:
-    - gram: nested list of integers (Gram matrix)
-
-    OUTPUT:
-    - dict with keys 'h' (Witt index), 'mat' (adjusted Gram), 'sign' (+1 or -1)
+    OUTPUT: dict with 'h', 'mat', 'sign', 'lattice'
     """
     L = make_lattice(gram)
     n = L.rank()
@@ -43,259 +27,158 @@ def get_attack_scheme(gram):
         return {"h": 0, "mat": gram, "sign": 1, "lattice": L}
 
     h = min(p, q)
-
     if q < p:
-        # Negate so fewer negative eigenvalues
         neg_gram = [[-int(L.b(L.module_generator(i), L.module_generator(j)))
                       for j in range(n)] for i in range(n)]
         return {"h": h, "mat": neg_gram, "sign": -1, "lattice": None}
-    else:
-        return {"h": h, "mat": gram, "sign": 1, "lattice": L}
+    return {"h": h, "mat": gram, "sign": 1, "lattice": L}
 
 
 def is_lorentzian(gram):
-    """Check if gram has signature (1, n-1) or (n-1, 1)."""
     L = make_lattice(gram)
     p, q = L.signature_pair()
     return min(p, q) == 1
 
 
-# ---------------------------------------------------------------------------
-# Lorentzian perfect domain: finding the fundamental domain
-# ---------------------------------------------------------------------------
-
 def find_isotropic_vector(gram):
-    """
-    Find an integer isotropic vector v with Q(v) = 0.
-
-    Uses preamble L.q() and L.module_generator().
-
-    INPUT:
-    - gram: nested list of integers
-
-    OUTPUT:
-    - list of integers (isotropic vector), or None
-    """
+    """Find isotropic v with L.q(v) = 0."""
     L = make_lattice(gram)
     n = L.rank()
-
-    # Try nullspace approach: Qv = 0
-    Q = matrix(ZZ, [[int(L.b(L.module_generator(i), L.module_generator(j)))
-                       for j in range(n)] for i in range(n)])
-    from sage.all import QQ as SageQQ
-    Q_qq = Q.change_ring(SageQQ)
-    NSP = Q_qq.left_kernel().matrix()
-    if NSP.nrows() > 0:
-        v = NSP[0]
-        return [int(v[i]) for i in range(n)]
-
-    # Enumerate small vectors using preamble q()
     bound = 10
     from itertools import product as iterproduct
     for coords in iterproduct(range(-bound, bound + 1), repeat=n):
         if all(c == 0 for c in coords):
             continue
-        v = sage_vector(ZZ, coords)
-        norm = L.q(L(v))
-        if norm == 0:
+        v = L(sage_vector(ZZ, coords))
+        if L.q(v) == 0:
             return list(coords)
-
     return None
 
 
 def find_hyperbolic_pair(gram):
-    """
-    Find isotropic vectors u, v with b(u, v) = 1 (a hyperbolic pair).
-
-    Uses preamble L.b(), L.q(), L.module_generator().
-
-    INPUT:
-    - gram: nested list of integers
-
-    OUTPUT:
-    - dict with 'u', 'v' (lists), 'scal' (integer), or None
-    """
+    """Find isotropic u, v with L.b(u, v) = 1."""
     L = make_lattice(gram)
     n = L.rank()
-
     v1_list = find_isotropic_vector(gram)
     if v1_list is None:
         return None
-
     v1 = L(sage_vector(ZZ, v1_list))
 
-    bound = 20
     from itertools import product as iterproduct
-    for coords in iterproduct(range(-bound, bound + 1), repeat=n):
+    for coords in iterproduct(range(-20, 21), repeat=n):
         if all(c == 0 for c in coords):
             continue
         v2 = L(sage_vector(ZZ, coords))
-        norm2 = L.q(v2)
-        if norm2 != 0:
+        if L.q(v2) != 0:
             continue
         scal = L.b(v1, v2)
-        if scal != 0:
-            if abs(scal) == 1:
-                if scal == -1:
-                    v2 = L(-sage_vector(ZZ, coords))
-                    scal = 1
-                return {
-                    "u": [int(c) for c in v1.to_list()],
-                    "v": [int(c) for c in v2.to_list()],
-                    "scal": 1,
-                }
-            return {
-                "u": [int(c) for c in v1.to_list()],
-                "v": [int(c) for c in v2.to_list()],
-                "scal": int(scal),
-            }
-
+        if scal == 1:
+            return {"u": [int(c) for c in v1.to_list()],
+                    "v": [int(c) for c in v2.to_list()], "scal": 1}
+        if scal == -1:
+            v2 = L(-sage_vector(ZZ, coords))
+            return {"u": [int(c) for c in v1.to_list()],
+                    "v": [int(c) for c in v2.to_list()], "scal": 1}
     return None
 
 
-def reflection_matrix(gram, root):
+def reflection_morphism(gram, root):
     """
-    Compute the orthogonal reflection matrix for a root vector.
+    Build an isometry morphism: reflection in root using preamble b(), q().
 
-    Uses preamble L.b(), L.q(), L.module_generator().
-
-    R = I - 2 * root * (Q * root)^T / Q(root)
-
-    INPUT:
-    - gram: nested list of integers
-    - root: list of integers (the root vector)
-
-    OUTPUT:
-    - Sage integer matrix (the reflection)
+    Returns a preamble morphism element.
     """
     L = make_lattice(gram)
     n = L.rank()
     r = L(sage_vector(ZZ, root))
     q_r = L.q(r)
-
     if q_r == 0:
-        raise ValueError("Cannot reflect in isotropic vector")
+        return None
 
-    # R = I - 2 * r * (Qr)^T / q(r)
-    # R_{ij} = delta_{ij} - 2 * r_i * (Qr)_j / q(r)
-    # r_i = coordinate of root, (Qr)_j = b(root, e_j)
     r_coords = [int(root[i]) for i in range(n)]
     Qr = [int(L.b(r, L.module_generator(j))) for j in range(n)]
+
+    # Build reflection matrix, then wrap as morphism
     R = identity_matrix(ZZ, n)
     for i in range(n):
         for j in range(n):
             R[i, j] -= 2 * r_coords[i] * Qr[j] // int(q_r)
 
-    return R
-
-
-def lorentzian_perfect_domain_step(gram):
-    """
-    One step of Lorentzian perfect domain traversal.
-
-    Uses preamble L.q(), L.b(), L.module_generator().
-
-    INPUT:
-    - gram: nested list of integers (Lorentzian Gram matrix)
-
-    OUTPUT:
-    - list of root vectors (lists) that are walls of the current chamber
-    """
-    L = make_lattice(gram)
-    n = L.rank()
-
-    roots = []
-    bound = 5
-    from itertools import product as iterproduct
-    for coords in iterproduct(range(-bound, bound + 1), repeat=n):
-        if all(c == 0 for c in coords):
-            continue
-        v = L(sage_vector(ZZ, coords))
-        norm = L.q(v)
-        if norm == 2 or norm == -2:
-            roots.append(list(coords))
-
-    return roots
+    return matrix_to_morphism(L, R)
 
 
 def lorentzian_generators_autom(gram):
     """
-    Compute generators of O^Omega(L) for a Lorentzian lattice.
+    Compute isometry morphisms generating O^Omega(L) for Lorentzian L.
 
-    Uses preamble L.b(), L.q(), L.module_generator() throughout.
-
-    INPUT:
-    - gram: nested list of integers (Lorentzian Gram matrix)
-
-    OUTPUT:
-    - list of nested lists (integer matrix generators)
+    Returns list of preamble morphism elements.
     """
     L = make_lattice(gram)
     n = L.rank()
-
     if n <= 1:
-        return [[[-1]]] if n == 1 else []
+        return [matrix_to_morphism(L, matrix(ZZ, [[-1]]))] if n == 1 else []
 
-    roots = lorentzian_perfect_domain_step(gram)
-
-    generators = []
-    seen = set()
-    I_mat = identity_matrix(ZZ, n)
-
-    for root in roots:
-        R = reflection_matrix(gram, root)
-        key = tuple(R[i, j] for i in range(n) for j in range(n))
-        if key not in seen and R != I_mat:
-            seen.add(key)
-            generators.append(R)
-
-    # Find additional generators from stabilizers of isotropic vectors
+    # Find roots (norm ±2 vectors)
+    roots = []
     from itertools import product as iterproduct
+    for coords in iterproduct(range(-5, 6), repeat=n):
+        if all(c == 0 for c in coords):
+            continue
+        v = L(sage_vector(ZZ, coords))
+        if L.q(v) in (2, -2):
+            roots.append(list(coords))
+
+    # Build reflection morphisms
+    mors = []
+    for root in roots:
+        mor = reflection_morphism(gram, root)
+        if mor is not None and verify_isometry(L, mor):
+            mors.append(mor)
+
+    # Find additional generators from isotropic vector stabilizers
     for coords in iterproduct(range(-3, 4), repeat=n):
         if all(c == 0 for c in coords):
             continue
         v = L(sage_vector(ZZ, coords))
-        norm = L.q(v)
-        if norm != 0:
+        if L.q(v) != 0:
             continue
-
         for root in roots:
             rv = L(sage_vector(ZZ, root))
-            b_v_r = L.b(rv, v)
-            if b_v_r == 0:
-                R = reflection_matrix(gram, root)
-                key = tuple(R[i, j] for i in range(n) for j in range(n))
-                if key not in seen and R != I_mat:
-                    seen.add(key)
-                    generators.append(R)
+            if L.b(rv, v) == 0:
+                mor = reflection_morphism(gram, root)
+                if mor is not None and verify_isometry(L, mor):
+                    mors.append(mor)
 
-    return [from_sage_matrix(g) for g in generators]
+    return unique_morphisms(mors, L)
 
 
-# ---------------------------------------------------------------------------
-# Full O(L) for Lorentzian: O^Omega x <-I>
-# ---------------------------------------------------------------------------
+def verify_isometry(L, mor):
+    """Check morphism preserves bilinear form."""
+    n = L.rank()
+    for i in range(n):
+        ei = L.module_generator(i)
+        for j in range(n):
+            ej = L.module_generator(j)
+            if L.b(mor(ei), mor(ej)) != L.b(ei, ej):
+                return False
+    return True
+
 
 def lorentzian_full_automorphism_group(gram):
-    """
-    Compute generators of full O(L) for Lorentzian L.
+    """Full O(L) = O^Omega(L) x <-I>."""
+    L = make_lattice(gram)
+    n = L.rank()
+    mors = lorentzian_generators_autom(gram)
 
-    O(L) = O^Omega(L) x <-I>
+    # Add -I if not present
+    neg_I = matrix_to_morphism(L, matrix(ZZ, [[-1 if i == j else 0 for j in range(n)] for i in range(n)]))
+    id_mor = L.identity_morphism()
+    seen = set()
+    for m in mors:
+        M = m.matrix()
+        seen.add(tuple(M[i, j] for i in range(n) for j in range(n)))
+    neg_key = tuple(neg_I.matrix()[i, j] for i in range(n) for j in range(n))
+    if neg_key not in seen:
+        mors.append(neg_I)
 
-    INPUT:
-    - gram: nested list of integers
-
-    OUTPUT:
-    - list of nested lists (generators of O(L))
-    """
-    n = len(gram)
-    gens = lorentzian_generators_autom(gram)
-
-    # Add -I if not already present
-    neg_I = [[-1 if i == j else 0 for j in range(n)] for i in range(n)]
-    neg_I_key = tuple(neg_I[i][j] for i in range(n) for j in range(n))
-    seen = {tuple(g[i][j] for i in range(n) for j in range(n)) for g in gens}
-    if neg_I_key not in seen:
-        gens.append(neg_I)
-
-    return gens
+    return mors

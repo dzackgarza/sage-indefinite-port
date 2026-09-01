@@ -183,3 +183,28 @@ This repository implements algorithms for indefinite quadratic lattices, arithme
   year         = {2024}
 }
 ```
+
+---
+
+## 5. Concrete Fixture Datasets and Source Mapping
+
+For detailed per-record extraction protocols, see [DATA_SOURCES.md](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/DATA_SOURCES.md).
+
+| Fixture File | Concrete Cases | Primary Data Source | Literature Citation / Upstream Origin |
+| :--- | :--- | :--- | :--- |
+| [`tests/fixtures/isotropic_cases_8821.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/isotropic_cases_8821.json) | 8,821 | `CI_tests/DATA/IsotropicCases` | Mathieu Dutour Sikirić (`polyhedral_common`) |
+| [`tests/fixtures/reflective_forms_8821.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/reflective_forms_8821.json) | 8,821 | `CI_tests/20_Reflective/ListReflect` | Mathieu Dutour Sikirić (`polyhedral_common`) |
+| [`tests/fixtures/lorentzian_equivalence_146.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/lorentzian_equivalence_146.json) | 145 | `CI_tests/13_LorentzianStabEqui/TestCasesEqui.tar.gz` | Mathieu Dutour Sikirić (`polyhedral_common`) |
+| [`tests/fixtures/root_systems_56.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/root_systems_56.json) | 103 | `CI_tests/02A_IntegralAutomorphy/ListSimpleRootSystem_4_56_X_5_47` | Mathieu Dutour Sikirić (`polyhedral_common`) |
+| [`tests/fixtures/enriques_87_polarizations.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/enriques_87_polarizations.json) | 87 | Tables 1 & 2 | Dutour Sikirić & Hulek (2023, arXiv:2302.01679) |
+| [`tests/fixtures/lorentzian_perfect_domains.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/lorentzian_perfect_domains.json) | 40 | `CI_tests/28B_LorentzianPerf/Result_Enumeration` | Mathieu Dutour Sikirić (`polyhedral_common`) |
+| [`tests/fixtures/double_coset_cases.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/double_coset_cases.json) | 18 | `CI_tests/DoubleCosets/DBL/` | Mathieu Dutour Sikirić (`polyhedral_common`) |
+| [`tests/fixtures/k3_modular_strata.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/k3_modular_strata.json) | 14 | Boundary classifications & Attwell-Duval formula | Scattone (1987), Jones (2000), Attwell-Duval (2021) |
+| [`tests/fixtures/classification_simplices.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/classification_simplices.json) | 12 | `CI_tests/DATA/ClassificationSimplices5/6/7` | Mathieu Dutour Sikirić (`polyhedral_common`) |
+| [`tests/fixtures/indefinite_jl_cases.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/indefinite_jl_cases.json) | 6 | `Indefinite.jl/TestLor` & `TestCases` | Mathieu Dutour Sikirić (`Indefinite.jl`) |
+| [`tests/fixtures/ci_indefinite_comp.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/ci_indefinite_comp.json) | 6 | `CI_tests/19_IndefiniteComp/AllTests.g` | Mathieu Dutour Sikirić (`polyhedral_common`) |
+| [`tests/fixtures/unpolarized_enriques.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/unpolarized_enriques.json) | 4 | Section 3.2, 3.3 | Dutour Sikirić & Hulek (2023), Nikulin (1983), Sterk (1985) |
+| [`tests/fixtures/lorentzian_stabilizers_cases.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/lorentzian_stabilizers_cases.json) | 3 | `CI_tests/13_LorentzianStabEqui/TestCasesStab.tar.gz` | Mathieu Dutour Sikirić (`polyhedral_common`) |
+| [`tests/fixtures/dawes_buildings.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/dawes_buildings.json) | 3 | `buildings.sage` | Matthew Dawes (Ph.D. thesis 2020) |
+| [`tests/fixtures/centralizer_involutions.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/centralizer_involutions.json) | 4 | Structural gluing & Enriques involution | Nikulin (1980), Sterk (1985) |
+
