@@ -16,22 +16,7 @@ import os
 sys.path.insert(0, os.path.expanduser("~/research/src"))
 
 from sage.all import ZZ, QQ, matrix, identity_matrix, vector as sage_vector
-from dzack_research.preamble.categories.lattices import Lattices
-from dzack_research.preamble.tensors import tensor
-
-
-def _make_lattice(gram):
-    """Build a preamble Lattice from a nested-list Gram matrix."""
-    C = Lattices(ZZ)
-    n = len(gram)
-    rows = tuple(tuple(int(x) for x in row) for row in gram)
-    g = tensor(ZZ, (), (n, n), rows)
-    return C(g)
-
-
-def _from_sage_matrix(M):
-    """Convert Sage matrix to nested list of ints."""
-    return [[int(M[i, j]) for j in range(M.ncols())] for i in range(M.nrows())]
+from . import make_lattice, from_sage_matrix
 
 
 # ---------------------------------------------------------------------------
@@ -50,7 +35,7 @@ def get_attack_scheme(gram):
     OUTPUT:
     - dict with keys 'h' (Witt index), 'mat' (adjusted Gram), 'sign' (+1 or -1)
     """
-    L = _make_lattice(gram)
+    L = make_lattice(gram)
     n = L.rank()
     p, q = L.signature_pair()
 
@@ -70,7 +55,7 @@ def get_attack_scheme(gram):
 
 def is_lorentzian(gram):
     """Check if gram has signature (1, n-1) or (n-1, 1)."""
-    L = _make_lattice(gram)
+    L = make_lattice(gram)
     p, q = L.signature_pair()
     return min(p, q) == 1
 
@@ -91,7 +76,7 @@ def find_isotropic_vector(gram):
     OUTPUT:
     - list of integers (isotropic vector), or None
     """
-    L = _make_lattice(gram)
+    L = make_lattice(gram)
     n = L.rank()
 
     # Try nullspace approach: Qv = 0
@@ -130,7 +115,7 @@ def find_hyperbolic_pair(gram):
     OUTPUT:
     - dict with 'u', 'v' (lists), 'scal' (integer), or None
     """
-    L = _make_lattice(gram)
+    L = make_lattice(gram)
     n = L.rank()
 
     v1_list = find_isotropic_vector(gram)
@@ -183,7 +168,7 @@ def reflection_matrix(gram, root):
     OUTPUT:
     - Sage integer matrix (the reflection)
     """
-    L = _make_lattice(gram)
+    L = make_lattice(gram)
     n = L.rank()
     r = L(sage_vector(ZZ, root))
     q_r = L.q(r)
@@ -216,7 +201,7 @@ def lorentzian_perfect_domain_step(gram):
     OUTPUT:
     - list of root vectors (lists) that are walls of the current chamber
     """
-    L = _make_lattice(gram)
+    L = make_lattice(gram)
     n = L.rank()
 
     roots = []
@@ -245,7 +230,7 @@ def lorentzian_generators_autom(gram):
     OUTPUT:
     - list of nested lists (integer matrix generators)
     """
-    L = _make_lattice(gram)
+    L = make_lattice(gram)
     n = L.rank()
 
     if n <= 1:
@@ -284,7 +269,7 @@ def lorentzian_generators_autom(gram):
                     seen.add(key)
                     generators.append(R)
 
-    return [_from_sage_matrix(g) for g in generators]
+    return [from_sage_matrix(g) for g in generators]
 
 
 # ---------------------------------------------------------------------------

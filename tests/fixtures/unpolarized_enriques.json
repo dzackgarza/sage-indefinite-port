@@ -1,0 +1,332 @@
+{
+  "id": "enriques_unpolarized_N",
+  "lattice": {
+    "name": "N",
+    "construction": "U + U(2) + E8(-2)",
+    "signature": [
+      2,
+      10
+    ],
+    "rank": 12,
+    "det": -1024,
+    "is_even": true,
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        -4,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        2,
+        -4,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        -4,
+        2,
+        0,
+        0,
+        0,
+        2
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        -4,
+        2,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        -4,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        -4,
+        2,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        -4,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        -4
+      ]
+    ]
+  },
+  "component_preserving_group": {
+    "internal_name": "O_component",
+    "construction": "kernel(component_character)",
+    "source_notation": "O^+(N)",
+    "counts": {
+      "line_orbits": 2,
+      "plane_orbits": 2
+    },
+    "line_representatives": [
+      {
+        "id": "I_1_1",
+        "basis": [
+          [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "description": "Z * e1 (from U)",
+        "discriminant_stabilizer_index": 1
+      },
+      {
+        "id": "I_1_2",
+        "basis": [
+          [
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "description": "Z * e3 (from U(2))",
+        "discriminant_stabilizer_index": 527
+      }
+    ],
+    "plane_representatives": [
+      {
+        "id": "I_2_1",
+        "basis": [
+          [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "description": "Z * e1 + Z * e3",
+        "discriminant_stabilizer_index": 527
+      },
+      {
+        "id": "I_2_2",
+        "basis": [
+          [
+            2,
+            2,
+            0,
+            0,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "description": "Z * (2e1 + 2e2 + w) + Z * e3",
+        "discriminant_stabilizer_index": 23715
+      }
+    ]
+  },
+  "stable_component_preserving_group": {
+    "internal_name": "O_plus_component",
+    "construction": "intersection(kernel(discriminant_representation), kernel(component_character))",
+    "source_notation": "\\widetilde O^+(N)",
+    "counts": {
+      "line_orbits": 528,
+      "plane_orbits": 24242,
+      "flag_orbits": 72199
+    },
+    "orbit_decompositions": {
+      "lines": "528 = 1 + 527 (from stabilizer image indices of O^Omega(N) orbits)",
+      "planes": "24242 = 527 + 23715 (from stabilizer image indices of O^Omega(N) orbits)"
+    }
+  },
+  "source": {
+    "kind": "published_table",
+    "paper": "Dutour Sikiri\u0107--Hulek",
+    "arxiv": "2302.01679",
+    "sections": [
+      "3.2",
+      "3.3"
+    ]
+  }
+}

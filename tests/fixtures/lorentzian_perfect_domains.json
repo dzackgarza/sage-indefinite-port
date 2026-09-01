@@ -1,0 +1,1582 @@
+[
+  {
+    "gram": [
+      [
+        4,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        -1
+      ],
+      [
+        0,
+        -1,
+        -2
+      ]
+    ],
+    "dimension": 3,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim3_case01"
+  },
+  {
+    "gram": [
+      [
+        -168,
+        16,
+        32
+      ],
+      [
+        16,
+        -1,
+        -3
+      ],
+      [
+        32,
+        -3,
+        -6
+      ]
+    ],
+    "dimension": 3,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 2,
+    "id": "lor_perf_dim3_case02"
+  },
+  {
+    "gram": [
+      [
+        -328,
+        32,
+        56
+      ],
+      [
+        32,
+        -3,
+        -6
+      ],
+      [
+        56,
+        -6,
+        -7
+      ]
+    ],
+    "dimension": 3,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim3_case03"
+  },
+  {
+    "gram": [
+      [
+        0,
+        -1,
+        0
+      ],
+      [
+        -1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1
+      ]
+    ],
+    "dimension": 3,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim3_case04"
+  },
+  {
+    "gram": [
+      [
+        2,
+        0,
+        -2
+      ],
+      [
+        0,
+        1,
+        -1
+      ],
+      [
+        -2,
+        -1,
+        2
+      ]
+    ],
+    "dimension": 3,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim3_case05"
+  },
+  {
+    "gram": [
+      [
+        -4,
+        4,
+        4
+      ],
+      [
+        4,
+        -2,
+        -3
+      ],
+      [
+        4,
+        -3,
+        -3
+      ]
+    ],
+    "dimension": 3,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim3_case06"
+  },
+  {
+    "gram": [
+      [
+        0,
+        -2,
+        -2
+      ],
+      [
+        -2,
+        -2,
+        -2
+      ],
+      [
+        -2,
+        -2,
+        -1
+      ]
+    ],
+    "dimension": 3,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim3_case07"
+  },
+  {
+    "gram": [
+      [
+        4,
+        -4,
+        0
+      ],
+      [
+        -4,
+        8,
+        4
+      ],
+      [
+        0,
+        4,
+        3
+      ]
+    ],
+    "dimension": 3,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim3_case08"
+  },
+  {
+    "gram": [
+      [
+        8,
+        -4,
+        0
+      ],
+      [
+        -4,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1
+      ]
+    ],
+    "dimension": 3,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim3_case09"
+  },
+  {
+    "gram": [
+      [
+        -48,
+        -56,
+        -8
+      ],
+      [
+        -56,
+        -56,
+        -8
+      ],
+      [
+        -8,
+        -8,
+        -1
+      ]
+    ],
+    "dimension": 3,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim3_case10"
+  },
+  {
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        2
+      ]
+    ],
+    "dimension": 4,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim4_case11"
+  },
+  {
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        2
+      ]
+    ],
+    "dimension": 4,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim4_case12"
+  },
+  {
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        4
+      ]
+    ],
+    "dimension": 4,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim4_case13"
+  },
+  {
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        4
+      ]
+    ],
+    "dimension": 4,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim4_case14"
+  },
+  {
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        6
+      ]
+    ],
+    "dimension": 4,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim4_case15"
+  },
+  {
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        4,
+        2
+      ],
+      [
+        0,
+        0,
+        2,
+        4
+      ]
+    ],
+    "dimension": 4,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim4_case16"
+  },
+  {
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        8
+      ]
+    ],
+    "dimension": 4,
+    "has_isotropic": true,
+    "isotropic_count": 2,
+    "total_count": 2,
+    "id": "lor_perf_dim4_case17"
+  },
+  {
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        4,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        4
+      ]
+    ],
+    "dimension": 4,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim4_case18"
+  },
+  {
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        10
+      ]
+    ],
+    "dimension": 4,
+    "has_isotropic": true,
+    "isotropic_count": 2,
+    "total_count": 2,
+    "id": "lor_perf_dim4_case19"
+  },
+  {
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        10
+      ]
+    ],
+    "dimension": 4,
+    "has_isotropic": true,
+    "isotropic_count": 2,
+    "total_count": 2,
+    "id": "lor_perf_dim4_case20"
+  },
+  {
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    ],
+    "dimension": 5,
+    "has_isotropic": true,
+    "isotropic_count": 2,
+    "total_count": 2,
+    "id": "lor_perf_dim5_case21"
+  },
+  {
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        2,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        2
+      ]
+    ],
+    "dimension": 5,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim5_case22"
+  },
+  {
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        3
+      ]
+    ],
+    "dimension": 5,
+    "has_isotropic": true,
+    "isotropic_count": 2,
+    "total_count": 2,
+    "id": "lor_perf_dim5_case23"
+  },
+  {
+    "gram": [
+      [
+        0,
+        2,
+        0,
+        0,
+        0
+      ],
+      [
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    ],
+    "dimension": 5,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim5_case24"
+  },
+  {
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        5
+      ]
+    ],
+    "dimension": 5,
+    "has_isotropic": true,
+    "isotropic_count": 2,
+    "total_count": 1,
+    "id": "lor_perf_dim5_case25"
+  },
+  {
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        2,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        3
+      ]
+    ],
+    "dimension": 5,
+    "has_isotropic": true,
+    "isotropic_count": 2,
+    "total_count": 2,
+    "id": "lor_perf_dim5_case26"
+  },
+  {
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        6
+      ]
+    ],
+    "dimension": 5,
+    "has_isotropic": true,
+    "isotropic_count": 2,
+    "total_count": 2,
+    "id": "lor_perf_dim5_case27"
+  },
+  {
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        2,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        2
+      ]
+    ],
+    "dimension": 5,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim5_case28"
+  },
+  {
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        7
+      ]
+    ],
+    "dimension": 5,
+    "has_isotropic": true,
+    "isotropic_count": 3,
+    "total_count": 3,
+    "id": "lor_perf_dim5_case29"
+  },
+  {
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        3,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        2,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        2
+      ]
+    ],
+    "dimension": 5,
+    "has_isotropic": true,
+    "isotropic_count": 5,
+    "total_count": 5,
+    "id": "lor_perf_dim5_case30"
+  },
+  {
+    "gram": [
+      [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        -1
+      ]
+    ],
+    "dimension": 6,
+    "has_isotropic": true,
+    "isotropic_count": 2,
+    "total_count": 2,
+    "id": "lor_perf_dim6_case31"
+  },
+  {
+    "gram": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        -2
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        -2,
+        0,
+        0,
+        0,
+        0,
+        -4
+      ]
+    ],
+    "dimension": 6,
+    "has_isotropic": true,
+    "isotropic_count": 1,
+    "total_count": 1,
+    "id": "lor_perf_dim6_case32"
+  },
+  {
+    "gram": [
+      [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        -1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        7
+      ]
+    ],
+    "dimension": 6,
+    "has_isotropic": true,
+    "isotropic_count": 3,
+    "total_count": 3,
+    "id": "lor_perf_dim6_case33"
+  },
+  {
+    "gram": [
+      [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        -1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        4,
+        -2
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        -2,
+        8
+      ]
+    ],
+    "dimension": 6,
+    "has_isotropic": true,
+    "isotropic_count": 15,
+    "total_count": 18,
+    "id": "lor_perf_dim6_case34"
+  },
+  {
+    "gram": [
+      [
+        0,
+        -1,
+        -1,
+        -3,
+        2,
+        -6
+      ],
+      [
+        -1,
+        0,
+        0,
+        1,
+        -1,
+        -3
+      ],
+      [
+        -1,
+        0,
+        2,
+        -1,
+        0,
+        0
+      ],
+      [
+        -3,
+        1,
+        -1,
+        12,
+        -3,
+        -4
+      ],
+      [
+        2,
+        -1,
+        0,
+        -3,
+        12,
+        -4
+      ],
+      [
+        -6,
+        -3,
+        0,
+        -4,
+        -4,
+        -20
+      ]
+    ],
+    "dimension": 6,
+    "has_isotropic": true,
+    "isotropic_count": 2,
+    "total_count": 2,
+    "id": "lor_perf_dim6_case35"
+  },
+  {
+    "gram": [
+      [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        -2,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1,
+        2
+      ]
+    ],
+    "dimension": 6,
+    "has_isotropic": true,
+    "isotropic_count": 3,
+    "total_count": 3,
+    "id": "lor_perf_dim6_case36"
+  },
+  {
+    "gram": [
+      [
+        0,
+        -1,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        -1,
+        -2,
+        0,
+        0,
+        1,
+        -1
+      ],
+      [
+        0,
+        0,
+        2,
+        -1,
+        1,
+        -1
+      ],
+      [
+        0,
+        0,
+        -1,
+        2,
+        -1,
+        1
+      ],
+      [
+        1,
+        1,
+        1,
+        -1,
+        2,
+        0
+      ],
+      [
+        0,
+        -1,
+        -1,
+        1,
+        0,
+        2
+      ]
+    ],
+    "dimension": 6,
+    "has_isotropic": true,
+    "isotropic_count": 2,
+    "total_count": 2,
+    "id": "lor_perf_dim6_case37"
+  },
+  {
+    "gram": [
+      [
+        0,
+        -1,
+        -1,
+        -1,
+        -2,
+        1
+      ],
+      [
+        -1,
+        0,
+        -1,
+        -1,
+        -2,
+        1
+      ],
+      [
+        -1,
+        -1,
+        0,
+        -1,
+        -2,
+        1
+      ],
+      [
+        -1,
+        -1,
+        -1,
+        0,
+        -2,
+        1
+      ],
+      [
+        -2,
+        -2,
+        -2,
+        -2,
+        -4,
+        2
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        2,
+        4
+      ]
+    ],
+    "dimension": 6,
+    "has_isotropic": true,
+    "isotropic_count": 2,
+    "total_count": 2,
+    "id": "lor_perf_dim6_case38"
+  },
+  {
+    "gram": [
+      [
+        0,
+        2,
+        2,
+        -1,
+        2,
+        -6
+      ],
+      [
+        2,
+        0,
+        -3,
+        -1,
+        5,
+        12
+      ],
+      [
+        2,
+        -3,
+        0,
+        -1,
+        -2,
+        19
+      ],
+      [
+        -1,
+        -1,
+        -1,
+        2,
+        0,
+        0
+      ],
+      [
+        2,
+        5,
+        -2,
+        0,
+        26,
+        10
+      ],
+      [
+        -6,
+        12,
+        19,
+        0,
+        10,
+        -58
+      ]
+    ],
+    "dimension": 6,
+    "has_isotropic": true,
+    "isotropic_count": 2,
+    "total_count": 2,
+    "id": "lor_perf_dim6_case39"
+  },
+  {
+    "gram": [
+      [
+        0,
+        -4,
+        1,
+        -5,
+        2,
+        5
+      ],
+      [
+        -4,
+        -2,
+        -1,
+        0,
+        -1,
+        1
+      ],
+      [
+        1,
+        -1,
+        4,
+        0,
+        -2,
+        0
+      ],
+      [
+        -5,
+        0,
+        0,
+        10,
+        -5,
+        5
+      ],
+      [
+        2,
+        -1,
+        -2,
+        -5,
+        10,
+        -1
+      ],
+      [
+        5,
+        1,
+        0,
+        5,
+        -1,
+        14
+      ]
+    ],
+    "dimension": 6,
+    "has_isotropic": true,
+    "isotropic_count": 12,
+    "total_count": 12,
+    "id": "lor_perf_dim6_case40"
+  }
+]

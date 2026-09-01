@@ -1,0 +1,218 @@
+[
+  {
+    "id": "dawes_2U_A2",
+    "name": "2U + A2",
+    "construction": "2U + A2",
+    "signature": [
+      2,
+      4
+    ],
+    "rank": 6,
+    "det": 3,
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        -2,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1,
+        -2
+      ]
+    ],
+    "group": {
+      "internal_name": "O_plus_component",
+      "construction": "intersection(kernel(discriminant_representation), kernel(component_character))",
+      "source_notation": "\\widetilde O^+(2U + A2)"
+    },
+    "source": {
+      "kind": "independent_implementation",
+      "author": "Matthew Dawes",
+      "code": "buildings.sage",
+      "paper": "Dawes (2020)"
+    }
+  },
+  {
+    "id": "dawes_2U_minus6_minus2",
+    "name": "2U + <-6> + <-2>",
+    "construction": "2U + <-6> + <-2>",
+    "signature": [
+      2,
+      4
+    ],
+    "rank": 6,
+    "det": 12,
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        -6,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        -2
+      ]
+    ],
+    "group": {
+      "internal_name": "O_component",
+      "construction": "kernel(component_character)",
+      "source_notation": "O^+(2U + <-6> + <-2>)"
+    },
+    "source": {
+      "kind": "independent_implementation",
+      "author": "Matthew Dawes",
+      "code": "buildings.sage",
+      "paper": "Dawes (2020)"
+    }
+  },
+  {
+    "id": "dawes_U_U2_A2",
+    "name": "U + U(2) + A2",
+    "construction": "U + U(2) + A2",
+    "signature": [
+      2,
+      4
+    ],
+    "rank": 6,
+    "det": 12,
+    "gram": [
+      [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        -2,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1,
+        -2
+      ]
+    ],
+    "group": {
+      "internal_name": "O_plus_component",
+      "construction": "intersection(kernel(discriminant_representation), kernel(component_character))",
+      "source_notation": "\\widetilde O^+(U + U(2) + A2)"
+    },
+    "source": {
+      "kind": "independent_implementation",
+      "author": "Matthew Dawes",
+      "code": "buildings.sage",
+      "paper": "Dawes (2020)"
+    }
+  }
+]

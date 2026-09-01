@@ -67,10 +67,8 @@ class IndefiniteLattice:
         return C(g)
 
     def determinant(self):
-        """Return |det(Q)|."""
-        from sage.all import matrix as sage_matrix
-        Q = sage_matrix(ZZ, self._gram)
-        return abs(Q.det())
+        """Return |det(Q)| via preamble L.discriminant()."""
+        return abs(int(self._preamble_lattice().discriminant()))
 
     def is_even(self):
         """Check if all diagonal entries are even."""

@@ -1,0 +1,1307 @@
+[
+  {
+    "case": 1,
+    "minimal_degree": 2,
+    "polarization_orbit_length": 1,
+    "line_orbits": 5,
+    "plane_orbits": 9,
+    "flag_orbits": 18,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 1
+    }
+  },
+  {
+    "case": 2,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 1,
+    "line_orbits": 6,
+    "plane_orbits": 11,
+    "flag_orbits": 22,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 2
+    }
+  },
+  {
+    "case": 3,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 2,
+    "line_orbits": 8,
+    "plane_orbits": 16,
+    "flag_orbits": 33,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 3
+    }
+  },
+  {
+    "case": 4,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 2,
+    "line_orbits": 8,
+    "plane_orbits": 17,
+    "flag_orbits": 36,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 4
+    }
+  },
+  {
+    "case": 5,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 3,
+    "line_orbits": 9,
+    "plane_orbits": 20,
+    "flag_orbits": 43,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 5
+    }
+  },
+  {
+    "case": 6,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 4,
+    "line_orbits": 12,
+    "plane_orbits": 30,
+    "flag_orbits": 66,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 6
+    }
+  },
+  {
+    "case": 7,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 4,
+    "line_orbits": 11,
+    "plane_orbits": 27,
+    "flag_orbits": 60,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 7
+    }
+  },
+  {
+    "case": 8,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 6,
+    "line_orbits": 14,
+    "plane_orbits": 38,
+    "flag_orbits": 87,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 8
+    }
+  },
+  {
+    "case": 9,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 6,
+    "line_orbits": 14,
+    "plane_orbits": 37,
+    "flag_orbits": 84,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 9
+    }
+  },
+  {
+    "case": 10,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 6,
+    "line_orbits": 15,
+    "plane_orbits": 42,
+    "flag_orbits": 96,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 10
+    }
+  },
+  {
+    "case": 11,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 8,
+    "line_orbits": 17,
+    "plane_orbits": 50,
+    "flag_orbits": 116,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 11
+    }
+  },
+  {
+    "case": 12,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 8,
+    "line_orbits": 18,
+    "plane_orbits": 56,
+    "flag_orbits": 132,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 12
+    }
+  },
+  {
+    "case": 13,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 12,
+    "line_orbits": 22,
+    "plane_orbits": 74,
+    "flag_orbits": 177,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 13
+    }
+  },
+  {
+    "case": 14,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 12,
+    "line_orbits": 23,
+    "plane_orbits": 80,
+    "flag_orbits": 192,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 14
+    }
+  },
+  {
+    "case": 15,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 12,
+    "line_orbits": 24,
+    "plane_orbits": 86,
+    "flag_orbits": 208,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 15
+    }
+  },
+  {
+    "case": 16,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 12,
+    "line_orbits": 26,
+    "plane_orbits": 98,
+    "flag_orbits": 240,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 16
+    }
+  },
+  {
+    "case": 17,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 16,
+    "line_orbits": 28,
+    "plane_orbits": 110,
+    "flag_orbits": 270,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 17
+    }
+  },
+  {
+    "case": 18,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 24,
+    "line_orbits": 37,
+    "plane_orbits": 158,
+    "flag_orbits": 396,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 18
+    }
+  },
+  {
+    "case": 19,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 24,
+    "line_orbits": 38,
+    "plane_orbits": 164,
+    "flag_orbits": 412,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 19
+    }
+  },
+  {
+    "case": 20,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 24,
+    "line_orbits": 41,
+    "plane_orbits": 182,
+    "flag_orbits": 460,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 20
+    }
+  },
+  {
+    "case": 21,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 24,
+    "line_orbits": 44,
+    "plane_orbits": 200,
+    "flag_orbits": 508,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 21
+    }
+  },
+  {
+    "case": 22,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 32,
+    "line_orbits": 48,
+    "plane_orbits": 226,
+    "flag_orbits": 578,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 22
+    }
+  },
+  {
+    "case": 23,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 36,
+    "line_orbits": 52,
+    "plane_orbits": 251,
+    "flag_orbits": 646,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 23
+    }
+  },
+  {
+    "case": 24,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 48,
+    "line_orbits": 63,
+    "plane_orbits": 322,
+    "flag_orbits": 836,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 24
+    }
+  },
+  {
+    "case": 25,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 48,
+    "line_orbits": 68,
+    "plane_orbits": 356,
+    "flag_orbits": 928,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 25
+    }
+  },
+  {
+    "case": 26,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 48,
+    "line_orbits": 73,
+    "plane_orbits": 388,
+    "flag_orbits": 1016,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 26
+    }
+  },
+  {
+    "case": 27,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 64,
+    "line_orbits": 83,
+    "plane_orbits": 454,
+    "flag_orbits": 1194,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 27
+    }
+  },
+  {
+    "case": 28,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 72,
+    "line_orbits": 91,
+    "plane_orbits": 508,
+    "flag_orbits": 1340,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 28
+    }
+  },
+  {
+    "case": 29,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 72,
+    "line_orbits": 96,
+    "plane_orbits": 544,
+    "flag_orbits": 1438,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 29
+    }
+  },
+  {
+    "case": 30,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 96,
+    "line_orbits": 113,
+    "plane_orbits": 662,
+    "flag_orbits": 1756,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 30
+    }
+  },
+  {
+    "case": 31,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 96,
+    "line_orbits": 121,
+    "plane_orbits": 718,
+    "flag_orbits": 1908,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 31
+    }
+  },
+  {
+    "case": 32,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 96,
+    "line_orbits": 131,
+    "plane_orbits": 788,
+    "flag_orbits": 2098,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 32
+    }
+  },
+  {
+    "case": 33,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 120,
+    "line_orbits": 138,
+    "plane_orbits": 839,
+    "flag_orbits": 2236,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 33
+    }
+  },
+  {
+    "case": 34,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 144,
+    "line_orbits": 161,
+    "plane_orbits": 1004,
+    "flag_orbits": 2684,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 34
+    }
+  },
+  {
+    "case": 35,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 144,
+    "line_orbits": 170,
+    "plane_orbits": 1072,
+    "flag_orbits": 2870,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 35
+    }
+  },
+  {
+    "case": 36,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 144,
+    "line_orbits": 182,
+    "plane_orbits": 1160,
+    "flag_orbits": 3110,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 36
+    }
+  },
+  {
+    "case": 37,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 192,
+    "line_orbits": 209,
+    "plane_orbits": 1364,
+    "flag_orbits": 3668,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 37
+    }
+  },
+  {
+    "case": 38,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 192,
+    "line_orbits": 224,
+    "plane_orbits": 1478,
+    "flag_orbits": 3982,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 38
+    }
+  },
+  {
+    "case": 39,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 192,
+    "line_orbits": 242,
+    "plane_orbits": 1616,
+    "flag_orbits": 4362,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 39
+    }
+  },
+  {
+    "case": 40,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 216,
+    "line_orbits": 240,
+    "plane_orbits": 1600,
+    "flag_orbits": 4316,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 40
+    }
+  },
+  {
+    "case": 41,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 288,
+    "line_orbits": 298,
+    "plane_orbits": 2056,
+    "flag_orbits": 5576,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 41
+    }
+  },
+  {
+    "case": 42,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 288,
+    "line_orbits": 315,
+    "plane_orbits": 2190,
+    "flag_orbits": 5946,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 42
+    }
+  },
+  {
+    "case": 43,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 288,
+    "line_orbits": 339,
+    "plane_orbits": 2382,
+    "flag_orbits": 6480,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 1,
+      "row": 43
+    }
+  },
+  {
+    "case": 44,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 360,
+    "line_orbits": 376,
+    "plane_orbits": 2686,
+    "flag_orbits": 7324,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 44
+    }
+  },
+  {
+    "case": 45,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 384,
+    "line_orbits": 387,
+    "plane_orbits": 2772,
+    "flag_orbits": 7556,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 45
+    }
+  },
+  {
+    "case": 46,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 384,
+    "line_orbits": 417,
+    "plane_orbits": 3020,
+    "flag_orbits": 8246,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 46
+    }
+  },
+  {
+    "case": 47,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 432,
+    "line_orbits": 442,
+    "plane_orbits": 3224,
+    "flag_orbits": 8812,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 47
+    }
+  },
+  {
+    "case": 48,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 480,
+    "line_orbits": 484,
+    "plane_orbits": 3568,
+    "flag_orbits": 9772,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 48
+    }
+  },
+  {
+    "case": 49,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 576,
+    "line_orbits": 548,
+    "plane_orbits": 4104,
+    "flag_orbits": 11264,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 49
+    }
+  },
+  {
+    "case": 50,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 576,
+    "line_orbits": 582,
+    "plane_orbits": 4390,
+    "flag_orbits": 12066,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 50
+    }
+  },
+  {
+    "case": 51,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 576,
+    "line_orbits": 630,
+    "plane_orbits": 4794,
+    "flag_orbits": 13204,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 51
+    }
+  },
+  {
+    "case": 52,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 720,
+    "line_orbits": 692,
+    "plane_orbits": 5352,
+    "flag_orbits": 14764,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 52
+    }
+  },
+  {
+    "case": 53,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 768,
+    "line_orbits": 718,
+    "plane_orbits": 5560,
+    "flag_orbits": 15334,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 53
+    }
+  },
+  {
+    "case": 54,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 768,
+    "line_orbits": 778,
+    "plane_orbits": 6076,
+    "flag_orbits": 16790,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 54
+    }
+  },
+  {
+    "case": 55,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 864,
+    "line_orbits": 818,
+    "plane_orbits": 6432,
+    "flag_orbits": 17792,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 55
+    }
+  },
+  {
+    "case": 56,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 960,
+    "line_orbits": 894,
+    "plane_orbits": 7108,
+    "flag_orbits": 19696,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 56
+    }
+  },
+  {
+    "case": 57,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 1152,
+    "line_orbits": 1008,
+    "plane_orbits": 8140,
+    "flag_orbits": 22596,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 57
+    }
+  },
+  {
+    "case": 58,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 1152,
+    "line_orbits": 1076,
+    "plane_orbits": 8732,
+    "flag_orbits": 24276,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 58
+    }
+  },
+  {
+    "case": 59,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 1152,
+    "line_orbits": 1172,
+    "plane_orbits": 9572,
+    "flag_orbits": 26660,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 59
+    }
+  },
+  {
+    "case": 60,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 1440,
+    "line_orbits": 1284,
+    "plane_orbits": 10636,
+    "flag_orbits": 29668,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 60
+    }
+  },
+  {
+    "case": 61,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 1536,
+    "line_orbits": 1332,
+    "plane_orbits": 11048,
+    "flag_orbits": 30800,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 61
+    }
+  },
+  {
+    "case": 62,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 1536,
+    "line_orbits": 1452,
+    "plane_orbits": 12100,
+    "flag_orbits": 33792,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 62
+    }
+  },
+  {
+    "case": 63,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 1728,
+    "line_orbits": 1528,
+    "plane_orbits": 12792,
+    "flag_orbits": 35748,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 63
+    }
+  },
+  {
+    "case": 64,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 1920,
+    "line_orbits": 1664,
+    "plane_orbits": 14108,
+    "flag_orbits": 39504,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 64
+    }
+  },
+  {
+    "case": 65,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 2304,
+    "line_orbits": 1876,
+    "plane_orbits": 16120,
+    "flag_orbits": 45220,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 65
+    }
+  },
+  {
+    "case": 66,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 2304,
+    "line_orbits": 2012,
+    "plane_orbits": 17348,
+    "flag_orbits": 48724,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 66
+    }
+  },
+  {
+    "case": 67,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 2304,
+    "line_orbits": 2204,
+    "plane_orbits": 19084,
+    "flag_orbits": 53684,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 67
+    }
+  },
+  {
+    "case": 68,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 2880,
+    "line_orbits": 2420,
+    "plane_orbits": 21192,
+    "flag_orbits": 59708,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 68
+    }
+  },
+  {
+    "case": 69,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 3072,
+    "line_orbits": 2512,
+    "plane_orbits": 22000,
+    "flag_orbits": 61968,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 69
+    }
+  },
+  {
+    "case": 70,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 3072,
+    "line_orbits": 2752,
+    "plane_orbits": 24192,
+    "flag_orbits": 68256,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 70
+    }
+  },
+  {
+    "case": 71,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 3456,
+    "line_orbits": 2896,
+    "plane_orbits": 25528,
+    "flag_orbits": 72076,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 71
+    }
+  },
+  {
+    "case": 72,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 3840,
+    "line_orbits": 3144,
+    "plane_orbits": 28004,
+    "flag_orbits": 79208,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 72
+    }
+  },
+  {
+    "case": 73,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 4608,
+    "line_orbits": 3544,
+    "plane_orbits": 31920,
+    "flag_orbits": 90464,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 73
+    }
+  },
+  {
+    "case": 74,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 4608,
+    "line_orbits": 3816,
+    "plane_orbits": 34484,
+    "flag_orbits": 97852,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 74
+    }
+  },
+  {
+    "case": 75,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 4608,
+    "line_orbits": 4200,
+    "plane_orbits": 38104,
+    "flag_orbits": 108304,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 75
+    }
+  },
+  {
+    "case": 76,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 5760,
+    "line_orbits": 4604,
+    "plane_orbits": 42168,
+    "flag_orbits": 120048,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 76
+    }
+  },
+  {
+    "case": 77,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 6144,
+    "line_orbits": 4776,
+    "plane_orbits": 43760,
+    "flag_orbits": 124544,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 77
+    }
+  },
+  {
+    "case": 78,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 6144,
+    "line_orbits": 5256,
+    "plane_orbits": 48352,
+    "flag_orbits": 137856,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 78
+    }
+  },
+  {
+    "case": 79,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 6912,
+    "line_orbits": 5536,
+    "plane_orbits": 50992,
+    "flag_orbits": 145456,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 79
+    }
+  },
+  {
+    "case": 80,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 7680,
+    "line_orbits": 6008,
+    "plane_orbits": 55784,
+    "flag_orbits": 159344,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 80
+    }
+  },
+  {
+    "case": 81,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 9216,
+    "line_orbits": 6776,
+    "plane_orbits": 63504,
+    "flag_orbits": 181712,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 81
+    }
+  },
+  {
+    "case": 82,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 9216,
+    "line_orbits": 7320,
+    "plane_orbits": 68864,
+    "flag_orbits": 197280,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 82
+    }
+  },
+  {
+    "case": 83,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 11520,
+    "line_orbits": 8784,
+    "plane_orbits": 83776,
+    "flag_orbits": 240896,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 83
+    }
+  },
+  {
+    "case": 84,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 12288,
+    "line_orbits": 9120,
+    "plane_orbits": 86976,
+    "flag_orbits": 249984,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 84
+    }
+  },
+  {
+    "case": 85,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 13824,
+    "line_orbits": 10568,
+    "plane_orbits": 101344,
+    "flag_orbits": 291776,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 85
+    }
+  },
+  {
+    "case": 86,
+    "minimal_degree": 4,
+    "polarization_orbit_length": 18432,
+    "line_orbits": 13000,
+    "plane_orbits": 125888,
+    "flag_orbits": 363200,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 86
+    }
+  },
+  {
+    "case": 87,
+    "minimal_degree": null,
+    "polarization_orbit_length": null,
+    "line_orbits": 528,
+    "plane_orbits": 24242,
+    "flag_orbits": 72199,
+    "source": {
+      "kind": "published_table",
+      "paper": "Dutour Sikiri\u0107--Hulek",
+      "arxiv": "2302.01679",
+      "table": 2,
+      "row": 87
+    }
+  }
+]
