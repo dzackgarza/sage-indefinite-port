@@ -12,40 +12,8 @@ import os
 sys.path.insert(0, os.path.expanduser("~/research/src"))
 
 from sage.all import ZZ, QQ, matrix, identity_matrix, vector as sage_vector
-from dzack_research.preamble.categories.lattices import Lattices
-from dzack_research.preamble.tensors import tensor
+from . import make_lattice, from_sage_matrix, verify_generator, unique_generators
 from .lorentzian_perfect import get_attack_scheme, lorentzian_generators_autom
-
-
-def _make_lattice(gram):
-    """Build a preamble Lattice from a nested-list Gram matrix."""
-    C = Lattices(ZZ)
-    n = len(gram)
-    rows = tuple(tuple(int(x) for x in row) for row in gram)
-    g = tensor(ZZ, (), (n, n), rows)
-    return C(g)
-
-
-def _verify_generator(gram, M):
-    """Check M^T Q M == Q using preamble b()."""
-    L = _make_lattice(gram)
-    n = L.rank()
-    if isinstance(M, list):
-        M = matrix(ZZ, M)
-
-    # Verify: for all i,j, b(M*e_i, M*e_j) == b(e_i, e_j)
-    for i in range(n):
-        ei = L.module_generator(i)
-        for j in range(n):
-            ej = L.module_generator(j)
-            # M*ei as a lattice element
-            Mi_coords = [int(M[i, k]) for k in range(n)]
-            Mj_coords = [int(M[j, k]) for k in range(n)]
-            Mi = L(sage_vector(ZZ, Mi_coords))
-            Mj = L(sage_vector(ZZ, Mj_coords))
-            if L.b(Mi, Mj) != L.b(ei, ej):
-                return False
-    return True
 
 
 def indefinite_form_automorphism_group(gram):
@@ -83,7 +51,7 @@ def _definite_automorphism_group(gram):
 
     If the preamble binary is unavailable, fall back to root reflection method.
     """
-    L = _make_lattice(gram)
+    L = make_lattice(gram)
     n = L.rank()
 
     try:
@@ -102,7 +70,7 @@ def _definite_reflections(gram):
     Uses preamble L.b(), L.q(), L.module_generator() for root finding
     and reflection construction.
     """
-    L = _make_lattice(gram)
+    L = make_lattice(gram)
     n = L.rank()
     Q = matrix(ZZ, [[int(L.b(L.module_generator(i), L.module_generator(j)))
                        for j in range(n)] for i in range(n)])
@@ -130,7 +98,7 @@ def _definite_reflections(gram):
                 seen.add(key)
                 generators.append(R)
 
-    return [_from_sage_matrix(g) for g in generators]
+    return [from_sage_matrix(g) for g in generators]
 
 
 def _higher_witt_generators(gram):
@@ -147,11 +115,11 @@ def _higher_witt_generators(gram):
     approx = get_approximate_model(gram)
     approx_gens = approx.get("generators", [])
     for g in approx_gens:
-        if _verify_generator(gram, g):
+        if verify_generator(gram, g):
             generators.append(g)
 
     # Find a small-norm vector using preamble
-    L = _make_lattice(gram)
+    L = make_lattice(gram)
     n = L.rank()
     v1 = _find_first_norm_vector(L)
     if v1 is None:
@@ -160,11 +128,11 @@ def _higher_witt_generators(gram):
     # Compute stabilizer of v1 using preamble b()
     stab_gens = _stabilizer_vector(gram, L, v1)
     for g in stab_gens:
-        if _verify_generator(gram, g):
+        if verify_generator(gram, g):
             generators.append(g)
 
     # Deduplicate
-    generators = _unique_generators(generators, n)
+    generators = unique_generators(generators, n)
     return generators
 
 
@@ -220,7 +188,7 @@ def _stabilizer_vector(gram, L, v):
     return generators
 
 
-def _unique_generators(gens, n):
+def unique_generators(gens, n):
     """Remove duplicate and trivial generators."""
     seen = set()
     result = []
@@ -234,7 +202,7 @@ def _unique_generators(gens, n):
     return result
 
 
-def _from_sage_matrix(M):
+def from_sage_matrix(M):
     """Convert Sage matrix to nested list of ints."""
     return [[int(M[i, j]) for j in range(M.ncols())] for i in range(M.nrows())]
 
@@ -276,8 +244,8 @@ def indefinite_form_test_equivalence(gram1, gram2):
 
 def _definite_test_equivalence(gram1, gram2):
     """Test equivalence for definite lattices using preamble."""
-    L1 = _make_lattice(gram1)
-    L2 = _make_lattice(gram2)
+    L1 = make_lattice(gram1)
+    L2 = make_lattice(gram2)
 
     if L1.signature_pair() != L2.signature_pair():
         return None
@@ -294,8 +262,8 @@ def _definite_test_equivalence(gram1, gram2):
 
 def _lorentzian_test_equivalence(gram1, gram2):
     """Test equivalence for Lorentzian lattices using preamble."""
-    L1 = _make_lattice(gram1)
-    L2 = _make_lattice(gram2)
+    L1 = make_lattice(gram1)
+    L2 = make_lattice(gram2)
     n = L1.rank()
 
     if n != L2.rank():
@@ -360,15 +328,15 @@ def _lorentzian_test_equivalence(gram1, gram2):
 
     # Quick matrix check first
     if B_int.transpose() * Q1 * B_int == Q2:
-        return _from_sage_matrix(B_int)
+        return from_sage_matrix(B_int)
 
     return None
 
 
 def _higher_witt_test_equivalence(gram1, gram2):
     """Test equivalence for higher Witt index lattices."""
-    L1 = _make_lattice(gram1)
-    L2 = _make_lattice(gram2)
+    L1 = make_lattice(gram1)
+    L2 = make_lattice(gram2)
 
     if L1.rank() != L2.rank():
         return None

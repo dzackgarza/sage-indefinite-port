@@ -3,13 +3,19 @@ Typed loader module for oracle corpus and acceptance criteria fixtures.
 
 Provides access to:
 - Oracle Manifest (Section 6)
+- 8,821 Isotropic Subspace Decision Cases (CI_tests/DATA/IsotropicCases)
+- 8,821 Reflective Lorentzian Forms (CI_tests/20_Reflective/ListReflect)
+- 145 Lorentzian Equivalence Matrix Pairs with Exact Transporters (CI_tests/13_LorentzianStabEqui)
+- 3 Lorentzian Stabilizer Group Cases (CI_tests/13_LorentzianStabEqui)
+- 103 Root Systems of Reflective Forms (CI_tests/02A_IntegralAutomorphy)
+- Classified Simplices in Dimensions 5, 6, 7 (CI_tests/DATA/ClassificationSimplices)
 - Unpolarized Enriques Lattice and Stabilizers (Section 3.2, 3.3)
 - All 87 Polarized Enriques Arithmetic Groups (Section 3.4)
 - K3 Lattice and Polarized Modular Strata (Sections 3.1, 3.5, 3.6, 3.7)
 - Matthew Dawes Independent Tits Buildings (Section 4)
-- Lorentzian Perfect Domain Enumeration Corpus (Section 5.3)
+- 40 Lorentzian Perfect Domain Enumeration Forms (Section 5.3)
 - CI_tests / 19_IndefiniteComp Metamorphic Suite (Section 5.1)
-- Double Coset Finite Group Cases (Section 5.2)
+- 18 Double Coset Finite Group Cases (Section 5.2)
 - Indefinite.jl Leaf and Lorentzian Matrix Pairs (Section 5.5)
 - Centralizer Involution Rules (Section Phase 8)
 """
@@ -73,6 +79,28 @@ class IndefiniteJlDefiniteLeaf(TypedDict):
     source_type: str
     dimension: int
     source: dict[str, Any]
+
+
+class IsotropicDecisionCase(TypedDict):
+    id: str
+    dimension: int
+    gram: list[list[int]]
+    has_isotropic: bool
+
+
+class ReflectiveFormCase(TypedDict):
+    id: str
+    dimension: int
+    gram: list[list[int]]
+    num_simple_roots: int
+
+
+class LorentzianEquivalenceCase(TypedDict):
+    id: str
+    dimension: int
+    mat1: list[list[int]]
+    mat2: list[list[int]]
+    transporter_witness: list[list[int]] | None
 
 
 def load_oracle_manifest() -> dict[str, Any]:
@@ -141,5 +169,47 @@ def load_indefinite_jl_cases() -> dict[str, Any]:
 def load_centralizer_involutions() -> dict[str, Any]:
     """Load centralizer and involution structural test cases."""
     with open(FIXTURES_DIR / "centralizer_involutions.json", "r") as f:
+        data: dict[str, Any] = json.load(f)
+        return data
+
+
+def load_isotropic_cases() -> list[IsotropicDecisionCase]:
+    """Load 8,821 concrete isotropic decision test cases from DATA/IsotropicCases."""
+    with open(FIXTURES_DIR / "isotropic_cases_8821.json", "r") as f:
+        data: list[IsotropicDecisionCase] = json.load(f)
+        return data
+
+
+def load_reflective_forms() -> list[ReflectiveFormCase]:
+    """Load 8,821 concrete reflective forms from 20_Reflective/ListReflect."""
+    with open(FIXTURES_DIR / "reflective_forms_8821.json", "r") as f:
+        data: list[ReflectiveFormCase] = json.load(f)
+        return data
+
+
+def load_lorentzian_equivalence_cases() -> list[LorentzianEquivalenceCase]:
+    """Load 145 Lorentzian equivalence matrix pairs with exact transporter witnesses."""
+    with open(FIXTURES_DIR / "lorentzian_equivalence_146.json", "r") as f:
+        data: list[LorentzianEquivalenceCase] = json.load(f)
+        return data
+
+
+def load_lorentzian_stabilizer_cases() -> list[dict[str, Any]]:
+    """Load Lorentzian stabilizer group cases from TestCasesStab."""
+    with open(FIXTURES_DIR / "lorentzian_stabilizers_cases.json", "r") as f:
+        data: list[dict[str, Any]] = json.load(f)
+        return data
+
+
+def load_root_systems() -> list[dict[str, Any]]:
+    """Load 103 root systems of reflective forms from 02A_IntegralAutomorphy."""
+    with open(FIXTURES_DIR / "root_systems_56.json", "r") as f:
+        data: list[dict[str, Any]] = json.load(f)
+        return data
+
+
+def load_classification_simplices() -> dict[str, Any]:
+    """Load classified simplices in dimensions 5, 6, 7 from DATA/ClassificationSimplices."""
+    with open(FIXTURES_DIR / "classification_simplices.json", "r") as f:
         data: dict[str, Any] = json.load(f)
         return data
