@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+*.lock
+!uv.lock
+
+# Sage preparse output
+*.sage.py
+
+# Build metadata
+*.egg-info/
+dist/
+build/
+
+# mypy cache
+.mypy_cache/
+
+# QC artifacts
+.ai-review-ci/
+.ruff_cache/
