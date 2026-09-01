@@ -147,8 +147,14 @@ agent-memory maintain move <key> --to global/advice
 
 # Architecture and Dependencies
 
-- **Implicit Dependency on `research` Preamble**:
-  This repository implicitly depends on the preamble code from the user's `research` repository (`dzack_research.preamble`, categories, formed modules, and semantic lattice interfaces). All semantic types, category objects, and morphisms must align with and leverage the category structures defined in `research`.
+- **Pure Dependency on `research` Preamble (DO NOT EDIT PREAMBLE CODE)**:
+  This repository implicitly consumes the preamble code from the user's `research` repository (`dzack_research.preamble`, categories, formed modules, and semantic lattice interfaces) as an external upstream dependency.
+  - **Do NOT modify preamble code**: Never edit, refactor, or touch files in `research/` or `dzack_research/preamble` during work on this repository.
+  - **Do NOT probe internals**: Treat the preamble as a standard library dependency. Do not inspect its internals, audit its mechanisms, or probe its implementation unless a concrete, fatal runtime blocker occurs.
+  - **Purpose of Dependency**:
+    1. Prevent falling back to raw SageMath lattices, where indefinite lattice and isometry support is broken/insufficient.
+    2. Avoid reinventing foundational lattice, discriminant module, and formed category infrastructure in this repository.
+  - **Contribution Direction**: This repository consumes the preamble's basic lattice infrastructure now to implement indefinite algorithms, and will contribute completed indefinite capabilities back upstream to `research` at a later milestone.
 
 - **NEVER BUILD THE C++ CODE**:
   **Do NOT attempt to compile, build, configure, or invoke C++ compilation toolchains** for `polyhedral_common` or any other C++ source in `references/`.
