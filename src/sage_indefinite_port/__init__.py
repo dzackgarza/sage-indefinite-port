@@ -1,8 +1,8 @@
 """
 sage_indefinite_port: Pure SageMath indefinite lattice algorithms.
 
-All lattice-level operations go through the preamble API:
-  L.b(), L.q(), L.module_generator(), L.signature_pair(), L.discriminant()
+All lattice-level operations go through the preamble API.
+Isometries are returned as preamble morphisms, not raw matrices.
 """
 
 __version__ = "0.1.0"
@@ -24,12 +24,36 @@ def make_lattice(gram):
     return Lattices(ZZ)(g)
 
 
-def from_sage_matrix(M):
-    """Convert Sage matrix to nested list of ints."""
-    return [[int(M[i, j]) for j in range(M.ncols())] for i in range(M.nrows())]
+def matrix_to_morphism(L, M):
+    """Wrap a Sage integer matrix M as a preamble isometry morphism L -> L.
+
+    Returns a morphism element with .matrix(), .domain(), .codomain().
+    """
+    if isinstance(M, list):
+        M = matrix(ZZ, M)
+    n = L.rank()
+    H = L.Hom(L)
+    return H(M)
 
 
-def verify_generator(gram, M):
+def morphism_to_matrix(mor):
+    """Extract the Sage integer matrix from a preamble morphism."""
+    return mor.matrix()
+
+
+def verify_isometry(L, mor):
+    """Check that a morphism is an isometry: b(mor(ei), mor(ej)) == b(ei, ej)."""
+    n = L.rank()
+    for i in range(n):
+        ei = L.module_generator(i)
+        for j in range(n):
+            ej = L.module_generator(j)
+            if L.b(mor(ei), mor(ej)) != L.b(ei, ej):
+                return False
+    return True
+
+
+def verify_matrix_isometry(gram, M):
     """Check M^T Q M == Q using preamble b()."""
     L = make_lattice(gram)
     n = L.rank()
@@ -46,18 +70,24 @@ def verify_generator(gram, M):
     return True
 
 
-def unique_generators(gens, n):
-    """Remove duplicate and trivial (identity) generators."""
+def unique_morphisms(mors, L):
+    """Remove duplicate and identity morphisms."""
     seen = set()
     result = []
-    I = identity_matrix(ZZ, n)
-    for g in gens:
-        M = matrix(ZZ, g) if isinstance(g, list) else g
+    n = L.rank()
+    id_mor = L.identity_morphism()
+    for m in mors:
+        M = m.matrix()
         key = tuple(M[i, j] for i in range(n) for j in range(n))
-        if key not in seen and M != I:
+        if key not in seen and m != id_mor:
             seen.add(key)
-            result.append(M)
+            result.append(m)
     return result
+
+
+def matrix_list_to_morphism_list(L, mat_list):
+    """Convert a list of integer matrices to preamble morphisms."""
+    return [matrix_to_morphism(L, M) for M in mat_list]
 
 
 # Public API
