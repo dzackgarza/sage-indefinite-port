@@ -1,0 +1,144 @@
+# polyhedral_common-capabilities.toml
+# Generated from upstream audit of polyhedral_common/src_indefinite/ and Indefinite.jl
+# Phase 01: Capability Inventory
+
+[[function]]
+name = "INDEF_FORM_TestEquivalence"
+upstream_source = "src_indefinite/INDEF_FORM_TestEquivalence.cpp"
+julia_wrapper = "Indefinite.jl: INDEF_FORM_TestEquivalence"
+gap_function = "INDEF_FORM_TestEquivalence"
+description = "Test if two indefinite integral quadratic forms are equivalent under GL(n, Z). Returns the equivalence matrix if equivalent, empty matrix if not."
+input = [
+  {name = "Qmat1", type = "QQMatrix", description = "First Gram matrix (symmetric, integral, indefinite)"},
+  {name = "Qmat2", type = "QQMatrix", description = "Second Gram matrix (symmetric, integral, indefinite)"},
+]
+output = {type = "QQMatrix", description = "Equivalence matrix P such that P * Qmat1 * P^T = Qmat2, or 0x0 matrix if not equivalent"}
+cli_binary = "INDEF_FORM_TestEquivalence"
+cli_input_format = "file: Qmat1 matrix then Qmat2 matrix (space-separated rational entries, first line: nrows ncols)"
+cli_output_format = "file: equivalence matrix or empty"
+temp_files = true
+notes = "Core isometry decision. Delegates to C++ via GAP."
+
+[[function]]
+name = "INDEF_FORM_AutomorphismGroup"
+upstream_source = "src_indefinite/INDEF_FORM_AutomorphismGroup.cpp"
+julia_wrapper = "Indefinite.jl: INDEF_FORM_AutomorphismGroup"
+gap_function = "INDEF_FORM_AutomorphismGroup"
+description = "Compute a generating set of the automorphism group (orthogonal group over Z) of an indefinite integral quadratic form."
+input = [
+  {name = "Qmat", type = "QQMatrix", description = "Gram matrix of the indefinite form"},
+]
+output = {type = "Vector[QQMatrix]", description = "List of generator matrices of O(Q, Z)"}
+cli_binary = "INDEF_FORM_AutomorphismGroup"
+cli_input_format = "file: Qmat matrix"
+cli_output_format = "file: list of generator matrices"
+temp_files = true
+notes = "Returns generators, not the full group. Group is infinite for indefinite forms."
+
+[[function]]
+name = "INDEF_FORM_GetOrbitRepresentative"
+upstream_source = "src_indefinite/INDEF_FORM_GetOrbitRepresentative.cpp"
+julia_wrapper = "Indefinite.jl: INDEF_FORM_GetOrbitRepresentative"
+gap_function = "INDEF_FORM_GetOrbitRepresentative"
+description = "Compute orbit representatives of solutions to Q[v] = C. When C=0, returns primitive isotropic vector representatives."
+input = [
+  {name = "Qmat", type = "QQMatrix", description = "Gram matrix of the indefinite form"},
+  {name = "Xval", type = "QQFieldElem", description = "Target value C for Q[v] = C (0 for isotropic vectors)"},
+]
+output = {type = "Vector[QQMatrix]", description = "List of orbit representative vectors (1 x n matrices)"}
+cli_binary = "INDEF_FORM_GetOrbitRepresentative"
+cli_input_format = "file: Qmat matrix then scalar Xval"
+cli_output_format = "file: list of representative vectors"
+temp_files = true
+notes = "Primitive isotropic vectors when Xval=0. Key for cusp computations."
+
+[[function]]
+name = "INDEF_FORM_GetOrbit_IsotropicKplane"
+upstream_source = "src_indefinite/INDEF_FORM_GetOrbit_IsotropicKplane.cpp"
+julia_wrapper = "Indefinite.jl: INDEF_FORM_GetOrbit_IsotropicKplane"
+gap_function = "INDEF_FORM_GetOrbit_IsotropicKplane"
+description = "Compute orbit representatives of k-dimensional isotropic subspaces of the form."
+input = [
+  {name = "Qmat", type = "QQMatrix", description = "Gram matrix of the indefinite form"},
+  {name = "k", type = "Int", description = "Dimension of isotropic subspaces (must be <= min(p,q) where (p,q) is the signature)"},
+]
+output = {type = "Vector[QQMatrix]", description = "List of orbit representative subspace bases (k x n matrices)"}
+cli_binary = "INDEF_FORM_GetOrbit_IsotropicKplane"
+cli_input_format = "file: Qmat matrix, then integer k on its own line"
+cli_output_format = "file: list of k x n representative matrices"
+temp_files = true
+notes = "Requires k <= min(p,q). Core for parabolic recursion in Phase 05."
+
+[[function]]
+name = "INDEF_FORM_GetOrbit_IsotropicKflag"
+upstream_source = "src_indefinite/INDEF_FORM_GetOrbit_IsotropicKflag.cpp"
+julia_wrapper = "Indefinite.jl: INDEF_FORM_GetOrbit_IsotropicKflag"
+gap_function = "INDEF_FORM_GetOrbit_IsotropicKflag"
+description = "Compute orbit representatives of isotropic flags of length k."
+input = [
+  {name = "Qmat", type = "QQMatrix", description = "Gram matrix of the indefinite form"},
+  {name = "k", type = "Int", description = "Length of the flag (number of nested isotropic subspaces)"},
+]
+output = {type = "Vector[QQMatrix]", description = "List of flag representative matrices"}
+cli_binary = "INDEF_FORM_GetOrbit_IsotropicKflag"
+cli_input_format = "file: Qmat matrix, then integer k"
+cli_output_format = "file: list of representative matrices"
+temp_files = true
+notes = "Flags are sequences of nested isotropic subspaces V1 ⊂ V2 ⊂ ... ⊂ Vk."
+
+[[function]]
+name = "IndefiniteReduction"
+upstream_source = "src_indefinite/ (called via Indefinite.jl)"
+julia_wrapper = "Indefinite.jl: IndefiniteReduction"
+description = "Reduce an indefinite matrix to smaller coefficients. Not canonical, but fast."
+input = [
+  {name = "GramMat", type = "QQMatrix", description = "Gram matrix of the indefinite form"},
+]
+output = {type = "(QQMatrix, QQMatrix)", description = "Pair (B, Mred) where B is the change-of-basis and Mred is the reduced form"}
+cli_binary = "IndefiniteReduction"
+cli_input_format = "file: GramMat matrix"
+cli_output_format = "file: B matrix then Mred matrix"
+temp_files = true
+notes = "Fast reduction, not canonical. Useful for preprocessing before isometry tests."
+
+[[function]]
+name = "LATT_Automorphism"
+upstream_source = "src_latt/ (called via Indefinite.jl)"
+julia_wrapper = "Indefinite.jl: LATT_Automorphism"
+description = "Compute automorphism group of a list of Gram matrices (first must be positive definite)."
+input = [
+  {name = "ListGramMat", type = "Vector[QQMatrix]", description = "List of Gram matrices, first must be positive definite"},
+]
+output = {type = "Vector[QQMatrix]", description = "List of generator matrices"}
+cli_binary = "LATT_Automorphism"
+temp_files = true
+notes = "For definite forms. Used as comparison baseline."
+
+[[function]]
+name = "LATT_Isomorphism"
+upstream_source = "src_latt/ (called via Indefinite.jl)"
+julia_wrapper = "Indefinite.jl: LATT_Isomorphism"
+description = "Test integral isomorphism between two lists of Gram matrices."
+input = [
+  {name = "ListGramMat1", type = "Vector[QQMatrix]", description = "First list of Gram matrices"},
+  {name = "ListGramMat2", type = "Vector[QQMatrix]", description = "Second list of Gram matrices"},
+]
+output = {type = "QQMatrix", description = "Integral equivalence matrix, or 0x0 matrix if not isomorphic"}
+cli_binary = "LATT_Isomorphism"
+temp_files = true
+notes = "For definite forms."
+
+[[function]]
+name = "GRP_ListMat_Subset_EXT_Automorphism"
+upstream_source = "src_group/ (called via Indefinite.jl)"
+julia_wrapper = "Indefinite.jl: GRP_ListMat_Subset_EXT_Automorphism"
+description = "Compute linear automorphism group preserving a set of Gram matrices and vertex weights."
+input = [
+  {name = "EXT", type = "QQMatrix", description = "Extremal rays matrix"},
+  {name = "ListGramMat", type = "Vector[QQMatrix]", description = "List of Gram matrices"},
+  {name = "Vdiag", type = "QQMatrix", description = "Vertex diagonal weights"},
+]
+output = {type = "GAP.GapObj", description = "GAP permutation group"}
+cli_binary = "GRP_ListMat_Subset_EXT_Automorphism"
+temp_files = true
+notes = "Higher-level polyhedral group computation."

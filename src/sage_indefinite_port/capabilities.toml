@@ -1,0 +1,254 @@
+# polyhedral_common-capabilities.toml
+# Generated from audit of Indefinite.jl + polyhedral_common/src_indefinite/
+# Phase 01: Capability Harness and Tracing
+
+# =============================================================================
+# C++ Binary Entry Points (src_indefinite/)
+# =============================================================================
+
+[[wrapper]]
+id = "INDEF_FORM_TestEquivalence"
+binary = "INDEF_FORM_TestEquivalence"
+source = "src_indefinite/INDEF_FORM_TestEquivalence.cpp"
+language = "C++"
+description = "Test whether two indefinite integral quadratic forms are equivalent under GL(n, Z). If equivalent, return the equivalence matrix."
+inputs = [
+    {name = "Qmat1", type = "integer_matrix", description = "First Gram matrix (n x n, symmetric, indefinite)"},
+    {name = "Qmat2", type = "integer_matrix", description = "Second Gram matrix (n x n, symmetric, indefinite)"},
+]
+outputs = [
+    {name = "equivalence", type = "integer_matrix", description = "Matrix P in GL(n,Z) such that P Q1 P^T = Q2, or empty if not equivalent"},
+]
+flags = []
+semantics = "Decides isometry of two indefinite integral forms. Returns the transporting matrix when equivalent, empty matrix when not."
+notes = "Called from GAP via INDEF_FORM_TestEquivalence gap function. Julia wrapper: Indefinite.INDEF_FORM_TestEquivalence"
+
+[[wrapper]]
+id = "INDEF_FORM_AutomorphismGroup"
+binary = "INDEF_FORM_AutomorphismGroup"
+source = "src_indefinite/INDEF_FORM_AutomorphismGroup.cpp"
+language = "C++"
+description = "Compute a generating set for the automorphism group (orthogonal group) of an indefinite integral quadratic form."
+inputs = [
+    {name = "Qmat", type = "integer_matrix", description = "Gram matrix (n x n, symmetric, indefinite)"},
+]
+outputs = [
+    {name = "generators", type = "list_of_integer_matrices", description = "List of generator matrices for Aut(Q) = {P in GL(n,Z) : P Q P^T = Q}"},
+]
+flags = []
+semantics = "Returns a generating set (not necessarily minimal) for the full integral orthogonal group of an indefinite form."
+notes = "Core algorithm in CombinedAlgorithms.h. Uses approximate models + stabilizer recursion for rank >= 3."
+
+[[wrapper]]
+id = "INDEF_FORM_GetOrbitRepresentative"
+binary = "INDEF_FORM_GetOrbitRepresentative"
+source = "src_indefinite/INDEF_FORM_GetOrbitRepresentative.cpp"
+language = "C++"
+description = "Find orbit representatives of vectors v satisfying Q[v] = C under the action of the automorphism group."
+inputs = [
+    {name = "Qmat", type = "integer_matrix", description = "Gram matrix (n x n, symmetric, indefinite)"},
+    {name = "C", type = "integer", description = "Target value. When C=0, computes primitive isotropic vector orbit reps."},
+]
+outputs = [
+    {name = "representatives", type = "list_of_integer_vectors", description = "Orbit representatives of vectors v with Q[v] = C"},
+]
+flags = []
+semantics = "For C=0: primitive isotropic vector orbits. For nonzero C: vectors of norm C up to automorphism."
+notes = "Called from GAP. Used for cusp enumeration in modular forms context."
+
+[[wrapper]]
+id = "INDEF_FORM_GetOrbit_IsotropicKplane"
+binary = "INDEF_FORM_GetOrbit_IsotropicKplane"
+source = "src_indefinite/INDEF_FORM_GetOrbit_IsotropicKplane.cpp"
+language = "C++"
+description = "Find orbit representatives of k-dimensional totally isotropic subspaces under the automorphism group."
+inputs = [
+    {name = "Qmat", type = "integer_matrix", description = "Gram matrix (n x n, symmetric, indefinite)"},
+    {name = "k", type = "integer", description = "Dimension of isotropic subspaces (must have k <= min(p,q) where (p,q) is signature)"},
+]
+outputs = [
+    {name = "representatives", type = "list_of_integer_matrices", description = "Orbit representatives, each a k x n matrix whose rows span an isotropic k-plane"},
+]
+flags = []
+semantics = "Enumerates orbits of maximal/intermediate isotropic subspaces. Key for K3/Enriques surface moduli."
+notes = "Uses parabolic recursion through CombinedAlgorithms.h INDEF_FORM_Rec_IsotropicKplane"
+
+[[wrapper]]
+id = "INDEF_FORM_GetOrbit_IsotropicKflag"
+binary = "INDEF_FORM_GetOrbit_IsotropicKflag"
+source = "src_indefinite/INDEF_FORM_GetOrbit_IsotropicKflag.cpp"
+language = "C++"
+description = "Find orbit representatives of isotropic k-flags (chains of isotropic subspaces 0 < V1 < V2 < ... < Vk) under the automorphism group."
+inputs = [
+    {name = "Qmat", type = "integer_matrix", description = "Gram matrix (n x n, symmetric, indefinite)"},
+    {name = "k", type = "integer", description = "Length of the flag"},
+]
+outputs = [
+    {name = "representatives", type = "list_of_flag_data", description = "Orbit representatives of isotropic flags of length k"},
+]
+flags = []
+semantics = "Generalizes isotropic k-planes to full flag chains. Uses SeqDims decomposition."
+notes = "Used for computing moduli of polarised Enriques surfaces."
+
+[[wrapper]]
+id = "IndefiniteReduction"
+binary = "IndefiniteReduction"
+source = "src_indefinite/ (shared infrastructure)"
+language = "C++"
+description = "Compute a reduced form of an indefinite matrix. Fast but not canonical — reduces coefficient size."
+inputs = [
+    {name = "GramMat", type = "integer_matrix", description = "Gram matrix (n x n, symmetric, indefinite)"},
+]
+outputs = [
+    {name = "B", type = "integer_matrix", description = "Change-of-basis matrix"},
+    {name = "Mred", type = "integer_matrix", description = "Reduced form B Q B^T"},
+]
+flags = []
+semantics = "Fast reduction (not canonical). Produces smaller coefficients for downstream algorithms."
+notes = "Called from Julia as IndefiniteReduction. Foundation for all other algorithms."
+
+[[wrapper]]
+id = "INDEF_FORM_ApproxCanonicalForm"
+binary = "INDEF_FORM_ApproxCanonicalForm"
+source = "src_indefinite/INDEF_FORM_ApproxCanonicalForm.cpp"
+language = "C++"
+description = "Compute an approximate canonical form for an indefinite integral quadratic form."
+inputs = [
+    {name = "Qmat", type = "integer_matrix", description = "Gram matrix (n x n, symmetric, indefinite)"},
+]
+outputs = [
+    {name = "canonical", type = "integer_matrix", description = "Approximate canonical form"},
+    {name = "transform", type = "integer_matrix", description = "Transform matrix P such that P Q P^T = canonical"},
+]
+flags = []
+semantics = "Approximate — may differ from true canonical form but sufficient for isometry testing."
+notes = "Used internally by equivalence testing."
+
+[[wrapper]]
+id = "INDEF_FORM_StabilizerVector"
+binary = "INDEF_FORM_StabilizerVector"
+source = "CombinedAlgorithms.h (template)"
+language = "C++"
+description = "Compute generators for the stabilizer of a given vector in the automorphism group."
+inputs = [
+    {name = "Qmat", type = "integer_matrix", description = "Gram matrix"},
+    {name = "v", type = "integer_vector", description = "Vector to stabilize"},
+]
+outputs = [
+    {name = "generators", type = "list_of_integer_matrices", description = "Generators of Stab(v) in Aut(Q)"},
+]
+flags = []
+semantics = "Restricts automorphism group computation to the stabilizer of a specific vector."
+notes = "Internal building block for orbit enumeration."
+
+# =============================================================================
+# Julia Wrapper Layer (Indefinite.jl)
+# =============================================================================
+
+[[wrapper]]
+id = "Julia_INDEF_FORM_GetOrbitRepresentative"
+binary = "N/A (Julia)"
+source = "Indefinite.jl/src/Functions.jl"
+language = "Julia"
+description = "Julia wrapper: converts matrices to GAP, calls GAP function, converts result back."
+inputs = [
+    {name = "Qmat", type = "QQMatrix (Nemo)", description = "Rational Gram matrix"},
+    {name = "Xval", type = "QQFieldElem (Nemo)", description = "Target value"},
+]
+outputs = [
+    {name = "orbit_reps", type = "QQMatrix (Nemo)", description = "Matrix whose rows are orbit representatives"},
+]
+semantics = "Delegates to GAP.Globals.INDEF_FORM_GetOrbitRepresentative via ReadOscarMatrix/MatrixToOscar conversion."
+notes = "Uses temp files for GAP binary communication in GRP_ListMat variants."
+
+[[wrapper]]
+id = "Julia_INDEF_FORM_AutomorphismGroup"
+binary = "N/A (Julia)"
+source = "Indefinite.jl/src/Functions.jl"
+language = "Julia"
+description = "Julia wrapper for automorphism group computation."
+inputs = [
+    {name = "Qmat", type = "QQMatrix (Nemo)", description = "Rational Gram matrix"},
+]
+outputs = [
+    {name = "generators", type = "Vector{QQMatrix}", description = "Generator matrices for Aut(Q)"},
+]
+semantics = "Delegates to GAP.Globals.INDEF_FORM_AutomorphismGroup, extracts generators via GeneratorsOfGroup."
+
+[[wrapper]]
+id = "Julia_INDEF_FORM_TestEquivalence"
+binary = "N/A (Julia)"
+source = "Indefinite.jl/src/Functions.jl"
+language = "Julia"
+description = "Julia wrapper for equivalence testing."
+inputs = [
+    {name = "Qmat1", type = "QQMatrix (Nemo)", description = "First Gram matrix"},
+    {name = "Qmat2", type = "QQMatrix (Nemo)", description = "Second Gram matrix"},
+]
+outputs = [
+    {name = "equivalence", type = "QQMatrix (Nemo)", description = "Equivalence matrix or empty"},
+]
+semantics = "Delegates to GAP.Globals.INDEF_FORM_TestEquivalence."
+
+# =============================================================================
+# External Dependencies
+# =============================================================================
+
+[[dependency]]
+id = "GAP"
+type = "CAS"
+description = "Groups, Algorithms, Programming — GAP4 with grape package"
+used_by = ["Julia wrappers", "polyhedral_common GAP interface"]
+notes = "GAP loads indef/init.g which defines the high-level functions calling C++ binaries."
+
+[[dependency]]
+id = "polyhedral_jll"
+type = "JLL package"
+description = "Julia binary wrapper for polyhedral_common C++ executables"
+used_by = ["Indefinite.jl __init__"]
+notes = "Provides BinaryWrappers for all C++ binaries. PATH manipulation in __init__."
+
+[[dependency]]
+id = "Nemo/Hecke"
+type = "Julia library"
+description = "Exact linear algebra over number fields and ZZ"
+used_by = ["Indefinite.jl"]
+notes = "QQMatrix type used for all matrix operations."
+
+# =============================================================================
+# File I/O Protocol
+# =============================================================================
+
+[[protocol]]
+id = "matrix_io"
+format = "text"
+description = "Space-separated matrix format used by C++ binaries"
+spec = """
+First line: n_rows n_cols
+Subsequent lines: space-separated rational entries (integer or p/q)
+Entries on each line preceded by a single space.
+"""
+examples = [
+    "3 3\n 1 0 0\n 0 -1 0\n 0 0 -1",
+]
+
+[[protocol]]
+id = "vector_io"
+format = "text"
+description = "Space-separated vector format"
+spec = """
+First line: n_cols
+Second line: space-separated rational entries preceded by a single space.
+"""
+examples = [
+    "3\n 1 0 -1",
+]
+
+[[protocol]]
+id = "group_io"
+format = "text"
+description = "Permutation group format for GAP binary communication"
+spec = """
+First line: n_elements n_generators
+Each generator line: space-separated 0-indexed images of elements 0..n-1
+"""
