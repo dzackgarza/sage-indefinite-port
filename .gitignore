@@ -19,3 +19,6 @@ build/
 # QC artifacts
 .ai-review-ci/
 .ruff_cache/
+
+# Reference repository clones
+references/*/
