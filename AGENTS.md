@@ -144,3 +144,13 @@ Move reusable lessons during maintenance with:
 agent-memory maintain move <key> --to global/advice
 ```
 <!-- agent-memory:end -->
+
+# Architecture and Dependencies
+
+- **Implicit Dependency on `research` Preamble**:
+  This repository implicitly depends on the preamble code from the user's `research` repository (`dzack_research.preamble`, categories, formed modules, and semantic lattice interfaces). All semantic types, category objects, and morphisms must align with and leverage the category structures defined in `research`.
+
+- **NEVER BUILD THE C++ CODE**:
+  **Do NOT attempt to compile, build, configure, or invoke C++ compilation toolchains** for `polyhedral_common` or any other C++ source in `references/`.
+  The upstream C++ codebase in `references/polyhedral_common` is strictly a reference implementation for algorithm extraction, logic translation, and structural understanding.
+  All production algorithms in this repository MUST be implemented as native SageMath / Python code delegating low-level operations to standard system backends (FLINT for exact integer linear algebra, Normaliz / cddlib / PPL for polyhedral cones, Bliss / Nauty for graph canonization, and `libgap` for finite quotient group actions).
