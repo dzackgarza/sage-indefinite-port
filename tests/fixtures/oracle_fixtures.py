@@ -2,6 +2,10 @@
 
 Provenance and extraction method for every file are recorded in ``DATA_SOURCES.md``; the
 acceptance criteria binding fixtures to plan phases are in ``oracle_manifest.yaml``.
+
+Upstream stores each lattice as the Gram matrix of its bilinear form in the standard basis
+of ``Z^n``; the preamble's category constructor takes that Gram directly,
+``Lattices(ZZ)(record["gram"])``.
 """
 
 from __future__ import annotations

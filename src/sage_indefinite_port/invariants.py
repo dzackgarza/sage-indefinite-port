@@ -17,7 +17,6 @@ from typing import Literal
 
 from dzack_research.preamble.categories._lattice import Lattice
 from sage.arith.misc import gcd
-from sage.matrix.constructor import matrix
 from sage.rings.integer import Integer
 
 type LatticeElement = Lattice.Element
@@ -65,11 +64,11 @@ class LatticePrefilter:
 
 def lattice_prefilter(lattice: Lattice) -> LatticePrefilter:
     """Rank, real signature ``(n_+, n_-, n_0)``, parity, signed discriminant, and the
-    elementary divisors of the Gram matrix other than 1 (the invariants of ``L^vee/L``)."""
+    invariants of the cokernel of the correlation ``L -> Hom(L, Z)``, the finite abelian
+    group ``L^vee / L``."""
     rank = Integer(lattice.rank())
     positive, negative = (Integer(index) for index in lattice.signature_pair())
-    gram = matrix(lattice.gram_tensor().components())
-    divisors = tuple(d for d in gram.elementary_divisors() if d != 1)
+    divisors = tuple(Integer(d) for d in lattice.correlation_morphism().cokernel().invariants())
     return LatticePrefilter(
         rank=rank,
         signature=(positive, negative, rank - positive - negative),
