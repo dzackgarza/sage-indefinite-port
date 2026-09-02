@@ -42,7 +42,5 @@ Key papers:
   Ann.
   272, 237–264.
 
-- **Conway & Sloane (1999)**: *Sphere Packings, Lattices and Groups (SPLAG)*, 3rd ed., Springer.
-
 - **Brandhorst (2021)**: *The classification of reflective hyperbolic lattices of rank $\ge 4$*, Math.
   Comp.

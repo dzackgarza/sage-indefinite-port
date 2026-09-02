@@ -63,11 +63,6 @@ The implementation, oracle corpus, and acceptance test fixtures are grounded in 
 
   - *Contribution*: Finiteness of fundamental polyhedra and Coxeter/reflective group properties of Enriques lattices.
 
-- **[CS99]** John H. Conway and Neil J. A. Sloane.
-  *Sphere Packings, Lattices and Groups (SPLAG)*. Grundlehren der mathematischen Wissenschaften, Vol. 290, Springer-Verlag, New York, 3rd edition, 1999.
-
-  - *Contribution*: Reference classifications for root lattices ($A_n, D_n, E_6, E_7, E_8$), Leech lattice $\Lambda_{24}$, $p$-adic Jordan decompositions, and spinor genera (Table 15.1).
-
 - **[Bra21]** Simon Brandhorst.
   *The classification of reflective hyperbolic lattices of rank $\geq 4$*. Mathematics of Computation, 2021.
 
@@ -193,17 +188,6 @@ The implementation, oracle corpus, and acceptance test fixtures are grounded in 
   number    = {2},
   pages     = {237--264},
   year      = {1985}
-}
-
-@book{SPLAG1999,
-  author    = {John H. Conway and Neil J. A. Sloane},
-  title     = {Sphere Packings, Lattices and Groups},
-  series    = {Grundlehren der mathematischen Wissenschaften},
-  volume    = {290},
-  edition   = {3rd},
-  publisher = {Springer-Verlag},
-  address   = {New York},
-  year      = {1999}
 }
 
 @article{Brandhorst2021,
