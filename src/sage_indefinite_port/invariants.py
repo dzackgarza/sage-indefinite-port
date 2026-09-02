@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from dzack_research.preamble.categories._lattice import Lattice
+from dzack_research.preamble.categories.lattice_properties import FiniteRankLattices
 from sage.rings.integer import Integer
 
 Parity = Literal["even", "odd"]
@@ -27,13 +27,13 @@ class LatticePrefilter:
     discriminant_elementary_divisors: tuple[Integer, ...]
 
 
-def lattice_prefilter(lattice: Lattice) -> LatticePrefilter:
+def lattice_prefilter(lattice: FiniteRankLattices.ParentMethods) -> LatticePrefilter:
     """Rank, real signature ``(n_+, n_-, n_0)``, parity, signed discriminant, and the
     invariants of the cokernel of the correlation ``L -> Hom(L, Z)``, the finite abelian
     group ``L^vee / L``."""
     rank = Integer(lattice.rank())
     positive, negative = (Integer(index) for index in lattice.signature_pair())
-    divisors = tuple(Integer(d) for d in lattice.correlation_morphism().cokernel().invariants())
+    divisors = tuple(Integer(d) for d in lattice.correlation_morphism().cokernel().invariant_factors())
     return LatticePrefilter(
         rank=rank,
         signature=(positive, negative, rank - positive - negative),
