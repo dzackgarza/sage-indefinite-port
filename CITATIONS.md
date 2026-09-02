@@ -70,6 +70,9 @@ The implementation, oracle corpus, and acceptance test fixtures are grounded in 
 
 * * *
 
+- **[CS99]** J. H. Conway and N. J. A. Sloane.
+  *Sphere Packings, Lattices and Groups*, 3rd ed., Grundlehren der mathematischen Wissenschaften 290, Springer, 1999. Contribution: Chapter 15 §11, equations (51a)–(51b) and Corollary 22 (two inequivalent indefinite ternary forms of determinant −128 in the genus I_{2,1}(2 × 64), the same-genus non-equivalence oracle); Chapter 4 §4 (the order convention g = g_0 g_1) and §§6–8 (automorphism orders of A2, A3, D4, E6, E7, E8, the definite-leaf oracle).
+
 ## 3. Upstream Software and Algorithmic Sources
 
 - **[Dut-PC]** Mathieu Dutour Sikirić.
@@ -190,6 +193,16 @@ The implementation, oracle corpus, and acceptance test fixtures are grounded in 
   year      = {1985}
 }
 
+@book{SPLAG1999,
+  author    = {Conway, John H. and Sloane, Neil J. A.},
+  title     = {Sphere Packings, Lattices and Groups},
+  edition   = {3},
+  series    = {Grundlehren der mathematischen Wissenschaften},
+  volume    = {290},
+  publisher = {Springer},
+  year      = {1999}
+}
+
 @article{Brandhorst2021,
   author    = {Simon Brandhorst},
   title     = {The classification of reflective hyperbolic lattices of rank $\ge 4$},
@@ -229,7 +242,7 @@ For detailed per-record extraction protocols, see [DATA_SOURCES.md](file:///home
 | [`tests/fixtures/double_coset_cases.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/double_coset_cases.json) | 18 | `CI_tests/DoubleCosets/DBL/` | Mathieu Dutour Sikirić (`polyhedral_common`) |
 | [`tests/fixtures/k3_modular_strata.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/k3_modular_strata.json) | 14 | Boundary classifications & Attwell-Duval formula | Scattone (1987), Jones (2000), Attwell-Duval (2021) |
 | [`tests/fixtures/classification_simplices.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/classification_simplices.json) | 12 | `CI_tests/DATA/ClassificationSimplices5/6/7` | Mathieu Dutour Sikirić (`polyhedral_common`) |
-| [`tests/fixtures/indefinite_jl_cases.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/indefinite_jl_cases.json) | 6 | `Indefinite.jl/TestLor` & `TestCases` | Mathieu Dutour Sikirić (`Indefinite.jl`) |
+| [`tests/fixtures/conway_sloane_cases.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/conway_sloane_cases.json) | 8 | Chapter 15 §11, eqs. (51a)/(51b); Chapter 4 §§4, 6, 7, 8 | Conway & Sloane (1999) [CS99] |
 | [`tests/fixtures/ci_indefinite_comp.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/ci_indefinite_comp.json) | 6 | `CI_tests/19_IndefiniteComp/AllTests.g` | Mathieu Dutour Sikirić (`polyhedral_common`) |
 | [`tests/fixtures/unpolarized_enriques.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/unpolarized_enriques.json) | 4 | Section 3.2, 3.3 | Dutour Sikirić & Hulek (2023), Nikulin (1983), Sterk (1985) |
 | [`tests/fixtures/lorentzian_stabilizers_cases.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/lorentzian_stabilizers_cases.json) | 3 | `CI_tests/28B_LorentzianPerfStabEqui/TestCasesStab.tar.gz` | Mathieu Dutour Sikirić (`polyhedral_common`) |

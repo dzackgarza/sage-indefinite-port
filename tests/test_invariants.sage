@@ -1,11 +1,15 @@
-"""Prefilters checked against upstream's equivalent Lorentzian pairs."""
+"""Prefilters checked against cited equivalences and genera."""
 
 import pytest
 from dzack_research.preamble.categories.lattices import Lattices
 from sage.rings.integer_ring import ZZ
 
 from sage_indefinite_port.invariants import lattice_prefilter
-from tests.fixtures.oracle_fixtures import LorentzianEquivalenceCase, load_lorentzian_equivalence_cases
+from tests.fixtures.oracle_fixtures import (
+    LorentzianEquivalenceCase,
+    load_conway_sloane_cases,
+    load_lorentzian_equivalence_cases,
+)
 
 INTEGRAL_LATTICES = Lattices(ZZ)
 
@@ -21,3 +25,14 @@ def test_lattice_prefilter_agrees_on_upstream_equivalent_pairs(case: LorentzianE
     assert first.discriminant == second.discriminant
     assert first.discriminant_elementary_divisors == second.discriminant_elementary_divisors
     assert first == second
+
+
+def test_lattice_prefilter_agrees_on_the_conway_sloane_same_genus_pair() -> None:
+    """Conway--Sloane, Chapter 15 §11: (51a) and (51b) lie in one genus, I_{2,1}(2 x 64),
+    so every genus invariant agrees although the forms are not integrally equivalent."""
+    pair = load_conway_sloane_cases()["spinor_genus_pair_determinant_minus_128"]
+    first = lattice_prefilter(INTEGRAL_LATTICES(pair["form_a"]["gram"]))
+    second = lattice_prefilter(INTEGRAL_LATTICES(pair["form_b"]["gram"]))
+    assert first == second
+    assert list(first.signature[:2]) == pair["signature"]
+    assert first.discriminant_elementary_divisors == second.discriminant_elementary_divisors

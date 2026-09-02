@@ -24,6 +24,7 @@ type Gram = list[list[int]]
 
 class Provenance(TypedDict, total=False):
     kind: Required[str]
+    citation: str
     paper: str
     arxiv: str
     table: int
@@ -86,31 +87,59 @@ class DoubleCosetCase(TypedDict):
     source: Provenance
 
 
-class IndefiniteJlDefiniteLeaf(TypedDict):
-    id: str
-    name: str
-    source_type: str
+class Citation(TypedDict, total=False):
+    kind: Required[str]
+    citation: Required[str]
+    chapter: int
+    section: str
+    statements: list[str]
+    quote: str
+
+
+class CitedGram(TypedDict):
+    equation: str
     gram: Gram
-    dimension: int
-    expected_aut_order: int
-    source: Provenance
 
 
-class IndefiniteJlLorentzianPair(TypedDict):
+class SpinorGenusPair(TypedDict):
     id: str
-    name: str
-    source_type: str
-    matrix1: Gram
-    matrix2: Gram
-    dimension: int
+    genus: str
+    determinant: int
     signature: list[int]
-    is_equivalent: bool
-    source: Provenance
+    form_a: CitedGram
+    form_b: CitedGram
+    same_genus: bool
+    spinor_genera_in_genus: int
+    classes_in_genus: int
+    integrally_equivalent: bool
+    source: Citation
 
 
-class IndefiniteJlCases(TypedDict):
-    definite_leaves: list[IndefiniteJlDefiniteLeaf]
-    lorentzian_pairs: list[IndefiniteJlLorentzianPair]
+class OrderConvention(TypedDict):
+    quote: str
+    source: Citation
+
+
+class RootLatticeAutomorphismCase(TypedDict, total=False):
+    id: Required[str]
+    name: Required[str]
+    gram: Required[Gram]
+    g0: Required[int]
+    g1: Required[int]
+    order: Required[int]
+    source: Required[Citation]
+    gram_source: Provenance
+
+
+class RootLatticeAutomorphismOrders(TypedDict):
+    order_convention: OrderConvention
+    gram_convention: str
+    cases: list[RootLatticeAutomorphismCase]
+
+
+class ConwaySloaneCases(TypedDict):
+    spinor_genus_pair_determinant_minus_128: SpinorGenusPair
+    root_lattice_automorphism_orders: RootLatticeAutomorphismOrders
 
 
 class IsotropicDecisionCase(TypedDict):
@@ -400,10 +429,11 @@ def load_double_coset_cases() -> list[DoubleCosetCase]:
         return data
 
 
-def load_indefinite_jl_cases() -> IndefiniteJlCases:
-    """Indefinite.jl definite leaves with automorphism orders and Lorentzian pairs."""
-    with open(FIXTURES_DIR / "indefinite_jl_cases.json", encoding="utf-8") as f:
-        data: IndefiniteJlCases = json.load(f)
+def load_conway_sloane_cases() -> ConwaySloaneCases:
+    """Conway--Sloane: the same-genus, non-equivalent ternary pair (51a)/(51b) of Chapter 15 §11,
+    and the root-lattice automorphism orders of Chapter 4 (A2, A3, D4, E6, E7, E8)."""
+    with open(FIXTURES_DIR / "conway_sloane_cases.json", encoding="utf-8") as f:
+        data: ConwaySloaneCases = json.load(f)
         return data
 
 

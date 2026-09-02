@@ -77,6 +77,22 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Content**: Independent line orbit, plane orbit, and incidence multigraph computations for $2U \oplus A_2$, $2U \oplus \langle-6\rangle \oplus \langle-2\rangle$, and $U \oplus U(2) \oplus A_2$.
 
+### E. Conway–Sloane: Spinor-Genus Pair and Root-Lattice Automorphism Orders
+
+- **File**: [`tests/fixtures/conway_sloane_cases.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/conway_sloane_cases.json)
+
+- **Source**: J. H. Conway and N. J. A. Sloane, *Sphere Packings, Lattices and Groups*, 3rd ed., Springer, 1999 [CS99].
+
+- **Content**:
+
+  - `spinor_genus_pair_determinant_minus_128`: the ternary forms (51a) and (51b) of Chapter 15 §11 ("Computational complexity"). The text states that both forms lie in the genus I_{2,1}(2 × 64), that this genus contains two spinor genera and hence two classes, and that (51b) represents the second class; Corollary 22 (n = 3, d_0 = 128) is the cited reason.
+    Every field of the record transcribes those sentences.
+
+  - `root_lattice_automorphism_orders`: the automorphism-group orders of A2, A3, D4, E6, E7, E8 from Chapter 4 (§4 for the convention g = g_0 g_1; §6 for A_n; §7 for D_n; §8 for E6, E7, E8), each with the quoted sentence.
+    The Gram matrices are the Cartan matrices of the fundamental roots (Chapter 4, Table 4.1). The record `indefinite_jl_E8` pairs the Gram matrix shipped in Indefinite.jl's `TestCases/LATT_AUTOMORPHISM_case1_ListMat_E8` with the same order; the identification with E8 rests on Chapter 2, Table 2.2 (one even unimodular lattice in dimension 8).
+
+- **Extraction**: transcribed from the Zotero extraction of the book (item T2WVLTDB). The `quote` fields are verbatim up to ASCII rendering of the mathematics.
+
 * * *
 
 ## 2. Upstream Algorithmic Regression Corpora
@@ -188,15 +204,3 @@ This document records the exact provenance, source files, authors, publications,
 - **Repository**: [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
 
 - **Content**: Forms `["U", "2U"]`, `["U", "2U", "A2"]`, `["U", "2U", "A3"]`, `["U", "2U", "A2", "A2"]`, `["U", "U", "E7"]`, `["U", "2U", "2E8"]`.
-
-### J. Indefinite.jl Definite Leaves & Lorentzian Pairs
-
-- **File**: [`tests/fixtures/indefinite_jl_cases.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/indefinite_jl_cases.json)
-
-- **Upstream Location**: `references/Indefinite.jl/TestLor/` and `references/Indefinite.jl/TestCases/`
-
-- **Upstream Author**: Mathieu Dutour Sikirić
-
-- **Repository**: [MathieuDutSik/Indefinite.jl](https://github.com/MathieuDutSik/Indefinite.jl)
-
-- **Content**: Definite leaf automorphisms ($E_8, 2E_8$), definite isomorphisms, and paired Lorentzian matrices ($U\_2U\_2I3, U\_E8, U\_I3$).

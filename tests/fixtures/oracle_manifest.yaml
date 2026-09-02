@@ -239,16 +239,15 @@ oracles:
     authoritative_outputs:
       - isotropic_count
       - total_count
-  - id: indefinite_jl_leaf_and_lorentzian
-    fixture_file: indefinite_jl_cases.json
+  - id: conway_sloane_root_orders_and_spinor_pair
+    fixture_file: conway_sloane_cases.json
     source:
-      kind: upstream_regression
-      path: references/Indefinite.jl/
-      section: '5.5'
+      kind: published
+      citation: CS99
+      section: Chapter 4 §§4, 6, 7, 8; Chapter 15 §11 eqs. (51a), (51b), Corollary 22
     authoritative_outputs:
       - automorphism_order
-      - isometry_witness
-      - transporter
+      - integral_equivalence_verdict
   - id: centralizer_involutions
     fixture_file: centralizer_involutions.json
     source:
