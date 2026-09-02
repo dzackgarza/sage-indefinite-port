@@ -200,15 +200,3 @@ This document records the exact provenance, source files, authors, publications,
 - **Repository**: [MathieuDutSik/Indefinite.jl](https://github.com/MathieuDutSik/Indefinite.jl)
 
 - **Content**: Definite leaf automorphisms ($E_8, 2E_8$), definite isomorphisms, and paired Lorentzian matrices ($U\_2U\_2I3, U\_E8, U\_I3$).
-
-* * *
-
-## 3. Reference Table of SPLAG and Genus Genera
-
-### A. SPLAG Invariant Corpus
-
-- **File**: [`tests/fixtures/lattice_corpus.py`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/lattice_corpus.py)
-
-- **Primary Source**: J. H. Conway and N. J. A. Sloane, *Sphere Packings, Lattices and Groups (SPLAG)*, 3rd ed., Springer-Verlag (1999), Table 15.1.
-
-- **Content**: Named hyperbolic lattices ($U, U(2)$), definite root systems ($A_2, D_4, E_8$), unimodular Lorentzian lattice $\mathrm{II}_{1,9}$, and non-isometric same-genus spinor genera pairs (SPLAG 51a / 51b with $\det = -128$).
