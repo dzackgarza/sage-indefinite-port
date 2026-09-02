@@ -1,0 +1,3 @@
+# Oracle fixtures are test inputs; their byte-level form is part of their contract and
+# is kept within the repository file-length limit (one record per line, or compact).
+tests/fixtures/*.json

@@ -147,89 +147,234 @@ agent-memory maintain move <key> --to global/advice
 
 # Architecture and Dependencies
 
-- **Pure Dependency on `research` Preamble (DO NOT EDIT PREAMBLE CODE)**:
-  This repository implicitly consumes the preamble code from the user's `research` repository (`dzack_research.preamble`, categories, formed modules, and semantic lattice interfaces) as an external upstream dependency.
-  - **Do NOT modify preamble code**: Never edit, refactor, or touch files in `research/` or `dzack_research/preamble` during work on this repository.
-  - **Do NOT probe internals**: Treat the preamble as a standard library dependency. Do not inspect its internals, audit its mechanisms, or probe its implementation unless a concrete, fatal runtime blocker occurs.
-  - **Purpose of Dependency**:
-    1. Prevent falling back to raw SageMath lattices, where indefinite lattice and isometry support is broken/insufficient.
-    2. Avoid reinventing foundational lattice, discriminant module, and formed category infrastructure in this repository.
-  - **Contribution Direction**: This repository consumes the preamble's basic lattice infrastructure now to implement indefinite algorithms, and will contribute completed indefinite capabilities back upstream to `research` at a later milestone.
+- **The `research` preamble is the lattice substrate and a co-developed dependency**:
+  This repository consumes `dzack_research.preamble` (categories, formed modules, lattices, isometries, discriminant modules) from the checkout at `/home/dzack/research/src`. `.envrc` puts it on `PYTHONPATH` and `MYPYPATH`; `pyproject.toml` declares `dzack-research`.
+  - **Use the preamble's own classes and types**: annotate with `Lattice` (and `Lattice.Element`), `LatticeIsometry`, `LatticeIsometryHomset`, and the tensor and presented-module classes. Never add Protocol, stub, or facade types over the preamble, and never edit `sys.path`.
+  - **Fix preamble defects upstream**: a missing annotation, a class reachable only from a private module, or a wrong result in the preamble is fixed in `research` under its own QC, then consumed here. No local workaround, no fallback to raw SageMath lattices (their indefinite support is insufficient), no reinvention of lattice, discriminant, or formed-category infrastructure here.
+  - **Contribution direction**: the indefinite algorithms built here move upstream into `research` once the plan's phases are complete.
 
 - **NEVER BUILD THE C++ CODE**:
   **Do NOT attempt to compile, build, configure, or invoke C++ compilation toolchains** for `polyhedral_common` or any other C++ source in `references/`.
   The upstream C++ codebase in `references/polyhedral_common` is strictly a reference implementation for algorithm extraction, logic translation, and structural understanding.
   All production algorithms in this repository MUST be implemented as native SageMath / Python code delegating low-level operations to standard system backends (FLINT for exact integer linear algebra, Normaliz / cddlib / PPL for polyhedral cones, Bliss / Nauty for graph canonization, and `libgap` for finite quotient group actions).
 
+## Imported Contribution Policies (from `/home/dzack/research/CONTRIBUTING.md`)
+
+### ARC: Mathematical Architecture & Ownership
+- `ARC-01`: Own universal properties, categories, morphisms, functors, and adjunctions natively in this repository’s category framework.
+- `ARC-02`: Represent subobjects as pairs `(S, iota: S -> M)`. Place predicates, isometries, embeddings, and containment checks on morphism data and hom-sets.
+- `ARC-03`: Build structural objects/functors first, then derive numerical invariants.
+
+### ENG: Computational Backend Delegation
+- `ENG-01`: Delegate heavy computations to reliable exact backends (SageMath, Singular, OSCAR, Macaulay2, PARI/GP) when available.
+- `ENG-02`: Do not hand-roll standard mathematics that mature upstream dependencies already provide.
+- `ENG-03`: Keep owned logic minimal; offload heavy numerical work to engine backends through standard bridges.
+- `ENG-04`: Prefer native engine implementations (e.g., Julia/OSCAR, Singular) for multi-step heavy computation when bridge overhead is worse.
+
+### BRG: Interoperability and Bridge Boundaries
+- `BRG-01`: Use structured, persistent bridge interfaces for external systems; avoid ad-hoc subprocess scripts with temp files for core algorithms.
+- `BRG-02`: Validate and wrap data at bridge boundaries to keep backend representations out of public API types.
+
+### ENV: Environment, Execution, and Tooling
+- `ENV-01`: Use exact physical paths in shell/tool invocations (e.g., `/home/dzack/...`).
+- `ENV-02`: Define project orchestration, gates, and doc generators in the root `justfile`.
+
+### DEV: Development Discipline
+- `DEV-01`: Use explicit typing on public APIs; avoid `Any`/`object` in public contracts.
+- `DEV-02`: Add concrete falsifiable specimens for every new category, functor, or operation.
+- `DEV-03`: Before adding code, run `just preamble-megadoc`, reuse existing constructions, and implement new work in the most general mathematical form before specialization.
+
+## Imported Contribution Policies (from `/home/dzack/gitclones/sage-categories/CONTRIBUTING.md`)
+
+### POL-SCOPE: Implementation Order and Scope
+- `POL-SCOPE-001`: Build dependency chains in order and complete required milestones before starting later phases.
+- `POL-SCOPE-002`: Execute only active-phase work with accepted prerequisites. Do not start unsupported descendants early.
+- `POL-SCOPE-007`: Measure success by categorical ownership, auditable declarations, and explicit mathematical structure.
+- `POL-SCOPE-008`: Keep the mathematical declaration as the source of truth. Keep runtime representation private except for authorized SymPy propositions.
+
+### POL-SHADOW: Package-owned Mathematical Surface
+- `POL-SHADOW-001`: Build a package-owned categorical replacement for the supported Sage surface.
+- `POL-SHADOW-003`: Keep public API closed over package-owned categories, objects, morphisms, and propositions.
+- `POL-SHADOW-005`: Do not guarantee compatibility with unsupported arbitrary Sage API behavior.
+- `POL-SHADOW-006`: Absorb required Sage constructions into the package-owned architecture.
+
+### POL-ONT: Foundational Ontology
+- `POL-ONT-001`: Treat raw Python values as private carriers, not as category members.
+- `POL-ONT-002`: Use separate constructor and refinement layers; avoid runtime-type-sniffing constructor overloads.
+- `POL-ONT-008`: Do not use catch-all fallback constructors. Route each input mode through explicit constructors and fail hard.
+- `POL-ONT-010`: Survey existing generic categorical machinery before adding greenfield implementations.
+- `POL-ONT-011`: Do not add standalone procedural helper functions for core predicates.
+
+### POL-MATH: Mathematical Architecture
+- `POL-MATH-001`: Identify object, element, morphism, category, functor, and universal-property owners before implementation.
+- `POL-MATH-002`: Model named categories as categories, not as utility-like classes.
+- `POL-MATH-003`: Model functors with explicit object and morphism maps.
+- `POL-MATH-008`: Do not duplicate data that a defining morphism already determines.
+- `POL-MATH-014`: Use inspected mathematics to justify construction sites; do not use tests as proof of mathematics.
+- `POL-MATH-034`: Every truth question gets one category-owned predicate and a SymPy proposition; `ask()` resolves it.
+- `POL-MATH-037`: Construct values in the stated mathematical category; constructors do not certify proofs.
+
+### POL-CAT: Category Ownership and Inheritance
+- `POL-CAT-001`: A category owns constructors, local operations, and role types.
+- `POL-CAT-002`: Use category-owned `ObjectType`, `ElementType`, and `MorphismType`.
+- `POL-CAT-004`: A category level only declares its own structure and operations.
+- `POL-CAT-006`: Do not re-export methods owned by another category.
+- `POL-CAT-018`: Distinguish property subcategories from “data-carrying” categories.
+- `POL-CAT-021`: Keep `Mor(n, C)` and endpoint categories as first-class objects in the categorical layer.
+
+### POL-REP: Semantic Representation
+- `POL-REP-001`: Treat Sage vectors/matrices as private representations; own semantic objects in the category layer.
+- `POL-REP-002`: Return semantic mathematical objects at public API boundaries.
+- `POL-REP-003`: Compare elements and morphisms semantically, not by raw coordinate unpacking.
+- `POL-REP-009`: Lower private semantics to computation once and reconstruct semantic outputs before returning.
+- Local repository rule: do not use raw matrices as mathematical API objects. Use morphisms for structure and tensor valences for numerics (for example, `(0,2)` Gram tensors and `(1,1)` endomorphism tensors).
+
+### POL-ENGINE: Computation Engine Boundary
+- `POL-ENGINE-001`: Public API is owned mathematics; engines provide private realizations and algorithms.
+- `POL-ENGINE-002`: Keep engine types private; only authorized SymPy proposition expressions may cross the boundary.
+- `POL-ENGINE-007`: Do not introduce selectable backends or replaceable engine abstractions in the public API.
+- `POL-ENGINE-015`: Use fixed dependency assignments for private algorithms and reconstruct exact semantic outputs.
+
+### POL-FORM: Forms and Lattices
+- `POL-FORM-001`: Model lattices as `R`-modules with a specified form, not as raw free `ZZ` modules.
+- `POL-FORM-002`: Encode bilinear forms via Gram tensors (`M ⊗ M -> W`).
+- `POL-FORM-004`: Do not assume positivity, freeness, embeddedness, or unimodularity by default.
+- `POL-FORM-006`: Define complements, norms, and reflections under correct hypotheses only.
+- `POL-FORM-008`: Use exact arithmetic and exact coefficient rings.
+
 # Existing Preamble Lattice API (Obviates Foundational Tasks)
 
 The user's `research` repository (`dzack_research.preamble.categories.lattices`, `lattice_morphisms`, `modules`, and `forms`) **already fully implements and provides** the complete formed lattice algebra and categorical infrastructure.
 **Do NOT reinvent or re-implement any of the following infrastructure; consume it directly from `dzack_research.preamble`. This completely obviates greenfield implementation for Phase 2 and early foundational tasks.**
 
-### 1. Lattice Constructors & Objects
-- `Lattices(ZZ)`: Category of integral formed quadratic lattices over $\mathbb{Z}$.
-- Named constructors: `Lattices(ZZ)("U")` (hyperbolic plane), `"U(m)"`, `"An"`, `"Dn"`, `"En"`, `"E8"`, `"II_{1,9}"`, `"Leech"`, and arbitrary Gram matrices.
-- Direct sums and scaling: `L1 + L2` (represented biproduct $\oplus$), `L.twist(scale)` (scaled lattice $L(a)$).
+## Full lattice interface in `preamble-megadoc.md` (`#subsystem-lattices`)
 
-### 2. Bilinear & Quadratic Form Operations
-- `L.gram_tensor()`: Symmetric $(0,2)$-tensor representing the bilinear form $b_L$.
-- `L.gram_matrix(basis=None)`: Presentation of $B$ in a specified basis.
-- `L.b(v, w)`: Bilinear pairing $b_L(v,w) \in \mathbb{Z}$.
-- `L.q(v)`: Quadratic evaluation $q(v) = b_L(v,v) \in \mathbb{Z}$ (no $1/2$ factor).
-- `L.rank()`: Free module rank $\mathrm{rk}(L)$.
-- `L.signature_pair()`: Real signature $(p,q)$ over $\mathbb{R}$.
-- `L.discriminant()`: Signed invariant determinant $d_\pm(b) = (-1)^{n(n-1)/2}\det G$.
-- `L.is_even()`, `L.is_nondegenerate()`, `L.is_unimodular()`, `L.is_finite_rank()`.
-- `L.level()`: Least $N > 0$ annihilating the discriminant form.
-- `L.genus()`: Genus invariant object from signature and discriminant quadratic form.
-- `L.is_locally_isometric(other, prime)`: Local $p$-adic isometry check over $\mathbb{Z}_p$.
+### Construction and category entry points
+- `Lattices` as the lattice category over a ring with constructor:
+  - `Lattices(cls, *args)`
+  - `Lattices(...)(self, data, basis=None, names=None, form=None, module_generators=None)`
+- Category constructors:
+  - `FiniteRankLattices`, `NondegenerateLattices`, `RationalLattices`, `EvenLattices`, `RootLattices`
+- `Lattices(ZZ)` named lattice constructors:
+  - `Lattices(ZZ)("U")`, `"U(m)"`, `"An"`, `"Dn"`, `"En"`, `"E8"`, `"II_{1,9}"`, `"Leech"`, and Gram-tensor constructors.
+- Direct sum and scaling:
+  - `L1 + L2` and `L.twist(scale)`.
 
-### 3. Duals, Discriminant Modules, and Finite Quadratic Forms
-- `L.dual_module()`: Algebraic dual $\mathrm{Hom}_{\mathbb{Z}}(L, \mathbb{Z})$.
-- `L.dual_lattice()`, `L.metric_dual()`: Metric dual $L^\# \subset L \otimes \mathbb{Q}$.
-- `L.correlation_morphism()`, `L.correlation()`, `L.metric_map()`: Canonical correlation $L \to L^\#$, $v \mapsto b(v,-)$.
-- `L.discriminant_module()`: Finite formed quotient module $A_L = L^\#/L$ equipped with $q_{A_L}: A_L \to \mathbb{Q}/2\mathbb{Z}$ (or $b_{A_L}: A_L \times A_L \to \mathbb{Q}/\mathbb{Z}$).
-- `L.discriminant_projection()`: Quotient morphism $\pi: L^\# \twoheadrightarrow A_L$.
-- `L.discriminant_class(w)`: Projection of $w \in L^\#$ to its class in $A_L$.
-- `L.divided_discriminant_class(v)`: Class $[v/\mathrm{div}(v)] \in A_L$ for $v \in L$.
+### `Lattices` parent object API (full interface)
+- Isometry and homset constructors:
+  - `Aut`, `O`, `orthogonal_group`
+  - `SO`, `special_orthogonal_group`
+  - `Emb(codomain)`, `Isom(codomain)`
+  - `hom(images, codomain=None)`, `identity_morphism`
+  - `similarity_homset(other, scale)`, `similarity(scale, images=None, codomain=None)`
+- Pairings and form evaluations:
+  - `b(left, right)`, `q(vector)`, `correlation`, `correlation_morphism`
+  - `gram_tensor`, `gram_matrix(basis=None)`, `discriminant`, `rank`, `signature_pair`, `level`, `genus`
+- Lattice reductions and basis control:
+  - `LLL()`, `BKZ(block_size=20)`, `HKZ()`
+  - `lll_reduction`, `bkz_reduction`, `hkz_reduction`, `orthogonal_group`, `stable_orthogonal_group`
+- Duality and discriminant data:
+  - `dual_module`, `dual_lattice`, `metric_dual`, `discriminant_module`, `discriminant_projection`
+  - `discriminant_group`, `discriminant_bilinear_form`, `discriminant_quadratic_form`
+  - `discriminant_class`, `divided_discriminant_class`, `discriminant_representation`
+  - `discriminant_image`, `discriminant_representation_is_surjective`
+- Orthogonality and decomposition:
+  - `radical`, `radical_quotient`, `orthogonal_complement`
+  - `module_generating_set`, `module_generator`, `biproduct_factors`, `decomposition`, `decomposition_names`, `summands`
+  - `is_decomposable`, `indecomposable_name`, `primitive_isotropic_subobject`
+  - `local_modification(prime, *discriminant_classes)`, `overlattice(*discriminant_classes)`, `even_overlattice_inclusions`
+- Arithmetical predicates:
+  - `is_finite_rank`, `is_even`, `is_nondegenerate`, `is_unimodular`
+  - `is_definite`, `is_positive_definite`, `is_negative_definite`, `is_p_elementary(prime)`
+  - `is_locally_isometric(other, prime)`, `is_isometric(other)`, `is_similar(other, scale)`
+- Discrete geometry and orbits:
+  - `minimum`, `successive_minima`, `shortest_vectors`, `roots`, `roots_of_square(square)`
+  - `vectors_of_square(square)`, `vectors_of_square_and_divisibility(square, divisibility)`
+  - `kissing_number`, `root_sublattice`, `theta_series(precision=20, variable='q')`
+- Isotropic and orbit APIs:
+  - `isotropic_flag`, `isotropic_flag_orbit_representatives(rank=2)`
+  - `isotropic_line_orbit_representatives`, `isotropic_plane_orbit_representatives`
+  - `voronoi_cell(bound=None)`, `voronoi_relevant_vectors`
+- Group and positivity APIs:
+  - `stable_orthogonal_group`, `spinor_kernel_subgroup`, `positive_cone_subgroup`
+  - `twist(scale)`, `reflection(root)`
+  - `two_elementary_invariants`, `delta`
+- Packing and metric helpers:
+  - `babai(target)`, `closest_vector(target)`, `contact_polytope`, `covering_radius`
+  - `packing_density`, `packing_radius`, `center_density`, `hadamard_ratio`, `hermite_invariant`
 
-### 4. Lattice Elements & Roots
-- `v.b(w)`: Bilinear pairing $b_L(v,w)$.
-- `v.q()`, `v.norm()`: Quadratic form value $q(v) = b_L(v,v)$.
-- `v.div()`: Integer divisibility $\mathrm{div}(v) = \gcd(b(v,L))$.
-- `v.divided_discriminant_class()`: Class $[v/\mathrm{div}(v)] \in A_L$.
-- `v.is_root()`: Whether reflection $s_v(x) = x - \frac{2b(x,v)}{q(v)}v$ is an integral lattice isometry.
-- `v.to_list()`, `v.to_tuple()`, `v.to_vector()`: Coordinate representations.
+### `Lattices` element methods
+- `b(other)`, `norm`, `q()`, `div()`, `divisibility_ideal`
+- `divided_discriminant_class()`, `is_root()`
+- `to_list`, `to_tuple`, `to_vector`, `monomial_coefficients`
 
-### 5. Subobjects, Saturations, Orthogonal Complements, and Reductions
-- `L.subobject_on(vectors)`: Sublattice $S \subseteq L$ returned as a first-class subobject pair $(S, \iota: S \hookrightarrow L)$.
-- `S.inclusion()`: Exact inclusion morphism $\iota: S \hookrightarrow L$.
-- `S.saturation()`: Primitive saturation $S^{\text{sat}} \subseteq L$ via Smith normal form of $L/S$.
-- `S.is_primitive()`: Boolean check whether $S$ is primitive.
-- `S.orthogonal_complement()`, `iota.orthogonal_complement()`: Orthogonal complement $S^\perp \subseteq L$.
-- `L.radical()`: Radical $\mathrm{rad}(L) = L^\perp \subseteq L$.
-- `L.radical_quotient()`: Non-degenerate quotient $L/\mathrm{rad}(L)$.
-- `S.isotropic_reduction()`: Non-degenerate quotient formed lattice $S^\perp/S$ for isotropic $S$.
+### Subcategory APIs
+- `FiniteRankLattices`: `is_finite_rank`
+- `RationalLattices`: `fraction_field`, `is_nondegenerate`
+- `EvenLattices`: `is_even` inherited by lattice parent
+- `RootLattices`:
+  - parent methods: `cartan_type`, `coxeter_number`, `highest_root`, `simple_reflections`, `simple_roots`, `fundamental_weights`
+  - element methods: `coroot`, `height`, `is_negative_root`, `is_positive_root`
 
-### 6. Overlattices, Primitive Embeddings, and Glue Maps
-- `L.overlattice(*classes)`: Overlattice $L \hookrightarrow L'$ generated by isotropic elements of $A_L$.
-- `L.even_overlattice_inclusions()`: All even overlattice inclusions from isotropic subgroups of $A_L$.
-- `L.local_modification(p, *classes)`: $p$-primary isotropic modification.
-- `L.glue_map(S, R)`: Nikulin glue anti-isometry $H_S \to H_R(-1)$ for primitive orthogonal decompositions $S \oplus R \subseteq L$.
-- `L.embeds_in_even_unimodular(p, q)`: Nikulin primitive embeddability decision into $\mathrm{II}_{p,q}$.
-- `L.embed_in_even_unimodular(p, q)`: Witness primitive embedding into $\mathrm{II}_{p,q}$.
+### Morphisms and homsets
+- `LatticeMorphism` (`ModuleMorphism`):
+  - constructor: `__init__(self, parent, images)`
+- `LatticeEmbedding` (`LatticeMorphism`):
+  - `discriminant_inclusion`, `is_injective`
+- `LatticeIsometry` (`LatticeEmbedding`):
+  - `centralizer_discriminant_image`, `cyclic_subgroup`, `determinant`, `discriminant_isometry`
+  - `discriminant_morphism`, `formed_coinvariants`, `invariant_lattice`, `inverse`
+  - `is_surjective`, `preserves_positive_cone`, `real_spinor_norm_sign`
+- `LatticeHomset`:
+  - `__init__(domain, codomain)`, `_element_constructor_(images)`
+- `LatticeEmbeddingHomset`:
+  - `an_element`, `even_overlattice_inclusions`, `is_empty`
+- `LatticeIsometryHomset`:
+  - `act`, `acting_group`, `compose`, `discriminant_image`, `discriminant_preimage`
+  - `group_generators`, `identity`, `is_empty`, `isotropic_equivalence_witness`
+  - `isotropic_orbit_representatives`, `isotropic_stabilizer_generators`, `number_of_group_generators`
+  - `one`, `order`, `transporter`, `vector_equivalence_witness`, `vector_orbit_representatives`
+  - `vector_stabilizer_generators`, `vectors_are_equivalent`
 
-### 7. Orthogonal Groups and Homset Invariants
-- `L.Emb(M)`: Form-preserving embeddings $L \hookrightarrow M$.
-- `L.Isom(M)`: Isometries $L \xrightarrow{\sim} M$.
-- `L.Aut()`, `L.O()`, `L.orthogonal_group()`: Full orthogonal group $O(L)$.
-- `L.SO()`, `L.special_orthogonal_group()`: Special orthogonal group $\ker(\det: O(L) \to \{\pm 1\})$.
-- `L.stable_orthogonal_group()`: $\ker(\rho_L: O(L) \to O(A_L))$.
-- `L.spinor_kernel_subgroup()`: Kernel of the real spinor norm sign.
-- `L.positive_cone_subgroup()`: For signature $(1,n)$, subgroup preserving the future cone component.
-- `L.discriminant_representation()`: Functorial homomorphism $\rho_L: O(L) \to O(A_L)$.
-- `L.discriminant_image()`: Image $\rho_L(O(L)) \subseteq O(A_L)$.
-- `L.discriminant_representation_is_surjective()`: Boolean check $\rho_L(O(L)) = O(A_L)$.
+### Lattice objects and named tables
+- `CoxeterDiagram`
+  - `cardinality`, `connected_components`, `elliptic_subdiagrams`, `graph`, `coxeter_entry`
+  - `coxeter_matrix`, `is_connected`, `is_elliptic`, `is_hyperbolic`, `is_parabolic`
+  - `is_rooted`, `index_set`, `induced_subdiagram`, `preferred_positions`, `roots`
+  - `root_gram_tensor`, `schlafli_tensor`, `signature_pair`, `vertex_names`
+- `Genus`
+  - `class_number`, `determinant`, `discriminant_form`, `excess`, `exists`
+  - `local_symbol`, `level`, `mass`, `representative`, `representatives`, `signature_pair`
+- `IsotropicFlag`
+  - `basis`, `lattice`, `rank`, `terms`, `top`
+- `OrthogonalCharacterQuotient`
+  - `image`, `image_keys`, `splitting_isometries`, `stabilizer_image_keys`
+  - `subgroup_image_keys`, `witness_meets_subgroup`
+- `VectorPrimitiveExtension`
+  - `class_of_representative`, `complement_is_definite`, `representative_of`
+- registries: `register_indecomposable`, `register_indecomposable_gram`
+
+### Helper functions from the lattice subsystem
+- lattice constructors and homset factories:
+  - `lattice(...)`, `lattice_embedding_homset`, `lattice_homset`, `lattice_isometry_homset`, `lattice_latex`
+- lattice operators:
+  - `diagonal_gram`, `orthogonal_sum`, `scale_gram_tensor`, `signature_pair_of_gram`
+  - `colimit_lattice`, `discriminant_of_gram`, `signature_pair_of_gram`
+- orbits, stabilizers, and equivalence:
+  - `definite_complement_extensions`, `isotropic_equivalence_witness`, `isotropic_orbit_representatives`, `isotropic_stabilizer_generators`
+  - `subgroup_isotropic_are_equivalent`, `subgroup_isotropic_orbit_representatives`
+  - `subgroup_vector_orbit_representatives`, `subgroup_vectors_are_equivalent`
+  - `transport_isotropic_object`, `vector_equivalence_witness`, `vectors_are_equivalent` (homset-level)
+- reduction and algorithm helpers:
+  - `babai`, `bkz_reduction`, `hkz_reduction`, `closest_vector`, `gaussian_heuristic`
+  - `generator_pairings`, `gluing_route_discriminant_classes`
+  - `packing_radius`, `packing_density`, `center_density`, `kissing_number`
+  - `roots`, `roots_of_square`, `vectors_of_square`, `vectors_of_square_and_divisibility`
+  - `voronoi_cell`, `voronoi_relevant_vectors`
+  - `oscar_centralizer_discriminant_image`, `oscar_even_unimodular_primitive_embedding`, `oscar_rational_spinor_norm_sign`
+
+### Compatibility note
+- The above interface is the preamble contract. This repo must use it and should not introduce local fallback lattice mechanics in place of these names.
 
 ---
 

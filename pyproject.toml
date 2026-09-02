@@ -3,7 +3,9 @@ name = "sage-indefinite-port"
 version = "0.1.0"
 description = "Port of indefinite lattices and orthogonal groups to SageMath."
 requires-python = ">=3.14,<3.15"
-dependencies = []
+dependencies = [
+    "dzack-research @ git+https://github.com/dzackgarza/research",
+]
 
 [build-system]
 requires = ["setuptools>=80"]
@@ -17,6 +19,7 @@ dev = [
     "hypothesis>=6.165,<7",
     "mypy>=2",
     "pytest>=9.1,<10",
+    "pyyaml>=6",
     "ruff>=0.16.5,<1",
     "sage-stubs @ git+https://github.com/dzackgarza/sage-stubs.git@main",
 ]

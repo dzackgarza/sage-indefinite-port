@@ -1,28 +1,6 @@
 {
-  "orthogonal_direct_sum_rule": {
-    "id": "centralizer_orthogonal_split",
-    "theorem": "If L = L+ perp L- and f = 1_{L+} + (-1_{L-}), then O(L,f) =~ O(L+) x O(L-)",
-    "kind": "structural_identity"
-  },
-  "gluing_overlattice_rule": {
-    "id": "centralizer_gluing_overlattice",
-    "theorem": "For overlattice L of L+ perp L-, O(L,f) =~ Stab_{O(L+) x O(L-)}(H_L)",
-    "kind": "structural_identity"
-  },
-  "stable_intersection_rule": {
-    "id": "centralizer_stable_intersection",
-    "theorem": "O(L,f) cap O^+(L) == ker(rho_A |_{O(L,f)})",
-    "kind": "structural_identity"
-  },
-  "enriques_involution_k3": {
-    "id": "centralizer_enriques_involution_k3",
-    "ambient_lattice": "Lambda_K3 = 3U + 2E8(-1)",
-    "fixed_sublattice": "L_+ =~ U + U(2) + E8(-2) (Enriques lattice N)",
-    "anti_fixed_sublattice": "L_- =~ U(2) + E8(-2)",
-    "gluing_subgroup": "H_L subset A_{L+} + A_{L-}",
-    "source": {
-      "kind": "published_theorem",
-      "section": "Phase 8"
-    }
-  }
+"orthogonal_direct_sum_rule":{"id":"centralizer_orthogonal_split","theorem":"If L = L+ perp L- and f = 1_{L+} + (-1_{L-}), then O(L,f) =~ O(L+) x O(L-)","kind":"structural_identity"},
+"gluing_overlattice_rule":{"id":"centralizer_gluing_overlattice","theorem":"For overlattice L of L+ perp L-, O(L,f) =~ Stab_{O(L+) x O(L-)}(H_L)","kind":"structural_identity"},
+"stable_intersection_rule":{"id":"centralizer_stable_intersection","theorem":"O(L,f) cap O^+(L) == ker(rho_A |_{O(L,f)})","kind":"structural_identity"},
+"enriques_involution_k3":{"id":"centralizer_enriques_involution_k3","ambient_lattice":"Lambda_K3 = 3U + 2E8(-1)","fixed_sublattice":"L_+ =~ U + U(2) + E8(-2) (Enriques lattice N)","anti_fixed_sublattice":"L_- =~ U(2) + E8(-2)","gluing_subgroup":"H_L subset A_{L+} + A_{L-}","source":{"kind":"published_theorem","section":"Phase 8"}}
 }

@@ -1,0 +1,191 @@
+# TASK-01-1: Machine-Readable Capability Manifest
+# Auto-generated from audit of polyhedral_common/src_indefinite/*.cpp
+# Maps all exported symbols, executables, IO formats, and mathematical preconditions.
+
+format_version = "1.0"
+source_commit = "polyhedral_common (reference)"
+generated_from = "references/polyhedral_common/src_indefinite/"
+
+# ============================================================================
+# Executables
+# ============================================================================
+
+[executable.INDEF_FORM_AutomorphismGroup]
+description = "Compute generators of the full orthogonal group O(L) for an indefinite integral lattice."
+source = "INDEF_FORM_AutomorphismGroup.cpp"
+core_algorithm = "IndefiniteCombinedAlgo.INDEF_FORM_AutomorphismGroup_Kernel"
+preconditions = [
+    "L must be indefinite (signature has both positive and negative parts)",
+    "L must be integral (Gram matrix over Z)",
+]
+input_args = [
+    { name = "arith", type = "string", values = ["gmp", "gmp_boost", "multi_boost", "safe"], description = "Arithmetic backend" },
+    { name = "MatFile", type = "file", description = "Gram matrix file (polyhedral_common format)" },
+    { name = "OutFormat", type = "string", values = ["GAP", "CPP", "PYTHON"], default = "GAP", description = "Output format" },
+    { name = "OutFile", type = "string", default = "stderr", description = "Output destination (stdout/stderr/filename)" },
+]
+input_format = "First line: nrows ncols. Subsequent lines: space-separated matrix entries."
+output_format = "List of generator matrices in chosen format."
+mathematical_output = "Generators of O(L) as integer matrices satisfying P^T Q P = Q."
+dispatch = "h=0 -> definite leaf; h=1 -> Lorentzian perfect domain; h>1 -> approximate model + stabilizer + covering orbit"
+
+[executable.INDEF_FORM_TestEquivalence]
+description = "Test if two indefinite integral quadratic forms are isomorphic over Z."
+source = "INDEF_FORM_TestEquivalence.cpp"
+core_algorithm = "IndefiniteCombinedAlgo.INDEF_FORM_TestEquivalence_Kernel"
+preconditions = [
+    "Both forms must be indefinite",
+    "Both forms must be integral",
+    "Both forms must have the same signature",
+]
+input_args = [
+    { name = "arith", type = "string", values = ["gmp", "gmp_boost", "multi_boost", "safe"] },
+    { name = "File1", type = "file", description = "First Gram matrix" },
+    { name = "File2", type = "file", description = "Second Gram matrix" },
+    { name = "OutFormat", type = "string", values = ["GAP", "PYTHON"], default = "GAP" },
+    { name = "OutFile", type = "string", default = "stderr" },
+]
+output_format = "Transporter matrix P (satisfying P^T Q1 P = Q2) or 'fail'/'None'."
+mathematical_output = "Integer matrix P with P^T Q1 P = Q2, or None if not equivalent."
+
+[executable.INDEF_FORM_GetOrbit_IsotropicKplane]
+description = "Compute orbit representatives of k-dimensional isotropic sublattices."
+source = "INDEF_FORM_GetOrbit_IsotropicKplane.cpp"
+core_algorithm = "IndefiniteCombinedAlgo.INDEF_FORM_GetOrbit_IsotropicKplane / INDEF_FORM_GetOrbit_IsotropicKflag"
+preconditions = [
+    "L must be indefinite",
+    "k must satisfy 1 <= k <= Witt index of L",
+]
+input_args = [
+    { name = "arith", type = "string", values = ["gmp", "gmp_boost", "multi_boost", "safe"] },
+    { name = "MatFile", type = "file", description = "Gram matrix" },
+    { name = "k", type = "int", description = "Dimension of isotropic sublattice" },
+    { name = "choice", type = "string", values = ["plane", "flag"], description = "plane for k-dimensional sublattice, flag for full flag" },
+    { name = "OutFormat", type = "string", values = ["GAP", "PYTHON"], default = "GAP" },
+    { name = "OutFile", type = "string", default = "stderr" },
+]
+output_format = "List of matrices whose rows span isotropic sublattice orbit representatives."
+mathematical_output = "Matrices P with P Q P^T = 0 (totally isotropic), one per orbit."
+
+[executable.INDEF_FORM_StabilizerIsotropicPlane]
+description = "Compute generators of the setwise stabilizer of an isotropic sublattice."
+source = "INDEF_FORM_StabilizerIsotropicPlane.cpp"
+core_algorithm = "IndefiniteCombinedAlgo.INDEF_FORM_Stabilizer_IsotropicKplane"
+preconditions = [
+    "L must be indefinite",
+    "Plane must define a totally isotropic sublattice",
+]
+input_args = [
+    { name = "arith", type = "string", values = ["gmp", "gmp_boost", "multi_boost", "safe"] },
+    { name = "QFile", type = "file", description = "Gram matrix" },
+    { name = "PlaneFile", type = "file", description = "Isotropic sublattice basis (matrix)" },
+    { name = "choice", type = "string", values = ["plane", "flag"] },
+    { name = "OutFormat", type = "string", values = ["GAP", "CPP", "PYTHON"], default = "GAP" },
+    { name = "OutFile", type = "string", default = "stderr" },
+]
+output_format = "List of generator matrices of the stabilizer subgroup."
+mathematical_output = "Generators of {g in O(L) : g(I) = I setwise}."
+
+[executable.INDEF_FORM_InvariantIsotropicPlane]
+description = "Compute an invariant (hash) of an isotropic sublattice under O(L)."
+source = "INDEF_FORM_InvariantIsotropicPlane.cpp"
+core_algorithm = "IndefiniteCombinedAlgo.INDEF_FORM_Invariant_IsotropicKplane"
+preconditions = [
+    "L must be indefinite",
+    "Plane must define a totally isotropic sublattice",
+]
+input_args = [
+    { name = "arith", type = "string", values = ["gmp", "gmp_boost", "multi_boost", "safe"] },
+    { name = "QFile", type = "file", description = "Gram matrix" },
+    { name = "PlaneFile", type = "file", description = "Isotropic sublattice basis" },
+    { name = "choice", type = "string", values = ["plane", "flag"] },
+    { name = "OutFormat", type = "string", values = ["GAP", "CPP", "PYTHON"], default = "GAP" },
+    { name = "OutFile", type = "string", default = "stderr" },
+]
+output_format = "Single integer (hash/invariant)."
+mathematical_output = "Invariant under O(L)-conjugation of the isotropic sublattice."
+
+[executable.INDEF_FORM_GetOrbitRepresentative]
+description = "Compute orbit representatives of vectors of given norm."
+source = "INDEF_FORM_GetOrbitRepresentative.cpp"
+core_algorithm = "IndefiniteCombinedAlgo.INDEF_FORM_GetOrbitRepresentative"
+preconditions = [
+    "L must be indefinite",
+    "Xnorm must be the target norm value",
+]
+input_args = [
+    { name = "arith", type = "string", values = ["gmp", "gmp_boost", "multi_boost", "safe"] },
+    { name = "MatFile", type = "file", description = "Gram matrix" },
+    { name = "Xnorm", type = "rational", description = "Target norm value" },
+    { name = "OutFormat", type = "string", values = ["GAP", "PYTHON"], default = "GAP" },
+    { name = "OutFile", type = "string", default = "stderr" },
+]
+output_format = "Matrix whose rows are orbit representatives, or empty list."
+mathematical_output = "Vectors v with Q(v) = Xnorm, one per O(L)-orbit."
+
+[executable.INDEF_FORM_TestEquivalenceVector]
+description = "Test if two vectors are in the same O(L)-orbit."
+source = "INDEF_FORM_TestEquivalenceVector.cpp"
+core_algorithm = "IndefiniteCombinedAlgo.INDEF_FORM_EquivalenceVector"
+preconditions = [
+    "L must be indefinite",
+    "v1 and v2 must have the same norm",
+]
+input_args = [
+    { name = "arith", type = "string", values = ["gmp", "gmp_boost", "multi_boost", "safe"] },
+    { name = "FileM", type = "file", description = "Gram matrix" },
+    { name = "FileV1", type = "file", description = "First vector" },
+    { name = "FileV2", type = "file", description = "Second vector" },
+    { name = "OutFormat", type = "string", values = ["GAP", "PYTHON"], default = "GAP" },
+    { name = "OutFile", type = "string", default = "stderr" },
+]
+output_format = "Transporter matrix or 'fail'/'None'."
+mathematical_output = "Matrix P with P^T Q P = Q and P(v1) = v2, or None."
+
+[executable.INDEF_FORM_ApproxCanonicalForm]
+description = "Compute an approximate canonical form for an indefinite integral lattice."
+source = "INDEF_FORM_ApproxCanonicalForm.cpp"
+core_algorithm = "ApproxCanonicalIndefiniteForm"
+preconditions = [
+    "L must be indefinite",
+    "L must be integral",
+]
+input_args = [
+    { name = "FileI", type = "file", description = "Input Gram matrix" },
+    { name = "OutFormat", type = "string", values = ["GAP", "Oscar"], default = "GAP" },
+    { name = "FileO", type = "string", default = "stderr" },
+]
+output_format = "Record with B (transformation) and Mred (reduced form)."
+mathematical_output = "Unimodular B with B Q B^T = Mred (reduced form)."
+
+# ============================================================================
+# Arithmetic Backends
+# ============================================================================
+
+[arithmetic]
+supported = ["gmp", "gmp_boost", "multi_boost", "safe"]
+description = "All executables accept an arith argument selecting the integer/rational type."
+gmp = "mpq_class / mpz_class (GMP)"
+gmp_boost = "boost::multiprecision::mpq_rational / mpz_int"
+multi_boost = "boost::multiprecision::cpp_rational / cpp_int"
+safe = "Rational<SafeInt64> (overflow-checked)"
+
+# ============================================================================
+# IO Format
+# ============================================================================
+
+[io_format.matrix]
+description = "Polyhedral_common matrix format: first line 'nrows ncols', then space-separated entries."
+example = "2 2\n 0 1\n 1 0"
+
+[io_format.vector]
+description = "Single-column matrix or row vector in polyhedral_common format."
+
+[io_format.output_GAP]
+description = "GAP format: 'return [...];' or 'return rec(...);'"
+
+[io_format.output_PYTHON]
+description = "Python list-of-lists format."
+
+[io_format.output_CPP]
+description = "Native C++ matrix format."

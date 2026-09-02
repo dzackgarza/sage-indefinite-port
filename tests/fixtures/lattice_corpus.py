@@ -57,7 +57,7 @@ CORPUS: list[LatticeEntry] = [
     {
         "name": "SPLAG_51a",
         "gram": [[-1, 1, 0], [1, 63, 0], [0, 0, 2]],
-        "signature": (1, 2, 0),
+        "signature": (2, 1, 0),
         "det": -128,
         "is_even": False,
         "isometry_class": "51a",
@@ -69,7 +69,7 @@ CORPUS: list[LatticeEntry] = [
     {
         "name": "SPLAG_51b",
         "gram": [[-9, 1, 0], [1, 7, 0], [0, 0, 2]],
-        "signature": (1, 2, 0),
+        "signature": (2, 1, 0),
         "det": -128,
         "is_even": False,
         "isometry_class": "51b",
