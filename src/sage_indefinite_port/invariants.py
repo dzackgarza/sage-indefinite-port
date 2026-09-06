@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from dzack_research.preamble.categories.lattice_properties import FiniteRankLattices
+from dzack_research.preamble.categories.lattices import FiniteRankLattices
 from sage.rings.integer import Integer
 
 Parity = Literal["even", "odd"]
