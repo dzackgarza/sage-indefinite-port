@@ -180,6 +180,83 @@ class RightCosetDecomposition(SageObject):
         return f"Right-subgroup cosets {self.ambient_group()}/{self.right_subgroup()} with {self.cardinality()} representatives"
 
 
+class DoubleCosetIntersection(SageObject):
+    """Finite-image intersection data for one double coset ``V g H``."""
+
+    def __init__(
+        self,
+        representative: LatticeIsometry,
+        finite_image_order: int,
+        double_coset_size: int,
+    ) -> None:
+        self._representative = representative
+        self._finite_image_order = int(finite_image_order)
+        self._double_coset_size = int(double_coset_size)
+
+    def representative(self) -> LatticeIsometry:
+        return self._representative
+
+    def finite_image_order(self) -> int:
+        return self._finite_image_order
+
+    def double_coset_size(self) -> int:
+        return self._double_coset_size
+
+
+class DoubleCosetDecomposition(SageObject):
+    """A finite decomposition ``V \ G / H`` retaining all three group sides."""
+
+    def __init__(
+        self,
+        left_subgroup: ArithmeticSubgroup,
+        ambient_group: RationalMatrixGroup,
+        right_subgroup: ArithmeticSubgroup,
+        representatives: tuple[LatticeIsometry, ...],
+        intersections: tuple[DoubleCosetIntersection, ...],
+        finite_ambient_order: int,
+        finite_left_order: int,
+        finite_right_order: int,
+    ) -> None:
+        self._left_subgroup = left_subgroup
+        self._ambient_group = ambient_group
+        self._right_subgroup = right_subgroup
+        self._representatives = tuple(representatives)
+        self._intersections = tuple(intersections)
+        self._finite_ambient_order = int(finite_ambient_order)
+        self._finite_left_order = int(finite_left_order)
+        self._finite_right_order = int(finite_right_order)
+
+    def left_subgroup(self) -> ArithmeticSubgroup:
+        return self._left_subgroup
+
+    def ambient_group(self) -> RationalMatrixGroup:
+        return self._ambient_group
+
+    def right_subgroup(self) -> ArithmeticSubgroup:
+        return self._right_subgroup
+
+    def representatives(self) -> tuple[LatticeIsometry, ...]:
+        return self._representatives
+
+    def intersections(self) -> tuple[DoubleCosetIntersection, ...]:
+        return self._intersections
+
+    def cardinality(self) -> int:
+        return len(self._representatives)
+
+    def finite_ambient_order(self) -> int:
+        return self._finite_ambient_order
+
+    def finite_left_order(self) -> int:
+        return self._finite_left_order
+
+    def finite_right_order(self) -> int:
+        return self._finite_right_order
+
+    def _repr_(self) -> str:
+        return f"Double cosets {self.left_subgroup()} \ {self.ambient_group()} / {self.right_subgroup()} with {self.cardinality()} representatives"
+
+
 class FiniteIntegralRepresentation(SageObject):
     """The finite action controlling the integral structures in one commensurability class.
 
@@ -350,6 +427,83 @@ class FiniteIntegralRepresentation(SageObject):
     def right_cosets(self) -> RightCosetDecomposition:
         """Return ``G/H`` where ``H`` is the selected lattice stabilizer."""
         return self._right_cosets
+
+    def _permutation_of_rational_isometry(self, automorphism: LatticeIsometry):
+        finite_automorphism = self.action()._finite_automorphism(automorphism)
+        images = []
+        for member in self._orbit:
+            image = self._image_submodule(finite_automorphism, member)
+            position = self._orbit_position(image)
+            match position:
+                case None:
+                    raise ArithmeticError("a rational subgroup generator leaves the finite orbit")
+                case _:
+                    images.append(position + 1)
+        permutation = libgap.PermList(images)
+        match permutation in self._permutation_group:
+            case False:
+                raise ValueError("the selected arithmetic subgroup is not contained in the ambient rational group")
+            case True:
+                return permutation
+
+    def double_cosets(self, left_subgroup: ArithmeticSubgroup) -> DoubleCosetDecomposition:
+        """Return ``left_subgroup \ G / H`` in the finite integral representation."""
+        match left_subgroup.supergroup() is self.action().rational_group():
+            case False:
+                raise ValueError("a double-coset left subgroup must lie in the selected rational group")
+            case True:
+                pass
+        left_image = libgap.Subgroup(
+            self._permutation_group,
+            [
+                self._permutation_of_rational_isometry(generator)
+                for generator in left_subgroup.generators()
+            ],
+        )
+        right_image = libgap.Stabilizer(self._permutation_group, 1)
+        representatives = []
+        intersections = []
+        for double_coset in libgap.DoubleCosets(
+            self._permutation_group,
+            left_image,
+            right_image,
+        ):
+            finite_representative = double_coset.Representative()
+            word = libgap.PreImagesRepresentative(
+                self._homomorphism,
+                finite_representative,
+            )
+            match str(word) == "fail":
+                case True:
+                    raise ArithmeticError("a finite double-coset representative has no rational lift")
+                case False:
+                    pass
+            representative = self._evaluate_free_word(word)
+            double_coset_size = int(double_coset.Size())
+            numerator = int(left_image.Size()) * int(right_image.Size())
+            match numerator % double_coset_size:
+                case 0:
+                    intersection_order = numerator // double_coset_size
+                case _:
+                    raise ArithmeticError("the finite double-coset size violates the orbit-stabilizer formula")
+            representatives.append(representative)
+            intersections.append(
+                DoubleCosetIntersection(
+                    representative,
+                    intersection_order,
+                    double_coset_size,
+                )
+            )
+        return DoubleCosetDecomposition(
+            left_subgroup,
+            self.action().rational_group(),
+            self.lattice_stabilizer(),
+            tuple(representatives),
+            tuple(intersections),
+            int(self._permutation_group.Size()),
+            int(left_image.Size()),
+            int(right_image.Size()),
+        )
 
 
 class IntegralStructureAction(SageObject):
@@ -606,12 +760,21 @@ class IntegralStructureAction(SageObject):
         """Return the finite ``G/H`` decomposition for the selected stabilizer ``H``."""
         return self.finite_representation().right_cosets()
 
+    def double_cosets(
+        self,
+        left_subgroup: ArithmeticSubgroup,
+    ) -> DoubleCosetDecomposition:
+        """Return ``left_subgroup \ G / G_L`` with all sides retained."""
+        return self.finite_representation().double_cosets(left_subgroup)
+
     def _repr_(self) -> str:
         return f"Integral-structure action of {self.rational_group()} on {self.lattice_inclusion().domain()}"
 
 
 __all__ = [
     "ArithmeticSubgroup",
+    "DoubleCosetDecomposition",
+    "DoubleCosetIntersection",
     "FiniteIntegralRepresentation",
     "IntegralStructureAction",
     "RationalMatrixGroup",

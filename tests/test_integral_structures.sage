@@ -121,3 +121,29 @@ def test_transporter_and_right_subgroup_cosets_retain_their_actual_sides() -> No
     assert cosets.cardinality() == 2
     assert len(cosets.representatives()) == 2
     assert cosets.representatives()[0] == plane.Aut().one()
+
+
+def test_double_cosets_name_both_subgroups_and_exhaust_the_finite_image() -> None:
+    plane, _space, standard, e, f = _standard_hyperbolic_lattice()
+    involution = plane.Aut()(
+        {
+            0: plane.scalar_multiple(QQ(2), f),
+            1: plane.scalar_multiple(QQ(1) / 2, e),
+        }
+    )
+    group = RationalMatrixGroup(plane, (involution,))
+    action = IntegralStructureAction(group, standard)
+    trivial = ArithmeticSubgroup(group, (plane.Aut().one(),))
+
+    decomposition = action.double_cosets(trivial)
+    assert decomposition.left_subgroup() is trivial
+    assert decomposition.ambient_group() is group
+    assert decomposition.right_subgroup() is action.lattice_stabilizer()
+    assert decomposition.cardinality() == 2
+    assert sum(piece.double_coset_size() for piece in decomposition.intersections()) == decomposition.finite_ambient_order()
+    assert all(piece.finite_image_order() == 1 for piece in decomposition.intersections())
+
+    whole = ArithmeticSubgroup(group, (involution,))
+    one_double_coset = action.double_cosets(whole)
+    assert one_double_coset.cardinality() == 1
+    assert one_double_coset.intersections()[0].double_coset_size() == one_double_coset.finite_ambient_order()
