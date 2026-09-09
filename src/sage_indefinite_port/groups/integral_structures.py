@@ -788,6 +788,14 @@ def integral_structure_action(rational_lattice: Lattice, generators, lattice_inc
     )
 
 
+def integral_structure_action_for_group(
+    rational_group: RationalMatrixGroup,
+    lattice_inclusion: ModuleEmbedding,
+) -> IntegralStructureAction:
+    """Build the T2 action while retaining the selected rational-group parent."""
+    return IntegralStructureAction(rational_group, lattice_inclusion)
+
+
 __all__ = [
     "ArithmeticSubgroup",
     "DoubleCosetDecomposition",
@@ -795,6 +803,7 @@ __all__ = [
     "FiniteIntegralRepresentation",
     "IntegralStructureAction",
     "integral_structure_action",
+    "integral_structure_action_for_group",
     "RationalMatrixGroup",
     "RightCosetDecomposition",
 ]
