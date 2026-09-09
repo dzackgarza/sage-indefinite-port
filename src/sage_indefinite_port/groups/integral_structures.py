@@ -771,12 +771,21 @@ class IntegralStructureAction(SageObject):
         return f"Integral-structure action of {self.rational_group()} on {self.lattice_inclusion().domain()}"
 
 
+def integral_structure_action(rational_lattice: Lattice, generators, lattice_inclusion: ModuleEmbedding) -> IntegralStructureAction:
+    """Build the T2 integral-structure action from live preamble objects."""
+    return IntegralStructureAction(
+        RationalMatrixGroup(rational_lattice, tuple(generators)),
+        lattice_inclusion,
+    )
+
+
 __all__ = [
     "ArithmeticSubgroup",
     "DoubleCosetDecomposition",
     "DoubleCosetIntersection",
     "FiniteIntegralRepresentation",
     "IntegralStructureAction",
+    "integral_structure_action",
     "RationalMatrixGroup",
     "RightCosetDecomposition",
 ]
