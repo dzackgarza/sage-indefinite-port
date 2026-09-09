@@ -145,6 +145,14 @@ agent-memory maintain move <key> --to global/advice
 ```
 <!-- agent-memory:end -->
 
+# Commit Gates and Work Claims
+
+- **Red gate protocol**: The first time a commit gate, hook, or QC stage goes red, diagnosing that failure becomes the current task. Stop authoring; root-cause and fix the gate, or report it as a blocker with a reproducer. Never keep writing code behind a red gate, and never accumulate uncommitted work around one. A gate that is red on two consecutive commit attempts is a defect to diagnose, not an environment condition to wait out.
+
+- **Claim freshness — no off-ledger work**: At every claim and every release, reconcile the shared queue/claim state against actual repository state across all branches before selecting work. Never select work from a queue older than your last branch sync. All authoring requires a live claim; batch-committing a body of work authored off-ledger is prohibited.
+
+- **The `[unverified]` commit tag**: `[unverified]` may appear in a commit message only while the repository's verification phase is formally deferred by a named contract, and every `[unverified]` commit must name the contract or terminal phase that discharges it.
+
 # Architecture and Dependencies
 
 - **The `research` preamble is the lattice substrate and a co-developed dependency**:
