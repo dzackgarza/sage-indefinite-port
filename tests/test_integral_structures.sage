@@ -88,3 +88,36 @@ def test_the_finite_module_orbit_recovers_the_lattice_stabilizer() -> None:
     assert stabilizer.supergroup() is group
     assert all(action.preserves_selected_lattice(generator) for generator in stabilizer.generators())
     assert not action.preserves_selected_lattice(involution)
+
+
+def test_transporter_and_right_subgroup_cosets_retain_their_actual_sides() -> None:
+    plane, space, standard, e, f = _standard_hyperbolic_lattice()
+    involution = plane.Aut()(
+        {
+            0: plane.scalar_multiple(QQ(2), f),
+            1: plane.scalar_multiple(QQ(1) / 2, e),
+        }
+    )
+    group = RationalMatrixGroup(plane, (involution,))
+    action = IntegralStructureAction(group, standard)
+    target = module_embedding(
+        FreeModule(ZZ, 2),
+        space,
+        {
+            0: space.wrap(involution(e)),
+            1: space.wrap(involution(f)),
+        },
+    )
+
+    witness = action.transporter(standard, target)
+    assert witness is not None
+    for label in standard.domain().module_generating_set():
+        vector = standard(standard.domain().module_generator(label)).underlying_element()
+        assert target.is_in_image(space.wrap(witness(vector)))
+
+    cosets = action.right_cosets()
+    assert cosets.ambient_group() is group
+    assert cosets.right_subgroup() is action.lattice_stabilizer()
+    assert cosets.cardinality() == 2
+    assert len(cosets.representatives()) == 2
+    assert cosets.representatives()[0] == plane.Aut().one()

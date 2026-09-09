@@ -5,6 +5,7 @@ from sage_indefinite_port.groups.integral_structures import (
     FiniteIntegralRepresentation,
     IntegralStructureAction,
     RationalMatrixGroup,
+    RightCosetDecomposition,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "FiniteIntegralRepresentation",
     "IntegralStructureAction",
     "RationalMatrixGroup",
+    "RightCosetDecomposition",
 ]

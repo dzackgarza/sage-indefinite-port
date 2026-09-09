@@ -151,6 +151,35 @@ class ArithmeticSubgroup(RationalMatrixGroup):
         return self._supergroup
 
 
+class RightCosetDecomposition(SageObject):
+    """A finite decomposition ``G/H`` with the subgroup explicitly on the right."""
+
+    def __init__(
+        self,
+        ambient_group: RationalMatrixGroup,
+        right_subgroup: ArithmeticSubgroup,
+        representatives: tuple[LatticeIsometry, ...],
+    ) -> None:
+        self._ambient_group = ambient_group
+        self._right_subgroup = right_subgroup
+        self._representatives = tuple(representatives)
+
+    def ambient_group(self) -> RationalMatrixGroup:
+        return self._ambient_group
+
+    def right_subgroup(self) -> ArithmeticSubgroup:
+        return self._right_subgroup
+
+    def representatives(self) -> tuple[LatticeIsometry, ...]:
+        return self._representatives
+
+    def cardinality(self) -> int:
+        return len(self._representatives)
+
+    def _repr_(self) -> str:
+        return f"Right-subgroup cosets {self.ambient_group()}/{self.right_subgroup()} with {self.cardinality()} representatives"
+
+
 class FiniteIntegralRepresentation(SageObject):
     """The finite action controlling the integral structures in one commensurability class.
 
@@ -300,6 +329,27 @@ class FiniteIntegralRepresentation(SageObject):
     def lattice_stabilizer(self) -> ArithmeticSubgroup:
         """Return the exact preimage of the stabilizer of ``S=L/dM``."""
         return self._lattice_stabilizer
+
+    def transporter_to(self, target_submodule):
+        """Return a live rational isometry carrying ``S`` to ``target_submodule``."""
+        position = self._orbit_position(target_submodule)
+        match position:
+            case None:
+                return None
+            case _:
+                return self._orbit_witnesses[position]
+
+    @cached_property
+    def _right_cosets(self) -> RightCosetDecomposition:
+        return RightCosetDecomposition(
+            self.action().rational_group(),
+            self.lattice_stabilizer(),
+            tuple(self._orbit_witnesses),
+        )
+
+    def right_cosets(self) -> RightCosetDecomposition:
+        """Return ``G/H`` where ``H`` is the selected lattice stabilizer."""
+        return self._right_cosets
 
 
 class IntegralStructureAction(SageObject):
@@ -492,6 +542,70 @@ class IntegralStructureAction(SageObject):
         """Return ``{g in G : g(L)=L}`` from the finite representation."""
         return self.finite_representation().lattice_stabilizer()
 
+    @staticmethod
+    def _carries_lattice(
+        automorphism: LatticeIsometry,
+        source_inclusion: ModuleEmbedding,
+        target_inclusion: ModuleEmbedding,
+    ) -> bool:
+        match source_inclusion.codomain() is target_inclusion.codomain():
+            case False:
+                return False
+            case True:
+                pass
+        space = source_inclusion.codomain()
+        source = source_inclusion.domain()
+        target = target_inclusion.domain()
+        inverse = ~automorphism
+        source_basis = tuple(
+            source_inclusion(source.module_generator(label)).underlying_element()
+            for label in source.module_generating_set()
+        )
+        target_basis = tuple(
+            target_inclusion(target.module_generator(label)).underlying_element()
+            for label in target.module_generating_set()
+        )
+        return all(
+            target_inclusion.is_in_image(space.wrap(automorphism(vector)))
+            for vector in source_basis
+        ) and all(
+            source_inclusion.is_in_image(space.wrap(inverse(vector)))
+            for vector in target_basis
+        )
+
+    def transporter(
+        self,
+        source_inclusion: ModuleEmbedding,
+        target_inclusion: ModuleEmbedding,
+    ) -> LatticeIsometry | None:
+        """Return one ``g`` in the rational group with ``g(source)=target``.
+
+        The finite submodule ``source/dM`` determines the source lattice among
+        the intermediate lattices ``dM <= source <= M``.  An orbit witness in
+        ``M/dM`` therefore lifts to a genuine lattice transporter, which is
+        checked again on both actual embeddings before being returned.
+        """
+        source_action = IntegralStructureAction(self.rational_group(), source_inclusion)
+        try:
+            target_submodule = source_action.intermediate_image(target_inclusion)
+        except ValueError:
+            return None
+        witness = source_action.finite_representation().transporter_to(target_submodule)
+        match witness:
+            case None:
+                return None
+            case _:
+                pass
+        match self._carries_lattice(witness, source_inclusion, target_inclusion):
+            case False:
+                raise ArithmeticError("a finite-module transporter does not carry the actual lattice")
+            case True:
+                return witness
+
+    def right_cosets(self) -> RightCosetDecomposition:
+        """Return the finite ``G/H`` decomposition for the selected stabilizer ``H``."""
+        return self.finite_representation().right_cosets()
+
     def _repr_(self) -> str:
         return f"Integral-structure action of {self.rational_group()} on {self.lattice_inclusion().domain()}"
 
@@ -501,4 +615,5 @@ __all__ = [
     "FiniteIntegralRepresentation",
     "IntegralStructureAction",
     "RationalMatrixGroup",
+    "RightCosetDecomposition",
 ]
