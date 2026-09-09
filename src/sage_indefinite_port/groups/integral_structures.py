@@ -16,6 +16,7 @@ from dzack_research.preamble.categories.modules.module_morphisms.module_morphism
     ModuleEmbedding,
     module_coefficients,
 )
+from sage.libs.gap.libgap import libgap
 from sage.matrix.constructor import matrix
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
@@ -135,6 +136,172 @@ def _same_embedded_lattice(left: ModuleEmbedding, right: ModuleEmbedding) -> boo
     return True
 
 
+class ArithmeticSubgroup(RationalMatrixGroup):
+    """A generated arithmetic subgroup retaining its ambient rational group."""
+
+    def __init__(
+        self,
+        supergroup: RationalMatrixGroup,
+        generators: tuple[LatticeIsometry, ...],
+    ) -> None:
+        self._supergroup = supergroup
+        super().__init__(supergroup.rational_lattice(), generators)
+
+    def supergroup(self) -> RationalMatrixGroup:
+        return self._supergroup
+
+
+class FiniteIntegralRepresentation(SageObject):
+    """The finite action controlling the integral structures in one commensurability class.
+
+    The public orbit consists of actual submodules of ``M/dM``.  libGAP owns
+    the private permutation group and subgroup preimage calculation; every
+    resulting free-group word is evaluated back in the selected live rational
+    isometries before it crosses the public boundary.
+    """
+
+    def __init__(self, action: "IntegralStructureAction") -> None:
+        self._action = action
+        self._orbit, self._orbit_witnesses = self._compute_submodule_orbit()
+        self._generator_permutations = self._compute_generator_permutations()
+        self._free_group = libgap.FreeGroup(len(action.rational_group().generators()))
+        self._permutation_group = libgap.Group(list(self._generator_permutations))
+        self._homomorphism = libgap.GroupHomomorphismByImages(
+            self._free_group,
+            self._permutation_group,
+            self._free_group.GeneratorsOfGroup(),
+            list(self._generator_permutations),
+        )
+
+    def action(self) -> "IntegralStructureAction":
+        return self._action
+
+    def orbit(self):
+        """Return the finite orbit of ``S=L/dM`` as represented submodules."""
+        return tuple(self._orbit)
+
+    def orbit_witnesses(self) -> tuple[LatticeIsometry, ...]:
+        """Return live rational isometries carrying ``S`` to the orbit members."""
+        return tuple(self._orbit_witnesses)
+
+    def image_order(self) -> int:
+        """Return the order of the finite permutation image."""
+        return int(self._permutation_group.Size())
+
+    @staticmethod
+    def _same_submodule(left, right) -> bool:
+        match left.inclusion().codomain() is right.inclusion().codomain():
+            case False:
+                return False
+            case True:
+                pass
+        try:
+            left.inclusion().factor_through(right.inclusion())
+            right.inclusion().factor_through(left.inclusion())
+        except ValueError:
+            return False
+        return True
+
+    def _orbit_position(self, candidate) -> int | None:
+        for position, member in enumerate(self._orbit):
+            match self._same_submodule(candidate, member):
+                case True:
+                    return position
+                case False:
+                    pass
+        return None
+
+    @staticmethod
+    def _image_submodule(automorphism, submodule):
+        return (automorphism * submodule.inclusion()).image()
+
+    def _compute_submodule_orbit(self):
+        seed = self.action().selected_submodule()
+        orbit = [seed]
+        witnesses = [self.action().rational_group().rational_lattice().Aut().one()]
+        steps = tuple(
+            zip(
+                self.action()._finite_generator_automorphisms_and_inverses(),
+                self.action().rational_group().generators_and_inverses(),
+                strict=True,
+            )
+        )
+        frontier = [0]
+        while frontier:
+            source_position = frontier.pop()
+            source = orbit[source_position]
+            source_witness = witnesses[source_position]
+            for finite_automorphism, rational_automorphism in steps:
+                candidate = self._image_submodule(finite_automorphism, source)
+                existing_position = None
+                for position, member in enumerate(orbit):
+                    match self._same_submodule(candidate, member):
+                        case True:
+                            existing_position = position
+                            break
+                        case False:
+                            pass
+                match existing_position:
+                    case None:
+                        orbit.append(candidate)
+                        witnesses.append(rational_automorphism * source_witness)
+                        frontier.append(len(orbit) - 1)
+                    case _:
+                        pass
+        return orbit, witnesses
+
+    def _compute_generator_permutations(self):
+        permutations = []
+        for automorphism in self.action()._finite_generator_automorphisms():
+            images = []
+            for member in self._orbit:
+                image = self._image_submodule(automorphism, member)
+                position = self._orbit_position(image)
+                match position:
+                    case None:
+                        raise ArithmeticError("the finite-module generator left the computed orbit")
+                    case _:
+                        images.append(position + 1)
+            permutations.append(libgap.PermList(images))
+        return tuple(permutations)
+
+    def _evaluate_free_word(self, word) -> LatticeIsometry:
+        representation = tuple(int(entry) for entry in libgap.ExtRepOfObj(word).sage())
+        generators = self.action().rational_group().generators()
+        result = self.action().rational_group().rational_lattice().Aut().one()
+        for position in range(0, len(representation), 2):
+            generator = generators[representation[position] - 1]
+            exponent = representation[position + 1]
+            match exponent < 0:
+                case True:
+                    generator = ~generator
+                    exponent = -exponent
+                case False:
+                    pass
+            for _step in range(exponent):
+                result = result * generator
+        return result
+
+    @cached_property
+    def _lattice_stabilizer(self) -> ArithmeticSubgroup:
+        point_stabilizer = libgap.Stabilizer(self._permutation_group, 1)
+        preimage = libgap.PreImage(self._homomorphism, point_stabilizer)
+        lifted = tuple(
+            self._evaluate_free_word(word)
+            for word in preimage.GeneratorsOfGroup()
+        )
+        match all(self.action().preserves_selected_lattice(generator) for generator in lifted):
+            case False:
+                raise ArithmeticError("a lifted finite stabilizer generator does not preserve the lattice")
+            case True:
+                pass
+        return ArithmeticSubgroup(self.action().rational_group(), lifted)
+
+    def lattice_stabilizer(self) -> ArithmeticSubgroup:
+        """Return the exact preimage of the stabilizer of ``S=L/dM``."""
+        return self._lattice_stabilizer
+
+
 class IntegralStructureAction(SageObject):
     """A rational group acting on lattices commensurable with one selected lattice.
 
@@ -211,8 +378,127 @@ class IntegralStructureAction(SageObject):
         """Return the exponent of ``M/L`` for ``M`` the invariant over-lattice."""
         return self._quotient_exponent
 
+    @cached_property
+    def _scaling_morphism(self):
+        from dzack_research.preamble.categories.modules.module_morphisms.module_morphisms import (
+            module_homset,
+        )
+
+        invariant = self.invariant_overlattice().domain()
+        modulus = self.quotient_exponent()
+        return module_homset(invariant, invariant)(
+            {
+                label: invariant.scalar_multiple(modulus, invariant.module_generator(label))
+                for label in invariant.module_generating_set()
+            }
+        )
+
+    def finite_module(self):
+        """Return ``F=M/dM`` as the actual cokernel of multiplication by ``d``."""
+        return self._scaling_morphism.cokernel()
+
+    def finite_projection(self):
+        """Return the quotient map ``M -> M/dM``."""
+        return self._scaling_morphism.cokernel_projection()
+
+    def intermediate_image(self, lattice_inclusion: ModuleEmbedding):
+        """Return ``L'/dM`` inside ``M/dM`` for ``dM <= L' <= M``."""
+        invariant = self.invariant_overlattice()
+        match lattice_inclusion.codomain() is invariant.codomain():
+            case False:
+                raise ValueError("an intermediate lattice lies in the selected rational space")
+            case True:
+                pass
+        into_invariant = lattice_inclusion.factor_through(invariant)
+        scaled_invariant = invariant * self._scaling_morphism
+        scaled_invariant.factor_through(lattice_inclusion)
+        return (self.finite_projection() * into_invariant).image()
+
+    @cached_property
+    def _selected_submodule(self):
+        return self.intermediate_image(self.lattice_inclusion())
+
+    def selected_submodule(self):
+        """Return ``S=L/dM <= M/dM`` for the selected lattice."""
+        return self._selected_submodule
+
+    def _restricted_automorphism(self, automorphism: LatticeIsometry):
+        invariant = self.invariant_overlattice()
+        lattice = invariant.domain()
+        space = invariant.codomain()
+        return lattice.Aut()(
+            {
+                label: invariant.lift(
+                    space.wrap(
+                        automorphism(
+                            invariant(lattice.module_generator(label)).underlying_element()
+                        )
+                    )
+                )
+                for label in lattice.module_generating_set()
+            }
+        )
+
+    def _finite_automorphism(self, automorphism: LatticeIsometry):
+        lattice = self.invariant_overlattice().domain()
+        projection = self.finite_projection()
+        restricted = self._restricted_automorphism(automorphism)
+        quotient = self.finite_module()
+        return quotient.Aut()(
+            {
+                label: projection(restricted(lattice.module_generator(label)))
+                for label in lattice.module_generating_set()
+            }
+        )
+
+    @cached_property
+    def _finite_generators(self):
+        return tuple(
+            self._finite_automorphism(generator)
+            for generator in self.rational_group().generators()
+        )
+
+    def _finite_generator_automorphisms(self):
+        return self._finite_generators
+
+    def _finite_generator_automorphisms_and_inverses(self):
+        return self._finite_generators + tuple(~generator for generator in self._finite_generators)
+
+    def preserves_selected_lattice(self, automorphism: LatticeIsometry) -> bool:
+        """Return whether the selected rational isometry carries ``L`` onto itself."""
+        inclusion = self.lattice_inclusion()
+        space = inclusion.codomain()
+        lattice = inclusion.domain()
+        basis = tuple(
+            inclusion(lattice.module_generator(label)).underlying_element()
+            for label in lattice.module_generating_set()
+        )
+        inverse = ~automorphism
+        return all(
+            inclusion.is_in_image(space.wrap(automorphism(vector)))
+            and inclusion.is_in_image(space.wrap(inverse(vector)))
+            for vector in basis
+        )
+
+    @cached_property
+    def _finite_representation(self) -> FiniteIntegralRepresentation:
+        return FiniteIntegralRepresentation(self)
+
+    def finite_representation(self) -> FiniteIntegralRepresentation:
+        """Return the finite submodule-orbit representation controlling integrality."""
+        return self._finite_representation
+
+    def lattice_stabilizer(self) -> ArithmeticSubgroup:
+        """Return ``{g in G : g(L)=L}`` from the finite representation."""
+        return self.finite_representation().lattice_stabilizer()
+
     def _repr_(self) -> str:
         return f"Integral-structure action of {self.rational_group()} on {self.lattice_inclusion().domain()}"
 
 
-__all__ = ["IntegralStructureAction", "RationalMatrixGroup"]
+__all__ = [
+    "ArithmeticSubgroup",
+    "FiniteIntegralRepresentation",
+    "IntegralStructureAction",
+    "RationalMatrixGroup",
+]

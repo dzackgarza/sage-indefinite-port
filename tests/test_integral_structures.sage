@@ -63,3 +63,28 @@ def test_a_rational_involution_closes_to_the_smallest_invariant_overlattice() ->
         embedded = invariant(basis_vector).underlying_element()
         moved = space.wrap(involution(embedded))
         assert invariant.is_in_image(moved)
+
+
+def test_the_finite_module_orbit_recovers_the_lattice_stabilizer() -> None:
+    plane, _space, standard, e, f = _standard_hyperbolic_lattice()
+    involution = plane.Aut()(
+        {
+            0: plane.scalar_multiple(QQ(2), f),
+            1: plane.scalar_multiple(QQ(1) / 2, e),
+        }
+    )
+    group = RationalMatrixGroup(plane, (involution,))
+    action = IntegralStructureAction(group, standard)
+    finite = action.finite_representation()
+
+    assert action.finite_module().cardinality() == 4
+    assert len(finite.orbit()) == 2
+    assert finite.image_order() == 2
+    assert len(finite.orbit_witnesses()) == 2
+    assert finite.orbit_witnesses()[0] == plane.Aut().one()
+    assert finite.orbit_witnesses()[1](e) in (involution(e), (~involution)(e))
+
+    stabilizer = action.lattice_stabilizer()
+    assert stabilizer.supergroup() is group
+    assert all(action.preserves_selected_lattice(generator) for generator in stabilizer.generators())
+    assert not action.preserves_selected_lattice(involution)
