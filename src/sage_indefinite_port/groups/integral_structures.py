@@ -9,13 +9,15 @@ from __future__ import annotations
 
 from functools import cached_property
 
-from dzack_research.preamble.all import FreeModule, module_embedding
+from dzack_research.preamble.all import ZZ, FreeModule, module_embedding
 from dzack_research.preamble.categories._lattice import Lattice
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometry
 from dzack_research.preamble.categories.modules.module_morphisms.module_morphisms import (
     ModuleEmbedding,
     module_coefficients,
+    module_homset,
 )
+from dzack_research.preamble.categories.rings.ring_foundation import _engine_element
 from sage.libs.gap.libgap import libgap
 from sage.matrix.constructor import matrix
 from sage.rings.integer_ring import ZZ as SageZZ
@@ -71,8 +73,14 @@ def _underlying_coordinates(space, element):
     ambient = space.module_over_extension()
     underlying = space(element).underlying_element()
     coefficients = module_coefficients(underlying, ambient)
+    base_ring = ambient.base_ring()
     return tuple(
-        SageQQ(coefficients.get(label, ambient.base_ring().zero()))
+        SageQQ(
+            _engine_element(
+                base_ring,
+                coefficients[label] if label in coefficients else base_ring.zero(),
+            )
+        )
         for label in ambient.module_generating_set()
     )
 
@@ -100,7 +108,7 @@ def _span_embedding(space, elements) -> ModuleEmbedding:
 
     ambient = space.module_over_extension()
     ambient_labels = tuple(ambient.module_generating_set())
-    domain = FreeModule(SageZZ, basis.nrows())
+    domain = FreeModule(ZZ, basis.nrows())
 
     def image(position):
         row = basis[int(position)]
@@ -110,8 +118,8 @@ def _span_embedding(space, elements) -> ModuleEmbedding:
                 case True:
                     pass
                 case False:
-                    coefficients[label] = ambient.base_ring()(
-                        SageQQ(row[column]) / denominator
+                    coefficients[label] = ambient.base_ring()(int(row[column])) / ambient.base_ring()(
+                        int(denominator)
                     )
         return space.wrap(ambient.linear_combination(coefficients))
 
@@ -630,7 +638,7 @@ class IntegralStructureAction(SageObject):
         invariant = self.invariant_overlattice()
         lattice = invariant.domain()
         space = invariant.codomain()
-        return lattice.Aut()(
+        restricted = module_homset(lattice, lattice)(
             {
                 label: invariant.lift(
                     space.wrap(
@@ -642,18 +650,20 @@ class IntegralStructureAction(SageObject):
                 for label in lattice.module_generating_set()
             }
         )
+        return restricted.as_automorphism()
 
     def _finite_automorphism(self, automorphism: LatticeIsometry):
         lattice = self.invariant_overlattice().domain()
         projection = self.finite_projection()
         restricted = self._restricted_automorphism(automorphism)
         quotient = self.finite_module()
-        return quotient.Aut()(
+        finite = module_homset(quotient, quotient)(
             {
                 label: projection(restricted(lattice.module_generator(label)))
-                for label in lattice.module_generating_set()
+                for label in quotient.module_generating_set()
             }
         )
+        return finite.as_automorphism()
 
     @cached_property
     def _finite_generators(self):
