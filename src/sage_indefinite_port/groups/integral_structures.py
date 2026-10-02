@@ -9,15 +9,13 @@ from __future__ import annotations
 
 from functools import cached_property
 
-from dzack_research.preamble.all import ZZ, FreeModule, module_embedding
-from dzack_research.preamble.categories._lattice import Lattice
+from dzack_research.preamble.all import ZZ
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometry
 from dzack_research.preamble.categories.modules.module_morphisms.module_morphisms import (
     ModuleEmbedding,
-    module_coefficients,
-    module_homset,
 )
 from dzack_research.preamble.categories.rings.ring_foundation import _engine_element
+from dzack_research.preamble.lexicon.category_theory import ObjectOfCategory
 from sage.libs.gap.libgap import libgap
 from sage.matrix.constructor import matrix
 from sage.rings.integer_ring import ZZ as SageZZ
@@ -35,7 +33,7 @@ class RationalMatrixGroup(SageObject):
 
     def __init__(
         self,
-        rational_lattice: Lattice,
+        rational_lattice: ObjectOfCategory,
         generators: tuple[LatticeIsometry, ...],
     ) -> None:
         selected = tuple(generators)
@@ -48,7 +46,7 @@ class RationalMatrixGroup(SageObject):
         self._rational_lattice = rational_lattice
         self._generators = selected
 
-    def rational_lattice(self) -> Lattice:
+    def rational_lattice(self) -> ObjectOfCategory:
         """Return the rational lattice acted on by this group."""
         return self._rational_lattice
 
@@ -72,13 +70,13 @@ def _embedded_basis(inclusion: ModuleEmbedding):
 def _underlying_coordinates(space, element):
     ambient = space.module_over_extension()
     underlying = space(element).underlying_element()
-    coefficients = module_coefficients(underlying, ambient)
+    coefficients = ambient._framing_lift(underlying)
     base_ring = ambient.base_ring()
     return tuple(
         SageQQ(
             _engine_element(
                 base_ring,
-                coefficients[label] if label in coefficients else base_ring.zero(),
+                coefficients(label),
             )
         )
         for label in ambient.module_generating_set()
@@ -99,16 +97,13 @@ def _span_embedding(space, elements) -> ModuleEmbedding:
     for row in rows:
         for entry in row:
             denominator = denominator.lcm(entry.denominator())
-    integral_rows = tuple(
-        tuple(SageZZ(denominator * entry) for entry in row)
-        for row in rows
-    )
+    integral_rows = tuple(tuple(SageZZ(denominator * entry) for entry in row) for row in rows)
     integer_span = matrix(SageZZ, integral_rows).row_module()
     basis = integer_span.basis_matrix()
 
     ambient = space.module_over_extension()
     ambient_labels = tuple(ambient.module_generating_set())
-    domain = FreeModule(ZZ, basis.nrows())
+    domain = ZZ.free_module(basis.nrows())
 
     def image(position):
         row = basis[int(position)]
@@ -118,30 +113,12 @@ def _span_embedding(space, elements) -> ModuleEmbedding:
                 case True:
                     pass
                 case False:
-                    coefficients[label] = ambient.base_ring()(int(row[column])) / ambient.base_ring()(
-                        int(denominator)
-                    )
+                    coefficients[label] = ambient.base_ring()(int(row[column])) / ambient.base_ring()(int(denominator))
         return space.wrap(ambient.linear_combination(coefficients))
 
-    return module_embedding(
-        domain,
-        space,
+    return domain.Mono(space)(
         {label: image(label) for label in domain.module_generating_set()},
     )
-
-
-def _same_embedded_lattice(left: ModuleEmbedding, right: ModuleEmbedding) -> bool:
-    match left.codomain() is right.codomain():
-        case False:
-            return False
-        case True:
-            pass
-    try:
-        left.factor_through(right)
-        right.factor_through(left)
-    except ValueError:
-        return False
-    return True
 
 
 class ArithmeticSubgroup(RationalMatrixGroup):
@@ -212,7 +189,7 @@ class DoubleCosetIntersection(SageObject):
 
 
 class DoubleCosetDecomposition(SageObject):
-    """A finite decomposition ``V \ G / H`` retaining all three group sides."""
+    r"""A finite decomposition ``V \ G / H`` retaining all three group sides."""
 
     def __init__(
         self,
@@ -262,7 +239,7 @@ class DoubleCosetDecomposition(SageObject):
         return self._finite_right_order
 
     def _repr_(self) -> str:
-        return f"Double cosets {self.left_subgroup()} \ {self.ambient_group()} / {self.right_subgroup()} with {self.cardinality()} representatives"
+        return rf"Double cosets {self.left_subgroup()} \ {self.ambient_group()} / {self.right_subgroup()} with {self.cardinality()} representatives"
 
 
 class FiniteIntegralRepresentation(SageObject):
@@ -274,9 +251,17 @@ class FiniteIntegralRepresentation(SageObject):
     isometries before it crosses the public boundary.
     """
 
-    def __init__(self, action: "IntegralStructureAction") -> None:
+    def __init__(self, action: IntegralStructureAction) -> None:
         self._action = action
-        self._orbit, self._orbit_witnesses = self._compute_submodule_orbit()
+        self._rational_permutation_cache = {}
+        self._matrix_isometry_cache = {}
+        (
+            self._orbit_keys,
+            self._orbit_witness_matrices,
+            self._orbit_position_by_key,
+        ) = self._compute_submodule_orbit()
+        self._orbit = None
+        self._orbit_witnesses = None
         self._generator_permutations = self._compute_generator_permutations()
         self._free_group = libgap.FreeGroup(len(action.rational_group().generators()))
         self._permutation_group = libgap.Group(list(self._generator_permutations))
@@ -287,15 +272,26 @@ class FiniteIntegralRepresentation(SageObject):
             list(self._generator_permutations),
         )
 
-    def action(self) -> "IntegralStructureAction":
+    def action(self) -> IntegralStructureAction:
         return self._action
 
     def orbit(self):
         """Return the finite orbit of ``S=L/dM`` as represented submodules."""
+        match self._orbit:
+            case None:
+                self._orbit = tuple(self._submodule_from_key(key) for key in self._orbit_keys)
+            case _:
+                pass
         return tuple(self._orbit)
 
     def orbit_witnesses(self) -> tuple[LatticeIsometry, ...]:
         """Return live rational isometries carrying ``S`` to the orbit members."""
+        match self._orbit_witnesses:
+            case None:
+                automorphisms = self.action().rational_group().rational_lattice().Aut()
+                self._orbit_witnesses = tuple(automorphisms._isometry_from_column_matrix(witness_matrix) for witness_matrix in self._orbit_witness_matrices)
+            case _:
+                pass
         return tuple(self._orbit_witnesses)
 
     def image_order(self) -> int:
@@ -303,78 +299,97 @@ class FiniteIntegralRepresentation(SageObject):
         return int(self._permutation_group.Size())
 
     @staticmethod
-    def _same_submodule(left, right) -> bool:
-        match left.inclusion().codomain() is right.inclusion().codomain():
-            case False:
-                return False
-            case True:
-                pass
-        try:
-            left.inclusion().factor_through(right.inclusion())
-            right.inclusion().factor_through(left.inclusion())
-        except ValueError:
-            return False
-        return True
+    def _row_lattice_key(rows) -> tuple[tuple[int, ...], ...]:
+        basis = matrix(SageZZ, rows).row_module().basis_matrix()
+        return tuple(tuple(int(entry) for entry in row) for row in basis.rows())
+
+    @staticmethod
+    def _submodule_key(submodule) -> tuple[tuple[int, ...], ...]:
+        r"""Return the canonical integral preimage lattice of a finite submodule.
+
+        For F = Z^n/R and S <= F generated by rows G, the inverse image of S
+        in Z^n is R + <G>.  Its Hermite basis is therefore an exact equality
+        key, without enumerating residue vectors.
+        """
+        inclusion = submodule.inclusion()
+        ambient = inclusion.codomain()
+        framing = ambient.framing_source()
+        framing_labels = tuple(framing.module_generating_set())
+        base_ring = framing.base_ring()
+
+        def coordinates(element):
+            vector = framing(element).to_vector()
+            return tuple(SageZZ(_engine_element(base_ring, vector(label))) for label in framing_labels)
+
+        presentation = ambient.presentation()
+        rows = [coordinates(presentation(generator)) for generator in presentation.domain().module_generators()]
+        augmentation = ambient.framing_morphism()
+        rows.extend(coordinates(augmentation.lift(inclusion(generator))) for generator in inclusion.domain().module_generators())
+        return FiniteIntegralRepresentation._row_lattice_key(rows)
+
+    @staticmethod
+    def _image_key(key, action_matrix) -> tuple[tuple[int, ...], ...]:
+        moved = matrix(SageZZ, key) * action_matrix
+        return FiniteIntegralRepresentation._row_lattice_key(moved.rows())
+
+    def _submodule_from_key(self, key):
+        invariant = self.action().invariant_overlattice().domain()
+        invariant_labels = tuple(invariant.module_generating_set())
+        source = ZZ.free_module(len(key))
+        inclusion = source.Mono(invariant)(
+            {
+                label: invariant.linear_combination({invariant_labels[column]: ZZ(entry) for column, entry in enumerate(key[int(label)]) if entry})
+                for label in source.module_generating_set()
+            }
+        )
+        return (self.action().finite_projection() * inclusion).image()
 
     def _orbit_position(self, candidate) -> int | None:
-        for position, member in enumerate(self._orbit):
-            match self._same_submodule(candidate, member):
-                case True:
-                    return position
-                case False:
-                    pass
-        return None
+        key = self._submodule_key(candidate)
+        return self._orbit_position_by_key.get(key)
 
     @staticmethod
     def _image_submodule(automorphism, submodule):
         return (automorphism * submodule.inclusion()).image()
 
     def _compute_submodule_orbit(self):
-        seed = self.action().selected_submodule()
-        orbit = [seed]
-        witnesses = [self.action().rational_group().rational_lattice().Aut().one()]
+        orbit_keys = [self._row_lattice_key(self.action()._selected_invariant_coordinates.rows())]
+        orbit_position_by_key = {orbit_keys[0]: 0}
+        witness_matrices = [self.action()._invariant_basis_matrix.parent().one()]
         steps = tuple(
-            zip(
-                self.action()._finite_generator_automorphisms_and_inverses(),
-                self.action().rational_group().generators_and_inverses(),
-                strict=True,
+            (
+                self.action()._restricted_matrix(generator),
+                self.action()._ambient_action_matrix(generator),
             )
+            for generator in self.action().rational_group().generators()
         )
         frontier = [0]
         while frontier:
             source_position = frontier.pop()
-            source = orbit[source_position]
-            source_witness = witnesses[source_position]
-            for finite_automorphism, rational_automorphism in steps:
-                candidate = self._image_submodule(finite_automorphism, source)
-                existing_position = None
-                for position, member in enumerate(orbit):
-                    match self._same_submodule(candidate, member):
-                        case True:
-                            existing_position = position
-                            break
-                        case False:
-                            pass
-                match existing_position:
-                    case None:
-                        orbit.append(candidate)
-                        witnesses.append(rational_automorphism * source_witness)
-                        frontier.append(len(orbit) - 1)
-                    case _:
-                        pass
-        return orbit, witnesses
+            source_key = orbit_keys[source_position]
+            source_witness_matrix = witness_matrices[source_position]
+            for action_matrix, ambient_action_matrix in steps:
+                candidate_key = self._image_key(source_key, action_matrix)
+                if candidate_key not in orbit_position_by_key:
+                    candidate_position = len(orbit_keys)
+                    orbit_keys.append(candidate_key)
+                    orbit_position_by_key[candidate_key] = candidate_position
+                    witness_matrices.append(ambient_action_matrix * source_witness_matrix)
+                    frontier.append(candidate_position)
+        return orbit_keys, witness_matrices, orbit_position_by_key
 
     def _compute_generator_permutations(self):
         permutations = []
-        for automorphism in self.action()._finite_generator_automorphisms():
+        for automorphism in self.action().rational_group().generators():
+            action_matrix = self.action()._restricted_matrix(automorphism)
             images = []
-            for member in self._orbit:
-                image = self._image_submodule(automorphism, member)
-                position = self._orbit_position(image)
-                match position:
-                    case None:
+            for key in self._orbit_keys:
+                image_key = self._image_key(key, action_matrix)
+                position = self._orbit_position_by_key.get(image_key)
+                match position is None:
+                    case True:
                         raise ArithmeticError("the finite-module generator left the computed orbit")
-                    case _:
+                    case False:
                         images.append(position + 1)
             permutations.append(libgap.PermList(images))
         return tuple(permutations)
@@ -382,28 +397,33 @@ class FiniteIntegralRepresentation(SageObject):
     def _evaluate_free_word(self, word) -> LatticeIsometry:
         representation = tuple(int(entry) for entry in libgap.ExtRepOfObj(word).sage())
         generators = self.action().rational_group().generators()
-        result = self.action().rational_group().rational_lattice().Aut().one()
+        generator_matrices = tuple(self.action()._ambient_action_matrix(generator) for generator in generators)
+        result = self.action()._invariant_basis_matrix.parent().one()
         for position in range(0, len(representation), 2):
-            generator = generators[representation[position] - 1]
+            generator_matrix = generator_matrices[representation[position] - 1]
             exponent = representation[position + 1]
-            match exponent < 0:
-                case True:
-                    generator = ~generator
-                    exponent = -exponent
-                case False:
-                    pass
-            for _step in range(exponent):
-                result = result * generator
-        return result
+            result = (generator_matrix**exponent) * result
+        matrix_key = tuple(tuple(entry for entry in row) for row in result.rows())
+        cached = self._matrix_isometry_cache.get(matrix_key)
+        match cached:
+            case None:
+                pass
+            case _:
+                return cached
+        isometry = self.action().rational_group().rational_lattice().Aut()._isometry_from_column_matrix(result)
+        self._matrix_isometry_cache[matrix_key] = isometry
+        self.action()._ambient_action_matrix_cache[id(isometry)] = (isometry, result)
+        return isometry
 
     @cached_property
     def _lattice_stabilizer(self) -> ArithmeticSubgroup:
         point_stabilizer = libgap.Stabilizer(self._permutation_group, 1)
         preimage = libgap.PreImage(self._homomorphism, point_stabilizer)
-        lifted = tuple(
-            self._evaluate_free_word(word)
-            for word in preimage.GeneratorsOfGroup()
-        )
+        lifted_by_identity = {}
+        for word in preimage.GeneratorsOfGroup():
+            isometry = self._evaluate_free_word(word)
+            lifted_by_identity[id(isometry)] = isometry
+        lifted = tuple(lifted_by_identity.values())
         match all(self.action().preserves_selected_lattice(generator) for generator in lifted):
             case False:
                 raise ArithmeticError("a lifted finite stabilizer generator does not preserve the lattice")
@@ -422,14 +442,14 @@ class FiniteIntegralRepresentation(SageObject):
             case None:
                 return None
             case _:
-                return self._orbit_witnesses[position]
+                return self.orbit_witnesses()[position]
 
     @cached_property
     def _right_cosets(self) -> RightCosetDecomposition:
         return RightCosetDecomposition(
             self.action().rational_group(),
             self.lattice_stabilizer(),
-            tuple(self._orbit_witnesses),
+            self.orbit_witnesses(),
         )
 
     def right_cosets(self) -> RightCosetDecomposition:
@@ -437,25 +457,35 @@ class FiniteIntegralRepresentation(SageObject):
         return self._right_cosets
 
     def _permutation_of_rational_isometry(self, automorphism: LatticeIsometry):
-        finite_automorphism = self.action()._finite_automorphism(automorphism)
+        cached = self._rational_permutation_cache.get(id(automorphism))
+        match cached is not None and cached[0] is automorphism:
+            case True:
+                return cached[1]
+            case False:
+                pass
+        action_matrix = self.action()._restricted_matrix(automorphism)
         images = []
-        for member in self._orbit:
-            image = self._image_submodule(finite_automorphism, member)
-            position = self._orbit_position(image)
-            match position:
-                case None:
+        for key in self._orbit_keys:
+            image_key = self._image_key(key, action_matrix)
+            position = self._orbit_position_by_key.get(image_key)
+            match position is None:
+                case True:
                     raise ArithmeticError("a rational subgroup generator leaves the finite orbit")
-                case _:
+                case False:
                     images.append(position + 1)
         permutation = libgap.PermList(images)
         match permutation in self._permutation_group:
             case False:
                 raise ValueError("the selected arithmetic subgroup is not contained in the ambient rational group")
             case True:
+                self._rational_permutation_cache[id(automorphism)] = (
+                    automorphism,
+                    permutation,
+                )
                 return permutation
 
     def double_cosets(self, left_subgroup: ArithmeticSubgroup) -> DoubleCosetDecomposition:
-        """Return ``left_subgroup \ G / H`` in the finite integral representation."""
+        r"""Return ``left_subgroup \ G / H`` in the finite integral representation."""
         match left_subgroup.supergroup() is self.action().rational_group():
             case False:
                 raise ValueError("a double-coset left subgroup must lie in the selected rational group")
@@ -463,10 +493,7 @@ class FiniteIntegralRepresentation(SageObject):
                 pass
         left_image = libgap.Subgroup(
             self._permutation_group,
-            [
-                self._permutation_of_rational_isometry(generator)
-                for generator in left_subgroup.generators()
-            ],
+            [self._permutation_of_rational_isometry(generator) for generator in left_subgroup.generators()],
         )
         right_image = libgap.Stabilizer(self._permutation_group, 1)
         representatives = []
@@ -542,6 +569,8 @@ class IntegralStructureAction(SageObject):
                 pass
         self._rational_group = rational_group
         self._lattice_inclusion = lattice_inclusion
+        self._ambient_action_matrix_cache = {}
+        self._restricted_matrix_cache = {}
 
     def rational_group(self) -> RationalMatrixGroup:
         return self._rational_group
@@ -550,24 +579,96 @@ class IntegralStructureAction(SageObject):
         """Return the selected lattice embedding ``L -> Res(V)``."""
         return self._lattice_inclusion
 
+    def _ambient_action_matrix(self, automorphism: LatticeIsometry):
+        cached = self._ambient_action_matrix_cache.get(id(automorphism))
+        match cached is not None and cached[0] is automorphism:
+            case True:
+                return cached[1]
+            case False:
+                pass
+
+        space = self.lattice_inclusion().codomain()
+        ambient = space.module_over_extension()
+        labels = tuple(ambient.module_generating_set())
+        basis = tuple(ambient.module_generator(label) for label in labels)
+        columns = tuple(
+            _underlying_coordinates(
+                space,
+                space.wrap(automorphism(vector)),
+            )
+            for vector in basis
+        )
+        result = matrix(
+            SageQQ,
+            [[columns[column][row] for column in range(len(columns))] for row in range(len(labels))],
+        )
+        self._ambient_action_matrix_cache[id(automorphism)] = (automorphism, result)
+        return result
+
     @cached_property
     def _invariant_overlattice(self):
-        current = self.lattice_inclusion()
-        space = current.codomain()
+        selected = self.lattice_inclusion()
+        space = selected.codomain()
+        ambient = space.module_over_extension()
+        ambient_labels = tuple(ambient.module_generating_set())
+        basis = matrix(
+            SageQQ,
+            tuple(_underlying_coordinates(space, element) for element in _embedded_basis(selected)),
+        )
+        match basis.nrows() == basis.ncols() and basis.rank() == basis.ncols():
+            case False:
+                raise ValueError("an integral structure must be a full-rank lattice in the selected rational space")
+            case True:
+                pass
+
+        generator_matrices = tuple(self._ambient_action_matrix(generator) for generator in self.rational_group().generators())
+        action_matrices = generator_matrices + tuple(action_matrix.inverse() for action_matrix in generator_matrices)
+
+        changed = False
         while True:
-            current_basis = _embedded_basis(current)
-            spanning = list(current_basis)
-            for generator in self.rational_group().generators_and_inverses():
-                spanning.extend(
-                    space.wrap(generator(vector.underlying_element()))
-                    for vector in current_basis
-                )
-            enlarged = _span_embedding(space, spanning)
-            match _same_embedded_lattice(current, enlarged):
+            inverse_basis = basis.inverse()
+            spanning_rows = list(basis.rows())
+            stable = True
+            for action_matrix in action_matrices:
+                moved = basis * action_matrix.transpose()
+                spanning_rows.extend(moved.rows())
+                for row in moved.rows():
+                    coordinates = row * inverse_basis
+                    if any(entry.denominator() != 1 for entry in coordinates):
+                        stable = False
+
+            match stable:
                 case True:
-                    return current
+                    match changed:
+                        case False:
+                            return selected
+                        case True:
+                            elements = []
+                            for row in basis.rows():
+                                coefficients = {}
+                                for column, label in enumerate(ambient_labels):
+                                    entry = row[column]
+                                    match entry == 0:
+                                        case True:
+                                            pass
+                                        case False:
+                                            coefficients[label] = ambient.base_ring()(int(entry.numerator())) / ambient.base_ring()(int(entry.denominator()))
+                                elements.append(space.wrap(ambient.linear_combination(coefficients)))
+                            return _span_embedding(space, elements)
                 case False:
-                    current = enlarged
+                    pass
+
+            denominator = SageZZ.one()
+            for row in spanning_rows:
+                for entry in row:
+                    denominator = denominator.lcm(entry.denominator())
+            integral_rows = tuple(tuple(SageZZ(denominator * entry) for entry in row) for row in spanning_rows)
+            integral_basis = matrix(SageZZ, integral_rows).row_module().basis_matrix()
+            basis = matrix(
+                SageQQ,
+                [[SageQQ(entry) / SageQQ(denominator) for entry in row] for row in integral_basis.rows()],
+            )
+            changed = True
 
     def invariant_overlattice(self) -> ModuleEmbedding:
         """Return the smallest represented over-lattice stable under the generators.
@@ -580,11 +681,42 @@ class IntegralStructureAction(SageObject):
         return self._invariant_overlattice
 
     @cached_property
+    def _invariant_basis_matrix(self):
+        space = self.invariant_overlattice().codomain()
+        return matrix(
+            SageQQ,
+            tuple(_underlying_coordinates(space, element) for element in _embedded_basis(self.invariant_overlattice())),
+        )
+
+    @cached_property
+    def _selected_invariant_coordinates(self):
+        space = self.lattice_inclusion().codomain()
+        selected_basis = matrix(
+            SageQQ,
+            tuple(_underlying_coordinates(space, element) for element in _embedded_basis(self.lattice_inclusion())),
+        )
+        coordinates = selected_basis * self._invariant_basis_matrix.inverse()
+        match all(entry.denominator() == 1 for entry in coordinates.list()):
+            case False:
+                raise ArithmeticError("the selected lattice is not integral in its invariant over-lattice")
+            case True:
+                pass
+        return matrix(
+            SageZZ,
+            [[SageZZ(entry) for entry in row] for row in coordinates.rows()],
+        )
+
+    @cached_property
     def _quotient_exponent(self):
-        original = self.lattice_inclusion()
-        invariant = self.invariant_overlattice()
-        into_invariant = original.factor_through(invariant)
-        return into_invariant.cokernel().exponent()
+        diagonal, _left, _right = self._selected_invariant_coordinates.smith_form()
+        exponent = SageZZ.one()
+        for entry in diagonal.diagonal():
+            match entry:
+                case 0:
+                    raise ArithmeticError("the selected lattice must have finite index in its invariant over-lattice")
+                case _:
+                    exponent = exponent.lcm(abs(SageZZ(entry)))
+        return ZZ(int(exponent))
 
     def quotient_exponent(self):
         """Return the exponent of ``M/L`` for ``M`` the invariant over-lattice."""
@@ -592,18 +724,9 @@ class IntegralStructureAction(SageObject):
 
     @cached_property
     def _scaling_morphism(self):
-        from dzack_research.preamble.categories.modules.module_morphisms.module_morphisms import (
-            module_homset,
-        )
-
         invariant = self.invariant_overlattice().domain()
         modulus = self.quotient_exponent()
-        return module_homset(invariant, invariant)(
-            {
-                label: invariant.scalar_multiple(modulus, invariant.module_generator(label))
-                for label in invariant.module_generating_set()
-            }
-        )
+        return invariant.Mor(invariant)({label: invariant.scalar_multiple(modulus, invariant.module_generator(label)) for label in invariant.module_generating_set()})
 
     def finite_module(self):
         """Return ``F=M/dM`` as the actual cokernel of multiplication by ``d``."""
@@ -634,65 +757,37 @@ class IntegralStructureAction(SageObject):
         """Return ``S=L/dM <= M/dM`` for the selected lattice."""
         return self._selected_submodule
 
-    def _restricted_automorphism(self, automorphism: LatticeIsometry):
-        invariant = self.invariant_overlattice()
-        lattice = invariant.domain()
-        space = invariant.codomain()
-        restricted = module_homset(lattice, lattice)(
-            {
-                label: invariant.lift(
-                    space.wrap(
-                        automorphism(
-                            invariant(lattice.module_generator(label)).underlying_element()
-                        )
-                    )
-                )
-                for label in lattice.module_generating_set()
-            }
+    def _restricted_matrix(self, automorphism: LatticeIsometry):
+        cached = self._restricted_matrix_cache.get(id(automorphism))
+        match cached is not None and cached[0] is automorphism:
+            case True:
+                return cached[1]
+            case False:
+                pass
+
+        basis = self._invariant_basis_matrix
+        moved = basis * self._ambient_action_matrix(automorphism).transpose()
+        coordinates = moved * basis.inverse()
+        match all(entry.denominator() == 1 for entry in coordinates.list()):
+            case False:
+                raise ArithmeticError("a rational-group generator does not preserve the computed invariant over-lattice")
+            case True:
+                pass
+        result = matrix(
+            SageZZ,
+            [[SageZZ(entry) for entry in row] for row in coordinates.rows()],
         )
-        return restricted.as_automorphism()
-
-    def _finite_automorphism(self, automorphism: LatticeIsometry):
-        lattice = self.invariant_overlattice().domain()
-        projection = self.finite_projection()
-        restricted = self._restricted_automorphism(automorphism)
-        quotient = self.finite_module()
-        finite = module_homset(quotient, quotient)(
-            {
-                label: projection(restricted(lattice.module_generator(label)))
-                for label in quotient.module_generating_set()
-            }
-        )
-        return finite.as_automorphism()
-
-    @cached_property
-    def _finite_generators(self):
-        return tuple(
-            self._finite_automorphism(generator)
-            for generator in self.rational_group().generators()
-        )
-
-    def _finite_generator_automorphisms(self):
-        return self._finite_generators
-
-    def _finite_generator_automorphisms_and_inverses(self):
-        return self._finite_generators + tuple(~generator for generator in self._finite_generators)
+        self._restricted_matrix_cache[id(automorphism)] = (automorphism, result)
+        return result
 
     def preserves_selected_lattice(self, automorphism: LatticeIsometry) -> bool:
         """Return whether the selected rational isometry carries ``L`` onto itself."""
-        inclusion = self.lattice_inclusion()
-        space = inclusion.codomain()
-        lattice = inclusion.domain()
-        basis = tuple(
-            inclusion(lattice.module_generator(label)).underlying_element()
-            for label in lattice.module_generating_set()
+        selected_key = FiniteIntegralRepresentation._row_lattice_key(self._selected_invariant_coordinates.rows())
+        image_key = FiniteIntegralRepresentation._image_key(
+            selected_key,
+            self._restricted_matrix(automorphism),
         )
-        inverse = ~automorphism
-        return all(
-            inclusion.is_in_image(space.wrap(automorphism(vector)))
-            and inclusion.is_in_image(space.wrap(inverse(vector)))
-            for vector in basis
-        )
+        return image_key == selected_key
 
     @cached_property
     def _finite_representation(self) -> FiniteIntegralRepresentation:
@@ -706,8 +801,8 @@ class IntegralStructureAction(SageObject):
         """Return ``{g in G : g(L)=L}`` from the finite representation."""
         return self.finite_representation().lattice_stabilizer()
 
-    @staticmethod
     def _carries_lattice(
+        self,
         automorphism: LatticeIsometry,
         source_inclusion: ModuleEmbedding,
         target_inclusion: ModuleEmbedding,
@@ -718,24 +813,21 @@ class IntegralStructureAction(SageObject):
             case True:
                 pass
         space = source_inclusion.codomain()
-        source = source_inclusion.domain()
-        target = target_inclusion.domain()
-        inverse = ~automorphism
-        source_basis = tuple(
-            source_inclusion(source.module_generator(label)).underlying_element()
-            for label in source.module_generating_set()
+        source_basis = matrix(
+            SageQQ,
+            tuple(_underlying_coordinates(space, element) for element in _embedded_basis(source_inclusion)),
         )
-        target_basis = tuple(
-            target_inclusion(target.module_generator(label)).underlying_element()
-            for label in target.module_generating_set()
+        target_basis = matrix(
+            SageQQ,
+            tuple(_underlying_coordinates(space, element) for element in _embedded_basis(target_inclusion)),
         )
-        return all(
-            target_inclusion.is_in_image(space.wrap(automorphism(vector)))
-            for vector in source_basis
-        ) and all(
-            source_inclusion.is_in_image(space.wrap(inverse(vector)))
-            for vector in target_basis
-        )
+        moved_basis = source_basis * self._ambient_action_matrix(automorphism).transpose()
+        denominator = SageZZ.one()
+        for entry in tuple(moved_basis.list()) + tuple(target_basis.list()):
+            denominator = denominator.lcm(entry.denominator())
+        moved_key = FiniteIntegralRepresentation._row_lattice_key(tuple(tuple(SageZZ(denominator * entry) for entry in row) for row in moved_basis.rows()))
+        target_key = FiniteIntegralRepresentation._row_lattice_key(tuple(tuple(SageZZ(denominator * entry) for entry in row) for row in target_basis.rows()))
+        return moved_key == target_key
 
     def transporter(
         self,
@@ -774,23 +866,21 @@ class IntegralStructureAction(SageObject):
         self,
         left_subgroup: ArithmeticSubgroup,
     ) -> DoubleCosetDecomposition:
-        """Return ``left_subgroup \ G / G_L`` with all sides retained."""
+        r"""Return ``left_subgroup \ G / G_L`` with all sides retained."""
         return self.finite_representation().double_cosets(left_subgroup)
 
     def double_cosets_from_generators(
         self,
         left_generators: tuple[LatticeIsometry, ...],
     ) -> DoubleCosetDecomposition:
-        """Return ``V \ G / G_L`` for the subgroup generated by live ``V`` generators."""
-        return self.double_cosets(
-            ArithmeticSubgroup(self.rational_group(), tuple(left_generators))
-        )
+        r"""Return ``V \ G / G_L`` for the subgroup generated by live ``V`` generators."""
+        return self.double_cosets(ArithmeticSubgroup(self.rational_group(), tuple(left_generators)))
 
     def _repr_(self) -> str:
         return f"Integral-structure action of {self.rational_group()} on {self.lattice_inclusion().domain()}"
 
 
-def integral_structure_action(rational_lattice: Lattice, generators, lattice_inclusion: ModuleEmbedding) -> IntegralStructureAction:
+def integral_structure_action(rational_lattice: ObjectOfCategory, generators, lattice_inclusion: ModuleEmbedding) -> IntegralStructureAction:
     """Build the T2 integral-structure action from live preamble objects."""
     return IntegralStructureAction(
         RationalMatrixGroup(rational_lattice, tuple(generators)),
