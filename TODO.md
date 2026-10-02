@@ -9,12 +9,7 @@ corpus, the shared `LatticePrefilter`, and dependency wiring (T0).
 
 Take the next unit with `uvx --from git+https://github.com/dzackgarza/itree itree next
 dzackgarza/sage-indefinite-port`: the first open work unit in tree order whose Needs are closed.
-T1, T2 and T3 are independent; T2 is listed first because it is in progress.
-
-## T2: Integral structures and double cosets ([#25](https://github.com/dzackgarza/sage-indefinite-port/issues/25))
-
-- [#10](https://github.com/dzackgarza/sage-indefinite-port/issues/10) `IntegralStructureAction`: in progress; the remaining work is the two oracle families. **Needs:** none.
-- [#11](https://github.com/dzackgarza/sage-indefinite-port/issues/11) Construction-aware arithmetic subgroup carriers: in progress. **Needs:** none.
+T1, T2 and T3 are independent. T2 is listed last: #10's oracle families wait on a research preamble fix (a fast LatticeIsometry constructor from matrices; see the blocker comment on #10), so T1 and T3 go first.
 
 ## T1: Subobjects, reductions, and exact lifts ([#24](https://github.com/dzackgarza/sage-indefinite-port/issues/24))
 
@@ -30,6 +25,11 @@ T1, T2 and T3 are independent; T2 is listed first because it is in progress.
 - [#13](https://github.com/dzackgarza/sage-indefinite-port/issues/13) Facets, rays, facet orbits through Sage polyhedra. **Needs:** none.
 - [#14](https://github.com/dzackgarza/sage-indefinite-port/issues/14) Definite leaf through the preamble. **Needs:** none.
 - [#15](https://github.com/dzackgarza/sage-indefinite-port/issues/15) Lorentzian perfect-cell backend, complex traversal, marked-cell orbits. **Needs:** #12, #13, #14.
+
+## T2: Integral structures and double cosets ([#25](https://github.com/dzackgarza/sage-indefinite-port/issues/25))
+
+- [#10](https://github.com/dzackgarza/sage-indefinite-port/issues/10) `IntegralStructureAction`: in progress; the remaining work is the two oracle families, blocked on the research preamble's LatticeIsometry construction cost. **Needs:** none.
+- [#11](https://github.com/dzackgarza/sage-indefinite-port/issues/11) Construction-aware arithmetic subgroup carriers: in progress. **Needs:** none.
 
 ## T4: Eichler covers and the recursive full group ([#27](https://github.com/dzackgarza/sage-indefinite-port/issues/27))
 
