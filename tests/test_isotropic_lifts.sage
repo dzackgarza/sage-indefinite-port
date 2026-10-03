@@ -27,6 +27,7 @@ def test_extension_equation_has_expected_affine_dimension() -> None:
         X = solution.particular
         assert X * A + A.transpose() * X.transpose() == B
         assert solution.homogeneous_space.dimension() == rank * (rank - 1) // 2
+        assert solution.homogeneous_lattice.rank() == rank * (rank - 1) // 2
 
 
 def test_codimension_one_extension_retains_subspace_inclusions() -> None:
@@ -48,10 +49,11 @@ def test_extension_torsor_reports_an_empty_integral_locus() -> None:
     rational_plane = integral_plane.base_change(OwnedZZ.fraction_field_map())
     field = rational_plane.base_ring()
     e, f = rational_plane.module_generators()
+    two = OwnedZZ.one() + OwnedZZ.one()
     rational_isometry = rational_plane.Isom(rational_plane)(
         (
-            rational_plane.scalar_multiple(field(2), e),
-            rational_plane.scalar_multiple(field(1) / field(2), f),
+            rational_plane.scalar_multiple(field(two), e),
+            rational_plane.scalar_multiple(field.one() / field(two), f),
         )
     )
     torsor = IsometryExtensionTorsor(rational_isometry, ())
@@ -86,3 +88,45 @@ def test_every_E8_orthogonal_generator_lifts_through_U_plus_E8() -> None:
         lifted = lattice.O()(tuple(images))
         assert lifted in lattice.O()
         assert lifted(isotropic) == isotropic
+
+
+def test_pointwise_perpendicular_kernel_acceptance() -> None:
+    plane = Lattices(OwnedZZ)("U")
+    lattice = plane + Lattices(OwnedZZ)("U")
+    e1, _f1, e3, _f3 = lattice.module_generators()
+    isotropic = lattice.primitive_isotropic_subobject(e1, e3)
+    reduction = isotropic.isotropic_reduction()
+    kernel = reduction.pointwise_perpendicular_kernel()
+    parameters = kernel.parameter_lattice()
+    orthogonal_group = lattice.O()
+    embedding = kernel.embedding_into(orthogonal_group)
+
+    assert int(parameters.module_rank()) == 1
+    assert embedding.domain() is parameters
+    assert embedding.codomain() is orthogonal_group
+    generator, = kernel.gens()
+    assert generator in orthogonal_group
+
+    perpendicular = reduction.orthogonal_complement()
+    perpendicular_inclusion = perpendicular.inclusion()
+    assert all(
+        generator(perpendicular_inclusion(vector))
+        == perpendicular_inclusion(vector)
+        for vector in perpendicular.module_generators()
+    )
+
+    parameter, = parameters.module_generators()
+    one = OwnedZZ.one()
+    two = one + one
+    three = two + one
+    twice = parameters.scalar_multiple(two, parameter)
+    thrice = parameters.scalar_multiple(three, parameter)
+    assert embedding(parameters.zero()) == orthogonal_group.identity()
+    assert embedding(parameter) != orthogonal_group.identity()
+    assert embedding(twice + thrice) == embedding(twice) * embedding(thrice)
+    assert embedding(twice) * embedding(thrice) == embedding(thrice) * embedding(twice)
+
+    line = plane.primitive_isotropic_subobject(plane.module_generators()[0])
+    rank_one_kernel = line.isotropic_reduction().pointwise_perpendicular_kernel()
+    assert int(rank_one_kernel.parameter_lattice().module_rank()) == 0
+    assert rank_one_kernel.gens() == ()

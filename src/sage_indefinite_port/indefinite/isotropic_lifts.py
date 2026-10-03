@@ -8,8 +8,10 @@ from dzack_research.preamble.categories.lattice_morphisms import (
 )
 from dzack_research.preamble.categories.rings.ring_foundation import (
     _engine_element,
+    _engine_ring,
     _owned_engine_element,
 )
+from dzack_research.preamble.categories.sets.set_categories import Sets
 from sage.matrix.constructor import matrix
 from sage.matrix.matrix0 import Matrix
 from sage.matrix.matrix_space import MatrixSpace
@@ -232,6 +234,133 @@ class IsometryExtensionTorsor:
         return source.Isom(target)(image)
 
 
+class PointwisePerpendicularKernel:
+    r"""Integral isometries acting identically on \(I^\perp\).
+
+    For an isotropic reduction \(R=I^\perp/I\), the represented quotient
+    \(L/I^\perp\) supplies integral complementary lifts.  If \(U\) is
+    their pairing matrix with the chosen framing of \(I\), an integral
+    matrix \(H\) changes those lifts by \(H I\).  The form is preserved
+    exactly when \(H U^T + U H^T=0\).
+
+    The integral homogeneous lattice returned by the T1 extension-equation
+    solver is therefore the parameter lattice.  Addition of parameters maps
+    to composition because every image fixes \(I^\perp\) pointwise.
+    """
+
+    def __init__(self, reduction) -> None:
+        self._reduction = reduction
+        embedding = reduction.isotropic_embedding()
+        ambient = embedding.codomain()
+        ring = ambient.base_ring()
+        if _engine_ring(ring) is not ZZ:
+            raise ValueError("the pointwise perpendicular kernel is implemented for integral lattices over ZZ")
+
+        isotropic = reduction.isotropic_sublattice()
+        perpendicular = reduction.orthogonal_complement()
+        quotient_projection = perpendicular.inclusion().cokernel_projection()
+        quotient = quotient_projection.codomain()
+        quotient_trivialization = quotient.finite_free_trivialization()
+        quotient_free = quotient_trivialization.forward().codomain()
+        quotient_section = quotient_projection.section()
+        quotient_labels = tuple(quotient_free.module_generating_set())
+        isotropic_labels = tuple(isotropic.module_generating_set())
+        if len(quotient_labels) != len(isotropic_labels):
+            raise ArithmeticError("L/I^perp and I have different ranks, so the nondegenerate pairing between them was not represented correctly")
+
+        complement = tuple(quotient_section(quotient_trivialization.inverse()(quotient_free.module_generator(label))) for label in quotient_labels)
+        embedded_isotropic = tuple(embedding(isotropic.module_generator(label)) for label in isotropic_labels)
+        pairing = matrix(
+            ZZ,
+            (tuple(_engine_element(ring, ambient.b(vector, isotropic_vector)) for isotropic_vector in embedded_isotropic) for vector in complement),
+        )
+        rank = len(isotropic_labels)
+        equation = solve_isotropic_extension_equation(
+            matrix(QQ, pairing.transpose()),
+            matrix(QQ, rank, rank, 0),
+        )
+        integral_kernel = equation.homogeneous_lattice
+        if integral_kernel is None:
+            raise ArithmeticError("the homogeneous extension equation did not return its integral solution lattice")
+        directions = tuple(integral_kernel.lift(basis_vector) for basis_vector in integral_kernel.basis())
+
+        self._ambient = ambient
+        self._embedding = embedding
+        self._isotropic = isotropic
+        self._quotient_projection = quotient_projection
+        self._quotient_trivialization = quotient_trivialization
+        self._quotient_labels = quotient_labels
+        self._isotropic_labels = isotropic_labels
+        self._directions = directions
+        self._parameter_lattice = ring.free_module(len(directions))
+
+    def parameter_lattice(self):
+        r"""Return the free integral lattice of homogeneous solutions \(H\)."""
+        return self._parameter_lattice
+
+    def _direction_matrix(self, parameter):
+        parameter = self._parameter_lattice(parameter)
+        coordinates = parameter.to_vector()
+        labels = tuple(self._parameter_lattice.module_generating_set())
+        rank = len(self._isotropic_labels)
+        result = MatrixSpace(ZZ, rank, rank).zero()
+        for position, label in enumerate(labels):
+            coefficient = coordinates(label)
+            if coefficient:
+                result += _engine_element(self._parameter_lattice.base_ring(), coefficient) * self._directions[position]
+        return result
+
+    def _isometry(self, parameter, target):
+        parameter = self._parameter_lattice(parameter)
+        direction = self._direction_matrix(parameter)
+        if not direction:
+            return target.identity()
+
+        ambient = self._ambient
+        ring = ambient.base_ring()
+        quotient_to_free = self._quotient_trivialization.forward()
+
+        def image(label):
+            source = ambient.module_generator(label)
+            quotient_coordinates = quotient_to_free(self._quotient_projection(source)).to_vector()
+            shift = self._isotropic.linear_combination(
+                {
+                    isotropic_label: coefficient
+                    for column, isotropic_label in enumerate(self._isotropic_labels)
+                    if (
+                        coefficient := sum(
+                            (
+                                quotient_coordinates(quotient_label) * _owned_engine_element(ring, direction[row, column])
+                                for row, quotient_label in enumerate(self._quotient_labels)
+                            ),
+                            ring.zero(),
+                        )
+                    )
+                }
+            )
+            return source + self._embedding(shift)
+
+        return target(image)
+
+    def embedding_into(self, target):
+        r"""Return the injective parameter map into the ambient orthogonal group."""
+        ambient_orthogonal_group = self._ambient.O()
+        if target is not ambient_orthogonal_group:
+            raise ValueError(f"the pointwise perpendicular kernel embeds in {ambient_orthogonal_group}, not in {target}")
+        return Sets().Mor(self._parameter_lattice, target)(lambda parameter: self._isometry(parameter, target))
+
+    def gens(self):
+        r"""Return the isometries attached to a basis of the parameter lattice."""
+        target = self._ambient.O()
+        embedding = self.embedding_into(target)
+        return tuple(embedding(generator) for generator in self._parameter_lattice.module_generators())
+
+
+def pointwise_perpendicular_kernel(reduction) -> PointwisePerpendicularKernel:
+    r"""Return the exact kernel fixing the reduction's \(I^\perp\) pointwise."""
+    return PointwisePerpendicularKernel(reduction)
+
+
 def solve_isotropic_extension_equation(A: Matrix, B: Matrix) -> MatrixEquationSolution:
     r"""Solve \(XA+A^T X^T=B\) exactly over \(\mathbf Q\).
 
@@ -266,9 +395,17 @@ def solve_isotropic_extension_equation(A: Matrix, B: Matrix) -> MatrixEquationSo
     )
     particular_coordinates = phi.matrix().solve_right(target_coordinates)
     particular = matrices(tuple(particular_coordinates))
+    relation_matrix = phi.matrix()
+    common_denominator = QQ.one()
+    for coefficient in relation_matrix.list():
+        common_denominator = common_denominator.lcm(coefficient.denominator())
+    integral_relation_matrix = matrix(ZZ, common_denominator * relation_matrix)
+    integral_coordinate_kernel = integral_relation_matrix.right_kernel()
+    integral_matrices = MatrixSpace(ZZ, rank, rank)
+    homogeneous_lattice = integral_matrices.submodule(tuple(integral_matrices(tuple(coordinates)) for coordinates in integral_coordinate_kernel.basis()))
 
     return MatrixEquationSolution(
         particular=particular,
         homogeneous_space=phi.kernel(),
-        homogeneous_lattice=None,
+        homogeneous_lattice=homogeneous_lattice,
     )
