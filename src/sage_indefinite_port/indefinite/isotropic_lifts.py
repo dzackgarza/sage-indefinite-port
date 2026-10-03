@@ -13,8 +13,10 @@ from dzack_research.preamble.categories.rings.ring_foundation import (
 from sage.matrix.constructor import matrix
 from sage.matrix.matrix0 import Matrix
 from sage.matrix.matrix_space import MatrixSpace
-from sage.modules.free_module_element import vector
+from sage.modules.free_module import FreeModule
+from sage.modules.free_module_element import FreeModuleElement, vector
 from sage.modules.module import Module
+from sage.rings.integer_ring import ZZ
 from sage.rings.rational_field import QQ
 
 
@@ -119,6 +121,115 @@ class CodimensionOneIsotropicExtension:
 
         extension = source_ambient.Isom(target_ambient)(image)
         return CodimensionOneIsotropicExtensionResult(extension, source_inclusion, target_inclusion)
+
+
+class NoIntegralExtensionError(ValueError):
+    r"""Raised when a rational extension torsor has no integral member."""
+
+
+@dataclass(frozen=True)
+class IntegralParameterCoset:
+    r"""A coset \(\lambda_0+\Lambda\subseteq\mathbf Q^r\)."""
+
+    particular: FreeModuleElement
+    lattice: Module
+
+
+class IsometryExtensionTorsor:
+    r"""An affine family \(T_0+\sum_i\lambda_iT_i\) of rational lattice maps."""
+
+    def __init__(self, particular, homogeneous_directions) -> None:
+        self._particular = particular
+        self._directions = tuple(homogeneous_directions)
+        self._integral_locus = None
+        self._integral_source = None
+        self._integral_target = None
+
+    def integral_parameters(self, source_lattice, target_lattice):
+        r"""Return the exact parameter coset giving integral maps, or ``None``."""
+        domain = self._particular.domain()
+        codomain = self._particular.codomain()
+        domain_labels = tuple(domain.module_generating_set())
+        codomain_labels = tuple(codomain.module_generating_set())
+        if int(source_lattice.module_rank()) != len(domain_labels) or int(target_lattice.module_rank()) != len(codomain_labels):
+            raise ValueError("integral lattices must have the ranks of the rational endpoints")
+
+        rows = []
+        for source_position in range(len(domain_labels)):
+            rational_generator = domain.module_generator(domain_labels[source_position])
+            base_image = self._particular(rational_generator).to_vector()
+            direction_images = tuple(direction(rational_generator).to_vector() for direction in self._directions)
+            for target_label in codomain_labels:
+                rows.append(
+                    (
+                        _engine_element(codomain.base_ring(), base_image(target_label)),
+                        tuple(_engine_element(codomain.base_ring(), image(target_label)) for image in direction_images),
+                    )
+                )
+        constant = vector(QQ, (entry[0] for entry in rows))
+        coefficients = matrix(QQ, (entry[1] for entry in rows)) if self._directions else matrix(QQ, len(rows), 0)
+        annihilator = coefficients.left_kernel().basis_matrix()
+        rhs = annihilator * constant
+        denominators = [entry.denominator() for entry in annihilator.list()] + [entry.denominator() for entry in rhs]
+        common_denominator = QQ(1)
+        for denominator in denominators:
+            common_denominator = common_denominator.lcm(denominator)
+        equations = matrix(ZZ, common_denominator * annihilator)
+        integral_rhs = vector(ZZ, common_denominator * rhs)
+        diagonal, left_change, right_change = equations.smith_form()
+        transformed_rhs = left_change * integral_rhs
+        smith_coordinates = vector(ZZ, [0] * len(rows))
+        diagonal_rank = min(diagonal.nrows(), diagonal.ncols())
+        for position in range(diagonal.nrows()):
+            diagonal_entry = diagonal[position, position] if position < diagonal_rank else 0
+            value = transformed_rhs[position]
+            if diagonal_entry:
+                if value % diagonal_entry:
+                    self._integral_locus = None
+                    return None
+                smith_coordinates[position] = value // diagonal_entry
+            elif value:
+                self._integral_locus = None
+                return None
+        integral_point = right_change * smith_coordinates
+        parameter_point = coefficients.solve_right(vector(QQ, integral_point) - constant)
+        integral_image_lattice = coefficients.column_space().intersection(FreeModule(ZZ, len(rows)))
+        parameter_directions = tuple(coefficients.solve_right(vector(QQ, lattice_vector)) for lattice_vector in integral_image_lattice.basis())
+        parameter_lattice = vector(QQ, [0] * len(self._directions)).parent().span(parameter_directions, ZZ)
+        locus = IntegralParameterCoset(parameter_point, parameter_lattice)
+        self._integral_locus = locus
+        self._integral_source = source_lattice
+        self._integral_target = target_lattice
+        return locus
+
+    def one_integral_extension(self):
+        r"""Return one integral isometry in the last computed integral locus."""
+        if self._integral_locus is None or self._integral_source is None or self._integral_target is None:
+            raise NoIntegralExtensionError("the extension torsor has no computed integral member")
+        parameters = self._integral_locus.particular
+        source = self._integral_source
+        target = self._integral_target
+        rational_domain = self._particular.domain()
+        rational_labels = tuple(rational_domain.module_generating_set())
+        target_labels = tuple(target.module_generating_set())
+        target_ring = target.base_ring()
+
+        def image(label):
+            position = tuple(source.module_generating_set()).index(label)
+            rational_generator = rational_domain.module_generator(rational_labels[position])
+            value = self._particular(rational_generator)
+            for coefficient, direction in zip(parameters, self._directions, strict=True):
+                value += value.parent().scalar_multiple(_owned_engine_element(value.parent().base_ring(), coefficient), direction(rational_generator))
+            coordinates = value.to_vector()
+            return target.linear_combination(
+                {
+                    target_labels[index]: _owned_engine_element(target_ring, _engine_element(value.parent().base_ring(), coordinates(rational_label)))
+                    for index, rational_label in enumerate(value.parent().module_generating_set())
+                    if coordinates(rational_label)
+                }
+            )
+
+        return source.Isom(target)(image)
 
 
 def solve_isotropic_extension_equation(A: Matrix, B: Matrix) -> MatrixEquationSolution:
