@@ -18,7 +18,9 @@ from sage_indefinite_port.backends.polyhedral import (
     facet_orbits,
 )
 from sage_indefinite_port.indefinite.lorentzian_cells import (
+    LorentzianPerfectComplex,
     LorentzianPerfectLocalBackend,
+    perfect_domain_traversal,
 )
 from tests.fixtures.oracle_fixtures import (
     LorentzianEquivalenceCase,
@@ -177,3 +179,43 @@ def test_native_rank_three_local_backend_builds_and_flips_both_cell_modes() -> N
         transporter(vector)
         for vector in total.vector_configuration
     } == set(neighbor.vector_configuration)
+
+
+def test_rank_three_quotient_traversal_and_groups_match_frozen_counts() -> None:
+    case = next(
+        case
+        for case in load_lorentzian_perfect_domains()
+        if case["id"] == "lor_perf_dim3_case01"
+    )
+    lattice = Lattices(OwnedZZ)(case["gram"])
+
+    total = LorentzianPerfectComplex(lattice, "total")
+    isotropic = LorentzianPerfectComplex(lattice, "isotropic")
+
+    total_cells = total.quotient_cells()
+    isotropic_cells = isotropic.quotient_cells()
+    assert len(total_cells) == case["total_count"]
+    assert len(isotropic_cells) == case["isotropic_count"]
+
+    for adjacency in total.adjacencies():
+        assert adjacency.transporter is not None
+        transported = {
+            adjacency.transporter(vector)
+            for vector in adjacency.target.vector_configuration
+        }
+        flipped = total.local_backend().flip_across(adjacency.source, adjacency.facet)
+        assert transported == set(flipped.vector_configuration)
+
+    component = total.component_preserving_group()
+    full = total.full_orthogonal_group()
+    assert full.generators()[:-1] == component.generators()
+    negation = full.generators()[-1]
+    assert all(
+        negation(generator) == -generator
+        for generator in lattice.module_generators()
+    )
+
+    records = perfect_domain_traversal(case["gram"], "total")
+    assert len(records) == case["total_count"]
+    assert all(record["x"]["EXT"] for record in records)
+    assert all(record["ListAdj"] for record in records)
