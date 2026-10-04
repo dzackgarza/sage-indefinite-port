@@ -52,16 +52,7 @@ class CellConfiguration:
         labels = tuple(lattice.module_generating_set())
         if any(len(row) != len(labels) for row in rows):
             raise ValueError("configuration rows must have the ambient lattice rank")
-        vectors = tuple(
-            lattice.linear_combination(
-                {
-                    label: lattice.base_ring()(entry)
-                    for label, entry in zip(labels, row, strict=True)
-                    if entry
-                }
-            )
-            for row in rows
-        )
+        vectors = tuple(lattice.linear_combination({label: lattice.base_ring()(entry) for label, entry in zip(labels, row, strict=True) if entry}) for row in rows)
         return cls(lattice, vectors)
 
 
@@ -102,19 +93,11 @@ def cell_transporter(
     if source_canon.canonical_signature != target_canon.canonical_signature:
         return None
 
-    target_by_canonical = {
-        target_canon.labeling[position]: position
-        for position in range(len(target.vectors))
-    }
+    target_by_canonical = {target_canon.labeling[position]: position for position in range(len(target.vectors))}
     try:
-        matching = tuple(
-            target_by_canonical[source_canon.labeling[position]]
-            for position in range(len(source.vectors))
-        )
+        matching = tuple(target_by_canonical[source_canon.labeling[position]] for position in range(len(source.vectors)))
     except KeyError as exc:
-        raise ArithmeticError(
-            "Bliss mapped a vector vertex outside the vector color classes"
-        ) from exc
+        raise ArithmeticError("Bliss mapped a vector vertex outside the vector color classes") from exc
 
     base_action = _configuration_row_action(source, target, matching)
     verified = _verified_integral_isometry(source, target, matching, base_action)
@@ -127,9 +110,7 @@ def cell_transporter(
         _identity_rows(int(target.lattice.module_rank())),
     )
     if target_group.rational_lattice() is not target_rational:
-        raise ArithmeticError(
-            "configuration automorphisms and integral structure use different rational lattices"
-        )
+        raise ArithmeticError("configuration automorphisms and integral structure use different rational lattices")
 
     _, source_image = _rational_lattice_with_integral_structure(
         target.lattice,
@@ -156,18 +137,14 @@ def cell_stabilizer(configuration: CellConfiguration) -> RationalMatrixGroup:
         _identity_rows(int(configuration.lattice.module_rank())),
     )
     if rational_group.rational_lattice() is not rational_lattice:
-        raise ArithmeticError(
-            "configuration automorphisms and integral structure use different rational lattices"
-        )
+        raise ArithmeticError("configuration automorphisms and integral structure use different rational lattices")
     action = IntegralStructureAction(rational_group, inclusion)
     stabilizer = action.lattice_stabilizer()
     integral_generators: list[LatticeIsometryMethods] = []
     for generator in stabilizer.generators():
         row_action = action._ambient_action_matrix(generator)
         if any(entry.denominator() != 1 for entry in row_action.list()):
-            raise ArithmeticError(
-                "an integral configuration stabilizer generator has a nonintegral matrix"
-            )
+            raise ArithmeticError("an integral configuration stabilizer generator has a nonintegral matrix")
         integral = matrix(
             SageZZ,
             row_action.nrows(),
@@ -175,14 +152,8 @@ def cell_stabilizer(configuration: CellConfiguration) -> RationalMatrixGroup:
             tuple(Integer(entry) for entry in row_action.list()),
         )
         if abs(Integer(integral.determinant())) != 1:
-            raise ArithmeticError(
-                "an integral configuration stabilizer generator is not unimodular"
-            )
-        integral_generators.append(
-            configuration.lattice.Aut()._isometry_from_column_matrix(
-                integral.transpose()
-            )
-        )
+            raise ArithmeticError("an integral configuration stabilizer generator is not unimodular")
+        integral_generators.append(configuration.lattice.Aut()._isometry_from_column_matrix(integral.transpose()))
     return RationalMatrixGroup(
         configuration.lattice,
         tuple(integral_generators),
@@ -244,13 +215,7 @@ def _coordinate_matrix(configuration: CellConfiguration) -> Matrix_integer_dense
     base_ring = configuration.lattice.base_ring()
     return matrix(
         SageZZ,
-        tuple(
-            tuple(
-                Integer(_engine_element(base_ring, vector.to_vector()(label)))
-                for label in labels
-            )
-            for vector in configuration.vectors
-        ),
+        tuple(tuple(Integer(_engine_element(base_ring, vector.to_vector()(label))) for label in labels) for vector in configuration.vectors),
     )
 
 
@@ -268,9 +233,7 @@ def _configuration_row_action(
     rank = int(source.lattice.module_rank())
     pivots = tuple(int(position) for position in source_coordinates.transpose().pivots())
     if len(pivots) < rank:
-        raise ArithmeticError(
-            "the source configuration lost full rank during transporter reconstruction"
-        )
+        raise ArithmeticError("the source configuration lost full rank during transporter reconstruction")
     basis_rows = pivots[:rank]
     source_basis = matrix(
         SageQQ,
@@ -282,9 +245,7 @@ def _configuration_row_action(
     )
     action = source_basis.inverse() * target_basis
     if source_coordinates * action != mapped_target:
-        raise ArithmeticError(
-            "the Bliss configuration bijection is not induced by one linear map"
-        )
+        raise ArithmeticError("the Bliss configuration bijection is not induced by one linear map")
     return action
 
 
@@ -312,23 +273,13 @@ def _verified_integral_isometry(
         tuple(target_coordinates.row(position) for position in matching),
     )
     if source_coordinates * integral != mapped_target:
-        raise ArithmeticError(
-            "an alleged integral transporter does not move the full configuration"
-        )
-    if integral * _gram_matrix(target.lattice) * integral.transpose() != _gram_matrix(
-        source.lattice
-    ):
-        raise ArithmeticError(
-            "an alleged cell transporter does not preserve the ambient form"
-        )
+        raise ArithmeticError("an alleged integral transporter does not move the full configuration")
+    if integral * _gram_matrix(target.lattice) * integral.transpose() != _gram_matrix(source.lattice):
+        raise ArithmeticError("an alleged cell transporter does not preserve the ambient form")
 
-    isometry = source.lattice.Isom(target.lattice)._isometry_from_column_matrix(
-        integral.transpose()
-    )
+    isometry = source.lattice.Isom(target.lattice)._isometry_from_column_matrix(integral.transpose())
     if not isinstance(isometry, LatticeIsometryMethods):
-        raise TypeError(
-            "the verified transporter was not realized as a lattice isometry"
-        )
+        raise TypeError("the verified transporter was not realized as a lattice isometry")
     return isometry
 
 
@@ -338,13 +289,7 @@ def _gram_matrix(lattice: Lattices.ParentMethods) -> Matrix_integer_dense:
     base_ring = lattice.base_ring()
     return matrix(
         SageZZ,
-        tuple(
-            tuple(
-                Integer(_engine_element(base_ring, lattice.b(left, right)))
-                for right in generators
-            )
-            for left in generators
-        ),
+        tuple(tuple(Integer(_engine_element(base_ring, lattice.b(left, right))) for right in generators) for left in generators),
     )
 
 
@@ -361,22 +306,12 @@ def _configuration_rational_automorphism_group(
         edge_labels=True,
     )
     for generator in permutation_group.gens():
-        permutation = tuple(
-            int(generator(position))
-            for position in range(graph.order())
-        )
-        matching = tuple(
-            permutation[position]
-            for position in range(len(configuration.vectors))
-        )
+        permutation = tuple(int(generator(position)) for position in range(graph.order()))
+        matching = tuple(permutation[position] for position in range(len(configuration.vectors)))
         if any(position >= len(configuration.vectors) for position in matching):
-            raise ArithmeticError(
-                "a Bliss generator moved a vector vertex to an incidence vertex"
-            )
+            raise ArithmeticError("a Bliss generator moved a vector vertex to an incidence vertex")
         action = _configuration_row_action(configuration, configuration, matching)
-        automorphisms.append(
-            rational_lattice.Aut()._isometry_from_column_matrix(action.transpose())
-        )
+        automorphisms.append(rational_lattice.Aut()._isometry_from_column_matrix(action.transpose()))
     return RationalMatrixGroup(rational_lattice, tuple(automorphisms))
 
 
@@ -385,9 +320,7 @@ def _rational_lattice_with_integral_structure(
     rows: tuple[tuple[object, ...], ...],
 ) -> tuple[Lattices.ParentMethods, object]:
     rational_lattice = lattice.base_change(ZZ.fraction_field_map())
-    restriction = Modules(QQ).restriction_of_scalars(
-        ZZ.Mor(QQ)(lambda element: QQ(element))
-    )
+    restriction = Modules(QQ).restriction_of_scalars(ZZ.Mor(QQ)(lambda element: QQ(element)))
     space = restriction(rational_lattice)
     rank = int(lattice.module_rank())
     domain = ZZ.free_module(rank)
@@ -415,16 +348,10 @@ def _rational_lattice_with_integral_structure(
 
 
 def _identity_rows(rank: int) -> tuple[tuple[int, ...], ...]:
-    return tuple(
-        tuple(1 if row == column else 0 for column in range(rank))
-        for row in range(rank)
-    )
+    return tuple(tuple(1 if row == column else 0 for column in range(rank)) for row in range(rank))
 
 
 def _rational_rows(
     matrix_value: Matrix_rational_dense,
 ) -> tuple[tuple[object, ...], ...]:
-    return tuple(
-        tuple(matrix_value[row, column] for column in range(matrix_value.ncols()))
-        for row in range(matrix_value.nrows())
-    )
+    return tuple(tuple(matrix_value[row, column] for column in range(matrix_value.ncols())) for row in range(matrix_value.nrows()))
