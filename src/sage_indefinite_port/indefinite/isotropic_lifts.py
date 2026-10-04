@@ -99,10 +99,7 @@ class CodimensionOneIsotropicExtension:
             raise ValueError("the source subspace must have codimension one")
         if len(tuple(target.module_generators())) + 1 != int(target_ambient.module_rank()):
             raise ValueError("the target subspace must have codimension one")
-        if (
-            partial.domain() is not source_inclusion.domain()
-            or partial.codomain() is not target_inclusion.domain()
-        ):
+        if partial.domain() is not source_inclusion.domain() or partial.codomain() is not target_inclusion.domain():
             raise ValueError("the partial isometry must map the source subspace to the target subspace")
 
         source_complement = next(generator for generator in source_ambient.module_generators() if generator not in source)
@@ -224,9 +221,7 @@ class IsometryExtensionTorsor:
         coefficients = matrix(QQ, (entry[1] for entry in rows)) if self._directions else matrix(QQ, len(rows), 0)
         annihilator = coefficients.left_kernel().basis_matrix()
         rhs = annihilator * constant
-        denominators = [QQ(entry).denominator() for entry in annihilator.list()] + [
-            QQ(entry).denominator() for entry in rhs.list()
-        ]
+        denominators = [QQ(entry).denominator() for entry in annihilator.list()] + [QQ(entry).denominator() for entry in rhs.list()]
         common_denominator = ZZ.one()
         for denominator in denominators:
             common_denominator = common_denominator.lcm(ZZ(denominator))
@@ -261,17 +256,11 @@ class IsometryExtensionTorsor:
         integral_point = right_change * smith_coordinates
         parameter_target = _vector(
             QQ,
-            (
-                QQ(integral_point[position]) - QQ(constant[position])
-                for position in range(len(rows))
-            ),
+            (QQ(integral_point[position]) - QQ(constant[position]) for position in range(len(rows))),
         )
         parameter_point = coefficients.solve_right(parameter_target)
         integral_image_lattice = coefficients.column_space().intersection(FreeModule(ZZ, len(rows)))
-        parameter_directions = tuple(
-            coefficients.solve_right(_vector(QQ, lattice_vector.list()))
-            for lattice_vector in integral_image_lattice.gens()
-        )
+        parameter_directions = tuple(coefficients.solve_right(_vector(QQ, lattice_vector.list())) for lattice_vector in integral_image_lattice.gens())
         parameter_ambient = FreeModule(QQ, len(self._directions))
         parameter_lattice = parameter_ambient.span(parameter_directions, ZZ)
         locus = IntegralParameterCoset(parameter_point, parameter_lattice)
@@ -446,9 +435,7 @@ class PointwisePerpendicularKernel:
         ambient_orthogonal_group = self._ambient.O()
         if target is not ambient_orthogonal_group:
             raise ValueError(f"the pointwise perpendicular kernel embeds in {ambient_orthogonal_group}, not in {target}")
-        embedding = Sets().Mor(self._parameter_lattice, target)(
-            lambda parameter: self._isometry(parameter, target)
-        )
+        embedding = Sets().Mor(self._parameter_lattice, target)(lambda parameter: self._isometry(parameter, target))
         if not isinstance(embedding, OwnedSetMorphism):
             raise ArithmeticError("the parameter embedding is not a represented set morphism")
         return embedding
@@ -492,11 +479,7 @@ def solve_isotropic_extension_equation(
         return matrix(QQ, rank, rank, {(row, column): QQ.one()})
 
     symmetric_generators = [matrix_unit((i, i)) for i in range(rank)]
-    symmetric_generators.extend(
-        matrix_unit((i, j)) + matrix_unit((j, i))
-        for i in range(rank)
-        for j in range(i + 1, rank)
-    )
+    symmetric_generators.extend(matrix_unit((i, j)) + matrix_unit((j, i)) for i in range(rank) for j in range(i + 1, rank))
     symmetric_matrices = matrices.submodule(symmetric_generators)
 
     def image_of_matrix_unit(index: object) -> IndexedFreeModuleElement:
@@ -505,9 +488,7 @@ def solve_isotropic_extension_equation(
                 unit = matrix_unit((row, column))
             case _:
                 raise TypeError(f"matrix-space basis index must be a pair of integers, got {index!r}")
-        image = symmetric_matrices.retract(
-            unit * A + A.transpose() * unit.transpose()
-        )
+        image = symmetric_matrices.retract(unit * A + A.transpose() * unit.transpose())
         if not isinstance(image, IndexedFreeModuleElement):
             raise ArithmeticError("the symmetric-matrix retraction did not return a basis element")
         return image
@@ -521,10 +502,7 @@ def solve_isotropic_extension_equation(
         raise ArithmeticError("the target matrix did not retract to the symmetric submodule")
     target_coordinates = _vector(
         QQ,
-        (
-            target.coefficient(label)
-            for label in symmetric_matrices.basis().keys()
-        ),
+        (target.coefficient(label) for label in symmetric_matrices.basis().keys()),
     )
     relation_matrix = phi.matrix()
     if not isinstance(relation_matrix, Matrix_rational_dense):
@@ -542,12 +520,7 @@ def solve_isotropic_extension_equation(
     )
     integral_coordinate_kernel = integral_relation_matrix.right_kernel()
     integral_matrices = MatrixSpace(ZZ, rank, rank)
-    homogeneous_lattice = integral_matrices.submodule(
-        tuple(
-            matrix(ZZ, rank, rank, coordinates.list())
-            for coordinates in integral_coordinate_kernel.gens()
-        )
-    )
+    homogeneous_lattice = integral_matrices.submodule(tuple(matrix(ZZ, rank, rank, coordinates.list()) for coordinates in integral_coordinate_kernel.gens()))
     homogeneous_space = phi.kernel()
     if not isinstance(homogeneous_space, SubmoduleWithBasis):
         raise ArithmeticError("the extension-equation kernel is not a submodule with basis")
