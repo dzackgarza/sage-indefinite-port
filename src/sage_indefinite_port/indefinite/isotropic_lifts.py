@@ -255,11 +255,13 @@ class IsometryExtensionTorsor:
         parameter_target = _vector(
             QQ,
             (
-                QQ(
+                (
                     QQ(integral_point[position]).numerator()
                     * QQ(constant[position]).denominator()
                     - QQ(constant[position]).numerator()
-                    * QQ(integral_point[position]).denominator(),
+                    * QQ(integral_point[position]).denominator()
+                )
+                / (
                     QQ(integral_point[position]).denominator()
                     * QQ(constant[position]).denominator()
                 )
