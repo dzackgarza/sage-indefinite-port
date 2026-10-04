@@ -27,12 +27,6 @@ def definite_isometry(
         raise ValueError("the definite leaf requires both lattices to be definite")
     witness = source.Isom(target).an_element()
     source_generators = tuple(source.module_generators())
-    if any(
-        source.b(left, right) != target.b(witness(left), witness(right))
-        for left in source_generators
-        for right in source_generators
-    ):
-        raise ArithmeticError(
-            "the preamble definite-isometry backend returned a map that does not preserve the form"
-        )
+    if any(source.b(left, right) != target.b(witness(left), witness(right)) for left in source_generators for right in source_generators):
+        raise ArithmeticError("the preamble definite-isometry backend returned a map that does not preserve the form")
     return witness
