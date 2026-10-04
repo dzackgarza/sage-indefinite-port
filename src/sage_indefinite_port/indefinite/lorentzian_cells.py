@@ -7,7 +7,7 @@ from functools import cached_property
 from math import gcd
 from typing import Literal, TypedDict
 
-from dzack_research.preamble.all import Lattices, ZZ
+from dzack_research.preamble.all import ZZ, Lattices
 from dzack_research.preamble.categories.lattice_engines import _rational_positive_vector
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.rings.ring_foundation import _engine_element
@@ -29,8 +29,6 @@ from sage_indefinite_port.backends.canonization import (
 )
 from sage_indefinite_port.backends.polyhedral import (
     FacetIncidence,
-)
-from sage_indefinite_port.backends.polyhedral import (
     _configuration_permutation,
 )
 from sage_indefinite_port.backends.polyhedral import (
@@ -372,6 +370,150 @@ def perfect_domain_traversal(
     r"""Return complete native perfect-domain traversal records for the Gram rows."""
     lattice = Lattices(ZZ)(gram_rows)
     return LorentzianPerfectComplex(lattice, option).records()
+
+
+class NoLocalMarkTheoremError(RuntimeError):
+    """The local perfect-cell mark theorem is unavailable for this norm."""
+
+
+class MarkedCellOrbitAlgorithm:
+    """Global isotropic-vertex orbits from local cell-stabilizer orbits."""
+
+    def __init__(self, complex_: LorentzianPerfectComplex, norm=0) -> None:
+        if norm != 0:
+            raise NoLocalMarkTheoremError(
+                "the Lorentzian marked-cell source proves finite local marks only for norm zero"
+            )
+        self._complex = complex_
+
+    def complex(self) -> LorentzianPerfectComplex:
+        return self._complex
+
+    def local_marks(
+        self, cell: LorentzianPerfectCell
+    ) -> tuple[Lattices.ElementMethods, ...]:
+        zero = cell.lattice.base_ring().zero()
+        return tuple(
+            vector for vector in cell.vector_configuration if vector.q() == zero
+        )
+
+    def local_stabilizer_orbits(
+        self, cell: LorentzianPerfectCell
+    ) -> tuple[tuple[Lattices.ElementMethods, ...], ...]:
+        marks = self.local_marks(cell)
+        stabilizer = self.complex().local_backend().cell_stabilizer(cell)
+        generators = stabilizer.generators_and_inverses()
+        unseen = set(range(len(marks)))
+        orbits: list[tuple[Lattices.ElementMethods, ...]] = []
+        while unseen:
+            start = min(unseen)
+            pending = [start]
+            orbit_positions: set[int] = set()
+            while pending:
+                position = pending.pop()
+                if position in orbit_positions:
+                    continue
+                orbit_positions.add(position)
+                unseen.discard(position)
+                mark = marks[position]
+                for generator in generators:
+                    moved = generator(mark)
+                    matches = [
+                        index
+                        for index, candidate in enumerate(marks)
+                        if candidate == moved
+                    ]
+                    if len(matches) != 1:
+                        raise ArithmeticError(
+                            "a cell stabilizer does not permute the isotropic local marks"
+                        )
+                    if matches[0] not in orbit_positions:
+                        pending.append(matches[0])
+            orbits.append(tuple(marks[index] for index in sorted(orbit_positions)))
+        return tuple(orbits)
+
+    def transport_marks(
+        self, adjacency: LorentzianCellAdjacency
+    ) -> tuple[tuple[Lattices.ElementMethods, Lattices.ElementMethods], ...]:
+        transporter = adjacency.transporter
+        if transporter is None:
+            raise ArithmeticError("a marked quotient adjacency needs a transporter")
+        inverse = ~transporter
+        target_marks = self.local_marks(adjacency.target)
+        transported = []
+        for position in sorted(adjacency.facet):
+            source_mark = adjacency.source.vector_configuration[position]
+            if source_mark.q() != source_mark.parent().base_ring().zero():
+                continue
+            target_mark = inverse(source_mark)
+            matches = [
+                candidate for candidate in target_marks if candidate == target_mark
+            ]
+            if len(matches) != 1:
+                raise ArithmeticError(
+                    "an isotropic facet mark does not transport to a unique mark of the target representative"
+                )
+            transported.append((source_mark, matches[0]))
+        return tuple(transported)
+
+    def global_orbits(self) -> tuple[tuple[Lattices.ElementMethods, ...], ...]:
+        cells = self.complex().quotient_cells()
+        local = tuple(self.local_stabilizer_orbits(cell) for cell in cells)
+        nodes = [
+            (cell_position, orbit_position)
+            for cell_position, cell_orbits in enumerate(local)
+            for orbit_position in range(len(cell_orbits))
+        ]
+        graph = {node: set() for node in nodes}
+
+        def local_orbit_position(cell_position, mark):
+            matches = [
+                orbit_position
+                for orbit_position, orbit in enumerate(local[cell_position])
+                if any(candidate == mark for candidate in orbit)
+            ]
+            if len(matches) != 1:
+                raise ArithmeticError(
+                    "a transported isotropic mark does not belong to a unique local stabilizer orbit"
+                )
+            return matches[0]
+
+        positions = {id(cell): position for position, cell in enumerate(cells)}
+        for adjacency in self.complex().adjacencies():
+            source_position = positions[id(adjacency.source)]
+            target_position = positions[id(adjacency.target)]
+            for source_mark, target_mark in self.transport_marks(adjacency):
+                source_node = (
+                    source_position,
+                    local_orbit_position(source_position, source_mark),
+                )
+                target_node = (
+                    target_position,
+                    local_orbit_position(target_position, target_mark),
+                )
+                graph[source_node].add(target_node)
+                graph[target_node].add(source_node)
+
+        unseen = set(nodes)
+        global_orbits: list[tuple[Lattices.ElementMethods, ...]] = []
+        while unseen:
+            start = min(unseen)
+            pending = [start]
+            component = []
+            while pending:
+                node = pending.pop()
+                if node not in unseen:
+                    continue
+                unseen.remove(node)
+                component.append(node)
+                pending.extend(graph[node])
+            marks: list[Lattices.ElementMethods] = []
+            for cell_position, orbit_position in sorted(component):
+                for mark in local[cell_position][orbit_position]:
+                    if not any(existing == mark for existing in marks):
+                        marks.append(mark)
+            global_orbits.append(tuple(marks))
+        return tuple(global_orbits)
 
 
 def _coordinate_row(lattice, element, ring):

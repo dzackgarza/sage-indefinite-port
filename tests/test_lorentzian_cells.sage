@@ -20,6 +20,8 @@ from sage_indefinite_port.backends.polyhedral import (
 from sage_indefinite_port.indefinite.lorentzian_cells import (
     LorentzianPerfectComplex,
     LorentzianPerfectLocalBackend,
+    MarkedCellOrbitAlgorithm,
+    NoLocalMarkTheoremError,
     perfect_domain_traversal,
 )
 from tests.fixtures.oracle_fixtures import (
@@ -219,3 +221,22 @@ def test_rank_three_quotient_traversal_and_groups_match_frozen_counts() -> None:
     assert len(records) == case["total_count"]
     assert all(record["x"]["EXT"] for record in records)
     assert all(record["ListAdj"] for record in records)
+
+
+def test_rank_three_marked_isotropic_orbits_follow_cell_adjacencies() -> None:
+    case = next(
+        case
+        for case in load_lorentzian_perfect_domains()
+        if case["id"] == "lor_perf_dim3_case01"
+    )
+    lattice = Lattices(OwnedZZ)(case["gram"])
+    complex_ = LorentzianPerfectComplex(lattice, "total")
+    algorithm = MarkedCellOrbitAlgorithm(complex_)
+
+    orbits = algorithm.global_orbits()
+
+    assert len(orbits) == 1
+    assert orbits[0]
+    assert all(vector.q() == 0 for vector in orbits[0])
+    with pytest.raises(NoLocalMarkTheoremError):
+        MarkedCellOrbitAlgorithm(complex_, norm=2)
