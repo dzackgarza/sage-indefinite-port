@@ -20,6 +20,7 @@ FIXTURES_DIR = Path(__file__).parent
 
 type Vector = list[int]
 type Gram = list[list[int]]
+type PermutationImages = tuple[int, ...]
 
 
 class Provenance(TypedDict, total=False):

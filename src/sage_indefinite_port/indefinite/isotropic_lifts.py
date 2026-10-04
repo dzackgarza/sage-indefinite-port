@@ -256,15 +256,10 @@ class IsometryExtensionTorsor:
             QQ,
             (
                 (
-                    QQ(integral_point[position]).numerator()
-                    * QQ(constant[position]).denominator()
-                    - QQ(constant[position]).numerator()
-                    * QQ(integral_point[position]).denominator()
+                    QQ(integral_point[position]).numerator() * QQ(constant[position]).denominator()
+                    - QQ(constant[position]).numerator() * QQ(integral_point[position]).denominator()
                 )
-                / (
-                    QQ(integral_point[position]).denominator()
-                    * QQ(constant[position]).denominator()
-                )
+                / (QQ(integral_point[position]).denominator() * QQ(constant[position]).denominator())
                 for position in range(len(rows))
             ),
         )
@@ -367,10 +362,7 @@ class PointwisePerpendicularKernel:
         integral_kernel = equation.homogeneous_lattice
         if integral_kernel is None:
             raise ArithmeticError("the homogeneous extension equation did not return its integral solution lattice")
-        directions = tuple(
-            matrix(ZZ, rank, rank, basis_vector.list())
-            for basis_vector in integral_kernel.gens()
-        )
+        directions = tuple(matrix(ZZ, rank, rank, basis_vector.list()) for basis_vector in integral_kernel.gens())
 
         self._ambient = ambient
         self._embedding = embedding
@@ -488,23 +480,9 @@ def solve_isotropic_extension_equation(
     matrices = MatrixSpace(QQ, rank, rank)
     A_matrix: Matrix2 = matrices.matrix(A)
     B_matrix: Matrix2 = matrices.matrix(B)
-    A_transpose: Matrix2 = matrices.matrix(
-        tuple(
-            A_matrix[column, row]
-            for row in range(rank)
-            for column in range(rank)
-        )
-    )
-    source_positions = tuple(
-        (row, column)
-        for row in range(rank)
-        for column in range(rank)
-    )
-    symmetric_positions = tuple((i, i) for i in range(rank)) + tuple(
-        (i, j)
-        for i in range(rank)
-        for j in range(i + 1, rank)
-    )
+    A_transpose: Matrix2 = matrices.matrix(tuple(A_matrix[column, row] for row in range(rank) for column in range(rank)))
+    source_positions = tuple((row, column) for row in range(rank) for column in range(rank))
+    symmetric_positions = tuple((i, i) for i in range(rank)) + tuple((i, j) for i in range(rank) for j in range(i + 1, rank))
 
     def matrix_unit(index: tuple[int, int]) -> Matrix2:
         row, column = index
@@ -515,26 +493,16 @@ def solve_isotropic_extension_equation(
     image_columns = tuple(
         _vector(
             QQ,
-            (
-                QQ(image[row, column])
-                for row, column in symmetric_positions
-            ),
+            (QQ(image[row, column]) for row, column in symmetric_positions),
         )
         for index in source_positions
-        for image in (
-            matrix_unit(index) * A_matrix
-            + A_transpose * matrix_unit((index[1], index[0])),
-        )
+        for image in (matrix_unit(index) * A_matrix + A_transpose * matrix_unit((index[1], index[0])),)
     )
     relation_matrix = matrix(
         QQ,
         len(symmetric_positions),
         len(source_positions),
-        tuple(
-            QQ(image_columns[column][row])
-            for row in range(len(symmetric_positions))
-            for column in range(len(source_positions))
-        ),
+        tuple(QQ(image_columns[column][row]) for row in range(len(symmetric_positions)) for column in range(len(source_positions))),
     )
     if not isinstance(relation_matrix, Matrix_rational_dense):
         raise ArithmeticError("the extension-equation relation matrix is not rational dense")

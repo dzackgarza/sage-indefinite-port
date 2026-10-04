@@ -7,7 +7,7 @@ owner.
 
 import pytest
 
-from dzack_research.preamble.all import *
+from dzack_research.preamble.all import FormModules, Lattices, NotPrimitiveError, ZZ
 
 
 def test_primitive_isotropic_line_of_U_plus_E8_reduces_to_E8() -> None:

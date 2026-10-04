@@ -1,20 +1,34 @@
 """Integral-structure actions for rational isometry groups."""
 
+from collections.abc import Callable
+
 import pytest
 
-from dzack_research.preamble.all import Lattices, Modules, QQ, ZZ
+from dzack_research.preamble.all import Lattices, Modules, QQ, RestrictedScalarsModules, ZZ
+from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
+from dzack_research.preamble.categories.modules.module_morphisms.module_morphisms import (
+    ModuleEmbeddingMethods,
+)
 from sage.graphs.graph import Graph
+from sage.groups.perm_gps.permgroup import PermutationGroup_generic
+from sage.groups.perm_gps.permgroup_element import PermutationGroupElement
+from sage.libs.gap.element import GapElement, GapElement_Permutation
 from sage.libs.gap.libgap import libgap
 from sage.matrix.constructor import matrix
+from sage.matrix.matrix_rational_dense import Matrix_rational_dense
+from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ as SageQQ
 
 from sage_indefinite_port.groups.integral_structures import (
     ArithmeticSubgroup,
+    DoubleCosetDecomposition,
     IntegralStructureAction,
     RationalMatrixGroup,
 )
 from tests.fixtures.oracle_fixtures import (
     DoubleCosetCase,
+    PermutationImages,
+    PermutationGroupData,
     RootSystemCase,
     load_classification_simplices,
     load_double_coset_cases,
@@ -22,7 +36,13 @@ from tests.fixtures.oracle_fixtures import (
 )
 
 
-def _standard_hyperbolic_lattice():
+def _standard_hyperbolic_lattice() -> tuple[
+    Lattices.ParentMethods,
+    RestrictedScalarsModules.ParentMethods,
+    ModuleEmbeddingMethods,
+    Lattices.ElementMethods,
+    Lattices.ElementMethods,
+]:
     plane = Lattices(QQ)("U")
     restriction = Modules(QQ).restriction_of_scalars(
         ZZ.Mor(QQ)(lambda element: QQ(element))
@@ -36,7 +56,9 @@ def _standard_hyperbolic_lattice():
     return plane, space, standard, e, f
 
 
-def _fixture_gap_group(data):
+def _fixture_gap_group(
+    data: PermutationGroupData,
+) -> tuple[GapElement, tuple[GapElement_Permutation, ...]]:
     generators = tuple(
         libgap.PermList([image + 1 for image in permutation])
         for permutation in data["generators"]
@@ -44,14 +66,20 @@ def _fixture_gap_group(data):
     return libgap.Group(list(generators)), generators
 
 
-def _permutation_images(permutation, degree: int) -> tuple[int, ...]:
+def _permutation_images(
+    permutation: GapElement,
+    degree: int,
+) -> PermutationImages:
     return tuple(
         int(image) - 1
         for image in libgap.ListPerm(permutation, degree).sage()
     )
 
 
-def _basis_permutation(action, automorphism):
+def _basis_permutation(
+    action: IntegralStructureAction,
+    automorphism: LatticeIsometryMethods,
+) -> GapElement_Permutation:
     transformation = action._ambient_action_matrix(automorphism)
     images = []
     for column in range(transformation.ncols()):
@@ -69,7 +97,15 @@ def _basis_permutation(action, automorphism):
     return libgap.PermList(images)
 
 
-def _double_coset_fixture_action(case: DoubleCosetCase):
+def _double_coset_fixture_action(
+    case: DoubleCosetCase,
+) -> tuple[
+    IntegralStructureAction,
+    GapElement,
+    GapElement,
+    GapElement,
+    Callable[[GapElement], LatticeIsometryMethods],
+]:
     big, _big_generators = _fixture_gap_group(case["group_h"])
     small, _small_generators = _fixture_gap_group(case["group_g"])
     assert int(big.Size()) == case["big_group_order"]
@@ -87,9 +123,9 @@ def _double_coset_fixture_action(case: DoubleCosetCase):
     labels = tuple(rational_lattice.module_generating_set())
     basis = tuple(rational_lattice.module_generator(label) for label in labels)
     automorphisms = rational_lattice.Aut()
-    live_isometries = {}
+    live_isometries: dict[PermutationImages, LatticeIsometryMethods] = {}
 
-    def live_isometry(permutation):
+    def live_isometry(permutation: GapElement) -> LatticeIsometryMethods:
         coset_images = _permutation_images(permutation, index)
         match coset_images in live_isometries:
             case True:
@@ -140,7 +176,9 @@ def _double_coset_fixture_action(case: DoubleCosetCase):
     )
 
 
-def _configuration_group(rows):
+def _configuration_group(
+    rows: list[list[int]],
+) -> tuple[Matrix_rational_dense, Matrix_rational_dense, PermutationGroup_generic]:
     configuration = matrix(SageQQ, rows)
     gram = configuration.transpose() * configuration
     projector = configuration * gram.inverse() * configuration.transpose()
@@ -150,7 +188,7 @@ def _configuration_group(rows):
     for left in points:
         for right in range(left + 1, configuration.nrows()):
             graph.add_edge(left, right, projector[left, right])
-    diagonal_parts = {}
+    diagonal_parts: dict[Rational, list[int]] = {}
     for point in points:
         diagonal_parts.setdefault(projector[point, point], []).append(point)
     group = graph.automorphism_group(
@@ -161,7 +199,11 @@ def _configuration_group(rows):
     return configuration, gram, group
 
 
-def _configuration_matrix(configuration, gram_inverse, permutation):
+def _configuration_matrix(
+    configuration: Matrix_rational_dense,
+    gram_inverse: Matrix_rational_dense,
+    permutation: PermutationGroupElement,
+) -> Matrix_rational_dense:
     target = matrix(
         SageQQ,
         [configuration.row(permutation(point)) for point in range(configuration.nrows())],
@@ -169,7 +211,15 @@ def _configuration_matrix(configuration, gram_inverse, permutation):
     return target.transpose() * configuration * gram_inverse
 
 
-def _configuration_action(rows):
+def _configuration_action(
+    rows: list[list[int]],
+) -> tuple[
+    IntegralStructureAction,
+    Matrix_rational_dense,
+    Matrix_rational_dense,
+    PermutationGroup_generic,
+    Callable[[PermutationGroupElement], LatticeIsometryMethods],
+]:
     configuration, gram, permutation_group = _configuration_group(rows)
     rational_gram = gram.inverse()
     rank = configuration.ncols()
@@ -185,7 +235,9 @@ def _configuration_action(rows):
     )
     labels = tuple(rational_lattice.module_generating_set())
 
-    def live_isometry(permutation):
+    def live_isometry(
+        permutation: PermutationGroupElement,
+    ) -> LatticeIsometryMethods:
         transformation = _configuration_matrix(configuration, rational_gram, permutation)
         assert transformation.transpose() * rational_gram * transformation == rational_gram
         return rational_lattice.Aut()._isometry_from_column_matrix(transformation)
@@ -216,7 +268,11 @@ def _configuration_action(rows):
     )
 
 
-def _configuration_permutation(action, automorphism, configuration):
+def _configuration_permutation(
+    action: IntegralStructureAction,
+    automorphism: LatticeIsometryMethods,
+    configuration: Matrix_rational_dense,
+) -> GapElement_Permutation:
     transformation = action._ambient_action_matrix(automorphism)
     moved = configuration * transformation.transpose()
     images = []
@@ -231,7 +287,11 @@ def _configuration_permutation(action, automorphism, configuration):
     return libgap.PermList(images)
 
 
-def _integral_configuration_subgroup(configuration, gram_inverse, permutation_group):
+def _integral_configuration_subgroup(
+    configuration: Matrix_rational_dense,
+    gram_inverse: Matrix_rational_dense,
+    permutation_group: PermutationGroup_generic,
+) -> GapElement:
     integral_permutations = []
     for permutation in permutation_group:
         transformation = _configuration_matrix(configuration, gram_inverse, permutation)
@@ -247,7 +307,9 @@ def _integral_configuration_subgroup(configuration, gram_inverse, permutation_gr
     return libgap.Group(integral_permutations)
 
 
-def _assert_configuration_stabilizer(rows) -> tuple:
+def _assert_configuration_stabilizer(
+    rows: list[list[int]],
+) -> tuple[IntegralStructureAction, Matrix_rational_dense, GapElement, int]:
     action, configuration, gram_inverse, permutation_group, _live_isometry = _configuration_action(rows)
     expected = _integral_configuration_subgroup(
         configuration,
@@ -272,14 +334,14 @@ def _assert_configuration_stabilizer(rows) -> tuple:
 
 
 def _assert_configuration_double_cosets(
-    action,
-    configuration,
-    expected,
+    action: IntegralStructureAction,
+    configuration: Matrix_rational_dense,
+    expected: GapElement,
     rational_order: int,
 ) -> None:
     decomposition = action.double_cosets(action.lattice_stabilizer())
-    source_representatives = []
-    source_double_coset_sizes = []
+    source_representatives: list[GapElement_Permutation] = []
+    source_double_coset_sizes: list[int] = []
     for representative in decomposition.representatives():
         source = _configuration_permutation(action, representative, configuration)
         source_double_coset = libgap.DoubleCoset(expected, source, expected)
@@ -446,7 +508,10 @@ def test_upstream_double_coset_cases_run_through_integral_structure_action(
     for generator in libgap.SmallGeneratingSet(small_image):
         assert action.preserves_selected_lattice(live_isometry(generator))
 
-    decompositions = {}
+    decompositions: dict[
+        frozenset[PermutationImages],
+        tuple[ArithmeticSubgroup, DoubleCosetDecomposition, int],
+    ] = {}
     for vector in case["vectors"]:
         face = [position + 1 for position, entry in enumerate(vector) if entry]
         left_gap = libgap.Stabilizer(big, face, libgap.OnSets)
@@ -523,7 +588,11 @@ def test_upstream_double_coset_cases_run_through_integral_structure_action(
 _CLASSIFIED_SIMPLEX_FIXTURE = load_classification_simplices()
 _CLASSIFIED_SIMPLEX_CASES = [
     (f"{family}_{position}", simplex)
-    for family, data in _CLASSIFIED_SIMPLEX_FIXTURE.items()
+    for family, data in (
+        ("dim5", _CLASSIFIED_SIMPLEX_FIXTURE["dim5"]),
+        ("dim6", _CLASSIFIED_SIMPLEX_FIXTURE["dim6"]),
+        ("dim7", _CLASSIFIED_SIMPLEX_FIXTURE["dim7"]),
+    )
     for position, simplex in enumerate(data["simplices"])
 ]
 
@@ -535,7 +604,7 @@ _CLASSIFIED_SIMPLEX_CASES = [
 )
 def test_rat_int_automorphy_classified_simplices_run_through_public_action(
     _case_id: str,
-    rows,
+    rows: list[list[int]],
 ) -> None:
     """Run every classified-simplex example used by ``01_RatIntAutomorphy``."""
     action, configuration, expected, rational_order = _assert_configuration_stabilizer(rows)

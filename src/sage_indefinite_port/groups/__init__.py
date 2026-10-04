@@ -6,10 +6,10 @@ from sage_indefinite_port.groups.integral_structures import (
     DoubleCosetIntersection,
     FiniteIntegralRepresentation,
     IntegralStructureAction,
-    integral_structure_action,
-    integral_structure_action_for_group,
     RationalMatrixGroup,
     RightCosetDecomposition,
+    integral_structure_action,
+    integral_structure_action_for_group,
 )
 
 __all__ = [
