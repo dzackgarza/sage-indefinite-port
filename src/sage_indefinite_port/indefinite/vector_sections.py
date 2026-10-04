@@ -10,9 +10,6 @@ from dzack_research.preamble.categories.lattice_morphisms import (
     LatticeIsometryMethods,
 )
 from dzack_research.preamble.categories.lattices import IsotropicReductions, Lattices
-from dzack_research.preamble.categories.modules.framed.framed_free_modules import (
-    FramedFreeModules,
-)
 
 from sage_indefinite_port.indefinite.isotropic_lifts import (
     CodimensionOneIsotropicExtension,
@@ -24,7 +21,7 @@ from sage_indefinite_port.indefinite.isotropic_lifts import (
 class NonIsotropicVectorSection:
     r"""Orthogonal section of a nonisotropic vector."""
 
-    vector: FramedFreeModules.ElementMethods
+    vector: Lattices.ElementMethods
     perpendicular: Lattices.ParentMethods
     inclusion: LatticeEmbeddingMethods
     reduction: Lattices.ParentMethods
@@ -74,14 +71,14 @@ class NonIsotropicVectorSection:
         target_rational = target_ambient.base_change(fraction_map)
 
         def extend_source(
-            vector: FramedFreeModules.ElementMethods,
-        ) -> FramedFreeModules.ElementMethods:
+            vector: Lattices.ElementMethods,
+        ) -> Lattices.ElementMethods:
             coordinates = vector.to_vector()
             return source_rational.linear_combination({label: fraction_map(coordinates(label)) for label in source_ambient.module_generating_set() if coordinates(label)})
 
         def extend_target(
-            vector: FramedFreeModules.ElementMethods,
-        ) -> FramedFreeModules.ElementMethods:
+            vector: Lattices.ElementMethods,
+        ) -> Lattices.ElementMethods:
             coordinates = vector.to_vector()
             return target_rational.linear_combination({label: fraction_map(coordinates(label)) for label in target_ambient.module_generating_set() if coordinates(label)})
 
@@ -92,7 +89,7 @@ class NonIsotropicVectorSection:
         target_vector = extend_target(target_section.vector)
         source_norm = source_rational.q(source_vector)
 
-        def image(label: Hashable) -> FramedFreeModules.ElementMethods:
+        def image(label: Hashable) -> Lattices.ElementMethods:
             source_generator = source_rational.module_generator(label)
             vector_coefficient = source_rational.b(source_generator, source_vector) / source_norm
             perpendicular_part = source_generator - source_rational.scalar_multiple(
@@ -113,7 +110,7 @@ class NonIsotropicVectorSection:
 class IsotropicVectorSection:
     r"""Orthogonal section of a primitive isotropic vector."""
 
-    vector: FramedFreeModules.ElementMethods
+    vector: Lattices.ElementMethods
     perpendicular: Lattices.ParentMethods
     inclusion: LatticeEmbeddingMethods
     reduction: IsotropicReductions.ParentMethods
@@ -166,8 +163,8 @@ class IsotropicVectorSection:
 
         def reduction_lift(
             reduction: IsotropicReductions.ParentMethods,
-            element: FramedFreeModules.ElementMethods,
-        ) -> FramedFreeModules.ElementMethods:
+            element: Lattices.ElementMethods,
+        ) -> Lattices.ElementMethods:
             perpendicular = reduction.orthogonal_complement()
             coordinates = element.to_vector()
             lifts = reduction.coordinate_frame()
@@ -176,7 +173,7 @@ class IsotropicVectorSection:
                 perpendicular.zero(),
             )
 
-        def partial_image(label: Hashable) -> FramedFreeModules.ElementMethods:
+        def partial_image(label: Hashable) -> Lattices.ElementMethods:
             source_element = self.perpendicular.module_generator(label)
             quotient_element = source_projection(source_element)
             chosen_lift = reduction_lift(source_reduction, quotient_element)
@@ -202,14 +199,14 @@ class IsotropicVectorSection:
         target_rational = target_ambient.base_change(fraction_map)
 
         def extend_source(
-            vector: FramedFreeModules.ElementMethods,
-        ) -> FramedFreeModules.ElementMethods:
+            vector: Lattices.ElementMethods,
+        ) -> Lattices.ElementMethods:
             coordinates = vector.to_vector()
             return source_rational.linear_combination({label: fraction_map(coordinates(label)) for label in source_ambient.module_generating_set() if coordinates(label)})
 
         def extend_target(
-            vector: FramedFreeModules.ElementMethods,
-        ) -> FramedFreeModules.ElementMethods:
+            vector: Lattices.ElementMethods,
+        ) -> Lattices.ElementMethods:
             coordinates = vector.to_vector()
             return target_rational.linear_combination({label: fraction_map(coordinates(label)) for label in target_ambient.module_generating_set() if coordinates(label)})
 
@@ -242,7 +239,7 @@ type VectorOrthogonalSection = NonIsotropicVectorSection | IsotropicVectorSectio
 
 
 def orthogonal_section(
-    vector: FramedFreeModules.ElementMethods,
+    vector: Lattices.ElementMethods,
 ) -> VectorOrthogonalSection:
     r"""Return the orthogonal section of a nonzero vector."""
     match vector.is_isotropic():
@@ -263,3 +260,5 @@ def orthogonal_section(
                 inclusion=perpendicular.inclusion(),
                 reduction=reduction,
             )
+        case _:
+            raise TypeError("is_isotropic() must return a Boolean value")

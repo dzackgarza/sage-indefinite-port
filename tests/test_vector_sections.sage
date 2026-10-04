@@ -39,6 +39,7 @@ def test_nonisotropic_section_in_U2_has_a_nonempty_integral_locus() -> None:
     plane = Lattices(OwnedZZ)("U").twist(two)
     e, f = plane.module_generators()
     section = orthogonal_section(e + f)
+    assert isinstance(section, NonIsotropicVectorSection)
     (perpendicular_generator,) = section.perpendicular.module_generators()
     reduced_minus_identity = section.perpendicular.O()((-perpendicular_generator,))
 
@@ -62,6 +63,7 @@ def test_isotropic_section_lifts_the_reduction_identity() -> None:
     lattice = Lattices(OwnedZZ)("U") + Lattices(OwnedZZ)("A1")
     e, _f, _a = lattice.module_generators()
     section = orthogonal_section(e)
+    assert isinstance(section, IsotropicVectorSection)
     (reduced_generator,) = section.reduction.module_generators()
     reduced_identity = section.reduction.O()((reduced_generator,))
     torsor = section.rational_lift(reduced_identity, target=section)
