@@ -11,6 +11,7 @@ from sage_indefinite_port.indefinite.isotropic_lifts import (
     pointwise_perpendicular_kernel,
     solve_isotropic_extension_equation,
 )
+from sage_indefinite_port.indefinite.isotropic_reductions import FlagType
 from sage_indefinite_port.indefinite.vector_sections import (
     IsotropicVectorSection,
     NonIsotropicVectorSection,
@@ -20,6 +21,7 @@ from sage_indefinite_port.indefinite.vector_sections import (
 
 __all__ = [
     "CodimensionOneIsotropicExtension",
+    "FlagType",
     "CodimensionOneIsotropicExtensionResult",
     "IntegralParameterCoset",
     "IsometryExtensionTorsor",
