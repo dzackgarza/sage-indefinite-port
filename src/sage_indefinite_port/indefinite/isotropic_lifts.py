@@ -23,14 +23,12 @@ from dzack_research.preamble.categories.rings.ring_foundation import (
 from dzack_research.preamble.categories.sets.set_categories import OwnedSetMorphism, Sets
 from sage.all import vector as _sage_vector
 from sage.matrix.constructor import matrix
+from sage.matrix.matrix2 import Matrix as Matrix2
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
 from sage.matrix.matrix_space import MatrixSpace
 from sage.modules.free_module import FreeModule, FreeModule_generic
 from sage.modules.free_module_element import FreeModuleElement
-from sage.modules.module import Module
-from sage.modules.with_basis.indexed_element import IndexedFreeModuleElement
-from sage.modules.with_basis.subquotient import SubmoduleWithBasis
 from sage.rings.integer import Integer
 from sage.rings.integer_ring import ZZ
 from sage.rings.rational_field import QQ
@@ -54,8 +52,8 @@ class MatrixEquationSolution:
     r"""Affine solutions of \(XA+A^T X^T=B\) over \(\mathbf Q\)."""
 
     particular: Matrix_rational_dense
-    homogeneous_space: SubmoduleWithBasis
-    homogeneous_lattice: SubmoduleWithBasis
+    homogeneous_space: FreeModule_generic
+    homogeneous_lattice: FreeModule_generic
 
 
 @dataclass(frozen=True)
@@ -222,7 +220,7 @@ class IsometryExtensionTorsor:
         annihilator = coefficients.left_kernel().basis_matrix()
         rhs = annihilator * constant
         denominators = [QQ(entry).denominator() for entry in annihilator.list()] + [QQ(entry).denominator() for entry in rhs.list()]
-        common_denominator = ZZ.one()
+        common_denominator: Integer = ZZ(1)
         for denominator in denominators:
             common_denominator = common_denominator.lcm(ZZ(denominator))
         equations = matrix(
@@ -256,7 +254,17 @@ class IsometryExtensionTorsor:
         integral_point = right_change * smith_coordinates
         parameter_target = _vector(
             QQ,
-            (QQ(integral_point[position]) - QQ(constant[position]) for position in range(len(rows))),
+            (
+                QQ(
+                    QQ(integral_point[position]).numerator()
+                    * QQ(constant[position]).denominator()
+                    - QQ(constant[position]).numerator()
+                    * QQ(integral_point[position]).denominator(),
+                    QQ(integral_point[position]).denominator()
+                    * QQ(constant[position]).denominator()
+                )
+                for position in range(len(rows))
+            ),
         )
         parameter_point = coefficients.solve_right(parameter_target)
         integral_image_lattice = coefficients.column_space().intersection(FreeModule(ZZ, len(rows)))
@@ -357,7 +365,10 @@ class PointwisePerpendicularKernel:
         integral_kernel = equation.homogeneous_lattice
         if integral_kernel is None:
             raise ArithmeticError("the homogeneous extension equation did not return its integral solution lattice")
-        directions = tuple(integral_kernel.lift(basis_vector) for basis_vector in integral_kernel.basis())
+        directions = tuple(
+            matrix(ZZ, rank, rank, basis_vector.list())
+            for basis_vector in integral_kernel.gens()
+        )
 
         self._ambient = ambient
         self._embedding = embedding
@@ -473,43 +484,68 @@ def solve_isotropic_extension_equation(
         raise ValueError("B must be symmetric")
 
     matrices = MatrixSpace(QQ, rank, rank)
-
-    def matrix_unit(index: tuple[int, int]) -> Matrix_rational_dense:
-        row, column = index
-        return matrix(QQ, rank, rank, {(row, column): QQ.one()})
-
-    symmetric_generators = [matrix_unit((i, i)) for i in range(rank)]
-    symmetric_generators.extend(matrix_unit((i, j)) + matrix_unit((j, i)) for i in range(rank) for j in range(i + 1, rank))
-    symmetric_matrices = matrices.submodule(symmetric_generators)
-
-    def image_of_matrix_unit(index: object) -> IndexedFreeModuleElement:
-        match index:
-            case (int() as row, int() as column):
-                unit = matrix_unit((row, column))
-            case _:
-                raise TypeError(f"matrix-space basis index must be a pair of integers, got {index!r}")
-        image = symmetric_matrices.retract(unit * A + A.transpose() * unit.transpose())
-        if not isinstance(image, IndexedFreeModuleElement):
-            raise ArithmeticError("the symmetric-matrix retraction did not return a basis element")
-        return image
-
-    phi = matrices.module_morphism(
-        on_basis=image_of_matrix_unit,
-        codomain=symmetric_matrices,
+    A_matrix: Matrix2 = matrices.matrix(A)
+    B_matrix: Matrix2 = matrices.matrix(B)
+    A_transpose: Matrix2 = matrices.matrix(
+        tuple(
+            A_matrix[column, row]
+            for row in range(rank)
+            for column in range(rank)
+        )
     )
-    target = symmetric_matrices.retract(B)
-    if not isinstance(target, IndexedFreeModuleElement):
-        raise ArithmeticError("the target matrix did not retract to the symmetric submodule")
+    source_positions = tuple(
+        (row, column)
+        for row in range(rank)
+        for column in range(rank)
+    )
+    symmetric_positions = tuple((i, i) for i in range(rank)) + tuple(
+        (i, j)
+        for i in range(rank)
+        for j in range(i + 1, rank)
+    )
+
+    def matrix_unit(index: tuple[int, int]) -> Matrix2:
+        row, column = index
+        entries = [QQ.zero()] * (rank * rank)
+        entries[row * rank + column] = QQ.one()
+        return matrices.matrix(entries)
+
+    image_columns = tuple(
+        _vector(
+            QQ,
+            (
+                QQ(image[row, column])
+                for row, column in symmetric_positions
+            ),
+        )
+        for index in source_positions
+        for image in (
+            matrix_unit(index) * A_matrix
+            + A_transpose * matrix_unit((index[1], index[0])),
+        )
+    )
+    relation_matrix = matrix(
+        QQ,
+        len(symmetric_positions),
+        len(source_positions),
+        tuple(
+            QQ(image_columns[column][row])
+            for row in range(len(symmetric_positions))
+            for column in range(len(source_positions))
+        ),
+    )
+    if not isinstance(relation_matrix, Matrix_rational_dense):
+        raise ArithmeticError("the extension-equation relation matrix is not rational dense")
     target_coordinates = _vector(
         QQ,
-        (target.coefficient(label) for label in symmetric_matrices.basis().keys()),
+        (QQ(B_matrix[row, column]) for row, column in symmetric_positions),
     )
-    relation_matrix = phi.matrix()
-    if not isinstance(relation_matrix, Matrix_rational_dense):
-        raise ArithmeticError("the extension-equation morphism did not return a rational matrix")
     particular_coordinates = relation_matrix.solve_right(target_coordinates)
     particular = matrix(QQ, rank, rank, particular_coordinates.list())
-    common_denominator = ZZ.one()
+    if not isinstance(particular, Matrix_rational_dense):
+        raise ArithmeticError("the extension-equation particular solution is not rational dense")
+    homogeneous_space = relation_matrix.right_kernel()
+    common_denominator: Integer = ZZ(1)
     for coefficient in relation_matrix.list():
         common_denominator = common_denominator.lcm(QQ(coefficient).denominator())
     integral_relation_matrix = matrix(
@@ -518,12 +554,7 @@ def solve_isotropic_extension_equation(
         relation_matrix.ncols(),
         tuple(ZZ(common_denominator * QQ(coefficient)) for coefficient in relation_matrix.list()),
     )
-    integral_coordinate_kernel = integral_relation_matrix.right_kernel()
-    integral_matrices = MatrixSpace(ZZ, rank, rank)
-    homogeneous_lattice = integral_matrices.submodule(tuple(matrix(ZZ, rank, rank, coordinates.list()) for coordinates in integral_coordinate_kernel.gens()))
-    homogeneous_space = phi.kernel()
-    if not isinstance(homogeneous_space, SubmoduleWithBasis):
-        raise ArithmeticError("the extension-equation kernel is not a submodule with basis")
+    homogeneous_lattice = integral_relation_matrix.right_kernel()
 
     return MatrixEquationSolution(
         particular=particular,
