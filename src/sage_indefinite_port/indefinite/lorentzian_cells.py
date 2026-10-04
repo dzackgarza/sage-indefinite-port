@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import cached_property
+from fractions import Fraction
 from math import gcd
 from typing import Literal, TypedDict
 
@@ -131,7 +132,14 @@ class LorentzianPerfectLocalBackend:
                 nullspace.matrix_from_columns(range(1, nullspace.ncols()))
                 * gram.inverse()
             )
-            normal_direction = _negative_direction_in_span(gram, directions)
+            outside_direction = _negative_direction_in_span(gram, directions)
+            direction_covector = gram * outside_direction.column()
+            critical_row = _coordinate_row(normalized, normalized_vectors[0], SageQQ)
+            direction_scalar = (critical_row * direction_covector)[0]
+            normal_direction = vector(
+                SageQQ,
+                [-direction_scalar, *direction_covector.column(0)],
+            )
             normalized_vectors, base_normal, _test_direction, _max_scal = (
                 _kernel_flipping(
                     normalized, normalized_vectors, base_normal, normal_direction, mode
@@ -566,7 +574,42 @@ def _positive_direction(lattice) -> tuple[SageQQ, ...]:
     rationals = raw.base_ring()
     coordinates = tuple(SageQQ(_engine_element(rationals, entry)) for entry in raw)
     primitive, _scale = _primitive_integral_direction(coordinates)
-    return tuple(SageQQ(entry) for entry in primitive)
+    gram = _gram_matrix(lattice)
+    rank = len(primitive)
+    directions = []
+    for first in range(rank):
+        for sign in (-1, 1):
+            row = [SageZZ.zero()] * rank
+            row[first] = SageZZ(sign)
+            directions.append(vector(SageZZ, row))
+    for first in range(rank):
+        for second in range(first + 1, rank):
+            for first_sign in (-1, 1):
+                for second_sign in (-1, 1):
+                    row = [SageZZ.zero()] * rank
+                    row[first] = SageZZ(first_sign)
+                    row[second] = SageZZ(second_sign)
+                    directions.append(vector(SageZZ, row))
+
+    current = vector(SageZZ, primitive)
+    while True:
+        changes = 0
+        for direction in directions:
+            current_norm = (current * gram * current.column())[0]
+            alpha = 0
+            while True:
+                candidate = current + (alpha + 1) * direction
+                candidate_norm = (candidate * gram * candidate.column())[0]
+                if 0 < candidate_norm < current_norm:
+                    current_norm = candidate_norm
+                    alpha += 1
+                else:
+                    break
+            if alpha:
+                current += alpha * direction
+                changes += alpha
+        if changes == 0:
+            return tuple(SageQQ(entry) for entry in current)
 
 
 def _primitive_integral_direction(coordinates):
@@ -617,70 +660,142 @@ def _bezout_partner(lattice, timelike):
     return partner
 
 
-def _find_positive_vectors(
-    lattice, rational_direction, max_scal, mode: PerfectMode, *, only_shortest: bool
-):
-    direction_q = tuple(SageQQ(entry) for entry in rational_direction)
-    primitive, scale = _primitive_integral_direction(direction_q)
-    timelike = _ambient_element(lattice, primitive)
-    if timelike.q() <= lattice.base_ring().zero():
-        raise ValueError("positive-vector enumeration needs a timelike direction")
-    scaled_max = SageQQ(max_scal) * scale
-    divisibility = timelike.div()
-    partner = _bezout_partner(lattice, timelike)
-    complement = timelike.orthogonal_complement()
-    if not complement.is_negative_definite():
-        raise ArithmeticError(
-            "a timelike vector must have negative-definite orthogonal complement"
+class _PositiveVectorEnumerator:
+    r"""Prepared exact positive-vector enumeration for one timelike direction."""
+
+    def __init__(self, lattice, rational_direction, max_scal, mode: PerfectMode):
+        self.lattice = lattice
+        self.mode = mode
+        direction_q = tuple(SageQQ(entry) for entry in rational_direction)
+        primitive, scale = _primitive_integral_direction(direction_q)
+        self.scaled_max = SageQQ(max_scal) * scale
+
+        gram = _gram_matrix(lattice)
+        timelike_row = vector(SageZZ, primitive)
+        square = SageZZ((timelike_row * gram * timelike_row.column())[0])
+        if square <= 0:
+            raise ValueError("positive-vector enumeration needs a timelike direction")
+
+        pairing_row = timelike_row * gram
+        kernel_rows = matrix(SageZZ, [pairing_row]).right_kernel_matrix()
+        kernel_gram = -(kernel_rows * gram * kernel_rows.transpose())
+        transform = kernel_gram.LLL_gram()
+        self.kernel_rows = transform.transpose() * kernel_rows
+        reduced_gram = -(self.kernel_rows * gram * self.kernel_rows.transpose())
+        self.kernel_lattice = Lattices(lattice.base_ring())(
+            [
+                [
+                    int(reduced_gram[row, column])
+                    for column in range(reduced_gram.ncols())
+                ]
+                for row in range(reduced_gram.nrows())
+            ]
         )
-    inclusion = complement.inclusion()
-    ambient_rows = matrix(
-        SageQQ,
-        [
-            _coordinate_row(lattice, inclusion(generator), SageQQ)
-            for generator in complement.module_generators()
-        ],
-    )
-    partner_row = _coordinate_row(lattice, partner, SageQQ)
-    timelike_row = _coordinate_row(lattice, timelike, SageQQ)
-    square = SageQQ(_engine_element(lattice.base_ring(), timelike.q()))
-    d = SageQQ(_engine_element(lattice.base_ring(), divisibility))
-    perpendicular_part = partner_row - (d / square) * timelike_row
-    perpendicular_coordinates = ambient_rows.transpose().solve_right(
-        perpendicular_part.column()
-    )
-    result = []
-    multiplier = 1
-    while True:
-        level = SageQQ(multiplier) * d
-        if scaled_max > 0 and level > scaled_max:
-            break
-        target = tuple(
-            -SageQQ(multiplier) * perpendicular_coordinates[index, 0]
-            for index in range(perpendicular_coordinates.nrows())
+
+        gcd_value = SageZZ.zero()
+        coefficients: list[SageZZ] = []
+        for pairing in pairing_row:
+            new_gcd, old_coefficient, new_coefficient = gcd_value.xgcd(SageZZ(pairing))
+            coefficients = [
+                old_coefficient * coefficient for coefficient in coefficients
+            ]
+            coefficients.append(new_coefficient)
+            gcd_value = new_gcd
+        if gcd_value < 0:
+            gcd_value = -gcd_value
+            coefficients = [-coefficient for coefficient in coefficients]
+        self.d = SageQQ(gcd_value)
+        self.bezout_row = vector(SageZZ, coefficients)
+        if self.bezout_row.dot_product(pairing_row) != gcd_value:
+            raise ArithmeticError(
+                "Bezout coefficients do not realize timelike divisibility"
+            )
+
+        alpha = self.d / SageQQ(square)
+        translation = alpha * vector(SageQQ, timelike_row) - vector(
+            SageQQ, self.bezout_row
         )
-        bound = -(SageQQ(multiplier) ** 2) * d * d / square
-        field = complement.base_ring().fraction_field()
+        self.base_target = tuple(
+            self.kernel_rows.change_ring(SageQQ)
+            .transpose()
+            .solve_right(translation.column())
+            .column(0)
+        )
+        self.base_bound = (self.d * self.d) / SageQQ(square)
+
+    def max_multiplier(self):
+        if self.scaled_max <= 0:
+            return None
+        return int(self.scaled_max / self.d)
+
+    def first_multiplier(self):
+        maximum = self.max_multiplier()
+        if maximum is None:
+            return None
+        return self.kernel_lattice._first_close_vector_scale(
+            self.base_target,
+            self.base_bound,
+            maximum,
+            exact_distance=self.mode == "isotropic",
+        )
+
+    def vectors_at_multiplier(self, multiplier):
+        target = tuple(SageQQ(multiplier) * entry for entry in self.base_target)
+        bound = (SageQQ(multiplier) ** 2) * self.base_bound
+        field = self.kernel_lattice.base_ring().fraction_field()
         owned_target = tuple(
             field(int(entry.numerator())) / field(int(entry.denominator()))
             for entry in target
         )
         owned_bound = field(int(bound.numerator())) / field(int(bound.denominator()))
-        close = complement.close_vectors(owned_target, owned_bound)
-        for perpendicular in close.index_set():
-            if mode == "isotropic" and close[perpendicular] != owned_bound:
+        close = self.kernel_lattice.close_vectors(owned_target, owned_bound)
+        result = []
+        labels = tuple(self.kernel_lattice.module_generating_set())
+        for kernel_vector in close.index_set():
+            if self.mode == "isotropic" and close[kernel_vector] != owned_bound:
                 continue
-            candidate = lattice.scalar_multiple(
-                lattice.base_ring()(multiplier), partner
-            ) + inclusion(perpendicular)
-            if mode == "isotropic" and candidate.q() != lattice.base_ring().zero():
+            coordinates = kernel_vector.to_vector()
+            kernel_row = vector(
+                SageZZ,
+                [SageZZ(int(coordinates(label))) for label in labels],
+            )
+            ambient_row = (
+                SageZZ(multiplier) * self.bezout_row
+                + self.kernel_rows.transpose() * kernel_row
+            )
+            candidate = _ambient_element(self.lattice, tuple(ambient_row))
+            if (
+                self.mode == "isotropic"
+                and candidate.q() != self.lattice.base_ring().zero()
+            ):
                 raise ArithmeticError(
                     "an isotropic shell returned a nonisotropic vector"
                 )
-            if mode == "total" and candidate.q() < lattice.base_ring().zero():
+            if self.mode == "total" and candidate.q() < self.lattice.base_ring().zero():
                 raise ArithmeticError("a total shell returned a negative-norm vector")
             result.append(candidate)
-        if only_shortest and result:
+        return tuple(result)
+
+
+def _find_positive_vectors(
+    lattice, rational_direction, max_scal, mode: PerfectMode, *, only_shortest: bool
+):
+    enumerator = _PositiveVectorEnumerator(lattice, rational_direction, max_scal, mode)
+    if only_shortest and enumerator.scaled_max > 0:
+        multiplier = enumerator.first_multiplier()
+        if multiplier is None:
+            return ()
+        return enumerator.vectors_at_multiplier(multiplier)
+
+    result = []
+    multiplier = 1
+    while True:
+        level = SageQQ(multiplier) * enumerator.d
+        if enumerator.scaled_max > 0 and level > enumerator.scaled_max:
+            break
+        shell = enumerator.vectors_at_multiplier(multiplier)
+        result.extend(shell)
+        if only_shortest and shell:
             break
         multiplier += 1
     return tuple(result)
@@ -697,6 +812,32 @@ def _search_initial_vectors(lattice, direction, mode: PerfectMode):
         if vectors:
             return vectors
         max_scal *= 2
+
+
+def _source_mid_value(lower, upper):
+    r"""Port the upstream continued-fraction middle-value rule."""
+    low = Fraction(int(lower.numerator()), int(lower.denominator()))
+    upp = Fraction(int(upper.numerator()), int(upper.denominator()))
+    midpoint = (low + upp) / 2
+    target_low = (2 * low + upp) / 3
+    target_upp = (low + 2 * upp) / 3
+
+    terms = []
+    work = midpoint
+    while True:
+        floor_value = work.numerator // work.denominator
+        terms.append(floor_value)
+        if work == floor_value:
+            break
+        work = 1 / (work - floor_value)
+
+    for end in range(len(terms)):
+        approximant = Fraction(terms[end], 1)
+        for position in range(end - 1, -1, -1):
+            approximant = terms[position] + 1 / approximant
+        if target_low <= approximant <= target_upp:
+            return SageQQ(approximant.numerator) / SageQQ(approximant.denominator)
+    raise ArithmeticError("continued-fraction middle value was not found")
 
 
 def _upper_bound(gram, base_normal, direction_normal):
@@ -733,9 +874,9 @@ def _upper_bound(gram, base_normal, direction_normal):
     if discriminant > 0 and SageQQ(discriminant).is_square():
         root = SageQQ(discriminant).sqrt()
         candidates = (
-            ((-b + root) / a, (-b - root) / a)
-            if a != 0
-            else ((SageQQ(-c) / (2 * b),) if b != 0 else ())
+            ((-b + root) / c, (-b - root) / c)
+            if c != 0
+            else ((SageQQ(-a) / (2 * b),) if b != 0 else ())
         )
         positive = [value for value in candidates if value > 0]
         isotropic_bound = min(positive) if positive else None
@@ -763,7 +904,7 @@ def _negative_direction_in_span(gram, spanning_rows):
     if not negative:
         raise ArithmeticError("the perfect-cell nullspace has no negative direction")
     ambient = spanning_rows.transpose() * change.column(negative[0])
-    return vector(SageQQ, [0, *ambient])
+    return vector(SageQQ, ambient)
 
 
 def _vector_rows(vectors):
@@ -788,7 +929,7 @@ def _kernel_flipping(
     critical_rows = _vector_rows(critical)
     total = ()
     while True:
-        middle = (lower + upper) / 2
+        middle = _source_mid_value(lower, upper)
         normal = base_normal + middle * direction_normal
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
         test_direction_row = test_direction.column(0)
@@ -797,9 +938,15 @@ def _kernel_flipping(
         if square <= 0 or max_scal <= 0:
             upper = middle
             continue
-        total = _find_positive_vectors(
-            lattice, tuple(test_direction_row), max_scal, mode, only_shortest=True
+        enumerator = _PositiveVectorEnumerator(
+            lattice, tuple(test_direction_row), max_scal, mode
         )
+        first_multiplier = enumerator.first_multiplier()
+        if first_multiplier is None:
+            raise ArithmeticError(
+                "a critical perfect-cell shell disappeared during flipping"
+            )
+        total = enumerator.vectors_at_multiplier(first_multiplier)
         total_rows = _vector_rows(total)
         if total_rows == critical_rows:
             lower = middle
