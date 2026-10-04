@@ -1,8 +1,8 @@
 r"""Acceptance specimens for Bliss-backed configuration equivalence."""
 
 import pytest
-
-from dzack_research.preamble.all import Lattices, ZZ as OwnedZZ
+from dzack_research.preamble.all import ZZ as OwnedZZ
+from dzack_research.preamble.all import Lattices
 from sage.matrix.constructor import matrix
 from sage.rings.integer_ring import ZZ as SageZZ
 

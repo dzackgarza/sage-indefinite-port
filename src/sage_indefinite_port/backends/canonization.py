@@ -8,9 +8,9 @@ the ambient bilinear forms.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import cache
 
-from dzack_research.preamble.all import Lattices, Modules, QQ, ZZ
-from dzack_research.preamble.categories.group.groups import OwnedGroups
+from dzack_research.preamble.all import QQ, ZZ, Lattices, Modules
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.rings.ring_foundation import _engine_element
 from sage.graphs.graph import Graph
@@ -25,6 +25,8 @@ from sage_indefinite_port.groups.integral_structures import (
     IntegralStructureAction,
     RationalMatrixGroup,
 )
+
+
 @dataclass(frozen=True)
 class CellConfiguration:
     """A finite full-rank vector configuration in one integral lattice."""
@@ -218,35 +220,15 @@ def _bliss_canonization(configuration: CellConfiguration) -> _BlissCanonization:
 def _configuration_graph(
     configuration: CellConfiguration,
 ) -> tuple[Graph, list[list[int]], tuple[int, ...]]:
-    vectors = configuration.vectors
-    count = len(vectors)
-    colors: list[int] = []
+    coordinates = _coordinate_matrix(configuration)
+    pairing = coordinates * _gram_matrix(configuration.lattice) * coordinates.transpose()
+    count = len(configuration.vectors)
+    colors = [int(pairing[position, position]) for position in range(count)]
     edges: list[tuple[int, int, int]] = []
-
-    for vector in vectors:
-        colors.append(
-            int(
-                _engine_element(
-                    configuration.lattice.base_ring(),
-                    configuration.lattice.b(vector, vector),
-                )
-            )
-        )
 
     for left in range(count):
         for right in range(left + 1, count):
-            edges.append(
-                (
-                    left,
-                    right,
-                    int(
-                        _engine_element(
-                            configuration.lattice.base_ring(),
-                            configuration.lattice.b(vectors[left], vectors[right]),
-                        )
-                    ),
-                )
-            )
+            edges.append((left, right, int(pairing[left, right])))
 
     graph = Graph(count)
     graph.add_edges(edges)
@@ -344,12 +326,13 @@ def _verified_integral_isometry(
         integral.transpose()
     )
     if not isinstance(isometry, LatticeIsometryMethods):
-        raise ArithmeticError(
+        raise TypeError(
             "the verified transporter was not realized as a lattice isometry"
         )
     return isometry
 
 
+@cache
 def _gram_matrix(lattice: Lattices.ParentMethods) -> Matrix_integer_dense:
     generators = tuple(lattice.module_generators())
     base_ring = lattice.base_ring()
