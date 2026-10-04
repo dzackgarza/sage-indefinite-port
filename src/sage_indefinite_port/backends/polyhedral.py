@@ -6,7 +6,10 @@ from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometry
 from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
 from sage.libs.gap.libgap import libgap
 
-from sage_indefinite_port.backends.canonization import CellConfiguration
+from sage_indefinite_port.backends.canonization import (
+    CellConfiguration,
+    _coordinate_matrix,
+)
 from sage_indefinite_port.groups.integral_structures import RationalMatrixGroup
 
 type FacetIncidence = frozenset[int]
@@ -26,16 +29,21 @@ def configuration_facets(
 ) -> tuple[FacetIncidence, ...]:
     """Return facets as incidence subsets of the original vector family."""
     cone = configuration_cone(configuration)
+    coordinates = _coordinate_matrix(configuration)
     facets = tuple(
         frozenset(
             position
-            for position, vector in enumerate(configuration.vectors)
-            if cone.evaluate_covector(covector, vector) == 0
+            for position, value in enumerate(
+                coordinates * inequality.A().column()
+            )
+            if value == 0
         )
-        for covector in cone.facet_covectors()
+        for inequality in cone._engine_polyhedron().inequalities()
     )
     if any(not facet for facet in facets):
-        raise ArithmeticError("a perfect-cell facet has no incident configuration vectors")
+        raise ArithmeticError(
+            "a perfect-cell facet has no incident configuration vectors"
+        )
     return tuple(sorted(facets, key=lambda facet: tuple(sorted(facet))))
 
 
@@ -62,9 +70,10 @@ def facet_orbits(
             images.append(target + 1)
         gap_generators.append(libgap.PermList(images))
     group = libgap.Group(gap_generators)
+    domain = libgap(list(range(1, len(facets) + 1)))
     return tuple(
-        tuple(facets[int(position) - 1] for position in orbit.sage())
-        for orbit in libgap.Orbits(group, list(range(1, len(facets) + 1)))
+        tuple(facets[int(position) - 1] for position in orbit)
+        for orbit in libgap.Orbits(group, domain).sage()
     )
 
 
@@ -82,8 +91,7 @@ def _configuration_permutation(
         )
         if len(matches) != 1:
             raise ArithmeticError(
-                "a cell-stabilizer generator does not induce a unique permutation "
-                "of the configuration vectors"
+                "a cell-stabilizer generator does not induce a unique permutation of the configuration vectors"
             )
         images.append(matches[0])
     if len(set(images)) != len(configuration.vectors):
