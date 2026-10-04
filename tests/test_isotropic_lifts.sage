@@ -1,6 +1,7 @@
 r"""Acceptance specimens for exact isotropic extension equations."""
 
-from sage.all import MatrixSpace, QQ
+from sage.matrix.matrix_space import MatrixSpace
+from sage.rings.rational_field import QQ
 import pytest
 
 from dzack_research.preamble.all import Lattices, ZZ as OwnedZZ
