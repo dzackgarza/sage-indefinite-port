@@ -1,5 +1,6 @@
 r"""Acceptance specimens for exact isotropic extension equations."""
 
+from sage.matrix.constructor import matrix
 from sage.matrix.matrix_space import MatrixSpace
 from sage.rings.rational_field import QQ
 import pytest
@@ -17,10 +18,10 @@ from sage_indefinite_port.indefinite.isotropic_lifts import (
 def test_extension_equation_has_expected_affine_dimension() -> None:
     for rank in range(1, 5):
         matrices = MatrixSpace(QQ, rank, rank)
-        A = matrices.random_element()
-        while not A.is_invertible():
-            A = matrices.random_element()
-        expected = matrices.random_element()
+        A = matrix(QQ, matrices.random_element())
+        while A.determinant() == 0:
+            A = matrix(QQ, matrices.random_element())
+        expected = matrix(QQ, matrices.random_element())
         B = expected * A + A.transpose() * expected.transpose()
 
         solution = solve_isotropic_extension_equation(A, B)
@@ -28,11 +29,13 @@ def test_extension_equation_has_expected_affine_dimension() -> None:
         X = solution.particular
         assert X * A + A.transpose() * X.transpose() == B
         assert solution.homogeneous_space.dimension() == rank * (rank - 1) // 2
-        assert solution.homogeneous_lattice.rank() == rank * (rank - 1) // 2
+        assert solution.homogeneous_lattice.dimension() == rank * (rank - 1) // 2
 
 
 def test_codimension_one_extension_retains_subspace_inclusions() -> None:
-    plane = Lattices(OwnedZZ)("U").base_change(OwnedZZ.fraction_field_map())
+    plane: Lattices.ParentMethods = Lattices(OwnedZZ)("U").base_change(
+        OwnedZZ.fraction_field_map()
+    )
     isotropic, _partner = plane.module_generators()
     line = plane.subobject_on((isotropic,))
     partial = line.identity_morphism()
@@ -47,7 +50,9 @@ def test_codimension_one_extension_retains_subspace_inclusions() -> None:
 
 def test_extension_torsor_reports_an_empty_integral_locus() -> None:
     integral_plane = Lattices(OwnedZZ)("U")
-    rational_plane = integral_plane.base_change(OwnedZZ.fraction_field_map())
+    rational_plane: Lattices.ParentMethods = integral_plane.base_change(
+        OwnedZZ.fraction_field_map()
+    )
     field = rational_plane.base_ring()
     e, f = rational_plane.module_generators()
     two = OwnedZZ.one() + OwnedZZ.one()

@@ -16,7 +16,7 @@ def test_nonisotropic_section_in_U_lifts_minus_one_to_the_reflection() -> None:
     section = orthogonal_section(vector)
 
     assert isinstance(section, NonIsotropicVectorSection)
-    assert section.inclusion is section.perpendicular.inclusion()
+    assert section.inclusion.domain() is section.perpendicular
     assert section.reduced_object() is section.perpendicular
 
     (perpendicular_generator,) = section.perpendicular.module_generators()
