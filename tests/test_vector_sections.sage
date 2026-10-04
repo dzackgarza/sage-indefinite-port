@@ -3,6 +3,7 @@ r"""Acceptance specimens for vector-orthogonal sections and rational lifts."""
 from dzack_research.preamble.all import Lattices, ZZ as OwnedZZ
 
 from sage_indefinite_port.indefinite.vector_sections import (
+    IsotropicVectorSection,
     NonIsotropicVectorSection,
     orthogonal_section,
 )
@@ -44,3 +45,27 @@ def test_nonisotropic_section_in_U2_has_a_nonempty_integral_locus() -> None:
     torsor = section.rational_lift(reduced_minus_identity, target=section)
 
     assert torsor.integral_parameters(plane, plane) is not None
+
+
+def test_isotropic_section_in_U_delegates_to_isotropic_reduction() -> None:
+    plane = Lattices(OwnedZZ)("U")
+    e, _f = plane.module_generators()
+    section = orthogonal_section(e)
+
+    assert isinstance(section, IsotropicVectorSection)
+    assert section.reduced_object() is section.reduction
+    assert section.perpendicular is section.reduction.orthogonal_complement()
+    assert section.inclusion is section.perpendicular.inclusion()
+
+
+def test_isotropic_section_lifts_the_reduction_identity() -> None:
+    lattice = Lattices(OwnedZZ)("U") + Lattices(OwnedZZ)("A1")
+    e, _f, _a = lattice.module_generators()
+    section = orthogonal_section(e)
+    (reduced_generator,) = section.reduction.module_generators()
+    reduced_identity = section.reduction.O()((reduced_generator,))
+    torsor = section.rational_lift(reduced_identity, target=section)
+
+    assert torsor.integral_parameters(lattice, lattice) is not None
+    lifted = torsor.one_integral_extension()
+    assert lifted(e) == e

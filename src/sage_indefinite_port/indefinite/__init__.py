@@ -12,7 +12,9 @@ from sage_indefinite_port.indefinite.isotropic_lifts import (
     solve_isotropic_extension_equation,
 )
 from sage_indefinite_port.indefinite.vector_sections import (
+    IsotropicVectorSection,
     NonIsotropicVectorSection,
+    VectorOrthogonalSection,
     orthogonal_section,
 )
 
@@ -21,10 +23,12 @@ __all__ = [
     "CodimensionOneIsotropicExtensionResult",
     "IntegralParameterCoset",
     "IsometryExtensionTorsor",
+    "IsotropicVectorSection",
     "MatrixEquationSolution",
     "NoIntegralExtensionError",
     "NonIsotropicVectorSection",
     "PointwisePerpendicularKernel",
+    "VectorOrthogonalSection",
     "orthogonal_section",
     "pointwise_perpendicular_kernel",
     "solve_isotropic_extension_equation",
