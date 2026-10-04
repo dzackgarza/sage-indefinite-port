@@ -10,6 +10,7 @@ from dzack_research.preamble.categories.lattice_morphisms import (
     LatticeIsometryMethods,
 )
 from dzack_research.preamble.categories.lattices import IsotropicReductions, Lattices
+from dzack_research.preamble.categories.rings.ring_foundation import OwnedRings
 
 from sage_indefinite_port.indefinite.isotropic_lifts import (
     CodimensionOneIsotropicExtension,
@@ -60,27 +61,46 @@ class NonIsotropicVectorSection:
 
         source_ambient = self.inclusion.codomain()
         target_ambient = target_section.inclusion.codomain()
-        match source_ambient.base_ring() is target_ambient.base_ring():
+        source_ring = source_ambient.base_ring()
+        match source_ring is target_ambient.base_ring():
             case True:
                 pass
             case False:
                 raise ValueError("source and target lattices must have the same base ring")
 
-        fraction_map = source_ambient.base_ring().fraction_field_map()
-        source_rational = source_ambient.base_change(fraction_map)
-        target_rational = target_ambient.base_change(fraction_map)
+        match source_ring:
+            case OwnedRings.NoZeroDivisors.Commutative.ParentMethods() as domain:
+                fraction_map = domain.fraction_field_map()
+            case _:
+                raise TypeError("rational lifting requires a lattice over an integral domain")
+        source_rational: Lattices.ParentMethods = source_ambient.base_change(fraction_map)
+        target_rational: Lattices.ParentMethods = target_ambient.base_change(fraction_map)
 
         def extend_source(
             vector: Lattices.ElementMethods,
         ) -> Lattices.ElementMethods:
             coordinates = vector.to_vector()
-            return source_rational.linear_combination({label: fraction_map(coordinates(label)) for label in source_ambient.module_generating_set() if coordinates(label)})
+            result: Lattices.ElementMethods = source_rational.linear_combination(
+                {
+                    label: fraction_map(coordinates(label))
+                    for label in source_ambient.module_generating_set()
+                    if coordinates(label)
+                }
+            )
+            return result
 
         def extend_target(
             vector: Lattices.ElementMethods,
         ) -> Lattices.ElementMethods:
             coordinates = vector.to_vector()
-            return target_rational.linear_combination({label: fraction_map(coordinates(label)) for label in target_ambient.module_generating_set() if coordinates(label)})
+            result: Lattices.ElementMethods = target_rational.linear_combination(
+                {
+                    label: fraction_map(coordinates(label))
+                    for label in target_ambient.module_generating_set()
+                    if coordinates(label)
+                }
+            )
+            return result
 
         source_perpendicular_inclusion = self.inclusion.base_change(fraction_map)
         target_perpendicular_inclusion = target_section.inclusion.base_change(fraction_map)
@@ -98,10 +118,14 @@ class NonIsotropicVectorSection:
             )
             reduced_part = source_perpendicular_inclusion.lift(perpendicular_part)
             target_perpendicular_part = target_perpendicular_inclusion(reduced_rational(reduced_part))
-            return target_perpendicular_part + target_rational.scalar_multiple(
-                vector_coefficient,
-                target_vector,
+            result: Lattices.ElementMethods = (
+                target_perpendicular_part
+                + target_rational.scalar_multiple(
+                    vector_coefficient,
+                    target_vector,
+                )
             )
+            return result
 
         return IsometryExtensionTorsor(source_rational.Isom(target_rational)(image), ())
 
@@ -168,10 +192,14 @@ class IsotropicVectorSection:
             perpendicular = reduction.orthogonal_complement()
             coordinates = element.to_vector()
             lifts = reduction.coordinate_frame()
-            return sum(
-                (perpendicular.scalar_multiple(coordinates(label), lifts(label)) for label in reduction.module_generating_set()),
+            result: Lattices.ElementMethods = sum(
+                (
+                    perpendicular.scalar_multiple(coordinates(label), lifts(label))
+                    for label in reduction.module_generating_set()
+                ),
                 perpendicular.zero(),
             )
+            return result
 
         def partial_image(label: Hashable) -> Lattices.ElementMethods:
             source_element = self.perpendicular.module_generator(label)
@@ -186,36 +214,56 @@ class IsotropicVectorSection:
                 target_line_vector,
             )
             target_line_part = target_line_in_perpendicular(target_line_element)
-            target_quotient_element = reduced_isometry(quotient_element)
-            return target_line_part + reduction_lift(
+            target_quotient_element: Lattices.ElementMethods = reduced_isometry(quotient_element)
+            result: Lattices.ElementMethods = target_line_part + reduction_lift(
                 target_reduction,
                 target_quotient_element,
             )
+            return result
 
         partial = self.perpendicular.Isom(target_section.perpendicular)(partial_image)
 
-        fraction_map = source_ambient.base_ring().fraction_field_map()
-        source_rational = source_ambient.base_change(fraction_map)
-        target_rational = target_ambient.base_change(fraction_map)
+        source_ring = source_ambient.base_ring()
+        match source_ring:
+            case OwnedRings.NoZeroDivisors.Commutative.ParentMethods() as domain:
+                fraction_map = domain.fraction_field_map()
+            case _:
+                raise TypeError("rational lifting requires a lattice over an integral domain")
+        source_rational: Lattices.ParentMethods = source_ambient.base_change(fraction_map)
+        target_rational: Lattices.ParentMethods = target_ambient.base_change(fraction_map)
 
         def extend_source(
             vector: Lattices.ElementMethods,
         ) -> Lattices.ElementMethods:
             coordinates = vector.to_vector()
-            return source_rational.linear_combination({label: fraction_map(coordinates(label)) for label in source_ambient.module_generating_set() if coordinates(label)})
+            result: Lattices.ElementMethods = source_rational.linear_combination(
+                {
+                    label: fraction_map(coordinates(label))
+                    for label in source_ambient.module_generating_set()
+                    if coordinates(label)
+                }
+            )
+            return result
 
         def extend_target(
             vector: Lattices.ElementMethods,
         ) -> Lattices.ElementMethods:
             coordinates = vector.to_vector()
-            return target_rational.linear_combination({label: fraction_map(coordinates(label)) for label in target_ambient.module_generating_set() if coordinates(label)})
+            result: Lattices.ElementMethods = target_rational.linear_combination(
+                {
+                    label: fraction_map(coordinates(label))
+                    for label in target_ambient.module_generating_set()
+                    if coordinates(label)
+                }
+            )
+            return result
 
         source_perpendicular_rational = source_rational.subobject_on(tuple(extend_source(self.inclusion(generator)) for generator in self.perpendicular.module_generators()))
         target_perpendicular_rational = target_rational.subobject_on(
             tuple(extend_target(target_section.inclusion(generator)) for generator in target_section.perpendicular.module_generators())
         )
-        source_extended = self.perpendicular.base_change(fraction_map)
-        target_extended = target_section.perpendicular.base_change(fraction_map)
+        source_extended: Lattices.ParentMethods = self.perpendicular.base_change(fraction_map)
+        target_extended: Lattices.ParentMethods = target_section.perpendicular.base_change(fraction_map)
         source_to_subspace = source_extended.Isom(source_perpendicular_rational)(
             lambda label: source_perpendicular_rational.inclusion().lift(extend_source(self.inclusion(self.perpendicular.module_generator(label))))
         )
