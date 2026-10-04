@@ -17,6 +17,9 @@ from sage_indefinite_port.backends.polyhedral import (
     configuration_facets,
     facet_orbits,
 )
+from sage_indefinite_port.indefinite.lorentzian_cells import (
+    LorentzianPerfectLocalBackend,
+)
 from tests.fixtures.oracle_fixtures import (
     LorentzianEquivalenceCase,
     load_lorentzian_equivalence_cases,
@@ -150,3 +153,27 @@ def test_rank_three_perfect_cell_facets_and_flip_stay_in_the_same_complex() -> N
         for vector in source.vectors
     } == set(neighbor.vectors)
     assert case["total_count"] == 1
+
+
+def test_native_rank_three_local_backend_builds_and_flips_both_cell_modes() -> None:
+    case = next(
+        case
+        for case in load_lorentzian_perfect_domains()
+        if case["id"] == "lor_perf_dim3_case01"
+    )
+    lattice = Lattices(OwnedZZ)(case["gram"])
+    backend = LorentzianPerfectLocalBackend()
+
+    isotropic = backend.initial_cell(lattice, "isotropic")
+    total = backend.initial_cell(lattice, "total")
+    orbits = backend.facet_orbits(total)
+    neighbor = backend.flip_across(total, orbits[0][0])
+    transporter = backend.cell_transporter(total, neighbor)
+
+    assert all(vector.q() == 0 for vector in isotropic.vector_configuration)
+    assert sum(len(orbit) for orbit in orbits) == 4
+    assert transporter is not None
+    assert {
+        transporter(vector)
+        for vector in total.vector_configuration
+    } == set(neighbor.vector_configuration)
