@@ -12,9 +12,15 @@ from sage_indefinite_port.backends.canonization import (
     cell_transporter,
     presentation_bucket_key,
 )
+from sage_indefinite_port.backends.polyhedral import (
+    configuration_cone,
+    configuration_facets,
+    facet_orbits,
+)
 from tests.fixtures.oracle_fixtures import (
     LorentzianEquivalenceCase,
     load_lorentzian_equivalence_cases,
+    load_lorentzian_perfect_domains,
 )
 
 
@@ -95,3 +101,52 @@ def test_U_basis_configuration_stabilizer_is_realized_by_integral_isometries() -
             generator(vector)
             for vector in configuration.vectors
         } == set(configuration.vectors)
+
+
+def test_rank_three_perfect_cell_facets_and_flip_stay_in_the_same_complex() -> None:
+    """Recover the rank-three source cell and its unique facet orbit."""
+    case = next(
+        case
+        for case in load_lorentzian_perfect_domains()
+        if case["id"] == "lor_perf_dim3_case04"
+    )
+    lattice = Lattices(OwnedZZ)(case["gram"])
+    source = CellConfiguration.from_coordinate_rows(
+        lattice,
+        (
+            (1, 0, 0),
+            (0, 1, 0),
+            (1, 1, -1),
+            (2, 1, -2),
+            (1, 2, -2),
+        ),
+    )
+    neighbor = CellConfiguration.from_coordinate_rows(
+        lattice,
+        (
+            (1, 0, 0),
+            (0, 1, 0),
+            (1, 1, 1),
+            (2, 1, 2),
+            (1, 2, 2),
+        ),
+    )
+
+    source_cone = configuration_cone(source)
+    neighbor_cone = configuration_cone(neighbor)
+    facets = configuration_facets(source)
+    orbits = facet_orbits(source, cell_stabilizer(source))
+
+    assert source_cone.primitive_rays().cardinality() == 4
+    assert len(facets) == 4
+    assert sum(len(orbit) for orbit in orbits) == len(facets)
+    assert len(orbits) == 1
+    assert frozenset({0, 1}) in orbits[0]
+    assert source_cone.is_adjacent_to(neighbor_cone)
+    transporter = cell_transporter(source, neighbor)
+    assert transporter is not None
+    assert {
+        transporter(vector)
+        for vector in source.vectors
+    } == set(neighbor.vectors)
+    assert case["total_count"] == 1

@@ -1,0 +1,93 @@
+"""Facet incidence and finite facet actions for Lorentzian cells."""
+
+from __future__ import annotations
+
+from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
+from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
+from sage.libs.gap.libgap import libgap
+
+from sage_indefinite_port.backends.canonization import CellConfiguration
+from sage_indefinite_port.groups.integral_structures import RationalMatrixGroup
+
+type FacetIncidence = frozenset[int]
+
+
+def configuration_cone(
+    configuration: CellConfiguration,
+) -> RationalPolyhedralCones.ParentMethods:
+    """Return the exact preamble cone spanned by the configuration vectors."""
+    return RationalPolyhedralCones(configuration.lattice).from_rays(
+        configuration.vectors
+    )
+
+
+def configuration_facets(
+    configuration: CellConfiguration,
+) -> tuple[FacetIncidence, ...]:
+    """Return facets as incidence subsets of the original vector family."""
+    cone = configuration_cone(configuration)
+    facets = tuple(
+        frozenset(
+            position
+            for position, vector in enumerate(configuration.vectors)
+            if cone.evaluate_covector(covector, vector) == 0
+        )
+        for covector in cone.facet_covectors()
+    )
+    if any(not facet for facet in facets):
+        raise ArithmeticError("a perfect-cell facet has no incident configuration vectors")
+    return tuple(sorted(facets, key=lambda facet: tuple(sorted(facet))))
+
+
+def facet_orbits(
+    configuration: CellConfiguration,
+    stabilizer: RationalMatrixGroup,
+) -> tuple[tuple[FacetIncidence, ...], ...]:
+    """Return facet orbits under an exact cell stabilizer via libGAP."""
+    facets = configuration_facets(configuration)
+    if not facets:
+        return ()
+    facet_position = {facet: position for position, facet in enumerate(facets)}
+    gap_generators = []
+    for generator in stabilizer.generators():
+        permutation = _configuration_permutation(configuration, generator)
+        images = []
+        for facet in facets:
+            moved = frozenset(permutation[position] for position in facet)
+            target = facet_position.get(moved)
+            if target is None:
+                raise ArithmeticError(
+                    "a cell-stabilizer generator does not preserve the facet set"
+                )
+            images.append(target + 1)
+        gap_generators.append(libgap.PermList(images))
+    group = libgap.Group(gap_generators)
+    return tuple(
+        tuple(facets[int(position) - 1] for position in orbit.sage())
+        for orbit in libgap.Orbits(group, list(range(1, len(facets) + 1)))
+    )
+
+
+def _configuration_permutation(
+    configuration: CellConfiguration,
+    generator: LatticeIsometryMethods,
+) -> tuple[int, ...]:
+    images = []
+    for vector in configuration.vectors:
+        moved = generator(vector)
+        matches = tuple(
+            position
+            for position, candidate in enumerate(configuration.vectors)
+            if candidate == moved
+        )
+        if len(matches) != 1:
+            raise ArithmeticError(
+                "a cell-stabilizer generator does not induce a unique permutation "
+                "of the configuration vectors"
+            )
+        images.append(matches[0])
+    if len(set(images)) != len(configuration.vectors):
+        raise ArithmeticError(
+            "a cell-stabilizer generator does not act bijectively on the configuration"
+        )
+    return tuple(images)

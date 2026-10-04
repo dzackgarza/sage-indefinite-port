@@ -153,7 +153,7 @@ def cell_stabilizer(configuration: CellConfiguration) -> RationalMatrixGroup:
         )
         if abs(Integer(integral.determinant())) != 1:
             raise ArithmeticError("an integral configuration stabilizer generator is not unimodular")
-        integral_generators.append(configuration.lattice.Aut()._isometry_from_column_matrix(integral.transpose()))
+        integral_generators.append(configuration.lattice.Aut()._isometry_from_column_matrix(integral))
     return RationalMatrixGroup(
         configuration.lattice,
         tuple(integral_generators),
