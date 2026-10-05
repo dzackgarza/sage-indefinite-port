@@ -51,6 +51,7 @@ class IndefiniteOrthogonalAlgorithm:
         match profile.positive_index:
             case 0:
                 from sage_indefinite_port.backends.definite import definite_orthogonal_group
+
                 return definite_orthogonal_group(profile.signed_view)
             case 1:
                 return LorentzianPerfectComplex(profile.signed_view, "total").full_orthogonal_group()
@@ -237,7 +238,6 @@ class LorentzianPerfectComplex:
             list[LorentzianPerfectCell],
         ] = {_perfect_form_hash_key(initial): [initial]}
         adjacencies: list[LorentzianCellAdjacency] = []
-        identity = self.lattice().Aut().identity()
         position = 0
         while position < len(representatives):
             source = representatives[position]
