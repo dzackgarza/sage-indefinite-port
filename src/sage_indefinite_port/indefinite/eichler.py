@@ -8,12 +8,15 @@ from math import gcd, isqrt
 from dzack_research.preamble.categories.eichler_criterion import TwoUEichlerModel
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.lattices import Lattices
+from dzack_research.preamble.categories.modules.module_morphisms.module_morphisms import ModuleEmbeddingMethods
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.matrix.constructor import matrix
 from sage.modules.free_module_element import FreeModuleElement
 from sage.quadratic_forms.qfsolve import qfsolve
 from sage.rings.integer import Integer as SageInteger
 from sage.rings.rational_field import QQ as SageQQ
+
+from sage_indefinite_port.groups.integral_structures import ArithmeticSubgroup, IntegralStructureAction
 
 
 class InfiniteLocusError(ValueError):
@@ -31,6 +34,73 @@ class OrbitCover:
 
     def __len__(self) -> int:
         return len(self.representatives)
+
+
+@dataclass(frozen=True)
+class OrbitCoverModel:
+    """Immutable finite-cover model with an optional arithmetic refinement."""
+
+    base: EichlerOrbitCover
+    refinement: ArithmeticSubgroup | None = None
+
+    def lattice(self):
+        return self.base.lattice()
+
+    def subgroup(self):
+        return self.refinement if self.refinement is not None else self.base.subgroup()
+
+    def covering_representatives(self, norm, *, primitive: bool) -> OrbitCover:
+        return self.base.covering_representatives(norm, primitive=primitive)
+
+    def one_representative(self, norm, *, primitive: bool):
+        return self.base.one_representative(norm, primitive=primitive)
+
+    def refined_by(self, subgroup: ArithmeticSubgroup) -> OrbitCoverModel:
+        return OrbitCoverModel(self.base, subgroup)
+
+    def choose_splitting_vector(self, *, objective: str = "minimize_recursive_complexity"):
+        return self.base.choose_splitting_vector(objective=objective)
+
+
+@dataclass(frozen=True)
+class TwoHyperbolicPlaneDecomposition:
+    """The explicit ``U + U + K`` decomposition retained by an Eichler model."""
+
+    lattice: Lattices.ParentMethods
+    first_hyperbolic_plane: Lattices.ParentMethods
+    second_hyperbolic_plane: Lattices.ParentMethods
+    complement: Lattices.ParentMethods
+    sum_isometry: tuple[ModuleEmbeddingMethods, ModuleEmbeddingMethods, ModuleEmbeddingMethods]
+
+    @classmethod
+    def from_model(cls, model: TwoUEichlerModel) -> TwoHyperbolicPlaneDecomposition:
+        lattice = model.lattice()
+        return cls(
+            lattice,
+            model.first_hyperbolic_plane(),
+            model.second_hyperbolic_plane(),
+            model.orthogonal_complement(),
+            (lattice.injection(0), lattice.injection(1), lattice.injection(2)),
+        )
+
+
+@dataclass(frozen=True)
+class EichlerEnvelope:
+    """An ambient Eichler lattice together with the integral lattice embedded in it."""
+
+    lattice: Lattices.ParentMethods
+    envelope: Lattices.ParentMethods
+    inclusion: ModuleEmbeddingMethods
+    two_u_decomposition: TwoHyperbolicPlaneDecomposition
+    integral_action: IntegralStructureAction
+
+    def stabilizer_of_original_lattice(self, group=None) -> ArithmeticSubgroup:
+        if group is not None and group is not self.integral_action.rational_group():
+            raise ValueError("the requested group is not the envelope's represented rational group")
+        return self.integral_action.finite_representation().lattice_stabilizer()
+
+    def right_cosets(self):
+        return self.integral_action.right_cosets()
 
 
 @dataclass(frozen=True)
@@ -181,9 +251,12 @@ def find_hyperbolic_pair(
 
 
 __all__ = [
+    "EichlerEnvelope",
     "EichlerOrbitCover",
     "InfiniteLocusError",
     "OrbitCover",
+    "OrbitCoverModel",
+    "TwoHyperbolicPlaneDecomposition",
     "eichler_transvection",
     "find_hyperbolic_pair",
     "square_divisors",

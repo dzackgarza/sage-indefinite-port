@@ -5,6 +5,8 @@ import pytest
 from sage_indefinite_port.indefinite.eichler import (
     EichlerOrbitCover,
     InfiniteLocusError,
+    OrbitCoverModel,
+    TwoHyperbolicPlaneDecomposition,
     eichler_transvection,
     find_hyperbolic_pair,
     square_divisors,
@@ -58,3 +60,23 @@ def test_choose_splitting_vector_returns_positive_vector() -> None:
     model = EichlerOrbitCover(Lattices(ZZ)("A2").two_u_eichler_model())
     vector = model.choose_splitting_vector()
     assert vector.q() > model.lattice().base_ring().zero()
+
+
+def test_orbit_cover_model_refinement_and_two_u_decomposition_are_immutable() -> None:
+    eichler = EichlerOrbitCover(Lattices(ZZ)("A2").two_u_eichler_model())
+    model = OrbitCoverModel(eichler)
+    decomposition = TwoHyperbolicPlaneDecomposition.from_model(eichler.model)
+
+    assert model.lattice() is eichler.lattice()
+    assert decomposition.lattice is eichler.lattice()
+    assert decomposition.complement is eichler.model.orthogonal_complement()
+    assert decomposition.sum_isometry[0].codomain() is eichler.lattice()
+
+
+def test_unpolarized_enriques_norm_zero_cover_meets_both_isotropic_line_types() -> None:
+    two = ZZ.one() + ZZ.one()
+    complement = Lattices(ZZ)("U").twist(two) + Lattices(ZZ)("E8").twist(-two)
+    cover = EichlerOrbitCover(complement.two_u_eichler_model()).covering_representatives(0, primitive=True)
+    divisibilities = {int(vector.div()) for vector in cover if vector.is_isotropic() and vector.is_primitive()}
+    assert 1 in divisibilities
+    assert 2 in divisibilities
