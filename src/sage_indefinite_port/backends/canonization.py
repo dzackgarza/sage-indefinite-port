@@ -14,6 +14,7 @@ from dzack_research.preamble.all import QQ, ZZ, Lattices, Modules
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.rings.ring_foundation import _engine_element
 from sage.graphs.graph import Graph
+from sage.libs.gap.libgap import libgap
 from sage.matrix.constructor import matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
@@ -22,6 +23,7 @@ from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
 
 from sage_indefinite_port.groups.integral_structures import (
+    FiniteIntegralRepresentation,
     IntegralStructureAction,
     RationalMatrixGroup,
 )
@@ -33,12 +35,15 @@ class CellConfiguration:
 
     lattice: Lattices.ParentMethods
     vectors: tuple[Lattices.ElementMethods, ...]
+    roles: tuple[int, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.vectors:
             raise ValueError("a cell configuration must contain at least one vector")
         if any(vector.parent() is not self.lattice for vector in self.vectors):
             raise ValueError("every configuration vector must lie in the configured lattice")
+        if self.roles and len(self.roles) != len(self.vectors):
+            raise ValueError("configuration roles must label every configuration vector")
         if _coordinate_matrix(self).rank() != int(self.lattice.module_rank()):
             raise ValueError("a cell configuration must span its ambient lattice over QQ")
 
@@ -47,20 +52,21 @@ class CellConfiguration:
         cls,
         lattice: Lattices.ParentMethods,
         rows: tuple[tuple[int, ...], ...],
+        roles: tuple[int, ...] = (),
     ) -> CellConfiguration:
         """Construct a configuration from integral coordinate rows."""
         labels = tuple(lattice.module_generating_set())
         if any(len(row) != len(labels) for row in rows):
             raise ValueError("configuration rows must have the ambient lattice rank")
-        vectors = tuple(lattice.linear_combination({label: lattice.base_ring()(entry) for label, entry in zip(labels, row, strict=True) if entry}) for row in rows)
-        return cls(lattice, vectors)
+        vectors = tuple(lattice.linear_combination({label: lattice.base_ring()(int(entry)) for label, entry in zip(labels, row, strict=True) if entry}) for row in rows)
+        return cls(lattice, vectors, roles)
 
 
 @dataclass(frozen=True)
 class _BlissCanonization:
     canonical_signature: tuple[
         tuple[tuple[int, int, int], ...],
-        tuple[int, ...],
+        tuple[tuple[int, int], ...],
     ]
     labeling: tuple[int, ...]
 
@@ -78,6 +84,7 @@ def presentation_bucket_key(
     )
 
 
+@cache
 def cell_transporter(
     source: CellConfiguration,
     target: CellConfiguration,
@@ -105,15 +112,22 @@ def cell_transporter(
         return verified
 
     target_group = _configuration_rational_automorphism_group(target, target_canon)
-    target_rational, target_inclusion = _rational_lattice_with_integral_structure(
+    target_rational = target.lattice.base_change(ZZ.fraction_field_map())
+    restriction = Modules(QQ).restriction_of_scalars(ZZ.Mor(QQ)(lambda element: QQ(element)))
+    integral_structure_space = restriction(target_rational)
+    target_inclusion = _rational_lattice_with_integral_structure(
         target.lattice,
+        target_rational,
+        integral_structure_space,
         _identity_rows(int(target.lattice.module_rank())),
     )
     if target_group.rational_lattice() is not target_rational:
         raise ArithmeticError("configuration automorphisms and integral structure use different rational lattices")
 
-    _, source_image = _rational_lattice_with_integral_structure(
+    source_image = _rational_lattice_with_integral_structure(
         target.lattice,
+        target_rational,
+        integral_structure_space,
         _rational_rows(base_action),
     )
     correction = IntegralStructureAction(target_group, target_inclusion).transporter(
@@ -125,41 +139,149 @@ def cell_transporter(
 
     correction_action = target_rational.Aut()._row_action_matrix(correction)
     corrected = base_action * correction_action
-    return _verified_integral_isometry(source, target, matching, corrected)
+    target_coordinates = _coordinate_matrix(target)
+    target_position = {tuple(row): position for position, row in enumerate(target_coordinates.rows())}
+    corrected_permutation = []
+    for row in (matrix(SageQQ, target_coordinates) * correction_action).rows():
+        if any(entry.denominator() != 1 for entry in row):
+            raise ArithmeticError("an integral-structure correction moves a configuration vector to nonintegral coordinates")
+        key = tuple(SageZZ(entry) for entry in row)
+        position = target_position.get(key)
+        if position is None:
+            raise ArithmeticError("an integral-structure correction does not preserve the target configuration")
+        corrected_permutation.append(position)
+    corrected_matching = tuple(corrected_permutation[position] for position in matching)
+    return _verified_integral_isometry(
+        source,
+        target,
+        corrected_matching,
+        corrected,
+    )
 
 
 def cell_stabilizer(configuration: CellConfiguration) -> RationalMatrixGroup:
     """Return the integral isometries preserving the configuration setwise."""
-    canon = _bliss_canonization(configuration)
-    rational_group = _configuration_rational_automorphism_group(configuration, canon)
-    rational_lattice, inclusion = _rational_lattice_with_integral_structure(
-        configuration.lattice,
-        _identity_rows(int(configuration.lattice.module_rank())),
+    graph, partition, _colors = _configuration_graph(configuration)
+    permutation_group = graph.automorphism_group(
+        partition=partition,
+        algorithm="bliss",
+        edge_labels=True,
     )
-    if rational_group.rational_lattice() is not rational_lattice:
-        raise ArithmeticError("configuration automorphisms and integral structure use different rational lattices")
-    action = IntegralStructureAction(rational_group, inclusion)
-    stabilizer = action.lattice_stabilizer()
-    integral_generators: list[LatticeIsometryMethods] = []
-    for generator in stabilizer.generators():
-        row_action = action._ambient_action_matrix(generator)
-        if any(entry.denominator() != 1 for entry in row_action.list()):
-            raise ArithmeticError("an integral configuration stabilizer generator has a nonintegral matrix")
-        integral = matrix(
-            SageZZ,
-            row_action.nrows(),
-            row_action.ncols(),
-            tuple(Integer(entry) for entry in row_action.list()),
+    permutation_generators = tuple(permutation_group.gens())
+    rational_actions = tuple(
+        _configuration_row_action(
+            configuration,
+            configuration,
+            tuple(int(generator(position)) for position in range(graph.order())),
         )
-        if abs(Integer(integral.determinant())) != 1:
-            raise ArithmeticError("an integral configuration stabilizer generator is not unimodular")
-        integral_generators.append(configuration.lattice.Aut()._isometry_from_column_matrix(integral))
+        for generator in permutation_generators
+    )
+    rank = int(configuration.lattice.module_rank())
+    invariant_basis = matrix(SageQQ, _identity_rows(rank))
+    action_matrices = rational_actions + tuple(action.inverse() for action in rational_actions)
+    while True:
+        inverse_basis = invariant_basis.inverse()
+        spanning_rows = list(invariant_basis.rows())
+        stable = True
+        for action_matrix in action_matrices:
+            moved = invariant_basis * action_matrix
+            spanning_rows.extend(moved.rows())
+            if any(entry.denominator() != 1 for row in moved.rows() for entry in row * inverse_basis):
+                stable = False
+        if stable:
+            break
+        denominator = SageZZ.one()
+        for row in spanning_rows:
+            for entry in row:
+                denominator = denominator.lcm(entry.denominator())
+        integral_rows = tuple(tuple(SageZZ(denominator * entry) for entry in row) for row in spanning_rows)
+        integral_basis = matrix(SageZZ, integral_rows).row_module().basis_matrix()
+        invariant_basis = matrix(
+            SageQQ,
+            [[SageQQ(entry) / SageQQ(denominator) for entry in row] for row in integral_basis.rows()],
+        )
+
+    restricted_actions = []
+    for action_matrix in rational_actions:
+        restricted = invariant_basis * action_matrix * invariant_basis.inverse()
+        if any(entry.denominator() != 1 for entry in restricted.list()):
+            raise ArithmeticError("a configuration automorphism does not preserve its invariant over-lattice")
+        restricted_actions.append(
+            matrix(
+                SageZZ,
+                restricted.nrows(),
+                restricted.ncols(),
+                tuple(SageZZ(entry) for entry in restricted.list()),
+            )
+        )
+
+    selected_coordinates = (
+        matrix(
+            SageQQ,
+            _identity_rows(rank),
+        )
+        * invariant_basis.inverse()
+    )
+    if any(entry.denominator() != 1 for entry in selected_coordinates.list()):
+        raise ArithmeticError("the configured lattice is not integral in its invariant over-lattice")
+    selected_key = FiniteIntegralRepresentation._row_lattice_key(tuple(tuple(SageZZ(entry) for entry in row) for row in selected_coordinates.rows()))
+    orbit_keys = [selected_key]
+    orbit_position = {selected_key: 0}
+    frontier = [0]
+    while frontier:
+        source_position = frontier.pop()
+        source_key = orbit_keys[source_position]
+        for action_matrix in restricted_actions:
+            candidate_key = FiniteIntegralRepresentation._row_lattice_key((matrix(SageZZ, source_key) * action_matrix).rows())
+            if candidate_key not in orbit_position:
+                orbit_position[candidate_key] = len(orbit_keys)
+                orbit_keys.append(candidate_key)
+                frontier.append(len(orbit_keys) - 1)
+
+    finite_generators = []
+    for action_matrix in restricted_actions:
+        images = []
+        for key in orbit_keys:
+            image_key = FiniteIntegralRepresentation._row_lattice_key((matrix(SageZZ, key) * action_matrix).rows())
+            images.append(orbit_position[image_key] + 1)
+        finite_generators.append(libgap.PermList(images))
+    graph_gap_generators = tuple(libgap.PermList([int(generator(position)) + 1 for position in range(graph.order())]) for generator in permutation_generators)
+    graph_gap_group = libgap.Group(graph_gap_generators)
+    finite_group = libgap.Group(finite_generators)
+    orbit_homomorphism = libgap.GroupHomomorphismByImages(
+        graph_gap_group,
+        finite_group,
+        graph_gap_generators,
+        finite_generators,
+    )
+    point_stabilizer = libgap.Stabilizer(finite_group, 1)
+    stabilizer_group = libgap.PreImage(orbit_homomorphism, point_stabilizer)
+    stabilizer_permutations = libgap.SmallGeneratingSet(stabilizer_group)
+
+    integral_generators: list[LatticeIsometryMethods] = []
+    for permutation in stabilizer_permutations:
+        matching = tuple(int(position) - 1 for position in libgap.ListPerm(permutation, graph.order()).sage())
+        row_action = _configuration_row_action(
+            configuration,
+            configuration,
+            matching,
+        )
+        verified = _verified_integral_isometry(
+            configuration,
+            configuration,
+            matching,
+            row_action,
+        )
+        if verified is None:
+            raise ArithmeticError("a finite configuration-stabilizer lift is not an integral isometry")
+        integral_generators.append(verified)
     return RationalMatrixGroup(
         configuration.lattice,
         tuple(integral_generators),
     )
 
 
+@cache
 def _bliss_canonization(configuration: CellConfiguration) -> _BlissCanonization:
     graph, partition, colors = _configuration_graph(configuration)
     canonical_graph, certificate = graph.canonical_label(
@@ -169,7 +291,7 @@ def _bliss_canonization(configuration: CellConfiguration) -> _BlissCanonization:
         edge_labels=True,
     )
     labeling = tuple(int(certificate[position]) for position in range(graph.order()))
-    canonical_colors = [0] * graph.order()
+    canonical_colors = [(0, 0)] * graph.order()
     for position, color in enumerate(colors):
         canonical_colors[labeling[position]] = color
     canonical_edges = tuple(
@@ -188,13 +310,18 @@ def _bliss_canonization(configuration: CellConfiguration) -> _BlissCanonization:
     )
 
 
+@cache
 def _configuration_graph(
     configuration: CellConfiguration,
-) -> tuple[Graph, list[list[int]], tuple[int, ...]]:
+) -> tuple[Graph, list[list[int]], tuple[tuple[int, int], ...]]:
     coordinates = _coordinate_matrix(configuration)
     pairing = coordinates * _gram_matrix(configuration.lattice) * coordinates.transpose()
     count = len(configuration.vectors)
-    colors = [int(pairing[position, position]) for position in range(count)]
+    roles = configuration.roles or tuple(0 for _ in range(count))
+    colors = [
+        (int(roles[position]), int(pairing[position, position]))
+        for position in range(count)
+    ]
     edges: list[tuple[int, int, int]] = []
 
     for left in range(count):
@@ -203,13 +330,14 @@ def _configuration_graph(
 
     graph = Graph(count)
     graph.add_edges(edges)
-    color_classes: dict[int, list[int]] = {}
+    color_classes: dict[tuple[int, int], list[int]] = {}
     for vertex, color in enumerate(colors):
         color_classes.setdefault(color, []).append(vertex)
     partition = [color_classes[color] for color in sorted(color_classes)]
     return graph, partition, tuple(colors)
 
 
+@cache
 def _coordinate_matrix(configuration: CellConfiguration) -> Matrix_integer_dense:
     labels = tuple(configuration.lattice.module_generating_set())
     base_ring = configuration.lattice.base_ring()
@@ -317,11 +445,10 @@ def _configuration_rational_automorphism_group(
 
 def _rational_lattice_with_integral_structure(
     lattice: Lattices.ParentMethods,
+    rational_lattice: Lattices.ParentMethods,
+    space,
     rows: tuple[tuple[object, ...], ...],
-) -> tuple[Lattices.ParentMethods, object]:
-    rational_lattice = lattice.base_change(ZZ.fraction_field_map())
-    restriction = Modules(QQ).restriction_of_scalars(ZZ.Mor(QQ)(lambda element: QQ(element)))
-    space = restriction(rational_lattice)
+):
     rank = int(lattice.module_rank())
     domain = ZZ.free_module(rank)
     domain_labels = tuple(domain.module_generating_set())
@@ -331,7 +458,7 @@ def _rational_lattice_with_integral_structure(
             domain_labels[position]: space.wrap(
                 rational_lattice.linear_combination(
                     {
-                        label: QQ(entry)
+                        label: QQ(int(SageQQ(entry).numerator())) / QQ(int(SageQQ(entry).denominator()))
                         for label, entry in zip(
                             rational_labels,
                             rows[position],
@@ -344,7 +471,7 @@ def _rational_lattice_with_integral_structure(
             for position in range(rank)
         }
     )
-    return rational_lattice, inclusion
+    return inclusion
 
 
 def _identity_rows(rank: int) -> tuple[tuple[int, ...], ...]:
