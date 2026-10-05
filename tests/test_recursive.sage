@@ -70,3 +70,17 @@ def test_ci_indefinite_2u_public_orthogonal_group() -> None:
     lattice = Lattices(ZZ)("U") + Lattices(ZZ)("U")
     group = IndefiniteOrthogonalAlgorithm().orthogonal_group(lattice)
     assert all(generator.parent() is lattice.Aut() for generator in group.generators())
+
+
+def test_higher_witt_model_data_transport_to_caller_lattice() -> None:
+    lattice = Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    algorithm = IndefiniteOrthogonalAlgorithm()
+    model = algorithm._two_u_cover_model(lattice)
+    model_to_lattice = model.lattice().isometry_to(lattice)
+    assert model_to_lattice is not None
+    vector = model_to_lattice(model.choose_splitting_vector())
+    assert vector.parent() is lattice
+    approximate = model.subgroup()
+    first_label = next(iter(approximate.index_set()))
+    generator = model_to_lattice * approximate[first_label] * ~model_to_lattice
+    assert generator.parent() is lattice.Aut()

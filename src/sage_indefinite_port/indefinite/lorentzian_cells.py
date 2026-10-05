@@ -85,14 +85,23 @@ class IndefiniteOrthogonalAlgorithm:
 
     def _higher_witt_orthogonal_group(self, lattice: Lattices.ParentMethods) -> GeneratedSubgroup:
         model = self._two_u_cover_model(lattice)
-        if model.lattice().gram_tensor() != lattice.gram_tensor():
-            raise ValueError("the represented 2U model does not match the supplied lattice")
-        vector = model.choose_splitting_vector()
+        model_lattice = model.lattice()
+        model_to_lattice = model_lattice.isometry_to(lattice)
+        if model_to_lattice is None:
+            raise ArithmeticError("the represented 2U model is not isometric to the supplied lattice")
+        lattice_to_model = ~model_to_lattice
+
+        def transport_isometry(generator):
+            return model_to_lattice * generator * lattice_to_model
+
+        model_vector = model.choose_splitting_vector()
+        vector = model_to_lattice(model_vector)
         approximate_family = model.subgroup()
-        approximate = tuple(approximate_family[label] for label in approximate_family.index_set())
+        approximate = tuple(transport_isometry(approximate_family[label]) for label in approximate_family.index_set())
         stabilizer = self.vector_stabilizer(vector).generators()
         transporters = []
-        for candidate in model.covering_representatives(vector.q(), primitive=vector.is_primitive()):
+        for model_candidate in model.covering_representatives(model_vector.q(), primitive=model_vector.is_primitive()):
+            candidate = model_to_lattice(model_candidate)
             witness = self.vector_transporter(vector, candidate)
             if witness is not None:
                 transporters.append(witness)
