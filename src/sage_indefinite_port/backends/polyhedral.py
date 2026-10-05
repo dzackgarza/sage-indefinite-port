@@ -65,17 +65,22 @@ def facet_orbits(
     return tuple(tuple(facets[int(position) - 1] for position in orbit) for orbit in libgap.Orbits(group, domain).sage())
 
 
+@cache
 def _configuration_permutation(
     configuration: CellConfiguration,
     generator: LatticeIsometryMethods,
 ) -> tuple[int, ...]:
+    coordinates = _coordinate_matrix(configuration)
+    position_by_row = {tuple(row): position for position, row in enumerate(coordinates.rows())}
+    if len(position_by_row) != len(configuration.vectors):
+        raise ArithmeticError("a cell configuration contains duplicate coordinate rows")
+    action = configuration.lattice.Aut()._row_action_matrix(generator)
     images = []
-    for vector in configuration.vectors:
-        moved = generator(vector)
-        matches = tuple(position for position, candidate in enumerate(configuration.vectors) if candidate == moved)
-        if len(matches) != 1:
-            raise ArithmeticError("a cell-stabilizer generator does not induce a unique permutation of the configuration vectors")
-        images.append(matches[0])
+    for row in (coordinates * action).rows():
+        position = position_by_row.get(tuple(row))
+        if position is None:
+            raise ArithmeticError("a cell-stabilizer generator does not preserve the configuration vectors")
+        images.append(position)
     if len(set(images)) != len(configuration.vectors):
         raise ArithmeticError("a cell-stabilizer generator does not act bijectively on the configuration")
     return tuple(images)

@@ -85,6 +85,24 @@ def presentation_bucket_key(
 
 
 @cache
+def _configuration_integral_structure_action(configuration: CellConfiguration):
+    canon = _bliss_canonization(configuration)
+    rational_group = _configuration_rational_automorphism_group(configuration, canon)
+    rational_lattice = configuration.lattice.base_change(ZZ.fraction_field_map())
+    restriction = Modules(QQ).restriction_of_scalars(ZZ.Mor(QQ)(lambda element: QQ(element)))
+    integral_structure_space = restriction(rational_lattice)
+    inclusion = _rational_lattice_with_integral_structure(
+        configuration.lattice,
+        rational_lattice,
+        integral_structure_space,
+        _identity_rows(int(configuration.lattice.module_rank())),
+    )
+    if rational_group.rational_lattice() is not rational_lattice:
+        raise ArithmeticError("configuration automorphisms and integral structure use different rational lattices")
+    return IntegralStructureAction(rational_group, inclusion), rational_lattice, integral_structure_space, inclusion
+
+
+@cache
 def cell_transporter(
     source: CellConfiguration,
     target: CellConfiguration,
@@ -111,18 +129,7 @@ def cell_transporter(
     if verified is not None:
         return verified
 
-    target_group = _configuration_rational_automorphism_group(target, target_canon)
-    target_rational = target.lattice.base_change(ZZ.fraction_field_map())
-    restriction = Modules(QQ).restriction_of_scalars(ZZ.Mor(QQ)(lambda element: QQ(element)))
-    integral_structure_space = restriction(target_rational)
-    target_inclusion = _rational_lattice_with_integral_structure(
-        target.lattice,
-        target_rational,
-        integral_structure_space,
-        _identity_rows(int(target.lattice.module_rank())),
-    )
-    if target_group.rational_lattice() is not target_rational:
-        raise ArithmeticError("configuration automorphisms and integral structure use different rational lattices")
+    target_action, target_rational, integral_structure_space, target_inclusion = _configuration_integral_structure_action(target)
 
     source_image = _rational_lattice_with_integral_structure(
         target.lattice,
@@ -130,7 +137,7 @@ def cell_transporter(
         integral_structure_space,
         _rational_rows(base_action),
     )
-    correction = IntegralStructureAction(target_group, target_inclusion).transporter(
+    correction = target_action.transporter(
         source_image,
         target_inclusion,
     )
@@ -318,10 +325,7 @@ def _configuration_graph(
     pairing = coordinates * _gram_matrix(configuration.lattice) * coordinates.transpose()
     count = len(configuration.vectors)
     roles = configuration.roles or tuple(0 for _ in range(count))
-    colors = [
-        (int(roles[position]), int(pairing[position, position]))
-        for position in range(count)
-    ]
+    colors = [(int(roles[position]), int(pairing[position, position])) for position in range(count)]
     edges: list[tuple[int, int, int]] = []
 
     for left in range(count):

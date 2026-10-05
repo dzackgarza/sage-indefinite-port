@@ -73,12 +73,12 @@ class LorentzianPerfectCell:
         positive, negative = self.lattice.signature_pair()
         if int(positive) != 1 and int(negative) != 1:
             raise ValueError(f"a Lorentzian perfect cell needs signature (1,n) or (n,1), but {self.lattice} has signature {self.lattice.signature_pair()}")
-        configuration = self.configuration()
-        zero = self.lattice.base_ring().zero()
-        if self.mode == "isotropic" and any(vector.q() != zero for vector in configuration.vectors):
+        gram = _gram_matrix(self.lattice)
+        squares = tuple((row * gram * row.column())[0] for row in (_coordinate_row(self.lattice, vector, SageZZ) for vector in self.vector_configuration))
+        if self.mode == "isotropic" and any(square != 0 for square in squares):
             raise ValueError("an isotropic perfect cell may contain only isotropic vectors")
-        sign = _normalizing_sign(self.lattice)
-        if self.mode == "total" and any(sign * vector.q() < zero for vector in configuration.vectors):
+        normalized_sign = 1 if int(positive) == 1 else -1
+        if self.mode == "total" and any(normalized_sign * square < 0 for square in squares):
             raise ValueError("a total perfect cell may contain only nonnegative normalized-norm vectors")
 
     def configuration(self) -> CellConfiguration:
@@ -138,7 +138,7 @@ class LorentzianPerfectLocalBackend:
 
     def flip_across(self, cell: LorentzianPerfectCell, facet: FacetIncidence) -> LorentzianPerfectCell:
         normalized = _normalized_lattice(cell.lattice)
-        vectors = tuple(_same_coordinates(cell.lattice, normalized, item) for item in cell.vector_configuration)
+        vectors = cell.vector_configuration
         if not facet or any(position < 0 or position >= len(vectors) for position in facet):
             raise ValueError("a perfect-cell facet must be a nonempty incidence subset")
         nonincident = next(
@@ -213,7 +213,12 @@ class LorentzianPerfectComplex:
         self,
     ) -> tuple[tuple[LorentzianPerfectCell, ...], tuple[LorentzianCellAdjacency, ...]]:
         backend = self.local_backend()
-        representatives: list[LorentzianPerfectCell] = [backend.initial_cell(self.lattice(), self.mode())]
+        initial = backend.initial_cell(self.lattice(), self.mode())
+        representatives: list[LorentzianPerfectCell] = [initial]
+        representative_buckets: dict[
+            tuple[tuple[int, ...], tuple[int, ...]],
+            list[LorentzianPerfectCell],
+        ] = {_perfect_form_hash_key(initial): [initial]}
         adjacencies: list[LorentzianCellAdjacency] = []
         position = 0
         while position < len(representatives):
@@ -223,7 +228,8 @@ class LorentzianPerfectComplex:
                 neighbor = backend.flip_across(source, facet)
                 target = None
                 transporter = None
-                for representative in representatives:
+                neighbor_key = _perfect_form_hash_key(neighbor)
+                for representative in representative_buckets.get(neighbor_key, ()):
                     candidate = backend.cell_transporter(representative, neighbor)
                     if candidate is not None:
                         target = representative
@@ -232,6 +238,7 @@ class LorentzianPerfectComplex:
                 if target is None:
                     target = neighbor
                     representatives.append(target)
+                    representative_buckets.setdefault(neighbor_key, []).append(target)
                     transporter = self.lattice().Aut().identity()
                 if transporter is None:
                     raise ArithmeticError("a quotient-cell adjacency has no transporter to its selected target representative")
@@ -295,6 +302,23 @@ class LorentzianPerfectComplex:
         return tuple(records)
 
 
+def _perfect_form_hash_key(
+    cell: LorentzianPerfectCell,
+) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    r"""Return the exact pairing multisets used by upstream f_hash.
+
+    ComputeInvariantPerfectForm hashes the multiplicities of diagonal and
+    off-diagonal Gram pairings of the configuration. Keeping the exact
+    multisets as the Python dictionary key avoids hash collisions while
+    retaining precisely the same necessary isometry invariant.
+    """
+    gram = _gram_matrix(cell.lattice)
+    rows = tuple(_coordinate_row(cell.lattice, item, SageZZ) for item in cell.vector_configuration)
+    diagonal = tuple(sorted(int((row * gram * row.column())[0]) for row in rows))
+    off_diagonal = tuple(sorted(int((rows[left] * gram * rows[right].column())[0]) for left in range(len(rows)) for right in range(left + 1, len(rows))))
+    return diagonal, off_diagonal
+
+
 def perfect_domain_traversal(gram_rows, option: PerfectMode = "total") -> tuple[TraversalRecord, ...]:
     r"""Return complete native perfect-domain traversal records for the Gram rows."""
     lattice = Lattices(ZZ)(gram_rows)
@@ -354,8 +378,7 @@ class MarkedCellOrbitAlgorithm:
         source_marks = tuple(
             adjacency.source.vector_configuration[position]
             for position in sorted(adjacency.facet)
-            if adjacency.source.vector_configuration[position].q()
-            == adjacency.source.lattice.base_ring().zero()
+            if adjacency.source.vector_configuration[position].q() == adjacency.source.lattice.base_ring().zero()
         )
         target_marks = self.local_marks(adjacency.target)
         transported = []
@@ -447,8 +470,13 @@ def _normalized_lattice(lattice):
 
 
 def _same_coordinates(source, target, element):
+    if source is target:
+        return element
     coordinates = element.to_vector()
-    return target(tuple(target.base_ring()(coordinates(label)) for label in source.module_generating_set()))
+    return _element_from_coordinates(
+        target,
+        tuple(coordinates(label) for label in source.module_generating_set()),
+    )
 
 
 def _ambient_element(lattice, coordinates):
@@ -584,16 +612,20 @@ class _PositiveVectorEnumerator:
             return None
         return int(self.scaled_max / self.d)
 
-    def first_multiplier(self):
+    def first_shell(self):
         maximum = self.max_multiplier()
         if maximum is None:
             return None
-        return self.kernel_lattice._first_close_vector_scale(
+        shell = self.kernel_lattice._exact_cvp_engine().first_close_vector_scale_coordinates(
             self.base_target,
             self.base_bound,
             maximum,
             exact_distance=self.mode == "isotropic",
         )
+        if shell is None:
+            return None
+        multiplier, close_coordinates = shell
+        return multiplier, self._ambient_vectors_from_shell(multiplier, close_coordinates)
 
     def vectors_at_multiplier(self, multiplier):
         target = tuple(SageQQ(multiplier) * entry for entry in self.base_target)
@@ -601,11 +633,15 @@ class _PositiveVectorEnumerator:
         field = self.kernel_lattice.base_ring().fraction_field()
         owned_target = tuple(field(int(entry.numerator())) / field(int(entry.denominator())) for entry in target)
         owned_bound = field(int(bound.numerator())) / field(int(bound.denominator()))
-        result = []
         close_coordinates = self.kernel_lattice._exact_cvp_engine().close_vector_coordinates(
             owned_target,
             owned_bound,
         )
+        return self._ambient_vectors_from_shell(multiplier, close_coordinates)
+
+    def _ambient_vectors_from_shell(self, multiplier, close_coordinates):
+        bound = (SageQQ(multiplier) ** 2) * self.base_bound
+        result = []
         for kernel_coordinates, kernel_square in close_coordinates:
             if self.mode == "isotropic" and kernel_square != bound:
                 continue
@@ -627,10 +663,11 @@ class _PositiveVectorEnumerator:
 def _find_positive_vectors(lattice, rational_direction, max_scal, mode: PerfectMode, *, only_shortest: bool):
     enumerator = _PositiveVectorEnumerator(lattice, rational_direction, max_scal, mode)
     if only_shortest and enumerator.scaled_max > 0:
-        multiplier = enumerator.first_multiplier()
-        if multiplier is None:
+        first = enumerator.first_shell()
+        if first is None:
             return ()
-        return enumerator.vectors_at_multiplier(multiplier)
+        _multiplier, vectors = first
+        return vectors
 
     result = []
     multiplier = 1
@@ -759,10 +796,10 @@ def _kernel_flipping(lattice, critical, base_normal, direction_normal, mode: Per
             upper = middle
             continue
         enumerator = _PositiveVectorEnumerator(lattice, tuple(test_direction_row), max_scal, mode)
-        first_multiplier = enumerator.first_multiplier()
-        if first_multiplier is None:
+        first = enumerator.first_shell()
+        if first is None:
             raise ArithmeticError("a critical perfect-cell shell disappeared during flipping")
-        total = enumerator.vectors_at_multiplier(first_multiplier)
+        _first_multiplier, total = first
         total_rows = _vector_rows(total)
         if total_rows == critical_rows:
             lower = middle
