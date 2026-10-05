@@ -33,3 +33,11 @@ def test_recursive_dispatch_uses_definite_leaf() -> None:
     lattice = Lattices(ZZ)("A2")
     group = IndefiniteOrthogonalAlgorithm().orthogonal_group(lattice)
     assert group.domain() is lattice
+
+
+def test_vector_stabilizer_lifts_reduced_group_and_fixes_vector() -> None:
+    plane = Lattices(ZZ)("U")
+    e, f = plane.module_generators()
+    vector = e + f
+    stabilizer = IndefiniteOrthogonalAlgorithm().vector_stabilizer(vector)
+    assert all(generator(vector) == vector for generator in stabilizer.generators())

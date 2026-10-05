@@ -36,7 +36,8 @@ from sage_indefinite_port.backends.polyhedral import (
 from sage_indefinite_port.backends.polyhedral import (
     facet_orbits as configuration_facet_orbits,
 )
-from sage_indefinite_port.groups.integral_structures import RationalMatrixGroup
+from sage_indefinite_port.groups.integral_structures import GeneratedSubgroup, RationalMatrixGroup
+from sage_indefinite_port.indefinite.vector_sections import NonIsotropicVectorSection, orthogonal_section
 from sage_indefinite_port.invariants import AttackProfile
 
 type PerfectMode = Literal["total", "isotropic"]
@@ -57,6 +58,25 @@ class IndefiniteOrthogonalAlgorithm:
                 return LorentzianPerfectComplex(profile.signed_view, "total").full_orthogonal_group()
             case _:
                 raise NotImplementedError("higher-Witt-index recursion is not in this commit boundary")
+
+    def vector_stabilizer(self, vector: Lattices.ElementMethods) -> GeneratedSubgroup:
+        section = orthogonal_section(vector)
+        if not isinstance(section, NonIsotropicVectorSection):
+            raise NotImplementedError("the isotropic stabilizer branch lands with PHASE-T5")
+        reduced_group = self.orthogonal_group(section.reduced_object())
+        reduced_generators = reduced_group.generators() if isinstance(reduced_group, RationalMatrixGroup) else tuple(reduced_group.group_generators())
+        ambient = vector.parent()
+        lifted = []
+        for generator in reduced_generators:
+            torsor = section.rational_lift(generator, target=section)
+            if torsor.integral_parameters(ambient, ambient) is None:
+                raise ArithmeticError("a reduced stabilizer generator has no integral ambient lift")
+            lifted.append(torsor.one_integral_extension())
+        generators = tuple(lifted)
+        if any(generator(vector) != vector for generator in generators):
+            raise ArithmeticError("a lifted vector-stabilizer generator does not fix the selected vector")
+        supergroup = RationalMatrixGroup(ambient, generators)
+        return GeneratedSubgroup(supergroup, generators)
 
 
 class TraversalObjectRecord(TypedDict):
