@@ -351,18 +351,23 @@ class MarkedCellOrbitAlgorithm:
         transporter = adjacency.transporter
         if transporter is None:
             raise ArithmeticError("a marked quotient adjacency needs a transporter")
-        inverse = ~transporter
+        source_marks = tuple(
+            adjacency.source.vector_configuration[position]
+            for position in sorted(adjacency.facet)
+            if adjacency.source.vector_configuration[position].q()
+            == adjacency.source.lattice.base_ring().zero()
+        )
         target_marks = self.local_marks(adjacency.target)
         transported = []
-        for position in sorted(adjacency.facet):
-            source_mark = adjacency.source.vector_configuration[position]
-            if source_mark.q() != source_mark.parent().base_ring().zero():
-                continue
-            target_mark = inverse(source_mark)
-            matches = [candidate for candidate in target_marks if candidate == target_mark]
-            if len(matches) != 1:
+        for target_mark in target_marks:
+            source_mark = transporter(target_mark)
+            matches = [candidate for candidate in source_marks if candidate == source_mark]
+            if len(matches) > 1:
                 raise ArithmeticError("an isotropic facet mark does not transport to a unique mark of the target representative")
-            transported.append((source_mark, matches[0]))
+            if matches:
+                transported.append((matches[0], target_mark))
+        if len(transported) != len(source_marks):
+            raise ArithmeticError("an isotropic facet mark has no unique mark in the target representative")
         return tuple(transported)
 
     def global_orbits(self) -> tuple[tuple[Lattices.ElementMethods, ...], ...]:
