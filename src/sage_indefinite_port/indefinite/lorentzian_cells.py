@@ -56,6 +56,17 @@ class IndefiniteOrthogonalAlgorithm:
 
                 return definite_orthogonal_group(profile.signed_view)
             case 1:
+                if int(profile.signed_view.module_rank()) == 2:
+                    labels = tuple(profile.signed_view.module_generating_set())
+                    if len(labels) == 2:
+                        left = profile.signed_view.module_generator(labels[0])
+                        right = profile.signed_view.module_generator(labels[1])
+                        zero = profile.signed_view.base_ring().zero()
+                        if profile.signed_view.q(left) == zero and profile.signed_view.q(right) == zero and profile.signed_view.b(left, right) != zero:
+                            automorphisms = profile.signed_view.Aut()
+                            swap = automorphisms((right, left))
+                            negation = automorphisms((-left, -right))
+                            return RationalMatrixGroup(profile.signed_view, (swap, negation))
                 return LorentzianPerfectComplex(profile.signed_view, "total").full_orthogonal_group()
             case _:
                 return self._higher_witt_orthogonal_group(profile.signed_view)
