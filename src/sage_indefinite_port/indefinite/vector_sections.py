@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Hashable
 from dataclasses import dataclass
+from functools import cached_property
 
 from dzack_research.preamble.categories.lattice_morphisms import (
     LatticeEmbeddingMethods,
@@ -30,6 +31,28 @@ class NonIsotropicVectorSection:
     def reduced_object(self) -> Lattices.ParentMethods:
         r"""Return the reduced lattice \(v^\perp\)."""
         return self.reduction
+
+    @cached_property
+    def _rational_lift_context(self):
+        source_ambient = self.inclusion.codomain()
+        source_ring = source_ambient.base_ring()
+        match source_ring:
+            case OwnedRings.NoZeroDivisors.Commutative.ParentMethods() as domain:
+                fraction_map = domain.fraction_field_map()
+            case _:
+                raise TypeError("rational lifting requires a lattice over an integral domain")
+        source_rational: Lattices.ParentMethods = source_ambient.base_change(fraction_map)
+        source_perpendicular_inclusion = self.inclusion.base_change(fraction_map)
+        coordinates = self.vector.to_vector()
+        source_vector = source_rational.linear_combination(
+            {
+                label: fraction_map(coordinates(label))
+                for label in source_ambient.module_generating_set()
+                if coordinates(label)
+            }
+        )
+        source_norm = source_rational.q(source_vector)
+        return fraction_map, source_rational, source_perpendicular_inclusion, source_vector, source_norm
 
     def rational_lift(
         self,
@@ -68,13 +91,20 @@ class NonIsotropicVectorSection:
             case False:
                 raise ValueError("source and target lattices must have the same base ring")
 
-        match source_ring:
-            case OwnedRings.NoZeroDivisors.Commutative.ParentMethods() as domain:
-                fraction_map = domain.fraction_field_map()
-            case _:
-                raise TypeError("rational lifting requires a lattice over an integral domain")
-        source_rational: Lattices.ParentMethods = source_ambient.base_change(fraction_map)
-        target_rational: Lattices.ParentMethods = target_ambient.base_change(fraction_map)
+        if target_section is self:
+            fraction_map, source_rational, source_perpendicular_inclusion, source_vector, source_norm = self._rational_lift_context
+            target_rational = source_rational
+        else:
+            match source_ring:
+                case OwnedRings.NoZeroDivisors.Commutative.ParentMethods() as domain:
+                    fraction_map = domain.fraction_field_map()
+                case _:
+                    raise TypeError("rational lifting requires a lattice over an integral domain")
+            source_rational = source_ambient.base_change(fraction_map)
+            target_rational = target_ambient.base_change(fraction_map)
+            source_perpendicular_inclusion = self.inclusion.base_change(fraction_map)
+            source_vector = None
+            source_norm = None
 
         def extend_source(
             vector: Lattices.ElementMethods,
@@ -102,12 +132,12 @@ class NonIsotropicVectorSection:
             )
             return result
 
-        source_perpendicular_inclusion = self.inclusion.base_change(fraction_map)
         target_perpendicular_inclusion = target_section.inclusion.base_change(fraction_map)
         reduced_rational = reduced_isometry.base_change(fraction_map)
-        source_vector = extend_source(self.vector)
-        target_vector = extend_target(target_section.vector)
-        source_norm = source_rational.q(source_vector)
+        if source_vector is None:
+            source_vector = extend_source(self.vector)
+            source_norm = source_rational.q(source_vector)
+        target_vector = source_vector if target_section is self else extend_target(target_section.vector)
 
         def image(label: Hashable) -> Lattices.ElementMethods:
             source_generator = source_rational.module_generator(label)
