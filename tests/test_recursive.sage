@@ -41,3 +41,13 @@ def test_vector_stabilizer_lifts_reduced_group_and_fixes_vector() -> None:
     vector = e + f
     stabilizer = IndefiniteOrthogonalAlgorithm().vector_stabilizer(vector)
     assert all(generator(vector) == vector for generator in stabilizer.generators())
+
+
+def test_vector_transporter_lifts_exact_reduced_isometry() -> None:
+    plane = Lattices(ZZ)("U")
+    e, f = plane.module_generators()
+    source = plane.scalar_multiple(ZZ.one() + ZZ.one(), e) + f
+    target = e + plane.scalar_multiple(ZZ.one() + ZZ.one(), f)
+    transporter = IndefiniteOrthogonalAlgorithm().vector_transporter(source, target)
+    assert transporter is not None
+    assert transporter(source) == target

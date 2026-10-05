@@ -55,7 +55,7 @@ class AttackProfile:
     negative_index: int
 
     @classmethod
-    def from_lattice(cls, lattice: Lattices.ParentMethods) -> "AttackProfile":
+    def from_lattice(cls, lattice: Lattices.ParentMethods) -> AttackProfile:
         positive, negative = lattice.signature_pair()
         positive_index = int(positive)
         negative_index = int(negative)
@@ -82,11 +82,8 @@ class VectorPrefilter:
     orthogonal_reduction_prefilter: LatticePrefilter | None
 
     @classmethod
-    def from_vector(cls, vector: Lattices.ElementMethods) -> "VectorPrefilter":
-        lattice = vector.parent()
+    def from_vector(cls, vector: Lattices.ElementMethods) -> VectorPrefilter:
         discriminant_key = None
-        if vector.is_primitive() and vector.div() != lattice.base_ring().zero():
-            discriminant_key = repr(vector.divided_discriminant_class())
         reduction_prefilter = None
         if vector.is_isotropic() and vector.is_primitive():
             reduction_prefilter = lattice_prefilter(vector.isotropic_reduction())

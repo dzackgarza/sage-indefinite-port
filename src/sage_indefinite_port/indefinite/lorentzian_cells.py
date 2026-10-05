@@ -38,7 +38,7 @@ from sage_indefinite_port.backends.polyhedral import (
 )
 from sage_indefinite_port.groups.integral_structures import GeneratedSubgroup, RationalMatrixGroup
 from sage_indefinite_port.indefinite.vector_sections import NonIsotropicVectorSection, orthogonal_section
-from sage_indefinite_port.invariants import AttackProfile
+from sage_indefinite_port.invariants import AttackProfile, VectorPrefilter
 
 type PerfectMode = Literal["total", "isotropic"]
 
@@ -77,6 +77,34 @@ class IndefiniteOrthogonalAlgorithm:
             raise ArithmeticError("a lifted vector-stabilizer generator does not fix the selected vector")
         supergroup = RationalMatrixGroup(ambient, generators)
         return GeneratedSubgroup(supergroup, generators)
+
+    def vector_transporter(self, source_vector: Lattices.ElementMethods, target_vector: Lattices.ElementMethods):
+        if VectorPrefilter.from_vector(source_vector) != VectorPrefilter.from_vector(target_vector):
+            return None
+        source_section = orthogonal_section(source_vector)
+        target_section = orthogonal_section(target_vector)
+        if isinstance(source_section, NonIsotropicVectorSection) != isinstance(target_section, NonIsotropicVectorSection):
+            return None
+        reduced_source = source_section.reduced_object()
+        reduced_target = target_section.reduced_object()
+        reduced_isometry = reduced_source.isometry_to(reduced_target)
+        if reduced_isometry is None:
+            return None
+        source = source_vector.parent()
+        target = target_vector.parent()
+        candidates = [reduced_isometry]
+        if reduced_target.is_definite():
+            for automorphism in reduced_target.O():
+                candidates.append(automorphism * reduced_isometry)
+        for candidate in candidates:
+            torsor = source_section.rational_lift(candidate, target=target_section)
+            if torsor.integral_parameters(source, target) is None:
+                continue
+            witness = torsor.one_integral_extension()
+            if witness(source_vector) != target_vector:
+                raise ArithmeticError("an integral vector transporter does not carry the selected source vector to the target")
+            return witness
+        return None
 
 
 class TraversalObjectRecord(TypedDict):
