@@ -68,6 +68,28 @@ class EichlerOrbitCover:
             raise ValueError(f"no covering representative exists for norm {norm}")
         return cover.representatives[0]
 
+    def choose_splitting_vector(self, *, objective: str = "minimize_recursive_complexity"):
+        if objective != "minimize_recursive_complexity":
+            raise ValueError("the implemented splitting-vector objective is 'minimize_recursive_complexity'")
+        lattice = self.lattice()
+        basis = tuple(lattice.module_generators())
+        candidates = list(basis)
+        for left_position, left in enumerate(basis):
+            for right in basis[left_position + 1 :]:
+                candidates.append(left + right)
+                candidates.append(left - right)
+        positive = tuple(vector for vector in candidates if vector.q() > lattice.base_ring().zero())
+        if not positive:
+            raise ValueError("the Eichler model lattice has no positive vector in its framing span")
+        labels = tuple(lattice.module_generating_set())
+        return min(
+            positive,
+            key=lambda vector: (
+                abs(int(vector.q())),
+                tuple(int(vector.to_vector()(label)) for label in labels),
+            ),
+        )
+
 
 def eichler_transvection(
     isotropic: Lattices.ElementMethods,

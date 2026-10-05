@@ -52,3 +52,9 @@ def test_find_hyperbolic_pair_matches_isotropic_fixture_cases() -> None:
     anisotropic = Lattices(ZZ)([[-516, 36, 72], [36, -2, -5], [72, -5, -10]])
     with pytest.raises(ValueError):
         find_hyperbolic_pair(anisotropic)
+
+
+def test_choose_splitting_vector_returns_positive_vector() -> None:
+    model = EichlerOrbitCover(Lattices(ZZ)("A2").two_u_eichler_model())
+    vector = model.choose_splitting_vector()
+    assert vector.q() > model.lattice().base_ring().zero()
