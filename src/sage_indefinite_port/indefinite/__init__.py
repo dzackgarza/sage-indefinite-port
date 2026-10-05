@@ -5,6 +5,7 @@ from sage_indefinite_port.indefinite.eichler import (
     InfiniteLocusError,
     OrbitCover,
     eichler_transvection,
+    find_hyperbolic_pair,
     square_divisors,
 )
 from sage_indefinite_port.indefinite.isotropic_lifts import (
@@ -30,6 +31,7 @@ __all__ = [
     "CodimensionOneIsotropicExtension",
     "EichlerOrbitCover",
     "eichler_transvection",
+    "find_hyperbolic_pair",
     "InfiniteLocusError",
     "FlagType",
     "CodimensionOneIsotropicExtensionResult",

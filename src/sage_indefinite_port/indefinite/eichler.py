@@ -3,9 +3,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import gcd, isqrt
 
+from dzack_research.preamble.categories.eichler_criterion import TwoUEichlerModel
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.lattices import Lattices
+from dzack_research.preamble.tensors.tensor import _engine_component_matrix
+from sage.matrix.constructor import matrix
+from sage.modules.free_module_element import FreeModuleElement
+from sage.quadratic_forms.qfsolve import qfsolve
+from sage.rings.integer import Integer as SageInteger
+from sage.rings.rational_field import QQ as SageQQ
 
 
 class InfiniteLocusError(ValueError):
@@ -29,7 +37,7 @@ class OrbitCover:
 class EichlerOrbitCover:
     """Immutable covering model for the preamble's represented ``2U + K`` lattice."""
 
-    model: object
+    model: TwoUEichlerModel
 
     def lattice(self):
         return self.model.lattice()
@@ -83,7 +91,71 @@ def square_divisors(integer) -> tuple[int, ...]:
     value = abs(int(integer))
     if value == 0:
         raise ValueError("zero has infinitely many square divisors")
-    return tuple(divisor for divisor in range(1, int(value**0.5) + 1) if value % (divisor * divisor) == 0)
+    return tuple(divisor for divisor in range(1, isqrt(value) + 1) if value % (divisor * divisor) == 0)
+
+
+def find_hyperbolic_pair(
+    lattice: Lattices.ParentMethods,
+    *,
+    primitive: bool = True,
+    method: str = "auto",
+) -> tuple[Lattices.ElementMethods, Lattices.ElementMethods]:
+    r"""Return verified integral isotropic ``v,w`` with ``b(v,w)>0``.
+
+    PARI's exact ``qfsolve`` supplies one rational isotropic direction.  Clearing
+    denominators and dividing the coordinate gcd gives an integral primitive
+    vector ``v``.  For any integral ``h`` with ``d=b(v,h)>0``, the vector
+
+    ``w = 2 d h - q(h) v``
+
+    is integral isotropic and satisfies ``b(v,w)=2d^2``.
+    """
+    if method != "auto":
+        raise ValueError("the implemented hyperbolic-pair method is 'auto'")
+    gram = _engine_component_matrix(lattice.gram_tensor()).change_ring(SageQQ)
+    solution = qfsolve(gram)
+    if isinstance(solution, SageInteger):
+        raise ValueError("the lattice is anisotropic over QQ")
+    if not isinstance(solution, FreeModuleElement):
+        raise ValueError("qfsolve returned a degenerate isotropic subspace instead of one vector")
+    denominators = [entry.denominator() for entry in solution]
+    denominator = 1
+    for entry_denominator in denominators:
+        denominator = denominator * int(entry_denominator) // gcd(denominator, int(entry_denominator))
+    coordinates = [int(denominator * entry) for entry in solution]
+    content = 0
+    for coordinate in coordinates:
+        content = gcd(content, abs(coordinate))
+    if content == 0:
+        raise ArithmeticError("qfsolve returned the zero vector")
+    coordinates = [coordinate // content for coordinate in coordinates]
+    labels = tuple(lattice.module_generating_set())
+    ring = lattice.base_ring()
+    v = lattice.linear_combination({label: ring(coordinate) for label, coordinate in zip(labels, coordinates, strict=True) if coordinate})
+    if not v.is_isotropic():
+        raise ArithmeticError("the saturated qfsolve witness is not isotropic")
+    if primitive and not v.is_primitive():
+        raise ArithmeticError("the saturated qfsolve witness is not primitive")
+
+    h = None
+    d = ring.zero()
+    for label in labels:
+        candidate = lattice.module_generator(label)
+        pairing = lattice.b(v, candidate)
+        if pairing != ring.zero():
+            h = candidate
+            d = pairing
+            break
+    if h is None:
+        raise ArithmeticError("a nonzero isotropic vector pairs trivially with every lattice generator")
+    if d < ring.zero():
+        h = lattice.scalar_multiple(-ring.one(), h)
+        d = -d
+    two_d = ring(2) * d
+    w = lattice.scalar_multiple(two_d, h) - lattice.scalar_multiple(h.q(), v)
+    if not w.is_isotropic() or lattice.b(v, w) <= ring.zero():
+        raise ArithmeticError("the constructed partner does not form a verified hyperbolic pair")
+    return v, w
 
 
 __all__ = [
@@ -91,5 +163,6 @@ __all__ = [
     "InfiniteLocusError",
     "OrbitCover",
     "eichler_transvection",
+    "find_hyperbolic_pair",
     "square_divisors",
 ]

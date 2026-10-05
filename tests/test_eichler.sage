@@ -6,6 +6,7 @@ from sage_indefinite_port.indefinite.eichler import (
     EichlerOrbitCover,
     InfiniteLocusError,
     eichler_transvection,
+    find_hyperbolic_pair,
     square_divisors,
 )
 
@@ -39,3 +40,15 @@ def test_two_u_cover_preserves_primitive_and_nonprimitive_semantics() -> None:
     assert all(vector.q() == nonprimitive_norm for vector in nonprimitive)
     with pytest.raises(InfiniteLocusError):
         model.covering_representatives(0, primitive=False)
+
+
+def test_find_hyperbolic_pair_matches_isotropic_fixture_cases() -> None:
+    isotropic = Lattices(ZZ)([[4, 0, 0], [0, 0, -1], [0, -1, -2]])
+    v, w = find_hyperbolic_pair(isotropic)
+    assert v.is_primitive() and v.is_isotropic()
+    assert w.is_isotropic()
+    assert isotropic.b(v, w) > ZZ.zero()
+
+    anisotropic = Lattices(ZZ)([[-516, 36, 72], [36, -2, -5], [72, -5, -10]])
+    with pytest.raises(ValueError):
+        find_hyperbolic_pair(anisotropic)
