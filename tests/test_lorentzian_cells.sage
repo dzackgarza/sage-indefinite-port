@@ -4,6 +4,8 @@ import pytest
 from dzack_research.preamble.all import ZZ as OwnedZZ
 from dzack_research.preamble.all import Lattices
 from sage.matrix.constructor import matrix
+from sage.groups.matrix_gps.finitely_generated import MatrixGroup
+from sage.rings.finite_rings.finite_field_constructor import GF
 from sage.rings.integer_ring import ZZ as SageZZ
 
 from sage_indefinite_port.backends.canonization import (
@@ -28,6 +30,7 @@ from tests.fixtures.oracle_fixtures import (
     LorentzianEquivalenceCase,
     load_lorentzian_equivalence_cases,
     load_lorentzian_perfect_domains,
+    load_lorentzian_stabilizer_cases,
 )
 
 
@@ -53,6 +56,8 @@ def _transported_basis_rows(
 
 
 _EQUIVALENCE_CASES = load_lorentzian_equivalence_cases()
+_PERFECT_DOMAIN_CASES = load_lorentzian_perfect_domains()
+_STABILIZER_CASES = load_lorentzian_stabilizer_cases()
 
 
 @pytest.mark.parametrize(
@@ -240,3 +245,54 @@ def test_rank_three_marked_isotropic_orbits_follow_cell_adjacencies() -> None:
     assert all(vector.q() == 0 for vector in orbits[0])
     with pytest.raises(NoLocalMarkTheoremError):
         MarkedCellOrbitAlgorithm(complex_, norm=2)
+
+
+@pytest.mark.parametrize(
+    "case",
+    _PERFECT_DOMAIN_CASES,
+    ids=[case["id"] for case in _PERFECT_DOMAIN_CASES],
+)
+@pytest.mark.parametrize("mode", ("total", "isotropic"))
+def test_all_frozen_perfect_domain_counts(case, mode) -> None:
+    lattice = Lattices(OwnedZZ)(case["gram"])
+
+    cells = LorentzianPerfectComplex(lattice, mode).quotient_cells()
+
+    assert len(cells) == case[f"{mode}_count"]
+
+
+def test_U_plus_E8_has_one_global_isotropic_marked_cell_orbit() -> None:
+    lattice = Lattices(OwnedZZ)("U") + Lattices(OwnedZZ)("E8")
+    complex_ = LorentzianPerfectComplex(lattice, "total")
+
+    orbits = MarkedCellOrbitAlgorithm(complex_).global_orbits()
+
+    assert len(orbits) == 1
+    assert orbits[0]
+    assert all(vector.q() == 0 for vector in orbits[0])
+
+
+@pytest.mark.parametrize(
+    "case",
+    _STABILIZER_CASES,
+    ids=[case["id"] for case in _STABILIZER_CASES],
+)
+def test_frozen_lorentzian_stabilizers_have_the_same_mod_3_image(case) -> None:
+    lattice = Lattices(OwnedZZ)(case["gram"])
+    computed = LorentzianPerfectComplex(lattice, "total").full_orthogonal_group()
+    field = GF(3)
+    automorphisms = lattice.Aut()
+
+    computed_matrices = tuple(
+        matrix(field, automorphisms._row_action_matrix(generator))
+        for generator in computed.generators()
+    )
+    fixture_matrices = tuple(
+        matrix(field, rows)
+        for rows in case["generators"]
+    )
+    computed_image = MatrixGroup(computed_matrices)
+    fixture_image = MatrixGroup(fixture_matrices)
+
+    assert all(generator in fixture_image for generator in computed_image.gens())
+    assert all(generator in computed_image for generator in fixture_image.gens())
