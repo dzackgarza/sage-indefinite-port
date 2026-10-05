@@ -36,8 +36,8 @@ from sage_indefinite_port.backends.polyhedral import (
 from sage_indefinite_port.backends.polyhedral import (
     facet_orbits as configuration_facet_orbits,
 )
-from sage_indefinite_port.groups.integral_structures import GeneratedSubgroup, RationalMatrixGroup
-from sage_indefinite_port.indefinite.eichler import EichlerOrbitCover
+from sage_indefinite_port.groups.integral_structures import GeneratedSubgroup, IntegralStructureAction, RationalMatrixGroup
+from sage_indefinite_port.indefinite.eichler import EichlerOrbitCover, build_eichler_envelope
 from sage_indefinite_port.indefinite.vector_sections import NonIsotropicVectorSection, orthogonal_section
 from sage_indefinite_port.invariants import AttackProfile, VectorPrefilter
 
@@ -72,42 +72,39 @@ class IndefiniteOrthogonalAlgorithm:
                 return self._higher_witt_orthogonal_group(profile.signed_view)
 
     def _two_u_cover_model(self, lattice: Lattices.ParentMethods) -> EichlerOrbitCover:
-        if not lattice.splits_two_hyperbolic_planes():
-            raise ValueError("higher-Witt recursion currently requires a represented 2U decomposition")
-        factors = tuple(lattice.biproduct_factors())
-        if len(factors) == 2:
-            complement = Lattices(lattice.base_ring())(lattice.base_ring().free_module(0))
-        elif len(factors) >= 3:
-            complement = factors[-1]
-        else:
-            raise ValueError("a represented 2U decomposition needs two hyperbolic-plane factors")
-        return EichlerOrbitCover(complement.two_u_eichler_model())
+        if lattice.splits_two_hyperbolic_planes():
+            return EichlerOrbitCover(lattice.two_u_eichler_model_from_represented_biproduct())
+        envelope = build_eichler_envelope(lattice)
+        return EichlerOrbitCover(envelope.two_u_decomposition.lattice.two_u_eichler_model_from_represented_biproduct())
 
     def _higher_witt_orthogonal_group(self, lattice: Lattices.ParentMethods) -> GeneratedSubgroup:
-        model = self._two_u_cover_model(lattice)
-        model_lattice = model.lattice()
-        model_to_lattice = model_lattice.isometry_to(lattice)
-        if model_to_lattice is None:
-            raise ArithmeticError("the represented 2U model is not isometric to the supplied lattice")
-        lattice_to_model = ~model_to_lattice
+        if lattice.splits_two_hyperbolic_planes():
+            model = self._two_u_cover_model(lattice)
+            vector = model.choose_splitting_vector()
+            approximate_family = model.subgroup()
+            approximate = tuple(approximate_family[label] for label in approximate_family.index_set())
+            stabilizer = self.vector_stabilizer(vector).generators()
+            transporters = []
+            for candidate in model.covering_representatives(vector.q(), primitive=vector.is_primitive()):
+                witness = self.vector_transporter(vector, candidate)
+                if witness is not None:
+                    transporters.append(witness)
+            generators = approximate + stabilizer + tuple(transporters)
+            return GeneratedSubgroup(RationalMatrixGroup(lattice, generators), generators)
 
-        def transport_isometry(generator):
-            return model_to_lattice * generator * lattice_to_model
-
-        model_vector = model.choose_splitting_vector()
-        vector = model_to_lattice(model_vector)
-        approximate_family = model.subgroup()
-        approximate = tuple(transport_isometry(approximate_family[label]) for label in approximate_family.index_set())
-        stabilizer = self.vector_stabilizer(vector).generators()
-        transporters = []
-        for model_candidate in model.covering_representatives(model_vector.q(), primitive=model_vector.is_primitive()):
-            candidate = model_to_lattice(model_candidate)
-            witness = self.vector_transporter(vector, candidate)
-            if witness is not None:
-                transporters.append(witness)
-        generators = approximate + stabilizer + tuple(transporters)
-        supergroup = RationalMatrixGroup(lattice, generators)
-        return GeneratedSubgroup(supergroup, generators)
+        envelope = build_eichler_envelope(lattice)
+        envelope_group = self._higher_witt_orthogonal_group(envelope.envelope)
+        rational_envelope = envelope.integral_action.rational_group().rational_lattice()
+        rational_generators = tuple(generator.base_change(lattice.base_ring().fraction_field_map()) for generator in envelope_group.generators())
+        rational_group = RationalMatrixGroup(rational_envelope, rational_generators)
+        action = IntegralStructureAction(rational_group, envelope.inclusion)
+        integral = action.lattice_stabilizer()
+        lifted = []
+        for generator in integral.generators():
+            images = tuple(envelope.lattice_to_envelope.lift(generator(envelope.lattice_to_envelope(source_generator))) for source_generator in lattice.module_generators())
+            lifted.append(lattice.Aut()(images))
+        generators = tuple(lifted)
+        return GeneratedSubgroup(RationalMatrixGroup(lattice, generators), generators)
 
     def isometry(self, source: Lattices.ParentMethods, target: Lattices.ParentMethods):
         if self.attack_profile(source).positive_index != self.attack_profile(target).positive_index:
@@ -116,6 +113,23 @@ class IndefiniteOrthogonalAlgorithm:
             from sage_indefinite_port.backends.definite import definite_isometry
 
             return definite_isometry(source, target)
+        source_profile = self.attack_profile(source)
+        target_profile = self.attack_profile(target)
+        if source_profile.positive_index == 1 and target_profile.positive_index == 1:
+            source_complex = LorentzianPerfectComplex(source_profile.signed_view, "total")
+            target_complex = LorentzianPerfectComplex(target_profile.signed_view, "total")
+            target_buckets = {}
+            for target_cell in target_complex.quotient_cells():
+                target_buckets.setdefault(_perfect_form_hash_key(target_cell), []).append(target_cell)
+            source_cells = source_complex.quotient_cells()
+            if not any(_perfect_form_hash_key(source_cell) in target_buckets for source_cell in source_cells):
+                return None
+            for source_cell in source_cells:
+                for target_cell in target_buckets.get(_perfect_form_hash_key(source_cell), ()):
+                    witness = source_complex.local_backend().cell_transporter(source_cell, target_cell)
+                    if witness is not None:
+                        return witness
+            return None
         source_model = self._two_u_cover_model(source)
         target_model = self._two_u_cover_model(target)
         witness = source_model.model.isometry_to(target_model.model)

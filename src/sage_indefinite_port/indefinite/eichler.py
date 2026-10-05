@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import gcd, isqrt
 
+from dzack_research.preamble.all import QQ, ZZ, Modules
 from dzack_research.preamble.categories.eichler_criterion import TwoUEichlerModel
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.lattices import Lattices
@@ -16,7 +17,8 @@ from sage.quadratic_forms.qfsolve import qfsolve
 from sage.rings.integer import Integer as SageInteger
 from sage.rings.rational_field import QQ as SageQQ
 
-from sage_indefinite_port.groups.integral_structures import ArithmeticSubgroup, IntegralStructureAction
+from sage_indefinite_port.backends.canonization import _identity_rows, _rational_lattice_with_integral_structure
+from sage_indefinite_port.groups.integral_structures import ArithmeticSubgroup, IntegralStructureAction, RationalMatrixGroup
 
 
 class InfiniteLocusError(ValueError):
@@ -91,6 +93,7 @@ class EichlerEnvelope:
     lattice: Lattices.ParentMethods
     envelope: Lattices.ParentMethods
     inclusion: ModuleEmbeddingMethods
+    lattice_to_envelope: ModuleEmbeddingMethods
     two_u_decomposition: TwoHyperbolicPlaneDecomposition
     integral_action: IntegralStructureAction
 
@@ -161,6 +164,59 @@ class EichlerOrbitCover:
         )
 
 
+def build_eichler_envelope(lattice: Lattices.ParentMethods) -> EichlerEnvelope:
+    """Construct a literal-2U Eichler envelope containing ``lattice``."""
+    ring = lattice.base_ring()
+    first_v, first_w = find_hyperbolic_pair(lattice)
+    first_plane = lattice.subobject_on((first_v, first_w)).saturation()
+    first_complement = lattice.orthogonal_complement(first_plane)
+    second_v, second_w = find_hyperbolic_pair(first_complement)
+    second_v_ambient = first_complement.inclusion()(second_v)
+    second_w_ambient = first_complement.inclusion()(second_w)
+    two_u_span = lattice.subobject_on((first_v, first_w, second_v_ambient, second_w_ambient))
+    complement = lattice.orthogonal_complement(two_u_span)
+    model = complement.two_u_eichler_model()
+    envelope = model.lattice()
+
+    source_labels = tuple(lattice.module_generating_set())
+    envelope_labels = tuple(envelope.module_generating_set())
+    # Express the selected four hyperbolic vectors and complement basis in the source lattice.
+    selected = (first_v, first_w, second_v_ambient, second_w_ambient) + tuple(complement.inclusion()(generator) for generator in complement.module_generators())
+    from dzack_research.preamble.categories.rings.ring_foundation import _engine_element, _engine_ring
+
+    change = matrix(
+        _engine_ring(ring),
+        [[_engine_element(ring, vector.to_vector()(label)) for vector in selected] for label in source_labels],
+    )
+    inverse = change.inverse()
+
+    def image(label):
+        position = int(lattice.module_generating_set().ranking_map()(label))
+        coefficients = inverse.column(position)
+        return envelope.linear_combination({envelope_labels[i]: ring(coeff) for i, coeff in enumerate(coefficients) if coeff})
+
+    inclusion_to_envelope = lattice.module_category().Mor(lattice, envelope)(image)
+    rational_envelope = envelope.base_change(ring.fraction_field_map())
+    restriction = Modules(QQ).restriction_of_scalars(ZZ.Mor(QQ)(lambda element: QQ(element)))
+    integral_structure_space = restriction(rational_envelope)
+    inclusion = _rational_lattice_with_integral_structure(
+        lattice,
+        rational_envelope,
+        integral_structure_space,
+        _identity_rows(int(lattice.module_rank())),
+    )
+    rational_group = RationalMatrixGroup(rational_envelope, ())
+    action = IntegralStructureAction(rational_group, inclusion)
+    return EichlerEnvelope(
+        lattice,
+        envelope,
+        inclusion,
+        inclusion_to_envelope,
+        TwoHyperbolicPlaneDecomposition.from_model(model),
+        action,
+    )
+
+
 def eichler_transvection(
     isotropic: Lattices.ElementMethods,
     orthogonal: Lattices.ElementMethods,
@@ -204,6 +260,17 @@ def find_hyperbolic_pair(
     """
     if method != "auto":
         raise ValueError("the implemented hyperbolic-pair method is 'auto'")
+    if int(lattice.module_rank()) == 2 and lattice.signature_pair() == (lattice.base_ring().one(), lattice.base_ring().one()):
+        basis = tuple(lattice.module_generators())
+        candidates = basis + (basis[0] + basis[1], basis[0] - basis[1], -basis[0] + basis[1], -basis[0] - basis[1])
+        isotropic = tuple(vector for vector in candidates if vector and vector.is_isotropic())
+        for left in isotropic:
+            for right in isotropic:
+                pairing = lattice.b(left, right)
+                if pairing != lattice.base_ring().zero():
+                    if pairing < lattice.base_ring().zero():
+                        right = -right
+                    return left, right
     gram = _engine_component_matrix(lattice.gram_tensor()).change_ring(SageQQ)
     solution = qfsolve(gram)
     if isinstance(solution, SageInteger):
@@ -252,6 +319,7 @@ def find_hyperbolic_pair(
 
 __all__ = [
     "EichlerEnvelope",
+    "build_eichler_envelope",
     "EichlerOrbitCover",
     "InfiniteLocusError",
     "OrbitCover",
