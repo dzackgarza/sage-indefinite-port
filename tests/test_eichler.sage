@@ -1,6 +1,13 @@
 from dzack_research.preamble.all import Lattices, ZZ
 
-from sage_indefinite_port.indefinite.eichler import eichler_transvection, square_divisors
+import pytest
+
+from sage_indefinite_port.indefinite.eichler import (
+    EichlerOrbitCover,
+    InfiniteLocusError,
+    eichler_transvection,
+    square_divisors,
+)
 
 
 def test_eichler_transvection_delegates_to_preamble_isometry() -> None:
@@ -17,3 +24,18 @@ def test_eichler_transvection_delegates_to_preamble_isometry() -> None:
 def test_square_divisors_match_nonprimitive_norm_decomposition() -> None:
     assert square_divisors(72) == (1, 2, 3, 6)
     assert square_divisors(-72) == (1, 2, 3, 6)
+
+
+def test_two_u_cover_preserves_primitive_and_nonprimitive_semantics() -> None:
+    complement = Lattices(ZZ)("A2")
+    model = EichlerOrbitCover(complement.two_u_eichler_model())
+
+    primitive = model.covering_representatives(2, primitive=True)
+    nonprimitive = model.covering_representatives(8, primitive=False)
+    primitive_norm = primitive.representatives[0].q()
+    nonprimitive_norm = nonprimitive.representatives[0].q()
+
+    assert all(vector.is_primitive() and vector.q() == primitive_norm for vector in primitive)
+    assert all(vector.q() == nonprimitive_norm for vector in nonprimitive)
+    with pytest.raises(InfiniteLocusError):
+        model.covering_representatives(0, primitive=False)

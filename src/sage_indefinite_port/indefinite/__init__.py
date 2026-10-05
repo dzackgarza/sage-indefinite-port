@@ -1,7 +1,12 @@
 """Indefinite-lattice reduction and lifting algorithms."""
 
-from sage_indefinite_port.indefinite.eichler import eichler_transvection, square_divisors
-
+from sage_indefinite_port.indefinite.eichler import (
+    EichlerOrbitCover,
+    InfiniteLocusError,
+    OrbitCover,
+    eichler_transvection,
+    square_divisors,
+)
 from sage_indefinite_port.indefinite.isotropic_lifts import (
     CodimensionOneIsotropicExtension,
     CodimensionOneIsotropicExtensionResult,
@@ -23,7 +28,9 @@ from sage_indefinite_port.indefinite.vector_sections import (
 
 __all__ = [
     "CodimensionOneIsotropicExtension",
+    "EichlerOrbitCover",
     "eichler_transvection",
+    "InfiniteLocusError",
     "FlagType",
     "CodimensionOneIsotropicExtensionResult",
     "IntegralParameterCoset",
@@ -32,6 +39,7 @@ __all__ = [
     "MatrixEquationSolution",
     "NoIntegralExtensionError",
     "NonIsotropicVectorSection",
+    "OrbitCover",
     "PointwisePerpendicularKernel",
     "VectorOrthogonalSection",
     "orthogonal_section",
