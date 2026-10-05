@@ -1,6 +1,6 @@
 """Engine-boundary adapters for recursive indefinite lattice operations."""
 
-from dzack_research.preamble.all import Lattices, ZZ
+from dzack_research.preamble.all import ZZ, Lattices
 
 from sage_indefinite_port.indefinite.lorentzian_cells import IndefiniteOrthogonalAlgorithm
 
@@ -11,20 +11,11 @@ def _lattice(gram):
 
 def _vector(lattice, coordinates):
     labels = tuple(lattice.module_generating_set())
-    return lattice.linear_combination(
-        {
-            label: lattice.base_ring()(int(coefficient))
-            for label, coefficient in zip(labels, coordinates, strict=True)
-            if coefficient
-        }
-    )
+    return lattice.linear_combination({label: lattice.base_ring()(int(coefficient)) for label, coefficient in zip(labels, coordinates, strict=True) if coefficient})
 
 
 def _row_matrix(isometry):
-    return [
-        [int(entry) for entry in row]
-        for row in isometry.domain().Aut()._row_action_matrix(isometry).rows()
-    ]
+    return [[int(entry) for entry in row] for row in isometry.domain().Aut()._row_action_matrix(isometry).rows()]
 
 
 def indefinite_automorphism_group(gram):
