@@ -697,7 +697,11 @@ def test_construction_aware_subgroup_carriers_retain_defining_data() -> None:
 
 
 def test_E8_root_action_word_lift_kernel_and_stabilizer_indices() -> None:
-    lattice, group = _root_reflection_group("E8")
+    lattice = Lattices(ZZ)("E8")
+    group = RationalMatrixGroup(
+        lattice,
+        tuple(lattice.Aut().framing().group_generators()),
+    )
     roots = tuple(lattice.roots())
     assert len(roots) == 240
 
