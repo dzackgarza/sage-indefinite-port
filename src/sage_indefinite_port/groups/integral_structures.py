@@ -7,7 +7,7 @@ isometries.  Sage matrices are used only privately to normalize a finite
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Hashable, Iterable
 from functools import cached_property
 
 from dzack_research.preamble.all import (
@@ -160,6 +160,318 @@ class ArithmeticSubgroup(RationalMatrixGroup):
         return self._supergroup
 
 
+class FinitePermutationRepresentation[FinitePointT: Hashable](SageObject):
+    r"""A finite permutation quotient with exact lifts to live isometries."""
+
+    def __init__(
+        self,
+        group: RationalMatrixGroup,
+        points: tuple[FinitePointT, ...],
+        action: Callable[[LatticeIsometryMethods, FinitePointT], FinitePointT],
+    ) -> None:
+        if not points:
+            raise ValueError("a finite permutation representation needs at least one point")
+        self._group = group
+        self._points = tuple(points)
+        self._position_by_point = {point: position for position, point in enumerate(self._points)}
+        if len(self._position_by_point) != len(self._points):
+            raise ValueError("a finite permutation representation needs distinct represented points")
+        self._action = action
+        self._matrix_isometry_cache: dict[RationalMatrixKey, LatticeIsometryMethods] = {}
+        self._generator_permutations = tuple(
+            self._permutation_of(generator, check_image=False)
+            for generator in group.generators()
+        )
+        self._free_group = libgap.FreeGroup(len(group.generators()))
+        self._permutation_group = libgap.Group(list(self._generator_permutations))
+        self._homomorphism = libgap.GroupHomomorphismByImages(
+            self._free_group,
+            self._permutation_group,
+            self._free_group.GeneratorsOfGroup(),
+            list(self._generator_permutations),
+        )
+
+    def group(self) -> RationalMatrixGroup:
+        return self._group
+
+    def points(self) -> tuple[FinitePointT, ...]:
+        return self._points
+
+    def is_faithful(self) -> bool:
+        r"""Return whether the finite action is faithful on the generated matrix group."""
+        automorphisms = self.group().rational_lattice().Aut()
+        engine_group = automorphisms._engine_subgroup_from_generators(self.group().generators())
+        try:
+            generated_order = int(engine_group.order())
+        except (TypeError, ValueError, OverflowError):
+            return False
+        return generated_order == self.image_order()
+
+    def image_order(self) -> int:
+        return int(self._permutation_group.Size())
+
+    def generator_word_lift(
+        self,
+        word: tuple[tuple[int, int], ...],
+    ) -> LatticeIsometryMethods:
+        r"""Lift an exponent word in the selected generators to a live isometry."""
+        automorphisms = self.group().rational_lattice().Aut()
+        matrices = tuple(
+            automorphisms._row_action_matrix(generator).transpose()
+            for generator in self.group().generators()
+        )
+        matrix_result = (
+            matrices[0].parent().one()
+            if matrices
+            else automorphisms._row_action_matrix(automorphisms.identity()).transpose()
+        )
+        for generator_position, exponent in word:
+            if generator_position < 0 or generator_position >= len(matrices):
+                raise ValueError("a generator word refers to a generator outside the selected framing")
+            matrix_result = (matrices[generator_position] ** int(exponent)) * matrix_result
+        matrix_key = tuple(tuple(entry for entry in row) for row in matrix_result.rows())
+        cached = self._matrix_isometry_cache.get(matrix_key)
+        if cached is not None:
+            return cached
+        result = automorphisms._isometry_from_column_matrix(matrix_result)
+        self._matrix_isometry_cache[matrix_key] = result
+        return result
+
+    def _permutation_of(
+        self,
+        automorphism: LatticeIsometryMethods,
+        *,
+        check_image: bool = True,
+    ) -> GapElement:
+        images = []
+        for point in self.points():
+            moved = self._action(automorphism, point)
+            position = self._position_by_point.get(moved)
+            if position is None:
+                raise ArithmeticError("a finite action does not preserve the represented point set")
+            images.append(position + 1)
+        permutation = libgap.PermList(images)
+        if check_image and permutation not in self._permutation_group:
+            raise ValueError("an isometry does not lie in the represented finite image")
+        return permutation
+
+    def _gap_word_lift(self, word: GapElement) -> LatticeIsometryMethods:
+        representation = tuple(int(entry) for entry in libgap.ExtRepOfObj(word).sage())
+        exponent_word = tuple(
+            (representation[position] - 1, representation[position + 1])
+            for position in range(0, len(representation), 2)
+        )
+        return self.generator_word_lift(exponent_word)
+
+    def _preimage_generators(
+        self,
+        finite_subgroup: GapElement,
+        *,
+        faithful: bool = False,
+    ) -> tuple[LatticeIsometryMethods, ...]:
+        if faithful:
+            return tuple(
+                self._gap_word_lift(
+                    libgap.PreImagesRepresentative(self._homomorphism, generator)
+                )
+                for generator in finite_subgroup.GeneratorsOfGroup()
+            )
+        preimage = libgap.PreImage(self._homomorphism, finite_subgroup)
+        return tuple(self._gap_word_lift(word) for word in preimage.GeneratorsOfGroup())
+
+    def _image_subgroup(
+        self,
+        generators: tuple[LatticeIsometryMethods, ...],
+    ) -> GapElement:
+        return libgap.Subgroup(
+            self._permutation_group,
+            [self._permutation_of(generator) for generator in generators],
+        )
+
+    def _subgroup_index(self, finite_subgroup: GapElement) -> int:
+        subgroup_order = int(finite_subgroup.Size())
+        image_order = self.image_order()
+        if image_order % subgroup_order:
+            raise ArithmeticError("a finite subgroup order does not divide its ambient image order")
+        return image_order // subgroup_order
+
+
+class GeneratedSubgroup(ArithmeticSubgroup):
+    r"""An arithmetic subgroup retaining the selected generating family."""
+
+    def __init__(
+        self,
+        supergroup: RationalMatrixGroup,
+        generators: tuple[LatticeIsometryMethods, ...],
+    ) -> None:
+        self._selected_generators = tuple(generators)
+        super().__init__(supergroup, self._selected_generators)
+
+    def selected_generators(self) -> tuple[LatticeIsometryMethods, ...]:
+        return self._selected_generators
+
+
+class FinitePreimageSubgroup[FinitePointT: Hashable](ArithmeticSubgroup):
+    r"""The exact preimage of a represented subgroup of a finite quotient."""
+
+    def __init__(
+        self,
+        representation: FinitePermutationRepresentation[FinitePointT],
+        finite_image_generators: tuple[LatticeIsometryMethods, ...],
+    ) -> None:
+        self._representation = representation
+        self._finite_image_generators = tuple(finite_image_generators)
+        self._finite_subgroup = representation._image_subgroup(self._finite_image_generators)
+        super().__init__(
+            representation.group(),
+            representation._preimage_generators(self._finite_subgroup),
+        )
+
+    def representation(self) -> FinitePermutationRepresentation[FinitePointT]:
+        return self._representation
+
+    def finite_image_generators(self) -> tuple[LatticeIsometryMethods, ...]:
+        return self._finite_image_generators
+
+    def index(self) -> int:
+        return self.representation()._subgroup_index(self._finite_subgroup)
+
+
+class KernelSubgroup[FinitePointT: Hashable](ArithmeticSubgroup):
+    r"""The exact kernel of a finite permutation representation."""
+
+    def __init__(
+        self,
+        representation: FinitePermutationRepresentation[FinitePointT],
+    ) -> None:
+        self._representation = representation
+        self._finite_subgroup = libgap.TrivialSubgroup(representation._permutation_group)
+        super().__init__(
+            representation.group(),
+            representation._preimage_generators(self._finite_subgroup),
+        )
+
+    def representation(self) -> FinitePermutationRepresentation[FinitePointT]:
+        return self._representation
+
+    def index(self) -> int:
+        return self.representation()._subgroup_index(self._finite_subgroup)
+
+
+class StabilizerSubgroup[FinitePointT: Hashable](ArithmeticSubgroup):
+    r"""The exact preimage of a point stabilizer in a finite action."""
+
+    def __init__(
+        self,
+        representation: FinitePermutationRepresentation[FinitePointT],
+        point_position: int,
+    ) -> None:
+        position = int(point_position)
+        if position < 0 or position >= len(representation.points()):
+            raise ValueError("a finite-action stabilizer needs a represented point position")
+        self._representation = representation
+        self._point_position = position
+        self._finite_subgroup = libgap.Stabilizer(
+            representation._permutation_group,
+            position + 1,
+        )
+        faithful = representation.is_faithful()
+        super().__init__(
+            representation.group(),
+            representation._preimage_generators(
+                self._finite_subgroup,
+                faithful=faithful,
+            ),
+        )
+
+    def representation(self) -> FinitePermutationRepresentation[FinitePointT]:
+        return self._representation
+
+    def point(self) -> FinitePointT:
+        return self.representation().points()[self._point_position]
+
+    def index(self) -> int:
+        return self.representation()._subgroup_index(self._finite_subgroup)
+
+
+class CentralizerSubgroup[FinitePointT: Hashable](ArithmeticSubgroup):
+    r"""The centralizer of an isometry recovered from a faithful finite action."""
+
+    def __init__(
+        self,
+        representation: FinitePermutationRepresentation[FinitePointT],
+        element: LatticeIsometryMethods,
+    ) -> None:
+        if not representation.is_faithful():
+            raise ValueError("a finite-image centralizer requires a faithful representation")
+        self._representation = representation
+        self._centralizing_element = element
+        self._finite_subgroup = libgap.Centralizer(
+            representation._permutation_group,
+            representation._permutation_of(element),
+        )
+        super().__init__(
+            representation.group(),
+            representation._preimage_generators(
+                self._finite_subgroup,
+                faithful=True,
+            ),
+        )
+
+    def representation(self) -> FinitePermutationRepresentation[FinitePointT]:
+        return self._representation
+
+    def centralizing_element(self) -> LatticeIsometryMethods:
+        return self._centralizing_element
+
+    def index(self) -> int:
+        return self.representation()._subgroup_index(self._finite_subgroup)
+
+
+class IntersectionSubgroup[FinitePointT: Hashable](ArithmeticSubgroup):
+    r"""The intersection of arithmetic subgroups in a faithful finite image."""
+
+    def __init__(
+        self,
+        representation: FinitePermutationRepresentation[FinitePointT],
+        subgroups: tuple[ArithmeticSubgroup, ...],
+    ) -> None:
+        if not representation.is_faithful():
+            raise ValueError("finite-image intersection requires a faithful representation")
+        selected = tuple(subgroups)
+        if not all(subgroup.supergroup() is representation.group() for subgroup in selected):
+            raise ValueError("intersected arithmetic subgroups must lie in the represented group")
+        self._representation = representation
+        self._subgroups = selected
+        finite_subgroups = tuple(
+            representation._image_subgroup(subgroup.generators())
+            for subgroup in selected
+        )
+        if finite_subgroups:
+            finite = finite_subgroups[0]
+            for subgroup in finite_subgroups[1:]:
+                finite = libgap.Intersection(finite, subgroup)
+            self._finite_subgroup = finite
+        else:
+            self._finite_subgroup = representation._permutation_group
+        super().__init__(
+            representation.group(),
+            representation._preimage_generators(
+                self._finite_subgroup,
+                faithful=True,
+            ),
+        )
+
+    def representation(self) -> FinitePermutationRepresentation[FinitePointT]:
+        return self._representation
+
+    def subgroups(self) -> tuple[ArithmeticSubgroup, ...]:
+        return self._subgroups
+
+    def index(self) -> int:
+        return self.representation()._subgroup_index(self._finite_subgroup)
+
+
 class RightCosetDecomposition(SageObject):
     """A finite decomposition ``G/H`` with the subgroup explicitly on the right."""
 
@@ -278,7 +590,6 @@ class FiniteIntegralRepresentation(SageObject):
     def __init__(self, action: IntegralStructureAction) -> None:
         self._action = action
         self._rational_permutation_cache: dict[int, tuple[LatticeIsometryMethods, GapElement]] = {}
-        self._matrix_isometry_cache: dict[RationalMatrixKey, LatticeIsometryMethods] = {}
         (
             self._orbit_keys,
             self._orbit_witness_matrices,
@@ -286,15 +597,14 @@ class FiniteIntegralRepresentation(SageObject):
         ) = self._compute_submodule_orbit()
         self._orbit: tuple[ModuleSubobjects.ParentMethods, ...] | None = None
         self._orbit_witnesses: tuple[LatticeIsometryMethods, ...] | None = None
-        self._generator_permutations = self._compute_generator_permutations()
-        self._free_group = libgap.FreeGroup(len(action.rational_group().generators()))
-        self._permutation_group = libgap.Group(list(self._generator_permutations))
-        self._homomorphism = libgap.GroupHomomorphismByImages(
-            self._free_group,
-            self._permutation_group,
-            self._free_group.GeneratorsOfGroup(),
-            list(self._generator_permutations),
+        self._finite_action = FinitePermutationRepresentation(
+            action.rational_group(),
+            tuple(self._orbit_keys),
+            self._act_on_key,
         )
+        self._generator_permutations = self._finite_action._generator_permutations
+        self._permutation_group = self._finite_action._permutation_group
+        self._homomorphism = self._finite_action._homomorphism
 
     def action(self) -> IntegralStructureAction:
         return self._action
@@ -320,7 +630,7 @@ class FiniteIntegralRepresentation(SageObject):
 
     def image_order(self) -> int:
         """Return the order of the finite permutation image."""
-        return int(self._permutation_group.Size())
+        return self._finite_action.image_order()
 
     @staticmethod
     def _row_lattice_key(
@@ -417,42 +727,19 @@ class FiniteIntegralRepresentation(SageObject):
                     frontier.append(candidate_position)
         return orbit_keys, witness_matrices, orbit_position_by_key
 
-    def _compute_generator_permutations(self) -> tuple[GapElement, ...]:
-        permutations = []
-        for automorphism in self.action().rational_group().generators():
-            action_matrix = self.action()._restricted_matrix(automorphism)
-            images = []
-            for key in self._orbit_keys:
-                image_key = self._image_key(key, action_matrix)
-                position = self._orbit_position_by_key.get(image_key)
-                match position:
-                    case None:
-                        raise ArithmeticError("the finite-module generator left the computed orbit")
-                    case int() as orbit_position:
-                        images.append(orbit_position + 1)
-            permutations.append(libgap.PermList(images))
-        return tuple(permutations)
+    def _act_on_key(
+        self,
+        automorphism: LatticeIsometryMethods,
+        key: RowLatticeKey,
+    ) -> RowLatticeKey:
+        action_matrix = self.action()._restricted_matrix(automorphism)
+        image_key = self._image_key(key, action_matrix)
+        if image_key not in self._orbit_position_by_key:
+            raise ArithmeticError("the finite-module generator left the computed orbit")
+        return image_key
 
     def _evaluate_free_word(self, word: GapElement) -> LatticeIsometryMethods:
-        representation = tuple(int(entry) for entry in libgap.ExtRepOfObj(word).sage())
-        generators = self.action().rational_group().generators()
-        generator_matrices = tuple(self.action()._ambient_action_matrix(generator) for generator in generators)
-        result = self.action()._invariant_basis_matrix.parent().one()
-        for position in range(0, len(representation), 2):
-            generator_matrix = generator_matrices[representation[position] - 1]
-            exponent = representation[position + 1]
-            result = (generator_matrix**exponent) * result
-        matrix_key = tuple(tuple(entry for entry in row) for row in result.rows())
-        cached = self._matrix_isometry_cache.get(matrix_key)
-        match cached:
-            case None:
-                pass
-            case _:
-                return cached
-        isometry = self.action().rational_group().rational_lattice().Aut()._isometry_from_column_matrix(result)
-        self._matrix_isometry_cache[matrix_key] = isometry
-        self.action()._ambient_action_matrix_cache[id(isometry)] = (isometry, result)
-        return isometry
+        return self._finite_action._gap_word_lift(word)
 
     @cached_property
     def _lattice_stabilizer(self) -> ArithmeticSubgroup:
@@ -508,26 +795,9 @@ class FiniteIntegralRepresentation(SageObject):
                 return permutation
             case _:
                 pass
-        action_matrix = self.action()._restricted_matrix(automorphism)
-        images = []
-        for key in self._orbit_keys:
-            image_key = self._image_key(key, action_matrix)
-            position = self._orbit_position_by_key.get(image_key)
-            match position:
-                case None:
-                    raise ArithmeticError("a rational subgroup generator leaves the finite orbit")
-                case int() as orbit_position:
-                    images.append(orbit_position + 1)
-        permutation = libgap.PermList(images)
-        match permutation in self._permutation_group:
-            case False:
-                raise ValueError("the selected arithmetic subgroup is not contained in the ambient rational group")
-            case True:
-                self._rational_permutation_cache[id(automorphism)] = (
-                    automorphism,
-                    permutation,
-                )
-                return permutation
+        permutation = self._finite_action._permutation_of(automorphism)
+        self._rational_permutation_cache[id(automorphism)] = (automorphism, permutation)
+        return permutation
 
     def double_cosets(self, left_subgroup: ArithmeticSubgroup) -> DoubleCosetDecomposition:
         r"""Return ``left_subgroup \ G / H`` in the finite integral representation."""
@@ -956,12 +1226,19 @@ def integral_structure_action_for_group(
 
 __all__ = [
     "ArithmeticSubgroup",
+    "CentralizerSubgroup",
     "DoubleCosetDecomposition",
     "DoubleCosetIntersection",
     "FiniteIntegralRepresentation",
+    "FinitePermutationRepresentation",
+    "FinitePreimageSubgroup",
+    "GeneratedSubgroup",
     "IntegralStructureAction",
+    "IntersectionSubgroup",
+    "KernelSubgroup",
     "integral_structure_action",
     "integral_structure_action_for_group",
     "RationalMatrixGroup",
     "RightCosetDecomposition",
+    "StabilizerSubgroup",
 ]

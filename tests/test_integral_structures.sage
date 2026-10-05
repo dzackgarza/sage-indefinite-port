@@ -9,6 +9,7 @@ from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometry
 from dzack_research.preamble.categories.modules.module_morphisms.module_morphisms import (
     ModuleEmbeddingMethods,
 )
+from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.graphs.graph import Graph
 from sage.groups.perm_gps.permgroup import PermutationGroup_generic
 from sage.groups.perm_gps.permgroup_element import PermutationGroupElement
@@ -21,9 +22,16 @@ from sage.rings.rational_field import QQ as SageQQ
 
 from sage_indefinite_port.groups.integral_structures import (
     ArithmeticSubgroup,
+    CentralizerSubgroup,
     DoubleCosetDecomposition,
+    FinitePermutationRepresentation,
+    FinitePreimageSubgroup,
+    GeneratedSubgroup,
     IntegralStructureAction,
+    IntersectionSubgroup,
+    KernelSubgroup,
     RationalMatrixGroup,
+    StabilizerSubgroup,
 )
 from tests.fixtures.oracle_fixtures import (
     DoubleCosetCase,
@@ -626,3 +634,115 @@ def test_rat_int_automorphy_root_systems_run_through_public_action(
 ) -> None:
     """Run every simple-root-system integral-stabilizer example from ``01_RatIntAutomorphy``."""
     _assert_configuration_stabilizer(case["roots"])
+
+
+
+def _root_reflection_group(name: str) -> tuple[Lattices.ParentMethods, RationalMatrixGroup]:
+    lattice = Lattices(ZZ)(name)
+    basis = tuple(lattice.module_generators())
+    gram = _engine_component_matrix(lattice.gram_tensor()).change_ring(SageQQ)
+    automorphisms = lattice.Aut()
+    generators = []
+    for position in range(len(basis)):
+        norm = gram[position, position]
+        transformation = matrix(
+            SageQQ,
+            len(basis),
+            len(basis),
+            lambda row, column: 1 if row == column else 0,
+        )
+        for column in range(len(basis)):
+            transformation[position, column] -= 2 * gram[column, position] / norm
+        generators.append(automorphisms._isometry_from_column_matrix(transformation))
+    generators = tuple(generators)
+    return lattice, RationalMatrixGroup(lattice, generators)
+
+
+def test_construction_aware_subgroup_carriers_retain_defining_data() -> None:
+    lattice, group = _root_reflection_group("A2")
+    roots = tuple(lattice.roots())
+    representation = FinitePermutationRepresentation(group, roots, lambda isometry, root: isometry(root))
+    assert representation.is_faithful()
+
+    generated = GeneratedSubgroup(group, group.generators()[:1])
+    preimage = FinitePreimageSubgroup(representation, group.generators()[:1])
+    stabilizer = StabilizerSubgroup(representation, 0)
+    centralizer = CentralizerSubgroup(representation, group.generators()[0])
+    intersection = IntersectionSubgroup(representation, (stabilizer, centralizer))
+
+    assert generated.selected_generators() == group.generators()[:1]
+    assert preimage.finite_image_generators() == group.generators()[:1]
+    assert stabilizer.point() == roots[0]
+    assert centralizer.centralizing_element() == group.generators()[0]
+    assert intersection.subgroups() == (stabilizer, centralizer)
+    assert all(generator(root) == root for generator in stabilizer.generators() for root in (roots[0],))
+    assert all(
+        generator * group.generators()[0] == group.generators()[0] * generator
+        for generator in centralizer.generators()
+    )
+    assert all(
+        generator(roots[0]) == roots[0]
+        and generator * group.generators()[0] == group.generators()[0] * generator
+        for generator in intersection.generators()
+    )
+
+    determinant = FinitePermutationRepresentation(
+        group,
+        (0, 1),
+        lambda isometry, sign: sign if isometry.determinant() == ZZ.one() else 1 - sign,
+    )
+    kernel = KernelSubgroup(determinant)
+    assert kernel.index() == 2
+    assert all(generator.determinant() == ZZ.one() for generator in kernel.generators())
+
+
+def test_E8_root_action_word_lift_kernel_and_stabilizer_indices() -> None:
+    lattice, group = _root_reflection_group("E8")
+    roots = tuple(lattice.roots())
+    assert len(roots) == 240
+
+    labels = tuple(lattice.module_generating_set())
+    root_coordinates = {
+        root: tuple(int(root.to_vector()(label)) for label in labels)
+        for root in roots
+    }
+    root_by_coordinates = {
+        coordinates: root
+        for root, coordinates in root_coordinates.items()
+    }
+    automorphisms = lattice.Aut()
+    action_matrices = {
+        id(generator): automorphisms._row_action_matrix(generator)
+        for generator in group.generators()
+    }
+
+    root_action = FinitePermutationRepresentation(
+        group,
+        roots,
+        lambda isometry, root: root_by_coordinates[
+            tuple(
+                (
+                    matrix(SageQQ, [root_coordinates[root]])
+                    * action_matrices[id(isometry)]
+                ).row(0)
+            )
+        ],
+    )
+    assert root_action.image_order() == 696729600
+    word = ((0, 1), (1, -1), (2, 1))
+    lifted = root_action.generator_word_lift(word)
+    expected = group.generators()[2] * (~group.generators()[1]) * group.generators()[0]
+    assert lifted == expected
+
+    determinant = FinitePermutationRepresentation(
+        group,
+        (0, 1),
+        lambda isometry, sign: sign if isometry.determinant() == ZZ.one() else 1 - sign,
+    )
+    determinant_kernel = KernelSubgroup(determinant)
+    assert determinant_kernel.index() == 2
+    assert all(generator.determinant() == ZZ.one() for generator in determinant_kernel.generators())
+
+    root_stabilizer = StabilizerSubgroup(root_action, 0)
+    assert root_stabilizer.index() == 240
+    assert all(generator(roots[0]) == roots[0] for generator in root_stabilizer.generators())
