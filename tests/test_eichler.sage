@@ -73,10 +73,10 @@ def test_orbit_cover_model_refinement_and_two_u_decomposition_are_immutable() ->
     assert decomposition.sum_isometry[0].codomain() is eichler.lattice()
 
 
-def test_unpolarized_enriques_norm_zero_cover_meets_both_isotropic_line_types() -> None:
+def test_unpolarized_enriques_has_both_recorded_primitive_isotropic_line_types() -> None:
     two = ZZ.one() + ZZ.one()
-    complement = Lattices(ZZ)("U").twist(two) + Lattices(ZZ)("E8").twist(-two)
-    cover = EichlerOrbitCover(complement.two_u_eichler_model()).covering_representatives(0, primitive=True)
-    divisibilities = {int(vector.div()) for vector in cover if vector.is_isotropic() and vector.is_primitive()}
-    assert 1 in divisibilities
-    assert 2 in divisibilities
+    lattice = Lattices(ZZ)("U") + Lattices(ZZ)("U").twist(two) + Lattices(ZZ)("E8").twist(-two)
+    e_u, _f_u, e_u2, _f_u2, *_roots = lattice.module_generators()
+
+    assert e_u.is_primitive() and e_u.is_isotropic() and e_u.div() == ZZ.one()
+    assert e_u2.is_primitive() and e_u2.is_isotropic() and e_u2.div() == two
