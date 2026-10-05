@@ -37,6 +37,7 @@ from sage_indefinite_port.backends.polyhedral import (
     facet_orbits as configuration_facet_orbits,
 )
 from sage_indefinite_port.groups.integral_structures import GeneratedSubgroup, RationalMatrixGroup
+from sage_indefinite_port.indefinite.eichler import EichlerOrbitCover
 from sage_indefinite_port.indefinite.vector_sections import NonIsotropicVectorSection, orthogonal_section
 from sage_indefinite_port.invariants import AttackProfile, VectorPrefilter
 
@@ -57,7 +58,49 @@ class IndefiniteOrthogonalAlgorithm:
             case 1:
                 return LorentzianPerfectComplex(profile.signed_view, "total").full_orthogonal_group()
             case _:
-                raise NotImplementedError("higher-Witt-index recursion is not in this commit boundary")
+                return self._higher_witt_orthogonal_group(profile.signed_view)
+
+    def _two_u_cover_model(self, lattice: Lattices.ParentMethods) -> EichlerOrbitCover:
+        if not lattice.splits_two_hyperbolic_planes():
+            raise ValueError("higher-Witt recursion currently requires a represented 2U decomposition")
+        factors = tuple(lattice.biproduct_factors())
+        if len(factors) < 3:
+            raise ValueError("a represented 2U decomposition needs a complement factor")
+        complement = factors[-1]
+        return EichlerOrbitCover(complement.two_u_eichler_model())
+
+    def _higher_witt_orthogonal_group(self, lattice: Lattices.ParentMethods) -> GeneratedSubgroup:
+        model = self._two_u_cover_model(lattice)
+        if model.lattice().gram_tensor() != lattice.gram_tensor():
+            raise ValueError("the represented 2U model does not match the supplied lattice")
+        vector = model.choose_splitting_vector()
+        approximate_family = model.subgroup()
+        approximate = tuple(approximate_family[label] for label in approximate_family.index_set())
+        stabilizer = self.vector_stabilizer(vector).generators()
+        transporters = []
+        for candidate in model.covering_representatives(vector.q(), primitive=vector.is_primitive()):
+            witness = self.vector_transporter(vector, candidate)
+            if witness is not None:
+                transporters.append(witness)
+        generators = approximate + stabilizer + tuple(transporters)
+        supergroup = RationalMatrixGroup(lattice, generators)
+        return GeneratedSubgroup(supergroup, generators)
+
+    def isometry(self, source: Lattices.ParentMethods, target: Lattices.ParentMethods):
+        if self.attack_profile(source).positive_index != self.attack_profile(target).positive_index:
+            return None
+        if source.is_definite() and target.is_definite():
+            from sage_indefinite_port.backends.definite import definite_isometry
+
+            return definite_isometry(source, target)
+        source_model = self._two_u_cover_model(source)
+        target_model = self._two_u_cover_model(target)
+        witness = source_model.model.isometry_to(target_model.model)
+        if witness is None:
+            return None
+        if witness.domain().gram_tensor() != source.gram_tensor() or witness.codomain().gram_tensor() != target.gram_tensor():
+            raise ArithmeticError("the 2U model isometry has the wrong represented endpoints")
+        return witness
 
     def vector_stabilizer(self, vector: Lattices.ElementMethods) -> GeneratedSubgroup:
         section = orthogonal_section(vector)
