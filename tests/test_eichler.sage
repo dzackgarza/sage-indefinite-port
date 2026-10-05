@@ -3,6 +3,7 @@ from dzack_research.preamble.all import Lattices, ZZ
 import pytest
 
 from sage_indefinite_port.indefinite.eichler import (
+    build_eichler_envelope,
     EichlerOrbitCover,
     InfiniteLocusError,
     OrbitCoverModel,
@@ -54,6 +55,28 @@ def test_find_hyperbolic_pair_matches_isotropic_fixture_cases() -> None:
     anisotropic = Lattices(ZZ)([[-516, 36, 72], [36, -2, -5], [72, -5, -10]])
     with pytest.raises(ValueError):
         find_hyperbolic_pair(anisotropic)
+
+
+def test_eichler_envelope_normalizes_scaled_hyperbolic_pairs() -> None:
+    lattice = Lattices(ZZ)(
+        [
+            [2, 1, 0, 0],
+            [1, 0, 0, 0],
+            [0, 0, 0, 1],
+            [0, 0, 1, 0],
+        ]
+    )
+    envelope = build_eichler_envelope(lattice)
+    inclusion = envelope.lattice_to_envelope
+    generators = tuple(lattice.module_generators())
+    first, second = generators[:2]
+    scale = envelope.envelope.b(inclusion(first), inclusion(second)) / lattice.b(first, second)
+
+    assert envelope.envelope.splits_two_hyperbolic_planes()
+    assert scale > ZZ.zero()
+    for left in generators:
+        for right in generators:
+            assert envelope.envelope.b(inclusion(left), inclusion(right)) == scale * lattice.b(left, right)
 
 
 def test_choose_splitting_vector_returns_positive_vector() -> None:

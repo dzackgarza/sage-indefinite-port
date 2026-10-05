@@ -17,7 +17,7 @@ from sage.quadratic_forms.qfsolve import qfsolve
 from sage.rings.integer import Integer as SageInteger
 from sage.rings.rational_field import QQ as SageQQ
 
-from sage_indefinite_port.backends.canonization import _identity_rows, _rational_lattice_with_integral_structure
+from sage_indefinite_port.backends.canonization import _rational_lattice_with_integral_structure
 from sage_indefinite_port.groups.integral_structures import ArithmeticSubgroup, IntegralStructureAction, RationalMatrixGroup
 
 
@@ -180,20 +180,43 @@ def build_eichler_envelope(lattice: Lattices.ParentMethods) -> EichlerEnvelope:
 
     source_labels = tuple(lattice.module_generating_set())
     envelope_labels = tuple(envelope.module_generating_set())
-    # Express the selected four hyperbolic vectors and complement basis in the source lattice.
     selected = (first_v, first_w, second_v_ambient, second_w_ambient) + tuple(complement.inclusion()(generator) for generator in complement.module_generators())
     from dzack_research.preamble.categories.rings.ring_foundation import _engine_element, _engine_ring
 
-    change = matrix(
+    source_gram = _engine_component_matrix(lattice.gram_tensor()).change_ring(SageQQ)
+    full_basis = matrix(
         _engine_ring(ring),
-        [[_engine_element(ring, vector.to_vector()(label)) for vector in selected] for label in source_labels],
-    )
-    inverse = change.inverse()
+        [[_engine_element(ring, vector.to_vector()(label)) for label in source_labels] for vector in selected],
+    ).change_ring(SageQQ)
+    first_scale = SageQQ(_engine_element(ring, lattice.b(first_v, first_w)))
+    second_scale = SageQQ(_engine_element(ring, lattice.b(second_v_ambient, second_w_ambient)))
+    if first_scale <= 0 or second_scale <= 0:
+        raise ArithmeticError("the selected hyperbolic pairs must have positive pairing")
+    normalization = matrix.identity(SageQQ, int(lattice.module_rank()))
+    normalization[0, 0] = SageQQ.one() / first_scale
+    normalization[2, 2] = SageQQ.one() / second_scale
+    envelope_basis = normalization * full_basis
+    envelope_gram = envelope_basis * source_gram * envelope_basis.transpose()
+    if any(entry.denominator() != 1 for entry in envelope_gram.list()):
+        raise ArithmeticError("the Eichler reduction did not produce an integral envelope form")
+    represented_envelope_gram = _engine_component_matrix(envelope.gram_tensor()).change_ring(SageQQ)
+    if envelope_gram != represented_envelope_gram:
+        raise ArithmeticError("the Eichler reduction does not match the represented 2U envelope")
+
+    pre_embedding = envelope_basis.inverse()
+    denominator = 1
+    for entry in pre_embedding.list():
+        entry_denominator = int(entry.denominator())
+        denominator = denominator * entry_denominator // gcd(denominator, entry_denominator)
+    embedding_matrix = SageQQ(denominator) * pre_embedding
+    if any(entry.denominator() != 1 for entry in embedding_matrix.list()):
+        raise ArithmeticError("clearing denominators did not produce an integral Eichler embedding")
+    embedding_rows = tuple(tuple(int(entry) for entry in embedding_matrix.row(position)) for position in range(embedding_matrix.nrows()))
 
     def image(label):
         position = int(lattice.module_generating_set().ranking_map()(label))
-        coefficients = inverse.column(position)
-        return envelope.linear_combination({envelope_labels[i]: ring(coeff) for i, coeff in enumerate(coefficients) if coeff})
+        row = embedding_rows[position]
+        return envelope.linear_combination({envelope_label: ring(coefficient) for envelope_label, coefficient in zip(envelope_labels, row, strict=True) if coefficient})
 
     inclusion_to_envelope = lattice.module_category().Mor(lattice, envelope)(image)
     rational_envelope = envelope.base_change(ring.fraction_field_map())
@@ -203,7 +226,7 @@ def build_eichler_envelope(lattice: Lattices.ParentMethods) -> EichlerEnvelope:
         lattice,
         rational_envelope,
         integral_structure_space,
-        _identity_rows(int(lattice.module_rank())),
+        embedding_rows,
     )
     rational_group = RationalMatrixGroup(rational_envelope, ())
     action = IntegralStructureAction(rational_group, inclusion)
@@ -260,8 +283,20 @@ def find_hyperbolic_pair(
     """
     if method != "auto":
         raise ValueError("the implemented hyperbolic-pair method is 'auto'")
+    basis = tuple(lattice.module_generators())
+    for left in basis:
+        if not left or not left.is_isotropic():
+            continue
+        for right in basis:
+            if not right or not right.is_isotropic():
+                continue
+            pairing = lattice.b(left, right)
+            if pairing == lattice.base_ring().zero():
+                continue
+            if pairing < lattice.base_ring().zero():
+                right = -right
+            return left, right
     if int(lattice.module_rank()) == 2 and lattice.signature_pair() == (lattice.base_ring().one(), lattice.base_ring().one()):
-        basis = tuple(lattice.module_generators())
         candidates = basis + (basis[0] + basis[1], basis[0] - basis[1], -basis[0] + basis[1], -basis[0] - basis[1])
         isotropic = tuple(vector for vector in candidates if vector and vector.is_isotropic())
         for left in isotropic:
