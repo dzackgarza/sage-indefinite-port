@@ -37,8 +37,25 @@ from sage_indefinite_port.backends.polyhedral import (
     facet_orbits as configuration_facet_orbits,
 )
 from sage_indefinite_port.groups.integral_structures import RationalMatrixGroup
+from sage_indefinite_port.invariants import AttackProfile
 
 type PerfectMode = Literal["total", "isotropic"]
+
+
+class IndefiniteOrthogonalAlgorithm:
+    def attack_profile(self, lattice: Lattices.ParentMethods) -> AttackProfile:
+        return AttackProfile.from_lattice(lattice)
+
+    def orthogonal_group(self, lattice: Lattices.ParentMethods):
+        profile = self.attack_profile(lattice)
+        match profile.positive_index:
+            case 0:
+                from sage_indefinite_port.backends.definite import definite_orthogonal_group
+                return definite_orthogonal_group(profile.signed_view)
+            case 1:
+                return LorentzianPerfectComplex(profile.signed_view, "total").full_orthogonal_group()
+            case _:
+                raise NotImplementedError("higher-Witt-index recursion is not in this commit boundary")
 
 
 class TraversalObjectRecord(TypedDict):
@@ -220,6 +237,7 @@ class LorentzianPerfectComplex:
             list[LorentzianPerfectCell],
         ] = {_perfect_form_hash_key(initial): [initial]}
         adjacencies: list[LorentzianCellAdjacency] = []
+        identity = self.lattice().Aut().identity()
         position = 0
         while position < len(representatives):
             source = representatives[position]

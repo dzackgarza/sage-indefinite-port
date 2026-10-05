@@ -36,3 +36,11 @@ def test_lattice_prefilter_agrees_on_the_conway_sloane_same_genus_pair() -> None
     assert first == second
     assert list(first.signature[:2]) == pair["signature"]
     assert first.discriminant_elementary_divisors == second.discriminant_elementary_divisors
+
+
+def test_lattice_prefilter_accepts_owned_isotropic_reduction() -> None:
+    plane = Lattices(ZZ)("U")
+    reduction = plane.module_generators()[0].isotropic_reduction()
+    prefilter = lattice_prefilter(reduction)
+    assert int(prefilter.rank) == int(reduction.rank())
+    assert prefilter.discriminant == 1
