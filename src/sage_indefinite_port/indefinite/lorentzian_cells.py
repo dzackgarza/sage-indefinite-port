@@ -64,9 +64,12 @@ class IndefiniteOrthogonalAlgorithm:
         if not lattice.splits_two_hyperbolic_planes():
             raise ValueError("higher-Witt recursion currently requires a represented 2U decomposition")
         factors = tuple(lattice.biproduct_factors())
-        if len(factors) < 3:
-            raise ValueError("a represented 2U decomposition needs a complement factor")
-        complement = factors[-1]
+        if len(factors) == 2:
+            complement = Lattices(lattice.base_ring())(lattice.base_ring().free_module(0))
+        elif len(factors) >= 3:
+            complement = factors[-1]
+        else:
+            raise ValueError("a represented 2U decomposition needs two hyperbolic-plane factors")
         return EichlerOrbitCover(complement.two_u_eichler_model())
 
     def _higher_witt_orthogonal_group(self, lattice: Lattices.ParentMethods) -> GeneratedSubgroup:

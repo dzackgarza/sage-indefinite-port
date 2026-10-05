@@ -64,3 +64,9 @@ def test_higher_witt_branch_selects_two_u_model_and_rank_drop() -> None:
     section = orthogonal_section(vector)
     assert algorithm.attack_profile(lattice).positive_index == 2
     assert algorithm.attack_profile(section.reduced_object()).positive_index == 1
+
+
+def test_ci_indefinite_2u_public_orthogonal_group() -> None:
+    lattice = Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    group = IndefiniteOrthogonalAlgorithm().orthogonal_group(lattice)
+    assert all(generator.parent() is lattice.Aut() for generator in group.generators())
