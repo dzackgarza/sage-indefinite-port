@@ -8,6 +8,7 @@ reject or bucket candidates; it never decides equivalence.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from fractions import Fraction
 from math import gcd
 from typing import Literal
 
@@ -89,28 +90,32 @@ class VectorPrefilter:
         *,
         include_orthogonal_reduction: bool = True,
     ) -> VectorPrefilter:
+        norm = int(vector.q())
+        content = vector_content(vector)
         divisor = int(vector.div())
         discriminant_key = None
         match divisor:
             case 0:
                 pass
-            case _ if vector.parent().is_unimodular():
-                discriminant_key = "trivial"
             case _:
-                discriminant_group = vector.parent().discriminant_group()
-                discriminant_class = vector.divided_discriminant_class()
-                discriminant_key = repr(
-                    (
-                        int(discriminant_class.additive_order()),
-                        repr(discriminant_group.q(discriminant_class)),
+                positive_divisor = abs(divisor)
+                order = positive_divisor // gcd(positive_divisor, content)
+                discriminant_key = (
+                    "trivial"
+                    if order == 1
+                    else repr(
+                        (
+                            order,
+                            Fraction(norm, positive_divisor * positive_divisor),
+                        )
                     )
                 )
         reduction_prefilter = None
         if include_orthogonal_reduction and vector.is_isotropic() and vector.is_primitive():
             reduction_prefilter = lattice_prefilter(vector.isotropic_reduction())
         return cls(
-            int(vector.q()),
-            vector_content(vector),
+            norm,
+            content,
             divisor,
             discriminant_key,
             reduction_prefilter,
