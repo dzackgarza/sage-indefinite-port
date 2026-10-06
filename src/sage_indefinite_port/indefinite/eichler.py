@@ -295,7 +295,7 @@ class EichlerOrbitCover:
         owned_norm = norm if getattr(norm, "parent", lambda: None)() is ring else ring(int(norm))
         if primitive:
             family = self.model.covering_vector_representatives(owned_norm)
-            return OrbitCover(tuple(family[label] for label in family.index_set()))
+            return OrbitCover(tuple(family))
         if int(owned_norm) == 0:
             raise InfiniteLocusError("nonprimitive isotropic vectors form an infinite locus")
         lattice = self.lattice()
@@ -304,7 +304,10 @@ class EichlerOrbitCover:
             primitive_norm = ring(int(owned_norm) // (divisor * divisor))
             family = self.model.covering_vector_representatives(primitive_norm)
             scalar = lattice.base_ring()(divisor)
-            representatives.extend(lattice.scalar_multiple(scalar, family[label]) for label in family.index_set())
+            representatives.extend(
+                lattice.scalar_multiple(scalar, representative)
+                for representative in family
+            )
         return OrbitCover(tuple(representatives))
 
     def one_representative(self, norm, *, primitive: bool):
