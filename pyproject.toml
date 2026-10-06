@@ -17,6 +17,9 @@ where = ["src"]
 [tool.sage-mypy-category-plugin]
 packages = ["dzack_research.preamble"]
 
+[tool.ruff]
+target-version = "py312"
+
 [dependency-groups]
 dev = [
     "hypothesis>=6.165,<7",
