@@ -356,11 +356,20 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
             if reduced_witness is None:
                 self._isometry_cache[cache_key] = (source, target, None)
                 return None
-            witness = reduced_witness
+            row_action = reduced_witness.parent()._row_action_matrix(reduced_witness)
             if reduced_source_to_source is not None:
-                witness = witness * ~reduced_source_to_source
+                source_reduction_action = reduced_source_to_source.parent()._row_action_matrix(
+                    reduced_source_to_source
+                )
+                row_action = source_reduction_action.inverse() * row_action
             if reduced_target_to_target is not None:
-                witness = reduced_target_to_target * witness
+                target_reduction_action = reduced_target_to_target.parent()._row_action_matrix(
+                    reduced_target_to_target
+                )
+                row_action = row_action * target_reduction_action
+            witness = source.Isom(target)._isometry_from_column_matrix(
+                row_action.transpose()
+            )
             self._isometry_cache[cache_key] = (source, target, witness)
             return witness
         match source.gram_tensor() == target.gram_tensor():
@@ -435,7 +444,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
         rational_group = RationalMatrixGroup(rational_ambient, rational_lifts)
         try:
             integral_generators = tuple(self._retarget_isometry(generator, ambient, ambient) for generator in rational_lifts)
-        except TypeError, ValueError:
+        except (TypeError, ValueError):
             integral_generators = ()
         if len(integral_generators) == len(rational_lifts):
             if any(generator(vector) != vector for generator in integral_generators):
