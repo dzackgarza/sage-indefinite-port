@@ -23,7 +23,6 @@ def test_lattice_prefilter_agrees_on_upstream_equivalent_pairs(case: LorentzianE
     assert first.signature == second.signature
     assert first.parity == second.parity
     assert first.discriminant == second.discriminant
-    assert first.discriminant_elementary_divisors == second.discriminant_elementary_divisors
     assert first == second
 
 
@@ -35,7 +34,6 @@ def test_lattice_prefilter_agrees_on_the_conway_sloane_same_genus_pair() -> None
     second = lattice_prefilter(INTEGRAL_LATTICES(pair["form_b"]["gram"]))
     assert first == second
     assert list(first.signature[:2]) == pair["signature"]
-    assert first.discriminant_elementary_divisors == second.discriminant_elementary_divisors
 
 
 def test_lattice_prefilter_accepts_owned_isotropic_reduction() -> None:

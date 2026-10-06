@@ -26,23 +26,24 @@ class LatticePrefilter:
     signature: tuple[Integer, Integer, Integer]
     parity: Parity
     discriminant: Integer
-    discriminant_elementary_divisors: tuple[Integer, ...]
 
 
 def lattice_prefilter(lattice: FiniteRankLattices.ParentMethods) -> LatticePrefilter:
-    """Rank, real signature ``(n_+, n_-, n_0)``, parity, signed discriminant, and the
-    invariants of the cokernel of the correlation ``L -> Hom(L, Z)``, the finite abelian
-    group ``L^vee / L``."""
+    """Return the structured form of the pinned ``INDEF_FORM_Invariant`` key.
+
+    The reference implementation hashes rank, real signature, parity, and the
+    determinant of the nondegenerate quotient.  This prefilter keeps those
+    invariants as a record instead of hashing them; it deliberately does not
+    construct the discriminant group or correlation cokernel.
+    """
     base_ring = lattice.base_ring()
     rank = Integer(lattice.rank())
     positive, negative = (Integer(index) for index in lattice.signature_pair())
-    divisors = tuple(Integer(_engine_element(base_ring, d)) for d in lattice.correlation_morphism().cokernel().invariant_factors())
     return LatticePrefilter(
         rank=rank,
         signature=(positive, negative, rank - positive - negative),
         parity="even" if lattice.is_even() else "odd",
         discriminant=Integer(_engine_element(base_ring, lattice.discriminant())),
-        discriminant_elementary_divisors=divisors,
     )
 
 
@@ -82,9 +83,35 @@ class VectorPrefilter:
     orthogonal_reduction_prefilter: LatticePrefilter | None
 
     @classmethod
-    def from_vector(cls, vector: Lattices.ElementMethods) -> VectorPrefilter:
+    def from_vector(
+        cls,
+        vector: Lattices.ElementMethods,
+        *,
+        include_orthogonal_reduction: bool = True,
+    ) -> VectorPrefilter:
+        divisor = int(vector.div())
         discriminant_key = None
+        match divisor:
+            case 0:
+                pass
+            case _ if vector.parent().is_unimodular():
+                discriminant_key = "trivial"
+            case _:
+                discriminant_group = vector.parent().discriminant_group()
+                discriminant_class = vector.divided_discriminant_class()
+                discriminant_key = repr(
+                    (
+                        int(discriminant_class.additive_order()),
+                        repr(discriminant_group.q(discriminant_class)),
+                    )
+                )
         reduction_prefilter = None
-        if vector.is_isotropic() and vector.is_primitive():
+        if include_orthogonal_reduction and vector.is_isotropic() and vector.is_primitive():
             reduction_prefilter = lattice_prefilter(vector.isotropic_reduction())
-        return cls(int(vector.q()), vector_content(vector), int(vector.div()), discriminant_key, reduction_prefilter)
+        return cls(
+            int(vector.q()),
+            vector_content(vector),
+            divisor,
+            discriminant_key,
+            reduction_prefilter,
+        )
