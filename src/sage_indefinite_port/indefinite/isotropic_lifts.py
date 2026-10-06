@@ -190,6 +190,10 @@ class IsometryExtensionTorsor:
         self._integral_source: Lattices.ParentMethods | None = None
         self._integral_target: Lattices.ParentMethods | None = None
 
+    def rational_isometry(self) -> LatticeIsometryMethods:
+        r"""Return the selected rational point of this extension torsor."""
+        return self._particular
+
     def integral_parameters(
         self,
         source_lattice: Lattices.ParentMethods,
