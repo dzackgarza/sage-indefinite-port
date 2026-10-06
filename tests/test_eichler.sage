@@ -69,14 +69,33 @@ def test_eichler_envelope_normalizes_scaled_hyperbolic_pairs() -> None:
     envelope = build_eichler_envelope(lattice)
     inclusion = envelope.lattice_to_envelope
     generators = tuple(lattice.module_generators())
-    first, second = generators[:2]
-    scale = envelope.envelope.b(inclusion(first), inclusion(second)) / lattice.b(first, second)
+    scale = envelope.similarity_scale()
 
     assert envelope.envelope.splits_two_hyperbolic_planes()
     assert scale > ZZ.zero()
     for left in generators:
         for right in generators:
             assert envelope.envelope.b(inclusion(left), inclusion(right)) == scale * lattice.b(left, right)
+
+    model = OrbitCoverModel.from_lattice(lattice)
+    representatives = model.covering_representatives(ZZ.one() + ZZ.one(), primitive=True)
+    assert model.lattice() is lattice
+    assert len(representatives.representatives) == 1
+    assert all(vector.parent() is lattice and vector.q() == ZZ.one() + ZZ.one() and vector.is_primitive() for vector in representatives)
+
+
+def test_find_hyperbolic_pair_prefers_unimodular_small_pair() -> None:
+    lattice = Lattices(ZZ)(
+        [
+            [2, 1, 0, 0],
+            [1, 0, 0, 0],
+            [0, 0, 0, 2],
+            [0, 0, 2, 0],
+        ]
+    )
+    left, right = find_hyperbolic_pair(lattice)
+    assert left.is_isotropic() and right.is_isotropic()
+    assert lattice.b(left, right) == ZZ.one()
 
 
 def test_choose_splitting_vector_returns_positive_vector() -> None:

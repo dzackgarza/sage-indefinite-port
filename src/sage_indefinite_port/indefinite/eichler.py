@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import cached_property
 from math import gcd, isqrt
 
 from dzack_research.preamble.all import QQ, ZZ, Modules
@@ -10,15 +11,17 @@ from dzack_research.preamble.categories.eichler_criterion import TwoUEichlerMode
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.lattices import Lattices
 from dzack_research.preamble.categories.modules.module_morphisms.module_morphisms import ModuleEmbeddingMethods
+from dzack_research.preamble.categories.rings.ring_foundation import _engine_element, _engine_ring
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.matrix.constructor import matrix
+from sage.matrix.matrix_rational_dense import Matrix_rational_dense
 from sage.modules.free_module_element import FreeModuleElement
 from sage.quadratic_forms.qfsolve import qfsolve
 from sage.rings.integer import Integer as SageInteger
 from sage.rings.rational_field import QQ as SageQQ
 
 from sage_indefinite_port.backends.canonization import _rational_lattice_with_integral_structure
-from sage_indefinite_port.groups.integral_structures import ArithmeticSubgroup, IntegralStructureAction, RationalMatrixGroup
+from sage_indefinite_port.groups.integral_structures import ArithmeticSubgroup, GeneratedSubgroup, IntegralStructureAction, RationalMatrixGroup
 
 
 class InfiniteLocusError(ValueError):
@@ -44,24 +47,119 @@ class OrbitCoverModel:
 
     base: EichlerOrbitCover
     refinement: ArithmeticSubgroup | None = None
+    envelope: EichlerEnvelope | None = None
+
+    @classmethod
+    def from_lattice(cls, lattice: Lattices.ParentMethods) -> OrbitCoverModel:
+        match lattice.is_decomposable():
+            case True:
+                factors = tuple(lattice.biproduct_factors())
+                hyperbolic_gram = Lattices(lattice.base_ring())("U").gram_tensor()
+                match (
+                    len(factors) >= 2,
+                    factors[0].gram_tensor() == hyperbolic_gram if factors else False,
+                    factors[1].gram_tensor() == hyperbolic_gram if len(factors) >= 2 else False,
+                ):
+                    case (True, True, True):
+                        return cls(EichlerOrbitCover(lattice.two_u_eichler_model_from_represented_biproduct()))
+                    case _:
+                        pass
+            case False:
+                pass
+        envelope = build_eichler_envelope(lattice)
+        base = EichlerOrbitCover(envelope.two_u_decomposition.lattice.two_u_eichler_model_from_represented_biproduct())
+        return cls(base, envelope=envelope)
 
     def lattice(self):
-        return self.base.lattice()
+        return self.base.lattice() if self.envelope is None else self.envelope.lattice
 
     def subgroup(self):
-        return self.refinement if self.refinement is not None else self.base.subgroup()
+        if self.refinement is not None:
+            return self.refinement
+        if self.envelope is None:
+            return self.base.subgroup()
+        stabilizer = self.envelope.stabilizer_of_original_lattice()
+        generators = tuple(self.envelope.pullback_isometry(generator) for generator in stabilizer.generators())
+        return GeneratedSubgroup(RationalMatrixGroup(self.envelope.lattice, generators), generators)
 
     def covering_representatives(self, norm, *, primitive: bool) -> OrbitCover:
-        return self.base.covering_representatives(norm, primitive=primitive)
+        if self.envelope is None:
+            return self.base.covering_representatives(norm, primitive=primitive)
+        source = self.envelope.lattice
+        owned_norm = norm if getattr(norm, "parent", lambda: None)() is source.base_ring() else source.base_ring()(int(norm))
+        scaled_norm = owned_norm * self.envelope.similarity_scale()
+        if scaled_norm == source.base_ring().zero():
+            if not primitive:
+                raise InfiniteLocusError("nonprimitive isotropic vectors form an infinite locus")
+            base_cover = self.base.covering_representatives(scaled_norm, primitive=True)
+        else:
+            base_cover = self.base.covering_representatives(scaled_norm, primitive=False)
+
+        rational_envelope = self.envelope.integral_action.rational_group().rational_lattice()
+        fraction_map = source.base_ring().fraction_field_map()
+        envelope_labels = tuple(self.envelope.envelope.module_generating_set())
+        rational_labels = tuple(rational_envelope.module_generating_set())
+        witnesses = self.envelope.integral_action.finite_representation().orbit_witnesses()
+        representatives = []
+        for representative in base_cover:
+            coordinates = representative.to_vector()
+            rational_representative = rational_envelope.linear_combination(
+                {
+                    rational_label: fraction_map(coordinates(envelope_label))
+                    for envelope_label, rational_label in zip(envelope_labels, rational_labels, strict=True)
+                    if coordinates(envelope_label)
+                }
+            )
+            for witness in witnesses:
+                candidate = self.envelope.pullback_element(witness(rational_representative))
+                if candidate is None or candidate.q() != owned_norm:
+                    continue
+                if primitive and not candidate.is_primitive():
+                    continue
+                if all(candidate != known for known in representatives):
+                    representatives.append(candidate)
+        return OrbitCover(tuple(representatives))
 
     def one_representative(self, norm, *, primitive: bool):
-        return self.base.one_representative(norm, primitive=primitive)
+        cover = self.covering_representatives(norm, primitive=primitive)
+        if not cover.representatives:
+            raise ValueError(f"no covering representative exists for norm {norm}")
+        return cover.representatives[0]
 
     def refined_by(self, subgroup: ArithmeticSubgroup) -> OrbitCoverModel:
-        return OrbitCoverModel(self.base, subgroup)
+        return OrbitCoverModel(self.base, subgroup, self.envelope)
 
     def choose_splitting_vector(self, *, objective: str = "minimize_recursive_complexity"):
-        return self.base.choose_splitting_vector(objective=objective)
+        match self.envelope:
+            case None:
+                return self.base.choose_splitting_vector(objective=objective)
+            case _:
+                match objective:
+                    case "minimize_recursive_complexity":
+                        pass
+                    case _:
+                        raise ValueError("the implemented splitting-vector objective is 'minimize_recursive_complexity'")
+                lattice = self.envelope.lattice
+                basis = tuple(lattice.module_generators())
+                candidates = list(basis)
+                for left_position, left in enumerate(basis):
+                    for right in basis[left_position + 1 :]:
+                        candidates.append(left + right)
+                        candidates.append(left - right)
+                positive = tuple(vector for vector in candidates if vector.q() > lattice.base_ring().zero())
+                match positive:
+                    case ():
+                        raise ValueError("the Eichler-envelope lattice has no positive vector in its framing span")
+                    case _:
+                        pass
+                labels = tuple(lattice.module_generating_set())
+                return min(
+                    positive,
+                    key=lambda vector: (
+                        abs(int(vector.q())),
+                        tuple(int(vector.to_vector()(label)) for label in labels),
+                    ),
+                )
 
 
 @dataclass(frozen=True)
@@ -94,8 +192,82 @@ class EichlerEnvelope:
     envelope: Lattices.ParentMethods
     inclusion: ModuleEmbeddingMethods
     lattice_to_envelope: ModuleEmbeddingMethods
+    embedding_rows: tuple[tuple[int, ...], ...]
     two_u_decomposition: TwoHyperbolicPlaneDecomposition
     integral_action: IntegralStructureAction
+
+    @cached_property
+    def _embedding_matrix(self) -> Matrix_rational_dense:
+        return matrix(SageQQ, self.embedding_rows)
+
+    @cached_property
+    def _embedding_inverse(self) -> Matrix_rational_dense:
+        return self._embedding_matrix.inverse()
+
+    def similarity_scale(self):
+        r"""Return the scale of ``lattice_to_envelope`` from its defining pairings."""
+        source = self.lattice
+        target = self.envelope
+        generators = tuple(source.module_generators())
+        scale = None
+        for left in generators:
+            for right in generators:
+                source_pairing = source.b(left, right)
+                if source_pairing == source.base_ring().zero():
+                    continue
+                target_pairing = target.b(
+                    self.lattice_to_envelope(left),
+                    self.lattice_to_envelope(right),
+                )
+                scale = target_pairing / source_pairing
+                break
+            if scale is not None:
+                break
+        if scale is None:
+            raise ArithmeticError("a nondegenerate Eichler envelope has no nonzero pairing in its frame")
+        if any(target.b(self.lattice_to_envelope(left), self.lattice_to_envelope(right)) != scale * source.b(left, right) for left in generators for right in generators):
+            raise ArithmeticError("the Eichler embedding does not have one similarity scale")
+        return scale
+
+    def pullback_element(self, element):
+        r"""Pull a rational-envelope element back to the selected lattice when it lies there."""
+        rational_envelope = self.integral_action.rational_group().rational_lattice()
+        rational_labels = tuple(rational_envelope.module_generating_set())
+        coordinate_vector = rational_envelope(element).to_vector()
+        envelope_coordinates = matrix(
+            SageQQ,
+            [
+                [
+                    SageQQ(
+                        _engine_element(
+                            rational_envelope.base_ring(),
+                            coordinate_vector(label),
+                        )
+                    )
+                    for label in rational_labels
+                ]
+            ],
+        )
+        source_coordinates = envelope_coordinates * self._embedding_inverse
+        if any(entry.denominator() != 1 for entry in source_coordinates.list()):
+            return None
+        source_labels = tuple(self.lattice.module_generating_set())
+        row = source_coordinates.row(0)
+        return self.lattice.linear_combination({source_label: self.lattice.base_ring()(int(entry)) for source_label, entry in zip(source_labels, row, strict=True) if entry})
+
+    def pullback_isometry(self, isometry: LatticeIsometryMethods) -> LatticeIsometryMethods:
+        r"""Restrict a rational-envelope isometry preserving the selected lattice."""
+        rational_envelope = self.integral_action.rational_group().rational_lattice()
+        rational_automorphisms = rational_envelope.Aut()
+        embedding = matrix(SageQQ, self.embedding_rows)
+        rational_action = rational_automorphisms._row_action_matrix(isometry)
+        pulled_action = embedding * rational_action * embedding.inverse()
+        if any(entry.denominator() != 1 for entry in pulled_action.list()):
+            raise ArithmeticError("a selected-lattice stabilizer does not preserve the Eichler embedding")
+        witness = self.lattice.Aut()._isometry_from_column_matrix(pulled_action.transpose())
+        if pulled_action * embedding != embedding * rational_action:
+            raise ArithmeticError("the conjugated Eichler stabilizer does not commute with the lattice embedding")
+        return witness
 
     def stabilizer_of_original_lattice(self, group=None) -> ArithmeticSubgroup:
         if group is not None and group is not self.integral_action.rational_group():
@@ -167,29 +339,29 @@ class EichlerOrbitCover:
 def build_eichler_envelope(lattice: Lattices.ParentMethods) -> EichlerEnvelope:
     """Construct a literal-2U Eichler envelope containing ``lattice``."""
     ring = lattice.base_ring()
-    first_v, first_w = find_hyperbolic_pair(lattice)
-    first_plane = lattice.subobject_on((first_v, first_w)).saturation()
-    first_complement = lattice.orthogonal_complement(first_plane)
+    source_gram = _engine_component_matrix(lattice.gram_tensor())
+    working_lattice = Lattices(ring)([[ring(int(source_gram[row, column])) for column in range(source_gram.ncols())] for row in range(source_gram.nrows())])
+    working_labels = tuple(working_lattice.module_generating_set())
+    first_v, first_w = find_hyperbolic_pair(working_lattice)
+    first_plane = working_lattice.subobject_on((first_v, first_w)).saturation()
+    first_complement = working_lattice.orthogonal_complement(first_plane)
     second_v, second_w = find_hyperbolic_pair(first_complement)
     second_v_ambient = first_complement.inclusion()(second_v)
     second_w_ambient = first_complement.inclusion()(second_w)
-    two_u_span = lattice.subobject_on((first_v, first_w, second_v_ambient, second_w_ambient))
-    complement = lattice.orthogonal_complement(two_u_span)
+    two_u_span = working_lattice.subobject_on((first_v, first_w, second_v_ambient, second_w_ambient))
+    complement = working_lattice.orthogonal_complement(two_u_span)
     model = complement.two_u_eichler_model()
     envelope = model.lattice()
 
-    source_labels = tuple(lattice.module_generating_set())
     envelope_labels = tuple(envelope.module_generating_set())
     selected = (first_v, first_w, second_v_ambient, second_w_ambient) + tuple(complement.inclusion()(generator) for generator in complement.module_generators())
-    from dzack_research.preamble.categories.rings.ring_foundation import _engine_element, _engine_ring
-
-    source_gram = _engine_component_matrix(lattice.gram_tensor()).change_ring(SageQQ)
+    source_gram = source_gram.change_ring(SageQQ)
     full_basis = matrix(
         _engine_ring(ring),
-        [[_engine_element(ring, vector.to_vector()(label)) for label in source_labels] for vector in selected],
+        [[_engine_element(ring, vector.to_vector()(label)) for label in working_labels] for vector in selected],
     ).change_ring(SageQQ)
-    first_scale = SageQQ(_engine_element(ring, lattice.b(first_v, first_w)))
-    second_scale = SageQQ(_engine_element(ring, lattice.b(second_v_ambient, second_w_ambient)))
+    first_scale = SageQQ(_engine_element(ring, working_lattice.b(first_v, first_w)))
+    second_scale = SageQQ(_engine_element(ring, working_lattice.b(second_v_ambient, second_w_ambient)))
     if first_scale <= 0 or second_scale <= 0:
         raise ArithmeticError("the selected hyperbolic pairs must have positive pairing")
     normalization = matrix.identity(SageQQ, int(lattice.module_rank()))
@@ -228,13 +400,17 @@ def build_eichler_envelope(lattice: Lattices.ParentMethods) -> EichlerEnvelope:
         integral_structure_space,
         embedding_rows,
     )
-    rational_group = RationalMatrixGroup(rational_envelope, ())
+    approximate_family = EichlerOrbitCover(model).subgroup()
+    fraction_map = ring.fraction_field_map()
+    rational_generators = tuple(approximate_family[label].base_change(fraction_map) for label in approximate_family.index_set())
+    rational_group = RationalMatrixGroup(rational_envelope, rational_generators)
     action = IntegralStructureAction(rational_group, inclusion)
     return EichlerEnvelope(
         lattice,
         envelope,
         inclusion,
         inclusion_to_envelope,
+        embedding_rows,
         TwoHyperbolicPlaneDecomposition.from_model(model),
         action,
     )
@@ -284,28 +460,37 @@ def find_hyperbolic_pair(
     if method != "auto":
         raise ValueError("the implemented hyperbolic-pair method is 'auto'")
     basis = tuple(lattice.module_generators())
-    for left in basis:
-        if not left or not left.is_isotropic():
-            continue
-        for right in basis:
-            if not right or not right.is_isotropic():
-                continue
+    candidates = list(basis)
+    for left_position, left in enumerate(basis):
+        for right in basis[left_position + 1 :]:
+            candidates.append(left + right)
+            candidates.append(left - right)
+    isotropic = tuple(vector for vector in candidates if vector and vector.is_isotropic())
+    labels = tuple(lattice.module_generating_set())
+    small_pairs = []
+    for left in isotropic:
+        for right in isotropic:
             pairing = lattice.b(left, right)
             if pairing == lattice.base_ring().zero():
                 continue
             if pairing < lattice.base_ring().zero():
                 right = -right
+                pairing = -pairing
+            small_pairs.append(
+                (
+                    int(pairing),
+                    tuple(int(left.to_vector()(label)) for label in labels),
+                    tuple(int(right.to_vector()(label)) for label in labels),
+                    left,
+                    right,
+                )
+            )
+    match small_pairs:
+        case []:
+            pass
+        case _:
+            _pairing, _left_key, _right_key, left, right = min(small_pairs)
             return left, right
-    if int(lattice.module_rank()) == 2 and lattice.signature_pair() == (lattice.base_ring().one(), lattice.base_ring().one()):
-        candidates = basis + (basis[0] + basis[1], basis[0] - basis[1], -basis[0] + basis[1], -basis[0] - basis[1])
-        isotropic = tuple(vector for vector in candidates if vector and vector.is_isotropic())
-        for left in isotropic:
-            for right in isotropic:
-                pairing = lattice.b(left, right)
-                if pairing != lattice.base_ring().zero():
-                    if pairing < lattice.base_ring().zero():
-                        right = -right
-                    return left, right
     gram = _engine_component_matrix(lattice.gram_tensor()).change_ring(SageQQ)
     solution = qfsolve(gram)
     if isinstance(solution, SageInteger):
@@ -323,7 +508,6 @@ def find_hyperbolic_pair(
     if content == 0:
         raise ArithmeticError("qfsolve returned the zero vector")
     coordinates = [coordinate // content for coordinate in coordinates]
-    labels = tuple(lattice.module_generating_set())
     ring = lattice.base_ring()
     v = lattice.linear_combination({label: ring(coordinate) for label, coordinate in zip(labels, coordinates, strict=True) if coordinate})
     if not v.is_isotropic():
