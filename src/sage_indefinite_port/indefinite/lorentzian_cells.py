@@ -118,17 +118,42 @@ class IndefiniteOrthogonalAlgorithm:
         if source_profile.positive_index == 1 and target_profile.positive_index == 1:
             source_complex = LorentzianPerfectComplex(source_profile.signed_view, "total")
             target_complex = LorentzianPerfectComplex(target_profile.signed_view, "total")
-            target_buckets = {}
-            for target_cell in target_complex.quotient_cells():
-                target_buckets.setdefault(_perfect_form_hash_key(target_cell), []).append(target_cell)
-            source_cells = source_complex.quotient_cells()
-            if not any(_perfect_form_hash_key(source_cell) in target_buckets for source_cell in source_cells):
-                return None
-            for source_cell in source_cells:
-                for target_cell in target_buckets.get(_perfect_form_hash_key(source_cell), ()):
-                    witness = source_complex.local_backend().cell_transporter(source_cell, target_cell)
+            target_cell = target_complex.local_backend().initial_cell(
+                target_complex.lattice(),
+                target_complex.mode(),
+            )
+            target_key = _perfect_form_hash_key(target_cell)
+
+            backend = source_complex.local_backend()
+            initial = backend.initial_cell(
+                source_complex.lattice(),
+                source_complex.mode(),
+            )
+            representatives = [initial]
+            representative_buckets = {
+                _perfect_form_hash_key(initial): [initial],
+            }
+            position = 0
+            while position < len(representatives):
+                source_cell = representatives[position]
+                if _perfect_form_hash_key(source_cell) == target_key:
+                    witness = backend.cell_transporter(source_cell, target_cell)
                     if witness is not None:
                         return witness
+
+                for orbit in backend.facet_orbits(source_cell):
+                    facet = orbit[0]
+                    neighbor = backend.flip_across(source_cell, facet)
+                    neighbor_key = _perfect_form_hash_key(neighbor)
+                    for representative in representative_buckets.get(neighbor_key, ()):
+                        if backend.cell_transporter(representative, neighbor) is not None:
+                            break
+                    else:
+                        representatives.append(neighbor)
+                        representative_buckets.setdefault(neighbor_key, []).append(
+                            neighbor
+                        )
+                position += 1
             return None
         source_model = self._two_u_cover_model(source)
         target_model = self._two_u_cover_model(target)
