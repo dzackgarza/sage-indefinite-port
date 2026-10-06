@@ -423,11 +423,47 @@ def test_the_finite_module_orbit_recovers_the_lattice_stabilizer() -> None:
     assert len(finite.orbit_witnesses()) == 2
     assert finite.orbit_witnesses()[0] == plane.Aut().identity()
     assert finite.orbit_witnesses()[1](e) in (involution(e), (~involution)(e))
+    assert finite.orbit_images(e) == tuple(witness(e) for witness in finite.orbit_witnesses())
+    assert all(
+        finite._submodule_key(submodule) == key
+        for submodule, key in zip(
+            finite.orbit(),
+            finite._orbit_keys,
+            strict=True,
+        )
+    )
 
     stabilizer = action.lattice_stabilizer()
     assert stabilizer.supergroup() is group
     assert all(action.preserves_selected_lattice(generator) for generator in stabilizer.generators())
     assert not action.preserves_selected_lattice(involution)
+
+
+def test_matrix_backed_rational_group_preserves_the_finite_action() -> None:
+    plane, _space, standard, e, f = _standard_hyperbolic_lattice()
+    involution = plane.Aut()(
+        {
+            0: plane.scalar_multiple(QQ(ZZ.one() + ZZ.one()), f),
+            1: plane.scalar_multiple(QQ.one() / QQ(ZZ.one() + ZZ.one()), e),
+        }
+    )
+    matrix_ = plane.Aut()._row_action_matrix(involution).transpose()
+    group = RationalMatrixGroup._from_column_matrices(plane, (matrix_,))
+    action = IntegralStructureAction(group, standard)
+
+    assert group._generator_column_matrices() == (matrix_,)
+    assert group.generators() == (involution,)
+    finite = action.finite_representation()
+    assert finite.image_order() == 2
+    matrix_keys = {
+        tuple(tuple(entry for entry in row) for row in matrix_.rows())
+        for matrix_ in finite._lattice_stabilizer_column_matrices
+    }
+    live_keys = {
+        tuple(tuple(entry for entry in row) for row in plane.Aut()._row_action_matrix(generator).transpose().rows())
+        for generator in finite.lattice_stabilizer().generators()
+    }
+    assert matrix_keys == live_keys
 
 
 def test_transporter_and_right_subgroup_cosets_retain_their_actual_sides() -> None:
@@ -453,6 +489,12 @@ def test_transporter_and_right_subgroup_cosets_retain_their_actual_sides() -> No
     for label in standard.domain().module_generating_set():
         vector = standard(standard.domain().module_generator(label)).underlying_element()
         assert target.is_in_image(space.wrap(witness(vector)))
+
+    reverse = action.transporter(target, standard)
+    assert reverse is not None
+    for label in target.domain().module_generating_set():
+        vector = target(target.domain().module_generator(label)).underlying_element()
+        assert standard.is_in_image(space.wrap(reverse(vector)))
 
     cosets = action.right_cosets()
     assert cosets.ambient_group() is group

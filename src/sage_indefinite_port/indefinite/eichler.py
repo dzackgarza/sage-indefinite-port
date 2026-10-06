@@ -78,8 +78,19 @@ class OrbitCoverModel:
             return self.refinement
         if self.envelope is None:
             return self.base.subgroup()
-        stabilizer = self.envelope.stabilizer_of_original_lattice()
-        generators = tuple(self.envelope.pullback_isometry(generator) for generator in stabilizer.generators())
+        embedding = self.envelope._embedding_matrix
+        embedding_inverse = self.envelope._embedding_inverse
+        lattice_automorphisms = self.envelope.lattice.Aut()
+        generators = []
+        for column_matrix in self.envelope.integral_action.finite_representation()._lattice_stabilizer_column_matrices:
+            rational_action = column_matrix.transpose()
+            pulled_action = embedding * rational_action * embedding_inverse
+            if any(entry.denominator() != 1 for entry in pulled_action.list()):
+                raise ArithmeticError("a selected-lattice stabilizer does not preserve the Eichler embedding")
+            if pulled_action * embedding != embedding * rational_action:
+                raise ArithmeticError("the conjugated Eichler stabilizer does not commute with the lattice embedding")
+            generators.append(lattice_automorphisms._isometry_from_column_matrix(pulled_action.transpose()))
+        generators = tuple(generators)
         return GeneratedSubgroup(RationalMatrixGroup(self.envelope.lattice, generators), generators)
 
     def covering_representatives(self, norm, *, primitive: bool) -> OrbitCover:
@@ -99,7 +110,7 @@ class OrbitCoverModel:
         fraction_map = source.base_ring().fraction_field_map()
         envelope_labels = tuple(self.envelope.envelope.module_generating_set())
         rational_labels = tuple(rational_envelope.module_generating_set())
-        witnesses = self.envelope.integral_action.finite_representation().orbit_witnesses()
+        finite_representation = self.envelope.integral_action.finite_representation()
         representatives = []
         for representative in base_cover:
             coordinates = representative.to_vector()
@@ -110,8 +121,8 @@ class OrbitCoverModel:
                     if coordinates(envelope_label)
                 }
             )
-            for witness in witnesses:
-                candidate = self.envelope.pullback_element(witness(rational_representative))
+            for moved_representative in finite_representation.orbit_images(rational_representative):
+                candidate = self.envelope.pullback_element(moved_representative)
                 if candidate is None or candidate.q() != owned_norm:
                     continue
                 if primitive and not candidate.is_primitive():
@@ -304,10 +315,7 @@ class EichlerOrbitCover:
             primitive_norm = ring(int(owned_norm) // (divisor * divisor))
             family = self.model.covering_vector_representatives(primitive_norm)
             scalar = lattice.base_ring()(divisor)
-            representatives.extend(
-                lattice.scalar_multiple(scalar, representative)
-                for representative in family
-            )
+            representatives.extend(lattice.scalar_multiple(scalar, representative) for representative in family)
         return OrbitCover(tuple(representatives))
 
     def one_representative(self, norm, *, primitive: bool):
@@ -349,15 +357,17 @@ def build_eichler_envelope(lattice: Lattices.ParentMethods) -> EichlerEnvelope:
     first_plane = working_lattice.subobject_on((first_v, first_w)).saturation()
     first_complement = working_lattice.orthogonal_complement(first_plane)
     second_v, second_w = find_hyperbolic_pair(first_complement)
-    second_v_ambient = first_complement.inclusion()(second_v)
-    second_w_ambient = first_complement.inclusion()(second_w)
+    first_complement_inclusion = first_complement.inclusion()
+    second_v_ambient = first_complement_inclusion(second_v)
+    second_w_ambient = first_complement_inclusion(second_w)
     two_u_span = working_lattice.subobject_on((first_v, first_w, second_v_ambient, second_w_ambient))
     complement = working_lattice.orthogonal_complement(two_u_span)
     model = complement.two_u_eichler_model()
     envelope = model.lattice()
 
     envelope_labels = tuple(envelope.module_generating_set())
-    selected = (first_v, first_w, second_v_ambient, second_w_ambient) + tuple(complement.inclusion()(generator) for generator in complement.module_generators())
+    complement_inclusion = complement.inclusion()
+    selected = (first_v, first_w, second_v_ambient, second_w_ambient) + tuple(complement_inclusion(generator) for generator in complement.module_generators())
     source_gram = source_gram.change_ring(SageQQ)
     full_basis = matrix(
         _engine_ring(ring),
@@ -394,7 +404,10 @@ def build_eichler_envelope(lattice: Lattices.ParentMethods) -> EichlerEnvelope:
         return envelope.linear_combination({envelope_label: ring(coefficient) for envelope_label, coefficient in zip(envelope_labels, row, strict=True) if coefficient})
 
     inclusion_to_envelope = lattice.module_category().Mor(lattice, envelope)(image)
-    rational_envelope = envelope.base_change(ring.fraction_field_map())
+    rational_envelope, rational_matrix_family = model._approximate_generator_column_matrices_after_base_change(ring.fraction_field_map())
+    rational_generator_matrices = tuple(rational_matrix_family[label] for label in rational_matrix_family.index_set())
+    if not rational_generator_matrices:
+        raise ArithmeticError("the Eichler approximate family has no generators")
     restriction = Modules(QQ).restriction_of_scalars(ZZ.Mor(QQ)(lambda element: QQ(element)))
     integral_structure_space = restriction(rational_envelope)
     inclusion = _rational_lattice_with_integral_structure(
@@ -403,18 +416,10 @@ def build_eichler_envelope(lattice: Lattices.ParentMethods) -> EichlerEnvelope:
         integral_structure_space,
         embedding_rows,
     )
-    approximate_family = EichlerOrbitCover(model).subgroup()
-    envelope_automorphisms = envelope.Aut()
-    rational_automorphisms = rational_envelope.Aut()
-    rational_generators = tuple(
-        rational_automorphisms._isometry_from_column_matrix(
-            envelope_automorphisms._row_action_matrix(generator)
-            .change_ring(SageQQ)
-            .transpose()
-        )
-        for generator in approximate_family
+    rational_group = RationalMatrixGroup._from_column_matrices(
+        rational_envelope,
+        rational_generator_matrices,
     )
-    rational_group = RationalMatrixGroup(rational_envelope, rational_generators)
     action = IntegralStructureAction(rational_group, inclusion)
     return EichlerEnvelope(
         lattice,
@@ -479,35 +484,17 @@ def find_hyperbolic_pair(
         candidate_coordinates.append(coordinates)
     for left_position in range(rank):
         for right_position in range(left_position + 1, rank):
-            candidate_coordinates.append(
-                tuple(
-                    1 if index in (left_position, right_position) else 0
-                    for index in range(rank)
-                )
-            )
-            candidate_coordinates.append(
-                tuple(
-                    1 if index == left_position else -1 if index == right_position else 0
-                    for index in range(rank)
-                )
-            )
+            candidate_coordinates.append(tuple(1 if index in (left_position, right_position) else 0 for index in range(rank)))
+            candidate_coordinates.append(tuple(1 if index == left_position else -1 if index == right_position else 0 for index in range(rank)))
     isotropic_coordinates = []
     for coordinates in candidate_coordinates:
-        norm = sum(
-            coordinates[row] * gram[row, column] * coordinates[column]
-            for row in range(rank)
-            for column in range(rank)
-        )
+        norm = sum(coordinates[row] * gram[row, column] * coordinates[column] for row in range(rank) for column in range(rank))
         if norm == 0:
             isotropic_coordinates.append(coordinates)
     small_pairs = []
     for left in isotropic_coordinates:
         for right in isotropic_coordinates:
-            pairing = sum(
-                left[row] * gram[row, column] * right[column]
-                for row in range(rank)
-                for column in range(rank)
-            )
+            pairing = sum(left[row] * gram[row, column] * right[column] for row in range(rank) for column in range(rank))
             if pairing == 0:
                 continue
             oriented_right = right
@@ -527,20 +514,8 @@ def find_hyperbolic_pair(
         case _:
             _pairing, left_coordinates, right_coordinates = min(small_pairs)
             ring = lattice.base_ring()
-            left = lattice.linear_combination(
-                {
-                    label: ring(coordinate)
-                    for label, coordinate in zip(labels, left_coordinates, strict=True)
-                    if coordinate
-                }
-            )
-            right = lattice.linear_combination(
-                {
-                    label: ring(coordinate)
-                    for label, coordinate in zip(labels, right_coordinates, strict=True)
-                    if coordinate
-                }
-            )
+            left = lattice.linear_combination({label: ring(coordinate) for label, coordinate in zip(labels, left_coordinates, strict=True) if coordinate})
+            right = lattice.linear_combination({label: ring(coordinate) for label, coordinate in zip(labels, right_coordinates, strict=True) if coordinate})
             return left, right
     gram = gram.change_ring(SageQQ)
     solution = qfsolve(gram)
