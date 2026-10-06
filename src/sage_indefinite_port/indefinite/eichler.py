@@ -404,8 +404,16 @@ def build_eichler_envelope(lattice: Lattices.ParentMethods) -> EichlerEnvelope:
         embedding_rows,
     )
     approximate_family = EichlerOrbitCover(model).subgroup()
-    fraction_map = ring.fraction_field_map()
-    rational_generators = tuple(approximate_family[label].base_change(fraction_map) for label in approximate_family.index_set())
+    envelope_automorphisms = envelope.Aut()
+    rational_automorphisms = rational_envelope.Aut()
+    rational_generators = tuple(
+        rational_automorphisms._isometry_from_column_matrix(
+            envelope_automorphisms._row_action_matrix(generator)
+            .change_ring(SageQQ)
+            .transpose()
+        )
+        for generator in approximate_family
+    )
     rational_group = RationalMatrixGroup(rational_envelope, rational_generators)
     action = IntegralStructureAction(rational_group, inclusion)
     return EichlerEnvelope(
