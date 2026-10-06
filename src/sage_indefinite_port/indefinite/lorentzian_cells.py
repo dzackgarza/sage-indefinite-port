@@ -9,7 +9,10 @@ from math import gcd
 from typing import Literal, TypedDict
 
 from dzack_research.preamble.all import ZZ, Lattices
-from dzack_research.preamble.categories.definite_lattices import _element_from_coordinates
+from dzack_research.preamble.categories.definite_lattices import (
+    _ExactCVPEngine,
+    _element_from_coordinates,
+)
 from dzack_research.preamble.categories.lattice_engines import _rational_positive_vector
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.rings.ring_foundation import _engine_element
@@ -756,7 +759,10 @@ class _PositiveVectorEnumerator:
         transform = kernel_gram.LLL_gram()
         self.kernel_rows = transform.transpose() * kernel_rows
         reduced_gram = -(self.kernel_rows * gram * self.kernel_rows.transpose())
-        self.kernel_lattice = Lattices(lattice.base_ring())([[int(reduced_gram[row, column]) for column in range(reduced_gram.ncols())] for row in range(reduced_gram.nrows())])
+        self.kernel_cvp_engine = _ExactCVPEngine._from_positive_engine_gram(
+            lattice.base_ring(),
+            reduced_gram,
+        )
 
         gcd_value = SageZZ.zero()
         coefficients: list[SageZZ] = []
@@ -787,7 +793,7 @@ class _PositiveVectorEnumerator:
         maximum = self.max_multiplier()
         if maximum is None:
             return None
-        shell = self.kernel_lattice._exact_cvp_engine().first_close_vector_scale_coordinates(
+        shell = self.kernel_cvp_engine.first_close_vector_scale_coordinates(
             self.base_target,
             self.base_bound,
             maximum,
@@ -801,10 +807,10 @@ class _PositiveVectorEnumerator:
     def vectors_at_multiplier(self, multiplier):
         target = tuple(SageQQ(multiplier) * entry for entry in self.base_target)
         bound = (SageQQ(multiplier) ** 2) * self.base_bound
-        field = self.kernel_lattice.base_ring().fraction_field()
+        field = self.lattice.base_ring().fraction_field()
         owned_target = tuple(field(int(entry.numerator())) / field(int(entry.denominator())) for entry in target)
         owned_bound = field(int(bound.numerator())) / field(int(bound.denominator()))
-        close_coordinates = self.kernel_lattice._exact_cvp_engine().close_vector_coordinates(
+        close_coordinates = self.kernel_cvp_engine.close_vector_coordinates(
             owned_target,
             owned_bound,
         )
