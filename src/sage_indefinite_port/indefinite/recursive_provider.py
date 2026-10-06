@@ -2,7 +2,7 @@
 
 from dzack_research.preamble.all import ZZ, Lattices
 
-from sage_indefinite_port.indefinite.lorentzian_cells import IndefiniteOrthogonalAlgorithm
+from sage_indefinite_port.indefinite.recursive import IndefiniteOrthogonalAlgorithm
 
 
 def _lattice(gram):
@@ -15,7 +15,7 @@ def _vector(lattice, coordinates):
 
 
 def _row_matrix(isometry):
-    return [[int(entry) for entry in row] for row in isometry.domain().Aut()._row_action_matrix(isometry).rows()]
+    return [[int(entry) for entry in row] for row in isometry.parent()._row_action_matrix(isometry).rows()]
 
 
 def indefinite_automorphism_group(gram):
@@ -46,9 +46,20 @@ def indefinite_vector_stabilizer(gram, coordinates):
     return tuple(_row_matrix(generator) for generator in subgroup.generators())
 
 
+def indefinite_orbit_representative(gram, square):
+    lattice = _lattice(gram)
+    representatives = IndefiniteOrthogonalAlgorithm().vector_orbit_representatives(
+        lattice,
+        lattice.base_ring()(square),
+    )
+    labels = tuple(lattice.module_generating_set())
+    return tuple(tuple(int(representative.to_vector()(label)) for label in labels) for representative in representatives)
+
+
 __all__ = [
     "indefinite_automorphism_group",
     "indefinite_isometry_witness",
+    "indefinite_orbit_representative",
     "indefinite_vector_isometry_witness",
     "indefinite_vector_stabilizer",
 ]

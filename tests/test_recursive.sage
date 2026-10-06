@@ -1,6 +1,6 @@
 from dzack_research.preamble.all import Lattices, ZZ
 
-from sage_indefinite_port.indefinite.lorentzian_cells import IndefiniteOrthogonalAlgorithm
+from sage_indefinite_port.indefinite.recursive import IndefiniteOrthogonalAlgorithm
 from sage_indefinite_port.indefinite.vector_sections import orthogonal_section
 from sage_indefinite_port.invariants import AttackProfile, VectorPrefilter, vector_content
 
@@ -29,11 +29,24 @@ def test_vector_content_and_prefilter_are_distinct_from_pairing_divisor() -> Non
     assert isotropic.divisor == 1
     assert isotropic.orthogonal_reduction_prefilter is not None
 
+    scaled_plane = plane.twist(ZZ.one() + ZZ.one())
+    first, second = scaled_plane.module_generators()
+    first_key = VectorPrefilter.from_vector(
+        first,
+        include_orthogonal_reduction=False,
+    ).discriminant_class_orbit_key
+    second_key = VectorPrefilter.from_vector(
+        second,
+        include_orthogonal_reduction=False,
+    ).discriminant_class_orbit_key
+    assert first_key is not None
+    assert first_key == second_key
+
 
 def test_recursive_dispatch_uses_definite_leaf() -> None:
     lattice = Lattices(ZZ)("A2")
     group = IndefiniteOrthogonalAlgorithm().orthogonal_group(lattice)
-    assert group.domain() is lattice
+    assert group.rational_lattice() is lattice
 
 
 def test_vector_stabilizer_lifts_reduced_group_and_fixes_vector() -> None:
@@ -64,6 +77,18 @@ def test_higher_witt_branch_selects_two_u_model_and_rank_drop() -> None:
     section = orthogonal_section(vector)
     assert algorithm.attack_profile(lattice).positive_index == 2
     assert algorithm.attack_profile(section.reduced_object()).positive_index == 1
+
+
+def test_higher_witt_rank_drop_stabilizer_lifts_integrally() -> None:
+    lattice = Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    algorithm = IndefiniteOrthogonalAlgorithm()
+    model = algorithm._two_u_cover_model(lattice)
+    vector = model.choose_splitting_vector()
+
+    stabilizer = algorithm.vector_stabilizer(vector)
+
+    assert stabilizer.generators()
+    assert all(generator(vector) == vector for generator in stabilizer.generators())
 
 
 def test_ci_indefinite_2u_public_orthogonal_group() -> None:
