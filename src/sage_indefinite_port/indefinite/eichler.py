@@ -459,39 +459,79 @@ def find_hyperbolic_pair(
     """
     if method != "auto":
         raise ValueError("the implemented hyperbolic-pair method is 'auto'")
-    basis = tuple(lattice.module_generators())
-    candidates = list(basis)
-    for left_position, left in enumerate(basis):
-        for right in basis[left_position + 1 :]:
-            candidates.append(left + right)
-            candidates.append(left - right)
-    isotropic = tuple(vector for vector in candidates if vector and vector.is_isotropic())
     labels = tuple(lattice.module_generating_set())
+    rank = len(labels)
+    gram = _engine_component_matrix(lattice.gram_tensor())
+    candidate_coordinates = []
+    for position in range(rank):
+        coordinates = tuple(1 if index == position else 0 for index in range(rank))
+        candidate_coordinates.append(coordinates)
+    for left_position in range(rank):
+        for right_position in range(left_position + 1, rank):
+            candidate_coordinates.append(
+                tuple(
+                    1 if index in (left_position, right_position) else 0
+                    for index in range(rank)
+                )
+            )
+            candidate_coordinates.append(
+                tuple(
+                    1 if index == left_position else -1 if index == right_position else 0
+                    for index in range(rank)
+                )
+            )
+    isotropic_coordinates = []
+    for coordinates in candidate_coordinates:
+        norm = sum(
+            coordinates[row] * gram[row, column] * coordinates[column]
+            for row in range(rank)
+            for column in range(rank)
+        )
+        if norm == 0:
+            isotropic_coordinates.append(coordinates)
     small_pairs = []
-    for left in isotropic:
-        for right in isotropic:
-            pairing = lattice.b(left, right)
-            if pairing == lattice.base_ring().zero():
+    for left in isotropic_coordinates:
+        for right in isotropic_coordinates:
+            pairing = sum(
+                left[row] * gram[row, column] * right[column]
+                for row in range(rank)
+                for column in range(rank)
+            )
+            if pairing == 0:
                 continue
-            if pairing < lattice.base_ring().zero():
-                right = -right
+            oriented_right = right
+            if pairing < 0:
+                oriented_right = tuple(-coordinate for coordinate in right)
                 pairing = -pairing
             small_pairs.append(
                 (
                     int(pairing),
-                    tuple(int(left.to_vector()(label)) for label in labels),
-                    tuple(int(right.to_vector()(label)) for label in labels),
                     left,
-                    right,
+                    oriented_right,
                 )
             )
     match small_pairs:
         case []:
             pass
         case _:
-            _pairing, _left_key, _right_key, left, right = min(small_pairs)
+            _pairing, left_coordinates, right_coordinates = min(small_pairs)
+            ring = lattice.base_ring()
+            left = lattice.linear_combination(
+                {
+                    label: ring(coordinate)
+                    for label, coordinate in zip(labels, left_coordinates, strict=True)
+                    if coordinate
+                }
+            )
+            right = lattice.linear_combination(
+                {
+                    label: ring(coordinate)
+                    for label, coordinate in zip(labels, right_coordinates, strict=True)
+                    if coordinate
+                }
+            )
             return left, right
-    gram = _engine_component_matrix(lattice.gram_tensor()).change_ring(SageQQ)
+    gram = gram.change_ring(SageQQ)
     solution = qfsolve(gram)
     if isinstance(solution, SageInteger):
         raise ValueError("the lattice is anisotropic over QQ")
