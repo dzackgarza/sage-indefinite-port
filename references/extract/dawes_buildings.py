@@ -110,8 +110,7 @@ def circular_building(relative: str, label: str) -> tuple[dict[str, object], int
         "points": sorted(node["label"] for node in nodes.values() if node["kind"] == "point"),
         "curves": sorted(node["label"] for node in nodes.values() if node["kind"] == "curve"),
         "incidences": sorted(
-            [next(nodes[k]["label"] for k in edge if nodes[k]["kind"] == "point"), next(nodes[k]["label"] for k in edge if nodes[k]["kind"] == "curve")]
-            for edge in edges
+            [next(nodes[k]["label"] for k in edge if nodes[k]["kind"] == "point"), next(nodes[k]["label"] for k in edge if nodes[k]["kind"] == "curve")] for edge in edges
         ),
     }
     return building, first + 1, last + 1
