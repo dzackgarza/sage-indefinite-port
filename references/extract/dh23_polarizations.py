@@ -27,7 +27,9 @@ Run from the repository root: uv run references/extract/dh23_polarizations.py
 import json
 import math
 import re
+from collections.abc import Callable
 from pathlib import Path
+from typing import TypedDict
 
 SOURCE = Path("references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex")
 TARGET = Path("tests/fixtures/enriques_87_polarizations.json")
@@ -36,6 +38,22 @@ HEADER = r"Nr & $S$ & $\# S$ &  $|\bar \Gamma_h|$  & $\# I_1$  & $\# I_2$ & $\# 
 FACTOR = re.compile(r"^(\d+)(?:\^\{(\d+)\})?$")
 E10_DOMAIN = Path("tests/fixtures/e10_fundamental_domain.json")
 ROOT_LABELS = tuple(range(-1, 9))
+
+
+class Polarization(TypedDict):
+    case: int
+    S: str
+    walls: list[int]
+    subsets_in_class: int
+    face_polarization: list[int]
+    face_polarization_norm: int
+    group_order: int
+    line_orbits: int
+    plane_orbits: int
+    flag_orbits: int
+    minimal_degree: int
+    phi_h_min: int
+    source: dict[str, str | int]
 
 
 def walls(cell: str) -> list[int]:
@@ -50,7 +68,7 @@ def walls(cell: str) -> list[int]:
     return sorted(set(ROOT_LABELS) - set(listed)) if match.group(1) else listed
 
 
-def face_polarizations() -> tuple[dict[int, list[int]], callable]:
+def face_polarizations() -> tuple[dict[int, list[int]], Callable[[list[int]], tuple[list[int], int]]]:
     """Map each wall label to the extreme ray lying off it, and return h_S as a function of S."""
     domain = json.loads(E10_DOMAIN.read_text(encoding="utf-8"))
     gram, rays = domain["gram"], domain["extreme_rays"]
@@ -59,7 +77,7 @@ def face_polarizations() -> tuple[dict[int, list[int]], callable]:
     def pairing(u: list[int], v: list[int]) -> int:
         return sum(u[i] * gram[i][j] * v[j] for i in range(10) for j in range(10))
 
-    off_wall = {}
+    off_wall: dict[int, list[int]] = {}
     for ray in rays:
         off = [label for label in ROOT_LABELS if pairing(ray, roots[label]) != 0]
         assert len(off) == 1, f"ray {ray} lies off walls {off}: the chamber is not simplicial"
@@ -103,7 +121,7 @@ def tabular_blocks(lines: list[str]) -> list[tuple[str, int, int]]:
 def main() -> None:
     lines = SOURCE.read_text(encoding="utf-8").splitlines()
     _off_wall, polarization = face_polarizations()
-    records = []
+    records: list[Polarization] = []
     for label, first, last in tabular_blocks(lines):
         for index in range(first - 1, last):
             line = lines[index].strip()

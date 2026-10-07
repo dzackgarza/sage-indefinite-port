@@ -32,9 +32,13 @@ import json
 import re
 from fractions import Fraction
 from pathlib import Path
+from typing import TypedDict
 
 # Importing from sage.all runs Sage's session startup.
 from sage.all import AA, QQ, ZZ, CartanMatrix, block_diagonal_matrix, identity_matrix, matrix
+from sage.matrix.matrix2 import Matrix
+from sage.rings.integer import Integer
+from sage.rings.rational import Rational
 
 TESTS = Path("references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom")
 TARGET = Path("tests/fixtures/isometry_centralizers.json")
@@ -51,15 +55,47 @@ CENTRALIZER_CASES = (
 )
 INVOLUTION_CLASSES = ("enumeration.jl", 52, 58)
 
+type FormMatrix = Matrix[Rational] | Matrix[Integer]
+type CentralizerValue = str | int | bool | list[int] | list[list[int]] | dict[str, str]
+
+
+class ClassCount(TypedDict):
+    id: str
+    oscar_call: str
+    class_count: int
+    recorded_properties: list[str]
+    source: dict[str, str]
+
+
+class LatticeClassCount(TypedDict):
+    id: str
+    gram: list[list[int]]
+    signature: list[int]
+    isometry_order: int
+    oscar_call: str
+    class_count: int
+    recorded_properties: list[str]
+    source: dict[str, str]
+
+
+class DefiniteClassCount(TypedDict):
+    id: str
+    gram: list[list[int]]
+    signature: list[int]
+    oscar_call: str
+    class_count: int
+    recorded_properties: list[str]
+    source: dict[str, str]
+
 
 def entries(body: str) -> list[Fraction]:
     tokens = [token for token in re.split(r"[\s,;]+", body.strip()) if token]
     return [Fraction(*map(int, token.split("//"))) if "//" in token else Fraction(int(token)) for token in tokens]
 
 
-def literals(path: Path, first: int, last: int) -> tuple[dict[str, object], str]:
+def literals(path: Path, first: int, last: int) -> tuple[dict[str, Matrix[Rational]], str]:
     text = "\n".join(path.read_text(encoding="utf-8").splitlines()[first - 1 : last])
-    found = {}
+    found: dict[str, Matrix[Rational]] = {}
     for name, rows, cols, body in LITERAL.findall(text):
         values = entries(body)
         assert len(values) == int(rows) * int(cols), f"{path}:{first}-{last}: {name} has {len(values)} entries"
@@ -67,7 +103,7 @@ def literals(path: Path, first: int, last: int) -> tuple[dict[str, object], str]
     return found, text
 
 
-def signature(gram) -> list[int]:
+def signature(gram: FormMatrix) -> list[int]:
     roots = gram.charpoly().roots(AA, multiplicities=True)
     positive = sum(m for r, m in roots if r > 0)
     negative = sum(m for r, m in roots if r < 0)
@@ -75,7 +111,7 @@ def signature(gram) -> list[int]:
     return [int(positive), int(negative)]
 
 
-def integral(m) -> list[list[int]]:
+def integral(m: FormMatrix) -> list[list[int]]:
     assert all(entry in ZZ for entry in m.list()), f"expected an integral matrix, got {m}"
     return [[int(entry) for entry in row] for row in m.rows()]
 
@@ -97,7 +133,7 @@ def recorded_count(relative: str, line: int) -> int:
     return int(match.group(1))
 
 
-def class_count(relative: str, case_id: str, call_line: int, count_line: int, property_lines: tuple[int, ...] = ()) -> dict[str, object]:
+def class_count(relative: str, case_id: str, call_line: int, count_line: int, property_lines: tuple[int, ...] = ()) -> ClassCount:
     return {
         "id": case_id,
         "oscar_call": at(relative, call_line, "("),
@@ -107,7 +143,7 @@ def class_count(relative: str, case_id: str, call_line: int, count_line: int, pr
     }
 
 
-def class_counts() -> dict[str, list[dict[str, object]]]:
+def class_counts() -> dict[str, list[LatticeClassCount] | list[ClassCount] | list[DefiniteClassCount]]:
     e = "enumeration.jl"
     hyperbolic = matrix(ZZ, [[0, 1], [1, 0]])
     e8 = matrix(ZZ, CartanMatrix(["E", 8]))
@@ -128,18 +164,29 @@ def class_counts() -> dict[str, list[dict[str, object]]]:
         (class_count(e, "2U_hermitian_order_4_fix_4", 108, 109), block_diagonal_matrix([hyperbolic] * 2), 4),
         (class_count(e, "fix_type_condition_order_14", 122, 123), fix_type, 14),
     )
-    lattice_counts = []
+    lattice_counts: list[LatticeClassCount] = []
     for record, gram, order in explicit:
         sig = signature(gram)
         assert all(sig), f"{record['id']}: lattice is definite {sig}"
-        lattice_counts.append({"id": record["id"], "gram": integral(gram), "signature": sig, "isometry_order": order} | {k: v for k, v in record.items() if k != "id"})
+        lattice_counts.append(
+            {
+                "id": record["id"],
+                "gram": integral(gram),
+                "signature": sig,
+                "isometry_order": order,
+                "oscar_call": record["oscar_call"],
+                "class_count": record["class_count"],
+                "recorded_properties": record["recorded_properties"],
+                "source": record["source"],
+            }
+        )
     genus_counts = [
         class_count(e, "hermitian_sig_2_4_det_3^5_order_9", 128, 129, (131, 132, 134, 135)),
         class_count(e, "hermitian_unimodular_sig_2_2_2_10_2_18_order_12", 137, 138, (139, 140, 141, 142)),
         class_count(e, "hermitian_sig_2_2_2_6_det_1_to_16_order_4", 144, 145, (146, 147, 148, 149)),
     ]
     at(e, 29, "E6 = root_lattice(:E, 6)")
-    definite_counts = []
+    definite_counts: list[DefiniteClassCount] = []
     for record, gram in (
         (class_count(e, "E6_order_20", 30, 30), e6),
         (class_count(e, "E6_order_9", 31, 31), e6),
@@ -151,11 +198,21 @@ def class_counts() -> dict[str, list[dict[str, object]]]:
         (class_count(e, "E8_order_12_x8+x6+x2+1", 48, 49), e8),
     ):
         assert not all(signature(gram))
-        definite_counts.append({"id": record["id"], "gram": integral(gram), "signature": signature(gram)} | {k: v for k, v in record.items() if k != "id"})
+        definite_counts.append(
+            {
+                "id": record["id"],
+                "gram": integral(gram),
+                "signature": signature(gram),
+                "oscar_call": record["oscar_call"],
+                "class_count": record["class_count"],
+                "recorded_properties": record["recorded_properties"],
+                "source": record["source"],
+            }
+        )
     return {"lattice_class_counts": lattice_counts, "hermitian_genus_class_counts": genus_counts, "definite_class_counts": definite_counts}
 
 
-def a3_identity_case() -> dict[str, object]:
+def a3_identity_case() -> dict[str, CentralizerValue]:
     """lattices_with_isometry.jl 28-36: the image of O(A3) in O(q_A3) (centralizer of the identity) has order 2."""
     relative = "lattices_with_isometry.jl"
     at(relative, 2, "A3 = root_lattice(:A, 3)")
@@ -175,7 +232,8 @@ def a3_identity_case() -> dict[str, object]:
 
 
 def main() -> None:
-    cases = []
+    indefinite: list[dict[str, CentralizerValue]] = []
+    definite: list[dict[str, CentralizerValue]] = []
     for relative, first, last, pattern, key in CENTRALIZER_CASES:
         found, text = literals(TESTS / relative, first, last)
         b, g, f = found["B"], found["G"], found["f"]
@@ -189,7 +247,7 @@ def main() -> None:
         assert match, f"{relative}:{first}-{last}: no recorded value matching {pattern}"
         value = True if match.group(1) == "is_bijective" else int(match.group(1))
         order = next(n for n in range(1, 1000) if (restricted**n) == 1)
-        cases.append(
+        (indefinite if all(sig) else definite).append(
             {
                 "id": f"oscar_{Path(relative).stem}_{first}",
                 "gram": gram,
@@ -201,15 +259,17 @@ def main() -> None:
                 "source": source(relative, first, last),
             }
         )
-    indefinite = [case for case in cases if all(case["signature"])]
-    definite = [case for case in cases if not all(case["signature"])]
     assert [case["id"] for case in definite] == ["oscar_lattices_with_isometry_80"], [case["id"] for case in definite]
     relative, first, last = INVOLUTION_CLASSES
     found, text = literals(TESTS / relative, first, last)
     m_gram = found["B"] * found["G"] * found["B"].transpose()
     assert "char_poly=(x-1)^4*(x+1)^6" in text
-    local = int(re.search(r"@test length\(r_local\)==(\d+)", text).group(1))
-    global_ = int(re.search(r"@test length\(r_global\)==(\d+)", text).group(1))
+    local_match = re.search(r"@test length\(r_local\)==(\d+)", text)
+    assert local_match, f"{relative}:{first}-{last}: no recorded length(r_local)"
+    local = int(local_match.group(1))
+    global_match = re.search(r"@test length\(r_global\)==(\d+)", text)
+    assert global_match, f"{relative}:{first}-{last}: no recorded length(r_global)"
+    global_ = int(global_match.group(1))
     involution_classes = {
         "id": f"oscar_{Path(relative).stem}_{first}",
         "genus_representative_gram": integral(m_gram),

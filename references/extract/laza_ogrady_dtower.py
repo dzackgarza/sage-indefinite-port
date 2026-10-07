@@ -25,9 +25,30 @@ Run from the repository root: uv run references/extract/laza_ogrady_dtower.py
 
 import json
 from pathlib import Path
+from typing import TypedDict
 
 SOURCE = Path("references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex")
 TARGET = Path("tests/fixtures/dtower_boundaries.json")
+
+
+class TypeCount(TypedDict):
+    N: int
+    type_ii_components: int
+    type_ii_from_genus_of_d: int
+    type_ii_from_even_unimodular: int
+    type_iii_components: int
+    group_note: str
+    derivation: str
+    source: dict[str, dict[str, str]]
+
+
+class FHatRow(TypedDict):
+    label: str
+    type: str
+    dimension_in_F_hat: int
+    geometric_meaning: str
+    quartic_case: str
+    source: dict[str, str | int]
 
 
 LOG1 = Path("references/vendor/arxiv/1607.01324/bir-quartics-arxiv.tex")
@@ -103,7 +124,7 @@ def genus_of_d() -> dict[int, list[str]]:
     return stated
 
 
-def type_counts(genus: dict[int, list[str]], definition: dict[str, str], group: dict[str, str]) -> list[dict[str, object]]:
+def type_counts(genus: dict[int, list[str]], definition: dict[str, str], group: dict[str, str]) -> list[TypeCount]:
     """Theorem thm:bbtype2comp with the unimodular lattices of line 4460, for 3 <= N <= 20."""
     theorem = cite(
         4604,
@@ -115,7 +136,7 @@ def type_counts(genus: dict[int, list[str]], definition: dict[str, str], group: 
     unimodular = cite(4460, 4460, "namely  $E_8$", r"namely $E_8\oplus E_8$, and the unique (up to isomorphism) unimodular overlattice of $D_{16}$")
     type_iii = cite(4391, 4391, r"the number of Type III boundary components is $1$ if    $N\not\equiv 2\pmod{8}$, and $2$ if $N\equiv 2\pmod{8}$")
     even_unimodular = {8: ["E8"], 16: ["E8+E8", "D16+"]}
-    counts = []
+    counts: list[TypeCount] = []
     for big_n in range(3, 21):
         n = big_n - 2
         first_kind = len(genus[n]) + (2 if big_n == 14 else 0)
@@ -137,12 +158,12 @@ def type_counts(genus: dict[int, list[str]], definition: dict[str, str], group: 
     return counts
 
 
-def f_hat_table() -> list[dict[str, object]]:
+def f_hat_table() -> list[FHatRow]:
     """Table tabletype2: the eight Type II components of F(18)* and their pre-images in F-hat."""
     lines = SOURCE.read_text(encoding="utf-8").splitlines()
     label = next(i for i, line in enumerate(lines) if r"\label{tabletype2}" in line)
     begin = max(i for i in range(label) if r"\begin{tabular}" in lines[i])
-    rows = []
+    rows: list[FHatRow] = []
     for index in range(begin + 1, label):
         line = lines[index].strip()
         if not line.endswith(r"\\") or line.startswith("Label"):

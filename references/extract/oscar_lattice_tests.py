@@ -36,19 +36,105 @@ Run from the repository root under Sage's Python:
 import json
 import re
 from pathlib import Path
+from typing import NotRequired, TypedDict
 
 # Importing from sage.all runs Sage's session startup.
 from sage.all import AA, ZZ, diagonal_matrix, factorial, matrix
+from sage.matrix.matrix2 import Matrix
+from sage.rings.integer import Integer
 
 TESTS = Path("references/vendor/Oscar.jl@d135b70b/test")
 TARGET = Path("tests/fixtures/oscar_lattice_oracles.json")
+
+type Source = dict[str, str | int]
+
+
+class VinbergCase(TypedDict):
+    id: str
+    gram: list[list[int]]
+    signature: list[int]
+    num_simple_roots: int
+    a_simple_root_up_to_sign: NotRequired[list[int]]
+    cusps: NotRequired[int]
+    coxeter_diagram_edges: NotRequired[int]
+    simple_roots_of_test_chamber: NotRequired[list[list[int]]]
+    chamber: NotRequired[str]
+    source: list[Source]
+
+
+class DiscriminantCase(TypedDict):
+    id: str
+    gram: list[list[int]]
+    signature: list[int]
+    image_in_Oq_order: NotRequired[int]
+    image_in_Oq_signed_order: NotRequired[int]
+    O_qL_order: NotRequired[int]
+    run_in_oscar_ci: NotRequired[bool]
+    image_in_Oq_is_all_of_O_qL: NotRequired[bool]
+    image_in_Oq_signed_is_all_of_O_qL: NotRequired[bool]
+    source: Source | list[Source]
+
+
+class IsometryGroupCase(TypedDict):
+    id: str
+    gram: list[list[int]]
+    signature: list[int]
+    orthogonal_group_order: NotRequired[int]
+    vector: NotRequired[list[int]]
+    vector_stabilizer_order: NotRequired[int]
+    source: list[Source]
+
+
+class OrderCase(TypedDict):
+    id: str
+    gram: list[list[int]]
+    signature: list[int]
+    orthogonal_group_order: int
+    run_in_oscar_ci: NotRequired[bool]
+    source: list[Source]
+
+
+class IsometryTest(TypedDict):
+    id: str
+    gram_1: list[list[int]]
+    gram_2: list[list[int]]
+    signature_1: list[int]
+    signature_2: list[int]
+    isometric: bool
+    source: list[Source]
+
+
+class GroupType(TypedDict):
+    isomorphism_type: str
+    order: int
+
+
+class RootLatticeGroups(TypedDict):
+    id: str
+    gram: list[list[int]]
+    signature: list[int]
+    stable_orthogonal_group: GroupType
+    special_orthogonal_group: GroupType
+    special_stable_orthogonal_group: GroupType
+    source: list[Source]
+
+
+class ReducedOrder(TypedDict):
+    lattice: str
+    hecke_reduced_automorphism_group_order: int
+    source: Source
+
+
+type OracleRecords = (
+    list[VinbergCase] | list[DiscriminantCase] | list[IsometryGroupCase] | list[OrderCase] | list[IsometryTest] | list[RootLatticeGroups] | list[ReducedOrder]
+)
 
 
 def lines_of(relative: str) -> list[str]:
     return (TESTS / relative).read_text(encoding="utf-8").splitlines()
 
 
-def at(relative: str, line: int, needle: str) -> dict[str, object]:
+def at(relative: str, line: int, needle: str) -> Source:
     text = lines_of(relative)[line - 1]
     assert needle in text, f"{TESTS / relative}:{line} does not contain {needle!r}: {text.strip()!r}"
     return {"kind": "independent_implementation_test", "file": str(TESTS / relative), "line": line}
@@ -58,7 +144,7 @@ def find(relative: str, needle: str, start: int = 1) -> int:
     return next(i for i, line in enumerate(lines_of(relative), start=1) if i >= start and needle in line)
 
 
-def indefinite(gram) -> list[int]:
+def indefinite(gram: Matrix[Integer]) -> list[int]:
     roots = gram.charpoly().roots(AA, multiplicities=True)
     positive = sum(m for r, m in roots if r > 0)
     negative = sum(m for r, m in roots if r < 0)
@@ -66,19 +152,19 @@ def indefinite(gram) -> list[int]:
     return [int(positive), int(negative)]
 
 
-def rows(m) -> list[list[int]]:
+def rows(m: Matrix[Integer]) -> list[list[int]]:
     return [[int(entry) for entry in row] for row in m.rows()]
 
 
-def integral_reflection(gram, root) -> None:
+def integral_reflection(gram: Matrix[Integer], root: list[int]) -> None:
     r = matrix(ZZ, [root])
     square = (r * gram * r.transpose())[0, 0]
     assert square != 0 and all((2 * entry) % square == 0 for entry in (gram * r.transpose()).list()), f"{root} gives no integral reflection"
 
 
-def vinberg() -> list[dict[str, object]]:
+def vinberg() -> list[VinbergCase]:
     f = "NumberTheory/vinberg.jl"
-    cases = []
+    cases: list[VinbergCase] = []
     i1_10 = diagonal_matrix(ZZ, [1] + [-1] * 10)
     line = find(f, "@test length(roots) == 12")
     last = find(f, "@test roots[12] == ZZ[3 1 1 1 1 1 1 1 1 1 1]")
@@ -121,7 +207,8 @@ def vinberg() -> list[dict[str, object]]:
         }
     )
     small = diagonal_matrix(ZZ, [1, -1, -3])
-    roots, sources = [], []
+    roots: list[list[int]] = []
+    sources: list[Source] = []
     for k, root in enumerate(([0, -1, 0], [0, 0, -1], [1, 0, 1], [3, 3, 1]), start=1):
         needle = f"@test roots[{k}] == ZZ[{' '.join(map(str, root))}]"
         sources.append(at(f, find(f, needle), needle))
@@ -141,13 +228,14 @@ def vinberg() -> list[dict[str, object]]:
     return cases
 
 
-def discriminant_images() -> list[dict[str, object]]:
+def discriminant_images() -> list[DiscriminantCase]:
     f = "Groups/spinor_norms.jl"
     lines = lines_of(f)
     start = find(f, "from_sage = [")
     stop = find(f, "for (g,ks,k,n) in from_sage", start)
     entry = re.compile(r"\(\[([-\d, ]+)\],\s*(\d+),\s*(\d+),\s*(\d+)\)")
-    cases, commented = [], False
+    cases: list[DiscriminantCase] = []
+    commented = False
     for number in range(start, stop):
         text = lines[number - 1]
         if "#=" in text:
@@ -202,11 +290,11 @@ def discriminant_images() -> list[dict[str, object]]:
     return cases
 
 
-def isometry_group() -> list[dict[str, object]]:
+def isometry_group() -> list[IsometryGroupCase]:
     f = "Groups/isometry_group.jl"
     hyperbolic = matrix(ZZ, [[0, 1], [1, 0]])
     h = find(f, "H = hyperbolic_plane_lattice()")
-    cases = [
+    cases: list[IsometryGroupCase] = [
         {
             "id": "O_U_order",
             "gram": rows(hyperbolic),
@@ -233,7 +321,7 @@ def isometry_group() -> list[dict[str, object]]:
 GRAM_LITERAL = re.compile(r"(?:ZZ|QQ)\[([^\]]*)\]")
 
 
-def gram_on(relative: str, line: int):
+def gram_on(relative: str, line: int) -> Matrix[Integer]:
     """The single Gram literal on a source line, as an integer matrix."""
     literals = GRAM_LITERAL.findall(lines_of(relative)[line - 1])
     assert len(literals) == 1, f"{TESTS / relative}:{line}: expected one Gram literal, found {len(literals)}"
@@ -241,7 +329,7 @@ def gram_on(relative: str, line: int):
     return matrix(ZZ, rows_)
 
 
-def definite(gram) -> list[int]:
+def definite(gram: Matrix[Integer]) -> list[int]:
     assert gram.is_symmetric() and gram.det() != 0, f"degenerate or asymmetric: {gram}"
     if gram.is_positive_definite():
         return [gram.nrows(), 0]
@@ -258,12 +346,12 @@ def evaluate_order(expression: str) -> int:
     return value
 
 
-def root_lattice_a(n: int):
+def root_lattice_a(n: int) -> Matrix[Integer]:
     """OSCAR's root_lattice(:A, n): the positive definite Cartan Gram matrix."""
     return matrix(ZZ, n, n, lambda i, j: 2 if i == j else (-1 if abs(i - j) == 1 else 0))
 
 
-def definite_orthogonal_groups() -> dict[str, list[dict[str, object]]]:
+def definite_orthogonal_groups() -> dict[str, OracleRecords]:
     f = "Groups/isometry_group.jl"
     order_test = re.compile(r"@test order\((.*)\)\s*==\s*([\d^*]+)\s*$")
 
@@ -272,7 +360,7 @@ def definite_orthogonal_groups() -> dict[str, list[dict[str, object]]]:
         assert match, f"{TESTS / f}:{line}: no recorded order"
         return evaluate_order(match.group(2))
 
-    def order_case(case_id: str, gram, gram_source: list[dict[str, object]], test_lines: list[int]) -> dict[str, object]:
+    def order_case(case_id: str, gram: Matrix[Integer], gram_source: list[Source], test_lines: list[int]) -> OrderCase:
         orders = {recorded_order(line) for line in test_lines}
         assert len(orders) == 1, f"{case_id}: the tests record different orders {orders}"
         return {
@@ -285,7 +373,7 @@ def definite_orthogonal_groups() -> dict[str, list[dict[str, object]]]:
 
     a2 = root_lattice_a(2)
     n_gram = a2.block_sum(4 * a2)
-    cases = [
+    cases: list[OrderCase] = [
         order_case(
             "A2_plus_A2(4)",
             n_gram,
@@ -299,7 +387,9 @@ def definite_orthogonal_groups() -> dict[str, list[dict[str, object]]]:
     for gram_line, test_line in ((48, 53), (59, 64), (72, 73), (77, 78), (81, 82), (84, 85), (88, 89)):
         cases.append(order_case(f"isometry_group_line_{gram_line}", gram_on(f, gram_line), [at(f, gram_line, "integer_lattice(gram=")], [test_line]))
     orders_line = find(f, "orders = ZZRingElem[")
-    orders = [int(x) for x in re.search(r"ZZRingElem\[([\d, ]+)\]", lines_of(f)[orders_line - 1]).group(1).split(",")]
+    orders_match = re.search(r"ZZRingElem\[([\d, ]+)\]", lines_of(f)[orders_line - 1])
+    assert orders_match, f"{TESTS / f}:{orders_line}: no ZZRingElem[...] order list"
+    orders = [int(x) for x in orders_match.group(1).split(",")]
     ll_lines = list(range(94, 118))
     assert len(orders) == len(ll_lines) == 24
     loop = find(f, "for (L,ord) in zip(LL[5:10], orders[5:10])")
@@ -323,7 +413,7 @@ def definite_orthogonal_groups() -> dict[str, list[dict[str, object]]]:
     assert by_id["isometry_group_line_59"]["gram"] == by_id["isometry_group_LL_1"]["gram"]
     assert by_id["isometry_group_line_59"]["orthogonal_group_order"] == by_id["isometry_group_LL_1"]["orthogonal_group_order"]
 
-    def pair(case_id: str, first: int, second: int, test: int, needle: str, isometric: bool) -> dict[str, object]:
+    def pair(case_id: str, first: int, second: int, test: int, needle: str, isometric: bool) -> IsometryTest:
         left, right = gram_on(f, first), gram_on(f, second)
         return {
             "id": case_id,
@@ -344,7 +434,7 @@ def definite_orthogonal_groups() -> dict[str, list[dict[str, object]]]:
     at(f, 31, "S = symmetric_group(i+1)")
     at(f, 32, "A = alternating_group(i+1)")
     at(f, 33, "T = isodd(i) ? S : direct_product(A, cyclic_group(2))")
-    groups = []
+    groups: list[RootLatticeGroups] = []
     for i in range(2, 6):
         n = factorial(i + 1)
         groups.append(
@@ -363,7 +453,7 @@ def definite_orthogonal_groups() -> dict[str, list[dict[str, object]]]:
         )
 
     e8 = find(f, "reduced_automorphism_group_order(root_lattice(:E, 8)) == 1")
-    reduced = [
+    reduced: list[ReducedOrder] = [
         {"lattice": "A2 (OSCAR root_lattice(:A, 2))", "hecke_reduced_automorphism_group_order": 2, "source": at(f, e8 - 1, "root_lattice(:A, 2)) == 2")},
         {"lattice": "E8 (OSCAR root_lattice(:E, 8))", "hecke_reduced_automorphism_group_order": 1, "source": at(f, e8, "root_lattice(:E, 8)) == 1")},
     ]
@@ -376,7 +466,7 @@ def definite_orthogonal_groups() -> dict[str, list[dict[str, object]]]:
 
 
 def main() -> None:
-    data = {"vinberg": vinberg(), "discriminant_images": discriminant_images(), "isometry_groups": isometry_group(), **definite_orthogonal_groups()}
+    data: dict[str, OracleRecords] = {"vinberg": vinberg(), "discriminant_images": discriminant_images(), "isometry_groups": isometry_group(), **definite_orthogonal_groups()}
     TARGET.write_text(json.dumps(data, indent=1) + "\n", encoding="utf-8")
     print(f"wrote {TARGET}: " + ", ".join(f"{k} {len(v)}" for k, v in data.items()))
 

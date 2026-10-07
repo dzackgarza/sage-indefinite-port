@@ -24,10 +24,17 @@ import json
 import re
 from itertools import pairwise
 from pathlib import Path
+from typing import TypedDict
 
 SOURCE = Path("references/vendor/arxiv/1303.3478/hyperbolic.tex")
 TARGET = Path("tests/fixtures/mertens_generators.json")
 PMATRIX = re.compile(r"\\begin\{pmatrix\}(.*?)\\end\{pmatrix\}", re.DOTALL)
+
+
+class Generator(TypedDict):
+    name: str
+    matrix: list[list[int]]
+    line: int
 
 
 def parse(body: str) -> list[list[int]]:
@@ -35,15 +42,15 @@ def parse(body: str) -> list[list[int]]:
     return [[int(cell) for cell in row.split("&")] for row in rows]
 
 
-def multiply(a, b):
+def multiply(a: list[list[int]], b: list[list[int]]) -> list[list[int]]:
     return [[sum(a[i][k] * b[k][j] for k in range(len(b))) for j in range(len(b[0]))] for i in range(len(a))]
 
 
-def transpose(a):
+def transpose(a: list[list[int]]) -> list[list[int]]:
     return [list(row) for row in zip(*a, strict=True)]
 
 
-def determinant3(m) -> int:
+def determinant3(m: list[list[int]]) -> int:
     return m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0])
 
 
@@ -53,21 +60,23 @@ def main() -> None:
     end = text.index(r"\end{example}", start)
     example = text[start:end]
     first_line = text[:start].count("\n") + 1
-    gram = parse(PMATRIX.search(example).group(1))
+    gram_match = PMATRIX.search(example)
+    assert gram_match, f"no pmatrix in {SOURCE} example exComplete at line {first_line}"
+    gram = parse(gram_match.group(1))
     assert gram == [[-1, -3, -1], [-3, 14, 8], [-1, 8, 11]] and determinant3(gram) == -155
     # Sylvester: the leading principal minors 1, -1, -23, -155 change sign once, so one negative eigenvalue.
     minors = [1, gram[0][0], gram[0][0] * gram[1][1] - gram[0][1] * gram[1][0], determinant3(gram)]
     negative = sum(1 for a, b in pairwise(minors) if a * b < 0)
     assert all(minors) and negative == 1, minors
     assert "the algorithm finds $9$ inequivalent $D$-perfect points" in example
-    points = {}
+    points: dict[int, list[int]] = {}
     for label, body in re.findall(r"x_(\d)=\s*&\s*\\begin\{pmatrix\}(.*?)\\end\{pmatrix\}", example, re.DOTALL):
         points[int(label)] = [int(cell) for cell in body.split("&")]
     assert sorted(points) == list(range(1, 10))
     neighbours = [8, 4, 6, 8, 4, 3, 4, 3, 6]
     assert "$8,\\,\n4,\\,\n6,\\,\n8,\\,\n4,\\,\n3,\\,\n4,\\,\n3$ and $6$ neighbours" in example
     assert "The stabilizers of $x_2$, $x_5$, $x_6$, $x_7$, $x_8$ are trivial" in example
-    generators = []
+    generators: list[Generator] = []
     for match in re.finditer(r"(\\Stab\(x_(\d)\)|c_\{(\d),(\d)\}('?))=&\s*(?:\\langle\s*)?\\begin\{pmatrix\}(.*?)\\end\{pmatrix\}", example, re.DOTALL):
         matrix = parse(match.group(6))
         assert abs(determinant3(matrix)) == 1, match.group(1)

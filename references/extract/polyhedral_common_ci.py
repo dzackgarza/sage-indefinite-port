@@ -18,26 +18,72 @@ import json
 import re
 import tarfile
 from pathlib import Path
+from typing import TypedDict
 
 # Importing from sage.all runs Sage's session startup, which libgap needs.
 from sage.all import AA, QQ, ZZ, PermutationGroup, libgap, matrix
+from sage.libs.gap.element import GapElement
 
 CI = Path("references/vendor/polyhedral_common@1592b246/CI_tests")
 FIXTURES = Path("tests/fixtures")
 
 
-def gap_file(path: Path):
+class ReflectiveForm(TypedDict):
+    id: str
+    dimension: int
+    gram: list[list[int]]
+    num_simple_roots: int
+    source: dict[str, str | int]
+
+
+class IsotropicCase(TypedDict):
+    id: str
+    dimension: int
+    gram: list[list[int]]
+    has_isotropic: bool
+    source: dict[str, str | int]
+
+
+class SimplexClassification(TypedDict):
+    dimension: int
+    count: int
+    simplices: list[list[list[int]]]
+    source: dict[str, str | int]
+
+
+class PermutationGroupData(TypedDict):
+    num_points: int
+    generators: list[list[int]]
+
+
+class DoubleCoset(TypedDict):
+    id: str
+    degree: int
+    big_group_order: int
+    small_group_order: int
+    num_vectors: int
+    index: int
+    group_g: PermutationGroupData
+    group_h: PermutationGroupData
+    vectors: list[list[int]]
+    source: dict[str, str]
+
+
+type PerfectDomainValue = str | int | bool | list[list[int]] | dict[str, str | int]
+
+
+def gap_file(path: Path) -> GapElement:
     text = path.read_text(encoding="utf-8").strip()
     assert text.startswith("return"), f"{path} does not start with 'return'"
     return libgap.eval(text[len("return") :].strip().rstrip(";"))
 
 
-def int_matrix(value) -> list[list[int]]:
+def int_matrix(value: GapElement) -> list[list[int]]:
     return [[int(entry) for entry in row] for row in value.sage()]
 
 
-def source(path: Path, index: int | None = None) -> dict[str, object]:
-    record: dict[str, object] = {"kind": "reference_implementation_output", "file": str(path)}
+def source(path: Path, index: int | None = None) -> dict[str, str | int]:
+    record: dict[str, str | int] = {"kind": "reference_implementation_output", "file": str(path)}
     if index is not None:
         record["index"] = index
     return record
@@ -48,7 +94,7 @@ def write(name: str, data: object) -> None:
     print(f"wrote {FIXTURES / name}")
 
 
-def write_one_record_per_line(name: str, records: list[dict[str, object]]) -> None:
+def write_one_record_per_line(name: str, records: list[DoubleCoset]) -> None:
     lines = ",\n".join(json.dumps(record, separators=(",", ":")) for record in records)
     (FIXTURES / name).write_text(f"[\n{lines}\n]\n", encoding="utf-8")
     print(f"wrote {FIXTURES / name}")
@@ -60,7 +106,9 @@ def reflective_and_isotropic() -> list[list[list[int]]]:
     reflect = gap_file(reflect_path)
     isotropic = gap_file(isotropic_path)
     assert reflect.Length() == isotropic.Length() == 8821
-    reflective, cases, grams = [], [], []
+    reflective: list[ReflectiveForm] = []
+    cases: list[IsotropicCase] = []
+    grams: list[list[list[int]]] = []
     for index in range(int(reflect.Length())):
         gram = int_matrix(reflect[index]["LorMat"])
         assert int_matrix(isotropic[index]["M"]) == gram, f"IsotropicCases[{index}] is not ListReflect[{index}]"
@@ -88,7 +136,7 @@ def reflective_and_isotropic() -> list[list[list[int]]]:
     return grams
 
 
-def root_systems(grams: list[list[list[int]]], reflective: list[dict[str, object]]) -> None:
+def root_systems(grams: list[list[list[int]]], reflective: list[ReflectiveForm]) -> None:
     path = CI / "01_RatIntAutomorphy" / "ListSimpleRootSystem_4_56_X_5_47"
     systems = gap_file(path)
     paired = [index for index, gram in enumerate(grams) if len(gram) in (4, 5)]
@@ -121,7 +169,7 @@ def root_systems(grams: list[list[list[int]]], reflective: list[dict[str, object
 def perfect_domains() -> None:
     path = CI / "28B_LorentzianPerfStabEqui" / "Result_Enumeration"
     entries = gap_file(path)
-    by_gram: dict[str, dict[str, object]] = {}
+    by_gram: dict[str, dict[str, PerfectDomainValue]] = {}
     for index in range(int(entries.Length())):
         data, mode, count = entries[index][0], str(entries[index][1]), int(entries[index][2])
         gram = int_matrix(data["M"])
@@ -214,7 +262,7 @@ def ci_indefinite_comp() -> None:
 
 
 def classification_simplices() -> None:
-    data = {}
+    data: dict[str, SimplexClassification] = {}
     for dimension in (5, 6, 7):
         path = CI / "DATA" / f"ClassificationSimplices{dimension}"
         simplices = [int_matrix(simplex) for simplex in gap_file(path)]
@@ -226,9 +274,11 @@ def classification_simplices() -> None:
 
 def double_cosets() -> None:
     name_pattern = re.compile(r"DoubleCoset_n(\d+)_big(\d+)_sma(\d+)_vf(\d+)_idx(\d+)")
-    records = []
+    records: list[DoubleCoset] = []
     for path in sorted((CI / "DoubleCosets" / "DBL").iterdir()):
-        degree, big, small, num_vectors, index = map(int, name_pattern.fullmatch(path.name).groups())
+        name_match = name_pattern.fullmatch(path.name)
+        assert name_match, f"{path}: file name does not match {name_pattern.pattern}"
+        degree, big, small, num_vectors, index = map(int, name_match.groups())
         tokens = iter(int(token) for token in path.read_text(encoding="utf-8").split())
         groups = []
         for _ in range(2):

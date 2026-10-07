@@ -27,6 +27,7 @@ Run from the repository root: uv run references/extract/hecke_binary_forms.py
 import json
 import re
 from pathlib import Path
+from typing import TypedDict
 
 SOURCE = Path("references/vendor/Hecke.jl@e2ab5716/test/QuadForm/QuadBin.jl")
 TARGET = Path("tests/fixtures/binary_form_automorphisms.json")
@@ -37,11 +38,29 @@ IMPROPER = re.compile(r"^\s*@assert any\(T -> det\(T\) == -1, gens\) # g is ambi
 MATRIX = re.compile(r"ZZ\[([^\]]*)\]")
 
 
-def mul(a, b):
+class Case(TypedDict):
+    form: list[int]
+    gram: list[list[int]]
+    discriminant: int
+    line: int
+
+
+class ExplicitCase(Case):
+    generators: list[list[list[int]]]
+
+
+class CountCase(Case):
+    count: int
+
+
+type RecordValue = str | int | bool | list[int] | list[list[int]] | list[list[list[int]]] | dict[str, str | int]
+
+
+def mul(a: list[list[int]], b: list[list[int]]) -> list[list[int]]:
     return [[sum(a[i][k] * b[k][j] for k in range(2)) for j in range(2)] for i in range(2)]
 
 
-def tr(a):
+def tr(a: list[list[int]]) -> list[list[int]]:
     return [[a[j][i] for j in range(2)] for i in range(2)]
 
 
@@ -49,7 +68,9 @@ def main() -> None:
     lines = SOURCE.read_text(encoding="utf-8").splitlines()
     start = next(i for i, line in enumerate(lines) if '@testset "Automormorphism group" begin' in line)
     end = next(i for i in range(start + 1, len(lines)) if lines[i].strip() == "end")
-    explicit, counts, improper = [], [], []
+    explicit: list[ExplicitCase] = []
+    counts: list[CountCase] = []
+    improper: list[Case] = []
     index = start + 1
     while index < end:
         form = FORM.match(lines[index])
@@ -59,15 +80,15 @@ def main() -> None:
         a, b, c = map(int, form.groups()[1:])
         assert b * b - 4 * a * c > 0, f"{SOURCE}:{index + 1}: form is not indefinite"
         block_end = next(k for k in range(index + 1, end + 1) if k == end or not lines[k].strip())
-        case = {"form": [a, b, c], "gram": [[2 * a, b], [b, 2 * c]], "discriminant": b * b - 4 * a * c, "line": index + 1}
+        case: Case = {"form": [a, b, c], "gram": [[2 * a, b], [b, 2 * c]], "discriminant": b * b - 4 * a * c, "line": index + 1}
         kinds = 0
         for line in lines[index + 1 : block_end]:
             if match := GENS.match(line):
                 generators = [[[int(x) for x in row.split()] for row in m.split(";")] for m in MATRIX.findall(match.group(1))]
-                explicit.append(case | {"generators": generators})
+                explicit.append({**case, "generators": generators})
                 kinds += 1
             elif match := COUNT.match(line):
-                counts.append(case | {"count": int(match.group(1))})
+                counts.append({**case, "count": int(match.group(1))})
                 kinds += 1
             elif IMPROPER.match(line):
                 improper.append(case)
@@ -80,7 +101,7 @@ def main() -> None:
     assert row or column, "the recorded generators are not isometries under either convention"
     convention = "T G T^T == G (row vectors)" if row else "T^T G T == G (column vectors)"
 
-    def record(case: dict[str, object], **fields: object) -> dict[str, object]:
+    def record(case: Case, **fields: RecordValue) -> dict[str, RecordValue]:
         form = case["form"]
         return {
             "id": f"hecke_binary_{'_'.join(map(str, form))}",

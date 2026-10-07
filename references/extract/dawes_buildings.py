@@ -34,10 +34,32 @@ import json
 import math
 import re
 from pathlib import Path
+from typing import NotRequired, TypedDict
 
 ARXIV = Path("references/vendor/arxiv")
 TARGET = Path("tests/fixtures/dawes_buildings.json")
 U = [[0, 1], [1, 0]]
+
+
+class Node(TypedDict):
+    kind: str
+    angle: float
+    radius: float
+    label: NotRequired[int]
+
+
+class Building(TypedDict):
+    points: list[int]
+    curves: list[int]
+    incidences: list[list[int]]
+
+
+class IndexChain(TypedDict):
+    id: str
+    chain: list[str]
+    indices: list[int]
+    total_index: int
+    source: dict[str, str]
 
 
 def cite(relative: str, first: int, last: int, *needles: str) -> dict[str, str]:
@@ -75,7 +97,7 @@ def bend_right_midpoint(start: tuple[float, float], end: tuple[float, float], be
     return ((start[0] + 3 * first[0] + 3 * second[0] + end[0]) / 8, (start[1] + 3 * first[1] + 3 * second[1] + end[1]) / 8)
 
 
-def circular_building(relative: str, label: str) -> tuple[dict[str, object], int, int]:
+def circular_building(relative: str, label: str) -> tuple[Building, int, int]:
     """Transcribe the circular building figure with the given label from its TikZ source."""
     path = ARXIV / relative
     lines = path.read_text(encoding="utf-8").splitlines()
@@ -83,7 +105,7 @@ def circular_building(relative: str, label: str) -> tuple[dict[str, object], int
     first = max(i for i in range(last) if r"\begin{tikzpicture}" in lines[i])
     body = "\n".join(lines[first : last + 1])
     angle = r"\(([\d*]+)(?:\*360/12)?:([\d.]+)cm\)"
-    nodes: dict[tuple[float, float], dict[str, object]] = {}
+    nodes: dict[tuple[float, float], Node] = {}
     for fill, step, radius in re.findall(r"\\draw\[black, fill=(black|white)\] " + angle + r" circle", body):
         key = (int(step.split("*")[0]) * 30.0, float(radius))
         nodes[key] = {"kind": "curve" if fill == "black" else "point", "angle": key[0], "radius": key[1]}
@@ -106,7 +128,7 @@ def circular_building(relative: str, label: str) -> tuple[dict[str, object], int
     for edge in edges:
         assert {nodes[key]["kind"] for key in edge} == {"point", "curve"}, f"{path}: edge {edge} is not a point-curve incidence"
 
-    building = {
+    building: Building = {
         "points": sorted(node["label"] for node in nodes.values() if node["kind"] == "point"),
         "curves": sorted(node["label"] for node in nodes.values() if node["kind"] == "curve"),
         "incidences": sorted(
@@ -200,7 +222,7 @@ def main() -> None:
         "point_curve_incidences": building["incidences"],
         "source": {"kind": "published_figure", "file": str(ARXIV / paper), "lines": f"{first}-{last}", "label": "2u2a2building"},
     }
-    index_chain = {
+    index_chain: IndexChain = {
         "id": "dawes_2U2_A2_index_chain",
         "chain": [
             "stable orthogonal group of 2U(2) + A2",

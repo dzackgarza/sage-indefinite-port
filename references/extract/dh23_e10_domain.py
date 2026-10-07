@@ -25,15 +25,30 @@ Run from the repository root: uv run references/extract/dh23_e10_domain.py
 import json
 import re
 from pathlib import Path
+from typing import TypedDict
 
 SOURCE = Path("references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex")
 DH_ORBITS = Path("tests/fixtures/enriques_polarization_orbits.json")
 TARGET = Path("tests/fixtures/e10_fundamental_domain.json")
 
 
+class Root(TypedDict):
+    label: int
+    vector: list[int]
+
+
+class Representative(TypedDict):
+    degree: int
+    gamma_class: int
+    g_coefficients: list[int]
+    vector: list[int]
+    source_line: int
+
+
 def matrix_after(lines: list[str], start: int, size: int) -> tuple[list[list[int]], int]:
     """Read the first size x size array of integer rows at or after line index start."""
-    rows, index = [], start
+    rows: list[list[int]] = []
+    index = start
     while len(rows) < size:
         text = lines[index].strip().removesuffix(r"\\").strip()
         index += 1
@@ -42,7 +57,7 @@ def matrix_after(lines: list[str], start: int, size: int) -> tuple[list[list[int
     return rows, index
 
 
-def pairing(gram, u, v) -> int:
+def pairing(gram: list[list[int]], u: list[int], v: list[int]) -> int:
     return sum(u[i] * gram[i][j] * v[j] for i in range(len(u)) for j in range(len(v)))
 
 
@@ -51,7 +66,7 @@ def main() -> None:
     g_line = next(i for i, line in enumerate(lines) if r"\label{equ:G}" in line)
     gram, _ = matrix_after(lines, g_line, 10)
     roots_line = next(i for i, line in enumerate(lines) if "are numbered from $-1$ to $8$ and have the coordinates" in line)
-    roots = []
+    roots: list[Root] = []
     for index in range(roots_line + 1, roots_line + 20):
         match = re.match(r"^\s*(-?\d+) &=& \(([-\d, ]+)\)", lines[index])
         if match:
@@ -80,7 +95,7 @@ def main() -> None:
             rows.append((index, line))
         elif line.startswith("&") and rows:
             rows[-1] = (rows[-1][0], rows[-1][1].removesuffix("\\\\").rstrip() + " " + line.lstrip("&").strip())
-    representatives = []
+    representatives: list[Representative] = []
     for index, line in rows:
         if line.startswith(("all &", "$\\deg$ &")):
             continue
@@ -102,7 +117,7 @@ def main() -> None:
     degrees = sorted({r["degree"] for r in representatives})
     assert degrees == list(range(2, 31, 2)), degrees
 
-    def at(index: int) -> dict[str, object]:
+    def at(index: int) -> dict[str, str | int]:
         return {"kind": "published_text", "file": str(SOURCE), "line": index + 1}
 
     data = {

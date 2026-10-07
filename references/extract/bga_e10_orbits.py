@@ -24,11 +24,20 @@ import math
 import re
 from collections import Counter
 from pathlib import Path
+from typing import TypedDict
 
 SOURCE = Path("references/vendor/arxiv/2408.00306/main_arxiv1.tex")
 DH_ORBITS = Path("tests/fixtures/enriques_polarization_orbits.json")
 TARGET = Path("tests/fixtures/e10_vector_orbits.json")
 FACTOR = re.compile(r"^(\d+)(?:\^\{?(\d+)\}?)?$")
+
+
+class Orbit(TypedDict):
+    lattice: str
+    h_squared: int
+    phi: int | None
+    stabilizer_image_index_in_O_E10_F2: int
+    source: dict[str, str | int]
 
 
 def product(cell: str) -> int:
@@ -46,7 +55,7 @@ def main() -> None:
     label = next(i for i, line in enumerate(lines) if r"\label{table1}" in line)
     definition = next(i for i, line in enumerate(lines) if "even unimodular lattice of signature $(1,9)$ and therefore $E_{10}\\cong U \\oplus E_8$" in line)
     statement = next(i for i, line in enumerate(lines) if "There are 1,2,2,2,3 $O(E_{10})$-orbits of primitive vectors" in line)
-    records = []
+    records: list[Orbit] = []
     for index in range(label + 1, len(lines)):
         line = lines[index].strip()
         if line.startswith(r"\end{tabular}"):

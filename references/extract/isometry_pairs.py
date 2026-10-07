@@ -22,28 +22,42 @@ Run from the repository root under Sage's Python:
 import json
 import re
 from pathlib import Path
+from typing import NotRequired, TypedDict
 
 # Importing from sage.all runs Sage's session startup.
 from sage.all import AA, ZZ, Genus, matrix
+from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 
 INDEF = Path("references/vendor/Indefinite.jl@374a5ebb")
 HECKE = Path("references/vendor/Hecke.jl@e2ab5716/test/QuadForm/Quad/ZLatticeAutIso.jl")
 TARGET = Path("tests/fixtures/indefinite_isometry_pairs.json")
 
 
-def read_indefinite_matrix(path: Path):
+class IsometryPair(TypedDict):
+    id: str
+    gram1: list[list[int]]
+    gram2: list[list[int]]
+    signature: list[int]
+    isometric: bool
+    certificate: str
+    source: dict[str, str | list[str]]
+    witness: NotRequired[list[list[int]]]
+    witness_convention: NotRequired[str]
+
+
+def read_indefinite_matrix(path: Path) -> Matrix_integer_dense:
     tokens = [int(token) for token in path.read_text(encoding="utf-8").split()]
     rows, cols, entries = tokens[0], tokens[1], tokens[2:]
     assert len(entries) == rows * cols, path
     return matrix(ZZ, rows, cols, entries)
 
 
-def julia_matrix(text: str):
+def julia_matrix(text: str) -> Matrix_integer_dense:
     rows = [[int(entry) for entry in row.split()] for row in text.split(";")]
     return matrix(ZZ, rows)
 
 
-def signature(gram) -> list[int]:
+def signature(gram: Matrix_integer_dense) -> list[int]:
     roots = gram.charpoly().roots(AA, multiplicities=True)
     positive = sum(m for r, m in roots if r > 0)
     negative = sum(m for r, m in roots if r < 0)
@@ -51,21 +65,29 @@ def signature(gram) -> list[int]:
     return [int(positive), int(negative)]
 
 
-def as_rows(m) -> list[list[int]]:
+def as_rows(m: Matrix_integer_dense) -> list[list[int]]:
     return [[int(entry) for entry in row] for row in m.rows()]
 
 
-def genus_certificate(gram1, gram2) -> str:
+def genus_certificate(gram1: Matrix_integer_dense, gram2: Matrix_integer_dense) -> str:
     assert gram1.nrows() >= 3, "the Eichler certificate needs rank >= 3"
     assert Genus(gram1) == Genus(gram2), "the pair is not in one genus"
     assert Genus(gram1).spinor_generators(proper=False) == [], "the genus has more than one spinor genus"
     return "equal genera, no spinor generators (one improper spinor genus); indefinite of rank >= 3, so one isometry class (Eichler)"
 
 
-def record(case_id, gram1, gram2, isometric, certificate, witness, source):
+def record(
+    case_id: str,
+    gram1: Matrix_integer_dense,
+    gram2: Matrix_integer_dense,
+    isometric: bool,
+    certificate: str,
+    witness: Matrix_integer_dense | None,
+    source: dict[str, str | list[str]],
+) -> IsometryPair:
     sig = signature(gram1)
     assert sig == signature(gram2) and sig[0] > 0 and sig[1] > 0, f"{case_id}: not an indefinite pair of one signature"
-    entry = {
+    entry: IsometryPair = {
         "id": case_id,
         "gram1": as_rows(gram1),
         "gram2": as_rows(gram2),
@@ -82,13 +104,13 @@ def record(case_id, gram1, gram2, isometric, certificate, witness, source):
 
 
 def main() -> None:
-    cases = []
+    cases: list[IsometryPair] = []
     driver = (INDEF / "test_gap.jl").read_text(encoding="utf-8")
     for name in ("U_I3", "U_E8", "U_2U_2I3"):
         assert f'"TestLor/{name}_mat1"' in driver and f'"TestLor/{name}_mat2"' in driver
         gram1 = read_indefinite_matrix(INDEF / "TestLor" / f"{name}_mat1")
         gram2 = read_indefinite_matrix(INDEF / "TestLor" / f"{name}_mat2")
-        source = {
+        source: dict[str, str | list[str]] = {
             "kind": "independent_implementation_test",
             "files": [str(INDEF / "TestLor" / f"{name}_mat{i}") for i in (1, 2)],
             "driver": str(INDEF / "test_gap.jl"),
@@ -100,8 +122,12 @@ def main() -> None:
     block = "\n".join(lines[start : start + 33])
     span = f"{start + 1}-{start + 33}"
     source = {"kind": "independent_implementation_test", "file": str(HECKE), "lines": span}
-    u = julia_matrix(re.search(r"u = ZZ\[(.*?)\]", block).group(1))
-    gram_l = julia_matrix(re.search(r"L = integer_lattice\(gram=ZZ\[(.*?)\]\)", block).group(1))
+    u_match = re.search(r"u = ZZ\[(.*?)\]", block)
+    assert u_match, f"{HECKE}:{span}: no witness u = ZZ[...]"
+    u = julia_matrix(u_match.group(1))
+    gram_l_match = re.search(r"L = integer_lattice\(gram=ZZ\[(.*?)\]\)", block)
+    assert gram_l_match, f"{HECKE}:{span}: no L = integer_lattice(gram=ZZ[...])"
+    gram_l = julia_matrix(gram_l_match.group(1))
     assert "@test Hecke.is_isometric(L, M)" in block
     cases.append(record("hecke_U2_A2_by_u", gram_l, u * gram_l * u.transpose(), True, "recorded witness u", u, source))
     assert "@test !is_isometric(L1, L2)" in block and "L2 = hyperbolic_plane_lattice(2)" in block
