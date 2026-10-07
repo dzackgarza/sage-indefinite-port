@@ -152,6 +152,19 @@ class AllcockEnriquesPeriodLattice(TypedDict):
     source: dict[str, TextSource]
 
 
+class E10VectorOrbit(TypedDict):
+    lattice: str
+    h_squared: int
+    phi: int | None
+    stabilizer_image_index_in_O_E10_F2: int
+    source: TableRowSource
+
+
+class E10VectorOrbits(TypedDict):
+    orbits: list[E10VectorOrbit]
+    source: dict[str, dict[str, object]]
+
+
 class LorentzianPerfectCase(TypedDict):
     id: str
     dimension: int
@@ -585,6 +598,13 @@ def load_allcock_i_2_10_orbits() -> AllcockEnriquesPeriodLattice:
     """Orbits of norm -1 vectors, isotropic lines and planes in I_{2,10} (Allcock, Cor. 3-4)."""
     with open(FIXTURES_DIR / "allcock_i_2_10_orbits.json", encoding="utf-8") as f:
         data: AllcockEnriquesPeriodLattice = json.load(f)
+        return data
+
+
+def load_e10_vector_orbits() -> E10VectorOrbits:
+    """O(E10)-orbits of primitive vectors of norm 0..10 with stabilizer indices (Brandhorst--Gonzalez-Alonso)."""
+    with open(FIXTURES_DIR / "e10_vector_orbits.json", encoding="utf-8") as f:
+        data: E10VectorOrbits = json.load(f)
         return data
 
 

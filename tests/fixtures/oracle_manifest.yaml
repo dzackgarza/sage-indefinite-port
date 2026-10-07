@@ -185,3 +185,8 @@ oracles:
     extraction: references/extract/allcock_enriques_period.py
     sources:
       - references/vendor/arxiv/9905166/main.tex
+  - id: e10_vector_orbits
+    fixture_file: e10_vector_orbits.json
+    extraction: references/extract/bga_e10_orbits.py
+    sources:
+      - references/vendor/arxiv/2408.00306/main_arxiv1.tex

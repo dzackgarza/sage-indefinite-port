@@ -26,6 +26,18 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Extraction**: `uv run references/extract/dh23_norm_orbits.py`. It checks that $2d = 2g-2$, that the cumulative row is the running sum of $\#h$ (ending at 312), and that $\#\bar\Gamma_h \le \#h$.
 
+### O(E10)-Orbits of Primitive Vectors with Stabilizer Indices (Brandhorst–González-Alonso)
+
+- **File**: `tests/fixtures/e10_vector_orbits.json`
+
+- **Source**: Brandhorst–González-Alonso, arXiv:2408.00306, Appendix Table `table1` (vendored TeX; computed by the authors with OSCAR). $E_{10}$ is the even unimodular lattice of signature (1,9), $U \oplus E_8(-1)$. For $h^2 \in \{0, 2, \dots, 10\}$ the table gives the orbits by $\phi(h)$ and the index of the image of $O(E_{10}, h)$ in $O(E_{10}\otimes\mathbb F_2)$.
+
+- **Cross-checks** (asserted by the extraction):
+  - the orbit counts 1, 2, 2, 2, 3 for $h^2 = 2..10$ match Dutour Sikirić–Hulek's $\#h$;
+  - the $h^2 = 0$ index $17\cdot31 = 527$ matches the length-527 isotropic orbit in Dutour Sikirić–Hulek.
+
+- **Extraction**: `uv run references/extract/bga_e10_orbits.py`.
+
 ### Unpolarized Enriques Boundary Strata and Stabilizers
 
 - **File**: `tests/fixtures/unpolarized_enriques.json`
