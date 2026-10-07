@@ -15,15 +15,37 @@ from dzack_research.preamble.categories.lattices import IsotropicReductions, Lat
 from dzack_research.preamble.categories.modules.pure.modules import _engine_matrix
 from dzack_research.preamble.categories.rings.ring_foundation import (
     OwnedRings,
+    RingMorphism,
     _engine_element,
 )
 from sage.matrix.constructor import matrix
 from sage.rings.rational_field import QQ as SageQQ
+from sage.structure.element import RingElement
 
 from sage_indefinite_port.indefinite.isotropic_lifts import (
     CodimensionOneIsotropicExtension,
     IsometryExtensionTorsor,
 )
+
+type NonIsotropicLiftContext = tuple[
+    RingMorphism,
+    Lattices.ParentMethods,
+    LatticeEmbeddingMethods,
+    Lattices.ElementMethods,
+    RingElement,
+    dict[Hashable, tuple[RingElement, Lattices.ElementMethods]],
+]
+"""Fraction map, rational ambient, rational perpendicular inclusion, rational vector, its norm, and each generator's split along the vector and its perpendicular."""
+
+type IsotropicLiftContext = tuple[
+    RingMorphism,
+    Lattices.ParentMethods,
+    Lattices.ParentMethods,
+    Lattices.ParentMethods,
+    LatticeIsometryMethods,
+    LatticeIsometryMethods,
+]
+"""Fraction map, rational ambient, rational perpendicular subspace, base-changed perpendicular, and the isometry to that subspace with its inverse."""
 
 
 @dataclass(frozen=True)
@@ -40,7 +62,7 @@ class NonIsotropicVectorSection:
         return self.reduction
 
     @cached_property
-    def _rational_lift_context(self):
+    def _rational_lift_context(self) -> NonIsotropicLiftContext:
         source_ambient = self.inclusion.codomain()
         source_ring = source_ambient.base_ring()
         match source_ring:
@@ -53,7 +75,7 @@ class NonIsotropicVectorSection:
         coordinates = self.vector.to_vector()
         source_vector = source_rational.linear_combination({label: fraction_map(coordinates(label)) for label in source_ambient.module_generating_set() if coordinates(label)})
         source_norm = source_rational.q(source_vector)
-        source_decomposition = {}
+        source_decomposition: dict[Hashable, tuple[RingElement, Lattices.ElementMethods]] = {}
         for label in source_rational.module_generating_set():
             source_generator = source_rational.module_generator(label)
             vector_coefficient = source_rational.b(source_generator, source_vector) / source_norm
@@ -278,7 +300,7 @@ class IsotropicVectorSection:
         return self.reduction
 
     @cached_property
-    def _rational_lift_context(self):
+    def _rational_lift_context(self) -> IsotropicLiftContext:
         source_ambient = self.inclusion.codomain()
         source_ring = source_ambient.base_ring()
         match source_ring:
