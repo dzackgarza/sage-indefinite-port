@@ -266,9 +266,12 @@ This document records the exact provenance, source files, authors, publications,
 
 - **File**: `tests/fixtures/binary_form_automorphisms.json`
 
-- **Source**: `references/vendor/Hecke.jl@e2ab5716/test/QuadForm/QuadBin.jl`, testset "Automormorphism group". For four indefinite binary forms $ax^2+bxy+cy^2$ (lattice Gram $[[2a,b],[b,2c]]$) it records Hecke's exact automorphism-group generators. Cases recording only how many generators Hecke returns are excluded, since that count is an implementation detail.
+- **Source**: `references/vendor/Hecke.jl@e2ab5716/test/QuadForm/QuadBin.jl`, testset "Automormorphism group". Every form $ax^2+bxy+cy^2$ there is indefinite (lattice Gram $[[2a,b],[b,2c]]$). Three lists:
+  - `explicit_generators`: four forms with Hecke's exact automorphism-group generators;
+  - `generator_counts`: six forms where the test records only how many generators Hecke returns (`hecke_generator_count`). This is Hecke's output, not an invariant of the group;
+  - `improper_automorphisms`: $3x^2+xy-3y^2$, which the test asserts is ambiguous (it has an automorphism of determinant $-1$).
 
-- **Extraction**: `uv run references/extract/hecke_binary_forms.py`. It asserts each form is indefinite and finds the convention the data satisfies, $T^T G T = G$ for every generator.
+- **Extraction**: `uv run references/extract/hecke_binary_forms.py`. It asserts each form is indefinite, that the testset holds exactly 4 + 6 + 1 cases, and finds the convention the explicit generators satisfy, $T^T G T = G$ for every generator.
 
 ### 6 Metamorphic Indefinite Forms
 

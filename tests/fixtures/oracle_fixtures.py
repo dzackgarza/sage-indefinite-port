@@ -190,7 +190,7 @@ class MertensGenerators(TypedDict):
     source: dict[str, object]
 
 
-class BinaryFormAutomorphisms(TypedDict):
+class BinaryFormGenerators(TypedDict):
     id: str
     form: list[int]
     gram: Gram
@@ -198,6 +198,32 @@ class BinaryFormAutomorphisms(TypedDict):
     automorphism_group_generators: list[list[list[int]]]
     isometry_convention: str
     source: FileSource
+
+
+class BinaryFormGeneratorCount(TypedDict):
+    """How many generators Hecke's automorphism_group_generators returns; Hecke's output, not a group invariant."""
+
+    id: str
+    form: list[int]
+    gram: Gram
+    discriminant: int
+    hecke_generator_count: int
+    source: FileSource
+
+
+class BinaryFormImproper(TypedDict):
+    id: str
+    form: list[int]
+    gram: Gram
+    discriminant: int
+    has_improper_automorphism: bool
+    source: FileSource
+
+
+class BinaryFormAutomorphisms(TypedDict):
+    explicit_generators: list[BinaryFormGenerators]
+    generator_counts: list[BinaryFormGeneratorCount]
+    improper_automorphisms: list[BinaryFormImproper]
 
 
 class DTowerTypeCount(TypedDict):
@@ -689,10 +715,10 @@ def load_mertens_generators() -> MertensGenerators:
         return data
 
 
-def load_binary_form_automorphisms() -> list[BinaryFormAutomorphisms]:
-    """Recorded automorphism-group generators of indefinite binary forms (Hecke QuadBin tests)."""
+def load_binary_form_automorphisms() -> BinaryFormAutomorphisms:
+    """Automorphism-group facts for indefinite binary forms recorded by Hecke's QuadBin tests."""
     with open(FIXTURES_DIR / "binary_form_automorphisms.json", encoding="utf-8") as f:
-        data: list[BinaryFormAutomorphisms] = json.load(f)
+        data: BinaryFormAutomorphisms = json.load(f)
         return data
 
 
