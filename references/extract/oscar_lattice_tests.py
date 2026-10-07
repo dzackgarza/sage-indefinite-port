@@ -12,8 +12,22 @@ lattices that this port computes. Sources (references/vendor/Oscar.jl@d135b70b/t
   (image_in_Oq_signed); plus two cases whose image map is recorded bijective;
 - Groups/isometry_group.jl: |O(U)| = 4, and a vector stabilizer of order 2.
 
-The script asserts each recorded value on its source line, that every lattice is
-indefinite and nondegenerate, and that explicit roots give integral reflections.
+The same file records facts about definite lattices, kept in their own keys because
+definite isometry groups are the research preamble's concern; this port reaches them
+only through the preamble:
+
+- definite_orthogonal_group_orders: |O(L)| for every lattice whose order the file
+  records, including all 24 entries of the list LL/orders (OSCAR's CI runs entries
+  5-10; run_in_oscar_ci says which);
+- definite_isometry_tests: one recorded non-isometric pair and one isometric pair;
+- root_lattice_groups: for A_i, i = 2..5, the isomorphism types of the stable,
+  special and special stable orthogonal groups, with their orders;
+- hecke_reduced_automorphism_group_orders: Hecke's reduced_automorphism_group_order
+  for A2 and E8, recorded under Hecke's name.
+
+The script asserts each recorded value on its source line, that every lattice in the
+indefinite keys is indefinite and nondegenerate, that every lattice in the definite
+keys is definite, and that explicit roots give integral reflections.
 
 Run from the repository root under Sage's Python:
     "$(dirname $(sage -c 'import sys; print(sys.executable)'))/python3" references/extract/oscar_lattice_tests.py
@@ -24,7 +38,7 @@ import re
 from pathlib import Path
 
 # Importing from sage.all runs Sage's session startup.
-from sage.all import AA, ZZ, diagonal_matrix, matrix
+from sage.all import AA, ZZ, diagonal_matrix, factorial, matrix
 
 TESTS = Path("references/vendor/Oscar.jl@d135b70b/test")
 TARGET = Path("tests/fixtures/oscar_lattice_oracles.json")
@@ -216,8 +230,153 @@ def isometry_group() -> list[dict[str, object]]:
     return cases
 
 
+GRAM_LITERAL = re.compile(r"(?:ZZ|QQ)\[([^\]]*)\]")
+
+
+def gram_on(relative: str, line: int):
+    """The single Gram literal on a source line, as an integer matrix."""
+    literals = GRAM_LITERAL.findall(lines_of(relative)[line - 1])
+    assert len(literals) == 1, f"{TESTS / relative}:{line}: expected one Gram literal, found {len(literals)}"
+    rows_ = [[int(entry) for entry in row.split()] for row in literals[0].split(";") if row.strip()]
+    return matrix(ZZ, rows_)
+
+
+def definite(gram) -> list[int]:
+    assert gram.is_symmetric() and gram.det() != 0, f"degenerate or asymmetric: {gram}"
+    if gram.is_positive_definite():
+        return [gram.nrows(), 0]
+    assert (-gram).is_positive_definite(), f"not definite: {gram}"
+    return [0, gram.nrows()]
+
+
+def evaluate_order(expression: str) -> int:
+    """An order as written in the test: a product of integers and powers, e.g. 696729600^2*2*2."""
+    value = 1
+    for factor in expression.split("*"):
+        base, _, exponent = factor.strip().partition("^")
+        value *= int(base) ** int(exponent or 1)
+    return value
+
+
+def root_lattice_a(n: int):
+    """OSCAR's root_lattice(:A, n): the positive definite Cartan Gram matrix."""
+    return matrix(ZZ, n, n, lambda i, j: 2 if i == j else (-1 if abs(i - j) == 1 else 0))
+
+
+def definite_orthogonal_groups() -> dict[str, list[dict[str, object]]]:
+    f = "Groups/isometry_group.jl"
+    order_test = re.compile(r"@test order\((.*)\)\s*==\s*([\d^*]+)\s*$")
+
+    def recorded_order(line: int) -> int:
+        match = order_test.search(lines_of(f)[line - 1])
+        assert match, f"{TESTS / f}:{line}: no recorded order"
+        return evaluate_order(match.group(2))
+
+    def order_case(case_id: str, gram, gram_source: list[dict[str, object]], test_lines: list[int]) -> dict[str, object]:
+        orders = {recorded_order(line) for line in test_lines}
+        assert len(orders) == 1, f"{case_id}: the tests record different orders {orders}"
+        return {
+            "id": case_id,
+            "gram": rows(gram),
+            "signature": definite(gram),
+            "orthogonal_group_order": orders.pop(),
+            "source": gram_source + [at(f, line, "@test order(") for line in test_lines],
+        }
+
+    a2 = root_lattice_a(2)
+    n_gram = a2.block_sum(4 * a2)
+    cases = [
+        order_case(
+            "A2_plus_A2(4)",
+            n_gram,
+            [at(f, 2, "root_lattice(:A, 2)"), at(f, 3, "rescale(N1, 4)"), at(f, 4, "direct_sum(N1,N2)")],
+            [5],
+        )
+    ]
+    assert gram_on(f, 7) == gram_on(f, 12)
+    cases.append(order_case("isometry_group_line_7", gram_on(f, 7), [at(f, 7, "integer_lattice")], [9, 10, 11, 13]))
+    cases.append(order_case("isometry_group_line_15", gram_on(f, 15), [at(f, 15, "gram = ZZ["), at(f, 16, "integer_lattice(; gram)")], [17]))
+    for gram_line, test_line in ((48, 53), (59, 64), (72, 73), (77, 78), (81, 82), (84, 85), (88, 89)):
+        cases.append(order_case(f"isometry_group_line_{gram_line}", gram_on(f, gram_line), [at(f, gram_line, "integer_lattice(gram=")], [test_line]))
+    orders_line = find(f, "orders = ZZRingElem[")
+    orders = [int(x) for x in re.search(r"ZZRingElem\[([\d, ]+)\]", lines_of(f)[orders_line - 1]).group(1).split(",")]
+    ll_lines = list(range(94, 118))
+    assert len(orders) == len(ll_lines) == 24
+    loop = find(f, "for (L,ord) in zip(LL[5:10], orders[5:10])")
+    at(f, loop + 1, "@test order(orthogonal_group(L))==ord")
+    for position, (line, order) in enumerate(zip(ll_lines, orders, strict=True), start=1):
+        gram = gram_on(f, line)
+        cases.append(
+            {
+                "id": f"isometry_group_LL_{position}",
+                "gram": rows(gram),
+                "signature": definite(gram),
+                "orthogonal_group_order": order,
+                "run_in_oscar_ci": 5 <= position <= 10,
+                "source": [at(f, line, "integer_lattice(gram="), at(f, orders_line, str(order)), at(f, loop, "zip(LL[5:10], orders[5:10])")],
+            }
+        )
+    for case in cases:
+        case.setdefault("run_in_oscar_ci", True)
+    # Cross-check within the file: L2 (line 59, order written 696729600^2*2*2) is LL[1] (order from the list).
+    by_id = {case["id"]: case for case in cases}
+    assert by_id["isometry_group_line_59"]["gram"] == by_id["isometry_group_LL_1"]["gram"]
+    assert by_id["isometry_group_line_59"]["orthogonal_group_order"] == by_id["isometry_group_LL_1"]["orthogonal_group_order"]
+
+    def pair(case_id: str, first: int, second: int, test: int, needle: str, isometric: bool) -> dict[str, object]:
+        left, right = gram_on(f, first), gram_on(f, second)
+        return {
+            "id": case_id,
+            "gram_1": rows(left),
+            "gram_2": rows(right),
+            "signature_1": definite(left),
+            "signature_2": definite(right),
+            "isometric": isometric,
+            "source": [at(f, first, "integer_lattice(gram="), at(f, second, "integer_lattice(gram="), at(f, test, needle)],
+        }
+
+    isometry_tests = [
+        pair("isometry_group_L1_L2_line_69", 48, 59, 69, "@test !is_isometric_with_isometry(L1,L2)[1]", False),
+        pair("isometry_group_L1_L2_line_130", 127, 129, 130, "@test is_isometric(L1, L2)", True),
+    ]
+
+    at(f, 29, "for i in 2:5")
+    at(f, 31, "S = symmetric_group(i+1)")
+    at(f, 32, "A = alternating_group(i+1)")
+    at(f, 33, "T = isodd(i) ? S : direct_product(A, cyclic_group(2))")
+    groups = []
+    for i in range(2, 6):
+        n = factorial(i + 1)
+        groups.append(
+            {
+                "id": f"A{i}_orthogonal_subgroups",
+                "gram": rows(root_lattice_a(i)),
+                "signature": definite(root_lattice_a(i)),
+                "stable_orthogonal_group": {"isomorphism_type": f"S_{i + 1}", "order": int(n)},
+                "special_orthogonal_group": {
+                    "isomorphism_type": f"S_{i + 1}" if i % 2 else f"A_{i + 1} x C_2",
+                    "order": int(n),
+                },
+                "special_stable_orthogonal_group": {"isomorphism_type": f"A_{i + 1}", "order": int(n // 2)},
+                "source": [at(f, 30, "root_lattice(:A, i)"), at(f, 35, "is_isomorphic(O_st, S)"), at(f, 38, "is_isomorphic(O_sp, T)"), at(f, 41, "is_isomorphic(O_spst, A)")],
+            }
+        )
+
+    e8 = find(f, "reduced_automorphism_group_order(root_lattice(:E, 8)) == 1")
+    reduced = [
+        {"lattice": "A2 (OSCAR root_lattice(:A, 2))", "hecke_reduced_automorphism_group_order": 2, "source": at(f, e8 - 1, "root_lattice(:A, 2)) == 2")},
+        {"lattice": "E8 (OSCAR root_lattice(:E, 8))", "hecke_reduced_automorphism_group_order": 1, "source": at(f, e8, "root_lattice(:E, 8)) == 1")},
+    ]
+    return {
+        "definite_orthogonal_group_orders": cases,
+        "definite_isometry_tests": isometry_tests,
+        "root_lattice_groups": groups,
+        "hecke_reduced_automorphism_group_orders": reduced,
+    }
+
+
 def main() -> None:
-    data = {"vinberg": vinberg(), "discriminant_images": discriminant_images(), "isometry_groups": isometry_group()}
+    data = {"vinberg": vinberg(), "discriminant_images": discriminant_images(), "isometry_groups": isometry_group(), **definite_orthogonal_groups()}
     TARGET.write_text(json.dumps(data, indent=1) + "\n", encoding="utf-8")
     print(f"wrote {TARGET}: " + ", ".join(f"{k} {len(v)}" for k, v in data.items()))
 

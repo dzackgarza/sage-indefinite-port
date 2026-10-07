@@ -228,7 +228,13 @@ This document records the exact provenance, source files, authors, publications,
 
   - `Groups/isometry_group.jl`: $|O(U)| = 4$, and a vector stabilizer of order 2.
 
-- **Extraction**: `references/extract/oscar_lattice_tests.py`, run under Sage's Python. It asserts each value on its source line, that every lattice is indefinite, and that explicit roots give integral reflections.
+  - Definite lattices from `Groups/isometry_group.jl`, in their own keys, since definite isometry groups are the research preamble's concern:
+    - `definite_orthogonal_group_orders`: $|O(L)|$ for every lattice whose order the file records (34), including all 24 entries of the list `LL`/`orders` (OSCAR's CI runs entries 5-10; `run_in_oscar_ci` records which). The script asserts that L2 of line 59, whose order is written $696729600^2\cdot 2\cdot 2$, is `LL[1]` with the same order;
+    - `definite_isometry_tests`: one recorded non-isometric pair (ranks 16 and 17) and one recorded isometric pair (rank 19);
+    - `root_lattice_groups`: for $A_i$, $i=2,\dots,5$, the stable orthogonal group is $S_{i+1}$, the special orthogonal group is $S_{i+1}$ ($i$ odd) or $A_{i+1}\times C_2$ ($i$ even), and the special stable group is $A_{i+1}$;
+    - `hecke_reduced_automorphism_group_orders`: Hecke's `reduced_automorphism_group_order` for $A_2$ (2) and $E_8$ (1), recorded under Hecke's name.
+
+- **Extraction**: `references/extract/oscar_lattice_tests.py`, run under Sage's Python. It asserts each value on its source line, that every lattice in the indefinite keys is indefinite and every lattice in the definite keys is definite, and that explicit roots give integral reflections.
 
 ### Centralizers of Finite-Order Isometries (OSCAR)
 
@@ -240,9 +246,11 @@ This document records the exact provenance, source files, authors, publications,
 
   - Five indefinite lattices with an isometry of order 4, 5 or 6. For each, OSCAR records the order of the centralizer's image in $O(q_L)$ (72, 2, 96, 24192), or that the image is all of $O(q_L)$.
 
+  - `definite_centralizer_cases`: the negative definite rank-8 lattice of `lattices_with_isometry.jl` lines 80-87, with an isometry of order 5 whose centralizer has image of order 600 in $O(q_L)$. Definite isometry groups are the research preamble's concern.
+
   - For a signature-(1,9) genus, OSCAR records 11 classes of pairs $(L, f)$ with characteristic polynomial $(x-1)^4(x+1)^6$ (9 locally).
 
-- **Extraction**: `references/extract/oscar_centralizers.py`, run under Sage's Python. It parses the Julia matrix literals mechanically and reads each recorded value from its `@test` line. It computes $B G B^T$ and the isometry in the lattice basis, and asserts integrality, form preservation and indefiniteness. The definite order-600 case is excluded by that check.
+- **Extraction**: `references/extract/oscar_centralizers.py`, run under Sage's Python. It parses the Julia matrix literals mechanically and reads each recorded value from its `@test` line. It computes $B G B^T$ and the isometry in the lattice basis, and asserts integrality and form preservation. It splits the cases by computed signature and asserts that exactly the order-600 case is definite.
 
 - **Replaced**: the previous `centralizer_involutions.json` held derived identities, not data.
 

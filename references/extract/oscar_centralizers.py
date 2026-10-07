@@ -7,8 +7,9 @@ from the cited line range: the ambient basis matrix B, ambient Gram matrix G and
 ambient isometry f (OSCAR acts on row vectors), and the recorded value from the
 @test line in that range. The script computes the lattice's Gram matrix B G B^T
 and the isometry in the lattice basis (the solution f_L of f_L B = B f), and
-asserts that f_L is integral, preserves the Gram matrix, and that the lattice is
-indefinite; definite cases belong to the research preamble.
+asserts that f_L is integral and preserves the Gram matrix. Cases are split by the
+computed signature: indefinite ones into centralizer_cases, definite ones (the
+research preamble's concern) into definite_centralizer_cases; the split is asserted.
 
 Run from the repository root under Sage's Python:
     "$(dirname $(sage -c 'import sys; print(sys.executable)'))/python3" references/extract/oscar_centralizers.py
@@ -28,6 +29,7 @@ LITERAL = re.compile(r"(\w+)\s*=\s*matrix\(QQ,\s*(\d+),\s*(\d+)\s*,\s*\[(.*?)\]\
 
 # (file, first line, last line, the @test pattern carrying the recorded value, record key)
 CENTRALIZER_CASES = (
+    ("lattices_with_isometry.jl", 80, 87, r"@test order\(GLf\) == (\d+)", "centralizer_image_order"),
     ("lattices_with_isometry.jl", 110, 116, r"@test order\(GL\) == (\d+)", "centralizer_image_order"),
     ("lattices_with_isometry.jl", 118, 124, r"@test order\(GL\) == (\d+)", "centralizer_image_order"),
     ("lattices_with_isometry.jl", 133, 139, r"@test (is_bijective)\(image_centralizer_in_Oq\(Lf\)\[2\]\)", "centralizer_image_is_all_of_O_qL"),
@@ -80,7 +82,6 @@ def main() -> None:
         gram, isometry = integral(lattice_gram), integral(restricted)
         assert restricted * lattice_gram * restricted.transpose() == lattice_gram, f"{relative}:{first}: f is not an isometry"
         sig = signature(lattice_gram)
-        assert sig[0] > 0 and sig[1] > 0, f"{relative}:{first}: lattice is definite {sig}"
         match = re.search(pattern, text)
         assert match, f"{relative}:{first}-{last}: no recorded value matching {pattern}"
         value = True if match.group(1) == "is_bijective" else int(match.group(1))
@@ -97,6 +98,9 @@ def main() -> None:
                 "source": source(relative, first, last),
             }
         )
+    indefinite = [case for case in cases if all(case["signature"])]
+    definite = [case for case in cases if not all(case["signature"])]
+    assert [case["id"] for case in definite] == ["oscar_lattices_with_isometry_80"], [case["id"] for case in definite]
     relative, first, last = INVOLUTION_CLASSES
     found, text = literals(TESTS / relative, first, last)
     m_gram = found["B"] * found["G"] * found["B"].transpose()
@@ -114,8 +118,8 @@ def main() -> None:
         "meaning": "isomorphism classes of pairs (L, f) with L in the genus of M and f of the given characteristic polynomial",
         "source": source(relative, first, last),
     }
-    TARGET.write_text(json.dumps({"centralizer_cases": cases, "involution_classes": [involution_classes]}, indent=1) + "\n", encoding="utf-8")
-    print(f"wrote {TARGET}: {len(cases)} centralizer cases, involution classes {global_} (local {local})")
+    TARGET.write_text(json.dumps({"centralizer_cases": indefinite, "definite_centralizer_cases": definite, "involution_classes": [involution_classes]}, indent=1) + "\n", encoding="utf-8")
+    print(f"wrote {TARGET}: {len(indefinite)} indefinite and {len(definite)} definite centralizer cases, involution classes {global_} (local {local})")
 
 
 if __name__ == "__main__":

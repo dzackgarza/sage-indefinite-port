@@ -41,9 +41,21 @@ class TableRowSource(TypedDict, total=False):
 
 class TextSource(TypedDict):
     kind: str
+    file: str
+    lines: str
+
+
+class CitedTextSource(TypedDict):
+    kind: str
     citation: str
     file: str
     lines: str
+
+
+class LineSource(TypedDict):
+    kind: str
+    file: str
+    line: int
 
 
 class Enriques87Case(TypedDict):
@@ -94,10 +106,54 @@ class AllcockRank3Lattice(TypedDict):
     source: FileSource
 
 
+class DefiniteOrthogonalGroupOrder(TypedDict):
+    id: str
+    gram: Gram
+    signature: list[int]
+    orthogonal_group_order: int
+    run_in_oscar_ci: bool
+    source: list[LineSource]
+
+
+class DefiniteIsometryTest(TypedDict):
+    id: str
+    gram_1: Gram
+    gram_2: Gram
+    signature_1: list[int]
+    signature_2: list[int]
+    isometric: bool
+    source: list[LineSource]
+
+
+class GroupIsomorphismType(TypedDict):
+    isomorphism_type: str
+    order: int
+
+
+class RootLatticeGroups(TypedDict):
+    id: str
+    gram: Gram
+    signature: list[int]
+    stable_orthogonal_group: GroupIsomorphismType
+    special_orthogonal_group: GroupIsomorphismType
+    special_stable_orthogonal_group: GroupIsomorphismType
+    source: list[LineSource]
+
+
+class HeckeReducedAutomorphismGroupOrder(TypedDict):
+    lattice: str
+    hecke_reduced_automorphism_group_order: int
+    source: LineSource
+
+
 class OscarLatticeOracles(TypedDict):
     vinberg: list[dict[str, object]]
     discriminant_images: list[dict[str, object]]
     isometry_groups: list[dict[str, object]]
+    definite_orthogonal_group_orders: list[DefiniteOrthogonalGroupOrder]
+    definite_isometry_tests: list[DefiniteIsometryTest]
+    root_lattice_groups: list[RootLatticeGroups]
+    hecke_reduced_automorphism_group_orders: list[HeckeReducedAutomorphismGroupOrder]
 
 
 class DTowerBoundary(TypedDict):
@@ -466,7 +522,7 @@ class ComponentPreservingGroupData(TypedDict):
     counts: OrbitCounts
     line_representatives: list[IsotropicRepresentative]
     plane_representatives: list[IsotropicRepresentative]
-    source: TextSource
+    source: CitedTextSource
 
 
 class StableGroupData(TypedDict):
@@ -474,7 +530,7 @@ class StableGroupData(TypedDict):
     construction: str
     source_notation: str
     counts: OrbitCounts
-    source: TextSource
+    source: CitedTextSource
 
 
 class UnpolarizedEnriques(TypedDict):
@@ -562,6 +618,7 @@ class InvolutionClassCount(TypedDict):
 
 class IsometryCentralizers(TypedDict):
     centralizer_cases: list[CentralizerCase]
+    definite_centralizer_cases: list[CentralizerCase]
     involution_classes: list[InvolutionClassCount]
 
 
