@@ -33,11 +33,7 @@ def pari_matrix(text: str) -> list[list[int]]:
 
 
 def main() -> None:
-    reflect_counts = {
-        json.dumps(record["gram"]): record["num_simple_roots"]
-        for record in json.loads(LIST_REFLECT.read_text())
-        if record["dimension"] == 3
-    }
+    reflect_counts = {json.dumps(record["gram"]): record["num_simple_roots"] for record in json.loads(LIST_REFLECT.read_text()) if record["dimension"] == 3}
     records, agreements = [], 0
     for number, line in enumerate(SOURCE.read_text(encoding="utf-8").splitlines(), start=1):
         match = LINE.match(line.strip())
