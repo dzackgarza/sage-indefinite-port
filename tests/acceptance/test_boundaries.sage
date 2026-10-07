@@ -122,7 +122,8 @@ def _lambda_n(n: int) -> list[list[int]]:
 def _gamma(lattice_):
     """Gamma(N) = {phi in O^+(Lambda_N) : phi(xi) = xi} for a decoration xi, q(xi) = 1 mod 2Z."""
     form = lattice_.discriminant_group()
-    decorations = [x for x in form.elements() if form.q(x) == 1]
+    one = form.quadratic_value_module()(1)
+    decorations = [x for x in form.elements() if form.q(x) == one]
     assert decorations, f"{lattice_} has no decoration"
     return _o_plus_fixing(lattice_, decorations[0])
 
