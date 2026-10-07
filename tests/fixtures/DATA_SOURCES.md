@@ -4,9 +4,9 @@ This document records the exact provenance, source files, authors, publications,
 
 * * *
 
-## 1. Published Mathematical Tables and Theorem Oracles
+## Datasets
 
-### A. 87 Numerical Enriques Polarizations
+### 87 Numerical Enriques Polarizations
 
 - **File**: `tests/fixtures/enriques_87_polarizations.json`
 
@@ -18,7 +18,7 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Check**: the script asserts cases 1–87 in order and that case 87 has 528 lines and 24242 planes, which the paper also states independently in its text (lines 1168–1170).
 
-### B. Unpolarized Enriques Boundary Strata and Stabilizers
+### Unpolarized Enriques Boundary Strata and Stabilizers
 
 - **File**: `tests/fixtures/unpolarized_enriques.json`
 
@@ -36,55 +36,41 @@ This document records the exact provenance, source files, authors, publications,
 
   - The stable group $\widetilde O^+(N)$ has 528 lines and 24242 planes (text) and 72199 flags (table).
 
-### B. 8,821 Reflective Lorentzian Forms
+### 8,821 Reflective Lorentzian Forms and Their Isotropy
 
-- **File**: [`tests/fixtures/reflective_forms_8821.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/reflective_forms_8821.json)
+- **Files**: `tests/fixtures/reflective_forms_8821.json`, `tests/fixtures/isotropic_cases_8821.json`
 
-- **Upstream Location**: `references/polyhedral_common/CI_tests/20_Reflective/ListReflect`
+- **Upstream**: `references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect` (Gram matrix and number of simple roots) and `references/vendor/polyhedral_common@1592b246/CI_tests/DATA/IsotropicCases` (whether an isotropic vector exists), the same 8,821 lattices in the same order; the script asserts the pairing row by row.
 
-- **Upstream Author**: Mathieu Dutour Sikirić
+- **Note**: the rank-3 part is Allcock's classification of reflective Lorentzian lattices of rank 3 (vendored separately with its explicit simple roots under `references/vendor/GeometryDatabase_Rank3_Lorentzian_lattices@63a9067a/`).
 
-- **Repository**: [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
+- These are the reference implementation's own recorded outputs (polyhedral_common, Mathieu Dutour Sikirić); agreement with them is acceptance for this port. Extracted by `references/extract/polyhedral_common_ci.py` (run under Sage's Python; GAP literals are evaluated with libgap). Each record cites its vendored file and index.
 
-- **Content**: 8,821 Lorentzian Gram matrices with exact number of simple roots ($n_{\mathrm{simple}}$).
+### 145 Lorentzian Equivalence Instances
 
-### C. 145 Lorentzian Equivalence Instances
+- **File**: `tests/fixtures/lorentzian_equivalence_145.json`
 
-- **File**: [`tests/fixtures/lorentzian_equivalence_146.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/lorentzian_equivalence_146.json)
+- **Upstream**: `references/vendor/polyhedral_common@1592b246/CI_tests/28B_LorentzianPerfStabEqui/TestCasesEqui.tar.gz` (extracted copy under `x/TestCasesEqui/`, checked against the archive). 145 pairs (`mat1`, `mat2`) of rank 10, signature (1,9), each with a recorded transporter; the script asserts `witness * mat1 * witness^T == mat2` for all 145.
 
-- **Upstream Location**: `references/polyhedral_common/CI_tests/28B_LorentzianPerfStabEqui/TestCasesEqui.tar.gz`
+- These are the reference implementation's own recorded outputs (polyhedral_common, Mathieu Dutour Sikirić); agreement with them is acceptance for this port. Extracted by `references/extract/polyhedral_common_ci.py` (run under Sage's Python; GAP literals are evaluated with libgap). Each record cites its vendored file and index.
 
-- **Upstream Author**: Mathieu Dutour Sikirić
+### Lorentzian Stabilizer Generators
 
-- **Repository**: [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
+- **File**: `tests/fixtures/lorentzian_stabilizers_cases.json`
 
-- **Content**: 145 pairs of equivalent Lorentzian Gram matrices $(M_1, M_2)$ with exact unimodular transporter matrices $U \in \mathrm{GL}_n(\mathbb{Z})$ satisfying $U M_1 U^{\mathsf{T}} = M_2$.
+- **Upstream**: `references/vendor/polyhedral_common@1592b246/CI_tests/28B_LorentzianPerfStabEqui/TestCasesStab.tar.gz` (extracted under `x/TestCasesStab/`): 3 rank-10 lattices with generator sets of 15, 30 and 14 matrices; the script asserts every generator preserves its form.
 
-### D. Lorentzian Stabilizer Generators
+- These are the reference implementation's own recorded outputs (polyhedral_common, Mathieu Dutour Sikirić); agreement with them is acceptance for this port. Extracted by `references/extract/polyhedral_common_ci.py` (run under Sage's Python; GAP literals are evaluated with libgap). Each record cites its vendored file and index.
 
-- **File**: [`tests/fixtures/lorentzian_stabilizers_cases.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/lorentzian_stabilizers_cases.json)
+### 103 Root Systems of Reflective Forms
 
-- **Upstream Location**: `references/polyhedral_common/CI_tests/28B_LorentzianPerfStabEqui/TestCasesStab.tar.gz`
+- **File**: `tests/fixtures/root_systems_103.json`
 
-- **Upstream Author**: Mathieu Dutour Sikirić
+- **Upstream**: `references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47`, the simple roots of the rank-4 (56) and rank-5 (47) entries of `ListReflect`, in the same order. Each record now carries its Gram matrix from `ListReflect`; the script asserts the root count matches `n_simple` and that every root defines an integral reflection.
 
-- **Repository**: [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
+- These are the reference implementation's own recorded outputs (polyhedral_common, Mathieu Dutour Sikirić); agreement with them is acceptance for this port. Extracted by `references/extract/polyhedral_common_ci.py` (run under Sage's Python; GAP literals are evaluated with libgap). Each record cites its vendored file and index.
 
-- **Content**: 3 full Lorentzian orthogonal group generator sets.
-
-### E. 103 Root Systems of Reflective Forms
-
-- **File**: [`tests/fixtures/root_systems_56.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/root_systems_56.json)
-
-- **Upstream Location**: `references/polyhedral_common/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47`
-
-- **Upstream Author**: Mathieu Dutour Sikirić
-
-- **Repository**: [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
-
-- **Content**: 103 root systems of reflective forms in dimensions 4 and 5.
-
-### F. Classified Simplices (Dimensions 5, 6, 7)
+### Classified Simplices (Dimensions 5, 6, 7)
 
 - **File**: [`tests/fixtures/classification_simplices.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/classification_simplices.json)
 
@@ -96,7 +82,7 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Content**: 12 classified simplices across dimensions 5, 6, and 7.
 
-### G. 18 Finite Double-Coset Instances
+### 18 Finite Double-Coset Instances
 
 - **File**: [`tests/fixtures/double_coset_cases.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/double_coset_cases.json)
 
@@ -108,19 +94,15 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Content**: 18 frozen finite group double coset instances across permutation degrees 55–96 with orders up to 92,160.
 
-### H. 40 Lorentzian Perfect Domain Forms
+### 40 Lorentzian Perfect Domain Forms
 
-- **File**: [`tests/fixtures/lorentzian_perfect_domains.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/lorentzian_perfect_domains.json)
+- **File**: `tests/fixtures/lorentzian_perfect_domains.json`
 
-- **Upstream Location**: `references/polyhedral_common/CI_tests/28B_LorentzianPerfStabEqui/Result_Enumeration`
+- **Upstream**: `references/vendor/polyhedral_common@1592b246/CI_tests/28B_LorentzianPerfStabEqui/Result_Enumeration`: for 40 lattices of ranks 3–6, the exact number of perfect-domain orbits in the "isotropic" and "total" modes.
 
-- **Upstream Author**: Mathieu Dutour Sikirić
+- These are the reference implementation's own recorded outputs (polyhedral_common, Mathieu Dutour Sikirić); agreement with them is acceptance for this port. Extracted by `references/extract/polyhedral_common_ci.py` (run under Sage's Python; GAP literals are evaluated with libgap). Each record cites its vendored file and index.
 
-- **Repository**: [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
-
-- **Content**: 40 exact Gram matrices across ranks 3, 4, 5, 6 with exact isotropic and total perfect domain orbit counts.
-
-### I. 6 Metamorphic Indefinite Forms
+### 6 Metamorphic Indefinite Forms
 
 - **File**: [`tests/fixtures/ci_indefinite_comp.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/ci_indefinite_comp.json)
 

@@ -84,8 +84,9 @@ class LorentzianPerfectCase(TypedDict):
     dimension: int
     gram: Gram
     has_isotropic: bool
-    isotropic_count: int | None
-    total_count: int | None
+    isotropic_count: int
+    total_count: int
+    source: FileSource
 
 
 class PermutationGroupData(TypedDict):
@@ -138,11 +139,18 @@ class ConwaySloaneCases(TypedDict):
     spinor_genus_pair_determinant_minus_128: SpinorGenusPair
 
 
+class FileSource(TypedDict, total=False):
+    kind: Required[str]
+    file: Required[str]
+    index: int
+
+
 class IsotropicDecisionCase(TypedDict):
     id: str
     dimension: int
     gram: Gram
     has_isotropic: bool
+    source: FileSource
 
 
 class ReflectiveFormCase(TypedDict):
@@ -150,6 +158,7 @@ class ReflectiveFormCase(TypedDict):
     dimension: int
     gram: Gram
     num_simple_roots: int
+    source: FileSource
 
 
 class LorentzianEquivalenceCase(TypedDict):
@@ -157,7 +166,9 @@ class LorentzianEquivalenceCase(TypedDict):
     dimension: int
     mat1: Gram
     mat2: Gram
-    transporter_witness: list[list[int]] | None
+    transporter_witness: list[list[int]]
+    witness_convention: str
+    source: FileSource
 
 
 class LorentzianStabilizerCase(TypedDict):
@@ -166,13 +177,17 @@ class LorentzianStabilizerCase(TypedDict):
     gram: Gram
     generators: list[list[list[int]]]
     num_generators: int
+    source: FileSource
 
 
 class RootSystemCase(TypedDict):
     id: str
-    num_roots: int
     dimension: int
+    gram: Gram
+    gram_source: FileSource
+    num_roots: int
     roots: list[Vector]
+    source: FileSource
 
 
 class ClassifiedSimplices(TypedDict):
@@ -451,7 +466,7 @@ def load_reflective_forms() -> list[ReflectiveFormCase]:
 
 def load_lorentzian_equivalence_cases() -> list[LorentzianEquivalenceCase]:
     """145 pairs of equivalent Lorentzian forms with exact transporters (28B_LorentzianPerfStabEqui)."""
-    with open(FIXTURES_DIR / "lorentzian_equivalence_146.json", encoding="utf-8") as f:
+    with open(FIXTURES_DIR / "lorentzian_equivalence_145.json", encoding="utf-8") as f:
         data: list[LorentzianEquivalenceCase] = json.load(f)
         return data
 
@@ -465,7 +480,7 @@ def load_lorentzian_stabilizer_cases() -> list[LorentzianStabilizerCase]:
 
 def load_root_systems() -> list[RootSystemCase]:
     """103 simple root systems of reflective forms (01_RatIntAutomorphy)."""
-    with open(FIXTURES_DIR / "root_systems_56.json", encoding="utf-8") as f:
+    with open(FIXTURES_DIR / "root_systems_103.json", encoding="utf-8") as f:
         data: list[RootSystemCase] = json.load(f)
         return data
 
