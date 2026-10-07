@@ -7,35 +7,45 @@ from dataclasses import dataclass
 from itertools import product
 
 from sage.matrix.constructor import matrix
-from sage.modules.free_module_element import vector
+from sage.matrix.matrix_integer_dense import Matrix_integer_dense
+from sage.matrix.matrix_rational_dense import Matrix_rational_dense
+from sage.modules.free_module_element import FreeModuleElement, vector
+from sage.rings.integer import Integer
+from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ
+
+type _RationalVector = FreeModuleElement[Rational]
+type _RootRow = Sequence[int | Integer | Rational]
 
 COXETER_INFINITY = QQ(-1)
 
 
 @dataclass(frozen=True)
 class NormedDynkinExtension:
-    u_component: tuple
-    residual_norm: object
-    norm: object
-    coxeter_entries: tuple
+    u_component: tuple[Rational, ...]
+    residual_norm: Rational
+    norm: Rational
+    coxeter_entries: tuple[Rational, ...]
 
 
-def _as_qq_matrix(gram):
+def _as_qq_matrix(gram: Matrix_integer_dense | Matrix_rational_dense) -> Matrix_rational_dense:
     result = matrix(QQ, gram)
     if not result.is_square() or result != result.transpose():
         raise ValueError("the Gram matrix must be square and symmetric")
     return result
 
 
-def _as_qq_roots(roots: Sequence[Sequence], dimension: int):
+def _as_qq_roots(roots: Sequence[_RootRow], dimension: int) -> tuple[_RationalVector, ...]:
     converted = tuple(vector(QQ, root) for root in roots)
     if any(len(root) != dimension for root in converted):
         raise ValueError("every root must have the Gram matrix dimension")
     return converted
 
 
-def compute_coxeter_matrix(gram, roots: Sequence[Sequence]):
+def compute_coxeter_matrix(
+    gram: Matrix_integer_dense | Matrix_rational_dense,
+    roots: Sequence[_RootRow],
+) -> tuple[Matrix_rational_dense, Matrix_rational_dense]:
     """Port ComputeCoxeterMatrix from pinned coxeter_dynkin.h."""
     gram_matrix = _as_qq_matrix(gram)
     root_vectors = _as_qq_roots(roots, gram_matrix.nrows())
@@ -68,7 +78,7 @@ def compute_coxeter_matrix(gram, roots: Sequence[Sequence]):
     return coxeter, scalar
 
 
-def _exact_negative_pairing(label, old_norm, new_norm):
+def _exact_negative_pairing(label: Rational, old_norm: Rational, new_norm: Rational) -> Rational | None:
     cs = {
         QQ(2): QQ(0),
         QQ(3): QQ(1) / 4,
@@ -80,7 +90,7 @@ def _exact_negative_pairing(label, old_norm, new_norm):
     return -square.sqrt() if square.is_square() else None
 
 
-def _norm_ratio_allows(label, old_norm, new_norm):
+def _norm_ratio_allows(label: Rational, old_norm: Rational, new_norm: Rational) -> bool:
     if label == 3:
         return new_norm == old_norm
     if label == 4:
@@ -90,11 +100,17 @@ def _norm_ratio_allows(label, old_norm, new_norm):
     return True
 
 
-def compute_possible_extensions(gram, roots: Sequence[Sequence], norms: Sequence, *, only_spherical: bool = False):
+def compute_possible_extensions(
+    gram: Matrix_integer_dense | Matrix_rational_dense,
+    roots: Sequence[_RootRow],
+    norms: Sequence[int | Integer | Rational],
+    *,
+    only_spherical: bool = False,
+) -> tuple[NormedDynkinExtension, ...]:
     """Port ComputePossibleExtensions using the equivalent exact Gram test."""
     gram_matrix = _as_qq_matrix(gram)
     root_vectors = _as_qq_roots(roots, gram_matrix.nrows())
-    coxeter, scalar = compute_coxeter_matrix(gram_matrix, root_vectors)
+    coxeter, scalar = compute_coxeter_matrix(gram_matrix, roots)
     if scalar.nrows() and not scalar.is_positive_definite():
         raise ValueError("the existing root Gram matrix must be positive definite")
     inv = scalar.inverse() if scalar.nrows() else matrix(QQ, 0, 0)
@@ -102,14 +118,15 @@ def compute_possible_extensions(gram, roots: Sequence[Sequence], norms: Sequence
     if any(x <= 0 for x in candidate_norms):
         raise ValueError("candidate root norms must be positive")
     labels = (QQ(2), QQ(3), QQ(4), QQ(6)) + (() if only_spherical else (COXETER_INFINITY,))
-    out = []
-    seen = set()
+    out: list[NormedDynkinExtension] = []
+    seen: set[tuple[tuple[Rational, ...], Rational]] = set()
     for entries in product(labels, repeat=len(root_vectors)):
         for new_norm in candidate_norms:
             if any(not _norm_ratio_allows(entries[i], coxeter[i, i], new_norm) for i in range(len(entries))):
                 continue
-            pairings = tuple(_exact_negative_pairing(entries[i], coxeter[i, i], new_norm) for i in range(len(entries)))
-            if any(x is None for x in pairings):
+            exact = tuple(_exact_negative_pairing(entries[i], coxeter[i, i], new_norm) for i in range(len(entries)))
+            pairings = tuple(x for x in exact if x is not None)
+            if len(pairings) != len(exact):
                 continue
             pv = vector(QQ, pairings)
             weights = inv * pv if len(entries) else vector(QQ, [])

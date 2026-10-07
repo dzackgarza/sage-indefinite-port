@@ -4,45 +4,57 @@ Translation of two_dim_lorentzian.h from polyhedral_common at
 a55fcb7b71af48c88d7abbeab7889e9347916e43.
 """
 
+from collections.abc import Sequence
 from math import isqrt
 
 from sage.arith.misc import divisors, gcd, xgcd
 from sage.matrix.constructor import matrix
-from sage.modules.free_module_element import vector
+from sage.matrix.matrix_integer_dense import Matrix_integer_dense
+from sage.matrix.matrix_rational_dense import Matrix_rational_dense
+from sage.modules.free_module_element import FreeModuleElement, vector
+from sage.rings.integer import Integer
 from sage.rings.integer_ring import ZZ
+from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ
 
+type _Gram = Matrix_integer_dense | Matrix_rational_dense
+type _Scalar = int | Integer | Rational
+type _IntegralVector = FreeModuleElement[Integer]
+type _IntegralRow = Sequence[int | Integer] | _IntegralVector
+type _RationalRow = Sequence[_Scalar] | FreeModuleElement[Rational] | _IntegralVector
+type _Pair = tuple[_IntegralVector, _IntegralVector]
 
-def _gram(G):
-    G = matrix(QQ, G)
-    if G.dimensions() != (2, 2) or not G.is_symmetric() or G.det() >= 0:
+
+def _gram(G: _Gram) -> Matrix_rational_dense:
+    rational = matrix(QQ, G)
+    if rational.dimensions() != (2, 2) or not rational.is_symmetric() or rational.det() >= 0:
         raise ValueError("G must be a symmetric Lorentzian 2 by 2 matrix")
-    return G
+    return rational
 
 
-def _zvector(v):
+def _zvector(v: _IntegralRow) -> _IntegralVector:
     v = vector(ZZ, v)
     if len(v) != 2:
         raise ValueError("rank-two vectors must have length 2")
     return v
 
 
-def quadratic_eval(G, v):
+def quadratic_eval(G: _Gram, v: _IntegralRow) -> Rational:
     G, v = _gram(G), _zvector(v)
     return G[0, 0] * v[0] ** 2 + 2 * G[0, 1] * v[0] * v[1] + G[1, 1] * v[1] ** 2
 
 
-def scalar_eval(G, v, w):
+def scalar_eval(G: _Gram, v: _IntegralRow, w: _IntegralRow) -> Rational:
     G, v, w = _gram(G), _zvector(v), _zvector(w)
     return G[0, 0] * v[0] * w[0] + G[0, 1] * (v[0] * w[1] + v[1] * w[0]) + G[1, 1] * v[1] * w[1]
 
 
-def oriented_determinant(r, l):
+def oriented_determinant(r: _IntegralRow, l: _IntegralRow) -> Integer:
     r, l = _zvector(r), _zvector(l)
     return r[0] * l[1] - r[1] * l[0]
 
 
-def _primitive_integral(v):
+def _primitive_integral(v: _RationalRow) -> _IntegralVector:
     v = vector(QQ, v)
     den = ZZ.one()
     for x in v:
@@ -54,7 +66,7 @@ def _primitive_integral(v):
     return vector(ZZ, [x // c for x in z])
 
 
-def isotropic_factorization(G):
+def isotropic_factorization(G: _Gram) -> Matrix_rational_dense | None:
     """Rows F_i satisfy Q(x,y)=(F_0.(x,y))(F_1.(x,y))."""
     G = _gram(G)
     a, b, c = G[0, 0], G[0, 1], G[1, 1]
@@ -71,14 +83,14 @@ def isotropic_factorization(G):
     return matrix(QQ, [[2 * b, 0], [0, 1]])
 
 
-def primitive_isotropic_vectors(G):
+def primitive_isotropic_vectors(G: _Gram) -> tuple[_IntegralVector, ...]:
     F = isotropic_factorization(G)
     if F is None:
         raise ValueError("the form is anisotropic over QQ")
     return tuple(_primitive_integral([-row[1], row[0]]) for row in F.rows())
 
 
-def fixed_norm_vectors_isotropic(G, norm):
+def fixed_norm_vectors_isotropic(G: _Gram, norm: _Scalar) -> tuple[_IntegralVector, ...]:
     F = isotropic_factorization(G)
     if F is None:
         raise ValueError("the form is anisotropic over QQ")
@@ -86,8 +98,8 @@ def fixed_norm_vectors_isotropic(G, norm):
     if norm == 0:
         u, v = primitive_isotropic_vectors(G)
         return (u, -u, v, -v)
-    rows = []
-    mult = []
+    rows: list[_IntegralVector] = []
+    mult: list[Rational] = []
     for row in F.rows():
         p = _primitive_integral(row)
         rows.append(p)
@@ -95,18 +107,18 @@ def fixed_norm_vectors_isotropic(G, norm):
     scaled = norm / (mult[0] * mult[1])
     if scaled.denominator() != 1:
         return ()
-    scaled = ZZ(scaled)
+    integral_scaled = ZZ(scaled)
     Ainv = matrix(QQ, rows).inverse()
-    out = set()
-    for d in divisors(abs(scaled)):
+    out: set[tuple[Integer, ...]] = set()
+    for d in divisors(abs(integral_scaled)):
         for first in (ZZ(d), -ZZ(d)):
-            sol = Ainv * vector(QQ, [first, scaled / first])
+            sol = Ainv * vector(QQ, [first, integral_scaled / first])
             if all(x.denominator() == 1 for x in sol):
                 out.add(tuple(ZZ(x) for x in sol))
     return tuple(vector(ZZ, x) for x in sorted(out))
 
 
-def _floor_sqrt(value):
+def _floor_sqrt(value: _Scalar) -> Integer:
     value = QQ(value)
     if value < 0:
         raise ValueError("negative radicand")
@@ -116,7 +128,7 @@ def _floor_sqrt(value):
     return x
 
 
-def canonical_companion(G, bound, r, l):
+def canonical_companion(G: _Gram, bound: _Scalar, r: _IntegralRow, l: _IntegralRow) -> _IntegralVector:
     rr, rl, ll = quadratic_eval(G, r), scalar_eval(G, r, l), quadratic_eval(G, l)
     if rr <= 0:
         raise ValueError("r must have positive norm")
@@ -125,7 +137,7 @@ def canonical_companion(G, bound, r, l):
     return _zvector(l) + k * _zvector(r)
 
 
-def promised_step(G, bound, r, l):
+def promised_step(G: _Gram, bound: _Scalar, r: _IntegralRow, l: _IntegralRow) -> _Pair:
     G, M, r, l = _gram(G), QQ(bound), _zvector(r), _zvector(l)
     if quadratic_eval(G, r) <= 0 or oriented_determinant(r, l) != 1:
         raise ValueError("Promised requires Q(r)>0 and det(r,l)=1")
@@ -141,7 +153,7 @@ def promised_step(G, bound, r, l):
         r = m
 
 
-def shorter_pair(G, r, l):
+def shorter_pair(G: _Gram, r: _IntegralRow, l: _IntegralRow) -> _Pair | None:
     G, r, l = _gram(G), _zvector(r), _zvector(l)
     M = quadratic_eval(G, r)
     char0 = (quadratic_eval(G, r), scalar_eval(G, r, l), quadratic_eval(G, l))
@@ -156,7 +168,7 @@ def shorter_pair(G, r, l):
             return None
 
 
-def reduced_start_pair(G, bound, r, l):
+def reduced_start_pair(G: _Gram, bound: _Scalar, r: _IntegralRow, l: _IntegralRow) -> _Pair | None:
     G, M, r, l = _gram(G), QQ(bound), _zvector(r), _zvector(l)
     if quadratic_eval(G, r) <= M:
         r, l = promised_step(G, M, r, l)
@@ -170,7 +182,7 @@ def reduced_start_pair(G, bound, r, l):
             return r, canonical_companion(G, M, r, l)
 
 
-def positive_primitive_vector(G):
+def positive_primitive_vector(G: _Gram) -> _IntegralVector:
     G = _gram(G)
     for v in (vector(ZZ, [1, 0]), vector(ZZ, [0, 1])):
         if quadratic_eval(G, v) > 0:
@@ -190,7 +202,7 @@ def positive_primitive_vector(G):
         radius += 1
 
 
-def oriented_complement(r):
+def oriented_complement(r: _IntegralRow) -> _IntegralVector:
     r = _zvector(r)
     g, s, t = xgcd(r[0], r[1])
     if g == -1:
@@ -200,7 +212,11 @@ def oriented_complement(r):
     return vector(ZZ, [-t, s])
 
 
-def anisotropic_cycle(G, bound, r=None):
+def anisotropic_cycle(
+    G: _Gram,
+    bound: _Scalar,
+    r: _IntegralRow | None = None,
+) -> tuple[Matrix_integer_dense, tuple[_IntegralVector, ...]] | None:
     G = _gram(G)
     if isotropic_factorization(G) is not None:
         raise ValueError("requires a QQ-anisotropic form")
@@ -211,7 +227,7 @@ def anisotropic_cycle(G, bound, r=None):
         return None
     r1, l1 = start
     char0 = (quadratic_eval(G, r1), scalar_eval(G, r1, l1), quadratic_eval(G, l1))
-    cycle = []
+    cycle: list[_IntegralVector] = []
     r, l = r1, l1
     while True:
         cycle.append(r)
@@ -224,12 +240,12 @@ def anisotropic_cycle(G, bound, r=None):
             return matrix(ZZ, transform), tuple(cycle)
 
 
-def first_next_vector(G, r0, search_norm):
+def first_next_vector(G: _Gram, r0: _IntegralRow, search_norm: _Scalar) -> _IntegralVector | None:
     G, r0, target = _gram(G), _zvector(r0), QQ(search_norm)
     if target <= 0:
         return None
     if isotropic_factorization(G) is not None:
-        chosen = None
+        chosen: _IntegralVector | None = None
         for v in fixed_norm_vectors_isotropic(G, target):
             if scalar_eval(G, r0, v) > 0 and oriented_determinant(r0, v) > 0 and (chosen is None or oriented_determinant(v, chosen) > 0):
                 chosen = v

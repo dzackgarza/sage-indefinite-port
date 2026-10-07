@@ -8,19 +8,27 @@ polyhedral_common binary is invoked.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import cmp_to_key
 from itertools import combinations
 from math import gcd
+from typing import TypedDict
 
 from dzack_research.preamble.all import ZZ, HyperbolicLattices, Lattices
+from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from sage.arith.misc import xgcd
 from sage.geometry.cone import Cone
 from sage.matrix.constructor import matrix
-from sage.modules.free_module_element import vector
+from sage.matrix.matrix_integer_dense import Matrix_integer_dense
+from sage.matrix.matrix_rational_dense import Matrix_rational_dense
+from sage.modules.free_module import FreeModule_submodule_with_basis_pid
+from sage.modules.free_module_element import FreeModuleElement, vector
 from sage.quadratic_forms.quadratic_form import QuadraticForm
 from sage.rings.infinity import Infinity
+from sage.rings.integer import Integer
 from sage.rings.integer_ring import ZZ as SageZZ
+from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ as SageQQ
 
 from sage_indefinite_port.backends.canonization import (
@@ -44,9 +52,22 @@ from sage_indefinite_port.indefinite.edgewalk_rank2 import (
 from sage_indefinite_port.readiness import unfinished
 
 type _Row = tuple[int, ...]
+type _Roots = tuple[_Row, ...]
+type _Gram = Matrix_integer_dense | Matrix_rational_dense
+type _RationalRow = Sequence[int | Integer | Rational] | FreeModuleElement[Rational] | FreeModuleElement[Integer]
+type _ConstraintLattice = FreeModule_submodule_with_basis_pid[Integer]
 
 
-def _signature_pair(gram):
+class EdgewalkRecord(TypedDict):
+    """Allcock's fundamental-domain record, in coordinate rows of the input Gram basis."""
+
+    simple_root_rows: _Roots
+    vertices: tuple[tuple[_Row, _Roots], ...]
+    is_reflective: bool
+    isometry_generator_rows: tuple[_Roots, ...]
+
+
+def _signature_pair(gram: _Gram) -> tuple[int, int]:
     diagonal = QuadraticForm(SageQQ, 2 * matrix(SageQQ, gram)).rational_diagonal_form().matrix()
     positive = sum(diagonal[index, index] > 0 for index in range(diagonal.nrows()))
     negative = sum(diagonal[index, index] < 0 for index in range(diagonal.nrows()))
@@ -56,18 +77,18 @@ def _signature_pair(gram):
 @dataclass(frozen=True)
 class _Vertex:
     generator: _Row
-    roots: tuple[_Row, ...]
+    roots: _Roots
 
 
 @dataclass(frozen=True)
 class _Candidate:
     alpha: _Row
-    residual_norm: object
-    root_norm: object
+    residual_norm: Rational
+    root_norm: Rational
     vertex: _Vertex
 
 
-def _integer_gram(gram):
+def _integer_gram(gram: Matrix_integer_dense) -> Matrix_integer_dense:
     result = matrix(SageZZ, [[int(entry) for entry in row] for row in gram])
     if not result.is_square() or result != result.transpose() or result.det() == 0:
         raise ValueError("Allcock edgewalk needs a nondegenerate symmetric Gram matrix")
@@ -77,42 +98,36 @@ def _integer_gram(gram):
     return result
 
 
-def _q(gram, row):
+def _q(gram: _Gram, row: _RationalRow) -> Rational:
     value = vector(SageQQ, row)
     return (value * gram * value.column())[0]
 
 
-def _pair(gram, left, right):
+def _pair(gram: _Gram, left: _RationalRow, right: _RationalRow) -> Rational:
     return (vector(SageQQ, left) * gram * vector(SageQQ, right).column())[0]
 
 
-def _primitive_row(row) -> _Row:
+def _primitive_row(row: _RationalRow) -> _Row:
     rational = vector(SageQQ, row)
     denominator = SageZZ.one()
     for entry in rational:
         denominator = denominator.lcm(entry.denominator())
     integers = [SageZZ(denominator * entry) for entry in rational]
     content = 0
-    for entry in integers:
-        content = gcd(content, abs(int(entry)))
+    for value in integers:
+        content = gcd(content, abs(int(value)))
     if content == 0:
         raise ValueError("the zero ray has no primitive integral generator")
     integers = [entry // content for entry in integers]
     return tuple(int(entry) for entry in integers)
 
 
-def _row_of_element(lattice, element) -> _Row:
+def _row_of_element(lattice: Lattices.ParentMethods, element: Lattices.ElementMethods) -> _Row:
     coordinates = element.to_vector()
     return tuple(int(coordinates(label)) for label in lattice.module_generating_set())
 
 
-def _owned_element(lattice, row):
-    labels = tuple(lattice.module_generating_set())
-    ring = lattice.base_ring()
-    return lattice.linear_combination({label: ring(int(entry)) for label, entry in zip(labels, row, strict=True) if entry})
-
-
-def _corner_from_roots(gram, roots: tuple[_Row, ...]) -> _Vertex | None:
+def _corner_from_roots(gram: Matrix_integer_dense, roots: _Roots) -> _Vertex | None:
     rank = gram.nrows()
     if len(roots) < rank - 1:
         return None
@@ -149,7 +164,7 @@ def _corner_from_roots(gram, roots: tuple[_Row, ...]) -> _Vertex | None:
     return candidates[0]
 
 
-def _initial_vertex(lattice, gram) -> _Vertex:
+def _initial_vertex(lattice: HyperbolicLattices.ParentMethods, gram: Matrix_integer_dense) -> _Vertex:
     for bound in (8, 16, 32, 64, 128):
         _complete, roots = lattice._vinberg_search(None, bound, max(256, 8 * bound))
         rows = tuple(_row_of_element(lattice, root) for root in roots)
@@ -159,7 +174,7 @@ def _initial_vertex(lattice, gram) -> _Vertex:
     raise RuntimeError("bounded Vinberg initialization did not expose one chamber corner")
 
 
-def _constraint_lattice(gram, norm):
+def _constraint_lattice(gram: Matrix_integer_dense, norm: Rational) -> _ConstraintLattice:
     rank = gram.nrows()
     ambient_integer = SageZZ**rank
     ambient_rational = SageQQ**rank
@@ -168,7 +183,7 @@ def _constraint_lattice(gram, norm):
     return ambient_integer.intersection(dual_lattice)
 
 
-def _positive_vector_in_plane(gram, plane_basis, k):
+def _positive_vector_in_plane(gram: Matrix_integer_dense, plane_basis: Matrix_rational_dense, k: _Row) -> FreeModuleElement[Rational]:
     half = SageQQ(1)
     k_row = vector(SageQQ, k)
     while True:
@@ -182,7 +197,13 @@ def _positive_vector_in_plane(gram, plane_basis, k):
         half /= 2
 
 
-def _projection_data(gram, roots, discarded, k, norm):
+def _projection_data(
+    gram: Matrix_integer_dense,
+    roots: _Roots,
+    discarded: _Row,
+    k: _Row,
+    norm: Rational,
+) -> tuple[_ConstraintLattice, Matrix_rational_dense, Matrix_rational_dense, FreeModuleElement[Integer], Matrix_integer_dense]:
     rank = gram.nrows()
     root_matrix = matrix(SageQQ, roots)
     if roots:
@@ -212,7 +233,7 @@ def _projection_data(gram, roots, discarded, k, norm):
 
     constraint = _constraint_lattice(gram, norm)
     constraint_rows = matrix(SageQQ, constraint.basis_matrix())
-    projected = []
+    projected: list[FreeModuleElement[Rational]] = []
     for row in constraint_rows.rows():
         if roots:
             coefficients = (row * gram * root_matrix.transpose()) * root_gram.inverse()
@@ -242,7 +263,7 @@ def _projection_data(gram, roots, discarded, k, norm):
     return constraint, basis, work_gram, vector(SageZZ, r0_integral), intersection_coordinates
 
 
-def _class_action_order(transform, intersection_coordinates) -> int:
+def _class_action_order(transform: Matrix_integer_dense, intersection_coordinates: Matrix_integer_dense) -> int:
     transform = matrix(SageZZ, transform).transpose()
     if intersection_coordinates.det() == 0:
         raise ArithmeticError("the perpendicular sublattice must have finite index")
@@ -260,7 +281,7 @@ def _class_action_order(transform, intersection_coordinates) -> int:
     raise ArithmeticError("failed to close the finite projected-lattice class action")
 
 
-def _orientation_compare(left, right):
+def _orientation_compare(left: FreeModuleElement[Integer], right: FreeModuleElement[Integer]) -> int:
     determinant = oriented_determinant(left, right)
     if determinant > 0:
         return -1
@@ -269,12 +290,18 @@ def _orientation_compare(left, right):
     return 0
 
 
-def _extension_roots(gram, roots, discarded, k, extension: NormedDynkinExtension):
+def _extension_roots(
+    gram: Matrix_integer_dense,
+    roots: _Roots,
+    discarded: _Row,
+    k: _Row,
+    extension: NormedDynkinExtension,
+) -> _Roots:
     constraint, basis, work_gram, r0, intersection = _projection_data(gram, roots, discarded, k, extension.norm)
     residual = SageQQ(extension.residual_norm)
     if residual <= 0:
         return ()
-    work_vectors = []
+    work_vectors: list[FreeModuleElement[Integer]] = []
     if isotropic_factorization(work_gram) is not None:
         vectors = list(fixed_norm_vectors_isotropic(work_gram, residual))
         if _q(gram, k) < 0:
@@ -287,7 +314,7 @@ def _extension_roots(gram, roots, discarded, k, extension: NormedDynkinExtension
         if cycle is None:
             return ()
         transform, representatives = cycle
-        primitive = []
+        primitive: list[FreeModuleElement[Integer]] = []
         for item in representatives:
             square = quadratic_eval(work_gram, item)
             multiplier = 1
@@ -302,7 +329,7 @@ def _extension_roots(gram, roots, discarded, k, extension: NormedDynkinExtension
             work_vectors.extend(action * item for item in primitive)
             action = transform.transpose() * action
 
-    answer = []
+    answer: list[_Row] = []
     component = vector(SageQQ, extension.u_component)
     for work_vector in work_vectors:
         ambient = component + basis.transpose() * vector(SageQQ, work_vector)
@@ -318,7 +345,7 @@ def _extension_roots(gram, roots, discarded, k, extension: NormedDynkinExtension
     return tuple(dict.fromkeys(answer))
 
 
-def _signed_sqrt_compare(sign_left, square_left, sign_right, square_right):
+def _signed_sqrt_compare(sign_left: int, square_left: Rational, sign_right: int, square_right: Rational) -> int:
     if sign_left != sign_right:
         return -1 if sign_left < sign_right else 1
     if sign_left == 0:
@@ -330,7 +357,7 @@ def _signed_sqrt_compare(sign_left, square_left, sign_right, square_right):
     return -1 if square_left > square_right else 1
 
 
-def _candidate_compare(left: _Candidate, right: _Candidate, gram, k):
+def _candidate_compare(left: _Candidate, right: _Candidate, gram: Matrix_integer_dense, k: _Row) -> int:
     left_scal = -_pair(gram, left.alpha, k)
     right_scal = -_pair(gram, right.alpha, k)
     left_sign = (left_scal > 0) - (left_scal < 0)
@@ -356,7 +383,7 @@ def _candidate_compare(left: _Candidate, right: _Candidate, gram, k):
     return -1 if left.root_norm < right.root_norm else 1
 
 
-def _vertex_from_root(gram, k, roots, discarded, alpha):
+def _vertex_from_root(gram: Matrix_integer_dense, k: _Row, roots: _Roots, discarded: _Row, alpha: _Row) -> _Vertex | None:
     extended = tuple(roots) + (alpha,)
     kernel = (matrix(SageQQ, extended) * gram).right_kernel_matrix()
     if kernel.nrows() != 1:
@@ -371,7 +398,7 @@ def _vertex_from_root(gram, k, roots, discarded, alpha):
     return _Vertex(_primitive_row(generator), extended)
 
 
-def _rational_gcd_pair(left, right):
+def _rational_gcd_pair(left: Rational, right: Rational) -> tuple[Rational, Matrix_rational_dense]:
     left, right = SageQQ(left), SageQQ(right)
     denominator = left.denominator().lcm(right.denominator())
     first = SageZZ(left * denominator)
@@ -388,7 +415,7 @@ def _rational_gcd_pair(left, right):
     return SageQQ(common) / denominator, transform
 
 
-def _resolve_cusp_lattice_equation(constraint, component, k):
+def _resolve_cusp_lattice_equation(constraint: _ConstraintLattice, component: tuple[Rational, ...], k: _Row) -> _Row | None:
     space = (SageQQ ** len(k)).span((vector(SageQQ, component), vector(SageQQ, k)))
     intersection = constraint.intersection(space)
     basis = matrix(SageQQ, intersection.basis_matrix())
@@ -424,8 +451,11 @@ def _resolve_cusp_lattice_equation(constraint, component, k):
     return tuple(int(entry) for entry in integral)
 
 
-def _cusp_roots(gram, roots, k, previous, norms):
-    candidates = []
+type _CuspCandidate = tuple[int, Rational, Rational, _Row]
+
+
+def _cusp_roots(gram: Matrix_integer_dense, roots: _Roots, k: _Row, previous: _Row, norms: tuple[int, ...]) -> _Roots:
+    candidates: list[_CuspCandidate] = []
     for extension in compute_possible_extensions(gram, roots, norms, only_spherical=False):
         if extension.residual_norm != 0:
             continue
@@ -437,7 +467,7 @@ def _cusp_roots(gram, roots, k, previous, norms):
         sign = (scalar > 0) - (scalar < 0)
         candidates.append((sign, scalar * scalar / extension.norm, extension.norm, root))
 
-    def compare(left, right):
+    def compare(left: _CuspCandidate, right: _CuspCandidate) -> int:
         first = _signed_sqrt_compare(left[0], left[1], right[0], right[1])
         if first:
             return first
@@ -453,11 +483,11 @@ def _cusp_roots(gram, roots, k, previous, norms):
     return tuple(accepted)
 
 
-def _isotropic_next_vertex(gram, roots, discarded, k, norms):
+def _isotropic_next_vertex(gram: Matrix_integer_dense, roots: _Roots, discarded: _Row, k: _Row, norms: tuple[int, ...]) -> _Vertex:
     root_matrix = matrix(SageQQ, roots)
     plane_basis = (root_matrix * gram).right_kernel().basis_matrix() if roots else matrix.identity(SageQQ, gram.nrows())
     reduced = plane_basis * gram * plane_basis.transpose()
-    choices = []
+    choices: list[_Row] = []
     for coordinates in primitive_isotropic_vectors(reduced):
         generator = plane_basis.transpose() * vector(SageQQ, coordinates)
         for sign in (1, -1):
@@ -471,7 +501,7 @@ def _isotropic_next_vertex(gram, roots, discarded, k, norms):
     return _Vertex(generator, cusp_roots)
 
 
-def _edge_step(gram, vertex: _Vertex, roots, discarded, norms) -> _Vertex:
+def _edge_step(gram: Matrix_integer_dense, vertex: _Vertex, roots: _Roots, discarded: _Row, norms: tuple[int, ...]) -> _Vertex:
     candidates: list[_Candidate] = []
     for extension in compute_possible_extensions(gram, roots, norms, only_spherical=True):
         for alpha in _extension_roots(gram, roots, discarded, vertex.generator, extension):
@@ -484,11 +514,11 @@ def _edge_step(gram, vertex: _Vertex, roots, discarded, norms) -> _Vertex:
     return _isotropic_next_vertex(gram, roots, discarded, vertex.generator, norms)
 
 
-def _edge_directions(vertex: _Vertex):
+def _edge_directions(vertex: _Vertex) -> tuple[tuple[_Roots, _Row], ...]:
     if len(vertex.roots) == 1:
         return ()
     cone = Cone(rays=vertex.roots)
-    directions = []
+    directions: list[tuple[_Roots, _Row]] = []
     for facet in cone.facets():
         included = tuple(root for root in vertex.roots if facet.contains(vector(SageQQ, root)))
         omitted = tuple(root for root in vertex.roots if root not in included)
@@ -498,11 +528,16 @@ def _edge_directions(vertex: _Vertex):
     return tuple(directions)
 
 
-def _vertex_configuration(lattice, gram, vertex: _Vertex, norms):
+def _vertex_configuration(
+    lattice: HyperbolicLattices.ParentMethods,
+    gram: Matrix_integer_dense,
+    vertex: _Vertex,
+    norms: tuple[int, ...],
+) -> CellConfiguration:
     rows = list(vertex.roots) + [vertex.generator]
     roles = [1] * len(vertex.roots) + [2]
     if _q(gram, vertex.generator) == 0:
-        adjacent_generators = []
+        adjacent_generators: list[_Row] = []
         for roots, discarded in _edge_directions(vertex):
             adjacent = _edge_step(gram, vertex, roots, discarded, norms)
             adjacent_generators.append(adjacent.generator)
@@ -516,13 +551,13 @@ def _vertex_configuration(lattice, gram, vertex: _Vertex, norms):
     )
 
 
-def _matrix_rows(lattice, isometry):
+def _matrix_rows(lattice: HyperbolicLattices.ParentMethods, isometry: LatticeIsometryMethods) -> _Roots:
     action = lattice.Aut()._row_action_matrix(isometry)
     return tuple(tuple(int(entry) for entry in row) for row in action.rows())
 
 
-def _update_finiteness(gram, invariant_basis, generator):
-    generator = matrix(SageZZ, generator)
+def _update_finiteness(gram: Matrix_integer_dense, invariant_basis: Matrix_rational_dense, generator_rows: _Roots) -> Matrix_rational_dense | None:
+    generator = matrix(SageZZ, generator_rows)
     if generator.multiplicative_order() == Infinity:
         return None
     difference = invariant_basis * generator - invariant_basis
@@ -537,7 +572,7 @@ def _update_finiteness(gram, invariant_basis, generator):
     return invariant
 
 
-def _full_root_orbit(root_rows, isometry_rows):
+def _full_root_orbit(root_rows: set[_Row], isometry_rows: set[_Roots]) -> _Roots:
     roots = set(root_rows)
     pending = list(roots)
     matrices = tuple(matrix(SageZZ, rows) for rows in isometry_rows)
@@ -553,7 +588,7 @@ def _full_root_orbit(root_rows, isometry_rows):
 
 
 @unfinished(31)
-def edgewalk_fundamental_domain(gram):
+def edgewalk_fundamental_domain(gram: Matrix_integer_dense) -> EdgewalkRecord:
     """Return Allcock's fundamental-domain record for a Lorentzian Gram matrix."""
     gram = _integer_gram(gram)
     lattice = HyperbolicLattices(ZZ)(Lattices(ZZ)([[int(entry) for entry in row] for row in gram.rows()]))
@@ -572,8 +607,8 @@ def edgewalk_fundamental_domain(gram):
 
     vertices = [initial]
     configurations = [_vertex_configuration(lattice, gram, initial, norms)]
-    isometries: set[tuple[tuple[int, ...], ...]] = set()
-    invariant_basis = matrix.identity(SageQQ, gram.nrows())
+    isometries: set[_Roots] = set()
+    invariant_basis: Matrix_rational_dense = matrix.identity(SageQQ, gram.nrows())
     identity = tuple(tuple(int(i == j) for j in range(gram.nrows())) for i in range(gram.nrows()))
     position = 0
     while position < len(vertices):
@@ -583,14 +618,15 @@ def edgewalk_fundamental_domain(gram):
             rows = _matrix_rows(lattice, generator)
             if rows != identity:
                 isometries.add(rows)
-                invariant_basis = _update_finiteness(gram, invariant_basis, rows)
-                if invariant_basis is None:
+                updated_basis = _update_finiteness(gram, invariant_basis, rows)
+                if updated_basis is None:
                     return {
                         "simple_root_rows": (),
                         "vertices": tuple((item.generator, item.roots) for item in vertices),
                         "is_reflective": False,
                         "isometry_generator_rows": tuple(sorted(isometries)),
                     }
+                invariant_basis = updated_basis
 
         for roots, discarded in _edge_directions(vertex):
             neighbor = _edge_step(gram, vertex, roots, discarded, norms)
@@ -610,14 +646,15 @@ def edgewalk_fundamental_domain(gram):
                 rows = _matrix_rows(lattice, transporter)
                 if rows != identity:
                     isometries.add(rows)
-                    invariant_basis = _update_finiteness(gram, invariant_basis, rows)
-                    if invariant_basis is None:
+                    updated_basis = _update_finiteness(gram, invariant_basis, rows)
+                    if updated_basis is None:
                         return {
                             "simple_root_rows": (),
                             "vertices": tuple((item.generator, item.roots) for item in vertices),
                             "is_reflective": False,
                             "isometry_generator_rows": tuple(sorted(isometries)),
                         }
+                    invariant_basis = updated_basis
         position += 1
 
     root_rows = {root for vertex in vertices for root in vertex.roots}
