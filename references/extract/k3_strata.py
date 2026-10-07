@@ -65,8 +65,7 @@ def main() -> None:
     record = {
         "type_ii_correspondence": {
             "statement": (
-                "boundary curves C_I of F_{2k} correspond bijectively to rank-2 isotropic sublattices I of "
-                "Lambda_{2k} modulo O(Lambda_{2k}), and to I^perp/I in the genus G(k)"
+                "boundary curves C_I of F_{2k} correspond bijectively to rank-2 isotropic sublattices I of Lambda_{2k} modulo O(Lambda_{2k}), and to I^perp/I in the genus G(k)"
             ),
             "group": "O(Lambda_{2k})",
             "source": correspondence,
