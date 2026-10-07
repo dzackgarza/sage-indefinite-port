@@ -15,8 +15,7 @@ oracles:
       internal_name: O
       source_notation: O(\Lambda_{K3})
     domain:
-      vector_objects: primitive vectors of fixed represented norm m in {0, -2, 2, 4,
-        -4}
+      vector_objects: primitive vectors of fixed represented norm m in {0, -2, 2, 4, -4}
     expected:
       orbits_per_represented_norm: 1
       isotropic_vector_orbits: 1
@@ -239,14 +238,13 @@ oracles:
     authoritative_outputs:
       - isotropic_count
       - total_count
-  - id: conway_sloane_root_orders_and_spinor_pair
+  - id: conway_sloane_spinor_pair
     fixture_file: conway_sloane_cases.json
     source:
       kind: published
       citation: CS99
-      section: Chapter 4 §§4, 6, 7, 8; Chapter 15 §11 eqs. (51a), (51b), Corollary 22
+      section: Chapter 15 §11 eqs. (51a), (51b), Corollary 22
     authoritative_outputs:
-      - automorphism_order
       - integral_equivalence_verdict
   - id: centralizer_involutions
     fixture_file: centralizer_involutions.json

@@ -88,8 +88,7 @@ This document records the exact provenance, source files, authors, publications,
   - `spinor_genus_pair_determinant_minus_128`: the ternary forms (51a) and (51b) of Chapter 15 §11 ("Computational complexity"). The text states that both forms lie in the genus I_{2,1}(2 × 64), that this genus contains two spinor genera and hence two classes, and that (51b) represents the second class; Corollary 22 (n = 3, d_0 = 128) is the cited reason.
     Every field of the record transcribes those sentences.
 
-  - `root_lattice_automorphism_orders`: the automorphism-group orders of A2, A3, D4, E6, E7, E8 from Chapter 4 (§4 for the convention g = g_0 g_1; §6 for A_n; §7 for D_n; §8 for E6, E7, E8), each with the quoted sentence.
-    The Gram matrices are the Cartan matrices of the fundamental roots (Chapter 4, Table 4.1). The record `indefinite_jl_E8` pairs the Gram matrix shipped in Indefinite.jl's `TestCases/LATT_AUTOMORPHISM_case1_ListMat_E8` with the same order; the identification with E8 rests on Chapter 2, Table 2.2 (one even unimodular lattice in dimension 8).
+  - The Chapter 4 root-lattice automorphism orders (A2, A3, D4, E6, E7, E8 as Cartan Grams, and the E8 matrix of Indefinite.jl's `TestCases/LATT_AUTOMORPHISM_case1_ListMat_E8`) are definite-lattice facts owned by the preamble: they live in `research/tests/lattices/test_root_lattice_gram_presentations.sage`.
 
 - **Extraction**: transcribed from the Zotero extraction of the book (item T2WVLTDB). The `quote` fields are verbatim up to ASCII rendering of the mathematics.
 

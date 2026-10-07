@@ -116,31 +116,8 @@ class SpinorGenusPair(TypedDict):
     source: Citation
 
 
-class OrderConvention(TypedDict):
-    quote: str
-    source: Citation
-
-
-class RootLatticeAutomorphismCase(TypedDict, total=False):
-    id: Required[str]
-    name: Required[str]
-    gram: Required[Gram]
-    g0: Required[int]
-    g1: Required[int]
-    order: Required[int]
-    source: Required[Citation]
-    gram_source: Provenance
-
-
-class RootLatticeAutomorphismOrders(TypedDict):
-    order_convention: OrderConvention
-    gram_convention: str
-    cases: list[RootLatticeAutomorphismCase]
-
-
 class ConwaySloaneCases(TypedDict):
     spinor_genus_pair_determinant_minus_128: SpinorGenusPair
-    root_lattice_automorphism_orders: RootLatticeAutomorphismOrders
 
 
 class IsotropicDecisionCase(TypedDict):
