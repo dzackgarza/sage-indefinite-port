@@ -18,6 +18,7 @@ from sage.matrix.matrix_rational_dense import Matrix_rational_dense
 from sage.modules.free_module_element import FreeModuleElement
 from sage.quadratic_forms.qfsolve import qfsolve
 from sage.rings.integer import Integer as SageInteger
+from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
 
 from sage_indefinite_port.backends.canonization import _rational_lattice_with_integral_structure
@@ -350,31 +351,68 @@ class EichlerOrbitCover:
 def build_eichler_envelope(lattice: Lattices.ParentMethods) -> EichlerEnvelope:
     """Construct a literal-2U Eichler envelope containing ``lattice``."""
     ring = lattice.base_ring()
-    source_gram = _engine_component_matrix(lattice.gram_tensor())
+    source_gram = _engine_component_matrix(lattice.gram_tensor()).change_ring(SageZZ)
     working_lattice = Lattices(ring)([[ring(int(source_gram[row, column])) for column in range(source_gram.ncols())] for row in range(source_gram.nrows())])
     working_labels = tuple(working_lattice.module_generating_set())
     first_v, first_w = find_hyperbolic_pair(working_lattice)
-    first_plane = working_lattice.subobject_on((first_v, first_w)).saturation()
-    first_complement = working_lattice.orthogonal_complement(first_plane)
+    first_pair_rows = matrix(
+        SageZZ,
+        [
+            [
+                SageZZ(int(_engine_element(ring, vector.to_vector()(label))))
+                for label in working_labels
+            ]
+            for vector in (first_v, first_w)
+        ],
+    )
+    first_complement_rows = (first_pair_rows * source_gram).right_kernel_matrix()
+    first_complement_gram = first_complement_rows * source_gram * first_complement_rows.transpose()
+    first_complement = Lattices(ring)(
+        [
+            [
+                ring(int(first_complement_gram[row, column]))
+                for column in range(first_complement_gram.ncols())
+            ]
+            for row in range(first_complement_gram.nrows())
+        ]
+    )
     second_v, second_w = find_hyperbolic_pair(first_complement)
-    first_complement_inclusion = first_complement.inclusion()
-    second_v_ambient = first_complement_inclusion(second_v)
-    second_w_ambient = first_complement_inclusion(second_w)
-    two_u_span = working_lattice.subobject_on((first_v, first_w, second_v_ambient, second_w_ambient))
-    complement = working_lattice.orthogonal_complement(two_u_span)
+    first_complement_labels = tuple(first_complement.module_generating_set())
+    second_pair_local_rows = matrix(
+        SageZZ,
+        [
+            [
+                SageZZ(int(_engine_element(ring, vector.to_vector()(label))))
+                for label in first_complement_labels
+            ]
+            for vector in (second_v, second_w)
+        ],
+    )
+    second_pair_rows = second_pair_local_rows * first_complement_rows
+    two_u_rows = first_pair_rows.stack(second_pair_rows)
+    complement_rows = (two_u_rows * source_gram).right_kernel_matrix()
+    complement_gram = complement_rows * source_gram * complement_rows.transpose()
+    match complement_rows.nrows():
+        case 0:
+            complement = Lattices(ring)(ring.free_module(0))
+        case _:
+            complement = Lattices(ring)(
+                [
+                    [
+                        ring(int(complement_gram[row, column]))
+                        for column in range(complement_gram.ncols())
+                    ]
+                    for row in range(complement_gram.nrows())
+                ]
+            )
     model = complement.two_u_eichler_model()
     envelope = model.lattice()
 
     envelope_labels = tuple(envelope.module_generating_set())
-    complement_inclusion = complement.inclusion()
-    selected = (first_v, first_w, second_v_ambient, second_w_ambient) + tuple(complement_inclusion(generator) for generator in complement.module_generators())
     source_gram = source_gram.change_ring(SageQQ)
-    full_basis = matrix(
-        _engine_ring(ring),
-        [[_engine_element(ring, vector.to_vector()(label)) for label in working_labels] for vector in selected],
-    ).change_ring(SageQQ)
-    first_scale = SageQQ(_engine_element(ring, working_lattice.b(first_v, first_w)))
-    second_scale = SageQQ(_engine_element(ring, working_lattice.b(second_v_ambient, second_w_ambient)))
+    full_basis = two_u_rows.stack(complement_rows).change_ring(SageQQ)
+    first_scale = (first_pair_rows.row(0) * source_gram * first_pair_rows.row(1).column())[0]
+    second_scale = (second_pair_rows.row(0) * source_gram * second_pair_rows.row(1).column())[0]
     if first_scale <= 0 or second_scale <= 0:
         raise ArithmeticError("the selected hyperbolic pairs must have positive pairing")
     normalization = matrix.identity(SageQQ, int(lattice.module_rank()))
