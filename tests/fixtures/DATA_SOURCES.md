@@ -131,6 +131,22 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Replaced**: the previous fixture recorded no outputs, and its third lattice $U\oplus U(2)\oplus A_2$ was not a published example.
 
+### Centralizers of Finite-Order Isometries (OSCAR)
+
+- **File**: `tests/fixtures/isometry_centralizers.json`
+
+- **Source**: OSCAR's own tests, an independent implementation, vendored at `references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/` (`lattices_with_isometry.jl` and `enumeration.jl`, line ranges per record).
+
+- **Content**:
+
+  - Five indefinite lattices with an isometry of order 4, 5 or 6. For each, OSCAR records the order of the centralizer's image in $O(q_L)$ (72, 2, 96, 24192), or that the image is all of $O(q_L)$.
+
+  - For a signature-(1,9) genus, OSCAR records 11 classes of pairs $(L, f)$ with characteristic polynomial $(x-1)^4(x+1)^6$ (9 locally).
+
+- **Extraction**: `references/extract/oscar_centralizers.py`, run under Sage's Python. It parses the Julia matrix literals mechanically and reads each recorded value from its `@test` line. It computes $B G B^T$ and the isometry in the lattice basis, and asserts integrality, form preservation and indefiniteness. The definite order-600 case is excluded by that check.
+
+- **Replaced**: the previous `centralizer_involutions.json` held derived identities, not data.
+
 ### 6 Metamorphic Indefinite Forms
 
 - **File**: `tests/fixtures/ci_indefinite_comp.json`

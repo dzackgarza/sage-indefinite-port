@@ -338,26 +338,33 @@ class K3ModularStrata(TypedDict):
     degree_four_polarized_k3: DegreeFourK3
 
 
-class StructuralRule(TypedDict):
+class CentralizerCase(TypedDict, total=False):
+    id: Required[str]
+    gram: Required[Gram]
+    signature: Required[list[int]]
+    isometry: Required[list[list[int]]]
+    isometry_order: Required[int]
+    isometry_convention: Required[str]
+    centralizer_image_order: int
+    centralizer_image_is_all_of_O_qL: bool
+    source: Required[TextSource]
+
+
+class InvolutionClassCount(TypedDict):
     id: str
-    theorem: str
-    kind: str
+    genus_representative_gram: Gram
+    signature: list[int]
+    characteristic_polynomial: str
+    isometry_order: int
+    classes_in_genus: int
+    local_classes: int
+    meaning: str
+    source: TextSource
 
 
-class EnriquesInvolutionCase(TypedDict):
-    id: str
-    ambient_lattice: str
-    fixed_sublattice: str
-    anti_fixed_sublattice: str
-    gluing_subgroup: str
-    source: Provenance
-
-
-class CentralizerInvolutions(TypedDict):
-    orthogonal_direct_sum_rule: StructuralRule
-    gluing_overlattice_rule: StructuralRule
-    stable_intersection_rule: StructuralRule
-    enriques_involution_k3: EnriquesInvolutionCase
+class IsometryCentralizers(TypedDict):
+    centralizer_cases: list[CentralizerCase]
+    involution_classes: list[InvolutionClassCount]
 
 
 class ManifestLattice(TypedDict, total=False):
@@ -458,10 +465,10 @@ def load_conway_sloane_cases() -> ConwaySloaneCases:
         return data
 
 
-def load_centralizer_involutions() -> CentralizerInvolutions:
-    """Structural identities for involution centralizers and the Enriques involution."""
-    with open(FIXTURES_DIR / "centralizer_involutions.json", encoding="utf-8") as f:
-        data: CentralizerInvolutions = json.load(f)
+def load_isometry_centralizers() -> IsometryCentralizers:
+    """Centralizer images and involution-class counts recorded in OSCAR's tests."""
+    with open(FIXTURES_DIR / "isometry_centralizers.json", encoding="utf-8") as f:
+        data: IsometryCentralizers = json.load(f)
         return data
 
 
