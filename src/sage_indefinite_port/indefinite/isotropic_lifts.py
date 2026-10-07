@@ -2,7 +2,7 @@ r"""Exact extension problems along isotropic subspaces."""
 
 from __future__ import annotations
 
-from collections.abc import Hashable, Iterable
+from collections.abc import Hashable
 from dataclasses import dataclass
 
 from dzack_research.preamble.categories.lattice_morphisms import (
@@ -21,30 +21,17 @@ from dzack_research.preamble.categories.rings.ring_foundation import (
     _owned_engine_element,
 )
 from dzack_research.preamble.categories.sets.set_categories import OwnedSetMorphism, Sets
-from sage.all import vector as _sage_vector
 from sage.matrix.constructor import matrix
-from sage.matrix.matrix2 import Matrix as Matrix2
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
 from sage.matrix.matrix_space import MatrixSpace
 from sage.modules.free_module import FreeModule, FreeModule_generic
 from sage.modules.free_module_element import FreeModuleElement
+from sage.modules.free_module_element import vector
 from sage.rings.integer import Integer
 from sage.rings.integer_ring import ZZ
+from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ
-from sage.rings.ring import Ring
-from sage.structure.element import Element
-
-
-def _vector(
-    base_ring: Ring,
-    entries: Iterable[Element | int | Integer],
-) -> FreeModuleElement:
-    """Construct a Sage vector and retain its exact runtime type."""
-    candidate: object = _sage_vector(base_ring, entries)
-    if not isinstance(candidate, FreeModuleElement):
-        raise TypeError(f"vector construction over {base_ring} returned {candidate!r}")
-    return candidate
 
 
 @dataclass(frozen=True)
@@ -52,8 +39,8 @@ class MatrixEquationSolution:
     r"""Affine solutions of \(XA+A^T X^T=B\) over \(\mathbf Q\)."""
 
     particular: Matrix_rational_dense
-    homogeneous_space: FreeModule_generic
-    homogeneous_lattice: FreeModule_generic
+    homogeneous_space: FreeModule_generic[Rational]
+    homogeneous_lattice: FreeModule_generic[Integer]
 
 
 @dataclass(frozen=True)
@@ -109,7 +96,7 @@ class CodimensionOneIsotropicExtension:
             QQ,
             (tuple(_engine_element(target_ring, target_ambient.b(generator, image)) for generator in target_ambient_generators) for image in target_images),
         )
-        prescribed_pairings = _vector(
+        prescribed_pairings = vector(
             QQ,
             tuple(
                 _engine_element(
@@ -151,7 +138,7 @@ class CodimensionOneIsotropicExtension:
 
         def image(label: Hashable) -> FramedFreeModules.ElementMethods:
             generator = source_ambient.module_generator(label)
-            generator_coordinates = _vector(
+            generator_coordinates = vector(
                 QQ,
                 (_engine_element(source_ring, generator.to_vector()(source_label)) for source_label in source_labels),
             )
@@ -181,8 +168,8 @@ class NoIntegralExtensionError(ValueError):
 class IntegralParameterCoset:
     r"""A coset \(\lambda_0+\Lambda\subseteq\mathbf Q^r\)."""
 
-    particular: FreeModuleElement
-    lattice: FreeModule_generic
+    particular: FreeModuleElement[Rational]
+    lattice: FreeModule_generic[Integer]
 
 
 class IsometryExtensionTorsor:
@@ -228,7 +215,7 @@ class IsometryExtensionTorsor:
                         tuple(_engine_element(codomain.base_ring(), image(target_label)) for image in direction_images),
                     )
                 )
-        constant = _vector(QQ, (entry[0] for entry in rows))
+        constant = vector(QQ, (entry[0] for entry in rows))
         coefficients = matrix(QQ, (entry[1] for entry in rows)) if self._directions else matrix(QQ, len(rows), 0)
         annihilator = coefficients.left_kernel().basis_matrix()
         rhs = annihilator * constant
@@ -242,7 +229,7 @@ class IsometryExtensionTorsor:
             annihilator.ncols(),
             tuple(ZZ(common_denominator * QQ(entry)) for entry in annihilator.list()),
         )
-        integral_rhs = _vector(
+        integral_rhs = vector(
             ZZ,
             tuple(ZZ(common_denominator * QQ(entry)) for entry in rhs.list()),
         )
@@ -251,7 +238,7 @@ class IsometryExtensionTorsor:
             raise ArithmeticError("Smith form did not return transformation matrices")
         diagonal, left_change, right_change = smith_data
         transformed_rhs = left_change * integral_rhs
-        smith_coordinates = _vector(ZZ, [0] * len(rows))
+        smith_coordinates = vector(ZZ, [0] * len(rows))
         diagonal_rank = min(diagonal.nrows(), diagonal.ncols())
         for position in range(diagonal.nrows()):
             diagonal_entry = diagonal[position, position] if position < diagonal_rank else 0
@@ -265,7 +252,7 @@ class IsometryExtensionTorsor:
                 self._integral_locus = None
                 return None
         integral_point = right_change * smith_coordinates
-        parameter_target = _vector(
+        parameter_target = vector(
             QQ,
             (
                 (
@@ -278,7 +265,7 @@ class IsometryExtensionTorsor:
         )
         parameter_point = coefficients.solve_right(parameter_target)
         integral_image_lattice = coefficients.column_space().intersection(FreeModule(ZZ, len(rows)))
-        parameter_directions = tuple(coefficients.solve_right(_vector(QQ, lattice_vector.list())) for lattice_vector in integral_image_lattice.gens())
+        parameter_directions = tuple(coefficients.solve_right(vector(QQ, lattice_vector.list())) for lattice_vector in integral_image_lattice.gens())
         parameter_ambient = FreeModule(QQ, len(self._directions))
         parameter_lattice = parameter_ambient.span(parameter_directions, ZZ)
         locus = IntegralParameterCoset(parameter_point, parameter_lattice)
@@ -491,20 +478,20 @@ def solve_isotropic_extension_equation(
         raise ValueError("B must be symmetric")
 
     matrices = MatrixSpace(QQ, rank, rank)
-    A_matrix: Matrix2 = matrices.matrix(A)
-    B_matrix: Matrix2 = matrices.matrix(B)
-    A_transpose: Matrix2 = matrices.matrix(tuple(A_matrix[column, row] for row in range(rank) for column in range(rank)))
+    A_matrix: Matrix_rational_dense = matrices.matrix(A)
+    B_matrix: Matrix_rational_dense = matrices.matrix(B)
+    A_transpose: Matrix_rational_dense = matrices.matrix(tuple(A_matrix[column, row] for row in range(rank) for column in range(rank)))
     source_positions = tuple((row, column) for row in range(rank) for column in range(rank))
     symmetric_positions = tuple((i, i) for i in range(rank)) + tuple((i, j) for i in range(rank) for j in range(i + 1, rank))
 
-    def matrix_unit(index: tuple[int, int]) -> Matrix2:
+    def matrix_unit(index: tuple[int, int]) -> Matrix_rational_dense:
         row, column = index
         entries = [QQ.zero()] * (rank * rank)
         entries[row * rank + column] = QQ.one()
         return matrices.matrix(entries)
 
     image_columns = tuple(
-        _vector(
+        vector(
             QQ,
             (QQ(image[row, column]) for row, column in symmetric_positions),
         )
@@ -519,7 +506,7 @@ def solve_isotropic_extension_equation(
     )
     if not isinstance(relation_matrix, Matrix_rational_dense):
         raise ArithmeticError("the extension-equation relation matrix is not rational dense")
-    target_coordinates = _vector(
+    target_coordinates = vector(
         QQ,
         (QQ(B_matrix[row, column]) for row, column in symmetric_positions),
     )
