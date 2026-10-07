@@ -59,7 +59,10 @@ def genus_of_d() -> dict[int, list[str]]:
     """Theorem thm:classifydn: root sublattices classifying the genus of D_n, 1 <= n <= 18."""
     source_text = "\n".join(SOURCE.read_text(encoding="utf-8").splitlines()[4463:4515])
     stated = {
-        1: ["empty (the single class D1 = <-4>, whose root sublattice is empty)"], 9: ["D9", "E8"], 13: ["D13", "D5+E8", "D12"], 14: ["D14", "D6+E8", "D12+D2"],
+        1: ["empty (the single class D1 = <-4>, whose root sublattice is empty)"],
+        9: ["D9", "E8"],
+        13: ["D13", "D5+E8", "D12"],
+        14: ["D14", "D6+E8", "D12+D2"],
         15: ["D15", "D7+E8", "D12+D3", "A15", "E7+E7"],
         16: ["D16", "D8+E8", "D12+D4", "D2+E7+E7", "D8+D8", "A15"],
         17: ["D17", "D9+E8", "D12+D5", "D3+E7+E7", "A15+D2", "A11+E6", "D8+D8", "D16", "E8+E8"],
@@ -69,11 +72,18 @@ def genus_of_d() -> dict[int, list[str]]:
         stated[n] = [f"D{n}"]
     for n in range(10, 13):
         stated[n] = [f"D{n}", f"D{n - 8}+E8"]
-    for needle in (r"$n=1$: $\es$", r"$2\le n\le 8$: $D_n$", r"$n=9$: $D_9$, $E_8$", r"$10\le n \le 12$: $D_n$, $D_{n-8}\oplus E_8$",
-                   r"$n=13$: $D_{13}$, $D_{5}\oplus E_8$, $D_{12}$", r"$n=14$: $D_{14}$, $D_{6}\oplus E_8$, $D_{12}\oplus D_{2}$",
-                   r"$n=15$: $D_{15}$, $D_7\oplus E_8$, $D_{12}\oplus D_3$,  $A_{15}$, $(E_7)^2$",
-                   r"$n=16$: $D_{16}$, $D_8\oplus E_8$, $D_{12}\oplus D_4$, $D_2\oplus (E_7)^2$, $(D_8)^2$, $A_{15}$",
-                   r"$A_{11}\oplus E_6$,  $(D_8)^2$, $D_{16}$, $(E_8)^2$", r"$(A_9)^2$, $D_{10}\oplus E_7\oplus A_1$, $A_{17}\oplus A_1$"):
+    for needle in (
+        r"$n=1$: $\es$",
+        r"$2\le n\le 8$: $D_n$",
+        r"$n=9$: $D_9$, $E_8$",
+        r"$10\le n \le 12$: $D_n$, $D_{n-8}\oplus E_8$",
+        r"$n=13$: $D_{13}$, $D_{5}\oplus E_8$, $D_{12}$",
+        r"$n=14$: $D_{14}$, $D_{6}\oplus E_8$, $D_{12}\oplus D_{2}$",
+        r"$n=15$: $D_{15}$, $D_7\oplus E_8$, $D_{12}\oplus D_3$,  $A_{15}$, $(E_7)^2$",
+        r"$n=16$: $D_{16}$, $D_8\oplus E_8$, $D_{12}\oplus D_4$, $D_2\oplus (E_7)^2$, $(D_8)^2$, $A_{15}$",
+        r"$A_{11}\oplus E_6$,  $(D_8)^2$, $D_{16}$, $(E_8)^2$",
+        r"$(A_9)^2$, $D_{10}\oplus E_7\oplus A_1$, $A_{17}\oplus A_1$",
+    ):
         assert needle in source_text, needle
     assert sorted(stated) == list(range(1, 19))
     return stated
@@ -105,8 +115,7 @@ def type_counts(genus: dict[int, list[str]], definition: dict[str, str], group: 
                 "type_iii_components": 2 if big_n % 8 == 2 else 1,
                 "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
                 "derivation": (
-                    "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), "
-                    "plus the even unimodular lattices of rank N-2 when N = 2 mod 8"
+                    "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8"
                 ),
                 "source": {"lattice": definition, "group": group, "theorem": theorem, "unimodular": unimodular, "type_iii": type_iii},
             }
@@ -126,8 +135,16 @@ def f_hat_table() -> list[dict[str, object]]:
             continue
         cells = [cell.strip() for cell in line[:-2].split("&")]
         assert len(cells) == 5, f"{SOURCE}:{index + 1}"
-        rows.append({"label": cells[0], "type": cells[1], "dimension_in_F_hat": int(cells[2].strip("$")), "geometric_meaning": cells[3], "quartic_case": cells[4],
-                     "source": {"kind": "published_table", "file": str(SOURCE), "table": "tabletype2", "line": index + 1}})
+        rows.append(
+            {
+                "label": cells[0],
+                "type": cells[1],
+                "dimension_in_F_hat": int(cells[2].strip("$")),
+                "geometric_meaning": cells[3],
+                "quartic_case": cells[4],
+                "source": {"kind": "published_table", "file": str(SOURCE), "table": "tabletype2", "line": index + 1},
+            }
+        )
     return rows
 
 
