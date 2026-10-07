@@ -96,6 +96,22 @@ This document records the exact provenance, source files, authors, publications,
 
 - These are the reference implementation's own recorded outputs (polyhedral_common, Mathieu Dutour Sikirić); agreement with them is acceptance for this port. Extracted by `references/extract/polyhedral_common_ci.py` (run under Sage's Python; GAP literals are evaluated with libgap). Each record cites its vendored file and index.
 
+### K3 Lattice and Degree-2 / Degree-4 K3 Baily–Borel Boundaries
+
+- **File**: `tests/fixtures/k3_modular_strata.json`
+
+- **Sources** (vendored TeX; the extraction asserts that every transcribed label appears on the cited lines):
+
+  - K3 lattice $3U \oplus 2E_8(-1)$: one orbit of primitive vectors per represented norm, by Eichler's criterion, Gritsenko–Hulek–Sankaran arXiv:1012.4155, Lemma `lem:eichler` (`references/vendor/arxiv/1012.4155/main.tex`).
+
+  - Degree 2: four Type II curves meeting in one Type III point (Laza arXiv:1205.3144, theorem citing Scattone §6.2), with Type II root types $A_{17}$, $E_8^2+A_1$, $D_{16}+A_1$, $E_7+D_{10}$ (Shah's table as given there).
+
+  - Degree 4: nine Type II curves with generalised types $A_{11}+E_6$, $A_1+A_1+A_{15}$, $D_8+D_8+\langle-4\rangle$, $D_{12}+D_5$, $D_{16}+\langle-4\rangle$, $E_7+E_7+A_3$, $E_8+E_8+\langle-4\rangle$, $E_8+D_9$, $D_{17}$ (Jones arXiv:2502.04301, theorem citing Scattone §6.3).
+
+- **Extraction**: `uv run references/extract/k3_strata.py`.
+
+- **Removed**: the "$2^{\omega(d)-1}$ zero-dimensional cusps" family attributed to Attwell-Duval. No source for it is vendored or known, and for squarefree $d$ the Eichler-criterion count is one cusp, which contradicts it. The previous degree-4 labels included $A_{17}$ and $D_{10}+E_7$ (degree-2 labels) and used $A_1$ where the classification has $\langle-4\rangle$.
+
 ### 6 Metamorphic Indefinite Forms
 
 - **File**: `tests/fixtures/ci_indefinite_comp.json`

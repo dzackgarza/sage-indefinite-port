@@ -269,11 +269,6 @@ class UnpolarizedEnriques(TypedDict):
     stable_component_preserving_group: StableGroupData
 
 
-class PrimitiveVectorTransitivity(TypedDict):
-    tested_represented_norms: list[int]
-    expected_orbits_per_norm: int
-
-
 class K3UnimodularLattice(TypedDict):
     id: str
     construction: str
@@ -282,49 +277,48 @@ class K3UnimodularLattice(TypedDict):
     det: int
     is_even: bool
     is_unimodular: bool
-    discriminant_group_order: int
-    stable_group_identity: str
-    primitive_vector_transitivity: PrimitiveVectorTransitivity
-    source: Provenance
+    primitive_vector_orbits: str
+    tested_represented_norms: list[int]
+    source: TextSource
 
 
-class TypeIIComponent(TypedDict):
-    index: int
-    quotient_root_type: str
-    cartan_type: list[str]
+class BailyBorelBoundary(TypedDict, total=False):
+    type_iii_points: int
+    type_ii_curves: Required[int]
+    point_curve_incidences: int
 
 
-class PolarizedK3Stratum(TypedDict):
+class DegreeTwoSources(TypedDict):
+    boundary: TextSource
+    root_types: TextSource
+
+
+class DegreeTwoK3(TypedDict):
     id: str
     construction: str
     signature: list[int]
     rank: int
     det: int
-    is_even: bool
-    group: GroupSpec
-    baily_borel_counts: OrbitCounts
-    type_ii_boundary_components: list[TypeIIComponent]
-    source: Provenance
+    baily_borel_boundary: BailyBorelBoundary
+    type_ii_root_types: list[str]
+    source: DegreeTwoSources
 
 
-class AttwellDuvalCase(TypedDict):
-    d: int
-    omega_d: int
-    expected_cusps: int
-
-
-class AttwellDuvalFamily(TypedDict):
+class DegreeFourK3(TypedDict):
     id: str
-    formula: str
-    test_cases: list[AttwellDuvalCase]
-    source: Provenance
+    construction: str
+    signature: list[int]
+    rank: int
+    det: int
+    baily_borel_boundary: BailyBorelBoundary
+    type_ii_generalised_types: list[str]
+    source: TextSource
 
 
 class K3ModularStrata(TypedDict):
     k3_unimodular_lattice: K3UnimodularLattice
-    degree_two_polarized_k3: PolarizedK3Stratum
-    degree_four_polarized_k3: PolarizedK3Stratum
-    attwell_duval_cusp_family: AttwellDuvalFamily
+    degree_two_polarized_k3: DegreeTwoK3
+    degree_four_polarized_k3: DegreeFourK3
 
 
 class StructuralRule(TypedDict):
