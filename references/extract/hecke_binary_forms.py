@@ -92,9 +92,7 @@ def main() -> None:
         }
 
     data = {
-        "explicit_generators": [
-            record(case, automorphism_group_generators=case["generators"], isometry_convention=convention) for case in explicit
-        ],
+        "explicit_generators": [record(case, automorphism_group_generators=case["generators"], isometry_convention=convention) for case in explicit],
         "generator_counts": [record(case, hecke_generator_count=case["count"]) for case in counts],
         "improper_automorphisms": [record(case, has_improper_automorphism=True) for case in improper],
     }
