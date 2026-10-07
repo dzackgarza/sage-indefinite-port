@@ -10,16 +10,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import cache
 
-from dzack_research.preamble.all import QQ, ZZ, Lattices, Modules
+from dzack_research.preamble.all import QQ, ZZ, Lattices, Modules, RestrictedScalarsModules
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
+from dzack_research.preamble.categories.modules.module_morphisms.module_morphisms import ModuleEmbeddingMethods
 from dzack_research.preamble.categories.rings.ring_foundation import _engine_element
 from sage.graphs.graph import Graph
+from sage.libs.gap.element import GapElement
 from sage.libs.gap.libgap import libgap
 from sage.matrix.constructor import matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
 from sage.rings.integer import Integer
 from sage.rings.integer_ring import ZZ as SageZZ
+from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ as SageQQ
 
 from sage_indefinite_port.groups.integral_structures import (
@@ -27,6 +30,8 @@ from sage_indefinite_port.groups.integral_structures import (
     IntegralStructureAction,
     RationalMatrixGroup,
 )
+
+type CoordinateRows = tuple[tuple[int | Integer | Rational, ...], ...]
 
 
 @dataclass(frozen=True)
@@ -85,7 +90,9 @@ def presentation_bucket_key(
 
 
 @cache
-def _configuration_integral_structure_action(configuration: CellConfiguration):
+def _configuration_integral_structure_action(
+    configuration: CellConfiguration,
+) -> tuple[IntegralStructureAction, Lattices.ParentMethods, RestrictedScalarsModules.ParentMethods, ModuleEmbeddingMethods]:
     canon = _bliss_canonization(configuration)
     rational_group = _configuration_rational_automorphism_group(configuration, canon)
     rational_lattice = configuration.lattice.base_change(ZZ.fraction_field_map())
@@ -148,7 +155,7 @@ def cell_transporter(
     corrected = base_action * correction_action
     target_coordinates = _coordinate_matrix(target)
     target_position = {tuple(row): position for position, row in enumerate(target_coordinates.rows())}
-    corrected_permutation = []
+    corrected_permutation: list[int] = []
     for row in (matrix(SageQQ, target_coordinates) * correction_action).rows():
         if any(entry.denominator() != 1 for entry in row):
             raise ArithmeticError("an integral-structure correction moves a configuration vector to nonintegral coordinates")
@@ -208,7 +215,7 @@ def cell_stabilizer(configuration: CellConfiguration) -> RationalMatrixGroup:
             [[SageQQ(entry) / SageQQ(denominator) for entry in row] for row in integral_basis.rows()],
         )
 
-    restricted_actions = []
+    restricted_actions: list[Matrix_integer_dense] = []
     for action_matrix in rational_actions:
         restricted = invariant_basis * action_matrix * invariant_basis.inverse()
         if any(entry.denominator() != 1 for entry in restricted.list()):
@@ -238,18 +245,18 @@ def cell_stabilizer(configuration: CellConfiguration) -> RationalMatrixGroup:
     while frontier:
         source_position = frontier.pop()
         source_key = orbit_keys[source_position]
-        for action_matrix in restricted_actions:
-            candidate_key = FiniteIntegralRepresentation._row_lattice_key((matrix(SageZZ, source_key) * action_matrix).rows())
+        for restricted_action in restricted_actions:
+            candidate_key = FiniteIntegralRepresentation._row_lattice_key((matrix(SageZZ, source_key) * restricted_action).rows())
             if candidate_key not in orbit_position:
                 orbit_position[candidate_key] = len(orbit_keys)
                 orbit_keys.append(candidate_key)
                 frontier.append(len(orbit_keys) - 1)
 
-    finite_generators = []
-    for action_matrix in restricted_actions:
-        images = []
+    finite_generators: list[GapElement] = []
+    for restricted_action in restricted_actions:
+        images: list[int] = []
         for key in orbit_keys:
-            image_key = FiniteIntegralRepresentation._row_lattice_key((matrix(SageZZ, key) * action_matrix).rows())
+            image_key = FiniteIntegralRepresentation._row_lattice_key((matrix(SageZZ, key) * restricted_action).rows())
             images.append(orbit_position[image_key] + 1)
         finite_generators.append(libgap.PermList(images))
     graph_gap_generators = tuple(libgap.PermList([int(generator(position)) + 1 for position in range(graph.order())]) for generator in permutation_generators)
@@ -450,9 +457,9 @@ def _configuration_rational_automorphism_group(
 def _rational_lattice_with_integral_structure(
     lattice: Lattices.ParentMethods,
     rational_lattice: Lattices.ParentMethods,
-    space,
-    rows: tuple[tuple[object, ...], ...],
-):
+    space: RestrictedScalarsModules.ParentMethods,
+    rows: CoordinateRows,
+) -> ModuleEmbeddingMethods:
     rank = int(lattice.module_rank())
     domain = ZZ.free_module(rank)
     domain_labels = tuple(domain.module_generating_set())
@@ -484,5 +491,5 @@ def _identity_rows(rank: int) -> tuple[tuple[int, ...], ...]:
 
 def _rational_rows(
     matrix_value: Matrix_rational_dense,
-) -> tuple[tuple[object, ...], ...]:
+) -> tuple[tuple[Rational, ...], ...]:
     return tuple(tuple(matrix_value[row, column] for column in range(matrix_value.ncols())) for row in range(matrix_value.nrows()))
