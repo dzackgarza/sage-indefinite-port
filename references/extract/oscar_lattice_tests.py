@@ -125,9 +125,7 @@ class ReducedOrder(TypedDict):
     source: Source
 
 
-type OracleRecords = (
-    list[VinbergCase] | list[DiscriminantCase] | list[IsometryGroupCase] | list[OrderCase] | list[IsometryTest] | list[RootLatticeGroups] | list[ReducedOrder]
-)
+type OracleRecords = list[VinbergCase] | list[DiscriminantCase] | list[IsometryGroupCase] | list[OrderCase] | list[IsometryTest] | list[RootLatticeGroups] | list[ReducedOrder]
 
 
 def lines_of(relative: str) -> list[str]:

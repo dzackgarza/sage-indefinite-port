@@ -26,8 +26,7 @@ from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
 from sage.matrix.matrix_space import MatrixSpace
 from sage.modules.free_module import FreeModule, FreeModule_generic
-from sage.modules.free_module_element import FreeModuleElement
-from sage.modules.free_module_element import vector
+from sage.modules.free_module_element import FreeModuleElement, vector
 from sage.rings.integer import Integer
 from sage.rings.integer_ring import ZZ
 from sage.rings.rational import Rational

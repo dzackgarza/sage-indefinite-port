@@ -1,13 +1,16 @@
 """Public recursive indefinite-lattice operations on live preamble objects."""
 
+from collections.abc import Hashable
 from random import Random
 
 from dzack_research.preamble.all import QQ, ZZ, Lattices, Modules
-from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
+from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods, LatticeIsometryMor
+from dzack_research.preamble.categories.rings.ring_foundation import _OwnedRingElement
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.matrix.constructor import identity_matrix, matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.modules.free_module_element import vector as sage_vector
+from sage.rings.integer import Integer
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.sets.disjoint_set import DisjointSet as SageDisjointSet
 
@@ -151,7 +154,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
         ring = lattice.base_ring()
         gram = _engine_component_matrix(lattice.gram_tensor()).change_ring(SageZZ)
         rank = gram.nrows()
-        transformation = identity_matrix(SageZZ, rank)
+        transformation: Matrix_integer_dense = identity_matrix(SageZZ, rank)
         work = gram
         indices = list(range(rank))
         search_rng = Random(0)
@@ -192,7 +195,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
             if selected is None:
                 break
             row, source_row, coefficient = selected
-            elementary = identity_matrix(SageZZ, rank)
+            elementary: Matrix_integer_dense = identity_matrix(SageZZ, rank)
             elementary[row, source_row] = coefficient
             transformation = elementary * transformation
             work = elementary * work * elementary.transpose()
@@ -228,7 +231,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
         source_labels = tuple(lattice.module_generating_set())
         reduced_labels = tuple(reduced.module_generating_set())
 
-        def image(label):
+        def image(label: Hashable) -> Lattices.ElementMethods:
             position = reduced_labels.index(label)
             return lattice.linear_combination(
                 {source_label: ring(int(transformation[position, column])) for column, source_label in enumerate(source_labels) if transformation[position, column]}
@@ -262,7 +265,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
         rational_source_labels = tuple(isometry.domain().module_generating_set())
         rational_target_labels = tuple(isometry.codomain().module_generating_set())
 
-        def image(label):
+        def image(label: Hashable) -> Lattices.ElementMethods:
             position = source_labels.index(label)
             moved = isometry(isometry.domain().module_generator(rational_source_labels[position]))
             coordinates = moved.to_vector()
@@ -281,7 +284,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
                 return expected_parent(image)
 
     @staticmethod
-    def _selected_generators(group) -> tuple[LatticeIsometryMethods, ...]:
+    def _selected_generators(group: LatticeIsometryMor | RationalMatrixGroup) -> tuple[LatticeIsometryMethods, ...]:
         match group:
             case RationalMatrixGroup():
                 return tuple(group.generators())
@@ -311,8 +314,8 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
         signed_lattice = profile.signed_view
         match profile.positive_index:
             case 0 | 1:
-                group = super().orthogonal_group(signed_lattice)
-                generators = self._selected_generators(group)
+                leaf_group = super().orthogonal_group(signed_lattice)
+                generators = self._selected_generators(leaf_group)
             case _:
                 model = self._orbit_cover_model(signed_lattice)
                 vector = model.choose_splitting_vector()
@@ -350,7 +353,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
             source_labels = tuple(source.module_generating_set())
             target_labels = tuple(target.module_generating_set())
 
-            def image(label):
+            def image(label: Hashable) -> Lattices.ElementMethods:
                 row = source_labels.index(label)
                 return target.linear_combination(
                     {target_label: target.base_ring()(int(row_action[row, column])) for column, target_label in enumerate(target_labels) if row_action[row, column]}
@@ -475,12 +478,12 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
 
     def _rational_stabilizer_lifts(
         self,
-        section,
+        section: IsotropicVectorSection | NonIsotropicVectorSection,
         reduced_group: GeneratedSubgroup,
     ) -> tuple[LatticeIsometryMethods, ...]:
-        lifts = tuple(section.rational_lift(generator, target=section).rational_isometry() for generator in reduced_group.generators())
         match section:
             case IsotropicVectorSection():
+                lifts = tuple(section.rational_lift(generator, target=section).rational_isometry() for generator in reduced_group.generators())
                 fraction_map = section.vector.parent().base_ring().fraction_field_map()
                 match section.vector.parent().is_even():
                     case True:
@@ -491,7 +494,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
                         kernel = section.reduction.pointwise_perpendicular_kernel()
                         return lifts + tuple(generator.base_change(fraction_map) for generator in kernel.gens())
             case NonIsotropicVectorSection():
-                return lifts
+                return tuple(section.rational_lift(generator, target=section).rational_isometry() for generator in reduced_group.generators())
 
     def _split_unimodular_isotropic_transporter(
         self,
@@ -566,7 +569,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
         )
         pairings = isotropic_coordinates * gram
         gcd_value = SageZZ.zero()
-        coefficients = []
+        coefficients: list[Integer] = []
         for pairing in pairings:
             new_gcd, old_coefficient, new_coefficient = gcd_value.xgcd(SageZZ(pairing))
             coefficients = [old_coefficient * coefficient for coefficient in coefficients]
@@ -676,13 +679,21 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
                         pass
                     case _:
                         return integral_witness
+                base_torsor = source_section.rational_lift(
+                    reduced_isometry,
+                    target=target_section,
+                )
+            case (
+                IsotropicVectorSection(),
+                IsotropicVectorSection(),
+            ):
+                base_torsor = source_section.rational_lift(
+                    reduced_isometry,
+                    target=target_section,
+                )
             case _:
-                pass
+                raise AssertionError("the source and target sections were checked above to be of the same kind")
 
-        base_torsor = source_section.rational_lift(
-            reduced_isometry,
-            target=target_section,
-        )
         match base_torsor.integral_parameters(source, target):
             case None:
                 pass
@@ -750,7 +761,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
     def vector_orbit_representatives(
         self,
         lattice: Lattices.ParentMethods,
-        square,
+        square: _OwnedRingElement | int,
     ) -> tuple[Lattices.ElementMethods, ...]:
         r"""Return exact higher-Witt O(L)-orbit representatives of a square."""
         reduced, reduced_to_lattice = self._simple_indefinite_reduction(lattice)
@@ -764,12 +775,9 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
                 )
             )
         cache_key = (lattice, int(square))
-        cached = self._vector_orbit_cache.get(cache_key)
-        match cached:
+        match self._vector_orbit_cache.get(cache_key):
             case tuple() as representatives:
                 return representatives
-            case _ if cached is not None:
-                return cached
             case None:
                 pass
         profile = self.attack_profile(lattice)
@@ -824,7 +832,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
                 for component in classes.root_to_elements_dict().values()
             )
         )
-        cover = tuple(
+        simplified_cover = tuple(
             signed_lattice.linear_combination(
                 {
                     label: signed_lattice.base_ring()(coordinate)
@@ -839,7 +847,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
             for coordinates in simplified_coordinates
         )
         buckets: dict[VectorPrefilter, list[Lattices.ElementMethods]] = {}
-        for candidate in cover:
+        for candidate in simplified_cover:
             bucket = buckets.setdefault(
                 VectorPrefilter.from_vector(
                     candidate,
@@ -879,26 +887,30 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
 
 
 @unfinished(18)
-def orthogonal_group_generators(homset) -> tuple[LatticeIsometryMethods, ...]:
+def orthogonal_group_generators(homset: LatticeIsometryMor) -> tuple[LatticeIsometryMethods, ...]:
     lattice = homset.domain()
     group = IndefiniteOrthogonalAlgorithm().orthogonal_group(lattice)
     return tuple(group.generators())
 
 
 @unfinished(18)
-def isometry(source: Lattices.ParentMethods, target: Lattices.ParentMethods):
+def isometry(source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
     return IndefiniteOrthogonalAlgorithm().isometry(source, target)
 
 
 @unfinished(18)
-def vector_equivalence_witness(homset, left, right):
+def vector_equivalence_witness(
+    homset: LatticeIsometryMor,
+    left: Lattices.ElementMethods,
+    right: Lattices.ElementMethods,
+) -> LatticeIsometryMethods | None:
     if left.parent() is not homset.domain() or right.parent() is not homset.domain():
         raise ValueError("vector equivalence requires vectors in the homset lattice")
     return IndefiniteOrthogonalAlgorithm().vector_transporter(left, right)
 
 
 @unfinished(18)
-def vector_stabilizer_generators(homset, element) -> tuple[LatticeIsometryMethods, ...]:
+def vector_stabilizer_generators(homset: LatticeIsometryMor, element: Lattices.ElementMethods) -> tuple[LatticeIsometryMethods, ...]:
     if element.parent() is not homset.domain():
         raise ValueError("vector stabilizer requires an element of the homset lattice")
     subgroup = IndefiniteOrthogonalAlgorithm().vector_stabilizer(element)

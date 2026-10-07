@@ -194,7 +194,7 @@ def cell_stabilizer(configuration: CellConfiguration) -> RationalMatrixGroup:
     invariant_basis = matrix(SageQQ, _identity_rows(rank))
     action_matrices = rational_actions + tuple(action.inverse() for action in rational_actions)
     while True:
-        inverse_basis = invariant_basis.inverse()
+        inverse_basis: Matrix_rational_dense = invariant_basis.inverse()
         spanning_rows = list(invariant_basis.rows())
         stable = True
         for action_matrix in action_matrices:

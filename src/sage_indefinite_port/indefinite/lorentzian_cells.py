@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import cache, cached_property
@@ -14,13 +15,19 @@ from dzack_research.preamble.categories.definite_lattices import (
     _ExactCVPEngine,
 )
 from dzack_research.preamble.categories.lattice_engines import _rational_positive_vector
-from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
-from dzack_research.preamble.categories.rings.ring_foundation import _engine_element
+from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods, LatticeIsometryMor
+from dzack_research.preamble.categories.rings.ring_foundation import _engine_element, _OwnedRingElement
 from sage.matrix.constructor import matrix
-from sage.modules.free_module_element import vector
+from sage.matrix.matrix_integer_dense import Matrix_integer_dense
+from sage.matrix.matrix_rational_dense import Matrix_rational_dense
+from sage.modules.free_module_element import FreeModuleElement, vector
 from sage.quadratic_forms.quadratic_form import QuadraticForm
+from sage.rings.integer import Integer
 from sage.rings.integer_ring import ZZ as SageZZ
+from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ as SageQQ
+from sage.structure.element import RingElement
+from sage.structure.parent import Parent
 
 from sage_indefinite_port.backends.canonization import (
     CellConfiguration,
@@ -41,7 +48,8 @@ from sage_indefinite_port.backends.polyhedral import (
 )
 from sage_indefinite_port.groups.integral_structures import GeneratedSubgroup, IntegralStructureAction, RationalMatrixGroup
 from sage_indefinite_port.indefinite.eichler import EichlerOrbitCover, build_eichler_envelope
-from sage_indefinite_port.indefinite.vector_sections import NonIsotropicVectorSection, orthogonal_section
+from sage_indefinite_port.indefinite.isotropic_lifts import IsometryExtensionTorsor
+from sage_indefinite_port.indefinite.vector_sections import IsotropicVectorSection, NonIsotropicVectorSection, orthogonal_section
 from sage_indefinite_port.invariants import AttackProfile, VectorPrefilter
 from sage_indefinite_port.readiness import unfinished
 
@@ -58,7 +66,7 @@ class IndefiniteOrthogonalAlgorithm:
     def attack_profile(self, lattice: Lattices.ParentMethods) -> AttackProfile:
         return AttackProfile.from_lattice(lattice)
 
-    def orthogonal_group(self, lattice: Lattices.ParentMethods):
+    def orthogonal_group(self, lattice: Lattices.ParentMethods) -> LatticeIsometryMor | RationalMatrixGroup:
         profile = self.attack_profile(lattice)
         match profile.positive_index:
             case 0:
@@ -118,7 +126,7 @@ class IndefiniteOrthogonalAlgorithm:
         generators = tuple(lifted)
         return GeneratedSubgroup(RationalMatrixGroup(lattice, generators), generators)
 
-    def isometry(self, source: Lattices.ParentMethods, target: Lattices.ParentMethods):
+    def isometry(self, source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
         if self.attack_profile(source).positive_index != self.attack_profile(target).positive_index:
             return None
         if source.is_definite() and target.is_definite():
@@ -167,13 +175,24 @@ class IndefiniteOrthogonalAlgorithm:
         supergroup = RationalMatrixGroup(ambient, generators)
         return GeneratedSubgroup(supergroup, generators)
 
-    def vector_transporter(self, source_vector: Lattices.ElementMethods, target_vector: Lattices.ElementMethods):
+    def vector_transporter(self, source_vector: Lattices.ElementMethods, target_vector: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
         if VectorPrefilter.from_vector(source_vector) != VectorPrefilter.from_vector(target_vector):
             return None
         source_section = orthogonal_section(source_vector)
         target_section = orthogonal_section(target_vector)
-        if isinstance(source_section, NonIsotropicVectorSection) != isinstance(target_section, NonIsotropicVectorSection):
-            return None
+        match source_section, target_section:
+            case NonIsotropicVectorSection(), NonIsotropicVectorSection():
+
+                def rational_lift(candidate: LatticeIsometryMethods) -> IsometryExtensionTorsor:
+                    return source_section.rational_lift(candidate, target=target_section)
+
+            case IsotropicVectorSection(), IsotropicVectorSection():
+
+                def rational_lift(candidate: LatticeIsometryMethods) -> IsometryExtensionTorsor:
+                    return source_section.rational_lift(candidate, target=target_section)
+
+            case _:
+                return None
         reduced_source = source_section.reduced_object()
         reduced_target = target_section.reduced_object()
         reduced_isometry = reduced_source.isometry_to(reduced_target)
@@ -186,7 +205,7 @@ class IndefiniteOrthogonalAlgorithm:
             for automorphism in reduced_target.O():
                 candidates.append(automorphism * reduced_isometry)
         for candidate in candidates:
-            torsor = source_section.rational_lift(candidate, target=target_section)
+            torsor = rational_lift(candidate)
             if torsor.integral_parameters(source, target) is None:
                 continue
             witness = torsor.one_integral_extension()
@@ -411,7 +430,7 @@ class LorentzianPerfectComplex:
         self._traversal_position += 1
         return tuple(new_representatives)
 
-    def isometry_to(self, target: LorentzianPerfectComplex):
+    def isometry_to(self, target: LorentzianPerfectComplex) -> LatticeIsometryMethods | None:
         if self.mode() != target.mode():
             return None
         self._ensure_traversal_started()
@@ -521,7 +540,7 @@ def _perfect_form_hash_key(
 
 
 @unfinished(15)
-def perfect_domain_traversal(gram_rows, option: PerfectMode = "total") -> tuple[TraversalRecord, ...]:
+def perfect_domain_traversal(gram_rows: Sequence[Sequence[int | Integer]], option: PerfectMode = "total") -> tuple[TraversalRecord, ...]:
     r"""Return complete native perfect-domain traversal records for the Gram rows."""
     lattice = Lattices(ZZ)(gram_rows)
     return LorentzianPerfectComplex(lattice, option).records()
@@ -534,7 +553,7 @@ class NoLocalMarkTheoremError(RuntimeError):
 class MarkedCellOrbitAlgorithm:
     """Global isotropic-vertex orbits from local cell-stabilizer orbits."""
 
-    def __init__(self, complex_: LorentzianPerfectComplex, norm=0) -> None:
+    def __init__(self, complex_: LorentzianPerfectComplex, norm: int | Integer = 0) -> None:
         if norm != 0:
             raise NoLocalMarkTheoremError("the Lorentzian marked-cell source proves finite local marks only for norm zero")
         self._complex = complex_
@@ -599,9 +618,9 @@ class MarkedCellOrbitAlgorithm:
         cells = self.complex().quotient_cells()
         local = tuple(self.local_stabilizer_orbits(cell) for cell in cells)
         nodes = [(cell_position, orbit_position) for cell_position, cell_orbits in enumerate(local) for orbit_position in range(len(cell_orbits))]
-        graph = {node: set() for node in nodes}
+        graph: dict[tuple[int, int], set[tuple[int, int]]] = {node: set() for node in nodes}
 
-        def local_orbit_position(cell_position, mark):
+        def local_orbit_position(cell_position: int, mark: Lattices.ElementMethods) -> int:
             matches = [orbit_position for orbit_position, orbit in enumerate(local[cell_position]) if any(candidate == mark for candidate in orbit)]
             if len(matches) != 1:
                 raise ArithmeticError("a transported isotropic mark does not belong to a unique local stabilizer orbit")
@@ -628,7 +647,7 @@ class MarkedCellOrbitAlgorithm:
         while unseen:
             start = min(unseen)
             pending = [start]
-            component = []
+            component: list[tuple[int, int]] = []
             while pending:
                 node = pending.pop()
                 if node not in unseen:
@@ -645,7 +664,7 @@ class MarkedCellOrbitAlgorithm:
         return tuple(global_orbits)
 
 
-def _coordinate_row(lattice, element, ring):
+def _coordinate_row[S: RingElement](lattice: Lattices.ParentMethods, element: Lattices.ElementMethods, ring: Parent[S]) -> FreeModuleElement[S]:
     coordinates = element.to_vector()
     base_ring = lattice.base_ring()
     return vector(
@@ -654,7 +673,7 @@ def _coordinate_row(lattice, element, ring):
     )
 
 
-def _normalizing_sign(lattice):
+def _normalizing_sign(lattice: Lattices.ParentMethods) -> _OwnedRingElement:
     positive, negative = lattice.signature_pair()
     match int(positive), int(negative):
         case 1, _:
@@ -666,12 +685,12 @@ def _normalizing_sign(lattice):
 
 
 @cache
-def _normalized_lattice(lattice):
+def _normalized_lattice(lattice: Lattices.ParentMethods) -> Lattices.ParentMethods:
     sign = _normalizing_sign(lattice)
     return lattice if sign == lattice.base_ring().one() else lattice.twist(sign)
 
 
-def _same_coordinates(source, target, element):
+def _same_coordinates(source: Lattices.ParentMethods, target: Lattices.ParentMethods, element: Lattices.ElementMethods) -> Lattices.ElementMethods:
     if source is target:
         return element
     coordinates = element.to_vector()
@@ -681,18 +700,18 @@ def _same_coordinates(source, target, element):
     )
 
 
-def _ambient_element(lattice, coordinates):
+def _ambient_element(lattice: Lattices.ParentMethods, coordinates: tuple[Integer, ...]) -> Lattices.ElementMethods:
     return _element_from_coordinates(lattice, tuple(SageZZ(entry) for entry in coordinates))
 
 
-def _positive_direction(lattice) -> tuple[SageQQ, ...]:
+def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]:
     raw = _rational_positive_vector(lattice.gram_tensor())
     rationals = raw.base_ring()
     coordinates = tuple(SageQQ(_engine_element(rationals, entry)) for entry in raw)
     primitive, _scale = _primitive_integral_direction(coordinates)
     gram = _gram_matrix(lattice)
     rank = len(primitive)
-    directions = []
+    directions: list[FreeModuleElement[Integer]] = []
     for first in range(rank):
         for sign in (-1, 1):
             row = [SageZZ.zero()] * rank
@@ -728,7 +747,7 @@ def _positive_direction(lattice) -> tuple[SageQQ, ...]:
             return tuple(SageQQ(entry) for entry in current)
 
 
-def _primitive_integral_direction(coordinates):
+def _primitive_integral_direction(coordinates: tuple[Rational, ...]) -> tuple[tuple[Integer, ...], Rational]:
     denominator = SageZZ.one()
     for entry in coordinates:
         denominator = denominator.lcm(SageZZ(SageQQ(entry).denominator()))
@@ -741,12 +760,12 @@ def _primitive_integral_direction(coordinates):
     return tuple(value // content for value in integers), SageQQ(denominator) / SageQQ(content)
 
 
-def _bezout_partner(lattice, timelike):
+def _bezout_partner(lattice: Lattices.ParentMethods, timelike: Lattices.ElementMethods) -> Lattices.ElementMethods:
     ring = lattice.base_ring()
     labels = tuple(lattice.module_generating_set())
     pairings = tuple(lattice.b(timelike, lattice.module_generator(label)) for label in labels)
     gcd_value = ring.zero()
-    coefficients = []
+    coefficients: list[_OwnedRingElement] = []
     for pairing in pairings:
         new_gcd, old_coefficient, new_coefficient = gcd_value.xgcd(pairing)
         coefficients = [old_coefficient * coefficient for coefficient in coefficients]
@@ -767,7 +786,7 @@ def _bezout_partner(lattice, timelike):
 class _PositiveVectorEnumerator:
     r"""Prepared exact positive-vector enumeration for one timelike direction."""
 
-    def __init__(self, lattice, rational_direction, max_scal, mode: PerfectMode):
+    def __init__(self, lattice: Lattices.ParentMethods, rational_direction: tuple[Rational, ...], max_scal: Rational, mode: PerfectMode) -> None:
         self.lattice = lattice
         self.mode = mode
         direction_q = tuple(SageQQ(entry) for entry in rational_direction)
@@ -793,7 +812,7 @@ class _PositiveVectorEnumerator:
         )
 
         gcd_value = SageZZ.zero()
-        coefficients: list[SageZZ] = []
+        coefficients: list[Integer] = []
         for pairing in pairing_row:
             new_gcd, old_coefficient, new_coefficient = gcd_value.xgcd(SageZZ(pairing))
             coefficients = [old_coefficient * coefficient for coefficient in coefficients]
@@ -812,12 +831,12 @@ class _PositiveVectorEnumerator:
         self.base_target = tuple(self.kernel_rows.change_ring(SageQQ).transpose().solve_right(translation.column()).column(0))
         self.base_bound = (self.d * self.d) / SageQQ(square)
 
-    def max_multiplier(self):
+    def max_multiplier(self) -> int | None:
         if self.scaled_max <= 0:
             return None
         return int(self.scaled_max / self.d)
 
-    def first_shell(self):
+    def first_shell(self) -> tuple[int, tuple[Lattices.ElementMethods, ...]] | None:
         maximum = self.max_multiplier()
         if maximum is None:
             return None
@@ -832,7 +851,7 @@ class _PositiveVectorEnumerator:
         multiplier, close_coordinates = shell
         return multiplier, self._ambient_vectors_from_shell(multiplier, close_coordinates)
 
-    def vectors_at_multiplier(self, multiplier):
+    def vectors_at_multiplier(self, multiplier: int) -> tuple[Lattices.ElementMethods, ...]:
         target = tuple(SageQQ(multiplier) * entry for entry in self.base_target)
         bound = (SageQQ(multiplier) ** 2) * self.base_bound
         field = self.lattice.base_ring().fraction_field()
@@ -844,9 +863,13 @@ class _PositiveVectorEnumerator:
         )
         return self._ambient_vectors_from_shell(multiplier, close_coordinates)
 
-    def _ambient_vectors_from_shell(self, multiplier, close_coordinates):
+    def _ambient_vectors_from_shell(
+        self,
+        multiplier: int,
+        close_coordinates: tuple[tuple[tuple[Integer, ...], Rational], ...],
+    ) -> tuple[Lattices.ElementMethods, ...]:
         bound = (SageQQ(multiplier) ** 2) * self.base_bound
-        result = []
+        result: list[Lattices.ElementMethods] = []
         for kernel_coordinates, kernel_square in close_coordinates:
             if self.mode == "isotropic" and kernel_square != bound:
                 continue
@@ -865,7 +888,14 @@ class _PositiveVectorEnumerator:
         return tuple(result)
 
 
-def _find_positive_vectors(lattice, rational_direction, max_scal, mode: PerfectMode, *, only_shortest: bool):
+def _find_positive_vectors(
+    lattice: Lattices.ParentMethods,
+    rational_direction: tuple[Rational, ...],
+    max_scal: Rational,
+    mode: PerfectMode,
+    *,
+    only_shortest: bool,
+) -> tuple[Lattices.ElementMethods, ...]:
     enumerator = _PositiveVectorEnumerator(lattice, rational_direction, max_scal, mode)
     if only_shortest and enumerator.scaled_max > 0:
         first = enumerator.first_shell()
@@ -874,7 +904,7 @@ def _find_positive_vectors(lattice, rational_direction, max_scal, mode: PerfectM
         _multiplier, vectors = first
         return vectors
 
-    result = []
+    result: list[Lattices.ElementMethods] = []
     multiplier = 1
     while True:
         level = SageQQ(multiplier) * enumerator.d
@@ -888,7 +918,7 @@ def _find_positive_vectors(lattice, rational_direction, max_scal, mode: PerfectM
     return tuple(result)
 
 
-def _search_initial_vectors(lattice, direction, mode: PerfectMode):
+def _search_initial_vectors(lattice: Lattices.ParentMethods, direction: tuple[Rational, ...], mode: PerfectMode) -> tuple[Lattices.ElementMethods, ...]:
     gram = _gram_matrix(lattice).change_ring(SageQQ)
     direction_row = vector(SageQQ, direction)
     max_scal = (direction_row * gram * direction_row.column())[0]
@@ -899,7 +929,7 @@ def _search_initial_vectors(lattice, direction, mode: PerfectMode):
         max_scal *= 2
 
 
-def _source_mid_value(lower, upper):
+def _source_mid_value(lower: Rational, upper: Rational) -> Rational:
     r"""Port the upstream continued-fraction middle-value rule."""
     low = Fraction(int(lower.numerator()), int(lower.denominator()))
     upp = Fraction(int(upper.numerator()), int(upper.denominator()))
@@ -907,7 +937,7 @@ def _source_mid_value(lower, upper):
     target_low = (2 * low + upp) / 3
     target_upp = (low + 2 * upp) / 3
 
-    terms = []
+    terms: list[int] = []
     work = midpoint
     while True:
         floor_value = work.numerator // work.denominator
@@ -925,14 +955,18 @@ def _source_mid_value(lower, upper):
     raise ArithmeticError("continued-fraction middle value was not found")
 
 
-def _upper_bound(gram, base_normal, direction_normal):
+def _upper_bound(
+    gram: Matrix_rational_dense,
+    base_normal: FreeModuleElement[Rational],
+    direction_normal: FreeModuleElement[Rational],
+) -> Rational | None:
     inverse = gram.inverse()
     base_constant = SageQQ(base_normal[0])
     direction_constant = SageQQ(direction_normal[0])
     base_covector = vector(SageQQ, base_normal[1:])
     direction_covector = vector(SageQQ, direction_normal[1:])
-    bounds = []
-    constant_bound = None
+    bounds: list[Rational] = []
+    constant_bound: Rational | None = None
     if direction_constant > 0:
         constant_bound = -base_constant / direction_constant
         if constant_bound <= 0:
@@ -953,7 +987,7 @@ def _upper_bound(gram, base_normal, direction_normal):
     restricted = basis * gram * basis.transpose()
     a, b, c = restricted[0, 0], restricted[0, 1], restricted[1, 1]
     discriminant = b * b - a * c
-    isotropic_bound = None
+    isotropic_bound: Rational | None = None
     if discriminant > 0 and SageQQ(discriminant).is_square():
         root = SageQQ(discriminant).sqrt()
         candidates = ((-b + root) / c, (-b - root) / c) if c != 0 else ((SageQQ(-a) / (2 * b),) if b != 0 else ())
@@ -966,7 +1000,7 @@ def _upper_bound(gram, base_normal, direction_normal):
     return min(bounds)
 
 
-def _negative_direction_in_span(gram, spanning_rows):
+def _negative_direction_in_span(gram: Matrix_rational_dense, spanning_rows: Matrix_rational_dense) -> FreeModuleElement[Rational]:
     restricted = spanning_rows * gram * spanning_rows.transpose()
     diagonal, change = QuadraticForm(SageQQ, 2 * restricted).rational_diagonal_form(return_matrix=True)
     negative = [index for index in range(diagonal.matrix().nrows()) if diagonal.matrix()[index, index] < 0]
@@ -976,11 +1010,17 @@ def _negative_direction_in_span(gram, spanning_rows):
     return vector(SageQQ, ambient)
 
 
-def _vector_rows(vectors):
+def _vector_rows(vectors: Iterable[Lattices.ElementMethods]) -> set[tuple[int, ...]]:
     return {tuple(int(entry) for entry in _coordinate_row(item.parent(), item, SageZZ)) for item in vectors}
 
 
-def _kernel_flipping(lattice, critical, base_normal, direction_normal, mode: PerfectMode):
+def _kernel_flipping(
+    lattice: Lattices.ParentMethods,
+    critical: tuple[Lattices.ElementMethods, ...],
+    base_normal: FreeModuleElement[Rational],
+    direction_normal: FreeModuleElement[Rational],
+    mode: PerfectMode,
+) -> tuple[tuple[Lattices.ElementMethods, ...], FreeModuleElement[Rational], FreeModuleElement[Rational], Rational]:
     gram = _gram_matrix(lattice).change_ring(SageQQ)
     upper = _upper_bound(gram, base_normal, direction_normal)
     if upper is None:
@@ -989,7 +1029,7 @@ def _kernel_flipping(lattice, critical, base_normal, direction_normal, mode: Per
     inverse = gram.inverse()
     critical_first = _coordinate_row(lattice, critical[0], SageQQ)
     critical_rows = _vector_rows(critical)
-    total = ()
+    total: tuple[Lattices.ElementMethods, ...] = ()
     while True:
         middle = _source_mid_value(lower, upper)
         normal = base_normal + middle * direction_normal

@@ -182,7 +182,6 @@ def reduced_start_pair(G: _Gram, bound: _Scalar, r: _IntegralRow, l: _IntegralRo
             return r, canonical_companion(G, M, r, l)
 
 
-
 def oriented_complement(r: _IntegralRow) -> _IntegralVector:
     r = _zvector(r)
     g, s, t = xgcd(r[0], r[1])
