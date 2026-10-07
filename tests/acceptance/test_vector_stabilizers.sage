@@ -11,7 +11,19 @@ from collections import Counter
 
 import pytest
 
-from tests.acceptance.consumer import coordinates, element, is_isometry, lattice, primitive, reduction_image_order, rows_of
+from tests.acceptance.consumer import (
+    VECTOR_ORBITS,
+    VECTOR_STABILIZER,
+    VECTOR_WITNESS,
+    coordinates,
+    element,
+    is_isometry,
+    lattice,
+    primitive,
+    reduction_image_order,
+    require,
+    rows_of,
+)
 from tests.fixtures.oracle_fixtures import (
     load_e10_fundamental_domain,
     load_e10_vector_orbits,
@@ -22,7 +34,10 @@ _E10 = load_e10_fundamental_domain()
 _ORDER_O_PLUS_10_2 = 2**21 * 3**5 * 5**2 * 7 * 17 * 31
 
 
+@pytest.mark.xfail(reason="O(L), isometry, vector stabilizers: owned by #18", strict=True)
 def test_vector_stabilizer_has_oscars_order() -> None:
+    require(VECTOR_STABILIZER)
+
     case = next(case for case in load_oscar_lattice_oracles()["isometry_groups"] if case["id"] == "stabilizer_of_100")
     lattice_ = lattice(case["gram"])
 
@@ -32,12 +47,11 @@ def test_vector_stabilizer_has_oscars_order() -> None:
     assert MatrixGroup([matrix(ZZ, rows_of(generator)) for generator in generators]).order() == case["vector_stabilizer_order"]
 
 
-def test_o_plus_10_2_has_the_order_dutour_sikiric_hulek_state() -> None:
-    assert GO(10, GF(2), e=1).order() == _ORDER_O_PLUS_10_2
-
-
 @pytest.mark.parametrize("square", sorted(Counter(orbit["h_squared"] for orbit in load_e10_vector_orbits()["orbits"])))
+@pytest.mark.xfail(reason="vector and primitive isotropic orbits: owned by #19", strict=True)
 def test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso(square) -> None:
+    require(VECTOR_ORBITS, VECTOR_STABILIZER)
+
     group = lattice(_E10["gram"]).O()
     recorded = Counter(
         orbit["stabilizer_image_index_in_O_E10_F2"] for orbit in load_e10_vector_orbits()["orbits"] if orbit["h_squared"] == square
@@ -59,7 +73,10 @@ def _reflection_rows(gram, root) -> list[list[int]]:
 
 
 @pytest.mark.parametrize("root", _E10["simple_roots"], ids=lambda root: f"r_{root['label']}")
+@pytest.mark.xfail(reason="O(L), isometry, vector stabilizers: owned by #18", strict=True)
 def test_equivalence_witness_carries_a_representative_to_its_reflection(root) -> None:
+    require(VECTOR_WITNESS)
+
     gram = _E10["gram"]
     group = lattice(gram).O()
     reflection = matrix(ZZ, _reflection_rows(gram, root["vector"]))

@@ -10,7 +10,17 @@ arXiv:1607.01324), Scattone's K3 boundaries of degree 2 and 4 (via arXiv:1205.31
 
 import pytest
 
-from tests.acceptance.consumer import basis, element, lattice
+from tests.acceptance.consumer import (
+    EQUIVARIANT_LATTICE,
+    FLAG_ORBITS,
+    ISOTROPIC_ORBITS,
+    SPLIT_ORBIT,
+    SUBGROUP_GENERATORS,
+    basis,
+    element,
+    lattice,
+    require,
+)
 from tests.fixtures.oracle_fixtures import (
     load_dawes_buildings,
     load_dtower_boundaries,
@@ -58,7 +68,10 @@ def _dawes_groups(case):
 
 
 @pytest.mark.parametrize("case", _DAWES["buildings"], ids=lambda case: case["id"])
+@pytest.mark.xfail(reason="finite-index subgroups and orbit splitting: owned by #22", strict=True)
 def test_dawes_buildings_have_the_published_counts(case) -> None:
+    require(ISOTROPIC_ORBITS, FLAG_ORBITS, SPLIT_ORBIT)
+
     building = case["building"]
 
     for group in _dawes_groups(case):
@@ -66,7 +79,10 @@ def test_dawes_buildings_have_the_published_counts(case) -> None:
 
 
 @pytest.mark.parametrize("graph", _DAWES["incidence_graphs"], ids=lambda graph: graph["building_id"])
+@pytest.mark.xfail(reason="finite-index subgroups and orbit splitting: owned by #22", strict=True)
 def test_dawes_building_incidence_graph_is_the_published_figure(graph) -> None:
+    require(ISOTROPIC_ORBITS, FLAG_ORBITS, SPLIT_ORBIT)
+
     case = next(case for case in _DAWES["buildings"] if case["id"] == graph["building_id"])
     (group,) = _dawes_groups(case)
     lines, planes = list(group.cusps(1)), list(group.cusps(2))
@@ -81,7 +97,10 @@ def test_dawes_building_incidence_graph_is_the_published_figure(graph) -> None:
     assert computed == published
 
 
+@pytest.mark.xfail(reason="finite-index subgroups and orbit splitting: owned by #22", strict=True)
 def test_dawes_last_index_in_the_chain_is_the_discriminant_image_of_o_plus() -> None:
+    require(SUBGROUP_GENERATORS)
+
     (chain,) = _DAWES["index_chains"]
     case = next(case for case in _DAWES["buildings"] if case["id"] == "dawes_2U_A2_stable")
     lattice_ = lattice(case["gram"])
@@ -129,7 +148,10 @@ def _gamma(lattice_):
 
 
 @pytest.mark.parametrize("case", _DTOWER["type_counts"], ids=lambda case: f"N_{case['N']}")
+@pytest.mark.xfail(reason="finite-index subgroups and orbit splitting: owned by #22", strict=True)
 def test_dtower_boundary_component_counts(case) -> None:
+    require(ISOTROPIC_ORBITS, SPLIT_ORBIT)
+
     group = _gamma(lattice(_lambda_n(case["N"])))
 
     assert len(group.isotropic_orbit_representatives(1)) == case["type_iii_components"]
@@ -137,7 +159,10 @@ def test_dtower_boundary_component_counts(case) -> None:
 
 
 @pytest.mark.parametrize("picture", _DTOWER["boundary_pictures"], ids=lambda picture: picture["id"])
+@pytest.mark.xfail(reason="finite-index subgroups and orbit splitting: owned by #22", strict=True)
 def test_dtower_boundary_pictures(picture) -> None:
+    require(ISOTROPIC_ORBITS, FLAG_ORBITS, SPLIT_ORBIT)
+
     group = _gamma(lattice(picture["gram"]))
 
     assert _counts(group) == (picture["type_iii_points"], picture["type_ii_curves"], len(picture["incidences"]))
@@ -152,7 +177,10 @@ def _lambda_2k(k: int) -> list[list[int]]:
     return [list(row) for row in block_diagonal_matrix([hyperbolic, hyperbolic, e8, e8, matrix(ZZ, [[-2 * k]])]).rows()]
 
 
+@pytest.mark.xfail(reason="isotropic sublattice and flag orbits: owned by #21", strict=True)
 def test_degree_two_k3_type_ii_components_and_root_types() -> None:
+    require(ISOTROPIC_ORBITS)
+
     case = _K3["degree_two_polarized_k3"]
     group = lattice(_lambda_2k(1)).O()
 
@@ -162,7 +190,10 @@ def test_degree_two_k3_type_ii_components_and_root_types() -> None:
     assert sorted(plane.isotropic_reduction().norm_two_root_types() for plane in planes) == sorted(case["type_ii_root_types"])
 
 
+@pytest.mark.xfail(reason="isotropic sublattice and flag orbits: owned by #21", strict=True)
 def test_degree_four_k3_has_nine_type_ii_components() -> None:
+    require(ISOTROPIC_ORBITS)
+
     case = _K3["degree_four_polarized_k3"]
     group = lattice(_lambda_2k(2)).O()
 
@@ -193,7 +224,10 @@ def _gamma_h(face_polarization):
 
 
 @pytest.mark.parametrize("case", _ENRIQUES, ids=lambda case: f"case_{case['case']}")
+@pytest.mark.xfail(reason="EquivariantLattice and centralizers: owned by #23", strict=True)
 def test_enriques_modular_groups_match_dutour_sikiric_hulek(case) -> None:
+    require(EQUIVARIANT_LATTICE, ISOTROPIC_ORBITS, FLAG_ORBITS, SPLIT_ORBIT)
+
     group = _gamma_h(case["face_polarization"])
     anti_invariant = group.supergroup().domain()
     target = anti_invariant.discriminant_group().orthogonal_group()
@@ -209,7 +243,10 @@ def test_enriques_modular_groups_match_dutour_sikiric_hulek(case) -> None:
     load_enriques_classical_indices()["consistent_with_table"] + load_enriques_classical_indices()["inconsistent_with_table"],
     ids=lambda case: f"degree_{case['degree']}",
 )
+@pytest.mark.xfail(reason="EquivariantLattice and centralizers: owned by #23", strict=True)
 def test_classical_polarization_indices(case) -> None:
+    require(EQUIVARIANT_LATTICE, SUBGROUP_GENERATORS)
+
     row = next(row for row in _ENRIQUES if row["case"] == case["case"])
     group = _gamma_h(row["face_polarization"])
     anti_invariant = group.supergroup().domain()

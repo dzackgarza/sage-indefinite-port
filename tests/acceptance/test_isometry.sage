@@ -9,7 +9,13 @@ isometric.
 
 import pytest
 
-from tests.acceptance.consumer import is_witness, lattice, rows_of
+from tests.acceptance.consumer import (
+    ISOMETRY,
+    is_witness,
+    lattice,
+    require,
+    rows_of,
+)
 from tests.fixtures.oracle_fixtures import (
     load_ci_indefinite_comp,
     load_conway_sloane_cases,
@@ -27,7 +33,10 @@ def _assert_isometric(source_gram, target_gram) -> None:
 
 
 @pytest.mark.parametrize("case", load_indefinite_isometry_pairs(), ids=lambda case: case["id"])
+@pytest.mark.xfail(reason="O(L), isometry, vector stabilizers: owned by #18", strict=True)
 def test_isometry_verdicts_match_certified_pairs(case) -> None:
+    require(ISOMETRY)
+
     if case["isometric"]:
         _assert_isometric(case["gram1"], case["gram2"])
     else:
@@ -36,13 +45,19 @@ def test_isometry_verdicts_match_certified_pairs(case) -> None:
 
 
 @pytest.mark.parametrize("case", load_lorentzian_equivalence_cases(), ids=lambda case: case["id"])
+@pytest.mark.xfail(reason="O(L), isometry, vector stabilizers: owned by #18", strict=True)
 def test_lorentzian_pairs_are_isometric(case) -> None:
+    require(ISOMETRY)
+
     assert is_witness(case["transporter_witness"], case["mat2"], case["mat1"])
 
     _assert_isometric(case["mat1"], case["mat2"])
 
 
+@pytest.mark.xfail(reason="O(L), isometry, vector stabilizers: owned by #18", strict=True)
 def test_conway_sloane_same_genus_pair_is_not_isometric() -> None:
+    require(ISOMETRY)
+
     pair = load_conway_sloane_cases()["spinor_genus_pair_determinant_minus_128"]
     first, second = lattice(pair["form_a"]["gram"]), lattice(pair["form_b"]["gram"])
 
@@ -57,7 +72,10 @@ def _unimodular_change_of_basis(rank: int) -> list[list[int]]:
 
 
 @pytest.mark.parametrize("case", load_ci_indefinite_comp(), ids=lambda case: case["id"])
+@pytest.mark.xfail(reason="O(L), isometry, vector stabilizers: owned by #18", strict=True)
 def test_change_of_basis_gives_an_isometric_lattice(case) -> None:
+    require(ISOMETRY)
+
     gram = matrix(ZZ, case["gram"])
     change = matrix(ZZ, _unimodular_change_of_basis(gram.nrows()))
     conjugate = change * gram * change.transpose()

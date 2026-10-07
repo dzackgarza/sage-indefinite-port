@@ -29,6 +29,7 @@ from sage_indefinite_port.indefinite.vector_sections import (
     NonIsotropicVectorSection,
     orthogonal_section,
 )
+from sage_indefinite_port.readiness import unfinished
 from sage_indefinite_port.invariants import (
     LatticePrefilter,
     VectorPrefilter,
@@ -877,22 +878,26 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
         return transported
 
 
+@unfinished(18)
 def orthogonal_group_generators(homset) -> tuple[LatticeIsometryMethods, ...]:
     lattice = homset.domain()
     group = IndefiniteOrthogonalAlgorithm().orthogonal_group(lattice)
     return tuple(group.generators())
 
 
+@unfinished(18)
 def isometry(source: Lattices.ParentMethods, target: Lattices.ParentMethods):
     return IndefiniteOrthogonalAlgorithm().isometry(source, target)
 
 
+@unfinished(18)
 def vector_equivalence_witness(homset, left, right):
     if left.parent() is not homset.domain() or right.parent() is not homset.domain():
         raise ValueError("vector equivalence requires vectors in the homset lattice")
     return IndefiniteOrthogonalAlgorithm().vector_transporter(left, right)
 
 
+@unfinished(18)
 def vector_stabilizer_generators(homset, element) -> tuple[LatticeIsometryMethods, ...]:
     if element.parent() is not homset.domain():
         raise ValueError("vector stabilizer requires an element of the homset lattice")

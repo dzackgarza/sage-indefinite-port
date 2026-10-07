@@ -12,12 +12,40 @@ satisfies ``R G R^T = G``, and a witness ``R`` from ``L_1`` to ``L_2`` satisfies
 ``R G_2 R^T = G_1``.
 """
 
+import importlib
 from functools import reduce
 from math import gcd
 
 from dzack_research.preamble.all import ZZ as PreambleZZ
 from dzack_research.preamble.all import Lattices
 from sage.all import GF, ZZ, MatrixGroup, matrix, prime_divisors
+
+from sage_indefinite_port.readiness import UNFINISHED
+
+O_L = "sage_indefinite_port.indefinite.recursive:orthogonal_group_generators"
+ISOMETRY = "sage_indefinite_port.indefinite.recursive:isometry"
+VECTOR_WITNESS = "sage_indefinite_port.indefinite.recursive:vector_equivalence_witness"
+VECTOR_STABILIZER = "sage_indefinite_port.indefinite.recursive:vector_stabilizer_generators"
+VECTOR_ORBITS = "sage_indefinite_port.indefinite.recursive:vector_orbit_representatives"
+ISOTROPIC_ORBITS = "sage_indefinite_port.indefinite.isotropic_flags:isotropic_sublattice_orbit_representatives"
+ISOTROPIC_WITNESS = "sage_indefinite_port.indefinite.isotropic_flags:isotropic_sublattice_equivalence_witness"
+ISOTROPIC_STABILIZER = "sage_indefinite_port.indefinite.isotropic_flags:isotropic_sublattice_stabilizer_generators"
+FLAG_ORBITS = "sage_indefinite_port.indefinite.isotropic_flags:isotropic_flag_orbit_representatives"
+SPLIT_ORBIT = "sage_indefinite_port.groups.finite_index:split_orbit"
+SUBGROUP_GENERATORS = "sage_indefinite_port.groups.finite_index:subgroup_generators"
+EQUIVARIANT_LATTICE = "sage_indefinite_port.groups.equivariant:EquivariantLattice"
+
+
+def require(*entry_points: str) -> None:
+    """The first line of a case: each port entry point it needs exists and is finished.
+
+    A missing module or name, or an entry point still marked ``@unfinished``, fails the case
+    at once instead of after the preamble work that precedes the missing capability.
+    """
+    for entry_point in entry_points:
+        module, _, name = entry_point.partition(":")
+        getattr(importlib.import_module(module), name)
+        assert entry_point not in UNFINISHED, f"{entry_point} is unfinished: work unit #{UNFINISHED.get(entry_point)} owns it"
 
 
 def lattice(gram):

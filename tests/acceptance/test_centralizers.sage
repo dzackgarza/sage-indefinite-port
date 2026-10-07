@@ -10,14 +10,24 @@ meaning is OSCAR's.
 
 import pytest
 
-from tests.acceptance.consumer import isometry_from_rows, lattice
-from tests.fixtures.oracle_fixtures import load_isometry_centralizers
+from tests.acceptance.consumer import (
+    EQUIVARIANT_LATTICE,
+    isometry_from_rows,
+    lattice,
+    require,
+)
+from tests.fixtures.oracle_fixtures import (
+    load_isometry_centralizers,
+)
 
 _DATA = load_isometry_centralizers()
 
 
 @pytest.mark.parametrize("case", _DATA["centralizer_cases"], ids=lambda case: case["id"])
+@pytest.mark.xfail(reason="EquivariantLattice and centralizers: owned by #23", strict=True)
 def test_centralizer_images_match_oscar(case) -> None:
+    require(EQUIVARIANT_LATTICE)
+
     lattice_ = lattice(case["gram"])
     isometry = isometry_from_rows(lattice_, case["isometry"])
     assert isometry**case["isometry_order"] == lattice_.Aut().identity()
@@ -30,7 +40,10 @@ def test_centralizer_images_match_oscar(case) -> None:
         assert image.cardinality() == lattice_.discriminant_group().orthogonal_group().cardinality()
 
 
+@pytest.mark.xfail(reason="EquivariantLattice and centralizers: owned by #23", strict=True)
 def test_involution_classes_in_the_signature_1_9_genus() -> None:
+    require(EQUIVARIANT_LATTICE)
+
     (case,) = _DATA["involution_classes"]
     x = polygen(ZZ, "x")
 
@@ -39,7 +52,10 @@ def test_involution_classes_in_the_signature_1_9_genus() -> None:
     assert len(classes) == case["classes_in_genus"]
 
 
+@pytest.mark.xfail(reason="EquivariantLattice and centralizers: owned by #23", strict=True)
 def test_u_plus_e8_has_one_class_of_order_30() -> None:
+    require(EQUIVARIANT_LATTICE)
+
     case = next(case for case in _DATA["lattice_class_counts"] if case["id"] == "U_plus_E8_order_30")
     x = polygen(ZZ, "x")
 
@@ -50,8 +66,11 @@ def test_u_plus_e8_has_one_class_of_order_30() -> None:
     assert representative.isometry().invariant_lattice().discriminant() == -1
 
 
+@pytest.mark.xfail(reason="EquivariantLattice and centralizers: owned by #23", strict=True)
 def test_4u_has_three_hermitian_classes_of_order_5() -> None:
     """representatives_of_hermitian_type(L, 5): f of order 5 without fixed vectors, so chi_f = Phi_5^2."""
+    require(EQUIVARIANT_LATTICE)
+
     case = next(case for case in _DATA["lattice_class_counts"] if case["id"] == "4U_hermitian_order_5")
     x = polygen(ZZ, "x")
 
