@@ -178,7 +178,14 @@ This document records the exact provenance, source files, authors, publications,
   - $N=10$: 2 points and 2 curves ($E_8$, $D_8$), 3 incidences;
   - $N=11$: 1 point and 2 curves ($E_8\oplus D_1$, $D_9$), 2 incidences.
 
-- **Not included**: Type II counts for other $N$. The paper's theorem for $3 \le N \le 20$ refers to a table under the label `tabletype2`, but that label belongs to a different table, the Type II components of $\widehat{\mathcal F}$. No per-$N$ counts are stated, so none are reconstructed.
+- **Per-$N$ counts for $3 \le N \le 20$**, derived from stated results. Theorem `classifydn` lists the genus of $D_n$ for $n \le 18$. Theorem `bbtype2comp` says Type II components correspond to that genus for $n = N-2$, with three components for $D_{12}$ when $N = 14$; when $N \equiv 2 \pmod 8$ the even unimodular lattices of rank $N-2$ are added ($E_8$; $E_8^2$ and $D_{16}^+$, line 4460). Type III components number 1, or 2 when $N \equiv 2 \pmod 8$ (line 4391). The derivation is in the script.
+
+- **Table `tabletype2`**: the eight Type II components of $\mathcal F(18)^*$, with their type (a/b), the dimensions of their pre-images in $\widehat{\mathcal F}$, and the matching quartic cases.
+
+- **Cross-checks** (asserted):
+  - the derived counts reproduce the $N = 9, 10, 11$ pictures;
+  - $N = 18$ gives 8, the number of rows in `tabletype2`, and its six type-a labels are the genus of $D_{16}$;
+  - $N = 19$ gives 9, the quartic K3 count in `k3_modular_strata.json`.
 
 - **Extraction**: `uv run references/extract/laza_ogrady_dtower.py`. It asserts every label on its cited line.
 

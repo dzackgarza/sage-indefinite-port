@@ -200,6 +200,38 @@ class BinaryFormAutomorphisms(TypedDict):
     source: FileSource
 
 
+class DTowerTypeCount(TypedDict):
+    N: int
+    type_ii_components: int
+    type_ii_from_genus_of_d: int
+    type_ii_from_even_unimodular: int
+    type_iii_components: int
+    group_note: str
+    derivation: str
+    source: dict[str, TextSource]
+
+
+class GenusOfD(TypedDict):
+    n: int
+    root_sublattices: list[str]
+
+
+class FHatComponent(TypedDict):
+    label: str
+    type: str
+    dimension_in_F_hat: int
+    geometric_meaning: str
+    quartic_case: str
+    source: TableRowSource
+
+
+class DTower(TypedDict):
+    boundary_pictures: list[DTowerBoundary]
+    type_counts: list[DTowerTypeCount]
+    genus_of_d: list[GenusOfD]
+    f18_hat_type_ii: list[FHatComponent]
+
+
 class LorentzianPerfectCase(TypedDict):
     id: str
     dimension: int
@@ -604,10 +636,10 @@ def load_oscar_lattice_oracles() -> OscarLatticeOracles:
         return data
 
 
-def load_dtower_boundaries() -> list[DTowerBoundary]:
-    """Baily--Borel boundaries of F(N) = O^+(U^2 + D_{N-2}) for N = 9, 10, 11 (Laza--O'Grady)."""
+def load_dtower_boundaries() -> DTower:
+    """Baily--Borel boundaries of F(N) = Gamma(N) \\ D(Lambda_N), Lambda_N = U^2 + D_{N-2} (Laza--O'Grady)."""
     with open(FIXTURES_DIR / "dtower_boundaries.json", encoding="utf-8") as f:
-        data: list[DTowerBoundary] = json.load(f)
+        data: DTower = json.load(f)
         return data
 
 

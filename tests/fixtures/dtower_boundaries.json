@@ -1,642 +1,1547 @@
-[
- {
-  "id": "lambda_9",
-  "N": 9,
-  "lattice": "U^2 + D_7 (D negative definite)",
-  "gram": [
-   [
-    0,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
+{
+ "boundary_pictures": [
+  {
+   "id": "lambda_9",
+   "N": 9,
+   "lattice": "U^2 + D_7 (D negative definite)",
+   "gram": [
+    [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     -2,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     1,
+     -2,
+     1,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     -2,
+     1,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     -2,
+     1,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     -2,
+     1,
+     1
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     -2,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     -2
+    ]
    ],
-   [
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
+   "signature": [
+    2,
+    9
    ],
-   [
-    0,
-    0,
-    0,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
+   "group": "O^+(Lambda_N)",
+   "type_iii_points": 1,
+   "type_ii_curves": 1,
+   "type_ii_labels": [
+    "D7"
    ],
-   [
-    0,
-    0,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
+   "incidences": [
+    [
+     "III_a",
+     "D7"
+    ]
    ],
-   [
-    0,
-    0,
-    0,
-    0,
-    -2,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "boundary": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4629-4629"
+    }
+   }
+  },
+  {
+   "id": "lambda_10",
+   "N": 10,
+   "lattice": "U^2 + D_8 (D negative definite)",
+   "gram": [
+    [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     -2,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     1,
+     -2,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     -2,
+     1,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     -2,
+     1,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     -2,
+     1,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     -2,
+     1,
+     1
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     -2,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     -2
+    ]
    ],
-   [
-    0,
-    0,
-    0,
-    0,
-    1,
-    -2,
-    1,
-    0,
-    0,
-    0,
-    0
+   "signature": [
+    2,
+    10
    ],
-   [
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    -2,
-    1,
-    0,
-    0,
-    0
+   "group": "O^+(Lambda_N)",
+   "type_iii_points": 2,
+   "type_ii_curves": 2,
+   "type_ii_labels": [
+    "E8",
+    "D8"
    ],
-   [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    -2,
-    1,
-    0,
-    0
+   "incidences": [
+    [
+     "III_b",
+     "E8"
+    ],
+    [
+     "III_a",
+     "E8"
+    ],
+    [
+     "III_a",
+     "D8"
+    ]
    ],
-   [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    -2,
-    1,
-    1
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "boundary": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4630-4630"
+    }
+   }
+  },
+  {
+   "id": "lambda_11",
+   "N": 11,
+   "lattice": "U^2 + D_9 (D negative definite)",
+   "gram": [
+    [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     -2,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     1,
+     -2,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     -2,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     -2,
+     1,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     -2,
+     1,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     -2,
+     1,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     -2,
+     1,
+     1
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     -2,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     -2
+    ]
    ],
-   [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    -2,
-    0
+   "signature": [
+    2,
+    11
    ],
-   [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    0,
-    -2
+   "group": "O^+(Lambda_N)",
+   "type_iii_points": 1,
+   "type_ii_curves": 2,
+   "type_ii_labels": [
+    "E8+D1",
+    "D9"
+   ],
+   "incidences": [
+    [
+     "III_a",
+     "E8+D1"
+    ],
+    [
+     "III_a",
+     "D9"
+    ]
+   ],
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "boundary": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4631-4631"
+    }
+   }
+  }
+ ],
+ "type_counts": [
+  {
+   "N": 3,
+   "type_ii_components": 1,
+   "type_ii_from_genus_of_d": 1,
+   "type_ii_from_even_unimodular": 0,
+   "type_iii_components": 1,
+   "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
+   "derivation": "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8",
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "theorem": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4604-4616"
+    },
+    "unimodular": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4460-4460"
+    },
+    "type_iii": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4391-4391"
+    }
+   }
+  },
+  {
+   "N": 4,
+   "type_ii_components": 1,
+   "type_ii_from_genus_of_d": 1,
+   "type_ii_from_even_unimodular": 0,
+   "type_iii_components": 1,
+   "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
+   "derivation": "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8",
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "theorem": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4604-4616"
+    },
+    "unimodular": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4460-4460"
+    },
+    "type_iii": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4391-4391"
+    }
+   }
+  },
+  {
+   "N": 5,
+   "type_ii_components": 1,
+   "type_ii_from_genus_of_d": 1,
+   "type_ii_from_even_unimodular": 0,
+   "type_iii_components": 1,
+   "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
+   "derivation": "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8",
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "theorem": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4604-4616"
+    },
+    "unimodular": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4460-4460"
+    },
+    "type_iii": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4391-4391"
+    }
+   }
+  },
+  {
+   "N": 6,
+   "type_ii_components": 1,
+   "type_ii_from_genus_of_d": 1,
+   "type_ii_from_even_unimodular": 0,
+   "type_iii_components": 1,
+   "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
+   "derivation": "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8",
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "theorem": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4604-4616"
+    },
+    "unimodular": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4460-4460"
+    },
+    "type_iii": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4391-4391"
+    }
+   }
+  },
+  {
+   "N": 7,
+   "type_ii_components": 1,
+   "type_ii_from_genus_of_d": 1,
+   "type_ii_from_even_unimodular": 0,
+   "type_iii_components": 1,
+   "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
+   "derivation": "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8",
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "theorem": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4604-4616"
+    },
+    "unimodular": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4460-4460"
+    },
+    "type_iii": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4391-4391"
+    }
+   }
+  },
+  {
+   "N": 8,
+   "type_ii_components": 1,
+   "type_ii_from_genus_of_d": 1,
+   "type_ii_from_even_unimodular": 0,
+   "type_iii_components": 1,
+   "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
+   "derivation": "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8",
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "theorem": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4604-4616"
+    },
+    "unimodular": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4460-4460"
+    },
+    "type_iii": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4391-4391"
+    }
+   }
+  },
+  {
+   "N": 9,
+   "type_ii_components": 1,
+   "type_ii_from_genus_of_d": 1,
+   "type_ii_from_even_unimodular": 0,
+   "type_iii_components": 1,
+   "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
+   "derivation": "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8",
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "theorem": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4604-4616"
+    },
+    "unimodular": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4460-4460"
+    },
+    "type_iii": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4391-4391"
+    }
+   }
+  },
+  {
+   "N": 10,
+   "type_ii_components": 2,
+   "type_ii_from_genus_of_d": 1,
+   "type_ii_from_even_unimodular": 1,
+   "type_iii_components": 2,
+   "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
+   "derivation": "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8",
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "theorem": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4604-4616"
+    },
+    "unimodular": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4460-4460"
+    },
+    "type_iii": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4391-4391"
+    }
+   }
+  },
+  {
+   "N": 11,
+   "type_ii_components": 2,
+   "type_ii_from_genus_of_d": 2,
+   "type_ii_from_even_unimodular": 0,
+   "type_iii_components": 1,
+   "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
+   "derivation": "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8",
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "theorem": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4604-4616"
+    },
+    "unimodular": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4460-4460"
+    },
+    "type_iii": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4391-4391"
+    }
+   }
+  },
+  {
+   "N": 12,
+   "type_ii_components": 2,
+   "type_ii_from_genus_of_d": 2,
+   "type_ii_from_even_unimodular": 0,
+   "type_iii_components": 1,
+   "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
+   "derivation": "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8",
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "theorem": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4604-4616"
+    },
+    "unimodular": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4460-4460"
+    },
+    "type_iii": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4391-4391"
+    }
+   }
+  },
+  {
+   "N": 13,
+   "type_ii_components": 2,
+   "type_ii_from_genus_of_d": 2,
+   "type_ii_from_even_unimodular": 0,
+   "type_iii_components": 1,
+   "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
+   "derivation": "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8",
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "theorem": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4604-4616"
+    },
+    "unimodular": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4460-4460"
+    },
+    "type_iii": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4391-4391"
+    }
+   }
+  },
+  {
+   "N": 14,
+   "type_ii_components": 4,
+   "type_ii_from_genus_of_d": 4,
+   "type_ii_from_even_unimodular": 0,
+   "type_iii_components": 1,
+   "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
+   "derivation": "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8",
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "theorem": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4604-4616"
+    },
+    "unimodular": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4460-4460"
+    },
+    "type_iii": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4391-4391"
+    }
+   }
+  },
+  {
+   "N": 15,
+   "type_ii_components": 3,
+   "type_ii_from_genus_of_d": 3,
+   "type_ii_from_even_unimodular": 0,
+   "type_iii_components": 1,
+   "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
+   "derivation": "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8",
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "theorem": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4604-4616"
+    },
+    "unimodular": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4460-4460"
+    },
+    "type_iii": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4391-4391"
+    }
+   }
+  },
+  {
+   "N": 16,
+   "type_ii_components": 3,
+   "type_ii_from_genus_of_d": 3,
+   "type_ii_from_even_unimodular": 0,
+   "type_iii_components": 1,
+   "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
+   "derivation": "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8",
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "theorem": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4604-4616"
+    },
+    "unimodular": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4460-4460"
+    },
+    "type_iii": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4391-4391"
+    }
+   }
+  },
+  {
+   "N": 17,
+   "type_ii_components": 5,
+   "type_ii_from_genus_of_d": 5,
+   "type_ii_from_even_unimodular": 0,
+   "type_iii_components": 1,
+   "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
+   "derivation": "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8",
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "theorem": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4604-4616"
+    },
+    "unimodular": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4460-4460"
+    },
+    "type_iii": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4391-4391"
+    }
+   }
+  },
+  {
+   "N": 18,
+   "type_ii_components": 8,
+   "type_ii_from_genus_of_d": 6,
+   "type_ii_from_even_unimodular": 2,
+   "type_iii_components": 2,
+   "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
+   "derivation": "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8",
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "theorem": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4604-4616"
+    },
+    "unimodular": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4460-4460"
+    },
+    "type_iii": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4391-4391"
+    }
+   }
+  },
+  {
+   "N": 19,
+   "type_ii_components": 9,
+   "type_ii_from_genus_of_d": 9,
+   "type_ii_from_even_unimodular": 0,
+   "type_iii_components": 1,
+   "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
+   "derivation": "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8",
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "theorem": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4604-4616"
+    },
+    "unimodular": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4460-4460"
+    },
+    "type_iii": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4391-4391"
+    }
+   }
+  },
+  {
+   "N": 20,
+   "type_ii_components": 13,
+   "type_ii_from_genus_of_d": 13,
+   "type_ii_from_even_unimodular": 0,
+   "type_iii_components": 1,
+   "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
+   "derivation": "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8",
+   "source": {
+    "lattice": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "625-625"
+    },
+    "group": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "642-642"
+    },
+    "theorem": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4604-4616"
+    },
+    "unimodular": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4460-4460"
+    },
+    "type_iii": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+     "lines": "4391-4391"
+    }
+   }
+  }
+ ],
+ "genus_of_d": [
+  {
+   "n": 1,
+   "root_sublattices": [
+    "empty (the single class D1 = <-4>, whose root sublattice is empty)"
    ]
-  ],
-  "signature": [
-   2,
-   9
-  ],
-  "group": "O^+(Lambda_N)",
-  "type_iii_points": 1,
-  "type_ii_curves": 1,
-  "type_ii_labels": [
-   "D7"
-  ],
-  "incidences": [
-   [
-    "III_a",
+  },
+  {
+   "n": 2,
+   "root_sublattices": [
+    "D2"
+   ]
+  },
+  {
+   "n": 3,
+   "root_sublattices": [
+    "D3"
+   ]
+  },
+  {
+   "n": 4,
+   "root_sublattices": [
+    "D4"
+   ]
+  },
+  {
+   "n": 5,
+   "root_sublattices": [
+    "D5"
+   ]
+  },
+  {
+   "n": 6,
+   "root_sublattices": [
+    "D6"
+   ]
+  },
+  {
+   "n": 7,
+   "root_sublattices": [
     "D7"
    ]
-  ],
-  "source": {
-   "lattice": {
-    "kind": "published_text",
-    "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
-    "lines": "625-625"
-   },
-   "group": {
-    "kind": "published_text",
-    "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
-    "lines": "642-642"
-   },
-   "boundary": {
-    "kind": "published_text",
-    "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
-    "lines": "4629-4629"
-   }
-  }
- },
- {
-  "id": "lambda_10",
-  "N": 10,
-  "lattice": "U^2 + D_8 (D negative definite)",
-  "gram": [
-   [
-    0,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-   ],
-   [
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-   ],
-   [
-    0,
-    0,
-    0,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-   ],
-   [
-    0,
-    0,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-   ],
-   [
-    0,
-    0,
-    0,
-    0,
-    -2,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-   ],
-   [
-    0,
-    0,
-    0,
-    0,
-    1,
-    -2,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0
-   ],
-   [
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    -2,
-    1,
-    0,
-    0,
-    0,
-    0
-   ],
-   [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    -2,
-    1,
-    0,
-    0,
-    0
-   ],
-   [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    -2,
-    1,
-    0,
-    0
-   ],
-   [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    -2,
-    1,
-    1
-   ],
-   [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    -2,
-    0
-   ],
-   [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    0,
-    -2
-   ]
-  ],
-  "signature": [
-   2,
-   10
-  ],
-  "group": "O^+(Lambda_N)",
-  "type_iii_points": 2,
-  "type_ii_curves": 2,
-  "type_ii_labels": [
-   "E8",
-   "D8"
-  ],
-  "incidences": [
-   [
-    "III_b",
-    "E8"
-   ],
-   [
-    "III_a",
-    "E8"
-   ],
-   [
-    "III_a",
+  },
+  {
+   "n": 8,
+   "root_sublattices": [
     "D8"
    ]
-  ],
-  "source": {
-   "lattice": {
-    "kind": "published_text",
+  },
+  {
+   "n": 9,
+   "root_sublattices": [
+    "D9",
+    "E8"
+   ]
+  },
+  {
+   "n": 10,
+   "root_sublattices": [
+    "D10",
+    "D2+E8"
+   ]
+  },
+  {
+   "n": 11,
+   "root_sublattices": [
+    "D11",
+    "D3+E8"
+   ]
+  },
+  {
+   "n": 12,
+   "root_sublattices": [
+    "D12",
+    "D4+E8"
+   ]
+  },
+  {
+   "n": 13,
+   "root_sublattices": [
+    "D13",
+    "D5+E8",
+    "D12"
+   ]
+  },
+  {
+   "n": 14,
+   "root_sublattices": [
+    "D14",
+    "D6+E8",
+    "D12+D2"
+   ]
+  },
+  {
+   "n": 15,
+   "root_sublattices": [
+    "D15",
+    "D7+E8",
+    "D12+D3",
+    "A15",
+    "E7+E7"
+   ]
+  },
+  {
+   "n": 16,
+   "root_sublattices": [
+    "D16",
+    "D8+E8",
+    "D12+D4",
+    "D2+E7+E7",
+    "D8+D8",
+    "A15"
+   ]
+  },
+  {
+   "n": 17,
+   "root_sublattices": [
+    "D17",
+    "D9+E8",
+    "D12+D5",
+    "D3+E7+E7",
+    "A15+D2",
+    "A11+E6",
+    "D8+D8",
+    "D16",
+    "E8+E8"
+   ]
+  },
+  {
+   "n": 18,
+   "root_sublattices": [
+    "D18",
+    "D10+E8",
+    "D12+D6",
+    "D4+E7+E7",
+    "A15+D3",
+    "D8+D8+D2",
+    "D16+D2",
+    "D2+E8+E8",
+    "A11+E6",
+    "D6+D6+D6",
+    "A9+A9",
+    "D10+E7+A1",
+    "A17+A1"
+   ]
+  }
+ ],
+ "f18_hat_type_ii": [
+  {
+   "label": "$D_{16}$",
+   "type": "a",
+   "dimension_in_F_hat": 1,
+   "geometric_meaning": "double twisted cubic  (on quadric cone)",
+   "quartic_case": "$D_{17}$",
+   "source": {
+    "kind": "published_table",
     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
-    "lines": "625-625"
-   },
-   "group": {
-    "kind": "published_text",
+    "table": "tabletype2",
+    "line": 4165
+   }
+  },
+  {
+   "label": "$D_8\\oplus E_8$",
+   "type": "a",
+   "dimension_in_F_hat": 9,
+   "geometric_meaning": "$\\widetilde E_8$, double line",
+   "quartic_case": "$D_9\\oplus E_8$",
+   "source": {
+    "kind": "published_table",
     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
-    "lines": "642-642"
-   },
-   "boundary": {
-    "kind": "published_text",
+    "table": "tabletype2",
+    "line": 4167
+   }
+  },
+  {
+   "label": "$D_{12}\\oplus D_4$",
+   "type": "a",
+   "dimension_in_F_hat": 5,
+   "geometric_meaning": "double conic",
+   "quartic_case": "$D_{12}\\oplus D_5$",
+   "source": {
+    "kind": "published_table",
     "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
-    "lines": "4630-4630"
+    "table": "tabletype2",
+    "line": 4168
+   }
+  },
+  {
+   "label": "$(E_7)^2\\oplus D_2$",
+   "type": "a",
+   "dimension_in_F_hat": 3,
+   "geometric_meaning": "two $\\widetilde E_7$ singularities",
+   "quartic_case": "$(E_7)^2\\oplus D_3$",
+   "source": {
+    "kind": "published_table",
+    "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+    "table": "tabletype2",
+    "line": 4169
+   }
+  },
+  {
+   "label": "$A_{15}\\oplus D_1$",
+   "type": "a",
+   "dimension_in_F_hat": 2,
+   "geometric_meaning": "double elliptic quartic",
+   "quartic_case": "$A_{15}\\oplus D_2$",
+   "source": {
+    "kind": "published_table",
+    "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+    "table": "tabletype2",
+    "line": 4170
+   }
+  },
+  {
+   "label": "$(D_8)^2$",
+   "type": "a",
+   "dimension_in_F_hat": 1,
+   "geometric_meaning": "two skew double lines;  smooth quadric",
+   "quartic_case": "$(D_8)^2\\oplus D_1$",
+   "source": {
+    "kind": "published_table",
+    "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+    "table": "tabletype2",
+    "line": 4171
+   }
+  },
+  {
+   "label": "$(E_8)^2$",
+   "type": "b",
+   "dimension_in_F_hat": 1,
+   "geometric_meaning": "two $\\widetilde E_8$ singularities; smooth quadric",
+   "quartic_case": "$(E_8)^2\\oplus D_1$",
+   "source": {
+    "kind": "published_table",
+    "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+    "table": "tabletype2",
+    "line": 4173
+   }
+  },
+  {
+   "label": "$(D_{16})^+$",
+   "type": "b",
+   "dimension_in_F_hat": 1,
+   "geometric_meaning": "double twisted cubic; smooth quadric",
+   "quartic_case": "$D_{16}\\oplus D_1$",
+   "source": {
+    "kind": "published_table",
+    "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+    "table": "tabletype2",
+    "line": 4174
    }
   }
- },
- {
-  "id": "lambda_11",
-  "N": 11,
-  "lattice": "U^2 + D_9 (D negative definite)",
-  "gram": [
-   [
-    0,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-   ],
-   [
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-   ],
-   [
-    0,
-    0,
-    0,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-   ],
-   [
-    0,
-    0,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-   ],
-   [
-    0,
-    0,
-    0,
-    0,
-    -2,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-   ],
-   [
-    0,
-    0,
-    0,
-    0,
-    1,
-    -2,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-   ],
-   [
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    -2,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0
-   ],
-   [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    -2,
-    1,
-    0,
-    0,
-    0,
-    0
-   ],
-   [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    -2,
-    1,
-    0,
-    0,
-    0
-   ],
-   [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    -2,
-    1,
-    0,
-    0
-   ],
-   [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    -2,
-    1,
-    1
-   ],
-   [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    -2,
-    0
-   ],
-   [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    0,
-    -2
-   ]
-  ],
-  "signature": [
-   2,
-   11
-  ],
-  "group": "O^+(Lambda_N)",
-  "type_iii_points": 1,
-  "type_ii_curves": 2,
-  "type_ii_labels": [
-   "E8+D1",
-   "D9"
-  ],
-  "incidences": [
-   [
-    "III_a",
-    "E8+D1"
-   ],
-   [
-    "III_a",
-    "D9"
-   ]
-  ],
-  "source": {
-   "lattice": {
-    "kind": "published_text",
-    "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
-    "lines": "625-625"
-   },
-   "group": {
-    "kind": "published_text",
-    "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
-    "lines": "642-642"
-   },
-   "boundary": {
-    "kind": "published_text",
-    "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
-    "lines": "4631-4631"
-   }
-  }
- }
-]
+ ]
+}
