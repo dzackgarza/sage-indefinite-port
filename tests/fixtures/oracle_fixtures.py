@@ -169,6 +169,27 @@ class E10FundamentalDomain(TypedDict):
     source: dict[str, dict[str, object]]
 
 
+class NamedMatrix(TypedDict):
+    name: str
+    matrix: list[list[int]]
+
+
+class MertensPoint(TypedDict):
+    point: Vector
+    neighbours: int
+
+
+class MertensGenerators(TypedDict):
+    id: str
+    gram: Gram
+    signature: list[int]
+    isometry_convention: str
+    omega: str
+    omega_generators: list[NamedMatrix]
+    mertens_d_perfect_points: list[MertensPoint]
+    source: dict[str, object]
+
+
 class LorentzianPerfectCase(TypedDict):
     id: str
     dimension: int
@@ -598,6 +619,13 @@ def load_e10_fundamental_domain() -> E10FundamentalDomain:
     """U + E8(-1): simple roots, chamber rays, and orbit representatives of norm <= 30 (DH section 3)."""
     with open(FIXTURES_DIR / "e10_fundamental_domain.json", encoding="utf-8") as f:
         data: E10FundamentalDomain = json.load(f)
+        return data
+
+
+def load_mertens_generators() -> MertensGenerators:
+    """Generators of O^+(L) for Mertens's det -155 example (arXiv:1303.3478)."""
+    with open(FIXTURES_DIR / "mertens_generators.json", encoding="utf-8") as f:
+        data: MertensGenerators = json.load(f)
         return data
 
 

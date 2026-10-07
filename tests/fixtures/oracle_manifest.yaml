@@ -31,6 +31,12 @@ oracles:
     kind: published_table
     sources:
       - references/vendor/arxiv/2408.00306/main_arxiv1.tex
+  - fixture_file: mertens_generators.json
+    extraction: references/extract/mertens_example.py
+    runtime: uv
+    kind: published_text
+    sources:
+      - references/vendor/arxiv/1303.3478/hyperbolic.tex
   - fixture_file: allcock_i_2_10_orbits.json
     extraction: references/extract/allcock_enriques_period.py
     runtime: uv

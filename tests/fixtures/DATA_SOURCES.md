@@ -92,6 +92,17 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Extraction**: `uv run references/extract/allcock_rank3.py`. It asserts that every simple root has positive norm and gives an integral reflection. It also checks that every Gram matrix appears in `reflective_forms_8821.json` with the same number of simple roots, which confirms that `ListReflect`'s rank-3 part is exactly this classification.
 
+### Generators of O^+(L) for a det -155 Lattice (Mertens)
+
+- **File**: `tests/fixtures/mertens_generators.json`
+
+- **Source**: Mertens, arXiv:1303.3478, Example `exComplete` (vendored TeX). For
+  $A = \begin{pmatrix}-1&-3&-1\\-3&14&8\\-1&8&11\end{pmatrix}$ (det $-155$, signature (2,1)) the paper lists the stabilizers of its 9 $D$-perfect points (4 nontrivial) and 16 connecting elements. By its theorem (line 176) these generate $\Omega$, the stabilizer of the positive cone in $\operatorname{Aut}_{\mathbb Z}(A) = \{g : gAg^T = A\}$. So $\Omega = O^+(L)$ and $O(L) = \langle\Omega, -I\rangle$.
+
+- **Note**: the $D$-perfect points and neighbour counts are Mertens's construction. They are recorded as published, not as this port's perfect-domain counts.
+
+- **Extraction**: `uv run references/extract/mertens_example.py`. It asserts that all 20 matrices are in $GL_3(\mathbb Z)$ and satisfy $gAg^T = A$, and checks the signature from the leading minors.
+
 ### 145 Lorentzian Equivalence Instances
 
 - **File**: `tests/fixtures/lorentzian_equivalence_145.json`
