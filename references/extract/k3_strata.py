@@ -55,7 +55,22 @@ def main() -> None:
         "D_{17}",
         "9 boundary curves",
     )
+    correspondence = cite(
+        "2502.04301/main.tex",
+        276,
+        281,
+        r"\cite[5.4.7]{Sca87} Let $I \subset \Lambda_{2k}$ be a rank 2 isotropic sublattice",
+        r"I \text{ } \operatorname{modulo} \text{ }O(\Lambda_{2k}) \leftrightarrow C_I",
+    )
     record = {
+        "type_ii_correspondence": {
+            "statement": (
+                "boundary curves C_I of F_{2k} correspond bijectively to rank-2 isotropic sublattices I of "
+                "Lambda_{2k} modulo O(Lambda_{2k}), and to I^perp/I in the genus G(k)"
+            ),
+            "group": "O(Lambda_{2k})",
+            "source": correspondence,
+        },
         "k3_unimodular_lattice": {
             "id": "k3_lattice_lambda",
             "construction": "3U + 2E8(-1)",

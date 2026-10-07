@@ -633,7 +633,14 @@ class DegreeFourK3(TypedDict):
     source: TextSource
 
 
+class TypeIICorrespondence(TypedDict):
+    statement: str
+    group: str
+    source: TextSource
+
+
 class K3ModularStrata(TypedDict):
+    type_ii_correspondence: TypeIICorrespondence
     k3_unimodular_lattice: K3UnimodularLattice
     degree_two_polarized_k3: DegreeTwoK3
     degree_four_polarized_k3: DegreeFourK3

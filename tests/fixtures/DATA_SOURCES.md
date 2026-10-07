@@ -167,6 +167,8 @@ This document records the exact provenance, source files, authors, publications,
 
   - Degree 4: nine Type II curves with generalised types $A_{11}+E_6$, $A_1+A_1+A_{15}$, $D_8+D_8+\langle-4\rangle$, $D_{12}+D_5$, $D_{16}+\langle-4\rangle$, $E_7+E_7+A_3$, $E_8+E_8+\langle-4\rangle$, $E_8+D_9$, $D_{17}$ (Jones arXiv:2502.04301, theorem citing Scattone §6.3).
 
+  - The group: by Scattone [5.4.7] as stated in Jones arXiv:2502.04301 (lines 276-281), the boundary curves of $\mathcal F_{2k}$ correspond bijectively to rank-2 isotropic sublattices $I \subset \Lambda_{2k}$ modulo $O(\Lambda_{2k})$ (`type_ii_correspondence`). No vendored source names the group for the Type III point count.
+
 - **Extraction**: `uv run references/extract/k3_strata.py`.
 
 - **Removed**: the "$2^{\omega(d)-1}$ zero-dimensional cusps" family attributed to Attwell-Duval. No source for it is vendored or known, and for squarefree $d$ the Eichler-criterion count is one cusp, which contradicts it. The previous degree-4 labels included $A_{17}$ and $D_{10}+E_7$ (degree-2 labels) and used $A_1$ where the classification has $\langle-4\rangle$.
