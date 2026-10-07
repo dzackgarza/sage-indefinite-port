@@ -216,22 +216,21 @@ oracles:
   - id: ci_indefinite_comp_metamorphic
     fixture_file: ci_indefinite_comp.json
     source:
-      kind: upstream_regression
-      path: references/polyhedral_common/CI_tests/19_IndefiniteComp/AllTests.g
-      section: '5.1'
+      kind: reference_implementation_input
+      file: references/vendor/polyhedral_common@1592b246/CI_tests/19_IndefiniteComp/AllTests.g
+      extraction: references/extract/polyhedral_common_ci.py
     authoritative_outputs:
       - basis_covariance
       - orbit_count_invariance
   - id: double_coset_finite_partitions
     fixture_file: double_coset_cases.json
     source:
-      kind: upstream_regression
-      path: references/polyhedral_common/CI_tests/DoubleCosets/DBL/
-      section: '5.2'
+      kind: reference_implementation_input
+      file: references/vendor/polyhedral_common@1592b246/CI_tests/DoubleCosets/DBL/
+      extraction: references/extract/polyhedral_common_ci.py
     authoritative_outputs:
       - disjoint_union
       - cardinality_sum
-      - representatives
   - id: lorentzian_perfect_domain_enumeration
     fixture_file: lorentzian_perfect_domains.json
     source:

@@ -114,8 +114,8 @@ def _double_coset_fixture_action(
     GapElement,
     Callable[[GapElement], LatticeIsometryMethods],
 ]:
-    big, _big_generators = _fixture_gap_group(case["group_h"])
-    small, _small_generators = _fixture_gap_group(case["group_g"])
+    big, _big_generators = _fixture_gap_group(case["group_g"])
+    small, _small_generators = _fixture_gap_group(case["group_h"])
     assert int(big.Size()) == case["big_group_order"]
     assert int(small.Size()) == case["small_group_order"]
     assert bool(libgap.IsSubgroup(big, small))

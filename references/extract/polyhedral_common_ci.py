@@ -15,11 +15,12 @@ Run from the repository root under Sage's Python:
 """
 
 import json
+import re
 import tarfile
 from pathlib import Path
 
 # Importing from sage.all runs Sage's session startup, which libgap needs.
-from sage.all import ZZ, libgap, matrix
+from sage.all import AA, QQ, ZZ, PermutationGroup, libgap, matrix
 
 CI = Path("references/vendor/polyhedral_common@1592b246/CI_tests")
 FIXTURES = Path("tests/fixtures")
@@ -44,6 +45,12 @@ def source(path: Path, index: int | None = None) -> dict[str, object]:
 
 def write(name: str, data: object) -> None:
     (FIXTURES / name).write_text(json.dumps(data, indent=1) + "\n", encoding="utf-8")
+    print(f"wrote {FIXTURES / name}")
+
+
+def write_one_record_per_line(name: str, records: list[dict[str, object]]) -> None:
+    lines = ",\n".join(json.dumps(record, separators=(",", ":")) for record in records)
+    (FIXTURES / name).write_text(f"[\n{lines}\n]\n", encoding="utf-8")
     print(f"wrote {FIXTURES / name}")
 
 
@@ -176,12 +183,97 @@ def lorentzian_equivalences_and_stabilizers() -> None:
     write("lorentzian_stabilizers_cases.json", stabilizers)
 
 
+def ci_indefinite_comp() -> None:
+    r"""The six families of 19_IndefiniteComp, built by upstream's own GetGramMatrixFromList."""
+    tests = CI / "19_IndefiniteComp" / "AllTests.g"
+    common = CI / "common.g"
+    libgap.Read(str(common))
+    build = libgap.function_factory("GetGramMatrixFromList")
+    families = re.findall(r'Add\(ListRec, rec\(eList:=(\[[^\]]*\]), k:=(\d+)\)\);', tests.read_text(encoding="utf-8"))
+    assert len(families) == 6, f"expected 6 families in {tests}, found {len(families)}"
+    records = []
+    for index, (components_text, k) in enumerate(families):
+        components = json.loads(components_text)
+        gram = int_matrix(build(components))
+        eigenvalues = matrix(QQ, gram).charpoly().roots(AA, multiplicities=True)
+        positive = sum(m for r, m in eigenvalues if r > 0)
+        negative = sum(m for r, m in eigenvalues if r < 0)
+        assert positive + negative == len(gram), f"{components} is degenerate"
+        records.append(
+            {
+                "id": "ci_indef_" + "_".join(components),
+                "components": components,
+                "k_dim": int(k),
+                "gram": gram,
+                "rank": len(gram),
+                "signature": [int(positive), int(negative)],
+                "source": {"kind": "reference_implementation_input", "file": str(tests), "index": index, "gram_constructor": f"{common}:GetGramMatrixFromList"},
+            }
+        )
+    write("ci_indefinite_comp.json", records)
+
+
+def classification_simplices() -> None:
+    data = {}
+    for dimension in (5, 6, 7):
+        path = CI / "DATA" / f"ClassificationSimplices{dimension}"
+        simplices = [int_matrix(simplex) for simplex in gap_file(path)]
+        data[f"dim{dimension}"] = {"dimension": dimension, "count": len(simplices), "simplices": simplices, "source": source(path)}
+    assert sum(entry["count"] for entry in data.values()) == 16
+    (FIXTURES / "classification_simplices.json").write_text(json.dumps(data, indent=1) + "\n", encoding="utf-8")
+    print(f"wrote {FIXTURES / 'classification_simplices.json'}")
+
+
+def double_cosets() -> None:
+    name_pattern = re.compile(r"DoubleCoset_n(\d+)_big(\d+)_sma(\d+)_vf(\d+)_idx(\d+)")
+    records = []
+    for path in sorted((CI / "DoubleCosets" / "DBL").iterdir()):
+        degree, big, small, num_vectors, index = map(int, name_pattern.fullmatch(path.name).groups())
+        tokens = iter(int(token) for token in path.read_text(encoding="utf-8").split())
+        groups = []
+        for _ in range(2):
+            group_degree, count = next(tokens), next(tokens)
+            assert group_degree == degree, f"{path}: block degree {group_degree} != {degree}"
+            generators = [[next(tokens) for _ in range(degree)] for _ in range(count)]
+            groups.append(generators)
+        vector_count = next(tokens)
+        assert vector_count == num_vectors, f"{path}: {vector_count} vectors, filename says {num_vectors}"
+        vectors = []
+        for _ in range(vector_count):
+            length = next(tokens)
+            assert length == degree
+            vectors.append([next(tokens) for _ in range(length)])
+        assert next(tokens, None) is None, f"{path}: trailing data"
+        orders = [int(PermutationGroup([[p + 1 for p in g] for g in gens]).order()) for gens in groups]
+        assert sorted(orders) == sorted([big, small]), f"{path}: group orders {orders} do not match the filename {big}, {small}"
+        big_gens, small_gens = (groups[0], groups[1]) if orders[0] == big else (groups[1], groups[0])
+        records.append(
+            {
+                "id": path.name,
+                "degree": degree,
+                "big_group_order": big,
+                "small_group_order": small,
+                "num_vectors": num_vectors,
+                "index": index,
+                "group_g": {"num_points": degree, "generators": big_gens},
+                "group_h": {"num_points": degree, "generators": small_gens},
+                "vectors": vectors,
+                "source": {"kind": "reference_implementation_input", "file": str(path), "point_numbering": "0-based"},
+            }
+        )
+    assert len(records) == 18
+    write_one_record_per_line("double_coset_cases.json", records)
+
+
 def main() -> None:
     grams = reflective_and_isotropic()
     reflective = json.loads((FIXTURES / "reflective_forms_8821.json").read_text())
     root_systems(grams, reflective)
     perfect_domains()
     lorentzian_equivalences_and_stabilizers()
+    ci_indefinite_comp()
+    classification_simplices()
+    double_cosets()
 
 
 if __name__ == "__main__":

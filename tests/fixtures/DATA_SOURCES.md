@@ -72,27 +72,21 @@ This document records the exact provenance, source files, authors, publications,
 
 ### Classified Simplices (Dimensions 5, 6, 7)
 
-- **File**: [`tests/fixtures/classification_simplices.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/classification_simplices.json)
+- **File**: `tests/fixtures/classification_simplices.json`
 
-- **Upstream Location**: `references/polyhedral_common/CI_tests/DATA/ClassificationSimplices5`, `ClassificationSimplices6`, `ClassificationSimplices7`
+- **Upstream**: `references/vendor/polyhedral_common@1592b246/CI_tests/DATA/ClassificationSimplices{5,6,7}`: 16 simplices (2 in dimension 5, 3 in 6, 11 in 7), the inputs of `01_RatIntAutomorphy/ProcessExamples.g`. Upstream records no outputs for them; its check is exact and mathematical (the double cosets partition the rational group: disjoint, sizes summing to its order).
 
-- **Upstream Author**: Mathieu Dutour Sikirić
-
-- **Repository**: [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
-
-- **Content**: 12 classified simplices across dimensions 5, 6, and 7.
+- Extracted by `references/extract/polyhedral_common_ci.py`; each record cites its vendored file.
 
 ### 18 Finite Double-Coset Instances
 
-- **File**: [`tests/fixtures/double_coset_cases.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/double_coset_cases.json)
+- **File**: `tests/fixtures/double_coset_cases.json`
 
-- **Upstream Location**: `references/polyhedral_common/CI_tests/DoubleCosets/DBL/`
+- **Upstream**: `references/vendor/polyhedral_common@1592b246/CI_tests/DoubleCosets/DBL/`: 18 inputs (degrees 55–96). Each file holds two permutation groups (0-based points) and a set of 0/1 vectors; the two group orders and the vector count are encoded only in the filename. The script parses each file exactly and assigns `group_g` (the big group) and `group_h` (the subgroup) by computing both orders with libgap and matching the filename. The previous fixture had the two groups swapped in all 18 cases.
 
-- **Upstream Author**: Mathieu Dutour Sikirić
+- **Recorded outputs**: none. Acceptance uses the mathematical identities of a double-coset decomposition (disjoint union, sizes summing to the group order).
 
-- **Repository**: [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
-
-- **Content**: 18 frozen finite group double coset instances across permutation degrees 55–96 with orders up to 92,160.
+- Extracted by `references/extract/polyhedral_common_ci.py`; each record cites its vendored file.
 
 ### 40 Lorentzian Perfect Domain Forms
 
@@ -104,12 +98,10 @@ This document records the exact provenance, source files, authors, publications,
 
 ### 6 Metamorphic Indefinite Forms
 
-- **File**: [`tests/fixtures/ci_indefinite_comp.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/ci_indefinite_comp.json)
+- **File**: `tests/fixtures/ci_indefinite_comp.json`
 
-- **Upstream Location**: `references/polyhedral_common/CI_tests/19_IndefiniteComp/AllTests.g`
+- **Upstream**: `references/vendor/polyhedral_common@1592b246/CI_tests/19_IndefiniteComp/AllTests.g` (`FullTest`), whose six families are built by upstream's `GetGramMatrixFromList` in `references/vendor/polyhedral_common@1592b246/CI_tests/common.g`. The script loads `common.g` into libgap and calls that function, so each Gram matrix is upstream's own (root lattices positive definite); signatures are computed from it. The previous fixture recorded invented signatures such as (2,4) for U+2U+A2, whose upstream Gram has signature (4,2).
 
-- **Upstream Author**: Mathieu Dutour Sikirić
+- **Recorded outputs**: none; the upstream suite is metamorphic (stabilizer generators preserve the form, a random conjugate is found isometric, and vector, plane and flag orbit counts agree between a form and its conjugate).
 
-- **Repository**: [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
-
-- **Content**: Forms `["U", "2U"]`, `["U", "2U", "A2"]`, `["U", "2U", "A3"]`, `["U", "2U", "A2", "A2"]`, `["U", "U", "E7"]`, `["U", "2U", "2E8"]`.
+- Extracted by `references/extract/polyhedral_common_ci.py`; each record cites its vendored file.

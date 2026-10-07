@@ -101,10 +101,10 @@ class DoubleCosetCase(TypedDict):
     small_group_order: int
     num_vectors: int
     index: int
-    group_h: PermutationGroupData
     group_g: PermutationGroupData
+    group_h: PermutationGroupData
     vectors: list[Vector]
-    source: Provenance
+    source: FileSource
 
 
 class Citation(TypedDict, total=False):
@@ -143,6 +143,8 @@ class FileSource(TypedDict, total=False):
     kind: Required[str]
     file: Required[str]
     index: int
+    point_numbering: str
+    gram_constructor: str
 
 
 class IsotropicDecisionCase(TypedDict):
@@ -194,6 +196,7 @@ class ClassifiedSimplices(TypedDict):
     dimension: int
     count: int
     simplices: list[list[Vector]]
+    source: FileSource
 
 
 class ClassificationSimplices(TypedDict):
@@ -205,10 +208,11 @@ class ClassificationSimplices(TypedDict):
 class CiIndefiniteCompCase(TypedDict):
     id: str
     components: list[str]
-    signature: list[int]
-    rank: int
     k_dim: int
-    source: Provenance
+    gram: Gram
+    rank: int
+    signature: list[int]
+    source: FileSource
 
 
 class DawesBuildingCase(TypedDict):
