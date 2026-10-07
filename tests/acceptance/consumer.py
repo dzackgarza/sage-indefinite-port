@@ -15,8 +15,8 @@ satisfies ``R G R^T = G``, and a witness ``R`` from ``L_1`` to ``L_2`` satisfies
 from functools import reduce
 from math import gcd
 
-from dzack_research.preamble.all import Lattices
 from dzack_research.preamble.all import ZZ as PreambleZZ
+from dzack_research.preamble.all import Lattices
 from sage.all import GF, ZZ, MatrixGroup, matrix, prime_divisors
 
 
