@@ -86,8 +86,22 @@ def main() -> None:
             "group": "Gamma_2 = {g in O^+(L_2) : g v* = v* mod L_2}, v generating <-2>",
             "building": {"points": 3, "curves": 2, "edges": 4},
             "source": {
-                "definition": cite("2108.06236/main.tex", 204, 212, r"L_{2d} = 2U \op \la -2d \ra \op \la -6 \ra", r"\Gamma_{2d} = \{ g \in \opn{O}^+(L) \mid g \underline{v}^* \equiv \underline{v}^* \bmod{ L} \}"),
-                "theorem": cite("2108.06236/main.tex", 1044, 1047, r"\label{L2boundarythm}", "curves $\\cc_1$ and $\\cc_2$", "points $P_1$, $P_2$, $P_3$", r"$\overline{\cc}_1 \cap P_1$, $\overline{\cc}_1 \cap P_2$, $\overline{\cc}_2 \cap P_2$ and $\overline{\cc}_2 \cap P_3$"),
+                "definition": cite(
+                    "2108.06236/main.tex",
+                    204,
+                    212,
+                    r"L_{2d} = 2U \op \la -2d \ra \op \la -6 \ra",
+                    r"\Gamma_{2d} = \{ g \in \opn{O}^+(L) \mid g \underline{v}^* \equiv \underline{v}^* \bmod{ L} \}",
+                ),
+                "theorem": cite(
+                    "2108.06236/main.tex",
+                    1044,
+                    1047,
+                    r"\label{L2boundarythm}",
+                    "curves $\\cc_1$ and $\\cc_2$",
+                    "points $P_1$, $P_2$, $P_3$",
+                    r"$\overline{\cc}_1 \cap P_1$, $\overline{\cc}_1 \cap P_2$, $\overline{\cc}_2 \cap P_2$ and $\overline{\cc}_2 \cap P_3$",
+                ),
             },
         },
     ]
