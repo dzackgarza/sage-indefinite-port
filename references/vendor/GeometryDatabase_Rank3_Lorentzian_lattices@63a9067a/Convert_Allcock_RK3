@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+
+import os;
+import random;
+
+if len(os.sys.argv) != 3:
+    print("Convert_Allcock_RK3 is used as");
+    print("Convert_Allcock_RK3 [input] [output]");
+    os.sys.exit(1);
+
+inputF = os.sys.argv[1];
+outputF   = os.sys.argv[2];
+
+f = open(inputF, 'r')
+lines = f.readlines()
+
+fo = open(outputF, 'w')
+fo.write("return [\n");
+for i in range(len(lines)):
+    if i>0:
+        fo.write(",\n")
+    eline = lines[i]
+    eline = eline.replace(';', ',')
+    fo.write(eline[:-1])
+fo.write("];\n")
+fo.close()
+

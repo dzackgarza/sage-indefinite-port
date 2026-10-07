@@ -1,0 +1,286 @@
+\NeedsTeXFormat{LaTeX2e}[1995/12/01]
+
+\RequirePackage[utf8]{inputenc}
+\RequirePackage[T1]{fontenc}
+
+\usepackage[sorting=nyt,giveninits=true]{biblatex} %Imports biblatex package
+    \setlength{\bibhang}{0pt}
+    \AtBeginBibliography{\small}
+    \addbibresource{references.bib} %Import the bibliography file
+
+
+\RequirePackage{amsmath, amssymb, amsthm, amscd, amsfonts, mathrsfs}
+
+\usepackage{amsxtra}
+\usepackage{mathtools}
+\usepackage{stmaryrd}
+\usepackage[all]{xy}
+
+\usepackage{eucal}
+
+
+\usepackage{geometry}
+
+\RequirePackage{lscape}
+\RequirePackage{comment}
+
+\RequirePackage{lipsum}
+
+%\RequirePackage[backend=bibtex,style=ieee,sorting=nyt]{biblatex} %Imports biblatex package
+%\addbibresource{references.bib} %Import the bibliography file
+
+% Lists
+\RequirePackage[shortlabels]{enumitem}
+\setlist{nosep}
+
+\RequirePackage{afterpage}
+
+% Tables
+\RequirePackage{booktabs, multirow, longtable}
+
+% Url
+\RequirePackage{url}
+
+% TikZ-pictures
+\RequirePackage{pgf,tikz}
+\usetikzlibrary{arrows,decorations.pathmorphing,decorations.pathreplacing,backgrounds,positioning,fit,petri,calc}
+\usepackage{caption}
+
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks  =   true,
+    linkcolor   =   blue,
+    filecolor   =   blue,      
+    urlcolor    =   blue,
+    citecolor   =   blue,
+}
+\urlstyle{same}
+\usepackage[capitalize,nameinlink,noabbrev]{cleveref}
+
+%\RequirePackage{todonotes}
+
+\RequirePackage{microtype}
+
+\def \anglefrac#1#2{\left\langle \tfrac{#1}{#2} \right\rangle}
+
+\newcommand{\PP}{\mathbb P}
+\newcommand{\ZZ}{\mathbb Z}
+\newcommand{\FF}{\mathbb F}
+\newcommand{\QQ}{\mathbb Q}
+\newcommand{\RR}{\mathbb R}
+\newcommand{\CC}{\mathbb C}
+\newcommand{\KK}{\mathbb K}
+\newcommand{\Aff}{\mathbb A}
+
+\newcommand{\cA}{\mathcal{A}}
+\newcommand{\cB}{\mathcal{B}}
+\newcommand{\cC}{\mathcal{C}}
+\newcommand{\cD}{\mathcal{D}}
+\newcommand{\cE}{\mathcal{E}}
+\newcommand{\cF}{\mathcal{F}}
+\newcommand{\cG}{\mathcal{G}}
+\newcommand{\cH}{\mathcal{H}}
+\newcommand{\cI}{\mathcal{I}}
+\newcommand{\cJ}{\mathcal{J}}
+\newcommand{\cK}{\mathcal{K}}
+\newcommand{\cL}{\mathcal{L}}
+\newcommand{\cM}{\mathcal{M}}
+\newcommand{\cN}{\mathcal{N}}
+\newcommand{\cO}{\mathcal{O}}
+\newcommand{\cP}{\mathcal{P}}
+\newcommand{\cQ}{\mathcal{Q}}
+\newcommand{\cR}{\mathcal{R}}
+\newcommand{\cS}{\mathcal{S}}
+\newcommand{\cT}{\mathcal{T}}
+\newcommand{\cU}{\mathcal{U}}
+\newcommand{\cV}{\mathcal{V}}
+\newcommand{\cW}{\mathcal{W}}
+\newcommand{\cX}{\mathcal{X}}
+\newcommand{\cY}{\mathcal{Y}}
+\newcommand{\cZ}{\mathcal{Z}}
+
+\newcommand{\bA}{\mathbf{A}}
+\newcommand{\bB}{\mathbf{B}}
+\newcommand{\bC}{\mathbf{C}}
+\newcommand{\bD}{\mathbf{D}}
+\newcommand{\bE}{\mathbf{E}}
+\newcommand{\bF}{\mathbf{F}}
+\newcommand{\bG}{\mathbf{G}}
+\newcommand{\bH}{\mathbf{H}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bJ}{\mathbf{J}}
+\newcommand{\bK}{\mathbf{K}}
+\newcommand{\bL}{\mathbf{L}}
+\newcommand{\bM}{\mathbf{M}}
+\newcommand{\bN}{\mathbf{N}}
+\newcommand{\bO}{\mathbf{O}}
+\newcommand{\bP}{\mathbf{P}}
+\newcommand{\bQ}{\mathbf{Q}}
+\newcommand{\bR}{\mathbf{R}}
+\newcommand{\bS}{\mathbf{S}}
+\newcommand{\bT}{\mathbf{T}}
+\newcommand{\bU}{\mathbf{U}}
+\newcommand{\bV}{\mathbf{V}}
+\newcommand{\bW}{\mathbf{W}}
+\newcommand{\bX}{\mathbf{X}}
+\newcommand{\bY}{\mathbf{Y}}
+\newcommand{\bZ}{\mathbf{Z}}
+
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bv}{\mathbf{v}}
+\newcommand{\bw}{\mathbf{w}}
+
+\newcommand{\bLambda}{\mathbf{\Lambda}}
+
+
+\newcommand{\IB}{\mathbb B}
+\newcommand{\IC}{\mathbb C}
+\newcommand{\IF}{\mathbb F}
+\newcommand{\IK}{\mathbb K}
+\newcommand{\IN}{\mathbb N}
+\newcommand{\IP}{\mathbb P}
+\newcommand{\IQ}{\mathbb Q}
+\newcommand{\IR}{\mathbb R}
+\newcommand{\IZ}{\mathbb Z}
+
+\newcommand{\fM}{\mathfrak{M}}
+\newcommand{\fS}{\mathfrak{S}}
+\newcommand{\fT}{\mathfrak{T}}
+
+\newcommand{\fa}{\mathfrak{a}}
+\newcommand{\fb}{\mathfrak{b}}
+\newcommand{\fc}{\mathfrak{c}}
+\newcommand{\fd}{\mathfrak{d}}
+\newcommand{\fe}{\mathfrak{e}}
+\newcommand{\ff}{\mathfrak{f}}
+\newcommand{\fg}{\mathfrak{g}}
+\newcommand{\fh}{\mathfrak{h}}
+\newcommand{\fp}{\mathfrak{p}}
+\newcommand{\fq}{\mathfrak{q}}
+
+\newcommand{\dJacobi}[2]{\left(\frac{#1}{#2}\right)}
+\newcommand{\tJacobi}[2]{\left(\tfrac{#1}{#2}\right)}
+\newcommand{\Jacobi}[2]{({#1}/{#2})}
+
+
+\let\splus\oplus
+
+\def\tA{\tilde\bA}
+\def\tD{\tilde\bD}
+\def\tE{\tilde\bE}
+\def\tJ{\tilde\bJ}
+%% Kodaira types
+\def\I{\mathrm{I}}
+\def\II{\mathrm{II}}
+\def\III{\mathrm{III}}
+\def\IV{\mathrm{IV}}
+
+\def\id{\mathrm{id}}
+
+\DeclareMathOperator{\Alt}{Alt}
+\DeclareMathOperator{\End}{End}
+\DeclareMathOperator{\Jac}{Jac}
+\DeclareMathOperator{\Pic}{Pic}
+\DeclareMathOperator{\Span}{span}
+\DeclareMathOperator{\val}{val}
+\DeclareMathOperator{\Char}{char}
+\DeclareMathOperator{\supp}{supp}
+\DeclareMathOperator{\length}{length}
+\DeclareMathOperator{\Sing}{Sing}
+\DeclareMathOperator{\Aut}{Aut}
+\DeclareMathOperator{\PGL}{PGL}
+\DeclareMathOperator{\Sympl}{Sp}
+\DeclareMathOperator{\Fix}{Fix}
+\DeclareMathOperator{\Orth}{O}
+\DeclareMathOperator{\Fn}{Fn}
+\DeclareMathOperator{\Sym}{Sym}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\discr}{discr}
+\DeclareMathOperator{\sign}{sign}
+\DeclareMathOperator{\Cl}{Cl}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\Spec}{Spec}
+\DeclareMathOperator{\Mat}{M}
+\DeclareMathOperator{\Sp}{Sp}
+\DeclareMathOperator{\Hom}{Hom}
+\DeclareMathOperator{\mass}{m}
+\DeclareMathOperator{\type}{type}
+\DeclareMathOperator{\tf}{tf}
+\DeclareMathOperator{\std}{std}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% For environments
+\ifx\undefined\AmSprefix
+ \def\AmSprefix{=}
+\fi
+\def\AmSstyle#1#2{%
+ \expandafter\let\csname\AmSprefix#1\expandafter\endcsname\csname#1\endcsname
+ \expandafter\let\csname end\AmSprefix#1\expandafter\endcsname\csname end#1\endcsname
+ \expandafter\edef\csname#2\endcsname{\noexpand\begin{\AmSprefix#1}}%
+ \expandafter\edef\csname end#2\endcsname{\noexpand\end{\AmSprefix#1}}}
+
+\ifx\undefined\newtheoremcs
+ \def\newtheoremcs#1#2{% #1 - Title; #2 - cs name
+  \newtheorem{#2}{#1}[section]}
+\fi
+\def\addtheorem#1#2{% #1 - Title; #2 - cs name
+ \expandafter\let\csname#2\endcsname\relax
+ \expandafter\newtheoremcs\csname#2name\endcsname{#2}%
+ \expandafter\ifx\csname#2name\endcsname\relax
+  \expandafter\def\csname#2name\endcsname{#1}\fi
+ \global\advance\count10-\@ne %% to save counters
+ \expandafter\let\csname c@#2\endcsname\c@theorem
+ \AmSstyle{#2}{#2}}
+
+\theoremstyle{plain}
+ \ifx\theoremname\undefined\def\theoremname{Theorem}\fi
+ \newtheoremcs{\theoremname}{theorem}\AmSstyle{theorem}{theorem}
+ \addtheorem{Proposition}{proposition}
+ \addtheorem{Lemma}{lemma}
+ \addtheorem{Corollary}{corollary}
+ \addtheorem{Addendum}{addendum}
+
+\theoremstyle{definition}
+ \addtheorem{Definition}{definition}
+ \addtheorem{Remark}{remark}
+ \addtheorem{Example}{example}
+ \addtheorem{Conjecture}{conjecture}
+ \addtheorem{Convention}{convention}
+ \addtheorem{Warning}{warning}
+ \addtheorem{Problem}{problem}
+ \addtheorem{Observation}{observation}
+
+ \AmSstyle{figure}{figure}
+ \AmSstyle{table}{table}
+    
+\def\sectionautorefname~{\S}
+\let\subsectionautorefname\sectionautorefname
+\let\subsubsectionautorefname\sectionautorefname
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\hyphenation{iso-met-ric Bil-kent su-per-flu-ous Ni-ku-lin}
+
+
+\newcommand{\calC}{\mathscr{C}}
+\newcommand{\calH}{\mathscr{H}}
+
+\newcommand{\HH}{{\rm H}}
+
+\newcommand{\cc}{{\rm c}}
+\newcommand{\ii}{{\rm i}}
+
+
+\newcounter{notecount}
+
+\newcommand{\Simon}[1]{{\stepcounter{notecount}\color{purple}$^{[\arabic{notecount}]}$\marginpar{\flushleft \scriptsize \color{purple}$^{[\arabic{notecount}]}$#1}}}
+
+\newcommand{\Davide}[1]{{\stepcounter{notecount}\color{orange}$^{[\arabic{notecount}]}$\marginpar{\flushleft \scriptsize \color{orange}$^{[\arabic{notecount}]}$% 
+    #1}}}
+
+\newcommand{\simon}[1]{{\color{red}(Si: #1)}}
+\newcommand{\davide}[1]{\footnote{\color{red}(Da: #1)}}
+
+    
+% predefined colors:
+% black, blue, brown, cyan, darkgray, gray, green, lightgray, lime, magenta, olive, orange, pink, purple, red, teal, violet, white, yellow.

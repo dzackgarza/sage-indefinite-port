@@ -1,0 +1,160 @@
+\newcommand{\etalchar}[1]{$^{#1}$}
+\providecommand{\bysame}{\leavevmode\hbox to3em{\hrulefill}\thinspace}
+\providecommand{\MR}{\relax\ifhmode\unskip\space\fi MR }
+% \MRhref is called by the amsart/book/proc definition of \MR.
+\providecommand{\MRhref}[2]{%
+  \href{http://www.ams.org/mathscinet-getitem?mr=#1}{#2}
+}
+\providecommand{\href}[2]{#2}
+\begin{thebibliography}{{Cam}99}
+
+\bibitem[AD14]{Attwell-Duval-Number}
+D.~Attwell-Duval, \emph{{On the number of cusps of orthogonal Shimura
+  varieties}}, {Ann. Math. Qu\'e.} \textbf{38} (2014), no.~2, 119--131.
+
+\bibitem[AD15]{Attwell-Duval}
+\bysame, \emph{{Algebraic and Geometric Properties of the Boundary of
+  Orthogonal Shimura Varieties}}, Ph.D. thesis, McGill University, 2015.
+
+\bibitem[AD17]{Attwell-Duval-Topological}
+\bysame, \emph{{Topological and algebraic results on the boundary of connected
+  orthogonal Shimura varieties}}, {Ann. Math. Qu\'e.} \textbf{41} (2017),
+  no.~1, 27--42.
+
+\bibitem[BB66]{bailyborel}
+W.L. Baily, Jr. and A.~Borel, \emph{Compactification of arithmetic quotients of
+  bounded symmetric domains}, Ann. of Math. (2) \textbf{84} (1966), 442--528.
+
+\bibitem[BCP97]{MAGMA}
+W.~Bosma, J.~Cannon, and C.~Playoust, \emph{The {M}agma algebra system. {I}.
+  {T}he user language}, J. Symbolic Comput. \textbf{24} (1997), no.~3-4,
+  235--265, Computational algebra and number theory (London, 1993).
+
+\bibitem[{Bri}83]{Brieskorn}
+E.~{Brieskorn}, \emph{{Die Milnorgitter der exzeptionellen unimodularen
+  Singularit\"aten}}, {Bonn. Math. Schr. 150}, 1983.
+
+\bibitem[{Cam}99]{Cameron}
+P.J. {Cameron}, \emph{{Permutation groups}}, vol.~45, Cambridge: Cambridge
+  University Press, 1999.
+
+\bibitem[Cas78]{cassels}
+J.W.S. Cassels, \emph{Rational quadratic forms}, London Mathematical Society
+  Monographs, vol.~13, Academic Press, Inc. London-New York, 1978.
+
+\bibitem[CS99]{SPLAG}
+J.H. Conway and N.J.A. Sloane, \emph{Sphere packings, lattices and groups},
+  third ed., Grundlehren der Mathematischen Wissenschaften, vol. 290,
+  Springer-Verlag, New York, 1999.
+
+\bibitem[Daw]{DawesFamily}
+M.R. Dawes, \emph{{The Baily-Borel compactification of a family of orthogonal
+  modular varieties}}, Osaka Journal of Mathematics (to appear).
+
+\bibitem[Daw22]{boundary}
+\bysame, \emph{Buildings}, \url{http://github.com/m-dawes/buildings},
+  21-05-2022.
+
+\bibitem[Der04]{DernThesis}
+T.~Dern, \emph{{H}ermitesche {M}odulformen zweiten {G}rades}, Aachen, 2004.
+
+\bibitem[{Eic}52]{Eichler}
+M.~{Eichler}, \emph{{Quadratische Formen und orthogonale Gruppen}}, vol.~63,
+  {Springer-Verlag, Berlin-G\"ottingen-Heidelberg}, 1952.
+
+\bibitem[FP85]{FinckePohst}
+U.~{Fincke} and M.~{Pohst}, \emph{{Improved methods for calculating vectors of
+  short length in a lattice, including a complexity analysis}}, {Math. Comput.}
+  \textbf{44} (1985), 463--471.
+
+\bibitem[GAP21]{GAP}
+The GAP~Group, \emph{{GAP -- Groups, Algorithms, and Programming, Version
+  4.11.1}}, 2021, {\tt https://www.gap-system.org}.
+
+\bibitem[GHS07]{GHSK3}
+V.~Gritsenko, K.~Hulek, and G.K. Sankaran, \emph{The {K}odaira dimension of the
+  moduli of {$K3$} surfaces}, Invent. Math. \textbf{169} (2007), no.~3,
+  519--567.
+
+\bibitem[GHS09]{abelianisation}
+V.A. Gritsenko, K.~Hulek, and G.K. Sankaran, \emph{Abelianisation of orthogonal
+  groups and the fundamental group of modular varieties}, J. Algebra
+  \textbf{322} (2009), no.~2, 463--478.
+
+\bibitem[GHS13]{handbook}
+\bysame, \emph{Moduli of {K}3 surfaces and irreducible symplectic manifolds},
+  Handbook of moduli. {V}ol. {I}, Adv. Lect. Math. (ALM), vol.~24, Int. Press,
+  Somerville, MA, 2013, pp.~459--526.
+
+\bibitem[GKR13]{GKRBorcherdsproducts}
+D.~{Gehre}, J.~{Kreuzer}, and M.~{Raum}, \emph{{Computing Borcherds products}},
+  {LMS J. Comput. Math.} \textbf{16} (2013), 200--215.
+
+\bibitem[HKW93]{abeliancompact}
+K.~{Hulek}, C.~{Kahn}, and S.H. {Weintraub}, \emph{{Moduli spaces of abelian
+  surfaces: compactification, degenerations, and theta functions}}, vol.~12,
+  Berlin: Walter de Gruyter, 1993.
+
+\bibitem[{Kne}56]{KneserIndef}
+M.~{Kneser}, \emph{{Klassenzahlen indefiniter quadratischer Formen in drei oder
+  mehr Ver\"anderlichen}}, {Arch. Math.} \textbf{7} (1956), 323--332.
+
+\bibitem[Kne02]{Kneser}
+M.~Kneser, \emph{{Quadratische Formen. Neu bearbeitet und herausgegeben in
+  Zusammenarbeit mit Rudolf Scharlau.}}, Berlin: Springer, 2002.
+
+\bibitem[Kon93]{Kondo}
+S.~Kond{\=o}, \emph{On the {K}odaira dimension of the moduli space of {$K3$}
+  surfaces}, {Compos. Math.} \textbf{89} (1993), no.~3, 251--299.
+
+\bibitem[{Mer}14]{Mertens}
+M.H. {Mertens}, \emph{{Automorphism groups of hyperbolic lattices}}, {J.
+  Algebra} \textbf{408} (2014), 147--165.
+
+\bibitem[{New}72]{morris}
+M.~{Newman}, \emph{{Integral matrices}}, {Academic Press New York-London},
+  1972.
+
+\bibitem[{Nik}80]{Nikulin}
+V.V. {Nikulin}, \emph{{Integral symmetric bilinear forms and some of their
+  applications}}, {Math. USSR, Izv.} \textbf{14} (1980), 103--167.
+
+\bibitem[PP85]{PleskenPohst}
+W.~{Plesken} and M.~{Pohst}, \emph{{Constructing integral lattices with
+  prescribed minimum. I}}, {Math. Comput.} \textbf{45} (1985), 209--221.
+
+\bibitem[PS97]{PleskenSouvignier}
+W.~{Plesken} and B.~{Souvignier}, \emph{{Computing isometries of lattices}},
+  {J. Symb. Comput.} \textbf{24} (1997), no.~3-4, 327--334.
+
+\bibitem[{Rau}11]{RaumImplement}
+M.~{Raum}, \emph{{How to implement a modular form}}, {J. Symb. Comput.}
+  \textbf{46} (2011), no.~12, 1336--1354.
+
+\bibitem[S{\etalchar{+}}22]{SAGE}
+W.A. Stein et~al., \emph{{S}age {M}athematics {S}oftware ({V}ersion 9.6)}, The
+  Sage Development Team, 2022, {\tt http://www.sagemath.org}.
+
+\bibitem[{Sca}87]{Scattone}
+F.~{Scattone}, \emph{{On the compactification of moduli spaces for algebraic K3
+  surfaces}}, vol. 374, Providence, RI: American Mathematical Society (AMS),
+  1987.
+
+\bibitem[SH98]{largeclass}
+R.~{Scharlau} and B.~{Hemkemeier}, \emph{{Classification of integral lattices
+  with large class number}}, {Math. Comput.} \textbf{67} (1998), no.~222,
+  737--749.
+
+\bibitem[{Ste}91]{Sterk}
+H.~{Sterk}, \emph{{Compactifications of the period space of Enriques surfaces.
+  I}}, {Math. Z.} \textbf{207} (1991), no.~1, 1--36.
+
+\bibitem[Vin75]{Vinberg}
+E.B. Vinberg, \emph{Some arithmetical discrete groups in {L}obacevskii spaces},
+  Discrete subgroups of Lie groups and applications to moduli (1975), 328--348.
+
+\bibitem[Vin07]{VinbergReflection}
+\bysame, \emph{Classification of 2-reflective hyperbolic lattices of rank 4},
+  Transactions of the Moscow Mathematical Society \textbf{68} (2007), 39--66.
+
+\end{thebibliography}

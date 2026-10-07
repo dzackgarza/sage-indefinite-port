@@ -1,0 +1,301 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%   MY MACROS: start 2016 Sep 02
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\erase}[1]{}
+
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+
+
+\newtheorem{_algorithm}[theorem]{Algorithm}
+\newenvironment{algorithm}{\begin{_algorithm}\rm}{\hfill \rule{3pt}{6pt}\end{_algorithm}}
+
+
+\newtheorem{_definition}[theorem]{Definition}
+\newenvironment{definition}{\begin{_definition}\rm}{\end{_definition}}
+
+\newtheorem{_propositiondefinition}[theorem]{Proposition-Definition}
+\newenvironment{propositiondefinition}{\begin{_propositiondefinition}\rm}{\end{_propositiondefinition}}
+
+
+\newtheorem{_remark}[theorem]{\it Remark}
+\newenvironment{remark}{\begin{_remark}\rm}{\end{_remark}}
+
+\newtheorem{_example}[theorem]{Example}
+\newenvironment{example}{\begin{_example}\rm}{\end{_example}}
+
+\newtheorem{_assumption}[theorem]{Assumption}
+\newenvironment{assumption}{\begin{_assumption}\rm}{\end{_assumption}}
+
+\newtheorem{_construction}[theorem]{Construction}
+\newenvironment{construction}{\begin{_construction}\rm}{\end{_construction}}
+
+\newtheorem{_claim}[theorem]{Claim}
+\newenvironment{claim}{\begin{_claim}\rm}{\end{_claim}}
+
+
+\newtheorem{_conjecture}[theorem]{Conjecture}
+\newenvironment{conjecture}{\begin{_conjecture}\rm}{\end{_conjecture}}
+
+
+
+\numberwithin{equation}{section}
+\numberwithin{table}{section}
+\numberwithin{figure}{section}
+\renewcommand{\qed}{\hfill {$\Box$}}
+
+
+%FONTS
+
+\newcommand{\A}{\mathord{\mathbb A}}
+\newcommand{\B}{\mathord{\mathbb B}}
+\newcommand{\C}{\mathord{\mathbb C}}
+\newcommand{\DD}{\mathord{\mathbb D}}
+\newcommand{\E}{\mathord{\mathbb E}}
+\newcommand{\F}{\mathord{\mathbb F}}
+\newcommand{\GG}{\mathord{\mathbb G}}
+\renewcommand{\H}{\mathord{\mathbb H}}
+\renewcommand{\P}{\mathord{\mathbb  P}}
+\newcommand{\Q}{\mathord{\mathbb  Q}}
+\newcommand{\R}{\mathord{\mathbb R}}
+\newcommand{\RR}{\mathord{\mathbb R}}
+\newcommand{\sphere}{\mathord{\mathbb S}}
+\newcommand{\Z}{\mathord{\mathbb Z}}
+
+\newcommand{\AAA}{\mathord{\mathcal A}}
+\newcommand{\BBB}{\mathord{\mathcal B}}
+\newcommand{\CCC}{\mathord{\mathcal C}}
+\newcommand{\DDD}{\mathord{\mathcal D}}
+\newcommand{\EEE}{\mathord{\mathcal E}}
+\newcommand{\FFF}{\mathord{\mathcal F}}
+\newcommand{\GGG}{\mathord{\mathcal G}}
+\newcommand{\HHH}{\mathord{\mathcal H}}
+\newcommand{\III}{\mathord{\mathcal I}}
+\newcommand{\KKK}{\mathord{\mathcal K}}
+\newcommand{\LLL}{\mathord{\mathcal L}}
+\newcommand{\MMM}{\mathord{\mathcal M}}
+\newcommand{\NNN}{\mathord{\mathcal N}}
+\newcommand{\OOO}{\mathord{\mathcal O}}
+\newcommand{\PPP}{\mathord{\mathcal P}}
+\newcommand{\QQQ}{\mathord{\mathcal Q}}
+\newcommand{\RRR}{\mathord{\mathcal R}}
+\newcommand{\SSS}{\mathord{\mathcal S}}
+\newcommand{\TTT}{\mathord{\mathcal T}}
+\newcommand{\UUU}{\mathord{\mathcal U}}
+\newcommand{\VVV}{\mathord{\mathcal V}}
+\newcommand{\WWW}{\mathord{\mathcal W}}
+\newcommand{\XXX}{\mathord{\mathcal X}}
+\newcommand{\YYY}{\mathord{\mathcal Y}}
+\newcommand{\ZZZ}{\mathord{\mathcal Z}}
+
+
+\newcommand{\SSSS}{\mathord{\mathfrak S}}
+\newcommand{\AAAA}{\mathord{\mathfrak A}}
+
+
+%ARROWS
+
+
+
+\newcommand{\congsb}[1]{\smash{\mathop{\cong}\limits\sb{#1}}}
+
+\newcommand{\maprightsp}[1]{\; \smash{\mathop{\; \longrightarrow \; }\limits\sp{#1}}\; }
+\newcommand{\maprightsb}[1]{\; \smash{\mathop{\; \longrightarrow \; }\limits\sb{#1}}\; }
+\newcommand{\maprightspsb}[2]{\; \smash{\mathop{\; \longrightarrow \; }\limits\sp{#1}\limits\sb{#2}}\; }
+
+\newcommand{\mapleftsp}[1]{\; \smash{\mathop{\; \longleftarrow \; }\limits\sp{#1}}\; }
+\newcommand{\mapleftsb}[1]{\; \smash{\mathop{\; \longleftarrow \; }\limits\sb{#1}}\; }
+\newcommand{\mapleftspsb}[2]{\; \smash{\mathop{\; \longleftarrow \; }\limits\sp{#1}\limits\sb{#2}}\; }
+
+
+\newcommand{\mapshortrightsp}[1]{\smash{\mathop{\to}\limits\sp{#1}}}
+\newcommand{\mapshortrightsb}[1]{\smash{\mathop{\to}\limits\sb{#1}}}
+\newcommand{\mapshortrightspsb}[2]{\smash{\mathop{\to}\limits\sp{#1}\limits\sb{#2} }}
+
+\newcommand{\maprightinj}{\; \smash{\mathop{\; \inj \; }}\; }
+\newcommand{\maprightinjsp}[1]{\; \smash{\mathop{\; \inj \; }\limits\sp{#1}}\; }
+\newcommand{\maprightinjsb}[1]{\; \smash{\mathop{\; \inj\; }\limits\sb{#1}}\; }
+
+\newcommand{\maprightsurj}{\; \smash{\mathop{\; \surj \; }}\; }
+\newcommand{\maprightsurjsp}[1]{\; \smash{\mathop{\; \surj \; }\limits\sp{#1}}\; }
+\newcommand{\maprightsurjsb}[1]{\; \smash{\mathop{\; \surj\; }\limits\sb{#1}}\; }
+
+
+\newcommand{\maprightisom}{\; \smash{\mathop{\; \longrightarrow \; }\limits\sp{\sim}}\; }
+\newcommand{\maprightisomsb}[1]{\; \smash{\mathop{\; \longrightarrow \; }\limits\sp{\sim}\limits\sb{#1}}\; }
+\newcommand{\mapleftisom}{\; \smash{\mathop{\; \longleftarrow \; }\limits\sp{\sim}}\; }
+\newcommand{\mapleftisomsb}[1]{\; \smash{\mathop{\; \longleftarrow \; }\limits\sp{\sim}\limits\sb{#1}}\; }
+
+\newcommand{\mapdown}{\phantom{\Big\downarrow}\hskip -8pt \downarrow}
+\newcommand{\mapdownright}[1]{\mapdown\rlap{$\vcenter{\hbox{$\scriptstyle#1$}}$}}
+\newcommand{\mapdownleft}[1]{\llap{$\vcenter{\hbox{$\scriptstyle#1$\;}}$}\mapdown}
+\newcommand{\mapdownsurj}{
+\hbox{$\downarrow$}
+\llap{\hbox{\raise 2pt\hbox{$\downarrow$}}}%
+%\vstrech %mapdown
+}
+
+\newcommand{\mapup}{\phantom{\Big\uparrow}\hskip -8pt \uparrow}
+\newcommand{\mapupright}[1]{\mapup\rlap{$\vcenter{\hbox{$\scriptstyle#1$}}$}}
+\newcommand{\mapupleft}[1]{\rlap{$\vcenter{\hbox{$\scriptstyle#1$}}$}%
+\phantom{\Big\uparrow}\mapup}
+\newcommand{\mapupsurj}{
+\hbox{$\bigm\uparrow$}
+\llap{\hbox{\raise 2pt\hbox{$\bigm\uparrow$}}}%
+\vstrechmapup
+}
+
+
+\newcommand{\inj}{\hookrightarrow}
+\newcommand{\surj}{\mathbin{\to \hskip -7pt \to}}
+\newcommand{\longrightarrowsurj}{\; \longrightarrow \hskip -14pt \longrightarrow \; }
+\newcommand{\longisom}{\maprightsp{\sim}}
+\newcommand{\longisomsb}[1]{\maprightspsb{\sim}{#1}}
+\newcommand{\isom}{\xrightarrow{\sim}}
+
+
+
+% SETS and MAPS
+
+%\newcommand{\set}[2]{\{\; {#1} \; \mid \; {#2} \;  \}}
+\newcommand{\set}[2]{\{\,{#1}\mid {#2} \,\}}
+%\newcommand{\shortset}[2]{\{ {#1} \mid  {#2}   \}}
+\newcommand{\shortset}[2]{\{\, {#1} \,|  \,{#2}\,   \}}
+\newcommand{\seth}[2]{\{\;{#1}\; \mid \; {\hbox{#2}}\}}
+\newcommand{\sethd}[3]{\left\{\;\;  {#1}\;\; \left|\;\;  \vcenter{\hbox{\parbox{#2}{#3}}}\;\;  \right. \right\}}
+
+\newcommand{\bigset}[2]{\left\{\; {#1} \; \left\vert \; {#2} \;  \right.\right \}}
+
+\newcommand{\gen}[1]{\langle {#1}  \rangle}
+\newcommand{\genset}[2]{\langle\; {#1} \; \mid  \; {#2}\; \rangle}
+
+
+
+\newcommand{\wt}{\widetilde}
+\newcommand{\ol}{\overline}
+
+\newcommand{\tensor}{\otimes}
+
+\newcommand{\pprime}{\prime\prime}
+\newcommand{\sprime}{\sp\prime}
+\newcommand{\sprimeinv}{\sp{\prime-1}}
+\newcommand{\spar}[1]{\sp{(#1)}}
+\newcommand{\sbar}[1]{\sb{(#1)}}
+\newcommand{\spprime}{\sp{\prime\prime}}
+\newcommand{\spcirc}{\sp{\mathord{\circ}}}
+\newcommand{\sptimes}{\sp{\times}}
+\newcommand{\sperp}{\sp{\perp}}
+
+\newcommand{\dual}{\sp{\vee}}
+\newcommand{\comp}{\sp{\wedge}}
+
+\newcommand{\fiberproduct}{\Box}
+
+\newcommand{\semidirectproduct}{\rtimes}
+
+\newcommand{\inv}{\sp{-1}}
+
+
+\newcommand{\bdr}{\partial\,}
+
+
+%\newcommand{\NS}{\mathord{\mathrm{NS}}}
+
+
+\newcommand{\Hom}{\mathord{\mathrm{Hom}}}
+\newcommand{\sheafHom}{\mathord{\mathcal {Hom}}}
+
+\newcommand{\GL}{\mathord{\mathrm{GL}}}
+\newcommand{\SL}{\mathord{\mathrm{SL}}}
+\newcommand{\PGU}{\mathord{\mathrm{PGU}}}
+\newcommand{\PSU}{\mathord{\mathrm{PSU}}}
+\newcommand{\PGL}{\mathord{\mathrm{PGL}}}
+\newcommand{\PSL}{\mathord{\mathrm{PSL}}}
+\newcommand{\OG}{\mathord{\mathrm{O}}}
+
+
+\newcommand{\id}{\mathord{\mathrm{id}}}
+
+\newcommand{\Ker}{\operatorname{\mathrm{Ker}}\nolimits}
+\newcommand{\Coker}{\operatorname{\mathrm{Coker}}\nolimits}
+\newcommand{\Image}{\operatorname{\mathrm{Im}}\nolimits}
+\newcommand{\Aut}{\operatorname{\mathrm{Aut}}\nolimits}
+\newcommand{\Gal}{\operatorname{\mathrm{Gal}}\nolimits}
+
+\newcommand{\pr}{\mathord{\mathrm{pr}}}
+\newcommand{\Sing}{\operatorname{\mathrm{Sing}}\nolimits}
+\newcommand{\Spec}{\operatorname{\mathrm{Spec}}\nolimits}
+\newcommand{\rank}{\operatorname{\mathrm{rank}}\nolimits}
+\newcommand{\disc}{\operatorname{\mathrm{disc}}\nolimits}
+\newcommand{\ch}{\operatorname{\mathrm{char}}\nolimits}
+%\newcommand{\ord}{\operatorname{\mathrm{ord}}\nolimits}
+\newcommand{\length}{\operatorname{\mathrm{length}}\nolimits}
+\newcommand{\Pt}{\P^2}
+
+\newcommand{\closure}[1]{\overline{#1}}
+
+\newcommand{\rmdisc}{\mathord{\mathrm{disc}}}
+
+\newcommand{\der}{\partial}
+
+\newcommand{\Der}[2]{\frac{\der #1}{\der #2}}
+\newcommand{\DDer}[3]{\frac{\der^2 #1}{\der #2 \der #3}}
+\newcommand{\DDersq}[2]{\frac{\partial^2 #1}{\partial #2 ^2 }}
+
+\newcommand{\ang}[1]{\langle #1\rangle}
+%\newcommand{\gen}[1]{\langle #1\rangle}
+
+
+\newcommand{\rmand}{\textrm{and}}
+\newcommand{\rmfor}{\textrm{for}}
+\newcommand{\rmforall}{\textrm{for all}}
+\newcommand{\rmforany}{\textrm{for any}}
+\newcommand{\rmif}{\textrm{if}}
+\newcommand{\rmor}{\textrm{or}}
+\newcommand{\rmwhere}{\textrm{where}}
+\newcommand{\qquand}{\qquad\rmand\qquad}
+\newcommand{\quand}{\quad\rmand\quad}
+\newcommand{\qand}{\;\;\rmand\;\;}
+
+
+\newcommand{\Qbar}{\overline{\Q}}
+
+
+\newcommand{\mystruth}[1]{\phantom{\hbox{\vrule height #1}}}
+\newcommand{\mystrutd}[1]{\phantom{\hbox{\vrule depth #1}}}
+\newcommand{\mystruthd}[2]{\phantom{\hbox{\vrule  height #1 depth #2}}}
+
+\newcommand{\tsum}{\textstyle\sum}
+\newcommand{\dsum}{\displaystyle\sum}
+
+\newcommand{\pione}{\pi_1}
+
+\newcommand{\intf}[1]{\langle #1 \rangle}
+
+\newcommand{\transpose}{{}^{\mathrm{T}}}
+
+\newcommand{\Scomment}[1]{\footnote{\bf #1}}
+
+
+%%%%%% comb
+\newcommand{\Stab}{\mathord{\rm Stab}}
+
+\newcommand{\bfone}{\mathord{\bf 1}}
+\newcommand{\bfzero}{\mathord{\bf 0}}
+
+\newcommand{\Grow}{G_{\mathord{\rm row}}}
+\newcommand{\Gcol}{G_{\mathord{\rm col}}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%   END OF MY MACROS
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

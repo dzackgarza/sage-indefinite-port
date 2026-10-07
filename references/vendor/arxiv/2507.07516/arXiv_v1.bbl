@@ -1,0 +1,100 @@
+\begin{thebibliography}{MMV24}
+
+\bibitem[BGA24]{brandhorst-gonzalez:527}
+Simon Brandhorst and Víctor González-Alonso.
+\newblock 527 elliptic fibrations on {E}nriques surfaces.
+\newblock \href{https://arxiv.org/abs/2408.00306}{arXiv:2408.00306}, 2024.
+
+\bibitem[BS22]{brandhorst_shimada:tautaubar}
+Simon Brandhorst and Ichiro Shimada.
+\newblock Automorphism groups of certain {E}nriques surfaces.
+\newblock {\em Found. Comput. Math.}, 22(5):1463--1512, 2022.
+
+\bibitem[BV24]{brandhorst-veniani}
+Simon Brandhorst and Davide~Cesare Veniani.
+\newblock Hensel lifting algorithms for quadratic forms.
+\newblock {\em Math. Comp.}, 93(348):1963--1991, 2024.
+
+\bibitem[CD85]{cossec-dolgachev:automorphisms_nodal}
+F.~Cossec and I.~Dolgachev.
+\newblock {On automorphisms of nodal Enriques surfaces}.
+\newblock {\em Bulletin (New Series) of the American Mathematical Society},
+  12(2):247 -- 249, 1985.
+
+\bibitem[CDL25]{cdl:enriquesI}
+Fran{\c{c}}ois Cossec, Igor Dolgachev, and Christian Liedtke.
+\newblock {\em Enriques surfaces {I}}.
+\newblock Singapore: Springer, 2nd edition edition, 2025.
+
+\bibitem[DK25]{enriquesII}
+Igor Dolgachev and Shigeyuki Kond{\=o}.
+\newblock {\em Enriques surfaces {II}}.
+\newblock Singapore: Springer, 2025.
+
+\bibitem[Dol84]{dolgachev:OnAutomorphismsOfEnriquesSurfaces}
+I.~Dolgachev.
+\newblock On automorphisms of {E}nriques surfaces.
+\newblock {\em Invent. Math.}, 76(1):163--177, 1984.
+
+\bibitem[Ebe13]{ebeling:lattices-and-codes}
+Wolfgang Ebeling.
+\newblock {\em Lattices and codes}.
+\newblock Advanced Lectures in Mathematics. Springer Spektrum, Wiesbaden, third
+  edition, 2013.
+\newblock A course partially based on lectures by Friedrich Hirzebruch.
+
+\bibitem[Kne02]{kneser}
+Martin Kneser.
+\newblock {\em Quadratische {F}ormen}.
+\newblock Springer-Verlag, Berlin, 2002.
+\newblock Revised and edited in collaboration with Rudolf Scharlau.
+
+\bibitem[Kon86]{kondo:enriques_finite_automorphism}
+Shigeyuki Kond{\=o}.
+\newblock Enriques surfaces with finite automorphism groups.
+\newblock {\em Jpn. J. Math., New Ser.}, 12:191--282, 1986.
+
+\bibitem[MM09]{miranda_morrison:embeddings}
+R.~Miranda and D.~R. Morrison.
+\newblock Embeddings of integral quadratic forms.
+\newblock \url{http://www.math.ucsb.edu/~drm/manuscripts/eiqf.pdf}, 2009.
+
+\bibitem[MMV24]{martin2024enriquessurfaceszeroentropy}
+Gebhard Martin, Giacomo Mezzedimi, and Davide~Cesare Veniani.
+\newblock Enriques surfaces of zero entropy.
+\newblock \href{https://arxiv.org/abs/2406.18407}{arXiv:2406.18407}, 2024.
+
+\bibitem[Nam85]{namikawa:periods_of_enriques}
+Yukihiko Namikawa.
+\newblock Periods of {Enriques} surfaces.
+\newblock {\em Math. Ann.}, 270:201--222, 1985.
+
+\bibitem[Nik79]{nikulin}
+V.~V. Nikulin.
+\newblock Integer symmetric bilinear forms and some of their geometric
+  applications.
+\newblock {\em Izv. Akad. Nauk SSSR Ser. Mat.}, 43(1):111--177, 238, 1979.
+
+\bibitem[Shi16]{shimada:salem}
+Ichiro Shimada.
+\newblock Automorphisms of supersingular {{\(K3\)}} surfaces and {Salem}
+  polynomials.
+\newblock {\em Exp. Math.}, 25(4):389--398, 2016.
+
+\bibitem[Shi21]{shimada:ADE}
+Ichiro Shimada.
+\newblock Rational double points on {E}nriques surfaces.
+\newblock {\em Sci. China Math.}, 64(4):665--690, 2021.
+
+\bibitem[Wal68]{wallach:subsystem}
+Nolan~R. Wallach.
+\newblock On maximal subsystems of root systems.
+\newblock {\em Canadian J. Math.}, 20:555--574, 1968.
+
+\bibitem[Wan20]{wang}
+Long Wang.
+\newblock On automorphisms and the cone conjecture for {E}nriques surfaces in
+  odd characteristic.
+\newblock \href{https://arxiv.org/abs/1908.07928}{arXiv:1908.07928}, 2020.
+
+\end{thebibliography}

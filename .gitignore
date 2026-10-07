@@ -21,4 +21,5 @@ build/
 .ruff_cache/
 
 # Reference repository clones
-references/*/
+references/polyhedral_common/
+references/Indefinite.jl/

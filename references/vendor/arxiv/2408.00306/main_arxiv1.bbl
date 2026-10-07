@@ -1,0 +1,153 @@
+\newcommand{\etalchar}[1]{$^{#1}$}
+\begin{thebibliography}{BHPVdV04}
+
+\bibitem[BB66]{baily-borel}
+W.~L. Baily, Jr. and A.~Borel.
+\newblock Compactification of arithmetic quotients of bounded symmetric
+  domains.
+\newblock {\em Ann. of Math. (2)}, 84:442--528, 1966.
+
+\bibitem[BHPVdV04]{bhpv:compact-complex-surfaces}
+Wolf~P. Barth, Klaus Hulek, Chris A.~M. Peters, and Antonius Van~de Ven.
+\newblock {\em Compact complex surfaces}, volume~4.
+\newblock Springer-Verlag, Berlin, second edition, 2004.
+
+\bibitem[BL19]{bragg-lieblich}
+Daniel Bragg and Max Lieblich.
+\newblock Twistor spaces for supersingular k3 surfaces.
+\newblock \url{https://arxiv.org/abs/1804.07282}, 2019.
+
+\bibitem[BP83]{barth-peters:very_general_enriques}
+W.~Barth and C.~Peters.
+\newblock Automorphisms of {E}nriques surfaces.
+\newblock {\em Invent. Math.}, 73(3):383--411, 1983.
+
+\bibitem[BS22]{brandhorst_shimada:tautaubar}
+Simon Brandhorst and Ichiro Shimada.
+\newblock Automorphism groups of certain {E}nriques surfaces.
+\newblock {\em Found. Comput. Math.}, 22(5):1463--1512, 2022.
+
+\bibitem[CD85]{cossec-dolgachev:automorphisms_nodal}
+F.~Cossec and I.~Dolgachev.
+\newblock {On automorphisms of nodal Enriques surfaces}.
+\newblock {\em Bulletin (New Series) of the American Mathematical Society},
+  12(2):247 -- 249, 1985.
+
+\bibitem[CDGK23]{ciliberto23}
+Ciro Ciliberto, Thomas Dedieu, Concettina Galati, and Andreas~Leopold Knutsen.
+\newblock Irreducible unirational and uniruled components of moduli spaces of
+  polarized {E}nriques surfaces.
+\newblock {\em Math. Z.}, 303(3):Paper No. 73, 34, 2023.
+
+\bibitem[CDL24]{cdl:enriquesI}
+François Cossec, Igor Dolgachev, and Christian Liedtke.
+\newblock {E}nriques {S}urfaces {I}.
+\newblock \url{https://dept.math.lsa.umich.edu/~idolga/EnriquesOne.pdf}, 2024.
+
+\bibitem[DEF{\etalchar{+}}24]{OSCAR-book}
+Wolfram Decker, Christian Eder, Claus Fieker, Max Horn, and Michael Joswig,
+  editors.
+\newblock {\em The {C}omputer {A}lgebra {S}ystem {OSCAR}: {A}lgorithms and
+  {E}xamples}, volume~32 of {\em Algorithms and {C}omputation in
+  {M}athematics}.
+\newblock Springer, 1 edition, 8 2024.
+
+\bibitem[DK24]{enriquesII}
+Igor Dolgachev and Shigeyuki Kodo.
+\newblock {\em Enriques Surfaces II}.
+\newblock Springer Nature, April 19th 2024.
+\newblock \url{https://dept.math.lsa.umich.edu/~idolga/EnriquesTwo.pdf}.
+
+\bibitem[DM19]{dolgachev_martin:numericallytrivial}
+Igor Dolgachev and Gebhard Martin.
+\newblock Numerically trivial automorphisms of {E}nriques surfaces in
+  characteristic 2.
+\newblock {\em J. Math. Soc. Japan}, 71(4):1181--1200, 2019.
+
+\bibitem[DSH24]{hulek-dutour}
+Mathieu Dutour-Sikiri{\'c} and Klaus Hulek.
+\newblock Moduli of polarised {Enriques} surfaces -- computational aspects.
+\newblock {\em J. Lond. Math. Soc., II. Ser.}, 109(1):32, 2024.
+\newblock Id/No e12828.
+
+\bibitem[GH16]{gritsenko-hulek}
+V.~Gritsenko and K.~Hulek.
+\newblock Moduli of polarized {E}nriques surfaces.
+\newblock In {\em K3 surfaces and their moduli}, volume 315 of {\em Progr.
+  Math.}, pages 55--72. Birkh\"auser/Springer, [Cham], 2016.
+
+\bibitem[Huy16]{huybrechts:k3}
+Daniel Huybrechts.
+\newblock {\em Lectures on {K}3 surfaces}, volume 158 of {\em Cambridge Studies
+  in Advanced Mathematics}.
+\newblock Cambridge University Press, Cambridge, 2016.
+
+\bibitem[Jan16]{jang:representation}
+Junmyong Jang.
+\newblock The representations of the automorphism groups and the {F}robenius
+  invariants of {K}3 surfaces.
+\newblock {\em Michigan Math. J.}, 65(1):147--163, 2016.
+
+\bibitem[Kne02]{kneser}
+Martin Kneser.
+\newblock {\em Quadratische {F}ormen}.
+\newblock Springer-Verlag, Berlin, 2002.
+\newblock Revised and edited in collaboration with Rudolf Scharlau.
+
+\bibitem[Knu20]{knutsen}
+Andreas~Leopold Knutsen.
+\newblock On moduli spaces of polarized {E}nriques surfaces.
+\newblock {\em J. Math. Pures Appl. (9)}, 144:106--136, 2020.
+
+\bibitem[LM18]{maulik}
+Max Lieblich and Davesh Maulik.
+\newblock A note on the cone conjecture for {K}3 surfaces in positive
+  characteristic.
+\newblock {\em Math. Res. Lett.}, 25(6):1879--1891, 2018.
+
+\bibitem[Mar19]{martin:automorphisms_of_unnodal_enriques_surfaces}
+Gebhard Martin.
+\newblock Automorphisms of unnodal {E}nriques surfaces, 2019.
+
+\bibitem[MN84]{mukai_namikawa:numerically_trivial}
+Shigeru Mukai and Yukihiko Namikawa.
+\newblock Automorphisms of {E}nriques surfaces which act trivially on the
+  cohomology groups.
+\newblock {\em Invent. Math.}, 77(3):383--397, 1984.
+
+\bibitem[Nik79a]{nikulin:auto}
+V.~V. Nikulin.
+\newblock Finite groups of automorphisms of {K}\"{a}hlerian {$K3$} surfaces.
+\newblock {\em Trudy Moskov. Mat. Obshch.}, 38:75--137, 1979.
+
+\bibitem[Nik79b]{nikulin}
+V.~V. Nikulin.
+\newblock Integer symmetric bilinear forms and some of their geometric
+  applications.
+\newblock {\em Izv. Akad. Nauk SSSR Ser. Mat.}, 43(1):111--177, 238, 1979.
+
+\bibitem[Ogu83]{ogus:83}
+Arthur Ogus.
+\newblock A crystalline {T}orelli theorem for supersingular {K}3 surfaces.
+\newblock In {\em Arithmetic and geometry, {V}ol. {II}}, volume~36 of {\em
+  Progr. Math.}, pages 361--394. Birkh\"auser Boston, Boston, MA, 1983.
+
+\bibitem[OSC24]{OSCAR}
+Oscar -- open source computer algebra research system, version 1.1.1.
+\newblock \url{https://www.oscar-system.org}, 2024.
+
+\bibitem[Shi15]{shimada:k3_auto}
+Ichiro Shimada.
+\newblock An algorithm to compute automorphism groups of {$K3$} surfaces and an
+  application to singular {$K3$} surfaces.
+\newblock {\em Int. Math. Res. Not. IMRN}, (22):11961--12014, 2015.
+
+\bibitem[Vin75]{vinberg}
+\`E.~B. Vinberg.
+\newblock Some arithmetical discrete groups in {L}oba\v{c}evski\u{\i} spaces.
+\newblock In {\em Discrete subgroups of {L}ie groups and applications to moduli
+  ({I}nternat. {C}olloq., {B}ombay, 1973)}, volume No. 7 of {\em Tata Inst.
+  Fundam. Res. Stud. Math.}, pages 323--348. Published for the Tata Institute
+  of Fundamental Research, Bombay by Oxford University Press, Bombay, 1975.
+
+\end{thebibliography}
