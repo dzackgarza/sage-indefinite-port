@@ -112,6 +112,25 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Removed**: the "$2^{\omega(d)-1}$ zero-dimensional cusps" family attributed to Attwell-Duval. No source for it is vendored or known, and for squarefree $d$ the Eichler-criterion count is one cusp, which contradicts it. The previous degree-4 labels included $A_{17}$ and $D_{10}+E_7$ (degree-2 labels) and used $A_1$ where the classification has $\langle-4\rangle$.
 
+### Dawes Tits Buildings and Index Chain
+
+- **File**: `tests/fixtures/dawes_buildings.json`
+
+- **Sources** (vendored TeX; the extraction asserts each fact on its cited lines). Dawes assumes root lattices negative definite (arXiv:2205.10601, line 158):
+
+  - arXiv:2205.10601, section "Examples":
+    - the stable orthogonal group of $2U \oplus A_2$ has a building with 1 point, 1 curve and 1 edge;
+    - $O^+$ and the stable group of $2U \oplus \langle-2\rangle \oplus \langle-6\rangle$ share a building with 2 points, 2 curves and 3 edges;
+    - the stable groups of $2U(2)\oplus A_2 \subset U\oplus U(2)\oplus A_2 \subset 2U\oplus A_2$ and $O^+(2U\oplus A_2)$ form a chain with indices 20, 27 and 2 (total 1080).
+
+  - arXiv:2108.06236, Theorem `L2boundarythm`: for $L_2 = 2U\oplus\langle-2\rangle\oplus\langle-6\rangle$ and $\Gamma_2$, the boundary has 3 points, 2 curves and 4 incidences.
+
+- **Not included**: the building of $2U(2)\oplus A_2$ (Figure `2u2a2building`). The text states no counts for it, and reading them off the TikZ drawing would mean interpreting the figure.
+
+- **Extraction**: `uv run references/extract/dawes_buildings.py`.
+
+- **Replaced**: the previous fixture recorded no outputs, and its third lattice $U\oplus U(2)\oplus A_2$ was not a published example.
+
 ### 6 Metamorphic Indefinite Forms
 
 - **File**: `tests/fixtures/ci_indefinite_comp.json`

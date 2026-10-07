@@ -1,5 +1,259 @@
-[
-{"id":"dawes_2U_A2","name":"2U + A2","construction":"2U + A2","signature":[2,4],"rank":6,"det":3,"gram":[[0,1,0,0,0,0],[1,0,0,0,0,0],[0,0,0,1,0,0],[0,0,1,0,0,0],[0,0,0,0,-2,1],[0,0,0,0,1,-2]],"group":{"internal_name":"O_plus_component","construction":"intersection(kernel(discriminant_representation), kernel(component_character))","source_notation":"\\widetilde O^+(2U + A2)"},"source":{"kind":"independent_implementation","author":"Matthew Dawes","code":"buildings.sage","paper":"Dawes (2020)"}},
-{"id":"dawes_2U_minus6_minus2","name":"2U + <-6> + <-2>","construction":"2U + <-6> + <-2>","signature":[2,4],"rank":6,"det":12,"gram":[[0,1,0,0,0,0],[1,0,0,0,0,0],[0,0,0,1,0,0],[0,0,1,0,0,0],[0,0,0,0,-6,0],[0,0,0,0,0,-2]],"group":{"internal_name":"O_component","construction":"kernel(component_character)","source_notation":"O^+(2U + <-6> + <-2>)"},"source":{"kind":"independent_implementation","author":"Matthew Dawes","code":"buildings.sage","paper":"Dawes (2020)"}},
-{"id":"dawes_U_U2_A2","name":"U + U(2) + A2","construction":"U + U(2) + A2","signature":[2,4],"rank":6,"det":12,"gram":[[0,1,0,0,0,0],[1,0,0,0,0,0],[0,0,0,2,0,0],[0,0,2,0,0,0],[0,0,0,0,-2,1],[0,0,0,0,1,-2]],"group":{"internal_name":"O_plus_component","construction":"intersection(kernel(discriminant_representation), kernel(component_character))","source_notation":"\\widetilde O^+(U + U(2) + A2)"},"source":{"kind":"independent_implementation","author":"Matthew Dawes","code":"buildings.sage","paper":"Dawes (2020)"}}
-]
+{
+  "buildings": [
+    {
+      "id": "dawes_2U_A2_stable",
+      "lattice": "2U + A2",
+      "gram": [
+        [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          -2,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          -2
+        ]
+      ],
+      "signature": [
+        2,
+        4
+      ],
+      "group": "stable orthogonal group (discriminant kernel of O^+)",
+      "building": {
+        "points": 1,
+        "curves": 1,
+        "edges": 1
+      },
+      "source": {
+        "convention": {
+          "kind": "published_text",
+          "file": "references/vendor/arxiv/2205.10601/orbits_in_lattices.tex",
+          "lines": "158-158"
+        },
+        "statement": {
+          "kind": "published_text",
+          "file": "references/vendor/arxiv/2205.10601/orbits_in_lattices.tex",
+          "lines": "1310-1310"
+        },
+        "figure": {
+          "kind": "published_text",
+          "file": "references/vendor/arxiv/2205.10601/orbits_in_lattices.tex",
+          "lines": "1349-1364"
+        }
+      }
+    },
+    {
+      "id": "dawes_2U_minus2_minus6",
+      "lattice": "2U + <-2> + <-6>",
+      "gram": [
+        [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          -2,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          -6
+        ]
+      ],
+      "signature": [
+        2,
+        4
+      ],
+      "group": "O^+ and the stable orthogonal group (same building)",
+      "building": {
+        "points": 2,
+        "curves": 2,
+        "edges": 3
+      },
+      "source": {
+        "statement": {
+          "kind": "published_text",
+          "file": "references/vendor/arxiv/2205.10601/orbits_in_lattices.tex",
+          "lines": "1392-1392"
+        },
+        "figure": {
+          "kind": "published_text",
+          "file": "references/vendor/arxiv/2205.10601/orbits_in_lattices.tex",
+          "lines": "1426-1444"
+        }
+      }
+    },
+    {
+      "id": "dawes_L2_gamma2",
+      "lattice": "L_2 = 2U + <-2> + <-6>",
+      "gram": [
+        [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          -2,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          -6
+        ]
+      ],
+      "signature": [
+        2,
+        4
+      ],
+      "group": "Gamma_2 = {g in O^+(L_2) : g v* = v* mod L_2}, v generating <-2>",
+      "building": {
+        "points": 3,
+        "curves": 2,
+        "edges": 4
+      },
+      "source": {
+        "definition": {
+          "kind": "published_text",
+          "file": "references/vendor/arxiv/2108.06236/main.tex",
+          "lines": "204-212"
+        },
+        "theorem": {
+          "kind": "published_text",
+          "file": "references/vendor/arxiv/2108.06236/main.tex",
+          "lines": "1044-1047"
+        }
+      }
+    }
+  ],
+  "index_chains": [
+    {
+      "id": "dawes_2U2_A2_index_chain",
+      "chain": [
+        "stable orthogonal group of 2U(2) + A2",
+        "stable orthogonal group of U + U(2) + A2",
+        "stable orthogonal group of 2U + A2",
+        "O^+(2U + A2)"
+      ],
+      "indices": [
+        20,
+        27,
+        2
+      ],
+      "total_index": 1080,
+      "source": {
+        "kind": "published_text",
+        "file": "references/vendor/arxiv/2205.10601/orbits_in_lattices.tex",
+        "lines": "1501-1513"
+      }
+    }
+  ]
+}

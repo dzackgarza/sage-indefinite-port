@@ -215,16 +215,33 @@ class CiIndefiniteCompCase(TypedDict):
     source: FileSource
 
 
+class TitsBuildingCounts(TypedDict):
+    points: int
+    curves: int
+    edges: int
+
+
 class DawesBuildingCase(TypedDict):
     id: str
-    name: str
-    construction: str
-    signature: list[int]
-    rank: int
-    det: int
+    lattice: str
     gram: Gram
-    group: GroupSpec
-    source: Provenance
+    signature: list[int]
+    group: str
+    building: TitsBuildingCounts
+    source: dict[str, TextSource]
+
+
+class DawesIndexChain(TypedDict):
+    id: str
+    chain: list[str]
+    indices: list[int]
+    total_index: int
+    source: TextSource
+
+
+class DawesBuildings(TypedDict):
+    buildings: list[DawesBuildingCase]
+    index_chains: list[DawesIndexChain]
 
 
 class LatticeSpec(TypedDict):
@@ -405,10 +422,10 @@ def load_k3_modular_strata() -> K3ModularStrata:
         return data
 
 
-def load_dawes_buildings() -> list[DawesBuildingCase]:
-    """Independent Tits-building computations of Dawes for three lattices."""
+def load_dawes_buildings() -> DawesBuildings:
+    """Dawes's published Tits buildings and index chain (arXiv:2205.10601, 2108.06236)."""
     with open(FIXTURES_DIR / "dawes_buildings.json", encoding="utf-8") as f:
-        data: list[DawesBuildingCase] = json.load(f)
+        data: DawesBuildings = json.load(f)
         return data
 
 

@@ -103,18 +103,12 @@ oracles:
       - flag_orbits
       - minimal_degree
       - phi_h_min
-  - id: dawes_independent_tits_buildings
+  - id: dawes_tits_buildings
     fixture_file: dawes_buildings.json
-    source:
-      kind: independent_implementation
-      author: Matthew Dawes
-      code: buildings.sage
-      section: '4'
-    authoritative_outputs:
-      - line_orbits
-      - plane_orbits
-      - incidence_multigraph
-      - representatives
+    extraction: references/extract/dawes_buildings.py
+    sources:
+      - references/vendor/arxiv/2205.10601/orbits_in_lattices.tex
+      - references/vendor/arxiv/2108.06236/main.tex
   - id: ci_indefinite_comp_metamorphic
     fixture_file: ci_indefinite_comp.json
     source:
