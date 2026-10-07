@@ -61,7 +61,10 @@ class LineSource(TypedDict):
 class Enriques87Case(TypedDict):
     case: int
     S: str
-    polarization_orbit_length: int
+    walls: list[int]
+    subsets_in_class: int
+    face_polarization: Vector
+    face_polarization_norm: int
     group_order: int
     line_orbits: int
     plane_orbits: int

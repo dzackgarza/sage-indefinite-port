@@ -14,7 +14,9 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Extraction**: `uv run references/extract/dh23_polarizations.py` parses both tables from the vendored TeX. Each record carries the TeX line it came from.
 
-- **Content**: for each of the 87 conjugacy classes of groups $\Gamma_h$: the subset $S$ of the $E_{10}$ diagram, $\#S$, $|\bar\Gamma_h|$, the isotropic line, plane and flag counts $\#I_1, \#I_2, \#I_{12}$, the degree of the smallest realization $h_{\min}$, and $\phi(h_{\min})$.
+- **Content**: for each of the 87 conjugacy classes of groups $\Gamma_h$: the set $S$ of chamber walls containing $h$ (as printed, and as root labels in `walls`; a bar means the complement, lines 686-688), $\#S$ (`subsets_in_class`: how many subsets define the same class), $|\bar\Gamma_h|$, the isotropic line, plane and flag counts $\#I_1, \#I_2, \#I_{12}$, the degree of the smallest realization $h_{\min}$, and $\phi(h_{\min})$.
+
+- **Derived polarization**: $\Gamma_h^+$ depends only on $S$ (proof of Theorem `teo:87groups`). Each record carries $h_S$ (`face_polarization`, coordinates of `e10_fundamental_domain.json`): the sum of the extreme rays $g_i$ whose one non-containing wall is outside $S$. The script asserts the chamber is simplicial, that $h_S$ is orthogonal to exactly the roots in $S$, that $h_S^2 \ge h_{\min}^2$, and that $h_\emptyset$ is the Weyl vector of norm 1240.
 
 - **Check**: the script asserts cases 1–87 in order and that case 87 has 528 lines and 24242 planes, which the paper also states independently in its text (lines 1168–1170).
 
