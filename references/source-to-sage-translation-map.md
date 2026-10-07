@@ -1,25 +1,30 @@
 # source-to-sage-translation-map
 
-Source-to-Sage translation map for the indefinite lattice port (received 2026-09-02, external report; citation markers of the generating tool removed). The plan card PLAN-INDEFINITE-EXTRACTION-AND-DECOMPOSITION is derived from this text.
+Source-to-Sage translation map for the indefinite lattice port (received 2026-09-02, external report; citation markers of the generating tool removed).
+The plan card PLAN-INDEFINITE-EXTRACTION-AND-DECOMPOSITION is derived from this text.
 
 ## Source authority and versioning
 
 Use two pinned source lines:
 
 - `MathieuDutSik/Indefinite.jl@374a5ebb…` for the readable GAP formulation of the high-level algorithm.
+
 - `MathieuDutSik/polyhedral_common@a55fcb7b…` for the later C++ reimplementation, including the newer isotropic-subspace double-coset machinery, memoization, and optimized Lorentzian implementation.
 
-The Julia code itself is not an algorithmic source: it exposes five thin Julia-to-GAP entry points and provides subprocess wrappers for compiled executables. The substantive legacy implementations are in `Indefinite.jl/indef/lib/IndefiniteForms.g`, `Lorentzian.g`, and `GroupAction.g`; the current C++ is a later reimplementation and extension of that corpus.
+The Julia code itself is not an algorithmic source: it exposes five thin Julia-to-GAP entry points and provides subprocess wrappers for compiled executables.
+The substantive legacy implementations are in `Indefinite.jl/indef/lib/IndefiniteForms.g`, `Lorentzian.g`, and `GroupAction.g`; the current C++ is a later reimplementation and extension of that corpus.
 
 The implementation rule should be:
 
 - read the GAP code first for mathematical control flow;
+
 - use the C++ to identify later refinements, exact corner cases, and the true performance-critical leaves;
+
 - do not translate the Julia wrappers, command-line programs, temporary-file protocols, or custom matrix framework.
 
 The module names below are proposed logical boundaries, not assumptions about the existing repository layout.
 
----
+* * *
 
 # 1. Semantic carriers and public API
 
@@ -63,7 +68,8 @@ v.is_isotropic()
 v.is_primitive()
 ```
 
-For a non-unimodular lattice, `v.to_covector()` lands in the linear dual, and `L.metric_map()` is an injective finite-cokernel map rather than an identification. The metric dual lattice and the linear dual must remain distinct objects.
+For a non-unimodular lattice, `v.to_covector()` lands in the linear dual, and `L.metric_map()` is an injective finite-cokernel map rather than an identification.
+The metric dual lattice and the linear dual must remain distinct objects.
 
 ## 1.2 Sublattices
 
@@ -157,7 +163,7 @@ D.domain()
 
 The representatives should be lattice elements or subobjects, not raw row matrices.
 
----
+* * *
 
 # 2. Proposed implementation modules
 
@@ -212,7 +218,7 @@ isotropic planes/flags
 finite-index Γ and equivariant/centralizer variants
 ```
 
----
+* * *
 
 # 3. `indefinite/invariants.py`
 
@@ -256,7 +262,8 @@ INDEF_FORM_InvariantVector
 INDEF_FORM_Invariant_IsotropicKplane_Raw
 ```
 
-The source combines rank, signature, determinant, parity, vector data, and reduced-form data into `size_t` hashes. These are valid candidate-bucketing devices but not mathematical invariants whose hash equality may be treated as equivalence.
+The source combines rank, signature, determinant, parity, vector data, and reduced-form data into `size_t` hashes.
+These are valid candidate-bucketing devices but not mathematical invariants whose hash equality may be treated as equivalence.
 
 Use:
 
@@ -287,7 +294,8 @@ class IsotropicSubspacePrefilter:
     embedding_elementary_divisors: tuple[Integer, ...]
 ```
 
-There is an important source-name correction. `INDEF_FORM_InvariantVector` calls one scalar extracted from v `divisor` and one extracted from Qv `index`. Semantically these should be separated as:
+There is an important source-name correction.
+`INDEF_FORM_InvariantVector` calls one scalar extracted from v `divisor` and one extracted from Qv `index`. Semantically these should be separated as:
 
 content(v) = max{ d : v ∈ dL },
 
@@ -299,7 +307,8 @@ The source code should not determine the public terminology.
 
 ## 3.3 Do not port `ExpandMatrix` as a public primitive
 
-`ExpandMatrix` merely inserts a reduced matrix into a chosen block basis. Its replacement is a direct-sum morphism:
+`ExpandMatrix` merely inserts a reduced matrix into a chosen block basis.
+Its replacement is a direct-sum morphism:
 
 ```python
 f = phi.direct_sum(identity_map(rank_one_factor))
@@ -307,7 +316,7 @@ f = phi.direct_sum(identity_map(rank_one_factor))
 
 The basis matrix used to express this morphism belongs in the coordinate adapter.
 
----
+* * *
 
 # 4. `indefinite/vector_sections.py`
 
@@ -377,11 +386,13 @@ extension = section1.rational_lift(phi, target=section2)
 g = extension.integral_point(source=L1, target=L2)
 ```
 
-The integrality correction must be a separate operation. A rational block extension is not automatically an integral lattice isometry.
+The integrality correction must be a separate operation.
+A rational block extension is not automatically an integral lattice isometry.
 
 ## 4.3 Isotropic branch
 
-The source does not quotient by Zv. Instead, it recursively handles the degenerate formed module v^⊥, then calls
+The source does not quotient by Zv.
+Instead, it recursively handles the degenerate formed module v^⊥, then calls
 
 ```text
 LORENTZ_ExtendOrthogonalIsotropicIsomorphism_Dim1
@@ -389,7 +400,8 @@ LORENTZ_ExtendOrthogonalIsotropicIsomorphism_Dim1
 
 and changes sign when the resulting lift sends v to -v.
 
-The semantic implementation should instead expose K_v = v^⊥/Zv as the primary reduced lattice. The source's degenerate recursion may remain as an interim backend, but it should not define the public object.
+The semantic implementation should instead expose K_v = v^⊥/Zv as the primary reduced lattice.
+The source's degenerate recursion may remain as an interim backend, but it should not define the public object.
 
 Use:
 
@@ -404,7 +416,7 @@ U = P.unipotent_kernel()
 
 This makes explicit that the stabilizer is not simply O(K_v).
 
----
+* * *
 
 # 5. `indefinite/isotropic_reductions.py`
 
@@ -501,7 +513,8 @@ class IsotropicFlag:
         ...
 ```
 
-`GetAutomorphismOfFlag` and `ExtendIsometryGroup_Triangular` should not survive as raw block-matrix generators. Replace them with:
+`GetAutomorphismOfFlag` and `ExtendIsometryGroup_Triangular` should not survive as raw block-matrix generators.
+Replace them with:
 
 ```python
 P = GL(I).stabilizer(flag_on_I)
@@ -536,7 +549,7 @@ G = D.automorphism_group(flag=None)
 
 The source's elementary shear generators are then generated from the ordinary module Hom_Z(M̄, R), rather than inserted by coordinate loops.
 
----
+* * *
 
 # 6. `indefinite/isotropic_lifts.py`
 
@@ -555,7 +568,8 @@ lorentzian_linalg.h
     LORENTZ_ExtendOrthogonalIsotropicIsomorphism_Dim1_Kernel
 ```
 
-The algorithm chooses a complementary vector, solves the prescribed pairings against the target subspace, and adjusts it along the one-dimensional isotropic radical to obtain the required norm. The GAP implementation states this calculation directly.
+The algorithm chooses a complementary vector, solves the prescribed pairings against the target subspace, and adjusts it along the one-dimensional isotropic radical to obtain the required norm.
+The GAP implementation states this calculation directly.
 
 Translate it as:
 
@@ -624,9 +638,11 @@ E.integral_parameters(source_lattice=L1, target_lattice=L2)
 E.one_integral_extension()
 ```
 
-Integrality is a system of affine congruences in the λ_i. Clear denominators once and solve the resulting affine lattice problem by Smith normal form and Chinese remaindering. This gives either:
+Integrality is a system of affine congruences in the λ_i. Clear denominators once and solve the resulting affine lattice problem by Smith normal form and Chinese remaindering.
+This gives either:
 
 - an empty integral locus;
+
 - or a coset λ_0 + Λ ⊂ Q^r.
 
 No heuristic prime-denominator cancellation is required.
@@ -640,7 +656,8 @@ IntegralKernelSpecialEquation
 GetOrthogonalTotallyIsotropicKernelSubspace
 ```
 
-The latter computes isometries acting identically on I^⊥. It reduces the condition to HU^T + UH^T = 0 and constructs generators from the integral kernel. The source explicitly notes that this particular kernel is commutative.
+The latter computes isometries acting identically on I^⊥. It reduces the condition to HU^T + UH^T = 0 and constructs generators from the integral kernel.
+The source explicitly notes that this particular kernel is commutative.
 
 Translate this as:
 
@@ -652,9 +669,10 @@ K.embedding_into(R.ambient.O())
 K.gens()
 ```
 
-Do not call this object the full unipotent radical. The full parabolic unipotent group may include additional shear directions and need not be commutative.
+Do not call this object the full unipotent radical.
+The full parabolic unipotent group may include additional shear directions and need not be commutative.
 
----
+* * *
 
 # 7. Replace `ComputeInvariantSublattice` by intrinsic parabolic data
 
@@ -670,7 +688,8 @@ ComputeRelevantKernel
 MapOrthogonalSublatticeGroupUsingSublattice
 ```
 
-The source itself states that its attempted invariant-sublattice construction has no theoretical guarantee, although it had worked on tested inputs. Method 2 lifts all quotient generators and then feeds those rational matrices to `MatrixIntegral_GetInvariantSpace`.
+The source itself states that its attempted invariant-sublattice construction has no theoretical guarantee, although it had worked on tested inputs.
+Method 2 lifts all quotient generators and then feeds those rational matrices to `MatrixIntegral_GetInvariantSpace`.
 
 Do not port either method.
 
@@ -682,14 +701,21 @@ The pairing induces an injection of free rank-k modules
 
 L/P ↪ I^∨, [x] ↦ b(x,-)|_I,
 
-with finite cokernel. Record:
+with finite cokernel.
+Record:
 
 1. I;
+
 2. P = I^⊥;
+
 3. K = P/I;
+
 4. the lattice J_I = im(L/P → I^∨);
+
 5. the extension 0 → I → P → K → 0;
+
 6. the finite gluing data recovering L inside a rational Witt decomposition;
+
 7. any requested flag on I.
 
 ```python
@@ -742,7 +768,7 @@ P_group = generated_group(
 
 This produces the actual parabolic stabilizer without guessing a common "helping lattice."
 
----
+* * *
 
 # 8. `groups/integral_structures.py`
 
@@ -806,7 +832,8 @@ The method should explicitly have the precondition that G stabilizes some lattic
 
 The GAP implementation increments d = 1, 2, … until it finds dZ^n ⊆ L.
 
-Replace this by the exponent of the finite quotient. If L ⊆ M and the Smith invariants of M/L are d_1 | ⋯ | d_r, then the least d satisfying dM ⊆ L is d_r.
+Replace this by the exponent of the finite quotient.
+If L ⊆ M and the Smith invariants of M/L are d_1 | ⋯ | d_r, then the least d satisfying dM ⊆ L is d_r.
 
 ```python
 d = (M / L).exponent()
@@ -842,7 +869,8 @@ stab = libgap.Stabilizer(P, S)
 H = rho.preimage(stab)
 ```
 
-For large F, refine prime by prime using F = ⊕_{p | d} F_(p) and the elementary-divisor filtration. This recovers the source's incremental modular refinement without treating residue vectors as the public abstraction.
+For large F, refine prime by prime using F = ⊕*{p | d} F*(p) and the elementary-divisor filtration.
+This recovers the source's incremental modular refinement without treating residue vectors as the public abstraction.
 
 ## 8.5 Map the `MatrixIntegral_*` family directly
 
@@ -863,16 +891,21 @@ The current C++ routines first find an invariant lattice, conjugate the rational
 Do not port:
 
 - `PersoGroup`;
+
 - custom Schreier routines;
+
 - custom permutation types;
+
 - `SmallGeneratingSet`;
+
 - direct double-coset enumeration.
 
-Maintain a homomorphism ρ: G → P to the finite permutation group together with the correspondence between matrix generators and permutation generators. Lift GAP words back by evaluating them in the original matrices.
+Maintain a homomorphism ρ: G → P to the finite permutation group together with the correspondence between matrix generators and permutation generators.
+Lift GAP words back by evaluating them in the original matrices.
 
 The parity corpus for this module is `CI_tests/01_RatIntAutomorphy/ProcessExamples.g`, which explicitly verifies that the returned double cosets are disjoint and exhaust the finite ambient group.
 
----
+* * *
 
 # 9. `indefinite/eichler.py`
 
@@ -952,10 +985,15 @@ GetApproximateGroup
 The source:
 
 1. identifies L = 2U ⊕ K;
+
 2. constructs left and right SL_2(Z)-actions on the 2U-block;
+
 3. adds Eichler transvections;
+
 4. enumerates discriminant classes of K;
+
 5. refines those classes under known easy isometries;
+
 6. constructs vector representatives satisfying the norm congruences.
 
 The target object is:
@@ -1011,7 +1049,8 @@ GetEichlerHyperplaneBasis
 INDEF_FORM_GetApproximateModel
 ```
 
-`GetEichlerHyperplaneBasis` finds two scaled hyperbolic pairs and constructs an embedding of the input lattice into an over-lattice having a literal 2U-summand. `INDEF_FORM_GetApproximateModel` then computes the subgroup of the envelope model preserving the original embedded lattice by `LinearSpace_Stabilizer_RightCoset`.
+`GetEichlerHyperplaneBasis` finds two scaled hyperbolic pairs and constructs an embedding of the input lattice into an over-lattice having a literal 2U-summand.
+`INDEF_FORM_GetApproximateModel` then computes the subgroup of the envelope model preserving the original embedded lattice by `LinearSpace_Stabilizer_RightCoset`.
 
 Use:
 
@@ -1055,8 +1094,11 @@ L.find_hyperbolic_pair(
 Backend order:
 
 1. use an already known orthogonal decomposition;
+
 2. use an exact rational isotropy solver and integral saturation;
+
 3. solve for w with q(w) = 0 and prescribed b(v,w);
+
 4. use randomized reduction only as a candidate accelerator.
 
 Every result returns actual elements v, w ∈ L and verifies q(v) = q(w) = 0, b(v,w) > 0.
@@ -1065,7 +1107,8 @@ Every result returns actual elements v, w ∈ L and verifies q(v) = q(w) = 0, b(
 
 The source seeks the first positive integer represented by the model and uses a vector of that norm as the splitting vector.
 
-The recursion only requires a vector v with positive norm in the sign-normalized form, because then the positive index of v^⊥ drops by one. The smallest represented positive norm is a complexity heuristic, not a mathematical requirement.
+The recursion only requires a vector v with positive norm in the sign-normalized form, because then the positive index of v^⊥ drops by one.
+The smallest represented positive norm is a complexity heuristic, not a mathematical requirement.
 
 Use:
 
@@ -1078,11 +1121,14 @@ v = model.choose_splitting_vector(
 Possible scores include:
 
 - |q(v)|;
+
 - determinant of v^⊥;
+
 - discriminant-module size of v^⊥;
+
 - estimated quotient-cover size.
 
----
+* * *
 
 # 10. `indefinite/recursive.py`
 
@@ -1106,11 +1152,17 @@ CombinedAlgorithms.h
 The current automorphism routine has exactly the following structure:
 
 1. dispatch definite/Lorentzian/higher-Witt-index by `AttackScheme`;
+
 2. construct an approximate model;
+
 3. choose a represented positive norm and vector v;
+
 4. insert generators of the approximate subgroup;
+
 5. recursively compute Stab_{O(L)}(v);
+
 6. obtain a finite covering list on the norm shell;
+
 7. add every exact transporter from v to a candidate in its full orbit.
 
 Translate it as:
@@ -1155,9 +1207,13 @@ This is one of the places where the source control flow should be preserved almo
 The source:
 
 1. compares attack indices;
+
 2. chooses a splitting vector v_1 in L_1;
+
 3. enumerates a covering list of vectors of the same norm in L_2;
+
 4. calls the recursive vector-transporter routine;
+
 5. optionally simplifies the resulting matrix by multiplying on both sides by approximate groups.
 
 Use:
@@ -1260,7 +1316,7 @@ def vector_orbits(self, G, locus):
 
 Store the transporters found during deduplication instead of discarding them.
 
----
+* * *
 
 # 11. Reduction and memoization
 
@@ -1289,11 +1345,15 @@ No reduced Gram matrix should be detached from the isometry relating it to L.
 `IndefApproxCanonical.h`:
 
 - reduces connected blocks;
+
 - canonically orders absolute-value patterns by graph canonicalization;
+
 - changes coordinate signs;
+
 - orders blocks by coefficient-size heuristics.
 
-This is not a canonical form for integral-lattice isometry. Retain it only as a private cache-bucketing and matrix-size heuristic:
+This is not a canonical form for integral-lattice isometry.
+Retain it only as a private cache-bucketing and matrix-size heuristic:
 
 ```python
 L.presentation_bucket_key()
@@ -1306,12 +1366,15 @@ An exact equivalence test is still mandatory after a key collision.
 The source stores:
 
 - known isometries;
+
 - known nonisometries;
+
 - known stabilizer generators;
 
 and transports stabilizers by conjugation along known isometries.
 
-This is mathematically useful. Translate it as:
+This is mathematically useful.
+Translate it as:
 
 ```python
 class IsometryGroupoidCache:
@@ -1325,7 +1388,7 @@ class IsometryGroupoidCache:
 
 If f: L → M and O(M) is known, return f^{-1} O(M) f as O(L), with actual conjugated `LatticeIsometry` elements.
 
----
+* * *
 
 # 12. `indefinite/lorentzian_cells.py`
 
@@ -1336,7 +1399,7 @@ The Lorentzian perfect-domain code should initially remain partly native, but th
 The existing C++ object already has approximately the desired local protocol:
 
 | Existing method | Target method |
-|---|---|
+| --- | --- |
 | `f_init` | `initial_cell()` |
 | `f_hash` | `cell_bucket_key(cell)` |
 | `f_repr` | `cell_transporter(C1,C2)` |
@@ -1345,7 +1408,8 @@ The existing C++ object already has approximately the desired local protocol:
 | `LORENTZ_ComputeStabilizer` | `cell_stabilizer(C)` |
 | `LORENTZ_DoFlipping` | `flip_across(C,facet)` |
 
-`f_adj` computes the cell stabilizer, enumerates facet orbits by dual description, and flips across each facet. `f_repr` performs an exact integral configuration isomorphism test.
+`f_adj` computes the cell stabilizer, enumerates facet orbits by dual description, and flips across each facet.
+`f_repr` performs an exact integral configuration isomorphism test.
 
 Define:
 
@@ -1393,8 +1457,11 @@ These perform exact CVP-like enumeration, wall movement, and cell construction.
 Do not keep native:
 
 - `EnumerateAndStore_Serial`;
+
 - final group extraction;
+
 - global memoization/database management;
+
 - command-line configuration and serialization.
 
 Python should own the quotient-cell traversal.
@@ -1416,7 +1483,9 @@ class LorentzianPerfectComplex:
 
 This is the semantic version of `LORENTZ_ExtractGeneratorsFromObjList`, which collects adjacency transporters and cell stabilizers.
 
-The result of the cell traversal is O^Ω(L). The full group method separately adjoins a verified component-flipping isometry. In Lorentzian signature, −1_L is canonical. The legacy GAP implementation explicitly begins with −I because the perfect-domain generators do not flip the cone.
+The result of the cell traversal is O^Ω(L). The full group method separately adjoins a verified component-flipping isometry.
+In Lorentzian signature, −1_L is canonical.
+The legacy GAP implementation explicitly begins with −I because the perfect-domain generators do not flip the cone.
 
 ```python
 def full_orthogonal_group(self):
@@ -1431,8 +1500,11 @@ def full_orthogonal_group(self):
 `LORENTZ_GetOrbitRepresentative_Kernel` currently:
 
 1. computes local orbits of isotropic vertices under each cell stabilizer;
+
 2. transports them across adjacency edges;
+
 3. builds a graph on the local orbit labels;
+
 4. takes connected components.
 
 For nonzero norm it stops with an explicit "some code needs to be written" error.
@@ -1457,7 +1529,7 @@ Nonzero fixed-norm vectors require a new finite local-mark theorem or enumeratio
 
 The Lorentzian parity corpus is `CI_tests/28B_LorentzianPerfStabEqui`, whose test driver compares exact perfect-domain counts in ranks 3, 4, 5, and > 5 with a frozen result file.
 
----
+* * *
 
 # 13. `indefinite/isotropic_flags.py`
 
@@ -1478,11 +1550,13 @@ CombinedAlgorithms.h
     INDEF_FORM_GetOrbit_IsotropicKstuff_Kernel
 ```
 
-The current C++ starts from primitive isotropic-vector orbits and inductively extends rank-(k−1) sublattices by isotropic vectors in the quotient. It uses the double-coset path by default.
+The current C++ starts from primitive isotropic-vector orbits and inductively extends rank-(k−1) sublattices by isotropic vectors in the quotient.
+It uses the double-coset path by default.
 
 ## 13.2 Express the induction intrinsically
 
-Let I represent a G-orbit of primitive isotropic rank-(k−1) sublattices. Put
+Let I represent a G-orbit of primitive isotropic rank-(k−1) sublattices.
+Put
 
 K_I = I^⊥/I, P_I = Stab_G(I), H_I = im(P_I → O(K_I)).
 
@@ -1541,7 +1615,9 @@ P.stabilizer_of_quotient_line(v.primitive_line())
 `f_double_cosets` computes the double cosets between:
 
 - the rational candidate group;
+
 - the rational subgroup stabilizing the extension vector;
+
 - the integral subgroup preserving the ambient lattice.
 
 The source comments explicitly identify this as an orbit-splitting problem and invoke `MatrixIntegral_DoubleCosets_General`.
@@ -1575,8 +1651,11 @@ accumulator.insert_with_exact_transporter(J)
 The prefilter may use:
 
 - rank;
+
 - flag type;
+
 - J^⊥/J;
+
 - discriminant gluing data;
 
 but it may not decide equivalence.
@@ -1588,12 +1667,14 @@ The source says that the initial-set computation "works by kind of chance" becau
 Therefore:
 
 1. implement rank-two planes and flags first;
+
 2. validate the exact parabolic/gluing construction;
+
 3. only then enable arbitrary `rank=k`.
 
 For signature (2,n), rank two is already the maximal isotropic rank and recovers the Baily–Borel/Tits-building applications.
 
----
+* * *
 
 # 14. `indefinite/arithmetic_subgroups.py`
 
@@ -1612,9 +1693,13 @@ For any finite representation ρ: G → F and H ≤ F, Γ = ρ^{-1}(H) is comput
 This covers:
 
 - O^+(L);
+
 - prescribed subgroups of O(A_L);
+
 - component kernels;
+
 - congruence groups;
+
 - intersections of these conditions.
 
 ## 14.2 Orbit splitting
@@ -1635,12 +1720,14 @@ D_gamma = G.split_orbit(
 The method returns:
 
 - the split representatives;
+
 - lifts of the finite double-coset representatives;
+
 - stabilizers in Γ.
 
 This is a separate use of double cosets from the internal integralization double cosets in `f_double_cosets`; both can share the same finite-group abstraction.
 
----
+* * *
 
 # 15. `indefinite/equivariant.py`
 
@@ -1662,7 +1749,8 @@ C.intersection(L.O_plus())
 
 For f^2 = 1, construct L_± = L ∩ ker(f ∓ 1). Let M = L_+ ⊕ L_- ⊆ L.
 
-The finite-index overlattice L/M is the gluing object. Then
+The finite-index overlattice L/M is the gluing object.
+Then
 
 O(L, f) ≅ Stab_{O(L_+) × O(L_-)}(L/M).
 
@@ -1687,8 +1775,11 @@ class EquivariantLattice:
 This reuses:
 
 - orthogonal-group computation on the two eigensublattices;
+
 - finite discriminant/gluing actions;
+
 - subgroup preimages;
+
 - exact extension to an overlattice.
 
 No generator filtering occurs.
@@ -1703,7 +1794,7 @@ Intersect each rational isotypic component with L, compute the product of compon
 
 A general infinite-order centralizer should not be claimed by this initial implementation.
 
----
+* * *
 
 # 16. Exact symbol-level disposition
 
@@ -1839,7 +1930,7 @@ ExhaustiveReductionComplexityGroupMatrix
 
 The first three are wrappers rather than mathematical implementations.
 
----
+* * *
 
 # 17. Implementation order and concrete recovery points
 
@@ -1872,7 +1963,8 @@ right cosets
 double cosets
 ```
 
-Run the complete `CI_tests/01_RatIntAutomorphy` and `CI_tests/DoubleCosets/DBL` corpora. The former checks rational versus integral automorphisms and exact disjoint exhaustion by double cosets.
+Run the complete `CI_tests/01_RatIntAutomorphy` and `CI_tests/DoubleCosets/DBL` corpora.
+The former checks rational versus integral automorphisms and exact disjoint exhaustion by double cosets.
 
 ## Tranche 3: Lorentzian cell backend
 
@@ -1881,9 +1973,13 @@ Expose only the local cell protocol from C++, with Python owning quotient traver
 Recover:
 
 - O^Ω(U ⊕ E_8(−1));
+
 - full O(U ⊕ E_8(−1));
+
 - primitive isotropic-vector orbits;
+
 - their stabilizers;
+
 - the frozen Lorentzian perfect-domain counts.
 
 ## Tranche 4: Eichler model and recursive full group
@@ -1942,4 +2038,5 @@ construction-aware intersections
 
 Recover the centralizer of an Enriques involution from eigensublattices and gluing, then intersect it with stable and polarization-stabilizer subgroups.
 
-The resulting Sage code owns the mathematical recursion and object semantics. The only initially retained C++ is the local Lorentzian perfect-cell engine; even there, traversal, orbit assembly, subgroup semantics, and result construction move into the Sage layer.
+The resulting Sage code owns the mathematical recursion and object semantics.
+The only initially retained C++ is the local Lorentzian perfect-cell engine; even there, traversal, orbit assembly, subgroup semantics, and result construction move into the Sage layer.
