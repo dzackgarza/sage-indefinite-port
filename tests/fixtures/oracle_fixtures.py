@@ -121,6 +121,20 @@ class OscarLatticeOracles(TypedDict):
     isometry_groups: list[dict[str, object]]
 
 
+class DTowerBoundary(TypedDict):
+    id: str
+    N: int
+    lattice: str
+    gram: Gram
+    signature: list[int]
+    group: str
+    type_iii_points: int
+    type_ii_curves: int
+    type_ii_labels: list[str]
+    incidences: list[list[str]]
+    source: dict[str, TextSource]
+
+
 class LorentzianPerfectCase(TypedDict):
     id: str
     dimension: int
@@ -540,6 +554,13 @@ def load_oscar_lattice_oracles() -> OscarLatticeOracles:
     """Vinberg roots, discriminant images and isometry-group orders recorded in OSCAR's tests."""
     with open(FIXTURES_DIR / "oscar_lattice_oracles.json", encoding="utf-8") as f:
         data: OscarLatticeOracles = json.load(f)
+        return data
+
+
+def load_dtower_boundaries() -> list[DTowerBoundary]:
+    """Baily--Borel boundaries of F(N) = O^+(U^2 + D_{N-2}) for N = 9, 10, 11 (Laza--O'Grady)."""
+    with open(FIXTURES_DIR / "dtower_boundaries.json", encoding="utf-8") as f:
+        data: list[DTowerBoundary] = json.load(f)
         return data
 
 

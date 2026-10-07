@@ -128,6 +128,19 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Removed**: the "$2^{\omega(d)-1}$ zero-dimensional cusps" family attributed to Attwell-Duval. No source for it is vendored or known, and for squarefree $d$ the Eichler-criterion count is one cusp, which contradicts it. The previous degree-4 labels included $A_{17}$ and $D_{10}+E_7$ (degree-2 labels) and used $A_1$ where the classification has $\langle-4\rangle$.
 
+### Baily–Borel Boundaries of the D-Tower (Laza–O'Grady)
+
+- **File**: `tests/fixtures/dtower_boundaries.json`
+
+- **Source**: Laza–O'Grady, arXiv:1801.04845 (vendored TeX). $\Lambda_N = U^2 \oplus D_{N-2}$ with $D$ negative definite (line 625); $\Gamma(N) = O^+(\Lambda_N)$ for the cases recorded (line 642). The diagram `bbpicture` (lines 4629–4631) gives the Baily–Borel boundaries of $\mathcal F(9)$, $\mathcal F(10)$ and $\mathcal F(11)$:
+  - $N=9$: 1 Type III point and 1 Type II curve ($D_7$), 1 incidence;
+  - $N=10$: 2 points and 2 curves ($E_8$, $D_8$), 3 incidences;
+  - $N=11$: 1 point and 2 curves ($E_8\oplus D_1$, $D_9$), 2 incidences.
+
+- **Not included**: Type II counts for other $N$. The paper's theorem for $3 \le N \le 20$ refers to a table under the label `tabletype2`, but that label belongs to a different table, the Type II components of $\widehat{\mathcal F}$. No per-$N$ counts are stated, so none are reconstructed.
+
+- **Extraction**: `uv run references/extract/laza_ogrady_dtower.py`. It asserts every label on its cited line.
+
 ### Dawes Tits Buildings and Index Chain
 
 - **File**: `tests/fixtures/dawes_buildings.json`
