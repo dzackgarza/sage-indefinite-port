@@ -248,6 +248,14 @@ This document records the exact provenance, source files, authors, publications,
 
   - `definite_centralizer_cases`: the negative definite rank-8 lattice of `lattices_with_isometry.jl` lines 80-87, with an isometry of order 5 whose centralizer has image of order 600 in $O(q_L)$. Definite isometry groups are the research preamble's concern.
 
+  - `definite_centralizer_cases` also holds $A_3$ with the identity (`lattices_with_isometry.jl` lines 28-36): the image of $O(A_3)$ in $O(q)$ has order 2.
+
+  - Class counts from `enumeration.jl`: how many isomorphism classes of lattices with isometry $(L,f)$ OSCAR's enumeration returns, with the OSCAR call kept verbatim (its filter arguments are OSCAR's parameters) and every further `@test` on the result:
+    - `lattice_class_counts`: $U\oplus E_8$ (order 30, 1 class), $5U$ (order 4, 5 classes, 3 with $\det$ of the 2-kernel lattice equal to 4), $4U$ (hermitian order 5: 3 classes, 2 with the extra argument 5), $2U$ (hermitian order 4: 1 class), and the rank-6 lattice of "Fix type condition" (order 14: 3 classes);
+    - `hermitian_genus_class_counts`: classes specified by signature pairs and determinant (1, 3 and 8 classes);
+    - `definite_class_counts`: $E_6$ and $E_8$ cases, including OSCAR's `admissible_triples` counts.
+    - Not transcribed: the $A_4$ loop (lines 15-18) compares OSCAR's enumeration with OSCAR's own conjugacy classes and records no count.
+
   - For a signature-(1,9) genus, OSCAR records 11 classes of pairs $(L, f)$ with characteristic polynomial $(x-1)^4(x+1)^6$ (9 locally).
 
 - **Extraction**: `references/extract/oscar_centralizers.py`, run under Sage's Python. It parses the Julia matrix literals mechanically and reads each recorded value from its `@test` line. It computes $B G B^T$ and the isometry in the lattice basis, and asserts integrality and form preservation. It splits the cases by computed signature and asserts that exactly the order-600 case is definite.

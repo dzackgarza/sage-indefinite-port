@@ -545,6 +545,55 @@
     "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/lattices_with_isometry.jl",
     "lines": "80-87"
    }
+  },
+  {
+   "id": "oscar_lattices_with_isometry_28",
+   "gram": [
+    [
+     2,
+     -1,
+     0
+    ],
+    [
+     -1,
+     2,
+     -1
+    ],
+    [
+     0,
+     -1,
+     2
+    ]
+   ],
+   "signature": [
+    3,
+    0
+   ],
+   "isometry": [
+    [
+     1,
+     0,
+     0
+    ],
+    [
+     0,
+     1,
+     0
+    ],
+    [
+     0,
+     0,
+     1
+    ]
+   ],
+   "isometry_order": 1,
+   "isometry_convention": "row vectors: v -> v * isometry",
+   "centralizer_image_order": 2,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/lattices_with_isometry.jl",
+    "lines": "28-36"
+   }
   }
  ],
  "involution_classes": [
@@ -685,6 +734,1228 @@
     "kind": "independent_implementation_test",
     "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/enumeration.jl",
     "lines": "52-58"
+   }
+  }
+ ],
+ "lattice_class_counts": [
+  {
+   "id": "U_plus_E8_order_30",
+   "gram": [
+    [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     2,
+     0,
+     -1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     2,
+     0,
+     -1,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     -1,
+     0,
+     2,
+     -1,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     -1,
+     -1,
+     2,
+     -1,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     -1,
+     2,
+     -1,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     -1,
+     2,
+     -1,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     -1,
+     2,
+     -1
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     -1,
+     2
+    ]
+   ],
+   "signature": [
+    9,
+    1
+   ],
+   "isometry_order": 30,
+   "oscar_call": "r = enumerate_classes_of_lattices_with_isometry(L, 30; char_poly=(x-1)^2*cyclotomic(30, x))",
+   "class_count": 1,
+   "recorded_properties": [
+    "@test det(invariant_lattice(r[1])) == -1"
+   ],
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/enumeration.jl",
+    "lines": "42-44"
+   }
+  },
+  {
+   "id": "5U_order_4",
+   "gram": [
+    [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0
+    ]
+   ],
+   "signature": [
+    5,
+    5
+   ],
+   "isometry_order": 4,
+   "oscar_call": "r = enumerate_classes_of_lattices_with_isometry(M, 4; min_poly=(x^2-1)*cyclotomic(4,x), pos_sigs=[(1,2), (2,1), (4,2)], neg_sigs=[(2,0)], fix_root=4)",
+   "class_count": 5,
+   "recorded_properties": [
+    "@test length(filter(N -> det(kernel_lattice(N, 2)) == 4, r)) == 3"
+   ],
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/enumeration.jl",
+    "lines": "61-63"
+   }
+  },
+  {
+   "id": "4U_hermitian_order_5",
+   "gram": [
+    [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0
+    ]
+   ],
+   "signature": [
+    4,
+    4
+   ],
+   "isometry_order": 5,
+   "oscar_call": "@test length(representatives_of_hermitian_type(L, 5)) == 3",
+   "class_count": 3,
+   "recorded_properties": [],
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/enumeration.jl",
+    "lines": "78-78"
+   }
+  },
+  {
+   "id": "4U_hermitian_order_5_fix_5",
+   "gram": [
+    [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0
+    ]
+   ],
+   "signature": [
+    4,
+    4
+   ],
+   "isometry_order": 5,
+   "oscar_call": "@test length(representatives_of_hermitian_type(L, 5, 5)) == 2",
+   "class_count": 2,
+   "recorded_properties": [],
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/enumeration.jl",
+    "lines": "79-79"
+   }
+  },
+  {
+   "id": "2U_hermitian_order_4_fix_4",
+   "gram": [
+    [
+     0,
+     1,
+     0,
+     0
+    ],
+    [
+     1,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     1
+    ],
+    [
+     0,
+     0,
+     1,
+     0
+    ]
+   ],
+   "signature": [
+    2,
+    2
+   ],
+   "isometry_order": 4,
+   "oscar_call": "reps = representatives_of_hermitian_type(L, 4, 4)",
+   "class_count": 1,
+   "recorded_properties": [],
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/enumeration.jl",
+    "lines": "108-109"
+   }
+  },
+  {
+   "id": "fix_type_condition_order_14",
+   "gram": [
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     1
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     1,
+     0
+    ],
+    [
+     0,
+     0,
+     -26,
+     13,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     13,
+     -52,
+     0,
+     0
+    ],
+    [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   ],
+   "signature": [
+    2,
+    4
+   ],
+   "isometry_order": 14,
+   "oscar_call": "r = enumerate_classes_of_lattices_with_isometry(L, 14; char_poly=cyclotomic_polynomial(14), fix_root=14)",
+   "class_count": 3,
+   "recorded_properties": [],
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/enumeration.jl",
+    "lines": "122-123"
+   }
+  }
+ ],
+ "hermitian_genus_class_counts": [
+  {
+   "id": "hermitian_sig_2_4_det_3^5_order_9",
+   "oscar_call": "r = representatives_of_hermitian_type((2, 4), 3^5, cyclotomic_polynomial(9), 9)",
+   "class_count": 1,
+   "recorded_properties": [
+    "@test order_of_isometry(Lf) == 9",
+    "@test is_of_hermitian_type(Lf)",
+    "@test signature_pair(G) == (2, 4)",
+    "@test det(G) == 3^5"
+   ],
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/enumeration.jl",
+    "lines": "128-135"
+   }
+  },
+  {
+   "id": "hermitian_unimodular_sig_2_2_2_10_2_18_order_12",
+   "oscar_call": "r = representatives_of_hermitian_type(Tuple{Int, Int}[(2,2), (2, 10), (2,18)], 1, cyclotomic_polynomial(12), 12)",
+   "class_count": 3,
+   "recorded_properties": [
+    "@test all(Lf -> order_of_isometry(Lf) == 12, r)",
+    "@test all(is_of_hermitian_type, r)",
+    "@test all(is_unimodular, r)",
+    "@test all(Lf -> signature_tuple(Lf)[1] == 2, r)"
+   ],
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/enumeration.jl",
+    "lines": "137-142"
+   }
+  },
+  {
+   "id": "hermitian_sig_2_2_2_6_det_1_to_16_order_4",
+   "oscar_call": "r = representatives_of_hermitian_type(Tuple{Int, Int}[(2,2), (2,6)], 1:16, cyclotomic_polynomial(4), 4)",
+   "class_count": 8,
+   "recorded_properties": [
+    "@test all(Lf -> det(Lf) in 1:16, r)",
+    "@test all(Lf -> order_of_isometry(Lf) == 4, r)",
+    "@test all(is_of_hermitian_type, r)",
+    "@test count(Lf -> is_one(order(discriminant_group(Lf)[2])), r) == 4"
+   ],
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/enumeration.jl",
+    "lines": "144-149"
+   }
+  }
+ ],
+ "definite_class_counts": [
+  {
+   "id": "E6_order_20",
+   "gram": [
+    [
+     2,
+     0,
+     -1,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     2,
+     0,
+     -1,
+     0,
+     0
+    ],
+    [
+     -1,
+     0,
+     2,
+     -1,
+     0,
+     0
+    ],
+    [
+     0,
+     -1,
+     -1,
+     2,
+     -1,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     -1,
+     2,
+     -1
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     -1,
+     2
+    ]
+   ],
+   "signature": [
+    6,
+    0
+   ],
+   "oscar_call": "@test length(enumerate_classes_of_lattices_with_isometry(E6, 20)) == 0",
+   "class_count": 0,
+   "recorded_properties": [],
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/enumeration.jl",
+    "lines": "30-30"
+   }
+  },
+  {
+   "id": "E6_order_9",
+   "gram": [
+    [
+     2,
+     0,
+     -1,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     2,
+     0,
+     -1,
+     0,
+     0
+    ],
+    [
+     -1,
+     0,
+     2,
+     -1,
+     0,
+     0
+    ],
+    [
+     0,
+     -1,
+     -1,
+     2,
+     -1,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     -1,
+     2,
+     -1
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     -1,
+     2
+    ]
+   ],
+   "signature": [
+    6,
+    0
+   ],
+   "oscar_call": "@test length(enumerate_classes_of_lattices_with_isometry(E6, 9)) == 1",
+   "class_count": 1,
+   "recorded_properties": [],
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/enumeration.jl",
+    "lines": "31-31"
+   }
+  },
+  {
+   "id": "E6_genus_order_1",
+   "gram": [
+    [
+     2,
+     0,
+     -1,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     2,
+     0,
+     -1,
+     0,
+     0
+    ],
+    [
+     -1,
+     0,
+     2,
+     -1,
+     0,
+     0
+    ],
+    [
+     0,
+     -1,
+     -1,
+     2,
+     -1,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     -1,
+     2,
+     -1
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     -1,
+     2
+    ]
+   ],
+   "signature": [
+    6,
+    0
+   ],
+   "oscar_call": "@test length(enumerate_classes_of_lattices_with_isometry(genus(E6), 1)) == 1",
+   "class_count": 1,
+   "recorded_properties": [],
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/enumeration.jl",
+    "lines": "32-32"
+   }
+  },
+  {
+   "id": "E6_admissible_triples_2_IpA_2",
+   "gram": [
+    [
+     2,
+     0,
+     -1,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     2,
+     0,
+     -1,
+     0,
+     0
+    ],
+    [
+     -1,
+     0,
+     2,
+     -1,
+     0,
+     0
+    ],
+    [
+     0,
+     -1,
+     -1,
+     2,
+     -1,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     -1,
+     2,
+     -1
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     -1,
+     2
+    ]
+   ],
+   "signature": [
+    6,
+    0
+   ],
+   "oscar_call": "@test length(admissible_triples(E6, 2; IpA=[2])) == 2",
+   "class_count": 2,
+   "recorded_properties": [],
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/enumeration.jl",
+    "lines": "34-34"
+   }
+  },
+  {
+   "id": "E6(2)_admissible_triples_2_IpB_4",
+   "gram": [
+    [
+     4,
+     0,
+     -2,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     4,
+     0,
+     -2,
+     0,
+     0
+    ],
+    [
+     -2,
+     0,
+     4,
+     -2,
+     0,
+     0
+    ],
+    [
+     0,
+     -2,
+     -2,
+     4,
+     -2,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     -2,
+     4,
+     -2
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     -2,
+     4
+    ]
+   ],
+   "signature": [
+    6,
+    0
+   ],
+   "oscar_call": "@test length(admissible_triples(rescale(E6, 2), 2; IpB=[4])) == 2",
+   "class_count": 2,
+   "recorded_properties": [],
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/enumeration.jl",
+    "lines": "35-35"
+   }
+  },
+  {
+   "id": "E6_admissible_triples_3_IpA_2_IpB_4",
+   "gram": [
+    [
+     2,
+     0,
+     -1,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     2,
+     0,
+     -1,
+     0,
+     0
+    ],
+    [
+     -1,
+     0,
+     2,
+     -1,
+     0,
+     0
+    ],
+    [
+     0,
+     -1,
+     -1,
+     2,
+     -1,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     -1,
+     2,
+     -1
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     -1,
+     2
+    ]
+   ],
+   "signature": [
+    6,
+    0
+   ],
+   "oscar_call": "@test length(admissible_triples(E6, 3; IpA=[2], IpB=[4])) == 1",
+   "class_count": 1,
+   "recorded_properties": [],
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/enumeration.jl",
+    "lines": "36-36"
+   }
+  },
+  {
+   "id": "E8_order_12_x8-x6+x2-1",
+   "gram": [
+    [
+     2,
+     0,
+     -1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     2,
+     0,
+     -1,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     -1,
+     0,
+     2,
+     -1,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     -1,
+     -1,
+     2,
+     -1,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     -1,
+     2,
+     -1,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     -1,
+     2,
+     -1,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     -1,
+     2,
+     -1
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     -1,
+     2
+    ]
+   ],
+   "signature": [
+    8,
+    0
+   ],
+   "oscar_call": "r = enumerate_classes_of_lattices_with_isometry(E8, 12; char_poly=x^8 - x^6 + x^2 - 1)",
+   "class_count": 1,
+   "recorded_properties": [],
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/enumeration.jl",
+    "lines": "46-47"
+   }
+  },
+  {
+   "id": "E8_order_12_x8+x6+x2+1",
+   "gram": [
+    [
+     2,
+     0,
+     -1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     2,
+     0,
+     -1,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     -1,
+     0,
+     2,
+     -1,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     -1,
+     -1,
+     2,
+     -1,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     -1,
+     2,
+     -1,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     -1,
+     2,
+     -1,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     -1,
+     2,
+     -1
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     -1,
+     2
+    ]
+   ],
+   "signature": [
+    8,
+    0
+   ],
+   "oscar_call": "r = enumerate_classes_of_lattices_with_isometry(E8, 12; char_poly=x^8 + x^6 + x^2 + 1)",
+   "class_count": 1,
+   "recorded_properties": [],
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/enumeration.jl",
+    "lines": "48-49"
    }
   }
  ]

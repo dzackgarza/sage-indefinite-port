@@ -616,10 +616,46 @@ class InvolutionClassCount(TypedDict):
     source: TextSource
 
 
+class LatticeClassCount(TypedDict):
+    """How many classes of lattices with isometry (L, f) OSCAR's call returns, for an explicit lattice."""
+
+    id: str
+    gram: Gram
+    signature: list[int]
+    isometry_order: int
+    oscar_call: str
+    class_count: int
+    recorded_properties: list[str]
+    source: TextSource
+
+
+class DefiniteClassCount(TypedDict):
+    id: str
+    gram: Gram
+    signature: list[int]
+    oscar_call: str
+    class_count: int
+    recorded_properties: list[str]
+    source: TextSource
+
+
+class HermitianGenusClassCount(TypedDict):
+    """As LatticeClassCount, for hermitian-type classes specified by signature pairs and determinant."""
+
+    id: str
+    oscar_call: str
+    class_count: int
+    recorded_properties: list[str]
+    source: TextSource
+
+
 class IsometryCentralizers(TypedDict):
     centralizer_cases: list[CentralizerCase]
     definite_centralizer_cases: list[CentralizerCase]
     involution_classes: list[InvolutionClassCount]
+    lattice_class_counts: list[LatticeClassCount]
+    hermitian_genus_class_counts: list[HermitianGenusClassCount]
+    definite_class_counts: list[DefiniteClassCount]
 
 
 class OracleEntry(TypedDict, total=False):
