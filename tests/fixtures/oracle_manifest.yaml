@@ -51,6 +51,12 @@ oracles:
       - references/vendor/GeometryDatabase_Rank3_Lorentzian_lattices@63a9067a/RK3_all
       - references/vendor/arxiv/1010.0486
       - references/vendor/arxiv/1111.1264
+  - fixture_file: enriques_classical_indices.json
+    extraction: references/extract/dh23_classical.py
+    runtime: uv
+    kind: published_text
+    sources:
+      - references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex
   - fixture_file: dawes_buildings.json
     extraction: references/extract/dawes_buildings.py
     runtime: uv

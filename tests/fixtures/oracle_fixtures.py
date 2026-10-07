@@ -71,6 +71,40 @@ class Enriques87Case(TypedDict):
     source: TableRowSource
 
 
+class ClassicalIndexSources(TypedDict):
+    count: TextSource
+    display: TextSource
+    order_of_O_plus_F2: TextSource
+
+
+class ClassicalIndex(TypedDict):
+    """[O+(N):Gamma_h] and |bar Gamma_h| = [Gamma_h : tilde O+(N)] for a classical polarization."""
+
+    degree: int
+    case: int
+    index_in_O_plus_N: int
+    gamma_h_over_stable_order: int
+    source: ClassicalIndexSources
+
+
+class InconsistentClassicalIndex(TypedDict):
+    """A classical case whose text disagrees with Table 1; the unprefixed values are the table's."""
+
+    degree: int
+    case: int
+    index_in_O_plus_N: int
+    gamma_h_over_stable_order: int
+    stated_index_in_O_plus_N: int
+    stated_gamma_h_over_stable_order: int
+    quotient_of_displayed_numbers: int
+    source: ClassicalIndexSources
+
+
+class EnriquesClassicalIndices(TypedDict):
+    consistent_with_table: list[ClassicalIndex]
+    inconsistent_with_table: list[InconsistentClassicalIndex]
+
+
 class PolarizationOrbitCount(TypedDict):
     lattice: str
     two_d: int
@@ -742,6 +776,13 @@ def load_isometry_centralizers() -> IsometryCentralizers:
     """Centralizer images and involution-class counts recorded in OSCAR's tests."""
     with open(FIXTURES_DIR / "isometry_centralizers.json", encoding="utf-8") as f:
         data: IsometryCentralizers = json.load(f)
+        return data
+
+
+def load_enriques_classical_indices() -> EnriquesClassicalIndices:
+    """[O+(N):Gamma_h] for the classical degree 2, 6, 10 polarizations (Dutour Sikirić--Hulek, Classical cases)."""
+    with open(FIXTURES_DIR / "enriques_classical_indices.json", encoding="utf-8") as f:
+        data: EnriquesClassicalIndices = json.load(f)
         return data
 
 
