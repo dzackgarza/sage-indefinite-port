@@ -3,8 +3,9 @@
 from dzack_research.preamble.all import QQ, ZZ, Lattices, Modules
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
-from sage.matrix.constructor import identity_matrix
+from sage.matrix.constructor import identity_matrix, matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
+from sage.modules.free_module_element import vector as sage_vector
 from sage.rings.integer_ring import ZZ as SageZZ
 
 from sage_indefinite_port.backends.canonization import (
@@ -88,8 +89,8 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
             int,
             tuple[
                 Lattices.ElementMethods,
-                Lattices.ElementMethods,
                 Lattices.ParentMethods,
+                Matrix_integer_dense,
             ],
         ] = {}
 
@@ -508,8 +509,8 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
             case _:
                 return None
 
-        source_partner, source_complement = self._split_unimodular_isotropic_data(source_vector)
-        target_partner, target_complement = self._split_unimodular_isotropic_data(target_vector)
+        source_complement, source_basis = self._split_unimodular_isotropic_data(source_vector)
+        target_complement, target_basis = self._split_unimodular_isotropic_data(target_vector)
         complement_isometry = self.isometry(source_complement, target_complement)
         match complement_isometry:
             case None:
@@ -517,24 +518,30 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
             case _:
                 pass
 
-        source_inclusion = source_complement.inclusion()
-        target_inclusion = target_complement.inclusion()
         match source is target:
             case True:
                 target_parent = source.Aut()
             case False:
                 target_parent = source.Isom(target)
-
-        def image(label):
-            vector = source.module_generator(label)
-            isotropic_coefficient = source.b(vector, source_partner)
-            partner_coefficient = source.b(vector, source_vector)
-            complement_part = vector - source.scalar_multiple(isotropic_coefficient, source_vector) - source.scalar_multiple(partner_coefficient, source_partner)
-            reduced_part = source_inclusion.lift(complement_part)
-            moved_reduced = target_inclusion(complement_isometry(reduced_part))
-            return target.scalar_multiple(isotropic_coefficient, target_vector) + target.scalar_multiple(partner_coefficient, target_partner) + moved_reduced
-
-        witness = target_parent(image)
+        complement_row_action = complement_isometry.parent()._row_action_matrix(
+            complement_isometry
+        ).change_ring(SageZZ)
+        rank = source_basis.nrows()
+        split_action = identity_matrix(SageZZ, rank)
+        for row in range(complement_row_action.nrows()):
+            for column in range(complement_row_action.ncols()):
+                split_action[row + 2, column + 2] = complement_row_action[
+                    row,
+                    column,
+                ]
+        ambient_row_action = (
+            source_basis.inverse()
+            * split_action
+            * target_basis
+        )
+        witness = target_parent._isometry_from_column_matrix(
+            ambient_row_action.transpose()
+        )
         match witness(source_vector) == target_vector:
             case True:
                 return witness
@@ -544,7 +551,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
     def _split_unimodular_isotropic_data(
         self,
         vector: Lattices.ElementMethods,
-    ) -> tuple[Lattices.ElementMethods, Lattices.ParentMethods]:
+    ) -> tuple[Lattices.ParentMethods, Matrix_integer_dense]:
         cached = self._split_isotropic_data_cache.get(id(vector))
         if cached is not None and cached[0] is vector:
             return cached[1], cached[2]
@@ -552,46 +559,86 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
         ambient = vector.parent()
         ring = ambient.base_ring()
         labels = tuple(ambient.module_generating_set())
-        pairings = tuple(ambient.b(vector, ambient.module_generator(label)) for label in labels)
-        gcd_value = ring.zero()
+        gram = _engine_component_matrix(ambient.gram_tensor()).change_ring(SageZZ)
+        coordinate_function = vector.to_vector()
+        isotropic_coordinates = sage_vector(
+            SageZZ,
+            tuple(
+                SageZZ(int(coordinate_function(label)))
+                for label in labels
+            ),
+        )
+        pairings = isotropic_coordinates * gram
+        gcd_value = SageZZ.zero()
         coefficients = []
         for pairing in pairings:
-            new_gcd, old_coefficient, new_coefficient = gcd_value.xgcd(pairing)
+            new_gcd, old_coefficient, new_coefficient = gcd_value.xgcd(
+                SageZZ(pairing)
+            )
             coefficients = [old_coefficient * coefficient for coefficient in coefficients]
             coefficients.append(new_coefficient)
             gcd_value = new_gcd
-        if gcd_value == -ring.one():
+        if gcd_value == -SageZZ.one():
             coefficients = [-coefficient for coefficient in coefficients]
             gcd_value = -gcd_value
-        if gcd_value != ring.one():
+        if gcd_value != SageZZ.one():
             raise ArithmeticError("a divisibility-one isotropic vector has no Bezout partner")
-        bezout = ambient.linear_combination({label: coefficient for label, coefficient in zip(labels, coefficients, strict=True) if coefficient})
-        if ambient.b(vector, bezout) != ring.one():
+        bezout_coordinates = sage_vector(SageZZ, coefficients)
+        if (isotropic_coordinates * gram * bezout_coordinates.column())[0] != 1:
             raise ArithmeticError("the computed Bezout partner does not pair to one")
-        half_norm = ring(int(bezout.q()) // 2)
-        two = ring.one() + ring.one()
-        match two * half_norm == bezout.q():
-            case True:
-                pass
-            case False:
-                raise ArithmeticError("an even-lattice Bezout partner has odd square")
-        partner = bezout - ambient.scalar_multiple(half_norm, vector)
+        bezout_square = (
+            bezout_coordinates * gram * bezout_coordinates.column()
+        )[0]
+        if bezout_square % 2:
+            raise ArithmeticError("an even-lattice Bezout partner has odd square")
+        partner_coordinates = (
+            bezout_coordinates
+            - SageZZ(bezout_square // 2) * isotropic_coordinates
+        )
         match (
-            partner.q() == ring.zero(),
-            ambient.b(vector, partner) == ring.one(),
+            (partner_coordinates * gram * partner_coordinates.column())[0] == 0,
+            (isotropic_coordinates * gram * partner_coordinates.column())[0] == 1,
         ):
             case (True, True):
                 pass
             case _:
                 raise ArithmeticError("the divisibility-one Witt partner does not span a hyperbolic plane")
-        plane = ambient.subobject_on((vector, partner))
-        complement = ambient.orthogonal_complement(plane)
+        perpendicular_pairings = matrix(
+            SageZZ,
+            [
+                isotropic_coordinates * gram,
+                partner_coordinates * gram,
+            ],
+        )
+        complement_rows = perpendicular_pairings.right_kernel_matrix()
+        complement_gram = complement_rows * gram * complement_rows.transpose()
+        complement = Lattices(ring)(
+            [
+                [
+                    ring(int(complement_gram[row, column]))
+                    for column in range(complement_gram.ncols())
+                ]
+                for row in range(complement_gram.nrows())
+            ]
+        )
+        split_basis = matrix(
+            SageZZ,
+            [
+                tuple(isotropic_coordinates),
+                tuple(partner_coordinates),
+                *(tuple(row) for row in complement_rows.rows()),
+            ],
+        )
+        if abs(split_basis.det()) != 1:
+            raise ArithmeticError(
+                "a divisibility-one hyperbolic plane does not split the ambient lattice unimodularly"
+            )
         self._split_isotropic_data_cache[id(vector)] = (
             vector,
-            partner,
             complement,
+            split_basis,
         )
-        return partner, complement
+        return complement, split_basis
 
     def vector_stabilizer(self, vector: Lattices.ElementMethods) -> GeneratedSubgroup:
         section = self._section(vector)
@@ -755,6 +802,69 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
         cover = model.covering_representatives(
             signed_square,
             primitive=signed_square == signed_lattice.base_ring().zero(),
+        )
+        generator_rows = []
+        known_generator_rows = set()
+        for matrix_ in model._subgroup_column_matrices():
+            integral_matrix = matrix_.change_ring(SageZZ)
+            for generator_matrix in (
+                integral_matrix,
+                integral_matrix.inverse().change_ring(SageZZ),
+            ):
+                rows = tuple(
+                    tuple(
+                        int(generator_matrix[row, column])
+                        for column in range(generator_matrix.ncols())
+                    )
+                    for row in range(generator_matrix.nrows())
+                )
+                if rows not in known_generator_rows:
+                    known_generator_rows.add(rows)
+                    generator_rows.append(rows)
+        labels = tuple(signed_lattice.module_generating_set())
+        simplified_coordinates = set()
+        for candidate in cover:
+            coordinate_function = candidate.to_vector()
+            work = tuple(
+                int(coordinate_function(label))
+                for label in labels
+            )
+            work_norm = sum(abs(entry) for entry in work)
+            while True:
+                improvement_count = 0
+                for rows in generator_rows:
+                    trial = tuple(
+                        sum(
+                            coefficient * entry
+                            for coefficient, entry in zip(
+                                row,
+                                work,
+                                strict=True,
+                            )
+                        )
+                        for row in rows
+                    )
+                    trial_norm = sum(abs(entry) for entry in trial)
+                    if trial_norm < work_norm:
+                        work = trial
+                        work_norm = trial_norm
+                        improvement_count += 1
+                if improvement_count == 0:
+                    break
+            simplified_coordinates.add(work)
+        cover = tuple(
+            signed_lattice.linear_combination(
+                {
+                    label: signed_lattice.base_ring()(coordinate)
+                    for label, coordinate in zip(
+                        labels,
+                        coordinates,
+                        strict=True,
+                    )
+                    if coordinate
+                }
+            )
+            for coordinates in sorted(simplified_coordinates)
         )
         buckets: dict[VectorPrefilter, list[Lattices.ElementMethods]] = {}
         for candidate in cover:
