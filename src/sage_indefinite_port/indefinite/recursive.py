@@ -29,13 +29,13 @@ from sage_indefinite_port.indefinite.vector_sections import (
     NonIsotropicVectorSection,
     orthogonal_section,
 )
-from sage_indefinite_port.readiness import unfinished
 from sage_indefinite_port.invariants import (
     LatticePrefilter,
     VectorPrefilter,
     lattice_prefilter,
     vector_content,
 )
+from sage_indefinite_port.readiness import unfinished
 
 
 class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
