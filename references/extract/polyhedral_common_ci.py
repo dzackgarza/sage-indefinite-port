@@ -189,7 +189,7 @@ def ci_indefinite_comp() -> None:
     common = CI / "common.g"
     libgap.Read(str(common))
     build = libgap.function_factory("GetGramMatrixFromList")
-    families = re.findall(r'Add\(ListRec, rec\(eList:=(\[[^\]]*\]), k:=(\d+)\)\);', tests.read_text(encoding="utf-8"))
+    families = re.findall(r"Add\(ListRec, rec\(eList:=(\[[^\]]*\]), k:=(\d+)\)\);", tests.read_text(encoding="utf-8"))
     assert len(families) == 6, f"expected 6 families in {tests}, found {len(families)}"
     records = []
     for index, (components_text, k) in enumerate(families):
