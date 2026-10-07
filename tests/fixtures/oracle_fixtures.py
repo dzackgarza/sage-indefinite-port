@@ -385,6 +385,23 @@ class DawesBuildingCase(TypedDict):
     source: dict[str, TextSource]
 
 
+class FigureSource(TypedDict):
+    kind: str
+    file: str
+    lines: str
+    label: str
+
+
+class DawesIncidenceGraph(TypedDict):
+    """Point-curve incidence graph of a building, keyed by DawesBuildingCase.id."""
+
+    building_id: str
+    points: list[int]
+    curves: list[int]
+    point_curve_incidences: list[list[int]]
+    source: FigureSource
+
+
 class DawesIndexChain(TypedDict):
     id: str
     chain: list[str]
@@ -395,6 +412,7 @@ class DawesIndexChain(TypedDict):
 
 class DawesBuildings(TypedDict):
     buildings: list[DawesBuildingCase]
+    incidence_graphs: list[DawesIncidenceGraph]
     index_chains: list[DawesIndexChain]
 
 

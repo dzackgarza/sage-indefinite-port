@@ -210,7 +210,7 @@ This document records the exact provenance, source files, authors, publications,
 
   - arXiv:2108.06236, Theorem `L2boundarythm`: for $L_2 = 2U\oplus\langle-2\rangle\oplus\langle-6\rangle$ and $\Gamma_2$, the boundary has 3 points, 2 curves and 4 incidences.
 
-- **Not included**: the building of $2U(2)\oplus A_2$ (Figure `2u2a2building`). The text states no counts for it, and reading them off the TikZ drawing would mean interpreting the figure.
+- **Figure `2u2a2building`** (arXiv:2205.10601, building of the stable orthogonal group of $2U(2)\oplus A_2$): transcribed from the TikZ source as a point-curve incidence graph (`incidence_graphs`). Black nodes are curves and white nodes are points. The outer circle joins consecutive nodes. Each `bend right=30` chord joins two points through one inner curve: the script evaluates the chord's Bezier midpoint and asserts it lies on exactly one inner node. Result: 6 points, 9 curves, 18 incidences, with every point on 3 curves and every curve through 2 points. Labels are the figure's.
 
 - **Extraction**: `uv run references/extract/dawes_buildings.py`.
 
