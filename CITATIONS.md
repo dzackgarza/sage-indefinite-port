@@ -1,250 +1,68 @@
-# Citations and Mathematical References
-
-This repository implements algorithms for indefinite quadratic lattices, arithmetic orthogonal groups, Lorentzian perfect domains, and Baily–Borel boundary strata.
-The implementation, oracle corpus, and acceptance test fixtures are grounded in the following published literature and software references.
-
-* * *
-
-## 1. Primary Mathematical Literature
-
-### Orthogonal Groups, Cusps, and Moduli Spaces of Enriques & K3 Surfaces
-
-- **[DH23]** Mathieu Dutour Sikirić and Klaus Hulek.
-  *On the classification of numerical Enriques surfaces and their moduli spaces*. [arXiv:2302.01679](https://arxiv.org/abs/2302.01679) [math.AG], 2023.
-
-  - *Contribution*: Full classification of 87 conjugacy classes of arithmetic subgroups $\Gamma \leq O^\Omega(N)$ for the Enriques anti-invariant lattice $N = U \oplus U(2) \oplus E_8(-2)$.
-
-  - *Oracles provided*: Stabilizer image indices $(1, 527, 527, 23715)$, stable building counts $(528, 24242, 72199)$, isotropic line/plane orbit representatives, and complete 87-case $(\#\mathcal{I}_1, \#\mathcal{I}_2, \#\mathcal{I}_{12})$ trie tables.
-
-- **[Daw20]** Matthew Dawes.
-  *The geometry of the boundary of orthogonal modular varieties*. Doctoral thesis, University of Bath, 2020. Accompanying software: `buildings.sage`.
-
-  - *Contribution*: Independent SageMath algorithm for Baily–Borel boundary components and Tits buildings for maximal lattices and congruence subgroups of $O(2,n)$.
-
-  - *Oracles provided*: Independent Tits building multigraphs and orbit counts for $2U \oplus A_2$, $2U \oplus \langle-6\rangle \oplus \langle-2\rangle$, $U \oplus U(2) \oplus A_2$, and $U \oplus U(m) \oplus A_2$.
-
-- **[Sca87]** Gianni Scattone.
-  *On the compactification of moduli spaces for algebraic K3 surfaces*. Memoirs of the American Mathematical Society, Vol. 70, No. 372, 1987.
-
-  - *Contribution*: Geometric identification of zero- and one-dimensional boundary strata for degree-two polarized K3 surfaces.
-
-  - *Oracles provided*: Exact $(1, 4, 4)$ Baily–Borel counts and the four Type II boundary component Cartan root types: $E_8 \oplus E_8 \oplus A_1$, $E_7 \oplus D_{10}$, $D_{16} \oplus A_1$, and $A_{17}$.
-
-- **[Jon00]** Kathleen Jones.
-  *The boundary of the moduli space of degree 4 K3 surfaces*. Doctoral thesis / J. Algebraic Geom., 2000.
-
-  - *Contribution*: Classification of the 9 Type II boundary components for the degree-four K3 modular variety.
-
-  - *Oracles provided*: Root types $A_{11} \oplus E_6$, $A_{15} \oplus 2A_1$, $A_{17}$, $2D_8 \oplus A_1$, $D_{10} \oplus E_7$, $D_{12} \oplus D_5$, $D_{16} \oplus A_1$, $D_{17}$, and $2E_8 \oplus A_1$.
-
-- **[AD21]** Simon Attwell-Duval.
-  *The boundary of moduli spaces of polarized K3 surfaces*. Thesis / arXiv, 2021.
-
-  - *Contribution*: Exact closed-form lower bound for zero-dimensional cusps of degree $2d$ polarized K3 surfaces.
-
-  - *Oracles provided*: For squarefree $d > 1$ with $\omega(d)$ distinct prime factors, the number of zero-dimensional cusps is exactly $2^{\omega(d)-1}$.
-
-* * *
-
-## 2. Foundational Lattice Theory and Discriminant Forms
-
-- **[Nik80]** Vyacheslav V. Nikulin.
-  *Integral symmetric bilinear forms and some of their applications*. Mathematics of the USSR-Izvestiya, 14(1):103–167, 1980.
-
-  - *Contribution*: Theory of finite quadratic forms on discriminant modules $A_L = L^\#/L$, genus theory, Nikulin glue maps $H_S \to H_R(-1)$, and primitive embeddability criteria into even unimodular lattices $\mathrm{II}_{p,q}$.
-
-- **[Eic52]** Martin Eichler.
-  *Quadratische Formen und orthogonale Gruppen*. Grundlehren der mathematischen Wissenschaften, Band 63, Springer-Verlag, Berlin-Göttingen-Heidelberg, 1952.
-
-  - *Contribution*: Eichler criterion for transitivity of stable orthogonal groups $O^+(L)$ on primitive vectors of fixed norm in even lattices containing $2U$.
-
-- **[Ste85]** A. I. Sterk.
-  *Finiteness results for automorphy groups of 2-reflective lattices and Enriques surfaces*. Mathematische Annalen, 272(2):237–264, 1985.
-
-  - *Contribution*: Finiteness of fundamental polyhedra and Coxeter/reflective group properties of Enriques lattices.
-
-- **[Bra21]** Simon Brandhorst.
-  *The classification of reflective hyperbolic lattices of rank $\geq 4$*. Mathematics of Computation, 2021.
-
-  - *Contribution*: Classification and symmetry groups of reflective hyperbolic and Lorentzian lattices.
-
-* * *
-
-- **[CS99]** J. H. Conway and N. J. A. Sloane.
-  *Sphere Packings, Lattices and Groups*, 3rd ed., Grundlehren der mathematischen Wissenschaften 290, Springer, 1999. Contribution: Chapter 15 §11, equations (51a)–(51b) and Corollary 22 (two inequivalent indefinite ternary forms of determinant −128 in the genus I_{2,1}(2 × 64), the same-genus non-equivalence oracle); Chapter 4 §4 (the order convention g = g_0 g_1) and §§6–8 (automorphism orders of A2, A3, D4, E6, E7, E8, the definite-leaf oracle).
-
-## 3. Upstream Software and Algorithmic Sources
-
-- **[Dut-PC]** Mathieu Dutour Sikirić.
-  `polyhedral_common`: C++ library for polyhedral computations, Delaunay polytopes, and indefinite quadratic forms.
-
-  - Repository: [https://github.com/MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
-
-  - *Extracted components*: `INDEF_FORM_*` algorithms, Lorentzian perfect domain traversal (`TestPerfLorentzian.g`, `Result_Enumeration`), and rational matrix group integralization (`01_RatIntAutomorphy`).
-
-- **[Dut-JL]** Mathieu Dutour Sikirić.
-  `Indefinite.jl`: Julia package for indefinite lattices and forms.
-
-  - Repository: [https://github.com/MathieuDutSik/Indefinite.jl](https://github.com/MathieuDutSik/Indefinite.jl)
-
-  - *Extracted components*: Definite leaf validation fixtures ($E_8, 2E_8$), Lorentzian matrix test pairs ($U\_2U\_2I3, U\_E8, U\_I3$), and vendored GAP algorithms.
-
-- **[GAP]** The GAP Group.
-  *GAP — Groups, Algorithms, and Programming*, Version 4.13, 2024.
-
-  - URL: [https://www.gap-system.org](https://www.gap-system.org)
-
-  - *Role*: libGAP integration for permutation group actions, double coset enumeration, and finite quotient stabilizer computations.
-
-- **[FLINT]** William Hart, Fredrik Johansson, and Sebastian Pancratz.
-  *FLINT: Fast Library for Number Theory*, 2024.
-
-  - URL: [https://flintlib.org](https://flintlib.org)
-
-  - *Role*: Exact integer linear algebra, Hermite Normal Form (HNF), and Smith Normal Form (SNF) saturation.
-
-- **[Normaliz]** Winfried Bruns, Bogdan Ichim, and Christof Söger.
-  *Normaliz: Algorithms for rational cones and affine monoids*, 2024.
-
-  - URL: [https://www.normaliz.uni-osnabrueck.de](https://www.normaliz.uni-osnabrueck.de)
-
-  - *Role*: Exact rational polyhedral cone facet enumeration and polyhedral reduction backends.
-
-- **[Bliss]** Tommi Junttila and Petteri Kaski.
-  *Bliss: A Tool for Computing Automorphism Groups and Canonical Labelings of Graphs*, 2015.
-
-  - URL: [http://www.tcs.hut.fi/Software/bliss/](http://www.tcs.hut.fi/Software/bliss/)
-
-  - *Role*: Canonical graph labeling for pairing configurations and lattice isometry transporter lifting.
-
-* * *
-
-## 4. BibTeX Database
-
-```bibtex
-@article{DutourSikiricHulek2023,
-  author    = {Mathieu Dutour Sikiri{\'{c}} and Klaus Hulek},
-  title     = {On the classification of numerical {E}nriques surfaces and their moduli spaces},
-  journal   = {arXiv preprint arXiv:2302.01679},
-  year      = {2023},
-  eprint    = {2302.01679},
-  archivePrefix = {arXiv},
-  primaryClass  = {math.AG}
-}
-
-@phdthesis{Dawes2020,
-  author    = {Matthew Dawes},
-  title     = {The geometry of the boundary of orthogonal modular varieties},
-  school    = {University of Bath},
-  year      = {2020}
-}
-
-@article{Scattone1987,
-  author    = {Gianni Scattone},
-  title     = {On the compactification of moduli spaces for algebraic {K}3 surfaces},
-  journal   = {Memoirs of the American Mathematical Society},
-  volume    = {70},
-  number    = {372},
-  year      = {1987},
-  publisher = {American Mathematical Society}
-}
-
-@phdthesis{Jones2000,
-  author    = {Kathleen Jones},
-  title     = {The boundary of the moduli space of degree 4 {K}3 surfaces},
-  school    = {University of Bath},
-  year      = {2000}
-}
-
-@phdthesis{AttwellDuval2021,
-  author    = {Simon Attwell-Duval},
-  title     = {The geometry of the boundary of moduli spaces of polarized {K}3 surfaces},
-  school    = {University of Bath},
-  year      = {2021}
-}
-
-@article{Nikulin1980,
-  author    = {Vyacheslav V. Nikulin},
-  title     = {Integral symmetric bilinear forms and some of their applications},
-  journal   = {Mathematics of the USSR-Izvestiya},
-  volume    = {14},
-  number    = {1},
-  pages     = {103--167},
-  year      = {1980}
-}
-
-@book{Eichler1952,
-  author    = {Martin Eichler},
-  title     = {Quadratische {F}ormen und orthogonale {G}ruppen},
-  series    = {Die Grundlehren der mathematischen Wissenschaften},
-  volume    = {63},
-  publisher = {Springer-Verlag},
-  address   = {Berlin-G{\"o}ttingen-Heidelberg},
-  year      = {1952}
-}
-
-@article{Sterk1985,
-  author    = {A. I. Sterk},
-  title     = {Finiteness results for automorphy groups of 2-reflective lattices and {E}nriques surfaces},
-  journal   = {Mathematische Annalen},
-  volume    = {272},
-  number    = {2},
-  pages     = {237--264},
-  year      = {1985}
-}
-
-@book{SPLAG1999,
-  author    = {Conway, John H. and Sloane, Neil J. A.},
-  title     = {Sphere Packings, Lattices and Groups},
-  edition   = {3},
-  series    = {Grundlehren der mathematischen Wissenschaften},
-  volume    = {290},
-  publisher = {Springer},
-  year      = {1999}
-}
-
-@article{Brandhorst2021,
-  author    = {Simon Brandhorst},
-  title     = {The classification of reflective hyperbolic lattices of rank $\ge 4$},
-  journal   = {Mathematics of Computation},
-  year      = {2021}
-}
-
-@misc{polyhedral_common,
-  author       = {Mathieu Dutour Sikiri{\'{c}}},
-  title        = {polyhedral\_common: {C}++ library for polyhedral computations and indefinite quadratic forms},
-  howpublished = {\url{https://github.com/MathieuDutSik/polyhedral_common}},
-  year         = {2024}
-}
-
-@misc{IndefiniteJL,
-  author       = {Mathieu Dutour Sikiri{\'{c}}},
-  title        = {Indefinite.jl: {J}ulia package for indefinite lattices and forms},
-  howpublished = {\url{https://github.com/MathieuDutSik/Indefinite.jl}},
-  year         = {2024}
-}
-```
-
-* * *
-
-## 5. Concrete Fixture Datasets and Source Mapping
-
-For detailed per-record extraction protocols, see [DATA_SOURCES.md](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/DATA_SOURCES.md).
-
-| Fixture File | Concrete Cases | Primary Data Source | Literature Citation / Upstream Origin |
-| :--- | :--- | :--- | :--- |
-| [`tests/fixtures/isotropic_cases_8821.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/isotropic_cases_8821.json) | 8,821 | `CI_tests/DATA/IsotropicCases` | Mathieu Dutour Sikirić (`polyhedral_common`) |
-| [`tests/fixtures/reflective_forms_8821.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/reflective_forms_8821.json) | 8,821 | `CI_tests/20_Reflective/ListReflect` | Mathieu Dutour Sikirić (`polyhedral_common`) |
-| [`tests/fixtures/lorentzian_equivalence_145.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/lorentzian_equivalence_145.json) | 145 | `CI_tests/28B_LorentzianPerfStabEqui/TestCasesEqui.tar.gz` | Mathieu Dutour Sikirić (`polyhedral_common`) |
-| [`tests/fixtures/root_systems_103.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/root_systems_103.json) | 103 | `CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47` | Mathieu Dutour Sikirić (`polyhedral_common`) |
-| [`tests/fixtures/enriques_87_polarizations.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/enriques_87_polarizations.json) | 87 | Tables 1 & 2 | Dutour Sikirić & Hulek (2023, arXiv:2302.01679) |
-| [`tests/fixtures/lorentzian_perfect_domains.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/lorentzian_perfect_domains.json) | 40 | `CI_tests/28B_LorentzianPerfStabEqui/Result_Enumeration` | Mathieu Dutour Sikirić (`polyhedral_common`) |
-| [`tests/fixtures/double_coset_cases.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/double_coset_cases.json) | 18 | `CI_tests/DoubleCosets/DBL/` | Mathieu Dutour Sikirić (`polyhedral_common`) |
-| [`tests/fixtures/k3_modular_strata.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/k3_modular_strata.json) | 14 | Boundary classifications & Attwell-Duval formula | Scattone (1987), Jones (2000), Attwell-Duval (2021) |
-| [`tests/fixtures/classification_simplices.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/classification_simplices.json) | 12 | `CI_tests/DATA/ClassificationSimplices5/6/7` | Mathieu Dutour Sikirić (`polyhedral_common`) |
-| [`tests/fixtures/conway_sloane_cases.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/conway_sloane_cases.json) | 8 | Chapter 15 §11, eqs. (51a)/(51b); Chapter 4 §§4, 6, 7, 8 | Conway & Sloane (1999) [CS99] |
-| [`tests/fixtures/ci_indefinite_comp.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/ci_indefinite_comp.json) | 6 | `CI_tests/19_IndefiniteComp/AllTests.g` | Mathieu Dutour Sikirić (`polyhedral_common`) |
-| [`tests/fixtures/unpolarized_enriques.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/unpolarized_enriques.json) | 4 | Section 3.2, 3.3 | Dutour Sikirić & Hulek (2023), Nikulin (1983), Sterk (1985) |
-| [`tests/fixtures/lorentzian_stabilizers_cases.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/lorentzian_stabilizers_cases.json) | 3 | `CI_tests/28B_LorentzianPerfStabEqui/TestCasesStab.tar.gz` | Mathieu Dutour Sikirić (`polyhedral_common`) |
-| [`tests/fixtures/dawes_buildings.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/dawes_buildings.json) | 3 | `buildings.sage` | Matthew Dawes (Ph.D. thesis 2020) |
-| [`tests/fixtures/isometry_centralizers.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/isometry_centralizers.json) | 4 | Structural gluing & Enriques involution | Nikulin (1980), Sterk (1985) |
+# Citations
+
+Bibliography of the sources this repository vendors under `references/vendor/`. Authors, titles and
+journal references come from the arXiv API. `tests/fixtures/oracle_manifest.yaml` maps each fixture to
+the sources it cites, and `tests/fixtures/DATA_SOURCES.md` describes each dataset.
+
+## Papers cited by fixtures
+
+- Daniel Allcock. *The reflective Lorentzian lattices of rank 3*. [arXiv:1010.0486](https://arxiv.org/abs/1010.0486) (1010.0486v2). Vendored: `references/vendor/arxiv/1010.0486/`.
+  Fixtures: `allcock_rank3_reflective.json`.
+- V. Gritsenko, K. Hulek, G. K. Sankaran. *Moduli of K3 Surfaces and Irreducible Symplectic Manifolds*. [arXiv:1012.4155](https://arxiv.org/abs/1012.4155) (1012.4155v2). Vendored: `references/vendor/arxiv/1012.4155/`.
+  Fixtures: `k3_modular_strata.json`.
+- Daniel Allcock. *Unabridged table of reflective lattices of rank 3*. [arXiv:1111.1264](https://arxiv.org/abs/1111.1264) (1111.1264v1). Vendored: `references/vendor/arxiv/1111.1264/`.
+  Fixtures: `allcock_rank3_reflective.json`.
+- Radu Laza. *The KSBA compactification for the moduli space of degree two K3 pairs*. J. Eur. Math. Soc. 18 (2016), no. 2, 225-279. [arXiv:1205.3144](https://arxiv.org/abs/1205.3144) (1205.3144v1). Vendored: `references/vendor/arxiv/1205.3144/`.
+  Fixtures: `k3_modular_strata.json`.
+- Radu Laza, Kieran O'Grady. *GIT versus Baily-Borel compactification for $K3$'s which are double covers of $\mathbb P^1\times\mathbb P^1$*. Adv. Math. 383 (2021). [arXiv:1801.04845](https://arxiv.org/abs/1801.04845) (1801.04845v2). Vendored: `references/vendor/arxiv/1801.04845/`.
+  Fixtures: `dtower_boundaries.json`.
+- Matthew Dawes. *The Baily-Borel compactification of a family of orthogonal modular varieties*. [arXiv:2108.06236](https://arxiv.org/abs/2108.06236) (2108.06236v1). Vendored: `references/vendor/arxiv/2108.06236/`.
+  Fixtures: `dawes_buildings.json`.
+- Matthew Dawes. *Orbits in Lattices*. [arXiv:2205.10601](https://arxiv.org/abs/2205.10601) (2205.10601v1). Vendored: `references/vendor/arxiv/2205.10601/`.
+  Fixtures: `dawes_buildings.json`.
+- Mathieu Dutour Sikirić, Klaus Hulek. *Moduli of polarized Enriques surfaces -- computational aspects*. [arXiv:2302.01679](https://arxiv.org/abs/2302.01679) (2302.01679v2). Vendored: `references/vendor/arxiv/2302.01679/`.
+  Fixtures: `enriques_87_polarizations.json`, `enriques_polarization_orbits.json`, `unpolarized_enriques.json`.
+- Simon Brandhorst, Víctor González-Alonso. *527 elliptic fibrations on Enriques surfaces*. [arXiv:2408.00306](https://arxiv.org/abs/2408.00306) (2408.00306v1). Vendored: `references/vendor/arxiv/2408.00306/`.
+  Fixtures: `e10_vector_orbits.json`.
+- James Matthew Jones. *Type II Degenerations of K3 Surfaces of Degree 4*. [arXiv:2502.04301](https://arxiv.org/abs/2502.04301) (2502.04301v2). Vendored: `references/vendor/arxiv/2502.04301/`.
+  Fixtures: `k3_modular_strata.json`.
+- Daniel Allcock. *The Period Lattice for Enriques Surfaces*. [arXiv:math/9905166](https://arxiv.org/abs/math/9905166) (math/9905166v1). Vendored: `references/vendor/arxiv/9905166/`.
+  Fixtures: `allcock_i_2_10_orbits.json`.
+
+## Vendored papers not yet extracted into fixtures
+
+- Shouhei Ma. *On the 0-dimensional cusps of the Kahler moduli of a K3 surface*. [arXiv:0812.4132](https://arxiv.org/abs/0812.4132) (0812.4132v2). Vendored: `references/vendor/arxiv/0812.4132/`.
+- John Mcleod. *Hyperbolic reflection groups associated to the quadratic forms $-3x_0^2 + x_1^2 + ... + x_n^2$*. [arXiv:1007.2299](https://arxiv.org/abs/1007.2299) (1007.2299v3). Vendored: `references/vendor/arxiv/1007.2299/`.
+- Daniel Allcock. *Root systems for Lorentzian Kac-Moody algebras in rank 3 (arXiv version)*. [arXiv:1209.0022](https://arxiv.org/abs/1209.0022) (1209.0022v2). Vendored: `references/vendor/arxiv/1209.0022/`.
+- Michael H. Mertens. *Automorphism Groups of Hyperbolic Lattices*. Journal of Algebra, 408 (2014), pp. 147-165. [arXiv:1303.3478](https://arxiv.org/abs/1303.3478) (1303.3478v3). Vendored: `references/vendor/arxiv/1303.3478/`.
+- Ivica Turkalj. *Totally-Reflective Genera of Integral Lattices*. [arXiv:1503.04428](https://arxiv.org/abs/1503.04428) (1503.04428v2). Vendored: `references/vendor/arxiv/1503.04428/`.
+- Daniel Allcock. *Congruence subgroups and Enriques surface automorphisms*. [arXiv:1601.00103](https://arxiv.org/abs/1601.00103) (1601.00103v2). Vendored: `references/vendor/arxiv/1601.00103/`.
+- Matthew Dawes. *Boundary combinatorics of orthogonal modular 4-folds*. [arXiv:1604.00726](https://arxiv.org/abs/1604.00726) (1604.00726v4). Vendored: `references/vendor/arxiv/1604.00726/`.
+- Nikolay V. Bogachev. *Reflective anisotropic hyperbolic lattices of rank $4$*. [arXiv:1610.06148](https://arxiv.org/abs/1610.06148) (1610.06148v1). Vendored: `references/vendor/arxiv/1610.06148/`.
+- Radu Laza, Kieran O'Grady. *GIT versus Baily-Borel compactification for quartic K3 surfaces*. [arXiv:1612.07432](https://arxiv.org/abs/1612.07432) (1612.07432v2). Vendored: `references/vendor/arxiv/1612.07432/`.
+- Matthew Dawes. *On the Kodaira Dimension of the Moduli of Deformation Generalised Kummer Varieties*. [arXiv:1710.01672](https://arxiv.org/abs/1710.01672) (1710.01672v4). Vendored: `references/vendor/arxiv/1710.01672/`.
+- Ciro Ciliberto, Thomas Dedieu, Concettina Galati, Andreas Leopold Knutsen. *Irreducible unirational and uniruled components of moduli spaces of polarized Enriques surfaces*. Math. Z. 303 (2023), no.3, Article number: 73, 34 pp. [arXiv:1809.10569](https://arxiv.org/abs/1809.10569) (1809.10569v5). Vendored: `references/vendor/arxiv/1809.10569/`.
+- Simon Brandhorst, Ichiro Shimada. *Borcherds' method for Enriques surfaces*. [arXiv:1903.01087](https://arxiv.org/abs/1903.01087) (1903.01087v2). Vendored: `references/vendor/arxiv/1903.01087/`.
+- Nikolay V. Bogachev. *Classification of $(1{,}2)$-reflective anisotropic hyperbolic lattices of rank $4$*. [arXiv:1903.08147](https://arxiv.org/abs/1903.08147) (1903.08147v1). Vendored: `references/vendor/arxiv/1903.08147/`.
+- Simon Brandhorst, Alberto Cattaneo. *Prime order isometries of unimodular lattices and automorphisms of ihs manifolds*. [arXiv:1912.07119](https://arxiv.org/abs/1912.07119) (1912.07119v3). Vendored: `references/vendor/arxiv/1912.07119/`.
+- Simon Brandhorst, Serkan Sonel, Davide Cesare Veniani. *Idoneal genera and K3 surfaces covering an Enriques surface*. [arXiv:2003.08914](https://arxiv.org/abs/2003.08914) (2003.08914v7). Vendored: `references/vendor/arxiv/2003.08914/`.
+- Simon Brandhorst, Ichiro Shimada. *Automorphism groups of certain Enriques surfaces*. [arXiv:2012.10622](https://arxiv.org/abs/2012.10622) (2012.10622v3). Vendored: `references/vendor/arxiv/2012.10622/`.
+- Daniel Allcock. *An Alternative to Vinberg's Algorithm*. [arXiv:2110.03784](https://arxiv.org/abs/2110.03784) (2110.03784v1). Vendored: `references/vendor/arxiv/2110.03784/`.
+- Simon Brandhorst, Tommy Hofmann. *Finite subgroups of automorphisms of K3 surfaces*. [arXiv:2112.07715](https://arxiv.org/abs/2112.07715) (2112.07715v4). Vendored: `references/vendor/arxiv/2112.07715/`.
+- Simon Brandhorst, Giacomo Mezzedimi. *Borcherds lattices and K3 surfaces of zero entropy*. [arXiv:2211.09600](https://arxiv.org/abs/2211.09600) (2211.09600v2). Vendored: `references/vendor/arxiv/2211.09600/`.
+- Simon Brandhorst, Davide Cesare Veniani. *Hensel lifting algorithms for quadratic forms*. Math. Comp. 93 (2024), no. 348, 1963--1991. [arXiv:2303.11981](https://arxiv.org/abs/2303.11981) (2303.11981v2). Vendored: `references/vendor/arxiv/2303.11981/`.
+- Mathieu Dutour Sikirić, Klaus Hulek, Christian Lehn. *Corrigendum to "The Mori fan of the Dolgachev-Nikulin-Voisin family in genus $2$" by K. Hulek and C. Liese*. Épijournal de Géométrie Algébrique, Volume 10 (September 18, 2026) epiga:15756. [arXiv:2505.02104](https://arxiv.org/abs/2505.02104) (2505.02104v2). Vendored: `references/vendor/arxiv/2505.02104/`.
+- Simon Brandhorst, Víctor González-Alonso. *Orbits of smooth rational curves on Enriques surfaces*. [arXiv:2507.07516](https://arxiv.org/abs/2507.07516) (2507.07516v1). Vendored: `references/vendor/arxiv/2507.07516/`.
+- Simon Brandhorst, Markus Kirschmer, Giacomo Mezzedimi. *On hyperbolic lattices whose reduced automorphism group is virtually abelian*. [arXiv:2507.20743](https://arxiv.org/abs/2507.20743) (2507.20743v2). Vendored: `references/vendor/arxiv/2507.20743/`.
+
+## Vendored software and data
+
+- Mathieu Dutour Sikirić, `polyhedral_common` (the reference implementation), CI data at commit `1592b2463bc7a04d94e900bf8efbada607405d8d`: `references/vendor/polyhedral_common@1592b246/CI_tests/`. https://github.com/MathieuDutSik/polyhedral_common
+- Mathieu Dutour Sikirić, `Indefinite.jl`, commit `374a5ebb5ae33e5688fd95052a4c68cbc91ae6aa`: `references/vendor/Indefinite.jl@374a5ebb/`. https://github.com/MathieuDutSik/Indefinite.jl
+- Daniel Allcock's rank-3 table, as published in `GeometryDatabase_Rank3_Lorentzian_lattices` at commit `63a9067af160505ffbdba0f38198bb20b6cfcb34`: `references/vendor/GeometryDatabase_Rank3_Lorentzian_lattices@63a9067a/`. https://github.com/MathieuDutSik/GeometryDatabase_Rank3_Lorentzian_lattices
+- The OSCAR computer algebra system, test files at commit `d135b70b6432b18a00701dfc1d4b2c11164d663c`: `references/vendor/Oscar.jl@d135b70b/test/`. https://github.com/oscar-system/Oscar.jl
+- Hecke.jl, test files at commit `e2ab5716135292294f5d5d9d34ed707b91e98b88`: `references/vendor/Hecke.jl@e2ab5716/test/`. https://github.com/thofma/Hecke.jl
+
+## Not vendored
+
+- J. H. Conway and N. J. A. Sloane, *Sphere Packings, Lattices and Groups*, 3rd ed., Springer, 1999. Chapter 15, Section 11, equations (51a) and (51b) are cited by `conway_sloane_cases.json`; no local copy is available.
