@@ -155,3 +155,9 @@ oracles:
     extraction: references/extract/dh23_norm_orbits.py
     sources:
       - references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex
+  - id: indefinite_isometry_pairs
+    fixture_file: indefinite_isometry_pairs.json
+    extraction: references/extract/isometry_pairs.py
+    sources:
+      - references/vendor/Indefinite.jl@374a5ebb/TestLor
+      - references/vendor/Hecke.jl@e2ab5716/test/QuadForm/Quad/ZLatticeAutIso.jl

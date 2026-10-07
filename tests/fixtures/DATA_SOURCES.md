@@ -155,6 +155,22 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Replaced**: the previous `centralizer_involutions.json` held derived identities, not data.
 
+### Indefinite Isometry Pairs (Indefinite.jl and Hecke)
+
+- **File**: `tests/fixtures/indefinite_isometry_pairs.json`
+
+- **Sources**: `references/vendor/Indefinite.jl@374a5ebb/TestLor/` (three pairs that `test_gap.jl` tests for equivalence: $U\oplus3\langle-1\rangle$, $U\oplus E_8(-1)$, $U\oplus U(2)\oplus3\langle-2\rangle$), and `references/vendor/Hecke.jl@e2ab5716/test/QuadForm/Quad/ZLatticeAutIso.jl`, testset "isometry testing":
+  - $U(2)\oplus A_2$ with the recorded witness $u$;
+  - $U$ against $U(2)$ (non-isometric);
+  - a recorded isometric $3\times3$ pair.
+
+- **Certificates** (checked by the extraction, independently of the port):
+  - a verified witness $W\,G_1\,W^T = G_2$;
+  - or equal genera with no spinor generators, which for indefinite rank $\ge 3$ means one isometry class (Eichler), computed with Sage's genus code;
+  - or, for the non-isometric pair, different determinants.
+
+- **Extraction**: `references/extract/isometry_pairs.py`, run under Sage's Python.
+
 ### 6 Metamorphic Indefinite Forms
 
 - **File**: `tests/fixtures/ci_indefinite_comp.json`

@@ -91,6 +91,18 @@ class PolarizationOrbitCount(TypedDict):
     source: TableRowSource
 
 
+class IsometryPair(TypedDict, total=False):
+    id: Required[str]
+    gram1: Required[Gram]
+    gram2: Required[Gram]
+    signature: Required[list[int]]
+    isometric: Required[bool]
+    certificate: Required[str]
+    witness: list[list[int]]
+    witness_convention: str
+    source: Required[dict[str, object]]
+
+
 class LorentzianPerfectCase(TypedDict):
     id: str
     dimension: int
@@ -488,6 +500,13 @@ def load_enriques_polarization_orbits() -> list[PolarizationOrbitCount]:
     """O(U + E8(-1))-orbit counts of primitive vectors of norm 2..72 (Dutour Sikirić--Hulek)."""
     with open(FIXTURES_DIR / "enriques_polarization_orbits.json", encoding="utf-8") as f:
         data: list[PolarizationOrbitCount] = json.load(f)
+        return data
+
+
+def load_indefinite_isometry_pairs() -> list[IsometryPair]:
+    """Indefinite pairs with certified isometry verdicts from Indefinite.jl and Hecke tests."""
+    with open(FIXTURES_DIR / "indefinite_isometry_pairs.json", encoding="utf-8") as f:
+        data: list[IsometryPair] = json.load(f)
         return data
 
 
