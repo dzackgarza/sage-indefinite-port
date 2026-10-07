@@ -7,6 +7,8 @@ This directory contains upstream reference repositories for algorithm extraction
 - `Indefinite.jl`: Clone of [MathieuDutSik/Indefinite.jl](https://github.com/MathieuDutSik/Indefinite.jl).
   Julia package for indefinite lattices and forms with vendored GAP algorithms.
 
+- `source-to-sage-translation-map.md`: the source-to-Sage translation map that the issue tree cites as "map §N".
+
 ## Pinned revisions
 
 The mirrors are ignored by git; each checkout is pinned to the revision the translation plan was written against.

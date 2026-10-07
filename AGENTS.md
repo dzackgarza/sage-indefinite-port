@@ -147,7 +147,7 @@ agent-memory maintain move <key> --to global/advice
 
 # Taking Work
 
-[TODO.md](TODO.md) is the task DAG; its work units are the leaf issues of the GitHub tree rooted at #4.
+The GitHub issue tree rooted at #4 is the only plan: its work units are the leaf issues, their blocked-by links are the dependency edges, and each unit's body holds its obligation and acceptance. Issue bodies cite "map §N" in [references/source-to-sage-translation-map.md](references/source-to-sage-translation-map.md).
 Take the next unit with `uvx --from git+https://github.com/dzackgarza/itree itree next dzackgarza/sage-indefinite-port`, work it to the acceptance in its issue body, commit, close it with `itree close`, and take the next unit in the same turn.
 A turn that ends with a ready unit untouched stops the repository until someone notices.
 
