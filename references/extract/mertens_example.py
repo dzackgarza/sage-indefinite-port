@@ -22,11 +22,12 @@ Run from the repository root: uv run references/extract/mertens_example.py
 
 import json
 import re
+from itertools import pairwise
 from pathlib import Path
 
 SOURCE = Path("references/vendor/arxiv/1303.3478/hyperbolic.tex")
 TARGET = Path("tests/fixtures/mertens_generators.json")
-PMATRIX = re.compile(r"\\begin\{pmatrix\}(.*?)\\end\{pmatrix\}", re.S)
+PMATRIX = re.compile(r"\\begin\{pmatrix\}(.*?)\\end\{pmatrix\}", re.DOTALL)
 
 
 def parse(body: str) -> list[list[int]]:
@@ -56,18 +57,18 @@ def main() -> None:
     assert gram == [[-1, -3, -1], [-3, 14, 8], [-1, 8, 11]] and determinant3(gram) == -155
     # Sylvester: the leading principal minors 1, -1, -23, -155 change sign once, so one negative eigenvalue.
     minors = [1, gram[0][0], gram[0][0] * gram[1][1] - gram[0][1] * gram[1][0], determinant3(gram)]
-    negative = sum(1 for a, b in zip(minors, minors[1:]) if a * b < 0)
+    negative = sum(1 for a, b in pairwise(minors) if a * b < 0)
     assert all(minors) and negative == 1, minors
     assert "the algorithm finds $9$ inequivalent $D$-perfect points" in example
     points = {}
-    for label, body in re.findall(r"x_(\d)=\s*&\s*\\begin\{pmatrix\}(.*?)\\end\{pmatrix\}", example, re.S):
+    for label, body in re.findall(r"x_(\d)=\s*&\s*\\begin\{pmatrix\}(.*?)\\end\{pmatrix\}", example, re.DOTALL):
         points[int(label)] = [int(cell) for cell in body.split("&")]
     assert sorted(points) == list(range(1, 10))
     neighbours = [8, 4, 6, 8, 4, 3, 4, 3, 6]
     assert "$8,\\,\n4,\\,\n6,\\,\n8,\\,\n4,\\,\n3,\\,\n4,\\,\n3$ and $6$ neighbours" in example
     assert "The stabilizers of $x_2$, $x_5$, $x_6$, $x_7$, $x_8$ are trivial" in example
     generators = []
-    for match in re.finditer(r"(\\Stab\(x_(\d)\)|c_\{(\d),(\d)\}('?))=&\s*(?:\\langle\s*)?\\begin\{pmatrix\}(.*?)\\end\{pmatrix\}", example, re.S):
+    for match in re.finditer(r"(\\Stab\(x_(\d)\)|c_\{(\d),(\d)\}('?))=&\s*(?:\\langle\s*)?\\begin\{pmatrix\}(.*?)\\end\{pmatrix\}", example, re.DOTALL):
         matrix = parse(match.group(6))
         assert abs(determinant3(matrix)) == 1, match.group(1)
         assert multiply(multiply(matrix, gram), transpose(matrix)) == gram, f"{match.group(1)} is not an isometry"

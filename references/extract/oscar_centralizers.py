@@ -25,7 +25,7 @@ from sage.all import AA, QQ, ZZ, matrix
 
 TESTS = Path("references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom")
 TARGET = Path("tests/fixtures/isometry_centralizers.json")
-LITERAL = re.compile(r"(\w+)\s*=\s*matrix\(QQ,\s*(\d+),\s*(\d+)\s*,\s*\[(.*?)\]\)", re.S)
+LITERAL = re.compile(r"(\w+)\s*=\s*matrix\(QQ,\s*(\d+),\s*(\d+)\s*,\s*\[(.*?)\]\)", re.DOTALL)
 
 # (file, first line, last line, the @test pattern carrying the recorded value, record key)
 CENTRALIZER_CASES = (
