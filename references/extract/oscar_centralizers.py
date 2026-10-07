@@ -118,7 +118,8 @@ def main() -> None:
         "meaning": "isomorphism classes of pairs (L, f) with L in the genus of M and f of the given characteristic polynomial",
         "source": source(relative, first, last),
     }
-    TARGET.write_text(json.dumps({"centralizer_cases": indefinite, "definite_centralizer_cases": definite, "involution_classes": [involution_classes]}, indent=1) + "\n", encoding="utf-8")
+    data = {"centralizer_cases": indefinite, "definite_centralizer_cases": definite, "involution_classes": [involution_classes]}
+    TARGET.write_text(json.dumps(data, indent=1) + "\n", encoding="utf-8")
     print(f"wrote {TARGET}: {len(indefinite)} indefinite and {len(definite)} definite centralizer cases, involution classes {global_} (local {local})")
 
 
