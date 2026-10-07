@@ -11,7 +11,7 @@ from dzack_research.preamble.categories.eichler_criterion import TwoUEichlerMode
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.lattices import Lattices
 from dzack_research.preamble.categories.modules.module_morphisms.module_morphisms import ModuleEmbeddingMethods
-from dzack_research.preamble.categories.rings.ring_foundation import _engine_element, _engine_ring
+from dzack_research.preamble.categories.rings.ring_foundation import _engine_element, _engine_ring, _owned_engine_element
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.matrix.constructor import matrix
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
@@ -218,28 +218,26 @@ class EichlerEnvelope:
 
     def similarity_scale(self):
         r"""Return the scale of ``lattice_to_envelope`` from its defining pairings."""
-        source = self.lattice
-        target = self.envelope
-        generators = tuple(source.module_generators())
-        scale = None
-        for left in generators:
-            for right in generators:
-                source_pairing = source.b(left, right)
-                if source_pairing == source.base_ring().zero():
-                    continue
-                target_pairing = target.b(
-                    self.lattice_to_envelope(left),
-                    self.lattice_to_envelope(right),
-                )
-                scale = target_pairing / source_pairing
-                break
-            if scale is not None:
-                break
+        source_gram = _engine_component_matrix(self.lattice.gram_tensor()).change_ring(SageQQ)
+        target_gram = _engine_component_matrix(self.envelope.gram_tensor()).change_ring(SageQQ)
+        pulled_gram = self._embedding_matrix * target_gram * self._embedding_matrix.transpose()
+        scale = next(
+            (
+                pulled_gram[row, column] / source_gram[row, column]
+                for row in range(source_gram.nrows())
+                for column in range(source_gram.ncols())
+                if source_gram[row, column]
+            ),
+            None,
+        )
         if scale is None:
             raise ArithmeticError("a nondegenerate Eichler envelope has no nonzero pairing in its frame")
-        if any(target.b(self.lattice_to_envelope(left), self.lattice_to_envelope(right)) != scale * source.b(left, right) for left in generators for right in generators):
+        if pulled_gram != scale * source_gram:
             raise ArithmeticError("the Eichler embedding does not have one similarity scale")
-        return scale
+        return _owned_engine_element(
+            self.lattice.base_ring().fraction_field(),
+            scale,
+        )
 
     def pullback_element(self, element):
         r"""Pull a rational-envelope element back to the selected lattice when it lies there."""
@@ -357,36 +355,18 @@ def build_eichler_envelope(lattice: Lattices.ParentMethods) -> EichlerEnvelope:
     first_v, first_w = find_hyperbolic_pair(working_lattice)
     first_pair_rows = matrix(
         SageZZ,
-        [
-            [
-                SageZZ(int(_engine_element(ring, vector.to_vector()(label))))
-                for label in working_labels
-            ]
-            for vector in (first_v, first_w)
-        ],
+        [[SageZZ(int(_engine_element(ring, vector.to_vector()(label)))) for label in working_labels] for vector in (first_v, first_w)],
     )
     first_complement_rows = (first_pair_rows * source_gram).right_kernel_matrix()
     first_complement_gram = first_complement_rows * source_gram * first_complement_rows.transpose()
     first_complement = Lattices(ring)(
-        [
-            [
-                ring(int(first_complement_gram[row, column]))
-                for column in range(first_complement_gram.ncols())
-            ]
-            for row in range(first_complement_gram.nrows())
-        ]
+        [[ring(int(first_complement_gram[row, column])) for column in range(first_complement_gram.ncols())] for row in range(first_complement_gram.nrows())]
     )
     second_v, second_w = find_hyperbolic_pair(first_complement)
     first_complement_labels = tuple(first_complement.module_generating_set())
     second_pair_local_rows = matrix(
         SageZZ,
-        [
-            [
-                SageZZ(int(_engine_element(ring, vector.to_vector()(label))))
-                for label in first_complement_labels
-            ]
-            for vector in (second_v, second_w)
-        ],
+        [[SageZZ(int(_engine_element(ring, vector.to_vector()(label)))) for label in first_complement_labels] for vector in (second_v, second_w)],
     )
     second_pair_rows = second_pair_local_rows * first_complement_rows
     two_u_rows = first_pair_rows.stack(second_pair_rows)
@@ -396,15 +376,7 @@ def build_eichler_envelope(lattice: Lattices.ParentMethods) -> EichlerEnvelope:
         case 0:
             complement = Lattices(ring)(ring.free_module(0))
         case _:
-            complement = Lattices(ring)(
-                [
-                    [
-                        ring(int(complement_gram[row, column]))
-                        for column in range(complement_gram.ncols())
-                    ]
-                    for row in range(complement_gram.nrows())
-                ]
-            )
+            complement = Lattices(ring)([[ring(int(complement_gram[row, column])) for column in range(complement_gram.ncols())] for row in range(complement_gram.nrows())])
     model = complement.two_u_eichler_model()
     envelope = model.lattice()
 
