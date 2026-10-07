@@ -1,5 +1,7 @@
 """Public recursive indefinite-lattice operations on live preamble objects."""
 
+from random import Random
+
 from dzack_research.preamble.all import QQ, ZZ, Lattices, Modules
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
@@ -7,6 +9,7 @@ from sage.matrix.constructor import identity_matrix, matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.modules.free_module_element import vector as sage_vector
 from sage.rings.integer_ring import ZZ as SageZZ
+from sage.sets.disjoint_set import DisjointSet as SageDisjointSet
 
 from sage_indefinite_port.backends.canonization import (
     _identity_rows,
@@ -38,6 +41,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
     r"""Exact recursion above the definite and Lorentzian leaf backends."""
 
     def __init__(self) -> None:
+        super().__init__()
         self._orbit_cover_model_cache: dict[
             Lattices.ParentMethods,
             OrbitCoverModel,
@@ -148,17 +152,20 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
         rank = gram.nrows()
         transformation = identity_matrix(SageZZ, rank)
         work = gram
-
-        def l1_norm(matrix):
-            return sum(abs(entry) for entry in matrix.list())
+        indices = list(range(rank))
+        search_rng = Random(0)
 
         while True:
-            current_norm = l1_norm(work)
             selected = None
-            for row in range(rank):
+            first = search_rng.randrange(rank)
+            second = search_rng.randrange(rank)
+            if first != second:
+                indices[first], indices[second] = indices[second], indices[first]
+            for row in indices:
                 if selected is not None:
                     break
-                for source_row in range(rank):
+                current_affected_norm = abs(work[row, row]) + 2 * sum(abs(work[row, column]) for column in range(rank) if column != row)
+                for source_row in indices:
                     if row == source_row:
                         continue
                     for direction in (-1, 1):
@@ -166,10 +173,11 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
                         best_coefficient = None
                         best_delta = SageZZ.zero()
                         while True:
-                            elementary = identity_matrix(SageZZ, rank)
-                            elementary[row, source_row] = coefficient
-                            candidate = elementary * work * elementary.transpose()
-                            delta = current_norm - l1_norm(candidate)
+                            candidate_diagonal = work[row, row] + 2 * coefficient * work[row, source_row] + coefficient * coefficient * work[source_row, source_row]
+                            candidate_affected_norm = abs(candidate_diagonal) + 2 * sum(
+                                abs(work[row, column] + coefficient * work[source_row, column]) for column in range(rank) if column != row
+                            )
+                            delta = current_affected_norm - candidate_affected_norm
                             if delta <= best_delta:
                                 break
                             best_delta = delta
@@ -280,6 +288,15 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
                 return tuple(group.framing().group_generators())
 
     def orthogonal_group(self, lattice: Lattices.ParentMethods) -> GeneratedSubgroup:
+        if lattice.is_definite():
+            from sage_indefinite_port.backends.definite import definite_orthogonal_group
+
+            group = definite_orthogonal_group(lattice)
+            generators = self._selected_generators(group)
+            if generators and generators[0].domain() is not lattice:
+                generators = tuple(self._retarget_isometry(generator, lattice, lattice) for generator in generators)
+            return GeneratedSubgroup(RationalMatrixGroup(lattice, generators), generators)
+        profile = self.attack_profile(lattice)
         reduced, reduced_to_lattice = self._simple_indefinite_reduction(lattice)
         if reduced is not lattice:
             assert reduced_to_lattice is not None
@@ -298,12 +315,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
             case _:
                 model = self._orbit_cover_model(signed_lattice)
                 vector = model.choose_splitting_vector()
-                match (model.refinement, model.envelope):
-                    case (None, None):
-                        approximate_family = model.subgroup()
-                        approximate = tuple(approximate_family[label] for label in approximate_family.index_set())
-                    case _:
-                        approximate = tuple(model.subgroup().generators())
+                approximate = tuple(model.subgroup().generators())
                 stabilizer = tuple(self.vector_stabilizer(vector).generators())
                 transporters = tuple(
                     witness
@@ -359,18 +371,12 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
                 return None
             row_action = reduced_witness.parent()._row_action_matrix(reduced_witness)
             if reduced_source_to_source is not None:
-                source_reduction_action = reduced_source_to_source.parent()._row_action_matrix(
-                    reduced_source_to_source
-                )
+                source_reduction_action = reduced_source_to_source.parent()._row_action_matrix(reduced_source_to_source)
                 row_action = source_reduction_action.inverse() * row_action
             if reduced_target_to_target is not None:
-                target_reduction_action = reduced_target_to_target.parent()._row_action_matrix(
-                    reduced_target_to_target
-                )
+                target_reduction_action = reduced_target_to_target.parent()._row_action_matrix(reduced_target_to_target)
                 row_action = row_action * target_reduction_action
-            witness = source.Isom(target)._isometry_from_column_matrix(
-                row_action.transpose()
-            )
+            witness = source.Isom(target)._isometry_from_column_matrix(row_action.transpose())
             self._isometry_cache[cache_key] = (source, target, witness)
             return witness
         match source.gram_tensor() == target.gram_tensor():
@@ -445,7 +451,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
         rational_group = RationalMatrixGroup(rational_ambient, rational_lifts)
         try:
             integral_generators = tuple(self._retarget_isometry(generator, ambient, ambient) for generator in rational_lifts)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             integral_generators = ()
         if len(integral_generators) == len(rational_lifts):
             if any(generator(vector) != vector for generator in integral_generators):
@@ -523,9 +529,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
                 target_parent = source.Aut()
             case False:
                 target_parent = source.Isom(target)
-        complement_row_action = complement_isometry.parent()._row_action_matrix(
-            complement_isometry
-        ).change_ring(SageZZ)
+        complement_row_action = complement_isometry.parent()._row_action_matrix(complement_isometry).change_ring(SageZZ)
         rank = source_basis.nrows()
         split_action = identity_matrix(SageZZ, rank)
         for row in range(complement_row_action.nrows()):
@@ -534,14 +538,8 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
                     row,
                     column,
                 ]
-        ambient_row_action = (
-            source_basis.inverse()
-            * split_action
-            * target_basis
-        )
-        witness = target_parent._isometry_from_column_matrix(
-            ambient_row_action.transpose()
-        )
+        ambient_row_action = source_basis.inverse() * split_action * target_basis
+        witness = target_parent._isometry_from_column_matrix(ambient_row_action.transpose())
         match witness(source_vector) == target_vector:
             case True:
                 return witness
@@ -563,18 +561,13 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
         coordinate_function = vector.to_vector()
         isotropic_coordinates = sage_vector(
             SageZZ,
-            tuple(
-                SageZZ(int(coordinate_function(label)))
-                for label in labels
-            ),
+            tuple(SageZZ(int(coordinate_function(label))) for label in labels),
         )
         pairings = isotropic_coordinates * gram
         gcd_value = SageZZ.zero()
         coefficients = []
         for pairing in pairings:
-            new_gcd, old_coefficient, new_coefficient = gcd_value.xgcd(
-                SageZZ(pairing)
-            )
+            new_gcd, old_coefficient, new_coefficient = gcd_value.xgcd(SageZZ(pairing))
             coefficients = [old_coefficient * coefficient for coefficient in coefficients]
             coefficients.append(new_coefficient)
             gcd_value = new_gcd
@@ -586,15 +579,10 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
         bezout_coordinates = sage_vector(SageZZ, coefficients)
         if (isotropic_coordinates * gram * bezout_coordinates.column())[0] != 1:
             raise ArithmeticError("the computed Bezout partner does not pair to one")
-        bezout_square = (
-            bezout_coordinates * gram * bezout_coordinates.column()
-        )[0]
+        bezout_square = (bezout_coordinates * gram * bezout_coordinates.column())[0]
         if bezout_square % 2:
             raise ArithmeticError("an even-lattice Bezout partner has odd square")
-        partner_coordinates = (
-            bezout_coordinates
-            - SageZZ(bezout_square // 2) * isotropic_coordinates
-        )
+        partner_coordinates = bezout_coordinates - SageZZ(bezout_square // 2) * isotropic_coordinates
         match (
             (partner_coordinates * gram * partner_coordinates.column())[0] == 0,
             (isotropic_coordinates * gram * partner_coordinates.column())[0] == 1,
@@ -612,15 +600,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
         )
         complement_rows = perpendicular_pairings.right_kernel_matrix()
         complement_gram = complement_rows * gram * complement_rows.transpose()
-        complement = Lattices(ring)(
-            [
-                [
-                    ring(int(complement_gram[row, column]))
-                    for column in range(complement_gram.ncols())
-                ]
-                for row in range(complement_gram.nrows())
-            ]
-        )
+        complement = Lattices(ring)([[ring(int(complement_gram[row, column])) for column in range(complement_gram.ncols())] for row in range(complement_gram.nrows())])
         split_basis = matrix(
             SageZZ,
             [
@@ -630,9 +610,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
             ],
         )
         if abs(split_basis.det()) != 1:
-            raise ArithmeticError(
-                "a divisibility-one hyperbolic plane does not split the ambient lattice unimodularly"
-            )
+            raise ArithmeticError("a divisibility-one hyperbolic plane does not split the ambient lattice unimodularly")
         self._split_isotropic_data_cache[id(vector)] = (
             vector,
             complement,
@@ -803,55 +781,48 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
             signed_square,
             primitive=signed_square == signed_lattice.base_ring().zero(),
         )
-        generator_rows = []
+        labels = tuple(signed_lattice.module_generating_set())
+        cover_coordinates = tuple(tuple(int(candidate.to_vector()(label)) for label in labels) for candidate in cover)
+        coordinate_positions = {coordinates: position for position, coordinates in enumerate(cover_coordinates)}
+        classes = SageDisjointSet(len(cover_coordinates))
         known_generator_rows = set()
+        generator_matrices = []
         for matrix_ in model._subgroup_column_matrices():
             integral_matrix = matrix_.change_ring(SageZZ)
-            for generator_matrix in (
-                integral_matrix,
-                integral_matrix.inverse().change_ring(SageZZ),
-            ):
-                rows = tuple(
-                    tuple(
-                        int(generator_matrix[row, column])
-                        for column in range(generator_matrix.ncols())
-                    )
-                    for row in range(generator_matrix.nrows())
-                )
-                if rows not in known_generator_rows:
-                    known_generator_rows.add(rows)
-                    generator_rows.append(rows)
-        labels = tuple(signed_lattice.module_generating_set())
-        simplified_coordinates = set()
-        for candidate in cover:
-            coordinate_function = candidate.to_vector()
-            work = tuple(
-                int(coordinate_function(label))
-                for label in labels
+            rows = tuple(tuple(int(integral_matrix[row, column]) for column in range(integral_matrix.ncols())) for row in range(integral_matrix.nrows()))
+            if rows not in known_generator_rows:
+                known_generator_rows.add(rows)
+                generator_matrices.append(integral_matrix)
+
+        if cover_coordinates and generator_matrices:
+            rank = len(labels)
+            stacked_actions = matrix(
+                SageZZ,
+                tuple(row for generator_matrix in generator_matrices for row in generator_matrix.rows()),
             )
-            work_norm = sum(abs(entry) for entry in work)
-            while True:
-                improvement_count = 0
-                for rows in generator_rows:
-                    trial = tuple(
-                        sum(
-                            coefficient * entry
-                            for coefficient, entry in zip(
-                                row,
-                                work,
-                                strict=True,
-                            )
-                        )
-                        for row in rows
-                    )
-                    trial_norm = sum(abs(entry) for entry in trial)
-                    if trial_norm < work_norm:
-                        work = trial
-                        work_norm = trial_norm
-                        improvement_count += 1
-                if improvement_count == 0:
-                    break
-            simplified_coordinates.add(work)
+            candidate_columns = matrix(
+                SageZZ,
+                rank,
+                len(cover_coordinates),
+                lambda row, column: cover_coordinates[column][row],
+            )
+            image_columns = stacked_actions * candidate_columns
+            for generator_position in range(len(generator_matrices)):
+                row_offset = generator_position * rank
+                for candidate_position in range(len(cover_coordinates)):
+                    image = tuple(int(image_columns[row_offset + row, candidate_position]) for row in range(rank))
+                    image_position = coordinate_positions.get(image)
+                    if image_position is not None:
+                        classes.union(candidate_position, image_position)
+
+        simplified_coordinates = tuple(
+            sorted(
+                min(
+                    (cover_coordinates[position] for position in component),
+                )
+                for component in classes.root_to_elements_dict().values()
+            )
+        )
         cover = tuple(
             signed_lattice.linear_combination(
                 {
@@ -864,7 +835,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
                     if coordinate
                 }
             )
-            for coordinates in sorted(simplified_coordinates)
+            for coordinates in simplified_coordinates
         )
         buckets: dict[VectorPrefilter, list[Lattices.ElementMethods]] = {}
         for candidate in cover:

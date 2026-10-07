@@ -100,17 +100,8 @@ class VectorPrefilter:
             content = gcd(content, abs(coordinate))
 
         gram = _engine_component_matrix(lattice.gram_tensor())
-        pairings = tuple(
-            sum(
-                coordinates[row] * int(gram[row, column])
-                for row in range(len(coordinates))
-            )
-            for column in range(len(coordinates))
-        )
-        norm = sum(
-            coordinate * pairing
-            for coordinate, pairing in zip(coordinates, pairings, strict=True)
-        )
+        pairings = tuple(sum(coordinates[row] * int(gram[row, column]) for row in range(len(coordinates))) for column in range(len(coordinates)))
+        norm = sum(coordinate * pairing for coordinate, pairing in zip(coordinates, pairings, strict=True))
         divisor = 0
         for pairing in pairings:
             divisor = gcd(divisor, abs(pairing))

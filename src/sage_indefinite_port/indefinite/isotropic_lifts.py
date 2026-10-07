@@ -138,15 +138,24 @@ class CodimensionOneIsotropicExtension:
         correction = (source_ambient.q(source_complement) - target_ambient.q(target_complement)) / denominator
         target_complement += target_ambient.scalar_multiple(correction, radical_vector)
 
-        source_frame = source_ambient.subobject_on(tuple(source_inclusion(generator) for generator in source_generators) + (source_complement,))
-        raw_source_frame_inclusion: object = source_frame.inclusion()
-        if not isinstance(raw_source_frame_inclusion, LatticeEmbeddingMethods):
-            raise ArithmeticError("the source framing subobject lost its lattice embedding")
-        source_frame_inclusion: LatticeEmbeddingMethods = raw_source_frame_inclusion
+        source_frame = tuple(source_inclusion(generator) for generator in source_generators) + (source_complement,)
         target_frame = target_images + (target_complement,)
+        source_labels = tuple(source_ambient.module_generating_set())
+        source_ring = source_ambient.base_ring()
+        source_frame_matrix = matrix(
+            QQ,
+            [[_engine_element(source_ring, element.to_vector()(label)) for label in source_labels] for element in source_frame],
+        )
+        if source_frame_matrix.rank() != len(source_labels):
+            raise ArithmeticError("the selected source frame does not span the ambient rational lattice")
 
         def image(label: Hashable) -> FramedFreeModules.ElementMethods:
-            coordinates = source_frame_inclusion.lift(source_ambient.module_generator(label)).to_vector()
+            generator = source_ambient.module_generator(label)
+            generator_coordinates = _vector(
+                QQ,
+                (_engine_element(source_ring, generator.to_vector()(source_label)) for source_label in source_labels),
+            )
+            coordinates = source_frame_matrix.transpose().solve_right(generator_coordinates)
             target_labels = tuple(target_ambient.module_generating_set())
             return target_ambient.linear_combination(
                 {
@@ -154,7 +163,7 @@ class CodimensionOneIsotropicExtension:
                     for target_label in target_labels
                     if (
                         coefficient := sum(
-                            coordinates(frame_label) * target_frame[index].to_vector()(target_label) for index, frame_label in enumerate(source_frame.module_generating_set())
+                            _owned_engine_element(target_ring, coordinates[index]) * target_frame[index].to_vector()(target_label) for index in range(len(target_frame))
                         )
                     )
                 }

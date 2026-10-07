@@ -9,7 +9,6 @@ from dzack_research.preamble.categories.lattices import Lattices
 
 from sage_indefinite_port.backends.canonization import presentation_bucket_key
 
-
 type BucketKey = tuple[int, tuple[int, int], bool, int]
 type LatticePair = tuple[Lattices.ParentMethods, Lattices.ParentMethods]
 

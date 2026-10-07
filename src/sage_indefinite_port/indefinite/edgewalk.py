@@ -46,15 +46,9 @@ type _Row = tuple[int, ...]
 
 
 def _signature_pair(gram):
-    diagonal = QuadraticForm(
-        SageQQ, 2 * matrix(SageQQ, gram)
-    ).rational_diagonal_form().matrix()
-    positive = sum(
-        diagonal[index, index] > 0 for index in range(diagonal.nrows())
-    )
-    negative = sum(
-        diagonal[index, index] < 0 for index in range(diagonal.nrows())
-    )
+    diagonal = QuadraticForm(SageQQ, 2 * matrix(SageQQ, gram)).rational_diagonal_form().matrix()
+    positive = sum(diagonal[index, index] > 0 for index in range(diagonal.nrows()))
+    negative = sum(diagonal[index, index] < 0 for index in range(diagonal.nrows()))
     return positive, negative
 
 
@@ -78,10 +72,7 @@ def _integer_gram(gram):
         raise ValueError("Allcock edgewalk needs a nondegenerate symmetric Gram matrix")
     positive, negative = _signature_pair(result)
     if negative != 1:
-        raise ValueError(
-            f"Allcock edgewalk uses signature (n,1), but the Gram matrix has "
-            f"signature ({positive},{negative})"
-        )
+        raise ValueError(f"Allcock edgewalk uses signature (n,1), but the Gram matrix has signature ({positive},{negative})")
     return result
 
 
@@ -117,13 +108,7 @@ def _row_of_element(lattice, element) -> _Row:
 def _owned_element(lattice, row):
     labels = tuple(lattice.module_generating_set())
     ring = lattice.base_ring()
-    return lattice.linear_combination(
-        {
-            label: ring(int(entry))
-            for label, entry in zip(labels, row, strict=True)
-            if entry
-        }
-    )
+    return lattice.linear_combination({label: ring(int(entry)) for label, entry in zip(labels, row, strict=True) if entry})
 
 
 def _corner_from_roots(gram, roots: tuple[_Row, ...]) -> _Vertex | None:
@@ -138,10 +123,7 @@ def _corner_from_roots(gram, roots: tuple[_Row, ...]) -> _Vertex | None:
         if null.nrows() != 1:
             continue
         generator = vector(SageQQ, null.row(0))
-        pairings = [
-            (vector(SageQQ, root) * gram * generator.column())[0]
-            for root in roots
-        ]
+        pairings = [(vector(SageQQ, root) * gram * generator.column())[0] for root in roots]
         if all(value >= 0 for value in pairings):
             generator = -generator
             pairings = [-value for value in pairings]
@@ -270,13 +252,8 @@ def _class_action_order(transform, intersection_coordinates) -> int:
     guard = max(12, 12 * quotient_size * quotient_size)
     for order in range(1, guard + 1):
         power *= transform
-        preserves = all(
-            vector(SageZZ, power * vector(SageZZ, row)) in sublattice
-            for row in intersection_coordinates.rows()
-        )
-        trivial = all(
-            vector(SageZZ, power * basis - basis) in sublattice for basis in standard
-        )
+        preserves = all(vector(SageZZ, power * vector(SageZZ, row)) in sublattice for row in intersection_coordinates.rows())
+        trivial = all(vector(SageZZ, power * basis - basis) in sublattice for basis in standard)
         if preserves and trivial:
             return order
     raise ArithmeticError("failed to close the finite projected-lattice class action")
@@ -292,9 +269,7 @@ def _orientation_compare(left, right):
 
 
 def _extension_roots(gram, roots, discarded, k, extension: NormedDynkinExtension):
-    constraint, basis, work_gram, r0, intersection = _projection_data(
-        gram, roots, discarded, k, extension.norm
-    )
+    constraint, basis, work_gram, r0, intersection = _projection_data(gram, roots, discarded, k, extension.norm)
     residual = SageQQ(extension.residual_norm)
     if residual <= 0:
         return ()
@@ -413,7 +388,7 @@ def _rational_gcd_pair(left, right):
 
 
 def _resolve_cusp_lattice_equation(constraint, component, k):
-    space = (SageQQ**len(k)).span((vector(SageQQ, component), vector(SageQQ, k)))
+    space = (SageQQ ** len(k)).span((vector(SageQQ, component), vector(SageQQ, k)))
     intersection = constraint.intersection(space)
     basis = matrix(SageQQ, intersection.basis_matrix())
     if basis.nrows() != 2:
@@ -479,11 +454,7 @@ def _cusp_roots(gram, roots, k, previous, norms):
 
 def _isotropic_next_vertex(gram, roots, discarded, k, norms):
     root_matrix = matrix(SageQQ, roots)
-    plane_basis = (
-        (root_matrix * gram).right_kernel().basis_matrix()
-        if roots
-        else matrix.identity(SageQQ, gram.nrows())
-    )
+    plane_basis = (root_matrix * gram).right_kernel().basis_matrix() if roots else matrix.identity(SageQQ, gram.nrows())
     reduced = plane_basis * gram * plane_basis.transpose()
     choices = []
     for coordinates in primitive_isotropic_vectors(reduced):
@@ -505,15 +476,9 @@ def _edge_step(gram, vertex: _Vertex, roots, discarded, norms) -> _Vertex:
         for alpha in _extension_roots(gram, roots, discarded, vertex.generator, extension):
             next_vertex = _vertex_from_root(gram, vertex.generator, roots, discarded, alpha)
             if next_vertex is not None:
-                candidates.append(
-                    _Candidate(alpha, extension.residual_norm, extension.norm, next_vertex)
-                )
+                candidates.append(_Candidate(alpha, extension.residual_norm, extension.norm, next_vertex))
     if candidates:
-        candidates.sort(
-            key=cmp_to_key(
-                lambda left, right: _candidate_compare(left, right, gram, vertex.generator)
-            )
-        )
+        candidates.sort(key=cmp_to_key(lambda left, right: _candidate_compare(left, right, gram, vertex.generator)))
         return candidates[0].vertex
     return _isotropic_next_vertex(gram, roots, discarded, vertex.generator, norms)
 
@@ -589,9 +554,7 @@ def _full_root_orbit(root_rows, isometry_rows):
 def edgewalk_fundamental_domain(gram):
     """Return Allcock's fundamental-domain record for a Lorentzian Gram matrix."""
     gram = _integer_gram(gram)
-    lattice = HyperbolicLattices(ZZ)(
-        Lattices(ZZ)([[int(entry) for entry in row] for row in gram.rows()])
-    )
+    lattice = HyperbolicLattices(ZZ)(Lattices(ZZ)([[int(entry) for entry in row] for row in gram.rows()]))
     norms = tuple(int(norm) for norm in lattice.possible_root_lengths())
     initial = _initial_vertex(lattice, gram)
 
@@ -609,10 +572,7 @@ def edgewalk_fundamental_domain(gram):
     configurations = [_vertex_configuration(lattice, gram, initial, norms)]
     isometries: set[tuple[tuple[int, ...], ...]] = set()
     invariant_basis = matrix.identity(SageQQ, gram.nrows())
-    identity = tuple(
-        tuple(int(i == j) for j in range(gram.nrows()))
-        for i in range(gram.nrows())
-    )
+    identity = tuple(tuple(int(i == j) for j in range(gram.nrows())) for i in range(gram.nrows()))
     position = 0
     while position < len(vertices):
         vertex = vertices[position]
@@ -632,9 +592,7 @@ def edgewalk_fundamental_domain(gram):
 
         for roots, discarded in _edge_directions(vertex):
             neighbor = _edge_step(gram, vertex, roots, discarded, norms)
-            neighbor_configuration = _vertex_configuration(
-                lattice, gram, neighbor, norms
-            )
+            neighbor_configuration = _vertex_configuration(lattice, gram, neighbor, norms)
             found = None
             transporter = None
             for index, configuration in enumerate(configurations):

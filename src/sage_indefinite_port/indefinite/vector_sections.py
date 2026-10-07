@@ -247,25 +247,15 @@ class NonIsotropicVectorSection:
                 for label in target_labels
             ],
         )
-        source_perpendicular_rows = _engine_matrix(
-            _module_matrix(self.inclusion)
-        ).transpose().change_ring(SageQQ)
-        target_perpendicular_rows = _engine_matrix(
-            _module_matrix(target_section.inclusion)
-        ).transpose().change_ring(SageQQ)
-        reduced_action = reduced_isometry.parent()._row_action_matrix(
-            reduced_isometry
-        ).change_ring(SageQQ)
+        source_perpendicular_rows = _engine_matrix(_module_matrix(self.inclusion)).transpose().change_ring(SageQQ)
+        target_perpendicular_rows = _engine_matrix(_module_matrix(target_section.inclusion)).transpose().change_ring(SageQQ)
+        reduced_action = reduced_isometry.parent()._row_action_matrix(reduced_isometry).change_ring(SageQQ)
         source_basis = source_vector_row.stack(source_perpendicular_rows)
-        image_rows = target_vector_row.stack(
-            reduced_action * target_perpendicular_rows
-        )
+        image_rows = target_vector_row.stack(reduced_action * target_perpendicular_rows)
         ambient_action = source_basis.inverse() * image_rows
         if any(entry.denominator() != 1 for entry in ambient_action.list()):
             return None
-        lift = source_ambient.Isom(target_ambient)._isometry_from_column_matrix(
-            ambient_action.transpose()
-        )
+        lift = source_ambient.Isom(target_ambient)._isometry_from_column_matrix(ambient_action.transpose())
         match lift(self.vector) == target_section.vector:
             case True:
                 pass

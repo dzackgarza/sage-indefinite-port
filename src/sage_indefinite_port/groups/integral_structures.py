@@ -250,7 +250,7 @@ class FinitePermutationRepresentation[FinitePointT: Hashable](SageObject):
         engine_group = automorphisms._engine_subgroup_from_generators(self.group().generators())
         try:
             generated_order = int(engine_group.order())
-        except (TypeError, ValueError, OverflowError):
+        except TypeError, ValueError, OverflowError:
             return False
         return generated_order == self.image_order()
 
@@ -720,10 +720,7 @@ class FiniteIntegralRepresentation(SageObject):
                 for label in labels
             ],
         )
-        return tuple(
-            witness_matrix * coordinate_column
-            for witness_matrix in self._orbit_witness_matrices
-        )
+        return tuple(witness_matrix * coordinate_column for witness_matrix in self._orbit_witness_matrices)
 
     def image_order(self) -> int:
         """Return the order of the finite permutation image."""

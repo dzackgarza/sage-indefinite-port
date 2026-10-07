@@ -10,8 +10,8 @@ from typing import Literal, TypedDict
 
 from dzack_research.preamble.all import ZZ, Lattices
 from dzack_research.preamble.categories.definite_lattices import (
-    _ExactCVPEngine,
     _element_from_coordinates,
+    _ExactCVPEngine,
 )
 from dzack_research.preamble.categories.lattice_engines import _rational_positive_vector
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
@@ -48,6 +48,12 @@ type PerfectMode = Literal["total", "isotropic"]
 
 
 class IndefiniteOrthogonalAlgorithm:
+    def __init__(self) -> None:
+        self._lorentzian_complex_cache: dict[
+            Lattices.ParentMethods,
+            LorentzianPerfectComplex,
+        ] = {}
+
     def attack_profile(self, lattice: Lattices.ParentMethods) -> AttackProfile:
         return AttackProfile.from_lattice(lattice)
 
@@ -98,7 +104,9 @@ class IndefiniteOrthogonalAlgorithm:
         envelope = build_eichler_envelope(lattice)
         envelope_group = self._higher_witt_orthogonal_group(envelope.envelope)
         rational_envelope = envelope.integral_action.rational_group().rational_lattice()
-        rational_generators = tuple(generator.base_change(lattice.base_ring().fraction_field_map()) for generator in envelope_group.generators())
+        fraction_map = lattice.base_ring().fraction_field_map()
+        rational_automorphisms = rational_envelope.Aut()
+        rational_generators = tuple(rational_automorphisms(generator.base_change(fraction_map)) for generator in envelope_group.generators())
         rational_group = RationalMatrixGroup(rational_envelope, rational_generators)
         action = IntegralStructureAction(rational_group, envelope.inclusion)
         integral = action.lattice_stabilizer()
@@ -119,45 +127,17 @@ class IndefiniteOrthogonalAlgorithm:
         source_profile = self.attack_profile(source)
         target_profile = self.attack_profile(target)
         if source_profile.positive_index == 1 and target_profile.positive_index == 1:
-            source_complex = LorentzianPerfectComplex(source_profile.signed_view, "total")
-            target_complex = LorentzianPerfectComplex(target_profile.signed_view, "total")
-            target_cell = target_complex.local_backend().initial_cell(
-                target_complex.lattice(),
-                target_complex.mode(),
-            )
-            target_key = _perfect_form_hash_key(target_cell)
-
-            backend = source_complex.local_backend()
-            initial = backend.initial_cell(
-                source_complex.lattice(),
-                source_complex.mode(),
-            )
-            representatives = [initial]
-            representative_buckets = {
-                _perfect_form_hash_key(initial): [initial],
-            }
-            position = 0
-            while position < len(representatives):
-                source_cell = representatives[position]
-                if _perfect_form_hash_key(source_cell) == target_key:
-                    witness = backend.cell_transporter(source_cell, target_cell)
-                    if witness is not None:
-                        return witness
-
-                for orbit in backend.facet_orbits(source_cell):
-                    facet = orbit[0]
-                    neighbor = backend.flip_across(source_cell, facet)
-                    neighbor_key = _perfect_form_hash_key(neighbor)
-                    for representative in representative_buckets.get(neighbor_key, ()):
-                        if backend.cell_transporter(representative, neighbor) is not None:
-                            break
-                    else:
-                        representatives.append(neighbor)
-                        representative_buckets.setdefault(neighbor_key, []).append(
-                            neighbor
-                        )
-                position += 1
-            return None
+            signed_source = source_profile.signed_view
+            signed_target = target_profile.signed_view
+            source_complex = self._lorentzian_complex_cache.get(signed_source)
+            if source_complex is None:
+                source_complex = LorentzianPerfectComplex(signed_source, "total")
+                self._lorentzian_complex_cache[signed_source] = source_complex
+            target_complex = self._lorentzian_complex_cache.get(signed_target)
+            if target_complex is None:
+                target_complex = LorentzianPerfectComplex(signed_target, "total")
+                self._lorentzian_complex_cache[signed_target] = target_complex
+            return source_complex.isometry_to(target_complex)
         source_model = self._two_u_cover_model(source)
         target_model = self._two_u_cover_model(target)
         witness = source_model.model.isometry_to(target_model.model)
@@ -372,6 +352,13 @@ class LorentzianPerfectComplex:
         self._lattice = lattice
         self._mode = mode
         self._local_backend = local_backend or LorentzianPerfectLocalBackend()
+        self._traversal_representatives: list[LorentzianPerfectCell] | None = None
+        self._traversal_representative_buckets: dict[
+            tuple[tuple[int, ...], tuple[int, ...]],
+            list[LorentzianPerfectCell],
+        ] = {}
+        self._traversal_adjacencies: list[LorentzianCellAdjacency] = []
+        self._traversal_position = 0
 
     def lattice(self) -> Lattices.ParentMethods:
         return self._lattice
@@ -382,43 +369,82 @@ class LorentzianPerfectComplex:
     def local_backend(self) -> LorentzianPerfectLocalBackend:
         return self._local_backend
 
+    def _ensure_traversal_started(self) -> None:
+        if self._traversal_representatives is not None:
+            return
+        initial = self.local_backend().initial_cell(self.lattice(), self.mode())
+        self._traversal_representatives = [initial]
+        self._traversal_representative_buckets = {
+            _perfect_form_hash_key(initial): [initial],
+        }
+
+    def _expand_traversal_once(self) -> tuple[LorentzianPerfectCell, ...]:
+        self._ensure_traversal_started()
+        representatives = self._traversal_representatives
+        if representatives is None or self._traversal_position >= len(representatives):
+            return ()
+        backend = self.local_backend()
+        source = representatives[self._traversal_position]
+        new_representatives: list[LorentzianPerfectCell] = []
+        for orbit in backend.facet_orbits(source):
+            facet = orbit[0]
+            neighbor = backend.flip_across(source, facet)
+            target = None
+            transporter = None
+            neighbor_key = _perfect_form_hash_key(neighbor)
+            for representative in self._traversal_representative_buckets.get(neighbor_key, ()):
+                candidate = backend.cell_transporter(representative, neighbor)
+                if candidate is not None:
+                    target = representative
+                    transporter = candidate
+                    break
+            if target is None:
+                target = neighbor
+                representatives.append(target)
+                new_representatives.append(target)
+                self._traversal_representative_buckets.setdefault(neighbor_key, []).append(target)
+                transporter = self.lattice().Aut().identity()
+            if transporter is None:
+                raise ArithmeticError("a quotient-cell adjacency has no transporter to its selected target representative")
+            self._traversal_adjacencies.append(LorentzianCellAdjacency(source, facet, target, transporter))
+        self._traversal_position += 1
+        return tuple(new_representatives)
+
+    def isometry_to(self, target: LorentzianPerfectComplex):
+        if self.mode() != target.mode():
+            return None
+        self._ensure_traversal_started()
+        target._ensure_traversal_started()
+        representatives = self._traversal_representatives
+        target_representatives = target._traversal_representatives
+        if representatives is None or target_representatives is None:
+            raise ArithmeticError("a started Lorentzian traversal has no initial cell")
+        target_cell = target_representatives[0]
+        target_key = _perfect_form_hash_key(target_cell)
+        backend = self.local_backend()
+        for source_cell in self._traversal_representative_buckets.get(target_key, ()):
+            witness = backend.cell_transporter(source_cell, target_cell)
+            if witness is not None:
+                return witness
+        while self._traversal_position < len(representatives):
+            for source_cell in self._expand_traversal_once():
+                if _perfect_form_hash_key(source_cell) == target_key:
+                    witness = backend.cell_transporter(source_cell, target_cell)
+                    if witness is not None:
+                        return witness
+        return None
+
     @cached_property
     def _traversal(
         self,
     ) -> tuple[tuple[LorentzianPerfectCell, ...], tuple[LorentzianCellAdjacency, ...]]:
-        backend = self.local_backend()
-        initial = backend.initial_cell(self.lattice(), self.mode())
-        representatives: list[LorentzianPerfectCell] = [initial]
-        representative_buckets: dict[
-            tuple[tuple[int, ...], tuple[int, ...]],
-            list[LorentzianPerfectCell],
-        ] = {_perfect_form_hash_key(initial): [initial]}
-        adjacencies: list[LorentzianCellAdjacency] = []
-        position = 0
-        while position < len(representatives):
-            source = representatives[position]
-            for orbit in backend.facet_orbits(source):
-                facet = orbit[0]
-                neighbor = backend.flip_across(source, facet)
-                target = None
-                transporter = None
-                neighbor_key = _perfect_form_hash_key(neighbor)
-                for representative in representative_buckets.get(neighbor_key, ()):
-                    candidate = backend.cell_transporter(representative, neighbor)
-                    if candidate is not None:
-                        target = representative
-                        transporter = candidate
-                        break
-                if target is None:
-                    target = neighbor
-                    representatives.append(target)
-                    representative_buckets.setdefault(neighbor_key, []).append(target)
-                    transporter = self.lattice().Aut().identity()
-                if transporter is None:
-                    raise ArithmeticError("a quotient-cell adjacency has no transporter to its selected target representative")
-                adjacencies.append(LorentzianCellAdjacency(source, facet, target, transporter))
-            position += 1
-        return tuple(representatives), tuple(adjacencies)
+        self._ensure_traversal_started()
+        representatives = self._traversal_representatives
+        if representatives is None:
+            raise ArithmeticError("a started Lorentzian traversal has no initial cell")
+        while self._traversal_position < len(representatives):
+            self._expand_traversal_once()
+        return tuple(representatives), tuple(self._traversal_adjacencies)
 
     def quotient_cells(self) -> tuple[LorentzianPerfectCell, ...]:
         return self._traversal[0]

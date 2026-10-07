@@ -80,9 +80,7 @@ class OrbitCoverModel:
             return self.refinement._generator_column_matrices()
         if self.envelope is None:
             lattice = self.base.lattice()
-            _rational_lattice, matrix_family = self.base.model._approximate_generator_column_matrices_after_base_change(
-                lattice.base_ring().fraction_field_map()
-            )
+            _rational_lattice, matrix_family = self.base.model._approximate_generator_column_matrices_after_base_change(lattice.base_ring().fraction_field_map())
             return tuple(matrix_family)
         embedding = self.envelope._embedding_matrix
         embedding_inverse = self.envelope._embedding_inverse
@@ -140,18 +138,12 @@ class OrbitCoverModel:
                     if coordinates(envelope_label)
                 }
             )
-            for image_coordinates in finite_representation._orbit_image_coordinate_columns(
-                rational_representative
-            ):
-                source_coordinates = self.envelope._pullback_coordinate_row(
-                    image_coordinates.column(0)
-                )
+            for image_coordinates in finite_representation._orbit_image_coordinate_columns(rational_representative):
+                source_coordinates = self.envelope._pullback_coordinate_row(image_coordinates.column(0))
                 if source_coordinates is None:
                     continue
                 source_row = matrix(SageQQ, [source_coordinates])
-                if (
-                    source_row * source_gram * source_row.transpose()
-                )[0, 0] != owned_norm_engine:
+                if (source_row * source_gram * source_row.transpose())[0, 0] != owned_norm_engine:
                     continue
                 integral_coordinates = tuple(int(entry) for entry in source_coordinates)
                 if primitive and gcd(*(abs(entry) for entry in integral_coordinates)) != 1:

@@ -34,11 +34,7 @@ def quadratic_eval(G, v):
 
 def scalar_eval(G, v, w):
     G, v, w = _gram(G), _zvector(v), _zvector(w)
-    return (
-        G[0, 0] * v[0] * w[0]
-        + G[0, 1] * (v[0] * w[1] + v[1] * w[0])
-        + G[1, 1] * v[1] * w[1]
-    )
+    return G[0, 0] * v[0] * w[0] + G[0, 1] * (v[0] * w[1] + v[1] * w[0]) + G[1, 1] * v[1] * w[1]
 
 
 def oriented_determinant(r, l):
@@ -235,11 +231,7 @@ def first_next_vector(G, r0, search_norm):
     if isotropic_factorization(G) is not None:
         chosen = None
         for v in fixed_norm_vectors_isotropic(G, target):
-            if (
-                scalar_eval(G, r0, v) > 0
-                and oriented_determinant(r0, v) > 0
-                and (chosen is None or oriented_determinant(v, chosen) > 0)
-            ):
+            if scalar_eval(G, r0, v) > 0 and oriented_determinant(r0, v) > 0 and (chosen is None or oriented_determinant(v, chosen) > 0):
                 chosen = v
         return chosen
     result = anisotropic_cycle(G, quadratic_eval(G, r0), r0)
