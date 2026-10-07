@@ -1,192 +1,145 @@
-version: 1.0.0
-description: Authoritative oracle corpus and acceptance criteria manifest for sage-indefinite-port
+version: "2"
+description: 'Index of the oracle corpus: each fixture file, the committed script that extracts it, and the vendored sources it cites. Expected values live only in the fixtures.'
 oracles:
-  - id: enriques_N_component_building
-    lattice:
-      construction: U + U(2) + E8(-2)
-      signature:
-        - 2
-        - 10
-      rank: 12
-      det: 1024
-    group:
-      construction: kernel(component_character)
-      internal_name: O_component
-      source_notation: O^+(N)
-    domain:
-      line_objects: primitive saturated isotropic rank-1 sublattices
-      plane_objects: primitive saturated totally isotropic rank-2 sublattices
-    expected:
-      line_orbits: 2
-      plane_orbits: 2
-      line_representatives:
-        - Z*e1
-        - Z*e3
-      plane_representatives:
-        - Z*e1 + Z*e3
-        - Z*(2e1+2e2+w) + Z*e3
-      discriminant_stabilizer_indices_lines:
-        - 1
-        - 527
-      discriminant_stabilizer_indices_planes:
-        - 527
-        - 23715
-    source:
-      kind: published
-      paper: Dutour Sikirić--Hulek
-      arxiv: '2302.01679'
-      section: '3.2'
-    authoritative_outputs:
-      - count
-      - representatives
-      - stabilizer_indices
-      - witness
-  - id: enriques_N_stable_component_building
-    lattice:
-      construction: U + U(2) + E8(-2)
-      signature:
-        - 2
-        - 10
-      rank: 12
-      det: 1024
-    group:
-      construction:
-        intersection:
-          - kernel: discriminant_representation
-          - kernel: component_character
-      internal_name: O_plus_component
-      source_notation: \widetilde O^+(N)
-    domain:
-      line_objects: primitive saturated isotropic rank-1 sublattices
-      plane_objects: primitive saturated totally isotropic rank-2 sublattices
-      incidence_objects: flags I1 < I2
-    expected:
-      line_orbits: 528
-      plane_orbits: 24242
-      flag_orbits: 72199
-      line_decomposition: 528 = 1 + 527
-      plane_decomposition: 24242 = 527 + 23715
-    source:
-      kind: published
-      paper: Dutour Sikirić--Hulek
-      arxiv: '2302.01679'
-      table: 2
-      case: 87
-      section: '3.3'
-    authoritative_outputs:
-      - count
-      - double_coset_splitting
-      - graph
-  - id: enriques_87_polarized_groups
-    lattice:
-      construction: U + U(2) + E8(-2)
-      signature:
-        - 2
-        - 10
-    group_family:
-      definition: Gamma_h^Omega = rho_A^{-1}(bar_Gamma_h) cap O^Omega(N)
-      cases_count: 87
-    fixture_file: enriques_87_polarizations.json
-    source:
-      kind: published_table
-      citation: Dutour Sikirić--Hulek, Moduli of polarised Enriques surfaces -- computational aspects, arXiv:2302.01679
-      file: references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex
-      tables:
-        - table_subgroups1
-        - table_subgroups2
-      extraction: references/extract/dh23_polarizations.py
-    authoritative_outputs:
-      - polarization_orbit_length
-      - group_order
-      - line_orbits
-      - plane_orbits
-      - flag_orbits
-      - minimal_degree
-      - phi_h_min
-  - id: dawes_tits_buildings
-    fixture_file: dawes_buildings.json
-    extraction: references/extract/dawes_buildings.py
-    sources:
-      - references/vendor/arxiv/2205.10601/orbits_in_lattices.tex
-      - references/vendor/arxiv/2108.06236/main.tex
-  - id: ci_indefinite_comp_metamorphic
-    fixture_file: ci_indefinite_comp.json
-    source:
-      kind: reference_implementation_input
-      file: references/vendor/polyhedral_common@1592b246/CI_tests/19_IndefiniteComp/AllTests.g
-      extraction: references/extract/polyhedral_common_ci.py
-    authoritative_outputs:
-      - basis_covariance
-      - orbit_count_invariance
-  - id: double_coset_finite_partitions
-    fixture_file: double_coset_cases.json
-    source:
-      kind: reference_implementation_input
-      file: references/vendor/polyhedral_common@1592b246/CI_tests/DoubleCosets/DBL/
-      extraction: references/extract/polyhedral_common_ci.py
-    authoritative_outputs:
-      - disjoint_union
-      - cardinality_sum
-  - id: lorentzian_perfect_domain_enumeration
-    fixture_file: lorentzian_perfect_domains.json
-    source:
-      kind: upstream_regression
-      path: references/polyhedral_common/CI_tests/28B_LorentzianPerfStabEqui/Result_Enumeration
-      section: '5.3'
-    authoritative_outputs:
-      - isotropic_count
-      - total_count
-  - id: conway_sloane_spinor_pair
-    fixture_file: conway_sloane_cases.json
-    source:
-      kind: published
-      citation: CS99
-      section: Chapter 15 §11 eqs. (51a), (51b), Corollary 22
-    authoritative_outputs:
-      - integral_equivalence_verdict
-  - id: isometry_centralizers
-    fixture_file: isometry_centralizers.json
-    extraction: references/extract/oscar_centralizers.py
-    sources:
-      - references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/lattices_with_isometry.jl
-      - references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/enumeration.jl
-  - id: enriques_polarization_orbits
-    fixture_file: enriques_polarization_orbits.json
-    extraction: references/extract/dh23_norm_orbits.py
+  - fixture_file: enriques_87_polarizations.json
+    extraction: references/extract/dh23_polarizations.py
+    runtime: uv
+    kind: published_table
     sources:
       - references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex
-  - id: indefinite_isometry_pairs
-    fixture_file: indefinite_isometry_pairs.json
-    extraction: references/extract/isometry_pairs.py
+  - fixture_file: enriques_polarization_orbits.json
+    extraction: references/extract/dh23_norm_orbits.py
+    runtime: uv
+    kind: published_table
     sources:
-      - references/vendor/Indefinite.jl@374a5ebb/TestLor
-      - references/vendor/Hecke.jl@e2ab5716/test/QuadForm/Quad/ZLatticeAutIso.jl
-  - id: allcock_rank3_reflective
-    fixture_file: allcock_rank3_reflective.json
+      - references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex
+  - fixture_file: unpolarized_enriques.json
+    extraction: references/extract/dh23_unpolarized.py
+    runtime: uv
+    kind: published_text
+    sources:
+      - references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex
+  - fixture_file: e10_vector_orbits.json
+    extraction: references/extract/bga_e10_orbits.py
+    runtime: uv
+    kind: published_table
+    sources:
+      - references/vendor/arxiv/2408.00306/main_arxiv1.tex
+  - fixture_file: allcock_i_2_10_orbits.json
+    extraction: references/extract/allcock_enriques_period.py
+    runtime: uv
+    kind: published_text
+    sources:
+      - references/vendor/arxiv/9905166/main.tex
+  - fixture_file: allcock_rank3_reflective.json
     extraction: references/extract/allcock_rank3.py
+    runtime: uv
+    kind: published_classification
     sources:
       - references/vendor/GeometryDatabase_Rank3_Lorentzian_lattices@63a9067a/RK3_all
       - references/vendor/arxiv/1010.0486
       - references/vendor/arxiv/1111.1264
-  - id: oscar_lattice_oracles
-    fixture_file: oscar_lattice_oracles.json
+  - fixture_file: dawes_buildings.json
+    extraction: references/extract/dawes_buildings.py
+    runtime: uv
+    kind: published_text
+    sources:
+      - references/vendor/arxiv/2205.10601/orbits_in_lattices.tex
+      - references/vendor/arxiv/2108.06236/main.tex
+  - fixture_file: dtower_boundaries.json
+    extraction: references/extract/laza_ogrady_dtower.py
+    runtime: uv
+    kind: published_text
+    sources:
+      - references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex
+  - fixture_file: k3_modular_strata.json
+    extraction: references/extract/k3_strata.py
+    runtime: uv
+    kind: published_text
+    sources:
+      - references/vendor/arxiv/1012.4155/main.tex
+      - references/vendor/arxiv/1205.3144/ksba.tex
+      - references/vendor/arxiv/2502.04301/main.tex
+  - fixture_file: indefinite_isometry_pairs.json
+    extraction: references/extract/isometry_pairs.py
+    runtime: sage
+    kind: independent_implementation_test
+    sources:
+      - references/vendor/Indefinite.jl@374a5ebb/TestLor
+      - references/vendor/Hecke.jl@e2ab5716/test/QuadForm/Quad/ZLatticeAutIso.jl
+  - fixture_file: isometry_centralizers.json
+    extraction: references/extract/oscar_centralizers.py
+    runtime: sage
+    kind: independent_implementation_test
+    sources:
+      - references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom
+  - fixture_file: oscar_lattice_oracles.json
     extraction: references/extract/oscar_lattice_tests.py
+    runtime: sage
+    kind: independent_implementation_test
     sources:
       - references/vendor/Oscar.jl@d135b70b/test/NumberTheory/vinberg.jl
       - references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl
       - references/vendor/Oscar.jl@d135b70b/test/Groups/isometry_group.jl
-  - id: dtower_boundaries
-    fixture_file: dtower_boundaries.json
-    extraction: references/extract/laza_ogrady_dtower.py
+  - fixture_file: reflective_forms_8821.json
+    extraction: references/extract/polyhedral_common_ci.py
+    runtime: sage
+    kind: reference_implementation_output
     sources:
-      - references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex
-  - id: allcock_i_2_10_orbits
-    fixture_file: allcock_i_2_10_orbits.json
-    extraction: references/extract/allcock_enriques_period.py
+      - references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect
+  - fixture_file: isotropic_cases_8821.json
+    extraction: references/extract/polyhedral_common_ci.py
+    runtime: sage
+    kind: reference_implementation_output
     sources:
-      - references/vendor/arxiv/9905166/main.tex
-  - id: e10_vector_orbits
-    fixture_file: e10_vector_orbits.json
-    extraction: references/extract/bga_e10_orbits.py
+      - references/vendor/polyhedral_common@1592b246/CI_tests/DATA/IsotropicCases
+  - fixture_file: root_systems_103.json
+    extraction: references/extract/polyhedral_common_ci.py
+    runtime: sage
+    kind: reference_implementation_output
     sources:
-      - references/vendor/arxiv/2408.00306/main_arxiv1.tex
+      - references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47
+  - fixture_file: lorentzian_perfect_domains.json
+    extraction: references/extract/polyhedral_common_ci.py
+    runtime: sage
+    kind: reference_implementation_output
+    sources:
+      - references/vendor/polyhedral_common@1592b246/CI_tests/28B_LorentzianPerfStabEqui/Result_Enumeration
+  - fixture_file: lorentzian_equivalence_145.json
+    extraction: references/extract/polyhedral_common_ci.py
+    runtime: sage
+    kind: reference_implementation_output
+    sources:
+      - references/vendor/polyhedral_common@1592b246/CI_tests/28B_LorentzianPerfStabEqui/TestCasesEqui.tar.gz
+  - fixture_file: lorentzian_stabilizers_cases.json
+    extraction: references/extract/polyhedral_common_ci.py
+    runtime: sage
+    kind: reference_implementation_output
+    sources:
+      - references/vendor/polyhedral_common@1592b246/CI_tests/28B_LorentzianPerfStabEqui/TestCasesStab.tar.gz
+  - fixture_file: ci_indefinite_comp.json
+    extraction: references/extract/polyhedral_common_ci.py
+    runtime: sage
+    kind: reference_implementation_input
+    sources:
+      - references/vendor/polyhedral_common@1592b246/CI_tests/19_IndefiniteComp/AllTests.g
+  - fixture_file: classification_simplices.json
+    extraction: references/extract/polyhedral_common_ci.py
+    runtime: sage
+    kind: reference_implementation_input
+    sources:
+      - references/vendor/polyhedral_common@1592b246/CI_tests/DATA
+  - fixture_file: double_coset_cases.json
+    extraction: references/extract/polyhedral_common_ci.py
+    runtime: sage
+    kind: reference_implementation_input
+    sources:
+      - references/vendor/polyhedral_common@1592b246/CI_tests/DoubleCosets/DBL
+  - fixture_file: conway_sloane_cases.json
+    extraction: null
+    runtime: null
+    kind: published_text
+    sources:
+      - Conway--Sloane, Sphere Packings, Lattices and Groups, 3rd ed., Ch. 15 sec. 11, eqs. (51a), (51b)
+    vendored: false
+    note: The book is not vendored; the record cannot cite a local file until a copy is available.

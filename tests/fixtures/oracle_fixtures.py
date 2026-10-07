@@ -1,7 +1,8 @@
 """Typed loaders for the oracle corpus in this directory.
 
-Provenance and extraction method for every file are recorded in ``DATA_SOURCES.md``; the
-acceptance criteria binding fixtures to plan phases are in ``oracle_manifest.yaml``.
+Every file is produced by a committed script in ``references/extract`` from sources vendored
+under ``references/vendor``; ``oracle_manifest.yaml`` indexes file, script and sources, and
+``DATA_SOURCES.md`` describes each dataset and its checks.
 
 Upstream stores each lattice as the Gram matrix of its bilinear form in the standard basis
 of ``Z^n``; the preamble's category constructor takes that Gram directly,
@@ -21,28 +22,6 @@ FIXTURES_DIR = Path(__file__).parent
 type Vector = list[int]
 type Gram = list[list[int]]
 type PermutationImages = tuple[int, ...]
-
-
-class Provenance(TypedDict, total=False):
-    kind: Required[str]
-    citation: str
-    paper: str
-    arxiv: str
-    table: int
-    row: int
-    section: str
-    sections: list[str]
-    theorem: str
-    author: str
-    code: str
-    path: str
-    repo: str
-
-
-class GroupSpec(TypedDict, total=False):
-    internal_name: Required[str]
-    construction: Required[str]
-    source_notation: str
 
 
 class OrbitCounts(TypedDict, total=False):
@@ -454,32 +433,14 @@ class IsometryCentralizers(TypedDict):
     involution_classes: list[InvolutionClassCount]
 
 
-class ManifestLattice(TypedDict, total=False):
-    construction: Required[str]
-    signature: list[int]
-    rank: int
-    det: int
-    is_even: bool
-    is_unimodular: bool
-
-
-class ManifestGroup(TypedDict, total=False):
-    construction: Required[str | dict[str, list[dict[str, str]]]]
-    internal_name: str
-    source_notation: str
-
-
 class OracleEntry(TypedDict, total=False):
-    id: Required[str]
-    source: Required[Provenance]
-    authoritative_outputs: Required[list[str]]
-    lattice: ManifestLattice
-    group: ManifestGroup
-    group_family: dict[str, str | int]
-    domain: dict[str, str]
-    expected: dict[str, int | str | list[int] | list[str]]
-    fixture_file: str
-    formula: str
+    fixture_file: Required[str]
+    extraction: Required[str | None]
+    runtime: Required[str | None]
+    kind: Required[str]
+    sources: Required[list[str]]
+    vendored: bool
+    note: str
 
 
 class OracleManifest(TypedDict):
