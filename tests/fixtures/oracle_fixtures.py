@@ -59,6 +59,13 @@ class TableRowSource(TypedDict):
     line: int
 
 
+class TextSource(TypedDict):
+    kind: str
+    citation: str
+    file: str
+    lines: str
+
+
 class Enriques87Case(TypedDict):
     case: int
     S: str
@@ -225,11 +232,7 @@ class ComponentPreservingGroupData(TypedDict):
     counts: OrbitCounts
     line_representatives: list[IsotropicRepresentative]
     plane_representatives: list[IsotropicRepresentative]
-
-
-class OrbitDecompositionNotes(TypedDict):
-    lines: str
-    planes: str
+    source: TextSource
 
 
 class StableGroupData(TypedDict):
@@ -237,7 +240,7 @@ class StableGroupData(TypedDict):
     construction: str
     source_notation: str
     counts: OrbitCounts
-    orbit_decompositions: OrbitDecompositionNotes
+    source: TextSource
 
 
 class UnpolarizedEnriques(TypedDict):
@@ -245,7 +248,6 @@ class UnpolarizedEnriques(TypedDict):
     lattice: LatticeSpec
     component_preserving_group: ComponentPreservingGroupData
     stable_component_preserving_group: StableGroupData
-    source: Provenance
 
 
 class PrimitiveVectorTransitivity(TypedDict):

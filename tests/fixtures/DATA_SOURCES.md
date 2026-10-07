@@ -20,91 +20,21 @@ This document records the exact provenance, source files, authors, publications,
 
 ### B. Unpolarized Enriques Boundary Strata and Stabilizers
 
-- **File**: [`tests/fixtures/unpolarized_enriques.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/unpolarized_enriques.json)
+- **File**: `tests/fixtures/unpolarized_enriques.json`
 
-- **Primary Sources**:
+- **Primary Source**: Dutour Sikirić & Hulek, arXiv:2302.01679, subsection "The Tits building" (vendored TeX `references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex`, lines 1159–1170), and Table `table_subgroups2` case 87 (line 814) for the flag count.
 
-  - Dutour Sikirić & Hulek (arXiv:2302.01679), Sections 3.2 and 3.3.
-
-  - V. V. Nikulin, *Surfaces of type K3 with finite automorphism group and Enriques surfaces*, J. Soviet Math.
-    22 (1983).
-
-  - A. I. Sterk, *Finiteness results for automorphy groups of 2-reflective lattices and Enriques surfaces*, Math.
-    Ann.
-    272 (1985), 237–264.
+- **Extraction**: `uv run references/extract/dh23_unpolarized.py` builds $N = U \oplus U(2) \oplus E_8(-2)$, takes the representatives from the text, and asserts $\det N = 1024$ and that every line and plane representative is totally isotropic.
 
 - **Content**:
 
-  - Gram matrix of $N = U \oplus U(2) \oplus E_8(-2)$ in standard basis.
+  - Gram matrix of $N$, with $(e_1, e_2)$ and $(e_3, e_4)$ the standard bases of $U$ and $U(2)$.
 
-  - Primitive isotropic line representatives $I_{1,1} = \mathbb{Z}e_1, I_{1,2} = \mathbb{Z}e_3$.
+  - Isotropic line representatives $\mathbb{Z}e_1$, $\mathbb{Z}e_3$, with discriminant-image stabilizer indices 1 and 527.
 
-  - Primitive isotropic plane representatives $I_{2,1} = \mathbb{Z}e_1 + \mathbb{Z}e_3, I_{2,2} = \mathbb{Z}(2e_1 + 2e_2 + w) + \mathbb{Z}e_3$.
+  - Isotropic plane representatives $\mathbb{Z}e_1 + \mathbb{Z}e_3$ and $\mathbb{Z}(2e_1 + 2e_2 + w) + \mathbb{Z}e_3$, with indices 527 and 23715. Here $w = \alpha_0 + \alpha_2$ has norm 4 in $E_8$, i.e. $w^2 = -8$ in $E_8(-2)$, as the paper requires.
 
-  - Exact discriminant orthogonal group stabilizer image indices: $1, 527$ (lines), $527, 23715$ (planes).
-
-  - Stable group counts: $528 = 1 + 527$, $24242 = 527 + 23715$, and flag count $72199$.
-
-### C. K3 Polarized Modular Boundary Strata
-
-- **File**: [`tests/fixtures/k3_modular_strata.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/k3_modular_strata.json)
-
-- **Primary Sources**:
-
-  - *Degree 2 K3 Boundary*: Gianni Scattone, *On the compactification of moduli spaces for algebraic K3 surfaces*, Memoirs of the AMS, Vol. 70, No. 372 (1987).
-
-  - *Degree 4 K3 Boundary*: Kathleen Jones, *The boundary of the moduli space of degree 4 K3 surfaces*, Ph.D. thesis, University of Bath (2000).
-
-  - *Degree $2d$ Cusp Formula*: Simon Attwell-Duval, *The boundary of moduli spaces of polarized K3 surfaces*, Ph.D. thesis, University of Bath (2021).
-
-  - *Unimodular Transitivity*: Martin Eichler, *Quadratische Formen und orthogonale Gruppen*, Springer-Verlag (1952).
-
-- **Content**:
-
-  - Degree 2: Baily–Borel counts $(1, 4, 4)$ and four Type II root types $E_8 \oplus E_8 \oplus A_1, E_7 \oplus D_{10}, D_{16} \oplus A_1, A_{17}$.
-
-  - Degree 4: 9 Type II components with generalized root types $A_{11} \oplus E_6, A_{15} \oplus 2A_1, A_{17}, 2D_8 \oplus A_1, D_{10} \oplus E_7, D_{12} \oplus D_5, D_{16} \oplus A_1, D_{17}, 2E_8 \oplus A_1$.
-
-  - Attwell-Duval formula test cases for squarefree degrees ($d = 2, 3, 5, 6, 10, 14, 15, 30, 42, 70, 105, 210$).
-
-### D. Independent Tits Buildings (Dawes)
-
-- **File**: [`tests/fixtures/dawes_buildings.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/dawes_buildings.json)
-
-- **Primary Source**: Matthew Dawes, *The geometry of the boundary of orthogonal modular varieties*, Ph.D. thesis, University of Bath (2020), and implementation `buildings.sage`.
-
-- **Content**: Independent line orbit, plane orbit, and incidence multigraph computations for $2U \oplus A_2$, $2U \oplus \langle-6\rangle \oplus \langle-2\rangle$, and $U \oplus U(2) \oplus A_2$.
-
-### E. Conway–Sloane: Spinor-Genus Pair and Root-Lattice Automorphism Orders
-
-- **File**: [`tests/fixtures/conway_sloane_cases.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/conway_sloane_cases.json)
-
-- **Source**: J. H. Conway and N. J. A. Sloane, *Sphere Packings, Lattices and Groups*, 3rd ed., Springer, 1999 [CS99].
-
-- **Content**:
-
-  - `spinor_genus_pair_determinant_minus_128`: the ternary forms (51a) and (51b) of Chapter 15 §11 ("Computational complexity"). The text states that both forms lie in the genus I_{2,1}(2 × 64), that this genus contains two spinor genera and hence two classes, and that (51b) represents the second class; Corollary 22 (n = 3, d_0 = 128) is the cited reason.
-    Every field of the record transcribes those sentences.
-
-  - The Chapter 4 root-lattice automorphism orders (A2, A3, D4, E6, E7, E8 as Cartan Grams, and the E8 matrix of Indefinite.jl's `TestCases/LATT_AUTOMORPHISM_case1_ListMat_E8`) are definite-lattice facts owned by the preamble: they live in `research/tests/lattices/test_root_lattice_gram_presentations.sage`.
-
-- **Extraction**: transcribed from the Zotero extraction of the book (item T2WVLTDB). The `quote` fields are verbatim up to ASCII rendering of the mathematics.
-
-* * *
-
-## 2. Upstream Algorithmic Regression Corpora
-
-### A. 8,821 Isotropic Decision Cases
-
-- **File**: [`tests/fixtures/isotropic_cases_8821.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/isotropic_cases_8821.json)
-
-- **Upstream Location**: `references/polyhedral_common/CI_tests/DATA/IsotropicCases`
-
-- **Upstream Author**: Mathieu Dutour Sikirić
-
-- **Repository**: [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
-
-- **Content**: 8,821 exact integer Gram matrices with ground-truth boolean flags indicating the existence of a non-zero integral isotropic vector.
+  - The stable group $\widetilde O^+(N)$ has 528 lines and 24242 planes (text) and 72199 flags (table).
 
 ### B. 8,821 Reflective Lorentzian Forms
 

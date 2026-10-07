@@ -33,7 +33,7 @@ oracles:
         - 2
         - 10
       rank: 12
-      det: -1024
+      det: 1024
     group:
       construction: kernel(component_character)
       internal_name: O_component
@@ -73,7 +73,7 @@ oracles:
         - 2
         - 10
       rank: 12
-      det: -1024
+      det: 1024
     group:
       construction:
         intersection:
