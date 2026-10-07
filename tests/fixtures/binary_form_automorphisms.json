@@ -1,0 +1,190 @@
+[
+ {
+  "id": "hecke_binary_0_3_0",
+  "form": [
+   0,
+   3,
+   0
+  ],
+  "gram": [
+   [
+    0,
+    3
+   ],
+   [
+    3,
+    0
+   ]
+  ],
+  "discriminant": 9,
+  "automorphism_group_generators": [
+   [
+    [
+     -1,
+     0
+    ],
+    [
+     0,
+     -1
+    ]
+   ],
+   [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     0
+    ]
+   ]
+  ],
+  "isometry_convention": "T^T G T == G (column vectors)",
+  "source": {
+   "kind": "independent_implementation_test",
+   "file": "references/vendor/Hecke.jl@e2ab5716/test/QuadForm/QuadBin.jl",
+   "line": 262
+  }
+ },
+ {
+  "id": "hecke_binary_-2_1_0",
+  "form": [
+   -2,
+   1,
+   0
+  ],
+  "gram": [
+   [
+    -4,
+    1
+   ],
+   [
+    1,
+    0
+   ]
+  ],
+  "discriminant": 1,
+  "automorphism_group_generators": [
+   [
+    [
+     -1,
+     0
+    ],
+    [
+     0,
+     -1
+    ]
+   ],
+   [
+    [
+     -2,
+     1
+    ],
+    [
+     -3,
+     2
+    ]
+   ]
+  ],
+  "isometry_convention": "T^T G T == G (column vectors)",
+  "source": {
+   "kind": "independent_implementation_test",
+   "file": "references/vendor/Hecke.jl@e2ab5716/test/QuadForm/QuadBin.jl",
+   "line": 266
+  }
+ },
+ {
+  "id": "hecke_binary_-4_3_0",
+  "form": [
+   -4,
+   3,
+   0
+  ],
+  "gram": [
+   [
+    -8,
+    3
+   ],
+   [
+    3,
+    0
+   ]
+  ],
+  "discriminant": 9,
+  "automorphism_group_generators": [
+   [
+    [
+     -1,
+     0
+    ],
+    [
+     0,
+     -1
+    ]
+   ],
+   [
+    [
+     -4,
+     3
+    ],
+    [
+     -5,
+     4
+    ]
+   ]
+  ],
+  "isometry_convention": "T^T G T == G (column vectors)",
+  "source": {
+   "kind": "independent_implementation_test",
+   "file": "references/vendor/Hecke.jl@e2ab5716/test/QuadForm/QuadBin.jl",
+   "line": 270
+  }
+ },
+ {
+  "id": "hecke_binary_-4_16_0",
+  "form": [
+   -4,
+   16,
+   0
+  ],
+  "gram": [
+   [
+    -8,
+    16
+   ],
+   [
+    16,
+    0
+   ]
+  ],
+  "discriminant": 256,
+  "automorphism_group_generators": [
+   [
+    [
+     -1,
+     0
+    ],
+    [
+     0,
+     -1
+    ]
+   ],
+   [
+    [
+     -1,
+     4
+    ],
+    [
+     0,
+     1
+    ]
+   ]
+  ],
+  "isometry_convention": "T^T G T == G (column vectors)",
+  "source": {
+   "kind": "independent_implementation_test",
+   "file": "references/vendor/Hecke.jl@e2ab5716/test/QuadForm/QuadBin.jl",
+   "line": 274
+  }
+ }
+]

@@ -255,6 +255,14 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Extraction**: `references/extract/isometry_pairs.py`, run under Sage's Python.
 
+### Automorphisms of Indefinite Binary Forms (Hecke)
+
+- **File**: `tests/fixtures/binary_form_automorphisms.json`
+
+- **Source**: `references/vendor/Hecke.jl@e2ab5716/test/QuadForm/QuadBin.jl`, testset "Automormorphism group". For four indefinite binary forms $ax^2+bxy+cy^2$ (lattice Gram $[[2a,b],[b,2c]]$) it records Hecke's exact automorphism-group generators. Cases recording only how many generators Hecke returns are excluded, since that count is an implementation detail.
+
+- **Extraction**: `uv run references/extract/hecke_binary_forms.py`. It asserts each form is indefinite and finds the convention the data satisfies, $T^T G T = G$ for every generator.
+
 ### 6 Metamorphic Indefinite Forms
 
 - **File**: `tests/fixtures/ci_indefinite_comp.json`

@@ -190,6 +190,16 @@ class MertensGenerators(TypedDict):
     source: dict[str, object]
 
 
+class BinaryFormAutomorphisms(TypedDict):
+    id: str
+    form: list[int]
+    gram: Gram
+    discriminant: int
+    automorphism_group_generators: list[list[list[int]]]
+    isometry_convention: str
+    source: FileSource
+
+
 class LorentzianPerfectCase(TypedDict):
     id: str
     dimension: int
@@ -626,6 +636,13 @@ def load_mertens_generators() -> MertensGenerators:
     """Generators of O^+(L) for Mertens's det -155 example (arXiv:1303.3478)."""
     with open(FIXTURES_DIR / "mertens_generators.json", encoding="utf-8") as f:
         data: MertensGenerators = json.load(f)
+        return data
+
+
+def load_binary_form_automorphisms() -> list[BinaryFormAutomorphisms]:
+    """Recorded automorphism-group generators of indefinite binary forms (Hecke QuadBin tests)."""
+    with open(FIXTURES_DIR / "binary_form_automorphisms.json", encoding="utf-8") as f:
+        data: list[BinaryFormAutomorphisms] = json.load(f)
         return data
 
 
