@@ -22,6 +22,8 @@ from sage_indefinite_port.indefinite.isotropic_lifts import (
     pointwise_perpendicular_kernel,
     solve_isotropic_extension_equation,
 )
+from sage_indefinite_port.indefinite.isotropic_reductions import FlagType
+from sage_indefinite_port.indefinite.presentations import ReducedLatticePresentation, presentation_bucket_key
 from sage_indefinite_port.indefinite.vector_sections import (
     IsotropicVectorSection,
     NonIsotropicVectorSection,
@@ -36,6 +38,7 @@ __all__ = [
     "eichler_transvection",
     "find_hyperbolic_pair",
     "InfiniteLocusError",
+    "FlagType",
     "CodimensionOneIsotropicExtensionResult",
     "IntegralParameterCoset",
     "IsometryExtensionTorsor",
@@ -46,10 +49,12 @@ __all__ = [
     "OrbitCover",
     "OrbitCoverModel",
     "PointwisePerpendicularKernel",
+    "ReducedLatticePresentation",
     "VectorOrthogonalSection",
     "orthogonal_section",
     "pointwise_perpendicular_kernel",
     "solve_isotropic_extension_equation",
     "square_divisors",
     "TwoHyperbolicPlaneDecomposition",
+    "presentation_bucket_key",
 ]
