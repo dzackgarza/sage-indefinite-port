@@ -103,6 +103,18 @@ class IsometryPair(TypedDict, total=False):
     source: Required[dict[str, object]]
 
 
+class AllcockRank3Lattice(TypedDict):
+    id: str
+    gram: Gram
+    elementary_divisors: list[int]
+    simple_roots: list[Vector]
+    num_simple_roots: int
+    weyl_group_id: int
+    lattice_id: int
+    convention: str
+    source: FileSource
+
+
 class LorentzianPerfectCase(TypedDict):
     id: str
     dimension: int
@@ -167,6 +179,7 @@ class FileSource(TypedDict, total=False):
     kind: Required[str]
     file: Required[str]
     index: int
+    line: int
     point_numbering: str
     gram_constructor: str
 
@@ -507,6 +520,13 @@ def load_indefinite_isometry_pairs() -> list[IsometryPair]:
     """Indefinite pairs with certified isometry verdicts from Indefinite.jl and Hecke tests."""
     with open(FIXTURES_DIR / "indefinite_isometry_pairs.json", encoding="utf-8") as f:
         data: list[IsometryPair] = json.load(f)
+        return data
+
+
+def load_allcock_rank3_reflective() -> list[AllcockRank3Lattice]:
+    """Allcock's 8,595 reflective Lorentzian lattices of rank 3 with their simple roots."""
+    with open(FIXTURES_DIR / "allcock_rank3_reflective.json", encoding="utf-8") as f:
+        data: list[AllcockRank3Lattice] = json.load(f)
         return data
 
 

@@ -54,6 +54,14 @@ This document records the exact provenance, source files, authors, publications,
 
 - These are the reference implementation's own recorded outputs (polyhedral_common, Mathieu Dutour Sikirić); agreement with them is acceptance for this port. Extracted by `references/extract/polyhedral_common_ci.py` (run under Sage's Python; GAP literals are evaluated with libgap). Each record cites its vendored file and index.
 
+### Allcock's Reflective Lorentzian Lattices of Rank 3
+
+- **File**: `tests/fixtures/allcock_rank3_reflective.json`
+
+- **Source**: Allcock's classification of the reflective Lorentzian lattices of rank 3 (arXiv:1010.0486, 1111.1264, both vendored), as published in `references/vendor/GeometryDatabase_Rank3_Lorentzian_lattices@63a9067a/RK3_all`. It has 8,595 lattices, each with its elementary divisors, explicit simple roots and Weyl-group id. The convention is signature (2,1) with roots of positive norm, the same as `ListReflect`.
+
+- **Extraction**: `uv run references/extract/allcock_rank3.py`. It asserts that every simple root has positive norm and gives an integral reflection. It also checks that every Gram matrix appears in `reflective_forms_8821.json` with the same number of simple roots, which confirms that `ListReflect`'s rank-3 part is exactly this classification.
+
 ### 145 Lorentzian Equivalence Instances
 
 - **File**: `tests/fixtures/lorentzian_equivalence_145.json`

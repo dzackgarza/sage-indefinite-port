@@ -161,3 +161,10 @@ oracles:
     sources:
       - references/vendor/Indefinite.jl@374a5ebb/TestLor
       - references/vendor/Hecke.jl@e2ab5716/test/QuadForm/Quad/ZLatticeAutIso.jl
+  - id: allcock_rank3_reflective
+    fixture_file: allcock_rank3_reflective.json
+    extraction: references/extract/allcock_rank3.py
+    sources:
+      - references/vendor/GeometryDatabase_Rank3_Lorentzian_lattices@63a9067a/RK3_all
+      - references/vendor/arxiv/1010.0486
+      - references/vendor/arxiv/1111.1264
