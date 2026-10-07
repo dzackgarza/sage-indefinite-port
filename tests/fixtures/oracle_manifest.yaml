@@ -19,6 +19,12 @@ oracles:
     kind: published_text
     sources:
       - references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex
+  - fixture_file: e10_fundamental_domain.json
+    extraction: references/extract/dh23_e10_domain.py
+    runtime: uv
+    kind: published_text
+    sources:
+      - references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex
   - fixture_file: e10_vector_orbits.json
     extraction: references/extract/bga_e10_orbits.py
     runtime: uv

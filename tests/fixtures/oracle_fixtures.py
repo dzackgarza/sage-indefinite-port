@@ -144,6 +144,31 @@ class E10VectorOrbits(TypedDict):
     source: dict[str, dict[str, object]]
 
 
+class LabelledRoot(TypedDict):
+    label: int
+    vector: Vector
+
+
+class E10OrbitRepresentative(TypedDict):
+    degree: int
+    gamma_class: int
+    g_coefficients: list[int]
+    vector: Vector
+    source_line: int
+
+
+class E10FundamentalDomain(TypedDict):
+    lattice: str
+    gram: Gram
+    simple_roots: list[LabelledRoot]
+    extreme_rays: list[Vector]
+    extreme_ray_gram: Gram
+    orthogonal_group_equals_weyl_group: bool
+    weyl_vector_norm: int
+    orbit_representatives: list[E10OrbitRepresentative]
+    source: dict[str, dict[str, object]]
+
+
 class LorentzianPerfectCase(TypedDict):
     id: str
     dimension: int
@@ -566,6 +591,13 @@ def load_e10_vector_orbits() -> E10VectorOrbits:
     """O(E10)-orbits of primitive vectors of norm 0..10 with stabilizer indices (Brandhorst--Gonzalez-Alonso)."""
     with open(FIXTURES_DIR / "e10_vector_orbits.json", encoding="utf-8") as f:
         data: E10VectorOrbits = json.load(f)
+        return data
+
+
+def load_e10_fundamental_domain() -> E10FundamentalDomain:
+    """U + E8(-1): simple roots, chamber rays, and orbit representatives of norm <= 30 (DH section 3)."""
+    with open(FIXTURES_DIR / "e10_fundamental_domain.json", encoding="utf-8") as f:
+        data: E10FundamentalDomain = json.load(f)
         return data
 
 

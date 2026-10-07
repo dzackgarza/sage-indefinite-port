@@ -38,6 +38,24 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Extraction**: `uv run references/extract/bga_e10_orbits.py`.
 
+### U + E8(-1): Weyl Chamber, Extreme Rays and Orbit Representatives
+
+- **File**: `tests/fixtures/e10_fundamental_domain.json`
+
+- **Source**: Dutour Sikirić–Hulek, arXiv:2302.01679, section 3 (vendored TeX). It gives:
+  - the Gram matrix $G$ of $U \oplus E_8(-1)$ (equation `equ:G`) and the ten simple roots $r_{-1}, \dots, r_8$ of a Weyl chamber;
+  - the chamber's extreme rays $g_1, \dots, g_{10}$, a $\mathbb Z$-basis, with their Gram matrix $W$ (equation `equ:W`);
+  - $O(U\oplus E_8(-1)) = W(U\oplus E_8(-1))$, and Weyl vector norm 1240;
+  - Table `ListVectorsNormAtMost30`: representatives of every orbit of primitive vectors of norm $\le 30$, grouped by the conjugacy class of $\bar\Gamma_h$.
+
+- **Checks** (asserted by the extraction):
+  - $W = g\,G\,g^T$;
+  - every simple root has norm $-2$, and distinct roots pair non-negatively;
+  - every one of the 61 representatives has the norm of its degree;
+  - the number of representatives per degree equals $\#h$ from `ListNumberPolarizationsModuli`.
+
+- **Extraction**: `uv run references/extract/dh23_e10_domain.py`.
+
 ### Unpolarized Enriques Boundary Strata and Stabilizers
 
 - **File**: `tests/fixtures/unpolarized_enriques.json`
