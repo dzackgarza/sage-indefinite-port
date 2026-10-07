@@ -1,4 +1,36 @@
 {
+ "gamma": {
+  "group": "Gamma(N) = Gamma_xi = {phi in O^+(Lambda_N) : phi(xi) = xi}",
+  "decoration": "xi in A_{Lambda_N} with q(xi) = 1 mod 2Z; unique unless N = 6 mod 8",
+  "index_in_O_plus": "1, or 3 when N = 6 mod 8",
+  "source": {
+   "gamma_n": {
+    "kind": "published_text",
+    "file": "references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex",
+    "lines": "642-642"
+   },
+   "decoration": {
+    "kind": "published_text",
+    "file": "references/vendor/arxiv/1607.01324/bir-quartics-arxiv.tex",
+    "lines": "619-619"
+   },
+   "uniqueness": {
+    "kind": "published_text",
+    "file": "references/vendor/arxiv/1607.01324/bir-quartics-arxiv.tex",
+    "lines": "626-626"
+   },
+   "definition": {
+    "kind": "published_text",
+    "file": "references/vendor/arxiv/1607.01324/bir-quartics-arxiv.tex",
+    "lines": "698-698"
+   },
+   "index": {
+    "kind": "published_text",
+    "file": "references/vendor/arxiv/1607.01324/bir-quartics-arxiv.tex",
+    "lines": "758-758"
+   }
+  }
+ },
  "boundary_pictures": [
   {
    "id": "lambda_9",

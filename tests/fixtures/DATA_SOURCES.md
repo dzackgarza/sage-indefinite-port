@@ -179,7 +179,9 @@ This document records the exact provenance, source files, authors, publications,
 
 - **File**: `tests/fixtures/dtower_boundaries.json`
 
-- **Source**: Laza–O'Grady, arXiv:1801.04845 (vendored TeX). $\Lambda_N = U^2 \oplus D_{N-2}$ with $D$ negative definite (line 625); $\Gamma(N) = O^+(\Lambda_N)$ for the cases recorded (line 642). The diagram `bbpicture` (lines 4629–4631) gives the Baily–Borel boundaries of $\mathcal F(9)$, $\mathcal F(10)$ and $\mathcal F(11)$:
+- **Source**: Laza–O'Grady, arXiv:1801.04845 (vendored TeX). $\Lambda_N = U^2 \oplus D_{N-2}$ with $D$ negative definite (line 625).
+
+- **Group** (`gamma`): $\Gamma(N) = \Gamma_\xi = \{\phi \in O^+(\Lambda_N) : \phi(\xi) = \xi\}$ for a decoration $\xi \in A_{\Lambda_N}$ of square $1 \bmod 2\mathbb Z$, from Laza–O'Grady arXiv:1607.01324 (vendored; lines 619, 626, 698, 758), which LOG3 line 642 cites. The decoration is unique and $\Gamma(N) = O^+(\Lambda_N)$ unless $N \equiv 6 \bmod 8$, where $\Gamma(N)$ has index 3. The diagram `bbpicture` (lines 4629–4631) gives the Baily–Borel boundaries of $\mathcal F(9)$, $\mathcal F(10)$ and $\mathcal F(11)$:
   - $N=9$: 1 Type III point and 1 Type II curve ($D_7$), 1 incidence;
   - $N=10$: 2 points and 2 curves ($E_8$, $D_8$), 3 incidences;
   - $N=11$: 1 point and 2 curves ($E_8\oplus D_1$, $D_9$), 2 incidences.

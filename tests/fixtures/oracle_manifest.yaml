@@ -70,6 +70,7 @@ oracles:
     kind: published_text
     sources:
       - references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex
+      - references/vendor/arxiv/1607.01324/bir-quartics-arxiv.tex
   - fixture_file: k3_modular_strata.json
     extraction: references/extract/k3_strata.py
     runtime: uv

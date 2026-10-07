@@ -344,7 +344,23 @@ class FHatComponent(TypedDict):
     source: TableRowSource
 
 
+class DTowerGroupSources(TypedDict):
+    gamma_n: TextSource
+    decoration: TextSource
+    uniqueness: TextSource
+    definition: TextSource
+    index: TextSource
+
+
+class DTowerGroup(TypedDict):
+    group: str
+    decoration: str
+    index_in_O_plus: str
+    source: DTowerGroupSources
+
+
 class DTower(TypedDict):
+    gamma: DTowerGroup
     boundary_pictures: list[DTowerBoundary]
     type_counts: list[DTowerTypeCount]
     genus_of_d: list[GenusOfD]

@@ -16,11 +16,13 @@ Retrieved 2026-10-07.
 | `arxiv/1010.0486/` | https://arxiv.org/abs/1010.0486 | TeX source, 2026-10-07 |
 | `arxiv/1012.4155/` | https://arxiv.org/abs/1012.4155 | TeX source, 2026-10-07 |
 | `arxiv/1111.1264/` | https://arxiv.org/abs/1111.1264 | TeX source, 2026-10-07 |
+| `arxiv/1205.3144/` | https://arxiv.org/abs/1205.3144 | TeX source, 2026-10-07 |
 | `arxiv/1209.0022/` | https://arxiv.org/abs/1209.0022 | TeX source, 2026-10-07 |
 | `arxiv/1303.3478/` | https://arxiv.org/abs/1303.3478 | TeX source, 2026-10-07 |
 | `arxiv/1503.04428/` | https://arxiv.org/abs/1503.04428 | TeX source, 2026-10-07 |
 | `arxiv/1601.00103/` | https://arxiv.org/abs/1601.00103 | TeX source, 2026-10-07 |
 | `arxiv/1604.00726/` | https://arxiv.org/abs/1604.00726 | TeX source, 2026-10-07 |
+| `arxiv/1607.01324/` | https://arxiv.org/abs/1607.01324 | TeX source, 2026-10-07 |
 | `arxiv/1610.06148/` | https://arxiv.org/abs/1610.06148 | TeX source, 2026-10-07 |
 | `arxiv/1612.07432/` | https://arxiv.org/abs/1612.07432 | TeX source, 2026-10-07 |
 | `arxiv/1710.01672/` | https://arxiv.org/abs/1710.01672 | TeX source, 2026-10-07 |

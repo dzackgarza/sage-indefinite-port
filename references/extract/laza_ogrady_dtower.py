@@ -16,6 +16,10 @@ Source (vendored TeX references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex):
 
 Every transcribed label is asserted on the cited lines.
 
+Gamma(N) is defined in Laza--O'Grady arXiv:1607.01324 (vendored; LOG3 line 642 cites
+its Prop. 1.2.3): Gamma_xi = {phi in O^+(Lambda) : phi(xi) = xi} for a decoration xi in
+A_Lambda of square 1 mod 2Z, recorded under "gamma" with every clause asserted on its line.
+
 Run from the repository root: uv run references/extract/laza_ogrady_dtower.py
 """
 
@@ -24,6 +28,16 @@ from pathlib import Path
 
 SOURCE = Path("references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex")
 TARGET = Path("tests/fixtures/dtower_boundaries.json")
+
+
+LOG1 = Path("references/vendor/arxiv/1607.01324/bir-quartics-arxiv.tex")
+
+
+def cite_log1(first: int, last: int, *needles: str) -> dict[str, str]:
+    text = "\n".join(LOG1.read_text(encoding="utf-8").splitlines()[first - 1 : last])
+    for needle in needles:
+        assert needle in text, f"{LOG1}:{first}-{last} does not contain {needle!r}"
+    return {"kind": "published_text", "file": str(LOG1), "lines": f"{first}-{last}"}
 
 
 def cite(first: int, last: int, *needles: str) -> dict[str, str]:
@@ -197,7 +211,25 @@ def main() -> None:
     assert n18["type_ii_components"] == len(f_hat) == 8
     labels_a = sorted(row["label"] for row in f_hat if row["type"] == "a")
     assert len(labels_a) == len(genus[16]) == 6
-    data = {"boundary_pictures": records, "type_counts": counts, "genus_of_d": [{"n": n, "root_sublattices": genus[n]} for n in sorted(genus)], "f18_hat_type_ii": f_hat}
+    gamma = {
+        "group": "Gamma(N) = Gamma_xi = {phi in O^+(Lambda_N) : phi(xi) = xi}",
+        "decoration": "xi in A_{Lambda_N} with q(xi) = 1 mod 2Z; unique unless N = 6 mod 8",
+        "index_in_O_plus": "1, or 3 when N = 6 mod 8",
+        "source": {
+            "gamma_n": cite(642, 642, r"$\Gamma(N)=O^{+}(\Lambda_N)$ if $n\not\equiv 6\pmod{8}$", "Prop.~1.2.3 ibid"),
+            "decoration": cite_log1(619, 619, r"a \emph{decoration} of  $\Lambda$  is an element $\xi\in A_{\Lambda}$  of square $1$ (modulo $2\ZZ$)"),
+            "uniqueness": cite_log1(626, 626, r"it is unique unless $N\equiv 6 \pmod 8$"),
+            "definition": cite_log1(698, 698, r"\Gamma_\xi:=\{\phi\in O^+(\Lambda)\mid \phi(\xi)=\xi\}"),
+            "index": cite_log1(758, 758, r"$\Gamma_\xi= O^+(\Lambda)$ unless $N\equiv 6\pmod 8$, in which case $\Gamma_\xi< O^+(\Lambda)$ is of index $3$"),
+        },
+    }
+    data = {
+        "gamma": gamma,
+        "boundary_pictures": records,
+        "type_counts": counts,
+        "genus_of_d": [{"n": n, "root_sublattices": genus[n]} for n in sorted(genus)],
+        "f18_hat_type_ii": f_hat,
+    }
     TARGET.write_text(json.dumps(data, indent=1) + "\n", encoding="utf-8")
     print(f"wrote {TARGET}: {len(records)} pictures, Type II/III counts for N = 3..20 (match the pictures and the 8 rows of the N = 18 table)")
 
