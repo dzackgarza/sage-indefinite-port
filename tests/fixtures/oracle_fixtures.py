@@ -51,14 +51,25 @@ class OrbitCounts(TypedDict, total=False):
     flag_orbits: int
 
 
+class TableRowSource(TypedDict):
+    kind: str
+    citation: str
+    file: str
+    table: str
+    line: int
+
+
 class Enriques87Case(TypedDict):
     case: int
-    minimal_degree: int | None
-    polarization_orbit_length: int | None
+    S: str
+    polarization_orbit_length: int
+    group_order: int
     line_orbits: int
     plane_orbits: int
     flag_orbits: int
-    source: Provenance
+    minimal_degree: int
+    phi_h_min: int
+    source: TableRowSource
 
 
 class LorentzianPerfectCase(TypedDict):

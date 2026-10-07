@@ -8,17 +8,15 @@ This document records the exact provenance, source files, authors, publications,
 
 ### A. 87 Numerical Enriques Polarizations
 
-- **File**: [`tests/fixtures/enriques_87_polarizations.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/enriques_87_polarizations.json)
+- **File**: `tests/fixtures/enriques_87_polarizations.json`
 
-- **Primary Source**: Mathieu Dutour Sikirić and Klaus Hulek, *On the classification of numerical Enriques surfaces and their moduli spaces*, [arXiv:2302.01679](https://arxiv.org/abs/2302.01679) [math.AG], 2023, Tables 1 and 2.
+- **Primary Source**: Mathieu Dutour Sikirić and Klaus Hulek, *Moduli of polarised Enriques surfaces — computational aspects*, J. London Math. Soc. 2024, [arXiv:2302.01679](https://arxiv.org/abs/2302.01679), Tables `table_subgroups1` and `table_subgroups2`; vendored at `references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex`.
 
-- **Content**: 87 rows containing case numbers, minimal degrees $d_{\min}$, polarization orbit lengths, zero-dimensional cusp orbit counts $\#\mathcal{I}_1$, one-dimensional boundary component counts $\#\mathcal{I}_2$, and flag orbit counts $\#\mathcal{I}_{12}$.
+- **Extraction**: `uv run references/extract/dh23_polarizations.py` parses both tables from the vendored TeX. Each record carries the TeX line it came from.
 
-- **Key Sentinel Cases**:
+- **Content**: for each of the 87 conjugacy classes of groups $\Gamma_h$: the subset $S$ of the $E_{10}$ diagram, $\#S$, $|\bar\Gamma_h|$, the isotropic line, plane and flag counts $\#I_1, \#I_2, \#I_{12}$, the degree of the smallest realization $h_{\min}$, and $\phi(h_{\min})$.
 
-  - Case 1: $(\#\mathcal{I}_1, \#\mathcal{I}_2, \#\mathcal{I}_{12}) = (5, 9, 18)$
-
-  - Case 87: $(\#\mathcal{I}_1, \#\mathcal{I}_2, \#\mathcal{I}_{12}) = (528, 24242, 72199)$ (stable component-preserving endpoint)
+- **Check**: the script asserts cases 1–87 in order and that case 87 has 528 lines and 24242 planes, which the paper also states independently in its text (lines 1168–1170).
 
 ### B. Unpolarized Enriques Boundary Strata and Stabilizers
 

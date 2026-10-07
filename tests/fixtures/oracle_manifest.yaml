@@ -114,17 +114,20 @@ oracles:
     fixture_file: enriques_87_polarizations.json
     source:
       kind: published_table
-      paper: Dutour Sikirić--Hulek
-      arxiv: '2302.01679'
+      citation: Dutour Sikirić--Hulek, Moduli of polarised Enriques surfaces -- computational aspects, arXiv:2302.01679
+      file: references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex
       tables:
-        - 1
-        - 2
-      section: '3.4'
+        - table_subgroups1
+        - table_subgroups2
+      extraction: references/extract/dh23_polarizations.py
     authoritative_outputs:
-      - count
+      - polarization_orbit_length
+      - group_order
       - line_orbits
       - plane_orbits
       - flag_orbits
+      - minimal_degree
+      - phi_h_min
   - id: k3_degree_two_type_ii_strata
     lattice:
       construction: 2U + 2E8(-1) + <-2>
