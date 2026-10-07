@@ -14,6 +14,7 @@ from typing import Literal
 
 from dzack_research.preamble.categories.lattices import FiniteRankLattices, Lattices
 from dzack_research.preamble.categories.rings.ring_foundation import _engine_element
+from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.rings.integer import Integer
 
 Parity = Literal["even", "odd"]
@@ -90,9 +91,29 @@ class VectorPrefilter:
         *,
         include_orthogonal_reduction: bool = True,
     ) -> VectorPrefilter:
-        norm = int(vector.q())
-        content = vector_content(vector)
-        divisor = int(vector.div())
+        lattice = vector.parent()
+        labels = tuple(lattice.module_generating_set())
+        coordinate_function = vector.to_vector()
+        coordinates = tuple(int(coordinate_function(label)) for label in labels)
+        content = 0
+        for coordinate in coordinates:
+            content = gcd(content, abs(coordinate))
+
+        gram = _engine_component_matrix(lattice.gram_tensor())
+        pairings = tuple(
+            sum(
+                coordinates[row] * int(gram[row, column])
+                for row in range(len(coordinates))
+            )
+            for column in range(len(coordinates))
+        )
+        norm = sum(
+            coordinate * pairing
+            for coordinate, pairing in zip(coordinates, pairings, strict=True)
+        )
+        divisor = 0
+        for pairing in pairings:
+            divisor = gcd(divisor, abs(pairing))
         discriminant_key = None
         match divisor:
             case 0:
@@ -111,7 +132,7 @@ class VectorPrefilter:
                     )
                 )
         reduction_prefilter = None
-        if include_orthogonal_reduction and vector.is_isotropic() and vector.is_primitive():
+        if include_orthogonal_reduction and norm == 0 and content == 1:
             reduction_prefilter = lattice_prefilter(vector.isotropic_reduction())
         return cls(
             norm,
