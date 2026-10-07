@@ -115,6 +115,12 @@ class AllcockRank3Lattice(TypedDict):
     source: FileSource
 
 
+class OscarLatticeOracles(TypedDict):
+    vinberg: list[dict[str, object]]
+    discriminant_images: list[dict[str, object]]
+    isometry_groups: list[dict[str, object]]
+
+
 class LorentzianPerfectCase(TypedDict):
     id: str
     dimension: int
@@ -527,6 +533,13 @@ def load_allcock_rank3_reflective() -> list[AllcockRank3Lattice]:
     """Allcock's 8,595 reflective Lorentzian lattices of rank 3 with their simple roots."""
     with open(FIXTURES_DIR / "allcock_rank3_reflective.json", encoding="utf-8") as f:
         data: list[AllcockRank3Lattice] = json.load(f)
+        return data
+
+
+def load_oscar_lattice_oracles() -> OscarLatticeOracles:
+    """Vinberg roots, discriminant images and isometry-group orders recorded in OSCAR's tests."""
+    with open(FIXTURES_DIR / "oscar_lattice_oracles.json", encoding="utf-8") as f:
+        data: OscarLatticeOracles = json.load(f)
         return data
 
 

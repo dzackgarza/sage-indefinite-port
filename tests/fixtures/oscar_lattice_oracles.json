@@ -1,0 +1,1532 @@
+{
+ "vinberg": [
+  {
+   "id": "vinberg_I_1_10",
+   "gram": [
+    [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     -1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     -1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     -1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     -1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     -1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     -1,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     -1,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     -1,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     -1,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     -1
+    ]
+   ],
+   "signature": [
+    1,
+    10
+   ],
+   "num_simple_roots": 12,
+   "a_simple_root_up_to_sign": [
+    3,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "source": [
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/vinberg.jl",
+     "line": 7
+    },
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/vinberg.jl",
+     "line": 9
+    }
+   ]
+  },
+  {
+   "id": "vinberg_diag_1_-1_-13",
+   "gram": [
+    [
+     1,
+     0,
+     0
+    ],
+    [
+     0,
+     -1,
+     0
+    ],
+    [
+     0,
+     0,
+     -13
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "num_simple_roots": 8,
+   "cusps": 2,
+   "source": [
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/vinberg.jl",
+     "line": 18
+    },
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/vinberg.jl",
+     "line": 30
+    }
+   ]
+  },
+  {
+   "id": "vinberg_scharlau_U_A2",
+   "gram": [
+    [
+     0,
+     -1,
+     0,
+     0
+    ],
+    [
+     -1,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     -2,
+     -1
+    ],
+    [
+     0,
+     0,
+     -1,
+     -2
+    ]
+   ],
+   "signature": [
+    1,
+    3
+   ],
+   "num_simple_roots": 4,
+   "coxeter_diagram_edges": 6,
+   "source": [
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/vinberg.jl",
+     "line": 37
+    },
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/vinberg.jl",
+     "line": 49
+    }
+   ]
+  },
+  {
+   "id": "vinberg_diag_1_-1_-3",
+   "gram": [
+    [
+     1,
+     0,
+     0
+    ],
+    [
+     0,
+     -1,
+     0
+    ],
+    [
+     0,
+     0,
+     -3
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "num_simple_roots": 4,
+   "simple_roots_of_test_chamber": [
+    [
+     0,
+     -1,
+     0
+    ],
+    [
+     0,
+     0,
+     -1
+    ],
+    [
+     1,
+     0,
+     1
+    ],
+    [
+     3,
+     3,
+     1
+    ]
+   ],
+   "chamber": "v0 = (1,0,0), direction (0,9,6)",
+   "source": [
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/vinberg.jl",
+     "line": 56
+    },
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/vinberg.jl",
+     "line": 57
+    },
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/vinberg.jl",
+     "line": 58
+    },
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/NumberTheory/vinberg.jl",
+     "line": 59
+    }
+   ]
+  }
+ ],
+ "discriminant_images": [
+  {
+   "id": "from_sage_0",
+   "gram": [
+    [
+     2,
+     -1,
+     0
+    ],
+    [
+     -1,
+     -2,
+     0
+    ],
+    [
+     0,
+     0,
+     -10
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 4,
+   "image_in_Oq_signed_order": 4,
+   "O_qL_order": 8,
+   "run_in_oscar_ci": true,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 18
+   }
+  },
+  {
+   "id": "from_sage_1",
+   "gram": [
+    [
+     2,
+     -1,
+     0
+    ],
+    [
+     -1,
+     -2,
+     0
+    ],
+    [
+     0,
+     0,
+     -20
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 12,
+   "image_in_Oq_signed_order": 12,
+   "O_qL_order": 24,
+   "run_in_oscar_ci": true,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 19
+   }
+  },
+  {
+   "id": "from_sage_2",
+   "gram": [
+    [
+     2,
+     0,
+     0
+    ],
+    [
+     0,
+     -4,
+     0
+    ],
+    [
+     0,
+     0,
+     -16
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 8,
+   "image_in_Oq_signed_order": 8,
+   "O_qL_order": 16,
+   "run_in_oscar_ci": true,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 20
+   }
+  },
+  {
+   "id": "from_sage_3",
+   "gram": [
+    [
+     0,
+     0,
+     8
+    ],
+    [
+     0,
+     -2,
+     0
+    ],
+    [
+     8,
+     0,
+     0
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 16,
+   "image_in_Oq_signed_order": 8,
+   "O_qL_order": 32,
+   "run_in_oscar_ci": true,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 21
+   }
+  },
+  {
+   "id": "from_sage_4",
+   "gram": [
+    [
+     -2,
+     -1,
+     0
+    ],
+    [
+     -1,
+     -8,
+     0
+    ],
+    [
+     0,
+     0,
+     10
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 12,
+   "image_in_Oq_signed_order": 12,
+   "O_qL_order": 24,
+   "run_in_oscar_ci": true,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 22
+   }
+  },
+  {
+   "id": "from_sage_5",
+   "gram": [
+    [
+     2,
+     1,
+     0
+    ],
+    [
+     1,
+     -2,
+     0
+    ],
+    [
+     0,
+     0,
+     -40
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 8,
+   "image_in_Oq_signed_order": 8,
+   "O_qL_order": 16,
+   "run_in_oscar_ci": true,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 23
+   }
+  },
+  {
+   "id": "from_sage_6",
+   "gram": [
+    [
+     2,
+     0,
+     1
+    ],
+    [
+     0,
+     -10,
+     -5
+    ],
+    [
+     1,
+     -5,
+     -12
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 8,
+   "image_in_Oq_signed_order": 8,
+   "O_qL_order": 16,
+   "run_in_oscar_ci": true,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 24
+   }
+  },
+  {
+   "id": "from_sage_7",
+   "gram": [
+    [
+     0,
+     0,
+     10
+    ],
+    [
+     0,
+     -2,
+     -2
+    ],
+    [
+     10,
+     -2,
+     -2
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 8,
+   "image_in_Oq_signed_order": 8,
+   "O_qL_order": 16,
+   "run_in_oscar_ci": true,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 25
+   }
+  },
+  {
+   "id": "from_sage_8",
+   "gram": [
+    [
+     0,
+     0,
+     5
+    ],
+    [
+     0,
+     -10,
+     0
+    ],
+    [
+     5,
+     0,
+     0
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 120,
+   "image_in_Oq_signed_order": 120,
+   "O_qL_order": 240,
+   "run_in_oscar_ci": true,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 26
+   }
+  },
+  {
+   "id": "from_sage_9",
+   "gram": [
+    [
+     2,
+     0,
+     6
+    ],
+    [
+     0,
+     -4,
+     0
+    ],
+    [
+     6,
+     0,
+     -14
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 16,
+   "image_in_Oq_signed_order": 16,
+   "O_qL_order": 32,
+   "run_in_oscar_ci": false,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 28
+   }
+  },
+  {
+   "id": "from_sage_10",
+   "gram": [
+    [
+     0,
+     0,
+     8
+    ],
+    [
+     0,
+     -4,
+     0
+    ],
+    [
+     8,
+     0,
+     8
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 64,
+   "image_in_Oq_signed_order": 32,
+   "O_qL_order": 128,
+   "run_in_oscar_ci": false,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 29
+   }
+  },
+  {
+   "id": "from_sage_11",
+   "gram": [
+    [
+     0,
+     0,
+     8
+    ],
+    [
+     0,
+     -4,
+     0
+    ],
+    [
+     8,
+     0,
+     0
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 96,
+   "image_in_Oq_signed_order": 48,
+   "O_qL_order": 192,
+   "run_in_oscar_ci": false,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 30
+   }
+  },
+  {
+   "id": "from_sage_12",
+   "gram": [
+    [
+     0,
+     0,
+     12
+    ],
+    [
+     0,
+     -2,
+     0
+    ],
+    [
+     12,
+     0,
+     0
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 24,
+   "image_in_Oq_signed_order": 12,
+   "O_qL_order": 48,
+   "run_in_oscar_ci": false,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 31
+   }
+  },
+  {
+   "id": "from_sage_13",
+   "gram": [
+    [
+     -6,
+     0,
+     0
+    ],
+    [
+     0,
+     -6,
+     0
+    ],
+    [
+     0,
+     0,
+     8
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 32,
+   "image_in_Oq_signed_order": 32,
+   "O_qL_order": 64,
+   "run_in_oscar_ci": false,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 32
+   }
+  },
+  {
+   "id": "from_sage_14",
+   "gram": [
+    [
+     0,
+     0,
+     12
+    ],
+    [
+     0,
+     -2,
+     -2
+    ],
+    [
+     12,
+     -2,
+     4
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 16,
+   "image_in_Oq_signed_order": 8,
+   "O_qL_order": 32,
+   "run_in_oscar_ci": false,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 33
+   }
+  },
+  {
+   "id": "from_sage_15",
+   "gram": [
+    [
+     -2,
+     -1,
+     -2
+    ],
+    [
+     -1,
+     2,
+     9
+    ],
+    [
+     -2,
+     9,
+     -22
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 16,
+   "image_in_Oq_signed_order": 16,
+   "O_qL_order": 32,
+   "run_in_oscar_ci": false,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 34
+   }
+  },
+  {
+   "id": "from_sage_16",
+   "gram": [
+    [
+     0,
+     0,
+     5
+    ],
+    [
+     0,
+     -12,
+     -2
+    ],
+    [
+     5,
+     -2,
+     -2
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 16,
+   "image_in_Oq_signed_order": 16,
+   "O_qL_order": 32,
+   "run_in_oscar_ci": false,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 35
+   }
+  },
+  {
+   "id": "from_sage_17",
+   "gram": [
+    [
+     2,
+     1,
+     0
+    ],
+    [
+     1,
+     -6,
+     0
+    ],
+    [
+     0,
+     0,
+     -26
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 12,
+   "image_in_Oq_signed_order": 12,
+   "O_qL_order": 24,
+   "run_in_oscar_ci": false,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 36
+   }
+  },
+  {
+   "id": "from_sage_18",
+   "gram": [
+    [
+     2,
+     0,
+     0
+    ],
+    [
+     0,
+     -10,
+     5
+    ],
+    [
+     0,
+     5,
+     -20
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 12,
+   "image_in_Oq_signed_order": 12,
+   "O_qL_order": 24,
+   "run_in_oscar_ci": false,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 37
+   }
+  },
+  {
+   "id": "from_sage_19",
+   "gram": [
+    [
+     2,
+     0,
+     0
+    ],
+    [
+     0,
+     -4,
+     0
+    ],
+    [
+     0,
+     0,
+     -48
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 16,
+   "image_in_Oq_signed_order": 16,
+   "O_qL_order": 32,
+   "run_in_oscar_ci": false,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 38
+   }
+  },
+  {
+   "id": "from_sage_20",
+   "gram": [
+    [
+     2,
+     0,
+     0
+    ],
+    [
+     0,
+     -16,
+     -8
+    ],
+    [
+     0,
+     -8,
+     -16
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 96,
+   "image_in_Oq_signed_order": 96,
+   "O_qL_order": 192,
+   "run_in_oscar_ci": false,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 39
+   }
+  },
+  {
+   "id": "from_sage_21",
+   "gram": [
+    [
+     2,
+     -1,
+     0
+    ],
+    [
+     -1,
+     -2,
+     0
+    ],
+    [
+     0,
+     0,
+     -80
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 12,
+   "image_in_Oq_signed_order": 12,
+   "O_qL_order": 24,
+   "run_in_oscar_ci": false,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 40
+   }
+  },
+  {
+   "id": "from_sage_22",
+   "gram": [
+    [
+     2,
+     0,
+     0
+    ],
+    [
+     0,
+     -10,
+     0
+    ],
+    [
+     0,
+     0,
+     -20
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 24,
+   "image_in_Oq_signed_order": 24,
+   "O_qL_order": 48,
+   "run_in_oscar_ci": false,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 41
+   }
+  },
+  {
+   "id": "from_sage_23",
+   "gram": [
+    [
+     0,
+     0,
+     10
+    ],
+    [
+     0,
+     -4,
+     0
+    ],
+    [
+     10,
+     0,
+     0
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 48,
+   "image_in_Oq_signed_order": 48,
+   "O_qL_order": 96,
+   "run_in_oscar_ci": false,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 42
+   }
+  },
+  {
+   "id": "from_sage_24",
+   "gram": [
+    [
+     0,
+     0,
+     6
+    ],
+    [
+     0,
+     -12,
+     0
+    ],
+    [
+     6,
+     0,
+     0
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 288,
+   "image_in_Oq_signed_order": 144,
+   "O_qL_order": 576,
+   "run_in_oscar_ci": false,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 43
+   }
+  },
+  {
+   "id": "from_sage_25",
+   "gram": [
+    [
+     -2,
+     -1,
+     -8
+    ],
+    [
+     -1,
+     -8,
+     -4
+    ],
+    [
+     -8,
+     -4,
+     -2
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 16,
+   "image_in_Oq_signed_order": 8,
+   "O_qL_order": 32,
+   "run_in_oscar_ci": false,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 44
+   }
+  },
+  {
+   "id": "from_sage_26",
+   "gram": [
+    [
+     2,
+     1,
+     0
+    ],
+    [
+     1,
+     -12,
+     5
+    ],
+    [
+     0,
+     5,
+     -20
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 8,
+   "image_in_Oq_signed_order": 8,
+   "O_qL_order": 16,
+   "run_in_oscar_ci": false,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 45
+   }
+  },
+  {
+   "id": "from_sage_27",
+   "gram": [
+    [
+     0,
+     0,
+     15
+    ],
+    [
+     0,
+     -2,
+     1
+    ],
+    [
+     15,
+     1,
+     2
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_order": 8,
+   "image_in_Oq_signed_order": 8,
+   "O_qL_order": 16,
+   "run_in_oscar_ci": true,
+   "source": {
+    "kind": "independent_implementation_test",
+    "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+    "line": 46
+   }
+  },
+  {
+   "id": "A7_plus_diag_1_1_-1",
+   "gram": [
+    [
+     2,
+     -1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     -1,
+     2,
+     -1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     -1,
+     2,
+     -1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     -1,
+     2,
+     -1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     -1,
+     2,
+     -1,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     -1,
+     2,
+     -1,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     -1,
+     2,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     -1
+    ]
+   ],
+   "signature": [
+    9,
+    1
+   ],
+   "image_in_Oq_is_all_of_O_qL": true,
+   "source": [
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+     "line": 57
+    },
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+     "line": 58
+    },
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+     "line": 61
+    }
+   ]
+  },
+  {
+   "id": "U_plus_-3",
+   "gram": [
+    [
+     0,
+     1,
+     0
+    ],
+    [
+     1,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     -3
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "image_in_Oq_signed_order": 2,
+   "image_in_Oq_signed_is_all_of_O_qL": true,
+   "source": [
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+     "line": 63
+    },
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+     "line": 65
+    },
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/spinor_norms.jl",
+     "line": 66
+    }
+   ]
+  }
+ ],
+ "isometry_groups": [
+  {
+   "id": "O_U_order",
+   "gram": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     0
+    ]
+   ],
+   "signature": [
+    1,
+    1
+   ],
+   "orthogonal_group_order": 4,
+   "source": [
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/isometry_group.jl",
+     "line": 19
+    },
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/isometry_group.jl",
+     "line": 21
+    }
+   ]
+  },
+  {
+   "id": "stabilizer_of_100",
+   "gram": [
+    [
+     4,
+     1,
+     1
+    ],
+    [
+     1,
+     -2,
+     0
+    ],
+    [
+     1,
+     0,
+     -2
+    ]
+   ],
+   "signature": [
+    1,
+    2
+   ],
+   "vector": [
+    1,
+    0,
+    0
+   ],
+   "vector_stabilizer_order": 2,
+   "source": [
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/isometry_group.jl",
+     "line": 23
+    },
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/isometry_group.jl",
+     "line": 24
+    },
+    {
+     "kind": "independent_implementation_test",
+     "file": "references/vendor/Oscar.jl@d135b70b/test/Groups/isometry_group.jl",
+     "line": 26
+    }
+   ]
+  }
+ ]
+}

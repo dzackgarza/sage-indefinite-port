@@ -147,6 +147,20 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Replaced**: the previous fixture recorded no outputs, and its third lattice $U\oplus U(2)\oplus A_2$ was not a published example.
 
+### Vinberg Roots, Discriminant Images and Isometry Groups (OSCAR)
+
+- **File**: `tests/fixtures/oscar_lattice_oracles.json`
+
+- **Sources**: OSCAR's own tests (an independent implementation), vendored at `references/vendor/Oscar.jl@d135b70b/test/`:
+
+  - `NumberTheory/vinberg.jl`: four reflective lattices with their numbers of simple roots, plus 2 cusps for one case, 6 Coxeter-diagram edges for another, and the explicit roots of the test's chamber for a third.
+
+  - `Groups/spinor_norms.jl`: 28 rank-3 lattices from the `from_sage` table (10 run in OSCAR's CI, 18 commented out there but still recorded). Each gives $|O(q_L)|$ and the orders of the images in $O(q_L)$ of $O(L)$ and of its real-spinor-norm subgroup. Two further cases have a recorded bijective image map.
+
+  - `Groups/isometry_group.jl`: $|O(U)| = 4$, and a vector stabilizer of order 2.
+
+- **Extraction**: `references/extract/oscar_lattice_tests.py`, run under Sage's Python. It asserts each value on its source line, that every lattice is indefinite, and that explicit roots give integral reflections.
+
 ### Centralizers of Finite-Order Isometries (OSCAR)
 
 - **File**: `tests/fixtures/isometry_centralizers.json`
