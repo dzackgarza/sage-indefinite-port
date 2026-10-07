@@ -48,6 +48,35 @@ def test_nonisotropic_section_in_U2_has_a_nonempty_integral_locus() -> None:
     assert torsor.integral_parameters(plane, plane) is not None
 
 
+def test_nonisotropic_integral_lift_between_distinct_U_presentations() -> None:
+    source = Lattices(OwnedZZ)("U")
+    target = Lattices(OwnedZZ)("U")
+    source_e, source_f = source.module_generators()
+    target_e, target_f = target.module_generators()
+    source_vector = source_e + source_f
+    target_vector = target_e + target_f
+    source_section = orthogonal_section(source_vector)
+    target_section = orthogonal_section(target_vector)
+    assert isinstance(source_section, NonIsotropicVectorSection)
+    assert isinstance(target_section, NonIsotropicVectorSection)
+    reduced_isometry = source_section.perpendicular.Isom(
+        target_section.perpendicular
+    )(
+        tuple(target_section.perpendicular.module_generators())
+    )
+
+    lifted = source_section.integral_lift(
+        reduced_isometry,
+        target=target_section,
+    )
+
+    assert lifted is not None
+    assert lifted.domain() is source
+    assert lifted.codomain() is target
+    assert lifted(source_vector) == target_vector
+    assert lifted(source_e - source_f) == target_e - target_f
+
+
 def test_isotropic_section_in_U_delegates_to_isotropic_reduction() -> None:
     plane = Lattices(OwnedZZ)("U")
     e, _f = plane.module_generators()

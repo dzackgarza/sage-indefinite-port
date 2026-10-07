@@ -12,6 +12,7 @@ from dzack_research.preamble.categories.lattice_morphisms import (
     _module_matrix,
 )
 from dzack_research.preamble.categories.lattices import IsotropicReductions, Lattices
+from dzack_research.preamble.categories.modules.pure.modules import _engine_matrix
 from dzack_research.preamble.categories.rings.ring_foundation import (
     OwnedRings,
     _engine_element,
@@ -214,92 +215,57 @@ class NonIsotropicVectorSection:
             case False:
                 raise ValueError("source and target lattices must have the same base ring")
 
-        if target_section is self:
-            ambient_labels = tuple(source_ambient.module_generating_set())
-            vector_coordinates = self.vector.to_vector()
-            vector_row = matrix(
-                SageQQ,
-                1,
-                len(ambient_labels),
-                [
-                    SageQQ(
-                        _engine_element(
-                            source_ambient.base_ring(),
-                            vector_coordinates(label),
-                        )
-                    )
-                    for label in ambient_labels
-                ],
-            )
-            perpendicular_rows = matrix(
-                SageQQ,
-                _module_matrix(self.inclusion).transpose(),
-            )
-            full_basis = vector_row.stack(perpendicular_rows)
-            reduced_action = matrix(
-                SageQQ,
-                self.perpendicular.Aut()._row_action_matrix(reduced_isometry),
-            )
-            image_rows = vector_row.stack(reduced_action * perpendicular_rows)
-            ambient_action = full_basis.inverse() * image_rows
-            if all(entry.denominator() == 1 for entry in ambient_action.list()):
-                lift = source_ambient.Aut()._isometry_from_column_matrix(ambient_action.transpose())
-                match lift(self.vector) == self.vector:
-                    case True:
-                        return lift
-                    case False:
-                        raise ArithmeticError("the integral lift does not fix the selected source vector")
-            return None
-
-        (
-            fraction_map,
-            source_rational,
-            source_perpendicular_inclusion,
-            source_vector,
-            _source_norm,
-            source_decomposition,
-        ) = self._rational_lift_context
-        reduced_rational = reduced_isometry.base_change(fraction_map)
-        match target_section is self:
-            case True:
-                target_rational = source_rational
-                target_perpendicular_inclusion = source_perpendicular_inclusion
-                target_vector = source_vector
-            case False:
-                target_rational = target_ambient.base_change(fraction_map)
-                target_perpendicular_inclusion = target_section.inclusion.base_change(fraction_map)
-                target_coordinates = target_section.vector.to_vector()
-                target_vector = target_rational.linear_combination(
-                    {label: fraction_map(target_coordinates(label)) for label in target_ambient.module_generating_set() if target_coordinates(label)}
-                )
+        source_labels = tuple(source_ambient.module_generating_set())
         target_labels = tuple(target_ambient.module_generating_set())
-        source_rational_labels = tuple(source_rational.module_generating_set())
-        target_rational_labels = tuple(target_rational.module_generating_set())
-        images = []
-        for label in source_rational_labels:
-            vector_coefficient, reduced_part = source_decomposition[label]
-            target_perpendicular_part = target_perpendicular_inclusion(reduced_rational(reduced_part))
-            rational_image = target_perpendicular_part + target_rational.scalar_multiple(
-                vector_coefficient,
-                target_vector,
-            )
-            coordinates = rational_image.to_vector()
-            try:
-                integral_image = target_ambient.linear_combination(
-                    {
-                        target_label: target_ambient.base_ring()(coordinates(rational_label))
-                        for target_label, rational_label in zip(
-                            target_labels,
-                            target_rational_labels,
-                            strict=True,
-                        )
-                        if coordinates(rational_label)
-                    }
+        source_coordinates = self.vector.to_vector()
+        target_coordinates = target_section.vector.to_vector()
+        source_vector_row = matrix(
+            SageQQ,
+            1,
+            len(source_labels),
+            [
+                SageQQ(
+                    _engine_element(
+                        source_ambient.base_ring(),
+                        source_coordinates(label),
+                    )
                 )
-            except TypeError, ValueError:
-                return None
-            images.append(integral_image)
-        lift = source_ambient.Isom(target_ambient)(tuple(images))
+                for label in source_labels
+            ],
+        )
+        target_vector_row = matrix(
+            SageQQ,
+            1,
+            len(target_labels),
+            [
+                SageQQ(
+                    _engine_element(
+                        target_ambient.base_ring(),
+                        target_coordinates(label),
+                    )
+                )
+                for label in target_labels
+            ],
+        )
+        source_perpendicular_rows = _engine_matrix(
+            _module_matrix(self.inclusion)
+        ).transpose().change_ring(SageQQ)
+        target_perpendicular_rows = _engine_matrix(
+            _module_matrix(target_section.inclusion)
+        ).transpose().change_ring(SageQQ)
+        reduced_action = reduced_isometry.parent()._row_action_matrix(
+            reduced_isometry
+        ).change_ring(SageQQ)
+        source_basis = source_vector_row.stack(source_perpendicular_rows)
+        image_rows = target_vector_row.stack(
+            reduced_action * target_perpendicular_rows
+        )
+        ambient_action = source_basis.inverse() * image_rows
+        if any(entry.denominator() != 1 for entry in ambient_action.list()):
+            return None
+        lift = source_ambient.Isom(target_ambient)._isometry_from_column_matrix(
+            ambient_action.transpose()
+        )
         match lift(self.vector) == target_section.vector:
             case True:
                 pass
