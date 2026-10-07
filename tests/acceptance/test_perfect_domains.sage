@@ -8,12 +8,16 @@ through the preamble's reduction complex, whose generators must generate O(L).
 import pytest
 
 from sage_indefinite_port.indefinite.lorentzian_cells import perfect_domain_traversal
-from tests.acceptance.consumer import lattice
+from sage_indefinite_port.readiness import UnfinishedCapability
+from tests.acceptance.consumer import PERFECT_DOMAINS, lattice, require
 from tests.fixtures.oracle_fixtures import load_lorentzian_perfect_domains
 
 
 @pytest.mark.parametrize("case", load_lorentzian_perfect_domains(), ids=lambda case: case["id"])
+@pytest.mark.xfail(reason="Lorentzian perfect domains: owned by #15", raises=UnfinishedCapability, strict=True)
 def test_perfect_domain_orbit_counts_match_polyhedral_common(case) -> None:
+    require(PERFECT_DOMAINS)
+
     traversal = lattice(case["gram"]).lorentzian_reduction_complex()
 
     assert traversal.is_complete()
@@ -22,7 +26,10 @@ def test_perfect_domain_orbit_counts_match_polyhedral_common(case) -> None:
 
 
 @pytest.mark.parametrize("case", load_lorentzian_perfect_domains(), ids=lambda case: case["id"])
+@pytest.mark.xfail(reason="Lorentzian perfect domains: owned by #15", raises=UnfinishedCapability, strict=True)
 def test_isotropic_mode_counts_match_polyhedral_common(case) -> None:
     """The "isotropic" mode is a reference-implementation option with no preamble consumer,
     so it is called on upstream's own input Gram matrix."""
+    require(PERFECT_DOMAINS)
+
     assert len(perfect_domain_traversal(case["gram"], "isotropic")) == case["isotropic_count"]

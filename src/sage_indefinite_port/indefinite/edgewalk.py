@@ -41,6 +41,7 @@ from sage_indefinite_port.indefinite.edgewalk_rank2 import (
     quadratic_eval,
     scalar_eval,
 )
+from sage_indefinite_port.readiness import unfinished
 
 type _Row = tuple[int, ...]
 
@@ -551,6 +552,7 @@ def _full_root_orbit(root_rows, isometry_rows):
     return tuple(sorted(roots))
 
 
+@unfinished(31)
 def edgewalk_fundamental_domain(gram):
     """Return Allcock's fundamental-domain record for a Lorentzian Gram matrix."""
     gram = _integer_gram(gram)

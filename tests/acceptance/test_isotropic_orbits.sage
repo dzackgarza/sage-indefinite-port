@@ -10,6 +10,7 @@ by the parity of v^perp/v and V^perp/V. O^+ is the kernel of the real spinor nor
 
 import pytest
 
+from sage_indefinite_port.readiness import UnfinishedCapability
 from tests.acceptance.consumer import (
     FLAG_ORBITS,
     ISOTROPIC_ORBITS,
@@ -30,7 +31,7 @@ from tests.fixtures.oracle_fixtures import (
 
 
 @pytest.mark.parametrize("case", load_isotropic_cases(), ids=lambda case: case["id"])
-@pytest.mark.xfail(reason="vector and primitive isotropic orbits: owned by #19", strict=True)
+@pytest.mark.xfail(reason="vector and primitive isotropic orbits: owned by #19", raises=UnfinishedCapability, strict=True)
 def test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors(case) -> None:
     require(ISOTROPIC_ORBITS)
 
@@ -46,7 +47,7 @@ def _n():
     return lattice(_N["lattice"]["gram"])
 
 
-@pytest.mark.xfail(reason="finite-index subgroups and orbit splitting: owned by #22", strict=True)
+@pytest.mark.xfail(reason="finite-index subgroups and orbit splitting: owned by #22", raises=UnfinishedCapability, strict=True)
 def test_o_plus_n_has_two_line_and_two_plane_orbits() -> None:
     require(ISOTROPIC_ORBITS, SPLIT_ORBIT)
 
@@ -57,7 +58,7 @@ def test_o_plus_n_has_two_line_and_two_plane_orbits() -> None:
     assert len(group.isotropic_orbit_representatives(2)) == counts["plane_orbits"]
 
 
-@pytest.mark.xfail(reason="finite-index subgroups and orbit splitting: owned by #22", strict=True)
+@pytest.mark.xfail(reason="finite-index subgroups and orbit splitting: owned by #22", raises=UnfinishedCapability, strict=True)
 def test_stable_o_plus_n_orbits_match_dutour_sikiric_hulek() -> None:
     require(ISOTROPIC_ORBITS, FLAG_ORBITS, SPLIT_ORBIT)
 
@@ -70,7 +71,7 @@ def test_stable_o_plus_n_orbits_match_dutour_sikiric_hulek() -> None:
     assert len(group.isotropic_orbit_representatives(2, flag=True)) == counts["flag_orbits"]
 
 
-@pytest.mark.xfail(reason="O(L), isometry, vector stabilizers: owned by #18", strict=True)
+@pytest.mark.xfail(reason="O(L), isometry, vector stabilizers: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_o_n_maps_onto_o_of_the_discriminant_form() -> None:
     require(O_L)
 
@@ -86,7 +87,7 @@ def _isotropic_sublattice(n, basis):
 
 
 @pytest.mark.parametrize("rank", [1, 2])
-@pytest.mark.xfail(reason="finite-index subgroups and orbit splitting: owned by #22", strict=True)
+@pytest.mark.xfail(reason="finite-index subgroups and orbit splitting: owned by #22", raises=UnfinishedCapability, strict=True)
 def test_published_representatives_lie_in_distinct_o_plus_orbits(rank) -> None:
     require(ISOTROPIC_ORBITS, ISOTROPIC_WITNESS, SPLIT_ORBIT)
 
@@ -106,7 +107,7 @@ def test_published_representatives_lie_in_distinct_o_plus_orbits(rank) -> None:
     _N["component_preserving_group"]["line_representatives"] + _N["component_preserving_group"]["plane_representatives"],
     ids=lambda rep: rep["id"],
 )
-@pytest.mark.xfail(reason="finite-index subgroups and orbit splitting: owned by #22", strict=True)
+@pytest.mark.xfail(reason="finite-index subgroups and orbit splitting: owned by #22", raises=UnfinishedCapability, strict=True)
 def test_stabilizer_images_have_dutour_sikiric_hulek_indices(representative) -> None:
     require(ISOTROPIC_STABILIZER, SUBGROUP_GENERATORS)
 
@@ -125,7 +126,7 @@ _ALLCOCK = load_allcock_i_2_10_orbits()
 _PARITY = {"I_{1,9}": False, "II_{1,9}": True, "E8(-1)": True, "I_{0,8}": False}
 
 
-@pytest.mark.xfail(reason="vector and primitive isotropic orbits: owned by #19", strict=True)
+@pytest.mark.xfail(reason="vector and primitive isotropic orbits: owned by #19", raises=UnfinishedCapability, strict=True)
 def test_i_2_10_isotropic_vectors_form_an_odd_and_an_even_orbit() -> None:
     require(ISOTROPIC_ORBITS)
 
@@ -137,7 +138,7 @@ def test_i_2_10_isotropic_vectors_form_an_odd_and_an_even_orbit() -> None:
     assert sorted(line.isotropic_reduction().is_even() for line in lines) == recorded
 
 
-@pytest.mark.xfail(reason="isotropic sublattice and flag orbits: owned by #21", strict=True)
+@pytest.mark.xfail(reason="isotropic sublattice and flag orbits: owned by #21", raises=UnfinishedCapability, strict=True)
 def test_i_2_10_isotropic_planes_form_an_odd_and_an_even_orbit() -> None:
     require(ISOTROPIC_ORBITS)
 

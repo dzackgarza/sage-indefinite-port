@@ -20,7 +20,7 @@ from dzack_research.preamble.all import ZZ as PreambleZZ
 from dzack_research.preamble.all import Lattices
 from sage.all import GF, ZZ, MatrixGroup, matrix, prime_divisors
 
-from sage_indefinite_port.readiness import UNFINISHED
+from sage_indefinite_port.readiness import UNFINISHED, UnfinishedCapability
 
 O_L = "sage_indefinite_port.indefinite.recursive:orthogonal_group_generators"
 ISOMETRY = "sage_indefinite_port.indefinite.recursive:isometry"
@@ -34,18 +34,31 @@ FLAG_ORBITS = "sage_indefinite_port.indefinite.isotropic_flags:isotropic_flag_or
 SPLIT_ORBIT = "sage_indefinite_port.groups.finite_index:split_orbit"
 SUBGROUP_GENERATORS = "sage_indefinite_port.groups.finite_index:subgroup_generators"
 EQUIVARIANT_LATTICE = "sage_indefinite_port.groups.equivariant:EquivariantLattice"
+EDGEWALK = "sage_indefinite_port.indefinite.edgewalk:edgewalk_fundamental_domain"
+PERFECT_DOMAINS = "sage_indefinite_port.indefinite.lorentzian_cells:perfect_domain_traversal"
 
 
 def require(*entry_points: str) -> None:
     """The first line of a case: each port entry point it needs exists and is finished.
 
-    A missing module or name, or an entry point still marked ``@unfinished``, fails the case
-    at once instead of after the preamble work that precedes the missing capability.
+    A missing module, a missing name, or an entry point still marked ``@unfinished`` raises
+    ``UnfinishedCapability`` at once, before any of the preamble work that precedes the missing
+    capability. Every other exception, such as a module that exists but does not import,
+    propagates as itself, so the case's xfail (``raises=UnfinishedCapability``) does not
+    absorb it.
     """
     for entry_point in entry_points:
-        module, _, name = entry_point.partition(":")
-        getattr(importlib.import_module(module), name)
-        assert entry_point not in UNFINISHED, f"{entry_point} is unfinished: work unit #{UNFINISHED.get(entry_point)} owns it"
+        module_name, _, name = entry_point.partition(":")
+        try:
+            module = importlib.import_module(module_name)
+        except ModuleNotFoundError as error:
+            if error.name != module_name:
+                raise
+            raise UnfinishedCapability(f"{entry_point} does not exist yet: its module is not written") from error
+        if not hasattr(module, name):
+            raise UnfinishedCapability(f"{entry_point} does not exist yet")
+        if entry_point in UNFINISHED:
+            raise UnfinishedCapability(f"{entry_point} is unfinished: work unit #{UNFINISHED[entry_point]} owns it")
 
 
 def lattice(gram):

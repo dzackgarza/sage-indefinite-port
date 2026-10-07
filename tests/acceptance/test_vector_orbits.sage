@@ -11,6 +11,7 @@ from collections import Counter
 
 import pytest
 
+from sage_indefinite_port.readiness import UnfinishedCapability
 from tests.acceptance.consumer import (
     VECTOR_ORBITS,
     element,
@@ -34,7 +35,7 @@ def _e10():
 
 
 @pytest.mark.parametrize("case", load_enriques_polarization_orbits(), ids=lambda case: f"2d_{case['two_d']}")
-@pytest.mark.xfail(reason="vector and primitive isotropic orbits: owned by #19", strict=True)
+@pytest.mark.xfail(reason="vector and primitive isotropic orbits: owned by #19", raises=UnfinishedCapability, strict=True)
 def test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek(case) -> None:
     require(VECTOR_ORBITS)
 
@@ -44,7 +45,7 @@ def test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek(case) ->
 
 
 @pytest.mark.parametrize("degree", sorted({rep["degree"] for rep in _E10["orbit_representatives"]}))
-@pytest.mark.xfail(reason="vector and primitive isotropic orbits: owned by #19", strict=True)
+@pytest.mark.xfail(reason="vector and primitive isotropic orbits: owned by #19", raises=UnfinishedCapability, strict=True)
 def test_published_representatives_are_one_per_orbit(degree) -> None:
     require(VECTOR_ORBITS)
 
@@ -58,7 +59,7 @@ def test_published_representatives_are_one_per_orbit(degree) -> None:
 
 
 @pytest.mark.parametrize("square", sorted(Counter(orbit["h_squared"] for orbit in load_e10_vector_orbits()["orbits"])))
-@pytest.mark.xfail(reason="vector and primitive isotropic orbits: owned by #19", strict=True)
+@pytest.mark.xfail(reason="vector and primitive isotropic orbits: owned by #19", raises=UnfinishedCapability, strict=True)
 def test_e10_orbit_counts_match_brandhorst_gonzalez_alonso(square) -> None:
     require(VECTOR_ORBITS)
 
@@ -67,7 +68,7 @@ def test_e10_orbit_counts_match_brandhorst_gonzalez_alonso(square) -> None:
     assert len(primitive(_e10().O().vector_orbit_representatives(square))) == recorded
 
 
-@pytest.mark.xfail(reason="vector and primitive isotropic orbits: owned by #19", strict=True)
+@pytest.mark.xfail(reason="vector and primitive isotropic orbits: owned by #19", raises=UnfinishedCapability, strict=True)
 def test_i_2_10_is_transitive_on_norm_minus_one_vectors() -> None:
     require(VECTOR_ORBITS)
 
@@ -86,7 +87,7 @@ def _k3_gram() -> list[list[int]]:
 
 
 @pytest.mark.parametrize("square", load_k3_modular_strata()["k3_unimodular_lattice"]["tested_represented_norms"])
-@pytest.mark.xfail(reason="vector and primitive isotropic orbits: owned by #19", strict=True)
+@pytest.mark.xfail(reason="vector and primitive isotropic orbits: owned by #19", raises=UnfinishedCapability, strict=True)
 def test_k3_lattice_has_one_primitive_orbit_per_norm(square) -> None:
     require(VECTOR_ORBITS)
 

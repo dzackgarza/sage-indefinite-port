@@ -43,6 +43,7 @@ from sage_indefinite_port.groups.integral_structures import GeneratedSubgroup, I
 from sage_indefinite_port.indefinite.eichler import EichlerOrbitCover, build_eichler_envelope
 from sage_indefinite_port.indefinite.vector_sections import NonIsotropicVectorSection, orthogonal_section
 from sage_indefinite_port.invariants import AttackProfile, VectorPrefilter
+from sage_indefinite_port.readiness import unfinished
 
 type PerfectMode = Literal["total", "isotropic"]
 
@@ -519,6 +520,7 @@ def _perfect_form_hash_key(
     return diagonal, off_diagonal
 
 
+@unfinished(15)
 def perfect_domain_traversal(gram_rows, option: PerfectMode = "total") -> tuple[TraversalRecord, ...]:
     r"""Return complete native perfect-domain traversal records for the Gram rows."""
     lattice = Lattices(ZZ)(gram_rows)

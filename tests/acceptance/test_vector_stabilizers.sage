@@ -11,6 +11,7 @@ from collections import Counter
 
 import pytest
 
+from sage_indefinite_port.readiness import UnfinishedCapability
 from tests.acceptance.consumer import (
     VECTOR_ORBITS,
     VECTOR_STABILIZER,
@@ -34,7 +35,7 @@ _E10 = load_e10_fundamental_domain()
 _ORDER_O_PLUS_10_2 = 2**21 * 3**5 * 5**2 * 7 * 17 * 31
 
 
-@pytest.mark.xfail(reason="O(L), isometry, vector stabilizers: owned by #18", strict=True)
+@pytest.mark.xfail(reason="O(L), isometry, vector stabilizers: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_vector_stabilizer_has_oscars_order() -> None:
     require(VECTOR_STABILIZER)
 
@@ -48,7 +49,7 @@ def test_vector_stabilizer_has_oscars_order() -> None:
 
 
 @pytest.mark.parametrize("square", sorted(Counter(orbit["h_squared"] for orbit in load_e10_vector_orbits()["orbits"])))
-@pytest.mark.xfail(reason="vector and primitive isotropic orbits: owned by #19", strict=True)
+@pytest.mark.xfail(reason="vector and primitive isotropic orbits: owned by #19", raises=UnfinishedCapability, strict=True)
 def test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso(square) -> None:
     require(VECTOR_ORBITS, VECTOR_STABILIZER)
 
@@ -73,7 +74,7 @@ def _reflection_rows(gram, root) -> list[list[int]]:
 
 
 @pytest.mark.parametrize("root", _E10["simple_roots"], ids=lambda root: f"r_{root['label']}")
-@pytest.mark.xfail(reason="O(L), isometry, vector stabilizers: owned by #18", strict=True)
+@pytest.mark.xfail(reason="O(L), isometry, vector stabilizers: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_equivalence_witness_carries_a_representative_to_its_reflection(root) -> None:
     require(VECTOR_WITNESS)
 
