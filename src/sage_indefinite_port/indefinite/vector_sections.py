@@ -401,7 +401,7 @@ class IsotropicVectorSection:
             _source_rational,
             source_perpendicular_rational,
             _source_extended,
-            source_to_subspace,
+            _source_to_subspace,
             subspace_to_source,
         ) = self._rational_lift_context
         (

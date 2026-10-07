@@ -74,15 +74,19 @@ class OrbitCoverModel:
     def lattice(self):
         return self.base.lattice() if self.envelope is None else self.envelope.lattice
 
-    def subgroup(self):
+    def _subgroup_column_matrices(self):
+        r"""Return exact private column matrices for the approximate subgroup."""
         if self.refinement is not None:
-            return self.refinement
+            return self.refinement._generator_column_matrices()
         if self.envelope is None:
-            return self.base.subgroup()
+            lattice = self.base.lattice()
+            _rational_lattice, matrix_family = self.base.model._approximate_generator_column_matrices_after_base_change(
+                lattice.base_ring().fraction_field_map()
+            )
+            return tuple(matrix_family)
         embedding = self.envelope._embedding_matrix
         embedding_inverse = self.envelope._embedding_inverse
-        lattice_automorphisms = self.envelope.lattice.Aut()
-        generators = []
+        matrices = []
         for column_matrix in self.envelope.integral_action.finite_representation()._lattice_stabilizer_column_matrices:
             rational_action = column_matrix.transpose()
             pulled_action = embedding * rational_action * embedding_inverse
@@ -90,9 +94,19 @@ class OrbitCoverModel:
                 raise ArithmeticError("a selected-lattice stabilizer does not preserve the Eichler embedding")
             if pulled_action * embedding != embedding * rational_action:
                 raise ArithmeticError("the conjugated Eichler stabilizer does not commute with the lattice embedding")
-            generators.append(lattice_automorphisms._isometry_from_column_matrix(pulled_action.transpose()))
-        generators = tuple(generators)
-        return GeneratedSubgroup(RationalMatrixGroup(self.envelope.lattice, generators), generators)
+            matrices.append(pulled_action.transpose().change_ring(SageQQ))
+        return tuple(matrices)
+
+    def subgroup(self):
+        if self.refinement is not None:
+            return self.refinement
+        lattice = self.lattice()
+        group = RationalMatrixGroup._from_column_matrices(
+            lattice,
+            self._subgroup_column_matrices(),
+        )
+        generators = group.generators()
+        return GeneratedSubgroup(group, generators)
 
     def covering_representatives(self, norm, *, primitive: bool) -> OrbitCover:
         if self.envelope is None:
@@ -112,7 +126,11 @@ class OrbitCoverModel:
         envelope_labels = tuple(self.envelope.envelope.module_generating_set())
         rational_labels = tuple(rational_envelope.module_generating_set())
         finite_representation = self.envelope.integral_action.finite_representation()
+        source_labels = tuple(source.module_generating_set())
+        source_gram = _engine_component_matrix(source.gram_tensor()).change_ring(SageQQ)
+        owned_norm_engine = SageQQ(_engine_element(source.base_ring(), owned_norm))
         representatives = []
+        known_coordinates: set[tuple[int, ...]] = set()
         for representative in base_cover:
             coordinates = representative.to_vector()
             rational_representative = rational_envelope.linear_combination(
@@ -122,14 +140,38 @@ class OrbitCoverModel:
                     if coordinates(envelope_label)
                 }
             )
-            for moved_representative in finite_representation.orbit_images(rational_representative):
-                candidate = self.envelope.pullback_element(moved_representative)
-                if candidate is None or candidate.q() != owned_norm:
+            for image_coordinates in finite_representation._orbit_image_coordinate_columns(
+                rational_representative
+            ):
+                source_coordinates = self.envelope._pullback_coordinate_row(
+                    image_coordinates.column(0)
+                )
+                if source_coordinates is None:
                     continue
-                if primitive and not candidate.is_primitive():
+                source_row = matrix(SageQQ, [source_coordinates])
+                if (
+                    source_row * source_gram * source_row.transpose()
+                )[0, 0] != owned_norm_engine:
                     continue
-                if all(candidate != known for known in representatives):
-                    representatives.append(candidate)
+                integral_coordinates = tuple(int(entry) for entry in source_coordinates)
+                if primitive and gcd(*(abs(entry) for entry in integral_coordinates)) != 1:
+                    continue
+                if integral_coordinates in known_coordinates:
+                    continue
+                known_coordinates.add(integral_coordinates)
+                representatives.append(
+                    source.linear_combination(
+                        {
+                            label: source.base_ring()(entry)
+                            for label, entry in zip(
+                                source_labels,
+                                integral_coordinates,
+                                strict=True,
+                            )
+                            if entry
+                        }
+                    )
+                )
         return OrbitCover(tuple(representatives))
 
     def one_representative(self, norm, *, primitive: bool):
@@ -222,12 +264,7 @@ class EichlerEnvelope:
         target_gram = _engine_component_matrix(self.envelope.gram_tensor()).change_ring(SageQQ)
         pulled_gram = self._embedding_matrix * target_gram * self._embedding_matrix.transpose()
         scale = next(
-            (
-                pulled_gram[row, column] / source_gram[row, column]
-                for row in range(source_gram.nrows())
-                for column in range(source_gram.ncols())
-                if source_gram[row, column]
-            ),
+            (pulled_gram[row, column] / source_gram[row, column] for row in range(source_gram.nrows()) for column in range(source_gram.ncols()) if source_gram[row, column]),
             None,
         )
         if scale is None:
@@ -244,26 +281,44 @@ class EichlerEnvelope:
         rational_envelope = self.integral_action.rational_group().rational_lattice()
         rational_labels = tuple(rational_envelope.module_generating_set())
         coordinate_vector = rational_envelope(element).to_vector()
-        envelope_coordinates = matrix(
-            SageQQ,
-            [
-                [
-                    SageQQ(
-                        _engine_element(
-                            rational_envelope.base_ring(),
-                            coordinate_vector(label),
-                        )
+        source_coordinates = self._pullback_coordinate_row(
+            tuple(
+                SageQQ(
+                    _engine_element(
+                        rational_envelope.base_ring(),
+                        coordinate_vector(label),
                     )
-                    for label in rational_labels
-                ]
-            ],
+                )
+                for label in rational_labels
+            )
         )
-        source_coordinates = envelope_coordinates * self._embedding_inverse
-        if any(entry.denominator() != 1 for entry in source_coordinates.list()):
+        if source_coordinates is None:
             return None
         source_labels = tuple(self.lattice.module_generating_set())
-        row = source_coordinates.row(0)
-        return self.lattice.linear_combination({source_label: self.lattice.base_ring()(int(entry)) for source_label, entry in zip(source_labels, row, strict=True) if entry})
+        return self.lattice.linear_combination(
+            {
+                source_label: self.lattice.base_ring()(int(entry))
+                for source_label, entry in zip(
+                    source_labels,
+                    source_coordinates,
+                    strict=True,
+                )
+                if entry
+            }
+        )
+
+    def _pullback_coordinate_row(self, envelope_coordinates):
+        r"""Pull exact envelope coordinates back to the selected lattice frame."""
+        source_coordinates = (
+            matrix(
+                SageQQ,
+                [tuple(SageQQ(entry) for entry in envelope_coordinates)],
+            )
+            * self._embedding_inverse
+        )
+        if any(entry.denominator() != 1 for entry in source_coordinates.list()):
+            return None
+        return tuple(SageZZ(entry) for entry in source_coordinates.row(0))
 
     def pullback_isometry(self, isometry: LatticeIsometryMethods) -> LatticeIsometryMethods:
         r"""Restrict a rational-envelope isometry preserving the selected lattice."""
