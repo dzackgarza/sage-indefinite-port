@@ -74,6 +74,8 @@ This document records the exact provenance, source files, authors, publications,
 
   - The stable group $\widetilde O^+(N)$ has 528 lines and 24242 planes (text) and 72199 flags (table).
 
+  - `discriminant_image`: $D(N) \cong \mathbb F_2^{10}$, $O(D(N)) \cong O^+(\mathbb F_2^{10})$ of order $2^{21}\cdot3^5\cdot5^2\cdot7\cdot17\cdot31$ (lines 332-336), and $O(N)\to O(D(N))$ is surjective (line 481). The script asserts both statements on their lines.
+
 ### 8,821 Reflective Lorentzian Forms and Their Isotropy
 
 - **Files**: `tests/fixtures/reflective_forms_8821.json`, `tests/fixtures/isotropic_cases_8821.json`

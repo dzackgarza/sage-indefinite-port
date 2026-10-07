@@ -567,10 +567,23 @@ class StableGroupData(TypedDict):
     source: CitedTextSource
 
 
+class EnriquesDiscriminantImageSources(TypedDict):
+    order: CitedTextSource
+    surjectivity: CitedTextSource
+
+
+class EnriquesDiscriminantImage(TypedDict):
+    O_qN_order: int
+    O_qN_isomorphism_type: str
+    image_of_O_N_is_all_of_O_qN: bool
+    source: EnriquesDiscriminantImageSources
+
+
 class UnpolarizedEnriques(TypedDict):
     id: str
     lattice: LatticeSpec
     component_preserving_group: ComponentPreservingGroupData
+    discriminant_image: EnriquesDiscriminantImage
     stable_component_preserving_group: StableGroupData
 
 

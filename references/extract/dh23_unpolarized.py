@@ -92,6 +92,12 @@ def main() -> None:
     def source(lines_: str) -> dict[str, str]:
         return {"kind": "published_text", "citation": "Dutour Sikirić--Hulek, arXiv:2302.01679", "file": SOURCE, "lines": lines_}
 
+    def cite(first: int, last: int, *needles: str) -> dict[str, str]:
+        text = "\n".join(Path(SOURCE).read_text(encoding="utf-8").splitlines()[first - 1 : last])
+        for needle in needles:
+            assert needle in text, f"{SOURCE}:{first}-{last} does not contain {needle!r}"
+        return source(f"{first}-{last}")
+
     record = {
         "id": "enriques_unpolarized_N",
         "lattice": {
@@ -122,6 +128,15 @@ def main() -> None:
                 },
             ],
             "source": source("1159-1166"),
+        },
+        "discriminant_image": {
+            "O_qN_order": 2**21 * 3**5 * 5**2 * 7 * 17 * 31,
+            "O_qN_isomorphism_type": "O^+(F_2^10), the orthogonal group of even type",
+            "image_of_O_N_is_all_of_O_qN": True,
+            "source": {
+                "order": cite(332, 336, r"D(N)=N^{\vee}/N\cong (\FF_2)^{10}", r"2^{21} \cdot 3^5 \cdot 5^2 \cdot 7 \cdot 17 \cdot 31"),
+                "surjectivity": cite(481, 481, r"$\pi_N: \Orth(N) \to \Orth(D(N))$ are surjective"),
+            },
         },
         "stable_component_preserving_group": {
             "internal_name": "O_plus_component",

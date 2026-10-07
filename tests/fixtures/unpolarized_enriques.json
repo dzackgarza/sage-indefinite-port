@@ -312,6 +312,25 @@
       "lines": "1159-1166"
     }
   },
+  "discriminant_image": {
+    "O_qN_order": 46998591897600,
+    "O_qN_isomorphism_type": "O^+(F_2^10), the orthogonal group of even type",
+    "image_of_O_N_is_all_of_O_qN": true,
+    "source": {
+      "order": {
+        "kind": "published_text",
+        "citation": "Dutour Sikirić--Hulek, arXiv:2302.01679",
+        "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+        "lines": "332-336"
+      },
+      "surjectivity": {
+        "kind": "published_text",
+        "citation": "Dutour Sikirić--Hulek, arXiv:2302.01679",
+        "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+        "lines": "481-481"
+      }
+    }
+  },
   "stable_component_preserving_group": {
     "internal_name": "O_plus_component",
     "construction": "intersection(kernel(discriminant_representation), kernel(component_character))",
