@@ -2,51 +2,42 @@
 
 The work is the GitHub issue tree rooted at
 [#4 Ledger: Indefinite lattice port](https://github.com/dzackgarza/sage-indefinite-port/issues/4).
-Each milestone below is one phase; each line is one work unit, a leaf issue whose body holds its
-obligation, acceptance, and proof. **Needs** lists the work units that must close first (GitHub
-blocked-by links carry the same edges). Already complete: the capability inventory and oracle
-corpus, the shared `LatticePrefilter`, dependency wiring (T0), and #10 `IntegralStructureAction`.
+Each line is one work unit, a leaf issue whose body holds its obligation and acceptance.
+**Needs** lists the work units that must close first (GitHub blocked-by links carry the same edges).
+
+Correctness is measured only against external facts: the reference implementation's recorded outputs,
+published results, and the oracle corpus derived from them. There is one acceptance suite (#33), written
+up front; every capability unit's acceptance is a named set of its cases going green. No unit adds tests.
 
 Take the next unit with `uvx --from git+https://github.com/dzackgarza/itree itree next
 dzackgarza/sage-indefinite-port`: the first open work unit in tree order whose Needs are closed.
-T1, T2 and T3 are independent.
 
-## T1: Subobjects, reductions, and exact lifts ([#24](https://github.com/dzackgarza/sage-indefinite-port/issues/24))
+## Oracle corpus and acceptance suite
 
-- [#5](https://github.com/dzackgarza/sage-indefinite-port/issues/5) `IsotropicReduction` K_I = I^⊥/I. **Needs:** none.
-- [#6](https://github.com/dzackgarza/sage-indefinite-port/issues/6) Codimension-one extension, extension equation, `IsometryExtensionTorsor`. **Needs:** #5.
-- [#7](https://github.com/dzackgarza/sage-indefinite-port/issues/7) Pointwise perpendicular kernel. **Needs:** #5, #6.
-- [#8](https://github.com/dzackgarza/sage-indefinite-port/issues/8) `VectorOrthogonalSection` and rational lifts. **Needs:** #5, #6.
-- [#9](https://github.com/dzackgarza/sage-indefinite-port/issues/9) `FlagType` and the preamble `IsotropicFlag`. **Needs:** none.
+- [#32](https://github.com/dzackgarza/sage-indefinite-port/issues/32) Oracle corpus: re-derive every fixture from its primary source. **Needs:** none.
+- [#33](https://github.com/dzackgarza/sage-indefinite-port/issues/33) Acceptance suite: every consumer operation against the corpus, written up front. **Needs:** #32.
 
-## T3: Lorentzian cell backend ([#26](https://github.com/dzackgarza/sage-indefinite-port/issues/26))
+## Closed on internal tests; accepted only when their #33 cases are green
 
-- [#12](https://github.com/dzackgarza/sage-indefinite-port/issues/12) Configuration isomorphism, cell stabilizers, bucket keys through Bliss. **Needs:** none.
-- [#13](https://github.com/dzackgarza/sage-indefinite-port/issues/13) Facets, rays, facet orbits through Sage polyhedra. **Needs:** none.
-- [#14](https://github.com/dzackgarza/sage-indefinite-port/issues/14) Definite leaf through the preamble. **Needs:** none.
-- [#15](https://github.com/dzackgarza/sage-indefinite-port/issues/15) Lorentzian perfect-cell backend, complex traversal, marked-cell orbits. **Needs:** #12, #13, #14.
-
-## T2: Integral structures and double cosets ([#25](https://github.com/dzackgarza/sage-indefinite-port/issues/25))
-
-- [#11](https://github.com/dzackgarza/sage-indefinite-port/issues/11) Construction-aware arithmetic subgroup carriers: in progress. **Needs:** none.
+T1 (#5–#9), T2 (#10, #11), T3 (#12–#15), and #31 (edgewalk). A red #33 case for Lorentzian perfect domains
+(#15), edgewalk (#31), integral structures and double cosets (#10, #11), or the perpendicular kernel (#7)
+reopens that unit.
 
 ## T4: Eichler covers and the recursive full group ([#27](https://github.com/dzackgarza/sage-indefinite-port/issues/27))
 
-- [#16](https://github.com/dzackgarza/sage-indefinite-port/issues/16) Eichler transvections, `OrbitCoverModel`, `EichlerEnvelope`, hyperbolic pairs, splitting vectors. **Needs:** T1 (#7, #8, #9), T2 (#10, #11), T3 (#15).
-- [#17](https://github.com/dzackgarza/sage-indefinite-port/issues/17) Reduced presentations, bucket keys, isometry-groupoid cache. **Needs:** T1 (#7, #8, #9), T2 (#10, #11), T3 (#15).
-- [#18](https://github.com/dzackgarza/sage-indefinite-port/issues/18) `IndefiniteOrthogonalAlgorithm`: O(L), isometry, vector stabilizers and transporters. **Needs:** #16, #17.
-- [#19](https://github.com/dzackgarza/sage-indefinite-port/issues/19) Vector orbit decompositions and primitive isotropic orbits. **Needs:** #16, #18.
+- [#18](https://github.com/dzackgarza/sage-indefinite-port/issues/18) O(L), isometry, vector stabilizers and transporters. **Needs:** #33.
+- [#19](https://github.com/dzackgarza/sage-indefinite-port/issues/19) Vector orbit decompositions and primitive isotropic orbits. **Needs:** #18, #33.
 
 ## T5: Exact parabolics and rank-two isotropic planes ([#28](https://github.com/dzackgarza/sage-indefinite-port/issues/28))
 
-- [#20](https://github.com/dzackgarza/sage-indefinite-port/issues/20) `IntegralParabolicDatum` and exact parabolic stabilizers. **Needs:** #19.
-- [#21](https://github.com/dzackgarza/sage-indefinite-port/issues/21) Inductive isotropic sublattice and flag orbits by double cosets. **Needs:** #20.
-- [#3](https://github.com/dzackgarza/sage-indefinite-port/issues/3) Vector-stabilizer and isotropic-k-plane-equivalence kernels as `research` port realizations. **Needs:** #18, #21.
+- [#20](https://github.com/dzackgarza/sage-indefinite-port/issues/20) IntegralParabolicDatum and exact parabolic stabilizers. **Needs:** #19, #33.
+- [#21](https://github.com/dzackgarza/sage-indefinite-port/issues/21) Isotropic sublattice and flag orbits by double cosets. **Needs:** #20, #33.
+- [#3](https://github.com/dzackgarza/sage-indefinite-port/issues/3) Preamble entry points for vector stabilizers and isotropic subspaces. **Needs:** #18, #21, #33.
 
 ## T6: Finite-index arithmetic groups ([#29](https://github.com/dzackgarza/sage-indefinite-port/issues/29))
 
-- [#22](https://github.com/dzackgarza/sage-indefinite-port/issues/22) Kernels, finite preimages, and orbit splitting. **Needs:** #21.
+- [#22](https://github.com/dzackgarza/sage-indefinite-port/issues/22) Kernels, finite preimages, and orbit splitting. **Needs:** #21, #33.
 
 ## T7: Centralizers and intersections ([#30](https://github.com/dzackgarza/sage-indefinite-port/issues/30))
 
-- [#23](https://github.com/dzackgarza/sage-indefinite-port/issues/23) `EquivariantLattice` and centralizers. **Needs:** #22.
+- [#23](https://github.com/dzackgarza/sage-indefinite-port/issues/23) EquivariantLattice and centralizers. **Needs:** #22, #33.
