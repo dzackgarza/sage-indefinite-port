@@ -182,6 +182,26 @@ def reduced_start_pair(G: _Gram, bound: _Scalar, r: _IntegralRow, l: _IntegralRo
             return r, canonical_companion(G, M, r, l)
 
 
+def positive_primitive_vector(G: _Gram) -> _IntegralVector:
+    G = _gram(G)
+    for v in (vector(ZZ, [1, 0]), vector(ZZ, [0, 1])):
+        if quadratic_eval(G, v) > 0:
+            return v
+    radius = 1
+    while True:
+        for x in range(-radius, radius + 1):
+            for y in (-radius, radius):
+                v = vector(ZZ, [x, y])
+                if gcd(v) == 1 and quadratic_eval(G, v) > 0:
+                    return v
+        for y in range(-radius + 1, radius):
+            for x in (-radius, radius):
+                v = vector(ZZ, [x, y])
+                if gcd(v) == 1 and quadratic_eval(G, v) > 0:
+                    return v
+        radius += 1
+
+
 def oriented_complement(r: _IntegralRow) -> _IntegralVector:
     r = _zvector(r)
     g, s, t = xgcd(r[0], r[1])
@@ -195,12 +215,12 @@ def oriented_complement(r: _IntegralRow) -> _IntegralVector:
 def anisotropic_cycle(
     G: _Gram,
     bound: _Scalar,
-    r: _IntegralRow,
+    r: _IntegralRow | None = None,
 ) -> tuple[Matrix_integer_dense, tuple[_IntegralVector, ...]] | None:
     G = _gram(G)
     if isotropic_factorization(G) is not None:
         raise ValueError("requires a QQ-anisotropic form")
-    r0 = _zvector(r)
+    r0 = positive_primitive_vector(G) if r is None else _zvector(r)
     l0 = canonical_companion(G, bound, r0, oriented_complement(r0))
     start = reduced_start_pair(G, bound, r0, l0)
     if start is None:
@@ -218,3 +238,19 @@ def anisotropic_cycle(
             if any(x.denominator() != 1 for x in transform.list()):
                 raise ArithmeticError("nonintegral cycle")
             return matrix(ZZ, transform), tuple(cycle)
+
+
+def first_next_vector(G: _Gram, r0: _IntegralRow, search_norm: _Scalar) -> _IntegralVector | None:
+    G, r0, target = _gram(G), _zvector(r0), QQ(search_norm)
+    if target <= 0:
+        return None
+    if isotropic_factorization(G) is not None:
+        chosen: _IntegralVector | None = None
+        for v in fixed_norm_vectors_isotropic(G, target):
+            if scalar_eval(G, r0, v) > 0 and oriented_determinant(r0, v) > 0 and (chosen is None or oriented_determinant(v, chosen) > 0):
+                chosen = v
+        return chosen
+    result = anisotropic_cycle(G, quadratic_eval(G, r0), r0)
+    if result is None:
+        return None
+    return next((v for v in result[1] if quadratic_eval(G, v) == target), None)
