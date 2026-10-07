@@ -81,7 +81,13 @@ def genus_of_d() -> dict[int, list[str]]:
 
 def type_counts(genus: dict[int, list[str]], definition: dict[str, str], group: dict[str, str]) -> list[dict[str, object]]:
     """Theorem thm:bbtype2comp with the unimodular lattices of line 4460, for 3 <= N <= 20."""
-    theorem = cite(4604, 4616, r"Let $3\le N\le 20$. The number of Type II  components", "with the exception of $N=14$, in this case  there are three Type II components labeled by $D_{12}$", r"If $N\equiv 2 \pmod 8$, there are two kinds of Type II components")
+    theorem = cite(
+        4604,
+        4616,
+        r"Let $3\le N\le 20$. The number of Type II  components",
+        "with the exception of $N=14$, in this case  there are three Type II components labeled by $D_{12}$",
+        r"If $N\equiv 2 \pmod 8$, there are two kinds of Type II components",
+    )
     unimodular = cite(4460, 4460, "namely  $E_8$", r"namely $E_8\oplus E_8$, and the unique (up to isomorphism) unimodular overlattice of $D_{16}$")
     type_iii = cite(4391, 4391, r"the number of Type III boundary components is $1$ if    $N\not\equiv 2\pmod{8}$, and $2$ if $N\equiv 2\pmod{8}$")
     even_unimodular = {8: ["E8"], 16: ["E8+E8", "D16+"]}
@@ -98,7 +104,10 @@ def type_counts(genus: dict[int, list[str]], definition: dict[str, str], group: 
                 "type_ii_from_even_unimodular": second_kind,
                 "type_iii_components": 2 if big_n % 8 == 2 else 1,
                 "group_note": "Gamma(N) = O^+(Lambda_N) unless n = 6 mod 8, then an index-3 subgroup (line 642)",
-                "derivation": "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), plus the even unimodular lattices of rank N-2 when N = 2 mod 8",
+                "derivation": (
+                    "Type II = classes in the genus of D_{N-2} (two extra components for D12 when N = 14), "
+                    "plus the even unimodular lattices of rank N-2 when N = 2 mod 8"
+                ),
                 "source": {"lattice": definition, "group": group, "theorem": theorem, "unimodular": unimodular, "type_iii": type_iii},
             }
         )
