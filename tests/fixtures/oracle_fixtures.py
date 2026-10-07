@@ -135,6 +135,23 @@ class DTowerBoundary(TypedDict):
     source: dict[str, TextSource]
 
 
+class OrbitInvariant(TypedDict):
+    invariant: str
+    isomorphism_class: str
+
+
+class AllcockEnriquesPeriodLattice(TypedDict):
+    id: str
+    lattice: str
+    gram: Gram
+    signature: list[int]
+    group: str
+    norm_minus_one_vector_orbits: int
+    primitive_isotropic_vector_orbits: list[OrbitInvariant]
+    isotropic_plane_orbits: list[OrbitInvariant]
+    source: dict[str, TextSource]
+
+
 class LorentzianPerfectCase(TypedDict):
     id: str
     dimension: int
@@ -561,6 +578,13 @@ def load_dtower_boundaries() -> list[DTowerBoundary]:
     """Baily--Borel boundaries of F(N) = O^+(U^2 + D_{N-2}) for N = 9, 10, 11 (Laza--O'Grady)."""
     with open(FIXTURES_DIR / "dtower_boundaries.json", encoding="utf-8") as f:
         data: list[DTowerBoundary] = json.load(f)
+        return data
+
+
+def load_allcock_i_2_10_orbits() -> AllcockEnriquesPeriodLattice:
+    """Orbits of norm -1 vectors, isotropic lines and planes in I_{2,10} (Allcock, Cor. 3-4)."""
+    with open(FIXTURES_DIR / "allcock_i_2_10_orbits.json", encoding="utf-8") as f:
+        data: AllcockEnriquesPeriodLattice = json.load(f)
         return data
 
 

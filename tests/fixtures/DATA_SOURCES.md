@@ -141,6 +141,14 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Extraction**: `uv run references/extract/laza_ogrady_dtower.py`. It asserts every label on its cited line.
 
+### Orbits in I_{2,10} (Allcock)
+
+- **File**: `tests/fixtures/allcock_i_2_10_orbits.json`
+
+- **Source**: Allcock, math/9905166 (vendored TeX). The Enriques period lattice $\hat K \cong I_{2,10}$ (lines 177–179) and $\Gamma = \operatorname{Aut}\hat K$. Corollary 3: one orbit of norm $-1$ vectors. Corollary 4: two orbits of primitive isotropic vectors ($v^\perp/v \cong I_{1,9}$ or $II_{1,9}$) and two orbits of isotropic planes ($V^\perp/V \cong E_8(-1)$ or $I_{0,8}$).
+
+- **Extraction**: `uv run references/extract/allcock_enriques_period.py`. It asserts every statement on its cited lines.
+
 ### Dawes Tits Buildings and Index Chain
 
 - **File**: `tests/fixtures/dawes_buildings.json`

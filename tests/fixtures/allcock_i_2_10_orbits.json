@@ -1,0 +1,222 @@
+{
+ "id": "allcock_enriques_period_lattice",
+ "lattice": "I_{2,10}",
+ "gram": [
+  [
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  [
+   0,
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   -1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   -1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   0,
+   -1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   0,
+   0,
+   -1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   -1,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   -1,
+   0,
+   0,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   -1,
+   0,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   -1,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   -1,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   -1
+  ]
+ ],
+ "signature": [
+  2,
+  10
+ ],
+ "group": "O(I_{2,10})",
+ "norm_minus_one_vector_orbits": 1,
+ "primitive_isotropic_vector_orbits": [
+  {
+   "invariant": "v^perp / v",
+   "isomorphism_class": "I_{1,9}"
+  },
+  {
+   "invariant": "v^perp / v",
+   "isomorphism_class": "II_{1,9}"
+  }
+ ],
+ "isotropic_plane_orbits": [
+  {
+   "invariant": "V^perp / V",
+   "isomorphism_class": "E8(-1)"
+  },
+  {
+   "invariant": "V^perp / V",
+   "isomorphism_class": "I_{0,8}"
+  }
+ ],
+ "source": {
+  "lattice": {
+   "kind": "published_text",
+   "file": "references/vendor/arxiv/9905166/main.tex",
+   "lines": "177-179"
+  },
+  "group": {
+   "kind": "published_text",
+   "file": "references/vendor/arxiv/9905166/main.tex",
+   "lines": "185-185"
+  },
+  "norm_minus_one": {
+   "kind": "published_text",
+   "file": "references/vendor/arxiv/9905166/main.tex",
+   "lines": "214-220"
+  },
+  "isotropic": {
+   "kind": "published_text",
+   "file": "references/vendor/arxiv/9905166/main.tex",
+   "lines": "232-241"
+  }
+ }
+}

@@ -180,3 +180,8 @@ oracles:
     extraction: references/extract/laza_ogrady_dtower.py
     sources:
       - references/vendor/arxiv/1801.04845/LOG3-2018-08-24.tex
+  - id: allcock_i_2_10_orbits
+    fixture_file: allcock_i_2_10_orbits.json
+    extraction: references/extract/allcock_enriques_period.py
+    sources:
+      - references/vendor/arxiv/9905166/main.tex
