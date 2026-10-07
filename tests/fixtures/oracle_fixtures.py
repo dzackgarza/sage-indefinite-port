@@ -51,12 +51,13 @@ class OrbitCounts(TypedDict, total=False):
     flag_orbits: int
 
 
-class TableRowSource(TypedDict):
-    kind: str
-    citation: str
-    file: str
-    table: str
+class TableRowSource(TypedDict, total=False):
+    kind: Required[str]
+    citation: Required[str]
+    file: Required[str]
+    table: Required[str]
     line: int
+    lines: str
 
 
 class TextSource(TypedDict):
@@ -76,6 +77,17 @@ class Enriques87Case(TypedDict):
     flag_orbits: int
     minimal_degree: int
     phi_h_min: int
+    source: TableRowSource
+
+
+class PolarizationOrbitCount(TypedDict):
+    lattice: str
+    two_d: int
+    g: int
+    primitive_vector_orbits: int
+    gamma_conjugacy_classes: int
+    primitive_vector_orbits_up_to_2d: int
+    gamma_conjugacy_classes_up_to_2d: int
     source: TableRowSource
 
 
@@ -469,6 +481,13 @@ def load_isometry_centralizers() -> IsometryCentralizers:
     """Centralizer images and involution-class counts recorded in OSCAR's tests."""
     with open(FIXTURES_DIR / "isometry_centralizers.json", encoding="utf-8") as f:
         data: IsometryCentralizers = json.load(f)
+        return data
+
+
+def load_enriques_polarization_orbits() -> list[PolarizationOrbitCount]:
+    """O(U + E8(-1))-orbit counts of primitive vectors of norm 2..72 (Dutour Sikirić--Hulek)."""
+    with open(FIXTURES_DIR / "enriques_polarization_orbits.json", encoding="utf-8") as f:
+        data: list[PolarizationOrbitCount] = json.load(f)
         return data
 
 

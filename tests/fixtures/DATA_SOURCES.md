@@ -18,6 +18,14 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Check**: the script asserts cases 1–87 in order and that case 87 has 528 lines and 24242 planes, which the paper also states independently in its text (lines 1168–1170).
 
+### Orbits of Primitive Vectors of Norm 2..72 in U + E8(-1)
+
+- **File**: `tests/fixtures/enriques_polarization_orbits.json`
+
+- **Source**: Dutour Sikirić–Hulek, arXiv:2302.01679, Table `ListNumberPolarizationsModuli`, vendored TeX. For each $2d = 2, \dots, 72$ the table gives $\#h$, the number of orbits of primitive vectors $h$ with $h^2 = 2d$ in $\mathrm{Num}(S) \cong U \oplus E_8(-1)$. The paper notes these agree with the CDGK appendix. It also gives the number of conjugacy classes of the groups $\bar\Gamma_h$, and cumulative counts for both.
+
+- **Extraction**: `uv run references/extract/dh23_norm_orbits.py`. It checks that $2d = 2g-2$, that the cumulative row is the running sum of $\#h$ (ending at 312), and that $\#\bar\Gamma_h \le \#h$.
+
 ### Unpolarized Enriques Boundary Strata and Stabilizers
 
 - **File**: `tests/fixtures/unpolarized_enriques.json`

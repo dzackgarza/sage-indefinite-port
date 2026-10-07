@@ -1,0 +1,578 @@
+[
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 2,
+    "g": 2,
+    "primitive_vector_orbits": 1,
+    "gamma_conjugacy_classes": 1,
+    "primitive_vector_orbits_up_to_2d": 1,
+    "gamma_conjugacy_classes_up_to_2d": 1,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "922,924,925"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 4,
+    "g": 3,
+    "primitive_vector_orbits": 2,
+    "gamma_conjugacy_classes": 2,
+    "primitive_vector_orbits_up_to_2d": 3,
+    "gamma_conjugacy_classes_up_to_2d": 3,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "922,924,925"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 6,
+    "g": 4,
+    "primitive_vector_orbits": 2,
+    "gamma_conjugacy_classes": 2,
+    "primitive_vector_orbits_up_to_2d": 5,
+    "gamma_conjugacy_classes_up_to_2d": 4,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "922,924,925"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 8,
+    "g": 5,
+    "primitive_vector_orbits": 2,
+    "gamma_conjugacy_classes": 2,
+    "primitive_vector_orbits_up_to_2d": 7,
+    "gamma_conjugacy_classes_up_to_2d": 5,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "922,924,925"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 10,
+    "g": 6,
+    "primitive_vector_orbits": 3,
+    "gamma_conjugacy_classes": 3,
+    "primitive_vector_orbits_up_to_2d": 10,
+    "gamma_conjugacy_classes_up_to_2d": 7,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "922,924,925"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 12,
+    "g": 7,
+    "primitive_vector_orbits": 4,
+    "gamma_conjugacy_classes": 3,
+    "primitive_vector_orbits_up_to_2d": 14,
+    "gamma_conjugacy_classes_up_to_2d": 8,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "922,924,925"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 14,
+    "g": 8,
+    "primitive_vector_orbits": 3,
+    "gamma_conjugacy_classes": 3,
+    "primitive_vector_orbits_up_to_2d": 17,
+    "gamma_conjugacy_classes_up_to_2d": 9,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "922,924,925"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 16,
+    "g": 9,
+    "primitive_vector_orbits": 4,
+    "gamma_conjugacy_classes": 4,
+    "primitive_vector_orbits_up_to_2d": 21,
+    "gamma_conjugacy_classes_up_to_2d": 10,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "922,924,925"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 18,
+    "g": 10,
+    "primitive_vector_orbits": 4,
+    "gamma_conjugacy_classes": 4,
+    "primitive_vector_orbits_up_to_2d": 25,
+    "gamma_conjugacy_classes_up_to_2d": 12,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "922,924,925"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 20,
+    "g": 11,
+    "primitive_vector_orbits": 5,
+    "gamma_conjugacy_classes": 4,
+    "primitive_vector_orbits_up_to_2d": 30,
+    "gamma_conjugacy_classes_up_to_2d": 14,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "922,924,925"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 22,
+    "g": 12,
+    "primitive_vector_orbits": 5,
+    "gamma_conjugacy_classes": 5,
+    "primitive_vector_orbits_up_to_2d": 35,
+    "gamma_conjugacy_classes_up_to_2d": 16,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "922,924,925"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 24,
+    "g": 13,
+    "primitive_vector_orbits": 6,
+    "gamma_conjugacy_classes": 4,
+    "primitive_vector_orbits_up_to_2d": 41,
+    "gamma_conjugacy_classes_up_to_2d": 17,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "922,924,925"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 26,
+    "g": 14,
+    "primitive_vector_orbits": 5,
+    "gamma_conjugacy_classes": 5,
+    "primitive_vector_orbits_up_to_2d": 46,
+    "gamma_conjugacy_classes_up_to_2d": 18,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "931,933,934"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 28,
+    "g": 15,
+    "primitive_vector_orbits": 8,
+    "gamma_conjugacy_classes": 6,
+    "primitive_vector_orbits_up_to_2d": 54,
+    "gamma_conjugacy_classes_up_to_2d": 19,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "931,933,934"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 30,
+    "g": 16,
+    "primitive_vector_orbits": 7,
+    "gamma_conjugacy_classes": 5,
+    "primitive_vector_orbits_up_to_2d": 61,
+    "gamma_conjugacy_classes_up_to_2d": 21,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "931,933,934"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 32,
+    "g": 17,
+    "primitive_vector_orbits": 6,
+    "gamma_conjugacy_classes": 6,
+    "primitive_vector_orbits_up_to_2d": 67,
+    "gamma_conjugacy_classes_up_to_2d": 22,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "931,933,934"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 34,
+    "g": 18,
+    "primitive_vector_orbits": 8,
+    "gamma_conjugacy_classes": 8,
+    "primitive_vector_orbits_up_to_2d": 75,
+    "gamma_conjugacy_classes_up_to_2d": 24,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "931,933,934"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 36,
+    "g": 19,
+    "primitive_vector_orbits": 8,
+    "gamma_conjugacy_classes": 6,
+    "primitive_vector_orbits_up_to_2d": 83,
+    "gamma_conjugacy_classes_up_to_2d": 25,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "931,933,934"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 38,
+    "g": 20,
+    "primitive_vector_orbits": 7,
+    "gamma_conjugacy_classes": 7,
+    "primitive_vector_orbits_up_to_2d": 90,
+    "gamma_conjugacy_classes_up_to_2d": 26,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "931,933,934"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 40,
+    "g": 21,
+    "primitive_vector_orbits": 10,
+    "gamma_conjugacy_classes": 7,
+    "primitive_vector_orbits_up_to_2d": 100,
+    "gamma_conjugacy_classes_up_to_2d": 27,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "931,933,934"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 42,
+    "g": 22,
+    "primitive_vector_orbits": 10,
+    "gamma_conjugacy_classes": 7,
+    "primitive_vector_orbits_up_to_2d": 110,
+    "gamma_conjugacy_classes_up_to_2d": 29,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "931,933,934"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 44,
+    "g": 23,
+    "primitive_vector_orbits": 10,
+    "gamma_conjugacy_classes": 7,
+    "primitive_vector_orbits_up_to_2d": 120,
+    "gamma_conjugacy_classes_up_to_2d": 31,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "931,933,934"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 46,
+    "g": 24,
+    "primitive_vector_orbits": 11,
+    "gamma_conjugacy_classes": 10,
+    "primitive_vector_orbits_up_to_2d": 131,
+    "gamma_conjugacy_classes_up_to_2d": 32,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "931,933,934"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 48,
+    "g": 25,
+    "primitive_vector_orbits": 11,
+    "gamma_conjugacy_classes": 7,
+    "primitive_vector_orbits_up_to_2d": 142,
+    "gamma_conjugacy_classes_up_to_2d": 33,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "931,933,934"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 50,
+    "g": 26,
+    "primitive_vector_orbits": 9,
+    "gamma_conjugacy_classes": 9,
+    "primitive_vector_orbits_up_to_2d": 151,
+    "gamma_conjugacy_classes_up_to_2d": 34,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "940,942,943"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 52,
+    "g": 27,
+    "primitive_vector_orbits": 14,
+    "gamma_conjugacy_classes": 10,
+    "primitive_vector_orbits_up_to_2d": 165,
+    "gamma_conjugacy_classes_up_to_2d": 35,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "940,942,943"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 54,
+    "g": 28,
+    "primitive_vector_orbits": 11,
+    "gamma_conjugacy_classes": 11,
+    "primitive_vector_orbits_up_to_2d": 176,
+    "gamma_conjugacy_classes_up_to_2d": 36,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "940,942,943"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 56,
+    "g": 29,
+    "primitive_vector_orbits": 12,
+    "gamma_conjugacy_classes": 8,
+    "primitive_vector_orbits_up_to_2d": 188,
+    "gamma_conjugacy_classes_up_to_2d": 37,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "940,942,943"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 58,
+    "g": 30,
+    "primitive_vector_orbits": 14,
+    "gamma_conjugacy_classes": 12,
+    "primitive_vector_orbits_up_to_2d": 202,
+    "gamma_conjugacy_classes_up_to_2d": 38,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "940,942,943"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 60,
+    "g": 31,
+    "primitive_vector_orbits": 16,
+    "gamma_conjugacy_classes": 9,
+    "primitive_vector_orbits_up_to_2d": 218,
+    "gamma_conjugacy_classes_up_to_2d": 39,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "940,942,943"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 62,
+    "g": 32,
+    "primitive_vector_orbits": 13,
+    "gamma_conjugacy_classes": 11,
+    "primitive_vector_orbits_up_to_2d": 231,
+    "gamma_conjugacy_classes_up_to_2d": 40,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "940,942,943"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 64,
+    "g": 33,
+    "primitive_vector_orbits": 15,
+    "gamma_conjugacy_classes": 14,
+    "primitive_vector_orbits_up_to_2d": 246,
+    "gamma_conjugacy_classes_up_to_2d": 41,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "940,942,943"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 66,
+    "g": 34,
+    "primitive_vector_orbits": 16,
+    "gamma_conjugacy_classes": 11,
+    "primitive_vector_orbits_up_to_2d": 262,
+    "gamma_conjugacy_classes_up_to_2d": 43,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "940,942,943"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 68,
+    "g": 35,
+    "primitive_vector_orbits": 16,
+    "gamma_conjugacy_classes": 11,
+    "primitive_vector_orbits_up_to_2d": 278,
+    "gamma_conjugacy_classes_up_to_2d": 44,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "940,942,943"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 70,
+    "g": 36,
+    "primitive_vector_orbits": 18,
+    "gamma_conjugacy_classes": 12,
+    "primitive_vector_orbits_up_to_2d": 296,
+    "gamma_conjugacy_classes_up_to_2d": 46,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "940,942,943"
+    }
+  },
+  {
+    "lattice": "U + E8(-1)",
+    "two_d": 72,
+    "g": 37,
+    "primitive_vector_orbits": 16,
+    "gamma_conjugacy_classes": 10,
+    "primitive_vector_orbits_up_to_2d": 312,
+    "gamma_conjugacy_classes_up_to_2d": 46,
+    "source": {
+      "kind": "published_table",
+      "citation": "Dutour Sikiri\u0107--Hulek, arXiv:2302.01679",
+      "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+      "table": "ListNumberPolarizationsModuli",
+      "lines": "940,942,943"
+    }
+  }
+]
