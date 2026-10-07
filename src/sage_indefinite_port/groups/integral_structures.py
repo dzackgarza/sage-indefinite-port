@@ -690,6 +690,19 @@ class FiniteIntegralRepresentation(SageObject):
         owned lattice elements.
         """
         lattice = self.action().rational_group().rational_lattice()
+        labels = tuple(lattice.module_generating_set())
+        ring = lattice.base_ring()
+        return tuple(
+            lattice.linear_combination({label: _owned_engine_element(ring, image_coordinates[row, 0]) for row, label in enumerate(labels) if image_coordinates[row, 0]})
+            for image_coordinates in self._orbit_image_coordinate_columns(element)
+        )
+
+    def _orbit_image_coordinate_columns(
+        self,
+        element,
+    ) -> tuple[Matrix_rational_dense, ...]:
+        r"""Return finite-orbit images as private exact coordinate columns."""
+        lattice = self.action().rational_group().rational_lattice()
         source = element if element.parent() is lattice else lattice(element)
         labels = tuple(lattice.module_generating_set())
         coordinates = source.to_vector()
@@ -697,12 +710,19 @@ class FiniteIntegralRepresentation(SageObject):
             SageQQ,
             len(labels),
             1,
-            [SageQQ(_engine_element(lattice.base_ring(), coordinates(label))) for label in labels],
+            [
+                SageQQ(
+                    _engine_element(
+                        lattice.base_ring(),
+                        coordinates(label),
+                    )
+                )
+                for label in labels
+            ],
         )
-        ring = lattice.base_ring()
         return tuple(
-            lattice.linear_combination({label: _owned_engine_element(ring, image_coordinates[row, 0]) for row, label in enumerate(labels) if image_coordinates[row, 0]})
-            for image_coordinates in (witness_matrix * coordinate_column for witness_matrix in self._orbit_witness_matrices)
+            witness_matrix * coordinate_column
+            for witness_matrix in self._orbit_witness_matrices
         )
 
     def image_order(self) -> int:
