@@ -17,7 +17,10 @@ Paths: port paths are relative to `src/sage_indefinite_port/`; preamble paths ar
 
 ## Cross-cutting decisions and findings
 
-- **Ownership boundary.** Research holds mathematical operations of general use, stated in standard terms. The port holds the algorithm glue that composes them as Dutour Sikirić's code and papers specify: approximate models, covering lists, the generation step O(L) = ⟨A, Stab(v), t_i⟩ (if A-translates of finitely many r_i = t_i(v) cover G·v, then G = ⟨A, Stab_G(v), t_i⟩), envelopes, prefilters and traversal bookkeeping. Glue that crossed into research moves to the port: `TwoUFullGeneratingDatum`, `full_generating_data`, `covering_orbit_data` and `recursive_stabilizer_data` (`eichler_criterion.py:197-261, 870-1062`), and further items an audit of research identifies.
+- **Ownership boundary.** Research holds mathematical operations of general use, stated in standard terms.
+  The port holds the algorithm glue that composes them as Dutour Sikirić's code and papers specify: approximate models, covering lists, the generation step O(L) = ⟨A, Stab(v), t_i⟩ (if A-translates of finitely many r_i = t_i(v) cover G·v, then G = ⟨A, Stab_G(v), t_i⟩), envelopes, prefilters and traversal bookkeeping.
+  Glue that crossed into research moves to the port: `TwoUFullGeneratingDatum`, `full_generating_data`, `covering_orbit_data` and `recursive_stabilizer_data` (`eichler_criterion.py:197-261, 870-1062`), and further items an audit of research identifies.
+
 - **The circular imports end with the migration.** Research imports the port at `rational_integral_stabilizers.py:122` (integral structures, research#394) and `lattices.py:5135` (pointwise kernel, research#398). Both bodies move to research.
 
 - **The preamble's subgroup carriers stay; the port's capability moves into them.** The port's `RationalMatrixGroup`, `ArithmeticSubgroup`, `GeneratedSubgroup` and the shells of its `*Subgroup` classes duplicate `Groups.subgroup` / `GeneratedSubgroups` (`group/groups.py:3105, 3922`) and `PredicateSubgroups` (`group/predicate_subgroups.py`). The new capability migrates into the preamble's classes as generator resolutions (research#396): Schreier generators through a finite permutation image, word lifting, finite-index `index`, orbit with transversal, and cosets and double cosets in infinite groups.
