@@ -132,4 +132,10 @@ Bibliography of the sources this repository vendors under `references/vendor/`. 
 
 - J. H. Conway and N. J. A. Sloane, *Sphere Packings, Lattices and Groups*, 3rd ed., Springer, 1999. Fixtures: `conway_sloane_cases.json` (Ch. 15, §11, (51a), (51b)).
 
-- Francesco Scattone, *On the compactification of moduli spaces for algebraic K3 surfaces*, Mem. Amer. Math. Soc. 70 (1987), no. 374. Fixtures: `k3_modular_strata.json` (Prop. 5.4.7, Cor. 5.4.8, §6).
+- Francesco Scattone, *On the compactification of moduli spaces for algebraic K3 surfaces*, Mem.
+  Amer.
+  Math.
+  Soc.
+  70 (1987), no. 374. Fixtures: `k3_modular_strata.json` (Prop.
+  5.4.7, Cor.
+  5.4.8, §6).
