@@ -170,7 +170,7 @@ A turn that ends with a ready unit untouched stops the repository until someone 
 - **NEVER BUILD THE C++ CODE**:
   **Do NOT attempt to compile, build, configure, or invoke C++ compilation toolchains** for `polyhedral_common` or any other C++ source in `references/`.
   The upstream C++ codebase in `references/polyhedral_common` is strictly a reference implementation for algorithm extraction, logic translation, and structural understanding.
-  All production algorithms in this repository MUST be implemented as native SageMath / Python code delegating low-level operations to standard system backends (FLINT for exact integer linear algebra, Normaliz / cddlib / PPL for polyhedral cones, Bliss / Nauty for graph canonization, and `libgap` for finite quotient group actions).
+  All production algorithms in this repository MUST be implemented as native SageMath / Python code delegating low-level operations to standard system backends (FLINT for exact integer linear algebra, Normaliz / cddlib / PPL for polyhedral cones). Basic mathematical operations (stabilizers, transporters, orbits, cosets and double cosets of group actions; kernels, preimages, centralizers and intersections of subgroups; isomorphisms and canonical forms of finite configurations) are the research preamble's. This repository calls them and never reimplements them, whether on libGAP, Bliss, or anything else. A missing preamble operation is an upstream gap: name its API in the acceptance contract and leave the cases that need it red.
 
 ## Imported Contribution Policies (from `/home/dzack/research/CONTRIBUTING.md`)
 
@@ -397,4 +397,4 @@ Because foundational formed algebra is already complete, development in this rep
 1. **Lorentzian perfect-domain reduction**: Traversal of the $(1,n)$ reduction complex for $O^\Omega(L)$ and $O(L)$ generators.
 2. **$2U$-Eichler approximate models & Higher-Witt-index recursion**: Generating $A(L)$ and lifting covering sets to full $O(L)$ for Witt index $\geq 2$.
 3. **Parabolic recursion & Isotropic orbit decomposition**: Cusp orbits, unipotent radicals, and inductive rank-$k$ isotropic plane orbits.
-4. **Rational group integralization & Bliss/Nauty configuration canonization**: Double-coset transporters via libGAP and graph canonization.
+4. **Centralizers of isometries**: eigensublattices, gluing data and the cyclotomic decomposition, with the stabilizers and intersections consumed from the preamble.

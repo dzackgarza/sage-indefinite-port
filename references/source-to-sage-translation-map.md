@@ -747,7 +747,7 @@ F = P.finite_compatibility_action()
 M_integral = M.stabilizer(F.gluing_object())
 ```
 
-This is a finite-module stabilizer problem and belongs to the integral-structure/libGAP layer.
+This is a finite-module stabilizer problem, which the preamble's stabilizer operation solves.
 
 ## 7.3 Lift generators by exact affine solving
 
@@ -770,9 +770,9 @@ This produces the actual parabolic stabilizer without guessing a common "helping
 
 * * *
 
-# 8. `groups/integral_structures.py`
+# 8. Integral structures: preamble group operations
 
-This module should reconstruct the mathematics of `GroupAction.g` and `MatrixGroup.h`, but not their custom permutation-group implementation.
+The mathematics of `GroupAction.g` and `MatrixGroup.h` (lattice stabilizers and transporters under a rational group, cosets, double cosets, finite-module actions) consists of basic group-action operations. They belong to the research preamble, and this repository calls them. It does not implement them, and it does not port the custom permutation-group implementation. The sections below record the mathematics the preamble operations must satisfy. A missing operation is an upstream gap, named in the acceptance contract (#33).
 
 ## 8.1 Target API
 
@@ -865,7 +865,7 @@ S = F.submodule(L)
 
 rho = QG.action_on(F)
 P = rho.image_as_permutation_group(orbit_of=S)
-stab = libgap.Stabilizer(P, S)
+stab = P.stabilizer(S)
 H = rho.preimage(stab)
 ```
 
@@ -886,9 +886,9 @@ This recovers the source's incremental modular refinement without treating resid
 
 The current C++ routines first find an invariant lattice, conjugate the rational group into integral coordinates, perform a finite modular action, and conjugate the results back.
 
-## 8.6 Delegate all finite group work to libGAP
+## 8.6 Finite group work is the preamble's
 
-Do not port:
+Neither this repository nor the preamble ports:
 
 - `PersoGroup`;
 
@@ -1676,9 +1676,9 @@ For signature (2,n), rank two is already the maximal isotropic rank and recovers
 
 * * *
 
-# 14. `indefinite/arithmetic_subgroups.py`
+# 14. Finite-index subgroups: preamble group operations
 
-This is a generalization above the upstream algorithm.
+This is a generalization above the upstream algorithm. Kernels, preimages, intersections and orbit splitting are basic subgroup operations owned by the research preamble. This repository supplies the O(L) they act on, and the acceptance suite checks the results.
 
 ## 14.1 Finite-preimage groups
 
@@ -1688,7 +1688,7 @@ Gamma = G.preimage(rho, H)
 Oplus = G.kernel(rho)
 ```
 
-For any finite representation ρ: G → F and H ≤ F, Γ = ρ^{-1}(H) is computed by a finite subgroup-preimage calculation in libGAP, with words lifted to isometries.
+For any finite representation ρ: G → F and H ≤ F, Γ = ρ^{-1}(H) is the preamble's finite subgroup preimage, with words lifted to isometries.
 
 This covers:
 
@@ -1891,8 +1891,9 @@ LATT_Isomorphism
 short-vector/CVP leaves
     -> Sage/Oscar/PARI/fplll-backed definite lattice backend
 
-finite permutation groups, stabilizers, transporters, double cosets
-    -> libGAP
+finite permutation groups, stabilizers, transporters, double cosets,
+kernels, preimages, centralizers, intersections, configuration canonization
+    -> research preamble group operations
 
 generic facets, rays, redundancy, LP
     -> Normaliz/cddlib/PPL/Sage polyhedral backends
