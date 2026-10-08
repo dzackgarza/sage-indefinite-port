@@ -9,33 +9,17 @@ from functools import cached_property
 from dzack_research.preamble.categories.lattice_morphisms import (
     LatticeEmbeddingMethods,
     LatticeIsometryMethods,
-    _module_matrix,
 )
 from dzack_research.preamble.categories.lattices import IsotropicReductions, Lattices
-from dzack_research.preamble.categories.modules.pure.modules import _engine_matrix
 from dzack_research.preamble.categories.rings.ring_foundation import (
     OwnedRings,
     RingMorphism,
-    _engine_element,
 )
-from sage.matrix.constructor import matrix
-from sage.rings.rational_field import QQ as SageQQ
-from sage.structure.element import RingElement
 
 from sage_indefinite_port.indefinite.isotropic_lifts import (
     CodimensionOneIsotropicExtension,
     IsometryExtensionTorsor,
 )
-
-type NonIsotropicLiftContext = tuple[
-    RingMorphism,
-    Lattices.ParentMethods,
-    LatticeEmbeddingMethods,
-    Lattices.ElementMethods,
-    RingElement,
-    dict[Hashable, tuple[RingElement, Lattices.ElementMethods]],
-]
-"""Fraction map, rational ambient, rational perpendicular inclusion, rational vector, its norm, and each generator's split along the vector and its perpendicular."""
 
 type IsotropicLiftContext = tuple[
     RingMorphism,
@@ -61,147 +45,18 @@ class NonIsotropicVectorSection:
         r"""Return the reduced lattice \(v^\perp\)."""
         return self.reduction
 
-    @cached_property
-    def _rational_lift_context(self) -> NonIsotropicLiftContext:
-        source_ambient = self.inclusion.codomain()
-        source_ring = source_ambient.base_ring()
-        match source_ring:
-            case OwnedRings.NoZeroDivisors.Commutative.ParentMethods() as domain:
-                fraction_map = domain.fraction_field_map()
-            case _:
-                raise TypeError("rational lifting requires a lattice over an integral domain")
-        source_rational: Lattices.ParentMethods = source_ambient.base_change(fraction_map)
-        source_perpendicular_inclusion = self.inclusion.base_change(fraction_map)
-        coordinates = self.vector.to_vector()
-        source_vector = source_rational.linear_combination({label: fraction_map(coordinates(label)) for label in source_ambient.module_generating_set() if coordinates(label)})
-        source_norm = source_rational.q(source_vector)
-        source_decomposition: dict[Hashable, tuple[RingElement, Lattices.ElementMethods]] = {}
-        for label in source_rational.module_generating_set():
-            source_generator = source_rational.module_generator(label)
-            vector_coefficient = source_rational.b(source_generator, source_vector) / source_norm
-            perpendicular_part = source_generator - source_rational.scalar_multiple(
-                vector_coefficient,
-                source_vector,
-            )
-            source_decomposition[label] = (
-                vector_coefficient,
-                source_perpendicular_inclusion.lift(perpendicular_part),
-            )
-        return (
-            fraction_map,
-            source_rational,
-            source_perpendicular_inclusion,
-            source_vector,
-            source_norm,
-            source_decomposition,
-        )
-
     def rational_lift(
         self,
         reduced_isometry: LatticeIsometryMethods,
         *,
         target: NonIsotropicVectorSection | None = None,
     ) -> IsometryExtensionTorsor:
-        r"""Extend an isometry of perpendicular lattices uniquely over the fraction field."""
-        match target:
-            case None:
-                target_section = self
-            case _:
-                target_section = target
-
-        match (
-            reduced_isometry.domain() is self.perpendicular,
-            reduced_isometry.codomain() is target_section.perpendicular,
-        ):
-            case (True, True):
-                pass
-            case _:
-                raise ValueError("the reduced isometry has the wrong endpoints")
-
-        match self.vector.q() == target_section.vector.q():
-            case True:
-                pass
-            case False:
-                raise ValueError("source and target vectors must have the same norm")
-
-        source_ambient = self.inclusion.codomain()
-        target_ambient = target_section.inclusion.codomain()
-        source_ring = source_ambient.base_ring()
-        match source_ring is target_ambient.base_ring():
-            case True:
-                pass
-            case False:
-                raise ValueError("source and target lattices must have the same base ring")
-
-        if target_section is self:
-            (
-                fraction_map,
-                source_rational,
-                source_perpendicular_inclusion,
-                source_vector,
-                source_norm,
-                source_decomposition,
-            ) = self._rational_lift_context
-            target_rational = source_rational
-            target_perpendicular_inclusion = source_perpendicular_inclusion
-        else:
-            match source_ring:
-                case OwnedRings.NoZeroDivisors.Commutative.ParentMethods() as domain:
-                    fraction_map = domain.fraction_field_map()
-                case _:
-                    raise TypeError("rational lifting requires a lattice over an integral domain")
-            source_rational = source_ambient.base_change(fraction_map)
-            target_rational = target_ambient.base_change(fraction_map)
-            source_perpendicular_inclusion = self.inclusion.base_change(fraction_map)
-            source_vector = None
-            source_norm = None
-            source_decomposition = None
-
-        def extend_source(
-            vector: Lattices.ElementMethods,
-        ) -> Lattices.ElementMethods:
-            coordinates = vector.to_vector()
-            result: Lattices.ElementMethods = source_rational.linear_combination(
-                {label: fraction_map(coordinates(label)) for label in source_ambient.module_generating_set() if coordinates(label)}
-            )
-            return result
-
-        def extend_target(
-            vector: Lattices.ElementMethods,
-        ) -> Lattices.ElementMethods:
-            coordinates = vector.to_vector()
-            result: Lattices.ElementMethods = target_rational.linear_combination(
-                {label: fraction_map(coordinates(label)) for label in target_ambient.module_generating_set() if coordinates(label)}
-            )
-            return result
-
-        if target_section is not self:
-            target_perpendicular_inclusion = target_section.inclusion.base_change(fraction_map)
-        reduced_rational = reduced_isometry.base_change(fraction_map)
-        if source_vector is None:
-            source_vector = extend_source(self.vector)
-            source_norm = source_rational.q(source_vector)
-        target_vector = source_vector if target_section is self else extend_target(target_section.vector)
-
-        def image(label: Hashable) -> Lattices.ElementMethods:
-            if source_decomposition is None:
-                source_generator = source_rational.module_generator(label)
-                vector_coefficient = source_rational.b(source_generator, source_vector) / source_norm
-                perpendicular_part = source_generator - source_rational.scalar_multiple(
-                    vector_coefficient,
-                    source_vector,
-                )
-                reduced_part = source_perpendicular_inclusion.lift(perpendicular_part)
-            else:
-                vector_coefficient, reduced_part = source_decomposition[label]
-            target_perpendicular_part = target_perpendicular_inclusion(reduced_rational(reduced_part))
-            result: Lattices.ElementMethods = target_perpendicular_part + target_rational.scalar_multiple(
-                vector_coefficient,
-                target_vector,
-            )
-            return result
-
-        return IsometryExtensionTorsor(source_rational.Isom(target_rational)(image), ())
+        r"""Extend the perpendicular isometry over the fraction field."""
+        target_section = self if target is None else target
+        if reduced_isometry.domain() is not self.perpendicular or reduced_isometry.codomain() is not target_section.perpendicular:
+            raise ValueError("the reduced isometry has the wrong endpoints")
+        extension = reduced_isometry.extend_from_perpendicular(self.vector, target_section.vector)
+        return IsometryExtensionTorsor(extension, ())
 
     def integral_lift(
         self,
@@ -209,81 +64,10 @@ class NonIsotropicVectorSection:
         *,
         target: NonIsotropicVectorSection | None = None,
     ) -> LatticeIsometryMethods | None:
-        r"""Lift a reduced isometry directly when its unique rational extension is integral."""
-        match target:
-            case None:
-                target_section = self
-            case _:
-                target_section = target
-        match (
-            reduced_isometry.domain() is self.perpendicular,
-            reduced_isometry.codomain() is target_section.perpendicular,
-        ):
-            case (True, True):
-                pass
-            case _:
-                raise ValueError("the reduced isometry has the wrong endpoints")
-        match self.vector.q() == target_section.vector.q():
-            case True:
-                pass
-            case False:
-                raise ValueError("source and target vectors must have the same norm")
-
-        source_ambient = self.inclusion.codomain()
-        target_ambient = target_section.inclusion.codomain()
-        match source_ambient.base_ring() is target_ambient.base_ring():
-            case True:
-                pass
-            case False:
-                raise ValueError("source and target lattices must have the same base ring")
-
-        source_labels = tuple(source_ambient.module_generating_set())
-        target_labels = tuple(target_ambient.module_generating_set())
-        source_coordinates = self.vector.to_vector()
-        target_coordinates = target_section.vector.to_vector()
-        source_vector_row = matrix(
-            SageQQ,
-            1,
-            len(source_labels),
-            [
-                SageQQ(
-                    _engine_element(
-                        source_ambient.base_ring(),
-                        source_coordinates(label),
-                    )
-                )
-                for label in source_labels
-            ],
-        )
-        target_vector_row = matrix(
-            SageQQ,
-            1,
-            len(target_labels),
-            [
-                SageQQ(
-                    _engine_element(
-                        target_ambient.base_ring(),
-                        target_coordinates(label),
-                    )
-                )
-                for label in target_labels
-            ],
-        )
-        source_perpendicular_rows = _engine_matrix(_module_matrix(self.inclusion)).transpose().change_ring(SageQQ)
-        target_perpendicular_rows = _engine_matrix(_module_matrix(target_section.inclusion)).transpose().change_ring(SageQQ)
-        reduced_action = reduced_isometry.parent()._row_action_matrix(reduced_isometry).change_ring(SageQQ)
-        source_basis = source_vector_row.stack(source_perpendicular_rows)
-        image_rows = target_vector_row.stack(reduced_action * target_perpendicular_rows)
-        ambient_action = source_basis.inverse() * image_rows
-        if any(entry.denominator() != 1 for entry in ambient_action.list()):
-            return None
-        lift = source_ambient.Isom(target_ambient)._isometry_from_column_matrix(ambient_action.transpose())
-        match lift(self.vector) == target_section.vector:
-            case True:
-                pass
-            case False:
-                raise ArithmeticError("the integral lift does not carry the selected source vector to the target vector")
-        return lift
+        r"""Return the extension when it preserves both integral lattices."""
+        target_section = self if target is None else target
+        extension = self.rational_lift(reduced_isometry, target=target_section).rational_isometry()
+        return extension.integral_restriction(self.inclusion.codomain(), target_section.inclusion.codomain())
 
 
 @dataclass(frozen=True)
