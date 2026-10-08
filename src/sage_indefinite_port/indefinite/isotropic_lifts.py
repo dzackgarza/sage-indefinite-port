@@ -338,10 +338,7 @@ class PointwisePerpendicularKernel:
         complement = tuple(quotient_section(quotient_trivialization.inverse()(quotient_free.module_generator(label))) for label in quotient_labels)
         embedded_isotropic = tuple(embedding(isotropic.module_generator(label)) for label in isotropic_labels)
         rank = len(isotropic_labels)
-        pairing = ring.matrix_space(rank).from_rows(
-            tuple(ambient.b(vector, isotropic_vector) for isotropic_vector in embedded_isotropic)
-            for vector in complement
-        )
+        pairing = ring.matrix_space(rank).from_rows(tuple(ambient.b(vector, isotropic_vector) for isotropic_vector in embedded_isotropic) for vector in complement)
         integral_kernel = pairing.transpose().symmetrized_right_multiplication().kernel()
 
         self._ambient = ambient
@@ -384,10 +381,7 @@ class PointwisePerpendicularKernel:
                     for column, isotropic_label in enumerate(self._isotropic_labels)
                     if (
                         coefficient := sum(
-                            (
-                                quotient_coordinates(quotient_label) * direction[row, column]
-                                for row, quotient_label in enumerate(self._quotient_labels)
-                            ),
+                            (quotient_coordinates(quotient_label) * direction[row, column] for row, quotient_label in enumerate(self._quotient_labels)),
                             ring.zero(),
                         )
                     )
@@ -425,4 +419,3 @@ def pointwise_perpendicular_kernel(
 ) -> PointwisePerpendicularKernel:
     r"""Return the exact kernel fixing the reduction's \(I^\perp\) pointwise."""
     return PointwisePerpendicularKernel(reduction)
-
