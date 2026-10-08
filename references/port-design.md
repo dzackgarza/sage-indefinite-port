@@ -17,7 +17,14 @@ Where the port already implements an [R] step, that code migrates upstream into 
 Notation: `L` a nondegenerate integral lattice, `G = L.O()`, `A_L` its discriminant form, `q(v) = b(v, v)`.
 
 Marked lattices.
-Every orbit, stabilizer and equivalence question here is about objects of a coslice category X/Lattices, the preamble's `CosliceCategory(Lattices(ZZ), X)` [P]. An object is a lattice L with a lattice morphism ι: X → L: a vector v with q(v) = n is a morphism ⟨n⟩ → L (a pointed lattice); a finite vector configuration S is a morphism from the lattice on the free module Z^S with Gram matrix (b(s, s')); a sublattice I is its inclusion I → L; a flag I_1 ⊂ I_2 is a morphism from the chain I_1 → I_2. Isom((L, ι), (M, κ)) is the set of isometries g: L → M with g ∘ ι = κ, and Aut((L, ι)) is its group for (M, κ) = (L, ι). Deciding whether two marked lattices are isometric means deciding whether this homset is empty and, if not, producing an element; "orbits of vectors of norm n under O(L)" are the isometry classes of objects of ⟨n⟩/Lattices with fixed underlying L. The homsets of X/Lattices with their computations are research#403; the port supplies the computation for indefinite L.
+Every orbit, stabilizer and equivalence question here is about isomorphisms in a category of marked lattices, built from the preamble's diagram categories [P]. A marking is a diagram of lattice morphisms ending at L, and an isomorphism of marked lattices is a natural isomorphism of diagrams: a commutative diagram whose components are isometries. Which components may vary decides the category:
+
+- a vector v with q(v) = n is a morphism ι: ⟨n⟩ → L. Isometries (L, ι) → (M, κ) satisfy g ∘ ι = κ exactly, so these are objects of the coslice category ⟨n⟩/Lattices (`CosliceCategory(Lattices(ZZ), ⟨n⟩)`), and Aut((L, ι)) is the group of isometries of L fixing v;
+- a sublattice I is an embedding ι: I ↪ L, an object of the arrow category Ar(Lattices) = Fun([1], Lattices) (`Cat().Mor(FiniteOrdinalCategory(2), Lattices(ZZ))`) restricted to monomorphisms. Its isomorphisms are squares (α, g) with g ∘ ι = κ ∘ α and α ∈ Isom(I, J), so (L, I) ≅ (M, J) exactly when some isometry carries I onto J; Aut((L, ι)) is the setwise stabilizer of I;
+- a finite vector configuration S is a morphism ι from the lattice on Z^S with Gram matrix (b(s, s')), with α restricted to automorphisms of that lattice preserving the colour classes, so g(S) = T as coloured sets;
+- a flag I_1 ⊂ I_2 ⊂ L is a chain of embeddings, an object of Fun([2], Lattices) (`Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))`); its isomorphisms are natural isomorphisms of chains.
+
+Deciding whether two marked lattices are isometric means deciding whether the core homset between them (`Core().Mor`) is empty, and producing an element when it is not. "Orbits of vectors of norm n under O(L)" are the isomorphism classes of pointed lattices (L, ⟨n⟩ → L) with L fixed; "orbits of isotropic planes" are those of marked sublattices. The homsets of these categories, with their computations, are research#403; the port supplies the computation for indefinite L.
 
 ## What the port owns
 
@@ -55,14 +62,14 @@ The port supplies exactly three things that no general construction yields:
 Port code calls these names now.
 An operation that research has not implemented yet fails at run time.
 The names extend existing preamble owners wherever one exists; each row is posted to its research issue.
-Notation: `XL = CosliceCategory(Lattices(ZZ), X)` for a marking lattice X; `G` a preamble group given by generators; `L`, `M` lattices.
+Notation: `D` is the category of a marking as above: `CosliceCategory(Lattices(ZZ), ⟨n⟩)` for pointed lattices, the monomorphisms of `Cat().Mor(FiniteOrdinalCategory(2), Lattices(ZZ))` for sublattices and configurations, `Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))` for flags; `G` a preamble group given by generators; `L`, `M` lattices.
 
 | Operation | Owner and name | Signature → result | Issue |
 | --- | --- | --- | --- |
-| marked lattice (L, ι: X → L) | `XL.object(iota)` (exists) | lattice morphism ι: X → L → object of X/Lattices | [P] |
-| Isom((L, ι), (M, κ)) | `XL.Core().Mor(source, target)` (exists) with `.is_empty()`, `.an_element()` | → homset; `an_element` raises on an empty homset | R#403 |
-| Aut((L, ι)) | `XL.Core().Mor(obj, obj)` with `.group_generators()` | → group of isometries of L fixing ι | R#403 |
-| isomorphism classes of markings of L | `XL.isomorphism_class_representatives(L, condition)` | L, a predicate on markings (primitive embedding, totally isotropic image) → finite ordered set of objects | R#403 |
+| marked lattice | `D.object(diagram)` (exists) | the marking diagram ending at L → object of D | [P] |
+| Isom of marked lattices | `D.Core().Mor(source, target)` (exists) with `.is_empty()`, `.an_element()` | → homset; `an_element` raises on an empty homset | R#403 |
+| Aut of a marked lattice | `D.Core().Mor(obj, obj)` with `.group_generators()` | → the group of isometries of L preserving the marking (fixing v; preserving I, S or the flag) | R#403 |
+| isomorphism classes of markings of L | `D.isomorphism_class_representatives(L, condition)` | L, a predicate on markings (primitive embedding, totally isotropic image) → finite ordered set of objects | R#403 |
 | subgroup generated by isometries of an indefinite lattice | `L.O().subgroup(generators)` (exists; must accept indefinite L and rational isometries) with membership, `group_generators()` | finite family of isometries → subgroup | R#400 |
 | finite G-set from an action | `FiniteGSets(G)(points, action)` (exists; G any group given by generators) | finite set, action (g, x) ↦ g·x → G-set | R#396 |
 | point stabilizer with generators | `X.stabilizer(x)` on a finite G-set (exists as a predicate subgroup; must carry Schreier generators) | point → subgroup with `group_generators()` | R#396 |
