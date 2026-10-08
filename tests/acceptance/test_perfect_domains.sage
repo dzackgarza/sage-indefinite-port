@@ -14,7 +14,7 @@ from tests.fixtures.oracle_fixtures import load_lorentzian_perfect_domains
 
 
 @pytest.mark.parametrize("case", load_lorentzian_perfect_domains(), ids=lambda case: case["id"])
-@pytest.mark.xfail(reason="Lorentzian perfect domains: owned by #15", raises=UnfinishedCapability, strict=True)
+@pytest.mark.xfail(reason="Lorentzian (1,n) backend: owned by #15", raises=UnfinishedCapability, strict=True)
 def test_perfect_domain_orbit_counts_match_polyhedral_common(case) -> None:
     require(PERFECT_DOMAINS)
 
@@ -26,7 +26,7 @@ def test_perfect_domain_orbit_counts_match_polyhedral_common(case) -> None:
 
 
 @pytest.mark.parametrize("case", load_lorentzian_perfect_domains(), ids=lambda case: case["id"])
-@pytest.mark.xfail(reason="Lorentzian perfect domains: owned by #15", raises=UnfinishedCapability, strict=True)
+@pytest.mark.xfail(reason="Lorentzian (1,n) backend: owned by #15", raises=UnfinishedCapability, strict=True)
 def test_isotropic_mode_counts_match_polyhedral_common(case) -> None:
     """The "isotropic" mode is a reference-implementation option with no preamble consumer,
     so it is called on upstream's own input Gram matrix."""

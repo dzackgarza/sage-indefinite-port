@@ -57,7 +57,7 @@ def _assert_same_root_system(gram, recorded_roots) -> None:
 
 
 @pytest.mark.parametrize("case", load_reflective_forms(), ids=lambda case: case["id"])
-@pytest.mark.xfail(reason="Allcock edgewalk: owned by #31", raises=UnfinishedCapability, strict=True)
+@pytest.mark.xfail(reason="Lorentzian (1,n) backend: owned by #15", raises=UnfinishedCapability, strict=True)
 def test_simple_root_counts_match_polyhedral_common(case) -> None:
     require(EDGEWALK)
 
@@ -68,7 +68,7 @@ def test_simple_root_counts_match_polyhedral_common(case) -> None:
 
 
 @pytest.mark.parametrize("case", load_root_systems(), ids=lambda case: case["id"])
-@pytest.mark.xfail(reason="Allcock edgewalk: owned by #31", raises=UnfinishedCapability, strict=True)
+@pytest.mark.xfail(reason="Lorentzian (1,n) backend: owned by #15", raises=UnfinishedCapability, strict=True)
 def test_root_systems_match_polyhedral_common(case) -> None:
     require(EDGEWALK)
 
@@ -76,7 +76,7 @@ def test_root_systems_match_polyhedral_common(case) -> None:
 
 
 @pytest.mark.parametrize("case", load_allcock_rank3_reflective(), ids=lambda case: case["id"])
-@pytest.mark.xfail(reason="Allcock edgewalk: owned by #31", raises=UnfinishedCapability, strict=True)
+@pytest.mark.xfail(reason="Lorentzian (1,n) backend: owned by #15", raises=UnfinishedCapability, strict=True)
 def test_root_systems_match_allcock(case) -> None:
     require(EDGEWALK)
 
@@ -87,14 +87,14 @@ _VINBERG = {case["id"]: case for case in load_oscar_lattice_oracles()["vinberg"]
 
 
 @pytest.mark.parametrize("case", list(_VINBERG.values()), ids=lambda case: case["id"])
-@pytest.mark.xfail(reason="Allcock edgewalk: owned by #31", raises=UnfinishedCapability, strict=True)
+@pytest.mark.xfail(reason="Lorentzian (1,n) backend: owned by #15", raises=UnfinishedCapability, strict=True)
 def test_simple_root_counts_match_oscar_vinberg(case) -> None:
     require(EDGEWALK)
 
     assert len(_computed_roots(case["gram"])) == case["num_simple_roots"]
 
 
-@pytest.mark.xfail(reason="Allcock edgewalk: owned by #31", raises=UnfinishedCapability, strict=True)
+@pytest.mark.xfail(reason="Lorentzian (1,n) backend: owned by #15", raises=UnfinishedCapability, strict=True)
 def test_vinberg_coxeter_diagram_has_oscars_edges() -> None:
     require(EDGEWALK)
 
@@ -107,7 +107,7 @@ def test_vinberg_coxeter_diagram_has_oscars_edges() -> None:
     assert edges == case["coxeter_diagram_edges"]
 
 
-@pytest.mark.xfail(reason="Allcock edgewalk: owned by #31", raises=UnfinishedCapability, strict=True)
+@pytest.mark.xfail(reason="Lorentzian (1,n) backend: owned by #15", raises=UnfinishedCapability, strict=True)
 def test_vinberg_roots_match_oscars_chamber_up_to_isometry() -> None:
     require(EDGEWALK)
 
@@ -116,7 +116,7 @@ def test_vinberg_roots_match_oscars_chamber_up_to_isometry() -> None:
     _assert_same_root_system(case["gram"], case["simple_roots_of_test_chamber"])
 
 
-@pytest.mark.xfail(reason="Allcock edgewalk: owned by #31", raises=UnfinishedCapability, strict=True)
+@pytest.mark.xfail(reason="Lorentzian (1,n) backend: owned by #15", raises=UnfinishedCapability, strict=True)
 def test_e10_simple_roots_match_dutour_sikiric_hulek() -> None:
     require(EDGEWALK)
 

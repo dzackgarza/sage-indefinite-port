@@ -587,7 +587,7 @@ def _full_root_orbit(root_rows: set[_Row], isometry_rows: set[_Roots]) -> _Roots
     return tuple(sorted(roots))
 
 
-@unfinished(31)
+@unfinished(15)
 def edgewalk_fundamental_domain(gram: Matrix_integer_dense) -> EdgewalkRecord:
     """Return Allcock's fundamental-domain record for a Lorentzian Gram matrix."""
     gram = _integer_gram(gram)
