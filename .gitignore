@@ -20,7 +20,7 @@ build/
 .ai-review-ci/
 .ruff_cache/
 
-# Copyrighted texts extracted from the local Zotero library (pinned by SHA-256 in references/extract)
+# Reading copies from the local Zotero library (copyrighted; not vendored)
 references/vendor/zotero/
 
 # Reference repository clones

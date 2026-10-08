@@ -77,7 +77,7 @@ oracles:
     kind: published_text
     sources:
       - references/vendor/arxiv/1012.4155/main.tex
-      - references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md
+      - F. Scattone, On the compactification of moduli spaces for algebraic K3 surfaces, Mem. Amer. Math. Soc. 70 (1987), no. 374, Prop. 5.4.7, Cor. 5.4.8, Section 6
   - fixture_file: indefinite_isometry_pairs.json
     extraction: references/extract/isometry_pairs.py
     runtime: sage
@@ -160,8 +160,8 @@ oracles:
     sources:
       - references/vendor/polyhedral_common@1592b246/CI_tests/DoubleCosets/DBL
   - fixture_file: conway_sloane_cases.json
-    extraction: references/extract/conway_sloane.py
-    runtime: uv
+    extraction: null
+    runtime: null
     kind: published_text
     sources:
-      - references/vendor/zotero/T2WVLTDB-conway-sloane-1999-splag/extracted.md
+      - J. H. Conway and N. J. A. Sloane, Sphere Packings, Lattices and Groups, 3rd ed., Springer, 1999, Ch. 15, Sec. 11, eqs. (51a), (51b)

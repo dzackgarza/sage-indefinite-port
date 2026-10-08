@@ -53,9 +53,8 @@
     "integrally_equivalent": false,
     "source": {
       "kind": "published_text",
-      "citation": "J. H. Conway and N. J. A. Sloane, Sphere Packings, Lattices and Groups, 3rd ed., Springer, 1999, Ch. 15, Sec. 11",
-      "file": "references/vendor/zotero/T2WVLTDB-conway-sloane-1999-splag/extracted.md",
-      "lines": "12933-12939"
+      "citation": "J. H. Conway and N. J. A. Sloane, Sphere Packings, Lattices and Groups, 3rd ed., Springer, 1999",
+      "location": "Chapter 15, Section 11, equations (51a) and (51b)"
     }
   }
 }

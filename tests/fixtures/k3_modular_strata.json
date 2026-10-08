@@ -4,8 +4,8 @@
     "group": "O(Lambda_{2k})",
     "source": {
       "kind": "published_text",
-      "file": "references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md",
-      "lines": "3224-3258"
+      "citation": "F. Scattone, On the compactification of moduli spaces for algebraic K3 surfaces, Mem. Amer. Math. Soc. 70 (1987), no. 374",
+      "location": "Proposition 5.4.7 and Corollary 5.4.8(2)"
     }
   },
   "k3_unimodular_lattice": {
@@ -56,13 +56,13 @@
     "source": {
       "boundary": {
         "kind": "published_text",
-        "file": "references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md",
-        "lines": "3746-3768"
+        "citation": "F. Scattone, On the compactification of moduli spaces for algebraic K3 surfaces, Mem. Amer. Math. Soc. 70 (1987), no. 374",
+        "location": "Section 6, opening: D_k/O_-(L_k) gains one point and h(k) curves through it; h(1) = 4, h(2) = 9"
       },
       "root_types": {
         "kind": "published_text",
-        "file": "references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md",
-        "lines": "3852-3856"
+        "citation": "F. Scattone, On the compactification of moduli spaces for algebraic K3 surfaces, Mem. Amer. Math. Soc. 70 (1987), no. 374",
+        "location": "(6.2.1)"
       }
     }
   },
@@ -92,13 +92,13 @@
     "source": {
       "boundary": {
         "kind": "published_text",
-        "file": "references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md",
-        "lines": "3746-3768"
+        "citation": "F. Scattone, On the compactification of moduli spaces for algebraic K3 surfaces, Mem. Amer. Math. Soc. 70 (1987), no. 374",
+        "location": "Section 6, opening: D_k/O_-(L_k) gains one point and h(k) curves through it; h(1) = 4, h(2) = 9"
       },
       "generalised_types": {
         "kind": "published_text",
-        "file": "references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md",
-        "lines": "3940-3946"
+        "citation": "F. Scattone, On the compactification of moduli spaces for algebraic K3 surfaces, Mem. Amer. Math. Soc. 70 (1987), no. 374",
+        "location": "Section 6.3, the nine orthogonal complements of D_7"
       }
     }
   }

@@ -128,15 +128,8 @@ Bibliography of the sources this repository vendors under `references/vendor/`. 
 
 - Hecke.jl, test files at commit `e2ab5716135292294f5d5d9d34ed707b91e98b88`: `references/vendor/Hecke.jl@e2ab5716/test/`. https://github.com/thofma/Hecke.jl
 
-## Local Zotero extractions (copyrighted, not committed)
+## Books (cited by chapter, section and equation or theorem number)
 
-These texts are OCR extractions from the local Zotero library.
-They are git-ignored, and each extraction script pins its file by SHA-256 (see `references/vendor/README.md`).
+- J. H. Conway and N. J. A. Sloane, *Sphere Packings, Lattices and Groups*, 3rd ed., Springer, 1999. Fixtures: `conway_sloane_cases.json` (Ch. 15, §11, (51a), (51b)).
 
-- J. H. Conway and N. J. A. Sloane, *Sphere Packings, Lattices and Groups*, 3rd ed., Springer, 1999. Zotero `T2WVLTDB`: `references/vendor/zotero/T2WVLTDB-conway-sloane-1999-splag/extracted.md`. Fixtures: `conway_sloane_cases.json`.
-
-- Francesco Scattone, *On the compactification of moduli spaces for algebraic K3 surfaces*, Mem.
-  Amer.
-  Math.
-  Soc.
-  70 (1987), no. 374. Zotero `SF7T3C8G`: `references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md`. Fixtures: `k3_modular_strata.json`.
+- Francesco Scattone, *On the compactification of moduli spaces for algebraic K3 surfaces*, Mem. Amer. Math. Soc. 70 (1987), no. 374. Fixtures: `k3_modular_strata.json` (Prop. 5.4.7, Cor. 5.4.8, §6).

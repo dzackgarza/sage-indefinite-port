@@ -45,6 +45,12 @@ class TextSource(TypedDict):
     lines: str
 
 
+class BookSource(TypedDict):
+    kind: str
+    citation: str
+    location: str
+
+
 class CitedTextSource(TypedDict):
     kind: str
     citation: str
@@ -411,7 +417,7 @@ class SpinorGenusPair(TypedDict):
     spinor_genera_in_genus: int
     classes_in_genus: int
     integrally_equivalent: bool
-    source: CitedTextSource
+    source: BookSource
 
 
 class ConwaySloaneCases(TypedDict):
@@ -617,8 +623,8 @@ class BailyBorelBoundary(TypedDict, total=False):
 
 
 class DegreeTwoSources(TypedDict):
-    boundary: TextSource
-    root_types: TextSource
+    boundary: BookSource
+    root_types: BookSource
 
 
 class DegreeTwoK3(TypedDict):
@@ -633,8 +639,8 @@ class DegreeTwoK3(TypedDict):
 
 
 class DegreeFourSources(TypedDict):
-    boundary: TextSource
-    generalised_types: TextSource
+    boundary: BookSource
+    generalised_types: BookSource
 
 
 class DegreeFourK3(TypedDict):
@@ -651,7 +657,7 @@ class DegreeFourK3(TypedDict):
 class TypeIICorrespondence(TypedDict):
     statement: str
     group: str
-    source: TextSource
+    source: BookSource
 
 
 class K3ModularStrata(TypedDict):

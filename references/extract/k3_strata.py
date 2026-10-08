@@ -20,19 +20,16 @@ here instead of in a test.
   the O(L_k)-orbits of primitive isotropic planes E are in bijection with G(k) by
   E -> E^perp/E, so there are h(k) of them.
 
-The memoir text is the OCR extraction of Zotero item SF7T3C8G, pinned by its
-SHA-256; it is copyrighted and not committed (see references/vendor/README.md).
+Scattone's values are transcribed from the memoir and cited by its numbering.
 
 Run from the repository root: uv run references/extract/k3_strata.py
 """
 
-import hashlib
 import json
 from pathlib import Path
 
 ARXIV = Path("references/vendor/arxiv")
-SCATTONE = Path("references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md")
-SCATTONE_SHA256 = "5b88bb090c5e21254a60b3c2750a78fc0e3ef0042f3c651cfde82473caf9d12e"
+SCATTONE = "F. Scattone, On the compactification of moduli spaces for algebraic K3 surfaces, Mem. Amer. Math. Soc. 70 (1987), no. 374"
 TARGET = Path("tests/fixtures/k3_modular_strata.json")
 
 
@@ -43,45 +40,17 @@ def cite(path: Path, first: int, last: int, *needles: str) -> dict[str, str]:
     return {"kind": "published_text", "file": str(path), "lines": f"{first}-{last}"}
 
 
+def book(location: str) -> dict[str, str]:
+    """A statement of Scattone's memoir, read from the memoir and cited by its numbering."""
+    return {"kind": "published_text", "citation": SCATTONE, "location": location}
+
+
 def main() -> None:
-    digest = hashlib.sha256(SCATTONE.read_bytes()).hexdigest()
-    assert digest == SCATTONE_SHA256, f"{SCATTONE} has SHA-256 {digest}, not the pinned {SCATTONE_SHA256}"
     eichler = cite(ARXIV / "1012.4155/main.tex", 3036, 3041, r"\label{lem:eichler}", "two orthogonal isotropic planes", "determined by two invariants")
-    boundary = cite(SCATTONE, 3746, 3768, "by adding one point p and h(k) curves", "intersect at $p$", "h(1) = 4 and h(2) = 9")
-    degree_two_types = cite(
-        SCATTONE,
-        3852,
-        3856,
-        "consists of four isomorphism classes",
-        r"\mathrm{A} _ {1} + \mathrm{E} _ {8} + \mathrm{E} _ {8}",
-        r"\mathrm{A} _ {1} + \mathrm{D} _ {1 6}",
-        r"\mathrm{E} _ {7} + \mathrm{D} _ {1 0}",
-        r"\mathrm{A} _ {1 7}",
-    )
-    degree_four = cite(
-        SCATTONE,
-        3940,
-        3946,
-        "<   - 4 > + E _ {8} + E _ {8}",
-        "<   - 4 > + D _ {1 6}",
-        "E _ {8} + D _ {9}",
-        "E _ {7} ^ {2} + A _ {3}",
-        "D _ {1 7}",
-        "D _ {1 2} + D _ {5}",
-        "<   - 4 > + D _ {8} ^ {2}",
-        "A _ {1} ^ {2} + A _ {1 5}",
-        "E _ {6} + A _ {1 1}",
-        "these nine distinct arithmetic possibilities",
-    )
-    correspondence = cite(
-        SCATTONE,
-        3224,
-        3258,
-        "Proposition 5.4.7. The map $E \\to E^1 / E$ induces a bijection",
-        "I _ {2, 1} (L) / O (L) \\approx G (k)",
-        "_ {2} (\\mathrm{O(L)}) = \\mathrm{h(k)}",
-        "if k is squarefree",
-    )
+    boundary = book("Section 6, opening: D_k/O_-(L_k) gains one point and h(k) curves through it; h(1) = 4, h(2) = 9")
+    degree_two_types = book("(6.2.1)")
+    degree_four = book("Section 6.3, the nine orthogonal complements of D_7")
+    correspondence = book("Proposition 5.4.7 and Corollary 5.4.8(2)")
     record = {
         "type_ii_correspondence": {
             "statement": (
