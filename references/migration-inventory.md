@@ -1,32 +1,42 @@
 # Migration inventory
 
-Every function and class in `src/sage_indefinite_port`, private ones included, classified against
-references/port-design.md. Source revision: 709f81a. Preamble revision: research@9bc51845d1.
-This is the work list of #37.
+Every function and class in `src/sage_indefinite_port`, private ones included, classified against references/port-design.md.
+Source revision: 709f81a. Preamble revision: research@9bc51845d1. This is the work list of #37.
 
 Dispositions:
 
-- **MIGRATE**: general mathematics the preamble lacks; moves to research under the named issue,
-  adapted to the preamble's categories and public operations.
-- **REPLACE**: duplicates an existing preamble operation, named with its location; the port
-  calls it instead.
-- **KEEP-I**: indefinite-specific logic owned here (#15, #18).
-- **DROP**: dead, unused, or a wrapper with no content (usage checked by grep over the port's
-  src and tests and research's src).
+- **MIGRATE**: general mathematics the preamble lacks; moves to research under the named issue, adapted to the preamble's categories and public operations.
 
-Paths: port paths are relative to `src/sage_indefinite_port/`; preamble paths are relative to
-`dzack_research/preamble/categories/`.
-Line numbers are those of the source revisions above.
+- **REPLACE**: duplicates an existing preamble operation, named with its location; the port calls it instead.
+
+- **KEEP-I**: indefinite-specific logic owned here (#15, #18).
+
+- **DROP**: dead, unused, or a wrapper with no content (usage checked by grep over the port's src and tests and research's src).
+
+Paths: port paths are relative to `src/sage_indefinite_port/`; preamble paths are relative to `dzack_research/preamble/categories/`. Line numbers are those of the source revisions above.
 
 ## Cross-cutting decisions and findings
 
-- **One owner for O(L) = ⟨A, Stab(v), t_i⟩.** The assembly exists three times: `recursive.py:321-334`, `lorentzian_cells.py:98-127` (dead), and research's `TwoUEichlerModel.full_generating_data` (`eichler_criterion.py:976-1062`). Research's copy obtains Stab(v) and t_i from the port's entry points. Per the design, the assembly is the Eichler recursion [I] and stays in the port. Research's `full_generating_data`, `covering_orbit_data` and `recursive_stabilizer_data` stop duplicating it and call the port's O(L) (research#393).
+- **One owner for O(L) = ⟨A, Stab(v), t_i⟩.** The assembly exists three times: `recursive.py:321-334`, `lorentzian_cells.py:98-127` (dead), and research's `TwoUEichlerModel.full_generating_data` (`eichler_criterion.py:976-1062`). Research's copy obtains Stab(v) and t_i from the port's entry points.
+  Per the design, the assembly is the Eichler recursion [I] and stays in the port.
+  Research's `full_generating_data`, `covering_orbit_data` and `recursive_stabilizer_data` stop duplicating it and call the port's O(L) (research#393).
+
 - **The circular imports end with the migration.** Research imports the port at `rational_integral_stabilizers.py:122` (integral structures, research#394) and `lattices.py:5135` (pointwise kernel, research#398). Both bodies move to research.
-- **The preamble's subgroup carriers stay; the port's capability moves into them.** The port's `RationalMatrixGroup`, `ArithmeticSubgroup`, `GeneratedSubgroup` and the shells of its `*Subgroup` classes duplicate `Groups.subgroup` / `GeneratedSubgroups` (`group/groups.py:3105, 3922`) and `PredicateSubgroups` (`group/predicate_subgroups.py`). The new capability migrates into the preamble's classes as generator resolutions (research#396): Schreier generators through a finite permutation image, word lifting, finite-index `index`, orbit with transversal, and cosets and double cosets in infinite groups. Prerequisite (research#400): the generated-subgroup engine must carry rational, non-integral isometries; `_from_backend_row_action` coerces coefficients to ZZ (`lattice_morphisms.py:1772`).
-- **Configurations generalise an existing category.** `VectorConfigurations` (`vector_configurations.py`) already canonizes the Bliss pairing graph for basis framings. The port's `CellConfiguration` extends that to overcomplete spanning families with colours, plus integral correction, and migrates into `VectorConfigurations` rather than beside it (research#399).
+
+- **The preamble's subgroup carriers stay; the port's capability moves into them.** The port's `RationalMatrixGroup`, `ArithmeticSubgroup`, `GeneratedSubgroup` and the shells of its `*Subgroup` classes duplicate `Groups.subgroup` / `GeneratedSubgroups` (`group/groups.py:3105, 3922`) and `PredicateSubgroups` (`group/predicate_subgroups.py`). The new capability migrates into the preamble's classes as generator resolutions (research#396): Schreier generators through a finite permutation image, word lifting, finite-index `index`, orbit with transversal, and cosets and double cosets in infinite groups.
+  Prerequisite (research#400): the generated-subgroup engine must carry rational, non-integral isometries; `_from_backend_row_action` coerces coefficients to ZZ (`lattice_morphisms.py:1772`).
+
+- **Configurations generalise an existing category.** `VectorConfigurations` (`vector_configurations.py`) already canonizes the Bliss pairing graph for basis framings.
+  The port's `CellConfiguration` extends that to overcomplete spanning families with colours, plus integral correction, and migrates into `VectorConfigurations` rather than beside it (research#399).
+
 - **Python version.** `except A, B:` (PEP 758) at `integral_structures.py:256` and `recursive.py:460` parses only on Python 3.14, while pyproject declares `>=3.12,<3.15`. Both sites are error-swallowing fallbacks that are removed in this migration anyway.
-- **Reference source missing.** `references/README.md` pins a `references/polyhedral_common` mirror at a55fcb7b, but the mirror is not checked out. Code that cites the C++ cannot be checked against it until it is.
-- **New preamble gap.** The Lorentzian positive-vector enumeration needs a public "first multiplier with a nonempty affine close-vector shell, with its vectors". Only the private `_first_close_vector_scale` (`lattices.py:3846`) and the engine-private `first_close_vector_scale_coordinates` (`definite_lattices.py:493`) exist. Added to research#401.
+
+- **Reference source missing.** `references/README.md` pins a `references/polyhedral_common` mirror at a55fcb7b, but the mirror is not checked out.
+  Code that cites the C++ cannot be checked against it until it is.
+
+- **New preamble gap.** The Lorentzian positive-vector enumeration needs a public "first multiplier with a nonempty affine close-vector shell, with its vectors".
+  Only the private `_first_close_vector_scale` (`lattices.py:3846`) and the engine-private `first_close_vector_scale_coordinates` (`definite_lattices.py:493`) exist.
+  Added to research#401.
 
 ## Correctness defects found (fixed when the code migrates or is rewritten; each needs a red reproducer first)
 
