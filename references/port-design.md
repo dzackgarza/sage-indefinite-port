@@ -74,7 +74,7 @@ Notation: `D` is the category of a marking as above: `CosliceCategory(Lattices(Z
 | Operation | Owner and name | Signature → result | Issue |
 | --- | --- | --- | --- |
 | marked lattice | `D.object(diagram)` (exists) | the marking diagram ending at L → object of D | [P] |
-| flag as a chain diagram | `Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ)).object((first, second))` (new: a functor from a composable pair) | embeddings I_1 → I_2, I_2 → L → object of Fun([2], Lattices) | R#403 |
+| flag as a chain diagram | `Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ)).object((first, second))` (new: a functor from a composable pair) | embeddings I_1 → I_2, I_2 → L → object of Fun([2], Lattices), with `.arrows()` returning the pair | R#403 |
 | Isom of marked lattices | `D.Core().Mor(source, target)` (exists) with `.is_empty()`, `.an_element()` | → homset; `an_element` raises on an empty homset | R#403 |
 | Aut of a marked lattice | `D.Core().Mor(obj, obj)` with `.group_generators()` | → the group of isometries of L preserving the marking (fixing v; preserving I, S or the flag) | R#403 |
 | isomorphism inside a subgroup | `D.Core().Mor(source, target).an_element_in(subgroup)` (new) | finite-index subgroup Γ of O(L) → an isomorphism whose isometry lies in Γ, or None | R#403 |
@@ -84,14 +84,15 @@ Notation: `D` is the category of a marking as above: `CosliceCategory(Lattices(Z
 | point stabilizer with generators | `X.stabilizer(x)` on a finite G-set (exists as a predicate subgroup; must carry Schreier generators) | point → subgroup with `group_generators()` | R#396 |
 | setwise stabilizer of a sublattice in a subgroup | `G.stabilizer(sublattice, action="setwise")` (exists as a predicate subgroup; must carry generators) | subobject of L → subgroup with `group_generators()` | R#396 |
 | element carrying x to y | `X.transporter_witness(x, y)` (exists for finite G only; extend to G given by generators) | points → group element or None | R#396 |
-| preimage and kernel of a finite representation | `rho.preimage_subgroup(H)`, `rho.kernel()` (exist as predicates; must carry generators) | finite subgroup H → subgroup with generators | R#396 |
+| preimage and kernel of a finite representation | `rho.preimage_subgroup(H)`, `rho.kernel()` (exist as predicates; must carry generators) | finite subgroup H, or a finitely generated subgroup of the codomain when the image of rho has finite index → subgroup with generators | R#396 |
 | intersection | `G.intersection(*subgroups)` (exists as predicate; generators when the subgroups have finite data) | subgroups → subgroup | R#396 |
 | cosets and double cosets with a finite-index side | `G.right_cosets(H)`, `G.left_cosets(H)` (exist for finite G), `G.double_cosets(Q, H)` (new) | subgroups → representatives lifted to G | R#396 |
 | orbit splitting | `L.O().split_orbit(x, subgroup)` (new) | a marked lattice x over L, finite-index subgroup Γ → one marked lattice per Γ-orbit inside the O(L)-orbit of x, each with generators of its stabilizer in Γ | R#396 |
 | lattice stabilizer under a rational group | `IntegralStructureAction(G, inclusion).stabilizer()` and `.transporter(target)` (exist; computation moves to research) | rational isometry group of L ⊗ Q, lattice inclusion → subgroup with generators / isometry or None | R#396 |
 | direct product of isometry groups | `G1.direct_product(G2)` (new) | O-subgroups of L1, L2 → subgroup of O(L1 ⊕ L2) | R#397 |
 | extension along a finite-index inclusion | `inclusion.extended_subgroup(H)` (new) on a sublattice inclusion M → L of finite index | subgroup of O(M) → its subgroup preserving L, as a subgroup of O(L) | R#397 |
-| induced action on I^perp/I | `R.levi_action()` (exists element-wise; must be a group morphism with `.image()` carrying generators) | → morphism Aut((L, I)) → O(I^perp/I) | R#397 |
+| induced action on I^perp/I | `R.levi_action()` (exists element-wise; must be a group morphism with `.image()` carrying generators) | → morphism Aut((L, I)) → O(I^perp/I); `.lift(h)` for h in the image → an element of Aut((L, I)) mapping to h | R#397 |
+| parabolic subgroups | `R.parabolic_subgroup()`, `R.pointwise_parabolic_subgroup()` (exist as predicate subgroups; must carry generators), `R.isotropic_action()` (new) | isotropic reduction of a primitive totally isotropic I ⊆ L → Aut((L, I)) (setwise), its subgroup fixing I pointwise, each with `group_generators()`; the morphism Aut((L, I)) → GL(I) with `.image()` | R#398 |
 | GL of a free module and flag parabolics | `M.general_linear_group()`, `M.general_linear_group().flag_stabilizer(flag)` (new) | free Z-module, flag of saturated submodules → group with generators | R#398 |
 | unipotent radical and pointwise kernel | `R.unipotent_group_generators()` (exists for rank 1), `R.pointwise_perpendicular_kernel()` (exists, body moves to research) | isotropic reduction → generators | R#398 |
 | finite spanning vector configurations | `L.vector_configuration(vectors, colors)` (exists for bases; extend to spanning coloured families) | finite family, colour labels → configuration; its Isom and Aut are the X/Lattices homsets above | R#399 |
@@ -100,7 +101,7 @@ Notation: `D` is the category of a marking as above: `CosliceCategory(Lattices(Z
 | content and Bezout partner | `v.content()`, `v.bezout_partner()` (new) | → largest d with v ∈ dL; h with b(v, h) = div(v) | R#401 |
 | integral hyperbolic splitting | `R.integral_hyperbolic_splitting()` (new) on the isotropic reduction of an even L at e with div(e) = 1 | → isometry L → U ⊕ K | R#401 |
 | rational extension across v^perp | `phi.extension_across(v, w)` (new) on an isometry φ: v^perp → w^perp | → isometry of L ⊗ Q carrying v to w, extending φ; `.is_integral_on(L)` | R#401 |
-| lifts through isotropic reductions | `R.rational_lifts(target, psi)` (new) | isometry ψ of the reductions → affine family of rational lifts (dimension n − 2), with one lift `.base_point()` | R#401 |
+| lifts through isotropic reductions | `R.rational_lifts(target, psi)` (new) | isometry ψ of the reductions → affine family of rational lifts (dimension n − 2) with `.integral_members()` | R#401 |
 | affine integral solution set | `family.integral_members()` (new) on an affine family T_0 + Σ λ_i T_i of rational maps | → empty, or a coset λ_0 + Λ | R#401 |
 | codimension-one Witt extension | `phi.witt_extension(source_inclusion, target_inclusion)` (new) | isometry between codimension-one subspaces with rank-1 radical → isometry of the ambient | R#401 |
 | invariant overlattice | `G.invariant_overlattice(L)` (new) | group commensurating L → smallest G-stable lattice containing L | R#401 |
@@ -202,3 +203,4 @@ Rank > 2 raises `UnsupportedRankError` (map §13.5).
 ## Boundary
 
 The preamble calls the port only for (1) and (2). The frozen entry points are listed in #33. They take preamble lattices and isometry groups and return preamble objects (research#403).
+The marked-lattice entry points take the category of the marking first: `isometry(D, source, target)`, `automorphism_group_generators(D, marked)` and `primitive_marking_classes(D, shape, L)`, with D one of `Lattices`, a coslice `<n>/Lattices`, `Ar(Lattices)` or `Fun([2], Lattices)`. The category is part of the question: a pointed lattice and a rank-1 sublattice have the same arrow and different isomorphisms. `isometry` returns the isometry of the underlying lattices; the markings are monomorphisms, so it determines the isomorphism.
