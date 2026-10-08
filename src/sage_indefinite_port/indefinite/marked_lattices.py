@@ -24,7 +24,7 @@ from sage.categories.morphism import Morphism
 from sage.structure.parent import Parent
 
 from sage_indefinite_port.indefinite.isotropic_induction import ARROWS, Flag, IsotropicInduction, UnsupportedRankError
-from sage_indefinite_port.indefinite.lorentzian_cells import NoLocalMarkTheoremError
+from sage_indefinite_port.indefinite.lorentzian_cells import LorentzianPerfectComplex, MarkedCellOrbitAlgorithm
 from sage_indefinite_port.indefinite.recursive import EichlerRecursion
 from sage_indefinite_port.invariants import AttackProfile
 from sage_indefinite_port.readiness import unfinished
@@ -114,9 +114,7 @@ def _pointed_classes(category: Category, lattice: Lattices.ParentMethods, square
         case 1, 0:
             vectors = INDUCTION.isotropic_vector_classes(lattice)
         case 1, _:
-            raise NoLocalMarkTheoremError(
-                f"{lattice} has positive index 1: classes of primitive vectors of nonzero square {square} need a finite local-mark theorem the source does not have (map §12.4)"
-            )
+            vectors = tuple(orbit[0] for orbit in MarkedCellOrbitAlgorithm(LorentzianPerfectComplex(lattice, "total"), square).global_orbits())
         case _:
             vectors = tuple(vector_class.representative for vector_class in RECURSION.primitive_vector_classes(lattice, square))
     base = category.base_object()

@@ -49,7 +49,7 @@ class IsotropicInduction:
             case 0:
                 return ()
             case 1:
-                orbits = MarkedCellOrbitAlgorithm(LorentzianPerfectComplex(lattice, "isotropic")).global_orbits()
+                orbits = MarkedCellOrbitAlgorithm(LorentzianPerfectComplex(lattice, "isotropic"), 0).global_orbits()
                 return tuple(orbit[0] for orbit in orbits)
             case _:
                 return tuple(vector_class.representative for vector_class in self.recursion.primitive_vector_classes(lattice, 0))

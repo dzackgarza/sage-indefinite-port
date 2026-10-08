@@ -360,23 +360,39 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
 
 
 class NoLocalMarkTheoremError(RuntimeError):
-    """The local perfect-cell mark theorem is unavailable for this norm."""
+    """The local perfect-cell mark theorem does not cover this norm: vectors outside the closed positive cone."""
 
 
 class MarkedCellOrbitAlgorithm:
-    """Global isotropic-vertex orbits from local cell-stabilizer orbits."""
+    r"""O(L)-orbits of primitive vectors of square n in the closed positive cone, from the quotient cells.
 
-    def __init__(self, complex_: LorentzianPerfectComplex, norm: int | Integer = 0) -> None:
-        if norm != 0:
-            raise NoLocalMarkTheoremError("the Lorentzian marked-cell source proves finite local marks only for norm zero")
+    The marks of a cell are the primitive lattice vectors of square n in its cone: its isotropic
+    rays for n = 0, and for timelike n the finite set the preamble enumerates. It is finite: a
+    lattice vector of the cone is a combination of the rays with coefficients in (1/D)Z_{>=0} for
+    a D fixed by the cell, distinct rays of the closed positive cone pair positively, and every
+    term of q is nonnegative, so q = n bounds each coefficient. Marks equivalent under a cell's
+    automorphism group are one local orbit, a mark on a shared facet is identified with its
+    preimage under the side pairing, and the cells around any face are connected through facet
+    adjacencies, so the connected components are the orbits. An element of O(L) carrying one
+    vector of the cone to another preserves the cone's sheet, so these are the O(L)-orbits.
+    """
+
+    def __init__(self, complex_: LorentzianPerfectComplex, norm: int) -> None:
+        sign = AttackProfile.from_lattice(complex_.lattice()).sign
+        if sign * norm < 0:
+            raise NoLocalMarkTheoremError(f"vectors of square {norm} in {complex_.lattice()} are spacelike: they lie outside the closed positive cone that the cells cover")
         self._complex = complex_
+        self._norm = norm
 
     def complex(self) -> LorentzianPerfectComplex:
         return self._complex
 
     def local_marks(self, cell: LorentzianPerfectCell) -> tuple[Lattices.ElementMethods, ...]:
-        zero = cell.lattice.base_ring().zero()
-        return tuple(vector for vector in cell.vector_configuration if vector.q() == zero)
+        if self._norm == 0:
+            zero = cell.lattice.base_ring().zero()
+            return tuple(vector for vector in cell.vector_configuration if vector.q() == zero)
+        cone = RationalPolyhedralCones(cell.lattice).from_rays(cell.vector_configuration)
+        return tuple(vector for vector in cone.vectors_of_square(self._norm) if vector.content() == 1)
 
     def local_stabilizer_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[Lattices.ElementMethods, ...], ...]:
         marks = self.local_marks(cell)
@@ -392,22 +408,20 @@ class MarkedCellOrbitAlgorithm:
         transporter = adjacency.transporter
         if transporter is None:
             raise ArithmeticError("a marked quotient adjacency needs a transporter")
-        source_marks = tuple(
-            adjacency.source.vector_configuration[position]
-            for position in sorted(adjacency.facet)
-            if adjacency.source.vector_configuration[position].q() == adjacency.source.lattice.base_ring().zero()
-        )
+        source = adjacency.source.vector_configuration
+        facet = RationalPolyhedralCones(adjacency.source.lattice).from_rays(tuple(source[position] for position in sorted(adjacency.facet)))
+        source_marks = tuple(mark for mark in self.local_marks(adjacency.source) if facet.contains(mark))
         target_marks = self.local_marks(adjacency.target)
         transported = []
         for target_mark in target_marks:
             source_mark = transporter(target_mark)
             matches = [candidate for candidate in source_marks if candidate == source_mark]
             if len(matches) > 1:
-                raise ArithmeticError("an isotropic facet mark does not transport to a unique mark of the target representative")
+                raise ArithmeticError("a facet mark does not transport to a unique mark of the target representative")
             if matches:
                 transported.append((matches[0], target_mark))
         if len(transported) != len(source_marks):
-            raise ArithmeticError("an isotropic facet mark has no unique mark in the target representative")
+            raise ArithmeticError("a facet mark has no unique mark in the target representative")
         return tuple(transported)
 
     def global_orbits(self) -> tuple[tuple[Lattices.ElementMethods, ...], ...]:

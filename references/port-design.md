@@ -117,6 +117,7 @@ Notation: `D` is the category of a marking as above: `CosliceCategory(Lattices(Z
 | integral descent of a rational isometry | `M.integral_isometry(phi)` (new) | φ: L ⊗ Q → M ⊗ Q with φ(L) = M → the isometry L → M; raises otherwise | R#401 |
 | similarity from a rational isometry | `phi.integral_similarity(L, E)` (new), `.scale()` | φ: L ⊗ Q → E ⊗ Q → σ = Nφ: L → E for the least positive integer N, and N | R#401 |
 | twist on isometries | `Lattices(ZZ).twist_functor(a)(phi)` (exists, returns a module morphism) | isometry φ: L → M → the element of `L(a).Isom(M(a))`; `L.twist(-1).twist(-1)` is L | R#401 |
+| lattice vectors of a square in a cone | `C.vectors_of_square(n)` (new) on a rational polyhedral cone C in the closed positive cone of a Lorentzian lattice | n of the timelike sign → the finite set of lattice vectors of C of square n | R#401 |
 | order of an induced action | `g.order_on(quotient)` (new) | isometry g of M, finite quotient M/N (a cokernel) → the least k ≥ 1 with (g^k − 1)M ⊆ N: the order of the induced action when g preserves N | R#396 |
 | orbit closure from seeds | `G.orbit_closure(seeds, action)` (new) | finite seeds in a G-set discovered on the fly → the finite union of their orbits | R#396 |
 
@@ -189,6 +190,10 @@ for I in rank-(k-1) representatives:
 ```
 
 Rank > 2 raises `UnsupportedRankError` (map §13.5).
+
+### Vector classes at positive index 1 (#18)
+
+Primitive vectors of square n in the closed positive cone of a Lorentzian L are classified by marked cells, generalising LORENTZ_GetOrbitRepresentative_Kernel from n = 0 (map §12.4): the marks of a quotient cell of the total-mode traversal are its primitive vectors of square n, `C.vectors_of_square(n)` [R#401]; local orbits under the cell's automorphism group [P], transport of facet marks along side pairings, and connected components [I]. The marks are finite because a lattice vector of the cone has coefficients in (1/D)Z≥0 on the rays, distinct rays pair positively, and every term of q is nonnegative. Spacelike n is outside the cells and raises `NoLocalMarkTheoremError`.
 
 ## General constructions over the port (not port algorithms)
 
