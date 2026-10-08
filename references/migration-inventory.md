@@ -1,6 +1,7 @@
 # Migration inventory
 
-Every function and class in `src/sage_indefinite_port`, private ones included, classified against references/port-design.md. The last column is the commit that applied the row (#38); — marks a KEEP row the cleanup left unchanged.
+Every function and class in `src/sage_indefinite_port`, private ones included, classified against references/port-design.md.
+The last column is the commit that applied the row (#38); — marks a KEEP row the cleanup left unchanged.
 Source revision: 709f81a. Preamble revision: research@9bc51845d1. This is the work list of #37.
 
 Dispositions:
