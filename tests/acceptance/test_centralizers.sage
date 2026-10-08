@@ -39,36 +39,3 @@ def test_centralizer_images_match_oscar(case) -> None:
         assert int(image.cardinality()) == case["centralizer_image_order"]
     else:
         assert image.cardinality() == lattice_.discriminant_group().orthogonal_group().cardinality()
-
-
-@pytest.mark.xfail(reason="research-owned: Genus.equivariant_classes is missing in the preamble; the case moves to research's suite under #33", raises=AttributeError, strict=True)
-def test_involution_classes_in_the_signature_1_9_genus() -> None:
-    (case,) = _DATA["involution_classes"]
-    x = polygen(ZZ, "x")
-
-    classes = lattice(case["genus_representative_gram"]).genus().equivariant_classes((x - 1) ** 4 * (x + 1) ** 6)
-
-    assert len(classes) == case["classes_in_genus"]
-
-
-@pytest.mark.xfail(reason="research-owned: Genus.equivariant_classes is missing in the preamble; the case moves to research's suite under #33", raises=AttributeError, strict=True)
-def test_u_plus_e8_has_one_class_of_order_30() -> None:
-    case = next(case for case in _DATA["lattice_class_counts"] if case["id"] == "U_plus_E8_order_30")
-    x = polygen(ZZ, "x")
-
-    classes = lattice(case["gram"]).genus().equivariant_classes((x - 1) ** 2 * cyclotomic_polynomial(30, x))
-
-    assert len(classes) == case["class_count"]
-    (representative,) = classes
-    assert representative.isometry().invariant_lattice().discriminant() == -1
-
-
-@pytest.mark.xfail(reason="research-owned: Genus.equivariant_classes is missing in the preamble; the case moves to research's suite under #33", raises=AttributeError, strict=True)
-def test_4u_has_three_hermitian_classes_of_order_5() -> None:
-    """representatives_of_hermitian_type(L, 5): f of order 5 without fixed vectors, so chi_f = Phi_5^2."""
-    case = next(case for case in _DATA["lattice_class_counts"] if case["id"] == "4U_hermitian_order_5")
-    x = polygen(ZZ, "x")
-
-    classes = lattice(case["gram"]).genus().equivariant_classes(cyclotomic_polynomial(5, x) ** 2)
-
-    assert len(classes) == case["class_count"]
