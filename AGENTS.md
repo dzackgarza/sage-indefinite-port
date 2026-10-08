@@ -159,6 +159,13 @@ A turn that ends with a ready unit untouched stops the repository until someone 
 
 - **The `[unverified]` commit tag**: `[unverified]` may appear in a commit message only while the repository's verification phase is formally deferred by a named contract, and every `[unverified]` commit must name the contract or terminal phase that discharges it.
 
+- **Deferred type checking (temporary, discharged by #36)**: while #36 is open, the push gate's mypy errors are acknowledged debt and are not paid down. A push may then use `git push --no-verify`, and only under all of these conditions:
+  - `just test-push` was run on the commit being pushed and failed in its mypy stage (`_sage-mypy`) and nowhere earlier.
+  - The tip commit of the push carries this trailer, verbatim apart from the count: `Type-Debt-Ack: MYPY-DEFER-7Q4K #36 errors=<N>`, where `<N>` is the "Found N errors" count of that run.
+  - `<N>` is no greater than the count in the previous `Type-Debt-Ack` trailer in `git log`. A push that would raise the count does not use this exception: fix the new errors first.
+
+  The trailer covers every commit in that push. Commits need no exception, because the commit gate does not run mypy. The exception covers only mypy debt: any other gate failure is fixed, never bypassed. #36's last commit deletes this rule.
+
 # Architecture and Dependencies
 
 - **The `research` preamble is the lattice substrate and a co-developed dependency**:
