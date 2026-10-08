@@ -18,7 +18,6 @@ from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.matrix.constructor import matrix
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
 from sage.modules.free_module_element import FreeModuleElement
-from sage.quadratic_forms.qfsolve import qfsolve
 from sage.rings.integer import Integer as SageInteger
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational import Rational
@@ -525,9 +524,8 @@ def find_hyperbolic_pair(
 ) -> tuple[Lattices.ElementMethods, Lattices.ElementMethods]:
     r"""Return verified integral isotropic ``v,w`` with ``b(v,w)>0``.
 
-    PARI's exact ``qfsolve`` supplies one rational isotropic direction.  Clearing
-    denominators and dividing the coordinate gcd gives an integral primitive
-    vector ``v``.  For any integral ``h`` with ``d=b(v,h)>0``, the vector
+    The preamble supplies a primitive integral isotropic witness ``v``.
+    For any integral ``h`` with ``d=b(v,h)>0``, the vector
 
     ``w = 2 d h - q(h) v``
 
@@ -577,29 +575,10 @@ def find_hyperbolic_pair(
             left_vector = lattice.linear_combination({label: ring(coordinate) for label, coordinate in zip(labels, left_coordinates, strict=True) if coordinate})
             right_vector = lattice.linear_combination({label: ring(coordinate) for label, coordinate in zip(labels, right_coordinates, strict=True) if coordinate})
             return left_vector, right_vector
-    gram = gram.change_ring(SageQQ)
-    solution = qfsolve(gram)
-    if isinstance(solution, SageInteger):
+    v = lattice.isotropic_vector_witness()
+    if v is None:
         raise ValueError("the lattice is anisotropic over QQ")
-    if not isinstance(solution, FreeModuleElement):
-        raise ValueError("qfsolve returned a degenerate isotropic subspace instead of one vector")
-    denominators = [entry.denominator() for entry in solution]
-    denominator = 1
-    for entry_denominator in denominators:
-        denominator = denominator * int(entry_denominator) // gcd(denominator, int(entry_denominator))
-    solution_coordinates = [int(denominator * entry) for entry in solution]
-    content = 0
-    for coordinate in solution_coordinates:
-        content = gcd(content, abs(coordinate))
-    if content == 0:
-        raise ArithmeticError("qfsolve returned the zero vector")
-    primitive_coordinates = [coordinate // content for coordinate in solution_coordinates]
     ring = lattice.base_ring()
-    v = lattice.linear_combination({label: ring(coordinate) for label, coordinate in zip(labels, primitive_coordinates, strict=True) if coordinate})
-    if not v.is_isotropic():
-        raise ArithmeticError("the saturated qfsolve witness is not isotropic")
-    if primitive and not v.is_primitive():
-        raise ArithmeticError("the saturated qfsolve witness is not primitive")
 
     h = None
     d = ring.zero()
