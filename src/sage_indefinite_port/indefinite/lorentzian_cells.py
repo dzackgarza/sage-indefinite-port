@@ -13,6 +13,7 @@ from dzack_research.preamble.categories.abstract_categories.products import Fini
 from dzack_research.preamble.categories.group.g_sets import FiniteGSets
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods, LatticeIsometryMor
 from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
+from dzack_research.preamble.categories.reduction_complexes import LorentzianPerfectDomainTraversal, PerfectDomainOrbitAdjacency
 from sage.matrix.constructor import matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
@@ -333,7 +334,29 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
 
     Returns the preamble's ``LorentzianPerfectDomainTraversal`` of ``lattice``: the quotient
     cells, their automorphism groups and the side pairings, from which O^Omega(L) is generated.
+    Each cell is the cone on its vectors; an adjacency carries the source cell, the
+    representative of the neighbour's orbit, the neighbour itself as the image of that
+    representative, the facet they share, and the isometry carrying the representative onto it.
     """
+    complex_ = LorentzianPerfectComplex(lattice, mode)
+    backend = complex_.local_backend()
+    cones = RationalPolyhedralCones(lattice)
+    cell_cones = {id(cell): cones.from_rays(cell.vector_configuration) for cell in complex_.quotient_cells()}
+    adjacencies = []
+    for adjacency in complex_.adjacencies():
+        source = adjacency.source.vector_configuration
+        target_to_neighbour = adjacency.transporter
+        adjacencies.append(
+            PerfectDomainOrbitAdjacency(
+                cell_cones[id(adjacency.source)],
+                cell_cones[id(adjacency.target)],
+                cones.from_rays(tuple(target_to_neighbour(vector_) for vector_ in adjacency.target.vector_configuration)),
+                cones.from_rays(tuple(source[position] for position in sorted(adjacency.facet))),
+                target_to_neighbour,
+            )
+        )
+    stabilizers = {cell_cones[id(cell)]: backend.cell_stabilizer(cell) for cell in complex_.quotient_cells()}
+    return LorentzianPerfectDomainTraversal(lattice, tuple(cell_cones.values()), adjacencies, stabilizers)
 
 
 class NoLocalMarkTheoremError(RuntimeError):
@@ -602,18 +625,16 @@ def _first_positive_shell(
 ) -> tuple[Lattices.ElementMethods, ...]:
     r"""The vectors of the first nonempty shell with 0 < b(v, t) <= max_scal, or ()."""
     enumerator = _PositiveVectorEnumerator(lattice, rational_direction, max_scal, mode)
-    if enumerator.scaled_max > 0:
-        first = enumerator.first_shell()
-        return () if first is None else first[1]
-    multiplier = 1
-    while True:
-        shell = enumerator.vectors_at_multiplier(multiplier)
-        if shell:
-            return shell
-        multiplier += 1
+    if enumerator.scaled_max <= 0:
+        raise ArithmeticError(f"the positive-vector shells below {max_scal} along {rational_direction} are empty by definition: the bound must be positive")
+    first = enumerator.first_shell()
+    return () if first is None else first[1]
 
 
 def _search_initial_vectors(lattice: Lattices.ParentMethods, direction: tuple[Rational, ...], mode: PerfectMode) -> tuple[Lattices.ElementMethods, ...]:
+    r"""The first shell along the direction, doubling the bound until it is nonempty; it terminates because L has vectors of the mode's kind."""
+    if mode == "isotropic" and not lattice.is_isotropic():
+        raise ValueError(f"{lattice} is anisotropic: it has no isotropic perfect cells")
     gram = _gram_matrix(lattice).change_ring(SageQQ)
     direction_row = vector(SageQQ, direction)
     max_scal = (direction_row * gram * direction_row.column())[0]
@@ -667,6 +688,13 @@ def _upper_bound(
         if constant_bound <= 0:
             raise ArithmeticError("the affine-normal constant gives a nonpositive flip bound")
         bounds.append(constant_bound)
+    base_vector = inverse * base_covector.column()
+    direction_vector = inverse * direction_covector.column()
+    base_square = (base_vector.transpose() * gram * base_vector)[0, 0]
+    cross = (base_vector.transpose() * gram * direction_vector)[0, 0]
+    direction_square = (direction_vector.transpose() * gram * direction_vector)[0, 0]
+    if not (direction_square < 0 or (direction_square == 0 and (cross < 0 or (cross == 0 and base_square < 0)))):
+        raise ArithmeticError("the flip direction never leaves the closed positive cone: q(base + s direction) stays nonnegative for all s > 0")
     shift = SageQQ.one()
     while True:
         covector = base_covector + shift * direction_covector
@@ -676,8 +704,6 @@ def _upper_bound(
             bounds.append(shift)
             break
         shift *= 2
-    base_vector = inverse * base_covector.column()
-    direction_vector = inverse * direction_covector.column()
     basis = matrix(SageQQ, [base_vector.column(0), direction_vector.column(0)])
     restricted = basis * gram * basis.transpose()
     a, b, c = restricted[0, 0], restricted[0, 1], restricted[1, 1]

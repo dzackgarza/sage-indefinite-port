@@ -52,6 +52,7 @@ def edgewalk_fundamental_domain(lattice: HyperbolicLattices.ParentMethods) -> Pa
     fundamental polyhedron of the reflection group W(L), as elements of ``lattice``, and whether
     ``lattice`` is reflective.
     """
+    return _Edgewalk(lattice).walk()
 
 
 def _key(vector_: _Vector) -> _Key:
