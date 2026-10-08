@@ -15,7 +15,8 @@ from itertools import combinations
 from math import gcd
 from typing import TypedDict
 
-from dzack_research.preamble.all import ZZ, HyperbolicLattices, Lattices
+from dzack_research.preamble.all import ZZ, Cat, HyperbolicLattices, Lattices
+from dzack_research.preamble.categories.abstract_categories.products import FiniteOrdinalCategory
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from sage.arith.misc import xgcd
 from sage.geometry.cone import Cone
@@ -32,11 +33,6 @@ from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ as SageQQ
 from sage.structure.parent import Parent
 
-from sage_indefinite_port.backends.canonization import (
-    CellConfiguration,
-    cell_stabilizer,
-    cell_transporter,
-)
 from sage_indefinite_port.indefinite.edgewalk_extensions import (
     NormedDynkinExtension,
     compute_possible_extensions,
@@ -57,6 +53,9 @@ type _Roots = tuple[_Row, ...]
 type _Gram = Matrix_integer_dense | Matrix_rational_dense
 type _RationalRow = Sequence[int | Integer | Rational] | FreeModuleElement[Rational] | FreeModuleElement[Integer]
 type _ConstraintLattice = FreeModule_submodule_with_basis_pid[Integer]
+
+ARROWS = Cat().Mor(FiniteOrdinalCategory(2), Lattices(ZZ))
+"""Ar(Lattices): a coloured vector configuration S of L is the marked lattice (L, Z^S -> L)."""
 
 
 class EdgewalkRecord(TypedDict):
@@ -534,7 +533,7 @@ def _vertex_configuration(
     gram: Matrix_integer_dense,
     vertex: _Vertex,
     norms: tuple[int, ...],
-) -> CellConfiguration:
+) -> Parent:
     rows = list(vertex.roots) + [vertex.generator]
     roles = [1] * len(vertex.roots) + [2]
     if _q(gram, vertex.generator) == 0:
@@ -545,11 +544,7 @@ def _vertex_configuration(
         auxiliary = sorted(set(adjacent_generators))
         rows.extend(auxiliary)
         roles.extend([3] * len(auxiliary))
-    return CellConfiguration.from_coordinate_rows(
-        lattice,
-        tuple(rows),
-        tuple(roles),
-    )
+    return lattice.vector_configuration([lattice(list(row)) for row in rows], list(roles))
 
 
 def _matrix_rows(lattice: HyperbolicLattices.ParentMethods, isometry: LatticeIsometryMethods) -> _Roots:
@@ -573,19 +568,12 @@ def _update_finiteness(gram: Matrix_integer_dense, invariant_basis: Matrix_ratio
     return invariant
 
 
-def _full_root_orbit(root_rows: set[_Row], isometry_rows: set[_Roots]) -> _Roots:
-    roots = set(root_rows)
-    pending = list(roots)
-    matrices = tuple(matrix(SageZZ, rows) for rows in isometry_rows)
-    while pending:
-        root = pending.pop()
-        row = vector(SageZZ, root)
-        for generator in matrices:
-            image = tuple(int(entry) for entry in row * generator)
-            if image not in roots:
-                roots.add(image)
-                pending.append(image)
-    return tuple(sorted(roots))
+def _full_root_orbit(lattice: HyperbolicLattices.ParentMethods, root_rows: set[_Row], isometries: list[LatticeIsometryMethods]) -> _Roots:
+    """The union of the orbits of the roots found under the symmetries of the polyhedron (a finite group here)."""
+    group = lattice.O().subgroup(tuple(isometries))
+    seeds = [lattice(list(row)) for row in sorted(root_rows)]
+    closure = group.orbit_closure(seeds, lambda isometry, root: isometry(root))
+    return tuple(sorted(_row_of_element(lattice, root) for root in closure))
 
 
 @unfinished(15)
@@ -618,16 +606,19 @@ def _edgewalk(gram: Matrix_integer_dense) -> EdgewalkRecord:
     vertices = [initial]
     configurations = [_vertex_configuration(lattice, gram, initial, norms)]
     isometries: set[_Roots] = set()
+    isometry_elements: list[LatticeIsometryMethods] = []
     invariant_basis: Matrix_rational_dense = matrix.identity(SageQQ, gram.nrows())
     identity = tuple(tuple(int(i == j) for j in range(gram.nrows())) for i in range(gram.nrows()))
     position = 0
     while position < len(vertices):
         vertex = vertices[position]
-        stabilizer = cell_stabilizer(configurations[position])
-        for generator in stabilizer.generators():
+        configuration = configurations[position]
+        stabilizer = tuple(automorphism.forward().right() for automorphism in ARROWS.Core().Mor(configuration, configuration).group_generators())
+        for generator in stabilizer:
             rows = _matrix_rows(lattice, generator)
-            if rows != identity:
+            if rows != identity and rows not in isometries:
                 isometries.add(rows)
+                isometry_elements.append(generator)
                 updated_basis = _update_finiteness(gram, invariant_basis, rows)
                 if updated_basis is None:
                     return {
@@ -644,18 +635,19 @@ def _edgewalk(gram: Matrix_integer_dense) -> EdgewalkRecord:
             found = None
             transporter = None
             for index, configuration in enumerate(configurations):
-                candidate = cell_transporter(configuration, neighbor_configuration)
-                if candidate is not None:
+                isomorphisms = ARROWS.Core().Mor(configuration, neighbor_configuration)
+                if not isomorphisms.is_empty():
                     found = index
-                    transporter = candidate
+                    transporter = isomorphisms.an_element().forward().right()
                     break
             if found is None:
                 vertices.append(neighbor)
                 configurations.append(neighbor_configuration)
             elif transporter is not None:
                 rows = _matrix_rows(lattice, transporter)
-                if rows != identity:
+                if rows != identity and rows not in isometries:
                     isometries.add(rows)
+                    isometry_elements.append(transporter)
                     updated_basis = _update_finiteness(gram, invariant_basis, rows)
                     if updated_basis is None:
                         return {
@@ -668,7 +660,7 @@ def _edgewalk(gram: Matrix_integer_dense) -> EdgewalkRecord:
         position += 1
 
     root_rows = {root for vertex in vertices for root in vertex.roots}
-    simple_roots = _full_root_orbit(root_rows, isometries)
+    simple_roots = _full_root_orbit(lattice, root_rows, isometry_elements)
     return {
         "simple_root_rows": simple_roots,
         "vertices": tuple((item.generator, item.roots) for item in vertices),

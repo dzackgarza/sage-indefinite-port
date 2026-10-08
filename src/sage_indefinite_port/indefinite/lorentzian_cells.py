@@ -9,13 +9,16 @@ from functools import cache, cached_property
 from math import gcd
 from typing import Literal, TypedDict
 
-from dzack_research.preamble.all import ZZ, Lattices
+from dzack_research.preamble.all import ZZ, Cat, Lattices
+from dzack_research.preamble.categories.abstract_categories.products import FiniteOrdinalCategory
 from dzack_research.preamble.categories.definite_lattices import (
     _element_from_coordinates,
     _ExactCVPEngine,
 )
+from dzack_research.preamble.categories.group.g_sets import FiniteGSets
 from dzack_research.preamble.categories.lattice_engines import _rational_positive_vector
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods, LatticeIsometryMor
+from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
 from dzack_research.preamble.categories.rings.ring_foundation import _engine_element, _OwnedRingElement
 from sage.matrix.constructor import matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
@@ -29,210 +32,34 @@ from sage.rings.rational_field import QQ as SageQQ
 from sage.structure.element import RingElement
 from sage.structure.parent import Parent
 
-from sage_indefinite_port.backends.canonization import (
-    CellConfiguration,
-    _gram_matrix,
-)
-from sage_indefinite_port.backends.canonization import (
-    cell_stabilizer as configuration_stabilizer,
-)
-from sage_indefinite_port.backends.canonization import (
-    cell_transporter as configuration_transporter,
-)
-from sage_indefinite_port.backends.polyhedral import (
-    FacetIncidence,
-    _configuration_permutation,
-)
-from sage_indefinite_port.backends.polyhedral import (
-    facet_orbits as configuration_facet_orbits,
-)
-from sage_indefinite_port.groups.integral_structures import GeneratedSubgroup, IntegralStructureAction, RationalMatrixGroup
-from sage_indefinite_port.indefinite.eichler import EichlerOrbitCover, build_eichler_envelope
-from sage_indefinite_port.indefinite.isotropic_lifts import IsometryExtensionTorsor
-from sage_indefinite_port.indefinite.vector_sections import IsotropicVectorSection, NonIsotropicVectorSection, orthogonal_section
-from sage_indefinite_port.invariants import AttackProfile, VectorPrefilter
 from sage_indefinite_port.readiness import unfinished
 
 type PerfectMode = Literal["total", "isotropic"]
+type FacetIncidence = frozenset[int]
+
+ARROWS = Cat().Mor(FiniteOrdinalCategory(2), Lattices(ZZ))
+"""Ar(Lattices): a vector configuration S of L is the marked lattice (L, Z^S -> L)."""
 
 
-class IndefiniteOrthogonalAlgorithm:
-    def __init__(self) -> None:
-        self._lorentzian_complex_cache: dict[
-            Lattices.ParentMethods,
-            LorentzianPerfectComplex,
-        ] = {}
-
-    def attack_profile(self, lattice: Lattices.ParentMethods) -> AttackProfile:
-        return AttackProfile.from_lattice(lattice)
-
-    def orthogonal_group(self, lattice: Lattices.ParentMethods) -> LatticeIsometryMor | RationalMatrixGroup:
-        profile = self.attack_profile(lattice)
-        match profile.positive_index:
-            case 0:
-                from sage_indefinite_port.backends.definite import definite_orthogonal_group
-
-                return definite_orthogonal_group(profile.signed_view)
-            case 1:
-                if int(profile.signed_view.module_rank()) == 2:
-                    labels = tuple(profile.signed_view.module_generating_set())
-                    if len(labels) == 2:
-                        left = profile.signed_view.module_generator(labels[0])
-                        right = profile.signed_view.module_generator(labels[1])
-                        zero = profile.signed_view.base_ring().zero()
-                        if profile.signed_view.q(left) == zero and profile.signed_view.q(right) == zero and profile.signed_view.b(left, right) != zero:
-                            automorphisms = profile.signed_view.Aut()
-                            swap = automorphisms((right, left))
-                            negation = automorphisms((-left, -right))
-                            return RationalMatrixGroup(profile.signed_view, (swap, negation))
-                return LorentzianPerfectComplex(profile.signed_view, "total").full_orthogonal_group()
-            case _:
-                return self._higher_witt_orthogonal_group(profile.signed_view)
-
-    def _two_u_cover_model(self, lattice: Lattices.ParentMethods) -> EichlerOrbitCover:
-        if lattice.splits_two_hyperbolic_planes():
-            return EichlerOrbitCover(lattice.two_u_eichler_model_from_represented_biproduct())
-        envelope = build_eichler_envelope(lattice)
-        return EichlerOrbitCover(envelope.two_u_decomposition.lattice.two_u_eichler_model_from_represented_biproduct())
-
-    def _higher_witt_orthogonal_group(self, lattice: Lattices.ParentMethods) -> GeneratedSubgroup:
-        if lattice.splits_two_hyperbolic_planes():
-            model = self._two_u_cover_model(lattice)
-            vector = model.choose_splitting_vector()
-            approximate_family = model.subgroup()
-            approximate = tuple(approximate_family[label] for label in approximate_family.index_set())
-            stabilizer = self.vector_stabilizer(vector).generators()
-            transporters = []
-            for candidate in model.covering_representatives(vector.q(), primitive=vector.is_primitive()):
-                witness = self.vector_transporter(vector, candidate)
-                if witness is not None:
-                    transporters.append(witness)
-            generators = approximate + stabilizer + tuple(transporters)
-            return GeneratedSubgroup(RationalMatrixGroup(lattice, generators), generators)
-
-        envelope = build_eichler_envelope(lattice)
-        envelope_group = self._higher_witt_orthogonal_group(envelope.envelope)
-        rational_envelope = envelope.integral_action.rational_group().rational_lattice()
-        fraction_map = lattice.base_ring().fraction_field_map()
-        rational_automorphisms = rational_envelope.Aut()
-        rational_generators = tuple(rational_automorphisms(generator.base_change(fraction_map)) for generator in envelope_group.generators())
-        rational_group = RationalMatrixGroup(rational_envelope, rational_generators)
-        action = IntegralStructureAction(rational_group, envelope.inclusion)
-        integral = action.lattice_stabilizer()
-        lifted = []
-        for generator in integral.generators():
-            images = tuple(envelope.lattice_to_envelope.lift(generator(envelope.lattice_to_envelope(source_generator))) for source_generator in lattice.module_generators())
-            lifted.append(lattice.Aut()(images))
-        generators = tuple(lifted)
-        return GeneratedSubgroup(RationalMatrixGroup(lattice, generators), generators)
-
-    def isometry(self, source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
-        if self.attack_profile(source).positive_index != self.attack_profile(target).positive_index:
-            return None
-        if source.is_definite() and target.is_definite():
-            from sage_indefinite_port.backends.definite import definite_isometry
-
-            return definite_isometry(source, target)
-        source_profile = self.attack_profile(source)
-        target_profile = self.attack_profile(target)
-        if source_profile.positive_index == 1 and target_profile.positive_index == 1:
-            signed_source = source_profile.signed_view
-            signed_target = target_profile.signed_view
-            source_complex = self._lorentzian_complex_cache.get(signed_source)
-            if source_complex is None:
-                source_complex = LorentzianPerfectComplex(signed_source, "total")
-                self._lorentzian_complex_cache[signed_source] = source_complex
-            target_complex = self._lorentzian_complex_cache.get(signed_target)
-            if target_complex is None:
-                target_complex = LorentzianPerfectComplex(signed_target, "total")
-                self._lorentzian_complex_cache[signed_target] = target_complex
-            return source_complex.isometry_to(target_complex)
-        source_model = self._two_u_cover_model(source)
-        target_model = self._two_u_cover_model(target)
-        witness = source_model.model.isometry_to(target_model.model)
-        if witness is None:
-            return None
-        if witness.domain().gram_tensor() != source.gram_tensor() or witness.codomain().gram_tensor() != target.gram_tensor():
-            raise ArithmeticError("the 2U model isometry has the wrong represented endpoints")
-        return witness
-
-    def vector_stabilizer(self, vector: Lattices.ElementMethods) -> GeneratedSubgroup:
-        section = orthogonal_section(vector)
-        if not isinstance(section, NonIsotropicVectorSection):
-            raise NotImplementedError("the isotropic stabilizer branch lands with PHASE-T5")
-        reduced_group = self.orthogonal_group(section.reduced_object())
-        reduced_generators = reduced_group.generators() if isinstance(reduced_group, RationalMatrixGroup) else tuple(reduced_group.group_generators())
-        ambient = vector.parent()
-        lifted = []
-        for generator in reduced_generators:
-            torsor = section.rational_lift(generator, target=section)
-            if torsor.integral_parameters(ambient, ambient) is None:
-                raise ArithmeticError("a reduced stabilizer generator has no integral ambient lift")
-            lifted.append(torsor.one_integral_extension())
-        generators = tuple(lifted)
-        if any(generator(vector) != vector for generator in generators):
-            raise ArithmeticError("a lifted vector-stabilizer generator does not fix the selected vector")
-        supergroup = RationalMatrixGroup(ambient, generators)
-        return GeneratedSubgroup(supergroup, generators)
-
-    def vector_transporter(self, source_vector: Lattices.ElementMethods, target_vector: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
-        if VectorPrefilter.from_vector(source_vector) != VectorPrefilter.from_vector(target_vector):
-            return None
-        source_section = orthogonal_section(source_vector)
-        target_section = orthogonal_section(target_vector)
-        match source_section, target_section:
-            case NonIsotropicVectorSection(), NonIsotropicVectorSection():
-
-                def rational_lift(candidate: LatticeIsometryMethods) -> IsometryExtensionTorsor:
-                    return source_section.rational_lift(candidate, target=target_section)
-
-            case IsotropicVectorSection(), IsotropicVectorSection():
-
-                def rational_lift(candidate: LatticeIsometryMethods) -> IsometryExtensionTorsor:
-                    return source_section.rational_lift(candidate, target=target_section)
-
-            case _:
-                return None
-        reduced_source = source_section.reduced_object()
-        reduced_target = target_section.reduced_object()
-        reduced_isometry = reduced_source.isometry_to(reduced_target)
-        if reduced_isometry is None:
-            return None
-        source = source_vector.parent()
-        target = target_vector.parent()
-        candidates = [reduced_isometry]
-        if reduced_target.is_definite():
-            for automorphism in reduced_target.O():
-                candidates.append(automorphism * reduced_isometry)
-        for candidate in candidates:
-            torsor = rational_lift(candidate)
-            if torsor.integral_parameters(source, target) is None:
-                continue
-            witness = torsor.one_integral_extension()
-            if witness(source_vector) != target_vector:
-                raise ArithmeticError("an integral vector transporter does not carry the selected source vector to the target")
-            return witness
-        return None
+def lorentzian_orthogonal_group_generators(lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
+    r"""Generators of O(L) for L of signature (1, n) or (n, 1): O^Omega(L) from the perfect-domain traversal, and -1."""
+    if int(lattice.module_rank()) == 2:
+        left, right = tuple(lattice.module_generators())
+        zero = lattice.base_ring().zero()
+        if lattice.q(left) == zero and lattice.q(right) == zero:
+            automorphisms = lattice.Aut()
+            return (automorphisms((right, left)), automorphisms((-left, -right)))
+    return LorentzianPerfectComplex(lattice, "total").full_orthogonal_group_generators()
 
 
-class TraversalObjectRecord(TypedDict):
-    EXT: list[list[int]]
-    GRP: list[list[int]]
+def lorentzian_isometry(source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
+    r"""An isometry between two lattices of signature (1, n) or (n, 1), found by matching perfect cells, or None."""
+    return LorentzianPerfectComplex(source, "total").isometry_to(LorentzianPerfectComplex(target, "total"))
 
 
-class TraversalAdjacencyData(TypedDict):
-    eInc: list[int]
-    eBigMat: list[list[int]]
-
-
-class TraversalAdjacencyRecord(TypedDict):
-    iOrb: int
-    x: TraversalAdjacencyData
-
-
-class TraversalRecord(TypedDict):
-    x: TraversalObjectRecord
-    ListAdj: list[TraversalAdjacencyRecord]
+def _gram_matrix(lattice: Lattices.ParentMethods) -> Matrix_integer_dense:
+    generators = tuple(lattice.module_generators())
+    return matrix(SageZZ, [[int(lattice.b(left, right)) for right in generators] for left in generators])
 
 
 @dataclass(frozen=True)
@@ -255,8 +82,9 @@ class LorentzianPerfectCell:
         if self.mode == "total" and any(normalized_sign * square < 0 for square in squares):
             raise ValueError("a total perfect cell may contain only nonnegative normalized-norm vectors")
 
-    def configuration(self) -> CellConfiguration:
-        return CellConfiguration(self.lattice, self.vector_configuration)
+    def configuration(self) -> Parent:
+        r"""The marked lattice (L, Z^S -> L) of the cell's vectors, an object of Ar(Lattices)."""
+        return self.lattice.vector_configuration(list(self.vector_configuration))
 
 
 @dataclass(frozen=True)
@@ -304,11 +132,22 @@ class LorentzianPerfectLocalBackend:
         return LorentzianPerfectCell(lattice, vectors, mode)
 
     @cache
-    def cell_stabilizer(self, cell: LorentzianPerfectCell) -> RationalMatrixGroup:
-        return configuration_stabilizer(cell.configuration())
+    def cell_stabilizer(self, cell: LorentzianPerfectCell) -> tuple[LatticeIsometryMethods, ...]:
+        r"""Generators of Aut((L, S)) for the cell's vector configuration S."""
+        configuration = cell.configuration()
+        return tuple(automorphism.forward().right() for automorphism in ARROWS.Core().Mor(configuration, configuration).group_generators())
 
     def facet_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[FacetIncidence, ...], ...]:
-        return configuration_facet_orbits(cell.configuration(), self.cell_stabilizer(cell))
+        r"""The orbits of Aut((L, S)) on the facets of the cone spanned by S, as incidence sets."""
+        vectors = cell.vector_configuration
+        cone = RationalPolyhedralCones(cell.lattice).from_rays(vectors)
+        facets = tuple(frozenset(position for position, item in enumerate(vectors) if cone.evaluate_covector(covector, item) == 0) for covector in cone.facet_covectors())
+
+        def act(isometry: LatticeIsometryMethods, facet: FacetIncidence) -> FacetIncidence:
+            return frozenset(vectors.index(isometry(vectors[position])) for position in facet)
+
+        stabilizer = cell.lattice.O().subgroup(self.cell_stabilizer(cell))
+        return tuple(tuple(orbit) for orbit in FiniteGSets(stabilizer)(facets, act).orbits())
 
     def flip_across(self, cell: LorentzianPerfectCell, facet: FacetIncidence) -> LorentzianPerfectCell:
         normalized = _normalized_lattice(cell.lattice)
@@ -349,9 +188,13 @@ class LorentzianPerfectLocalBackend:
         return LorentzianPerfectCell(cell.lattice, returned, cell.mode)
 
     def cell_transporter(self, source: LorentzianPerfectCell, target: LorentzianPerfectCell) -> LatticeIsometryMethods | None:
+        r"""An element of Isom((L, S), (L, T)) for the cells' configurations, or None."""
         if source.mode != target.mode:
+            raise ValueError(f"cells of modes {source.mode!r} and {target.mode!r} are never isometric: compare cells of one traversal")
+        isomorphisms = ARROWS.Core().Mor(source.configuration(), target.configuration())
+        if isomorphisms.is_empty():
             return None
-        return configuration_transporter(source.configuration(), target.configuration())
+        return isomorphisms.an_element().forward().right()
 
 
 class LorentzianPerfectComplex:
@@ -472,54 +315,18 @@ class LorentzianPerfectComplex:
     def adjacencies(self) -> tuple[LorentzianCellAdjacency, ...]:
         return self._traversal[1]
 
-    def component_preserving_group(self) -> RationalMatrixGroup:
+    def component_preserving_generators(self) -> tuple[LatticeIsometryMethods, ...]:
+        r"""Generators of O^Omega(L): the cells' automorphism groups and the side pairings."""
         generators: list[LatticeIsometryMethods] = []
         for cell in self.quotient_cells():
-            generators.extend(self.local_backend().cell_stabilizer(cell).generators())
+            generators.extend(self.local_backend().cell_stabilizer(cell))
         generators.extend(adjacency.transporter for adjacency in self.adjacencies() if adjacency.transporter is not None)
-        return RationalMatrixGroup(self.lattice(), tuple(generators))
+        return tuple(generators)
 
-    def full_orthogonal_group(self) -> RationalMatrixGroup:
-        component = self.component_preserving_group()
+    def full_orthogonal_group_generators(self) -> tuple[LatticeIsometryMethods, ...]:
+        r"""Generators of O(L) = O^Omega(L) x {±1}."""
         negation = self.lattice().Aut()({label: -self.lattice().module_generator(label) for label in self.lattice().module_generating_set()})
-        return RationalMatrixGroup(self.lattice(), component.generators() + (negation,))
-
-    def records(self) -> tuple[TraversalRecord, ...]:
-        cells = self.quotient_cells()
-        positions = {id(cell): position for position, cell in enumerate(cells)}
-        by_source: dict[int, list[TraversalAdjacencyRecord]] = {position: [] for position in range(len(cells))}
-        for adjacency in self.adjacencies():
-            source_position = positions[id(adjacency.source)]
-            target_position = positions[id(adjacency.target)]
-            transporter = adjacency.transporter
-            if transporter is None:
-                raise ArithmeticError("a completed quotient adjacency has no transporter")
-            row_action = self.lattice().Aut()._row_action_matrix(transporter)
-            incidence = [int(position in adjacency.facet) for position in range(len(adjacency.source.vector_configuration))]
-            by_source[source_position].append(
-                {
-                    "iOrb": target_position,
-                    "x": {
-                        "eInc": incidence,
-                        "eBigMat": [[int(entry) for entry in row] for row in row_action.rows()],
-                    },
-                }
-            )
-        records: list[TraversalRecord] = []
-        for position, cell in enumerate(cells):
-            configuration = cell.configuration()
-            stabilizer = self.local_backend().cell_stabilizer(cell)
-            permutations = [list(_configuration_permutation(configuration, generator)) for generator in stabilizer.generators()]
-            records.append(
-                {
-                    "x": {
-                        "EXT": [[int(entry) for entry in _coordinate_row(self.lattice(), vector, SageZZ)] for vector in cell.vector_configuration],
-                        "GRP": permutations,
-                    },
-                    "ListAdj": by_source[position],
-                }
-            )
-        return tuple(records)
+        return self.component_preserving_generators() + (negation,)
 
 
 def _perfect_form_hash_key(
@@ -569,30 +376,13 @@ class MarkedCellOrbitAlgorithm:
 
     def local_stabilizer_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[Lattices.ElementMethods, ...], ...]:
         marks = self.local_marks(cell)
-        stabilizer = self.complex().local_backend().cell_stabilizer(cell)
-        generators = stabilizer.generators_and_inverses()
-        unseen = set(range(len(marks)))
-        orbits: list[tuple[Lattices.ElementMethods, ...]] = []
-        while unseen:
-            start = min(unseen)
-            pending = [start]
-            orbit_positions: set[int] = set()
-            while pending:
-                position = pending.pop()
-                if position in orbit_positions:
-                    continue
-                orbit_positions.add(position)
-                unseen.discard(position)
-                mark = marks[position]
-                for generator in generators:
-                    moved = generator(mark)
-                    matches = [index for index, candidate in enumerate(marks) if candidate == moved]
-                    if len(matches) != 1:
-                        raise ArithmeticError("a cell stabilizer does not permute the isotropic local marks")
-                    if matches[0] not in orbit_positions:
-                        pending.append(matches[0])
-            orbits.append(tuple(marks[index] for index in sorted(orbit_positions)))
-        return tuple(orbits)
+        stabilizer = cell.lattice.O().subgroup(self.complex().local_backend().cell_stabilizer(cell))
+        positions = tuple(range(len(marks)))
+
+        def act(isometry: LatticeIsometryMethods, position: int) -> int:
+            return marks.index(isometry(marks[position]))
+
+        return tuple(tuple(marks[position] for position in sorted(orbit)) for orbit in FiniteGSets(stabilizer)(positions, act).orbits())
 
     def transport_marks(self, adjacency: LorentzianCellAdjacency) -> tuple[tuple[Lattices.ElementMethods, Lattices.ElementMethods], ...]:
         transporter = adjacency.transporter
