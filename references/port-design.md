@@ -17,14 +17,21 @@ Where the port already implements an [R] step, that code migrates upstream into 
 Notation: `L` a nondegenerate integral lattice, `G = L.O()`, `A_L` its discriminant form, `q(v) = b(v, v)`.
 
 Marked lattices.
-Every orbit, stabilizer and equivalence question here is about isomorphisms in a category of marked lattices, built from the preamble's diagram categories [P]. A marking is a diagram of lattice morphisms ending at L, and an isomorphism of marked lattices is a natural isomorphism of diagrams: a commutative diagram whose components are isometries. Which components may vary decides the category:
+Every orbit, stabilizer and equivalence question here is about isomorphisms in a category of marked lattices, built from the preamble's diagram categories [P]. A marking is a diagram of lattice morphisms ending at L, and an isomorphism of marked lattices is a natural isomorphism of diagrams: a commutative diagram whose components are isometries.
+Which components may vary decides the category:
 
 - a vector v with q(v) = n is a morphism ι: ⟨n⟩ → L. Isometries (L, ι) → (M, κ) satisfy g ∘ ι = κ exactly, so these are objects of the coslice category ⟨n⟩/Lattices (`CosliceCategory(Lattices(ZZ), ⟨n⟩)`), and Aut((L, ι)) is the group of isometries of L fixing v;
-- a sublattice I is an embedding ι: I ↪ L, an object of the arrow category Ar(Lattices) = Fun([1], Lattices) (`Cat().Mor(FiniteOrdinalCategory(2), Lattices(ZZ))`) restricted to monomorphisms. Its isomorphisms are squares (α, g) with g ∘ ι = κ ∘ α and α ∈ Isom(I, J), so (L, I) ≅ (M, J) exactly when some isometry carries I onto J; Aut((L, ι)) is the setwise stabilizer of I;
+
+- a sublattice I is an embedding ι: I ↪ L, an object of the arrow category Ar(Lattices) = Fun([1], Lattices) (`Cat().Mor(FiniteOrdinalCategory(2), Lattices(ZZ))`) restricted to monomorphisms.
+  Its isomorphisms are squares (α, g) with g ∘ ι = κ ∘ α and α ∈ Isom(I, J), so (L, I) ≅ (M, J) exactly when some isometry carries I onto J; Aut((L, ι)) is the setwise stabilizer of I;
+
 - a finite vector configuration S is a morphism ι from the lattice on Z^S with Gram matrix (b(s, s')), with α restricted to automorphisms of that lattice preserving the colour classes, so g(S) = T as coloured sets;
+
 - a flag I_1 ⊂ I_2 ⊂ L is a chain of embeddings, an object of Fun([2], Lattices) (`Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))`); its isomorphisms are natural isomorphisms of chains.
 
-Deciding whether two marked lattices are isometric means deciding whether the core homset between them (`Core().Mor`) is empty, and producing an element when it is not. "Orbits of vectors of norm n under O(L)" are the isomorphism classes of pointed lattices (L, ⟨n⟩ → L) with L fixed; "orbits of isotropic planes" are those of marked sublattices. The homsets of these categories, with their computations, are research#403; the port supplies the computation for indefinite L.
+Deciding whether two marked lattices are isometric means deciding whether the core homset between them (`Core().Mor`) is empty, and producing an element when it is not.
+"Orbits of vectors of norm n under O(L)" are the isomorphism classes of pointed lattices (L, ⟨n⟩ → L) with L fixed; "orbits of isotropic planes" are those of marked sublattices.
+The homsets of these categories, with their computations, are research#403; the port supplies the computation for indefinite L.
 
 ## What the port owns
 
