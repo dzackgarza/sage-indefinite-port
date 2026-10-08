@@ -1,7 +1,6 @@
-"""Indefinite integral lattices: isometries, orthogonal groups, isotropic orbits.
+"""Indefinite integral lattices: the algorithm glue of Dutour Sikirić's methods.
 
-Algorithms are built on the formed-lattice category of ``dzack_research.preamble``
-and delegate finite group theory to libGAP and polyhedral geometry to Sage.
+The port composes the research preamble's general operations into the Lorentzian
+perfect-domain traversal, Allcock's edgewalk, the Eichler recursion and the isotropic
+induction (references/port-design.md). General mathematics lives in the preamble.
 """
-
-__version__ = "0.1.0"

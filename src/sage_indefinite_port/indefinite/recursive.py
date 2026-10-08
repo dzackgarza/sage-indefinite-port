@@ -292,10 +292,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
 
     def orthogonal_group(self, lattice: Lattices.ParentMethods) -> GeneratedSubgroup:
         if lattice.is_definite():
-            from sage_indefinite_port.backends.definite import definite_orthogonal_group
-
-            group = definite_orthogonal_group(lattice)
-            generators = self._selected_generators(group)
+            generators = tuple(lattice.O().group_generators())
             if generators and generators[0].domain() is not lattice:
                 generators = tuple(self._retarget_isometry(generator, lattice, lattice) for generator in generators)
             return GeneratedSubgroup(RationalMatrixGroup(lattice, generators), generators)
