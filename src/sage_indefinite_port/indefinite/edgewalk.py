@@ -166,7 +166,7 @@ def _corner_from_roots(gram: Matrix_integer_dense, roots: _Roots) -> _Vertex | N
 
 def _initial_vertex(lattice: HyperbolicLattices.ParentMethods, gram: Matrix_integer_dense) -> _Vertex:
     for bound in (8, 16, 32, 64, 128):
-        _complete, roots = lattice._vinberg_search(None, bound, max(256, 8 * bound))
+        roots = lattice.vinberg_simple_roots(max_roots=bound, max_decompositions=max(256, 8 * bound))
         rows = tuple(_row_of_element(lattice, root) for root in roots)
         corner = _corner_from_roots(gram, rows)
         if corner is not None:
@@ -548,8 +548,8 @@ def _vertex_configuration(
 
 
 def _matrix_rows(lattice: HyperbolicLattices.ParentMethods, isometry: LatticeIsometryMethods) -> _Roots:
-    action = lattice.Aut()._row_action_matrix(isometry)
-    return tuple(tuple(int(entry) for entry in row) for row in action.rows())
+    r"""Row i is the coordinate row of the image of the i-th basis vector."""
+    return tuple(_row_of_element(lattice, isometry(generator)) for generator in lattice.module_generators())
 
 
 def _update_finiteness(gram: Matrix_integer_dense, invariant_basis: Matrix_rational_dense, generator_rows: _Roots) -> Matrix_rational_dense | None:
