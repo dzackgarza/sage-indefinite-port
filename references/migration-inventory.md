@@ -17,10 +17,7 @@ Paths: port paths are relative to `src/sage_indefinite_port/`; preamble paths ar
 
 ## Cross-cutting decisions and findings
 
-- **One owner for O(L) = ⟨A, Stab(v), t_i⟩.** The assembly exists three times: `recursive.py:321-334`, `lorentzian_cells.py:98-127` (dead), and research's `TwoUEichlerModel.full_generating_data` (`eichler_criterion.py:976-1062`). Research's copy obtains Stab(v) and t_i from the port's entry points.
-  Per the design, the assembly is the Eichler recursion [I] and stays in the port.
-  Research's `full_generating_data`, `covering_orbit_data` and `recursive_stabilizer_data` stop duplicating it and call the port's O(L) (research#393).
-
+- **Ownership boundary.** Research holds mathematical operations of general use, stated in standard terms. The port holds the algorithm glue that composes them as Dutour Sikirić's code and papers specify: approximate models, covering lists, the generation step O(L) = ⟨A, Stab(v), t_i⟩ (if A-translates of finitely many r_i = t_i(v) cover G·v, then G = ⟨A, Stab_G(v), t_i⟩), envelopes, prefilters and traversal bookkeeping. Glue that crossed into research moves to the port: `TwoUFullGeneratingDatum`, `full_generating_data`, `covering_orbit_data` and `recursive_stabilizer_data` (`eichler_criterion.py:197-261, 870-1062`), and further items an audit of research identifies.
 - **The circular imports end with the migration.** Research imports the port at `rational_integral_stabilizers.py:122` (integral structures, research#394) and `lattices.py:5135` (pointwise kernel, research#398). Both bodies move to research.
 
 - **The preamble's subgroup carriers stay; the port's capability moves into them.** The port's `RationalMatrixGroup`, `ArithmeticSubgroup`, `GeneratedSubgroup` and the shells of its `*Subgroup` classes duplicate `Groups.subgroup` / `GeneratedSubgroups` (`group/groups.py:3105, 3922`) and `PredicateSubgroups` (`group/predicate_subgroups.py`). The new capability migrates into the preamble's classes as generator resolutions (research#396): Schreier generators through a finite permutation image, word lifting, finite-index `index`, orbit with transversal, and cosets and double cosets in infinite groups.
@@ -107,10 +104,10 @@ Paths: port paths are relative to `src/sage_indefinite_port/`; preamble paths ar
 | `polyhedral._configuration_permutation` (68) | MIGRATE | research#399 action of isometries on a configuration | private `_row_action_matrix` |
 | `definite.definite_orthogonal_group` (12), `definite.definite_isometry` (21) | REPLACE | `L.O()`, `source.Isom(target).an_element()` | wrappers |
 | `groupoid_cache.IsometryGroupoidCache` (16-82) | DROP (unused); the operation migrates | research#397: transporting group generators along an isometry | conflates "unknown" with "non-isometric" |
-| `invariants.LatticePrefilter`, `lattice_prefilter` (23, 33) | MIGRATE | research#401 `isometry_prefilter()` (genus asserts even, so it does not replace this for odd lattices) | private `_engine_element`, `_engine_component_matrix` |
+| `invariants.LatticePrefilter`, `lattice_prefilter` (23, 33) | KEEP-I | bucketing for the port's deduplication, composed of research invariants: genus [P] where it applies, otherwise signature, parity and discriminant form [P] | private `_engine_element`, `_engine_component_matrix` → public invariants |
 | `invariants.AttackProfile` (52), `from_lattice` | KEEP-I | sign normalization | `positive_index` holds min(n+, n−) |
 | `invariants.vector_content` (71) | MIGRATE | research#401 `Element.content()` | duplicated at 97-100 |
-| `invariants.VectorPrefilter` (79), `from_vector` | MIGRATE | research#401, composed from `q`, `div`, `content`, `divided_discriminant_class`, `isotropic_reduction` | the orbit-key defect above; boolean mode flag; `repr` keys |
+| `invariants.VectorPrefilter` (79), `from_vector` | KEEP-I | bucketing for vector deduplication, composed of `q`, `div`, `divided_discriminant_class`, `isotropic_reduction` [P] and `content` (research#401) | the orbit-key defect above; boolean mode flag; `repr` keys |
 | `presentations.ReducedLatticePresentation` (13), `from_lattice` | DROP | preamble `LatticeReduction`; indefinite reduction is research#400 | raises on indefinite input |
 | `isotropic_reductions` (FlagType re-export), `recursive_provider` (all), `groups/__init__`, `indefinite/__init__` re-exports, `__init__.__version__` | DROP | unused facades, raw-Gram adapters and re-exports | `__version__` duplicates pyproject; package docstring claims libGAP delegation |
 | `readiness` (all) | KEEP | process infrastructure | — |
@@ -128,7 +125,7 @@ Paths: port paths are relative to `src/sage_indefinite_port/`; preamble paths ar
 | `.cell_stabilizer` (306), `.cell_transporter` (351), `.facet_orbits` (310) | REPLACE | research#399 stabilizer and transporter; cone facets [P] plus orbits on a finite set [P]/research#396 | `@cache` keeps cells alive |
 | `LorentzianPerfectComplex` (357) and traversal methods, `.isometry_to` | KEEP-I | — | fail-open mode mismatch; optional `local_backend` fallback |
 | `.component_preserving_group` (475), `.full_orthogonal_group` (482) | KEEP-I collection | research#400 generated subgroup | — |
-| `_perfect_form_hash_key` (525) | MIGRATE | research#399 pairing invariant of a configuration | — |
+| `_perfect_form_hash_key` (525) | KEEP-I | upstream `f_hash` bucketing, computed with `L.b` [P] | raw Gram rows |
 | `perfect_domain_traversal` (543) | KEEP-I entry point | frozen: `(L, mode) -> LorentzianPerfectDomainTraversal` | contract mismatch (defects table) |
 | `NoLocalMarkTheoremError` (549), `MarkedCellOrbitAlgorithm` (553) with `.local_marks`, `.transport_marks`, `.global_orbits` | KEEP-I | — | no caller or test yet |
 | `MarkedCellOrbitAlgorithm.local_stabilizer_orbits` (568) | REPLACE | orbits on a finite set [P] | hand-written search |
@@ -147,7 +144,7 @@ Paths: port paths are relative to `src/sage_indefinite_port/`; preamble paths ar
 | `IndefiniteOrthogonalAlgorithm.__init__` (49) | KEEP-I | `cached_method` on objects instead of `id()`-keyed caches | caches live for one call |
 | `._section` (107) | DROP cache; section MIGRATES | research#401 | — |
 | `._lattice_prefilter` (118) | REPLACE | genus comparison [P]; the migrated `isometry_prefilter` for odd lattices | — |
-| `._orbit_cover_model` (129) | KEEP-I | `TwoUEichlerModel` [P]; envelope research#401/#396 | — |
+| `._orbit_cover_model` (129) | KEEP-I | the port's `OrbitCoverModel` | — |
 | `._simple_indefinite_reduction_data` (141), `._simple_indefinite_reduction` (224) | MIGRATE / REPLACE | research#400 `indefinite_reduction() -> LatticeReduction` | private `_engine_component_matrix`; `id()` caches |
 | `._retarget_isometry` (245) | REPLACE + MIGRATE | `twist_functor(-1)` (`lattices.py:635`), `base_change` (`lattice_morphisms.py:598`); QQ→ZZ descent → research#401 | integrality signalled by exceptions |
 | `._selected_generators` (288) | REPLACE | `group_generators()` | type-sniffing |
@@ -165,14 +162,14 @@ Paths: port paths are relative to `src/sage_indefinite_port/`; preamble paths ar
 | Symbol | Disposition | Destination or replacement | Adaptations and defects |
 | --- | --- | --- | --- |
 | `eichler.OrbitCover` (36) | REPLACE | `finite_indexed_family` from `covering_vector_representatives` | — |
-| `OrbitCoverModel` (48): `.from_lattice`, `.lattice`, `._subgroup_column_matrices`, `.subgroup`, `.covering_representatives` | REPLACE (2U case) + MIGRATE (envelope) | `TwoUEichlerModel` [P] (`eichler_criterion.py:305, 512, 640, 664`); envelope research#401; A_L and cosets research#396; restriction research#397 | the isotropic coverage gap; private API |
+| `OrbitCoverModel` (48): `.from_lattice`, `.lattice`, `._subgroup_column_matrices`, `.subgroup`, `.covering_representatives` | KEEP-I | the approximate model of the recursion (map §9), composed of research primitives: SL₂(Z)×SL₂(Z) on U⊕U, Eichler transvections, O(K), discriminant classes, Eichler's criterion; A_L and its cosets through research#396, restriction through research#397. Research's `TwoUEichlerModel` approximate-model and covering parts are themselves algorithm glue and move here (audit pending) | the isotropic coverage gap; private API |
 | `.one_representative`, `.refined_by`, `EichlerOrbitCover.one_representative` | DROP | unused | — |
 | `.choose_splitting_vector` (181, 376) | KEEP-I (one copy) | a real recursive-complexity score per the design | bounded search |
 | `TwoHyperbolicPlaneDecomposition` (214) | REPLACE | the `TwoUEichlerModel` accessors (`:325, 334, 337`) | — |
-| `EichlerEnvelope` (236), `build_eichler_envelope` (399), `.similarity_scale` | MIGRATE | research#401 `L.two_u_envelope()` returning a similarity morphism | a similarity embedding, not an overlattice (the design text is corrected) |
+| `EichlerEnvelope` (236), `build_eichler_envelope` (399), `.similarity_scale` | KEEP-I | Dutour Sikirić's hyperplane-basis step (`GetEichlerHyperplaneBasis`), composed of research primitives: isotropic vector with witness and hyperbolic partner (research#401), orthogonal complement and similarity morphisms [P] | a similarity embedding, not an overlattice; raw matrices → preamble objects |
 | `EichlerEnvelope._embedding_matrix`, `._embedding_inverse`, `.pullback_element`, `._pullback_coordinate_row`, `.pullback_isometry`, `.stabilizer_of_original_lattice`, `.right_cosets` | DROP / REPLACE | `lift` / `is_in_image` (`module_morphisms.py:1236, 1255`); research#397, #396 | unused |
 | `EichlerOrbitCover` (341): `.lattice`, `.subgroup`, `.covering_representatives` (primitive) | REPLACE | `TwoUEichlerModel` `lattice()`, `approximate_generating_family()`, `covering_vector_representatives` | — |
-| `EichlerOrbitCover.covering_representatives` (non-primitive), `square_divisors` (512), `InfiniteLocusError` (31) | MIGRATE | `TwoUEichlerModel.covering_vector_representatives_by_content(square)` | boolean mode flag |
+| `EichlerOrbitCover.covering_representatives` (non-primitive), `square_divisors` (512), `InfiniteLocusError` (31) | KEEP-I | the cover of non-primitive vectors as multiples c·w of primitive covers at norm n/c², part of the recursion | boolean mode flag → two functions |
 | `eichler_transvection` (495) | DROP | `lattices.py:3269` | stricter (requires even) |
 | `find_hyperbolic_pair` (520) | MIGRATE (witness) + REPLACE (partner) | research#401 `isotropic_vector_witness()`, `hyperbolic_partner()`; `rational_witt_decomposition` | bounded search; non-minimal pairing; dead parameters |
 | `vector_sections` `NonIsotropicLiftContext`, `IsotropicLiftContext`, `.reduced_object`, `._rational_lift_context`, `VectorOrthogonalSection`, `orthogonal_section` | DROP / REPLACE | `v.orthogonal_complement()` (`lattices.py:4198`), `v.isotropic_reduction()` (`:4206`) | — |
