@@ -149,47 +149,6 @@ def _underlying_coordinates(
     )
 
 
-def _span_embedding(
-    space: RestrictedScalarsModules.ParentMethods,
-    elements: Iterable[RestrictedScalarsModules.ElementMethods],
-) -> ModuleEmbeddingMethods:
-    """Return the exact ``ZZ``-span of finitely many elements of ``Res(V)``."""
-    elements = tuple(elements)
-    match elements:
-        case ():
-            raise ValueError("an integral lattice span requires at least one generator")
-        case _:
-            pass
-
-    rows = tuple(_underlying_coordinates(space, element) for element in elements)
-    denominator = SageZZ.one()
-    for row in rows:
-        for entry in row:
-            denominator = denominator.lcm(entry.denominator())
-    integral_rows = tuple(tuple(SageZZ(denominator * entry) for entry in row) for row in rows)
-    integer_span = matrix(SageZZ, integral_rows).row_module()
-    basis = integer_span.basis_matrix()
-
-    ambient = space.module_over_extension()
-    ambient_labels = tuple(ambient.module_generating_set())
-    domain = ZZ.free_module(basis.nrows())
-
-    def image(position: int) -> RestrictedScalarsModules.ElementMethods:
-        row = basis[int(position)]
-        coefficients = {}
-        for column, label in enumerate(ambient_labels):
-            match row[column] == 0:
-                case True:
-                    pass
-                case False:
-                    coefficients[label] = ambient.base_ring()(int(row[column])) / ambient.base_ring()(int(denominator))
-        return space.wrap(ambient.linear_combination(coefficients))
-
-    return domain.Mono(space)(
-        {label: image(label) for label in domain.module_generating_set()},
-    )
-
-
 class ArithmeticSubgroup(RationalMatrixGroup):
     """A generated arithmetic subgroup retaining its ambient rational group."""
 
@@ -1186,7 +1145,7 @@ class IntegralStructureAction(SageObject):
                                         case False:
                                             coefficients[label] = ambient.base_ring()(int(entry.numerator())) / ambient.base_ring()(int(entry.denominator()))
                                 elements.append(space.wrap(ambient.linear_combination(coefficients)))
-                            return _span_embedding(space, elements)
+                            return space.subobject_on(elements).inclusion()
                 case False:
                     pass
 
