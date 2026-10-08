@@ -21,7 +21,7 @@ Paths: port paths are relative to `src/sage_indefinite_port/`; preamble paths ar
   The port holds the algorithm glue that composes them as Dutour Sikirić's code and papers specify: approximate models, covering lists, the generation step O(L) = ⟨A, Stab(v), t_i⟩ (if A-translates of finitely many r_i = t_i(v) cover G·v, then G = ⟨A, Stab_G(v), t_i⟩), envelopes, prefilters and traversal bookkeeping.
   Glue that crossed into research moves to the port: `TwoUFullGeneratingDatum`, `full_generating_data`, `covering_orbit_data` and `recursive_stabilizer_data` (`eichler_criterion.py:197-261, 870-1062`), and the further items listed in dzackgarza/research#404 (the approximate-model framing, base-changed approximate actions, the Lorentzian traversal record classes and the decoding of the port's records).
 
-- **The circular imports end with the migration.** Research imports the port at `rational_integral_stabilizers.py:122` (integral structures, research#394) and `lattices.py:5135` (pointwise kernel, research#398). Both bodies move to research.
+- **The circular imports end with the migration.** Research imports the port at `rational_integral_stabilizers.py:122` (integral structures, research#396) and `lattices.py:5135` (pointwise kernel, research#398). Both bodies move to research.
 
 - **The preamble's subgroup carriers stay; the port's capability moves into them.** The port's `RationalMatrixGroup`, `ArithmeticSubgroup`, `GeneratedSubgroup` and the shells of its `*Subgroup` classes duplicate `Groups.subgroup` / `GeneratedSubgroups` (`group/groups.py:3105, 3922`) and `PredicateSubgroups` (`group/predicate_subgroups.py`). The new capability migrates into the preamble's classes as generator resolutions (research#396): Schreier generators through a finite permutation image, word lifting, finite-index `index`, orbit with transversal, and cosets and double cosets in infinite groups.
   Prerequisite (research#400): the generated-subgroup engine must carry rational, non-integral isometries; `_from_backend_row_action` coerces coefficients to ZZ (`lattice_morphisms.py:1772`).
@@ -50,7 +50,7 @@ Paths: port paths are relative to `src/sage_indefinite_port/`; preamble paths ar
 | `presentations.py` `ReducedLatticePresentation` | Calls `lll_reduction`, which raises on every indefinite lattice. | drop | read |
 | `lorentzian_cells.py:921-929, 891-918, 958-1000, 1017-1069` | Unbounded `while True` loops: `_search_initial_vectors` doubles forever on an anisotropic lattice in isotropic mode; `_find_positive_vectors` has no stop when `scaled_max ≤ 0`; `_upper_bound` doubles unboundedly. | #15 | inference |
 | `lorentzian_cells.py:77-87` | The rank-2 U special case depends on the basis: it fires only when both basis vectors are isotropic. | #15 | inference |
-| `lorentzian_cells.py:543` `perfect_domain_traversal` | Takes Gram rows and returns records; the frozen test passes a lattice and reads `.cells()`; research passes negated rows. | #15, research#393 | read |
+| `lorentzian_cells.py:543` `perfect_domain_traversal` | Takes Gram rows and returns records; the frozen test passes a lattice and reads `.cells()`; research passes negated rows. | #15, research#403 | read |
 | `edgewalk.py` `_edge_directions` (517), `_isotropic_next_vertex` (486), `_edge_step` (504), `_corner_from_roots` (130), `_class_action_order` (266) | Unhandled cases: non-simplicial cones at multi-component cusps; anisotropic edge planes should return non-reflective but raise; tied candidates dropped; unverified corner vertices; an arbitrary bound `max(12, 12N²)`. | #15 | inference |
 | `edgewalk.py:598-606` | The rank-2 branch reports reflective with one wall, against the preamble's treatment of signature (1,1). | #15 | read |
 | `edgewalk.py:91,125,594` | `int(entry)` truncates a rational entry silently. | #15 | inference |
@@ -66,7 +66,7 @@ Paths: port paths are relative to `src/sage_indefinite_port/`; preamble paths ar
 
 | Symbol | Disposition | Destination or replacement | Adaptations and defects |
 | --- | --- | --- | --- |
-| `RowLatticeKey`, `IntegralRows`, `RationalMatrixKey` (43-45) | MIGRATE (private) | research#394 module | — |
+| `RowLatticeKey`, `IntegralRows`, `RationalMatrixKey` (43-45) | MIGRATE (private) | research#396 module | — |
 | `RationalMatrixGroup` (48) and `__init__`, `rational_lattice`, `generators`, `generators_and_inverses`, `_repr_` | REPLACE | `V.Aut().subgroup(generators)` (`group/groups.py:3105`) → `GeneratedSubgroups` (`:3922`); `group_generators()`, `supergroup().domain()` | blocked until the engine carries QQ isometries (research#400); private `_isometry_from_column_matrix`, `_row_action_matrix` |
 | `RationalMatrixGroup._from_column_matrices` (72), `._generator_column_matrices` (107) | MIGRATE (private) | research#400 engine seam of `LatticeIsometryMor` | private `_engine_component_matrix`; used by `eichler.py:83,105,479` |
 | `_embedded_basis` (126) | DROP | private duplicate at `rational_integral_stabilizers.py:407` | — |
@@ -79,13 +79,13 @@ Paths: port paths are relative to `src/sage_indefinite_port/`; preamble paths ar
 | `._preimage_generators` (324), `._subgroup_index` (344) | MIGRATE (core capability) | research#396: generator resolution of `PreimageSubgroups` via `GroupMorphism.preimage_subgroup` (`groups.py:1945`); `index()` | no reduction of Schreier generators |
 | `FinitePreimageSubgroup` (367), `KernelSubgroup` (393), `StabilizerSubgroup` (414), `CentralizerSubgroup` (450), `IntersectionSubgroup` (484) and accessors | MIGRATE (generators) into the preamble shells | research#396: `PreimageSubgroups`, `KernelSubgroups`, `StabilizerSubgroups`, `CentralizerSubgroups`, `IntersectionSubgroups` (`predicate_subgroups.py:326-562`) gain generators | centralizer and intersection need a faithful finite image, so they cover finite G only; not used in src |
 | `RightCosetDecomposition` (525), `DoubleCosetIntersection` (554), `DoubleCosetDecomposition` (577) | MIGRATE | research#396: cosets and double cosets with a finite-index side (generalising `groups.py:3183-3210` and `orthogonal_quotients.py:257`) | representatives are left cosets g·G_L despite the name |
-| `FiniteIntegralRepresentation` (631) and `orbit`, `orbit_witnesses`, `_compute_submodule_orbit`, `_lattice_stabilizer`, `transporter_to(_key)`, `right_cosets`, `double_cosets`, key and permutation helpers | MIGRATE | research#394, merged into `FiniteCommensurabilityQuotient` (`rational_integral_stabilizers.py:238`); the orbit with transversal goes to research#396 | hand-written GF(p) row reduction (should be Sage `echelon_form`); GAP `fail` detected by string comparison; left generators not checked to lie in G; `PreImage` run twice |
+| `FiniteIntegralRepresentation` (631) and `orbit`, `orbit_witnesses`, `_compute_submodule_orbit`, `_lattice_stabilizer`, `transporter_to(_key)`, `right_cosets`, `double_cosets`, key and permutation helpers | MIGRATE | research#396, merged into `FiniteCommensurabilityQuotient` (`rational_integral_stabilizers.py:238`); the orbit with transversal goes to research#396 | hand-written GF(p) row reduction (should be Sage `echelon_form`); GAP `fail` detected by string comparison; left generators not checked to lie in G; `PreImage` run twice |
 | `.orbit_images` (686), `._evaluate_free_word` (914) | DROP | trivial wrappers | — |
-| `IntegralStructureAction` (1056) and `rational_group`, `lattice_inclusion`, `preserves_selected_lattice` | MIGRATE / REPLACE | research#394: merged into `rational_integral_stabilizers.IntegralStructureAction` (`:129`); the port callback at `:118-126` is deleted | takes a preamble generated subgroup |
+| `IntegralStructureAction` (1056) and `rational_group`, `lattice_inclusion`, `preserves_selected_lattice` | MIGRATE / REPLACE | research#396: merged into `rational_integral_stabilizers.IntegralStructureAction` (`:129`); the port callback at `:118-126` is deleted | takes a preamble generated subgroup |
 | `._ambient_action_matrix` (1094), `._scaling_morphism` (1257), `.finite_module`, `.finite_projection`, `.intermediate_image`, `._carries_lattice` | REPLACE | `_row_action_matrix().transpose()`; `FiniteCommensurabilityQuotient` `scaling_morphism`, `quotient_module`, `quotient_projection`, `intermediate_image` (`:286-344`); `is_in_image` | `_carries_lattice` returns False instead of raising |
 | `._invariant_overlattice`, `.invariant_overlattice` (1140, 1205) | MIGRATE | research#401 invariant overlattice | unbounded loop if the precondition fails |
-| `._quotient_exponent`, `.quotient_exponent`, `._restricted_matrix*`, `._invariant_basis_matrix`, `._selected_invariant_coordinates`, `._intermediate_image_key`, `._finite_representation`, `.finite_representation`, `.lattice_stabilizer`, `.right_cosets`, `.double_cosets`, `._repr_` | MIGRATE | research#394 | — |
-| `.transporter` (1389) | MIGRATE | research#394 `transporter(target)` (`:188`) | three `except ValueError: return None` blocks |
+| `._quotient_exponent`, `.quotient_exponent`, `._restricted_matrix*`, `._invariant_basis_matrix`, `._selected_invariant_coordinates`, `._intermediate_image_key`, `._finite_representation`, `.finite_representation`, `.lattice_stabilizer`, `.right_cosets`, `.double_cosets`, `._repr_` | MIGRATE | research#396 | — |
+| `.transporter` (1389) | MIGRATE | research#396 `transporter(target)` (`:188`) | three `except ValueError: return None` blocks |
 | `._selected_submodule`, `.selected_submodule`, `.double_cosets_from_generators`, `integral_structure_action`, `integral_structure_action_for_group` | DROP | unused, or the callback target that the migration removes | — |
 
 ## backends/, groups/groupoid_cache.py, invariants.py, small modules
@@ -95,10 +95,10 @@ Paths: port paths are relative to `src/sage_indefinite_port/`; preamble paths ar
 | `canonization.CellConfiguration` (37) and `__post_init__` | MIGRATE | research#399: generalise `VectorConfigurations` to spanning, coloured families (colours as a mark family, as in `polyhedral_cones.py:552`) | optional `roles=()` |
 | `CellConfiguration.from_coordinate_rows` (55) | DROP | callers build preamble elements | raw rows |
 | `_BlissCanonization` (70), `_bliss_canonization` (298), `_configuration_graph` (327), `_coordinate_matrix` (351), `_configuration_row_action` (361), `_verified_integral_isometry` (391), `_configuration_rational_automorphism_group` (435) | MIGRATE (private) | research#399, merged with `_canonical_pairing_data` and `_pairing_graph` (`vector_configurations.py:71, 114`) | private `_isometry_from_column_matrix`; unused parameter `canon`; dead guards |
-| `cell_stabilizer` (176) | MIGRATE | research#399, built on research#401 (invariant overlattice) and research#394/#396 (stabilizer of an integral structure) | inline overlattice loop and raw libGAP orbit and preimage; `libgap.Group([])` |
+| `cell_stabilizer` (176) | MIGRATE | research#399, built on research#401 (invariant overlattice) and research#396 (stabilizer of an integral structure) | inline overlattice loop and raw libGAP orbit and preimage; `libgap.Group([])` |
 | `cell_transporter` (112) | MIGRATE | research#399 configuration transporter | private `_row_action_matrix` |
-| `_configuration_integral_structure_action` (92) | MIGRATE | research#394 | — |
-| `_rational_lattice_with_integral_structure` (457) | MIGRATE | research#394: `(L⊗QQ).integral_structure(basis_vectors)` | imported across modules though private |
+| `_configuration_integral_structure_action` (92) | MIGRATE | research#396 | — |
+| `_rational_lattice_with_integral_structure` (457) | MIGRATE | research#396: `(L⊗QQ).integral_structure(basis_vectors)` | imported across modules though private |
 | `_gram_matrix` (425) | REPLACE | `L.gram_matrix()` (`lattices.py:1874`) | — |
 | `presentation_bucket_key` (79), `_identity_rows` (488), `_rational_rows` (492) | DROP | duplicates `lattice_prefilter` / trivial conversions | — |
 | `polyhedral.configuration_cone` (20) | DROP | `RationalPolyhedralCones(L).from_rays(vectors)` (`polyhedral_cones.py:162`) | — |
@@ -123,7 +123,7 @@ Paths: port paths are relative to `src/sage_indefinite_port/`; preamble paths ar
 | `IndefiniteOrthogonalAlgorithm.__init__`, `.orthogonal_group` case 1 (76-88), `.isometry` Lorentzian branch (138-149) | KEEP-I | become the Lorentzian leaf functions `lorentzian_orthogonal_group(L)` / `lorentzian_isometry(L, M)` that `recursive.py` calls; no base class | the complex cache is ignored by `orthogonal_group` |
 | `.attack_profile` (66), `.orthogonal_group` case 0, `.isometry` definite branch (132-135) | REPLACE | `AttackProfile`; `L.O()`; `Isom(...).an_element()` | — |
 | `._two_u_cover_model` (92), `._higher_witt_orthogonal_group` (98), `.isometry` 2U branch (150-157), `.vector_stabilizer` (159), `.vector_transporter` (178), `.orthogonal_group` default case | DROP | unreachable behind `recursive.py`'s overrides | `vector_stabilizer` is also wrong (requires every generator to lift) |
-| `TraversalObjectRecord`, `TraversalAdjacencyData`, `TraversalAdjacencyRecord`, `TraversalRecord` (218-235), `LorentzianPerfectComplex.records` (487) | DROP | the boundary returns preamble objects (research#393) | private `_row_action_matrix` |
+| `TraversalObjectRecord`, `TraversalAdjacencyData`, `TraversalAdjacencyRecord`, `TraversalRecord` (218-235), `LorentzianPerfectComplex.records` (487) | DROP | the boundary returns preamble objects (research#403) | private `_row_action_matrix` |
 | `LorentzianPerfectCell` (239), `LorentzianCellAdjacency` (263), `LorentzianPerfectLocalBackend` (270), `.initial_cell` (271), `.flip_across` (313) | KEEP-I | `.configuration()` becomes a research#399 configuration; facet normals come from `facet_covectors` | raw matrices → preamble objects (#15); dead guards |
 | `.cell_stabilizer` (306), `.cell_transporter` (351), `.facet_orbits` (310) | REPLACE | research#399 stabilizer and transporter; cone facets [P] plus orbits on a finite set [P]/research#396 | `@cache` keeps cells alive |
 | `LorentzianPerfectComplex` (357) and traversal methods, `.isometry_to` | KEEP-I | — | fail-open mode mismatch; optional `local_backend` fallback |
@@ -153,11 +153,11 @@ Paths: port paths are relative to `src/sage_indefinite_port/`; preamble paths ar
 | `._selected_generators` (288) | REPLACE | `group_generators()` | type-sniffing |
 | `.orthogonal_group` (296) | KEEP-I recursion; definite branch REPLACE; assembly KEEP-I as the single owner | research#400 generated subgroup | dead assignment; impossible guard |
 | `.isometry` (339) | KEEP-I | genus [P], reduction research#400, covers [P] | bounded splitting-vector search (three copies); private API |
-| `._integral_stabilizer_from_rational_lifts` (448) | REPLACE | research#394 `stabilizer()` | swallows TypeError/ValueError |
+| `._integral_stabilizer_from_rational_lifts` (448) | REPLACE | research#396 `stabilizer()` | swallows TypeError/ValueError |
 | `._rational_stabilizer_lifts` (481) | KEEP-I composition | lifts research#401; unipotent generators [P]; odd kernel research#398 | the isotropic-case concern above |
 | `._split_unimodular_isotropic_transporter` (501) | KEEP-I | research#401 split plus research#397 direct sum | private API |
 | `._split_unimodular_isotropic_data` (555) | MIGRATE; Bezout part REPLACE | research#401 `integral_hyperbolic_splitting()`; `rational_witt_decomposition().bezout_partner()` (`lattices.py:4484`) | private `_engine_component_matrix` |
-| `.vector_stabilizer` (627), `.vector_transporter` (633), `.vector_orbit_representatives` (763) | KEEP-I | research#401 extension and content; research#394 transporter | discards transporters; NotImplementedError for index < 2 |
+| `.vector_stabilizer` (627), `.vector_transporter` (633), `.vector_orbit_representatives` (763) | KEEP-I | research#401 extension and content; research#396 transporter | discards transporters; NotImplementedError for index < 2 |
 | entry points (891-924), six `isotropic_flags` functions | KEEP-I | frozen in #33 | — |
 
 ## indefinite/eichler.py, vector_sections.py, isotropic_lifts.py
