@@ -321,10 +321,9 @@ def _perfect_form_hash_key(
     multisets as the Python dictionary key avoids hash collisions while
     retaining precisely the same necessary isometry invariant.
     """
-    gram = _gram_matrix(cell.lattice)
-    rows = tuple(_coordinate_row(cell.lattice, item, SageZZ) for item in cell.vector_configuration)
-    diagonal = tuple(sorted(int((row * gram * row.column())[0]) for row in rows))
-    off_diagonal = tuple(sorted(int((rows[left] * gram * rows[right].column())[0]) for left in range(len(rows)) for right in range(left + 1, len(rows))))
+    vectors = cell.vector_configuration
+    diagonal = tuple(sorted(int(vector_.q()) for vector_ in vectors))
+    off_diagonal = tuple(sorted(int(cell.lattice.b(vectors[left], vectors[right])) for left in range(len(vectors)) for right in range(left + 1, len(vectors))))
     return diagonal, off_diagonal
 
 

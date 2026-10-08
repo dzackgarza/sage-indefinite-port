@@ -72,6 +72,8 @@ class EichlerRecursion:
     def isometry(self, source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
         if LatticePrefilter.from_lattice(source) != LatticePrefilter.from_lattice(target):
             return None
+        if source.is_even() and source.genus() != target.genus():
+            return None
         if source.is_definite():
             homset = source.Isom(target)
             return None if homset.is_empty() else homset.an_element()
