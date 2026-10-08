@@ -30,6 +30,7 @@ from sage.rings.integer import Integer
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ as SageQQ
+from sage.structure.parent import Parent
 
 from sage_indefinite_port.backends.canonization import (
     CellConfiguration,
@@ -49,8 +50,6 @@ from sage_indefinite_port.indefinite.edgewalk_rank2 import (
     quadratic_eval,
     scalar_eval,
 )
-from sage.structure.parent import Parent
-
 from sage_indefinite_port.readiness import unfinished
 
 type _Row = tuple[int, ...]
