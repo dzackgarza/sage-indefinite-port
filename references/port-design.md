@@ -193,7 +193,8 @@ Rank > 2 raises `UnsupportedRankError` (map §13.5).
 
 ### Vector classes at positive index 1 (#18)
 
-Primitive vectors of square n in the closed positive cone of a Lorentzian L are classified by marked cells, generalising LORENTZ_GetOrbitRepresentative_Kernel from n = 0 (map §12.4): the marks of a quotient cell of the total-mode traversal are its primitive vectors of square n, `C.vectors_of_square(n)` [R#401]; local orbits under the cell's automorphism group [P], transport of facet marks along side pairings, and connected components [I]. The marks are finite because a lattice vector of the cone has coefficients in (1/D)Z≥0 on the rays, distinct rays pair positively, and every term of q is nonnegative. Spacelike n is outside the cells and raises `NoLocalMarkTheoremError`.
+Primitive vectors of square n in the closed positive cone of a Lorentzian L are classified by marked cells, generalising LORENTZ_GetOrbitRepresentative_Kernel from n = 0 (map §12.4): the marks of a quotient cell of the total-mode traversal are its primitive vectors of square n, `C.vectors_of_square(n)` [R#401]; local orbits under the cell's automorphism group [P], transport of facet marks along side pairings, and connected components [I]. The marks are finite because a lattice vector of the cone has coefficients in (1/D)Z≥0 on the rays, distinct rays pair positively, and every term of q is nonnegative.
+Spacelike n is outside the cells and raises `NoLocalMarkTheoremError`.
 
 ## General constructions over the port (not port algorithms)
 
