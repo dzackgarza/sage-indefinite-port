@@ -202,5 +202,5 @@ Rank > 2 raises `UnsupportedRankError` (map §13.5).
 
 ## Boundary
 
-The preamble calls the port only for (1) and (2). The frozen entry points are listed in #33. They take preamble lattices and isometry groups and return preamble objects (research#403).
-The marked-lattice entry points take the category of the marking first: `isometry(D, source, target)`, `automorphism_group_generators(D, marked)` and `primitive_marking_classes(D, shape, L)`, with D one of `Lattices`, a coslice `<n>/Lattices`, `Ar(Lattices)` or `Fun([2], Lattices)`. The category is part of the question: a pointed lattice and a rank-1 sublattice have the same arrow and different isomorphisms. `isometry` returns the isometry of the underlying lattices; the markings are monomorphisms, so it determines the isomorphism.
+The preamble calls the port only for (1) and (2). The frozen entry points are listed in #33. They take preamble lattices and isometry groups and return preamble objects (research#403). The marked-lattice entry points take the category of the marking first: `isometry(D, source, target)`, `automorphism_group_generators(D, marked)` and `primitive_marking_classes(D, shape, L)`, with D one of `Lattices`, a coslice `<n>/Lattices`, `Ar(Lattices)` or `Fun([2], Lattices)`. The category is part of the question: a pointed lattice and a rank-1 sublattice have the same arrow and different isomorphisms.
+`isometry` returns the isometry of the underlying lattices; the markings are monomorphisms, so it determines the isomorphism.
