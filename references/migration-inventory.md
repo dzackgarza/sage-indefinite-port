@@ -19,7 +19,7 @@ Paths: port paths are relative to `src/sage_indefinite_port/`; preamble paths ar
 
 - **Ownership boundary.** Research holds mathematical operations of general use, stated in standard terms.
   The port holds the algorithm glue that composes them as Dutour Sikirić's code and papers specify: approximate models, covering lists, the generation step O(L) = ⟨A, Stab(v), t_i⟩ (if A-translates of finitely many r_i = t_i(v) cover G·v, then G = ⟨A, Stab_G(v), t_i⟩), envelopes, prefilters and traversal bookkeeping.
-  Glue that crossed into research moves to the port: `TwoUFullGeneratingDatum`, `full_generating_data`, `covering_orbit_data` and `recursive_stabilizer_data` (`eichler_criterion.py:197-261, 870-1062`), and further items an audit of research identifies.
+  Glue that crossed into research moves to the port: `TwoUFullGeneratingDatum`, `full_generating_data`, `covering_orbit_data` and `recursive_stabilizer_data` (`eichler_criterion.py:197-261, 870-1062`), and the further items listed in dzackgarza/research#404 (the approximate-model framing, base-changed approximate actions, the Lorentzian traversal record classes and the decoding of the port's records).
 
 - **The circular imports end with the migration.** Research imports the port at `rational_integral_stabilizers.py:122` (integral structures, research#394) and `lattices.py:5135` (pointwise kernel, research#398). Both bodies move to research.
 
