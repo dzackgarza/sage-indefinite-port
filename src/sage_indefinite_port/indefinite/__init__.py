@@ -16,11 +16,9 @@ from sage_indefinite_port.indefinite.isotropic_lifts import (
     CodimensionOneIsotropicExtensionResult,
     IntegralParameterCoset,
     IsometryExtensionTorsor,
-    MatrixEquationSolution,
     NoIntegralExtensionError,
     PointwisePerpendicularKernel,
     pointwise_perpendicular_kernel,
-    solve_isotropic_extension_equation,
 )
 from sage_indefinite_port.indefinite.isotropic_reductions import FlagType
 from sage_indefinite_port.indefinite.presentations import ReducedLatticePresentation, presentation_bucket_key
@@ -43,7 +41,6 @@ __all__ = [
     "IntegralParameterCoset",
     "IsometryExtensionTorsor",
     "IsotropicVectorSection",
-    "MatrixEquationSolution",
     "NoIntegralExtensionError",
     "NonIsotropicVectorSection",
     "OrbitCover",
@@ -53,7 +50,6 @@ __all__ = [
     "VectorOrthogonalSection",
     "orthogonal_section",
     "pointwise_perpendicular_kernel",
-    "solve_isotropic_extension_equation",
     "square_divisors",
     "TwoHyperbolicPlaneDecomposition",
     "presentation_bucket_key",

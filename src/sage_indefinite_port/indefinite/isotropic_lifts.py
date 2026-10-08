@@ -14,7 +14,7 @@ from dzack_research.preamble.categories.lattices import IsotropicReductions, Lat
 from dzack_research.preamble.categories.modules.framed.framed_free_modules import (
     FramedFreeModules,
 )
-from dzack_research.preamble.categories.modules.pure.modules import ModuleSubobjects
+from dzack_research.preamble.categories.modules.pure.modules import MatrixSpaces, ModuleSubobjects
 from dzack_research.preamble.categories.rings.ring_foundation import (
     _engine_element,
     _engine_ring,
@@ -22,24 +22,12 @@ from dzack_research.preamble.categories.rings.ring_foundation import (
 )
 from dzack_research.preamble.categories.sets.set_categories import OwnedSetMorphism, Sets
 from sage.matrix.constructor import matrix
-from sage.matrix.matrix_integer_dense import Matrix_integer_dense
-from sage.matrix.matrix_rational_dense import Matrix_rational_dense
-from sage.matrix.matrix_space import MatrixSpace
 from sage.modules.free_module import FreeModule, FreeModule_generic
 from sage.modules.free_module_element import FreeModuleElement, vector
 from sage.rings.integer import Integer
 from sage.rings.integer_ring import ZZ
 from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ
-
-
-@dataclass(frozen=True)
-class MatrixEquationSolution:
-    r"""Affine solutions of \(XA+A^T X^T=B\) over \(\mathbf Q\)."""
-
-    particular: Matrix_rational_dense
-    homogeneous_space: FreeModule_generic[Rational]
-    homogeneous_lattice: FreeModule_generic[Integer]
 
 
 @dataclass(frozen=True)
@@ -349,19 +337,12 @@ class PointwisePerpendicularKernel:
 
         complement = tuple(quotient_section(quotient_trivialization.inverse()(quotient_free.module_generator(label))) for label in quotient_labels)
         embedded_isotropic = tuple(embedding(isotropic.module_generator(label)) for label in isotropic_labels)
-        pairing = matrix(
-            ZZ,
-            (tuple(_engine_element(ring, ambient.b(vector, isotropic_vector)) for isotropic_vector in embedded_isotropic) for vector in complement),
-        )
         rank = len(isotropic_labels)
-        equation = solve_isotropic_extension_equation(
-            matrix(QQ, pairing.transpose()),
-            matrix(QQ, rank, rank, 0),
+        pairing = ring.matrix_space(rank).from_rows(
+            tuple(ambient.b(vector, isotropic_vector) for isotropic_vector in embedded_isotropic)
+            for vector in complement
         )
-        integral_kernel = equation.homogeneous_lattice
-        if integral_kernel is None:
-            raise ArithmeticError("the homogeneous extension equation did not return its integral solution lattice")
-        directions = tuple(matrix(ZZ, rank, rank, basis_vector.list()) for basis_vector in integral_kernel.gens())
+        integral_kernel = pairing.transpose().symmetrized_right_multiplication().kernel()
 
         self._ambient = ambient
         self._embedding = embedding
@@ -370,27 +351,15 @@ class PointwisePerpendicularKernel:
         self._quotient_trivialization = quotient_trivialization
         self._quotient_labels = quotient_labels
         self._isotropic_labels = isotropic_labels
-        self._directions = directions
-        raw_parameter_lattice: object = ring.free_module(len(directions))
-        if not isinstance(raw_parameter_lattice, FramedFreeModules.ParentMethods):
-            raise ArithmeticError("the parameter module is not a framed free module")
-        self._parameter_lattice: FramedFreeModules.ParentMethods = raw_parameter_lattice
+        self._parameter_lattice: FramedFreeModules.ParentMethods = integral_kernel
 
     def parameter_lattice(self) -> FramedFreeModules.ParentMethods:
         r"""Return the free integral lattice of homogeneous solutions \(H\)."""
         return self._parameter_lattice
 
-    def _direction_matrix(self, parameter: FramedFreeModules.ElementMethods) -> Matrix_integer_dense:
+    def _direction_matrix(self, parameter: FramedFreeModules.ElementMethods) -> MatrixSpaces.ElementMethods:
         parameter = self._parameter_lattice(parameter)
-        coordinates = parameter.to_vector()
-        labels = tuple(self._parameter_lattice.module_generating_set())
-        rank = len(self._isotropic_labels)
-        result = matrix(ZZ, rank, rank, 0)
-        for position, label in enumerate(labels):
-            coefficient = coordinates(label)
-            if coefficient:
-                result += _engine_element(self._parameter_lattice.base_ring(), coefficient) * self._directions[position]
-        return result
+        return self._parameter_lattice.inclusion()(parameter)
 
     def _isometry(
         self,
@@ -416,7 +385,7 @@ class PointwisePerpendicularKernel:
                     if (
                         coefficient := sum(
                             (
-                                quotient_coordinates(quotient_label) * _owned_engine_element(ring, direction[row, column])
+                                quotient_coordinates(quotient_label) * direction[row, column]
                                 for row, quotient_label in enumerate(self._quotient_labels)
                             ),
                             ring.zero(),
@@ -457,76 +426,3 @@ def pointwise_perpendicular_kernel(
     r"""Return the exact kernel fixing the reduction's \(I^\perp\) pointwise."""
     return PointwisePerpendicularKernel(reduction)
 
-
-def solve_isotropic_extension_equation(
-    A: Matrix_rational_dense,
-    B: Matrix_rational_dense,
-) -> MatrixEquationSolution:
-    r"""Solve \(XA+A^T X^T=B\) exactly over \(\mathbf Q\).
-
-    The map is constructed as a Sage module morphism from the full matrix
-    space to its symmetric submodule. Sage supplies its kernel and matrix; the
-    latter is used only to obtain one affine preimage of ``B``.
-    """
-    if A.nrows() != A.ncols():
-        raise ValueError("A must be square")
-    rank = A.nrows()
-    if B.nrows() != rank or B.ncols() != rank:
-        raise ValueError("B must have the same shape as A")
-    if B != B.transpose():
-        raise ValueError("B must be symmetric")
-
-    matrices = MatrixSpace(QQ, rank, rank)
-    A_matrix: Matrix_rational_dense = matrices.matrix(A)
-    B_matrix: Matrix_rational_dense = matrices.matrix(B)
-    A_transpose: Matrix_rational_dense = matrices.matrix(tuple(A_matrix[column, row] for row in range(rank) for column in range(rank)))
-    source_positions = tuple((row, column) for row in range(rank) for column in range(rank))
-    symmetric_positions = tuple((i, i) for i in range(rank)) + tuple((i, j) for i in range(rank) for j in range(i + 1, rank))
-
-    def matrix_unit(index: tuple[int, int]) -> Matrix_rational_dense:
-        row, column = index
-        entries = [QQ.zero()] * (rank * rank)
-        entries[row * rank + column] = QQ.one()
-        return matrices.matrix(entries)
-
-    image_columns = tuple(
-        vector(
-            QQ,
-            (QQ(image[row, column]) for row, column in symmetric_positions),
-        )
-        for index in source_positions
-        for image in (matrix_unit(index) * A_matrix + A_transpose * matrix_unit((index[1], index[0])),)
-    )
-    relation_matrix = matrix(
-        QQ,
-        len(symmetric_positions),
-        len(source_positions),
-        tuple(QQ(image_columns[column][row]) for row in range(len(symmetric_positions)) for column in range(len(source_positions))),
-    )
-    if not isinstance(relation_matrix, Matrix_rational_dense):
-        raise ArithmeticError("the extension-equation relation matrix is not rational dense")
-    target_coordinates = vector(
-        QQ,
-        (QQ(B_matrix[row, column]) for row, column in symmetric_positions),
-    )
-    particular_coordinates = relation_matrix.solve_right(target_coordinates)
-    particular = matrix(QQ, rank, rank, particular_coordinates.list())
-    if not isinstance(particular, Matrix_rational_dense):
-        raise ArithmeticError("the extension-equation particular solution is not rational dense")
-    homogeneous_space = relation_matrix.right_kernel()
-    common_denominator: Integer = ZZ(1)
-    for coefficient in relation_matrix.list():
-        common_denominator = common_denominator.lcm(QQ(coefficient).denominator())
-    integral_relation_matrix = matrix(
-        ZZ,
-        relation_matrix.nrows(),
-        relation_matrix.ncols(),
-        tuple(ZZ(common_denominator * QQ(coefficient)) for coefficient in relation_matrix.list()),
-    )
-    homogeneous_lattice = integral_relation_matrix.right_kernel()
-
-    return MatrixEquationSolution(
-        particular=particular,
-        homogeneous_space=homogeneous_space,
-        homogeneous_lattice=homogeneous_lattice,
-    )
