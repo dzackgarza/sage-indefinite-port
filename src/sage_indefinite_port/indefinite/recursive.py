@@ -6,6 +6,7 @@ from random import Random
 from dzack_research.preamble.all import QQ, ZZ, Lattices, Modules
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods, LatticeIsometryMor
 from dzack_research.preamble.categories.rings.ring_foundation import _OwnedRingElement
+from dzack_research.preamble.categories.sets.finite_ordered_sets import finite_ordered_set
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.matrix.constructor import identity_matrix, matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
@@ -13,6 +14,7 @@ from sage.modules.free_module_element import vector as sage_vector
 from sage.rings.integer import Integer
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.sets.disjoint_set import DisjointSet as SageDisjointSet
+from sage.structure.parent import Parent
 
 from sage_indefinite_port.backends.canonization import (
     _identity_rows,
@@ -887,10 +889,10 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
 
 
 @unfinished(18)
-def orthogonal_group_generators(homset: LatticeIsometryMor) -> tuple[LatticeIsometryMethods, ...]:
+def orthogonal_group_generators(homset: LatticeIsometryMor) -> Parent:
     lattice = homset.domain()
     group = IndefiniteOrthogonalAlgorithm().orthogonal_group(lattice)
-    return tuple(group.generators())
+    return finite_ordered_set(group.generators())
 
 
 @unfinished(18)
@@ -910,11 +912,16 @@ def vector_equivalence_witness(
 
 
 @unfinished(18)
-def vector_stabilizer_generators(homset: LatticeIsometryMor, element: Lattices.ElementMethods) -> tuple[LatticeIsometryMethods, ...]:
+def vector_stabilizer_generators(homset: LatticeIsometryMor, element: Lattices.ElementMethods) -> Parent:
     if element.parent() is not homset.domain():
         raise ValueError("vector stabilizer requires an element of the homset lattice")
     subgroup = IndefiniteOrthogonalAlgorithm().vector_stabilizer(element)
-    return tuple(subgroup.generators())
+    return finite_ordered_set(subgroup.generators())
+
+
+@unfinished(18)
+def vector_orbit_representatives(homset: LatticeIsometryMor, square: _OwnedRingElement) -> Parent:
+    return finite_ordered_set(IndefiniteOrthogonalAlgorithm().vector_orbit_representatives(homset.domain(), square))
 
 
 __all__ = [
@@ -922,5 +929,6 @@ __all__ = [
     "isometry",
     "orthogonal_group_generators",
     "vector_equivalence_witness",
+    "vector_orbit_representatives",
     "vector_stabilizer_generators",
 ]
