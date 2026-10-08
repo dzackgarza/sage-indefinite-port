@@ -4,8 +4,7 @@ For an arithmetic group Gamma acting on a lattice of signature (2, n), the Type 
 Type II curves and their incidences are the Gamma-orbits of isotropic lines, isotropic
 planes and line-in-plane flags. Recorded boundaries: Dawes's Tits buildings
 (arXiv:2205.10601, 2108.06236), Laza--O'Grady's D-tower (arXiv:1801.04845 with the group of
-arXiv:1607.01324), Scattone's K3 boundaries of degree 2 and 4 (via arXiv:1205.3144 and
-2502.04301), and Dutour Sikirić--Hulek's 87 Enriques modular groups (arXiv:2302.01679).
+arXiv:1607.01324), Scattone's K3 boundaries of degree 2 and 4 (Mem. AMS 374, §§5.4, 6), and Dutour Sikirić--Hulek's 87 Enriques modular groups (arXiv:2302.01679).
 """
 
 import pytest

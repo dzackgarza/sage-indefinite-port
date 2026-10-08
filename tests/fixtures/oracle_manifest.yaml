@@ -77,8 +77,7 @@ oracles:
     kind: published_text
     sources:
       - references/vendor/arxiv/1012.4155/main.tex
-      - references/vendor/arxiv/1205.3144/ksba.tex
-      - references/vendor/arxiv/2502.04301/main.tex
+      - references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md
   - fixture_file: indefinite_isometry_pairs.json
     extraction: references/extract/isometry_pairs.py
     runtime: sage
@@ -161,10 +160,8 @@ oracles:
     sources:
       - references/vendor/polyhedral_common@1592b246/CI_tests/DoubleCosets/DBL
   - fixture_file: conway_sloane_cases.json
-    extraction: null
-    runtime: null
+    extraction: references/extract/conway_sloane.py
+    runtime: uv
     kind: published_text
     sources:
-      - Conway--Sloane, Sphere Packings, Lattices and Groups, 3rd ed., Ch. 15 sec. 11, eqs. (51a), (51b)
-    vendored: false
-    note: The book is not vendored; the record cannot cite a local file until a copy is available.
+      - references/vendor/zotero/T2WVLTDB-conway-sloane-1999-splag/extracted.md

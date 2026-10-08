@@ -46,3 +46,5 @@ Retrieved 2026-10-07.
 | `arxiv/2507.07516/` | https://arxiv.org/abs/2507.07516 | TeX source, 2026-10-07 |
 | `arxiv/2507.20743/` | https://arxiv.org/abs/2507.20743 | TeX source, 2026-10-07 |
 | `arxiv/9905166/` | https://arxiv.org/abs/math/9905166 | TeX source, 2026-10-07 |
+| `zotero/T2WVLTDB-conway-sloane-1999-splag/` | local Zotero item `T2WVLTDB` (Conway--Sloane, SPLAG 3rd ed.) | OCR extraction, SHA-256 pinned in `references/extract/conway_sloane.py`; copyrighted, git-ignored |
+| `zotero/SF7T3C8G-scattone-1987-memoir/` | local Zotero item `SF7T3C8G` (Scattone, Mem. AMS 374) | OCR extraction, SHA-256 pinned in `references/extract/k3_strata.py`; copyrighted, git-ignored |

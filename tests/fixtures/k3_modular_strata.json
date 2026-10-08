@@ -1,11 +1,11 @@
 {
   "type_ii_correspondence": {
-    "statement": "boundary curves C_I of F_{2k} correspond bijectively to rank-2 isotropic sublattices I of Lambda_{2k} modulo O(Lambda_{2k}), and to I^perp/I in the genus G(k)",
+    "statement": "for squarefree k, E -> E^perp/E is a bijection from the O(Lambda_{2k})-orbits of primitive isotropic planes E of Lambda_{2k} onto the genus G(k) of <-2k> + 2E8(-1), so there are h(k) orbits",
     "group": "O(Lambda_{2k})",
     "source": {
       "kind": "published_text",
-      "file": "references/vendor/arxiv/2502.04301/main.tex",
-      "lines": "276-281"
+      "file": "references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md",
+      "lines": "3224-3258"
     }
   },
   "k3_unimodular_lattice": {
@@ -56,13 +56,13 @@
     "source": {
       "boundary": {
         "kind": "published_text",
-        "file": "references/vendor/arxiv/1205.3144/ksba.tex",
-        "lines": "256-256"
+        "file": "references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md",
+        "lines": "3746-3768"
       },
       "root_types": {
         "kind": "published_text",
-        "file": "references/vendor/arxiv/1205.3144/ksba.tex",
-        "lines": "194-205"
+        "file": "references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md",
+        "lines": "3852-3856"
       }
     }
   },
@@ -90,9 +90,16 @@
       "D17"
     ],
     "source": {
-      "kind": "published_text",
-      "file": "references/vendor/arxiv/2502.04301/main.tex",
-      "lines": "289-296"
+      "boundary": {
+        "kind": "published_text",
+        "file": "references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md",
+        "lines": "3746-3768"
+      },
+      "generalised_types": {
+        "kind": "published_text",
+        "file": "references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md",
+        "lines": "3940-3946"
+      }
     }
   }
 }

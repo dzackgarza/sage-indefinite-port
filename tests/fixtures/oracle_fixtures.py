@@ -395,15 +395,6 @@ class DoubleCosetCase(TypedDict):
     source: FileSource
 
 
-class Citation(TypedDict, total=False):
-    kind: Required[str]
-    citation: Required[str]
-    chapter: int
-    section: str
-    statements: list[str]
-    quote: str
-
-
 class CitedGram(TypedDict):
     equation: str
     gram: Gram
@@ -420,7 +411,7 @@ class SpinorGenusPair(TypedDict):
     spinor_genera_in_genus: int
     classes_in_genus: int
     integrally_equivalent: bool
-    source: Citation
+    source: CitedTextSource
 
 
 class ConwaySloaneCases(TypedDict):
@@ -641,6 +632,11 @@ class DegreeTwoK3(TypedDict):
     source: DegreeTwoSources
 
 
+class DegreeFourSources(TypedDict):
+    boundary: TextSource
+    generalised_types: TextSource
+
+
 class DegreeFourK3(TypedDict):
     id: str
     construction: str
@@ -649,7 +645,7 @@ class DegreeFourK3(TypedDict):
     det: int
     baily_borel_boundary: BailyBorelBoundary
     type_ii_generalised_types: list[str]
-    source: TextSource
+    source: DegreeFourSources
 
 
 class TypeIICorrespondence(TypedDict):
@@ -804,8 +800,7 @@ def load_double_coset_cases() -> list[DoubleCosetCase]:
 
 
 def load_conway_sloane_cases() -> ConwaySloaneCases:
-    """Conway--Sloane: the same-genus, non-equivalent ternary pair (51a)/(51b) of Chapter 15 §11,
-    and the root-lattice automorphism orders of Chapter 4 (A2, A3, D4, E6, E7, E8)."""
+    """Conway--Sloane: the same-genus, non-equivalent ternary pair (51a)/(51b) of Chapter 15 §11."""
     with open(FIXTURES_DIR / "conway_sloane_cases.json", encoding="utf-8") as f:
         data: ConwaySloaneCases = json.load(f)
         return data

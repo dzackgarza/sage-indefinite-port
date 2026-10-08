@@ -13,11 +13,19 @@ Bibliography of the sources this repository vendors under `references/vendor/`. 
 - Daniel Allcock.
   *Unabridged table of reflective lattices of rank 3*. [arXiv:1111.1264](https://arxiv.org/abs/1111.1264) (1111.1264v1). Vendored: `references/vendor/arxiv/1111.1264/`. Fixtures: `allcock_rank3_reflective.json`.
 
+- Simon Brandhorst, Víctor González-Alonso.
+  *527 elliptic fibrations on Enriques surfaces*. [arXiv:2408.00306](https://arxiv.org/abs/2408.00306) (2408.00306v1). Vendored: `references/vendor/arxiv/2408.00306/`. Fixtures: `e10_vector_orbits.json`.
+
+- Daniel Allcock.
+  *The Period Lattice for Enriques Surfaces*. [arXiv:math/9905166](https://arxiv.org/abs/math/9905166) (math/9905166v1). Vendored: `references/vendor/arxiv/9905166/`. Fixtures: `allcock_i_2_10_orbits.json`.
+
+## Vendored papers not yet extracted into fixtures
+
 - Radu Laza.
   *The KSBA compactification for the moduli space of degree two K3 pairs*. J. Eur.
   Math.
   Soc.
-  18 (2016), no. 2, 225-279. [arXiv:1205.3144](https://arxiv.org/abs/1205.3144) (1205.3144v1). Vendored: `references/vendor/arxiv/1205.3144/`. Fixtures: `k3_modular_strata.json`.
+  18 (2016), no. 2, 225-279. [arXiv:1205.3144](https://arxiv.org/abs/1205.3144) (1205.3144v1). Vendored: `references/vendor/arxiv/1205.3144/`.
 
 - Radu Laza, Kieran O'Grady.
   *GIT versus Baily-Borel compactification for $K3$'s which are double covers of $\mathbb P^1\times\mathbb P^1$*. Adv.
@@ -33,16 +41,8 @@ Bibliography of the sources this repository vendors under `references/vendor/`. 
 - Mathieu Dutour Sikirić, Klaus Hulek.
   *Moduli of polarized Enriques surfaces -- computational aspects*. [arXiv:2302.01679](https://arxiv.org/abs/2302.01679) (2302.01679v2). Vendored: `references/vendor/arxiv/2302.01679/`. Fixtures: `enriques_87_polarizations.json`, `enriques_polarization_orbits.json`, `unpolarized_enriques.json`.
 
-- Simon Brandhorst, Víctor González-Alonso.
-  *527 elliptic fibrations on Enriques surfaces*. [arXiv:2408.00306](https://arxiv.org/abs/2408.00306) (2408.00306v1). Vendored: `references/vendor/arxiv/2408.00306/`. Fixtures: `e10_vector_orbits.json`.
-
 - James Matthew Jones.
-  *Type II Degenerations of K3 Surfaces of Degree 4*. [arXiv:2502.04301](https://arxiv.org/abs/2502.04301) (2502.04301v2). Vendored: `references/vendor/arxiv/2502.04301/`. Fixtures: `k3_modular_strata.json`.
-
-- Daniel Allcock.
-  *The Period Lattice for Enriques Surfaces*. [arXiv:math/9905166](https://arxiv.org/abs/math/9905166) (math/9905166v1). Vendored: `references/vendor/arxiv/9905166/`. Fixtures: `allcock_i_2_10_orbits.json`.
-
-## Vendored papers not yet extracted into fixtures
+  *Type II Degenerations of K3 Surfaces of Degree 4*. [arXiv:2502.04301](https://arxiv.org/abs/2502.04301) (2502.04301v2). Vendored: `references/vendor/arxiv/2502.04301/`.
 
 - Shouhei Ma.
   *On the 0-dimensional cusps of the Kahler moduli of a K3 surface*. [arXiv:0812.4132](https://arxiv.org/abs/0812.4132) (0812.4132v2). Vendored: `references/vendor/arxiv/0812.4132/`.
@@ -128,6 +128,15 @@ Bibliography of the sources this repository vendors under `references/vendor/`. 
 
 - Hecke.jl, test files at commit `e2ab5716135292294f5d5d9d34ed707b91e98b88`: `references/vendor/Hecke.jl@e2ab5716/test/`. https://github.com/thofma/Hecke.jl
 
-## Not vendored
+## Local Zotero extractions (copyrighted, not committed)
 
-- J. H. Conway and N. J. A. Sloane, *Sphere Packings, Lattices and Groups*, 3rd ed., Springer, 1999. Chapter 15, Section 11, equations (51a) and (51b) are cited by `conway_sloane_cases.json`; no local copy is available.
+These texts are OCR extractions from the local Zotero library.
+They are git-ignored, and each extraction script pins its file by SHA-256 (see `references/vendor/README.md`).
+
+- J. H. Conway and N. J. A. Sloane, *Sphere Packings, Lattices and Groups*, 3rd ed., Springer, 1999. Zotero `T2WVLTDB`: `references/vendor/zotero/T2WVLTDB-conway-sloane-1999-splag/extracted.md`. Fixtures: `conway_sloane_cases.json`.
+
+- Francesco Scattone, *On the compactification of moduli spaces for algebraic K3 surfaces*, Mem.
+  Amer.
+  Math.
+  Soc.
+  70 (1987), no. 374. Zotero `SF7T3C8G`: `references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md`. Fixtures: `k3_modular_strata.json`.

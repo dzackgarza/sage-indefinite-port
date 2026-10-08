@@ -165,15 +165,25 @@ This document records the exact provenance, source files, authors, publications,
 
   - K3 lattice $3U \oplus 2E_8(-1)$: one orbit of primitive vectors per represented norm, by Eichler's criterion, Gritsenko–Hulek–Sankaran arXiv:1012.4155, Lemma `lem:eichler` (`references/vendor/arxiv/1012.4155/main.tex`).
 
-  - Degree 2: four Type II curves meeting in one Type III point (Laza arXiv:1205.3144, theorem citing Scattone §6.2), with Type II root types $A_{17}$, $E_8^2+A_1$, $D_{16}+A_1$, $E_7+D_{10}$ (Shah's table as given there).
+  - Degree 2: four Type II curves meeting in one Type III point, with Type II root types $A_1+E_8+E_8$, $A_1+D_{16}$, $E_7+D_{10}$, $A_{17}$ (Scattone, *On the compactification of moduli spaces for algebraic K3 surfaces*, Mem. AMS 374, 1987: §6 opening, which states the point and $h(k)$ curves for $D_k/O_-(L_k)$ with $h(1)=4$, $h(2)=9$; and (6.2.1)).
 
-  - Degree 4: nine Type II curves with generalised types $A_{11}+E_6$, $A_1+A_1+A_{15}$, $D_8+D_8+\langle-4\rangle$, $D_{12}+D_5$, $D_{16}+\langle-4\rangle$, $E_7+E_7+A_3$, $E_8+E_8+\langle-4\rangle$, $E_8+D_9$, $D_{17}$ (Jones arXiv:2502.04301, theorem citing Scattone §6.3).
+  - Degree 4: nine Type II curves with generalised types $A_{11}+E_6$, $A_1+A_1+A_{15}$, $D_8+D_8+\langle-4\rangle$, $D_{12}+D_5$, $D_{16}+\langle-4\rangle$, $E_7+E_7+A_3$, $E_8+E_8+\langle-4\rangle$, $E_8+D_9$, $D_{17}$ (Scattone §6.3).
 
-  - The group: by Scattone [5.4.7] as stated in Jones arXiv:2502.04301 (lines 276-281), the boundary curves of $\mathcal F_{2k}$ correspond bijectively to rank-2 isotropic sublattices $I \subset \Lambda_{2k}$ modulo $O(\Lambda_{2k})$ (`type_ii_correspondence`). No vendored source names the group for the Type III point count.
+  - The group: Scattone Proposition 5.4.7 and Corollary 5.4.8(2). For squarefree $k$, $E \mapsto E^\perp/E$ is a bijection from the $O(\Lambda_{2k})$-orbits of primitive isotropic planes onto $G(k)$, so there are $h(k)$ of them (`type_ii_correspondence`). The Type III point is stated for $O_-(L_k)$, not $O(\Lambda_{2k})$.
+
+  - Scattone's memoir is read from the OCR extraction of Zotero item `SF7T3C8G` (`references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md`), pinned by SHA-256 in the script and not committed.
 
 - **Extraction**: `uv run references/extract/k3_strata.py`.
 
 - **Removed**: the "$2^{\omega(d)-1}$ zero-dimensional cusps" family attributed to Attwell-Duval. No source for it is vendored or known, and for squarefree $d$ the Eichler-criterion count is one cusp, which contradicts it. The previous degree-4 labels included $A_{17}$ and $D_{10}+E_7$ (degree-2 labels) and used $A_1$ where the classification has $\langle-4\rangle$.
+
+### Conway–Sloane Same-Genus Ternary Pair (51a)/(51b)
+
+- **File**: `tests/fixtures/conway_sloane_cases.json`
+
+- **Primary Source**: J. H. Conway and N. J. A. Sloane, *Sphere Packings, Lattices and Groups*, 3rd ed., Springer, 1999, Chapter 15, §11, equations (51a) and (51b): two inequivalent indefinite ternary forms of determinant $-128$ in the genus $\mathrm{I}_{2,1}(2 \times 64)$ of $\mathrm{diag}\{-1, 64, 2\}$, which has two spinor genera and hence two classes. Read from the OCR extraction of Zotero item `T2WVLTDB` (`references/vendor/zotero/T2WVLTDB-conway-sloane-1999-splag/extracted.md`), pinned by SHA-256 in the script and not committed.
+
+- **Extraction**: `uv run references/extract/conway_sloane.py` parses both Gram matrices from the displayed equation and asserts determinant $-128$ and signature $(2,1)$ for each, that (51a) has the diagonal basis $e_1, e_1+e_2, e_3$ of $\mathrm{diag}\{-1,64,2\}$, and that (51b) is the Gram matrix of $3e_1, e_2/3, e_3$, as the passage states.
 
 ### Baily–Borel Boundaries of the D-Tower (Laza–O'Grady)
 

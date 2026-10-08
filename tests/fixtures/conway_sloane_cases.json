@@ -1,3 +1,61 @@
 {
-"spinor_genus_pair_determinant_minus_128":{"id":"cs99_ch15_sec11_forms_51ab","genus":"I_{2,1}(2 x 64)","determinant":-128,"signature":[2,1],"form_a":{"equation":"(51a)","gram":[[-1,1,0],[1,63,0],[0,0,2]]},"form_b":{"equation":"(51b)","gram":[[-9,1,0],[1,7,0],[0,0,2]]},"same_genus":true,"spinor_genera_in_genus":2,"classes_in_genus":2,"integrally_equivalent":false,"source":{"kind":"published","citation":"CS99","chapter":15,"section":"11. Computational complexity","statements":["equations (51a) and (51b)","Corollary 22 (n = 3, d_0 = 128)"],"quote":"We illustrate by finding two inequivalent indefinite ternary forms of determinant -128 of the same genus (see Corollary 22). It is easy to see that the genus of f = diag{-1, 64, 2}, namely I_{2,1}(2 x 64), contains two spinor genera and hence two classes, namely f and f * Delta(3). [...] The matrix (51b) is therefore a representative for the second class in this genus."}}
+  "spinor_genus_pair_determinant_minus_128": {
+    "id": "cs99_ch15_sec11_forms_51ab",
+    "genus": "I_{2,1}(2 x 64)",
+    "determinant": -128,
+    "signature": [
+      2,
+      1
+    ],
+    "form_a": {
+      "equation": "(51a)",
+      "gram": [
+        [
+          -1,
+          1,
+          0
+        ],
+        [
+          1,
+          63,
+          0
+        ],
+        [
+          0,
+          0,
+          2
+        ]
+      ]
+    },
+    "form_b": {
+      "equation": "(51b)",
+      "gram": [
+        [
+          -9,
+          1,
+          0
+        ],
+        [
+          1,
+          7,
+          0
+        ],
+        [
+          0,
+          0,
+          2
+        ]
+      ]
+    },
+    "same_genus": true,
+    "spinor_genera_in_genus": 2,
+    "classes_in_genus": 2,
+    "integrally_equivalent": false,
+    "source": {
+      "kind": "published_text",
+      "citation": "J. H. Conway and N. J. A. Sloane, Sphere Packings, Lattices and Groups, 3rd ed., Springer, 1999, Ch. 15, Sec. 11",
+      "file": "references/vendor/zotero/T2WVLTDB-conway-sloane-1999-splag/extracted.md",
+      "lines": "12933-12939"
+    }
+  }
 }
