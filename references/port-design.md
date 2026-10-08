@@ -52,7 +52,10 @@ The port supplies exactly three things that no general construction yields:
 
 ## Planned preamble API (frozen)
 
-Port code calls these names now. An operation that research has not implemented yet fails at run time. The names extend existing preamble owners wherever one exists; each row is posted to its research issue. Notation: `XL = CosliceCategory(Lattices(ZZ), X)` for a marking lattice X; `G` a preamble group given by generators; `L`, `M` lattices.
+Port code calls these names now.
+An operation that research has not implemented yet fails at run time.
+The names extend existing preamble owners wherever one exists; each row is posted to its research issue.
+Notation: `XL = CosliceCategory(Lattices(ZZ), X)` for a marking lattice X; `G` a preamble group given by generators; `L`, `M` lattices.
 
 | Operation | Owner and name | Signature → result | Issue |
 | --- | --- | --- | --- |
