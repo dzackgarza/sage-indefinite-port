@@ -14,7 +14,6 @@ from dzack_research.preamble.categories.definite_lattices import (
     _element_from_coordinates,
     _ExactCVPEngine,
 )
-from dzack_research.preamble.categories.lattice_engines import _rational_positive_vector
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods, LatticeIsometryMor
 from dzack_research.preamble.categories.rings.ring_foundation import _engine_element, _OwnedRingElement
 from sage.matrix.constructor import matrix
@@ -705,10 +704,10 @@ def _ambient_element(lattice: Lattices.ParentMethods, coordinates: tuple[Integer
 
 
 def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]:
-    raw = _rational_positive_vector(lattice.gram_tensor())
-    rationals = raw.base_ring()
-    coordinates = tuple(SageQQ(_engine_element(rationals, entry)) for entry in raw)
-    primitive, _scale = _primitive_integral_direction(coordinates)
+    positive = lattice.positive_vector()
+    if positive is None:
+        raise ValueError("the Lorentzian cell lattice has no positive vector")
+    primitive = _coordinate_row(lattice, positive, SageZZ)
     gram = _gram_matrix(lattice)
     rank = len(primitive)
     directions: list[FreeModuleElement[Integer]] = []
@@ -758,29 +757,6 @@ def _primitive_integral_direction(coordinates: tuple[Rational, ...]) -> tuple[tu
     if content == 0:
         raise ValueError("a Lorentzian direction cannot be zero")
     return tuple(value // content for value in integers), SageQQ(denominator) / SageQQ(content)
-
-
-def _bezout_partner(lattice: Lattices.ParentMethods, timelike: Lattices.ElementMethods) -> Lattices.ElementMethods:
-    ring = lattice.base_ring()
-    labels = tuple(lattice.module_generating_set())
-    pairings = tuple(lattice.b(timelike, lattice.module_generator(label)) for label in labels)
-    gcd_value = ring.zero()
-    coefficients: list[_OwnedRingElement] = []
-    for pairing in pairings:
-        new_gcd, old_coefficient, new_coefficient = gcd_value.xgcd(pairing)
-        coefficients = [old_coefficient * coefficient for coefficient in coefficients]
-        coefficients.append(new_coefficient)
-        gcd_value = new_gcd
-    divisibility = timelike.div()
-    if gcd_value != divisibility:
-        coefficients = [-coefficient for coefficient in coefficients]
-        gcd_value = -gcd_value
-    if gcd_value != divisibility:
-        raise ArithmeticError("Bezout coefficients do not realize the timelike divisibility")
-    partner = lattice.linear_combination({label: coefficient for label, coefficient in zip(labels, coefficients, strict=True) if coefficient})
-    if lattice.b(timelike, partner) != divisibility:
-        raise ArithmeticError("the Bezout partner has the wrong pairing")
-    return partner
 
 
 class _PositiveVectorEnumerator:

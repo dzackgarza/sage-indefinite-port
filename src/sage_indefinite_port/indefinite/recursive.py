@@ -38,7 +38,6 @@ from sage_indefinite_port.invariants import (
     LatticePrefilter,
     VectorPrefilter,
     lattice_prefilter,
-    vector_content,
 )
 from sage_indefinite_port.readiness import unfinished
 
@@ -637,7 +636,7 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
     ) -> LatticeIsometryMethods | None:
         match (
             source_vector.q() == target_vector.q(),
-            vector_content(source_vector) == vector_content(target_vector),
+            source_vector.content() == target_vector.content(),
             source_vector.div() == target_vector.div(),
         ):
             case (True, True, True):

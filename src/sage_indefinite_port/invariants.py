@@ -14,7 +14,6 @@ from typing import Literal
 
 from dzack_research.preamble.categories.lattices import FiniteRankLattices, Lattices
 from dzack_research.preamble.categories.rings.ring_foundation import _engine_element
-from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.rings.integer import Integer
 
 Parity = Literal["even", "odd"]
@@ -68,14 +67,6 @@ class AttackProfile:
         return cls(lattice, signed, -1, negative_index, positive_index)
 
 
-def vector_content(vector: Lattices.ElementMethods) -> int:
-    coordinates = vector.to_vector()
-    content = 0
-    for label in vector.parent().module_generating_set():
-        content = gcd(content, abs(int(coordinates(label))))
-    return content
-
-
 @dataclass(frozen=True)
 class VectorPrefilter:
     norm: int
@@ -91,20 +82,9 @@ class VectorPrefilter:
         *,
         include_orthogonal_reduction: bool = True,
     ) -> VectorPrefilter:
-        lattice = vector.parent()
-        labels = tuple(lattice.module_generating_set())
-        coordinate_function = vector.to_vector()
-        coordinates = tuple(int(coordinate_function(label)) for label in labels)
-        content = 0
-        for coordinate in coordinates:
-            content = gcd(content, abs(coordinate))
-
-        gram = _engine_component_matrix(lattice.gram_tensor())
-        pairings = tuple(sum(coordinates[row] * int(gram[row, column]) for row in range(len(coordinates))) for column in range(len(coordinates)))
-        norm = sum(coordinate * pairing for coordinate, pairing in zip(coordinates, pairings, strict=True))
-        divisor = 0
-        for pairing in pairings:
-            divisor = gcd(divisor, abs(pairing))
+        content = int(vector.content())
+        norm = int(vector.q())
+        divisor = int(vector.div())
         discriminant_key = None
         match divisor:
             case 0:
