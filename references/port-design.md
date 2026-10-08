@@ -12,7 +12,7 @@ Every step carries one tag:
 
 The port owns only [I] steps.
 A step that is general mathematics is never [I], whatever the port's current code does.
-Current code that implements a [P] or [R] step is replaced by the preamble operation and deleted (#15, #18).
+Where the port already implements an [R] step, that code migrates upstream into research as the preamble operation, and the port then imports it (#37). Port code that duplicates a [P] step is replaced by the preamble call.
 
 Notation: `L` a nondegenerate integral lattice, `G = L.O()`, `A_L` its discriminant form, `q(v) = b(v, v)`.
 
