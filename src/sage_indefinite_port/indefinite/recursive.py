@@ -764,7 +764,9 @@ class IndefiniteOrthogonalAlgorithm(_RecursiveBackend):
         lattice: Lattices.ParentMethods,
         square: _OwnedRingElement | int,
     ) -> tuple[Lattices.ElementMethods, ...]:
-        r"""Return exact higher-Witt O(L)-orbit representatives of a square."""
+        r"""Return O(L)-orbit representatives through the available rank-specific owners."""
+        if lattice.module_rank() == 2 and not lattice.is_definite() and not lattice.is_isotropic():
+            return tuple(lattice.binary_fixed_norm_representatives(square))
         reduced, reduced_to_lattice = self._simple_indefinite_reduction(lattice)
         if reduced is not lattice:
             assert reduced_to_lattice is not None
