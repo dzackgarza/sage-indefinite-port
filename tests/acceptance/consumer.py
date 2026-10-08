@@ -1,10 +1,14 @@
 """The consumer side of the acceptance suite: corpus data in, preamble objects out.
 
 Every case reaches this port the way the research preamble's consumers do: a lattice is
-``Lattices(ZZ)(gram)`` (or a named preamble lattice), and every group, orbit,
-stabilizer, witness and cusp is a method of that lattice, of its orthogonal group, or of
-a subgroup of it. These helpers only translate corpus coordinates into preamble elements
-and read results back as coordinates, so that results can be compared with recorded data.
+``Lattices(ZZ)(gram)`` (or a named preamble lattice). Questions about vectors, sublattices
+and flags are questions about marked lattices (references/port-design.md, "Marked
+lattices"): Isom and Aut are the core homsets of the coslice ``<n>/Lattices`` (pointed
+lattices), of ``Ar(Lattices)`` (sublattices) and of ``Fun([2], Lattices)`` (flags), and
+orbits under O(L) are isomorphism classes of primitive markings. Orbits under a subgroup
+are obtained by splitting those classes. These helpers build the marked objects from corpus
+coordinates and read results back as coordinates, so that results can be compared with
+recorded data.
 
 Matrices follow the corpus's row convention: row ``i`` holds the coordinates of the image
 of the ``i``-th basis vector, so an isometry ``R`` of a lattice with Gram matrix ``G``
@@ -17,20 +21,16 @@ from functools import reduce
 from math import gcd
 
 from dzack_research.preamble.all import ZZ as PreambleZZ
-from dzack_research.preamble.all import Lattices
+from dzack_research.preamble.all import Cat, Lattices
+from dzack_research.preamble.categories.abstract_categories.arrow_categories import CosliceCategory
+from dzack_research.preamble.categories.abstract_categories.products import FiniteOrdinalCategory
 from sage.all import GF, ZZ, MatrixGroup, matrix, prime_divisors
 
 from sage_indefinite_port.readiness import UNFINISHED, UnfinishedCapability
 
-O_L = "sage_indefinite_port.indefinite.recursive:orthogonal_group_generators"
-ISOMETRY = "sage_indefinite_port.indefinite.recursive:isometry"
-VECTOR_WITNESS = "sage_indefinite_port.indefinite.recursive:vector_equivalence_witness"
-VECTOR_STABILIZER = "sage_indefinite_port.indefinite.recursive:vector_stabilizer_generators"
-VECTOR_ORBITS = "sage_indefinite_port.indefinite.recursive:vector_orbit_representatives"
-ISOTROPIC_ORBITS = "sage_indefinite_port.indefinite.isotropic_flags:isotropic_sublattice_orbit_representatives"
-ISOTROPIC_WITNESS = "sage_indefinite_port.indefinite.isotropic_flags:isotropic_sublattice_equivalence_witness"
-ISOTROPIC_STABILIZER = "sage_indefinite_port.indefinite.isotropic_flags:isotropic_sublattice_stabilizer_generators"
-FLAG_ORBITS = "sage_indefinite_port.indefinite.isotropic_flags:isotropic_flag_orbit_representatives"
+MARKED_ISOMETRY = "sage_indefinite_port.indefinite.marked_lattices:isometry"
+MARKED_AUTOMORPHISMS = "sage_indefinite_port.indefinite.marked_lattices:automorphism_group_generators"
+MARKED_CLASSES = "sage_indefinite_port.indefinite.marked_lattices:primitive_marking_classes"
 EDGEWALK = "sage_indefinite_port.indefinite.edgewalk:edgewalk_fundamental_domain"
 PERFECT_DOMAINS = "sage_indefinite_port.indefinite.lorentzian_cells:perfect_domain_traversal"
 
@@ -136,3 +136,104 @@ def assert_same_finite_images(gram, computed, recorded_rows) -> None:
 
 def transpose(rows):
     return [list(column) for column in zip(*rows, strict=True)]
+
+
+def pointed_category(square):
+    """The coslice <n>/Lattices of lattices with a marked vector of square n."""
+    return CosliceCategory(Lattices(PreambleZZ), Lattices(PreambleZZ)([[int(square)]]))
+
+
+def pointed(lattice_, vector):
+    """The pointed lattice (L, v): the morphism <q(v)> -> L sending the generator to v."""
+    category = pointed_category(lattice_.q(vector))
+    return category.object(category.base_object().hom([vector], codomain=lattice_))
+
+
+def marked_vector(pointed_lattice):
+    """The vector v of a pointed lattice (L, <n> -> L)."""
+    arrow = pointed_lattice.arrow()
+    (generator,) = basis(arrow.domain())
+    return arrow(generator)
+
+
+def sublattice_category():
+    """Ar(Lattices): sublattices up to isometries carrying one onto the other."""
+    return Cat().Mor(FiniteOrdinalCategory(2), Lattices(PreambleZZ))
+
+
+def flag_category():
+    """Fun([2], Lattices): flags I_1 -> I_2 -> L."""
+    return Cat().Mor(FiniteOrdinalCategory(3), Lattices(PreambleZZ))
+
+
+def marked_sublattice(lattice_, vectors):
+    """The marked lattice (L, I -> L) for the sublattice I spanned by the vectors."""
+    return sublattice_category().object(lattice_.vector_configuration(list(vectors)).inclusion())
+
+
+def sublattice_of(marked):
+    """The sublattice I of a marked lattice (L, I -> L), as a preamble subobject of L."""
+    arrow = marked.arrow()
+    return arrow.codomain().vector_configuration([arrow(generator) for generator in basis(arrow.domain())])
+
+
+def totally_isotropic_source(rank):
+    """The shape of a totally isotropic sublattice of rank k: Z^k with the zero form."""
+    return Lattices(PreambleZZ)([[0] * rank for _ in range(rank)])
+
+
+def line_in_plane_source():
+    """The shape of an isotropic flag of ranks (1, 2): the inclusion of the first coordinate."""
+    line, plane = totally_isotropic_source(1), totally_isotropic_source(2)
+    return line.hom([basis(plane)[0]], codomain=plane)
+
+
+def isomorphisms(category, source, target):
+    """Isom of two marked lattices: the core homset of their category."""
+    return category.Core().Mor(source, target)
+
+
+def automorphisms(category, marked):
+    """Aut of a marked lattice."""
+    return category.Core().Mor(marked, marked)
+
+
+def underlying_isometry(isomorphism):
+    """The isometry g: L -> M of an isomorphism of marked lattices (the square's right edge)."""
+    return isomorphism.forward().right()
+
+
+def are_isomorphic(category, source, target) -> bool:
+    return not isomorphisms(category, source, target).is_empty()
+
+
+def marking_classes(category, source, lattice_):
+    """One marked lattice per O(L)-orbit of primitive markings of L of the given shape."""
+    return tuple(category.primitive_marking_classes(source, lattice_))
+
+
+def vector_classes(lattice_, square):
+    """One pointed lattice per O(L)-orbit of primitive vectors of the given square."""
+    category = pointed_category(square)
+    return marking_classes(category, category.base_object(), lattice_)
+
+
+def isotropic_classes(lattice_, rank):
+    """One marked lattice per O(L)-orbit of primitive totally isotropic sublattices of the rank."""
+    return marking_classes(sublattice_category(), totally_isotropic_source(rank), lattice_)
+
+
+def flag_classes(lattice_):
+    """One marked lattice per O(L)-orbit of isotropic flags of ranks (1, 2)."""
+    return marking_classes(flag_category(), line_in_plane_source(), lattice_)
+
+
+def subgroup_classes(subgroup, classes):
+    """Orbits under a finite-index subgroup Gamma of O(L): the O(L)-orbits split along Gamma."""
+    lattice_ = subgroup.supergroup().domain()
+    return tuple(split for marked in classes for split in lattice_.O().split_orbit(marked, subgroup))
+
+
+def isomorphism_in(subgroup, category, source, target):
+    """An isomorphism of marked lattices whose isometry lies in the subgroup, or None."""
+    return isomorphisms(category, source, target).an_element_in(subgroup)

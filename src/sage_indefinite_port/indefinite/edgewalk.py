@@ -49,6 +49,8 @@ from sage_indefinite_port.indefinite.edgewalk_rank2 import (
     quadratic_eval,
     scalar_eval,
 )
+from sage.structure.parent import Parent
+
 from sage_indefinite_port.readiness import unfinished
 
 type _Row = tuple[int, ...]
@@ -588,8 +590,17 @@ def _full_root_orbit(root_rows: set[_Row], isometry_rows: set[_Roots]) -> _Roots
 
 
 @unfinished(15)
-def edgewalk_fundamental_domain(gram: Matrix_integer_dense) -> EdgewalkRecord:
-    """Return Allcock's fundamental-domain record for a Lorentzian Gram matrix."""
+def edgewalk_fundamental_domain(lattice: HyperbolicLattices.ParentMethods) -> Parent:
+    r"""Allcock's edgewalk on a hyperbolic lattice.
+
+    Returns the preamble's ``AllcockEdgewalkReport`` of ``lattice``: the simple roots of a
+    fundamental polyhedron of the reflection group W(L), as elements of ``lattice``, and whether
+    ``lattice`` is reflective.
+    """
+
+
+def _edgewalk(gram: Matrix_integer_dense) -> EdgewalkRecord:
+    """Allcock's walk on a Lorentzian Gram matrix; the [I] logic #15 rebuilds on preamble objects."""
     gram = _integer_gram(gram)
     lattice = HyperbolicLattices(ZZ)(Lattices(ZZ)([[int(entry) for entry in row] for row in gram.rows()]))
     norms = tuple(int(norm) for norm in lattice.possible_root_lengths())

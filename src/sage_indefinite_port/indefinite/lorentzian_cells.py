@@ -540,10 +540,12 @@ def _perfect_form_hash_key(
 
 
 @unfinished(15)
-def perfect_domain_traversal(gram_rows: Sequence[Sequence[int | Integer]], option: PerfectMode = "total") -> tuple[TraversalRecord, ...]:
-    r"""Return complete native perfect-domain traversal records for the Gram rows."""
-    lattice = Lattices(ZZ)(gram_rows)
-    return LorentzianPerfectComplex(lattice, option).records()
+def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode) -> Parent:
+    r"""The perfect-domain decomposition of a Lorentzian lattice in the given mode.
+
+    Returns the preamble's ``LorentzianPerfectDomainTraversal`` of ``lattice``: the quotient
+    cells, their automorphism groups and the side pairings, from which O^Omega(L) is generated.
+    """
 
 
 class NoLocalMarkTheoremError(RuntimeError):

@@ -1,10 +1,12 @@
-"""Stabilizers and equivalence witnesses of vectors in indefinite lattices.
+"""Automorphisms and isometries of pointed indefinite lattices.
 
-OSCAR records a vector stabilizer of order 2. Brandhorst--Gonzalez-Alonso record, for every
-O(E10)-orbit of primitive vectors of norm 0..10, the index of the image of its stabilizer
-in O(E10 tensor F_2), the orthogonal group of even type O^+_10(2). Equivalence witnesses
-are checked against isometries the corpus provides independently: the reflections in Dutour
-Sikirić--Hulek's simple roots of U + E8(-1).
+The stabilizer of a vector v is Aut((L, v)) for the pointed lattice (L, <q(v)> -> L), and
+an isometry carrying v to w is an element of Isom((L, v), (L, w)). OSCAR records an
+automorphism group of order 2. Brandhorst--Gonzalez-Alonso record, for every O(E10)-orbit
+of primitive vectors of norm 0..10, the index of the image of its automorphism group in
+O(E10 tensor F_2), the orthogonal group of even type O^+_10(2). Isometries of pointed
+lattices are checked against isometries the corpus provides independently: the
+reflections in Dutour Sikirić--Hulek's simple roots of U + E8(-1).
 """
 
 from collections import Counter
@@ -13,17 +15,23 @@ import pytest
 
 from sage_indefinite_port.readiness import UnfinishedCapability
 from tests.acceptance.consumer import (
-    VECTOR_ORBITS,
-    VECTOR_STABILIZER,
-    VECTOR_WITNESS,
+    MARKED_AUTOMORPHISMS,
+    MARKED_CLASSES,
+    MARKED_ISOMETRY,
+    automorphisms,
     coordinates,
     element,
     is_isometry,
+    isomorphisms,
     lattice,
-    primitive,
+    marked_vector,
+    pointed,
+    pointed_category,
     reduction_image_order,
     require,
     rows_of,
+    underlying_isometry,
+    vector_classes,
 )
 from tests.fixtures.oracle_fixtures import (
     load_e10_fundamental_domain,
@@ -35,33 +43,34 @@ _E10 = load_e10_fundamental_domain()
 _ORDER_O_PLUS_10_2 = 2**21 * 3**5 * 5**2 * 7 * 17 * 31
 
 
+def _automorphism_rows(marked):
+    category = pointed_category(marked_vector(marked).q())
+    return [rows_of(underlying_isometry(generator)) for generator in automorphisms(category, marked).group_generators()]
+
+
 @pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_vector_stabilizer_has_oscars_order() -> None:
-    require(VECTOR_STABILIZER)
+    require(MARKED_AUTOMORPHISMS)
 
     case = next(case for case in load_oscar_lattice_oracles()["isometry_groups"] if case["id"] == "stabilizer_of_100")
     lattice_ = lattice(case["gram"])
 
-    generators = lattice_.O().vector_stabilizer_generators(element(lattice_, case["vector"]))
+    rows = _automorphism_rows(pointed(lattice_, element(lattice_, case["vector"])))
 
-    assert all(is_isometry(rows_of(generator), case["gram"]) for generator in generators)
-    assert MatrixGroup([matrix(ZZ, rows_of(generator)) for generator in generators]).order() == case["vector_stabilizer_order"]
+    assert all(is_isometry(generator, case["gram"]) for generator in rows)
+    assert MatrixGroup([matrix(ZZ, generator) for generator in rows]).order() == case["vector_stabilizer_order"]
 
 
 @pytest.mark.parametrize("square", sorted(Counter(orbit["h_squared"] for orbit in load_e10_vector_orbits()["orbits"])))
 @pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso(square) -> None:
-    require(VECTOR_ORBITS, VECTOR_STABILIZER)
+    require(MARKED_CLASSES, MARKED_AUTOMORPHISMS)
 
-    group = lattice(_E10["gram"]).O()
     recorded = Counter(
         orbit["stabilizer_image_index_in_O_E10_F2"] for orbit in load_e10_vector_orbits()["orbits"] if orbit["h_squared"] == square
     )
 
-    computed = Counter()
-    for representative in primitive(group.vector_orbit_representatives(square)):
-        generators = [rows_of(generator) for generator in group.vector_stabilizer_generators(representative)]
-        computed[_ORDER_O_PLUS_10_2 // reduction_image_order(generators, 2)] += 1
+    computed = Counter(_ORDER_O_PLUS_10_2 // reduction_image_order(_automorphism_rows(marked), 2) for marked in vector_classes(lattice(_E10["gram"]), square))
 
     assert computed == recorded
 
@@ -76,17 +85,20 @@ def _reflection_rows(gram, root) -> list[list[int]]:
 @pytest.mark.parametrize("root", _E10["simple_roots"], ids=lambda root: f"r_{root['label']}")
 @pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_equivalence_witness_carries_a_representative_to_its_reflection(root) -> None:
-    require(VECTOR_WITNESS)
+    require(MARKED_ISOMETRY)
 
     gram = _E10["gram"]
-    group = lattice(gram).O()
+    lattice_ = lattice(gram)
     reflection = matrix(ZZ, _reflection_rows(gram, root["vector"]))
     assert is_isometry(reflection.rows(), gram)
     for representative in _E10["orbit_representatives"]:
         source = vector(ZZ, representative["vector"])
         target = source * reflection
+        source_vector = element(lattice_, source)
 
-        witness = group.vector_equivalence_witness(element(group.domain(), source), element(group.domain(), target))
+        isometry = underlying_isometry(
+            isomorphisms(pointed_category(source_vector.q()), pointed(lattice_, source_vector), pointed(lattice_, element(lattice_, target))).an_element()
+        )
 
-        assert is_isometry(rows_of(witness), gram)
-        assert vector(ZZ, coordinates(witness(element(group.domain(), source)))) == target
+        assert is_isometry(rows_of(isometry), gram)
+        assert vector(ZZ, coordinates(isometry(source_vector))) == target

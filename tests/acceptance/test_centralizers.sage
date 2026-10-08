@@ -11,7 +11,7 @@ import pytest
 
 from sage_indefinite_port.readiness import UnfinishedCapability
 from tests.acceptance.consumer import (
-    O_L,
+    MARKED_AUTOMORPHISMS,
     isometry_from_rows,
     lattice,
     require,
@@ -26,7 +26,7 @@ _DATA = load_isometry_centralizers()
 @pytest.mark.parametrize("case", _DATA["centralizer_cases"], ids=lambda case: case["id"])
 @pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_centralizer_images_match_oscar(case) -> None:
-    require(O_L)
+    require(MARKED_AUTOMORPHISMS)
 
     lattice_ = lattice(case["gram"])
     isometry = isometry_from_rows(lattice_, case["isometry"])
