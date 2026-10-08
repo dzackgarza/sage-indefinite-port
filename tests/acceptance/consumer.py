@@ -31,7 +31,6 @@ ISOTROPIC_ORBITS = "sage_indefinite_port.indefinite.isotropic_flags:isotropic_su
 ISOTROPIC_WITNESS = "sage_indefinite_port.indefinite.isotropic_flags:isotropic_sublattice_equivalence_witness"
 ISOTROPIC_STABILIZER = "sage_indefinite_port.indefinite.isotropic_flags:isotropic_sublattice_stabilizer_generators"
 FLAG_ORBITS = "sage_indefinite_port.indefinite.isotropic_flags:isotropic_flag_orbit_representatives"
-CENTRALIZER = "sage_indefinite_port.indefinite.equivariant:centralizer_generators"
 EDGEWALK = "sage_indefinite_port.indefinite.edgewalk:edgewalk_fundamental_domain"
 PERFECT_DOMAINS = "sage_indefinite_port.indefinite.lorentzian_cells:perfect_domain_traversal"
 
