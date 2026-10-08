@@ -81,7 +81,7 @@ The walk along edges of the polyhedron, the cusp handling, and the termination c
 Input: `L` of positive index ≥ 2 (after the sign normalization that makes the positive index min(n_+, n_-) [I]).
 
 ```
-envelope: find U ⊕ U in L or in an overlattice E ⊇ L                [R#401] (isotropic witness, hyperbolic pair, splitting)
+envelope: find U ⊕ U in L, or a similarity embedding L → E into a lattice E with U ⊕ U   [R#401] (isotropic witness, hyperbolic pair, splitting)
 A = approximate group of E (TwoUEichlerModel)                       [P]
 A_L = stabilizer of L in A, with right cosets A/A_L                  [R#396]
 v = splitting vector of positive norm                                [I]  choice by recursive-complexity score
