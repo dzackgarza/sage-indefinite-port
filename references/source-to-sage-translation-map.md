@@ -772,7 +772,11 @@ This produces the actual parabolic stabilizer without guessing a common "helping
 
 # 8. Integral structures: preamble group operations
 
-The mathematics of `GroupAction.g` and `MatrixGroup.h` (lattice stabilizers and transporters under a rational group, cosets, double cosets, finite-module actions) consists of basic group-action operations. They belong to the research preamble, and this repository calls them. It does not implement them, and it does not port the custom permutation-group implementation. The sections below record the mathematics the preamble operations must satisfy. A missing operation is an upstream gap, named in the acceptance contract (#33).
+The mathematics of `GroupAction.g` and `MatrixGroup.h` (lattice stabilizers and transporters under a rational group, cosets, double cosets, finite-module actions) consists of basic group-action operations.
+They belong to the research preamble, and this repository calls them.
+It does not implement them, and it does not port the custom permutation-group implementation.
+The sections below record the mathematics the preamble operations must satisfy.
+A missing operation is an upstream gap, named in the acceptance contract (#33).
 
 ## 8.1 Target API
 
@@ -1678,7 +1682,9 @@ For signature (2,n), rank two is already the maximal isotropic rank and recovers
 
 # 14. Finite-index subgroups: preamble group operations
 
-This is a generalization above the upstream algorithm. Kernels, preimages, intersections and orbit splitting are basic subgroup operations owned by the research preamble. This repository supplies the O(L) they act on, and the acceptance suite checks the results.
+This is a generalization above the upstream algorithm.
+Kernels, preimages, intersections and orbit splitting are basic subgroup operations owned by the research preamble.
+This repository supplies the O(L) they act on, and the acceptance suite checks the results.
 
 ## 14.1 Finite-preimage groups
 
