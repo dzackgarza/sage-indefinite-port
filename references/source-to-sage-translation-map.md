@@ -1685,11 +1685,11 @@ For signature (2,n), rank two is already the maximal isotropic rank and recovers
 
 * * *
 
-# 14. Finite-index subgroups: preamble group operations
+# 14. Finite-index subgroups: generic solver and arithmetic application
 
-This is a generalization above the upstream algorithm.
-Kernels, preimages, intersections and orbit splitting are basic subgroup operations owned by the research preamble.
-This repository supplies the O(L) they act on, and the acceptance suite checks the results.
+Research computes kernels, preimages, intersections and orbit splitting from supplied generators and effective finite-action data.
+This repository computes the indefinite ambient groups, orbit representatives and point stabilizers, constructs the arithmetic actions, and reconstructs the marked-lattice answers (#18).
+Both parts are required by the unchanged consumer acceptance; neither the subgroup predicate nor the generic solver supplies the missing indefinite data.
 
 ## 14.1 Finite-preimage groups
 
@@ -1913,7 +1913,7 @@ HNF, SNF, saturation, kernels, quotient modules
     -> Sage/FLINT
 ```
 
-## Retain native temporarily
+## Port the native local protocol to Sage (#15)
 
 ```text
 LORENTZ_FindPositiveVectorsKernel
@@ -1980,7 +1980,8 @@ The former checks rational versus integral automorphisms and exact disjoint exha
 
 ## Tranche 3: Lorentzian cell backend
 
-Expose only the local cell protocol from C++, with Python owning quotient traversal and group extraction.
+Implement the local cell protocol in native Sage/Python, together with quotient traversal and group extraction.
+The C++ implementation is reference source only; it is never built or invoked.
 
 Recover:
 
@@ -2050,5 +2051,6 @@ construction-aware intersections
 
 Recover the centralizer of an Enriques involution from eigensublattices and gluing, then intersect it with stable and polarization-stabilizer subgroups.
 
-The resulting Sage code owns the mathematical recursion and object semantics.
-The only initially retained C++ is the local Lorentzian perfect-cell engine; even there, traversal, orbit assembly, subgroup semantics, and result construction move into the Sage layer.
+The port owns the specialized recursion, traversal and generator algorithms; research owns the mathematical objects and independent primitives.
+All local Lorentzian cell computations are implemented in Sage/Python (#15).
+No C++ execution backend is retained.
