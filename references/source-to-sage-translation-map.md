@@ -1,7 +1,7 @@
 # source-to-sage-translation-map
 
 Source-to-Sage translation map for the indefinite lattice port (received 2026-09-02, external report; citation markers of the generating tool removed).
-The plan card PLAN-INDEFINITE-EXTRACTION-AND-DECOMPOSITION is derived from this text.
+The issue tree rooted at #4 owns execution. [Port design](port-design.md) distinguishes mathematical objects and primitives from the specialized algorithms that compute them. The source symbols and sections below describe the algorithms; a public preamble method does not assign its specialized implementation to research.
 
 ## Source authority and versioning
 
@@ -520,7 +520,7 @@ Replace them with:
 P = GL(I).stabilizer(flag_on_I)
 ```
 
-represented as the integral parabolic subgroup determined by `FlagType`.
+represented as the integral parabolic subgroup determined by `FlagType`. This block triangular free-module construction is a research primitive. Combining it with the form, radical, quotient orthogonal group, gluing and integral lift kernel is the port's algorithm; the GL construction does not compute an orthogonal flag stabilizer.
 
 ## 5.3 Port the radical extension as a semidirect product
 
@@ -747,7 +747,7 @@ F = P.finite_compatibility_action()
 M_integral = M.stabilizer(F.gluing_object())
 ```
 
-This is a finite-module stabilizer problem, which the preamble's stabilizer operation solves.
+The port constructs this finite compatibility action and proves that it captures exactly the integral liftability condition. Research solves the resulting supplied finite-action stabilizer problem. Finding the action and its liftable subgroup is part of the port's parabolic algorithm (#18).
 
 ## 7.3 Lift generators by exact affine solving
 
@@ -770,13 +770,9 @@ This produces the actual parabolic stabilizer without guessing a common "helping
 
 * * *
 
-# 8. Integral structures: preamble group operations
+# 8. Integral structures: port construction over finite-action primitives
 
-The mathematics of `GroupAction.g` and `MatrixGroup.h` (lattice stabilizers and transporters under a rational group, cosets, double cosets, finite-module actions) consists of basic group-action operations.
-They belong to the research preamble, and this repository calls them.
-It does not implement them, and it does not port the custom permutation-group implementation.
-The sections below record the mathematics the preamble operations must satisfy.
-A missing operation is an upstream gap, named in the acceptance contract (#33).
+`GroupAction.g` and `MatrixGroup.h` construct an integral model and finite action for the rational group, then solve stabilizer, equivalence and coset problems through it. The construction, its termination hypotheses and the reconstruction of lattice isometries belong to this port (#18). Research supplies spans, quotients, induced morphisms, finite G-sets, Schreier generators and finite coset operations on the supplied data. Do not port the source's custom permutation-group engine. Do not assume the required integral model or finite action is already available merely by calling a research subgroup method.
 
 ## 8.1 Target API
 
@@ -822,15 +818,15 @@ Translate this as:
 def smallest_invariant_overlattice(G, L):
     M = L
     while True:
-        M_next = saturation(sum_of_sublattices(
+        M_next = sum_of_sublattices(
             [M] + [g(M) for g in G.gens_and_inverses()]
-        ))
+        )
         if M_next == M:
             return M
         M = M_next
 ```
 
-The method should explicitly have the precondition that G stabilizes some lattice commensurable with L. It should not be advertised as a terminating procedure for every finitely generated subgroup of GL_n(Q).
+The port must establish a finite stable containing module before using this loop; taking a saturation would change the orbit-generated lattice. The method should explicitly have the precondition that G stabilizes some lattice commensurable with L. It should not be advertised as a terminating procedure for every finitely generated subgroup of GL_n(Q).
 
 ## 8.3 Replace `LinearSpace_GetDivisor`
 

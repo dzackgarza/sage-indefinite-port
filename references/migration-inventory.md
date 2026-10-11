@@ -1,3 +1,43 @@
+# Implementation ownership inventory
+
+The current split is specified in [port design](port-design.md). This inventory identifies the source families affected by the earlier migration and their live owners. Deleting a port implementation in #38 did not implement its replacement. The source at `709f81a` is recovery material, not an instruction to restore raw matrices, duplicate primitives, or retain known defects.
+
+| Source family | Primitive retained in research | Specialized computation owned by the port | Issue |
+| --- | --- | --- | --- |
+| `groups/integral_structures.py`: `IntegralStructureAction`, `FiniteIntegralRepresentation`, integral stabilizer/equivalence/coset assembly | Module spans and finite quotients; finite actions, Schreier generators and word lifting on supplied data | Construct bounded integral models and the finite action; reconstruct lattice isometries and arithmetic cosets | #18; research #396 retains only the primitive part |
+| `RationalMatrixGroup`, `ArithmeticSubgroup`, generated/predicate subgroup carriers | Group objects, exact isometry elements, supplied generators and explicit membership capabilities | Compute indefinite generators and arithmetic membership data without a duplicate group class | #18; research #400 |
+| `RightCosetDecomposition`, `DoubleCosetDecomposition`, kernel/preimage/intersection helpers | General finite-action coset, kernel, preimage and intersection computations | Establish finite-index/action hypotheses and apply them to the port's lattice data | #18; research #396 |
+| `canonization.CellConfiguration`, Bliss pairing graph and configuration isomorphisms | Finite coloured spanning configurations, relation and integrality checks | Perfect-cell construction, choice of markings, adjacency and traversal | #15; research #399 |
+| `polyhedral` facets, `definite` wrappers | Cone facets/rays and existing definite Aut/Isom computations | None: use existing primitives | #15/#18 |
+| `invariants`, `presentations`, cache helpers | Content, norm, divisor, discriminant objects, exact change of basis | Dispatch, prefilter use, reduced-presentation strategy, caching and exact deduplication | #18 |
+| `lorentzian_cells` | Definite close-vector queries, signed witnesses, finite configurations/actions | Initial cell, multiplier searches, flip bounds, adjacency, side pairings and termination | #15 |
+| `recursive` | Complements, quotient objects, general isometry extension and integral descent | Recursive O(L), Isom, pointed Aut/Isom, liftable subgroup selection and coverage | #18 |
+| `eichler`, `OrbitCoverModel`, `EichlerEnvelope`, `TwoUEichlerModel` algorithm routines in research | Individual transvections, direct sums, ordinary Witt/partner constructions and discriminant classes | Approximate generating sets, envelope search, prescribed-invariant covering representatives and full-group assembly | #18; research #404 moves these computations here |
+| `IsotropicVectorSection`, `IsometryExtensionTorsor` | Torsor objects, linear/affine fibres and exact congruence solving; reusable existing extension operations | Derive the correct nonlinear lift family, select integral lifts and compute the full kernel in the recursive algorithm | #18; research #401 is not asked to port this whole family |
+| `MatrixEquationSolution`, `solve_isotropic_extension_equation`, `CodimensionOneIsotropicExtension` | Generic linear map fibres and valid Witt extension | Form the algorithm's equations and compose chosen solutions with the retained embeddings | #18 |
+| `PointwisePerpendicularKernel`, `INDEF_FORM_GetRec_IsotropicKplane` | Group/kernel objects and elementary morphisms | Integral kernel and unipotent generators, parabolic and orthogonal flag stabilizer assembly | #18; research #398 supplies GL/module-flag primitives |
+| `edgewalk_rank2`: `canonical_companion`, `promised_step`, `shorter_pair`, `reduced_start_pair`, `anisotropic_cycle` | Existing binary-form arithmetic and exact root computations | Oriented cycle, candidate enumeration and stopping rule for the edgewalk | #15 |
+| `edgewalk`: cusp, corner, extension-root and next-edge routines | Affine-line lattice points, roots, Coxeter diagrams, finite quotient orders | Cusp equations' geometric setup, root selection, traversal and reflectivity certificate | #15 |
+| Fixed-square vectors in Lorentzian cell cones | Cone and lattice objects, bounded integer-point enumeration | Bound the norm fibre and enumerate primitive cell marks | #15/#18 |
+| Arithmetic subgroup orbit splitting (former #22) | Generic finite-image preimages and splitting from supplied orbit/stabilizer data | Compute the indefinite data and assemble the marked-lattice answers | #18 |
+| Indefinite centralizers (former #23) | Eigensublattices, cyclotomic and gluing objects; group products and finite actions | Recursive component groups, compatible generators and extension to the ambient lattice | #18 |
+
+Acceptance remains the complete #33 corpus and suite. None of these rows is marked implemented by this ownership audit. The defect observations in the historical record remain investigation inputs for #15/#18 until source and runtime evidence resolve them; their old destination labels do not assign ownership.
+
+## Source evidence
+
+- `references/vendor/Indefinite.jl@374a5ebb/indef/lib/IndefiniteForms.g:683`: `INDEF_FORM_GetApproximateModel` constructs the envelope, integral stabilizer/cosets and transformed covers.
+- The same file, line 911: `GetAutomorphismOfFlag` is the elementary block-triangular module primitive. Line 1060: `INDEF_FORM_GetRec_IsotropicKplane` additionally constructs rational extensions and denominator-dependent kernel generators. The latter computation is port work.
+- `references/vendor/Indefinite.jl@374a5ebb/indef/lib/GroupAction.g:813`: `MatrixIntegral_GetInvariantSpace`; lines 869 onward: integral stabilizer, right-coset and equivalence constructions. Their finite-action engine is reusable; construction of the arithmetic problem is owned here.
+- Translation map §§7–10 and §§12–15 retain the remaining source correspondences and acceptance obligations.
+
+## Historical deletion record
+
+The following is the inventory used by #37/#38 at port `709f81a` and research `9bc51845d1`. Its MIGRATE/REPLACE/DROP labels describe the old decision and the cited deletion commits, not current ownership or completed implementations. Use the table above for all new work.
+
+<details>
+<summary>Original inventory and defect observations, retained for source recovery</summary>
+
 # Migration inventory
 
 Every function and class in `src/sage_indefinite_port`, private ones included, classified against references/port-design.md.
@@ -208,3 +248,5 @@ Paths: port paths are relative to `src/sage_indefinite_port/`; preamble paths ar
 | `_full_root_orbit` | MIGRATE | research#396 orbit closure from seeds | — | 4b6b63e |
 | `_rational_gcd_pair`, `_resolve_cusp_lattice_equation` (lattice part) | MIGRATE | research#401 points of an affine line in a lattice | fail-open None returns | 6444c29 |
 | `_positive_vector_in_plane`, `_projection_data`, `_orientation_compare`, `_Candidate`, `_extension_roots`, `_signed_sqrt_compare`, `_candidate_compare`, `_vertex_from_root`, `_CuspCandidate`, `_cusp_roots`, `_isotropic_next_vertex`, `_edge_step`, `_edge_directions`, `_vertex_configuration`, `_update_finiteness`, `edgewalk_fundamental_domain` | KEEP-I | cones, roots, invariant lattices, `multiplicative_order` [P]; configurations research#399 | the unhandled cases in the defects table | 6444c29 |
+
+</details>

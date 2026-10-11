@@ -1,23 +1,17 @@
-# Port design: indefinite algorithms over preamble operations
+# Port design: computational ownership
 
-This document is the API design of the port.
-Each algorithm the port owns is sketched as a composition of operations.
-Every step carries one tag:
+Research owns the mathematical objects and reusable primitives. This package implements the specialized indefinite-lattice algorithms that research imports. A public preamble method and the algorithm answering it can have different owners.
 
-- **[P]** an operation the research preamble provides today, verified to compute on these inputs;
+An operation belongs in research when it is simple, composable mathematics with independent applications and a general implementation: module kernels and quotients, exact linear solving, finite group actions, or a standard backend operation. A specialized construction extracted from the reference algorithms belongs here. Giving it a standard name, a category-owned method, or a predicate-defined result does not turn its implementation into a preamble prerequisite.
 
-- **[R#N]** a general operation requested from research in dzackgarza/research#N;
+For every group computation, distinguish the given data from the requested output. A subgroup predicate does not supply generators. Schreier computation on a supplied finite action does not construct that action, prove its orbit finite, find an arithmetic stabilizer, or find generators of its ambient orthogonal group.
 
-- **[I]** indefinite-specific logic that this repository owns.
+Ownership labels below describe responsibility, not current runtime availability. Research issues track primitives and dispatch; port issues track the specialized computations. The acceptance corpus in #33 is unchanged.
 
-The port owns only [I] steps.
-A step that is general mathematics is never [I], whatever the port's current code does.
-Where the port already implements an [R] step, that code migrates upstream into research as the preamble operation, and the port then imports it (#37). Port code that duplicates a [P] step is replaced by the preamble call.
-
-Notation: `L` a nondegenerate integral lattice, `G = L.O()`, `A_L` its discriminant form, `q(v) = b(v, v)`.
+Notation: `L` is an integral lattice, `G = L.O()`, `A_L` its discriminant form, and `q(v) = b(v,v)`.
 
 Marked lattices.
-Every orbit, stabilizer and equivalence question here is about isomorphisms in a category of marked lattices, built from the preamble's diagram categories [P]. A marking is a diagram of lattice morphisms ending at L, and an isomorphism of marked lattices is a natural isomorphism of diagrams: a commutative diagram whose components are isometries.
+Every orbit, stabilizer and equivalence question here is about isomorphisms in a category of marked lattices, built from the preamble's diagram categories. A marking is a diagram of lattice morphisms ending at L, and an isomorphism of marked lattices is a natural isomorphism of diagrams: a commutative diagram whose components are isometries.
 Which components may vary decides the category:
 
 - a vector v with q(v) = n is a morphism ι: ⟨n⟩ → L. Isometries (L, ι) → (M, κ) satisfy g ∘ ι = κ exactly, so these are objects of the coslice category ⟨n⟩/Lattices (`CosliceCategory(Lattices(ZZ), ⟨n⟩)`), and Aut((L, ι)) is the group of isometries of L fixing v;
@@ -31,182 +25,76 @@ Which components may vary decides the category:
 
 Deciding whether two marked lattices are isometric means deciding whether the core homset between them (`Core().Mor`) is empty, and producing an element when it is not.
 "Orbits of vectors of norm n under O(L)" are the isomorphism classes of pointed lattices (L, ⟨n⟩ → L) with L fixed; "orbits of isotropic planes" are those of marked sublattices.
-The homsets of these categories, with their computations, are research#403; the port supplies the computation for indefinite L.
+Research #403 owns these objects and dispatches their indefinite computations to this port. A homset definition is not an isometry, orbit or generator algorithm.
 
 ## What the port owns
 
-The port supplies exactly three things that no general construction yields:
+- **#15:** the Lorentzian perfect-cell search, flips, side pairings and quotient traversal; Allcock edgewalk, cusp handling, rank-two edge cycles, root selection and termination.
+- **#18:** Eichler approximate groups, envelopes and covering representatives; the recursive full orthogonal group, lattice and pointed isometries; exact integral parabolic generators, Levi-image construction, lifts and kernels; isotropic line, plane and flag orbits and stabilizers; arithmetic orbit splitting and indefinite centralizer assembly.
+- **#36:** type correctness of the resulting implementation and its dependency contracts.
 
-1. generators of O^Ω(L) and O(L) for signature (1, n), by the Lorentzian perfect-domain traversal, and the reflective fundamental domain by Allcock's edgewalk (#15);
+The source algorithms are recorded in [the translation map](source-to-sage-translation-map.md). Their use of linear algebra and finite groups does not transfer the surrounding algorithm to research. Definite orthogonal groups and existing generic arithmetic operations remain dependency calls.
 
-2. generators of O(L) and isometries of lattices, and, for pointed lattices (L, v) and lattices marked by rank ≤ 2 isotropic sublattices or flags, orbit representatives, generators of Aut((L, X)) and elements of Isom((L, X), (L, Y)), for positive index ≥ 2, by the Eichler recursion and the isotropic induction (#18);
+## Operations and implementation owners
 
-3. nothing else.
-   Every other item of #4's Result is a general construction applied to (1) and (2).
+This replaces the former blanket “Planned preamble API” migration table. Consumer-facing names remain mathematical; the computation column determines where implementation work belongs. Exact internal callback signatures changed by implementation must be recorded through #33 before use.
 
-## Standard operations the algorithms use
+| Operation / public surface | Research supplies | Port supplies / live obligation |
+| --- | --- | --- |
+| `D.object(diagram)`, `Core().Mor`, chain `.arrows()` | Diagram objects, commuting squares, homsets and dispatch (#403) | Indefinite decisions, witnesses and automorphism generators (#18); no call back into the same unanswered query |
+| `D.primitive_marking_classes(shape,L)` | Result objects and dispatch (#403) | Primitive vector, isotropic sublattice and flag classification (#18) |
+| `Isom(...).an_element_in(H)` | Homsets, given group actions and finite-image word lifts (#396, #403) | Marked-lattice witness search and assembly with the supplied subgroup condition (#18) |
+| `G.subgroup(generators)` | Generated subgroup, exact morphisms and retained supplied generators (#400) | Find the generators of indefinite groups (#15, #18). Ambient isometry membership is not membership in an arbitrary generated subgroup |
+| Finite G-sets, point stabilizers, transporters, kernels, preimages, intersections, cosets and double cosets | Schreier and finite-image computations from supplied generators and explicit finite action/transversal data (#396) | Construct the relevant arithmetic action, establish its finite-index hypotheses, and lift/recombine its results (#18) |
+| `G.split_orbit(marked,H)` | Generic finite-action orbit splitting when the ambient orbit and point-stabilizer data are given (#396) | Compute the indefinite ambient orbits and their stabilizers; reconstruct marked-lattice representatives and stabilizers (#18) |
+| Rational-group integral structures and `IntegralStructureAction` | Spans, inclusions, quotients, induced maps; finite-action solver (#396, #401) | The `MatrixIntegral_*` construction of a suitable integral model, finite action, lattice stabilizer, isometry witness and cosets (#18); prove the needed boundedness |
+| Products, restriction, finite-index extension, induced subquotient maps | General morphism constructions; transport supplied generators and words (#397) | Choose and assemble the factors and glue-compatible subgroup for the indefinite algorithm (#18) |
+| `R.parabolic_subgroup()`, pointwise subgroup, Levi and isotropic actions | Represent the subgroups and maps, and evaluate maps on supplied elements (#398, #403) | Compute full integral generators, actual Levi image, liftable subgroup, integral lifts and unipotent/pointwise kernels (#18) |
+| `GL(M)` and a saturated module flag | General linear groups and block triangular groups from a chosen free-module flag (#398) | Select the radical/flag data and combine them with the lattice form, quotient recursion and gluing (#18). A GL flag group is not the orthogonal flag stabilizer |
+| Finite coloured spanning configurations | General finite-configuration isomorphism via pairing graphs, relations and integral checks (#399) | Select the perfect-cell configurations, facets, adjacencies and marking data; traverse and identify cells (#15) |
+| Isotropic and signed witnesses, content, Bezout partner | General formed-module/module operations, e.g. a retained `qfsolve` witness and image fibre (#401) | Choose witnesses and splitting vectors for recursion and envelope construction (#18) |
+| Hyperbolic partners and splitting | Partner locus with existence hypotheses; splitting from supplied valid data; independently implemented general two-plane splitting (#401) | The envelope/splitting search and coverage argument of the reference algorithm (#18). Primitive does not imply an integral partner exists |
+| Perpendicular extension, Witt extension, integral descent, denominator clearing, twist | General morphism operations with their exact hypotheses (#401) | Compose these into recursive isometry and stabilizer computations (#18) |
+| Isotropic reduction lifts | Reduction objects, torsors, general map fibres and exact linear/congruence solving (#401) | Specialized parametrization, integral lift selection, kernel generation and parabolic assembly required by the reference algorithm (#18). Reuse independently valid existing research primitives |
+| `family.integral_members()` | Integral inverse images of a specified affine linear map, retaining parameter inclusion and full fibre (#401) | Supply the actual extension equations (#18). Isotropic isometry lifts form a torsor; evaluation is generally nonlinear |
+| Invariant orbit span | Generated submodule and finite/bounded-action realization (#401) | Establish a finite stable containing module for the rational groups used here (#18); commensuration alone does not imply one exists |
+| Definite `close_vectors`, norms, affine-line points, divisibility sublattices | Exact primitive computations (#401) | Choose and advance the multiplier, shell/sphere and flip bounds (#15) |
+| Indefinite binary arithmetic | Existing exact quadratic-form backend operations, fixed-norm fibres and rational null lines (#401) | Edgewalk-oriented reduction cycle, starting pair, stopping rule and candidate enumeration (#15); indefinite reduction strategy (#18) |
+| Cone facets, rays, bounded integral points | General polyhedral operations | Establish bounds and enumerate fixed-norm marks in Lorentzian cells (#15, #18). Do not request the whole specialized enumeration as a cone primitive |
+| Eichler transvection, direct sum and discriminant class | Individual formed morphisms and invariants (#401, #404) | Assemble the approximate generating family, choose prescribed-invariant covering vectors and prove coverage (#18); renaming a covering routine is not a migration |
+| Order of a supplied finite quotient action, finite orbit closure | Generic finite-action computation with justified finiteness (#396) | Construct the action and prove the finite orbit needed by the edgewalk (#15) |
+| Centralizers and equivariant lattices | Centralizer objects, eigensublattices, cyclotomic decomposition, gluing objects, products and finite-action primitives (#397, #403) | Indefinite component recursion, compatible-generator assembly and extension to L (#18, carrying former #23 acceptance) |
 
-| Operation | Tag |
-| --- | --- |
-| orthogonal complement, saturation, sums and intersections of sublattices, discriminant form, genus | [P] |
-| definite O(L) generators and definite isometry | [P] |
-| close vectors and vectors of bounded norm in a definite lattice | [P] |
-| facets and rays of a rational polyhedral cone | [P] |
-| roots, reflections, the Coxeter diagram of a root set | [P] |
-| isotropic reduction `I^perp/I` and the element-wise Levi action | [P] |
-| SL₂(Z)×SL₂(Z) acting on U ⊕ U, Eichler transvections, discriminant classes, Eichler's criterion for stable orbits | [P] |
-| orbits of a group with known generators on a finite set | [P] |
-| subgroup generated by isometries of an indefinite lattice, with membership | [R#400] |
-| from generators of a group G and a finite G-set X: generators (Schreier) of point stabilizers, preimages, kernels and intersections; for x, y ∈ X an element g ∈ G with g·x = y; cosets and double cosets with a finite-index side; orbit splitting | [R#396] |
-| direct products of isometry groups; restriction and extension along finite-index inclusions; induced actions on subquotients | [R#397] |
-| GL of a free module, integral flag parabolics, product actions on finite gluing data; generators of the unipotent radical and of the kernel acting trivially on I^perp | [R#398, R#400] |
-| Aut((L, S)) and Isom((L, S), (L, T)) for finite spanning (coloured) vector configurations S, T, and for cones and marked cells | [R#399] |
-| isotropic vector with witness; integral hyperbolic pair; splitting U ⊕ U off a lattice; content of a vector; affine integral solution sets; rational extension of an isometry across v^perp and its integrality; the codimension-one Witt extension; invariant overlattice | [R#401] |
-| for a rational isometry group G of L ⊗ Q: the subgroup preserving L and an element carrying L_1 to L_2 (an instance of [R#396] on M/dM with [R#401]'s invariant overlattice) | [R#396] |
-
-## Planned preamble API (frozen)
-
-Port code calls these names now.
-An operation that research has not implemented yet fails at run time.
-The names extend existing preamble owners wherever one exists; each row is posted to its research issue.
-Notation: `D` is the category of a marking as above: `CosliceCategory(Lattices(ZZ), ⟨n⟩)` for pointed lattices, the monomorphisms of `Cat().Mor(FiniteOrdinalCategory(2), Lattices(ZZ))` for sublattices and configurations, `Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))` for flags; `G` a preamble group given by generators; `L`, `M` lattices.
-
-| Operation | Owner and name | Signature → result | Issue |
-| --- | --- | --- | --- |
-| marked lattice | `D.object(diagram)` (exists) | the marking diagram ending at L → object of D | [P] |
-| flag as a chain diagram | `Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ)).object((first, second))` (new: a functor from a composable pair) | embeddings I_1 → I_2, I_2 → L → object of Fun([2], Lattices), with `.arrows()` returning the pair | R#403 |
-| Isom of marked lattices | `D.Core().Mor(source, target)` (exists) with `.is_empty()`, `.an_element()` | → homset; `an_element` raises on an empty homset | R#403 |
-| Aut of a marked lattice | `D.Core().Mor(obj, obj)` with `.group_generators()` | → the group of isometries of L preserving the marking (fixing v; preserving I, S or the flag) | R#403 |
-| isomorphism inside a subgroup | `D.Core().Mor(source, target).an_element_in(subgroup)` (new) | finite-index subgroup Γ of O(L) → an isomorphism whose isometry lies in Γ, or None | R#403 |
-| isomorphism classes of primitive markings of L | `D.primitive_marking_classes(source, L)` | the shape of the marking (`<n>`, the zero-form lattice of rank k, or the chain of such) and L → finite ordered set of marked lattices, one per O(L)-orbit | R#403 |
-| subgroup generated by isometries of an indefinite lattice | `L.O().subgroup(generators)` (exists; must accept indefinite L and rational isometries) with membership, `group_generators()` | finite family of isometries → subgroup | R#400 |
-| finite G-set from an action | `FiniteGSets(G)(points, action)` (exists; G any group given by generators) | finite set, action (g, x) ↦ g·x → G-set | R#396 |
-| point stabilizer with generators | `X.stabilizer(x)` on a finite G-set (exists as a predicate subgroup; must carry Schreier generators) | point → subgroup with `group_generators()` | R#396 |
-| setwise stabilizer of a sublattice in a subgroup | `G.stabilizer(sublattice, action="setwise")` (exists as a predicate subgroup; must carry generators) | subobject of L → subgroup with `group_generators()` | R#396 |
-| element carrying x to y | `X.transporter_witness(x, y)` (exists for finite G only; extend to G given by generators) | points → group element or None | R#396 |
-| preimage and kernel of a finite representation | `rho.preimage_subgroup(H)`, `rho.kernel()` (exist as predicates; must carry generators) | finite subgroup H, or a finitely generated subgroup of the codomain when the image of rho has finite index → subgroup with generators | R#396 |
-| intersection | `G.intersection(*subgroups)` (exists as predicate; generators when the subgroups have finite data) | subgroups → subgroup | R#396 |
-| cosets and double cosets with a finite-index side | `G.right_cosets(H)`, `G.left_cosets(H)` (exist for finite G), `G.double_cosets(Q, H)` (new) | subgroups → representatives lifted to G | R#396 |
-| orbit splitting | `L.O().split_orbit(x, subgroup)` (new) | a marked lattice x over L, finite-index subgroup Γ → one marked lattice per Γ-orbit inside the O(L)-orbit of x, each with generators of its stabilizer in Γ | R#396 |
-| lattice stabilizer under a rational group | `IntegralStructureAction(G, inclusion).stabilizer()` and `.transporter(target)` (exist; computation moves to research) | rational isometry group of L ⊗ Q, lattice inclusion → subgroup with generators / isometry or None | R#396 |
-| direct product of isometry groups | `G1.direct_product(G2)` (new) | O-subgroups of L1, L2 → subgroup of O(L1 ⊕ L2) | R#397 |
-| extension along a finite-index inclusion | `inclusion.extended_subgroup(H)` (new) on a sublattice inclusion M → L of finite index | subgroup of O(M) → its subgroup preserving L, as a subgroup of O(L) | R#397 |
-| induced action on I^perp/I | `R.levi_action()` (exists element-wise; must be a group morphism with `.image()` carrying generators) | → morphism Aut((L, I)) → O(I^perp/I); `.lift(h)` for h in the image → an element of Aut((L, I)) mapping to h | R#397 |
-| parabolic subgroups | `R.parabolic_subgroup()`, `R.pointwise_parabolic_subgroup()` (exist as predicate subgroups; must carry generators), `R.isotropic_action()` (new) | isotropic reduction of a primitive totally isotropic I ⊆ L → Aut((L, I)) (setwise), its subgroup fixing I pointwise, each with `group_generators()`; the morphism Aut((L, I)) → GL(I) with `.image()` | R#398 |
-| GL of a free module and flag parabolics | `M.general_linear_group()`, `M.general_linear_group().flag_stabilizer(flag)` (new) | free Z-module, flag of saturated submodules → group with generators | R#398 |
-| unipotent radical and pointwise kernel | `R.unipotent_group_generators()` (exists for rank 1), `R.pointwise_perpendicular_kernel()` (exists, body moves to research) | isotropic reduction → generators | R#398 |
-| finite spanning vector configurations | `L.vector_configuration(vectors, colors)` (exists for bases; extend to spanning coloured families) | finite family, colour labels → configuration; its Isom and Aut are the X/Lattices homsets above | R#399 |
-| isotropic vector with witness | `L.isotropic_vector()` (new) | → nonzero v with q(v) = 0, or raises on an anisotropic lattice | R#401 |
-| hyperbolic partner | `v.hyperbolic_partner()` (new) | primitive isotropic v → w with q(w) = 0, b(v, w) = div(v) | R#401 |
-| content and Bezout partner | `v.content()`, `v.bezout_partner()` (new) | → largest d with v ∈ dL; h with b(v, h) = div(v) | R#401 |
-| integral hyperbolic splitting | `R.integral_hyperbolic_splitting()` (new) on the isotropic reduction of an even L at e with div(e) = 1 | → isometry L → U ⊕ K | R#401 |
-| rational extension across v^perp | `phi.extension_across(v, w)` (new) on an isometry φ: v^perp → w^perp | → isometry of L ⊗ Q carrying v to w, extending φ; `.is_integral_on(L)` | R#401 |
-| lifts through isotropic reductions | `R.rational_lifts(target, psi)` (new) | isometry ψ of the reductions → affine family of rational lifts (dimension n − 2) with `.integral_members()` | R#401 |
-| affine integral solution set | `family.integral_members()` (new) on an affine family T_0 + Σ λ_i T_i of rational maps | → empty, or a coset λ_0 + Λ | R#401 |
-| codimension-one Witt extension | `phi.witt_extension(source_inclusion, target_inclusion)` (new) | isometry between codimension-one subspaces with rank-1 radical → isometry of the ambient | R#401 |
-| invariant overlattice | `G.invariant_overlattice(L)` (new) | group commensurating L → smallest G-stable lattice containing L | R#401 |
-| vectors of a given sign | `L.positive_vector()`, `S.vector_of_sign(sign)` (new) | → a vector with q > 0; a vector of the given sign in a subspace S | R#401 |
-| affine close-vector shell | `K.first_close_vector_shell(target, bound, max_multiplier)`, `K.first_close_vector_sphere(target, bound, max_multiplier)` (new, public) on a definite K; the shell at a given m is `K.close_vectors(m·target, m²·bound)` (exists) | rational target t, bound b of the form's sign, M → the first m ≤ M with some x ∈ K having q(x − m t) between 0 and m² b (shell) or equal to m² b (sphere), with those x; or None | R#401 |
-| representations by an indefinite binary form | on a rank-2 indefinite P: `P.vectors_of_square(n)` (exists for definite) for isotropic P and n ≠ 0; `P.primitive_isotropic_vectors()` (new) for isotropic P; `P.reduction_cycle(bound, start)` (new) for anisotropic P | all vectors of square n (a finite set when P is isotropic); the four primitive isotropic vectors ±u, ±v; the reduction cycle of the form from a primitive vector `start` of positive square: the automorph g carrying the cycle once around, as an isometry of P, and the vectors of square ≤ bound met along one period from `start`, or None when there are none | R#401 |
-| points of an affine line in a lattice | `C.affine_line_points(base, direction)` (new) on a sublattice C of L | base ∈ L ⊗ Q, direction ∈ L → (p, s) in L with the points of C on base + Q·direction exactly p + Z·s, or None when there are none | R#401 |
-| sublattice of vectors of a given divisibility | `L.divisible_sublattice(d)` (new) | d → {v ∈ L : b(v, L) ⊆ dZ} = L ∩ d·L^#, a sublattice | R#401 |
-| indefinite reduction | `L.indefinite_reduction()` (new) | → `LatticeReduction` (reduced lattice, isometry) | R#400 |
-| Eichler subgroup of a 2U model | `model.eichler_subgroup_generators()` (new; the general part of `approximate_generating_family`) | 2U model of L = U ⊕ U ⊕ K → generators of the group generated by SL₂(Z)×SL₂(Z) on U ⊕ U and the Eichler transvections | R#404 |
-| primitive vector with prescribed invariants | `model.primitive_vector_with_invariants(square, discriminant_class)` (new; the general part of `covering_vector_representatives`) | n, a class of A_L → a primitive v with q(v) = n and v/div(v) in the class, unique up to the Eichler subgroup by Eichler's criterion | R#404 |
-| integral structure of a rational space | `V.integral_structure(vectors)` (new) on V = L ⊗ Q | spanning family → the lattice it spans, as the point `IntegralStructureAction` acts on | R#396 |
-| integral descent of a rational isometry | `M.integral_isometry(phi)` (new) | φ: L ⊗ Q → M ⊗ Q with φ(L) = M → the isometry L → M; raises otherwise | R#401 |
-| similarity from a rational isometry | `phi.integral_similarity(L, E)` (new), `.scale()` | φ: L ⊗ Q → E ⊗ Q → σ = Nφ: L → E for the least positive integer N, and N | R#401 |
-| twist on isometries | `Lattices(ZZ).twist_functor(a)(phi)` (exists, returns a module morphism) | isometry φ: L → M → the element of `L(a).Isom(M(a))`; `L.twist(-1).twist(-1)` is L | R#401 |
-| lattice vectors of a square in a cone | `C.vectors_of_square(n)` (new) on a rational polyhedral cone C in the closed positive cone of a Lorentzian lattice | n of the timelike sign → the finite set of lattice vectors of C of square n | R#401 |
-| order of an induced action | `g.order_on(quotient)` (new) | isometry g of M, finite quotient M/N (a cokernel) → the least k ≥ 1 with (g^k − 1)M ⊆ N: the order of the induced action when g preserves N | R#396 |
-| orbit closure from seeds | `G.orbit_closure(seeds, action)` (new) | finite seeds in a G-set discovered on the fly → the finite union of their orbits | R#396 |
-
-## Algorithms the port owns
+## Algorithm composition
 
 ### Lorentzian perfect-domain traversal (#15)
 
-Input: `L` of signature (1, n). Output: generators of O^Ω(L); O(L) adds −1.
+Find an initial perfect cell, enumerate its facets, compute its finite configuration automorphisms, flip across facet-orbit representatives, identify neighbouring configurations, and record side pairings. The cell automorphisms and side pairings generate the component-preserving group; adjoin minus identity for the full group. Generic configuration and finite-action computations are inputs; the search and traversal are this port's algorithm.
 
-```
-C0 = initial perfect cell of L                                   [I]  perfect forms of a Lorentzian lattice
-queue = [C0]; cells = [C0]
-while queue:
-    C = queue.pop()
-    S = C.vectors                                                [I]
-    Stab = Aut((L, S))                                            [R#399]
-    for F in orbits of Stab on facets(cone(S)):                   [P] facets, [P] orbits
-        C' = flip(C, F)                                           [I]  wall movement: definite close-vector enumeration [P]
-        if Isom((L, S'), (L, S'')) is nonempty for some known C'': [R#399]
-            record its element g as a side pairing                [I]
-        else: cells.append(C'); queue.append(C')
-O^Ω(L) = subgroup generated by all Stab and side pairings          [R#400]
-```
+For isotropic markings, glue local vertex orbits along side pairings. For timelike vector classes, enumerate primitive vectors of the prescribed square in each cell using a proved finite bound and glue their local orbits (#18). Nonzero null rays have infinitely many multiples, so an unrestricted norm-zero fibre must not be advertised as a finite cone primitive. Spacelike classes require their own valid algorithm; a missing route remains incomplete acceptance, not a research primitive request.
 
-Marked-cell isotropic orbits: the isotropic vertices of each cell as marks [I]; their local orbits under Stab [P]; marks transported along side pairings and joined into global orbits [I]. Nonzero-norm marks raise `NoLocalMarkTheoremError`.
+### Allcock edgewalk (#15)
 
-### Allcock's edgewalk (#15)
+Construct the starting corner, traverse the edges, solve the cusp and rank-two candidate problems, select the next wall, and establish the termination/reflectivity result. Consume general roots, pairings, cone faces, exact arithmetic, definite close-vector and binary-form operations. The first-success multiplier search and oriented binary cycle belong to this traversal. Vinberg is an independent computation where applicable, not an implementation substitute for the required edgewalk.
 
-Input: `L` hyperbolic.
-Output: the simple roots of a fundamental polyhedron of W(L), and whether L is reflective.
-The walk along edges of the polyhedron, the cusp handling, and the termination certificate are [I]. Roots, reflections and the Coxeter diagram are [P]. Cone facets are [P]. Enumerating representations by an indefinite binary form is [R#401]. Vinberg's algorithm [P] computes the same roots where it terminates, and serves as an independent check.
+### Eichler recursion and integral structures (#18)
 
-### Eichler recursion (#18)
+Construct the envelope and approximate group, using individual transvections and ordinary module operations. Construct the finite integral-structure action needed to restrict this rational group to L; pass that supplied finite action to the general Schreier solver. Select a splitting vector v, recursively compute Aut((L,v)), and find isometries to the covering representatives. Assemble O(L) from those generators and witnesses.
 
-Input: `L` of positive index ≥ 2 (after the sign normalization that makes the positive index min(n_+, n_-) [I]).
+For nonisotropic v, recurse on its perpendicular and select the integral, glue-compatible extensions. For isotropic v, compute the integral parabolic: construct the compatibility data, recurse for the quotient group, compute the admissible Levi image through a finite action, solve its lift problems, and adjoin the complete integral kernel. Defining `Aut((L,v))` or calling its `group_generators()` is not an implementation of this step.
 
-```
-envelope: find U ⊕ U in L, or a similarity embedding L → E into a lattice E with U ⊕ U   [I]  from isotropic witness and hyperbolic partner [R#401], complement [P]
-A = approximate group of E                                           [I]  from SL₂(Z)×SL₂(Z) on U⊕U, Eichler transvections, O(K) [P]
-A_L = subgroup of A preserving L, with cosets A/A_L                 [R#396]
-v = splitting vector of positive norm                                [I]  choice by recursive-complexity score
-Aut((L, v)) by recursion                                            [I]  (below)
-for w in covering representatives of norm q(v):                      [I]  covering list from discriminant classes and Eichler's criterion [P]
-    t = an element of Isom((L, v), (L, w)), or none                  [I]
-O(L) = subgroup generated by A_L, Aut((L, v)), all t                [R#400]
-```
+### Isotropic induction, rank at most two (#18)
 
-Aut((L, v)), for q(v) ≠ 0: K = v^perp [P]; generators of O(K) by recursion [I]; their rational extensions across v^perp [R#401]; the subgroup preserving L of the group those extensions generate [R#396]. For q(v) = 0: the parabolic below.
+For each line representative I, form K = I-perp/I with research's quotient construction. Compute P_I = Aut((L,I)) here, then its image H_I in O(K). Recurse for isotropic classes u of K and their stabilizers Q_u. Construct the required finite coset action for Q_u \ O(K) / H_I, consume its generic double-coset computation, and lift and saturate the resulting lines to planes. Identify planes and flags by the port's marked-isometry algorithm. Compute their stabilizers using the integral lift and kernel constructions above. Rank greater than two remains outside the frozen acceptance scope.
 
-An element of Isom((L, v), (L, w)): an isometry v^perp → w^perp by recursion [I]; its rational extension and one integral member of the affine family [R#401].
+### Arithmetic subgroups and centralizers (#18)
 
-`isometry(L, M)`: genus comparison [P]; splitting vector in L, covering representatives w in M [I]; an element of Isom((L, v), (M, w)) by recursion [I].
+Supply the full indefinite group generators, orbit representatives, point stabilizers and character/discriminant actions to generic finite-image preimage and orbit-splitting operations. Reconstruct the lattice markings and their subgroup stabilizers. For involution centralizers, form eigensublattices using research primitives, recursively compute their orthogonal groups, construct and solve the finite gluing condition, and extend the resulting generators. Retain every finite-order case already present in the frozen suite; do not replace a component centralizer computation by a predicate.
 
-Vector orbits: covering representatives [I]; bucketing by prefilters [I] built from norm, div, discriminant class [P] and content [R#401]; deduplication by deciding Isom((L, v), (L, w)) exactly [I], keeping the isometries found.
+## Boundary and acceptance
 
-### Isotropic induction, rank ≤ 2 (#18)
+Research imports this package at computational call sites. The port imports research's mathematical objects and primitive operations. These imports are valid; a runtime cycle that asks the same unresolved orbit/stabilizer question again is not.
 
-```
-lines = primitive isotropic vector orbits                              [I]  (vector orbits, norm 0)
-for I in rank-(k-1) representatives:
-    K = I^perp/I                                                       [P]
-    P_I = Aut((L, I))                                                  [R#398] Levi image as the stabilizer of the gluing data [R#396]
-                                                                       + unipotent generators [R#398, R#400]
-    H_I = image of P_I in O(K)                                         [R#397] induced action
-    for u in primitive isotropic vector orbits of O(K):                [I]  recursion
-        Q_u = Aut((K, u))                                              [I]  recursion
-        for d in double cosets Q_u \ O(K) / H_I:                        [R#396]
-            J = saturation of lift of the line d(u) through I           [P]
-            keep J unless Isom((L, J), (L, J')) is nonempty for a kept J'   [I]
-```
+The existing marked entry points are `isometry(D,source,target)`, `automorphism_group_generators(D,marked)` and `primitive_marking_classes(D,shape,L)` in `indefinite.marked_lattices`. The category distinguishes fixed markings from markings movable by domain automorphisms. The Lorentzian entries are `perfect_domain_traversal(L,mode)` and `edgewalk_fundamental_domain(L)`. Research #403 owns dispatch and removal of obsolete Gram/dictionary conversions. Internal specialized operations remain port code even when exposed through research methods.
 
-Rank > 2 raises `UnsupportedRankError` (map §13.5).
-
-### Vector classes at positive index 1 (#18)
-
-Primitive vectors of square n in the closed positive cone of a Lorentzian L are classified by marked cells, generalising LORENTZ_GetOrbitRepresentative_Kernel from n = 0 (map §12.4): the marks of a quotient cell of the total-mode traversal are its primitive vectors of square n, `C.vectors_of_square(n)` [R#401]; local orbits under the cell's automorphism group [P], transport of facet marks along side pairings, and connected components [I]. The marks are finite because a lattice vector of the cone has coefficients in (1/D)Z≥0 on the rays, distinct rays pair positively, and every term of q is nonnegative.
-Spacelike n is outside the cells and raises `NoLocalMarkTheoremError`.
-
-## General constructions over the port (not port algorithms)
-
-| Result item | Construction | Owner |
-| --- | --- | --- |
-| O^+(L) | kernel of O(L) → O(A_L) | [R#396] on port generators |
-| O^Ω(L), signature (2, n) and beyond | kernel of the component character | [R#396], [R#400] character data |
-| finite-index preimages, orbit splitting | preimage and orbit splitting | [R#396] |
-| centralizers of finite-order isometries | cyclotomic decomposition, product of the componentwise groups, stabilizer of the gluing | [R#397] over [R#396]; the componentwise O(L_d) are the port's O(L) |
-| pointwise perpendicular kernel | kernel of Stab(I) → O(I^perp) | [R#398, R#400] |
-
-## Boundary
-
-The preamble calls the port only for (1) and (2). The frozen entry points are listed in #33. They take preamble lattices and isometry groups and return preamble objects (research#403). The marked-lattice entry points take the category of the marking first: `isometry(D, source, target)`, `automorphism_group_generators(D, marked)` and `primitive_marking_classes(D, shape, L)`, with D one of `Lattices`, a coslice `<n>/Lattices`, `Ar(Lattices)` or `Fun([2], Lattices)`. The category is part of the question: a pointed lattice and a rank-1 sublattice have the same arrow and different isomorphisms.
-`isometry` returns the isometry of the underlying lattices; the markings are monomorphisms, so it determines the isomorphism.
+All frozen acceptance cases remain required. #15 owns its traversal and reflective cases; #18 owns the group, isometry, vector, isotropic, boundary and centralizer cases, including the former #19–#23 obligations. #36 closes type debt. An issue transferred between repositories remains unfinished until its computation and acceptance are implemented; a renamed method, removed implementation or passing xfail does not complete it.
