@@ -5,7 +5,7 @@ This inventory identifies the source families affected by the earlier migration 
 Deleting a port implementation in #38 did not implement its replacement.
 The source at `709f81a` is recovery material, not an instruction to restore raw matrices, duplicate primitives, or retain known defects.
 
-| Source family | Primitive retained in research | Specialized computation owned by the port | Issue |
+| Source family | General operation and reusable computation in research | Particular port implementation contribution | Issue |
 | --- | --- | --- | --- |
 | `groups/integral_structures.py`: `IntegralStructureAction`, `FiniteIntegralRepresentation`, integral stabilizer/equivalence/coset assembly | Module spans and finite quotients; finite actions, Schreier generators and word lifting on supplied data | Construct bounded integral models and the finite action; reconstruct lattice isometries and arithmetic cosets | #18; research #396 retains only the primitive part |
 | `RationalMatrixGroup`, `ArithmeticSubgroup`, generated/predicate subgroup carriers | Group objects, exact isometry elements, supplied generators and explicit membership capabilities | Compute indefinite generators and arithmetic membership data without a duplicate group class | #18; research #400 |
@@ -16,14 +16,14 @@ The source at `709f81a` is recovery material, not an instruction to restore raw 
 | `lorentzian_cells` | Definite close-vector queries, signed witnesses, finite configurations/actions | Initial cell, multiplier searches, flip bounds, adjacency, side pairings and termination | #15 |
 | `recursive` | Complements, quotient objects, general isometry extension and integral descent | Recursive O(L), Isom, pointed Aut/Isom, liftable subgroup selection and coverage | #18 |
 | `eichler`, `OrbitCoverModel`, `EichlerEnvelope`, `TwoUEichlerModel` algorithm routines in research | Individual transvections, direct sums, ordinary Witt/partner constructions and discriminant classes | Approximate generating sets, envelope search, prescribed-invariant covering representatives and full-group assembly | #18; research #404 moves these computations here |
-| `IsotropicVectorSection`, `IsometryExtensionTorsor` | Torsor objects, linear/affine fibres and exact congruence solving; reusable existing extension operations | Derive the correct nonlinear lift family, select integral lifts and compute the full kernel in the recursive algorithm | #18; research #401 is not asked to port this whole family |
+| `IsotropicVectorSection`, `IsometryExtensionTorsor` | Restriction maps on isometry sets; fibres, sections/multisections and integral solution loci, with their reusable computations | Choose the marked reduction and compose these operations with recursive group/isometry computations | #18; research #401 owns extension computations, not just torsor objects |
 | `MatrixEquationSolution`, `solve_isotropic_extension_equation`, `CodimensionOneIsotropicExtension` | Generic linear map fibres and valid Witt extension | Form the algorithm's equations and compose chosen solutions with the retained embeddings | #18 |
-| `PointwisePerpendicularKernel`, `INDEF_FORM_GetRec_IsotropicKplane` | Group/kernel objects and elementary morphisms | Integral kernel and unipotent generators, parabolic and orthogonal flag stabilizer assembly | #18; research #398 supplies GL/module-flag primitives |
+| `PointwisePerpendicularKernel`, `INDEF_FORM_GetRec_IsotropicKplane` | Kernel of r: Stab_O(L)(I) → Aut(I-perp), its reusable generator computation, quotient-action kernels and sections under their own hypotheses | Recursive reduced-group computation and the reference's composition of section values and kernel generators into flag stabilizers | #18; research #398/#401 own the general computations |
 | `edgewalk_rank2`: `canonical_companion`, `promised_step`, `shorter_pair`, `reduced_start_pair`, `anisotropic_cycle` | Existing binary-form arithmetic and exact root computations | Oriented cycle, candidate enumeration and stopping rule for the edgewalk | #15 |
 | `edgewalk`: cusp, corner, extension-root and next-edge routines | Affine-line lattice points, roots, Coxeter diagrams, finite quotient orders | Cusp equations' geometric setup, root selection, traversal and reflectivity certificate | #15 |
 | Fixed-square vectors in Lorentzian cell cones | Cone and lattice objects, bounded integer-point enumeration | Bound the norm fibre and enumerate primitive cell marks | #15/#18 |
 | Arithmetic subgroup orbit splitting (former #22) | Generic finite-image preimages and splitting from supplied orbit/stabilizer data | Compute the indefinite data and assemble the marked-lattice answers | #18 |
-| Indefinite centralizers (former #23) | Eigensublattices, cyclotomic and gluing objects; group products and finite actions | Recursive component groups, compatible generators and extension to the ambient lattice | #18 |
+| Centralizers (former #23; map §15 adds functionality beyond the source port) | C_G(I) and applicable computations; invariant decomposition, compatible subgroup of component centralizers, and finite-index extension | Supply indefinite component orthogonal-group computations; preserve and verify the complete consumer result | research #397/#403; #18 retains former #23 acceptance |
 
 Acceptance remains the complete #33 corpus and suite.
 None of these rows is marked implemented by this ownership audit.
@@ -34,13 +34,14 @@ The defect observations in the historical record remain investigation inputs for
 - `references/vendor/Indefinite.jl@374a5ebb/indef/lib/IndefiniteForms.g:683`: `INDEF_FORM_GetApproximateModel` constructs the envelope, integral stabilizer/cosets and transformed covers.
 
 - The same file, line 911: `GetAutomorphismOfFlag` is the elementary block-triangular module primitive.
-  Line 1060: `INDEF_FORM_GetRec_IsotropicKplane` additionally constructs rational extensions and denominator-dependent kernel generators.
-  The latter computation is port work.
+  Lines 1060–1128: `INDEF_FORM_GetRec_IsotropicKplane` composes a reduced-group computation with calls to `Lorentzian.g:115–248` for extension fibres and kernel generators.
+  Research owns the reusable section/kernel computation, including the linear equation B = XA + AᵀXᵀ under the source's hypotheses; the port owns the recursive composition. Source residency does not assign both to the port.
 
 - `references/vendor/Indefinite.jl@374a5ebb/indef/lib/GroupAction.g:813`: `MatrixIntegral_GetInvariantSpace`; lines 869 onward: integral stabilizer, right-coset and equivalence constructions.
   Their finite-action engine is reusable; construction of the arithmetic problem is owned here.
 
 - Translation map §§7–10 and §§12–15 retain the remaining source correspondences and acceptance obligations.
+  Section 15 explicitly introduces centralizers as new functionality. Its invariant-decomposition/gluing composition belongs with research's centralizer operation; indefinite component O(L) computations call this port. No separate port centralizer route is established by that source record.
 
 ## Historical deletion record
 

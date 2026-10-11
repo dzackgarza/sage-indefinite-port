@@ -1,12 +1,14 @@
-# Port design: computational ownership
+# Port design: mathematical operations and implementation routes
 
-Research owns the mathematical objects and reusable primitives.
+Research owns general mathematical operations, their interfaces, and reusable computations, as well as the mathematical objects.
 This package implements the specialized indefinite-lattice algorithms that research imports.
 A public preamble method and the algorithm answering it can have different owners.
 
-An operation belongs in research when it is simple, composable mathematics with independent applications and a general implementation: module kernels and quotients, exact linear solving, finite group actions, or a standard backend operation.
-A specialized construction extracted from the reference algorithms belongs here.
-Giving it a standard name, a category-owned method, or a predicate-defined result does not turn its implementation into a preamble prerequisite.
+Research operations include kernels, fibres, sections and multisections, centralizers, quotients, exact solving, group actions and isometry extension under their stated hypotheses.
+The port implements particular indefinite reduction, recursion and traversal algorithms that compose these operations.
+A primitive remains general mathematics when it occurs in the reference source or is applied to an indefinite lattice.
+Conversely, expressing an entire specialized orbit algorithm as a preamble method does not make research responsible for implementing that algorithm.
+For each boundary, identify the general operation, the reusable computation, and any specific port implementation route separately.
 
 For every group computation, distinguish the given data from the requested output.
 A subgroup predicate does not supply generators.
@@ -41,7 +43,7 @@ A homset definition is not an isometry, orbit or generator algorithm.
 
 - **#15:** the Lorentzian perfect-cell search, flips, side pairings and quotient traversal; Allcock edgewalk, cusp handling, rank-two edge cycles, root selection and termination.
 
-- **#18:** Eichler approximate groups, envelopes and covering representatives; the recursive full orthogonal group, lattice and pointed isometries; exact integral parabolic generators, Levi-image construction, lifts and kernels; isotropic line, plane and flag orbits and stabilizers; arithmetic orbit splitting and indefinite centralizer assembly.
+- **#18:** Eichler approximate groups, envelopes and covering representatives; recursive orthogonal-group and marked-isometry algorithms; the reference algorithm's composition for integral parabolic and flag stabilizers; isotropic orbit induction. Supply indefinite group/orbit computations to research's arithmetic subgroup and centralizer operations and retain their complete consumer acceptance. General sections, kernels and centralizer computations are research operations.
 
 - **#36:** type correctness of the resulting implementation and its dependency contracts.
 
@@ -52,7 +54,7 @@ Definite orthogonal groups and existing generic arithmetic operations remain dep
 ## Operations and implementation owners
 
 This replaces the former blanket “Planned preamble API” migration table.
-Consumer-facing names remain mathematical; the computation column determines where implementation work belongs.
+Research owns the public operations in every row; the last column identifies the port's particular implementation contribution, not exclusive ownership of the operation.
 Exact internal callback signatures changed by implementation must be recorded through #33 before use.
 
 | Operation / public surface | Research supplies | Port supplies / live obligation |
@@ -65,13 +67,13 @@ Exact internal callback signatures changed by implementation must be recorded th
 | `G.split_orbit(marked,H)` | Generic finite-action orbit splitting when the ambient orbit and point-stabilizer data are given (#396) | Compute the indefinite ambient orbits and their stabilizers; reconstruct marked-lattice representatives and stabilizers (#18) |
 | Rational-group integral structures and `IntegralStructureAction` | Spans, inclusions, quotients, induced maps; finite-action solver (#396, #401) | The `MatrixIntegral_*` construction of a suitable integral model, finite action, lattice stabilizer, isometry witness and cosets (#18); prove the needed boundedness |
 | Products, restriction, finite-index extension, induced subquotient maps | General morphism constructions; transport supplied generators and words (#397) | Choose and assemble the factors and glue-compatible subgroup for the indefinite algorithm (#18) |
-| `R.parabolic_subgroup()`, pointwise subgroup, Levi and isotropic actions | Represent the subgroups and maps, and evaluate maps on supplied elements (#398, #403) | Compute full integral generators, actual Levi image, liftable subgroup, integral lifts and unipotent/pointwise kernels (#18) |
+| `R.parabolic_subgroup()`, pointwise subgroup, restriction and quotient actions | Subgroup operations, induced morphisms, effective images, kernels and sections on their images; reusable formed-module calculations (#398, #401) | Select the reduction, recursively compute its indefinite group, and compose the compatibility, section and kernel computations into the reference flag-stabilizer algorithm (#18) |
 | `GL(M)` and a saturated module flag | General linear groups and block triangular groups from a chosen free-module flag (#398) | Select the radical/flag data and combine them with the lattice form, quotient recursion and gluing (#18). A GL flag group is not the orthogonal flag stabilizer |
 | Finite coloured spanning configurations | General finite-configuration isomorphism via pairing graphs, relations and integral checks (#399) | Select the perfect-cell configurations, facets, adjacencies and marking data; traverse and identify cells (#15) |
 | Isotropic and signed witnesses, content, Bezout partner | General formed-module/module operations, e.g. a retained `qfsolve` witness and image fibre (#401) | Choose witnesses and splitting vectors for recursion and envelope construction (#18) |
 | Hyperbolic partners and splitting | Partner locus with existence hypotheses; splitting from supplied valid data; independently implemented general two-plane splitting (#401) | The envelope/splitting search and coverage argument of the reference algorithm (#18). Primitive does not imply an integral partner exists |
 | Perpendicular extension, Witt extension, integral descent, denominator clearing, twist | General morphism operations with their exact hypotheses (#401) | Compose these into recursive isometry and stabilizer computations (#18) |
-| Isotropic reduction lifts | Reduction objects, torsors, general map fibres and exact linear/congruence solving (#401) | Specialized parametrization, integral lift selection, kernel generation and parabolic assembly required by the reference algorithm (#18). Reuse independently valid existing research primitives |
+| Sections/multisections of restriction and quotient-action maps | The maps and their fibres, image conditions, isometry-extension computations, integral solution loci and sections where justified (#398, #401) | Supply the particular markings/maps, recursively obtain the reduced generators, request their fibres or section values, and compose results in the stabilizer algorithm (#18) |
 | `family.integral_members()` | Integral inverse images of a specified affine linear map, retaining parameter inclusion and full fibre (#401) | Supply the actual extension equations (#18). Isotropic isometry lifts form a torsor; evaluation is generally nonlinear |
 | Invariant orbit span | Generated submodule and finite/bounded-action realization (#401) | Establish a finite stable containing module for the rational groups used here (#18); commensuration alone does not imply one exists |
 | Definite `close_vectors`, norms, affine-line points, divisibility sublattices | Exact primitive computations (#401) | Choose and advance the multiplier, shell/sphere and flip bounds (#15) |
@@ -79,7 +81,25 @@ Exact internal callback signatures changed by implementation must be recorded th
 | Cone facets, rays, bounded integral points | General polyhedral operations | Establish bounds and enumerate fixed-norm marks in Lorentzian cells (#15, #18). Do not request the whole specialized enumeration as a cone primitive |
 | Eichler transvection, direct sum and discriminant class | Individual formed morphisms and invariants (#401, #404) | Assemble the approximate generating family, choose prescribed-invariant covering vectors and prove coverage (#18); renaming a covering routine is not a migration |
 | Order of a supplied finite quotient action, finite orbit closure | Generic finite-action computation with justified finiteness (#396) | Construct the action and prove the finite orbit needed by the edgewalk (#15) |
-| Centralizers and equivariant lattices | Centralizer objects, eigensublattices, cyclotomic decomposition, gluing objects, products and finite-action primitives (#397, #403) | Indefinite component recursion, compatible-generator assembly and extension to L (#18, carrying former #23 acceptance) |
+| `G.centralizer(I)` and equivariant lattices | General centralizer operation and applicable computations; invariant decomposition, compatible subgroup of component centralizers, and extension across finite-index gluing (#397, #403) | Indefinite orthogonal-group computations called on components (#18). Map §15 provides no separate source-backed centralizer algorithm to migrate here; former #23 consumer acceptance remains in #18 |
+
+### Sections and kernels: specify the morphism
+
+For an isotropic inclusion I ↪ L, put P = Stab_O(L)(I) and K = I-perp/I.
+Distinguish restriction r: P → Aut(I-perp) from the joint action ρ: P → GL(I) × O(K).
+The pointwise-perpendicular subgroup is ker(r). It is not, in general, ker(ρ), nor the whole unipotent radical.
+Research #398 owns these maps and kernel computations; #401 owns reusable isometry-extension fibres and their rational/integral sections.
+The port's recursion supplies the marked lattice and reduced group computations and uses those operations.
+
+A selected preimage of h lies in r⁻¹(h) or ρ⁻¹(h). A section on the image selects such a preimage for each h; a multisection must specify the family retained in each fibre.
+State the category: a set-theoretic section need not be a group-homomorphic splitting, and a rational section need not take integral values.
+For isometries between distinct lattices, use the restriction map between the relevant Isom sets and its fibre over the specified partial isometry.
+Its nonempty fibre is a torsor under the corresponding restriction kernel, not automatically an affine family of matrices.
+Computing these constructions is a research obligation, not merely declaring their objects.
+
+The inspected `IndefiniteForms.g:1060–1128` composes the separate extension routine `Lorentzian.g:115–248` with a reduced-group computation.
+The extension routine solves B = XA + AᵀXᵀ and computes homogeneous integral parameters under its isotropic-complement hypotheses.
+Those are reusable extension/kernel computations (#398/#401); the reference's recursive choice and assembly remain #18.
 
 ## Algorithm composition
 
@@ -107,8 +127,9 @@ Construct the finite integral-structure action needed to restrict this rational 
 Select a splitting vector v, recursively compute Aut((L,v)), and find isometries to the covering representatives.
 Assemble O(L) from those generators and witnesses.
 
-For nonisotropic v, recurse on its perpendicular and select the integral, glue-compatible extensions.
-For isotropic v, compute the integral parabolic: construct the compatibility data, recurse for the quotient group, compute the admissible Levi image through a finite action, solve its lift problems, and adjoin the complete integral kernel.
+For nonisotropic v, recurse on its perpendicular and consume research's integral, glue-compatible extension computation.
+For isotropic v, use research's restriction and quotient-action maps: recurse for the reduced group, supply the algorithm's compatibility data, compute the admissible image with the general action operations, evaluate a section on its generators, and adjoin the corresponding kernel generators.
+The map, its section and its kernel computations remain research-owned; the recursive reduction and composition are #18.
 Defining `Aut((L,v))` or calling its `group_generators()` is not an implementation of this step.
 
 ### Isotropic induction, rank at most two (#18)
@@ -116,15 +137,18 @@ Defining `Aut((L,v))` or calling its `group_generators()` is not an implementati
 For each line representative I, form K = I-perp/I with research's quotient construction.
 Compute P_I = Aut((L,I)) here, then its image H_I in O(K). Recurse for isotropic classes u of K and their stabilizers Q_u. Construct the required finite coset action for Q_u \ O(K) / H_I, consume its generic double-coset computation, and lift and saturate the resulting lines to planes.
 Identify planes and flags by the port's marked-isometry algorithm.
-Compute their stabilizers using the integral lift and kernel constructions above.
+Compute their stabilizers by composing the research-owned section and kernel computations above with the port's recursive reduced-group computation.
 Rank greater than two remains outside the frozen acceptance scope.
 
 ### Arithmetic subgroups and centralizers (#18)
 
 Supply the full indefinite group generators, orbit representatives, point stabilizers and character/discriminant actions to generic finite-image preimage and orbit-splitting operations.
 Reconstruct the lattice markings and their subgroup stabilizers.
-For involution centralizers, form eigensublattices using research primitives, recursively compute their orthogonal groups, construct and solve the finite gluing condition, and extend the resulting generators.
-Retain every finite-order case already present in the frozen suite; do not replace a component centralizer computation by a predicate.
+For involution centralizers, research #397 computes the compatible subgroup of O(L_+) × O(L_-) preserving the gluing and extends it to L.
+This works through general invariant-subobject, group-action and finite-index extension operations; the indefinite O(L_±) calls use #15/#18 where applicable.
+Map §15 explicitly introduces centralizers as new functionality, not a port of the source recursion. No separate centralizer implementation is assigned here on that evidence.
+For further finite-order cases, research retains the actual component-centralizer computation and its hypotheses; decomposing into cyclotomic summands does not solve it.
+Retain every finite-order case already present in the frozen suite. #18 remains accountable for full consumer acceptance and its indefinite dependency calls, while #397 tracks the reusable computation; neither issue is complete merely because work is routed to the other.
 
 ## Boundary and acceptance
 
@@ -134,7 +158,7 @@ These imports are valid; a runtime cycle that asks the same unresolved orbit/sta
 
 The existing marked entry points are `isometry(D,source,target)`, `automorphism_group_generators(D,marked)` and `primitive_marking_classes(D,shape,L)` in `indefinite.marked_lattices`. The category distinguishes fixed markings from markings movable by domain automorphisms.
 The Lorentzian entries are `perfect_domain_traversal(L,mode)` and `edgewalk_fundamental_domain(L)`. Research #403 owns dispatch and removal of obsolete Gram/dictionary conversions.
-Internal specialized operations remain port code even when exposed through research methods.
+A general operation may select a port implementation route; neither that selection nor an indefinite argument transfers ownership of the general computation.
 
 All frozen acceptance cases remain required.
 #15 owns its traversal and reflective cases; #18 owns the group, isometry, vector, isotropic, boundary and centralizer cases, including the former #19–#23 obligations.
