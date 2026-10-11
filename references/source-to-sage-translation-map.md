@@ -1,7 +1,9 @@
 # source-to-sage-translation-map
 
 Source-to-Sage translation map for the indefinite lattice port (received 2026-09-02, external report; citation markers of the generating tool removed).
-The issue tree rooted at #4 owns execution. [Port design](port-design.md) distinguishes mathematical objects and primitives from the specialized algorithms that compute them. The source symbols and sections below describe the algorithms; a public preamble method does not assign its specialized implementation to research.
+The issue tree rooted at #4 owns execution.
+[Port design](port-design.md) distinguishes mathematical objects and primitives from the specialized algorithms that compute them.
+The source symbols and sections below describe the algorithms; a public preamble method does not assign its specialized implementation to research.
 
 ## Source authority and versioning
 
@@ -520,7 +522,8 @@ Replace them with:
 P = GL(I).stabilizer(flag_on_I)
 ```
 
-represented as the integral parabolic subgroup determined by `FlagType`. This block triangular free-module construction is a research primitive. Combining it with the form, radical, quotient orthogonal group, gluing and integral lift kernel is the port's algorithm; the GL construction does not compute an orthogonal flag stabilizer.
+represented as the integral parabolic subgroup determined by `FlagType`. This block triangular free-module construction is a research primitive.
+Combining it with the form, radical, quotient orthogonal group, gluing and integral lift kernel is the port's algorithm; the GL construction does not compute an orthogonal flag stabilizer.
 
 ## 5.3 Port the radical extension as a semidirect product
 
@@ -747,7 +750,9 @@ F = P.finite_compatibility_action()
 M_integral = M.stabilizer(F.gluing_object())
 ```
 
-The port constructs this finite compatibility action and proves that it captures exactly the integral liftability condition. Research solves the resulting supplied finite-action stabilizer problem. Finding the action and its liftable subgroup is part of the port's parabolic algorithm (#18).
+The port constructs this finite compatibility action and proves that it captures exactly the integral liftability condition.
+Research solves the resulting supplied finite-action stabilizer problem.
+Finding the action and its liftable subgroup is part of the port's parabolic algorithm (#18).
 
 ## 7.3 Lift generators by exact affine solving
 
@@ -772,7 +777,10 @@ This produces the actual parabolic stabilizer without guessing a common "helping
 
 # 8. Integral structures: port construction over finite-action primitives
 
-`GroupAction.g` and `MatrixGroup.h` construct an integral model and finite action for the rational group, then solve stabilizer, equivalence and coset problems through it. The construction, its termination hypotheses and the reconstruction of lattice isometries belong to this port (#18). Research supplies spans, quotients, induced morphisms, finite G-sets, Schreier generators and finite coset operations on the supplied data. Do not port the source's custom permutation-group engine. Do not assume the required integral model or finite action is already available merely by calling a research subgroup method.
+`GroupAction.g` and `MatrixGroup.h` construct an integral model and finite action for the rational group, then solve stabilizer, equivalence and coset problems through it.
+The construction, its termination hypotheses and the reconstruction of lattice isometries belong to this port (#18). Research supplies spans, quotients, induced morphisms, finite G-sets, Schreier generators and finite coset operations on the supplied data.
+Do not port the source's custom permutation-group engine.
+Do not assume the required integral model or finite action is already available merely by calling a research subgroup method.
 
 ## 8.1 Target API
 
@@ -826,7 +834,8 @@ def smallest_invariant_overlattice(G, L):
         M = M_next
 ```
 
-The port must establish a finite stable containing module before using this loop; taking a saturation would change the orbit-generated lattice. The method should explicitly have the precondition that G stabilizes some lattice commensurable with L. It should not be advertised as a terminating procedure for every finitely generated subgroup of GL_n(Q).
+The port must establish a finite stable containing module before using this loop; taking a saturation would change the orbit-generated lattice.
+The method should explicitly have the precondition that G stabilizes some lattice commensurable with L. It should not be advertised as a terminating procedure for every finitely generated subgroup of GL_n(Q).
 
 ## 8.3 Replace `LinearSpace_GetDivisor`
 

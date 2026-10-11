@@ -1,6 +1,9 @@
 # Implementation ownership inventory
 
-The current split is specified in [port design](port-design.md). This inventory identifies the source families affected by the earlier migration and their live owners. Deleting a port implementation in #38 did not implement its replacement. The source at `709f81a` is recovery material, not an instruction to restore raw matrices, duplicate primitives, or retain known defects.
+The current split is specified in [port design](port-design.md).
+This inventory identifies the source families affected by the earlier migration and their live owners.
+Deleting a port implementation in #38 did not implement its replacement.
+The source at `709f81a` is recovery material, not an instruction to restore raw matrices, duplicate primitives, or retain known defects.
 
 | Source family | Primitive retained in research | Specialized computation owned by the port | Issue |
 | --- | --- | --- | --- |
@@ -22,21 +25,29 @@ The current split is specified in [port design](port-design.md). This inventory 
 | Arithmetic subgroup orbit splitting (former #22) | Generic finite-image preimages and splitting from supplied orbit/stabilizer data | Compute the indefinite data and assemble the marked-lattice answers | #18 |
 | Indefinite centralizers (former #23) | Eigensublattices, cyclotomic and gluing objects; group products and finite actions | Recursive component groups, compatible generators and extension to the ambient lattice | #18 |
 
-Acceptance remains the complete #33 corpus and suite. None of these rows is marked implemented by this ownership audit. The defect observations in the historical record remain investigation inputs for #15/#18 until source and runtime evidence resolve them; their old destination labels do not assign ownership.
+Acceptance remains the complete #33 corpus and suite.
+None of these rows is marked implemented by this ownership audit.
+The defect observations in the historical record remain investigation inputs for #15/#18 until source and runtime evidence resolve them; their old destination labels do not assign ownership.
 
 ## Source evidence
 
 - `references/vendor/Indefinite.jl@374a5ebb/indef/lib/IndefiniteForms.g:683`: `INDEF_FORM_GetApproximateModel` constructs the envelope, integral stabilizer/cosets and transformed covers.
-- The same file, line 911: `GetAutomorphismOfFlag` is the elementary block-triangular module primitive. Line 1060: `INDEF_FORM_GetRec_IsotropicKplane` additionally constructs rational extensions and denominator-dependent kernel generators. The latter computation is port work.
-- `references/vendor/Indefinite.jl@374a5ebb/indef/lib/GroupAction.g:813`: `MatrixIntegral_GetInvariantSpace`; lines 869 onward: integral stabilizer, right-coset and equivalence constructions. Their finite-action engine is reusable; construction of the arithmetic problem is owned here.
+
+- The same file, line 911: `GetAutomorphismOfFlag` is the elementary block-triangular module primitive.
+  Line 1060: `INDEF_FORM_GetRec_IsotropicKplane` additionally constructs rational extensions and denominator-dependent kernel generators.
+  The latter computation is port work.
+
+- `references/vendor/Indefinite.jl@374a5ebb/indef/lib/GroupAction.g:813`: `MatrixIntegral_GetInvariantSpace`; lines 869 onward: integral stabilizer, right-coset and equivalence constructions.
+  Their finite-action engine is reusable; construction of the arithmetic problem is owned here.
+
 - Translation map §§7–10 and §§12–15 retain the remaining source correspondences and acceptance obligations.
 
 ## Historical deletion record
 
-The following is the inventory used by #37/#38 at port `709f81a` and research `9bc51845d1`. Its MIGRATE/REPLACE/DROP labels describe the old decision and the cited deletion commits, not current ownership or completed implementations. Use the table above for all new work.
+The following is the inventory used by #37/#38 at port `709f81a` and research `9bc51845d1`. Its MIGRATE/REPLACE/DROP labels describe the old decision and the cited deletion commits, not current ownership or completed implementations.
+Use the table above for all new work.
 
-<details>
-<summary>Original inventory and defect observations, retained for source recovery</summary>
+<details> <summary>Original inventory and defect observations, retained for source recovery</summary>
 
 # Migration inventory
 

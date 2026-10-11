@@ -1,17 +1,26 @@
 # Port design: computational ownership
 
-Research owns the mathematical objects and reusable primitives. This package implements the specialized indefinite-lattice algorithms that research imports. A public preamble method and the algorithm answering it can have different owners.
+Research owns the mathematical objects and reusable primitives.
+This package implements the specialized indefinite-lattice algorithms that research imports.
+A public preamble method and the algorithm answering it can have different owners.
 
-An operation belongs in research when it is simple, composable mathematics with independent applications and a general implementation: module kernels and quotients, exact linear solving, finite group actions, or a standard backend operation. A specialized construction extracted from the reference algorithms belongs here. Giving it a standard name, a category-owned method, or a predicate-defined result does not turn its implementation into a preamble prerequisite.
+An operation belongs in research when it is simple, composable mathematics with independent applications and a general implementation: module kernels and quotients, exact linear solving, finite group actions, or a standard backend operation.
+A specialized construction extracted from the reference algorithms belongs here.
+Giving it a standard name, a category-owned method, or a predicate-defined result does not turn its implementation into a preamble prerequisite.
 
-For every group computation, distinguish the given data from the requested output. A subgroup predicate does not supply generators. Schreier computation on a supplied finite action does not construct that action, prove its orbit finite, find an arithmetic stabilizer, or find generators of its ambient orthogonal group.
+For every group computation, distinguish the given data from the requested output.
+A subgroup predicate does not supply generators.
+Schreier computation on a supplied finite action does not construct that action, prove its orbit finite, find an arithmetic stabilizer, or find generators of its ambient orthogonal group.
 
-Ownership labels below describe responsibility, not current runtime availability. Research issues track primitives and dispatch; port issues track the specialized computations. The acceptance corpus in #33 is unchanged.
+Ownership labels below describe responsibility, not current runtime availability.
+Research issues track primitives and dispatch; port issues track the specialized computations.
+The acceptance corpus in #33 is unchanged.
 
 Notation: `L` is an integral lattice, `G = L.O()`, `A_L` its discriminant form, and `q(v) = b(v,v)`.
 
 Marked lattices.
-Every orbit, stabilizer and equivalence question here is about isomorphisms in a category of marked lattices, built from the preamble's diagram categories. A marking is a diagram of lattice morphisms ending at L, and an isomorphism of marked lattices is a natural isomorphism of diagrams: a commutative diagram whose components are isometries.
+Every orbit, stabilizer and equivalence question here is about isomorphisms in a category of marked lattices, built from the preamble's diagram categories.
+A marking is a diagram of lattice morphisms ending at L, and an isomorphism of marked lattices is a natural isomorphism of diagrams: a commutative diagram whose components are isometries.
 Which components may vary decides the category:
 
 - a vector v with q(v) = n is a morphism ι: ⟨n⟩ → L. Isometries (L, ι) → (M, κ) satisfy g ∘ ι = κ exactly, so these are objects of the coslice category ⟨n⟩/Lattices (`CosliceCategory(Lattices(ZZ), ⟨n⟩)`), and Aut((L, ι)) is the group of isometries of L fixing v;
@@ -25,19 +34,26 @@ Which components may vary decides the category:
 
 Deciding whether two marked lattices are isometric means deciding whether the core homset between them (`Core().Mor`) is empty, and producing an element when it is not.
 "Orbits of vectors of norm n under O(L)" are the isomorphism classes of pointed lattices (L, ⟨n⟩ → L) with L fixed; "orbits of isotropic planes" are those of marked sublattices.
-Research #403 owns these objects and dispatches their indefinite computations to this port. A homset definition is not an isometry, orbit or generator algorithm.
+Research #403 owns these objects and dispatches their indefinite computations to this port.
+A homset definition is not an isometry, orbit or generator algorithm.
 
 ## What the port owns
 
 - **#15:** the Lorentzian perfect-cell search, flips, side pairings and quotient traversal; Allcock edgewalk, cusp handling, rank-two edge cycles, root selection and termination.
+
 - **#18:** Eichler approximate groups, envelopes and covering representatives; the recursive full orthogonal group, lattice and pointed isometries; exact integral parabolic generators, Levi-image construction, lifts and kernels; isotropic line, plane and flag orbits and stabilizers; arithmetic orbit splitting and indefinite centralizer assembly.
+
 - **#36:** type correctness of the resulting implementation and its dependency contracts.
 
-The source algorithms are recorded in [the translation map](source-to-sage-translation-map.md). Their use of linear algebra and finite groups does not transfer the surrounding algorithm to research. Definite orthogonal groups and existing generic arithmetic operations remain dependency calls.
+The source algorithms are recorded in [the translation map](source-to-sage-translation-map.md).
+Their use of linear algebra and finite groups does not transfer the surrounding algorithm to research.
+Definite orthogonal groups and existing generic arithmetic operations remain dependency calls.
 
 ## Operations and implementation owners
 
-This replaces the former blanket “Planned preamble API” migration table. Consumer-facing names remain mathematical; the computation column determines where implementation work belongs. Exact internal callback signatures changed by implementation must be recorded through #33 before use.
+This replaces the former blanket “Planned preamble API” migration table.
+Consumer-facing names remain mathematical; the computation column determines where implementation work belongs.
+Exact internal callback signatures changed by implementation must be recorded through #33 before use.
 
 | Operation / public surface | Research supplies | Port supplies / live obligation |
 | --- | --- | --- |
@@ -69,32 +85,58 @@ This replaces the former blanket “Planned preamble API” migration table. Con
 
 ### Lorentzian perfect-domain traversal (#15)
 
-Find an initial perfect cell, enumerate its facets, compute its finite configuration automorphisms, flip across facet-orbit representatives, identify neighbouring configurations, and record side pairings. The cell automorphisms and side pairings generate the component-preserving group; adjoin minus identity for the full group. Generic configuration and finite-action computations are inputs; the search and traversal are this port's algorithm.
+Find an initial perfect cell, enumerate its facets, compute its finite configuration automorphisms, flip across facet-orbit representatives, identify neighbouring configurations, and record side pairings.
+The cell automorphisms and side pairings generate the component-preserving group; adjoin minus identity for the full group.
+Generic configuration and finite-action computations are inputs; the search and traversal are this port's algorithm.
 
-For isotropic markings, glue local vertex orbits along side pairings. For timelike vector classes, enumerate primitive vectors of the prescribed square in each cell using a proved finite bound and glue their local orbits (#18). Nonzero null rays have infinitely many multiples, so an unrestricted norm-zero fibre must not be advertised as a finite cone primitive. Spacelike classes require their own valid algorithm; a missing route remains incomplete acceptance, not a research primitive request.
+For isotropic markings, glue local vertex orbits along side pairings.
+For timelike vector classes, enumerate primitive vectors of the prescribed square in each cell using a proved finite bound and glue their local orbits (#18). Nonzero null rays have infinitely many multiples, so an unrestricted norm-zero fibre must not be advertised as a finite cone primitive.
+Spacelike classes require their own valid algorithm; a missing route remains incomplete acceptance, not a research primitive request.
 
 ### Allcock edgewalk (#15)
 
-Construct the starting corner, traverse the edges, solve the cusp and rank-two candidate problems, select the next wall, and establish the termination/reflectivity result. Consume general roots, pairings, cone faces, exact arithmetic, definite close-vector and binary-form operations. The first-success multiplier search and oriented binary cycle belong to this traversal. Vinberg is an independent computation where applicable, not an implementation substitute for the required edgewalk.
+Construct the starting corner, traverse the edges, solve the cusp and rank-two candidate problems, select the next wall, and establish the termination/reflectivity result.
+Consume general roots, pairings, cone faces, exact arithmetic, definite close-vector and binary-form operations.
+The first-success multiplier search and oriented binary cycle belong to this traversal.
+Vinberg is an independent computation where applicable, not an implementation substitute for the required edgewalk.
 
 ### Eichler recursion and integral structures (#18)
 
-Construct the envelope and approximate group, using individual transvections and ordinary module operations. Construct the finite integral-structure action needed to restrict this rational group to L; pass that supplied finite action to the general Schreier solver. Select a splitting vector v, recursively compute Aut((L,v)), and find isometries to the covering representatives. Assemble O(L) from those generators and witnesses.
+Construct the envelope and approximate group, using individual transvections and ordinary module operations.
+Construct the finite integral-structure action needed to restrict this rational group to L; pass that supplied finite action to the general Schreier solver.
+Select a splitting vector v, recursively compute Aut((L,v)), and find isometries to the covering representatives.
+Assemble O(L) from those generators and witnesses.
 
-For nonisotropic v, recurse on its perpendicular and select the integral, glue-compatible extensions. For isotropic v, compute the integral parabolic: construct the compatibility data, recurse for the quotient group, compute the admissible Levi image through a finite action, solve its lift problems, and adjoin the complete integral kernel. Defining `Aut((L,v))` or calling its `group_generators()` is not an implementation of this step.
+For nonisotropic v, recurse on its perpendicular and select the integral, glue-compatible extensions.
+For isotropic v, compute the integral parabolic: construct the compatibility data, recurse for the quotient group, compute the admissible Levi image through a finite action, solve its lift problems, and adjoin the complete integral kernel.
+Defining `Aut((L,v))` or calling its `group_generators()` is not an implementation of this step.
 
 ### Isotropic induction, rank at most two (#18)
 
-For each line representative I, form K = I-perp/I with research's quotient construction. Compute P_I = Aut((L,I)) here, then its image H_I in O(K). Recurse for isotropic classes u of K and their stabilizers Q_u. Construct the required finite coset action for Q_u \ O(K) / H_I, consume its generic double-coset computation, and lift and saturate the resulting lines to planes. Identify planes and flags by the port's marked-isometry algorithm. Compute their stabilizers using the integral lift and kernel constructions above. Rank greater than two remains outside the frozen acceptance scope.
+For each line representative I, form K = I-perp/I with research's quotient construction.
+Compute P_I = Aut((L,I)) here, then its image H_I in O(K). Recurse for isotropic classes u of K and their stabilizers Q_u. Construct the required finite coset action for Q_u \ O(K) / H_I, consume its generic double-coset computation, and lift and saturate the resulting lines to planes.
+Identify planes and flags by the port's marked-isometry algorithm.
+Compute their stabilizers using the integral lift and kernel constructions above.
+Rank greater than two remains outside the frozen acceptance scope.
 
 ### Arithmetic subgroups and centralizers (#18)
 
-Supply the full indefinite group generators, orbit representatives, point stabilizers and character/discriminant actions to generic finite-image preimage and orbit-splitting operations. Reconstruct the lattice markings and their subgroup stabilizers. For involution centralizers, form eigensublattices using research primitives, recursively compute their orthogonal groups, construct and solve the finite gluing condition, and extend the resulting generators. Retain every finite-order case already present in the frozen suite; do not replace a component centralizer computation by a predicate.
+Supply the full indefinite group generators, orbit representatives, point stabilizers and character/discriminant actions to generic finite-image preimage and orbit-splitting operations.
+Reconstruct the lattice markings and their subgroup stabilizers.
+For involution centralizers, form eigensublattices using research primitives, recursively compute their orthogonal groups, construct and solve the finite gluing condition, and extend the resulting generators.
+Retain every finite-order case already present in the frozen suite; do not replace a component centralizer computation by a predicate.
 
 ## Boundary and acceptance
 
-Research imports this package at computational call sites. The port imports research's mathematical objects and primitive operations. These imports are valid; a runtime cycle that asks the same unresolved orbit/stabilizer question again is not.
+Research imports this package at computational call sites.
+The port imports research's mathematical objects and primitive operations.
+These imports are valid; a runtime cycle that asks the same unresolved orbit/stabilizer question again is not.
 
-The existing marked entry points are `isometry(D,source,target)`, `automorphism_group_generators(D,marked)` and `primitive_marking_classes(D,shape,L)` in `indefinite.marked_lattices`. The category distinguishes fixed markings from markings movable by domain automorphisms. The Lorentzian entries are `perfect_domain_traversal(L,mode)` and `edgewalk_fundamental_domain(L)`. Research #403 owns dispatch and removal of obsolete Gram/dictionary conversions. Internal specialized operations remain port code even when exposed through research methods.
+The existing marked entry points are `isometry(D,source,target)`, `automorphism_group_generators(D,marked)` and `primitive_marking_classes(D,shape,L)` in `indefinite.marked_lattices`. The category distinguishes fixed markings from markings movable by domain automorphisms.
+The Lorentzian entries are `perfect_domain_traversal(L,mode)` and `edgewalk_fundamental_domain(L)`. Research #403 owns dispatch and removal of obsolete Gram/dictionary conversions.
+Internal specialized operations remain port code even when exposed through research methods.
 
-All frozen acceptance cases remain required. #15 owns its traversal and reflective cases; #18 owns the group, isometry, vector, isotropic, boundary and centralizer cases, including the former #19–#23 obligations. #36 closes type debt. An issue transferred between repositories remains unfinished until its computation and acceptance are implemented; a renamed method, removed implementation or passing xfail does not complete it.
+All frozen acceptance cases remain required.
+#15 owns its traversal and reflective cases; #18 owns the group, isometry, vector, isotropic, boundary and centralizer cases, including the former #19–#23 obligations.
+#36 closes type debt.
+An issue transferred between repositories remains unfinished until its computation and acceptance are implemented; a renamed method, removed implementation or passing xfail does not complete it.
