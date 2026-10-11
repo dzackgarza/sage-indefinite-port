@@ -19,7 +19,7 @@ from __future__ import annotations
 from math import isqrt
 
 from dzack_research.preamble.all import Lattices
-from dzack_research.preamble.categories.eichler_criterion import TwoUEichlerModel
+from dzack_research.preamble.categories.eichler_criterion import TwoUEichlerModel, TwoUFullGeneratingDatum
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.modules.framed.formed.discriminant_modules import DiscriminantQuadraticModules
 from dzack_research.preamble.categories.rational_integral_stabilizers import IntegralStructureAction
@@ -146,6 +146,37 @@ class OrbitCoverModel:
             return lattice.scalar_multiple(order, e) + lattice.scalar_multiple(order * coefficient, f) + inclusion(k)
 
         return finite_indexed_family(complement.covering_discriminant_classes(square), representative, name=f"Eichler covering vectors of square {square} in {lattice}")
+
+    @staticmethod
+    def split_full_generating_data(model: TwoUEichlerModel, square: RingElement) -> TwoUFullGeneratingDatum:
+        r"""Assemble O(L) from the approximate subgroup, one pointed stabilizer and exact witnesses.
+
+        Every image of the base vector is approximately equivalent to one
+        retained covering vector. Dividing an arbitrary isometry by that
+        approximate element and the retained witness leaves an element of
+        the base stabilizer. This proves generation by the three families.
+        """
+        from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+        recursion = EichlerRecursion()
+        representatives = model.covering_vector_representatives(square)
+        if int(representatives.cardinality()) == 0:
+            raise ValueError("full-group assembly requires a nonempty primitive covering family")
+        base_label = next(iter(representatives.index_set()))
+        base_vector = representatives.value(base_label)
+        witnesses: dict[DiscriminantQuadraticModules.ElementMethods, LatticeIsometryMethods] = {}
+        for label in representatives.index_set():
+            witness = recursion.pointed_isometry(base_vector, representatives.value(label))
+            if witness is not None:
+                witnesses[label] = witness
+        labels = finite_ordered_set(tuple(witnesses))
+        orbit_representatives = finite_indexed_family(labels, representatives.value)
+        orbit_witnesses = finite_indexed_family(labels, witnesses.__getitem__)
+        approximate = model.approximate_generating_family()
+        stabilizer = finite_ordered_set(recursion.pointed_automorphism_generators(base_vector))
+        generators = tuple(approximate) + tuple(stabilizer) + tuple(orbit_witnesses)
+        family = finite_indexed_family(finite_ordered_set(tuple(range(len(generators)))), generators.__getitem__)
+        return TwoUFullGeneratingDatum(model, model.lattice().base_ring()(square), base_vector, approximate, stabilizer, orbit_representatives, orbit_witnesses, family)
 
     def __init__(self, lattice: Lattices.ParentMethods) -> None:
         self.lattice = lattice
