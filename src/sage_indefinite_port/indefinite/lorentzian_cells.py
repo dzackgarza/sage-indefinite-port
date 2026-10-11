@@ -8,12 +8,12 @@ from fractions import Fraction
 from functools import cache, cached_property
 from typing import Literal, TypedDict
 
-from dzack_research.preamble.all import ZZ, Cat, Lattices
-from dzack_research.preamble.categories.abstract_categories.products import FiniteOrdinalCategory
+from dzack_research.preamble.all import Lattices
 from dzack_research.preamble.categories.group.g_sets import FiniteGSets
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods, LatticeIsometryMor
 from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
 from dzack_research.preamble.categories.reduction_complexes import LorentzianPerfectDomainTraversal, PerfectDomainOrbitAdjacency
+from dzack_research.preamble.categories.vector_configurations import VectorConfigurations
 from sage.matrix.constructor import matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
@@ -30,10 +30,6 @@ from sage_indefinite_port.readiness import unfinished
 
 type PerfectMode = Literal["total", "isotropic"]
 type FacetIncidence = frozenset[int]
-
-ARROWS = Cat().Mor(FiniteOrdinalCategory(2), Lattices(ZZ))
-"""Ar(Lattices): a vector configuration S of L is the marked lattice (L, Z^S -> L)."""
-
 
 def lorentzian_orthogonal_group_generators(lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
     r"""Generators of O(L) for L of signature (1, n) or (n, 1): O^Omega(L) from the perfect-domain traversal, and -1."""
@@ -123,8 +119,9 @@ class LorentzianPerfectLocalBackend:
     @cache
     def cell_stabilizer(self, cell: LorentzianPerfectCell) -> tuple[LatticeIsometryMethods, ...]:
         r"""Generators of Aut((L, S)) for the cell's vector configuration S."""
-        configuration = cell.configuration()
-        return tuple(automorphism.forward().right() for automorphism in ARROWS.Core().Mor(configuration, configuration).group_generators())
+        return tuple(VectorConfigurations(cell.lattice.base_ring()).spanning_automorphism_generators(
+            cell.lattice, cell.vector_configuration, (0,) * len(cell.vector_configuration)
+        ))
 
     def facet_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[FacetIncidence, ...], ...]:
         r"""The orbits of Aut((L, S)) on the facets of the cone spanned by S, as incidence sets."""
@@ -136,7 +133,7 @@ class LorentzianPerfectLocalBackend:
             return frozenset(vectors.index(isometry(vectors[position])) for position in facet)
 
         stabilizer = cell.lattice.O().subgroup(self.cell_stabilizer(cell))
-        return tuple(tuple(orbit) for orbit in FiniteGSets(stabilizer)(facets, act).orbits())
+        return tuple(tuple(orbit.points()) for orbit in FiniteGSets(stabilizer)(facets, act).orbits())
 
     def flip_across(self, cell: LorentzianPerfectCell, facet: FacetIncidence) -> LorentzianPerfectCell:
         normalized = _lorentzian_view(cell.lattice)
@@ -180,10 +177,10 @@ class LorentzianPerfectLocalBackend:
         r"""An element of Isom((L, S), (L, T)) for the cells' configurations, or None."""
         if source.mode != target.mode:
             raise ValueError(f"cells of modes {source.mode!r} and {target.mode!r} are never isometric: compare cells of one traversal")
-        isomorphisms = ARROWS.Core().Mor(source.configuration(), target.configuration())
-        if isomorphisms.is_empty():
-            return None
-        return isomorphisms.an_element().forward().right()
+        return VectorConfigurations(source.lattice.base_ring()).spanning_isometry(
+            source.lattice, source.vector_configuration, (0,) * len(source.vector_configuration),
+            target.lattice, target.vector_configuration, (0,) * len(target.vector_configuration),
+        )
 
 
 class LorentzianPerfectComplex:
@@ -402,7 +399,7 @@ class MarkedCellOrbitAlgorithm:
         def act(isometry: LatticeIsometryMethods, position: int) -> int:
             return marks.index(isometry(marks[position]))
 
-        return tuple(tuple(marks[position] for position in sorted(orbit)) for orbit in FiniteGSets(stabilizer)(positions, act).orbits())
+        return tuple(tuple(marks[position] for position in sorted(orbit.points())) for orbit in FiniteGSets(stabilizer)(positions, act).orbits())
 
     def transport_marks(self, adjacency: LorentzianCellAdjacency) -> tuple[tuple[Lattices.ElementMethods, Lattices.ElementMethods], ...]:
         transporter = adjacency.transporter
@@ -493,7 +490,8 @@ def _lorentzian_view(lattice: Lattices.ParentMethods) -> Lattices.ParentMethods:
 
 def _transfer(target: Lattices.ParentMethods, element: Lattices.ElementMethods) -> Lattices.ElementMethods:
     r"""The element with the same coordinates in a lattice on the same module (L and its twist)."""
-    return target.linear_combination(element.monomial_coefficients())
+    coordinates = element.to_vector()
+    return target.linear_combination({label: coordinates(label) for label in target.module_generating_set()})
 
 
 def _ambient_element(lattice: Lattices.ParentMethods, coordinates: tuple[Integer, ...]) -> Lattices.ElementMethods:
@@ -601,21 +599,17 @@ class _PositiveVectorEnumerator:
         maximum = self.max_multiplier()
         if maximum is None:
             return None
-        bound = _owned_rational(self.lattice, -self.base_bound)
-        match self.mode:
-            case "total":
-                shell = self.kernel.first_close_vector_shell(self.base_target, bound, maximum)
-            case "isotropic":
-                shell = self.kernel.first_close_vector_sphere(self.base_target, bound, maximum)
-        if shell is None:
-            return None
-        multiplier, close_vectors = shell
-        return multiplier, self._ambient_vectors(multiplier, close_vectors)
+        for multiplier in range(1, maximum + 1):
+            vectors = self.vectors_at_multiplier(multiplier)
+            if vectors:
+                return multiplier, vectors
+        return None
 
     def vectors_at_multiplier(self, multiplier: int) -> tuple[Lattices.ElementMethods, ...]:
         target = self.base_target.parent().scalar_multiple(_owned_rational(self.lattice, SageQQ(multiplier)), self.base_target)
         bound = _owned_rational(self.lattice, -(SageQQ(multiplier) ** 2) * self.base_bound)
-        return self._ambient_vectors(multiplier, tuple(self.kernel.close_vectors(target, bound)))
+        distances = self.kernel.close_vectors(target, bound)
+        return self._ambient_vectors(multiplier, tuple(distances.index_set()))
 
     def _ambient_vectors(self, multiplier: int, close_vectors: tuple[Lattices.ElementMethods, ...]) -> tuple[Lattices.ElementMethods, ...]:
         shift = self.lattice.scalar_multiple(self.lattice.base_ring()(multiplier), self.partner)

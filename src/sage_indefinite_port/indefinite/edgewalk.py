@@ -16,11 +16,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import cmp_to_key
 
-from dzack_research.preamble.all import ZZ, Cat, HyperbolicLattices, Lattices
-from dzack_research.preamble.categories.abstract_categories.products import FiniteOrdinalCategory
+from dzack_research.preamble.all import ZZ, HyperbolicLattices, Lattices
 from dzack_research.preamble.categories.hyperbolic_lattices import AllcockEdgewalkReport
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
+from dzack_research.preamble.categories.vector_configurations import VectorConfigurations
 from sage.matrix.constructor import matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
@@ -33,16 +33,13 @@ from sage.rings.rational_field import QQ as SageQQ
 from sage.structure.parent import Parent
 
 from sage_indefinite_port.indefinite.edgewalk_extensions import NormedDynkinExtension, finite_type_extensions, parabolic_extensions
+from sage_indefinite_port.indefinite.edgewalk_rank2 import anisotropic_cycle
 from sage_indefinite_port.readiness import unfinished
 
 type _Vector = Lattices.ElementMethods
 type _Roots = tuple[_Vector, ...]
 type _Key = tuple[int, ...]
 type _RationalRow = FreeModuleElement[Rational]
-
-ARROWS = Cat().Mor(FiniteOrdinalCategory(2), Lattices(ZZ))
-"""Ar(Lattices): a coloured vector configuration S of L is the marked lattice (L, Z^S -> L)."""
-
 
 @unfinished(15)
 def edgewalk_fundamental_domain(lattice: HyperbolicLattices.ParentMethods) -> Parent:
@@ -56,7 +53,8 @@ def edgewalk_fundamental_domain(lattice: HyperbolicLattices.ParentMethods) -> Pa
 
 
 def _key(vector_: _Vector) -> _Key:
-    return tuple(int(entry) for entry in vector_.to_tuple())
+    coordinates = vector_.to_vector()
+    return tuple(int(coordinates(label)) for label in vector_.parent().module_generating_set())
 
 
 def _oriented_determinant(left: _Key, right: _Key) -> int:
@@ -267,7 +265,7 @@ class _Edgewalk:
             vectors.sort(key=lambda item: cmp_to_key(_orientation_compare)(_key(item)))
             work_vectors.extend(vectors)
         else:
-            cycle = plane.reduction_cycle(scale * SageQQ(extension.norm), r0)
+            cycle = anisotropic_cycle(plane, scale * SageQQ(extension.norm), r0)
             if cycle is None:
                 return ()
             automorph, representatives = cycle
@@ -412,7 +410,7 @@ class _Edgewalk:
             directions.append((included, omitted[0]))
         return tuple(directions)
 
-    def vertex_configuration(self, vertex: _Vertex) -> Parent:
+    def vertex_configuration(self, vertex: _Vertex) -> tuple[_Roots, tuple[int, ...]]:
         r"""The coloured configuration of the vertex: its roots, the vertex, and at an ideal vertex its neighbours."""
         vectors = [*vertex.roots, vertex.generator]
         colours = [1] * len(vertex.roots) + [2]
@@ -423,7 +421,7 @@ class _Edgewalk:
                 adjacent.setdefault(_key(neighbour), neighbour)
             vectors.extend(adjacent[key] for key in sorted(adjacent))
             colours.extend([3] * len(adjacent))
-        return self.lattice.vector_configuration(vectors, colours)
+        return tuple(vectors), tuple(colours)
 
     def isometry_key(self, isometry: LatticeIsometryMethods) -> tuple[_Key, ...]:
         return tuple(_key(isometry(generator)) for generator in self.lattice.module_generators())
@@ -479,17 +477,18 @@ class _Edgewalk:
             return True
 
         position = 0
+        configuration_category = VectorConfigurations(self.lattice.base_ring())
         while position < len(vertices):
             vertex = vertices[position]
             configuration = configurations[position]
-            for automorphism in ARROWS.Core().Mor(configuration, configuration).group_generators():
-                if not admit(automorphism.forward().right()):
+            for automorphism in configuration_category.spanning_automorphism_generators(self.lattice, *configuration):
+                if not admit(automorphism):
                     return self.report(vertices, False, (), isometries)
             for roots, discarded in self.edge_directions(vertex):
                 neighbour = self.edge_step(vertex, roots, discarded)
                 neighbour_configuration = self.vertex_configuration(neighbour)
-                homsets = (ARROWS.Core().Mor(known, neighbour_configuration) for known in configurations)
-                transporter = next((isomorphisms.an_element().forward().right() for isomorphisms in homsets if not isomorphisms.is_empty()), None)
+                isometries_to_neighbour = (configuration_category.spanning_isometry(self.lattice, *known, self.lattice, *neighbour_configuration) for known in configurations)
+                transporter = next((isometry for isometry in isometries_to_neighbour if isometry is not None), None)
                 if transporter is None:
                     vertices.append(neighbour)
                     configurations.append(neighbour_configuration)
