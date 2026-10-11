@@ -67,7 +67,9 @@ class LorentzianPerfectCell:
         positive, negative = self.lattice.signature_pair()
         if int(positive) != 1 and int(negative) != 1:
             raise ValueError(f"a Lorentzian perfect cell needs signature (1,n) or (n,1), but {self.lattice} has signature {self.lattice.signature_pair()}")
-        squares = tuple(int(vector.q()) for vector in self.vector_configuration)
+        gram = _gram_matrix(self.lattice)
+        rows = tuple(_coordinate_row(self.lattice, point, SageZZ) for point in self.vector_configuration)
+        squares = tuple(int(row * gram * row) for row in rows)
         if self.mode == "isotropic" and any(square != 0 for square in squares):
             raise ValueError("an isotropic perfect cell may contain only isotropic vectors")
         normalized_sign = 1 if int(positive) == 1 else -1
@@ -306,9 +308,10 @@ def _perfect_form_hash_key(cell: LorentzianPerfectCell) -> tuple[tuple[int, ...]
     multisets as the Python dictionary key avoids hash collisions while
     retaining precisely the same necessary isometry invariant.
     """
-    vectors = cell.vector_configuration
-    diagonal = tuple(sorted(int(vector_.q()) for vector_ in vectors))
-    off_diagonal = tuple(sorted(int(cell.lattice.b(vectors[left], vectors[right])) for left in range(len(vectors)) for right in range(left + 1, len(vectors))))
+    rows = matrix(SageZZ, [_coordinate_row(cell.lattice, point, SageZZ) for point in cell.vector_configuration])
+    pairings = rows * _gram_matrix(cell.lattice) * rows.transpose()
+    diagonal = tuple(sorted(int(pairings[index, index]) for index in range(rows.nrows())))
+    off_diagonal = tuple(sorted(int(pairings[left, right]) for left in range(rows.nrows()) for right in range(left + 1, rows.nrows())))
     return diagonal, off_diagonal
 
 
@@ -551,6 +554,7 @@ class _PositiveVectorEnumerator:
 
     def __init__(self, lattice: Lattices.ParentMethods, rational_direction: tuple[Rational, ...], max_scal: Rational, mode: PerfectMode) -> None:
         self.lattice = lattice
+        self.gram = _gram_matrix(lattice)
         self.mode = mode
         timelike, scale = _primitive_integral_direction(lattice, tuple(SageQQ(entry) for entry in rational_direction))
         self.scaled_max = SageQQ(max_scal) * scale
@@ -598,7 +602,8 @@ class _PositiveVectorEnumerator:
         result: list[Lattices.ElementMethods] = []
         for close in close_vectors:
             candidate = shift + self.inclusion(close)
-            candidate_square = int(candidate.q())
+            row = _coordinate_row(self.lattice, candidate, SageZZ)
+            candidate_square = int(row * self.gram * row)
             if self.mode == "isotropic" and candidate_square != 0:
                 continue
             if candidate_square < 0:
