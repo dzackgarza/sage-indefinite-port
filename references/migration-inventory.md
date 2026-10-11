@@ -35,13 +35,16 @@ The defect observations in the historical record remain investigation inputs for
 
 - The same file, line 911: `GetAutomorphismOfFlag` is the elementary block-triangular module primitive.
   Lines 1060–1128: `INDEF_FORM_GetRec_IsotropicKplane` composes a reduced-group computation with calls to `Lorentzian.g:115–248` for extension fibres and kernel generators.
-  Research owns the reusable section/kernel computation, including the linear equation B = XA + AᵀXᵀ under the source's hypotheses; the port owns the recursive composition. Source residency does not assign both to the port.
+  Research owns the reusable section/kernel computation, including the linear equation B = XA + AᵀXᵀ under the source's hypotheses; the port owns the recursive composition.
+  Source residency does not assign both to the port.
 
 - `references/vendor/Indefinite.jl@374a5ebb/indef/lib/GroupAction.g:813`: `MatrixIntegral_GetInvariantSpace`; lines 869 onward: integral stabilizer, right-coset and equivalence constructions.
   Their finite-action engine is reusable; construction of the arithmetic problem is owned here.
 
 - Translation map §§7–10 and §§12–15 retain the remaining source correspondences and acceptance obligations.
-  Section 15 explicitly introduces centralizers as new functionality. Its invariant-decomposition/gluing composition belongs with research's centralizer operation; indefinite component O(L) computations call this port. No separate port centralizer route is established by that source record.
+  Section 15 explicitly introduces centralizers as new functionality.
+  Its invariant-decomposition/gluing composition belongs with research's centralizer operation; indefinite component O(L) computations call this port.
+  No separate port centralizer route is established by that source record.
 
 ## Historical deletion record
 

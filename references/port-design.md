@@ -43,7 +43,9 @@ A homset definition is not an isometry, orbit or generator algorithm.
 
 - **#15:** the Lorentzian perfect-cell search, flips, side pairings and quotient traversal; Allcock edgewalk, cusp handling, rank-two edge cycles, root selection and termination.
 
-- **#18:** Eichler approximate groups, envelopes and covering representatives; recursive orthogonal-group and marked-isometry algorithms; the reference algorithm's composition for integral parabolic and flag stabilizers; isotropic orbit induction. Supply indefinite group/orbit computations to research's arithmetic subgroup and centralizer operations and retain their complete consumer acceptance. General sections, kernels and centralizer computations are research operations.
+- **#18:** Eichler approximate groups, envelopes and covering representatives; recursive orthogonal-group and marked-isometry algorithms; the reference algorithm's composition for integral parabolic and flag stabilizers; isotropic orbit induction.
+  Supply indefinite group/orbit computations to research's arithmetic subgroup and centralizer operations and retain their complete consumer acceptance.
+  General sections, kernels and centralizer computations are research operations.
 
 - **#36:** type correctness of the resulting implementation and its dependency contracts.
 
@@ -85,9 +87,7 @@ Exact internal callback signatures changed by implementation must be recorded th
 
 ### Sections and kernels: specify the morphism
 
-For an isotropic inclusion I ↪ L, put P = Stab_O(L)(I) and K = I-perp/I.
-Distinguish restriction r: P → Aut(I-perp) from the joint action ρ: P → GL(I) × O(K).
-The pointwise-perpendicular subgroup is ker(r). It is not, in general, ker(ρ), nor the whole unipotent radical.
+For an isotropic inclusion I ↪ L, put P = Stab_O(L)(I) and K = I-perp/I. Distinguish restriction r: P → Aut(I-perp) from the joint action ρ: P → GL(I) × O(K). The pointwise-perpendicular subgroup is ker(r). It is not, in general, ker(ρ), nor the whole unipotent radical.
 Research #398 owns these maps and kernel computations; #401 owns reusable isometry-extension fibres and their rational/integral sections.
 The port's recursion supplies the marked lattice and reduced group computations and uses those operations.
 
@@ -129,8 +129,7 @@ Assemble O(L) from those generators and witnesses.
 
 For nonisotropic v, recurse on its perpendicular and consume research's integral, glue-compatible extension computation.
 For isotropic v, use research's restriction and quotient-action maps: recurse for the reduced group, supply the algorithm's compatibility data, compute the admissible image with the general action operations, evaluate a section on its generators, and adjoin the corresponding kernel generators.
-The map, its section and its kernel computations remain research-owned; the recursive reduction and composition are #18.
-Defining `Aut((L,v))` or calling its `group_generators()` is not an implementation of this step.
+The map, its section and its kernel computations remain research-owned; the recursive reduction and composition are #18. Defining `Aut((L,v))` or calling its `group_generators()` is not an implementation of this step.
 
 ### Isotropic induction, rank at most two (#18)
 
@@ -144,11 +143,12 @@ Rank greater than two remains outside the frozen acceptance scope.
 
 Supply the full indefinite group generators, orbit representatives, point stabilizers and character/discriminant actions to generic finite-image preimage and orbit-splitting operations.
 Reconstruct the lattice markings and their subgroup stabilizers.
-For involution centralizers, research #397 computes the compatible subgroup of O(L_+) × O(L_-) preserving the gluing and extends it to L.
-This works through general invariant-subobject, group-action and finite-index extension operations; the indefinite O(L_±) calls use #15/#18 where applicable.
-Map §15 explicitly introduces centralizers as new functionality, not a port of the source recursion. No separate centralizer implementation is assigned here on that evidence.
+For involution centralizers, research #397 computes the compatible subgroup of O(L_+) × O(L_-) preserving the gluing and extends it to L. This works through general invariant-subobject, group-action and finite-index extension operations; the indefinite O(L_±) calls use #15/#18 where applicable.
+Map §15 explicitly introduces centralizers as new functionality, not a port of the source recursion.
+No separate centralizer implementation is assigned here on that evidence.
 For further finite-order cases, research retains the actual component-centralizer computation and its hypotheses; decomposing into cyclotomic summands does not solve it.
-Retain every finite-order case already present in the frozen suite. #18 remains accountable for full consumer acceptance and its indefinite dependency calls, while #397 tracks the reusable computation; neither issue is complete merely because work is routed to the other.
+Retain every finite-order case already present in the frozen suite.
+#18 remains accountable for full consumer acceptance and its indefinite dependency calls, while #397 tracks the reusable computation; neither issue is complete merely because work is routed to the other.
 
 ## Boundary and acceptance
 

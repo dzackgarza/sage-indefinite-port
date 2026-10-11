@@ -322,7 +322,9 @@ The basis matrix used to express this morphism belongs in the coordinate adapter
 
 # 4. Vector restrictions and sections: research operations consumed by recursion
 
-The source family formerly mapped to `indefinite/vector_sections.py` contains general extension computations as well as recursive composition. Research #401 owns restriction fibres and sections, including their computation. The port selects reductions and composes these operations in #18. The sketches below describe mathematical operations, not instructions to create parallel port-owned classes.
+The source family formerly mapped to `indefinite/vector_sections.py` contains general extension computations as well as recursive composition.
+Research #401 owns restriction fibres and sections, including their computation.
+The port selects reductions and composes these operations in #18. The sketches below describe mathematical operations, not instructions to create parallel port-owned classes.
 
 ## 4.1 Translate `INDEF_FORM_GetVectorStructure`
 
@@ -525,7 +527,9 @@ P = GL(I).stabilizer(flag_on_I)
 ```
 
 represented as the integral parabolic subgroup determined by `FlagType`. This block triangular free-module construction is a research primitive.
-The port's recursive flag-stabilizer algorithm combines these operations with its reduced orthogonal-group computation. Research also supplies the restriction maps, their kernels and sections, and gluing computations. The GL construction alone does not compute an orthogonal flag stabilizer.
+The port's recursive flag-stabilizer algorithm combines these operations with its reduced orthogonal-group computation.
+Research also supplies the restriction maps, their kernels and sections, and gluing computations.
+The GL construction alone does not compute an orthogonal flag stabilizer.
 
 ## 5.3 Port the radical extension as a semidirect product
 
@@ -558,7 +562,8 @@ The source's elementary shear generators are then generated from the ordinary mo
 
 # 6. Restriction fibres, sections and kernels
 
-Research #398/#401 own these general mathematical operations and their reusable implementations. The former path `indefinite/isotropic_lifts.py` identifies recovery source, not a destination for generic primitives.
+Research #398/#401 own these general mathematical operations and their reusable implementations.
+The former path `indefinite/isotropic_lifts.py` identifies recovery source, not a destination for generic primitives.
 
 ## 6.1 Compute a section of restriction in codimension one
 
@@ -588,7 +593,10 @@ class CodimensionOneIsotropicExtension:
 ```
 
 The return value should include the source and target subspace morphisms, not only a matrix.
-Precisely, restriction sends an ambient isometry to its specified partial isometry. The extension is a point of the fibre over that partial isometry. A construction selecting points defines a section on the image; it need not be a group-homomorphic section. Research owns this construction, while the port supplies the partial isometries produced by recursion.
+Precisely, restriction sends an ambient isometry to its specified partial isometry.
+The extension is a point of the fibre over that partial isometry.
+A construction selecting points defines a section on the image; it need not be a group-homomorphic section.
+Research owns this construction, while the port supplies the partial isometries produced by recursion.
 
 ## 6.2 Rewrite `SpecialEquationSolving` as a linear-map problem
 
@@ -662,7 +670,8 @@ IntegralKernelSpecialEquation
 GetOrthogonalTotallyIsotropicKernelSubspace
 ```
 
-For P = Stab_O(L)(I), let r: P → Aut(I^⊥) be restriction. The latter source routine computes ker(r), the isometries acting identically on I^⊥. It reduces the condition to HU^T + UH^T = 0 and constructs generators from the integral kernel.
+For P = Stab_O(L)(I), let r: P → Aut(I^⊥) be restriction.
+The latter source routine computes ker(r), the isometries acting identically on I^⊥. It reduces the condition to HU^T + UH^T = 0 and constructs generators from the integral kernel.
 The source explicitly notes that this particular kernel is commutative.
 Both the kernel operation and this reusable formed-module computation belong to research #398/#401. The port consumes the result when assembling its recursive stabilizer.
 
@@ -754,12 +763,16 @@ F = P.finite_compatibility_action()
 M_integral = M.stabilizer(F.gluing_object())
 ```
 
-Research owns the induced action, its image, the compatibility stabilizer and the section/fibre computations. The port selects the reduction and compatibility data for the reference algorithm, supplies the recursively computed quotient group, and establishes that this composition captures the required integral stabilizer (#18).
+Research owns the induced action, its image, the compatibility stabilizer and the section/fibre computations.
+The port selects the reduction and compatibility data for the reference algorithm, supplies the recursively computed quotient group, and establishes that this composition captures the required integral stabilizer (#18).
 
 ## 7.3 Evaluate sections on generators and adjoin the kernel
 
-Write ρ: P → GL(I) × O(K) for the joint action and H = im(ρ). For h in a generating family of H, compute the fibre ρ⁻¹(h) using research's isometry-extension operations and select s(h) in that fibre. Then P is generated by these section values and generators of ker(ρ). A section is needed only on the image and need not be a homomorphism.
-The pointwise-perpendicular kernel in §6.4 is ker(r) for a different map; it cannot replace ker(ρ) without an argument. An affine solver applies only after the actual fibre has been proved affine in the chosen parameters. The general fibre can be a nonlinear torsor.
+Write ρ: P → GL(I) × O(K) for the joint action and H = im(ρ). For h in a generating family of H, compute the fibre ρ⁻¹(h) using research's isometry-extension operations and select s(h) in that fibre.
+Then P is generated by these section values and generators of ker(ρ). A section is needed only on the image and need not be a homomorphism.
+The pointwise-perpendicular kernel in §6.4 is ker(r) for a different map; it cannot replace ker(ρ) without an argument.
+An affine solver applies only after the actual fibre has been proved affine in the chosen parameters.
+The general fibre can be a nonlinear torsor.
 
 For each generator (a, g) of `M_integral`:
 
@@ -1747,7 +1760,10 @@ This is a separate use of double cosets from the internal integralization double
 # 15. Research centralizer computations using indefinite group algorithms
 
 Centralizers are new functionality, not a small modification of the source recursion.
-Research #397 owns C_G(I), its computational interface, and the invariant-decomposition/gluing route below. This port supplies the indefinite component orthogonal-group algorithms it calls (#15/#18); this section does not justify introducing a separate port-owned centralizer operation or implementation. The former `indefinite/equivariant.py` name is not an ownership assignment. Research #403 integrates the calls, and port #18 retains every original centralizer consumer acceptance case.
+Research #397 owns C_G(I), its computational interface, and the invariant-decomposition/gluing route below.
+This port supplies the indefinite component orthogonal-group algorithms it calls (#15/#18); this section does not justify introducing a separate port-owned centralizer operation or implementation.
+The former `indefinite/equivariant.py` name is not an ownership assignment.
+Research #403 integrates the calls, and port #18 retains every original centralizer consumer acceptance case.
 
 ## 15.1 Public API
 
@@ -1807,7 +1823,9 @@ For finite-order f, replace the ±1-decomposition by the rational cyclotomic dec
 L_Q = ⊕_{d | ord(f)} ker Φ_d(f).
 
 Intersect each rational isotypic component with L, compute the product of componentwise centralizers, and impose the finite equivariant gluing condition.
-Research #397 must supply applicable component-centralizer computations; ordinary component orthogonal groups only suffice when the restricted isometry is scalar, as in the involution case. Indefiniteness by itself does not assign these general centralizer computations to the port. Any additional specialized port route requires an identified algorithm and a recorded input/output contract through #33.
+Research #397 must supply applicable component-centralizer computations; ordinary component orthogonal groups only suffice when the restricted isometry is scalar, as in the involution case.
+Indefiniteness by itself does not assign these general centralizer computations to the port.
+Any additional specialized port route requires an identified algorithm and a recorded input/output contract through #33.
 
 A general infinite-order centralizer should not be claimed by this initial implementation.
 
