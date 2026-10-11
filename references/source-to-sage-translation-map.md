@@ -1688,8 +1688,7 @@ For signature (2,n), rank two is already the maximal isotropic rank and recovers
 # 14. Finite-index subgroups: generic solver and arithmetic application
 
 Research computes kernels, preimages, intersections and orbit splitting from supplied generators and effective finite-action data.
-This repository computes the indefinite ambient groups, orbit representatives and point stabilizers, constructs the arithmetic actions, and reconstructs the marked-lattice answers (#18).
-Both parts are required by the unchanged consumer acceptance; neither the subgroup predicate nor the generic solver supplies the missing indefinite data.
+This repository computes the indefinite ambient groups, orbit representatives and point stabilizers, constructs the arithmetic actions, and reconstructs the marked-lattice answers (#18). Both parts are required by the unchanged consumer acceptance; neither the subgroup predicate nor the generic solver supplies the missing indefinite data.
 
 ## 14.1 Finite-preimage groups
 
@@ -2052,5 +2051,4 @@ construction-aware intersections
 Recover the centralizer of an Enriques involution from eigensublattices and gluing, then intersect it with stable and polarization-stabilizer subgroups.
 
 The port owns the specialized recursion, traversal and generator algorithms; research owns the mathematical objects and independent primitives.
-All local Lorentzian cell computations are implemented in Sage/Python (#15).
-No C++ execution backend is retained.
+All local Lorentzian cell computations are implemented in Sage/Python (#15). No C++ execution backend is retained.
