@@ -2,7 +2,7 @@
 
 Source-to-Sage translation map for the indefinite lattice port (received 2026-09-02, external report; citation markers of the generating tool removed).
 The issue tree rooted at #4 owns execution.
-[Port design](port-design.md) distinguishes mathematical objects and primitives from the specialized algorithms that compute them.
+[Port design](port-design.md) separates general operations and reusable computations from the particular indefinite algorithms supplied by this port.
 The source symbols and sections below describe the algorithms; a public preamble method does not assign its specialized implementation to research.
 
 ## Source authority and versioning
@@ -531,7 +531,7 @@ The port's recursive flag-stabilizer algorithm combines these operations with it
 Research also supplies the restriction maps, their kernels and sections, and gluing computations.
 The GL construction alone does not compute an orthogonal flag stabilizer.
 
-## 5.3 Port the radical extension as a semidirect product
+## 5.3 Consume the general radical extension as a semidirect product
 
 Reference:
 
@@ -557,6 +557,8 @@ G = D.automorphism_group(flag=None)
 ```
 
 The source's elementary shear generators are then generated from the ordinary module Hom_Z(M̄, R), rather than inserted by coordinate loops.
+Research owns this general formed-module construction and its computation from supplied factor groups.
+The port supplies an indefinite O(M̄) computation when needed, rather than reimplementing the semidirect-product construction.
 
 * * *
 
@@ -1833,18 +1835,15 @@ A general infinite-order centralizer should not be claimed by this initial imple
 
 # 16. Exact symbol-level disposition
 
-## Port semantically
+## Port the identified indefinite algorithms
 
 ```text
 IndefiniteFormFundamental.h
     AttackScheme
     INDEF_FORM_GetAttackScheme
-    INDEF_FORM_IsEven
 
 IndefiniteForms.g / ApproximateModels.h
-    INDEF_FORM_Eichler_Transvection
     INDEF_FORM_EichlerCriterion_TwoHyperplanesEven
-    GetSquareDivisors
     INDEF_FORM_GetApproximateModel
 
 CombinedAlgorithms.h
@@ -1854,41 +1853,23 @@ CombinedAlgorithms.h
     INDEF_FORM_StabilizerVector_Reduced
     INDEF_FORM_EquivalenceVector_Reduced
 
-Lorentzian.g / lorentzian_linalg.h
-    LORENTZ_ExtendOrthogonalIsotropicIsomorphism_Dim1
-    SpecialEquationSolving
-    LORENTZ_ExtendOrthogonalIsotropicIsomorphism
-    IntegralKernelSpecialEquation
-    GetOrthogonalTotallyIsotropicKernelSubspace
-
 GroupAction.g / MatrixGroupBasic.h
     MatrixIntegral_GetInvariantSpace
 ```
 
-## Generalize into typed abstractions
+General callees in those source families remain research computations; the list does not assign whole source files to the port.
 
-```text
-ApproximateModel
-    -> OrbitCoverModel
+## Preserve mathematical objects at their owners
 
-INDEF_FORM_GetVectorStructure
-    -> VectorOrthogonalSection
-
-INDEF_FORM_Rec_IsotropicKplane
-    -> IsotropicReduction + IntegralParabolicDatum
-
-SeqDims
-    -> FlagType
-
-DataPerfectLorentzianFunc
-    -> LorentzianPerfectLocalBackend
-
-DatabaseResultEquiStab
-    -> IsometryGroupoidCache
-
-MatrixIntegral_* and LinearSpace_*
-    -> IntegralStructureAction
-```
+| Source | Research computation/object | Port contribution |
+| --- | --- | --- |
+| `ApproximateModel` | Groups, actions and marked lattices | Approximate-cover algorithm (`OrbitCoverModel`) |
+| `INDEF_FORM_GetVectorStructure` | Perpendicular/reduction, restriction fibres and sections | Recursive choice of reduction and composition |
+| `INDEF_FORM_Rec_IsotropicKplane` | Isotropic reduction, restriction/quotient actions, kernels and sections | Recursive flag-stabilizer algorithm |
+| `SeqDims` | Flag as a diagram of subobjects | Choose the marking used by the orbit algorithm |
+| `DataPerfectLorentzianFunc` | Cones and configuration computations | Perfect-cell search/traversal |
+| `DatabaseResultEquiStab` | Isom/Aut of marked lattices | Algorithm cache and prefilters |
+| `MatrixIntegral_*` and `LinearSpace_*` | Submodules, finite quotients and actions | Reference-specific integral-model construction and its proof of applicability |
 
 ## Rewrite rather than port
 
@@ -1919,6 +1900,20 @@ LORENTZ_GetOrbitRepresentative_Kernel
 ## Delegate
 
 ```text
+INDEF_FORM_IsEven, GetSquareDivisors, INDEF_FORM_Eichler_Transvection
+    -> research's general predicates, integer arithmetic and transvections
+
+LORENTZ_ExtendOrthogonalIsotropicIsomorphism_Dim1
+SpecialEquationSolving
+LORENTZ_ExtendOrthogonalIsotropicIsomorphism
+IntegralKernelSpecialEquation
+GetOrthogonalTotallyIsotropicKernelSubspace
+    -> research's restriction fibres, sections and kernel computations
+
+ExtendIsometryGroup, ExtendIsometryGroup_Triangular
+ExtendIsometryGroup_IsotropicOrth
+    -> research's radical-extension construction from supplied factor groups
+
 PositiveNegative.h
 LatticeStabEquiCan.h
 LATT_Automorphism

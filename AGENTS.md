@@ -411,5 +411,5 @@ The user's `research` repository (`dzack_research.preamble.categories.lattices`,
 Because foundational formed algebra is already complete, development in this repository focuses strictly on:
 1. **Lorentzian perfect-domain reduction**: Traversal of the $(1,n)$ reduction complex for $O^\Omega(L)$ and $O(L)$ generators.
 2. **$2U$-Eichler approximate models & Higher-Witt-index recursion**: Generating $A(L)$ and lifting covering sets to full $O(L)$ for Witt index $\geq 2$.
-3. **Parabolic recursion & Isotropic orbit decomposition**: Cusp orbits, unipotent radicals, and inductive rank-$k$ isotropic plane orbits.
-4. **Centralizers of isometries**: eigensublattices, gluing data and the cyclotomic decomposition, with the stabilizers and intersections consumed from the preamble.
+3. **Parabolic recursion & Isotropic orbit decomposition**: Compose research's group actions, sections and kernels with recursive reduced-group computations to obtain cusp and flag stabilizers and the frozen rank-at-most-two isotropic orbits.
+4. **Centralizer and arithmetic-subgroup consumers**: Supply indefinite orthogonal-group and orbit computations to research's general centralizer, gluing and subgroup operations; verify all frozen consumer cases.
