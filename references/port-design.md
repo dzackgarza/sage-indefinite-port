@@ -53,6 +53,39 @@ The source algorithms are recorded in [the translation map](source-to-sage-trans
 Their use of linear algebra and finite groups does not transfer the surrounding algorithm to research.
 Definite orthogonal groups and existing generic arithmetic operations remain dependency calls.
 
+## Implementation assignments
+
+Issue references #396–#404 in this section denote research issues; #15, #18 and #33 denote port issues.
+
+Research paths below are relative to `src/dzack_research/preamble/categories`; port paths are relative to `src/sage_indefinite_port`. These rows assign concrete implementation work.
+Existing method names do not certify that the computation works.
+
+| Computation | Implement in research | Implement in this port |
+| --- | --- | --- |
+| Indefinite plain/pointed Isom and Aut | `lattice_morphisms.py` and marked-diagram homsets: construct the marking and call `indefinite.marked_lattices.isometry(category, source, target)` or `automorphism_group_generators(category, marked)` (#403) | `indefinite/recursive.py`: `EichlerRecursion.orthogonal_group_generators`, `isometry`, `pointed_isometry`, `pointed_automorphism_generators`; `indefinite/marked_lattices.py` selects the algorithm (#18) |
+| Isotropic line/plane/flag stabilizer generators | Construct the marked diagram and dispatch through the same marked Aut entry (#403); compute the section/kernel primitives below | `indefinite/isotropic_induction.py`: `line_automorphism_generators`, `plane_automorphism_generators`, `flag_automorphism_generators` implement the reference recursion (#18) |
+| Primitive vector, isotropic line/plane/flag classes and witnesses | `isotropic_orbits.py` and marked homsets call `primitive_marking_classes(category, source, lattice)` and `isometry(...)`; replace imports of the absent `indefinite.isotropic_flags` module (#403) | `marked_lattices.py`, `EichlerRecursion` and `IsotropicInduction` perform the actual classification/witness algorithms (#18) |
+| Isometry-extension fibres and their integral members | `lattices.py`: `R.rational_lifts(target, isometry)` and the returned torsor's `integral_members()`; preserve and complete the reusable computation (#401) | Call those operations from `EichlerRecursion.pointed_isometry`; supply the recursively found reduced isometry (#18) |
+| Isometries fixing I-perp pointwise | `lattices.py`: `R.pointwise_perpendicular_kernel()` computes ker(r) for restriction r: Stab_O(L)(I) → Aut(I-perp). Replace its import of the absent port `indefinite.isotropic_lifts` module with the research-owned computation (#398/#401) | Consume this kernel when the recursive assembly needs ker(r). Do not create a replacement port kernel module (#18) |
+| Joint isotropic/quotient action and its kernel/image/sections | `R.parabolic_subgroup()`, `R.levi_action()` and the action on I retain the actual maps; general image, fibre, kernel and section computations belong here (#398/#401) | Choose the reduction and combine computed section values, the appropriate kernel generators and recursive quotient-group results. Do not assume the desired parabolic generators as an input to their own computation (#18) |
+| Involution and further finite-order centralizers | `group/groups.py`, `group/predicate_subgroups.py`, `lattice_morphisms.py` and `lattice_centralizers.py`: compute C_G(f), component centralizers, the compatible subgroup and extension across gluing (#397) | Supply indefinite component O(L) computations through `EichlerRecursion`; no standalone port centralizer implementation is assigned by map §15 (#18) |
+| Finite-action group computations and arithmetic orbit splitting | `group/groups.py`, `group/g_sets.py`, subgroup owners and `orthogonal_quotients.py`: compute from supplied generators/actions/ambient orbit data (#396) | Supply the indefinite group, orbit and stabilizer computations these operations consume (#18) |
+| Integral structures for the reference's rational groups | `rational_integral_stabilizers.py` owns the action interface and finite-quotient computation; remove the requirement for a port-specific `RationalMatrixGroup` (#396/#403) | `groups.integral_structures.integral_structure_action_for_group(G, i)` constructs the reference's stable integral model and returns research's `IntegralStructureAction` on (G, i), with the constructive finite-action data (#18). This is a planned function, currently absent; its contract is below |
+| Eichler approximate groups and covers | Individual transvections, module/gluing operations and exact solving remain here. Move the whole approximate-cover/full-group routines out of `eichler_criterion.py` as specified by #404 | `indefinite/eichler.py`: `EichlerEnvelope`, `OrbitCoverModel.approximate_generators`, `primitive_covering_vectors`, `covering_vectors`, `splitting_vector` (#18) |
+| Lorentzian perfect domains | `reduction_complexes.py` calls `perfect_domain_traversal(lattice, mode)` with a semantic lattice and consumes its semantic result; replace the current Gram-row call and dictionary decoding (#403) | `indefinite/lorentzian_cells.py`: starting-cell search, flips, cell identifications, side pairings and traversal (#15) |
+| Allcock edgewalk | `hyperbolic_lattices.py` calls `edgewalk_fundamental_domain(lattice)`; replace the current Gram argument and dictionary decoding (#403) | `indefinite/edgewalk.py` and `edgewalk_extensions.py`: corners, cusp/edge steps, root selection and traversal (#15) |
+| GL flags, radical extensions, definite isometry, finite configurations, exact module algebra and polyhedra | Implement and reuse these general computations through their preamble owners and established backends (#398–#401) | Invoke them; no local implementations or carrier classes |
+
+In the current source, the line and plane generator methods delegate straight to `parabolic_subgroup().group_generators()`, and the isotropic pointed-generator branch delegates to `pointwise_parabolic_subgroup().group_generators()`. Those are unfinished port algorithm bodies (#18), not requests for research to implement the whole recursive stabilizer.
+The general section, fibre and kernel calls in the adjacent rows are research work.
+Research #403 repairs the opposite direction: old imports and old argument/result shapes must reach the actual port entry points.
+
+The planned `integral_structure_action_for_group(G, i)` takes a preamble group G with supplied rational-isometry generators and a lattice inclusion i: L ↪ Res(V). Its supported domain is the reference algorithm's rational groups for which the construction establishes a finite stable containing lattice and finite residue action; commensuration alone is insufficient.
+It returns the preamble's `IntegralStructureAction` for exactly (G, i), equipped to compute the stabilizer, isometry witnesses and cosets through research's general finite-action operations.
+It must not return a new port group/action class or call `_ported_integral_structure` again.
+Research #396 supplies the general action realization; port #18 supplies the reference-specific construction; #403 removes the foreign-group admission check.
+Recording this contract does not implement the missing function.
+
 ## Operations and implementation owners
 
 This replaces the former blanket “Planned preamble API” migration table.
