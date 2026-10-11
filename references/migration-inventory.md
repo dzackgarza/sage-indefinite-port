@@ -7,7 +7,7 @@ The source at `709f81a` is recovery material, not an instruction to restore raw 
 
 | Source family | General operation and reusable computation in research | Particular port implementation contribution | Issue |
 | --- | --- | --- | --- |
-| `groups/integral_structures.py`: `IntegralStructureAction`, `FiniteIntegralRepresentation`, integral stabilizer/equivalence/coset assembly | Module spans and finite quotients; finite actions, Schreier generators and word lifting on supplied data | Construct bounded integral models and the finite action; reconstruct lattice isometries and arithmetic cosets | #18; research #396 retains only the primitive part |
+| `groups/integral_structures.py`: `IntegralStructureAction`, `FiniteIntegralRepresentation`, integral stabilizer/equivalence/coset assembly | Invariant module closure under a justified bound, finite residue action, stabilizer/equivalence/coset computation on supplied group and lattice inclusion | Supply the algorithm's generated rational group, marking and proof of applicability; consume the general action | research #396/#401 implements; #18 consumes; #403 removes the stale port callback |
 | `RationalMatrixGroup`, `ArithmeticSubgroup`, generated/predicate subgroup carriers | Group objects, exact isometry elements, supplied generators and explicit membership capabilities | Compute indefinite generators and arithmetic membership data without a duplicate group class | #18; research #400 |
 | `RightCosetDecomposition`, `DoubleCosetDecomposition`, kernel/preimage/intersection helpers | General finite-action coset, kernel, preimage and intersection computations | Establish finite-index/action hypotheses and apply them to the port's lattice data | #18; research #396 |
 | `canonization.CellConfiguration`, Bliss pairing graph and configuration isomorphisms | Finite coloured spanning configurations, relation and integrality checks | Perfect-cell construction, choice of markings, adjacency and traversal | #15; research #399 |
@@ -39,7 +39,8 @@ The defect observations in the historical record remain investigation inputs for
   Source residency does not assign both to the port.
 
 - `references/vendor/Indefinite.jl@374a5ebb/indef/lib/GroupAction.g:813`: `MatrixIntegral_GetInvariantSpace`; lines 869 onward: integral stabilizer, right-coset and equivalence constructions.
-  Their finite-action engine is reusable; construction of the arithmetic problem is owned here.
+  The source closes a module under supplied generators and then computes a finite-action stabilizer/cosets.
+  Research #396/#401 owns these general computations; the port supplies its group and proves the applicable boundedness hypotheses.
 
 - Translation map §§7–10 and §§12–15 retain the remaining source correspondences and acceptance obligations.
   Section 15 explicitly introduces centralizers as new functionality.

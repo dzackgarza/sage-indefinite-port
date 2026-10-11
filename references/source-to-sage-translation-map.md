@@ -795,10 +795,12 @@ This produces the actual parabolic stabilizer without guessing a common "helping
 
 * * *
 
-# 8. Integral structures: port construction over finite-action primitives
+# 8. Integral structures: research computation on supplied groups and inclusions
 
 `GroupAction.g` and `MatrixGroup.h` construct an integral model and finite action for the rational group, then solve stabilizer, equivalence and coset problems through it.
-The construction, its termination hypotheses and the reconstruction of lattice isometries belong to this port (#18). Research supplies spans, quotients, induced morphisms, finite G-sets, Schreier generators and finite coset operations on the supplied data.
+Research #396/#401 implements the invariant-module closure, residue action, stabilizer and coset computations under explicit hypotheses.
+Port #18 supplies the particular generated rational group, lattice inclusion and application-specific boundedness argument.
+`GroupAction.g:813–900` uses module spans and finite group actions, not a specialized indefinite-form step.
 Do not port the source's custom permutation-group engine.
 Do not assume the required integral model or finite action is already available merely by calling a research subgroup method.
 
@@ -836,7 +838,7 @@ class DoubleCosetDecomposition:
 
 For the source call used in isotropic-plane induction, this is V \ G / G_L, with G_L = G ∩ GL(L).
 
-## 8.2 Port `MatrixIntegral_GetInvariantSpace` as a lattice closure
+## 8.2 Compute `MatrixIntegral_GetInvariantSpace` through research module closure
 
 The source starts from the standard lattice and repeatedly replaces it by the Z-span of its images under every generator and inverse until the determinant stabilizes.
 
@@ -854,7 +856,9 @@ def smallest_invariant_overlattice(G, L):
         M = M_next
 ```
 
-The port must establish a finite stable containing module before using this loop; taking a saturation would change the orbit-generated lattice.
+Research implements this bounded orbit-span computation; the caller must establish its boundedness hypotheses.
+Taking a saturation would change the orbit-generated lattice.
+A stable underlying module need not be integral for the quadratic form, so use the module operation unless the stronger formed-overlattice hypotheses are proved.
 The method should explicitly have the precondition that G stabilizes some lattice commensurable with L. It should not be advertised as a terminating procedure for every finitely generated subgroup of GL_n(Q).
 
 ## 8.3 Replace `LinearSpace_GetDivisor`
@@ -1853,8 +1857,6 @@ CombinedAlgorithms.h
     INDEF_FORM_StabilizerVector_Reduced
     INDEF_FORM_EquivalenceVector_Reduced
 
-GroupAction.g / MatrixGroupBasic.h
-    MatrixIntegral_GetInvariantSpace
 ```
 
 General callees in those source families remain research computations; the list does not assign whole source files to the port.
@@ -1869,7 +1871,7 @@ General callees in those source families remain research computations; the list 
 | `SeqDims` | Flag as a diagram of subobjects | Choose the marking used by the orbit algorithm |
 | `DataPerfectLorentzianFunc` | Cones and configuration computations | Perfect-cell search/traversal |
 | `DatabaseResultEquiStab` | Isom/Aut of marked lattices | Algorithm cache and prefilters |
-| `MatrixIntegral_*` and `LinearSpace_*` | Submodules, finite quotients and actions | Reference-specific integral-model construction and its proof of applicability |
+| `MatrixIntegral_*` and `LinearSpace_*` | Bounded invariant-module closure, finite residue actions, stabilizers and cosets | Supply the algorithm's group and lattice inclusion; prove applicability |
 
 ## Rewrite rather than port
 
@@ -1900,6 +1902,10 @@ LORENTZ_GetOrbitRepresentative_Kernel
 ## Delegate
 
 ```text
+MatrixIntegral_GetInvariantSpace, MatrixIntegral_Stabilizer
+MatrixIntegral_RightCosets, MatrixIntegral_Equivalence*
+    -> research invariant-module and finite-action computations
+
 INDEF_FORM_IsEven, GetSquareDivisors, INDEF_FORM_Eichler_Transvection
     -> research's general predicates, integer arithmetic and transvections
 
