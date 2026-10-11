@@ -14,7 +14,8 @@ from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ as SageQQ
 
 type _Vector = Lattices.ElementMethods
-type _Pair = tuple[_Vector, _Vector]
+type _Point = tuple[int, int]
+type _Pair = tuple[_Point, _Point]
 
 
 class _OrientedBinaryCycle:
@@ -22,22 +23,32 @@ class _OrientedBinaryCycle:
         if int(lattice.rank()) != 2 or tuple(int(index) for index in lattice.signature_pair()) != (1, 1) or lattice.is_isotropic():
             raise ValueError("an oriented binary cycle needs an anisotropic lattice of signature (1,1)")
         self.lattice = lattice
+        first, second = tuple(lattice.module_generators())
+        self.form = int(first.q()), int(lattice.b(first, second)), int(second.q())
 
     def coordinates(self, point: _Vector) -> tuple[int, ...]:
         coordinates = point.to_vector()
         return tuple(int(coordinates(label)) for label in self.lattice.module_generating_set())
 
-    def canonical_companion(self, bound: int, right: _Vector, left: _Vector) -> _Vector:
+    def point(self, coordinates: _Point) -> _Vector:
+        ring = self.lattice.base_ring()
+        return self.lattice.linear_combination({label: ring(entry) for label, entry in zip(self.lattice.module_generating_set(), coordinates, strict=True)})
+
+    def pairing(self, left: _Point, right: _Point) -> int:
+        a, b, c = self.form
+        return a * left[0] * right[0] + b * (left[0] * right[1] + left[1] * right[0]) + c * left[1] * right[1]
+
+    def canonical_companion(self, bound: int, right: _Point, left: _Point) -> _Point:
         """The last supplement before the positive branch of the bound hyperbola."""
-        rr = int(right.q())
-        rl = int(self.lattice.b(right, left))
-        ll = int(left.q())
+        rr = self.pairing(right, right)
+        rl = self.pairing(right, left)
+        ll = self.pairing(left, left)
         radicand = rl * rl - rr * (ll - bound)
         root = SageZZ(radicand).isqrt()
         multiple = (-rl + int(root)) // rr
-        return left + self.lattice.scalar_multiple(self.lattice.base_ring()(multiple), right)
+        return left[0] + multiple * right[0], left[1] + multiple * right[1]
 
-    def promised_step(self, bound: int, right: _Vector, left: _Vector) -> _Pair:
+    def promised_step(self, bound: int, right: _Point, left: _Point) -> _Pair:
         """Find the next primitive positive vector of square at most bound.
 
         The oriented unimodular pair brackets the required vector. Each step
@@ -45,31 +56,31 @@ class _OrientedBinaryCycle:
         Allcock's Promised algorithm. No iteration cap decides nonexistence.
         """
         while True:
-            middle = right + left
-            if int(middle.q()) <= bound or self.lattice.b(middle, right) < 0:
+            middle = right[0] + left[0], right[1] + left[1]
+            if self.pairing(middle, middle) <= bound or self.pairing(middle, right) < 0:
                 left = middle
                 continue
-            if left.q() >= 0 and self.lattice.b(right, left) > 0:
-                return left, -right
+            if self.pairing(left, left) >= 0 and self.pairing(right, left) > 0:
+                return left, (-right[0], -right[1])
             right = middle
 
-    def characteristic(self, right: _Vector, left: _Vector) -> tuple[int, int, int]:
-        return int(right.q()), int(self.lattice.b(right, left)), int(left.q())
+    def characteristic(self, right: _Point, left: _Point) -> tuple[int, int, int]:
+        return self.pairing(right, right), self.pairing(right, left), self.pairing(left, left)
 
-    def shorter_pair(self, right: _Vector, left: _Vector) -> _Pair | None:
+    def shorter_pair(self, right: _Point, left: _Point) -> _Pair | None:
         """A strictly shorter positive vector, or a full period proving absence."""
         initial = self.characteristic(right, left)
         while True:
-            right, left = self.promised_step(int(right.q()), right, left)
-            left = self.canonical_companion(int(right.q()), right, left)
-            if int(right.q()) < initial[0]:
+            right, left = self.promised_step(self.pairing(right, right), right, left)
+            left = self.canonical_companion(self.pairing(right, right), right, left)
+            if self.pairing(right, right) < initial[0]:
                 return right, left
             if self.characteristic(right, left) == initial:
                 return None
 
-    def reduced_start_pair(self, bound: int, right: _Vector, left: _Vector) -> _Pair | None:
+    def reduced_start_pair(self, bound: int, right: _Point, left: _Point) -> _Pair | None:
         """Allcock's NotPromised, beginning with a canonical q(right)-supplement."""
-        if int(right.q()) <= bound:
+        if self.pairing(right, right) <= bound:
             right, left = self.promised_step(bound, right, left)
             return right, self.canonical_companion(bound, right, left)
         while True:
@@ -77,7 +88,7 @@ class _OrientedBinaryCycle:
             if pair is None:
                 return None
             right, left = pair
-            if int(right.q()) <= bound:
+            if self.pairing(right, right) <= bound:
                 return right, self.canonical_companion(bound, right, left)
 
     def cycle(self, bound: int, start: _Vector) -> tuple[LatticeIsometryMethods, tuple[_Vector, ...]] | None:
@@ -86,28 +97,27 @@ class _OrientedBinaryCycle:
         if bound <= 0:
             return None
         coordinates = self.coordinates(start)
+        initial_point = coordinates[0], coordinates[1]
         _gcd, first, second = SageZZ(coordinates[0]).xgcd(SageZZ(coordinates[1]))
-        labels = tuple(self.lattice.module_generating_set())
-        ring = self.lattice.base_ring()
-        companion = self.lattice.linear_combination({labels[0]: ring(-int(second)), labels[1]: ring(int(first))})
+        companion = -int(second), int(first)
         # Shorter requires the q(start)-supplement, even when bound < q(start).
-        companion = self.canonical_companion(int(start.q()), start, companion)
-        pair = self.reduced_start_pair(bound, start, companion)
+        companion = self.canonical_companion(int(start.q()), initial_point, companion)
+        pair = self.reduced_start_pair(bound, initial_point, companion)
         if pair is None:
             return None
         right, left = pair
         initial = self.characteristic(right, left)
-        frame = matrix(SageQQ, [self.coordinates(point) for point in pair])
-        representatives: list[_Vector] = []
+        frame = matrix(SageQQ, pair)
+        representatives: list[_Point] = []
         while True:
             representatives.append(right)
             right, left = self.promised_step(bound, right, left)
             left = self.canonical_companion(bound, right, left)
             if self.characteristic(right, left) == initial:
-                final = matrix(SageQQ, [self.coordinates(point) for point in (right, left)])
+                final = matrix(SageQQ, (right, left))
                 period = (frame.inverse() * final).change_ring(SageZZ)
-                images = tuple(self.lattice.linear_combination({label: ring(int(entry)) for label, entry in zip(labels, row, strict=True)}) for row in period.rows())
-                return self.lattice.Isom(self.lattice)(images), tuple(representatives)
+                images = tuple(self.point((int(row[0]), int(row[1]))) for row in period.rows())
+                return self.lattice.Isom(self.lattice)(images), tuple(self.point(point) for point in representatives)
 
 
 def anisotropic_cycle(lattice: Lattices.ParentMethods, bound: Rational, start: _Vector) -> tuple[LatticeIsometryMethods, tuple[_Vector, ...]] | None:

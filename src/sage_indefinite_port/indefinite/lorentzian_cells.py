@@ -2,21 +2,25 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 from dataclasses import dataclass
 from fractions import Fraction
-from functools import cache, cached_property
-from typing import Literal, TypedDict
+from functools import cached_property
+from typing import Literal
 
 from dzack_research.preamble.all import Lattices
 from dzack_research.preamble.categories.group.g_sets import FiniteGSets
-from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods, LatticeIsometryMor
+from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
 from dzack_research.preamble.categories.reduction_complexes import LorentzianPerfectDomainTraversal, PerfectDomainOrbitAdjacency
+from dzack_research.preamble.categories.sets.finite_ordered_sets import finite_ordered_set
+from dzack_research.preamble.categories.sets.indexed_families import finite_indexed_family
 from dzack_research.preamble.categories.vector_configurations import VectorConfigurations
+from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.matrix.constructor import matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
+from sage.misc.cachefunc import cached_method
 from sage.modules.free_module_element import FreeModuleElement, vector
 from sage.rings.integer import Integer
 from sage.rings.integer_ring import ZZ as SageZZ
@@ -26,10 +30,10 @@ from sage.structure.element import RingElement
 from sage.structure.parent import Parent
 
 from sage_indefinite_port.invariants import AttackProfile
-from sage_indefinite_port.readiness import unfinished
 
 type PerfectMode = Literal["total", "isotropic"]
 type FacetIncidence = frozenset[int]
+
 
 def lorentzian_orthogonal_group_generators(lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
     r"""Generators of O(L) for L of signature (1, n) or (n, 1): O^Omega(L) from the perfect-domain traversal, and -1."""
@@ -48,8 +52,7 @@ def lorentzian_isometry(source: Lattices.ParentMethods, target: Lattices.ParentM
 
 
 def _gram_matrix(lattice: Lattices.ParentMethods) -> Matrix_integer_dense:
-    generators = tuple(lattice.module_generators())
-    return matrix(SageZZ, [[int(lattice.b(left, right)) for right in generators] for left in generators])
+    return _engine_component_matrix(lattice.gram_tensor()).change_ring(SageZZ)
 
 
 @dataclass(frozen=True)
@@ -94,37 +97,29 @@ class LorentzianPerfectLocalBackend:
         first = _coordinate_row(normalized, normalized_vectors[0], SageQQ)
         scalar = (central * gram * first.column())[0]
         base_normal = vector(SageQQ, [-scalar, *(gram * central.column()).column(0)])
-        while matrix(
-            SageQQ,
-            [_coordinate_row(normalized, item, SageQQ) for item in normalized_vectors],
-        ).rank() < int(lattice.module_rank()):
-            expanded = matrix(
-                SageQQ,
-                [[1, *_coordinate_row(normalized, item, SageQQ)] for item in normalized_vectors],
-            )
+        while matrix(SageQQ, [_coordinate_row(normalized, item, SageQQ) for item in normalized_vectors]).rank() < int(lattice.module_rank()):
+            expanded = matrix(SageQQ, [[1, *_coordinate_row(normalized, item, SageQQ)] for item in normalized_vectors])
             nullspace = expanded.right_kernel_matrix()
             directions = nullspace.matrix_from_columns(range(1, nullspace.ncols())) * gram.inverse()
             outside_direction = _negative_direction_in_span(normalized, directions)
             direction_covector = gram * outside_direction.column()
             critical_row = _coordinate_row(normalized, normalized_vectors[0], SageQQ)
             direction_scalar = (critical_row * direction_covector)[0]
-            normal_direction = vector(
-                SageQQ,
-                [-direction_scalar, *direction_covector.column(0)],
-            )
+            normal_direction = vector(SageQQ, [-direction_scalar, *direction_covector.column(0)])
             normalized_vectors, base_normal, _test_direction, _max_scal = _kernel_flipping(normalized, normalized_vectors, base_normal, normal_direction, mode)
         vectors = tuple(_transfer(lattice, item) for item in normalized_vectors)
         return LorentzianPerfectCell(lattice, vectors, mode)
 
-    @cache
+    @cached_method
     def cell_stabilizer(self, cell: LorentzianPerfectCell) -> tuple[LatticeIsometryMethods, ...]:
         r"""Generators of Aut((L, S)) for the cell's vector configuration S."""
-        return tuple(VectorConfigurations(cell.lattice.base_ring()).spanning_automorphism_generators(
-            cell.lattice, cell.vector_configuration, (0,) * len(cell.vector_configuration)
-        ))
+        return tuple(
+            VectorConfigurations(cell.lattice.base_ring()).spanning_automorphism_generators(cell.lattice, cell.vector_configuration, (0,) * len(cell.vector_configuration))
+        )
 
-    def facet_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[FacetIncidence, ...], ...]:
-        r"""The orbits of Aut((L, S)) on the facets of the cone spanned by S, as incidence sets."""
+    @cached_method
+    def facet_action(self, cell: LorentzianPerfectCell) -> Parent:
+        r"""The finite action of Aut((L, S)) on the facets spanned by S."""
         vectors = cell.vector_configuration
         cone = RationalPolyhedralCones(cell.lattice).from_rays(vectors)
         facets = tuple(frozenset(position for position, item in enumerate(vectors) if cone.evaluate_covector(covector, item) == 0) for covector in cone.facet_covectors())
@@ -133,23 +128,20 @@ class LorentzianPerfectLocalBackend:
             return frozenset(vectors.index(isometry(vectors[position])) for position in facet)
 
         stabilizer = cell.lattice.O().subgroup(self.cell_stabilizer(cell))
-        return tuple(tuple(orbit.points()) for orbit in FiniteGSets(stabilizer)(facets, act).orbits())
+        return FiniteGSets(stabilizer)(facets, act)
+
+    def facet_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[FacetIncidence, ...], ...]:
+        return tuple(tuple(orbit.points()) for orbit in self.facet_action(cell).orbits())
 
     def flip_across(self, cell: LorentzianPerfectCell, facet: FacetIncidence) -> LorentzianPerfectCell:
         normalized = _lorentzian_view(cell.lattice)
         vectors = cell.vector_configuration
         if not facet or any(position < 0 or position >= len(vectors) for position in facet):
             raise ValueError("a perfect-cell facet must be a nonempty incidence subset")
-        nonincident = next(
-            (position for position in range(len(vectors)) if position not in facet),
-            None,
-        )
+        nonincident = next((position for position in range(len(vectors)) if position not in facet), None)
         if nonincident is None:
             raise ValueError("a facet must omit at least one configuration vector")
-        selected = matrix(
-            SageQQ,
-            [_coordinate_row(normalized, vectors[position], SageQQ) for position in sorted(facet)],
-        )
+        selected = matrix(SageQQ, [_coordinate_row(normalized, vectors[position], SageQQ) for position in sorted(facet)])
         facet_nullspace = selected.right_kernel_matrix()
         if facet_nullspace.nrows() != 1:
             raise ArithmeticError("a perfect-cell facet must have one normal direction")
@@ -158,10 +150,7 @@ class LorentzianPerfectLocalBackend:
         if direction.dot_product(outside) < 0:
             direction = -direction
         normal_direction = vector(SageQQ, [0, *direction])
-        expanded = matrix(
-            SageQQ,
-            [[1, *_coordinate_row(normalized, item, SageQQ)] for item in vectors],
-        )
+        expanded = matrix(SageQQ, [[1, *_coordinate_row(normalized, item, SageQQ)] for item in vectors])
         base_nullspace = expanded.right_kernel_matrix()
         if base_nullspace.nrows() != 1:
             raise ArithmeticError("a perfect cell must have a unique affine supporting functional")
@@ -178,8 +167,12 @@ class LorentzianPerfectLocalBackend:
         if source.mode != target.mode:
             raise ValueError(f"cells of modes {source.mode!r} and {target.mode!r} are never isometric: compare cells of one traversal")
         return VectorConfigurations(source.lattice.base_ring()).spanning_isometry(
-            source.lattice, source.vector_configuration, (0,) * len(source.vector_configuration),
-            target.lattice, target.vector_configuration, (0,) * len(target.vector_configuration),
+            source.lattice,
+            source.vector_configuration,
+            (0,) * len(source.vector_configuration),
+            target.lattice,
+            target.vector_configuration,
+            (0,) * len(target.vector_configuration),
         )
 
 
@@ -196,10 +189,7 @@ class LorentzianPerfectComplex:
         self._mode = mode
         self._local_backend = LorentzianPerfectLocalBackend()
         self._traversal_representatives: list[LorentzianPerfectCell] | None = None
-        self._traversal_representative_buckets: dict[
-            tuple[tuple[int, ...], tuple[int, ...]],
-            list[LorentzianPerfectCell],
-        ] = {}
+        self._traversal_representative_buckets: dict[tuple[tuple[int, ...], tuple[int, ...]], list[LorentzianPerfectCell]] = {}
         self._traversal_adjacencies: list[LorentzianCellAdjacency] = []
         self._traversal_position = 0
 
@@ -217,9 +207,7 @@ class LorentzianPerfectComplex:
             return
         initial = self.local_backend().initial_cell(self.lattice(), self.mode())
         self._traversal_representatives = [initial]
-        self._traversal_representative_buckets = {
-            _perfect_form_hash_key(initial): [initial],
-        }
+        self._traversal_representative_buckets = {_perfect_form_hash_key(initial): [initial]}
 
     def _expand_traversal_once(self) -> tuple[LorentzianPerfectCell, ...]:
         self._ensure_traversal_started()
@@ -249,7 +237,10 @@ class LorentzianPerfectComplex:
                 transporter = self.lattice().Aut().identity()
             if transporter is None:
                 raise ArithmeticError("a quotient-cell adjacency has no transporter to its selected target representative")
-            self._traversal_adjacencies.append(LorentzianCellAdjacency(source, facet, target, transporter))
+            action = backend.facet_action(source)
+            for incident in orbit:
+                symmetry = action.transporter_witness(facet, incident)
+                self._traversal_adjacencies.append(LorentzianCellAdjacency(source, incident, target, symmetry * transporter))
         self._traversal_position += 1
         return tuple(new_representatives)
 
@@ -278,9 +269,7 @@ class LorentzianPerfectComplex:
         return None
 
     @cached_property
-    def _traversal(
-        self,
-    ) -> tuple[tuple[LorentzianPerfectCell, ...], tuple[LorentzianCellAdjacency, ...]]:
+    def _traversal(self) -> tuple[tuple[LorentzianPerfectCell, ...], tuple[LorentzianCellAdjacency, ...]]:
         self._ensure_traversal_started()
         representatives = self._traversal_representatives
         if representatives is None:
@@ -309,9 +298,7 @@ class LorentzianPerfectComplex:
         return self.component_preserving_generators() + (negation,)
 
 
-def _perfect_form_hash_key(
-    cell: LorentzianPerfectCell,
-) -> tuple[tuple[int, ...], tuple[int, ...]]:
+def _perfect_form_hash_key(cell: LorentzianPerfectCell) -> tuple[tuple[int, ...], tuple[int, ...]]:
     r"""Return the exact pairing multisets used by upstream f_hash.
 
     ComputeInvariantPerfectForm hashes the multiplicities of diagonal and
@@ -325,8 +312,7 @@ def _perfect_form_hash_key(
     return diagonal, off_diagonal
 
 
-@unfinished(15)
-def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode) -> Parent:
+def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode) -> LorentzianPerfectDomainTraversal:
     r"""The perfect-domain decomposition of a Lorentzian lattice in the given mode.
 
     Returns the preamble's ``LorentzianPerfectDomainTraversal`` of ``lattice``: the quotient
@@ -352,7 +338,9 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 target_to_neighbour,
             )
         )
-    stabilizers = {cell_cones[id(cell)]: backend.cell_stabilizer(cell) for cell in complex_.quotient_cells()}
+    cells = complex_.quotient_cells()
+    cones_by_position = tuple(cell_cones[id(cell)] for cell in cells)
+    stabilizers = finite_indexed_family(finite_ordered_set(cones_by_position), lambda cone: backend.cell_stabilizer(cells[cones_by_position.index(cone)]))
     return LorentzianPerfectDomainTraversal(lattice, tuple(cell_cones.values()), adjacencies, stabilizers)
 
 
@@ -438,14 +426,8 @@ class MarkedCellOrbitAlgorithm:
             source_position = positions[id(adjacency.source)]
             target_position = positions[id(adjacency.target)]
             for source_mark, target_mark in self.transport_marks(adjacency):
-                source_node = (
-                    source_position,
-                    local_orbit_position(source_position, source_mark),
-                )
-                target_node = (
-                    target_position,
-                    local_orbit_position(target_position, target_mark),
-                )
+                source_node = (source_position, local_orbit_position(source_position, source_mark))
+                target_node = (target_position, local_orbit_position(target_position, target_mark))
                 graph[source_node].add(target_node)
                 graph[target_node].add(source_node)
 
@@ -626,10 +608,7 @@ class _PositiveVectorEnumerator:
 
 
 def _first_positive_shell(
-    lattice: Lattices.ParentMethods,
-    rational_direction: tuple[Rational, ...],
-    max_scal: Rational,
-    mode: PerfectMode,
+    lattice: Lattices.ParentMethods, rational_direction: tuple[Rational, ...], max_scal: Rational, mode: PerfectMode
 ) -> tuple[Lattices.ElementMethods, ...]:
     r"""The vectors of the first nonempty shell with 0 < b(v, t) <= max_scal, or ()."""
     enumerator = _PositiveVectorEnumerator(lattice, rational_direction, max_scal, mode)
@@ -679,11 +658,7 @@ def _source_mid_value(lower: Rational, upper: Rational) -> Rational:
     raise ArithmeticError("continued-fraction middle value was not found")
 
 
-def _upper_bound(
-    gram: Matrix_rational_dense,
-    base_normal: FreeModuleElement[Rational],
-    direction_normal: FreeModuleElement[Rational],
-) -> Rational | None:
+def _upper_bound(gram: Matrix_rational_dense, base_normal: FreeModuleElement[Rational], direction_normal: FreeModuleElement[Rational]) -> Rational | None:
     inverse = gram.inverse()
     base_constant = SageQQ(base_normal[0])
     direction_constant = SageQQ(direction_normal[0])

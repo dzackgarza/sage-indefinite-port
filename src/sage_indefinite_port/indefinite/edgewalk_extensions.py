@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from itertools import product
 
 from dzack_research.preamble.all import Lattices
+from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.matrix.constructor import matrix
 from sage.modules.free_module_element import vector
 from sage.rings.infinity import Infinity
@@ -44,31 +44,48 @@ def _norm_ratio_allows(label: CoxeterLabel, old_norm: Rational, new_norm: Ration
 
 
 def _extensions(
-    lattice: Lattices.ParentMethods,
-    roots: Sequence[Lattices.ElementMethods],
-    norms: Sequence[int],
-    labels: tuple[CoxeterLabel, ...],
+    lattice: Lattices.ParentMethods, roots: Sequence[Lattices.ElementMethods], norms: Sequence[int], labels: tuple[CoxeterLabel, ...]
 ) -> tuple[NormedDynkinExtension, ...]:
-    root_norms = tuple(QQ(int(root.q())) for root in roots)
-    pairings = matrix(QQ, [[QQ(int(lattice.b(left, right))) for right in roots] for left in roots])
+    if not roots:
+        return tuple(NormedDynkinExtension((QQ.zero(),) * int(lattice.rank()), QQ(norm), QQ(norm)) for norm in norms)
+    coordinates = matrix(QQ, [[QQ(int(root.to_vector()(label))) for label in lattice.module_generating_set()] for root in roots])
+    gram = _engine_component_matrix(lattice.gram_tensor()).change_ring(QQ)
+    pairings = coordinates * gram * coordinates.transpose()
+    root_norms = tuple(pairings[i, i] for i in range(len(roots)))
     if not pairings.is_positive_definite():
         raise ValueError(f"the roots {roots} span a form that is not positive definite: they are not the walls through a point of hyperbolic space")
     inverse = pairings.inverse()
-    coordinates = matrix(QQ, [[QQ(int(entry)) for entry in root.to_tuple()] for root in roots])
+    if any(pairings[i, j] > 0 for i in range(len(roots)) for j in range(i)):
+        raise ValueError("Dynkin extensions require simple roots with nonpositive mutual pairings")
     out: list[NormedDynkinExtension] = []
-    for entries in product(labels, repeat=len(roots)):
-        for new_norm in (QQ(norm) for norm in norms):
-            if not all(_norm_ratio_allows(entries[i], root_norms[i], new_norm) for i in range(len(roots))):
-                continue
-            squares = tuple(_FOUR_COS_SQUARED[entries[i]] * root_norms[i] * new_norm / 4 for i in range(len(roots)))
-            if not all(square.is_square() for square in squares):
-                continue
-            target = vector(QQ, [-square.sqrt() for square in squares])
-            weights = inverse * target
-            residual = new_norm - target.dot_product(weights)
-            if residual < 0:
-                continue
-            out.append(NormedDynkinExtension(tuple(weights * coordinates), residual, new_norm))
+
+    def extend(target: tuple[Rational, ...], projected_square: Rational, norm: Rational, choices: Sequence[tuple[Rational, ...]]) -> None:
+        position = len(target)
+        if position == len(roots):
+            weights = inverse * vector(QQ, target)
+            out.append(NormedDynkinExtension(tuple(weights * coordinates), norm - projected_square, norm))
+            return
+        for pairing in choices[position]:
+            square = projected_square + inverse[position, position] * pairing * pairing
+            square += 2 * pairing * sum(inverse[position, j] * target[j] for j in range(position))
+            # A positive-definite simple-root Gram matrix is a Stieltjes
+            # matrix: its inverse is entrywise nonnegative. All chosen
+            # pairings are nonpositive, so later terms cannot lower this
+            # partial squared projection.
+            if square <= norm:
+                extend((*target, pairing), square, norm, choices)
+
+    for new_norm in (QQ(norm) for norm in norms):
+        choices = []
+        for old_norm in root_norms:
+            allowed = []
+            for label in labels:
+                square = _FOUR_COS_SQUARED[label] * old_norm * new_norm / 4
+                if _norm_ratio_allows(label, old_norm, new_norm) and square.is_square():
+                    allowed.append(-square.sqrt())
+            choices.append(tuple(allowed))
+
+        extend((), QQ.zero(), new_norm, choices)
     return tuple(out)
 
 
