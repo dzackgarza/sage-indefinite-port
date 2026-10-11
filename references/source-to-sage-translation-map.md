@@ -4,6 +4,7 @@ Source-to-Sage translation map for the indefinite lattice port (received 2026-09
 The issue tree rooted at #4 owns execution.
 [Port design](port-design.md) separates general operations and reusable computations from the particular indefinite algorithms supplied by this port.
 The source symbols and sections below describe the algorithms; a public preamble method does not assign its specialized implementation to research.
+In particular, binary oriented-cycle construction (`canonical_companion`, `promised_step`, `shorter_pair`, `reduced_start_pair`, `anisotropic_cycle`) and the scaled first-success shell/sphere multiplier search belong to port #15. Research supplies ordinary binary arithmetic and fixed-target `close_vectors(target,bound)`. Frozen public names may dispatch to the port; moving a body behind those names does not make it a primitive.
 
 ## Source authority and versioning
 
@@ -323,7 +324,8 @@ The basis matrix used to express this morphism belongs in the coordinate adapter
 # 4. Vector restrictions and sections: research operations consumed by recursion
 
 The source family formerly mapped to `indefinite/vector_sections.py` contains general extension computations as well as recursive composition.
-Research #401 owns restriction fibres and sections, including their computation.
+Research #401 owns independently derived partial-isometry extension fibres and sections, including their computation.
+This is not a blanket assignment of specialized lifting searches; specify the input morphism and independent equation/torsor construction.
 The port selects reductions and composes these operations in #18. The sketches below describe mathematical operations, not instructions to create parallel port-owned classes.
 
 ## 4.1 Translate `INDEF_FORM_GetVectorStructure`
@@ -528,7 +530,8 @@ P = GL(I).stabilizer(flag_on_I)
 
 represented as the integral parabolic subgroup determined by `FlagType`. This block triangular free-module construction is a research primitive.
 The port's recursive flag-stabilizer algorithm combines these operations with its reduced orthogonal-group computation.
-Research also supplies the restriction maps, their kernels and sections, and gluing computations.
+Research supplies the restriction maps, independent equation/kernel primitives, gluing computations and word sections from supplied effective group data.
+The port constructs the arithmetic compatibility action and liftable image needed by its recursion.
 The GL construction alone does not compute an orthogonal flag stabilizer.
 
 ## 5.3 Consume the general radical extension as a semidirect product
@@ -765,8 +768,10 @@ F = P.finite_compatibility_action()
 M_integral = M.stabilizer(F.gluing_object())
 ```
 
-Research owns the induced action, its image, the compatibility stabilizer and the section/fibre computations.
-The port selects the reduction and compatibility data for the reference algorithm, supplies the recursively computed quotient group, and establishes that this composition captures the required integral stabilizer (#18).
+The port constructs this arithmetic compatibility action, discovers the liftable image and supplies the recursively computed quotient generators (#18). Research computes finite-action stabilizers, images and word sections from supplied effective data, and independently justified extension/equation fibres.
+The displayed methods describe the algorithmic steps, not an obligation for research to discover an arithmetic image from a parabolic predicate.
+Computing an image from the desired parabolic generators cannot be a prerequisite for finding those same generators.
+The port establishes that this composition captures the required integral stabilizer.
 
 ## 7.3 Evaluate sections on generators and adjoin the kernel
 
@@ -1766,8 +1771,8 @@ This is a separate use of double cosets from the internal integralization double
 # 15. Research centralizer computations using indefinite group algorithms
 
 Centralizers are new functionality, not a small modification of the source recursion.
-Research #397 owns C_G(I), its computational interface, and the invariant-decomposition/gluing route below.
-This port supplies the indefinite component orthogonal-group algorithms it calls (#15/#18); this section does not justify introducing a separate port-owned centralizer operation or implementation.
+Research #397 owns the C_G(I) interface, independent invariant decomposition and gluing from supplied component generators/actions.
+This port supplies the indefinite component orthogonal-group algorithms (#15/#18). Public ownership of C_G(I) does not assign every component-centralizer algorithm to research; each computational route must pass the primitive criteria in [port design](port-design.md#assigning-a-computation).
 The former `indefinite/equivariant.py` name is not an ownership assignment.
 Research #403 integrates the calls, and port #18 retains every original centralizer consumer acceptance case.
 
@@ -1829,9 +1834,11 @@ For finite-order f, replace the ±1-decomposition by the rational cyclotomic dec
 L_Q = ⊕_{d | ord(f)} ker Φ_d(f).
 
 Intersect each rational isotypic component with L, compute the product of componentwise centralizers, and impose the finite equivariant gluing condition.
-Research #397 must supply applicable component-centralizer computations; ordinary component orthogonal groups only suffice when the restricted isometry is scalar, as in the involution case.
-Indefiniteness by itself does not assign these general centralizer computations to the port.
-Any additional specialized port route requires an identified algorithm and a recorded input/output contract through #33.
+Ordinary component orthogonal groups only suffice when the restricted isometry is scalar, as in the involution case.
+Polynomial-kernel decomposition and gluing do not compute non-scalar component centralizers.
+An independently established general backend route belongs to research under its documented hypotheses; otherwise the missing specialized route must be identified as part of port #18's complete consumer obligation.
+This source record supplies no such algorithm, and does not justify asking research to invent one.
+Record any frozen contract amendment through #33.
 
 A general infinite-order centralizer should not be claimed by this initial implementation.
 
