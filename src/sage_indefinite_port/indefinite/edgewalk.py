@@ -361,8 +361,6 @@ class _Edgewalk:
             if any(entry.denominator() != 1 for entry in ambient):
                 continue
             root = self.element(tuple(ambient))
-            if int(root.content()) != 1:
-                continue
             if extension.norm not in (1, 2) and not edge.constraint.inclusion().is_in_image(root):
                 continue
             if self.pair(ambient, ambient) != extension.norm:
@@ -397,7 +395,12 @@ class _Edgewalk:
             old_pairing = -old_pairing
         if old_pairing == 0 or self.pairing(discarded, generator) >= 0:
             return None
-        return _Vertex(generator, extended)
+        # The constraint-lattice candidates are almost-roots, not necessarily
+        # primitive. Retain their full scaling through the exact priority
+        # comparison, but use the primitive generator for the actual wall.
+        # Scaling a nonzero vector does not change its reflecting hyperplane.
+        primitive = alpha.primitive_part()
+        return _Vertex(generator, (*roots, primitive))
 
     def cusp_root(self, constraint: Parent, component: tuple[Rational, ...], k: _Vector) -> _Vector | None:
         r"""The point u + c k of C on the line through the component u in direction k with the least c > 0."""
@@ -423,7 +426,7 @@ class _Edgewalk:
         candidates: list[tuple[int, Rational, Rational, _Vector]] = []
         for extension in parabolic_extensions(self.lattice, roots, self.norms):
             root = self.cusp_root(self.constraint(extension.norm), extension.u_component, k)
-            if root is None or int(root.content()) != 1:
+            if root is None:
                 continue
             scalar = -SageQQ(int(self.pairing(previous, root)))
             sign = (scalar > 0) - (scalar < 0)
@@ -441,7 +444,7 @@ class _Edgewalk:
         accepted = list(roots)
         for _sign, _quant, _norm, root in candidates:
             if all(self.pairing(old, root) <= 0 for old in accepted):
-                accepted.append(root)
+                accepted.append(root.primitive_part())
         return tuple(accepted)
 
     def isotropic_next_vertex(self, roots: _Roots, discarded: _Vector, k: _Vector) -> _Vertex:
