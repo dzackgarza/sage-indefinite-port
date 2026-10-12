@@ -192,7 +192,7 @@ class _Edgewalk:
             * self.gram
         ).right_kernel_matrix()
 
-    def initial_isotropic_vertex(self) -> _Vertex:
+    def initial_isotropic_vertex(self) -> _Vertex | None:
         r"""The ``isotropic_vinberg`` starting corner of pinned edgewalk.h:1880–2055.
 
         The source finds a primitive null vector, enumerates each admissible
@@ -228,7 +228,9 @@ class _Edgewalk:
                 projected_roots.append((projected, lifted))
 
         if not projected_roots:
-            raise ArithmeticError("the isotropic starting corner has no admissible perpendicular roots")
+            # get_simple_cone: an empty projected root system certifies
+            # non-reflectivity, rather than an arithmetic failure.
+            return None
         labels = tuple(reduction.module_generating_set())
 
         def quotient_row(point: _Vector) -> _RationalRow:
@@ -237,7 +239,9 @@ class _Edgewalk:
 
         projected_rows = tuple(quotient_row(projected) for projected, _root in projected_roots)
         if matrix(SageQQ, projected_rows).rank() != rank:
-            raise ArithmeticError("the isotropic starting root system has insufficient rank")
+            # edgewalk.h: the projected roots must span the rank-(n-2)
+            # quotient for a reflective cusp.
+            return None
 
         # GetFacetOneDomain_ListIdx (lorentzian_linalg.h:267–339):
         # regular splitting vector, positive half and its extreme rays.
@@ -275,7 +279,7 @@ class _Edgewalk:
         previous = self.primitive(negative)
         return _Vertex(k, self.cusp_roots(tuple(simple_roots), k, previous))
 
-    def initial_vertex(self) -> _Vertex:
+    def initial_vertex(self) -> _Vertex | None:
         r"""Find a corner, first checking the finite root system at a timelike point.
 
         A full-rank perpendicular root system makes the point a corner of
@@ -762,6 +766,8 @@ class _Edgewalk:
         if self.rank == 2:
             return self.binary_walk()
         initial = self.initial_vertex()
+        if initial is None:
+            return self.report([], False, (), [])
 
         vertices = [initial]
         configurations = [self.vertex_configuration(initial)]
