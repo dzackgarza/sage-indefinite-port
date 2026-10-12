@@ -545,7 +545,16 @@ class _Edgewalk:
     def binary_walk(self) -> AllcockEdgewalkReport:
         """A binary chamber has two ordinary ends, or one wall in the split case."""
         root_locus = self.lattice.reflective_root_locus()
-        root = next((point for norm in self.norms for point in self.lattice.binary_fixed_norm_representatives(norm) if point in root_locus), None)
+        # In the rationally split binary case, a nonzero norm fibre is
+        # finite: after factoring the form over Q, its two integral linear
+        # factors have a prescribed nonzero product. Enumerate that actual
+        # fibre. In the anisotropic case it can be infinite, and the
+        # preamble's finite orbit-representative computation is required.
+        if self.lattice.is_isotropic():
+            candidates = (point for norm in self.norms for point in self.lattice.vectors_of_square(ZZ(norm)))
+        else:
+            candidates = (point for norm in self.norms for point in self.lattice.binary_fixed_norm_representatives(ZZ(norm)))
+        root = next((point for point in candidates if point in root_locus), None)
         if root is None:
             return self.report([], bool(self.lattice.is_isotropic()), (), [])
         generator = self.primitive(self.perpendicular_rows((self.row(root),)).row(0))
