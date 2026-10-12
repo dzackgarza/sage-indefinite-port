@@ -526,12 +526,16 @@ def _owned_rational(lattice: Lattices.ParentMethods, value: Rational) -> RingEle
 
 
 def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]:
-    r"""A positive vector of L, primitive, then greedily shortened along e_i and e_i +- e_j."""
-    positive = lattice.positive_vector()
-    content = int(positive.content())
-    primitive = tuple(int(entry) // content for entry in _coordinate_row(lattice, positive, SageZZ))
+    r"""Pinned polyhedral_common@a55fcb7b src_isotropy/Positivity.h:565-673,
+    ``INDEFINITE_GetShortPositiveVector``.
+
+    The positive-vector finder is the independent preamble primitive. The
+    Graver-basis descent, randomized unimodular reframing, 500-failure stop,
+    and short-norm stop are the reference's *specialized* search, not a
+    replacement one-shot reduction.
+    """
     gram = _gram_matrix(lattice)
-    rank = len(primitive)
+    rank = gram.nrows()
     directions: list[FreeModuleElement[Integer]] = []
     for first in range(rank):
         for sign in (-1, 1):
@@ -547,25 +551,65 @@ def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]
                     row[second] = SageZZ(second_sign)
                     directions.append(vector(SageZZ, row))
 
-    current = vector(SageZZ, primitive)
+    perturbation = identity_matrix(SageZZ, rank)
+    best_vector: FreeModuleElement[Integer] | None = None
+    best_norm: Integer | None = None
+    without_improvement = 0
+    gram_l1 = sum(abs(entry) for entry in gram.list())
     while True:
-        changes = 0
-        for direction in directions:
-            current_norm = (current * gram * current.column())[0]
-            alpha = 0
-            while True:
-                candidate = current + (alpha + 1) * direction
-                candidate_norm = (candidate * gram * candidate.column())[0]
-                if 0 < candidate_norm < current_norm:
-                    current_norm = candidate_norm
-                    alpha += 1
-                else:
-                    break
-            if alpha:
-                current += alpha * direction
-                changes += alpha
-        if changes == 0:
-            return tuple(SageQQ(entry) for entry in current)
+        perturbed_gram = perturbation * gram * perturbation.transpose()
+        if perturbation == identity_matrix(SageZZ, rank):
+            positive = lattice.positive_vector()
+            found = _coordinate_row(lattice, positive, SageZZ)
+        else:
+            # The unimodular change of frame is applied to the *form* before
+            # the general positive-vector primitive, exactly as upstream.
+            ring = lattice.base_ring()
+            framed = Lattices(ring)([[ring(int(perturbed_gram[i, j])) for j in range(rank)] for i in range(rank)])
+            found = _coordinate_row(framed, framed.positive_vector(), SageZZ)
+        current = perturbation.transpose() * found.column()
+        improved = current.column(0)
+        while True:
+            changes = 0
+            for direction in directions:
+                current_norm = (improved * gram * improved.column())[0]
+                alpha = 0
+                while True:
+                    candidate = improved + (alpha + 1) * direction
+                    candidate_norm = (candidate * gram * candidate.column())[0]
+                    if 0 < candidate_norm < current_norm:
+                        current_norm = candidate_norm
+                        alpha += 1
+                    else:
+                        break
+                if alpha:
+                    improved += alpha * direction
+                    changes += alpha
+            if changes == 0:
+                break
+        norm = (improved * gram * improved.column())[0]
+        if best_norm is None or norm < best_norm:
+            best_vector = improved
+            best_norm = SageZZ(norm)
+            without_improvement = 0
+        else:
+            without_improvement += 1
+        if without_improvement == 500 or (best_norm is not None and best_norm < 10):
+            if best_vector is None:
+                raise ArithmeticError("the positive-vector search has no best vector")
+            return tuple(SageQQ(entry) for entry in best_vector)
+        if sum(abs(entry) for entry in perturbed_gram.list()) > 1000 * gram_l1:
+            perturbation = identity_matrix(SageZZ, rank)
+        modification = identity_matrix(SageZZ, rank)
+        if choice((0, 1)) == 0:
+            permutation = list(range(rank))
+            shuffle(permutation)
+            modification = matrix(SageZZ, rank, rank)
+            for index, image in enumerate(permutation):
+                modification[index, image] = choice((-1, 1))
+        else:
+            modification[randrange(rank), randrange(rank)] = choice((-1, 1))
+        perturbation *= modification
 
 
 def _primitive_integral_direction(lattice: Lattices.ParentMethods, coordinates: tuple[Rational, ...]) -> tuple[Lattices.ElementMethods, Rational]:
