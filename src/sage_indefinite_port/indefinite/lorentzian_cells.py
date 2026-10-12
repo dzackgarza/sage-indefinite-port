@@ -685,17 +685,25 @@ def _upper_bound(gram: Matrix_rational_dense, base_normal: FreeModuleElement[Rat
     base_square = (base_vector.transpose() * gram * base_vector)[0, 0]
     cross = (base_vector.transpose() * gram * direction_vector)[0, 0]
     direction_square = (direction_vector.transpose() * gram * direction_vector)[0, 0]
-    if not (direction_square < 0 or (direction_square == 0 and (cross < 0 or (cross == 0 and base_square < 0)))):
-        raise ArithmeticError("the flip direction never leaves the closed positive cone: q(base + s direction) stays nonnegative for all s > 0")
-    shift = SageQQ.one()
-    while True:
-        covector = base_covector + shift * direction_covector
-        value = inverse * covector.column()
-        square = (value.transpose() * gram * value)[0, 0]
-        if square < 0:
-            bounds.append(shift)
-            break
-        shift *= 2
+    # The exact pencil has square a + 2*b*s + c*s^2. An eventual-negative
+    # test on c alone is insufficient: with c>0 the pencil can still cross
+    # the negative cone on a *bounded interval* (b<0 and b^2>a*c).
+    # Its rational vertex then certifies a finite negative point, while
+    # doubling alone would skip that interval or run forever.
+    if base_square <= 0:
+        raise ArithmeticError("a perfect-cell supporting covector must be timelike before flipping")
+    negative_shift: Rational | None = None
+    if direction_square > 0 and cross < 0 and cross * cross > base_square * direction_square:
+        negative_shift = -cross / direction_square
+    elif direction_square < 0 or (direction_square == 0 and cross < 0):
+        shift = SageQQ.one()
+        while base_square + 2 * cross * shift + direction_square * shift * shift >= 0:
+            shift *= 2
+        negative_shift = shift
+    if negative_shift is not None:
+        if base_square + 2 * cross * negative_shift + direction_square * negative_shift * negative_shift >= 0:
+            raise ArithmeticError("the candidate negative-cone bound is not negative")
+        bounds.append(negative_shift)
     basis = matrix(SageQQ, [base_vector.column(0), direction_vector.column(0)])
     restricted = basis * gram * basis.transpose()
     a, b, c = restricted[0, 0], restricted[0, 1], restricted[1, 1]
@@ -710,6 +718,8 @@ def _upper_bound(gram: Matrix_rational_dense, base_normal: FreeModuleElement[Rat
         bounds.append(isotropic_bound)
     if constant_bound is not None and isotropic_bound is not None and constant_bound == isotropic_bound:
         return None
+    if not bounds:
+        raise ArithmeticError("the supporting-normal pencil has no finite cone or affine-constant exit; no flip bound is established")
     return min(bounds)
 
 
