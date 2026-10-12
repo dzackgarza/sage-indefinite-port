@@ -771,7 +771,7 @@ def _first_positive_shell(
 
 
 def _search_initial_vectors(lattice: Lattices.ParentMethods, direction: tuple[Rational, ...], allowed_squares: RealSet) -> tuple[Lattices.ElementMethods, ...]:
-    r"""The first shell along the direction, doubling the bound until it is nonempty; it terminates because L has vectors of the mode's kind."""
+    r"""The first shell along the direction, following LORENTZ_SearchInitialVectorOpt's successive integral bounds."""
     if allowed_squares == ZERO_SQUARES and not lattice.is_isotropic():
         raise ValueError(f"{lattice} is anisotropic: it has no isotropic perfect cells")
     gram = _gram_matrix(lattice).change_ring(SageQQ)
@@ -781,7 +781,9 @@ def _search_initial_vectors(lattice: Lattices.ParentMethods, direction: tuple[Ra
         vectors = _first_positive_shell(lattice, direction, max_scal, allowed_squares)
         if vectors:
             return vectors
-        max_scal *= 2
+        # Lorentzian.g:411–423 increases MaxScal by one, rather than
+        # exponentially expanding the search interval.
+        max_scal += 1
 
 
 def _source_mid_value(lower: Rational, upper: Rational) -> Rational:
