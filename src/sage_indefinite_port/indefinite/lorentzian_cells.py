@@ -900,10 +900,10 @@ def _kernel_flipping(
     while True:
         if not total:
             raise ArithmeticError("perfect-cell flipping reached an empty positive-vector shell")
-        # Lorentzian.g:949-965. The next supporting hyperplane is defined by
-        # the new vector from the previous shell; the new shell must contain
-        # that vector as well as every critical vector. Preserving only the
-        # critical set is insufficient to certify the source's second exit.
+        # polyhedral_common@a55fcb7b src_lorentzian/lorentzian_perfect.h:798-824.
+        # The second exit requires the new shell to contain the critical set.
+        # Unlike the older GAP Lorentzian.g:949-965, the pinned later C++
+        # source does not also require the chosen temporary vector to persist.
         new_vector = total[0]
         expanded = vector(SageQQ, [1, *_coordinate_row(lattice, new_vector, SageQQ)])
         denominator = direction_normal.dot_product(expanded)
@@ -915,6 +915,5 @@ def _kernel_flipping(
         test_direction_row = test_direction.column(0)
         max_scal = (critical_first * gram * test_direction)[0]
         total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
-        required = critical_rows | _vector_rows((new_vector,))
-        if required.issubset(_vector_rows(total)):
+        if critical_rows.issubset(_vector_rows(total)):
             return total, normal, test_direction_row, max_scal
