@@ -57,7 +57,10 @@ class _OrientedBinaryCycle:
         """
         while True:
             middle = right[0] + left[0], right[1] + left[1]
-            if self.pairing(middle, middle) <= bound or self.pairing(middle, right) < 0:
+            # Allcock, Algorithm Promised, step [Go right?]: the test is
+            # m·l < 0, not m·r < 0. The negative pairing certifies that
+            # the left sector contains no eligible next vector.
+            if self.pairing(middle, middle) <= bound or self.pairing(middle, left) < 0:
                 left = middle
                 continue
             if self.pairing(left, left) >= 0 and self.pairing(right, left) > 0:

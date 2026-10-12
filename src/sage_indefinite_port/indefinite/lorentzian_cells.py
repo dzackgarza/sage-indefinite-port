@@ -11,6 +11,7 @@ from typing import Literal
 
 from dzack_research.preamble.all import Groups, Lattices
 from dzack_research.preamble.categories.group.g_sets import FiniteGSets
+from dzack_research.preamble.categories.group.groups import GroupMorphism
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
 from dzack_research.preamble.categories.reduction_complexes import LorentzianPerfectDomainTraversal, PerfectDomainOrbitAdjacency
@@ -120,7 +121,7 @@ class LorentzianPerfectLocalBackend:
         )
 
     @cached_method
-    def facet_lift(self, cell: LorentzianPerfectCell):
+    def facet_lift(self, cell: LorentzianPerfectCell) -> GroupMorphism:
         r"""Evaluate words in the given integral cell-stabilizer generators.
 
         The source's finite facet-orbit calculation requires the action of
