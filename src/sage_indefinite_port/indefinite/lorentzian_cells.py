@@ -840,7 +840,12 @@ def _kernel_flipping(
     while True:
         if not total:
             raise ArithmeticError("perfect-cell flipping reached an empty positive-vector shell")
-        expanded = vector(SageQQ, [1, *_coordinate_row(lattice, total[0], SageQQ)])
+        # Lorentzian.g:949-965. The next supporting hyperplane is defined by
+        # the new vector from the previous shell; the new shell must contain
+        # that vector as well as every critical vector. Preserving only the
+        # critical set is insufficient to certify the source's second exit.
+        new_vector = total[0]
+        expanded = vector(SageQQ, [1, *_coordinate_row(lattice, new_vector, SageQQ)])
         denominator = direction_normal.dot_product(expanded)
         if denominator == 0:
             raise ArithmeticError("the flip direction is parallel to a newly found wall")
@@ -850,5 +855,6 @@ def _kernel_flipping(
         test_direction_row = test_direction.column(0)
         max_scal = (critical_first * gram * test_direction)[0]
         total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
-        if critical_rows.issubset(_vector_rows(total)):
+        required = critical_rows | _vector_rows((new_vector,))
+        if required.issubset(_vector_rows(total)):
             return total, normal, test_direction_row, max_scal
