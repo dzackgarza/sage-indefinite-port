@@ -9,7 +9,7 @@ from functools import cached_property
 from random import choice, randrange, shuffle
 from typing import Literal
 
-from dzack_research.preamble.all import Lattices
+from dzack_research.preamble.all import Groups, Lattices
 from dzack_research.preamble.categories.group.g_sets import FiniteGSets
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
@@ -120,17 +120,31 @@ class LorentzianPerfectLocalBackend:
         )
 
     @cached_method
+    def facet_lift(self, cell: LorentzianPerfectCell):
+        r"""Evaluate words in the given integral cell-stabilizer generators.
+
+        The source's finite facet-orbit calculation requires the action of
+        these generators, not construction of the infinite arithmetic matrix
+        subgroup of O(L) in its general group backend.
+        """
+        generators = self.cell_stabilizer(cell)
+        free = Groups.Free(index_set=finite_ordered_set(range(len(generators))))
+        return free.Mor(cell.lattice.O())({position: generator for position, generator in enumerate(generators)})
+
+    @cached_method
     def facet_action(self, cell: LorentzianPerfectCell) -> Parent:
         r"""The finite action of Aut((L, S)) on the facets spanned by S."""
         vectors = cell.vector_configuration
         cone = RationalPolyhedralCones(cell.lattice).from_rays(vectors)
         facets = tuple(frozenset(position for position, item in enumerate(vectors) if cone.evaluate_covector(covector, item) == 0) for covector in cone.facet_covectors())
 
-        def act(isometry: LatticeIsometryMethods, facet: FacetIncidence) -> FacetIncidence:
+        lift = self.facet_lift(cell)
+
+        def act(word, facet: FacetIncidence) -> FacetIncidence:
+            isometry = lift(word)
             return frozenset(vectors.index(isometry(vectors[position])) for position in facet)
 
-        stabilizer = cell.lattice.O().subgroup(self.cell_stabilizer(cell))
-        return FiniteGSets(stabilizer)(facets, act)
+        return FiniteGSets(lift.domain())(facets, act)
 
     def facet_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[FacetIncidence, ...], ...]:
         return tuple(tuple(orbit.points()) for orbit in self.facet_action(cell).orbits())
@@ -253,7 +267,7 @@ class LorentzianPerfectComplex:
                 raise ArithmeticError("a quotient-cell adjacency has no transporter to its selected target representative")
             action = backend.facet_action(source)
             for incident in orbit:
-                symmetry = action.transporter_witness(facet, incident)
+                symmetry = backend.facet_lift(source)(action.transporter_witness(facet, incident))
                 self._traversal_adjacencies.append(LorentzianCellAdjacency(source, incident, target, symmetry * transporter))
         self._traversal_position += 1
         return tuple(new_representatives)
@@ -404,13 +418,14 @@ class MarkedCellOrbitAlgorithm:
 
     def local_stabilizer_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[Lattices.ElementMethods, ...], ...]:
         marks = self.local_marks(cell)
-        stabilizer = cell.lattice.O().subgroup(self.complex().local_backend().cell_stabilizer(cell))
+        lift = self.complex().local_backend().facet_lift(cell)
         positions = tuple(range(len(marks)))
 
-        def act(isometry: LatticeIsometryMethods, position: int) -> int:
+        def act(word, position: int) -> int:
+            isometry = lift(word)
             return marks.index(isometry(marks[position]))
 
-        return tuple(tuple(marks[position] for position in sorted(orbit.points())) for orbit in FiniteGSets(stabilizer)(positions, act).orbits())
+        return tuple(tuple(marks[position] for position in sorted(orbit.points())) for orbit in FiniteGSets(lift.domain())(positions, act).orbits())
 
     def transport_marks(self, adjacency: LorentzianCellAdjacency) -> tuple[tuple[Lattices.ElementMethods, Lattices.ElementMethods], ...]:
         transporter = adjacency.transporter
