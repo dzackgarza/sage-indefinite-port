@@ -614,18 +614,10 @@ class _PositiveVectorEnumerator:
     def vectors_at_multiplier(self, multiplier: int) -> tuple[Lattices.ElementMethods, ...]:
         target = self.base_target.parent().scalar_multiple(_owned_rational(self.lattice, SageQQ(multiplier)), self.base_target)
         bound = _owned_rational(self.lattice, -(SageQQ(multiplier) ** 2) * self.base_bound)
-        # The exact CVP engine already returns every coordinate and distance.
-        # Reconstruct just the kernel vectors needed to form ambient vectors:
-        # self.kernel.close_vectors first reconstructs all of them, then
-        # allocates a finite ordered set and an indexed family which this
-        # traversal immediately discards.
-        rows = self.kernel._exact_cvp_engine().close_vector_coordinates(target, bound)
-        labels = tuple(self.kernel.module_generating_set())
-        ring = self.kernel.base_ring()
-        close = tuple(
-            self.kernel.linear_combination({label: ring(int(entry)) for label, entry in zip(labels, coordinates, strict=True) if entry}) for coordinates, _square in rows
-        )
-        return self._ambient_vectors(multiplier, close)
+        # Lorentzian.g:369-373 delegates this finite exact distance fibre to
+        # the general closest-vector computation; use its semantic API.
+        distances = self.kernel.close_vectors(target, bound)
+        return self._ambient_vectors(multiplier, tuple(distances.index_set()))
 
     def _ambient_vectors(self, multiplier: int, close_vectors: tuple[Lattices.ElementMethods, ...]) -> tuple[Lattices.ElementMethods, ...]:
         shift = self.lattice.scalar_multiple(self.lattice.base_ring()(multiplier), self.partner)
