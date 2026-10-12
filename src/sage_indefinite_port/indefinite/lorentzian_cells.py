@@ -105,6 +105,12 @@ def lorentzian_orthogonal_group_generators(lattice: Lattices.ParentMethods) -> t
 
 def lorentzian_isometry(source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
     r"""An isometry between two Lorentzian lattices, or None."""
+    # polyhedral_common@a55fcb7b, lorentzian_perfect.h:1897-1910:
+    # LORENTZ_TestEquivalenceMatrices_Reduced first compares
+    # INDEF_FORM_Invariant_NonDeg (rank, determinant, inertia). Use the
+    # actual invariant tuple rather than its hashed representation.
+    if source.rank() != target.rank() or source.signature_pair() != target.signature_pair() or _gram_matrix(source).det() != _gram_matrix(target).det():
+        return None
     if int(source.rank()) == 2 and int(target.rank()) == 2:
         if source.is_isotropic() != target.is_isotropic():
             return None
