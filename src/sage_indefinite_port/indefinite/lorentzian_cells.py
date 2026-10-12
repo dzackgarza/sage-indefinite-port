@@ -612,8 +612,19 @@ class _PositiveVectorEnumerator:
     def vectors_at_multiplier(self, multiplier: int) -> tuple[Lattices.ElementMethods, ...]:
         target = self.base_target.parent().scalar_multiple(_owned_rational(self.lattice, SageQQ(multiplier)), self.base_target)
         bound = _owned_rational(self.lattice, -(SageQQ(multiplier) ** 2) * self.base_bound)
-        distances = self.kernel.close_vectors(target, bound)
-        return self._ambient_vectors(multiplier, tuple(distances.index_set()))
+        # The exact CVP engine already returns every coordinate and distance.
+        # Reconstruct just the kernel vectors needed to form ambient vectors:
+        # self.kernel.close_vectors first reconstructs all of them, then
+        # allocates a finite ordered set and an indexed family which this
+        # traversal immediately discards.
+        rows = self.kernel._exact_cvp_engine().close_vector_coordinates(target, bound)
+        labels = tuple(self.kernel.module_generating_set())
+        ring = self.kernel.base_ring()
+        close = tuple(
+            self.kernel.linear_combination({label: ring(int(entry)) for label, entry in zip(labels, coordinates, strict=True) if entry})
+            for coordinates, _square in rows
+        )
+        return self._ambient_vectors(multiplier, close)
 
     def _ambient_vectors(self, multiplier: int, close_vectors: tuple[Lattices.ElementMethods, ...]) -> tuple[Lattices.ElementMethods, ...]:
         shift = self.lattice.scalar_multiple(self.lattice.base_ring()(multiplier), self.partner)
@@ -699,25 +710,16 @@ def _upper_bound(gram: Matrix_rational_dense, base_normal: FreeModuleElement[Rat
     base_square = (base_vector.transpose() * gram * base_vector)[0, 0]
     cross = (base_vector.transpose() * gram * direction_vector)[0, 0]
     direction_square = (direction_vector.transpose() * gram * direction_vector)[0, 0]
-    # The exact pencil has square a + 2*b*s + c*s^2. An eventual-negative
-    # test on c alone is insufficient: with c>0 the pencil can still cross
-    # the negative cone on a *bounded interval* (b<0 and b^2>a*c).
-    # Its rational vertex then certifies a finite negative point, while
-    # doubling alone would skip that interval or run forever.
     if base_square <= 0:
-        raise ArithmeticError("a perfect-cell supporting covector must be timelike before flipping")
-    negative_shift: Rational | None = None
-    if direction_square > 0 and cross < 0 and cross * cross > base_square * direction_square:
-        negative_shift = -cross / direction_square
-    elif direction_square < 0 or (direction_square == 0 and cross < 0):
-        shift = SageQQ.one()
-        while base_square + 2 * cross * shift + direction_square * shift * shift >= 0:
-            shift *= 2
-        negative_shift = shift
-    if negative_shift is not None:
-        if base_square + 2 * cross * negative_shift + direction_square * negative_shift * negative_shift >= 0:
-            raise ArithmeticError("the candidate negative-cone bound is not negative")
-        bounds.append(negative_shift)
+        raise ArithmeticError("LORENTZ_Kernel_Flipping requires a positive-norm base normal")
+    if direction_square >= 0:
+        raise ArithmeticError("LORENTZ_Kernel_Flipping requires a negative-norm direction normal")
+    # Lorentzian.g:778-790. The required negative-norm direction guarantees
+    # eventual negativity, so the reference's doubling search terminates.
+    shift = SageQQ.one()
+    while base_square + 2 * cross * shift + direction_square * shift * shift >= 0:
+        shift *= 2
+    bounds.append(shift)
     basis = matrix(SageQQ, [base_vector.column(0), direction_vector.column(0)])
     restricted = basis * gram * basis.transpose()
     a, b, c = restricted[0, 0], restricted[0, 1], restricted[1, 1]
@@ -732,9 +734,13 @@ def _upper_bound(gram: Matrix_rational_dense, base_normal: FreeModuleElement[Rat
         bounds.append(isotropic_bound)
     if constant_bound is not None and isotropic_bound is not None and constant_bound == isotropic_bound:
         return None
-    if not bounds:
-        raise ArithmeticError("the supporting-normal pencil has no finite cone or affine-constant exit; no flip bound is established")
-    return min(bounds)
+    upper = min(bounds)
+    # Lorentzian.g:823-831: a returned upper bound must lie on or outside
+    # the positive cone. A smaller affine-constant bound is not silently
+    # accepted as an admissible cone exit.
+    if base_square + 2 * cross * upper + direction_square * upper * upper > 0:
+        raise ArithmeticError("the computed Lorentzian upper bound remains inside the positive cone")
+    return upper
 
 
 def _negative_direction_in_span(lattice: Lattices.ParentMethods, spanning_rows: Matrix_rational_dense) -> FreeModuleElement[Rational]:
@@ -760,6 +766,17 @@ def _kernel_flipping(
     allowed_squares: RealSet,
 ) -> tuple[tuple[Lattices.ElementMethods, ...], FreeModuleElement[Rational], FreeModuleElement[Rational], Rational]:
     gram = _gram_matrix(lattice).change_ring(SageQQ)
+    # Lorentzian.g:853-860. Both affine normals annihilate the critical
+    # configuration and are independent. Those are hypotheses of the
+    # one-parameter wall crossing, not optional diagnostics.
+    if matrix(SageQQ, [base_normal, direction_normal]).rank() != 2:
+        raise ArithmeticError("Lorentzian flip normals must be independent")
+    for point in critical:
+        augmented = vector(SageQQ, [1, *_coordinate_row(lattice, point, SageQQ)])
+        if base_normal.dot_product(augmented) != 0 or direction_normal.dot_product(augmented) != 0:
+            raise ArithmeticError("both Lorentzian flip normals must vanish on the critical vectors")
+        if allowed_squares == ZERO_SQUARES and point.q() != lattice.base_ring().zero():
+            raise ArithmeticError("an isotropic flip requires isotropic critical vectors")
     upper = _upper_bound(gram, base_normal, direction_normal)
     if upper is None:
         raise ArithmeticError("the flip direction ends at a forbidden isotropic boundary")
