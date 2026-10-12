@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import cached_property
+from itertools import product
 from random import choice, randrange, shuffle
 from typing import Literal
 
@@ -44,13 +45,71 @@ NONNEGATIVE_SQUARES = RealSet.unbounded_above_closed(0)
 ZERO_SQUARES = RealSet.point(0)
 
 
+def _binary_split_isotropic_basis(lattice: Lattices.ParentMethods) -> Matrix_rational_dense:
+    r"""The two primitive null lines of a split binary form, as row vectors.
+
+    The preamble's finite primitive-null-line enumeration replaces
+    ``GetBasisIsotropicVectors_reduced`` in pinned
+    ``src_lorentzian/two_dim_lorentzian.h:443–461``. The signs of its
+    two representatives are immaterial to the eight sign/permutation choices.
+    """
+    rays = []
+    for point in lattice.primitive_isotropic_vectors():
+        row = _coordinate_row(lattice, point, SageQQ)
+        if next(entry for entry in row if entry) > 0:
+            rays.append(row)
+    if len(rays) != 2:
+        raise ArithmeticError("a split nondegenerate binary lattice has exactly two rational null lines")
+    return matrix(SageQQ, rays)
+
+
+def _binary_split_isometries(source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
+    r"""Port ``TwoDimIsotropic_TestEquivalence`` and
+    ``TwoDimIsotropic_AutomGenerator`` (pinned two_dim_lorentzian.h:478–612).
+
+    Enumerate precisely the eight signed permutations of the two primitive
+    null lines; keep exactly those inducing integral isometries. For different
+    lattices, each returned morphism has source and target as endpoints.
+    """
+    source_basis = _binary_split_isotropic_basis(source)
+    target_basis = _binary_split_isotropic_basis(target)
+    if abs(source_basis.det()) != abs(target_basis.det()):
+        return ()
+    source_gram = _gram_matrix(source)
+    target_gram = _gram_matrix(target)
+    source_labels = tuple(source.module_generating_set())
+    target_labels = tuple(target.module_generating_set())
+    result: list[LatticeIsometryMethods] = []
+    for swap, sign0, sign1 in product((0, 1), repeat=3):
+        first, second = (1, 0) if swap else (0, 1)
+        end_basis = matrix(SageQQ, [(2 * sign0 - 1) * target_basis.row(first), (2 * sign1 - 1) * target_basis.row(second)])
+        rows = source_basis.inverse() * end_basis
+        if any(entry.denominator() != 1 for entry in rows.list()):
+            continue
+        if rows * target_gram * rows.transpose() != source_gram:
+            continue
+        images = {
+            label: target.linear_combination({t_label: target.base_ring()(int(entry)) for t_label, entry in zip(target_labels, row, strict=True) if entry})
+            for label, row in zip(source_labels, rows.rows(), strict=True)
+        }
+        result.append(source.Isom(target)(images))
+    return tuple(result)
+
+
 def lorentzian_orthogonal_group_generators(lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
-    r"""Generators of O(L) for L of signature (1, n) or (n, 1): O^Omega(L) from the perfect-domain traversal, and -1."""
+    r"""Generators of O(L), with the pinned split rank-two branch."""
+    if int(lattice.rank()) == 2 and lattice.is_isotropic():
+        return _binary_split_isometries(lattice, lattice)
     return LorentzianPerfectComplex(lattice, NONNEGATIVE_SQUARES).full_orthogonal_group_generators()
 
 
 def lorentzian_isometry(source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
-    r"""An isometry between two lattices of signature (1, n) or (n, 1), found by matching perfect cells, or None."""
+    r"""An isometry between two Lorentzian lattices, or None."""
+    if int(source.rank()) == 2 and int(target.rank()) == 2:
+        if source.is_isotropic() != target.is_isotropic():
+            return None
+        if source.is_isotropic():
+            return next(iter(_binary_split_isometries(source, target)), None)
     return LorentzianPerfectComplex(source, NONNEGATIVE_SQUARES).isometry_to(LorentzianPerfectComplex(target, NONNEGATIVE_SQUARES))
 
 
