@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import cached_property
+from random import choice, randrange, shuffle
 from typing import Literal
 
 from dzack_research.preamble.all import Lattices
@@ -20,6 +21,7 @@ from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.matrix.constructor import matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
+from sage.matrix.special import identity_matrix
 from sage.misc.cachefunc import cached_method
 from sage.modules.free_module_element import FreeModuleElement, vector
 from sage.rings.integer import Integer
@@ -101,7 +103,7 @@ class LorentzianPerfectLocalBackend:
             expanded = matrix(SageQQ, [[1, *_coordinate_row(normalized, item, SageQQ)] for item in normalized_vectors])
             nullspace = expanded.right_kernel_matrix()
             directions = nullspace.matrix_from_columns(range(1, nullspace.ncols())) * gram.inverse()
-            outside_direction = _negative_direction_in_span(normalized, directions)
+            outside_direction = _negative_direction_in_span(normalized, directions, normalized_vectors, base_normal)
             direction_covector = gram * outside_direction.column()
             critical_row = _coordinate_row(normalized, normalized_vectors[0], SageQQ)
             direction_scalar = (critical_row * direction_covector)[0]
@@ -621,8 +623,7 @@ class _PositiveVectorEnumerator:
         labels = tuple(self.kernel.module_generating_set())
         ring = self.kernel.base_ring()
         close = tuple(
-            self.kernel.linear_combination({label: ring(int(entry)) for label, entry in zip(labels, coordinates, strict=True) if entry})
-            for coordinates, _square in rows
+            self.kernel.linear_combination({label: ring(int(entry)) for label, entry in zip(labels, coordinates, strict=True) if entry}) for coordinates, _square in rows
         )
         return self._ambient_vectors(multiplier, close)
 
@@ -743,15 +744,52 @@ def _upper_bound(gram: Matrix_rational_dense, base_normal: FreeModuleElement[Rat
     return upper
 
 
-def _negative_direction_in_span(lattice: Lattices.ParentMethods, spanning_rows: Matrix_rational_dense) -> FreeModuleElement[Rational]:
-    r"""A vector of negative norm in the subspace of L tensor Q spanned by the rows."""
+def _negative_direction_in_span(
+    lattice: Lattices.ParentMethods,
+    spanning_rows: Matrix_rational_dense,
+    critical: tuple[Lattices.ElementMethods, ...],
+    base_normal: FreeModuleElement[Rational],
+) -> FreeModuleElement[Rational]:
+    r"""The negative direction accepted by Lorentzian.g's GetOneOutsideRay.
+
+    The source perturbs the basis until GetUpperBound does not report its
+    inadmissible isotropic endpoint. A single arbitrary negative vector is
+    insufficient for that algorithm.
+    """
     rational = lattice.base_change(lattice.base_ring().fraction_field_map())
     labels = tuple(lattice.module_generating_set())
-    span = rational.vector_configuration(
-        [rational.linear_combination({label: _owned_rational(lattice, entry) for label, entry in zip(labels, row, strict=True) if entry}) for row in spanning_rows.rows()]
-    )
-    negative = span.inclusion()(span.vector_of_sign(-1)).to_vector()
-    return vector(SageQQ, tuple(_rational(negative(label)) for label in labels))
+    gram = _gram_matrix(lattice).change_ring(SageQQ)
+    perturbation = identity_matrix(SageZZ, spanning_rows.nrows())
+    while True:
+        rows = perturbation * spanning_rows
+        span = rational.vector_configuration(
+            [rational.linear_combination({label: _owned_rational(lattice, entry) for label, entry in zip(labels, row, strict=True) if entry}) for row in rows.rows()]
+        )
+        negative = span.inclusion()(span.vector_of_sign(-1)).to_vector()
+        direction = vector(SageQQ, tuple(_rational(negative(label)) for label in labels))
+        covector = gram * direction.column()
+        scalars = {(_coordinate_row(lattice, point, SageQQ) * covector)[0] for point in critical}
+        if len(scalars) != 1:
+            raise ArithmeticError("the GetOneOutsideRay direction must pair equally with every critical vector")
+        (scalar,) = scalars
+        normal = vector(SageQQ, [-scalar, *covector.column(0)])
+        if _upper_bound(gram, base_normal, normal) is not None:
+            return direction
+        # IndefiniteFormsFundamental.g:11-30, GetRandomMatrixPerturbation.
+        # These changes of basis preserve the rational span of the rows.
+        dimension = spanning_rows.nrows()
+        modification = identity_matrix(SageZZ, dimension)
+        if choice((1, 2)) == 1:
+            permutation = list(range(dimension))
+            shuffle(permutation)
+            modification = matrix(SageZZ, dimension, dimension)
+            for index, image in enumerate(permutation):
+                modification[index, image] = choice((-1, 1))
+        else:
+            index = randrange(dimension)
+            image = randrange(dimension)
+            modification[index, image] = choice((-1, 1))
+        perturbation *= modification
 
 
 def _vector_rows(vectors: Iterable[Lattices.ElementMethods]) -> set[tuple[int, ...]]:
