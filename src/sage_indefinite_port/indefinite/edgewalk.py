@@ -361,6 +361,8 @@ class _Edgewalk:
             if any(entry.denominator() != 1 for entry in ambient):
                 continue
             root = self.element(tuple(ambient))
+            if int(root.content()) != 1:
+                continue
             if extension.norm not in (1, 2) and not edge.constraint.inclusion().is_in_image(root):
                 continue
             if self.pair(ambient, ambient) != extension.norm:
@@ -421,7 +423,7 @@ class _Edgewalk:
         candidates: list[tuple[int, Rational, Rational, _Vector]] = []
         for extension in parabolic_extensions(self.lattice, roots, self.norms):
             root = self.cusp_root(self.constraint(extension.norm), extension.u_component, k)
-            if root is None:
+            if root is None or int(root.content()) != 1:
                 continue
             scalar = -SageQQ(int(self.pairing(previous, root)))
             sign = (scalar > 0) - (scalar < 0)
@@ -539,7 +541,8 @@ class _Edgewalk:
 
     def binary_walk(self) -> AllcockEdgewalkReport:
         """A binary chamber has two ordinary ends, or one wall in the split case."""
-        root = next((point for norm in self.norms for point in self.lattice.binary_fixed_norm_representatives(norm) if point.is_root()), None)
+        root_locus = self.lattice.reflective_root_locus()
+        root = next((point for norm in self.norms for point in self.lattice.binary_fixed_norm_representatives(norm) if point in root_locus), None)
         if root is None:
             return self.report([], bool(self.lattice.is_isotropic()), (), [])
         generator = self.primitive(self.perpendicular_rows((self.row(root),)).row(0))
