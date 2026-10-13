@@ -403,8 +403,18 @@ class _Edgewalk:
         initial = accepted_vertex()
         if initial is not None:
             return initial
-        for root in engine.NextRoot():
-            engine.roots.append(root)
+        # vinberg.h FindRoots_Kernel tests its exit only after every root
+        # belonging to one decomposition request has been inserted. VinAl's
+        # NextRoot yields those roots individually; use the backend's called
+        # decomposition helpers so an intermediate root cannot end the search.
+        for component, norm in engine.IterateRootDecompositions():
+            new_roots = [
+                root for root in engine.Roots_decomposed_into(component, norm)
+                if engine.IsNewRoot(root)
+            ]
+            if not new_roots:
+                continue
+            engine.roots.extend(new_roots)
             initial = accepted_vertex()
             if initial is not None:
                 return initial
