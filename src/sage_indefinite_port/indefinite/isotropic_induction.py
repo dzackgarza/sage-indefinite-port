@@ -22,7 +22,7 @@ from dzack_research.preamble.categories.abstract_categories.products import Fini
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from sage.structure.parent import Parent
 
-from sage_indefinite_port.indefinite.lorentzian_cells import LorentzianPerfectComplex, MarkedCellOrbitAlgorithm
+from sage_indefinite_port.indefinite.lorentzian_cells import ZERO_SQUARES, LorentzianPerfectComplex, MarkedCellOrbitAlgorithm
 from sage_indefinite_port.indefinite.recursive import EichlerRecursion
 from sage_indefinite_port.invariants import AttackProfile
 
@@ -49,7 +49,7 @@ class IsotropicInduction:
             case 0:
                 return ()
             case 1:
-                orbits = MarkedCellOrbitAlgorithm(LorentzianPerfectComplex(lattice, "isotropic"), 0).global_orbits()
+                orbits = MarkedCellOrbitAlgorithm(LorentzianPerfectComplex(lattice, ZERO_SQUARES), 0).global_orbits()
                 return tuple(orbit[0] for orbit in orbits)
             case _:
                 return tuple(vector_class.representative for vector_class in self.recursion.primitive_vector_classes(lattice, 0))

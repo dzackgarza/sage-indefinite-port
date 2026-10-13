@@ -2,78 +2,145 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 from dataclasses import dataclass
 from fractions import Fraction
-from functools import cache, cached_property
-from typing import Literal, TypedDict
+from functools import cached_property
+from itertools import product
+from random import choice, randrange, shuffle
+from typing import Literal
 
-from dzack_research.preamble.all import ZZ, Cat, Lattices
-from dzack_research.preamble.categories.abstract_categories.products import FiniteOrdinalCategory
+from dzack_research.preamble.all import Groups, Lattices
 from dzack_research.preamble.categories.group.g_sets import FiniteGSets
-from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods, LatticeIsometryMor
+from dzack_research.preamble.categories.group.groups import GroupMorphism
+from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
 from dzack_research.preamble.categories.reduction_complexes import LorentzianPerfectDomainTraversal, PerfectDomainOrbitAdjacency
+from dzack_research.preamble.categories.sets.finite_ordered_sets import finite_ordered_set
+from dzack_research.preamble.categories.sets.indexed_families import finite_indexed_family
+from dzack_research.preamble.categories.vector_configurations import VectorConfigurations
+from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.matrix.constructor import matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
+from sage.matrix.special import identity_matrix
+from sage.misc.cachefunc import cached_method
 from sage.modules.free_module_element import FreeModuleElement, vector
 from sage.rings.integer import Integer
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ as SageQQ
+from sage.sets.real_set import RealSet
 from sage.structure.element import RingElement
 from sage.structure.parent import Parent
 
 from sage_indefinite_port.invariants import AttackProfile
-from sage_indefinite_port.readiness import unfinished
 
 type PerfectMode = Literal["total", "isotropic"]
 type FacetIncidence = frozenset[int]
 
-ARROWS = Cat().Mor(FiniteOrdinalCategory(2), Lattices(ZZ))
-"""Ar(Lattices): a vector configuration S of L is the marked lattice (L, Z^S -> L)."""
+# The admissible squares in the normalized signature-(1,n) form are actual
+# subsets of R, not a source-level string selector.
+NONNEGATIVE_SQUARES = RealSet.unbounded_above_closed(0)
+ZERO_SQUARES = RealSet.point(0)
+
+
+def _binary_split_isotropic_basis(lattice: Lattices.ParentMethods) -> Matrix_rational_dense:
+    r"""The two primitive null lines of a split binary form, as row vectors.
+
+    The preamble's finite primitive-null-line enumeration replaces
+    ``GetBasisIsotropicVectors_reduced`` in pinned
+    ``src_lorentzian/two_dim_lorentzian.h:443–461``. The signs of its
+    two representatives are immaterial to the eight sign/permutation choices.
+    """
+    rays = []
+    for point in lattice.primitive_isotropic_vectors():
+        row = _coordinate_row(lattice, point, SageQQ)
+        if next(entry for entry in row if entry) > 0:
+            rays.append(row)
+    if len(rays) != 2:
+        raise ArithmeticError("a split nondegenerate binary lattice has exactly two rational null lines")
+    return matrix(SageQQ, rays)
+
+
+def _binary_split_isometries(source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
+    r"""Port ``TwoDimIsotropic_TestEquivalence`` and
+    ``TwoDimIsotropic_AutomGenerator`` (pinned two_dim_lorentzian.h:478–612).
+
+    Enumerate precisely the eight signed permutations of the two primitive
+    null lines; keep exactly those inducing integral isometries. For different
+    lattices, each returned morphism has source and target as endpoints.
+    """
+    source_basis = _binary_split_isotropic_basis(source)
+    target_basis = _binary_split_isotropic_basis(target)
+    if abs(source_basis.det()) != abs(target_basis.det()):
+        return ()
+    source_gram = _gram_matrix(source)
+    target_gram = _gram_matrix(target)
+    source_labels = tuple(source.module_generating_set())
+    target_labels = tuple(target.module_generating_set())
+    result: list[LatticeIsometryMethods] = []
+    for swap, sign0, sign1 in product((0, 1), repeat=3):
+        first, second = (1, 0) if swap else (0, 1)
+        end_basis = matrix(SageQQ, [(2 * sign0 - 1) * target_basis.row(first), (2 * sign1 - 1) * target_basis.row(second)])
+        rows = source_basis.inverse() * end_basis
+        if any(entry.denominator() != 1 for entry in rows.list()):
+            continue
+        if rows * target_gram * rows.transpose() != source_gram:
+            continue
+        images = {
+            label: target.linear_combination({t_label: target.base_ring()(int(entry)) for t_label, entry in zip(target_labels, row, strict=True) if entry})
+            for label, row in zip(source_labels, rows.rows(), strict=True)
+        }
+        result.append(source.Isom(target)(images))
+    return tuple(result)
 
 
 def lorentzian_orthogonal_group_generators(lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
-    r"""Generators of O(L) for L of signature (1, n) or (n, 1): O^Omega(L) from the perfect-domain traversal, and -1."""
-    if int(lattice.module_rank()) == 2:
-        left, right = tuple(lattice.module_generators())
-        zero = lattice.base_ring().zero()
-        if lattice.q(left) == zero and lattice.q(right) == zero:
-            automorphisms = lattice.Aut()
-            return (automorphisms((right, left)), automorphisms((-left, -right)))
-    return LorentzianPerfectComplex(lattice, "total").full_orthogonal_group_generators()
+    r"""Generators of O(L), with the pinned split rank-two branch."""
+    if int(lattice.rank()) == 2 and lattice.is_isotropic():
+        return _binary_split_isometries(lattice, lattice)
+    return LorentzianPerfectComplex(lattice, NONNEGATIVE_SQUARES).full_orthogonal_group_generators()
 
 
 def lorentzian_isometry(source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
-    r"""An isometry between two lattices of signature (1, n) or (n, 1), found by matching perfect cells, or None."""
-    return LorentzianPerfectComplex(source, "total").isometry_to(LorentzianPerfectComplex(target, "total"))
+    r"""An isometry between two Lorentzian lattices, or None."""
+    # polyhedral_common@a55fcb7b, lorentzian_perfect.h:1897-1910:
+    # LORENTZ_TestEquivalenceMatrices_Reduced first compares
+    # INDEF_FORM_Invariant_NonDeg (rank, determinant, inertia). Use the
+    # actual invariant tuple rather than its hashed representation.
+    if source.rank() != target.rank() or source.signature_pair() != target.signature_pair() or _gram_matrix(source).det() != _gram_matrix(target).det():
+        return None
+    if int(source.rank()) == 2 and int(target.rank()) == 2:
+        if source.is_isotropic() != target.is_isotropic():
+            return None
+        if source.is_isotropic():
+            return next(iter(_binary_split_isometries(source, target)), None)
+    return LorentzianPerfectComplex(source, NONNEGATIVE_SQUARES).isometry_to(LorentzianPerfectComplex(target, NONNEGATIVE_SQUARES))
 
 
 def _gram_matrix(lattice: Lattices.ParentMethods) -> Matrix_integer_dense:
-    generators = tuple(lattice.module_generators())
-    return matrix(SageZZ, [[int(lattice.b(left, right)) for right in generators] for left in generators])
+    return _engine_component_matrix(lattice.gram_tensor()).change_ring(SageZZ)
 
 
 @dataclass(frozen=True)
 class LorentzianPerfectCell:
     lattice: Lattices.ParentMethods
     vector_configuration: tuple[Lattices.ElementMethods, ...]
-    mode: PerfectMode
+    allowed_squares: RealSet
 
     def __post_init__(self) -> None:
-        if self.mode not in ("total", "isotropic"):
-            raise ValueError(f"unknown Lorentzian perfect-cell mode {self.mode!r}")
+        if self.allowed_squares not in (NONNEGATIVE_SQUARES, ZERO_SQUARES):
+            raise ValueError(f"unsupported normalized-norm locus {self.allowed_squares!r}")
         positive, negative = self.lattice.signature_pair()
         if int(positive) != 1 and int(negative) != 1:
             raise ValueError(f"a Lorentzian perfect cell needs signature (1,n) or (n,1), but {self.lattice} has signature {self.lattice.signature_pair()}")
-        squares = tuple(int(vector.q()) for vector in self.vector_configuration)
-        if self.mode == "isotropic" and any(square != 0 for square in squares):
-            raise ValueError("an isotropic perfect cell may contain only isotropic vectors")
+        gram = _gram_matrix(self.lattice)
+        rows = tuple(_coordinate_row(self.lattice, point, SageZZ) for point in self.vector_configuration)
+        squares = tuple(int(row * gram * row) for row in rows)
         normalized_sign = 1 if int(positive) == 1 else -1
-        if self.mode == "total" and any(normalized_sign * square < 0 for square in squares):
-            raise ValueError("a total perfect cell may contain only nonnegative normalized-norm vectors")
+        if any(normalized_sign * square not in self.allowed_squares for square in squares):
+            raise ValueError(f"a perfect cell may contain only vectors with normalized square in {self.allowed_squares}")
 
     def configuration(self) -> Parent:
         r"""The marked lattice (L, Z^S -> L) of the cell's vectors, an object of Ar(Lattices)."""
@@ -89,70 +156,94 @@ class LorentzianCellAdjacency:
 
 
 class LorentzianPerfectLocalBackend:
-    def initial_cell(self, lattice: Lattices.ParentMethods, mode: PerfectMode) -> LorentzianPerfectCell:
+    def initial_cell(self, lattice: Lattices.ParentMethods, allowed_squares: RealSet) -> LorentzianPerfectCell:
         normalized = _lorentzian_view(lattice)
         direction = _positive_direction(normalized)
-        normalized_vectors = _search_initial_vectors(normalized, direction, mode)
+        normalized_vectors = _search_initial_vectors(normalized, direction, allowed_squares)
         gram = _gram_matrix(normalized).change_ring(SageQQ)
         central = vector(SageQQ, direction)
         first = _coordinate_row(normalized, normalized_vectors[0], SageQQ)
         scalar = (central * gram * first.column())[0]
         base_normal = vector(SageQQ, [-scalar, *(gram * central.column()).column(0)])
-        while matrix(
-            SageQQ,
-            [_coordinate_row(normalized, item, SageQQ) for item in normalized_vectors],
-        ).rank() < int(lattice.module_rank()):
-            expanded = matrix(
-                SageQQ,
-                [[1, *_coordinate_row(normalized, item, SageQQ)] for item in normalized_vectors],
-            )
+        while matrix(SageQQ, [_coordinate_row(normalized, item, SageQQ) for item in normalized_vectors]).rank() < int(lattice.module_rank()):
+            expanded = matrix(SageQQ, [[1, *_coordinate_row(normalized, item, SageQQ)] for item in normalized_vectors])
             nullspace = expanded.right_kernel_matrix()
             directions = nullspace.matrix_from_columns(range(1, nullspace.ncols())) * gram.inverse()
-            outside_direction = _negative_direction_in_span(normalized, directions)
+            outside_direction = _negative_direction_in_span(normalized, directions, normalized_vectors, base_normal)
             direction_covector = gram * outside_direction.column()
             critical_row = _coordinate_row(normalized, normalized_vectors[0], SageQQ)
             direction_scalar = (critical_row * direction_covector)[0]
-            normal_direction = vector(
-                SageQQ,
-                [-direction_scalar, *direction_covector.column(0)],
-            )
-            normalized_vectors, base_normal, _test_direction, _max_scal = _kernel_flipping(normalized, normalized_vectors, base_normal, normal_direction, mode)
+            normal_direction = vector(SageQQ, [-direction_scalar, *direction_covector.column(0)])
+            normalized_vectors, base_normal, _test_direction, _max_scal = _kernel_flipping(normalized, normalized_vectors, base_normal, normal_direction, allowed_squares)
         vectors = tuple(_transfer(lattice, item) for item in normalized_vectors)
-        return LorentzianPerfectCell(lattice, vectors, mode)
+        return LorentzianPerfectCell(lattice, vectors, allowed_squares)
 
-    @cache
+    @cached_method
     def cell_stabilizer(self, cell: LorentzianPerfectCell) -> tuple[LatticeIsometryMethods, ...]:
         r"""Generators of Aut((L, S)) for the cell's vector configuration S."""
-        configuration = cell.configuration()
-        return tuple(automorphism.forward().right() for automorphism in ARROWS.Core().Mor(configuration, configuration).group_generators())
+        return tuple(
+            VectorConfigurations(cell.lattice.base_ring()).spanning_automorphism_generators(cell.lattice, cell.vector_configuration, (0,) * len(cell.vector_configuration))
+        )
 
-    def facet_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[FacetIncidence, ...], ...]:
-        r"""The orbits of Aut((L, S)) on the facets of the cone spanned by S, as incidence sets."""
+    @cached_method
+    def facet_lift(self, cell: LorentzianPerfectCell) -> GroupMorphism:
+        r"""Evaluate words in the given integral cell-stabilizer generators.
+
+        The source's finite facet-orbit calculation requires the action of
+        these generators, not construction of the infinite arithmetic matrix
+        subgroup of O(L) in its general group backend.
+        """
+        generators = self.cell_stabilizer(cell)
+        free = Groups.Free(index_set=finite_ordered_set(range(len(generators))))
+        return free.Mor(cell.lattice.O())({position: generator for position, generator in enumerate(generators)})
+
+    @cached_method
+    def facet_action(self, cell: LorentzianPerfectCell) -> Parent:
+        r"""The finite action of Aut((L, S)) on the facets spanned by S."""
         vectors = cell.vector_configuration
         cone = RationalPolyhedralCones(cell.lattice).from_rays(vectors)
-        facets = tuple(frozenset(position for position, item in enumerate(vectors) if cone.evaluate_covector(covector, item) == 0) for covector in cone.facet_covectors())
+        covectors = tuple(cone.facet_covectors())
+        labels = tuple(cell.lattice.module_generating_set())
+        ray_rows = matrix(SageQQ, [_coordinate_row(cell.lattice, point, SageQQ) for point in vectors])
+        facets: tuple[FacetIncidence, ...] = ()
+        if covectors:
+            covector_rows = matrix(SageQQ, [
+                [_rational(covector.to_vector()(label)) for label in labels]
+                for covector in covectors
+            ])
+            pairings = covector_rows * ray_rows.transpose()
+            facets = tuple(
+                frozenset(position for position in range(len(vectors)) if pairings[facet, position] == 0)
+                for facet in range(len(covectors))
+            )
 
-        def act(isometry: LatticeIsometryMethods, facet: FacetIncidence) -> FacetIncidence:
+        lift = self.facet_lift(cell)
+
+        def act(word, facet: FacetIncidence) -> FacetIncidence:
+            isometry = lift(word)
             return frozenset(vectors.index(isometry(vectors[position])) for position in facet)
 
-        stabilizer = cell.lattice.O().subgroup(self.cell_stabilizer(cell))
-        return tuple(tuple(orbit) for orbit in FiniteGSets(stabilizer)(facets, act).orbits())
+        return FiniteGSets(lift.domain())(facets, act)
 
-    def flip_across(self, cell: LorentzianPerfectCell, facet: FacetIncidence) -> LorentzianPerfectCell:
+    def facet_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[FacetIncidence, ...], ...]:
+        return tuple(tuple(orbit.points()) for orbit in self.facet_action(cell).orbits())
+
+    def flip_across(self, cell: LorentzianPerfectCell, facet: FacetIncidence) -> LorentzianPerfectCell | None:
         normalized = _lorentzian_view(cell.lattice)
         vectors = cell.vector_configuration
         if not facet or any(position < 0 or position >= len(vectors) for position in facet):
             raise ValueError("a perfect-cell facet must be a nonempty incidence subset")
-        nonincident = next(
-            (position for position in range(len(vectors)) if position not in facet),
-            None,
-        )
+        nonincident = next((position for position in range(len(vectors)) if position not in facet), None)
         if nonincident is None:
             raise ValueError("a facet must omit at least one configuration vector")
-        selected = matrix(
-            SageQQ,
-            [_coordinate_row(normalized, vectors[position], SageQQ) for position in sorted(facet)],
-        )
+        # In a Lorentzian plane, either null ray is an actual boundary of the
+        # chosen positive cone, not a side shared with a second perfect cell.
+        # With null basis (u,v), the cone is {a u + b v : a,b >= 0}; crossing
+        # the face b=0 yields ab < 0 and leaves the admissible cone. Do not
+        # try the source's interior-facet flip across a boundary face.
+        if int(cell.lattice.module_rank()) == 2 and all(cell.lattice.q(vectors[position]) == 0 for position in facet):
+            return None
+        selected = matrix(SageQQ, [_coordinate_row(normalized, vectors[position], SageQQ) for position in sorted(facet)])
         facet_nullspace = selected.right_kernel_matrix()
         if facet_nullspace.nrows() != 1:
             raise ArithmeticError("a perfect-cell facet must have one normal direction")
@@ -161,10 +252,7 @@ class LorentzianPerfectLocalBackend:
         if direction.dot_product(outside) < 0:
             direction = -direction
         normal_direction = vector(SageQQ, [0, *direction])
-        expanded = matrix(
-            SageQQ,
-            [[1, *_coordinate_row(normalized, item, SageQQ)] for item in vectors],
-        )
+        expanded = matrix(SageQQ, [[1, *_coordinate_row(normalized, item, SageQQ)] for item in vectors])
         base_nullspace = expanded.right_kernel_matrix()
         if base_nullspace.nrows() != 1:
             raise ArithmeticError("a perfect cell must have a unique affine supporting functional")
@@ -172,18 +260,22 @@ class LorentzianPerfectLocalBackend:
         if vector(SageQQ, base_normal[1:]).dot_product(outside) <= 0:
             base_normal = -base_normal
         critical = tuple(vectors[position] for position in sorted(facet))
-        flipped, _normal, _direction, _max_scal = _kernel_flipping(normalized, critical, base_normal, normal_direction, cell.mode)
+        flipped, _normal, _direction, _max_scal = _kernel_flipping(normalized, critical, base_normal, normal_direction, cell.allowed_squares)
         returned = tuple(_transfer(cell.lattice, item) for item in flipped)
-        return LorentzianPerfectCell(cell.lattice, returned, cell.mode)
+        return LorentzianPerfectCell(cell.lattice, returned, cell.allowed_squares)
 
     def cell_transporter(self, source: LorentzianPerfectCell, target: LorentzianPerfectCell) -> LatticeIsometryMethods | None:
         r"""An element of Isom((L, S), (L, T)) for the cells' configurations, or None."""
-        if source.mode != target.mode:
-            raise ValueError(f"cells of modes {source.mode!r} and {target.mode!r} are never isometric: compare cells of one traversal")
-        isomorphisms = ARROWS.Core().Mor(source.configuration(), target.configuration())
-        if isomorphisms.is_empty():
-            return None
-        return isomorphisms.an_element().forward().right()
+        if source.allowed_squares != target.allowed_squares:
+            raise ValueError("an isometry of perfect cells must preserve their prescribed normalized-norm locus")
+        return VectorConfigurations(source.lattice.base_ring()).spanning_isometry(
+            source.lattice,
+            source.vector_configuration,
+            (0,) * len(source.vector_configuration),
+            target.lattice,
+            target.vector_configuration,
+            (0,) * len(target.vector_configuration),
+        )
 
 
 class LorentzianPerfectComplex:
@@ -194,23 +286,22 @@ class LorentzianPerfectComplex:
     retained source facet.
     """
 
-    def __init__(self, lattice: Lattices.ParentMethods, mode: PerfectMode) -> None:
+    def __init__(self, lattice: Lattices.ParentMethods, allowed_squares: RealSet) -> None:
+        if allowed_squares not in (NONNEGATIVE_SQUARES, ZERO_SQUARES):
+            raise ValueError(f"unsupported normalized-norm locus {allowed_squares!r}")
         self._lattice = lattice
-        self._mode = mode
+        self._allowed_squares = allowed_squares
         self._local_backend = LorentzianPerfectLocalBackend()
         self._traversal_representatives: list[LorentzianPerfectCell] | None = None
-        self._traversal_representative_buckets: dict[
-            tuple[tuple[int, ...], tuple[int, ...]],
-            list[LorentzianPerfectCell],
-        ] = {}
+        self._traversal_representative_buckets: dict[tuple[tuple[int, ...], tuple[int, ...]], list[LorentzianPerfectCell]] = {}
         self._traversal_adjacencies: list[LorentzianCellAdjacency] = []
         self._traversal_position = 0
 
     def lattice(self) -> Lattices.ParentMethods:
         return self._lattice
 
-    def mode(self) -> PerfectMode:
-        return self._mode
+    def allowed_squares(self) -> RealSet:
+        return self._allowed_squares
 
     def local_backend(self) -> LorentzianPerfectLocalBackend:
         return self._local_backend
@@ -218,11 +309,9 @@ class LorentzianPerfectComplex:
     def _ensure_traversal_started(self) -> None:
         if self._traversal_representatives is not None:
             return
-        initial = self.local_backend().initial_cell(self.lattice(), self.mode())
+        initial = self.local_backend().initial_cell(self.lattice(), self.allowed_squares())
         self._traversal_representatives = [initial]
-        self._traversal_representative_buckets = {
-            _perfect_form_hash_key(initial): [initial],
-        }
+        self._traversal_representative_buckets = {_perfect_form_hash_key(initial): [initial]}
 
     def _expand_traversal_once(self) -> tuple[LorentzianPerfectCell, ...]:
         self._ensure_traversal_started()
@@ -235,6 +324,9 @@ class LorentzianPerfectComplex:
         for orbit in backend.facet_orbits(source):
             facet = orbit[0]
             neighbor = backend.flip_across(source, facet)
+            if neighbor is None:
+                # A boundary face has no adjacent perfect cell or side pairing.
+                continue
             target = None
             transporter = None
             neighbor_key = _perfect_form_hash_key(neighbor)
@@ -252,13 +344,16 @@ class LorentzianPerfectComplex:
                 transporter = self.lattice().Aut().identity()
             if transporter is None:
                 raise ArithmeticError("a quotient-cell adjacency has no transporter to its selected target representative")
-            self._traversal_adjacencies.append(LorentzianCellAdjacency(source, facet, target, transporter))
+            action = backend.facet_action(source)
+            for incident in orbit:
+                symmetry = backend.facet_lift(source)(action.transporter_witness(facet, incident))
+                self._traversal_adjacencies.append(LorentzianCellAdjacency(source, incident, target, symmetry * transporter))
         self._traversal_position += 1
         return tuple(new_representatives)
 
     def isometry_to(self, target: LorentzianPerfectComplex) -> LatticeIsometryMethods | None:
-        if self.mode() != target.mode():
-            raise ValueError(f"traversals of modes {self.mode()!r} and {target.mode()!r} are never compared: an isometry matches cells of one mode")
+        if self.allowed_squares() != target.allowed_squares():
+            raise ValueError("an isometry of perfect-domain complexes must preserve the prescribed normalized-norm locus")
         self._ensure_traversal_started()
         target._ensure_traversal_started()
         representatives = self._traversal_representatives
@@ -281,9 +376,7 @@ class LorentzianPerfectComplex:
         return None
 
     @cached_property
-    def _traversal(
-        self,
-    ) -> tuple[tuple[LorentzianPerfectCell, ...], tuple[LorentzianCellAdjacency, ...]]:
+    def _traversal(self) -> tuple[tuple[LorentzianPerfectCell, ...], tuple[LorentzianCellAdjacency, ...]]:
         self._ensure_traversal_started()
         representatives = self._traversal_representatives
         if representatives is None:
@@ -312,9 +405,7 @@ class LorentzianPerfectComplex:
         return self.component_preserving_generators() + (negation,)
 
 
-def _perfect_form_hash_key(
-    cell: LorentzianPerfectCell,
-) -> tuple[tuple[int, ...], tuple[int, ...]]:
+def _perfect_form_hash_key(cell: LorentzianPerfectCell) -> tuple[tuple[int, ...], tuple[int, ...]]:
     r"""Return the exact pairing multisets used by upstream f_hash.
 
     ComputeInvariantPerfectForm hashes the multiplicities of diagonal and
@@ -322,14 +413,14 @@ def _perfect_form_hash_key(
     multisets as the Python dictionary key avoids hash collisions while
     retaining precisely the same necessary isometry invariant.
     """
-    vectors = cell.vector_configuration
-    diagonal = tuple(sorted(int(vector_.q()) for vector_ in vectors))
-    off_diagonal = tuple(sorted(int(cell.lattice.b(vectors[left], vectors[right])) for left in range(len(vectors)) for right in range(left + 1, len(vectors))))
+    rows = matrix(SageZZ, [_coordinate_row(cell.lattice, point, SageZZ) for point in cell.vector_configuration])
+    pairings = rows * _gram_matrix(cell.lattice) * rows.transpose()
+    diagonal = tuple(sorted(int(pairings[index, index]) for index in range(rows.nrows())))
+    off_diagonal = tuple(sorted(int(pairings[left, right]) for left in range(rows.nrows()) for right in range(left + 1, rows.nrows())))
     return diagonal, off_diagonal
 
 
-@unfinished(15)
-def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode) -> Parent:
+def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode) -> LorentzianPerfectDomainTraversal:
     r"""The perfect-domain decomposition of a Lorentzian lattice in the given mode.
 
     Returns the preamble's ``LorentzianPerfectDomainTraversal`` of ``lattice``: the quotient
@@ -338,7 +429,15 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     representative of the neighbour's orbit, the neighbour itself as the image of that
     representative, the facet they share, and the isometry carrying the representative onto it.
     """
-    complex_ = LorentzianPerfectComplex(lattice, mode)
+    # Decode the frozen #33 historical selector at its sole entry point;
+    # the actual algorithm receives a mathematical norm locus.
+    if mode == "total":
+        allowed_squares = NONNEGATIVE_SQUARES
+    elif mode == "isotropic":
+        allowed_squares = ZERO_SQUARES
+    else:
+        raise ValueError(f"unsupported perfect-domain selection {mode!r}")
+    complex_ = LorentzianPerfectComplex(lattice, allowed_squares)
     backend = complex_.local_backend()
     cones = RationalPolyhedralCones(lattice)
     cell_cones = {id(cell): cones.from_rays(cell.vector_configuration) for cell in complex_.quotient_cells()}
@@ -355,7 +454,9 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 target_to_neighbour,
             )
         )
-    stabilizers = {cell_cones[id(cell)]: backend.cell_stabilizer(cell) for cell in complex_.quotient_cells()}
+    cells = complex_.quotient_cells()
+    cones_by_position = tuple(cell_cones[id(cell)] for cell in cells)
+    stabilizers = finite_indexed_family(finite_ordered_set(cones_by_position), lambda cone: backend.cell_stabilizer(cells[cones_by_position.index(cone)]))
     return LorentzianPerfectDomainTraversal(lattice, tuple(cell_cones.values()), adjacencies, stabilizers)
 
 
@@ -396,13 +497,14 @@ class MarkedCellOrbitAlgorithm:
 
     def local_stabilizer_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[Lattices.ElementMethods, ...], ...]:
         marks = self.local_marks(cell)
-        stabilizer = cell.lattice.O().subgroup(self.complex().local_backend().cell_stabilizer(cell))
+        lift = self.complex().local_backend().facet_lift(cell)
         positions = tuple(range(len(marks)))
 
-        def act(isometry: LatticeIsometryMethods, position: int) -> int:
+        def act(word, position: int) -> int:
+            isometry = lift(word)
             return marks.index(isometry(marks[position]))
 
-        return tuple(tuple(marks[position] for position in sorted(orbit)) for orbit in FiniteGSets(stabilizer)(positions, act).orbits())
+        return tuple(tuple(marks[position] for position in sorted(orbit.points())) for orbit in FiniteGSets(lift.domain())(positions, act).orbits())
 
     def transport_marks(self, adjacency: LorentzianCellAdjacency) -> tuple[tuple[Lattices.ElementMethods, Lattices.ElementMethods], ...]:
         transporter = adjacency.transporter
@@ -441,14 +543,8 @@ class MarkedCellOrbitAlgorithm:
             source_position = positions[id(adjacency.source)]
             target_position = positions[id(adjacency.target)]
             for source_mark, target_mark in self.transport_marks(adjacency):
-                source_node = (
-                    source_position,
-                    local_orbit_position(source_position, source_mark),
-                )
-                target_node = (
-                    target_position,
-                    local_orbit_position(target_position, target_mark),
-                )
+                source_node = (source_position, local_orbit_position(source_position, source_mark))
+                target_node = (target_position, local_orbit_position(target_position, target_mark))
                 graph[source_node].add(target_node)
                 graph[target_node].add(source_node)
 
@@ -493,7 +589,8 @@ def _lorentzian_view(lattice: Lattices.ParentMethods) -> Lattices.ParentMethods:
 
 def _transfer(target: Lattices.ParentMethods, element: Lattices.ElementMethods) -> Lattices.ElementMethods:
     r"""The element with the same coordinates in a lattice on the same module (L and its twist)."""
-    return target.linear_combination(element.monomial_coefficients())
+    coordinates = element.to_vector()
+    return target.linear_combination({label: coordinates(label) for label in target.module_generating_set()})
 
 
 def _ambient_element(lattice: Lattices.ParentMethods, coordinates: tuple[Integer, ...]) -> Lattices.ElementMethods:
@@ -507,12 +604,16 @@ def _owned_rational(lattice: Lattices.ParentMethods, value: Rational) -> RingEle
 
 
 def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]:
-    r"""A positive vector of L, primitive, then greedily shortened along e_i and e_i +- e_j."""
-    positive = lattice.positive_vector()
-    content = int(positive.content())
-    primitive = tuple(int(entry) // content for entry in _coordinate_row(lattice, positive, SageZZ))
+    r"""Pinned polyhedral_common@a55fcb7b src_isotropy/Positivity.h:565-673,
+    ``INDEFINITE_GetShortPositiveVector``.
+
+    The positive-vector finder is the independent preamble primitive. The
+    Graver-basis descent, randomized unimodular reframing, 500-failure stop,
+    and short-norm stop are the reference's *specialized* search, not a
+    replacement one-shot reduction.
+    """
     gram = _gram_matrix(lattice)
-    rank = len(primitive)
+    rank = gram.nrows()
     directions: list[FreeModuleElement[Integer]] = []
     for first in range(rank):
         for sign in (-1, 1):
@@ -528,25 +629,65 @@ def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]
                     row[second] = SageZZ(second_sign)
                     directions.append(vector(SageZZ, row))
 
-    current = vector(SageZZ, primitive)
+    perturbation = identity_matrix(SageZZ, rank)
+    best_vector: FreeModuleElement[Integer] | None = None
+    best_norm: Integer | None = None
+    without_improvement = 0
+    gram_l1 = sum(abs(entry) for entry in gram.list())
     while True:
-        changes = 0
-        for direction in directions:
-            current_norm = (current * gram * current.column())[0]
-            alpha = 0
-            while True:
-                candidate = current + (alpha + 1) * direction
-                candidate_norm = (candidate * gram * candidate.column())[0]
-                if 0 < candidate_norm < current_norm:
-                    current_norm = candidate_norm
-                    alpha += 1
-                else:
-                    break
-            if alpha:
-                current += alpha * direction
-                changes += alpha
-        if changes == 0:
-            return tuple(SageQQ(entry) for entry in current)
+        perturbed_gram = perturbation * gram * perturbation.transpose()
+        if perturbation == identity_matrix(SageZZ, rank):
+            positive = lattice.positive_vector()
+            found = _coordinate_row(lattice, positive, SageZZ)
+        else:
+            # The unimodular change of frame is applied to the *form* before
+            # the general positive-vector primitive, exactly as upstream.
+            ring = lattice.base_ring()
+            framed = Lattices(ring)([[ring(int(perturbed_gram[i, j])) for j in range(rank)] for i in range(rank)])
+            found = _coordinate_row(framed, framed.positive_vector(), SageZZ)
+        current = perturbation.transpose() * found.column()
+        improved = current.column(0)
+        while True:
+            changes = 0
+            for direction in directions:
+                current_norm = (improved * gram * improved.column())[0]
+                alpha = 0
+                while True:
+                    candidate = improved + (alpha + 1) * direction
+                    candidate_norm = (candidate * gram * candidate.column())[0]
+                    if 0 < candidate_norm < current_norm:
+                        current_norm = candidate_norm
+                        alpha += 1
+                    else:
+                        break
+                if alpha:
+                    improved += alpha * direction
+                    changes += alpha
+            if changes == 0:
+                break
+        norm = (improved * gram * improved.column())[0]
+        if best_norm is None or norm < best_norm:
+            best_vector = improved
+            best_norm = SageZZ(norm)
+            without_improvement = 0
+        else:
+            without_improvement += 1
+        if without_improvement == 500 or (best_norm is not None and best_norm < 10):
+            if best_vector is None:
+                raise ArithmeticError("the positive-vector search has no best vector")
+            return tuple(SageQQ(entry) for entry in best_vector)
+        if sum(abs(entry) for entry in perturbed_gram.list()) > 1000 * gram_l1:
+            perturbation = identity_matrix(SageZZ, rank)
+        modification = identity_matrix(SageZZ, rank)
+        if choice((0, 1)) == 0:
+            permutation = list(range(rank))
+            shuffle(permutation)
+            modification = matrix(SageZZ, rank, rank)
+            for index, image in enumerate(permutation):
+                modification[index, image] = choice((-1, 1))
+        else:
+            modification[randrange(rank), randrange(rank)] = choice((-1, 1))
+        perturbation *= modification
 
 
 def _primitive_integral_direction(lattice: Lattices.ParentMethods, coordinates: tuple[Rational, ...]) -> tuple[Lattices.ElementMethods, Rational]:
@@ -569,9 +710,10 @@ class _PositiveVectorEnumerator:
     vectors of m w in K within m^2 d^2 / q(t) (on the sphere, in isotropic mode).
     """
 
-    def __init__(self, lattice: Lattices.ParentMethods, rational_direction: tuple[Rational, ...], max_scal: Rational, mode: PerfectMode) -> None:
+    def __init__(self, lattice: Lattices.ParentMethods, rational_direction: tuple[Rational, ...], max_scal: Rational, allowed_squares: RealSet) -> None:
         self.lattice = lattice
-        self.mode = mode
+        self.gram = _gram_matrix(lattice)
+        self.allowed_squares = allowed_squares
         timelike, scale = _primitive_integral_direction(lattice, tuple(SageQQ(entry) for entry in rational_direction))
         self.scaled_max = SageQQ(max_scal) * scale
         square = SageQQ(int(timelike.q()))
@@ -601,62 +743,60 @@ class _PositiveVectorEnumerator:
         maximum = self.max_multiplier()
         if maximum is None:
             return None
-        bound = _owned_rational(self.lattice, -self.base_bound)
-        match self.mode:
-            case "total":
-                shell = self.kernel.first_close_vector_shell(self.base_target, bound, maximum)
-            case "isotropic":
-                shell = self.kernel.first_close_vector_sphere(self.base_target, bound, maximum)
-        if shell is None:
-            return None
-        multiplier, close_vectors = shell
-        return multiplier, self._ambient_vectors(multiplier, close_vectors)
+        for multiplier in range(1, maximum + 1):
+            vectors = self.vectors_at_multiplier(multiplier)
+            if vectors:
+                return multiplier, vectors
+        return None
 
     def vectors_at_multiplier(self, multiplier: int) -> tuple[Lattices.ElementMethods, ...]:
         target = self.base_target.parent().scalar_multiple(_owned_rational(self.lattice, SageQQ(multiplier)), self.base_target)
         bound = _owned_rational(self.lattice, -(SageQQ(multiplier) ** 2) * self.base_bound)
-        return self._ambient_vectors(multiplier, tuple(self.kernel.close_vectors(target, bound)))
+        # Lorentzian.g:369-373 delegates this finite exact distance fibre to
+        # the general closest-vector computation; use its semantic API.
+        distances = self.kernel.close_vectors(target, bound)
+        return self._ambient_vectors(multiplier, tuple(distances.index_set()))
 
     def _ambient_vectors(self, multiplier: int, close_vectors: tuple[Lattices.ElementMethods, ...]) -> tuple[Lattices.ElementMethods, ...]:
         shift = self.lattice.scalar_multiple(self.lattice.base_ring()(multiplier), self.partner)
         result: list[Lattices.ElementMethods] = []
         for close in close_vectors:
             candidate = shift + self.inclusion(close)
-            candidate_square = int(candidate.q())
-            if self.mode == "isotropic" and candidate_square != 0:
-                continue
+            row = _coordinate_row(self.lattice, candidate, SageZZ)
+            candidate_square = int(row * self.gram * row)
             if candidate_square < 0:
                 raise ArithmeticError("a close-vector shell returned a negative-norm vector")
+            if candidate_square not in self.allowed_squares:
+                continue
             result.append(candidate)
         return tuple(result)
 
 
 def _first_positive_shell(
-    lattice: Lattices.ParentMethods,
-    rational_direction: tuple[Rational, ...],
-    max_scal: Rational,
-    mode: PerfectMode,
+    lattice: Lattices.ParentMethods, rational_direction: tuple[Rational, ...], max_scal: Rational, allowed_squares: RealSet
 ) -> tuple[Lattices.ElementMethods, ...]:
     r"""The vectors of the first nonempty shell with 0 < b(v, t) <= max_scal, or ()."""
-    enumerator = _PositiveVectorEnumerator(lattice, rational_direction, max_scal, mode)
+    enumerator = _PositiveVectorEnumerator(lattice, rational_direction, max_scal, allowed_squares)
     if enumerator.scaled_max <= 0:
         raise ArithmeticError(f"the positive-vector shells below {max_scal} along {rational_direction} are empty by definition: the bound must be positive")
     first = enumerator.first_shell()
     return () if first is None else first[1]
 
 
-def _search_initial_vectors(lattice: Lattices.ParentMethods, direction: tuple[Rational, ...], mode: PerfectMode) -> tuple[Lattices.ElementMethods, ...]:
-    r"""The first shell along the direction, doubling the bound until it is nonempty; it terminates because L has vectors of the mode's kind."""
-    if mode == "isotropic" and not lattice.is_isotropic():
+def _search_initial_vectors(lattice: Lattices.ParentMethods, direction: tuple[Rational, ...], allowed_squares: RealSet) -> tuple[Lattices.ElementMethods, ...]:
+    r"""The first shell along the direction, following LORENTZ_SearchInitialVectorOpt's successive integral bounds."""
+    if allowed_squares == ZERO_SQUARES and not lattice.is_isotropic():
         raise ValueError(f"{lattice} is anisotropic: it has no isotropic perfect cells")
     gram = _gram_matrix(lattice).change_ring(SageQQ)
     direction_row = vector(SageQQ, direction)
     max_scal = (direction_row * gram * direction_row.column())[0]
     while True:
-        vectors = _first_positive_shell(lattice, direction, max_scal, mode)
+        vectors = _first_positive_shell(lattice, direction, max_scal, allowed_squares)
         if vectors:
             return vectors
-        max_scal *= 2
+        # Lorentzian.g:411–423 increases MaxScal by one, rather than
+        # exponentially expanding the search interval.
+        max_scal += 1
 
 
 def _source_mid_value(lower: Rational, upper: Rational) -> Rational:
@@ -685,11 +825,7 @@ def _source_mid_value(lower: Rational, upper: Rational) -> Rational:
     raise ArithmeticError("continued-fraction middle value was not found")
 
 
-def _upper_bound(
-    gram: Matrix_rational_dense,
-    base_normal: FreeModuleElement[Rational],
-    direction_normal: FreeModuleElement[Rational],
-) -> Rational | None:
+def _upper_bound(gram: Matrix_rational_dense, base_normal: FreeModuleElement[Rational], direction_normal: FreeModuleElement[Rational]) -> Rational | None:
     inverse = gram.inverse()
     base_constant = SageQQ(base_normal[0])
     direction_constant = SageQQ(direction_normal[0])
@@ -707,17 +843,16 @@ def _upper_bound(
     base_square = (base_vector.transpose() * gram * base_vector)[0, 0]
     cross = (base_vector.transpose() * gram * direction_vector)[0, 0]
     direction_square = (direction_vector.transpose() * gram * direction_vector)[0, 0]
-    if not (direction_square < 0 or (direction_square == 0 and (cross < 0 or (cross == 0 and base_square < 0)))):
-        raise ArithmeticError("the flip direction never leaves the closed positive cone: q(base + s direction) stays nonnegative for all s > 0")
+    if base_square <= 0:
+        raise ArithmeticError("LORENTZ_Kernel_Flipping requires a positive-norm base normal")
+    if direction_square >= 0:
+        raise ArithmeticError("LORENTZ_Kernel_Flipping requires a negative-norm direction normal")
+    # Lorentzian.g:778-790. The required negative-norm direction guarantees
+    # eventual negativity, so the reference's doubling search terminates.
     shift = SageQQ.one()
-    while True:
-        covector = base_covector + shift * direction_covector
-        value = inverse * covector.column()
-        square = (value.transpose() * gram * value)[0, 0]
-        if square < 0:
-            bounds.append(shift)
-            break
+    while base_square + 2 * cross * shift + direction_square * shift * shift >= 0:
         shift *= 2
+    bounds.append(shift)
     basis = matrix(SageQQ, [base_vector.column(0), direction_vector.column(0)])
     restricted = basis * gram * basis.transpose()
     a, b, c = restricted[0, 0], restricted[0, 1], restricted[1, 1]
@@ -732,18 +867,65 @@ def _upper_bound(
         bounds.append(isotropic_bound)
     if constant_bound is not None and isotropic_bound is not None and constant_bound == isotropic_bound:
         return None
-    return min(bounds)
+    upper = min(bounds)
+    # Lorentzian.g:823-831: a returned upper bound must lie on or outside
+    # the positive cone. A smaller affine-constant bound is not silently
+    # accepted as an admissible cone exit.
+    if base_square + 2 * cross * upper + direction_square * upper * upper > 0:
+        raise ArithmeticError("the computed Lorentzian upper bound remains inside the positive cone")
+    return upper
 
 
-def _negative_direction_in_span(lattice: Lattices.ParentMethods, spanning_rows: Matrix_rational_dense) -> FreeModuleElement[Rational]:
-    r"""A vector of negative norm in the subspace of L tensor Q spanned by the rows."""
+def _negative_direction_in_span(
+    lattice: Lattices.ParentMethods,
+    spanning_rows: Matrix_rational_dense,
+    critical: tuple[Lattices.ElementMethods, ...],
+    base_normal: FreeModuleElement[Rational],
+) -> FreeModuleElement[Rational]:
+    r"""The negative direction accepted by Lorentzian.g's GetOneOutsideRay.
+
+    The source perturbs the basis until GetUpperBound does not report its
+    inadmissible isotropic endpoint. A single arbitrary negative vector is
+    insufficient for that algorithm.
+    """
     rational = lattice.base_change(lattice.base_ring().fraction_field_map())
-    labels = tuple(lattice.module_generating_set())
-    span = rational.vector_configuration(
-        [rational.linear_combination({label: _owned_rational(lattice, entry) for label, entry in zip(labels, row, strict=True) if entry}) for row in spanning_rows.rows()]
-    )
-    negative = span.inclusion()(span.vector_of_sign(-1)).to_vector()
-    return vector(SageQQ, tuple(_rational(negative(label)) for label in labels))
+    gram = _gram_matrix(lattice).change_ring(SageQQ)
+    perturbation = identity_matrix(SageZZ, spanning_rows.nrows())
+    while True:
+        rows = perturbation * spanning_rows
+        restricted = rows * gram * rows.transpose()
+        framed = Lattices(rational.base_ring())(
+            [[_owned_rational(lattice, restricted[i, j]) for j in range(restricted.ncols())] for i in range(restricted.nrows())]
+        )
+        negative = framed.vector_of_sign(-1)
+        if negative is None:
+            raise ArithmeticError("the outside-ray span has no negative direction")
+        coordinates = negative.to_vector()
+        negative_row = vector(SageQQ, [_rational(coordinates(label)) for label in framed.module_generating_set()])
+        direction = negative_row * rows
+        covector = gram * direction.column()
+        scalars = {(_coordinate_row(lattice, point, SageQQ) * covector)[0] for point in critical}
+        if len(scalars) != 1:
+            raise ArithmeticError("the GetOneOutsideRay direction must pair equally with every critical vector")
+        (scalar,) = scalars
+        normal = vector(SageQQ, [-scalar, *covector.column(0)])
+        if _upper_bound(gram, base_normal, normal) is not None:
+            return direction
+        # IndefiniteFormsFundamental.g:11-30, GetRandomMatrixPerturbation.
+        # These changes of basis preserve the rational span of the rows.
+        dimension = spanning_rows.nrows()
+        modification = identity_matrix(SageZZ, dimension)
+        if choice((1, 2)) == 1:
+            permutation = list(range(dimension))
+            shuffle(permutation)
+            modification = matrix(SageZZ, dimension, dimension)
+            for index, image in enumerate(permutation):
+                modification[index, image] = choice((-1, 1))
+        else:
+            index = randrange(dimension)
+            image = randrange(dimension)
+            modification[index, image] = choice((-1, 1))
+        perturbation *= modification
 
 
 def _vector_rows(vectors: Iterable[Lattices.ElementMethods]) -> set[tuple[int, ...]]:
@@ -755,9 +937,20 @@ def _kernel_flipping(
     critical: tuple[Lattices.ElementMethods, ...],
     base_normal: FreeModuleElement[Rational],
     direction_normal: FreeModuleElement[Rational],
-    mode: PerfectMode,
+    allowed_squares: RealSet,
 ) -> tuple[tuple[Lattices.ElementMethods, ...], FreeModuleElement[Rational], FreeModuleElement[Rational], Rational]:
     gram = _gram_matrix(lattice).change_ring(SageQQ)
+    # Lorentzian.g:853-860. Both affine normals annihilate the critical
+    # configuration and are independent. Those are hypotheses of the
+    # one-parameter wall crossing, not optional diagnostics.
+    if matrix(SageQQ, [base_normal, direction_normal]).rank() != 2:
+        raise ArithmeticError("Lorentzian flip normals must be independent")
+    for point in critical:
+        augmented = vector(SageQQ, [1, *_coordinate_row(lattice, point, SageQQ)])
+        if base_normal.dot_product(augmented) != 0 or direction_normal.dot_product(augmented) != 0:
+            raise ArithmeticError("both Lorentzian flip normals must vanish on the critical vectors")
+        if allowed_squares == ZERO_SQUARES and point.q() != lattice.base_ring().zero():
+            raise ArithmeticError("an isotropic flip requires isotropic critical vectors")
     upper = _upper_bound(gram, base_normal, direction_normal)
     if upper is None:
         raise ArithmeticError("the flip direction ends at a forbidden isotropic boundary")
@@ -776,7 +969,7 @@ def _kernel_flipping(
         if square <= 0 or max_scal <= 0:
             upper = middle
             continue
-        enumerator = _PositiveVectorEnumerator(lattice, tuple(test_direction_row), max_scal, mode)
+        enumerator = _PositiveVectorEnumerator(lattice, tuple(test_direction_row), max_scal, allowed_squares)
         first = enumerator.first_shell()
         if first is None:
             raise ArithmeticError("a critical perfect-cell shell disappeared during flipping")
@@ -791,7 +984,12 @@ def _kernel_flipping(
     while True:
         if not total:
             raise ArithmeticError("perfect-cell flipping reached an empty positive-vector shell")
-        expanded = vector(SageQQ, [1, *_coordinate_row(lattice, total[0], SageQQ)])
+        # polyhedral_common@a55fcb7b src_lorentzian/lorentzian_perfect.h:798-824.
+        # The second exit requires the new shell to contain the critical set.
+        # Unlike the older GAP Lorentzian.g:949-965, the pinned later C++
+        # source does not also require the chosen temporary vector to persist.
+        new_vector = total[0]
+        expanded = vector(SageQQ, [1, *_coordinate_row(lattice, new_vector, SageQQ)])
         denominator = direction_normal.dot_product(expanded)
         if denominator == 0:
             raise ArithmeticError("the flip direction is parallel to a newly found wall")
@@ -800,6 +998,6 @@ def _kernel_flipping(
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
         test_direction_row = test_direction.column(0)
         max_scal = (critical_first * gram * test_direction)[0]
-        total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, mode)
+        total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
         if critical_rows.issubset(_vector_rows(total)):
             return total, normal, test_direction_row, max_scal
