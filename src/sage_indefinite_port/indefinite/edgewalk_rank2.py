@@ -65,7 +65,9 @@ class _OrientedBinaryCycle:
                 continue
             if self.pairing(left, left) >= 0 and self.pairing(right, left) > 0:
                 return left, (-right[0], -right[1])
-            right = middle
+            # Allcock, Algorithm Promised, [Go left]: recurse on (m,r),
+            # replacing *both* members of the oriented search pair.
+            right, left = middle, right
 
     def characteristic(self, right: _Point, left: _Point) -> tuple[int, int, int]:
         return self.pairing(right, right), self.pairing(right, left), self.pairing(left, left)
