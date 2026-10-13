@@ -366,7 +366,24 @@ class _Edgewalk:
         # VinAl otherwise derives its own list from the form determinant,
         # which need not equal the admissible lengths of this lattice.
         engine.root_lengths = list(self.norms)
-        engine.roots = engine.FundCone()
+        initial_rays = engine.FundCone()
+        # vinberg.h FundCone selects original V1 roots of prescribed
+        # length; VinAl.FundCone instead returns primitive cone rays.
+        # Recover the actual accepted root on each chosen direction.
+        initial_roots = [
+            root
+            for norm in engine.root_lengths
+            for root in engine.Roots_decomposed_into(engine.V([0] * engine.n), norm)
+            if engine.IsRoot(root)
+        ]
+        engine.roots = [
+            next(
+                root for root in initial_roots
+                if matrix(SageQQ, [vector(SageQQ, root), vector(SageQQ, ray)]).rank() == 1
+                and vector(SageQQ, root).dot_product(vector(SageQQ, ray)) > 0
+            )
+            for ray in initial_rays
+        ]
 
         def accepted_vertex() -> _Vertex | None:
             roots = tuple(self.element(tuple(int(entry) for entry in root)) for root in engine.roots)
