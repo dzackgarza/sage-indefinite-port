@@ -677,10 +677,9 @@ class _Edgewalk:
             if any(entry.denominator() != 1 for entry in ambient):
                 continue
             root = self.element(tuple(ambient))
-            if extension.norm not in (
-                1,
-                2,
-            ) and not edge.constraint.inclusion().is_in_image(root):
+            # edgewalk.h get_next_anisotropic/get_next_isotropic: every
+            # integral candidate must belong to the norm-specific lattice.
+            if not edge.constraint.inclusion().is_in_image(root):
                 continue
             if self.pair(ambient, ambient) != extension.norm:
                 raise ArithmeticError("rank-two reconstruction changed the root norm")
