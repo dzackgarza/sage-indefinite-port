@@ -114,7 +114,8 @@ def _diagram_extension_labels(coxeter_rows: list[list[Integer]], spherical: bool
     for vertex in isolated:
         add(((vertex, Integer(4)),))
 
-    # Remaining one-bond finite/affine Dynkin cases, in source type order.
+    # Remaining one-bond finite/affine Dynkin cases are emitted after the
+    # A/B path cases, in the order of the source's D/E/G/F constructions.
     for label in (Integer(3), Integer(4)):
         for vertex in range(n):
             add(((vertex, label),))
