@@ -463,13 +463,25 @@ class _Edgewalk:
             extreme = RationalPolyhedralCones(self.lattice).from_rays(
                 ambient_roots
             ).primitive_rays()
+            # ReduceListRoot/get_non_redundant_indices preserves the order
+            # of the original family. Keep its first normed representative
+            # of each extremal direction rather than reordering by rays.
+            ray_rows = tuple(self.row(ray) for ray in extreme)
             reduced = []
-            for ray in extreme:
-                reduced.append(next(
-                    root for root in engine.roots
-                    if matrix(SageQQ, [vector(SageQQ, root), self.row(ray)]).rank() == 1
-                    and vector(SageQQ, root).dot_product(self.row(ray)) > 0
-                ))
+            retained_directions = set()
+            for root in engine.roots:
+                row = vector(SageQQ, root)
+                for index, ray_row in enumerate(ray_rows):
+                    if (
+                        index not in retained_directions
+                        and matrix(SageQQ, [row, ray_row]).rank() == 1
+                        and row.dot_product(ray_row) > 0
+                    ):
+                        reduced.append(root)
+                        retained_directions.add(index)
+                        break
+            if len(retained_directions) != len(ray_rows):
+                raise ArithmeticError("Vinberg cone ray has no accepted normed root")
             engine.roots = reduced
             initial = accepted_vertex()
             if initial is not None:
