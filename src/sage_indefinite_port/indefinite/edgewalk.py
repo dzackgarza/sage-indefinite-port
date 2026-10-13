@@ -387,14 +387,24 @@ class _Edgewalk:
                 self.element(tuple(int(entry) for entry in root)) for root in positive
             )
             rays = tuple(self.row(ray) for ray in positive_cone.primitive_rays())
-            engine.roots = [
-                root for root in positive
-                if any(
-                    matrix(SageQQ, [vector(SageQQ, root), ray]).rank() == 1
-                    and vector(SageQQ, root).dot_product(ray) > 0
-                    for ray in rays
-                )
-            ]
+            # GetFacetOneDomain_ListIdx selects nonredundant *indices*;
+            # parallel root vectors cannot both survive its reduction.
+            chosen = []
+            used_rays = set()
+            for root in positive:
+                row = vector(SageQQ, root)
+                for index, ray in enumerate(rays):
+                    if (
+                        index not in used_rays
+                        and matrix(SageQQ, [row, ray]).rank() == 1
+                        and row.dot_product(ray) > 0
+                    ):
+                        chosen.append(root)
+                        used_rays.add(index)
+                        break
+            if len(used_rays) != len(rays):
+                raise ArithmeticError("initial Vinberg cone ray has no normed root")
+            engine.roots = chosen
         else:
             engine.roots = []
 
