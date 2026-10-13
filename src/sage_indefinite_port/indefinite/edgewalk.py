@@ -1040,6 +1040,30 @@ class _Edgewalk:
             invariant = fixed
             return True
 
+        def certified_roots() -> _Roots:
+            # LORENTZ_RunEdgewalkAlgorithm::f_try_terminate: close the
+            # accumulated walls under every discovered chamber symmetry.
+            group = self.lattice.O().subgroup(tuple(isometries))
+            seeds = tuple({
+                _key(root): root for vertex in vertices for root in vertex.roots
+            }.values())
+            closure = FiniteGSets(group).from_finite_orbits(
+                seeds, lambda isometry, root: isometry(root)
+            )
+            return tuple(sorted(closure, key=_key))
+
+        def try_reflectivity_certificate() -> AllcockEdgewalkReport | None:
+            roots = certified_roots()
+            if self.root_chamber_certificate(roots):
+                return self.report(vertices, True, roots, isometries)
+            return None
+
+        # The source checks after insertion of the initial vertex and after
+        # every newly discovered vertex, not only once the quotient closes.
+        certificate = try_reflectivity_certificate()
+        if certificate is not None:
+            return certificate
+
         position = 0
         configuration_category = VectorConfigurations(self.lattice.base_ring())
         while position < len(vertices):
@@ -1073,18 +1097,14 @@ class _Edgewalk:
                 if transporter is None:
                     vertices.append(neighbour)
                     configurations.append(neighbour_configuration)
+                    certificate = try_reflectivity_certificate()
+                    if certificate is not None:
+                        return certificate
                 elif not admit(transporter):
                     return self.report(vertices, False, (), isometries)
             position += 1
 
-        group = self.lattice.O().subgroup(tuple(isometries))
-        seeds = list(
-            {_key(root): root for vertex in vertices for root in vertex.roots}.values()
-        )
-        closure = FiniteGSets(group).from_finite_orbits(
-            seeds, lambda isometry, root: isometry(root)
-        )
-        simple_roots = tuple(sorted(closure, key=_key))
+        simple_roots = certified_roots()
         return self.report(vertices, self.root_chamber_certificate(simple_roots), simple_roots, isometries)
 
 
