@@ -1021,8 +1021,8 @@ def _kernel_flipping(
         test_direction_row = test_direction.column(0)
         max_scal = (critical_first * gram * test_direction)[0]
         total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
-        # Pinned Indefinite.jl Lorentzian.g:949-965 tests against
-        # ListIsoTest = Concatenation(CritSet, [eVect]), not CritSet alone.
-        # The intermediate wall vector can persist in the new shell.
-        if _vector_rows(total).issubset(critical_rows | {tuple(int(entry) for entry in _coordinate_row(lattice, new_vector, SageZZ))}):
+        # Pinned polyhedral_common lorentzian_perfect.h:827 tests the
+        # second exit against CritSet alone. The temporary wall vector
+        # selects the shift but is not an admissible extra exit member.
+        if _vector_rows(total).issubset(critical_rows):
             return total, normal, test_direction_row, max_scal
