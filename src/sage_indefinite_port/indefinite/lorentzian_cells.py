@@ -676,7 +676,9 @@ def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]
             if best_vector is None:
                 raise ArithmeticError("the positive-vector search has no best vector")
             return tuple(SageQQ(entry) for entry in best_vector)
-        if sum(abs(entry) for entry in perturbed_gram.list()) > 1000 * gram_l1:
+        # Lorentzian.g:1090-1093 resets the random frame only at 10000 times
+        # the original entrywise L1 norm, not at 1000.
+        if sum(abs(entry) for entry in perturbed_gram.list()) > 10000 * gram_l1:
             perturbation = identity_matrix(SageZZ, rank)
         modification = identity_matrix(SageZZ, rank)
         if choice((0, 1)) == 0:
