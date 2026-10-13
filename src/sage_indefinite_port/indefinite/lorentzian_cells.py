@@ -723,6 +723,7 @@ class _PositiveVectorEnumerator:
         self.gram = _gram_matrix(lattice)
         self.allowed_squares = allowed_squares
         timelike, scale = _primitive_integral_direction(lattice, tuple(SageQQ(entry) for entry in rational_direction))
+        self.timelike = timelike
         self.scaled_max = SageQQ(max_scal) * scale
         square = SageQQ(int(timelike.q()))
         if square <= 0:
@@ -772,6 +773,11 @@ class _PositiveVectorEnumerator:
             candidate = shift + self.inclusion(close)
             row = _coordinate_row(self.lattice, candidate, SageZZ)
             candidate_square = int(row * self.gram * row)
+            # Lorentzian.g:377-385 verifies both the scalar-product shell
+            # and norm after reconstructing each closest-vector solution.
+            pairing = (row * self.gram * _coordinate_row(self.lattice, self.timelike, SageZZ).column())[0]
+            if pairing != multiplier * self.d or pairing <= 0 or pairing > self.scaled_max:
+                raise ArithmeticError("a close-vector shell returned a vector outside its prescribed pairing fibre")
             if candidate_square < 0:
                 raise ArithmeticError("a close-vector shell returned a negative-norm vector")
             if candidate_square not in self.allowed_squares:
