@@ -405,7 +405,25 @@ class _Edgewalk:
         # belonging to one decomposition request has been inserted. VinAl's
         # NextRoot yields those roots individually; use the backend's called
         # decomposition helpers so an intermediate root cannot end the search.
-        for component, norm in engine.IterateRootDecompositions():
+        # vinberg.h IterateRootDecompositions::get_k (pinned 1592b246)
+        # prioritizes each length's next coset by val/sqrt(val), with
+        # val = -<v0, a>. VinAl instead uses val/sqrt(k), so its iterator
+        # does not reproduce the C++ candidate sequence.
+        candidates = {norm: 1 for norm in engine.root_lengths}
+        while True:
+            choices = {
+                norm: engine.W[index % len(engine.W)]
+                + (index // len(engine.W)) * engine.v0
+                for norm, index in candidates.items()
+            }
+            norm = min(
+                engine.root_lengths,
+                key=lambda length: float(
+                    -engine.v0.inner_product(choices[length])
+                ) ** 0.5,
+            )
+            component = choices[norm]
+            candidates[norm] += 1
             # vinberg.h FindRoot_filter/fct_CVP retains every norm-k
             # candidate satisfying all accepted wall inequalities. VinAl's
             # IsNewRoot additionally rejects linearly dependent candidates;
