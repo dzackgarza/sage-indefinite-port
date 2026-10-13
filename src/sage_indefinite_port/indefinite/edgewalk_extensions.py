@@ -73,16 +73,59 @@ def _diagram_extension_labels(coxeter_rows: list[list[Integer]], spherical: bool
             labels[index] = value
         candidates.append(tuple(labels))
 
-    # The pinned FindDiagramExtensions_Efficient emits the disconnected A1,
-    # then the single-edge Dynkin enlargements, and only subsequently its
-    # disconnected A1/G2/parallel cases. Keep diagram-first output ordering.
-    for label in (Integer(3), Integer(4), Integer(6)):
-        for i in range(n):
-            add(((i, label),))
-    if not spherical:
-        for i in isolated:
-            add(((i, Infinity),))
+    # FindDiagramExtensions_Efficient, coxeter_dynkin.h:1036–1197:
+    # disconnected A1; A(n-1) end and isolated A1 to A_n; A/B extensions;
+    # D/E extensions; G2; F4; affine extensions; parallel I1 last.
+    # The accepted diagram order is relevant to edgewalk tie breaking.
+    components: list[tuple[int, ...]] = []
+    unseen = set(range(n))
+    while unseen:
+        first = min(unseen)
+        component = {first}
+        fringe = [first]
+        while fringe:
+            current = fringe.pop()
+            for neighbor in range(n):
+                if neighbor not in component and coxeter_rows[current][neighbor] != 2 and neighbor != current:
+                    component.add(neighbor)
+                    fringe.append(neighbor)
+        unseen.difference_update(component)
+        components.append(tuple(sorted(component)))
 
+    # A_n paths: ends extend by bond 3, and B_n by bond 4.
+    paths: list[tuple[int, ...]] = []
+    for component in components:
+        if len(component) < 2:
+            continue
+        degrees = {vertex: sum(coxeter_rows[vertex][neighbor] != 2 for neighbor in component if neighbor != vertex) for vertex in component}
+        if all(coxeter_rows[i][j] == 3 for i in component for j in component if i != j and coxeter_rows[i][j] != 2) and sorted(degrees.values()) == [1, 1] + [2] * (
+            len(component) - 2
+        ):
+            paths.append(tuple(vertex for vertex in component if degrees[vertex] == 1))
+
+    for ends in paths:
+        for vertex in ends:
+            add(((vertex, Integer(3)),))
+    for vertex in isolated:
+        add(((vertex, Integer(3)),))
+    for ends in paths:
+        for vertex in ends:
+            add(((vertex, Integer(4)),))
+    for vertex in isolated:
+        add(((vertex, Integer(4)),))
+
+    # Remaining one-bond finite/affine Dynkin cases, in source type order.
+    for label in (Integer(3), Integer(4)):
+        for vertex in range(n):
+            add(((vertex, label),))
+    for vertex in isolated:
+        add(((vertex, Integer(6)),))
+    if not spherical:
+        for label in (Integer(3), Integer(4), Integer(6)):
+            for vertex in range(n):
+                add(((vertex, label),))
+        for vertex in isolated:
+            add(((vertex, Infinity),))
     # Source: finite A/B/D/E/F and affine A/B/C/D/E/F/G extensions.
     for i, j in combinations(range(n), 2):
         add(((i, Integer(3)), (j, Integer(3))))
