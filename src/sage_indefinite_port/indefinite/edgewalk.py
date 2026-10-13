@@ -1075,8 +1075,13 @@ class _Edgewalk:
                 )
             )
             for automorphism in local_generators:
+                previous_generators = len(isometries)
                 if not admit(automorphism):
                     return self.report(vertices, False, (), isometries)
+                if len(isometries) > previous_generators:
+                    certificate = try_reflectivity_certificate()
+                    if certificate is not None:
+                        return certificate
             for roots, discarded in self.edge_orbits(vertex, local_generators):
                 neighbour = self.edge_step(vertex, roots, discarded)
                 neighbour_configuration = self.vertex_configuration(neighbour)
@@ -1100,8 +1105,14 @@ class _Edgewalk:
                     certificate = try_reflectivity_certificate()
                     if certificate is not None:
                         return certificate
-                elif not admit(transporter):
-                    return self.report(vertices, False, (), isometries)
+                else:
+                    previous_generators = len(isometries)
+                    if not admit(transporter):
+                        return self.report(vertices, False, (), isometries)
+                    if len(isometries) > previous_generators:
+                        certificate = try_reflectivity_certificate()
+                        if certificate is not None:
+                            return certificate
             position += 1
 
         simple_roots = certified_roots()
