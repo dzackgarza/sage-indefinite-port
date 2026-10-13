@@ -15,7 +15,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import cmp_to_key
-from random import randrange
 
 from dzack_research.preamble.all import ZZ, HyperbolicLattices, Lattices
 from dzack_research.preamble.categories.group.g_sets import FiniteGSets
@@ -280,10 +279,19 @@ class _Edgewalk:
 
         # GetFacetOneDomain_ListIdx (lorentzian_linalg.h:267–339):
         # regular splitting vector, positive half and its extreme rays.
+        # A regular splitting is outside the finitely many hyperplanes
+        # annihilating the nonzero projected roots. On the moment curve
+        # (1,t,...,t^(rank-1)), each forbidden hyperplane has at most
+        # rank-1 integer parameters t. Exhausting t=0,1,... therefore
+        # constructs a regular splitting without probabilistic retries.
+        if any(not any(row) for row in projected_rows):
+            raise ArithmeticError("the projected root list contains a zero vector")
+        parameter = 0
         while True:
-            splitting = vector(SageQQ, [randrange(-1000, 1001) for _ in range(rank)])
+            splitting = vector(SageQQ, [SageQQ(parameter) ** degree for degree in range(rank)])
             if all(splitting.dot_product(row) != 0 for row in projected_rows):
                 break
+            parameter += 1
         positive = [
             (projected, root)
             for (projected, root), row in zip(
