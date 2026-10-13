@@ -355,61 +355,55 @@ class _Edgewalk:
         roots = self.ordinary_vertex_roots(timelike)
         if self.span_rank(roots) == self.rank - 1:
             return _Vertex(timelike, self.ordinary_vertex_roots(timelike, require_full=True))
-        bound = 8
-        while True:
-            chamber = self.lattice.fundamental_chamber(
-                controlling_vector=timelike,
-                max_roots=bound,
-                max_decompositions=max(256, 8 * bound),
-            )
-            roots = tuple(chamber.wall_roots())
-            # vinberg.h FindOneInitialRay, rank-(dim-1) exit: the unique
-            # kernel ray is already a nonpositive vertex, independently of
-            # the full-rank interior-vertex search. Check all accepted walls
-            # before using it; a truncated prefix is not a completeness proof.
+        # vinberg.h FindRoots_Kernel / FindOneInitialRay: examine the accepted
+        # root system after its initial finite cone and after each new root,
+        # stopping on the first feasible nonpositive ray. The preamble's
+        # VinAl backend supplies the actual root-decomposition enumeration.
+        from vinal import VinAl
+
+        engine = VinAl(self.gram, vector(SageZZ, _key(timelike)), False, None)
+        engine.roots = engine.FundCone()
+
+        def accepted_vertex() -> _Vertex | None:
+            roots = tuple(self.element(tuple(int(entry) for entry in root)) for root in engine.roots)
+            if not roots:
+                return None
             equations = matrix(SageQQ, [self.row(root) * self.gram for root in roots])
-            if equations.nrows() and equations.rank() == self.rank - 1:
-                kernel = equations.right_kernel().basis_matrix()
-                generator = self.primitive(kernel.row(0))
+            rank = equations.rank()
+            if rank < self.rank - 1:
+                return None
+            if rank == self.rank - 1:
+                generator = self.primitive(equations.right_kernel_matrix().row(0))
                 if self.pairing(generator, timelike) > 0:
                     generator = -generator
-                if self.norm(generator) <= 0 and self.pairing(generator, timelike) < 0:
-                    if self.norm(generator) < 0:
-                        return _Vertex(generator, self.ordinary_vertex_roots(generator, require_full=True))
-                    return self.initial_isotropic_vertex(generator)
-            # vinberg.h GetOneInteriorVertex is reached only when the
-            # accepted feasible constraint matrix has full ambient rank.
-            if equations.rank() < self.rank:
-                bound *= 2
-                continue
-            candidates: list[_Vertex] = []
-            for ray in chamber.primitive_rays():
-                generator = -ray
                 if self.norm(generator) > 0 or self.pairing(generator, timelike) >= 0:
-                    continue
-                incident = tuple(
-                    root for root in roots if self.pairing(root, generator) == 0
-                )
-                if self.span_rank(incident) == self.rank - 1:
-                    candidates.append(_Vertex(generator, incident))
-            if candidates:
-                corner = min(
-                    candidates,
-                    key=lambda vertex: (
-                        self.norm(vertex.generator) == 0,
-                        tuple(abs(entry) for entry in _key(vertex.generator)),
-                        _key(vertex.generator),
-                    ),
-                )
-                if self.norm(corner.generator) < 0:
-                    return _Vertex(
-                        corner.generator, self.ordinary_vertex_roots(corner.generator, require_full=True)
-                    )
-                # The accepted affine roots span k-perp and positively span
-                # k. Every subsequent Vinberg root pairs nonpositively with
-                # them, so it cannot cut off k or add another wall through it.
-                return self.initial_isotropic_vertex(corner.generator)
-            bound *= 2
+                    return None
+            else:
+                # GetOneInteriorVertex: exact dual description of -R*G,
+                # tested on each extreme ray in the selected time component.
+                dual = self.lattice.dual_module()
+                inequalities = tuple(dual.linear_combination({
+                    label: self.lattice.base_ring()(int(entry))
+                    for label, entry in zip(self.labels, -(self.row(root) * self.gram), strict=True)
+                    if entry
+                }) for root in roots)
+                cone = RationalPolyhedralCones(self.lattice).from_halfspaces(inequalities)
+                generator = next((ray for ray in cone.primitive_rays()
+                                  if self.norm(ray) <= 0 and self.pairing(ray, timelike) < 0), None)
+                if generator is None:
+                    return None
+            if self.norm(generator) == 0:
+                return self.initial_isotropic_vertex(generator)
+            return _Vertex(generator, self.ordinary_vertex_roots(generator, require_full=True))
+
+        initial = accepted_vertex()
+        if initial is not None:
+            return initial
+        for root in engine.NextRoot():
+            engine.roots.append(root)
+            initial = accepted_vertex()
+            if initial is not None:
+                return initial
 
     def ordinary_vertex_roots(self, timelike: _Vector, *, require_full: bool = False) -> _Roots:
         """A simple system of all ambient reflective roots perpendicular to k.
