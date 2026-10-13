@@ -362,6 +362,10 @@ class _Edgewalk:
         from vinal import VinAl
 
         engine = VinAl(self.gram, vector(SageZZ, _key(timelike)), False, None)
+        # vinberg.h GetVinbergFromG supplies the caller's root-length set.
+        # VinAl otherwise derives its own list from the form determinant,
+        # which need not equal the admissible lengths of this lattice.
+        engine.root_lengths = list(self.norms)
         engine.roots = engine.FundCone()
 
         def accepted_vertex() -> _Vertex | None:
