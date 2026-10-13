@@ -391,11 +391,19 @@ class _Edgewalk:
             root for root in initial_roots
             if next((entry for entry in root if entry), 0) > 0
         ]
-        # GetFacetOneDomain_ListIdx allocates exactly half the input roots
-        # for the regular-positive half. Its source precondition is a
-        # centrally symmetric root family, not merely sufficient rank.
-        if initial_roots and len(positive) * 2 != len(initial_roots):
-            raise ArithmeticError("Vinberg perpendicular roots do not form opposite pairs")
+        # GetFacetOneDomain_ListIdx allocates exactly half the roots on
+        # the assumption that the family is centrally symmetric. A count
+        # alone cannot establish the required opposite-root correspondence.
+        if initial_roots:
+            root_rows = [tuple(int(entry) for entry in root) for root in initial_roots]
+            multiplicities = {}
+            for row in root_rows:
+                multiplicities[row] = multiplicities.get(row, 0) + 1
+            if any(
+                multiplicities.get(row, 0) != multiplicities.get(tuple(-entry for entry in row), 0)
+                for row in multiplicities
+            ):
+                raise ArithmeticError("Vinberg perpendicular roots do not form opposite pairs")
         if positive:
             positive_cone = RationalPolyhedralCones(self.lattice).from_rays(
                 self.element(tuple(int(entry) for entry in root)) for root in positive
