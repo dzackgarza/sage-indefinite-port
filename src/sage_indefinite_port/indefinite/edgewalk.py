@@ -903,6 +903,28 @@ class _Edgewalk:
         _positive, negative = fixed.inclusion().domain().signature_pair()
         return None if int(negative) == 0 else fixed
 
+    def root_chamber_certificate(self, roots: _Roots) -> bool:
+        r"""Upstream LORENTZ_RunEdgewalkAlgorithm dual-description ray test.
+
+        The inequalities are -b(root, x) >= 0.  A pointed rational
+        chamber is tested on its exact extreme rays, as in the pinned
+        upstream dual-description termination condition.
+        """
+        if not roots:
+            return False
+        dual = self.lattice.dual_module()
+        inequalities = []
+        for root in roots:
+            row = -(_coordinate_row(self.lattice, root, SageQQ) * self.gram)
+            inequalities.append(dual.linear_combination({
+                label: self.lattice.base_ring()(int(entry))
+                for label, entry in zip(self.labels, row, strict=True) if entry
+            }))
+        chamber = RationalPolyhedralCones(self.lattice).from_halfspaces(inequalities)
+        if not chamber.is_pointed():
+            return False
+        return all(self.norm(ray) <= 0 for ray in chamber.primitive_rays())
+
     def report(
         self,
         vertices: list[_Vertex],
@@ -1062,7 +1084,8 @@ class _Edgewalk:
         closure = FiniteGSets(group).from_finite_orbits(
             seeds, lambda isometry, root: isometry(root)
         )
-        return self.report(vertices, True, tuple(sorted(closure, key=_key)), isometries)
+        simple_roots = tuple(sorted(closure, key=_key))
+        return self.report(vertices, self.root_chamber_certificate(simple_roots), simple_roots, isometries)
 
 
 __all__ = ["edgewalk_fundamental_domain"]
