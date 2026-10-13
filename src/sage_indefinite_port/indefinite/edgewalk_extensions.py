@@ -132,7 +132,8 @@ def _diagram_extension_labels(coxeter_rows: list[list[Integer]], spherical: bool
                 add(((vertex, label),))
         for vertex in isolated:
             add(((vertex, Infinity),))
-    # Source: finite A/B/D/E/F and affine A/B/C/D/E/F/G extensions.
+    # Source: finite A/B/D/E/F and affine A/B/C/D/E/F/G extensions,
+    # with admissibility checked using the Coxeter classification.
     for i, j in combinations(range(n), 2):
         add(((i, Integer(3)), (j, Integer(3))))
         add(((i, Integer(3)), (j, Integer(4))))
