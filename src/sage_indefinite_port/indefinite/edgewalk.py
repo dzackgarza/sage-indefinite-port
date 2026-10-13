@@ -415,6 +415,24 @@ class _Edgewalk:
             if not new_roots:
                 continue
             engine.roots.extend(new_roots)
+            # vinberg.h ReduceListRoot removes generators redundant in the
+            # accepted root cone. Keep the original normed root vectors,
+            # using primitive rays only to identify their directions.
+            ambient_roots = tuple(
+                self.element(tuple(int(entry) for entry in root))
+                for root in engine.roots
+            )
+            extreme = RationalPolyhedralCones(self.lattice).from_rays(
+                ambient_roots
+            ).primitive_rays()
+            reduced = []
+            for ray in extreme:
+                reduced.append(next(
+                    root for root in engine.roots
+                    if matrix(SageQQ, [vector(SageQQ, root), self.row(ray)]).rank() == 1
+                    and vector(SageQQ, root).dot_product(self.row(ray)) > 0
+                ))
+            engine.roots = reduced
             initial = accepted_vertex()
             if initial is not None:
                 return initial
