@@ -431,6 +431,10 @@ class _Edgewalk:
                 ):
                     positive.append(root)
         if not positive:
+            if require_full:
+                # The upstream ordinary-cone constructor rejects a root
+                # family whose facet count is not dimSpace (including zero).
+                raise ArithmeticError("ordinary initial cone has incorrect simple-root count")
             return ()
         # edgewalk.h get_simple_cone_from_lattice selects actual normed
         # roots from FindFixedDistVectors, not primitive multiples of them.
