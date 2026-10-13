@@ -362,6 +362,20 @@ class _Edgewalk:
                 max_decompositions=max(256, 8 * bound),
             )
             roots = tuple(chamber.wall_roots())
+            # vinberg.h FindOneInitialRay, rank-(dim-1) exit: the unique
+            # kernel ray is already a nonpositive vertex, independently of
+            # the full-rank interior-vertex search. Check all accepted walls
+            # before using it; a truncated prefix is not a completeness proof.
+            equations = matrix(SageQQ, [self.row(root) * self.gram for root in roots])
+            if equations.nrows() and equations.rank() == self.rank - 1:
+                kernel = equations.right_kernel().basis_matrix()
+                generator = self.primitive(kernel.row(0))
+                if self.pairing(generator, timelike) > 0:
+                    generator = -generator
+                if self.norm(generator) <= 0 and self.pairing(generator, timelike) < 0:
+                    if self.norm(generator) < 0:
+                        return _Vertex(generator, self.ordinary_vertex_roots(generator))
+                    return _Vertex(generator, roots)
             candidates: list[_Vertex] = []
             for ray in chamber.primitive_rays():
                 generator = -ray
