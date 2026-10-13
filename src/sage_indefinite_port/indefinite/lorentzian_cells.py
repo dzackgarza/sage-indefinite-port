@@ -202,7 +202,20 @@ class LorentzianPerfectLocalBackend:
         r"""The finite action of Aut((L, S)) on the facets spanned by S."""
         vectors = cell.vector_configuration
         cone = RationalPolyhedralCones(cell.lattice).from_rays(vectors)
-        facets = tuple(frozenset(position for position, item in enumerate(vectors) if cone.evaluate_covector(covector, item) == 0) for covector in cone.facet_covectors())
+        covectors = tuple(cone.facet_covectors())
+        labels = tuple(cell.lattice.module_generating_set())
+        ray_rows = matrix(SageQQ, [_coordinate_row(cell.lattice, point, SageQQ) for point in vectors])
+        facets: tuple[FacetIncidence, ...] = ()
+        if covectors:
+            covector_rows = matrix(SageQQ, [
+                [_rational(covector.to_vector()(label)) for label in labels]
+                for covector in covectors
+            ])
+            pairings = covector_rows * ray_rows.transpose()
+            facets = tuple(
+                frozenset(position for position in range(len(vectors)) if pairings[facet, position] == 0)
+                for facet in range(len(covectors))
+            )
 
         lift = self.facet_lift(cell)
 
@@ -876,16 +889,20 @@ def _negative_direction_in_span(
     insufficient for that algorithm.
     """
     rational = lattice.base_change(lattice.base_ring().fraction_field_map())
-    labels = tuple(lattice.module_generating_set())
     gram = _gram_matrix(lattice).change_ring(SageQQ)
     perturbation = identity_matrix(SageZZ, spanning_rows.nrows())
     while True:
         rows = perturbation * spanning_rows
-        span = rational.vector_configuration(
-            [rational.linear_combination({label: _owned_rational(lattice, entry) for label, entry in zip(labels, row, strict=True) if entry}) for row in rows.rows()]
+        restricted = rows * gram * rows.transpose()
+        framed = Lattices(rational.base_ring())(
+            [[_owned_rational(lattice, restricted[i, j]) for j in range(restricted.ncols())] for i in range(restricted.nrows())]
         )
-        negative = span.inclusion()(span.vector_of_sign(-1)).to_vector()
-        direction = vector(SageQQ, tuple(_rational(negative(label)) for label in labels))
+        negative = framed.vector_of_sign(-1)
+        if negative is None:
+            raise ArithmeticError("the outside-ray span has no negative direction")
+        coordinates = negative.to_vector()
+        negative_row = vector(SageQQ, [_rational(coordinates(label)) for label in framed.module_generating_set()])
+        direction = negative_row * rows
         covector = gram * direction.column()
         scalars = {(_coordinate_row(lattice, point, SageQQ) * covector)[0] for point in critical}
         if len(scalars) != 1:
