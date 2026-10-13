@@ -29,7 +29,7 @@ def test_perfect_domain_orbit_counts_match_polyhedral_common(case) -> None:
 @pytest.mark.xfail(reason="Lorentzian (1,n) backend: owned by #15", raises=UnfinishedCapability, strict=True)
 def test_isotropic_mode_counts_match_polyhedral_common(case) -> None:
     """The "isotropic" mode is a reference-implementation option with no preamble consumer,
-    so it is called on upstream's own input Gram matrix."""
+    so the case calls the port's entry point directly, on the preamble lattice."""
     require(PERFECT_DOMAINS)
 
-    assert len(perfect_domain_traversal(case["gram"], "isotropic")) == case["isotropic_count"]
+    assert len(perfect_domain_traversal(lattice(case["gram"]), "isotropic").cells()) == case["isotropic_count"]

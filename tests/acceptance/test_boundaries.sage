@@ -2,7 +2,8 @@
 
 For an arithmetic group Gamma acting on a lattice of signature (2, n), the Type III points,
 Type II curves and their incidences are the Gamma-orbits of isotropic lines, isotropic
-planes and line-in-plane flags. Recorded boundaries: Dawes's Tits buildings
+planes and line-in-plane flags: the isomorphism classes of marked lattices (L, I -> L) and
+(L, I_1 -> I_2 -> L), split along Gamma when Gamma is a proper subgroup of O(L). Recorded boundaries: Dawes's Tits buildings
 (arXiv:2205.10601, 2108.06236), Laza--O'Grady's D-tower (arXiv:1801.04845 with the group of
 arXiv:1607.01324), Scattone's K3 boundaries of degree 2 and 4 (Mem. AMS 374, §§5.4, 6), and Dutour Sikirić--Hulek's 87 Enriques modular groups (arXiv:2302.01679).
 """
@@ -11,13 +12,16 @@ import pytest
 
 from sage_indefinite_port.readiness import UnfinishedCapability
 from tests.acceptance.consumer import (
-    O_L,
-    FLAG_ORBITS,
-    ISOTROPIC_ORBITS,
+    MARKED_AUTOMORPHISMS,
+    MARKED_CLASSES,
     basis,
     element,
+    flag_classes,
+    isotropic_classes,
     lattice,
     require,
+    subgroup_classes,
+    sublattice_of,
 )
 from tests.fixtures.oracle_fixtures import (
     load_dawes_buildings,
@@ -30,10 +34,11 @@ from tests.fixtures.oracle_fixtures import (
 
 
 def _counts(group) -> tuple[int, int, int]:
+    lattice_ = group.supergroup().domain()
     return (
-        len(group.isotropic_orbit_representatives(1)),
-        len(group.isotropic_orbit_representatives(2)),
-        len(group.isotropic_orbit_representatives(2, flag=True)),
+        len(subgroup_classes(group, isotropic_classes(lattice_, 1))),
+        len(subgroup_classes(group, isotropic_classes(lattice_, 2))),
+        len(subgroup_classes(group, flag_classes(lattice_))),
     )
 
 
@@ -68,7 +73,7 @@ def _dawes_groups(case):
 @pytest.mark.parametrize("case", _DAWES["buildings"], ids=lambda case: case["id"])
 @pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_dawes_buildings_have_the_published_counts(case) -> None:
-    require(ISOTROPIC_ORBITS, FLAG_ORBITS)
+    require(MARKED_CLASSES)
 
     building = case["building"]
 
@@ -79,7 +84,7 @@ def test_dawes_buildings_have_the_published_counts(case) -> None:
 @pytest.mark.parametrize("graph", _DAWES["incidence_graphs"], ids=lambda graph: graph["building_id"])
 @pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_dawes_building_incidence_graph_is_the_published_figure(graph) -> None:
-    require(ISOTROPIC_ORBITS, FLAG_ORBITS)
+    require(MARKED_CLASSES)
 
     case = next(case for case in _DAWES["buildings"] if case["id"] == graph["building_id"])
     (group,) = _dawes_groups(case)
@@ -97,7 +102,7 @@ def test_dawes_building_incidence_graph_is_the_published_figure(graph) -> None:
 
 @pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_dawes_last_index_in_the_chain_is_the_discriminant_image_of_o_plus() -> None:
-    require(O_L)
+    require(MARKED_AUTOMORPHISMS)
 
     (chain,) = _DAWES["index_chains"]
     case = next(case for case in _DAWES["buildings"] if case["id"] == "dawes_2U_A2_stable")
@@ -148,18 +153,19 @@ def _gamma(lattice_):
 @pytest.mark.parametrize("case", _DTOWER["type_counts"], ids=lambda case: f"N_{case['N']}")
 @pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_dtower_boundary_component_counts(case) -> None:
-    require(ISOTROPIC_ORBITS)
+    require(MARKED_CLASSES)
 
-    group = _gamma(lattice(_lambda_n(case["N"])))
+    lattice_ = lattice(_lambda_n(case["N"]))
+    group = _gamma(lattice_)
 
-    assert len(group.isotropic_orbit_representatives(1)) == case["type_iii_components"]
-    assert len(group.isotropic_orbit_representatives(2)) == case["type_ii_components"]
+    assert len(subgroup_classes(group, isotropic_classes(lattice_, 1))) == case["type_iii_components"]
+    assert len(subgroup_classes(group, isotropic_classes(lattice_, 2))) == case["type_ii_components"]
 
 
 @pytest.mark.parametrize("picture", _DTOWER["boundary_pictures"], ids=lambda picture: picture["id"])
 @pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_dtower_boundary_pictures(picture) -> None:
-    require(ISOTROPIC_ORBITS, FLAG_ORBITS)
+    require(MARKED_CLASSES)
 
     group = _gamma(lattice(picture["gram"]))
 
@@ -177,25 +183,21 @@ def _lambda_2k(k: int) -> list[list[int]]:
 
 @pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_degree_two_k3_type_ii_components_and_root_types() -> None:
-    require(ISOTROPIC_ORBITS)
+    require(MARKED_CLASSES)
 
     case = _K3["degree_two_polarized_k3"]
-    group = lattice(_lambda_2k(1)).O()
-
-    planes = group.isotropic_orbit_representatives(2)
+    planes = isotropic_classes(lattice(_lambda_2k(1)), 2)
 
     assert len(planes) == case["baily_borel_boundary"]["type_ii_curves"]
-    assert sorted(plane.isotropic_reduction().norm_two_root_types() for plane in planes) == sorted(case["type_ii_root_types"])
+    assert sorted(sublattice_of(plane).isotropic_reduction().norm_two_root_types() for plane in planes) == sorted(case["type_ii_root_types"])
 
 
 @pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_degree_four_k3_has_nine_type_ii_components() -> None:
-    require(ISOTROPIC_ORBITS)
+    require(MARKED_CLASSES)
 
     case = _K3["degree_four_polarized_k3"]
-    group = lattice(_lambda_2k(2)).O()
-
-    assert len(group.isotropic_orbit_representatives(2)) == case["baily_borel_boundary"]["type_ii_curves"]
+    assert len(isotropic_classes(lattice(_lambda_2k(2)), 2)) == case["baily_borel_boundary"]["type_ii_curves"]
 
 
 _ENRIQUES = load_enriques_87_polarizations()
@@ -224,7 +226,7 @@ def _gamma_h(face_polarization):
 @pytest.mark.parametrize("case", _ENRIQUES, ids=lambda case: f"case_{case['case']}")
 @pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_enriques_modular_groups_match_dutour_sikiric_hulek(case) -> None:
-    require(O_L, ISOTROPIC_ORBITS, FLAG_ORBITS)
+    require(MARKED_CLASSES, MARKED_AUTOMORPHISMS)
 
     group = _gamma_h(case["face_polarization"])
     anti_invariant = group.supergroup().domain()
@@ -243,7 +245,7 @@ def test_enriques_modular_groups_match_dutour_sikiric_hulek(case) -> None:
 )
 @pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_classical_polarization_indices(case) -> None:
-    require(O_L)
+    require(MARKED_AUTOMORPHISMS)
 
     row = next(row for row in _ENRIQUES if row["case"] == case["case"])
     group = _gamma_h(row["face_polarization"])

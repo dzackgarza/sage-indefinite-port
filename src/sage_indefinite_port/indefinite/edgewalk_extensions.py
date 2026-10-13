@@ -1,4 +1,4 @@
-"""Exact normed-Dynkin extension candidates for the Allcock edgewalk."""
+"""Normed Dynkin extensions of a root configuration, for the Allcock edgewalk (ComputePossibleExtensions)."""
 
 from __future__ import annotations
 
@@ -6,91 +6,34 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from itertools import product
 
+from dzack_research.preamble.all import Lattices
 from sage.matrix.constructor import matrix
-from sage.matrix.matrix_integer_dense import Matrix_integer_dense
-from sage.matrix.matrix_rational_dense import Matrix_rational_dense
-from sage.modules.free_module_element import FreeModuleElement, vector
+from sage.modules.free_module_element import vector
+from sage.rings.infinity import Infinity
 from sage.rings.integer import Integer
 from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ
 
-type _RationalVector = FreeModuleElement[Rational]
-type _RootRow = Sequence[int | Integer | Rational]
+type CoxeterLabel = Integer | type(Infinity)
 
-COXETER_INFINITY = QQ(-1)
+_FOUR_COS_SQUARED: dict[CoxeterLabel, Rational] = {Integer(2): QQ(0), Integer(3): QQ(1), Integer(4): QQ(2), Integer(6): QQ(3), Infinity: QQ(4)}
+_FINITE_LABELS: tuple[CoxeterLabel, ...] = (Integer(2), Integer(3), Integer(4), Integer(6))
 
 
 @dataclass(frozen=True)
 class NormedDynkinExtension:
+    r"""A root a of norm ``norm`` with prescribed Coxeter labels against the roots r_i.
+
+    ``u_component`` is the projection of a onto the span of the r_i, in coordinates of L tensor Q,
+    and ``residual_norm`` is q(a) - q(u_component), the norm left for the component orthogonal to them.
+    """
+
     u_component: tuple[Rational, ...]
     residual_norm: Rational
     norm: Rational
-    coxeter_entries: tuple[Rational, ...]
 
 
-def _as_qq_matrix(gram: Matrix_integer_dense | Matrix_rational_dense) -> Matrix_rational_dense:
-    result = matrix(QQ, gram)
-    if not result.is_square() or result != result.transpose():
-        raise ValueError("the Gram matrix must be square and symmetric")
-    return result
-
-
-def _as_qq_roots(roots: Sequence[_RootRow], dimension: int) -> tuple[_RationalVector, ...]:
-    converted = tuple(vector(QQ, root) for root in roots)
-    if any(len(root) != dimension for root in converted):
-        raise ValueError("every root must have the Gram matrix dimension")
-    return converted
-
-
-def compute_coxeter_matrix(
-    gram: Matrix_integer_dense | Matrix_rational_dense,
-    roots: Sequence[_RootRow],
-) -> tuple[Matrix_rational_dense, Matrix_rational_dense]:
-    """Port ComputeCoxeterMatrix from pinned coxeter_dynkin.h."""
-    gram_matrix = _as_qq_matrix(gram)
-    root_vectors = _as_qq_roots(roots, gram_matrix.nrows())
-    scalar = matrix(
-        QQ,
-        len(root_vectors),
-        len(root_vectors),
-        lambda i, j: (root_vectors[i] * gram_matrix * root_vectors[j].column())[0],
-    )
-    coxeter = matrix(QQ, scalar.nrows(), scalar.ncols())
-    quotient_to_label = {
-        QQ(1) / 4: QQ(3),
-        QQ(1) / 2: QQ(4),
-        QQ(3) / 4: QQ(6),
-        QQ(1): COXETER_INFINITY,
-    }
-    for i in range(scalar.nrows()):
-        if scalar[i, i] <= 0:
-            raise ValueError("edgewalk roots must have positive norm")
-        for j in range(scalar.ncols()):
-            if i == j:
-                coxeter[i, j] = scalar[i, j]
-            elif scalar[i, j] == 0:
-                coxeter[i, j] = 2
-            else:
-                quotient = scalar[i, j] ** 2 / (scalar[i, i] * scalar[j, j])
-                if quotient not in quotient_to_label:
-                    raise ValueError(f"root pair ({i}, {j}) has unsupported Coxeter quotient {quotient}")
-                coxeter[i, j] = quotient_to_label[quotient]
-    return coxeter, scalar
-
-
-def _exact_negative_pairing(label: Rational, old_norm: Rational, new_norm: Rational) -> Rational | None:
-    cs = {
-        QQ(2): QQ(0),
-        QQ(3): QQ(1) / 4,
-        QQ(4): QQ(1) / 2,
-        QQ(6): QQ(3) / 4,
-        COXETER_INFINITY: QQ(1),
-    }[label]
-    square = cs * old_norm * new_norm
-    return -square.sqrt() if square.is_square() else None
-
-
-def _norm_ratio_allows(label: Rational, old_norm: Rational, new_norm: Rational) -> bool:
+def _norm_ratio_allows(label: CoxeterLabel, old_norm: Rational, new_norm: Rational) -> bool:
     if label == 3:
         return new_norm == old_norm
     if label == 4:
@@ -100,45 +43,40 @@ def _norm_ratio_allows(label: Rational, old_norm: Rational, new_norm: Rational) 
     return True
 
 
-def compute_possible_extensions(
-    gram: Matrix_integer_dense | Matrix_rational_dense,
-    roots: Sequence[_RootRow],
-    norms: Sequence[int | Integer | Rational],
-    *,
-    only_spherical: bool = False,
+def _extensions(
+    lattice: Lattices.ParentMethods,
+    roots: Sequence[Lattices.ElementMethods],
+    norms: Sequence[int],
+    labels: tuple[CoxeterLabel, ...],
 ) -> tuple[NormedDynkinExtension, ...]:
-    """Port ComputePossibleExtensions using the equivalent exact Gram test."""
-    gram_matrix = _as_qq_matrix(gram)
-    root_vectors = _as_qq_roots(roots, gram_matrix.nrows())
-    coxeter, scalar = compute_coxeter_matrix(gram_matrix, roots)
-    if scalar.nrows() and not scalar.is_positive_definite():
-        raise ValueError("the existing root Gram matrix must be positive definite")
-    inv = scalar.inverse() if scalar.nrows() else matrix(QQ, 0, 0)
-    candidate_norms = tuple(QQ(x) for x in norms)
-    if any(x <= 0 for x in candidate_norms):
-        raise ValueError("candidate root norms must be positive")
-    labels = (QQ(2), QQ(3), QQ(4), QQ(6)) + (() if only_spherical else (COXETER_INFINITY,))
+    root_norms = tuple(QQ(int(root.q())) for root in roots)
+    pairings = matrix(QQ, [[QQ(int(lattice.b(left, right))) for right in roots] for left in roots])
+    if not pairings.is_positive_definite():
+        raise ValueError(f"the roots {roots} span a form that is not positive definite: they are not the walls through a point of hyperbolic space")
+    inverse = pairings.inverse()
+    coordinates = matrix(QQ, [[QQ(int(entry)) for entry in root.to_tuple()] for root in roots])
     out: list[NormedDynkinExtension] = []
-    seen: set[tuple[tuple[Rational, ...], Rational]] = set()
-    for entries in product(labels, repeat=len(root_vectors)):
-        for new_norm in candidate_norms:
-            if any(not _norm_ratio_allows(entries[i], coxeter[i, i], new_norm) for i in range(len(entries))):
+    for entries in product(labels, repeat=len(roots)):
+        for new_norm in (QQ(norm) for norm in norms):
+            if not all(_norm_ratio_allows(entries[i], root_norms[i], new_norm) for i in range(len(roots))):
                 continue
-            exact = tuple(_exact_negative_pairing(entries[i], coxeter[i, i], new_norm) for i in range(len(entries)))
-            pairings = tuple(x for x in exact if x is not None)
-            if len(pairings) != len(exact):
+            squares = tuple(_FOUR_COS_SQUARED[entries[i]] * root_norms[i] * new_norm / 4 for i in range(len(roots)))
+            if not all(square.is_square() for square in squares):
                 continue
-            pv = vector(QQ, pairings)
-            weights = inv * pv if len(entries) else vector(QQ, [])
-            residual = new_norm - pv.dot_product(weights)
-            if residual < 0 or (only_spherical and residual == 0):
+            target = vector(QQ, [-square.sqrt() for square in squares])
+            weights = inverse * target
+            residual = new_norm - target.dot_product(weights)
+            if residual < 0:
                 continue
-            key = (entries, new_norm)
-            if key in seen:
-                continue
-            seen.add(key)
-            component = vector(QQ, gram_matrix.nrows())
-            for i, w in enumerate(weights):
-                component += w * root_vectors[i]
-            out.append(NormedDynkinExtension(tuple(component), residual, new_norm, entries))
+            out.append(NormedDynkinExtension(tuple(weights * coordinates), residual, new_norm))
     return tuple(out)
+
+
+def finite_type_extensions(lattice: Lattices.ParentMethods, roots: Sequence[Lattices.ElementMethods], norms: Sequence[int]) -> tuple[NormedDynkinExtension, ...]:
+    r"""Extensions by a root at angles pi/2, pi/3, pi/4, pi/6 with a nonzero orthogonal component."""
+    return tuple(extension for extension in _extensions(lattice, roots, norms, _FINITE_LABELS) if extension.residual_norm != 0)
+
+
+def parabolic_extensions(lattice: Lattices.ParentMethods, roots: Sequence[Lattices.ElementMethods], norms: Sequence[int]) -> tuple[NormedDynkinExtension, ...]:
+    r"""Extensions by a root lying in the span of the roots (residual norm 0), at any crystallographic angle including parallel walls."""
+    return tuple(extension for extension in _extensions(lattice, roots, norms, (*_FINITE_LABELS, Infinity)) if extension.residual_norm == 0)

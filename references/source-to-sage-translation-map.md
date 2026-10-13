@@ -1,7 +1,10 @@
 # source-to-sage-translation-map
 
 Source-to-Sage translation map for the indefinite lattice port (received 2026-09-02, external report; citation markers of the generating tool removed).
-The plan card PLAN-INDEFINITE-EXTRACTION-AND-DECOMPOSITION is derived from this text.
+The issue tree rooted at #4 owns execution.
+[Port design](port-design.md) separates general operations and reusable computations from the particular indefinite algorithms supplied by this port.
+The source symbols and sections below describe the algorithms; a public preamble method does not assign its specialized implementation to research.
+In particular, binary oriented-cycle construction (`canonical_companion`, `promised_step`, `shorter_pair`, `reduced_start_pair`, `anisotropic_cycle`) and the scaled first-success shell/sphere multiplier search belong to port #15. Research supplies ordinary binary arithmetic and fixed-target `close_vectors(target,bound)`. Frozen public names may dispatch to the port; moving a body behind those names does not make it a primitive.
 
 ## Source authority and versioning
 
@@ -318,7 +321,12 @@ The basis matrix used to express this morphism belongs in the coordinate adapter
 
 * * *
 
-# 4. `indefinite/vector_sections.py`
+# 4. Vector restrictions and sections: research operations consumed by recursion
+
+The source family formerly mapped to `indefinite/vector_sections.py` contains general extension computations as well as recursive composition.
+Research #401 owns independently derived partial-isometry extension fibres and sections, including their computation.
+This is not a blanket assignment of specialized lifting searches; specify the input morphism and independent equation/torsor construction.
+The port selects reductions and composes these operations in #18. The sketches below describe mathematical operations, not instructions to create parallel port-owned classes.
 
 ## 4.1 Translate `INDEF_FORM_GetVectorStructure`
 
@@ -520,9 +528,13 @@ Replace them with:
 P = GL(I).stabilizer(flag_on_I)
 ```
 
-represented as the integral parabolic subgroup determined by `FlagType`.
+represented as the integral parabolic subgroup determined by `FlagType`. This block triangular free-module construction is a research primitive.
+The port's recursive flag-stabilizer algorithm combines these operations with its reduced orthogonal-group computation.
+Research supplies the restriction maps, independent equation/kernel primitives, gluing computations and word sections from supplied effective group data.
+The port constructs the arithmetic compatibility action and liftable image needed by its recursion.
+The GL construction alone does not compute an orthogonal flag stabilizer.
 
-## 5.3 Port the radical extension as a semidirect product
+## 5.3 Consume the general radical extension as a semidirect product
 
 Reference:
 
@@ -548,14 +560,17 @@ G = D.automorphism_group(flag=None)
 ```
 
 The source's elementary shear generators are then generated from the ordinary module Hom_Z(M̄, R), rather than inserted by coordinate loops.
+Research owns this general formed-module construction and its computation from supplied factor groups.
+The port supplies an indefinite O(M̄) computation when needed, rather than reimplementing the semidirect-product construction.
 
 * * *
 
-# 6. `indefinite/isotropic_lifts.py`
+# 6. Restriction fibres, sections and kernels
 
-This is one of the best pieces to reconstruct directly in Sage.
+Research #398/#401 own these general mathematical operations and their reusable implementations.
+The former path `indefinite/isotropic_lifts.py` identifies recovery source, not a destination for generic primitives.
 
-## 6.1 Port the codimension-one extension
+## 6.1 Compute a section of restriction in codimension one
 
 Reference:
 
@@ -583,6 +598,10 @@ class CodimensionOneIsotropicExtension:
 ```
 
 The return value should include the source and target subspace morphisms, not only a matrix.
+Precisely, restriction sends an ambient isometry to its specified partial isometry.
+The extension is a point of the fibre over that partial isometry.
+A construction selecting points defines a section on the image; it need not be a group-homomorphic section.
+Research owns this construction, while the port supplies the partial isometries produced by recursion.
 
 ## 6.2 Rewrite `SpecialEquationSolving` as a linear-map problem
 
@@ -647,7 +666,7 @@ This gives either:
 
 No heuristic prime-denominator cancellation is required.
 
-## 6.4 Port the pointwise kernel, not the entire unipotent radical
+## 6.4 Compute the kernel of restriction to I-perp
 
 Reference:
 
@@ -656,8 +675,10 @@ IntegralKernelSpecialEquation
 GetOrthogonalTotallyIsotropicKernelSubspace
 ```
 
-The latter computes isometries acting identically on I^⊥. It reduces the condition to HU^T + UH^T = 0 and constructs generators from the integral kernel.
+For P = Stab_O(L)(I), let r: P → Aut(I^⊥) be restriction.
+The latter source routine computes ker(r), the isometries acting identically on I^⊥. It reduces the condition to HU^T + UH^T = 0 and constructs generators from the integral kernel.
 The source explicitly notes that this particular kernel is commutative.
+Both the kernel operation and this reusable formed-module computation belong to research #398/#401. The port consumes the result when assembling its recursive stabilizer.
 
 Translate this as:
 
@@ -747,9 +768,18 @@ F = P.finite_compatibility_action()
 M_integral = M.stabilizer(F.gluing_object())
 ```
 
-This is a finite-module stabilizer problem, which the preamble's stabilizer operation solves.
+The port constructs this arithmetic compatibility action, discovers the liftable image and supplies the recursively computed quotient generators (#18). Research computes finite-action stabilizers, images and word sections from supplied effective data, and independently justified extension/equation fibres.
+The displayed methods describe the algorithmic steps, not an obligation for research to discover an arithmetic image from a parabolic predicate.
+Computing an image from the desired parabolic generators cannot be a prerequisite for finding those same generators.
+The port establishes that this composition captures the required integral stabilizer.
 
-## 7.3 Lift generators by exact affine solving
+## 7.3 Evaluate sections on generators and adjoin the kernel
+
+Write ρ: P → GL(I) × O(K) for the joint action and H = im(ρ). For h in a generating family of H, compute the fibre ρ⁻¹(h) using research's isometry-extension operations and select s(h) in that fibre.
+Then P is generated by these section values and generators of ker(ρ). A section is needed only on the image and need not be a homomorphism.
+The pointwise-perpendicular kernel in §6.4 is ker(r) for a different map; it cannot replace ker(ρ) without an argument.
+An affine solver applies only after the actual fibre has been proved affine in the chosen parameters.
+The general fibre can be a nonlinear torsor.
 
 For each generator (a, g) of `M_integral`:
 
@@ -770,13 +800,14 @@ This produces the actual parabolic stabilizer without guessing a common "helping
 
 * * *
 
-# 8. Integral structures: preamble group operations
+# 8. Integral structures: research computation on supplied groups and inclusions
 
-The mathematics of `GroupAction.g` and `MatrixGroup.h` (lattice stabilizers and transporters under a rational group, cosets, double cosets, finite-module actions) consists of basic group-action operations.
-They belong to the research preamble, and this repository calls them.
-It does not implement them, and it does not port the custom permutation-group implementation.
-The sections below record the mathematics the preamble operations must satisfy.
-A missing operation is an upstream gap, named in the acceptance contract (#33).
+`GroupAction.g` and `MatrixGroup.h` construct an integral model and finite action for the rational group, then solve stabilizer, equivalence and coset problems through it.
+Research #396/#401 implements the invariant-module closure, residue action, stabilizer and coset computations under explicit hypotheses.
+Port #18 supplies the particular generated rational group, lattice inclusion and application-specific boundedness argument.
+`GroupAction.g:813–900` uses module spans and finite group actions, not a specialized indefinite-form step.
+Do not port the source's custom permutation-group engine.
+Do not assume the required integral model or finite action is already available merely by calling a research subgroup method.
 
 ## 8.1 Target API
 
@@ -812,7 +843,7 @@ class DoubleCosetDecomposition:
 
 For the source call used in isotropic-plane induction, this is V \ G / G_L, with G_L = G ∩ GL(L).
 
-## 8.2 Port `MatrixIntegral_GetInvariantSpace` as a lattice closure
+## 8.2 Compute `MatrixIntegral_GetInvariantSpace` through research module closure
 
 The source starts from the standard lattice and repeatedly replaces it by the Z-span of its images under every generator and inverse until the determinant stabilizes.
 
@@ -822,14 +853,17 @@ Translate this as:
 def smallest_invariant_overlattice(G, L):
     M = L
     while True:
-        M_next = saturation(sum_of_sublattices(
+        M_next = sum_of_sublattices(
             [M] + [g(M) for g in G.gens_and_inverses()]
-        ))
+        )
         if M_next == M:
             return M
         M = M_next
 ```
 
+Research implements this bounded orbit-span computation; the caller must establish its boundedness hypotheses.
+Taking a saturation would change the orbit-generated lattice.
+A stable underlying module need not be integral for the quadratic form, so use the module operation unless the stronger formed-overlattice hypotheses are proved.
 The method should explicitly have the precondition that G stabilizes some lattice commensurable with L. It should not be advertised as a terminating procedure for every finitely generated subgroup of GL_n(Q).
 
 ## 8.3 Replace `LinearSpace_GetDivisor`
@@ -1680,11 +1714,10 @@ For signature (2,n), rank two is already the maximal isotropic rank and recovers
 
 * * *
 
-# 14. Finite-index subgroups: preamble group operations
+# 14. Finite-index subgroups: generic solver and arithmetic application
 
-This is a generalization above the upstream algorithm.
-Kernels, preimages, intersections and orbit splitting are basic subgroup operations owned by the research preamble.
-This repository supplies the O(L) they act on, and the acceptance suite checks the results.
+Research computes kernels, preimages, intersections and orbit splitting from supplied generators and effective finite-action data.
+This repository computes the indefinite ambient groups, orbit representatives and point stabilizers, constructs the arithmetic actions, and reconstructs the marked-lattice answers (#18). Both parts are required by the unchanged consumer acceptance; neither the subgroup predicate nor the generic solver supplies the missing indefinite data.
 
 ## 14.1 Finite-preimage groups
 
@@ -1735,9 +1768,13 @@ This is a separate use of double cosets from the internal integralization double
 
 * * *
 
-# 15. `indefinite/equivariant.py`
+# 15. Research centralizer computations using indefinite group algorithms
 
 Centralizers are new functionality, not a small modification of the source recursion.
+Research #397 owns the C_G(I) interface, independent invariant decomposition and gluing from supplied component generators/actions.
+This port supplies the indefinite component orthogonal-group algorithms (#15/#18). Public ownership of C_G(I) does not assign every component-centralizer algorithm to research; each computational route must pass the primitive criteria in [port design](port-design.md#assigning-a-computation).
+The former `indefinite/equivariant.py` name is not an ownership assignment.
+Research #403 integrates the calls, and port #18 retains every original centralizer consumer acceptance case.
 
 ## 15.1 Public API
 
@@ -1797,6 +1834,11 @@ For finite-order f, replace the ±1-decomposition by the rational cyclotomic dec
 L_Q = ⊕_{d | ord(f)} ker Φ_d(f).
 
 Intersect each rational isotypic component with L, compute the product of componentwise centralizers, and impose the finite equivariant gluing condition.
+Ordinary component orthogonal groups only suffice when the restricted isometry is scalar, as in the involution case.
+Polynomial-kernel decomposition and gluing do not compute non-scalar component centralizers.
+An independently established general backend route belongs to research under its documented hypotheses; otherwise the missing specialized route must be identified as part of port #18's complete consumer obligation.
+This source record supplies no such algorithm, and does not justify asking research to invent one.
+Record any frozen contract amendment through #33.
 
 A general infinite-order centralizer should not be claimed by this initial implementation.
 
@@ -1804,18 +1846,15 @@ A general infinite-order centralizer should not be claimed by this initial imple
 
 # 16. Exact symbol-level disposition
 
-## Port semantically
+## Port the identified indefinite algorithms
 
 ```text
 IndefiniteFormFundamental.h
     AttackScheme
     INDEF_FORM_GetAttackScheme
-    INDEF_FORM_IsEven
 
 IndefiniteForms.g / ApproximateModels.h
-    INDEF_FORM_Eichler_Transvection
     INDEF_FORM_EichlerCriterion_TwoHyperplanesEven
-    GetSquareDivisors
     INDEF_FORM_GetApproximateModel
 
 CombinedAlgorithms.h
@@ -1825,41 +1864,21 @@ CombinedAlgorithms.h
     INDEF_FORM_StabilizerVector_Reduced
     INDEF_FORM_EquivalenceVector_Reduced
 
-Lorentzian.g / lorentzian_linalg.h
-    LORENTZ_ExtendOrthogonalIsotropicIsomorphism_Dim1
-    SpecialEquationSolving
-    LORENTZ_ExtendOrthogonalIsotropicIsomorphism
-    IntegralKernelSpecialEquation
-    GetOrthogonalTotallyIsotropicKernelSubspace
-
-GroupAction.g / MatrixGroupBasic.h
-    MatrixIntegral_GetInvariantSpace
 ```
 
-## Generalize into typed abstractions
+General callees in those source families remain research computations; the list does not assign whole source files to the port.
 
-```text
-ApproximateModel
-    -> OrbitCoverModel
+## Preserve mathematical objects at their owners
 
-INDEF_FORM_GetVectorStructure
-    -> VectorOrthogonalSection
-
-INDEF_FORM_Rec_IsotropicKplane
-    -> IsotropicReduction + IntegralParabolicDatum
-
-SeqDims
-    -> FlagType
-
-DataPerfectLorentzianFunc
-    -> LorentzianPerfectLocalBackend
-
-DatabaseResultEquiStab
-    -> IsometryGroupoidCache
-
-MatrixIntegral_* and LinearSpace_*
-    -> IntegralStructureAction
-```
+| Source | Research computation/object | Port contribution |
+| --- | --- | --- |
+| `ApproximateModel` | Groups, actions and marked lattices | Approximate-cover algorithm (`OrbitCoverModel`) |
+| `INDEF_FORM_GetVectorStructure` | Perpendicular/reduction, restriction fibres and sections | Recursive choice of reduction and composition |
+| `INDEF_FORM_Rec_IsotropicKplane` | Isotropic reduction, restriction/quotient actions, kernels and sections | Recursive flag-stabilizer algorithm |
+| `SeqDims` | Flag as a diagram of subobjects | Choose the marking used by the orbit algorithm |
+| `DataPerfectLorentzianFunc` | Cones and configuration computations | Perfect-cell search/traversal |
+| `DatabaseResultEquiStab` | Isom/Aut of marked lattices | Algorithm cache and prefilters |
+| `MatrixIntegral_*` and `LinearSpace_*` | Bounded invariant-module closure, finite residue actions, stabilizers and cosets | Supply the algorithm's group and lattice inclusion; prove applicability |
 
 ## Rewrite rather than port
 
@@ -1890,6 +1909,24 @@ LORENTZ_GetOrbitRepresentative_Kernel
 ## Delegate
 
 ```text
+MatrixIntegral_GetInvariantSpace, MatrixIntegral_Stabilizer
+MatrixIntegral_RightCosets, MatrixIntegral_Equivalence*
+    -> research invariant-module and finite-action computations
+
+INDEF_FORM_IsEven, GetSquareDivisors, INDEF_FORM_Eichler_Transvection
+    -> research's general predicates, integer arithmetic and transvections
+
+LORENTZ_ExtendOrthogonalIsotropicIsomorphism_Dim1
+SpecialEquationSolving
+LORENTZ_ExtendOrthogonalIsotropicIsomorphism
+IntegralKernelSpecialEquation
+GetOrthogonalTotallyIsotropicKernelSubspace
+    -> research's restriction fibres, sections and kernel computations
+
+ExtendIsometryGroup, ExtendIsometryGroup_Triangular
+ExtendIsometryGroup_IsotropicOrth
+    -> research's radical-extension construction from supplied factor groups
+
 PositiveNegative.h
 LatticeStabEquiCan.h
 LATT_Automorphism
@@ -1908,7 +1945,7 @@ HNF, SNF, saturation, kernels, quotient modules
     -> Sage/FLINT
 ```
 
-## Retain native temporarily
+## Port the native local protocol to Sage (#15)
 
 ```text
 LORENTZ_FindPositiveVectorsKernel
@@ -1975,7 +2012,8 @@ The former checks rational versus integral automorphisms and exact disjoint exha
 
 ## Tranche 3: Lorentzian cell backend
 
-Expose only the local cell protocol from C++, with Python owning quotient traversal and group extraction.
+Implement the local cell protocol in native Sage/Python, together with quotient traversal and group extraction.
+The C++ implementation is reference source only; it is never built or invoked.
 
 Recover:
 
@@ -2045,5 +2083,5 @@ construction-aware intersections
 
 Recover the centralizer of an Enriques involution from eigensublattices and gluing, then intersect it with stable and polarization-stabilizer subgroups.
 
-The resulting Sage code owns the mathematical recursion and object semantics.
-The only initially retained C++ is the local Lorentzian perfect-cell engine; even there, traversal, orbit assembly, subgroup semantics, and result construction move into the Sage layer.
+The port owns the specialized recursion, traversal and generator algorithms; research owns the mathematical objects and independent primitives.
+All local Lorentzian cell computations are implemented in Sage/Python (#15). No C++ execution backend is retained.
