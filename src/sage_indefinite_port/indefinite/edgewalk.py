@@ -423,10 +423,7 @@ class _Edgewalk:
         for norm in self.norms:
             for point in complement.vectors_of_square(complement.base_ring()(norm)):
                 root = inclusion(point)
-                if (
-                    int(root.content()) != 1
-                    or next(entry for entry in _key(root) if entry) < 0
-                ):
+                if next(entry for entry in _key(root) if entry) < 0:
                     continue
                 if all(
                     (2 * int(self.pairing(root, basis))) % norm == 0
@@ -435,8 +432,18 @@ class _Edgewalk:
                     positive.append(root)
         if not positive:
             return ()
+        # edgewalk.h get_simple_cone_from_lattice selects actual normed
+        # roots from FindFixedDistVectors, not primitive multiples of them.
+        # Use geometric rays only to identify which original roots span
+        # the selected cone, retaining each root's prescribed norm.
+        rays = RationalPolyhedralCones(self.lattice).from_rays(positive).primitive_rays()
         return tuple(
-            RationalPolyhedralCones(self.lattice).from_rays(positive).primitive_rays()
+            next(
+                root for root in positive
+                if matrix(SageQQ, [self.row(root), self.row(ray)]).rank() == 1
+                and self.row(root).dot_product(self.row(ray)) > 0
+            )
+            for ray in rays
         )
 
     def constraint(self, norm: Rational) -> Parent:
