@@ -216,7 +216,7 @@ class _Edgewalk:
             * self.gram
         ).right_kernel_matrix()
 
-    def initial_isotropic_vertex(self) -> _Vertex | None:
+    def initial_isotropic_vertex(self, k: _Vector | None = None) -> _Vertex | None:
         r"""The ``isotropic_vinberg`` starting corner of pinned edgewalk.h:1880–2055.
 
         The source finds a primitive null vector, enumerates each admissible
@@ -225,7 +225,8 @@ class _Edgewalk:
         cusp roots. The preamble supplies the isotropic reduction and exact
         definite-lattice fixed-square enumeration.
         """
-        k = self.lattice.isotropic_vector()
+        if k is None:
+            k = self.lattice.isotropic_vector()
         reduction = k.isotropic_reduction()
         perpendicular = reduction.orthogonal_complement()
         perpendicular_inclusion = perpendicular.inclusion()
@@ -375,7 +376,7 @@ class _Edgewalk:
                 if self.norm(generator) <= 0 and self.pairing(generator, timelike) < 0:
                     if self.norm(generator) < 0:
                         return _Vertex(generator, self.ordinary_vertex_roots(generator))
-                    return _Vertex(generator, roots)
+                    return self.initial_isotropic_vertex(generator)
             # vinberg.h GetOneInteriorVertex is reached only when the
             # accepted feasible constraint matrix has full ambient rank.
             if equations.rank() < self.rank:
@@ -407,7 +408,7 @@ class _Edgewalk:
                 # The accepted affine roots span k-perp and positively span
                 # k. Every subsequent Vinberg root pairs nonpositively with
                 # them, so it cannot cut off k or add another wall through it.
-                return corner
+                return self.initial_isotropic_vertex(corner.generator)
             bound *= 2
 
     def ordinary_vertex_roots(self, timelike: _Vector) -> _Roots:
