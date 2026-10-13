@@ -138,11 +138,7 @@ def _extensions(
     inverse = pairings.inverse()
     if any(pairings[i, j] > 0 for i in range(len(roots)) for j in range(i)):
         raise ValueError("Dynkin extensions require simple roots with nonpositive mutual pairings")
-    # ComputePossibleExtensions (coxeter_dynkin.h:2305-2336) iterates diagram
-    # extensions before prescribed norms. FindDiagramExtensions_Efficient
-    # (715-1671) lists them in Dynkin construction order.
-    out: list[tuple[tuple[CoxeterLabel, ...], int, NormedDynkinExtension]] = []
-    coxeter_rows = [[Integer(1) if i == j else Integer(2) for j in range(len(roots) + 1)] for i in range(len(roots) + 1)]
+    coxeter_rows = [[Integer(1) if i == j else Integer(2) for j in range(len(roots))] for i in range(len(roots))]
     for i in range(len(roots)):
         for j in range(i):
             old_pair = pairings[i, j]
@@ -152,55 +148,25 @@ def _extensions(
                 raise ValueError("the supplied roots have noncrystallographic Coxeter pairings")
             coxeter_rows[i][j] = coxeter_rows[j][i] = Integer(-1) if label == Infinity else label
 
-    def extend(
-        target: tuple[Rational, ...],
-        projected_square: Rational,
-        norm: Rational,
-        choices: Sequence[tuple[tuple[CoxeterLabel, Rational], ...]],
-        diagram: tuple[CoxeterLabel, ...],
-        norm_position: int,
-    ) -> None:
-        position = len(target)
-        if position == len(roots):
-            weights = inverse * vector(QQ, target)
-            out.append(
-                (
-                    diagram,
-                    norm_position,
-                    NormedDynkinExtension(tuple(weights * coordinates), norm - projected_square, norm),
-                )
-            )
-            return
-        for label, pairing in choices[position]:
-            square = projected_square + inverse[position, position] * pairing * pairing
-            square += 2 * pairing * sum(inverse[position, j] * target[j] for j in range(position))
-            # A positive-definite simple-root Gram matrix is a Stieltjes
-            # matrix: its inverse is entrywise nonnegative. All chosen
-            # pairings are nonpositive, so later terms cannot lower this
-            # partial squared projection.
-            if square <= norm:
-                extend(
-                    (*target, pairing),
-                    square,
-                    norm,
-                    choices,
-                    (*diagram, label),
-                    norm_position,
-                )
-
-    for diagram in _diagram_extension_labels(
-        [row[:-1] for row in coxeter_rows[:-1]],
-        spherical=len(labels) == len(_FINITE_LABELS),
-    ):
-        for norm_position, new_norm in enumerate(QQ(norm) for norm in norms):
-            choices: list[tuple[tuple[CoxeterLabel, Rational], ...]] = []
-            for old_norm, label in zip(root_norms, diagram, strict=True):
+    # ComputePossibleExtensions, coxeter_dynkin.h:2210–2336: each diagram is
+    # visited before its compatible norms, in the supplied norm order.
+    out: list[NormedDynkinExtension] = []
+    for diagram in _diagram_extension_labels(coxeter_rows, spherical=labels == _FINITE_LABELS):
+        for new_norm in (QQ(norm) for norm in norms):
+            if any(not _norm_ratio_allows(label, old_norm, new_norm) for label, old_norm in zip(diagram, root_norms, strict=True)):
+                continue
+            scalar_products: list[Rational] = []
+            for label, old_norm in zip(diagram, root_norms, strict=True):
                 square = _FOUR_COS_SQUARED[label] * old_norm * new_norm / 4
-                allowed = ((label, -square.sqrt()),) if _norm_ratio_allows(label, old_norm, new_norm) and square.is_square() else ()
-                choices.append(allowed)
-            if all(choices):
-                extend((), QQ.zero(), new_norm, choices, (), norm_position)
-    return tuple(item[2] for item in out)
+                if not square.is_square():
+                    break
+                scalar_products.append(-square.sqrt())
+            if len(scalar_products) != len(roots):
+                continue
+            weights = inverse * vector(QQ, scalar_products)
+            projected_square = vector(QQ, scalar_products).dot_product(weights)
+            out.append(NormedDynkinExtension(tuple(weights * coordinates), new_norm - projected_square, new_norm))
+    return tuple(out)
 
 
 def finite_type_extensions(
