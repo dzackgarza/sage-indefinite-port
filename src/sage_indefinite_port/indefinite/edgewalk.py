@@ -359,9 +359,21 @@ class _Edgewalk:
         # root system after its initial finite cone and after each new root,
         # stopping on the first feasible nonpositive ray. The preamble's
         # VinAl backend supplies the actual root-decomposition enumeration.
-        from vinal import VinAl
+        from vinal import GetIntegerPoints, VinAl
 
         engine = VinAl(self.gram, vector(SageZZ, _key(timelike)), False, None)
+        # vinberg.h GetVinbergAux: enumerate translation classes of the
+        # saturated perpendicular lattice together with v0, and reduce
+        # each representative by the quotient of -<w,v0> and -v0^2.
+        # VinAl sorts the unnormalized representatives, which changes the
+        # source's decomposition sequence; reconstruct W before searching.
+        coset_basis = matrix(SageZZ, tuple(engine.V1.gens()) + (engine.v0,))
+        norm_shift = -engine.v0.inner_product(engine.v0)
+        engine.W = []
+        for coordinates in GetIntegerPoints(coset_basis):
+            representative = engine.V(coordinates)
+            quotient = (-representative.inner_product(engine.v0)) // norm_shift
+            engine.W.append(representative - quotient * engine.v0)
         # vinberg.h GetVinbergFromG supplies the caller's root-length set.
         # VinAl otherwise derives its own list from the form determinant,
         # which need not equal the admissible lengths of this lattice.
