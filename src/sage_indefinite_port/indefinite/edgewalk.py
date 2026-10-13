@@ -385,12 +385,10 @@ class _Edgewalk:
             else:
                 # GetOneInteriorVertex: exact dual description of -R*G,
                 # tested on each extreme ray in the selected time component.
-                dual = self.lattice.dual_module()
-                inequalities = tuple(dual.linear_combination({
-                    label: self.lattice.base_ring()(int(entry))
-                    for label, entry in zip(self.labels, -(self.row(root) * self.gram), strict=True)
-                    if entry
-                }) for root in roots)
+                # GetOneInteriorVertex uses the covectors -G*r. The
+                # lattice's algebraic correlation produces these directly,
+                # without assuming that primal and dual generator labels agree.
+                inequalities = tuple(-root.to_covector() for root in roots)
                 cone = RationalPolyhedralCones(self.lattice).from_halfspaces(inequalities)
                 generator = next((ray for ray in cone.primitive_rays()
                                   if self.norm(ray) <= 0 and self.pairing(ray, timelike) < 0), None)
