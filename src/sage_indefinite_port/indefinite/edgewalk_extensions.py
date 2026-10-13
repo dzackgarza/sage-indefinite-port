@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from itertools import combinations
 
 from dzack_research.preamble.all import CoxeterDiagrams, Lattices
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
@@ -54,6 +55,67 @@ def _norm_ratio_allows(label: CoxeterLabel, old_norm: Rational, new_norm: Ration
     return True
 
 
+def _diagram_extension_labels(coxeter_rows: list[list[Integer]], spherical: bool) -> tuple[tuple[CoxeterLabel, ...], ...]:
+    r"""Admissible diagram extensions (coxeter_dynkin.h:715–1671).
+
+    The reference constructs at most four noncommuting bonds using finite
+    and affine Dynkin types. The Coxeter category certifies each resulting
+    diagram before the root-norm test.
+    """
+    n = len(coxeter_rows)
+    base: tuple[CoxeterLabel, ...] = (Integer(2),) * n
+    candidates: list[tuple[CoxeterLabel, ...]] = [base]
+    isolated = tuple(i for i in range(n) if all(coxeter_rows[i][j] == 2 for j in range(n) if i != j))
+
+    def add(entries: tuple[tuple[int, CoxeterLabel], ...]) -> None:
+        labels = list(base)
+        for index, value in entries:
+            labels[index] = value
+        candidates.append(tuple(labels))
+
+    # Source: edges of type A/B/G2 and the parallel rank-two case.
+    for i in range(n):
+        for label in (Integer(3), Integer(4), Integer(6)):
+            add(((i, label),))
+    if not spherical:
+        for i in isolated:
+            add(((i, Infinity),))
+
+    # Source: finite A/B/D/E/F and affine A/B/C/D/E/F/G extensions.
+    for i, j in combinations(range(n), 2):
+        add(((i, Integer(3)), (j, Integer(3))))
+        add(((i, Integer(3)), (j, Integer(4))))
+        add(((i, Integer(4)), (j, Integer(3))))
+        if not spherical and i in isolated and j in isolated:
+            add(((i, Integer(4)), (j, Integer(4))))
+            add(((i, Integer(3)), (j, Integer(6))))
+            add(((i, Integer(6)), (j, Integer(3))))
+    # Source: D4 and the higher D/E triples, plus affine triples.
+    for subset in combinations(range(n), 3):
+        add(tuple((i, Integer(3)) for i in subset))
+        if not spherical and all(i in isolated for i in subset):
+            for singled in subset:
+                add(tuple((i, Integer(4) if i == singled else Integer(3)) for i in subset))
+    if not spherical:
+        for subset in combinations(isolated, 4):
+            add(tuple((i, Integer(3)) for i in subset))
+
+    rows = [list(row) + [Integer(2)] for row in coxeter_rows]
+    rows.append([Integer(2)] * n + [Integer(1)])
+    accepted: list[tuple[CoxeterLabel, ...]] = []
+    seen: set[tuple[CoxeterLabel, ...]] = set()
+    for candidate in candidates:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        for i, label in enumerate(candidate):
+            rows[i][-1] = rows[-1][i] = Integer(-1) if label == Infinity else Integer(label)
+        diagram = CoxeterDiagrams()(rows)
+        if diagram.is_elliptic() or (not spherical and diagram.is_parabolic()):
+            accepted.append(candidate)
+    return tuple(accepted)
+
+
 def _extensions(
     lattice: Lattices.ParentMethods,
     roots: Sequence[Lattices.ElementMethods],
@@ -75,13 +137,9 @@ def _extensions(
     if any(pairings[i, j] > 0 for i in range(len(roots)) for j in range(i)):
         raise ValueError("Dynkin extensions require simple roots with nonpositive mutual pairings")
     # ComputePossibleExtensions (coxeter_dynkin.h:2305-2336) iterates diagram
-    # extensions before prescribed norms. The source enumerates diagrams
-    # by Dynkin type (FindDiagramExtensions_Efficient:715-1671), rather than
-    # lexicographic label order; the finite diagram check is indispensable.
+    # extensions before prescribed norms. FindDiagramExtensions_Efficient
+    # (715-1671) lists them in Dynkin construction order.
     out: list[tuple[tuple[CoxeterLabel, ...], int, NormedDynkinExtension]] = []
-    # The preamble owns the Coxeter diagram and its exact Schlaefli
-    # classification. The pinned CheckDiagram recognizes the same spherical
-    # and Euclidean types before any root-norm test.
     coxeter_rows = [[Integer(1) if i == j else Integer(2) for j in range(len(roots) + 1)] for i in range(len(roots) + 1)]
     for i in range(len(roots)):
         for j in range(i):
@@ -91,12 +149,6 @@ def _extensions(
             if label is None:
                 raise ValueError("the supplied roots have noncrystallographic Coxeter pairings")
             coxeter_rows[i][j] = coxeter_rows[j][i] = Integer(-1) if label == Infinity else label
-
-    def diagram_allowed(diagram: tuple[CoxeterLabel, ...]) -> bool:
-        for i, label in enumerate(diagram):
-            coxeter_rows[i][-1] = coxeter_rows[-1][i] = Integer(-1) if label == Infinity else label
-        extended = CoxeterDiagrams()(coxeter_rows)
-        return extended.is_elliptic() if len(labels) == len(_FINITE_LABELS) else (extended.is_elliptic() or extended.is_parabolic())
 
     def extend(
         target: tuple[Rational, ...],
@@ -108,8 +160,6 @@ def _extensions(
     ) -> None:
         position = len(target)
         if position == len(roots):
-            if not diagram_allowed(diagram):
-                return
             weights = inverse * vector(QQ, target)
             out.append(
                 (
@@ -136,18 +186,18 @@ def _extensions(
                     norm_position,
                 )
 
-    for norm_position, new_norm in enumerate(QQ(norm) for norm in norms):
-        choices = []
-        for old_norm in root_norms:
-            allowed = []
-            for label in labels:
+    for diagram in _diagram_extension_labels(
+        [row[:-1] for row in coxeter_rows[:-1]],
+        spherical=len(labels) == len(_FINITE_LABELS),
+    ):
+        for norm_position, new_norm in enumerate(QQ(norm) for norm in norms):
+            choices: list[tuple[tuple[CoxeterLabel, Rational], ...]] = []
+            for old_norm, label in zip(root_norms, diagram, strict=True):
                 square = _FOUR_COS_SQUARED[label] * old_norm * new_norm / 4
-                if _norm_ratio_allows(label, old_norm, new_norm) and square.is_square():
-                    allowed.append((label, -square.sqrt()))
-            choices.append(tuple(allowed))
-
-        extend((), QQ.zero(), new_norm, choices, (), norm_position)
-    out.sort(key=lambda item: (item[0], item[1]))
+                allowed = ((label, -square.sqrt()),) if _norm_ratio_allows(label, old_norm, new_norm) and square.is_square() else ()
+                choices.append(allowed)
+            if all(choices):
+                extend((), QQ.zero(), new_norm, choices, (), norm_position)
     return tuple(item[2] for item in out)
 
 
