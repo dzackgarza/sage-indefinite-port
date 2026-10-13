@@ -1,0 +1,348 @@
+\providecommand{\bysame}{\leavevmode\hbox to3em{\hrulefill}\thinspace}
+\providecommand{\MR}{\relax\ifhmode\unskip\space\fi MR }
+% \MRhref is called by the amsart/book/proc definition of \MR.
+\providecommand{\MRhref}[2]{%
+  \href{http://www.ams.org/mathscinet-getitem?mr=#1}{#2}
+}
+\providecommand{\href}[2]{#2}
+\begin{thebibliography}{10}
+
+\bibitem{sextics}
+Ay\c{s}eg\"{u}l Akyol and Alex Degtyarev, \emph{Geography of irreducible plane
+  sextics}, Proc. Lond. Math. Soc. (3) \textbf{111} (2015), no.~6, 1307--1337.
+
+\bibitem{order8}
+Dima Al~Tabbaa and Alessandra Sarti, \emph{Order eight non-symplectic
+  automorphisms on elliptic {$K3$} surfaces}, Phenomenological approach to
+  algebraic geometry, Banach Center Publ., vol. 116, Polish Acad. Sci. Inst.
+  Math., Warsaw, 2018, pp.~11--24.
+
+\bibitem{order16}
+Dima Al~Tabbaa, Alessandra Sarti, and Shingo Taki, \emph{Classification of
+  order sixteen non-symplectic automorphisms on {K}3 surfaces}, J. Korean Math.
+  Soc. \textbf{53} (2016), no.~6, 1237--1260.
+
+\bibitem{alexeev-engel}
+Valery Alexeev and Philip Engel, \emph{Compact moduli of {K}3 surfaces}, 2021,
+  arXiv:2101.12186.
+
+\bibitem{alexeev-engel-han}
+Valery Alexeev, Philip Engel, and Changho Han, \emph{Compact moduli of {K3}
+  surfaces with a nonsymplectic automorphism}, 2021, arXiv:2110.13834.
+
+\bibitem{onedim}
+Michela Artebani, Paola Comparin, and María~Elisa Valdés,
+  \emph{Non-symplectic automorphisms of {K}3 surfaces with one-dimensional
+  moduli space}, Rev. Math. Ibero, to appear (2021), doi.org/10.4171/RMI/1326.
+
+\bibitem{order4}
+Michela Artebani and Alessandra Sarti, \emph{Symmetries of order four on {K}3
+  surfaces}, J. Math. Soc. Japan \textbf{67} (2015), no.~2, 503--533.
+
+\bibitem{artebani-sarti-taki}
+Michela {Artebani}, Alessandra {Sarti}, and Shingo {Taki}, \emph{{\(K3\)
+  surfaces with non-symplectic automorphisms of prime order. With an appendix
+  by Shigeyuki Kond\=o}}, {Math. Z.} \textbf{268} (2011), no.~1-2, 507--533.
+
+\bibitem{atiyah-singer1968}
+Michael~F. {Atiyah} and I.~M. {Singer}, \emph{{The index of elliptic operators.
+  III}}, {Ann. Math. (2)} \textbf{87} (1968), 546--604.
+
+\bibitem{baily-borel1966}
+Walter~L. Baily, Jr. and Armand Borel, \emph{Compactification of arithmetic
+  quotients of bounded symmetric domains}, Ann. of Math. (2) \textbf{84}
+  (1966), 442--528.
+
+\bibitem{bhpv}
+Wolf~P. {Barth}, Klaus {Hulek}, Chris A.~M. {Peters}, and Antonius {Van de
+  Ven}, \emph{{Compact complex surfaces}}, vol.~4, Berlin: Springer, 2004.
+
+\bibitem{fluckiger21b}
+Eva Bayer-Fluckiger, \emph{Isometries of lattices and automorphisms of {K}3
+  surfaces}, 2021, arXiv:2107.07583.
+
+\bibitem{fluckiger21}
+\bysame, \emph{Isometries of lattices and {H}asse principles}, J. Eur. Math.
+  Soc. (JEMS) (2021), to appear.
+
+\bibitem{fluckiger20}
+Eva Bayer-Fluckiger and Lenny Taelman, \emph{Automorphisms of even unimodular
+  lattices and equivariant {W}itt groups}, J. Eur. Math. Soc. (JEMS)
+  \textbf{22} (2020), no.~11, 3467--3490.
+
+\bibitem{Besche2002}
+Hans~Ulrich Besche, Bettina Eick, and E.~A. O'Brien, \emph{A millennium
+  project: constructing small groups}, Internat. J. Algebra Comput. \textbf{12}
+  (2002), no.~5, 623--644.
+
+\bibitem{Bley2005}
+Werner Bley and Markus Endres, \emph{Picard groups and refined discrete
+  logarithms}, LMS J. Comput. Math. \textbf{8} (2005), 1--16.
+
+\bibitem{magma}
+Wieb Bosma, John Cannon, and Catherine Playoust, \emph{The {M}agma algebra
+  system. {I}. {T}he user language}, J. Symbolic Comput. \textbf{24} (1997),
+  no.~3-4, 235--265.
+
+\bibitem{brandhorst2019}
+Simon {Brandhorst}, \emph{{The classification of purely non-symplectic
+  automorphisms of high order on \(K3\) surfaces}}, {J. Algebra} \textbf{533}
+  (2019), 229--265.
+
+\bibitem{brandhorst-cattaneo}
+Simon Brandhorst and Alberto Cattaneo, \emph{{Prime Order Isometries of
+  Unimodular Lattices and Automorphisms of IHS Manifolds}}, International
+  Mathematics Research Notices (2022), rnac279.
+
+\bibitem{brandhorst-hashimoto2021}
+Simon Brandhorst and Kenji Hashimoto, \emph{Extensions of maximal symplectic
+  actions on {K}3 surfaces}, Ann. H. Lebesgue \textbf{4} (2021), 785--809.
+
+\bibitem{K3Groups}
+Simon Brandhorst and Tommy Hofmann, \emph{Database: Finite subgroups of
+  automorphisms of {K3} surfaces (2.0)}, 2022,
+  \url{https://doi.org/10.5281/zenodo.6544475}.
+
+\bibitem{brandhorsthofmann2021}
+\bysame, \emph{Generation of local unitary groups}, J. Algebra \textbf{609}
+  (2022), 484--513, With an appendix by Sven Manthe.
+
+\bibitem{brandhorst-veniani2023}
+Simon Brandhorst and Davide~Cesare Veniani, \emph{Hensel lifting algorithms for
+  quadratic forms}, 2023, arXiv:2303.11981.
+
+\bibitem{cartan1954}
+Henri Cartan, \emph{Quotient d'une vari\'et\'e analytique par un groupe discret
+  d'automorphismes}, S\'eminaire Henri Cartan \textbf{6} (1953-1954) (fr),
+  talk:12.
+
+\bibitem{Cohen2000}
+Henri Cohen, \emph{Advanced topics in computational number theory}, Graduate
+  Texts in Mathematics, vol. 193, Springer-Verlag, New York, 2000.
+
+\bibitem{splag}
+J.~H. {Conway} and N.~J.~A. {Sloane}, \emph{{Sphere packings, lattices and
+  groups}}, vol. 290, New York, NY, Springer, 1999.
+
+\bibitem{curtis2006}
+Charles~W. Curtis and Irving Reiner, \emph{Representation theory of finite
+  groups and associative algebras}, AMS Chelsea Publishing, Providence, RI,
+  2006.
+
+\bibitem{order6}
+Jimmy Dillies, \emph{On some order 6 non-symplectic automorphisms of elliptic
+  {K}3 surfaces}, Albanian J. Math. \textbf{6} (2012), no.~2, 103--114.
+
+\bibitem{dolgachev-kondo2005}
+Igor~V. {Dolgachev} and Shigeyuki {Kond\=o}, \emph{{Moduli of \(K3\) surfaces
+  and complex ball quotients}}, Arithmetic and geometry around hypergeometric
+  functions. Lecture notes of a CIMPA summer school held at Galatasaray
+  University, Istanbul, Turkey, June 13--25, 2005, Basel: Birkh\"auser, 2007,
+  pp.~43--100.
+
+\bibitem{Eichler1974}
+Martin Eichler, \emph{Quadratische {F}ormen und orthogonale {G}ruppen}, Die
+  Grundlehren der mathematischen Wissenschaften, vol.~63, Springer-Verlag,
+  Berlin-New York, 1974.
+
+\bibitem{hecke}
+Claus Fieker, William Hart, Tommy Hofmann, and Fredrik Johansson,
+  \emph{Nemo/{H}ecke: computer algebra and number theory packages for the
+  {J}ulia programming language}, I{SSAC}'17---{P}roceedings of the 2017 {ACM}
+  {I}nternational {S}ymposium on {S}ymbolic and {A}lgebraic {C}omputation, ACM,
+  New York, 2017, pp.~157--164.
+
+\bibitem{GAP4}
+The GAP~Group, \emph{{GAP -- Groups, Algorithms, and Programming, Version
+  4.11.1}}, 2021.
+
+\bibitem{grunewald:conjugacy}
+Fritz Grunewald and Daniel Segal, \emph{Some general algorithms. {I}:
+  Arithmetic groups}, Annals of Mathematics \textbf{112} (1980), no.~3,
+  531--583.
+
+\bibitem{Hashimoto2012}
+Kenji {Hashimoto}, \emph{{Finite symplectic actions on the \(K3\) lattice}},
+  {Nagoya Math. J.} \textbf{206} (2012), 99--153.
+
+\bibitem{mason2016}
+Gerald {H\"ohn} and Geoffrey {Mason}, \emph{{The 290 fixed-point sublattices of
+  the Leech lattice}}, {J. Algebra} \textbf{448} (2016), 618--637.
+
+\bibitem{huybrechts2016}
+Daniel Huybrechts, \emph{Lectures on {K}3 surfaces}, Cambridge Studies in
+  Advanced Mathematics, vol. 158, Cambridge University Press, Cambridge, 2016.
+
+\bibitem{Jacobowitz1962}
+Ronald Jacobowitz, \emph{Hermitian forms over local fields}, Amer. J. Math.
+  \textbf{84} (1962), 441--465.
+
+\bibitem{Johnson1968}
+Arnold~A. Johnson, \emph{Integral representations of hermitian forms over local
+  fields}, J. Reine Angew. Math. \textbf{229} (1968), 57--80.
+
+\bibitem{michael2015}
+Michael J\"urgens, \emph{Nicht-{E}xistenz und {K}onstruktion extremaler
+  {G}itter}, Dissertation, Technische Universität Dortmund, 2015,
+  \href{http://dx.doi.org/10.17877/DE290R-7882}{doi:10.17877/DE290R-7882}.
+
+\bibitem{keum2015}
+JongHae {Keum}, \emph{{\(K3\) surfaces with an automorphism of order 66, the
+  maximum possible}}, {J. Algebra} \textbf{426} (2015), 273--287.
+
+\bibitem{kirschmer_software}
+Markus Kirschmer, \emph{{M}agma package: {Q}uadratische und hermitische
+  {G}itter \"uber {Z}ahlk\"orpern},
+  \href{https://math.uni-paderborn.de/ag/ca/forschung/quadratische-und-hermitische-gitter-ueber-zahlkoerpern}{https://math.uni-paderborn.de/ag/ca/forschung/quadratische-und-hermitische-gitter-ueber-zahlkoerpern}.
+
+\bibitem{KirschmerHabil}
+\bysame, \emph{Definite quadratic and hermitian forms with small class number},
+  Habilitationsschrift, RWTH Aachen University, Aachen, Germany, 2016,
+  \href{http://www.math.rwth-aachen.de/~Markus.Kirschmer/papers/herm.pdf}{http://www.math.rwth-aachen.de/~Markus.Kirschmer/papers/herm.pdf}.
+
+\bibitem{Kirschmer2019}
+\bysame, \emph{Determinant groups of {H}ermitian lattices over local fields},
+  Arch. Math. (Basel) \textbf{113} (2019), no.~4, 337--347.
+
+\bibitem{Kluners2005}
+J\"{u}rgen Kl\"{u}ners and Sebastian Pauli, \emph{Computing residue class rings
+  and {P}icard groups of orders}, J. Algebra \textbf{292} (2005), no.~1,
+  47--64.
+
+\bibitem{kneser1966}
+Martin Kneser, \emph{Strong approximation}, Algebraic {G}roups and
+  {D}iscontinuous {S}ubgroups ({P}roc. {S}ympos. {P}ure {M}ath., {B}oulder,
+  {C}olo., 1965), Amer. Math. Soc., Providence, R.I., 1966, pp.~187--196.
+
+\bibitem{kneser2002}
+Martin {Kneser}, \emph{{Quadratische Formen}}, Berlin: Springer, 2002 (German).
+
+\bibitem{kondo1989}
+Shigeyuki {Kond\=o}, \emph{{Algebraic K3 surfaces with finite automorphism
+  groups}}, {Nagoya Math. J.} \textbf{116} (1989), 1--15.
+
+\bibitem{kondo1998}
+\bysame, \emph{{Niemeier lattices, Mathieu groups, and finite groups of
+  symplectic automorphisms of \(K3\) surfaces. With an appendix by Shigeru
+  Mukai}}, {Duke Math. J.} \textbf{92} (1998), no.~3, 593--603.
+
+\bibitem{kondo2018}
+\bysame, \emph{{A survey of finite groups of symplectic automorphisms of \(K3\)
+  surfaces}}, {J. Phys. A, Math. Theor.} \textbf{51} (2018), no.~5, 20, Id/No
+  053003.
+
+\bibitem{looijenga-wahl1986}
+Eduard {Looijenga} and Jonathan {Wahl}, \emph{{Quadratic functions and
+  smoothing surface singularities}}, {Topology} \textbf{25} (1986), 261--291.
+
+\bibitem{Oguiso-Machida1998}
+Natsumi {Machida} and Keiji {Oguiso}, \emph{{On K3 surfaces admitting finite
+  non-symplectic groups actions}}, {J. Math. Sci., Tokyo} \textbf{5} (1998),
+  no.~2, 273--297.
+
+\bibitem{Marseglia2020}
+Stefano Marseglia, \emph{Computing the ideal class monoid of an order}, J.
+  Lond. Math. Soc. (2) \textbf{101} (2020), no.~3, 984--1007.
+
+\bibitem{milnor1969}
+John Milnor, \emph{On isometries of inner product spaces}, Invent. Math.
+  \textbf{8} (1969), 83--97.
+
+\bibitem{miranda-morrison}
+Rick {Miranda} and David~R. {Morrison}, \emph{Embeddings of integral quadratic
+  forms.},
+  \href{https://web.math.ucsb.edu/~drm/manuscripts/eiqf.pdf}{https://web.math.ucsb.edu/~drm/manuscripts/eiqf.pdf}.
+
+\bibitem{miranda-morrisonI}
+\bysame, \emph{{The number of embeddings of integral quadratic forms. I}},
+  {Proc. Japan Acad., Ser. A} \textbf{61} (1985), 317--320.
+
+\bibitem{miranda-morrisonII}
+\bysame, \emph{{The number of embeddings of integral quadratic forms. II}},
+  {Proc. Japan Acad., Ser. A} \textbf{62} (1986), 29--32.
+
+\bibitem{mukai1988}
+Shigeru {Mukai}, \emph{{Finite groups of automorphisms of K3 surfaces and the
+  Mathieu group}}, {Invent. Math.} \textbf{94} (1988), no.~1, 183--221.
+
+\bibitem{mukai-ohashi2015}
+Shigeru Mukai and Hisanori Ohashi, \emph{Finite groups of automorphisms of
+  {E}nriques surfaces and the {M}athieu group {$M_{12}$}}, 2014,
+  arXiv:1410.7535.
+
+\bibitem{nikulin1980}
+Viacheslav~V. {Nikulin}, \emph{{Finite automorphism groups of K\"ahler K3
+  surfaces}}, {Trans. Mosc. Math. Soc.} \textbf{2} (1980), 71--135.
+
+\bibitem{nikulin1980_forms}
+\bysame, \emph{{Integral symmetric bilinear forms and some of their
+  applications}}, {Math. USSR, Izv.} \textbf{14} (1980), 103--167.
+
+\bibitem{nikulin1981}
+\bysame, \emph{{On factor groups of automorphism groups of hyperbolic forms by
+  subgroups generated by 2-reflections. Algebro-geometric applications}},
+  {Itogi Nauki Tekh., Ser. Sovrem. Probl. Mat. 18, 3-114 (1981).}, 1981.
+
+\bibitem{nikulin1984}
+\bysame, \emph{{Surfaces of type K3 with finite group of automorphisms and
+  Picard group of rank three}}, {Prob. Steklov Inst. Math. 165, 131-155 (1985);
+  translation from Tr. Mat. Inst. Steklova 165, 119-142 (1984).}, 1984.
+
+\bibitem{obrien1990}
+Eamonn~A. {O'Brien}, \emph{{The \(p\)-group generation algorithm}}, {J. Symb.
+  Comput.} \textbf{9} (1990), no.~5-6, 677--698.
+
+\bibitem{oguiso-sakurai}
+Keiji {Oguiso} and Jun {Sakurai}, \emph{{Calabi-Yau threefolds of quotient
+  type}}, {Asian J. Math.} \textbf{5} (2001), no.~1, 43--77.
+
+\bibitem{ohashi2015}
+Hisanori Ohashi, \emph{Bi-canonical representations of finite automorphisms
+  acting on {E}nriques surfaces}, 2015, arXiv:1504.00728.
+
+\bibitem{omeara1958}
+Onorato~T. {O'Meara}, \emph{{The integral representations of quadratic forms
+  over local fields}}, {Am. J. Math.} \textbf{80} (1958), 843--878.
+
+\bibitem{PARI}
+\emph{{PARI/GP, version {\tt 2.13.1}}}, Bordeaux, 2021,
+  \url{http://pari.math.u-bordeaux.fr/}.
+
+\bibitem{Plesken-Souvignier}
+Wilhelm {Plesken} and Bernd {Souvignier}, \emph{{Computing isometries of
+  lattices}}, {J. Symb. Comput.} \textbf{24} (1997), no.~3-4, 327--334.
+
+\bibitem{shafarevich1972}
+Ilya~I. {Pyatetskij-Shapiro} and Igor~R. {Shafarevich}, \emph{{A Torelli
+  theorem for algebraic surfaces of type K3}}, {Math. USSR, Izv.} \textbf{5}
+  (1972), 547--588.
+
+\bibitem{Roulleau2021}
+Xavier Roulleau, \emph{An atlas of {K}3 surfaces with finite automorphism
+  group}, 2020, arXiv:2003.08985.
+
+\bibitem{Serre1979}
+Jean-Pierre Serre, \emph{Local fields}, Graduate Texts in Mathematics, vol.~67,
+  Springer-Verlag, New York-Berlin, 1979.
+
+\bibitem{shimada2018}
+Ichiro {Shimada}, \emph{{Connected components of the moduli of elliptic \(K3\)
+  surfaces}}, {Mich. Math. J.} \textbf{67} (2018), no.~3, 511--559.
+
+\bibitem{shioda1990}
+Tetsuji {Shioda}, \emph{{On the Mordell-Weil lattices}}, {Comment. Math. Univ.
+  St. Pauli} \textbf{39} (1990), no.~2, 211--240.
+
+\bibitem{sagemath}
+{The Sage Developers}, \emph{{S}agemath, the {S}age {M}athematics {S}oftware
+  {S}ystem ({V}ersion 9.3)}, 2021, {\tt https://www.sagemath.org}.
+
+\bibitem{vinberg2007}
+Ernest~B. {Vinberg}, \emph{{Classification of 2-reflective hyperbolic lattices
+  of rank 4}}, {Trans. Mosc. Math. Soc.} \textbf{2007} (2007), 39--66.
+
+\bibitem{Xiao}
+Gang Xiao, \emph{Galois covers between {$K3$} surfaces}, Ann. Inst. Fourier
+  (Grenoble) \textbf{46} (1996), no.~1, 73--88.
+
+\end{thebibliography}

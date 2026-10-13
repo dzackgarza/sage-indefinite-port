@@ -4,203 +4,325 @@ This document records the exact provenance, source files, authors, publications,
 
 * * *
 
-## 1. Published Mathematical Tables and Theorem Oracles
+## Datasets
 
-### A. 87 Numerical Enriques Polarizations
+### 87 Numerical Enriques Polarizations
 
-- **File**: [`tests/fixtures/enriques_87_polarizations.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/enriques_87_polarizations.json)
+- **File**: `tests/fixtures/enriques_87_polarizations.json`
 
-- **Primary Source**: Mathieu Dutour Sikirić and Klaus Hulek, *On the classification of numerical Enriques surfaces and their moduli spaces*, [arXiv:2302.01679](https://arxiv.org/abs/2302.01679) [math.AG], 2023, Tables 1 and 2.
+- **Primary Source**: Mathieu Dutour Sikirić and Klaus Hulek, *Moduli of polarised Enriques surfaces — computational aspects*, J. London Math. Soc. 2024, [arXiv:2302.01679](https://arxiv.org/abs/2302.01679), Tables `table_subgroups1` and `table_subgroups2`; vendored at `references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex`.
 
-- **Content**: 87 rows containing case numbers, minimal degrees $d_{\min}$, polarization orbit lengths, zero-dimensional cusp orbit counts $\#\mathcal{I}_1$, one-dimensional boundary component counts $\#\mathcal{I}_2$, and flag orbit counts $\#\mathcal{I}_{12}$.
+- **Extraction**: `uv run references/extract/dh23_polarizations.py` parses both tables from the vendored TeX. Each record carries the TeX line it came from.
 
-- **Key Sentinel Cases**:
+- **Content**: for each of the 87 conjugacy classes of groups $\Gamma_h$: the set $S$ of chamber walls containing $h$ (as printed, and as root labels in `walls`; a bar means the complement, lines 686-688), $\#S$ (`subsets_in_class`: how many subsets define the same class), $|\bar\Gamma_h|$, the isotropic line, plane and flag counts $\#I_1, \#I_2, \#I_{12}$, the degree of the smallest realization $h_{\min}$, and $\phi(h_{\min})$.
 
-  - Case 1: $(\#\mathcal{I}_1, \#\mathcal{I}_2, \#\mathcal{I}_{12}) = (5, 9, 18)$
+- **Derived polarization**: $\Gamma_h^+$ depends only on $S$ (proof of Theorem `teo:87groups`). Each record carries $h_S$ (`face_polarization`, coordinates of `e10_fundamental_domain.json`): the sum of the extreme rays $g_i$ whose one non-containing wall is outside $S$. The script asserts the chamber is simplicial, that $h_S$ is orthogonal to exactly the roots in $S$, that $h_S^2 \ge h_{\min}^2$, and that $h_\emptyset$ is the Weyl vector of norm 1240.
 
-  - Case 87: $(\#\mathcal{I}_1, \#\mathcal{I}_2, \#\mathcal{I}_{12}) = (528, 24242, 72199)$ (stable component-preserving endpoint)
+- **Check**: the script asserts cases 1–87 in order and that case 87 has 528 lines and 24242 planes, which the paper also states independently in its text (lines 1168–1170).
 
-### B. Unpolarized Enriques Boundary Strata and Stabilizers
+### Orbits of Primitive Vectors of Norm 2..72 in U + E8(-1)
 
-- **File**: [`tests/fixtures/unpolarized_enriques.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/unpolarized_enriques.json)
+- **File**: `tests/fixtures/enriques_polarization_orbits.json`
 
-- **Primary Sources**:
+- **Source**: Dutour Sikirić–Hulek, arXiv:2302.01679, Table `ListNumberPolarizationsModuli`, vendored TeX. For each $2d = 2, \dots, 72$ the table gives $\#h$, the number of orbits of primitive vectors $h$ with $h^2 = 2d$ in $\mathrm{Num}(S) \cong U \oplus E_8(-1)$. The paper notes these agree with the CDGK appendix. It also gives the number of conjugacy classes of the groups $\bar\Gamma_h$, and cumulative counts for both.
 
-  - Dutour Sikirić & Hulek (arXiv:2302.01679), Sections 3.2 and 3.3.
+- **Extraction**: `uv run references/extract/dh23_norm_orbits.py`. It checks that $2d = 2g-2$, that the cumulative row is the running sum of $\#h$ (ending at 312), and that $\#\bar\Gamma_h \le \#h$.
 
-  - V. V. Nikulin, *Surfaces of type K3 with finite automorphism group and Enriques surfaces*, J. Soviet Math.
-    22 (1983).
+### O(E10)-Orbits of Primitive Vectors with Stabilizer Indices (Brandhorst–González-Alonso)
 
-  - A. I. Sterk, *Finiteness results for automorphy groups of 2-reflective lattices and Enriques surfaces*, Math.
-    Ann.
-    272 (1985), 237–264.
+- **File**: `tests/fixtures/e10_vector_orbits.json`
 
-- **Content**:
+- **Source**: Brandhorst–González-Alonso, arXiv:2408.00306, Appendix Table `table1` (vendored TeX; computed by the authors with OSCAR). $E_{10}$ is the even unimodular lattice of signature (1,9), $U \oplus E_8(-1)$. For $h^2 \in \{0, 2, \dots, 10\}$ the table gives the orbits by $\phi(h)$ and the index of the image of $O(E_{10}, h)$ in $O(E_{10}\otimes\mathbb F_2)$.
 
-  - Gram matrix of $N = U \oplus U(2) \oplus E_8(-2)$ in standard basis.
+- **Cross-checks** (asserted by the extraction):
+  - the orbit counts 1, 2, 2, 2, 3 for $h^2 = 2..10$ match Dutour Sikirić–Hulek's $\#h$;
+  - the $h^2 = 0$ index $17\cdot31 = 527$ matches the length-527 isotropic orbit in Dutour Sikirić–Hulek.
 
-  - Primitive isotropic line representatives $I_{1,1} = \mathbb{Z}e_1, I_{1,2} = \mathbb{Z}e_3$.
+- **Extraction**: `uv run references/extract/bga_e10_orbits.py`.
 
-  - Primitive isotropic plane representatives $I_{2,1} = \mathbb{Z}e_1 + \mathbb{Z}e_3, I_{2,2} = \mathbb{Z}(2e_1 + 2e_2 + w) + \mathbb{Z}e_3$.
+### U + E8(-1): Weyl Chamber, Extreme Rays and Orbit Representatives
 
-  - Exact discriminant orthogonal group stabilizer image indices: $1, 527$ (lines), $527, 23715$ (planes).
+- **File**: `tests/fixtures/e10_fundamental_domain.json`
 
-  - Stable group counts: $528 = 1 + 527$, $24242 = 527 + 23715$, and flag count $72199$.
+- **Source**: Dutour Sikirić–Hulek, arXiv:2302.01679, section 3 (vendored TeX). It gives:
+  - the Gram matrix $G$ of $U \oplus E_8(-1)$ (equation `equ:G`) and the ten simple roots $r_{-1}, \dots, r_8$ of a Weyl chamber;
+  - the chamber's extreme rays $g_1, \dots, g_{10}$, a $\mathbb Z$-basis, with their Gram matrix $W$ (equation `equ:W`);
+  - $O(U\oplus E_8(-1)) = W(U\oplus E_8(-1))$, and Weyl vector norm 1240;
+  - Table `ListVectorsNormAtMost30`: representatives of every orbit of primitive vectors of norm $\le 30$, grouped by the conjugacy class of $\bar\Gamma_h$.
 
-### C. K3 Polarized Modular Boundary Strata
+- **Checks** (asserted by the extraction):
+  - $W = g\,G\,g^T$;
+  - every simple root has norm $-2$, and distinct roots pair non-negatively;
+  - every one of the 61 representatives has the norm of its degree;
+  - the number of representatives per degree equals $\#h$ from `ListNumberPolarizationsModuli`.
 
-- **File**: [`tests/fixtures/k3_modular_strata.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/k3_modular_strata.json)
+- **Extraction**: `uv run references/extract/dh23_e10_domain.py`.
 
-- **Primary Sources**:
+### Unpolarized Enriques Boundary Strata and Stabilizers
 
-  - *Degree 2 K3 Boundary*: Gianni Scattone, *On the compactification of moduli spaces for algebraic K3 surfaces*, Memoirs of the AMS, Vol. 70, No. 372 (1987).
+- **File**: `tests/fixtures/unpolarized_enriques.json`
 
-  - *Degree 4 K3 Boundary*: Kathleen Jones, *The boundary of the moduli space of degree 4 K3 surfaces*, Ph.D. thesis, University of Bath (2000).
+- **Primary Source**: Dutour Sikirić & Hulek, arXiv:2302.01679, subsection "The Tits building" (vendored TeX `references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex`, lines 1159–1170), and Table `table_subgroups2` case 87 (line 814) for the flag count.
 
-  - *Degree $2d$ Cusp Formula*: Simon Attwell-Duval, *The boundary of moduli spaces of polarized K3 surfaces*, Ph.D. thesis, University of Bath (2021).
-
-  - *Unimodular Transitivity*: Martin Eichler, *Quadratische Formen und orthogonale Gruppen*, Springer-Verlag (1952).
-
-- **Content**:
-
-  - Degree 2: Baily–Borel counts $(1, 4, 4)$ and four Type II root types $E_8 \oplus E_8 \oplus A_1, E_7 \oplus D_{10}, D_{16} \oplus A_1, A_{17}$.
-
-  - Degree 4: 9 Type II components with generalized root types $A_{11} \oplus E_6, A_{15} \oplus 2A_1, A_{17}, 2D_8 \oplus A_1, D_{10} \oplus E_7, D_{12} \oplus D_5, D_{16} \oplus A_1, D_{17}, 2E_8 \oplus A_1$.
-
-  - Attwell-Duval formula test cases for squarefree degrees ($d = 2, 3, 5, 6, 10, 14, 15, 30, 42, 70, 105, 210$).
-
-### D. Independent Tits Buildings (Dawes)
-
-- **File**: [`tests/fixtures/dawes_buildings.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/dawes_buildings.json)
-
-- **Primary Source**: Matthew Dawes, *The geometry of the boundary of orthogonal modular varieties*, Ph.D. thesis, University of Bath (2020), and implementation `buildings.sage`.
-
-- **Content**: Independent line orbit, plane orbit, and incidence multigraph computations for $2U \oplus A_2$, $2U \oplus \langle-6\rangle \oplus \langle-2\rangle$, and $U \oplus U(2) \oplus A_2$.
-
-### E. Conway–Sloane: Spinor-Genus Pair and Root-Lattice Automorphism Orders
-
-- **File**: [`tests/fixtures/conway_sloane_cases.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/conway_sloane_cases.json)
-
-- **Source**: J. H. Conway and N. J. A. Sloane, *Sphere Packings, Lattices and Groups*, 3rd ed., Springer, 1999 [CS99].
+- **Extraction**: `uv run references/extract/dh23_unpolarized.py` builds $N = U \oplus U(2) \oplus E_8(-2)$, takes the representatives from the text, and asserts $\det N = 1024$ and that every line and plane representative is totally isotropic.
 
 - **Content**:
 
-  - `spinor_genus_pair_determinant_minus_128`: the ternary forms (51a) and (51b) of Chapter 15 §11 ("Computational complexity"). The text states that both forms lie in the genus I_{2,1}(2 × 64), that this genus contains two spinor genera and hence two classes, and that (51b) represents the second class; Corollary 22 (n = 3, d_0 = 128) is the cited reason.
-    Every field of the record transcribes those sentences.
+  - Gram matrix of $N$, with $(e_1, e_2)$ and $(e_3, e_4)$ the standard bases of $U$ and $U(2)$.
 
-  - `root_lattice_automorphism_orders`: the automorphism-group orders of A2, A3, D4, E6, E7, E8 from Chapter 4 (§4 for the convention g = g_0 g_1; §6 for A_n; §7 for D_n; §8 for E6, E7, E8), each with the quoted sentence.
-    The Gram matrices are the Cartan matrices of the fundamental roots (Chapter 4, Table 4.1). The record `indefinite_jl_E8` pairs the Gram matrix shipped in Indefinite.jl's `TestCases/LATT_AUTOMORPHISM_case1_ListMat_E8` with the same order; the identification with E8 rests on Chapter 2, Table 2.2 (one even unimodular lattice in dimension 8).
+  - Isotropic line representatives $\mathbb{Z}e_1$, $\mathbb{Z}e_3$, with discriminant-image stabilizer indices 1 and 527.
 
-- **Extraction**: transcribed from the Zotero extraction of the book (item T2WVLTDB). The `quote` fields are verbatim up to ASCII rendering of the mathematics.
+  - Isotropic plane representatives $\mathbb{Z}e_1 + \mathbb{Z}e_3$ and $\mathbb{Z}(2e_1 + 2e_2 + w) + \mathbb{Z}e_3$, with indices 527 and 23715. Here $w = \alpha_0 + \alpha_2$ has norm 4 in $E_8$, i.e. $w^2 = -8$ in $E_8(-2)$, as the paper requires.
 
-* * *
+  - The stable group $\widetilde O^+(N)$ has 528 lines and 24242 planes (text) and 72199 flags (table).
 
-## 2. Upstream Algorithmic Regression Corpora
+  - `discriminant_image`: $D(N) \cong \mathbb F_2^{10}$, $O(D(N)) \cong O^+(\mathbb F_2^{10})$ of order $2^{21}\cdot3^5\cdot5^2\cdot7\cdot17\cdot31$ (lines 332-336), and $O(N)\to O(D(N))$ is surjective (line 481). The script asserts both statements on their lines.
 
-### A. 8,821 Isotropic Decision Cases
+### 8,821 Reflective Lorentzian Forms and Their Isotropy
 
-- **File**: [`tests/fixtures/isotropic_cases_8821.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/isotropic_cases_8821.json)
+- **Files**: `tests/fixtures/reflective_forms_8821.json`, `tests/fixtures/isotropic_cases_8821.json`
 
-- **Upstream Location**: `references/polyhedral_common/CI_tests/DATA/IsotropicCases`
+- **Upstream**: `references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect` (Gram matrix and number of simple roots) and `references/vendor/polyhedral_common@1592b246/CI_tests/DATA/IsotropicCases` (whether an isotropic vector exists), the same 8,821 lattices in the same order; the script asserts the pairing row by row.
 
-- **Upstream Author**: Mathieu Dutour Sikirić
+- **Note**: the rank-3 part is Allcock's classification of reflective Lorentzian lattices of rank 3 (vendored separately with its explicit simple roots under `references/vendor/GeometryDatabase_Rank3_Lorentzian_lattices@63a9067a/`).
 
-- **Repository**: [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
+- These are the reference implementation's own recorded outputs (polyhedral_common, Mathieu Dutour Sikirić); agreement with them is acceptance for this port. Extracted by `references/extract/polyhedral_common_ci.py` (run under Sage's Python; GAP literals are evaluated with libgap). Each record cites its vendored file and index.
 
-- **Content**: 8,821 exact integer Gram matrices with ground-truth boolean flags indicating the existence of a non-zero integral isotropic vector.
+### Allcock's Reflective Lorentzian Lattices of Rank 3
 
-### B. 8,821 Reflective Lorentzian Forms
+- **File**: `tests/fixtures/allcock_rank3_reflective.json`
 
-- **File**: [`tests/fixtures/reflective_forms_8821.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/reflective_forms_8821.json)
+- **Source**: Allcock's classification of the reflective Lorentzian lattices of rank 3 (arXiv:1010.0486, 1111.1264, both vendored), as published in `references/vendor/GeometryDatabase_Rank3_Lorentzian_lattices@63a9067a/RK3_all`. It has 8,595 lattices, each with its elementary divisors, explicit simple roots and Weyl-group id. The convention is signature (2,1) with roots of positive norm, the same as `ListReflect`.
 
-- **Upstream Location**: `references/polyhedral_common/CI_tests/20_Reflective/ListReflect`
+- **Extraction**: `uv run references/extract/allcock_rank3.py`. It asserts that every simple root has positive norm and gives an integral reflection. It also checks that every Gram matrix appears in `reflective_forms_8821.json` with the same number of simple roots, which confirms that `ListReflect`'s rank-3 part is exactly this classification.
 
-- **Upstream Author**: Mathieu Dutour Sikirić
+### Generators of O^+(L) for a det -155 Lattice (Mertens)
 
-- **Repository**: [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
+- **File**: `tests/fixtures/mertens_generators.json`
 
-- **Content**: 8,821 Lorentzian Gram matrices with exact number of simple roots ($n_{\mathrm{simple}}$).
+- **Source**: Mertens, arXiv:1303.3478, Example `exComplete` (vendored TeX). For
+  $A = \begin{pmatrix}-1&-3&-1\\-3&14&8\\-1&8&11\end{pmatrix}$ (det $-155$, signature (2,1)) the paper lists the stabilizers of its 9 $D$-perfect points (4 nontrivial) and 16 connecting elements. By its theorem (line 176) these generate $\Omega$, the stabilizer of the positive cone in $\operatorname{Aut}_{\mathbb Z}(A) = \{g : gAg^T = A\}$. So $\Omega = O^+(L)$ and $O(L) = \langle\Omega, -I\rangle$.
 
-### C. 145 Lorentzian Equivalence Instances
+- **Note**: the $D$-perfect points and neighbour counts are Mertens's construction. They are recorded as published, not as this port's perfect-domain counts.
 
-- **File**: [`tests/fixtures/lorentzian_equivalence_146.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/lorentzian_equivalence_146.json)
+- **Extraction**: `uv run references/extract/mertens_example.py`. It asserts that all 20 matrices are in $GL_3(\mathbb Z)$ and satisfy $gAg^T = A$, and checks the signature from the leading minors.
 
-- **Upstream Location**: `references/polyhedral_common/CI_tests/28B_LorentzianPerfStabEqui/TestCasesEqui.tar.gz`
+### 145 Lorentzian Equivalence Instances
 
-- **Upstream Author**: Mathieu Dutour Sikirić
+- **File**: `tests/fixtures/lorentzian_equivalence_145.json`
 
-- **Repository**: [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
+- **Upstream**: `references/vendor/polyhedral_common@1592b246/CI_tests/28B_LorentzianPerfStabEqui/TestCasesEqui.tar.gz` (extracted copy under `x/TestCasesEqui/`, checked against the archive). 145 pairs (`mat1`, `mat2`) of rank 10, signature (1,9), each with a recorded transporter; the script asserts `witness * mat1 * witness^T == mat2` for all 145.
 
-- **Content**: 145 pairs of equivalent Lorentzian Gram matrices $(M_1, M_2)$ with exact unimodular transporter matrices $U \in \mathrm{GL}_n(\mathbb{Z})$ satisfying $U M_1 U^{\mathsf{T}} = M_2$.
+- These are the reference implementation's own recorded outputs (polyhedral_common, Mathieu Dutour Sikirić); agreement with them is acceptance for this port. Extracted by `references/extract/polyhedral_common_ci.py` (run under Sage's Python; GAP literals are evaluated with libgap). Each record cites its vendored file and index.
 
-### D. Lorentzian Stabilizer Generators
+### Lorentzian Stabilizer Generators
 
-- **File**: [`tests/fixtures/lorentzian_stabilizers_cases.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/lorentzian_stabilizers_cases.json)
+- **File**: `tests/fixtures/lorentzian_stabilizers_cases.json`
 
-- **Upstream Location**: `references/polyhedral_common/CI_tests/28B_LorentzianPerfStabEqui/TestCasesStab.tar.gz`
+- **Upstream**: `references/vendor/polyhedral_common@1592b246/CI_tests/28B_LorentzianPerfStabEqui/TestCasesStab.tar.gz` (extracted under `x/TestCasesStab/`): 3 rank-10 lattices with generator sets of 15, 30 and 14 matrices; the script asserts every generator preserves its form.
 
-- **Upstream Author**: Mathieu Dutour Sikirić
+- These are the reference implementation's own recorded outputs (polyhedral_common, Mathieu Dutour Sikirić); agreement with them is acceptance for this port. Extracted by `references/extract/polyhedral_common_ci.py` (run under Sage's Python; GAP literals are evaluated with libgap). Each record cites its vendored file and index.
 
-- **Repository**: [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
+### 103 Root Systems of Reflective Forms
 
-- **Content**: 3 full Lorentzian orthogonal group generator sets.
+- **File**: `tests/fixtures/root_systems_103.json`
 
-### E. 103 Root Systems of Reflective Forms
+- **Upstream**: `references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47`, the simple roots of the rank-4 (56) and rank-5 (47) entries of `ListReflect`, in the same order. Each record now carries its Gram matrix from `ListReflect`; the script asserts the root count matches `n_simple` and that every root defines an integral reflection.
 
-- **File**: [`tests/fixtures/root_systems_56.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/root_systems_56.json)
+- These are the reference implementation's own recorded outputs (polyhedral_common, Mathieu Dutour Sikirić); agreement with them is acceptance for this port. Extracted by `references/extract/polyhedral_common_ci.py` (run under Sage's Python; GAP literals are evaluated with libgap). Each record cites its vendored file and index.
 
-- **Upstream Location**: `references/polyhedral_common/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47`
+### Classified Simplices (Dimensions 5, 6, 7)
 
-- **Upstream Author**: Mathieu Dutour Sikirić
+- **File**: `tests/fixtures/classification_simplices.json`
 
-- **Repository**: [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
+- **Upstream**: `references/vendor/polyhedral_common@1592b246/CI_tests/DATA/ClassificationSimplices{5,6,7}`: 16 simplices (2 in dimension 5, 3 in 6, 11 in 7), the inputs of `01_RatIntAutomorphy/ProcessExamples.g`. Upstream records no outputs for them; its check is exact and mathematical (the double cosets partition the rational group: disjoint, sizes summing to its order).
 
-- **Content**: 103 root systems of reflective forms in dimensions 4 and 5.
+- Extracted by `references/extract/polyhedral_common_ci.py`; each record cites its vendored file.
 
-### F. Classified Simplices (Dimensions 5, 6, 7)
+### 18 Finite Double-Coset Instances
 
-- **File**: [`tests/fixtures/classification_simplices.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/classification_simplices.json)
+- **File**: `tests/fixtures/double_coset_cases.json`
 
-- **Upstream Location**: `references/polyhedral_common/CI_tests/DATA/ClassificationSimplices5`, `ClassificationSimplices6`, `ClassificationSimplices7`
+- **Upstream**: `references/vendor/polyhedral_common@1592b246/CI_tests/DoubleCosets/DBL/`: 18 inputs (degrees 55–96). Each file holds two permutation groups (0-based points) and a set of 0/1 vectors; the two group orders and the vector count are encoded only in the filename. The script parses each file exactly and assigns `group_g` (the big group) and `group_h` (the subgroup) by computing both orders with libgap and matching the filename. The previous fixture had the two groups swapped in all 18 cases.
 
-- **Upstream Author**: Mathieu Dutour Sikirić
+- **Recorded outputs**: none. Acceptance uses the mathematical identities of a double-coset decomposition (disjoint union, sizes summing to the group order).
 
-- **Repository**: [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
+- Extracted by `references/extract/polyhedral_common_ci.py`; each record cites its vendored file.
 
-- **Content**: 12 classified simplices across dimensions 5, 6, and 7.
+### 40 Lorentzian Perfect Domain Forms
 
-### G. 18 Finite Double-Coset Instances
+- **File**: `tests/fixtures/lorentzian_perfect_domains.json`
 
-- **File**: [`tests/fixtures/double_coset_cases.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/double_coset_cases.json)
+- **Upstream**: `references/vendor/polyhedral_common@1592b246/CI_tests/28B_LorentzianPerfStabEqui/Result_Enumeration`: for 40 lattices of ranks 3–6, the exact number of perfect-domain orbits in the "isotropic" and "total" modes.
 
-- **Upstream Location**: `references/polyhedral_common/CI_tests/DoubleCosets/DBL/`
+- These are the reference implementation's own recorded outputs (polyhedral_common, Mathieu Dutour Sikirić); agreement with them is acceptance for this port. Extracted by `references/extract/polyhedral_common_ci.py` (run under Sage's Python; GAP literals are evaluated with libgap). Each record cites its vendored file and index.
 
-- **Upstream Author**: Mathieu Dutour Sikirić
+### K3 Lattice and Degree-2 / Degree-4 K3 Baily–Borel Boundaries
 
-- **Repository**: [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
+- **File**: `tests/fixtures/k3_modular_strata.json`
 
-- **Content**: 18 frozen finite group double coset instances across permutation degrees 55–96 with orders up to 92,160.
+- **Sources** (vendored TeX; the extraction asserts that every transcribed label appears on the cited lines):
 
-### H. 40 Lorentzian Perfect Domain Forms
+  - K3 lattice $3U \oplus 2E_8(-1)$: one orbit of primitive vectors per represented norm, by Eichler's criterion, Gritsenko–Hulek–Sankaran arXiv:1012.4155, Lemma `lem:eichler` (`references/vendor/arxiv/1012.4155/main.tex`).
 
-- **File**: [`tests/fixtures/lorentzian_perfect_domains.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/lorentzian_perfect_domains.json)
+  - Degree 2: four Type II curves meeting in one Type III point, with Type II root types $A_1+E_8+E_8$, $A_1+D_{16}$, $E_7+D_{10}$, $A_{17}$ (Scattone, *On the compactification of moduli spaces for algebraic K3 surfaces*, Mem. AMS 374, 1987: the opening of §6, which states the point and $h(k)$ curves for $D_k/O_-(L_k)$ with $h(1)=4$, $h(2)=9$; and (6.2.1)).
 
-- **Upstream Location**: `references/polyhedral_common/CI_tests/28B_LorentzianPerfStabEqui/Result_Enumeration`
+  - Degree 4: nine Type II curves with generalised types $A_{11}+E_6$, $A_1+A_1+A_{15}$, $D_8+D_8+\langle-4\rangle$, $D_{12}+D_5$, $D_{16}+\langle-4\rangle$, $E_7+E_7+A_3$, $E_8+E_8+\langle-4\rangle$, $E_8+D_9$, $D_{17}$ (Scattone §6.3).
 
-- **Upstream Author**: Mathieu Dutour Sikirić
+  - The group: Scattone Proposition 5.4.7 and Corollary 5.4.8(2). For squarefree $k$, $E \mapsto E^\perp/E$ is a bijection from the $O(\Lambda_{2k})$-orbits of primitive isotropic planes onto $G(k)$, so there are $h(k)$ of them (`type_ii_correspondence`). The Type III point is stated for $O_-(L_k)$, not $O(\Lambda_{2k})$.
 
-- **Repository**: [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
+  - Scattone's values are transcribed from the memoir and cited by its numbering; the script hard-codes them and asserts only the arXiv citations against the vendored TeX.
 
-- **Content**: 40 exact Gram matrices across ranks 3, 4, 5, 6 with exact isotropic and total perfect domain orbit counts.
+- **Extraction**: `uv run references/extract/k3_strata.py`.
 
-### I. 6 Metamorphic Indefinite Forms
+- **Removed**: the "$2^{\omega(d)-1}$ zero-dimensional cusps" family attributed to Attwell-Duval. No source for it is vendored or known, and for squarefree $d$ the Eichler-criterion count is one cusp, which contradicts it. The previous degree-4 labels included $A_{17}$ and $D_{10}+E_7$ (degree-2 labels) and used $A_1$ where the classification has $\langle-4\rangle$.
 
-- **File**: [`tests/fixtures/ci_indefinite_comp.json`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures/ci_indefinite_comp.json)
+### Conway–Sloane Same-Genus Ternary Pair (51a)/(51b)
 
-- **Upstream Location**: `references/polyhedral_common/CI_tests/19_IndefiniteComp/AllTests.g`
+- **File**: `tests/fixtures/conway_sloane_cases.json`
 
-- **Upstream Author**: Mathieu Dutour Sikirić
+- **Primary Source**: J. H. Conway and N. J. A. Sloane, *Sphere Packings, Lattices and Groups*, 3rd ed., Springer, 1999, Chapter 15, §11, equations (51a) and (51b): two inequivalent indefinite ternary forms of determinant $-128$ in the genus $\mathrm{I}_{2,1}(2 \times 64)$ of $\mathrm{diag}\{-1, 64, 2\}$, which has two spinor genera and hence two classes.
 
-- **Repository**: [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common)
+- **Transcription**: both Gram matrices are transcribed from the book; the record has no extraction script.
 
-- **Content**: Forms `["U", "2U"]`, `["U", "2U", "A2"]`, `["U", "2U", "A3"]`, `["U", "2U", "A2", "A2"]`, `["U", "U", "E7"]`, `["U", "2U", "2E8"]`.
+### Baily–Borel Boundaries of the D-Tower (Laza–O'Grady)
+
+- **File**: `tests/fixtures/dtower_boundaries.json`
+
+- **Source**: Laza–O'Grady, arXiv:1801.04845 (vendored TeX). $\Lambda_N = U^2 \oplus D_{N-2}$ with $D$ negative definite (line 625).
+
+- **Group** (`gamma`): $\Gamma(N) = \Gamma_\xi = \{\phi \in O^+(\Lambda_N) : \phi(\xi) = \xi\}$ for a decoration $\xi \in A_{\Lambda_N}$ of square $1 \bmod 2\mathbb Z$, from Laza–O'Grady arXiv:1607.01324 (vendored; lines 619, 626, 698, 758), which LOG3 line 642 cites. The decoration is unique and $\Gamma(N) = O^+(\Lambda_N)$ unless $N \equiv 6 \bmod 8$, where $\Gamma(N)$ has index 3. The diagram `bbpicture` (lines 4629–4631) gives the Baily–Borel boundaries of $\mathcal F(9)$, $\mathcal F(10)$ and $\mathcal F(11)$:
+  - $N=9$: 1 Type III point and 1 Type II curve ($D_7$), 1 incidence;
+  - $N=10$: 2 points and 2 curves ($E_8$, $D_8$), 3 incidences;
+  - $N=11$: 1 point and 2 curves ($E_8\oplus D_1$, $D_9$), 2 incidences.
+
+- **Per-$N$ counts for $3 \le N \le 20$**, derived from stated results. Theorem `classifydn` lists the genus of $D_n$ for $n \le 18$. Theorem `bbtype2comp` says Type II components correspond to that genus for $n = N-2$, with three components for $D_{12}$ when $N = 14$; when $N \equiv 2 \pmod 8$ the even unimodular lattices of rank $N-2$ are added ($E_8$; $E_8^2$ and $D_{16}^+$, line 4460). Type III components number 1, or 2 when $N \equiv 2 \pmod 8$ (line 4391). The derivation is in the script.
+
+- **Table `tabletype2`**: the eight Type II components of $\mathcal F(18)^*$, with their type (a/b), the dimensions of their pre-images in $\widehat{\mathcal F}$, and the matching quartic cases.
+
+- **Cross-checks** (asserted):
+  - the derived counts reproduce the $N = 9, 10, 11$ pictures;
+  - $N = 18$ gives 8, the number of rows in `tabletype2`, and its six type-a labels are the genus of $D_{16}$;
+  - $N = 19$ gives 9, the quartic K3 count in `k3_modular_strata.json`.
+
+- **Extraction**: `uv run references/extract/laza_ogrady_dtower.py`. It asserts every label on its cited line.
+
+### Orbits in I_{2,10} (Allcock)
+
+- **File**: `tests/fixtures/allcock_i_2_10_orbits.json`
+
+- **Source**: Allcock, math/9905166 (vendored TeX). The Enriques period lattice $\hat K \cong I_{2,10}$ (lines 177–179) and $\Gamma = \operatorname{Aut}\hat K$. Corollary 3: one orbit of norm $-1$ vectors. Corollary 4: two orbits of primitive isotropic vectors ($v^\perp/v \cong I_{1,9}$ or $II_{1,9}$) and two orbits of isotropic planes ($V^\perp/V \cong E_8(-1)$ or $I_{0,8}$).
+
+- **Extraction**: `uv run references/extract/allcock_enriques_period.py`. It asserts every statement on its cited lines.
+
+### Classical Enriques Polarization Indices
+
+- **File**: `tests/fixtures/enriques_classical_indices.json`
+
+- **Source**: arXiv:2302.01679, subsection "Classical cases" (vendored TeX). The paper derives $[O^+(N):\Gamma_h]$ from Barth--Peters's counts of projective models for degree 2 (Case 1), 6 (Case 4) and 10 (Case 7), and then $[\Gamma_h:\tilde O^+(N)] = |O^+(\mathbb F_2^{10})|/[O^+(N):\Gamma_h]$.
+
+- **Consistency**: for degrees 6 and 10 the displayed quotient, its stated value and Table 1's $|\bar\Gamma_h|$ agree; the script asserts this. For degree 2 the text is not consistent. It states $[O^+(N):\Gamma_h] = 2^7\cdot7\cdot31$ and $[\Gamma_h:\tilde O^+(N)] = 2^{14}\cdot3^5\cdot5^2\cdot7\cdot31$, while the quotient of the displayed numbers is $2^{14}\cdot3^5\cdot5^2\cdot17$. Table 1 gives $2^{14}\cdot3^5\cdot5^2\cdot7$, i.e. index $2^7\cdot17\cdot31$. The record (`inconsistent_with_table`) carries the table-derived values unprefixed and the stated ones as `stated_*`.
+
+- **Extraction**: `uv run references/extract/dh23_classical.py`.
+
+### Dawes Tits Buildings and Index Chain
+
+- **File**: `tests/fixtures/dawes_buildings.json`
+
+- **Sources** (vendored TeX; the extraction asserts each fact on its cited lines). Dawes assumes root lattices negative definite (arXiv:2205.10601, line 158):
+
+  - arXiv:2205.10601, section "Examples":
+    - the stable orthogonal group of $2U \oplus A_2$ has a building with 1 point, 1 curve and 1 edge;
+    - $O^+$ and the stable group of $2U \oplus \langle-2\rangle \oplus \langle-6\rangle$ share a building with 2 points, 2 curves and 3 edges;
+    - the stable groups of $2U(2)\oplus A_2 \subset U\oplus U(2)\oplus A_2 \subset 2U\oplus A_2$ and $O^+(2U\oplus A_2)$ form a chain with indices 20, 27 and 2 (total 1080).
+
+  - arXiv:2108.06236, Theorem `L2boundarythm`: for $L_2 = 2U\oplus\langle-2\rangle\oplus\langle-6\rangle$ and $\Gamma_2$, the boundary has 3 points, 2 curves and 4 incidences.
+
+- **Figure `2u2a2building`** (arXiv:2205.10601, building of the stable orthogonal group of $2U(2)\oplus A_2$): transcribed from the TikZ source as a point-curve incidence graph (`incidence_graphs`). Black nodes are curves and white nodes are points. The outer circle joins consecutive nodes. Each `bend right=30` chord joins two points through one inner curve: the script evaluates the chord's Bezier midpoint and asserts it lies on exactly one inner node. Result: 6 points, 9 curves, 18 incidences, with every point on 3 curves and every curve through 2 points. Labels are the figure's.
+
+- **Extraction**: `uv run references/extract/dawes_buildings.py`.
+
+- **Replaced**: the previous fixture recorded no outputs, and its third lattice $U\oplus U(2)\oplus A_2$ was not a published example.
+
+### Vinberg Roots, Discriminant Images and Isometry Groups (OSCAR)
+
+- **File**: `tests/fixtures/oscar_lattice_oracles.json`
+
+- **Sources**: OSCAR's own tests (an independent implementation), vendored at `references/vendor/Oscar.jl@d135b70b/test/`:
+
+  - `NumberTheory/vinberg.jl`: four reflective lattices with their numbers of simple roots, plus 2 cusps for one case, 6 Coxeter-diagram edges for another, and the explicit roots of the test's chamber for a third.
+
+  - `Groups/spinor_norms.jl`: 28 rank-3 lattices from the `from_sage` table (10 run in OSCAR's CI, 18 commented out there but still recorded). Each gives $|O(q_L)|$ and the orders of the images in $O(q_L)$ of $O(L)$ and of its real-spinor-norm subgroup. Two further cases have a recorded bijective image map.
+
+  - `Groups/isometry_group.jl`: $|O(U)| = 4$, and a vector stabilizer of order 2.
+
+  - Definite lattices from `Groups/isometry_group.jl`, in their own keys, since definite isometry groups are the research preamble's concern:
+    - `definite_orthogonal_group_orders`: $|O(L)|$ for every lattice whose order the file records (34), including all 24 entries of the list `LL`/`orders` (OSCAR's CI runs entries 5-10; `run_in_oscar_ci` records which). The script asserts that L2 of line 59, whose order is written $696729600^2\cdot 2\cdot 2$, is `LL[1]` with the same order;
+    - `definite_isometry_tests`: one recorded non-isometric pair (ranks 16 and 17) and one recorded isometric pair (rank 19);
+    - `root_lattice_groups`: for $A_i$, $i=2,\dots,5$, the stable orthogonal group is $S_{i+1}$, the special orthogonal group is $S_{i+1}$ ($i$ odd) or $A_{i+1}\times C_2$ ($i$ even), and the special stable group is $A_{i+1}$;
+    - `hecke_reduced_automorphism_group_orders`: Hecke's `reduced_automorphism_group_order` for $A_2$ (2) and $E_8$ (1), recorded under Hecke's name.
+
+- **Extraction**: `references/extract/oscar_lattice_tests.py`, run under Sage's Python. It asserts each value on its source line, that every lattice in the indefinite keys is indefinite and every lattice in the definite keys is definite, and that explicit roots give integral reflections.
+
+### Centralizers of Finite-Order Isometries (OSCAR)
+
+- **File**: `tests/fixtures/isometry_centralizers.json`
+
+- **Source**: OSCAR's own tests, an independent implementation, vendored at `references/vendor/Oscar.jl@d135b70b/test/NumberTheory/QuadFormAndIsom/` (`lattices_with_isometry.jl` and `enumeration.jl`, line ranges per record).
+
+- **Content**:
+
+  - Five indefinite lattices with an isometry of order 4, 5 or 6. For each, OSCAR records the order of the centralizer's image in $O(q_L)$ (72, 2, 96, 24192), or that the image is all of $O(q_L)$.
+
+  - `definite_centralizer_cases`: the negative definite rank-8 lattice of `lattices_with_isometry.jl` lines 80-87, with an isometry of order 5 whose centralizer has image of order 600 in $O(q_L)$. Definite isometry groups are the research preamble's concern.
+
+  - `definite_centralizer_cases` also holds $A_3$ with the identity (`lattices_with_isometry.jl` lines 28-36): the image of $O(A_3)$ in $O(q)$ has order 2.
+
+  - Class counts from `enumeration.jl`: how many isomorphism classes of lattices with isometry $(L,f)$ OSCAR's enumeration returns, with the OSCAR call kept verbatim (its filter arguments are OSCAR's parameters) and every further `@test` on the result:
+    - `lattice_class_counts`: $U\oplus E_8$ (order 30, 1 class), $5U$ (order 4, 5 classes, 3 with $\det$ of the 2-kernel lattice equal to 4), $4U$ (hermitian order 5: 3 classes, 2 with the extra argument 5), $2U$ (hermitian order 4: 1 class), and the rank-6 lattice of "Fix type condition" (order 14: 3 classes);
+    - `hermitian_genus_class_counts`: classes specified by signature pairs and determinant (1, 3 and 8 classes);
+    - `definite_class_counts`: $E_6$ and $E_8$ cases, including OSCAR's `admissible_triples` counts.
+    - Not transcribed: the $A_4$ loop (lines 15-18) compares OSCAR's enumeration with OSCAR's own conjugacy classes and records no count.
+
+  - For a signature-(1,9) genus, OSCAR records 11 classes of pairs $(L, f)$ with characteristic polynomial $(x-1)^4(x+1)^6$ (9 locally).
+
+- **Extraction**: `references/extract/oscar_centralizers.py`, run under Sage's Python. It parses the Julia matrix literals mechanically and reads each recorded value from its `@test` line. It computes $B G B^T$ and the isometry in the lattice basis, and asserts integrality and form preservation. It splits the cases by computed signature and asserts that exactly the order-600 case is definite.
+
+- **Replaced**: the previous `centralizer_involutions.json` held derived identities, not data.
+
+### Indefinite Isometry Pairs (Indefinite.jl and Hecke)
+
+- **File**: `tests/fixtures/indefinite_isometry_pairs.json`
+
+- **Sources**: `references/vendor/Indefinite.jl@374a5ebb/TestLor/` (three pairs that `test_gap.jl` tests for equivalence: $U\oplus3\langle-1\rangle$, $U\oplus E_8(-1)$, $U\oplus U(2)\oplus3\langle-2\rangle$), and `references/vendor/Hecke.jl@e2ab5716/test/QuadForm/Quad/ZLatticeAutIso.jl`, testset "isometry testing":
+  - $U(2)\oplus A_2$ with the recorded witness $u$;
+  - $U$ against $U(2)$ (non-isometric);
+  - a recorded isometric $3\times3$ pair.
+
+- **Certificates** (checked by the extraction, independently of the port):
+  - a verified witness $W\,G_1\,W^T = G_2$;
+  - or equal genera with no spinor generators, which for indefinite rank $\ge 3$ means one isometry class (Eichler), computed with Sage's genus code;
+  - or, for the non-isometric pair, different determinants.
+
+- **Extraction**: `references/extract/isometry_pairs.py`, run under Sage's Python.
+
+### Automorphisms of Indefinite Binary Forms (Hecke)
+
+- **File**: `tests/fixtures/binary_form_automorphisms.json`
+
+- **Source**: `references/vendor/Hecke.jl@e2ab5716/test/QuadForm/QuadBin.jl`, testset "Automormorphism group". Every form $ax^2+bxy+cy^2$ there is indefinite (lattice Gram $[[2a,b],[b,2c]]$). Three lists:
+  - `explicit_generators`: four forms with Hecke's exact automorphism-group generators;
+  - `generator_counts`: six forms where the test records only how many generators Hecke returns (`hecke_generator_count`). This is Hecke's output, not an invariant of the group;
+  - `improper_automorphisms`: $3x^2+xy-3y^2$, which the test asserts is ambiguous (it has an automorphism of determinant $-1$).
+
+- **Extraction**: `uv run references/extract/hecke_binary_forms.py`. It asserts each form is indefinite, that the testset holds exactly 4 + 6 + 1 cases, and finds the convention the explicit generators satisfy, $T^T G T = G$ for every generator.
+
+### 6 Metamorphic Indefinite Forms
+
+- **File**: `tests/fixtures/ci_indefinite_comp.json`
+
+- **Upstream**: `references/vendor/polyhedral_common@1592b246/CI_tests/19_IndefiniteComp/AllTests.g` (`FullTest`), whose six families are built by upstream's `GetGramMatrixFromList` in `references/vendor/polyhedral_common@1592b246/CI_tests/common.g`. The script loads `common.g` into libgap and calls that function, so each Gram matrix is upstream's own (root lattices positive definite); signatures are computed from it. The previous fixture recorded invented signatures such as (2,4) for U+2U+A2, whose upstream Gram has signature (4,2).
+
+- **Recorded outputs**: none; the upstream suite is metamorphic (stabilizer generators preserve the form, a random conjugate is found isometric, and vector, plane and flag orbit counts agree between a form and its conjugate).
+
+- Extracted by `references/extract/polyhedral_common_ci.py`; each record cites its vendored file.

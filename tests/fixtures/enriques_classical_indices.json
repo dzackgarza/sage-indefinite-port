@@ -1,0 +1,78 @@
+{
+ "consistent_with_table": [
+  {
+   "degree": 6,
+   "case": 4,
+   "index_in_O_plus_N": 2698240,
+   "gamma_h_over_stable_order": 17418240,
+   "source": {
+    "count": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+     "lines": "1291-1293"
+    },
+    "display": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+     "lines": "1295-1297"
+    },
+    "order_of_O_plus_F2": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+     "lines": "700-700"
+    }
+   }
+  },
+  {
+   "degree": 10,
+   "case": 7,
+   "index_in_O_plus_N": 12951552,
+   "gamma_h_over_stable_order": 3628800,
+   "source": {
+    "count": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+     "lines": "1305-1307"
+    },
+    "display": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+     "lines": "1309-1311"
+    },
+    "order_of_O_plus_F2": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+     "lines": "700-700"
+    }
+   }
+  }
+ ],
+ "inconsistent_with_table": [
+  {
+   "degree": 2,
+   "case": 1,
+   "index_in_O_plus_N": 67456,
+   "gamma_h_over_stable_order": 696729600,
+   "stated_index_in_O_plus_N": 27776,
+   "stated_gamma_h_over_stable_order": 21598617600,
+   "quotient_of_displayed_numbers": 1692057600,
+   "source": {
+    "count": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+     "lines": "1275-1275"
+    },
+    "display": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+     "lines": "1278-1280"
+    },
+    "order_of_O_plus_F2": {
+     "kind": "published_text",
+     "file": "references/vendor/arxiv/2302.01679/Enriques_compu_rev.tex",
+     "lines": "700-700"
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,90 @@
+\newcommand{\etalchar}[1]{$^{#1}$}
+\begin{thebibliography}{CCN{\etalchar{+}}85}
+
+\bibitem[BH23]{brandhorst-hofmann}
+Simon Brandhorst and Tommy Hofmann.
+\newblock Finite subgroups of automorphisms of {K3} surfaces.
+\newblock {\em Forum Math. Sigma}, 2023.
+\newblock To appear. Preprint:
+  \href{https://doi.org/10.48550/arXiv.2112.07715}{arXiv:2112.07715v3} (2022).
+
+\bibitem[Car72]{generators3}
+Roger~W. Carter.
+\newblock {\em Simple groups of {L}ie type}.
+\newblock Pure and Applied Mathematics, Vol. 28. John Wiley \& Sons, London-New
+  York-Sydney, 1972.
+
+\bibitem[CCN{\etalchar{+}}85]{atlas}
+John~H. Conway, Robert~T. Curtis, Simon~P. Norton, Richard~A. Parker, and
+  Robert~A. Wilson.
+\newblock {\em {$\mathbb{ATLAS}$} of finite groups}.
+\newblock Oxford University Press, Eynsham, 1985.
+\newblock Maximal subgroups and ordinary characters for simple groups, with
+  computational assistance from J. G. Thackray.
+
+\bibitem[CS88]{conway-sloane:mass_formula}
+John~H. Conway and Neil J.~A. Sloane.
+\newblock Low-dimensional lattices. {IV}: {The} mass formula.
+\newblock {\em Proc. R. Soc. Lond. A}, 419(1857):259--286, 1988.
+
+\bibitem[CS99]{conway_sloane:sphere_packings}
+John~H. Conway and Neil J.~A. Sloane.
+\newblock {\em Sphere packings, lattices and groups}, volume 290 of {\em
+  Grundlehren der Mathematischen Wissenschaften}.
+\newblock Springer-Verlag, New York, third edition, 1999.
+
+\bibitem[GAP22]{GAP4}
+The GAP~Group.
+\newblock {\em {GAP -- Groups, Algorithms, and Programming, Version 4.12.2}},
+  2022.
+
+\bibitem[IE94]{generators2}
+Hiroyuki Ishibashi and Andrew~G. Earnest.
+\newblock Two-element generation of orthogonal groups over finite fields.
+\newblock {\em J. Algebra}, 165(1):164--171, 1994.
+
+\bibitem[KL90]{generators1}
+Peter Kleidman and Martin Liebeck.
+\newblock {\em The subgroup structure of the finite classical groups}, volume
+  129 of {\em London Mathematical Society Lecture Note Series}.
+\newblock Cambridge University Press, Cambridge, 1990.
+
+\bibitem[Kne72]{kneser:witt_for_local_rings}
+Martin Kneser.
+\newblock Witts {S}atz f\"{u}r quadratische {F}ormen \"{u}ber lokalen {R}ingen.
+\newblock {\em Nachr. Akad. Wiss. G\"{o}ttingen Math.-Phys. Kl. II}, pages
+  195--203, 1972.
+
+\bibitem[Kne02]{kneser:quadratische_formen}
+Martin Kneser.
+\newblock {\em Quadratische {F}ormen}.
+\newblock Springer-Verlag, Berlin, 2002.
+\newblock Revised and edited in collaboration with Rudolf Scharlau.
+
+\bibitem[MM09]{miranda_morrison:embeddings}
+Rick Miranda and David~R. Morrison.
+\newblock {\em Embeddings of Integral Quadratic Forms}.
+\newblock Unpublished, 2009.
+\newblock Preprint: \url{https://web.math.ucsb.edu/~drm/manuscripts/eiqf.pdf}
+  (retrieved March 2023).
+
+\bibitem[Nik80]{nikulin:bilinear}
+Viacheslav~V. Nikulin.
+\newblock {Integral symmetric bilinear forms and some of their applications}.
+\newblock {\em {Math. USSR, Izv.}}, 14:103--167, 1980.
+
+\bibitem[O'M78]{omeara:symplectic-groups}
+O.~Timothy O'Meara.
+\newblock {\em Symplectic groups}, volume~16 of {\em Math. Surv.}
+\newblock American Mathematical Society (AMS), Providence, RI, 1978.
+
+\bibitem[OSC23]{OSCAR}
+{OSCAR} -- {O}pen {S}ource {C}omputer {A}lgebra {R}esearch system, version
+  0.12.0-{DEV}, 2023.
+
+\bibitem[Wat76]{watson1976}
+George~Leo Watson.
+\newblock The 2-adic density of a quadratic form.
+\newblock {\em Mathematika}, 23:94--106, 1976.
+
+\end{thebibliography}

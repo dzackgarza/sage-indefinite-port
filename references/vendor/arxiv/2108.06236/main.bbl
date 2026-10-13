@@ -1,0 +1,135 @@
+\begin{thebibliography}{{Mon}16}
+
+\bibitem[BB66]{bailyborel}
+W.~L. Baily, Jr. and A.~Borel.
+\newblock Compactification of arithmetic quotients of bounded symmetric
+  domains.
+\newblock {\em Ann. of Math. (2)}, 84:442--528, 1966.
+
+\bibitem[Bea83]{beauvillesexamples}
+A.~Beauville.
+\newblock Vari{\'e}t{\'e}s {K}{\"a}hleriennes dont la premi{\`e}re classe de
+  {C}hern est nulle.
+\newblock {\em J. Differential Geom.}, 18(4):755--782, 1983.
+
+\bibitem[{Bri}83]{Brieskorn}
+E.~{Brieskorn}.
+\newblock {Die Milnorgitter der exzeptionellen unimodularen Singularit\"aten.}
+\newblock {Bonn. Math. Schr. 150}, 1983.
+
+\bibitem[Cas78]{cassels}
+J.~W.~S. Cassels.
+\newblock {\em Rational quadratic forms}, volume~13 of {\em London Mathematical
+  Society Monographs}.
+\newblock Academic Press, Inc. London-New York, 1978.
+
+\bibitem[CS99]{SPLAG}
+J.~H. Conway and N.~J.~A. Sloane.
+\newblock {\em Sphere packings, lattices and groups}, volume 290 of {\em
+  Grundlehren der Mathematischen Wissenschaften}.
+\newblock Springer-Verlag, New York, 1999.
+
+\bibitem[Daw15]{DawesThesis}
+M.~R. Dawes.
+\newblock {\em Moduli of deformation generalised Kummer manifolds}.
+\newblock PhD thesis, University of Bath, 2015.
+
+\bibitem[Die71]{Dieudonne}
+J.~A. Dieudonn{{\'e}}.
+\newblock {\em La g{\'e}om{\'e}trie des groupes classiques}.
+\newblock Springer-Verlag, Berlin-New York, 1971.
+\newblock Troisi{{\`e}}me {{\'e}}dition, Ergebnisse der Mathematik und ihrer
+  Grenzgebiete, Band 5.
+
+\bibitem[Eic74]{eichler}
+M.~Eichler.
+\newblock {\em Quadratische {F}ormen und orthogonale {G}ruppen}.
+\newblock Springer-Verlag, Berlin-New York, 1974.
+\newblock Zweite Auflage, Die Grundlehren der mathematischen Wissenschaften,
+  Band 63.
+
+\bibitem[GHS09]{abelianisation}
+V.~Gritsenko, K.~Hulek, and G.~K. Sankaran.
+\newblock Abelianisation of orthogonal groups and the fundamental group of
+  modular varieties.
+\newblock {\em J. Algebra}, 322(2):463--478, 2009.
+
+\bibitem[GHS10]{ModuliSpacesOfIrreducibleSymplecticManifolds}
+V.~Gritsenko, K.~Hulek, and G.~K. Sankaran.
+\newblock Moduli spaces of irreducible symplectic manifolds.
+\newblock {\em {Compos. Math.}}, 146(2):404--434, 2010.
+
+\bibitem[GHS13]{handbook}
+V.~Gritsenko, K.~Hulek, and G.~K. Sankaran.
+\newblock Moduli of {K}3 surfaces and irreducible symplectic manifolds.
+\newblock In {\em Handbook of moduli. {V}ol. {I}}, volume~24 of {\em Adv. Lect.
+  Math. (ALM)}, pages 459--526. Int. Press, Somerville, MA, 2013.
+
+\bibitem[Kne02]{Kneser}
+M.~Kneser.
+\newblock {\em {Quadratische Formen. Neu bearbeitet und herausgegeben in
+  Zusammenarbeit mit Rudolf Scharlau.}}
+\newblock Berlin: Springer, 2002.
+
+\bibitem[Kon93]{Kondo}
+S.~Kond{\=o}.
+\newblock On the {K}odaira dimension of the moduli space of {$K3$} surfaces.
+\newblock {\em {Compos. Math.}}, 89(3):251--299, 1993.
+
+\bibitem[Mar]{monok3ii}
+E.~Markman.
+\newblock On the monodromy of moduli spaces of sheaves on ${K3}$ surfaces
+  ${II}$.
+\newblock {\em arXiv:math.AG/0305043}.
+
+\bibitem[Mar08]{monok3}
+E.~Markman.
+\newblock On the monodromy of moduli spaces of sheaves on {$K3$} surfaces.
+\newblock {\em J. Algebraic Geom.}, 17(1):29--99, 2008.
+
+\bibitem[Mar10]{intk3}
+E.~Markman.
+\newblock Integral constraints on the monodromy group of the hyperk{\"a}hler
+  resolution of a symmetric product of a {$K3$} surface.
+\newblock {\em Internat. J. Math.}, 21(2):169--223, 2010.
+
+\bibitem[{Mon}16]{Mongardi}
+G.~{Mongardi}.
+\newblock {On the monodromy of irreducible symplectic manifolds}.
+\newblock {\em {Algebr. Geom.}}, 3(3):385--391, 2016.
+
+\bibitem[{New}72]{Newman}
+M.~{Newman}.
+\newblock {\em {Integral matrices}}.
+\newblock {Academic Press (New York - London)}, 1972.
+
+\bibitem[Nik79]{Nikulin}
+V.~V. Nikulin.
+\newblock Integer symmetric bilinear forms and some of their geometric
+  applications.
+\newblock {\em Izv. Akad. Nauk SSSR Ser. Mat.}, 43(1):111--177, 238, 1979.
+
+\bibitem[Rap08]{rapagnetta2}
+A.~Rapagnetta.
+\newblock On the {B}eauville form of the known irreducible symplectic
+  varieties.
+\newblock {\em Math. Ann.}, 340(1):77--95, 2008.
+
+\bibitem[Sca87]{Scattone}
+F.~Scattone.
+\newblock On the compactification of moduli spaces for algebraic {$K3$}
+  surfaces.
+\newblock {\em Mem. Amer. Math. Soc.}, 70(374), 1987.
+
+\bibitem[{Ste}91]{Sterk}
+H.~{Sterk}.
+\newblock {Compactifications of the period space of Enriques surfaces. I}.
+\newblock {\em {Math. Z.}}, 207(1):1--36, 1991.
+
+\bibitem[Vie95]{Viehweg}
+E.~Viehweg.
+\newblock {\em Quasi-projective moduli for polarized manifolds}, volume~30 of
+  {\em Ergebnisse der Mathematik und ihrer Grenzgebiete (3)}.
+\newblock Springer-Verlag, Berlin, 1995.
+
+\end{thebibliography}

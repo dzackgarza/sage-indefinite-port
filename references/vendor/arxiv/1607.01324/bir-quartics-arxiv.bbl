@@ -1,0 +1,226 @@
+\providecommand{\bysame}{\leavevmode\hbox to3em{\hrulefill}\thinspace}
+\providecommand{\MR}{\relax\ifhmode\unskip\space\fi MR }
+% \MRhref is called by the amsart/book/proc definition of \MR.
+\providecommand{\MRhref}[2]{%
+  \href{http://www.ams.org/mathscinet-getitem?mr=#1}{#2}
+}
+\providecommand{\href}[2]{#2}
+\begin{thebibliography}{BKPSB98}
+
+\bibitem[ACT11]{act}
+D.~Allcock, J.~A. Carlson, and D.~Toledo, \emph{The moduli space of cubic
+  threefolds as a ball quotient}, Mem. Amer. Math. Soc. \textbf{209} (2011),
+  no.~985, xii+70.
+
+\bibitem[BCHM10]{bchmk}
+C.~Birkar, P.~Cascini, C.~D. Hacon, and J.~McKernan, \emph{Existence of minimal
+  models for varieties of log general type}, J. Amer. Math. Soc. \textbf{23}
+  (2010), no.~2, 405--468.
+
+\bibitem[BKPSB98]{bkpsb}
+R.~E. Borcherds, L.~Katzarkov, T.~Pantev, and N.~I. Shepherd-Barron,
+  \emph{Families of {$K3$} surfaces}, J. Algebraic Geom. \textbf{7} (1998),
+  no.~1, 183--193.
+
+\bibitem[BLMM14]{pick3nl}
+N.~Bergeron, Z.~Li, J.~Millson, and C.~Moeglin, \emph{The {N}oether-{L}efschetz
+  conjecture and generalizations}, arXiv:1412.3774, 2014.
+
+\bibitem[Bor95]{borcherds}
+R.~E. Borcherds, \emph{Automorphic forms on {${\rm O}_{s+2,2}({\bf R})$} and
+  infinite products}, Invent. Math. \textbf{120} (1995), no.~1, 161--213.
+
+\bibitem[Bru02a]{bruinierbook}
+J.~H. Bruinier, \emph{Borcherds products on {O}(2, {$l$}) and {C}hern classes
+  of {H}eegner divisors}, Lecture Notes in Mathematics, vol. 1780,
+  Springer-Verlag, Berlin, 2002.
+
+\bibitem[Bru02b]{bruinier}
+\bysame, \emph{On the rank of {P}icard groups of modular varieties attached to
+  orthogonal groups}, Compositio Math. \textbf{133} (2002), no.~1, 49--63.
+
+\bibitem[CMJL12]{g4ball}
+S.~Casalaina-Martin, D.~Jensen, and R.~Laza, \emph{The geometry of the ball
+  quotient model of the moduli space of genus four curves}, Compact moduli
+  spaces and vector bundles, Contemp. Math., vol. 564, Amer. Math. Soc.,
+  Providence, RI, 2012, pp.~107--136.
+
+\bibitem[CMJL14]{g4git}
+\bysame, \emph{Log canonical models and variation of {GIT} for genus 4
+  canonical curves}, J. Algebraic Geom. \textbf{23} (2014), no.~4, 727--764.
+
+\bibitem[Don01]{donaldson}
+S.~K. Donaldson, \emph{Scalar curvature and projective embeddings. {I}}, J.
+  Differential Geom. \textbf{59} (2001), no.~3, 479--522.
+
+\bibitem[FM02]{fmdelpezzo}
+R.~Friedman and J.~W. Morgan, \emph{Exceptional groups and del {P}ezzo
+  surfaces}, Symposium in {H}onor of {C}. {H}. {C}lemens ({S}alt {L}ake {C}ity,
+  {UT}, 2000), Contemp. Math., vol. 312, Amer. Math. Soc., Providence, RI,
+  2002, pp.~101--116.
+
+\bibitem[Gal13]{gallardo}
+P.~Gallardo, \emph{On the {GIT} quotient of quintic surfaces}, arXiv:1310.3534,
+  2013.
+
+\bibitem[GHS07]{ghs}
+V.~A. Gritsenko, K.~Hulek, and G.~K. Sankaran, \emph{The {K}odaira dimension of
+  the moduli of {$K3$} surfaces}, Invent. Math. \textbf{169} (2007), no.~3,
+  519--567.
+
+\bibitem[GHS09]{ghs-abelianisation}
+\bysame, \emph{Abelianisation of orthogonal groups and the fundamental group of
+  modular varieties}, J. Algebra \textbf{322} (2009), no.~2, 463--478.
+
+\bibitem[Gie77]{gieseker}
+D.~Gieseker, \emph{Global moduli for surfaces of general type}, Invent. Math.
+  \textbf{43} (1977), no.~3, 233--282.
+
+\bibitem[Gri10]{gritsenko}
+V.~A. Gritsenko, \emph{Reflective modular forms in algebraic geometry},
+  arXiv:1005.3753, 2010.
+
+\bibitem[HH09]{hh1}
+B.~Hassett and D.~Hyeon, \emph{Log canonical models for the moduli space of
+  curves: the first divisorial contraction}, Trans. Amer. Math. Soc.
+  \textbf{361} (2009), no.~8, 4471--4489.
+
+\bibitem[HH13]{hh2}
+\bysame, \emph{Log minimal model program for the moduli space of stable curves:
+  the first flip}, Ann. of Math. (2) \textbf{177} (2013), no.~3, 911--968.
+
+\bibitem[HX13]{haconxu}
+C.~D. Hacon and C.~Xu, \emph{Existence of log canonical closures}, Invent.
+  Math. \textbf{192} (2013), no.~1, 161--195.
+
+\bibitem[IKKR15]{ikkr}
+A.~Iliev, G.~Kapustka, M.~Kapustka, and K.~Ranestad, \emph{{EPW} cubes},
+  arXiv:1505.02389, 2015.
+
+\bibitem[Laz09a]{raduthesis}
+R.~Laza, \emph{Deformations of singularities and variation of {GIT} quotients},
+  Trans. Amer. Math. Soc. \textbf{361} (2009), no.~4, 2109--2161.
+
+\bibitem[Laz09b]{gitcubic}
+\bysame, \emph{The moduli space of cubic fourfolds}, J. Algebraic Geom.
+  \textbf{18} (2009), no.~3, 511--545.
+
+\bibitem[Laz10]{cubic4fold}
+\bysame, \emph{The moduli space of cubic fourfolds via the period map}, Ann. of
+  Math. (2) \textbf{172} (2010), no.~1, 673--711.
+
+\bibitem[LO16]{announcement}
+R.~Laza and K.~G. O'Grady, \emph{{GIT} versus {B}aily-{B}orel compactification
+  for quartic {$K3$} surfaces}, preprint, 2016.
+
+\bibitem[Loo83]{ltriangle1}
+E.~Looijenga, \emph{The smoothing components of a triangle singularity. {I}},
+  Singularities, {P}art 2 ({A}rcata, {C}alif., 1981), Proc. Sympos. Pure Math.,
+  vol.~40, Amer. Math. Soc., Providence, RI, 1983, pp.~173--183.
+
+\bibitem[Loo86]{looijengavancouver}
+\bysame, \emph{New compactifications of locally symmetric varieties},
+  Proceedings of the 1984 Vancouver conference in algebraic geometry
+  (Providence, RI), CMS Conf. Proc., vol.~6, Amer. Math. Soc., 1986,
+  pp.~341--364.
+
+\bibitem[Loo03a]{looijenga1}
+\bysame, \emph{Compactifications defined by arrangements. {I}. {T}he ball
+  quotient case}, Duke Math. J. \textbf{118} (2003), no.~1, 151--187.
+
+\bibitem[Loo03b]{looijengacompact}
+\bysame, \emph{Compactifications defined by arrangements. {II}. {L}ocally
+  symmetric varieties of type {IV}}, Duke Math. J. \textbf{119} (2003), no.~3,
+  527--588.
+
+\bibitem[Loo09]{lcubic}
+\bysame, \emph{The period map for cubic fourfolds}, Invent. Math. \textbf{177}
+  (2009), no.~1, 213--233.
+
+\bibitem[LS07]{ls}
+E.~Looijenga and R.~Swierstra, \emph{The period map for cubic threefolds},
+  Compos. Math. \textbf{143} (2007), no.~4, 1037--1049.
+
+\bibitem[LS08]{ls2}
+\bysame, \emph{On period maps that are open embeddings}, J. Reine Angew. Math.
+  \textbf{617} (2008), 169--192.
+
+\bibitem[May72]{mayer}
+A.~L. Mayer, \emph{Families of {$K-3$} surfaces}, Nagoya Math. J. \textbf{48}
+  (1972), 1--17.
+
+\bibitem[Mon14]{mongardimon}
+G.~Mongardi, \emph{On the monodromy of irreducible symplectic manifolds},
+  arXiv:1407.4269, 2014.
+
+\bibitem[MOP15]{mop}
+A.~Marian, D.~Oprea, and R.~Pandharipande, \emph{{S}egre classes and {H}ilbert
+  schemes of points}, arXiv:1507.00688, 2015.
+
+\bibitem[Mum77]{mumford_stab}
+D.~Mumford, \emph{Stability of projective varieties}, L'Enseignement
+  Math\'ematique, Geneva, 1977, Lectures given at the ``Institut des Hautes
+  {\'E}tudes Scientifiques'', Bures-sur-Yvette, March-April 1976, Monographie
+  de l'Enseignement Math{\'e}matique, No. 24.
+
+\bibitem[Mus06]{mustata}
+M.~Musta{\c{t}}{\u{a}}, \emph{Multiplier ideals of hyperplane arrangements},
+  Trans. Amer. Math. Soc. \textbf{358} (2006), no.~11, 5015--5023 (electronic).
+  \MR{2231883 (2007d:14007)}
+
+\bibitem[Nik80]{nikulin}
+V.~V. Nikulin, \emph{Integral symmetric bilinear forms and some of their
+  applications}, Math. USSR Izvestiya \textbf{43} (1980), no.~1, 103--167.
+
+\bibitem[O'G06]{epwduke}
+K.~G. O'Grady, \emph{Irreducible symplectic 4-folds and
+  {E}isenbud-{P}opescu-{W}alter sextics}, Duke Math. J. \textbf{134} (2006),
+  no.~1, 99--137.
+
+\bibitem[O'G08]{dualepw}
+\bysame, \emph{Dual double {EPW}-sextics and their periods}, Pure Appl. Math.
+  Q. \textbf{4} (2008), no.~2, part 1, 427--468.
+
+\bibitem[O'G15]{epwperiods}
+\bysame, \emph{Periods of double {EPW}-sextics}, Math. Z. \textbf{280} (2015),
+  no.~1-2, 485--524.
+
+\bibitem[O'G16]{epw}
+\bysame, \emph{Moduli of double {EPW}-sextics}, Memoirs of the American
+  Mathematical Society \textbf{240} (2016), no.~1136, 1--172.
+
+\bibitem[Rap08]{rapagnetta}
+A.~Rapagnetta, \emph{On the {B}eauville form of the known irreducible
+  symplectic varieties}, Math. Ann. \textbf{340} (2008), no.~1, 77--95.
+
+\bibitem[SB83]{sbnef}
+N.~I. Shepherd-Barron, \emph{Degenerations with numerically effective canonical
+  divisor}, The birational geometry of degenerations (Cambridge, Mass., 1981),
+  Progr. Math., vol.~29, Birkh\"auser Boston, Boston, MA, 1983, pp.~33--84.
+
+\bibitem[Sha80]{shah}
+J.~Shah, \emph{A complete moduli space for {$K3$} surfaces of degree {$2$}},
+  Ann. of Math. (2) \textbf{112} (1980), no.~3, 485--510.
+
+\bibitem[Sha81]{shah4}
+\bysame, \emph{Degenerations of {$K3$} surfaces of degree {$4$}}, Trans. Amer.
+  Math. Soc. \textbf{263} (1981), no.~2, 271--308.
+
+\bibitem[Tha96]{thaddeus}
+M.~Thaddeus, \emph{Geometric invariant theory and flips}, J. Amer. Math. Soc.
+  \textbf{9} (1996), no.~3, 691--723.
+
+\bibitem[Ver13]{verbitskytor}
+M.~Verbitsky, \emph{Mapping class group and a global {T}orelli theorem for
+  hyperk\"ahler manifolds.}, Duke Math. J. \textbf{162} (2013), no.~15,
+  2929--2986.
+
+\bibitem[WX14]{wangxu}
+X.~Wang and C.~Xu, \emph{Nonexistence of asymptotic {GIT} compactification},
+  Duke Math. J. \textbf{163} (2014), no.~12, 2217--2241.
+
+\bibitem[Zar83]{zarhin}
+Yu.~G. Zarhin, \emph{Hodge groups of {$K3$} surfaces}, J. Reine Angew. Math.
+  \textbf{341} (1983), 193--220.
+
+\end{thebibliography}

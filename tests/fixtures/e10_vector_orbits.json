@@ -1,0 +1,148 @@
+{
+ "orbits": [
+  {
+   "lattice": "E10 = U + E8(-1)",
+   "h_squared": 0,
+   "phi": null,
+   "stabilizer_image_index_in_O_E10_F2": 527,
+   "source": {
+    "kind": "published_table",
+    "file": "references/vendor/arxiv/2408.00306/main_arxiv1.tex",
+    "table": "table1",
+    "line": 1132
+   }
+  },
+  {
+   "lattice": "E10 = U + E8(-1)",
+   "h_squared": 2,
+   "phi": 1,
+   "stabilizer_image_index_in_O_E10_F2": 67456,
+   "source": {
+    "kind": "published_table",
+    "file": "references/vendor/arxiv/2408.00306/main_arxiv1.tex",
+    "table": "table1",
+    "line": 1133
+   }
+  },
+  {
+   "lattice": "E10 = U + E8(-1)",
+   "h_squared": 4,
+   "phi": 1,
+   "stabilizer_image_index_in_O_E10_F2": 134912,
+   "source": {
+    "kind": "published_table",
+    "file": "references/vendor/arxiv/2408.00306/main_arxiv1.tex",
+    "table": "table1",
+    "line": 1134
+   }
+  },
+  {
+   "lattice": "E10 = U + E8(-1)",
+   "h_squared": 4,
+   "phi": 2,
+   "stabilizer_image_index_in_O_E10_F2": 505920,
+   "source": {
+    "kind": "published_table",
+    "file": "references/vendor/arxiv/2408.00306/main_arxiv1.tex",
+    "table": "table1",
+    "line": 1135
+   }
+  },
+  {
+   "lattice": "E10 = U + E8(-1)",
+   "h_squared": 6,
+   "phi": 1,
+   "stabilizer_image_index_in_O_E10_F2": 134912,
+   "source": {
+    "kind": "published_table",
+    "file": "references/vendor/arxiv/2408.00306/main_arxiv1.tex",
+    "table": "table1",
+    "line": 1136
+   }
+  },
+  {
+   "lattice": "E10 = U + E8(-1)",
+   "h_squared": 6,
+   "phi": 2,
+   "stabilizer_image_index_in_O_E10_F2": 2698240,
+   "source": {
+    "kind": "published_table",
+    "file": "references/vendor/arxiv/2408.00306/main_arxiv1.tex",
+    "table": "table1",
+    "line": 1137
+   }
+  },
+  {
+   "lattice": "E10 = U + E8(-1)",
+   "h_squared": 8,
+   "phi": 1,
+   "stabilizer_image_index_in_O_E10_F2": 134912,
+   "source": {
+    "kind": "published_table",
+    "file": "references/vendor/arxiv/2408.00306/main_arxiv1.tex",
+    "table": "table1",
+    "line": 1138
+   }
+  },
+  {
+   "lattice": "E10 = U + E8(-1)",
+   "h_squared": 8,
+   "phi": 2,
+   "stabilizer_image_index_in_O_E10_F2": 9106560,
+   "source": {
+    "kind": "published_table",
+    "file": "references/vendor/arxiv/2408.00306/main_arxiv1.tex",
+    "table": "table1",
+    "line": 1139
+   }
+  },
+  {
+   "lattice": "E10 = U + E8(-1)",
+   "h_squared": 10,
+   "phi": 1,
+   "stabilizer_image_index_in_O_E10_F2": 134912,
+   "source": {
+    "kind": "published_table",
+    "file": "references/vendor/arxiv/2408.00306/main_arxiv1.tex",
+    "table": "table1",
+    "line": 1140
+   }
+  },
+  {
+   "lattice": "E10 = U + E8(-1)",
+   "h_squared": 10,
+   "phi": 2,
+   "stabilizer_image_index_in_O_E10_F2": 8094720,
+   "source": {
+    "kind": "published_table",
+    "file": "references/vendor/arxiv/2408.00306/main_arxiv1.tex",
+    "table": "table1",
+    "line": 1141
+   }
+  },
+  {
+   "lattice": "E10 = U + E8(-1)",
+   "h_squared": 10,
+   "phi": 3,
+   "stabilizer_image_index_in_O_E10_F2": 12951552,
+   "source": {
+    "kind": "published_table",
+    "file": "references/vendor/arxiv/2408.00306/main_arxiv1.tex",
+    "table": "table1",
+    "line": 1142
+   }
+  }
+ ],
+ "source": {
+  "definition": {
+   "kind": "published_text",
+   "file": "references/vendor/arxiv/2408.00306/main_arxiv1.tex",
+   "line": 289
+  },
+  "orbit_counts": {
+   "kind": "published_text",
+   "file": "references/vendor/arxiv/2408.00306/main_arxiv1.tex",
+   "line": 1122
+  }
+ }
+}

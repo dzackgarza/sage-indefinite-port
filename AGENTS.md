@@ -145,6 +145,27 @@ agent-memory maintain move <key> --to global/advice
 ```
 <!-- agent-memory:end -->
 
+# Taking Work
+
+The GitHub issue tree rooted at #4 is the only plan: its work units are the leaf issues, their blocked-by links are the dependency edges, and each unit's body holds its obligation and acceptance. Issue bodies cite "map §N" in [references/source-to-sage-translation-map.md](references/source-to-sage-translation-map.md).
+Take the next unit with `uvx --from git+https://github.com/dzackgarza/itree itree next dzackgarza/sage-indefinite-port`, work it to the acceptance in its issue body, commit, close it with `itree close`, and take the next unit in the same turn.
+A turn that ends with a ready unit untouched stops the repository until someone notices.
+
+# Commit Gates and Work Claims
+
+- **Red gate protocol**: The first time a commit gate, hook, or QC stage goes red, diagnosing that failure becomes the current task. Stop authoring; root-cause and fix the gate, or report it as a blocker with a reproducer. Never keep writing code behind a red gate, and never accumulate uncommitted work around one. A gate that is red on two consecutive commit attempts is a defect to diagnose, not an environment condition to wait out.
+
+- **Claim freshness — no off-ledger work**: At every claim and every release, reconcile the shared queue/claim state against actual repository state across all branches before selecting work. Never select work from a queue older than your last branch sync. All authoring requires a live claim; batch-committing a body of work authored off-ledger is prohibited.
+
+- **The `[unverified]` commit tag**: `[unverified]` may appear in a commit message only while the repository's verification phase is formally deferred by a named contract, and every `[unverified]` commit must name the contract or terminal phase that discharges it.
+
+- **Deferred type checking (temporary, discharged by #36)**: while #36 is open, the push gate's mypy errors are acknowledged debt and are not paid down. A push may then use `git push --no-verify`, and only under all of these conditions:
+  - `just test-push` was run on the commit being pushed and failed in its mypy stage (`_sage-mypy`) and nowhere earlier.
+  - The tip commit of the push carries this trailer, verbatim apart from the count: `Type-Debt-Ack: MYPY-DEFER-7Q4K #36 errors=<N>`, where `<N>` is the "Found N errors" count of that run.
+  - `<N>` is no greater than the count in the previous `Type-Debt-Ack` trailer in `git log`. A push that would raise the count does not use this exception: fix the new errors first.
+
+  The trailer covers every commit in that push. Commits need no exception, because the commit gate does not run mypy. The exception covers only mypy debt: any other gate failure is fixed, never bypassed. #36's last commit deletes this rule.
+
 # Architecture and Dependencies
 
 - **The `research` preamble is the lattice substrate and a co-developed dependency**:
@@ -156,7 +177,7 @@ agent-memory maintain move <key> --to global/advice
 - **NEVER BUILD THE C++ CODE**:
   **Do NOT attempt to compile, build, configure, or invoke C++ compilation toolchains** for `polyhedral_common` or any other C++ source in `references/`.
   The upstream C++ codebase in `references/polyhedral_common` is strictly a reference implementation for algorithm extraction, logic translation, and structural understanding.
-  All production algorithms in this repository MUST be implemented as native SageMath / Python code delegating low-level operations to standard system backends (FLINT for exact integer linear algebra, Normaliz / cddlib / PPL for polyhedral cones, Bliss / Nauty for graph canonization, and `libgap` for finite quotient group actions).
+  All production algorithms in this repository MUST be implemented as native SageMath / Python code delegating low-level operations to standard system backends (FLINT for exact integer linear algebra, Normaliz / cddlib / PPL for polyhedral cones). Basic mathematical operations (stabilizers, transporters, orbits, cosets and double cosets of group actions; kernels, preimages, centralizers and intersections of subgroups; isomorphisms and canonical forms of finite configurations) are the research preamble's. This repository calls them and never reimplements them, whether on libGAP, Bliss, or anything else. A missing preamble operation is an upstream gap: name its API in the acceptance contract and leave the cases that need it red.
 
 ## Imported Contribution Policies (from `/home/dzack/research/CONTRIBUTING.md`)
 
@@ -383,4 +404,4 @@ Because foundational formed algebra is already complete, development in this rep
 1. **Lorentzian perfect-domain reduction**: Traversal of the $(1,n)$ reduction complex for $O^\Omega(L)$ and $O(L)$ generators.
 2. **$2U$-Eichler approximate models & Higher-Witt-index recursion**: Generating $A(L)$ and lifting covering sets to full $O(L)$ for Witt index $\geq 2$.
 3. **Parabolic recursion & Isotropic orbit decomposition**: Cusp orbits, unipotent radicals, and inductive rank-$k$ isotropic plane orbits.
-4. **Rational group integralization & Bliss/Nauty configuration canonization**: Double-coset transporters via libGAP and graph canonization.
+4. **Centralizers of isometries**: eigensublattices, gluing data and the cyclotomic decomposition, with the stabilizers and intersections consumed from the preamble.

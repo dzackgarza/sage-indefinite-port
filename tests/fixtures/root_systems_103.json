@@ -1,0 +1,11890 @@
+[
+ {
+  "id": "ListSimpleRootSystem_0",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    2
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8595
+  },
+  "num_roots": 4,
+  "roots": [
+   [
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    1,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 0
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_1",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8596
+  },
+  "num_roots": 4,
+  "roots": [
+   [
+    0,
+    0,
+    1,
+    -1
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    -1,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 1
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_2",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    4
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8597
+  },
+  "num_roots": 6,
+  "roots": [
+   [
+    1,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    7,
+    0,
+    1,
+    -2
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    1,
+    -1,
+    0,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 2
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_3",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    4
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8598
+  },
+  "num_roots": 5,
+  "roots": [
+   [
+    2,
+    0,
+    0,
+    -1
+   ],
+   [
+    1,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 3
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_4",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    6
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8599
+  },
+  "num_roots": 6,
+  "roots": [
+   [
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    1,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    11,
+    0,
+    1,
+    -2
+   ],
+   [
+    2,
+    -1,
+    0,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 4
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_5",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    4,
+    2
+   ],
+   [
+    0,
+    0,
+    2,
+    4
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8600
+  },
+  "num_roots": 4,
+  "roots": [
+   [
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    2,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 5
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_6",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    8
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8601
+  },
+  "num_roots": 8,
+  "roots": [
+   [
+    15,
+    0,
+    1,
+    -2
+   ],
+   [
+    15,
+    -15,
+    -4,
+    -7
+   ],
+   [
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    0,
+    -1,
+    0
+   ],
+   [
+    15,
+    -15,
+    4,
+    -8
+   ],
+   [
+    3,
+    -1,
+    0,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 6
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_7",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    4,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    4
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8602
+  },
+  "num_roots": 6,
+  "roots": [
+   [
+    5,
+    0,
+    -1,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    3,
+    0,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    -1
+   ],
+   [
+    1,
+    -1,
+    -1,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 7
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_8",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    10
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8603
+  },
+  "num_roots": 7,
+  "roots": [
+   [
+    19,
+    0,
+    1,
+    -2
+   ],
+   [
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    2,
+    -2,
+    0,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    4,
+    -1,
+    0,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 8
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_9",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    10
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8604
+  },
+  "num_roots": 6,
+  "roots": [
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    5,
+    0,
+    0,
+    -1
+   ],
+   [
+    1,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    2,
+    -2,
+    -1,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 9
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_10",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    4,
+    2
+   ],
+   [
+    0,
+    0,
+    2,
+    6
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8605
+  },
+  "num_roots": 6,
+  "roots": [
+   [
+    2,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    2,
+    -1,
+    0,
+    -1
+   ],
+   [
+    10,
+    0,
+    1,
+    -2
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 10
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_11",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    12
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8606
+  },
+  "num_roots": 6,
+  "roots": [
+   [
+    1,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    2,
+    -2,
+    0,
+    -1
+   ],
+   [
+    6,
+    0,
+    0,
+    -1
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 11
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_12",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    4,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    6
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8607
+  },
+  "num_roots": 6,
+  "roots": [
+   [
+    2,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    3,
+    0,
+    0,
+    -1
+   ],
+   [
+    2,
+    -2,
+    -1,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 12
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_13",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    4,
+    2
+   ],
+   [
+    0,
+    0,
+    2,
+    8
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8608
+  },
+  "num_roots": 8,
+  "roots": [
+   [
+    2,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    14,
+    0,
+    1,
+    -2
+   ],
+   [
+    3,
+    -1,
+    0,
+    -1
+   ],
+   [
+    7,
+    -7,
+    -2,
+    -3
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    7,
+    -7,
+    2,
+    -4
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 13
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_14",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    6,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    6
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8609
+  },
+  "num_roots": 8,
+  "roots": [
+   [
+    5,
+    0,
+    -1,
+    1
+   ],
+   [
+    7,
+    0,
+    -1,
+    -1
+   ],
+   [
+    3,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    2,
+    -2,
+    -1,
+    1
+   ],
+   [
+    2,
+    -1,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    -1
+   ],
+   [
+    0,
+    0,
+    1,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 14
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_15",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    6,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    6
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8610
+  },
+  "num_roots": 5,
+  "roots": [
+   [
+    0,
+    0,
+    1,
+    -1
+   ],
+   [
+    3,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    2,
+    -2,
+    -1,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 15
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_16",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    20
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8611
+  },
+  "num_roots": 10,
+  "roots": [
+   [
+    39,
+    0,
+    1,
+    -2
+   ],
+   [
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    1,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    26,
+    -13,
+    3,
+    -6
+   ],
+   [
+    12,
+    -3,
+    1,
+    -2
+   ],
+   [
+    9,
+    -1,
+    0,
+    -1
+   ],
+   [
+    39,
+    -13,
+    -3,
+    -7
+   ],
+   [
+    3,
+    -3,
+    -1,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 16
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_17",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    20
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8612
+  },
+  "num_roots": 9,
+  "roots": [
+   [
+    30,
+    -30,
+    -10,
+    -9
+   ],
+   [
+    10,
+    0,
+    0,
+    -1
+   ],
+   [
+    40,
+    -40,
+    -20,
+    -11
+   ],
+   [
+    4,
+    -2,
+    0,
+    -1
+   ],
+   [
+    1,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    8,
+    -6,
+    -3,
+    -2
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 17
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_18",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    4,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    10
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8613
+  },
+  "num_roots": 7,
+  "roots": [
+   [
+    2,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    2,
+    -2,
+    0,
+    -1
+   ],
+   [
+    3,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    5,
+    0,
+    0,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 18
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_19",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    4,
+    2
+   ],
+   [
+    0,
+    0,
+    2,
+    12
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8614
+  },
+  "num_roots": 7,
+  "roots": [
+   [
+    2,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    22,
+    0,
+    1,
+    -2
+   ],
+   [
+    5,
+    -1,
+    0,
+    -1
+   ],
+   [
+    2,
+    -2,
+    0,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    -1,
+    2
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 19
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_20",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    26
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8615
+  },
+  "num_roots": 10,
+  "roots": [
+   [
+    52,
+    -39,
+    -13,
+    -12
+   ],
+   [
+    13,
+    0,
+    0,
+    -1
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    6,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    4,
+    -3,
+    0,
+    -1
+   ],
+   [
+    52,
+    -52,
+    -13,
+    -14
+   ],
+   [
+    1,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    4,
+    -4,
+    -2,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 20
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_21",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    28
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8616
+  },
+  "num_roots": 9,
+  "roots": [
+   [
+    14,
+    0,
+    0,
+    -1
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    -1,
+    0
+   ],
+   [
+    4,
+    -4,
+    -2,
+    -1
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    7,
+    -7,
+    0,
+    -2
+   ],
+   [
+    6,
+    -2,
+    0,
+    -1
+   ],
+   [
+    28,
+    -14,
+    -7,
+    -5
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 21
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_22",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    4,
+    2
+   ],
+   [
+    0,
+    0,
+    2,
+    16
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8617
+  },
+  "num_roots": 10,
+  "roots": [
+   [
+    2,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    15,
+    -5,
+    -1,
+    -3
+   ],
+   [
+    30,
+    0,
+    1,
+    -2
+   ],
+   [
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    5,
+    -5,
+    1,
+    -2
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    7,
+    -1,
+    0,
+    -1
+   ],
+   [
+    3,
+    -3,
+    -1,
+    -1
+   ],
+   [
+    9,
+    -3,
+    1,
+    -2
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 22
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_23",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    6,
+    3
+   ],
+   [
+    0,
+    0,
+    3,
+    12
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8618
+  },
+  "num_roots": 10,
+  "roots": [
+   [
+    5,
+    -1,
+    0,
+    -1
+   ],
+   [
+    42,
+    -21,
+    -1,
+    -12
+   ],
+   [
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    3,
+    0,
+    -1,
+    0
+   ],
+   [
+    21,
+    0,
+    1,
+    -2
+   ],
+   [
+    21,
+    -21,
+    1,
+    -9
+   ],
+   [
+    6,
+    -3,
+    1,
+    -2
+   ],
+   [
+    3,
+    -3,
+    -1,
+    -1
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 23
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_24",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    34
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8619
+  },
+  "num_roots": 13,
+  "roots": [
+   [
+    85,
+    -51,
+    0,
+    -16
+   ],
+   [
+    204,
+    -102,
+    0,
+    -35
+   ],
+   [
+    17,
+    0,
+    0,
+    -1
+   ],
+   [
+    17,
+    -9,
+    -1,
+    -3
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    8,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    136,
+    -68,
+    -17,
+    -23
+   ],
+   [
+    19,
+    -8,
+    0,
+    -3
+   ],
+   [
+    4,
+    -4,
+    -1,
+    -1
+   ],
+   [
+    68,
+    -34,
+    -17,
+    -11
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 24
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_25",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    6,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    12
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8620
+  },
+  "num_roots": 8,
+  "roots": [
+   [
+    6,
+    0,
+    0,
+    -1
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    3,
+    0,
+    -1,
+    0
+   ],
+   [
+    2,
+    -2,
+    0,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    4,
+    -4,
+    -2,
+    -1
+   ],
+   [
+    4,
+    -2,
+    -1,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 25
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_26",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    10,
+    5
+   ],
+   [
+    0,
+    0,
+    5,
+    10
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8621
+  },
+  "num_roots": 6,
+  "roots": [
+   [
+    15,
+    -15,
+    -4,
+    -4
+   ],
+   [
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    5,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    -1
+   ],
+   [
+    2,
+    -2,
+    -1,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 26
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_27",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    42
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8622
+  },
+  "num_roots": 11,
+  "roots": [
+   [
+    63,
+    -63,
+    -21,
+    -13
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    21,
+    0,
+    0,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    6,
+    -4,
+    -2,
+    -1
+   ],
+   [
+    1,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    14,
+    -14,
+    -3,
+    -3
+   ],
+   [
+    10,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    42,
+    -42,
+    -21,
+    -8
+   ],
+   [
+    6,
+    -3,
+    0,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 27
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_28",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    6,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    14
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8623
+  },
+  "num_roots": 8,
+  "roots": [
+   [
+    7,
+    0,
+    0,
+    -1
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    4,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    3,
+    0,
+    -1,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    3,
+    -2,
+    0,
+    -1
+   ],
+   [
+    14,
+    -14,
+    -7,
+    -3
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 28
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_29",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    10,
+    4
+   ],
+   [
+    0,
+    0,
+    4,
+    10
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8624
+  },
+  "num_roots": 11,
+  "roots": [
+   [
+    14,
+    0,
+    -1,
+    -1
+   ],
+   [
+    0,
+    0,
+    1,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    4,
+    -1,
+    -1,
+    0
+   ],
+   [
+    2,
+    -2,
+    -1,
+    1
+   ],
+   [
+    6,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    2,
+    -2,
+    -1,
+    0
+   ],
+   [
+    6,
+    0,
+    -1,
+    1
+   ],
+   [
+    7,
+    -7,
+    -2,
+    -2
+   ],
+   [
+    14,
+    -7,
+    -5,
+    2
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 29
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_30",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    10,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    10
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8625
+  },
+  "num_roots": 6,
+  "roots": [
+   [
+    0,
+    0,
+    1,
+    -1
+   ],
+   [
+    5,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    4,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    2,
+    -2,
+    -1,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 30
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_31",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    60
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8626
+  },
+  "num_roots": 11,
+  "roots": [
+   [
+    30,
+    0,
+    0,
+    -1
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    9,
+    -3,
+    0,
+    -1
+   ],
+   [
+    6,
+    -6,
+    -3,
+    -1
+   ],
+   [
+    5,
+    -5,
+    0,
+    -1
+   ],
+   [
+    14,
+    -2,
+    0,
+    -1
+   ],
+   [
+    50,
+    -10,
+    -5,
+    -4
+   ],
+   [
+    8,
+    -4,
+    -2,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 31
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_32",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    4,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    30
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8627
+  },
+  "num_roots": 14,
+  "roots": [
+   [
+    10,
+    -6,
+    -1,
+    -2
+   ],
+   [
+    2,
+    0,
+    -1,
+    0
+   ],
+   [
+    60,
+    -30,
+    0,
+    -11
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    4,
+    -4,
+    -1,
+    -1
+   ],
+   [
+    7,
+    -2,
+    0,
+    -1
+   ],
+   [
+    15,
+    0,
+    0,
+    -1
+   ],
+   [
+    12,
+    -6,
+    -3,
+    -2
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    8,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    15,
+    -15,
+    0,
+    -4
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    50,
+    -20,
+    -5,
+    -8
+   ],
+   [
+    10,
+    -10,
+    -5,
+    -2
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 32
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_33",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    6,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    20
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8628
+  },
+  "num_roots": 13,
+  "roots": [
+   [
+    30,
+    -24,
+    -11,
+    -6
+   ],
+   [
+    6,
+    -6,
+    -3,
+    -1
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    4,
+    -2,
+    0,
+    -1
+   ],
+   [
+    10,
+    0,
+    0,
+    -1
+   ],
+   [
+    60,
+    -40,
+    -20,
+    -11
+   ],
+   [
+    14,
+    -14,
+    -6,
+    -3
+   ],
+   [
+    6,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    50,
+    -40,
+    -20,
+    -9
+   ],
+   [
+    3,
+    0,
+    -1,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    4,
+    -3,
+    -1,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 33
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_34",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    10,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    12
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8629
+  },
+  "num_roots": 14,
+  "roots": [
+   [
+    48,
+    -36,
+    -12,
+    -13
+   ],
+   [
+    15,
+    -15,
+    -4,
+    -5
+   ],
+   [
+    14,
+    -10,
+    -3,
+    -4
+   ],
+   [
+    40,
+    -30,
+    -11,
+    -10
+   ],
+   [
+    18,
+    -18,
+    -6,
+    -5
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    5,
+    0,
+    -1,
+    0
+   ],
+   [
+    2,
+    -2,
+    0,
+    -1
+   ],
+   [
+    6,
+    -4,
+    -2,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    6,
+    0,
+    0,
+    -1
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    5,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    2,
+    -2,
+    -1,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 34
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_35",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    66
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8630
+  },
+  "num_roots": 15,
+  "roots": [
+   [
+    264,
+    -66,
+    0,
+    -23
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    11,
+    -3,
+    -1,
+    -1
+   ],
+   [
+    16,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    33,
+    0,
+    0,
+    -1
+   ],
+   [
+    37,
+    -8,
+    0,
+    -3
+   ],
+   [
+    6,
+    -6,
+    -3,
+    -1
+   ],
+   [
+    1,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    11,
+    -11,
+    0,
+    -2
+   ],
+   [
+    8,
+    -4,
+    -1,
+    -1
+   ],
+   [
+    121,
+    -22,
+    0,
+    -9
+   ],
+   [
+    99,
+    -33,
+    0,
+    -10
+   ],
+   [
+    90,
+    -18,
+    -3,
+    -7
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 35
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_36",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    12,
+    2
+   ],
+   [
+    0,
+    0,
+    2,
+    12
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8631
+  },
+  "num_roots": 11,
+  "roots": [
+   [
+    5,
+    -1,
+    -1,
+    0
+   ],
+   [
+    14,
+    0,
+    -1,
+    -1
+   ],
+   [
+    0,
+    0,
+    1,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    10,
+    0,
+    -1,
+    1
+   ],
+   [
+    21,
+    -7,
+    -5,
+    2
+   ],
+   [
+    4,
+    -2,
+    -1,
+    1
+   ],
+   [
+    6,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    2,
+    -2,
+    -1,
+    0
+   ],
+   [
+    7,
+    -7,
+    -2,
+    -2
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 36
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_37",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    14,
+    7
+   ],
+   [
+    0,
+    0,
+    7,
+    14
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8632
+  },
+  "num_roots": 6,
+  "roots": [
+   [
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    6,
+    -3,
+    -1,
+    -1
+   ],
+   [
+    7,
+    0,
+    -1,
+    0
+   ],
+   [
+    3,
+    -2,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 37
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_38",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    6,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    28
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8633
+  },
+  "num_roots": 18,
+  "roots": [
+   [
+    70,
+    -42,
+    -14,
+    -13
+   ],
+   [
+    14,
+    0,
+    0,
+    -1
+   ],
+   [
+    168,
+    -84,
+    -28,
+    -29
+   ],
+   [
+    15,
+    -9,
+    -2,
+    -3
+   ],
+   [
+    3,
+    0,
+    -1,
+    0
+   ],
+   [
+    4,
+    -4,
+    -1,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    8,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    154,
+    -70,
+    -21,
+    -26
+   ],
+   [
+    7,
+    -7,
+    0,
+    -2
+   ],
+   [
+    36,
+    -18,
+    -7,
+    -6
+   ],
+   [
+    35,
+    -14,
+    -7,
+    -5
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    6,
+    -2,
+    0,
+    -1
+   ],
+   [
+    14,
+    -14,
+    -7,
+    -2
+   ],
+   [
+    6,
+    -4,
+    -2,
+    -1
+   ],
+   [
+    19,
+    -8,
+    -3,
+    -3
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 38
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_39",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    12,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    14
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8634
+  },
+  "num_roots": 18,
+  "roots": [
+   [
+    42,
+    -35,
+    -7,
+    -13
+   ],
+   [
+    7,
+    0,
+    0,
+    -1
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    72,
+    -66,
+    -11,
+    -24
+   ],
+   [
+    6,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    6,
+    0,
+    -1,
+    0
+   ],
+   [
+    34,
+    -34,
+    -5,
+    -12
+   ],
+   [
+    2,
+    -2,
+    -1,
+    0
+   ],
+   [
+    8,
+    -4,
+    -1,
+    -2
+   ],
+   [
+    22,
+    -18,
+    -3,
+    -7
+   ],
+   [
+    28,
+    -14,
+    -7,
+    -4
+   ],
+   [
+    84,
+    -84,
+    -14,
+    -29
+   ],
+   [
+    4,
+    -3,
+    -1,
+    -1
+   ],
+   [
+    3,
+    -2,
+    0,
+    -1
+   ],
+   [
+    154,
+    -140,
+    -21,
+    -52
+   ],
+   [
+    36,
+    -36,
+    -7,
+    -12
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 39
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_40",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    6,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    30
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8635
+  },
+  "num_roots": 15,
+  "roots": [
+   [
+    15,
+    -15,
+    0,
+    -4
+   ],
+   [
+    15,
+    0,
+    0,
+    -1
+   ],
+   [
+    60,
+    -30,
+    0,
+    -11
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    6,
+    -6,
+    -3,
+    -1
+   ],
+   [
+    8,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    42,
+    -18,
+    -3,
+    -7
+   ],
+   [
+    15,
+    -9,
+    -1,
+    -3
+   ],
+   [
+    4,
+    -4,
+    -1,
+    -1
+   ],
+   [
+    7,
+    -2,
+    0,
+    -1
+   ],
+   [
+    3,
+    0,
+    -1,
+    0
+   ],
+   [
+    20,
+    -10,
+    -5,
+    -3
+   ],
+   [
+    40,
+    -20,
+    -5,
+    -7
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 40
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_41",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    14,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    14
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8636
+  },
+  "num_roots": 9,
+  "roots": [
+   [
+    7,
+    -7,
+    -2,
+    -2
+   ],
+   [
+    14,
+    -14,
+    -5,
+    -2
+   ],
+   [
+    7,
+    0,
+    -1,
+    0
+   ],
+   [
+    6,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    0,
+    0,
+    1,
+    -1
+   ],
+   [
+    3,
+    -2,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    28,
+    -14,
+    -7,
+    -3
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 41
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_42",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    10,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    20
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8637
+  },
+  "num_roots": 13,
+  "roots": [
+   [
+    10,
+    -10,
+    -2,
+    -3
+   ],
+   [
+    10,
+    0,
+    0,
+    -1
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    40,
+    -20,
+    -8,
+    -7
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    20,
+    -10,
+    -3,
+    -4
+   ],
+   [
+    5,
+    -5,
+    -2,
+    -1
+   ],
+   [
+    4,
+    -2,
+    0,
+    -1
+   ],
+   [
+    7,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    5,
+    0,
+    -1,
+    0
+   ],
+   [
+    14,
+    -6,
+    -3,
+    -2
+   ],
+   [
+    2,
+    -2,
+    -1,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 42
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_43",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    20,
+    10
+   ],
+   [
+    0,
+    0,
+    10,
+    20
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8638
+  },
+  "num_roots": 7,
+  "roots": [
+   [
+    10,
+    0,
+    -1,
+    0
+   ],
+   [
+    9,
+    -3,
+    -1,
+    -1
+   ],
+   [
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    4,
+    -2,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    5,
+    -5,
+    -1,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 43
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_44",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    6,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    60
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8639
+  },
+  "num_roots": 20,
+  "roots": [
+   [
+    230,
+    -50,
+    -15,
+    -19
+   ],
+   [
+    10,
+    -10,
+    -5,
+    -1
+   ],
+   [
+    30,
+    0,
+    0,
+    -1
+   ],
+   [
+    37,
+    -8,
+    -3,
+    -3
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    8,
+    -4,
+    -1,
+    -1
+   ],
+   [
+    14,
+    -2,
+    0,
+    -1
+   ],
+   [
+    16,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    3,
+    0,
+    -1,
+    0
+   ],
+   [
+    55,
+    -10,
+    -5,
+    -4
+   ],
+   [
+    90,
+    -30,
+    -10,
+    -9
+   ],
+   [
+    9,
+    -3,
+    0,
+    -1
+   ],
+   [
+    66,
+    -12,
+    -4,
+    -5
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    240,
+    -60,
+    -20,
+    -21
+   ],
+   [
+    6,
+    -6,
+    -2,
+    -1
+   ],
+   [
+    5,
+    -5,
+    0,
+    -1
+   ],
+   [
+    24,
+    -6,
+    -3,
+    -2
+   ],
+   [
+    10,
+    -4,
+    -2,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 44
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_45",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    12,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    30
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8640
+  },
+  "num_roots": 20,
+  "roots": [
+   [
+    15,
+    -15,
+    0,
+    -4
+   ],
+   [
+    15,
+    0,
+    0,
+    -1
+   ],
+   [
+    30,
+    -18,
+    -1,
+    -6
+   ],
+   [
+    6,
+    0,
+    -1,
+    0
+   ],
+   [
+    2,
+    -2,
+    -1,
+    0
+   ],
+   [
+    60,
+    -30,
+    0,
+    -11
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    14,
+    -10,
+    -1,
+    -3
+   ],
+   [
+    8,
+    -8,
+    -1,
+    -2
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    16,
+    -4,
+    -1,
+    -2
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    34,
+    -16,
+    -1,
+    -6
+   ],
+   [
+    7,
+    -2,
+    0,
+    -1
+   ],
+   [
+    6,
+    -6,
+    -2,
+    -1
+   ],
+   [
+    20,
+    -10,
+    -5,
+    -2
+   ],
+   [
+    100,
+    -50,
+    -5,
+    -18
+   ],
+   [
+    6,
+    -3,
+    -1,
+    -1
+   ],
+   [
+    10,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    42,
+    -18,
+    -2,
+    -7
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 45
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_46",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    26,
+    13
+   ],
+   [
+    0,
+    0,
+    13,
+    26
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8641
+  },
+  "num_roots": 12,
+  "roots": [
+   [
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    13,
+    0,
+    -1,
+    0
+   ],
+   [
+    78,
+    -39,
+    -13,
+    -4
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    6,
+    -2,
+    -1,
+    0
+   ],
+   [
+    15,
+    -6,
+    -2,
+    -1
+   ],
+   [
+    0,
+    0,
+    1,
+    -1
+   ],
+   [
+    4,
+    -3,
+    -1,
+    0
+   ],
+   [
+    12,
+    -3,
+    -1,
+    -1
+   ],
+   [
+    26,
+    -13,
+    -3,
+    -3
+   ],
+   [
+    39,
+    -26,
+    -7,
+    -3
+   ],
+   [
+    6,
+    -6,
+    -1,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 46
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_47",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    28,
+    14
+   ],
+   [
+    0,
+    0,
+    14,
+    28
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8642
+  },
+  "num_roots": 12,
+  "roots": [
+   [
+    168,
+    -42,
+    -13,
+    -13
+   ],
+   [
+    0,
+    0,
+    1,
+    -1
+   ],
+   [
+    14,
+    0,
+    -1,
+    0
+   ],
+   [
+    10,
+    -4,
+    -1,
+    -1
+   ],
+   [
+    6,
+    -2,
+    -1,
+    0
+   ],
+   [
+    47,
+    -11,
+    -4,
+    -3
+   ],
+   [
+    72,
+    -18,
+    -7,
+    -4
+   ],
+   [
+    133,
+    -35,
+    -12,
+    -9
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    7,
+    -7,
+    -2,
+    0
+   ],
+   [
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    6,
+    -6,
+    -1,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 47
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_48",
+  "dimension": 4,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    30,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    30
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8643
+  },
+  "num_roots": 18,
+  "roots": [
+   [
+    0,
+    0,
+    1,
+    -1
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    34,
+    -22,
+    -7,
+    -1
+   ],
+   [
+    14,
+    -2,
+    -1,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    15,
+    -15,
+    -4,
+    0
+   ],
+   [
+    70,
+    -50,
+    -15,
+    -3
+   ],
+   [
+    21,
+    -12,
+    -4,
+    -1
+   ],
+   [
+    60,
+    -30,
+    -11,
+    -1
+   ],
+   [
+    9,
+    -3,
+    -1,
+    -1
+   ],
+   [
+    50,
+    -10,
+    -5,
+    -3
+   ],
+   [
+    12,
+    -12,
+    -3,
+    -1
+   ],
+   [
+    24,
+    -6,
+    -3,
+    -1
+   ],
+   [
+    25,
+    -10,
+    -4,
+    -1
+   ],
+   [
+    5,
+    -5,
+    -1,
+    -1
+   ],
+   [
+    7,
+    -2,
+    -1,
+    0
+   ],
+   [
+    15,
+    0,
+    -1,
+    0
+   ],
+   [
+    12,
+    -6,
+    -2,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 48
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_49",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8644
+  },
+  "num_roots": 5,
+  "roots": [
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    -1,
+    0,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 49
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_50",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    2
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8645
+  },
+  "num_roots": 6,
+  "roots": [
+   [
+    1,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 50
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_51",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    3
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8646
+  },
+  "num_roots": 7,
+  "roots": [
+   [
+    3,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    -1
+   ],
+   [
+    1,
+    0,
+    -1,
+    -1,
+    0
+   ],
+   [
+    1,
+    -1,
+    -1,
+    0,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 51
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_52",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    2,
+    0,
+    0,
+    0
+   ],
+   [
+    2,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8647
+  },
+  "num_roots": 5,
+  "roots": [
+   [
+    1,
+    0,
+    -2,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 52
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_53",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    5
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8648
+  },
+  "num_roots": 7,
+  "roots": [
+   [
+    5,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    -1
+   ],
+   [
+    1,
+    0,
+    -1,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    2,
+    -1,
+    -1,
+    0,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 53
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_54",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    3
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8649
+  },
+  "num_roots": 8,
+  "roots": [
+   [
+    5,
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    -2
+   ],
+   [
+    1,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    1,
+    -1,
+    -1,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 54
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_55",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    6
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8650
+  },
+  "num_roots": 7,
+  "roots": [
+   [
+    0,
+    0,
+    1,
+    -1,
+    0
+   ],
+   [
+    3,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    -1
+   ],
+   [
+    1,
+    0,
+    -1,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    2,
+    -2,
+    -2,
+    0,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 55
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_56",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    2
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8651
+  },
+  "num_roots": 6,
+  "roots": [
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    1
+   ],
+   [
+    1,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 56
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_57",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    7
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8652
+  },
+  "num_roots": 10,
+  "roots": [
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    -1,
+    0
+   ],
+   [
+    1,
+    0,
+    -1,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    -1
+   ],
+   [
+    7,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    7,
+    -7,
+    -7,
+    0,
+    3
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    7,
+    -7,
+    0,
+    0,
+    4
+   ],
+   [
+    3,
+    -1,
+    -1,
+    0,
+    1
+   ],
+   [
+    2,
+    -2,
+    -1,
+    -1,
+    1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 57
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_58",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    3,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    2
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8653
+  },
+  "num_roots": 7,
+  "roots": [
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    3,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 58
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_59",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    3,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    3
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8654
+  },
+  "num_roots": 7,
+  "roots": [
+   [
+    3,
+    0,
+    0,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    1,
+    -1,
+    -1,
+    0,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 59
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_60",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    6
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8655
+  },
+  "num_roots": 9,
+  "roots": [
+   [
+    1,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    -2
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    2,
+    -1,
+    0,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    0
+   ],
+   [
+    11,
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    2,
+    -2,
+    -2,
+    -1,
+    1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 60
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_61",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    2,
+    0,
+    0,
+    0
+   ],
+   [
+    2,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    2
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8656
+  },
+  "num_roots": 6,
+  "roots": [
+   [
+    1,
+    0,
+    0,
+    -1,
+    1
+   ],
+   [
+    1,
+    0,
+    -2,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 61
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_62",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    7
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8657
+  },
+  "num_roots": 13,
+  "roots": [
+   [
+    28,
+    -14,
+    0,
+    -7,
+    10
+   ],
+   [
+    14,
+    -14,
+    -14,
+    -7,
+    4
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    0
+   ],
+   [
+    7,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    7,
+    -7,
+    0,
+    0,
+    4
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    -1
+   ],
+   [
+    3,
+    -1,
+    -1,
+    0,
+    1
+   ],
+   [
+    7,
+    -7,
+    -7,
+    0,
+    3
+   ],
+   [
+    2,
+    -2,
+    -1,
+    -1,
+    1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 62
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_63",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    4
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8658
+  },
+  "num_roots": 8,
+  "roots": [
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    7,
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    -2
+   ],
+   [
+    1,
+    -1,
+    0,
+    -1,
+    1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 63
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_64",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    3,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    3
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8659
+  },
+  "num_roots": 10,
+  "roots": [
+   [
+    1,
+    0,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    3,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    -2
+   ],
+   [
+    5,
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    1,
+    -1,
+    0,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    2,
+    -1,
+    -1,
+    -1,
+    1
+   ],
+   [
+    1,
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 64
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_65",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    3,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    5
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8660
+  },
+  "num_roots": 15,
+  "roots": [
+   [
+    1,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    3,
+    0,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    15,
+    -15,
+    0,
+    -10,
+    6
+   ],
+   [
+    15,
+    -15,
+    0,
+    -5,
+    9
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    30,
+    -15,
+    -15,
+    -10,
+    9
+   ],
+   [
+    2,
+    -1,
+    -1,
+    0,
+    1
+   ],
+   [
+    3,
+    -1,
+    0,
+    -1,
+    1
+   ],
+   [
+    5,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    15,
+    -15,
+    -15,
+    -5,
+    6
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    -1,
+    -1,
+    -1,
+    0
+   ],
+   [
+    2,
+    -2,
+    -1,
+    -1,
+    1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 65
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_66",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    15
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8661
+  },
+  "num_roots": 12,
+  "roots": [
+   [
+    7,
+    -1,
+    -1,
+    0,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    15,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    3,
+    -3,
+    -3,
+    0,
+    1
+   ],
+   [
+    9,
+    -3,
+    0,
+    0,
+    2
+   ],
+   [
+    1,
+    0,
+    -1,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    -1,
+    0
+   ],
+   [
+    15,
+    -5,
+    -5,
+    0,
+    3
+   ],
+   [
+    4,
+    -2,
+    -1,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    5,
+    -5,
+    0,
+    0,
+    2
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 66
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_67",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    5,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    2
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8662
+  },
+  "num_roots": 10,
+  "roots": [
+   [
+    20,
+    -20,
+    -11,
+    -10,
+    10
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    5,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    4,
+    -3,
+    -2,
+    -1,
+    2
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    2,
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    15,
+    -15,
+    -9,
+    -5,
+    5
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 67
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_68",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    3,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    3
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8663
+  },
+  "num_roots": 8,
+  "roots": [
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    6,
+    -6,
+    -3,
+    -2,
+    4
+   ],
+   [
+    1,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    3,
+    0,
+    0,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    -1,
+    0,
+    0,
+    1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 68
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_69",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    6,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    2
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8664
+  },
+  "num_roots": 7,
+  "roots": [
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    6,
+    -6,
+    -3,
+    -2,
+    4
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    1
+   ],
+   [
+    3,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 69
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_70",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    2,
+    0,
+    0,
+    0
+   ],
+   [
+    2,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    5
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8665
+  },
+  "num_roots": 7,
+  "roots": [
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    -1,
+    0
+   ],
+   [
+    5,
+    0,
+    0,
+    0,
+    2
+   ],
+   [
+    1,
+    -1,
+    -1,
+    0,
+    1
+   ],
+   [
+    1,
+    0,
+    -2,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 70
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_71",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    7,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    2
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8666
+  },
+  "num_roots": 14,
+  "roots": [
+   [
+    3,
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    84,
+    -42,
+    -29,
+    -14,
+    28
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    15,
+    -9,
+    -6,
+    -2,
+    4
+   ],
+   [
+    28,
+    -14,
+    -10,
+    -7,
+    7
+   ],
+   [
+    7,
+    -7,
+    -4,
+    0,
+    0
+   ],
+   [
+    7,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    18,
+    -8,
+    -6,
+    -3,
+    5
+   ],
+   [
+    2,
+    -2,
+    -1,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    35,
+    -21,
+    -13,
+    -7,
+    14
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 71
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_72",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    3,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    7
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8667
+  },
+  "num_roots": 18,
+  "roots": [
+   [
+    1,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    3,
+    0,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    7,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    6,
+    -6,
+    -3,
+    -1,
+    3
+   ],
+   [
+    3,
+    -2,
+    -2,
+    -1,
+    1
+   ],
+   [
+    12,
+    -6,
+    -3,
+    -5,
+    3
+   ],
+   [
+    21,
+    -7,
+    -7,
+    -7,
+    4
+   ],
+   [
+    14,
+    -7,
+    0,
+    -7,
+    3
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    7,
+    -7,
+    0,
+    0,
+    4
+   ],
+   [
+    1,
+    -1,
+    -1,
+    -1,
+    0
+   ],
+   [
+    7,
+    -7,
+    -7,
+    0,
+    3
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    2,
+    -2,
+    0,
+    -1,
+    1
+   ],
+   [
+    3,
+    -1,
+    -1,
+    0,
+    1
+   ],
+   [
+    4,
+    -1,
+    0,
+    -1,
+    1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 72
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_73",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    5,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    5
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8668
+  },
+  "num_roots": 9,
+  "roots": [
+   [
+    5,
+    0,
+    0,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    2,
+    -1,
+    -1,
+    0,
+    1
+   ],
+   [
+    2,
+    -2,
+    0,
+    -1,
+    1
+   ],
+   [
+    1,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    3,
+    -2,
+    -2,
+    -1,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 73
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_74",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    5,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    3
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8669
+  },
+  "num_roots": 14,
+  "roots": [
+   [
+    5,
+    -5,
+    -3,
+    -1,
+    2
+   ],
+   [
+    5,
+    -5,
+    -2,
+    -4,
+    3
+   ],
+   [
+    5,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    1,
+    -1,
+    0,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    2,
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    5,
+    -5,
+    -2,
+    -2,
+    4
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    5,
+    -5,
+    -3,
+    -3,
+    1
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    5,
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    -2
+   ],
+   [
+    3,
+    -1,
+    -1,
+    -1,
+    1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 74
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_75",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    15
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8670
+  },
+  "num_roots": 19,
+  "roots": [
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    4,
+    -2,
+    -1,
+    -1,
+    1
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    0
+   ],
+   [
+    40,
+    -10,
+    -5,
+    -5,
+    7
+   ],
+   [
+    10,
+    -10,
+    -10,
+    -5,
+    2
+   ],
+   [
+    50,
+    -10,
+    0,
+    -5,
+    8
+   ],
+   [
+    3,
+    -3,
+    -3,
+    0,
+    1
+   ],
+   [
+    9,
+    -3,
+    0,
+    0,
+    2
+   ],
+   [
+    1,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    5,
+    -5,
+    0,
+    0,
+    2
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    15,
+    -5,
+    -5,
+    0,
+    3
+   ],
+   [
+    10,
+    -10,
+    -5,
+    -5,
+    3
+   ],
+   [
+    7,
+    -1,
+    -1,
+    0,
+    1
+   ],
+   [
+    24,
+    -6,
+    -6,
+    -3,
+    4
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    -1
+   ],
+   [
+    15,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    6,
+    -6,
+    0,
+    -3,
+    2
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 75
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_76",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    2,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    8
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8671
+  },
+  "num_roots": 11,
+  "roots": [
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    15,
+    -15,
+    0,
+    -11,
+    7
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    -2
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    15,
+    -15,
+    0,
+    -4,
+    8
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    0
+   ],
+   [
+    3,
+    -1,
+    0,
+    -1,
+    1
+   ],
+   [
+    15,
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    1,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    2,
+    -2,
+    -1,
+    -1,
+    1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 76
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_77",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    10,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    2
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8672
+  },
+  "num_roots": 10,
+  "roots": [
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    1
+   ],
+   [
+    2,
+    -2,
+    -1,
+    0,
+    0
+   ],
+   [
+    10,
+    -10,
+    -4,
+    -5,
+    5
+   ],
+   [
+    30,
+    -30,
+    -11,
+    -10,
+    20
+   ],
+   [
+    5,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    9,
+    -6,
+    -3,
+    -2,
+    4
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 77
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_78",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    2,
+    0,
+    0,
+    0
+   ],
+   [
+    2,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    3,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    2
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8673
+  },
+  "num_roots": 7,
+  "roots": [
+   [
+    3,
+    0,
+    -2,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    1,
+    -1,
+    -1,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 78
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_79",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    14,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    2
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8674
+  },
+  "num_roots": 11,
+  "roots": [
+   [
+    42,
+    -42,
+    -15,
+    -14,
+    14
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    21,
+    -14,
+    -6,
+    -7,
+    7
+   ],
+   [
+    7,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    1
+   ],
+   [
+    12,
+    -6,
+    -3,
+    -2,
+    4
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    3,
+    -2,
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    3,
+    -3,
+    -1,
+    -1,
+    2
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 79
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_80",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    15,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    2
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8675
+  },
+  "num_roots": 16,
+  "roots": [
+   [
+    45,
+    -15,
+    -9,
+    -5,
+    10
+   ],
+   [
+    15,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    4,
+    -2,
+    -1,
+    -1,
+    1
+   ],
+   [
+    120,
+    -30,
+    -21,
+    -10,
+    20
+   ],
+   [
+    5,
+    -5,
+    -2,
+    0,
+    0
+   ],
+   [
+    9,
+    -3,
+    -2,
+    0,
+    0
+   ],
+   [
+    33,
+    -6,
+    -5,
+    -2,
+    4
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    36,
+    -8,
+    -6,
+    -3,
+    5
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    7,
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    50,
+    -10,
+    -8,
+    -5,
+    5
+   ],
+   [
+    3,
+    -3,
+    -1,
+    -1,
+    2
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 80
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_81",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    3,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    8
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8676
+  },
+  "num_roots": 21,
+  "roots": [
+   [
+    15,
+    -15,
+    0,
+    -4,
+    8
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    -2
+   ],
+   [
+    15,
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    15,
+    -15,
+    0,
+    -11,
+    7
+   ],
+   [
+    3,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    3,
+    -3,
+    -2,
+    -2,
+    1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    5,
+    -4,
+    -1,
+    -3,
+    2
+   ],
+   [
+    3,
+    -1,
+    0,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    6,
+    -6,
+    -1,
+    -3,
+    3
+   ],
+   [
+    6,
+    -3,
+    -2,
+    -1,
+    2
+   ],
+   [
+    10,
+    -5,
+    -5,
+    -1,
+    2
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    0
+   ],
+   [
+    15,
+    -15,
+    -5,
+    -6,
+    7
+   ],
+   [
+    20,
+    -15,
+    -5,
+    -9,
+    8
+   ],
+   [
+    5,
+    -1,
+    -1,
+    -1,
+    1
+   ],
+   [
+    15,
+    -5,
+    -5,
+    -4,
+    3
+   ],
+   [
+    4,
+    -4,
+    -1,
+    -1,
+    2
+   ],
+   [
+    1,
+    -1,
+    -1,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 81
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_82",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    2,
+    0,
+    0,
+    0
+   ],
+   [
+    2,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    3,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    3
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8677
+  },
+  "num_roots": 11,
+  "roots": [
+   [
+    3,
+    0,
+    -2,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    5,
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    -2
+   ],
+   [
+    1,
+    -1,
+    -1,
+    -1,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    3,
+    -1,
+    -1,
+    -1,
+    2
+   ],
+   [
+    2,
+    -1,
+    0,
+    -2,
+    2
+   ],
+   [
+    1,
+    -1,
+    -1,
+    -1,
+    1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 82
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_83",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    2,
+    0,
+    0,
+    0
+   ],
+   [
+    2,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    5,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    2
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8678
+  },
+  "num_roots": 12,
+  "roots": [
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    9,
+    -9,
+    -6,
+    -5,
+    10
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    15,
+    -15,
+    -8,
+    -10,
+    20
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    3,
+    -2,
+    -2,
+    -2,
+    2
+   ],
+   [
+    5,
+    0,
+    -2,
+    0,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    20,
+    -15,
+    -11,
+    -10,
+    20
+   ],
+   [
+    1,
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    5,
+    -5,
+    -3,
+    -4,
+    6
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 83
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_84",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    10,
+    5
+   ],
+   [
+    0,
+    0,
+    0,
+    5,
+    10
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8679
+  },
+  "num_roots": 14,
+  "roots": [
+   [
+    15,
+    -15,
+    0,
+    -4,
+    8
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    2,
+    -2,
+    0,
+    -1,
+    1
+   ],
+   [
+    6,
+    -3,
+    -3,
+    -1,
+    2
+   ],
+   [
+    15,
+    -10,
+    -5,
+    -4,
+    6
+   ],
+   [
+    3,
+    -2,
+    -2,
+    -1,
+    1
+   ],
+   [
+    5,
+    -5,
+    -5,
+    -1,
+    2
+   ],
+   [
+    5,
+    -3,
+    -1,
+    -1,
+    2
+   ],
+   [
+    5,
+    0,
+    0,
+    -1,
+    1
+   ],
+   [
+    4,
+    -4,
+    -2,
+    -1,
+    2
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 84
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_85",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    5,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    15
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8680
+  },
+  "num_roots": 51,
+  "roots": [
+   [
+    1,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    30,
+    -15,
+    0,
+    -6,
+    7
+   ],
+   [
+    10,
+    -5,
+    -5,
+    -2,
+    2
+   ],
+   [
+    9,
+    -4,
+    -3,
+    -1,
+    2
+   ],
+   [
+    45,
+    -15,
+    -15,
+    -6,
+    8
+   ],
+   [
+    10,
+    -5,
+    0,
+    -3,
+    2
+   ],
+   [
+    45,
+    -15,
+    -15,
+    -9,
+    7
+   ],
+   [
+    45,
+    -15,
+    0,
+    -9,
+    8
+   ],
+   [
+    15,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    12,
+    -3,
+    -3,
+    -1,
+    2
+   ],
+   [
+    20,
+    -5,
+    -5,
+    -3,
+    3
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    5,
+    0,
+    0,
+    -1,
+    0
+   ],
+   [
+    2,
+    -1,
+    -1,
+    -1,
+    0
+   ],
+   [
+    15,
+    -5,
+    0,
+    -2,
+    3
+   ],
+   [
+    8,
+    -4,
+    -1,
+    -1,
+    2
+   ],
+   [
+    14,
+    -4,
+    -3,
+    -3,
+    2
+   ],
+   [
+    7,
+    -3,
+    -3,
+    -2,
+    1
+   ],
+   [
+    50,
+    -10,
+    -5,
+    -7,
+    7
+   ],
+   [
+    9,
+    -1,
+    0,
+    -1,
+    1
+   ],
+   [
+    40,
+    -10,
+    -5,
+    -3,
+    7
+   ],
+   [
+    5,
+    -2,
+    -1,
+    -1,
+    1
+   ],
+   [
+    9,
+    -3,
+    0,
+    -3,
+    1
+   ],
+   [
+    15,
+    -5,
+    -5,
+    0,
+    3
+   ],
+   [
+    9,
+    -6,
+    -3,
+    -3,
+    2
+   ],
+   [
+    7,
+    -1,
+    -1,
+    0,
+    1
+   ],
+   [
+    18,
+    -3,
+    -3,
+    -3,
+    2
+   ],
+   [
+    10,
+    -10,
+    -5,
+    -3,
+    3
+   ],
+   [
+    5,
+    -5,
+    -5,
+    -2,
+    1
+   ],
+   [
+    3,
+    -3,
+    -3,
+    0,
+    1
+   ],
+   [
+    9,
+    -3,
+    0,
+    0,
+    2
+   ],
+   [
+    5,
+    -5,
+    0,
+    0,
+    2
+   ],
+   [
+    13,
+    -3,
+    0,
+    -2,
+    2
+   ],
+   [
+    30,
+    -5,
+    -5,
+    -3,
+    4
+   ],
+   [
+    20,
+    -10,
+    -5,
+    -1,
+    5
+   ],
+   [
+    20,
+    -5,
+    -5,
+    -5,
+    2
+   ],
+   [
+    25,
+    -5,
+    0,
+    -5,
+    3
+   ],
+   [
+    20,
+    -10,
+    -5,
+    -7,
+    3
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    3,
+    -3,
+    0,
+    -1,
+    1
+   ],
+   [
+    24,
+    -6,
+    -3,
+    -3,
+    4
+   ],
+   [
+    30,
+    -10,
+    -5,
+    -3,
+    6
+   ],
+   [
+    15,
+    -10,
+    -5,
+    -3,
+    4
+   ],
+   [
+    25,
+    -5,
+    0,
+    -2,
+    4
+   ],
+   [
+    40,
+    -10,
+    -5,
+    -7,
+    6
+   ],
+   [
+    25,
+    -10,
+    -5,
+    -7,
+    4
+   ],
+   [
+    5,
+    -5,
+    0,
+    -3,
+    1
+   ],
+   [
+    40,
+    -10,
+    -5,
+    -9,
+    5
+   ],
+   [
+    13,
+    -4,
+    -1,
+    -3,
+    2
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 85
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_86",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    2,
+    0,
+    0,
+    0
+   ],
+   [
+    2,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    7,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    2
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8681
+  },
+  "num_roots": 15,
+  "roots": [
+   [
+    42,
+    -42,
+    -29,
+    -14,
+    28
+   ],
+   [
+    42,
+    -35,
+    -26,
+    -14,
+    28
+   ],
+   [
+    9,
+    -8,
+    -6,
+    -3,
+    5
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    2,
+    -1,
+    -1,
+    -1,
+    1
+   ],
+   [
+    7,
+    0,
+    -2,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    1
+   ],
+   [
+    4,
+    -3,
+    -2,
+    -2,
+    4
+   ],
+   [
+    9,
+    -9,
+    -6,
+    -5,
+    7
+   ],
+   [
+    3,
+    -2,
+    -2,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    14,
+    -14,
+    -10,
+    -7,
+    7
+   ],
+   [
+    7,
+    -7,
+    -4,
+    -7,
+    7
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 86
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_87",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    2,
+    0,
+    0,
+    0
+   ],
+   [
+    2,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    5,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    5
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8682
+  },
+  "num_roots": 11,
+  "roots": [
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    5,
+    0,
+    0,
+    0,
+    2
+   ],
+   [
+    1,
+    -1,
+    -1,
+    0,
+    1
+   ],
+   [
+    10,
+    -10,
+    -10,
+    -5,
+    6
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    2,
+    -1,
+    0,
+    -1,
+    1
+   ],
+   [
+    15,
+    -15,
+    -10,
+    -8,
+    10
+   ],
+   [
+    1,
+    0,
+    -2,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    4,
+    -3,
+    -3,
+    -2,
+    2
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 87
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_88",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    10,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    8
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8683
+  },
+  "num_roots": 33,
+  "roots": [
+   [
+    45,
+    -30,
+    -9,
+    -8,
+    16
+   ],
+   [
+    30,
+    -30,
+    -6,
+    -7,
+    14
+   ],
+   [
+    45,
+    -30,
+    -6,
+    -23,
+    16
+   ],
+   [
+    15,
+    -15,
+    -6,
+    -2,
+    4
+   ],
+   [
+    45,
+    -30,
+    -9,
+    -22,
+    14
+   ],
+   [
+    15,
+    -15,
+    0,
+    -11,
+    7
+   ],
+   [
+    15,
+    -15,
+    0,
+    -4,
+    8
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    -2
+   ],
+   [
+    10,
+    -10,
+    -2,
+    -7,
+    4
+   ],
+   [
+    10,
+    -10,
+    -3,
+    -2,
+    4
+   ],
+   [
+    18,
+    -10,
+    -3,
+    -4,
+    6
+   ],
+   [
+    8,
+    -8,
+    -1,
+    -2,
+    4
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    12,
+    -10,
+    -3,
+    -6,
+    4
+   ],
+   [
+    10,
+    -8,
+    -1,
+    -6,
+    4
+   ],
+   [
+    15,
+    0,
+    0,
+    -1,
+    2
+   ],
+   [
+    10,
+    -2,
+    -1,
+    -2,
+    2
+   ],
+   [
+    2,
+    -2,
+    -1,
+    0,
+    0
+   ],
+   [
+    5,
+    -5,
+    -2,
+    -3,
+    1
+   ],
+   [
+    5,
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    15,
+    -10,
+    -2,
+    -3,
+    6
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    20,
+    -10,
+    -3,
+    -8,
+    6
+   ],
+   [
+    15,
+    -5,
+    -2,
+    -2,
+    4
+   ],
+   [
+    30,
+    -30,
+    -9,
+    -13,
+    11
+   ],
+   [
+    3,
+    -1,
+    0,
+    -1,
+    1
+   ],
+   [
+    60,
+    -30,
+    -9,
+    -17,
+    19
+   ],
+   [
+    45,
+    -15,
+    -6,
+    -13,
+    11
+   ],
+   [
+    5,
+    -4,
+    -1,
+    -2,
+    2
+   ],
+   [
+    10,
+    -10,
+    -1,
+    -5,
+    5
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    0
+   ],
+   [
+    4,
+    -2,
+    -1,
+    -1,
+    1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 88
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_89",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    2,
+    0,
+    0,
+    0
+   ],
+   [
+    2,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    15,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    2,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    2
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8684
+  },
+  "num_roots": 17,
+  "roots": [
+   [
+    30,
+    -15,
+    -11,
+    0,
+    0
+   ],
+   [
+    5,
+    -3,
+    -2,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    0,
+    -1,
+    1
+   ],
+   [
+    15,
+    -15,
+    -8,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    2,
+    -2,
+    -1,
+    -1,
+    1
+   ],
+   [
+    15,
+    0,
+    -2,
+    0,
+    0
+   ],
+   [
+    4,
+    -1,
+    -1,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    6,
+    -3,
+    -2,
+    -2,
+    4
+   ],
+   [
+    21,
+    -9,
+    -7,
+    -2,
+    4
+   ],
+   [
+    7,
+    -2,
+    -2,
+    0,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    25,
+    -10,
+    -8,
+    -5,
+    5
+   ],
+   [
+    5,
+    -5,
+    -2,
+    -5,
+    5
+   ],
+   [
+    3,
+    -3,
+    -1,
+    -2,
+    4
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 89
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_90",
+  "dimension": 5,
+  "gram": [
+   [
+    0,
+    2,
+    0,
+    0,
+    0
+   ],
+   [
+    2,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    10,
+    5
+   ],
+   [
+    0,
+    0,
+    0,
+    5,
+    10
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8685
+  },
+  "num_roots": 19,
+  "roots": [
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    5,
+    0,
+    0,
+    -1,
+    1
+   ],
+   [
+    2,
+    -1,
+    0,
+    -1,
+    1
+   ],
+   [
+    10,
+    -10,
+    -10,
+    -5,
+    6
+   ],
+   [
+    1,
+    0,
+    -2,
+    0,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    15,
+    -15,
+    -10,
+    -9,
+    9
+   ],
+   [
+    15,
+    -10,
+    -10,
+    -6,
+    8
+   ],
+   [
+    9,
+    -3,
+    0,
+    -2,
+    4
+   ],
+   [
+    4,
+    -2,
+    -2,
+    -1,
+    2
+   ],
+   [
+    3,
+    -3,
+    -3,
+    -1,
+    2
+   ],
+   [
+    15,
+    -5,
+    -5,
+    -4,
+    6
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    27,
+    -24,
+    -18,
+    -14,
+    16
+   ],
+   [
+    25,
+    -25,
+    -15,
+    -14,
+    16
+   ],
+   [
+    4,
+    -3,
+    -3,
+    -2,
+    2
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    5,
+    -5,
+    0,
+    -2,
+    4
+   ],
+   [
+    6,
+    -6,
+    -4,
+    -3,
+    4
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 90
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_91",
+  "dimension": 4,
+  "gram": [
+   [
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8773
+  },
+  "num_roots": 4,
+  "roots": [
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    -1
+   ],
+   [
+    0,
+    -1,
+    -1,
+    0
+   ],
+   [
+    1,
+    1,
+    -1,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 91
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_92",
+  "dimension": 4,
+  "gram": [
+   [
+    -2,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8774
+  },
+  "num_roots": 5,
+  "roots": [
+   [
+    0,
+    -1,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    1,
+    2,
+    0,
+    0
+   ],
+   [
+    1,
+    1,
+    1,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 92
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_93",
+  "dimension": 4,
+  "gram": [
+   [
+    -3,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8775
+  },
+  "num_roots": 4,
+  "roots": [
+   [
+    -2,
+    -3,
+    3,
+    0
+   ],
+   [
+    1,
+    0,
+    -2,
+    1
+   ],
+   [
+    -1,
+    1,
+    2,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 93
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_94",
+  "dimension": 4,
+  "gram": [
+   [
+    -5,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8776
+  },
+  "num_roots": 6,
+  "roots": [
+   [
+    1,
+    1,
+    -2,
+    -1
+   ],
+   [
+    3,
+    5,
+    -5,
+    0
+   ],
+   [
+    2,
+    0,
+    -5,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    0,
+    1,
+    1,
+    0
+   ],
+   [
+    0,
+    -1,
+    0,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 94
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_95",
+  "dimension": 4,
+  "gram": [
+   [
+    -7,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8777
+  },
+  "num_roots": 5,
+  "roots": [
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    1,
+    -1,
+    0
+   ],
+   [
+    -1,
+    -2,
+    -1,
+    -2
+   ],
+   [
+    0,
+    -1,
+    0,
+    1
+   ],
+   [
+    -1,
+    0,
+    0,
+    -3
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 95
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_96",
+  "dimension": 4,
+  "gram": [
+   [
+    -11,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8778
+  },
+  "num_roots": 7,
+  "roots": [
+   [
+    14,
+    11,
+    44,
+    -11
+   ],
+   [
+    0,
+    -1,
+    0,
+    0
+   ],
+   [
+    4,
+    2,
+    13,
+    -2
+   ],
+   [
+    -3,
+    0,
+    -11,
+    0
+   ],
+   [
+    1,
+    0,
+    3,
+    -2
+   ],
+   [
+    0,
+    1,
+    0,
+    1
+   ],
+   [
+    3,
+    0,
+    10,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 96
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_97",
+  "dimension": 4,
+  "gram": [
+   [
+    -17,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8779
+  },
+  "num_roots": 13,
+  "roots": [
+   [
+    959,
+    2431,
+    2533,
+    -1819
+   ],
+   [
+    0,
+    1,
+    -1,
+    0
+   ],
+   [
+    86,
+    219,
+    227,
+    -162
+   ],
+   [
+    3,
+    7,
+    9,
+    -5
+   ],
+   [
+    418,
+    1054,
+    1105,
+    -799
+   ],
+   [
+    10,
+    25,
+    26,
+    -20
+   ],
+   [
+    -2,
+    -6,
+    -5,
+    3
+   ],
+   [
+    132,
+    340,
+    340,
+    -255
+   ],
+   [
+    78,
+    198,
+    205,
+    -149
+   ],
+   [
+    293,
+    748,
+    765,
+    -561
+   ],
+   [
+    58,
+    153,
+    153,
+    -102
+   ],
+   [
+    -7,
+    -17,
+    -17,
+    17
+   ],
+   [
+    15,
+    39,
+    39,
+    -28
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 97
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_98",
+  "dimension": 5,
+  "gram": [
+   [
+    -1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8780
+  },
+  "num_roots": 5,
+  "roots": [
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    0,
+    -1,
+    -1,
+    0,
+    0
+   ],
+   [
+    1,
+    1,
+    -1,
+    0,
+    1
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 98
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_99",
+  "dimension": 5,
+  "gram": [
+   [
+    -2,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8781
+  },
+  "num_roots": 6,
+  "roots": [
+   [
+    1,
+    1,
+    1,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    -1,
+    0,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    0,
+    1,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    0,
+    2,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 99
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_100",
+  "dimension": 5,
+  "gram": [
+   [
+    -3,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8782
+  },
+  "num_roots": 6,
+  "roots": [
+   [
+    -3,
+    -1,
+    5,
+    1,
+    -1
+   ],
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    -2,
+    0,
+    3,
+    3,
+    0
+   ],
+   [
+    -1,
+    0,
+    2,
+    0,
+    1
+   ],
+   [
+    1,
+    -1,
+    -2,
+    0,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 100
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_101",
+  "dimension": 5,
+  "gram": [
+   [
+    -5,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8783
+  },
+  "num_roots": 7,
+  "roots": [
+   [
+    1,
+    1,
+    -2,
+    1,
+    1
+   ],
+   [
+    0,
+    1,
+    0,
+    -1,
+    0
+   ],
+   [
+    4,
+    0,
+    -9,
+    0,
+    1
+   ],
+   [
+    7,
+    0,
+    -15,
+    0,
+    5
+   ],
+   [
+    0,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    -2,
+    0,
+    5,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    -1
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 101
+  }
+ },
+ {
+  "id": "ListSimpleRootSystem_102",
+  "dimension": 5,
+  "gram": [
+   [
+    -11,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "gram_source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/20_Reflective/ListReflect",
+   "index": 8784
+  },
+  "num_roots": 9,
+  "roots": [
+   [
+    1,
+    1,
+    3,
+    -1,
+    1
+   ],
+   [
+    0,
+    0,
+    -1,
+    0,
+    1
+   ],
+   [
+    0,
+    0,
+    0,
+    -1,
+    -1
+   ],
+   [
+    1,
+    0,
+    3,
+    0,
+    2
+   ],
+   [
+    8,
+    0,
+    22,
+    -11,
+    11
+   ],
+   [
+    1,
+    1,
+    2,
+    -2,
+    2
+   ],
+   [
+    3,
+    0,
+    11,
+    0,
+    0
+   ],
+   [
+    0,
+    -1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0,
+    1,
+    0
+   ]
+  ],
+  "source": {
+   "kind": "reference_implementation_output",
+   "file": "references/vendor/polyhedral_common@1592b246/CI_tests/01_RatIntAutomorphy/ListSimpleRootSystem_4_56_X_5_47",
+   "index": 102
+  }
+ }
+]

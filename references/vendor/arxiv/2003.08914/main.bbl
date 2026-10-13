@@ -1,0 +1,1102 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.2 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{nyt/global//global/global}
+    \entry{Allcock.Gal.Mark}{article}{}
+      \name{author}{3}{}{%
+        {{hash=f50a34989dd4afb9db87f4ac98dd9f26}{%
+           family={Allcock},
+           familyi={A\bibinitperiod},
+           given={Daniel},
+           giveni={D\bibinitperiod}}}%
+        {{hash=a8e95444d4cdc77c244782801373aafa}{%
+           family={Gal},
+           familyi={G\bibinitperiod},
+           given={Itamar},
+           giveni={I\bibinitperiod}}}%
+        {{hash=294e25801e6dab784aac98422ea83a36}{%
+           family={Mark},
+           familyi={M\bibinitperiod},
+           given={Alice},
+           giveni={A\bibinitperiod}}}%
+      }
+      \strng{namehash}{c878896bcc3e81742b1aa5d9e75a4751}
+      \strng{fullhash}{c878896bcc3e81742b1aa5d9e75a4751}
+      \strng{bibnamehash}{c878896bcc3e81742b1aa5d9e75a4751}
+      \strng{authorbibnamehash}{c878896bcc3e81742b1aa5d9e75a4751}
+      \strng{authornamehash}{c878896bcc3e81742b1aa5d9e75a4751}
+      \strng{authorfullhash}{c878896bcc3e81742b1aa5d9e75a4751}
+      \field{sortinit}{A}
+      \field{sortinithash}{2f401846e2029bad6b3ecc16d50031e2}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Enseign. Math.}
+      \field{number}{1-2}
+      \field{title}{The {C}onway-{S}loane calculus for 2-adic lattices}
+      \field{volume}{66}
+      \field{year}{2020}
+      \field{pages}{5\bibrangedash 31}
+      \range{pages}{27}
+      \verb{doi}
+      \verb 10.4171/LEM/66-1/2-2
+      \endverb
+    \endentry
+    \entry{magma}{article}{}
+      \name{author}{3}{}{%
+        {{hash=6af9d924e0ce2bc82b20f1cb4cceb29b}{%
+           family={Bosma},
+           familyi={B\bibinitperiod},
+           given={Wieb},
+           giveni={W\bibinitperiod}}}%
+        {{hash=ef4238cce44c194cec970f8d4eb8e92b}{%
+           family={Cannon},
+           familyi={C\bibinitperiod},
+           given={John},
+           giveni={J\bibinitperiod}}}%
+        {{hash=6dbe502fea0e8279934da21eeeb7cc3b}{%
+           family={Playoust},
+           familyi={P\bibinitperiod},
+           given={Catherine},
+           giveni={C\bibinitperiod}}}%
+      }
+      \strng{namehash}{d05713c29377946f6c9a0fe8864f3687}
+      \strng{fullhash}{d05713c29377946f6c9a0fe8864f3687}
+      \strng{bibnamehash}{d05713c29377946f6c9a0fe8864f3687}
+      \strng{authorbibnamehash}{d05713c29377946f6c9a0fe8864f3687}
+      \strng{authornamehash}{d05713c29377946f6c9a0fe8864f3687}
+      \strng{authorfullhash}{d05713c29377946f6c9a0fe8864f3687}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{J. Symbolic Comput.}
+      \field{note}{Computational algebra and number theory (London, 1993)}
+      \field{number}{3-4}
+      \field{title}{The {M}agma algebra system. {I}. {T}he user language}
+      \field{volume}{24}
+      \field{year}{1997}
+      \field{pages}{235\bibrangedash 265}
+      \range{pages}{31}
+      \verb{doi}
+      \verb 10.1006/jsco.1996.0125
+      \endverb
+    \endentry
+    \entry{brandhorst_2024_10617125}{misc}{}
+      \name{author}{3}{}{%
+        {{hash=bac7bb9b7759961521b987dbcb9e9b31}{%
+           family={Brandhorst},
+           familyi={B\bibinitperiod},
+           given={Simon},
+           giveni={S\bibinitperiod}}}%
+        {{hash=925dbff3e7ecad51ac3d538f05144077}{%
+           family={Sonel},
+           familyi={S\bibinitperiod},
+           given={Serkan},
+           giveni={S\bibinitperiod}}}%
+        {{hash=5930baa8af14491583e509e929c0a07d}{%
+           family={Veniani},
+           familyi={V\bibinitperiod},
+           given={Davide\bibnamedelima Cesare},
+           giveni={D\bibinitperiod\bibinitdelim C\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Zenodo}%
+      }
+      \strng{namehash}{b2311ee25fb44507706e60f16a3bd0a3}
+      \strng{fullhash}{b2311ee25fb44507706e60f16a3bd0a3}
+      \strng{bibnamehash}{b2311ee25fb44507706e60f16a3bd0a3}
+      \strng{authorbibnamehash}{b2311ee25fb44507706e60f16a3bd0a3}
+      \strng{authornamehash}{b2311ee25fb44507706e60f16a3bd0a3}
+      \strng{authorfullhash}{b2311ee25fb44507706e60f16a3bd0a3}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{month}{3}
+      \field{note}{Zenodo}
+      \field{title}{{Data for "Idoneal genera and K3 surfaces covering an Enriques surface"}}
+      \field{year}{2020}
+      \verb{doi}
+      \verb 10.5281/zenodo.10617125
+      \endverb
+    \endentry
+    \entry{brandhorst_discriminant_forms}{misc}{}
+      \name{author}{2}{}{%
+        {{hash=bac7bb9b7759961521b987dbcb9e9b31}{%
+           family={Brandhorst},
+           familyi={B\bibinitperiod},
+           given={Simon},
+           giveni={S\bibinitperiod}}}%
+        {{hash=a21570db8927af6592c28ec8848b98fe}{%
+           family={{The Sage Development Team}},
+           familyi={T\bibinitperiod}}}%
+      }
+      \strng{namehash}{57366a79bf07f99ede6c9718e01fb564}
+      \strng{fullhash}{57366a79bf07f99ede6c9718e01fb564}
+      \strng{bibnamehash}{57366a79bf07f99ede6c9718e01fb564}
+      \strng{authorbibnamehash}{57366a79bf07f99ede6c9718e01fb564}
+      \strng{authornamehash}{57366a79bf07f99ede6c9718e01fb564}
+      \strng{authorfullhash}{57366a79bf07f99ede6c9718e01fb564}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{\url{https://doc.sagemath.org/html/en/reference/modules/sage/modules/torsion_quadratic_module.html}, \newline \url{https://doc.sagemath.org/html/en/reference/modules/sage/modules/free_quadratic_module_integer_symmetric.html}}
+      \field{title}{Quadratic lattices and discriminant forms in {SageMath}}
+      \field{year}{2017}
+    \endentry
+    \entry{cho2015}{article}{}
+      \name{author}{1}{}{%
+        {{hash=d5cf59713e8bd1071bab592cc2c3d3db}{%
+           family={Cho},
+           familyi={C\bibinitperiod},
+           given={Sungmun},
+           giveni={S\bibinitperiod}}}%
+      }
+      \strng{namehash}{d5cf59713e8bd1071bab592cc2c3d3db}
+      \strng{fullhash}{d5cf59713e8bd1071bab592cc2c3d3db}
+      \strng{bibnamehash}{d5cf59713e8bd1071bab592cc2c3d3db}
+      \strng{authorbibnamehash}{d5cf59713e8bd1071bab592cc2c3d3db}
+      \strng{authornamehash}{d5cf59713e8bd1071bab592cc2c3d3db}
+      \strng{authorfullhash}{d5cf59713e8bd1071bab592cc2c3d3db}
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Compos. Math.}
+      \field{number}{5}
+      \field{title}{Group schemes and local densities of quadratic lattices in residue characteristic 2}
+      \field{volume}{151}
+      \field{year}{2015}
+      \field{pages}{793\bibrangedash 827}
+      \range{pages}{35}
+      \verb{doi}
+      \verb 10.1112/S0010437X14007829
+      \endverb
+    \endentry
+    \entry{splag}{book}{}
+      \name{author}{2}{}{%
+        {{hash=903e214f118a1370c81ad555c7ec96e8}{%
+           family={{Conway}},
+           familyi={C\bibinitperiod},
+           given={J.\bibnamedelimi H.},
+           giveni={J\bibinitperiod\bibinitdelim H\bibinitperiod}}}%
+        {{hash=2cd3e6d4b468535119a6ad5372bb996c}{%
+           family={{Sloane}},
+           familyi={S\bibinitperiod},
+           given={N.\bibnamedelimi J.\bibnamedelimi A.},
+           giveni={N\bibinitperiod\bibinitdelim J\bibinitperiod\bibinitdelim A\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {New York, NY, Springer}%
+      }
+      \strng{namehash}{f1c0a9c162ed8eb3c77baba18929edea}
+      \strng{fullhash}{f1c0a9c162ed8eb3c77baba18929edea}
+      \strng{bibnamehash}{f1c0a9c162ed8eb3c77baba18929edea}
+      \strng{authorbibnamehash}{f1c0a9c162ed8eb3c77baba18929edea}
+      \strng{authornamehash}{f1c0a9c162ed8eb3c77baba18929edea}
+      \strng{authorfullhash}{f1c0a9c162ed8eb3c77baba18929edea}
+      \field{extraname}{1}
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{isbn}{0-387-98585-9}
+      \field{issn}{0072-7830}
+      \field{journaltitle}{{Grundlehren Math. Wiss.}}
+      \field{title}{{Sphere packings, lattices and groups}}
+      \field{volume}{290}
+      \field{year}{1999}
+      \field{pages}{lxxiv\bibrangessep 703}
+      \range{pages}{2}
+    \endentry
+    \entry{ConwaySloane88}{article}{}
+      \name{author}{2}{}{%
+        {{hash=4d38889baa1da2b61817906c7e7106fe}{%
+           family={Conway},
+           familyi={C\bibinitperiod},
+           given={John\bibnamedelima H.},
+           giveni={J\bibinitperiod\bibinitdelim H\bibinitperiod}}}%
+        {{hash=bdcac8dedb9591786db682b397f5a984}{%
+           family={Sloane},
+           familyi={S\bibinitperiod},
+           given={Neil\bibnamedelimb J.\bibnamedelimi A.},
+           giveni={N\bibinitperiod\bibinitdelim J\bibinitperiod\bibinitdelim A\bibinitperiod}}}%
+      }
+      \strng{namehash}{82a611eeebc4abb3d26ff0ec85b36a1c}
+      \strng{fullhash}{82a611eeebc4abb3d26ff0ec85b36a1c}
+      \strng{bibnamehash}{82a611eeebc4abb3d26ff0ec85b36a1c}
+      \strng{authorbibnamehash}{82a611eeebc4abb3d26ff0ec85b36a1c}
+      \strng{authornamehash}{82a611eeebc4abb3d26ff0ec85b36a1c}
+      \strng{authorfullhash}{82a611eeebc4abb3d26ff0ec85b36a1c}
+      \field{extraname}{2}
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Proc. Roy. Soc. London Ser. A}
+      \field{number}{1857}
+      \field{title}{Low-dimensional lattices. {IV}. {T}he mass formula}
+      \field{volume}{419}
+      \field{year}{1988}
+      \field{pages}{259\bibrangedash 286}
+      \range{pages}{28}
+      \verb{urlraw}
+      \verb https://www.jstor.org/stable/2398465
+      \endverb
+      \verb{url}
+      \verb https://www.jstor.org/stable/2398465
+      \endverb
+    \endentry
+    \entry{euler:numeri.idonei}{article}{}
+      \name{author}{1}{}{%
+        {{hash=f57a8c3746c4afcfc0cce86966aff75f}{%
+           family={Euler},
+           familyi={E\bibinitperiod},
+           given={Leonhard},
+           giveni={L\bibinitperiod}}}%
+      }
+      \list{language}{1}{%
+        {Latin}%
+      }
+      \strng{namehash}{f57a8c3746c4afcfc0cce86966aff75f}
+      \strng{fullhash}{f57a8c3746c4afcfc0cce86966aff75f}
+      \strng{bibnamehash}{f57a8c3746c4afcfc0cce86966aff75f}
+      \strng{authorbibnamehash}{f57a8c3746c4afcfc0cce86966aff75f}
+      \strng{authornamehash}{f57a8c3746c4afcfc0cce86966aff75f}
+      \strng{authorfullhash}{f57a8c3746c4afcfc0cce86966aff75f}
+      \field{sortinit}{E}
+      \field{sortinithash}{8da8a182d344d5b9047633dfc0cc9131}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Nova Acta Academiae Scientarum Imperialis Petropolitinae}
+      \field{note}{Delivered to the St. Petersburg Academy April 20, 1778. English translation by Jordan Bell: \href{https://arxiv.org/abs/math/0507352}{\texttt{arXiv:math/0507352}} (2005)}
+      \field{title}{Illustratio paradoxi circa progressionem numerorum idoneorum sive congruorum}
+      \field{volume}{15}
+      \field{year}{1806}
+      \field{pages}{29\bibrangedash 32}
+      \range{pages}{4}
+    \endentry
+    \entry{Festi.Veniani}{article}{}
+      \name{author}{2}{}{%
+        {{hash=b8c33f7b535b1c332b95a602718d6af1}{%
+           family={Festi},
+           familyi={F\bibinitperiod},
+           given={Dino},
+           giveni={D\bibinitperiod}}}%
+        {{hash=5930baa8af14491583e509e929c0a07d}{%
+           family={Veniani},
+           familyi={V\bibinitperiod},
+           given={Davide\bibnamedelima Cesare},
+           giveni={D\bibinitperiod\bibinitdelim C\bibinitperiod}}}%
+      }
+      \strng{namehash}{966ec8508bfd3d4ba4392219dad46e5c}
+      \strng{fullhash}{966ec8508bfd3d4ba4392219dad46e5c}
+      \strng{bibnamehash}{966ec8508bfd3d4ba4392219dad46e5c}
+      \strng{authorbibnamehash}{966ec8508bfd3d4ba4392219dad46e5c}
+      \strng{authornamehash}{966ec8508bfd3d4ba4392219dad46e5c}
+      \strng{authorfullhash}{966ec8508bfd3d4ba4392219dad46e5c}
+      \field{sortinit}{F}
+      \field{sortinithash}{2638baaa20439f1b5a8f80c6c08a13b4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Math. Nachr.}
+      \field{number}{7}
+      \field{title}{Enriques involutions on pencils of {K}3 surfaces}
+      \field{volume}{295}
+      \field{year}{2022}
+      \field{pages}{1312\bibrangedash 1326}
+      \range{pages}{15}
+      \verb{doi}
+      \verb doi.org/10.1002/mana.202100140
+      \endverb
+    \endentry
+    \entry{fincke.pohst}{article}{}
+      \name{author}{2}{}{%
+        {{hash=0f1cb21a495abe0c048fcb984bcc2f89}{%
+           family={Fincke},
+           familyi={F\bibinitperiod},
+           given={U.},
+           giveni={U\bibinitperiod}}}%
+        {{hash=6fc5fbfed90b54e53cf7bd4bf47d9b0d}{%
+           family={Pohst},
+           familyi={P\bibinitperiod},
+           given={M.},
+           giveni={M\bibinitperiod}}}%
+      }
+      \strng{namehash}{0a2f6d96f75a4710450be6ccf68b35c6}
+      \strng{fullhash}{0a2f6d96f75a4710450be6ccf68b35c6}
+      \strng{bibnamehash}{0a2f6d96f75a4710450be6ccf68b35c6}
+      \strng{authorbibnamehash}{0a2f6d96f75a4710450be6ccf68b35c6}
+      \strng{authornamehash}{0a2f6d96f75a4710450be6ccf68b35c6}
+      \strng{authorfullhash}{0a2f6d96f75a4710450be6ccf68b35c6}
+      \field{sortinit}{F}
+      \field{sortinithash}{2638baaa20439f1b5a8f80c6c08a13b4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Math. Comp.}
+      \field{number}{170}
+      \field{title}{Improved methods for calculating vectors of short length in a lattice, including a complexity analysis}
+      \field{volume}{44}
+      \field{year}{1985}
+      \field{pages}{463\bibrangedash 471}
+      \range{pages}{9}
+      \verb{doi}
+      \verb 10.2307/2007966
+      \endverb
+    \endentry
+    \entry{hanke}{misc}{}
+      \name{author}{2}{}{%
+        {{hash=fad38660f938503ad3c4d4c6ed8292fc}{%
+           family={Hanke},
+           familyi={H\bibinitperiod},
+           given={Jonathan},
+           giveni={J\bibinitperiod}}}%
+        {{hash=a21570db8927af6592c28ec8848b98fe}{%
+           family={{The Sage Development Team}},
+           familyi={T\bibinitperiod}}}%
+      }
+      \strng{namehash}{8e8234a81f2ca996339f4eaccb26feba}
+      \strng{fullhash}{8e8234a81f2ca996339f4eaccb26feba}
+      \strng{bibnamehash}{8e8234a81f2ca996339f4eaccb26feba}
+      \strng{authorbibnamehash}{8e8234a81f2ca996339f4eaccb26feba}
+      \strng{authornamehash}{8e8234a81f2ca996339f4eaccb26feba}
+      \strng{authorfullhash}{8e8234a81f2ca996339f4eaccb26feba}
+      \field{sortinit}{H}
+      \field{sortinithash}{23a3aa7c24e56cfa16945d55545109b5}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{\url{https://doc.sagemath.org/html/en/reference/quadratic_forms/sage/quadratic_forms/quadratic_form.html}}
+      \field{title}{Quadratic Forms in {SageMath}}
+      \field{year}{2007}
+    \endentry
+    \entry{hua}{book}{}
+      \name{author}{1}{}{%
+        {{hash=f5ef8e598e8e3a13493029960163cef6}{%
+           family={Hua},
+           familyi={H\bibinitperiod},
+           given={Loo\bibnamedelima Keng},
+           giveni={L\bibinitperiod\bibinitdelim K\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Springer-Verlag, Berlin-New York}%
+      }
+      \strng{namehash}{f5ef8e598e8e3a13493029960163cef6}
+      \strng{fullhash}{f5ef8e598e8e3a13493029960163cef6}
+      \strng{bibnamehash}{f5ef8e598e8e3a13493029960163cef6}
+      \strng{authorbibnamehash}{f5ef8e598e8e3a13493029960163cef6}
+      \strng{authornamehash}{f5ef8e598e8e3a13493029960163cef6}
+      \strng{authorfullhash}{f5ef8e598e8e3a13493029960163cef6}
+      \field{sortinit}{H}
+      \field{sortinithash}{23a3aa7c24e56cfa16945d55545109b5}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Translated from the Chinese by Peter Shiu}
+      \field{title}{Introduction to number theory}
+      \field{year}{1982}
+      \field{pages}{xviii+572}
+      \range{pages}{-1}
+    \endentry
+    \entry{Johansson2017arb}{article}{}
+      \name{author}{1}{}{%
+        {{hash=1cd2f71317215f5336dbc31416e0bbd7}{%
+           family={Johansson},
+           familyi={J\bibinitperiod},
+           given={Fredrik},
+           giveni={F\bibinitperiod}}}%
+      }
+      \strng{namehash}{1cd2f71317215f5336dbc31416e0bbd7}
+      \strng{fullhash}{1cd2f71317215f5336dbc31416e0bbd7}
+      \strng{bibnamehash}{1cd2f71317215f5336dbc31416e0bbd7}
+      \strng{authorbibnamehash}{1cd2f71317215f5336dbc31416e0bbd7}
+      \strng{authornamehash}{1cd2f71317215f5336dbc31416e0bbd7}
+      \strng{authorfullhash}{1cd2f71317215f5336dbc31416e0bbd7}
+      \field{sortinit}{J}
+      \field{sortinithash}{b2f54a9081ace9966a7cb9413811edb4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{issue}{8}
+      \field{journaltitle}{IEEE Transactions on Computers}
+      \field{title}{Arb: efficient arbitrary-precision midpoint-radius interval arithmetic}
+      \field{volume}{66}
+      \field{year}{2017}
+      \field{pages}{1281\bibrangedash 1292}
+      \range{pages}{12}
+      \verb{doi}
+      \verb 10.1109/TC.2017.2690633
+      \endverb
+    \endentry
+    \entry{Kani:idoneal.numbers}{article}{}
+      \name{author}{1}{}{%
+        {{hash=3800308e4429983542aec4467ed42e82}{%
+           family={Kani},
+           familyi={K\bibinitperiod},
+           given={Ernst},
+           giveni={E\bibinitperiod}}}%
+      }
+      \strng{namehash}{3800308e4429983542aec4467ed42e82}
+      \strng{fullhash}{3800308e4429983542aec4467ed42e82}
+      \strng{bibnamehash}{3800308e4429983542aec4467ed42e82}
+      \strng{authorbibnamehash}{3800308e4429983542aec4467ed42e82}
+      \strng{authornamehash}{3800308e4429983542aec4467ed42e82}
+      \strng{authorfullhash}{3800308e4429983542aec4467ed42e82}
+      \field{sortinit}{K}
+      \field{sortinithash}{c02bf6bff1c488450c352b40f5d853ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Ann. Sci. Math. Québec}
+      \field{number}{2}
+      \field{title}{Idoneal numbers and some generalizations}
+      \field{volume}{35}
+      \field{year}{2011}
+      \field{pages}{197\bibrangedash 227}
+      \range{pages}{31}
+      \verb{urlraw}
+      \verb https://www.labmath.uqam.ca/~annales/volumes/35-2/PDF/197-227.pdf
+      \endverb
+      \verb{url}
+      \verb https://www.labmath.uqam.ca/~annales/volumes/35-2/PDF/197-227.pdf
+      \endverb
+    \endentry
+    \entry{Keum90}{article}{}
+      \name{author}{1}{}{%
+        {{hash=b4ca5a591327f3473795e1f02935ee8e}{%
+           family={Keum},
+           familyi={K\bibinitperiod},
+           given={JongHae},
+           giveni={J\bibinitperiod}}}%
+      }
+      \strng{namehash}{b4ca5a591327f3473795e1f02935ee8e}
+      \strng{fullhash}{b4ca5a591327f3473795e1f02935ee8e}
+      \strng{bibnamehash}{b4ca5a591327f3473795e1f02935ee8e}
+      \strng{authorbibnamehash}{b4ca5a591327f3473795e1f02935ee8e}
+      \strng{authornamehash}{b4ca5a591327f3473795e1f02935ee8e}
+      \strng{authorfullhash}{b4ca5a591327f3473795e1f02935ee8e}
+      \field{sortinit}{K}
+      \field{sortinithash}{c02bf6bff1c488450c352b40f5d853ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Nagoya Math. J.}
+      \field{title}{Every algebraic {K}ummer surface is the {$K3$}-cover of an {E}nriques surface}
+      \field{volume}{118}
+      \field{year}{1990}
+      \field{pages}{99\bibrangedash 110}
+      \range{pages}{12}
+      \verb{doi}
+      \verb 10.1017/S0027763000003019
+      \endverb
+    \endentry
+    \entry{kirschmer}{thesis}{}
+      \name{author}{1}{}{%
+        {{hash=6583565ee4cd53f7a93b4e38acbb89a4}{%
+           family={Kirschmer},
+           familyi={K\bibinitperiod},
+           given={Markus},
+           giveni={M\bibinitperiod}}}%
+      }
+      \list{institution}{1}{%
+        {RWTH Aachen University}%
+      }
+      \list{location}{1}{%
+        {Aachen, Germany}%
+      }
+      \strng{namehash}{6583565ee4cd53f7a93b4e38acbb89a4}
+      \strng{fullhash}{6583565ee4cd53f7a93b4e38acbb89a4}
+      \strng{bibnamehash}{6583565ee4cd53f7a93b4e38acbb89a4}
+      \strng{authorbibnamehash}{6583565ee4cd53f7a93b4e38acbb89a4}
+      \strng{authornamehash}{6583565ee4cd53f7a93b4e38acbb89a4}
+      \strng{authorfullhash}{6583565ee4cd53f7a93b4e38acbb89a4}
+      \field{sortinit}{K}
+      \field{sortinithash}{c02bf6bff1c488450c352b40f5d853ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Definite quadratic and hermitian forms with small class number}
+      \field{type}{Habilitationsschrift}
+      \field{year}{2016}
+      \verb{urlraw}
+      \verb http://www.math.rwth-aachen.de/~Markus.Kirschmer/papers/herm.pdf
+      \endverb
+      \verb{url}
+      \verb http://www.math.rwth-aachen.de/~Markus.Kirschmer/papers/herm.pdf
+      \endverb
+    \endentry
+    \entry{kneser}{book}{}
+      \name{author}{1}{}{%
+        {{hash=6718d048286809e17f567f993c05841c}{%
+           family={Kneser},
+           familyi={K\bibinitperiod},
+           given={Martin},
+           giveni={M\bibinitperiod}}}%
+      }
+      \list{language}{1}{%
+        {German}%
+      }
+      \list{publisher}{1}{%
+        {Springer-Verlag, Berlin}%
+      }
+      \strng{namehash}{6718d048286809e17f567f993c05841c}
+      \strng{fullhash}{6718d048286809e17f567f993c05841c}
+      \strng{bibnamehash}{6718d048286809e17f567f993c05841c}
+      \strng{authorbibnamehash}{6718d048286809e17f567f993c05841c}
+      \strng{authornamehash}{6718d048286809e17f567f993c05841c}
+      \strng{authorfullhash}{6718d048286809e17f567f993c05841c}
+      \field{sortinit}{K}
+      \field{sortinithash}{c02bf6bff1c488450c352b40f5d853ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Revised and edited in collaboration with Rudolf Scharlau}
+      \field{title}{Quadratische {F}ormen}
+      \field{year}{2002}
+      \field{pages}{viii+164}
+      \range{pages}{-1}
+      \verb{doi}
+      \verb 10.1007/978-3-642-56380-5
+      \endverb
+    \endentry
+    \entry{landau}{book}{}
+      \name{author}{1}{}{%
+        {{hash=3b848e10fc7fbcf12b4c4cba04ed6ee8}{%
+           family={Landau},
+           familyi={L\bibinitperiod},
+           given={Edmund},
+           giveni={E\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Chelsea Publishing Co., New York}%
+      }
+      \strng{namehash}{3b848e10fc7fbcf12b4c4cba04ed6ee8}
+      \strng{fullhash}{3b848e10fc7fbcf12b4c4cba04ed6ee8}
+      \strng{bibnamehash}{3b848e10fc7fbcf12b4c4cba04ed6ee8}
+      \strng{authorbibnamehash}{3b848e10fc7fbcf12b4c4cba04ed6ee8}
+      \strng{authornamehash}{3b848e10fc7fbcf12b4c4cba04ed6ee8}
+      \strng{authorfullhash}{3b848e10fc7fbcf12b4c4cba04ed6ee8}
+      \field{sortinit}{L}
+      \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{2d ed, with an appendix by Paul T. Bateman}
+      \field{title}{Handbuch der {L}ehre von der {V}erteilung der {P}rimzahlen. 2 {B}ände}
+      \field{year}{1953}
+      \field{pages}{xviii+pp. 1\bibrangedash 564\bibrangessep ix+pp. 565\bibrangedash 1001}
+      \range{pages}{-1}
+    \endentry
+    \entry{Lee12}{article}{}
+      \name{author}{1}{}{%
+        {{hash=783b9360ee07f84507f382a94234a3aa}{%
+           family={Lee},
+           familyi={L\bibinitperiod},
+           given={Kwangwoo},
+           giveni={K\bibinitperiod}}}%
+      }
+      \strng{namehash}{783b9360ee07f84507f382a94234a3aa}
+      \strng{fullhash}{783b9360ee07f84507f382a94234a3aa}
+      \strng{bibnamehash}{783b9360ee07f84507f382a94234a3aa}
+      \strng{authorbibnamehash}{783b9360ee07f84507f382a94234a3aa}
+      \strng{authornamehash}{783b9360ee07f84507f382a94234a3aa}
+      \strng{authorfullhash}{783b9360ee07f84507f382a94234a3aa}
+      \field{sortinit}{L}
+      \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Bull. Korean Math. Soc.}
+      \field{number}{1}
+      \field{title}{Which {K}3 surfaces with {P}icard number 19 cover an {E}nriques surface}
+      \field{volume}{49}
+      \field{year}{2012}
+      \field{pages}{213\bibrangedash 222}
+      \range{pages}{10}
+      \verb{doi}
+      \verb 10.4134/BKMS.2012.49.1.213
+      \endverb
+    \endentry
+    \entry{morrison:K3.large.picard}{article}{}
+      \name{author}{1}{}{%
+        {{hash=c68e15e8e0be16d793449aae3d582084}{%
+           family={Morrison},
+           familyi={M\bibinitperiod},
+           given={David\bibnamedelima R.},
+           giveni={D\bibinitperiod\bibinitdelim R\bibinitperiod}}}%
+      }
+      \strng{namehash}{c68e15e8e0be16d793449aae3d582084}
+      \strng{fullhash}{c68e15e8e0be16d793449aae3d582084}
+      \strng{bibnamehash}{c68e15e8e0be16d793449aae3d582084}
+      \strng{authorbibnamehash}{c68e15e8e0be16d793449aae3d582084}
+      \strng{authornamehash}{c68e15e8e0be16d793449aae3d582084}
+      \strng{authorfullhash}{c68e15e8e0be16d793449aae3d582084}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Invent. Math.}
+      \field{number}{1}
+      \field{title}{On {$K3$} surfaces with large {P}icard number}
+      \field{volume}{75}
+      \field{year}{1984}
+      \field{pages}{105\bibrangedash 121}
+      \range{pages}{17}
+      \verb{doi}
+      \verb 10.1007/BF01403093
+      \endverb
+    \endentry
+    \entry{nikulin:kummer}{article}{}
+      \name{author}{1}{}{%
+        {{hash=0a461aad65e9ed7ba880c3347dc93bb1}{%
+           family={Nikulin},
+           familyi={N\bibinitperiod},
+           given={Viacheslav\bibnamedelima V.},
+           giveni={V\bibinitperiod\bibinitdelim V\bibinitperiod}}}%
+      }
+      \strng{namehash}{0a461aad65e9ed7ba880c3347dc93bb1}
+      \strng{fullhash}{0a461aad65e9ed7ba880c3347dc93bb1}
+      \strng{bibnamehash}{0a461aad65e9ed7ba880c3347dc93bb1}
+      \strng{authorbibnamehash}{0a461aad65e9ed7ba880c3347dc93bb1}
+      \strng{authornamehash}{0a461aad65e9ed7ba880c3347dc93bb1}
+      \strng{authorfullhash}{0a461aad65e9ed7ba880c3347dc93bb1}
+      \field{extraname}{1}
+      \field{sortinit}{N}
+      \field{sortinithash}{22369a73d5f88983a108b63f07f37084}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Math. USSR-Izv.}
+      \field{number}{2}
+      \field{title}{On Kummer surfaces}
+      \field{volume}{9}
+      \field{year}{1975}
+      \field{pages}{261\bibrangedash 275}
+      \range{pages}{15}
+      \verb{doi}
+      \verb 10.1070/IM1975v009n02ABEH001477
+      \endverb
+    \endentry
+    \entry{Nikulin:int.sym.bilinear.forms_Russian}{article}{}
+      \name{author}{1}{}{%
+        {{hash=0a461aad65e9ed7ba880c3347dc93bb1}{%
+           family={Nikulin},
+           familyi={N\bibinitperiod},
+           given={Viacheslav\bibnamedelima V.},
+           giveni={V\bibinitperiod\bibinitdelim V\bibinitperiod}}}%
+      }
+      \list{language}{1}{%
+        {Russian}%
+      }
+      \strng{namehash}{0a461aad65e9ed7ba880c3347dc93bb1}
+      \strng{fullhash}{0a461aad65e9ed7ba880c3347dc93bb1}
+      \strng{bibnamehash}{0a461aad65e9ed7ba880c3347dc93bb1}
+      \strng{authorbibnamehash}{0a461aad65e9ed7ba880c3347dc93bb1}
+      \strng{authornamehash}{0a461aad65e9ed7ba880c3347dc93bb1}
+      \strng{authorfullhash}{0a461aad65e9ed7ba880c3347dc93bb1}
+      \field{extraname}{2}
+      \field{sortinit}{N}
+      \field{sortinithash}{22369a73d5f88983a108b63f07f37084}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Izv. Akad. Nauk SSSR Ser. Mat.}
+      \field{number}{1}
+      \field{title}{Integer symmetric bilinear forms and some of their geometric applications}
+      \field{volume}{43}
+      \field{year}{1979}
+      \field{pages}{111\bibrangedash 177}
+      \range{pages}{67}
+      \verb{doi}
+      \verb 10.1070/IM1980v014n01ABEH001060
+      \endverb
+    \endentry
+    \entry{Nikulin:int.sym.bilinear.forms}{article}{}
+      \name{author}{1}{}{%
+        {{hash=0a461aad65e9ed7ba880c3347dc93bb1}{%
+           family={Nikulin},
+           familyi={N\bibinitperiod},
+           given={Viacheslav\bibnamedelima V.},
+           giveni={V\bibinitperiod\bibinitdelim V\bibinitperiod}}}%
+      }
+      \strng{namehash}{0a461aad65e9ed7ba880c3347dc93bb1}
+      \strng{fullhash}{0a461aad65e9ed7ba880c3347dc93bb1}
+      \strng{bibnamehash}{0a461aad65e9ed7ba880c3347dc93bb1}
+      \strng{authorbibnamehash}{0a461aad65e9ed7ba880c3347dc93bb1}
+      \strng{authornamehash}{0a461aad65e9ed7ba880c3347dc93bb1}
+      \strng{authorfullhash}{0a461aad65e9ed7ba880c3347dc93bb1}
+      \field{extraname}{3}
+      \field{sortinit}{N}
+      \field{sortinithash}{22369a73d5f88983a108b63f07f37084}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Math. USSR-Izv.}
+      \field{number}{1}
+      \field{title}{Integral symmetric bilinear forms and some of their applications}
+      \field{volume}{14}
+      \field{year}{1980}
+      \field{pages}{103\bibrangedash 167}
+      \range{pages}{65}
+      \verb{doi}
+      \verb 10.1070/IM1980v014n01ABEH001060
+      \endverb
+    \endentry
+    \entry{Ohashi}{article}{}
+      \name{author}{1}{}{%
+        {{hash=2ee0561d435b3a2f768639f2923163d6}{%
+           family={Ohashi},
+           familyi={O\bibinitperiod},
+           given={Hisanori},
+           giveni={H\bibinitperiod}}}%
+      }
+      \strng{namehash}{2ee0561d435b3a2f768639f2923163d6}
+      \strng{fullhash}{2ee0561d435b3a2f768639f2923163d6}
+      \strng{bibnamehash}{2ee0561d435b3a2f768639f2923163d6}
+      \strng{authorbibnamehash}{2ee0561d435b3a2f768639f2923163d6}
+      \strng{authornamehash}{2ee0561d435b3a2f768639f2923163d6}
+      \strng{authorfullhash}{2ee0561d435b3a2f768639f2923163d6}
+      \field{extraname}{1}
+      \field{sortinit}{O}
+      \field{sortinithash}{2cd7140a07aea5341f9e2771efe90aae}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Res. Inst. Math. Sci. preprint}
+      \field{note}{\url{www.kurims.kyoto-u.ac.jp/preprint/file/RIMS1609.pdf}}
+      \field{number}{1609}
+      \field{title}{Counting {E}nriques quotients of a {K3} surface}
+      \field{year}{2007}
+      \field{pages}{1\bibrangedash 6}
+      \range{pages}{6}
+    \endentry
+    \entry{Ohashi07}{article}{}
+      \name{author}{1}{}{%
+        {{hash=2ee0561d435b3a2f768639f2923163d6}{%
+           family={Ohashi},
+           familyi={O\bibinitperiod},
+           given={Hisanori},
+           giveni={H\bibinitperiod}}}%
+      }
+      \strng{namehash}{2ee0561d435b3a2f768639f2923163d6}
+      \strng{fullhash}{2ee0561d435b3a2f768639f2923163d6}
+      \strng{bibnamehash}{2ee0561d435b3a2f768639f2923163d6}
+      \strng{authorbibnamehash}{2ee0561d435b3a2f768639f2923163d6}
+      \strng{authornamehash}{2ee0561d435b3a2f768639f2923163d6}
+      \strng{authorfullhash}{2ee0561d435b3a2f768639f2923163d6}
+      \field{extraname}{2}
+      \field{sortinit}{O}
+      \field{sortinithash}{2cd7140a07aea5341f9e2771efe90aae}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Publ. Res. Inst. Math. Sci.}
+      \field{number}{1}
+      \field{title}{On the number of {E}nriques quotients of a {$K3$} surface}
+      \field{volume}{43}
+      \field{year}{2007}
+      \field{pages}{181\bibrangedash 200}
+      \range{pages}{20}
+      \verb{urlraw}
+      \verb https://www.kurims.kyoto-u.ac.jp/~prims/pdf/43-1/43-1-10.pdf
+      \endverb
+      \verb{url}
+      \verb https://www.kurims.kyoto-u.ac.jp/~prims/pdf/43-1/43-1-10.pdf
+      \endverb
+    \endentry
+    \entry{pari}{manual}{}
+      \list{location}{1}{%
+        {Univ. Bordeaux}%
+      }
+      \list{organization}{1}{%
+        {The PARI~Group}%
+      }
+      \field{sortinit}{P}
+      \field{sortinithash}{ff3bcf24f47321b42cb156c2cc8a8422}
+      \field{labeltitlesource}{title}
+      \field{note}{\url{pari.math.u-bordeaux.fr/}}
+      \field{title}{{PARI/GP version {\tt 2.11.1}}}
+      \field{year}{2018}
+    \endentry
+    \entry{isometries}{article}{}
+      \name{author}{2}{}{%
+        {{hash=7c90dde4822b0ab48782e9e768bf74a6}{%
+           family={Plesken},
+           familyi={P\bibinitperiod},
+           given={Wilhelm},
+           giveni={W\bibinitperiod}}}%
+        {{hash=57049eb7bcbac92d3d404216c9cf82af}{%
+           family={Souvignier},
+           familyi={S\bibinitperiod},
+           given={Bernd},
+           giveni={B\bibinitperiod}}}%
+      }
+      \strng{namehash}{d00fa15ca5eeafba865d3b87e7106ffc}
+      \strng{fullhash}{d00fa15ca5eeafba865d3b87e7106ffc}
+      \strng{bibnamehash}{d00fa15ca5eeafba865d3b87e7106ffc}
+      \strng{authorbibnamehash}{d00fa15ca5eeafba865d3b87e7106ffc}
+      \strng{authornamehash}{d00fa15ca5eeafba865d3b87e7106ffc}
+      \strng{authorfullhash}{d00fa15ca5eeafba865d3b87e7106ffc}
+      \field{sortinit}{P}
+      \field{sortinithash}{ff3bcf24f47321b42cb156c2cc8a8422}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{J. Symbolic Comput.}
+      \field{note}{Computational algebra and number theory (London, 1993)}
+      \field{number}{3-4}
+      \field{title}{Computing isometries of lattices}
+      \field{volume}{24}
+      \field{year}{1997}
+      \field{pages}{327\bibrangedash 334}
+      \range{pages}{8}
+      \verb{doi}
+      \verb 10.1006/jsco.1996.0130
+      \endverb
+    \endentry
+    \entry{sage}{manual}{}
+      \true{moreauthor}
+      \true{morelabelname}
+      \name{author}{1}{}{%
+        {{hash=c3bdd3daf6e5699e6ec978dcae669242}{%
+           family={Stein},
+           familyi={S\bibinitperiod},
+           given={William\bibnamedelima A.},
+           giveni={W\bibinitperiod\bibinitdelim A\bibinitperiod}}}%
+      }
+      \list{organization}{1}{%
+        {The Sage Development Team}%
+      }
+      \strng{namehash}{f792ae64aece40284a053f481f862cbe}
+      \strng{fullhash}{f792ae64aece40284a053f481f862cbe}
+      \strng{bibnamehash}{f792ae64aece40284a053f481f862cbe}
+      \strng{authorbibnamehash}{f792ae64aece40284a053f481f862cbe}
+      \strng{authornamehash}{f792ae64aece40284a053f481f862cbe}
+      \strng{authorfullhash}{f792ae64aece40284a053f481f862cbe}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{\url{www.sagemath.org}}
+      \field{title}{{S}age {M}athematics {S}oftware ({V}ersion 9.0)}
+      \field{year}{2020}
+    \endentry
+    \entry{neighbor}{article}{}
+      \name{author}{2}{}{%
+        {{hash=ceb08231d381c85d0bf91953ede982f6}{%
+           family={Scharlau},
+           familyi={S\bibinitperiod},
+           given={Rudolf},
+           giveni={R\bibinitperiod}}}%
+        {{hash=0be738550e58129d089823c71669bc10}{%
+           family={Hemkemeier},
+           familyi={H\bibinitperiod},
+           given={Boris},
+           giveni={B\bibinitperiod}}}%
+      }
+      \strng{namehash}{9279fc6c6c3d80276f6fd30a5b7921b5}
+      \strng{fullhash}{9279fc6c6c3d80276f6fd30a5b7921b5}
+      \strng{bibnamehash}{9279fc6c6c3d80276f6fd30a5b7921b5}
+      \strng{authorbibnamehash}{9279fc6c6c3d80276f6fd30a5b7921b5}
+      \strng{authornamehash}{9279fc6c6c3d80276f6fd30a5b7921b5}
+      \strng{authorfullhash}{9279fc6c6c3d80276f6fd30a5b7921b5}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Math. Comp.}
+      \field{number}{222}
+      \field{title}{Classification of integral lattices with large class number}
+      \field{volume}{67}
+      \field{year}{1998}
+      \field{pages}{737\bibrangedash 749}
+      \range{pages}{13}
+      \verb{doi}
+      \verb 10.1090/S0025-5718-98-00938-7
+      \endverb
+    \endentry
+    \entry{Sertoez05}{article}{}
+      \name{author}{1}{}{%
+        {{hash=50fb342c93607becdebf7912346e5dbb}{%
+           family={Sertöz},
+           familyi={S\bibinitperiod},
+           given={Ali\bibnamedelima Sinan},
+           giveni={A\bibinitperiod\bibinitdelim S\bibinitperiod}}}%
+      }
+      \strng{namehash}{50fb342c93607becdebf7912346e5dbb}
+      \strng{fullhash}{50fb342c93607becdebf7912346e5dbb}
+      \strng{bibnamehash}{50fb342c93607becdebf7912346e5dbb}
+      \strng{authorbibnamehash}{50fb342c93607becdebf7912346e5dbb}
+      \strng{authornamehash}{50fb342c93607becdebf7912346e5dbb}
+      \strng{authorfullhash}{50fb342c93607becdebf7912346e5dbb}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Proc. Amer. Math. Soc.}
+      \field{number}{1}
+      \field{title}{Which singular {$K3$} surfaces cover an {E}nriques surface}
+      \field{volume}{133}
+      \field{year}{2005}
+      \field{pages}{43\bibrangedash 50}
+      \range{pages}{8}
+      \verb{doi}
+      \verb 10.1090/S0002-9939-04-07666-X
+      \endverb
+    \endentry
+    \entry{ShimadaVeniani}{article}{}
+      \name{author}{2}{}{%
+        {{hash=da2d1b042094a24e06a84014be8e5338}{%
+           family={Shimada},
+           familyi={S\bibinitperiod},
+           given={Ichiro},
+           giveni={I\bibinitperiod}}}%
+        {{hash=5930baa8af14491583e509e929c0a07d}{%
+           family={Veniani},
+           familyi={V\bibinitperiod},
+           given={Davide\bibnamedelima Cesare},
+           giveni={D\bibinitperiod\bibinitdelim C\bibinitperiod}}}%
+      }
+      \strng{namehash}{d1a741ba6c029fe529c556a9cabc238d}
+      \strng{fullhash}{d1a741ba6c029fe529c556a9cabc238d}
+      \strng{bibnamehash}{d1a741ba6c029fe529c556a9cabc238d}
+      \strng{authorbibnamehash}{d1a741ba6c029fe529c556a9cabc238d}
+      \strng{authornamehash}{d1a741ba6c029fe529c556a9cabc238d}
+      \strng{authorfullhash}{d1a741ba6c029fe529c556a9cabc238d}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Ann. Sc. Norm. Super. Pisa Cl. Sci. (5)}
+      \field{title}{Enriques involutions on singular {K}3 surfaces of small discriminants}
+      \field{volume}{21}
+      \field{year}{2020}
+      \field{pages}{1667\bibrangedash 1701}
+      \range{pages}{35}
+      \verb{doi}
+      \verb 10.2422/2036-2145.201902\_004
+      \endverb
+    \endentry
+    \entry{OEIS:A000926}{misc}{}
+      \name{author}{1}{}{%
+        {{hash=bdcac8dedb9591786db682b397f5a984}{%
+           family={Sloane},
+           familyi={S\bibinitperiod},
+           given={Neil\bibnamedelimb J.\bibnamedelimi A.},
+           giveni={N\bibinitperiod\bibinitdelim J\bibinitperiod\bibinitdelim A\bibinitperiod}}}%
+      }
+      \strng{namehash}{bdcac8dedb9591786db682b397f5a984}
+      \strng{fullhash}{bdcac8dedb9591786db682b397f5a984}
+      \strng{bibnamehash}{bdcac8dedb9591786db682b397f5a984}
+      \strng{authorbibnamehash}{bdcac8dedb9591786db682b397f5a984}
+      \strng{authornamehash}{bdcac8dedb9591786db682b397f5a984}
+      \strng{authorfullhash}{bdcac8dedb9591786db682b397f5a984}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{\href{http://oeis.org/A000926}{\texttt{oeis.org/A000926}}}
+      \field{title}{Euler's idoneal numbers, {Entry} \href{http://oeis.org/A000926}{\texttt{A000926}} in {The On-Line Encyclopedia of Integer Sequences}}
+      \field{year}{2020}
+    \endentry
+    \entry{weinberger}{article}{}
+      \name{author}{1}{}{%
+        {{hash=dac1c4dea9def8270a088811291e1141}{%
+           family={Weinberger},
+           familyi={W\bibinitperiod},
+           given={Peter\bibnamedelima J.},
+           giveni={P\bibinitperiod\bibinitdelim J\bibinitperiod}}}%
+      }
+      \strng{namehash}{dac1c4dea9def8270a088811291e1141}
+      \strng{fullhash}{dac1c4dea9def8270a088811291e1141}
+      \strng{bibnamehash}{dac1c4dea9def8270a088811291e1141}
+      \strng{authorbibnamehash}{dac1c4dea9def8270a088811291e1141}
+      \strng{authornamehash}{dac1c4dea9def8270a088811291e1141}
+      \strng{authorfullhash}{dac1c4dea9def8270a088811291e1141}
+      \field{sortinit}{W}
+      \field{sortinithash}{4315d78024d0cea9b57a0c6f0e35ed0d}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Acta Arith.}
+      \field{title}{Exponents of the class groups of complex quadratic fields}
+      \field{volume}{22}
+      \field{year}{1973}
+      \field{pages}{117\bibrangedash 124}
+      \range{pages}{8}
+      \verb{doi}
+      \verb 10.4064/aa-22-2-117-124
+      \endverb
+    \endentry
+    \entry{Whittaker.Watson:course.modern.analysis}{book}{}
+      \name{author}{2}{}{%
+        {{hash=5132db19fe0ad334db14252f9887f29d}{%
+           family={Whittaker},
+           familyi={W\bibinitperiod},
+           given={E.\bibnamedelimi T.},
+           giveni={E\bibinitperiod\bibinitdelim T\bibinitperiod}}}%
+        {{hash=35673bb7ba499f77d168ee80794262e8}{%
+           family={Watson},
+           familyi={W\bibinitperiod},
+           given={G.\bibnamedelimi N.},
+           giveni={G\bibinitperiod\bibinitdelim N\bibinitperiod}}}%
+      }
+      \name{editor}{1}{}{%
+        {{hash=459db79507400740d3b2b1509ee49e18}{%
+           family={Moll},
+           familyi={M\bibinitperiod},
+           given={Victor\bibnamedelima H.},
+           giveni={V\bibinitperiod\bibinitdelim H\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Cambridge University Press, Cambridge}%
+      }
+      \strng{namehash}{72dd6060b6f1d789d78346a350a43218}
+      \strng{fullhash}{72dd6060b6f1d789d78346a350a43218}
+      \strng{bibnamehash}{72dd6060b6f1d789d78346a350a43218}
+      \strng{authorbibnamehash}{72dd6060b6f1d789d78346a350a43218}
+      \strng{authornamehash}{72dd6060b6f1d789d78346a350a43218}
+      \strng{authorfullhash}{72dd6060b6f1d789d78346a350a43218}
+      \strng{editorbibnamehash}{459db79507400740d3b2b1509ee49e18}
+      \strng{editornamehash}{459db79507400740d3b2b1509ee49e18}
+      \strng{editorfullhash}{459db79507400740d3b2b1509ee49e18}
+      \field{sortinit}{W}
+      \field{sortinithash}{4315d78024d0cea9b57a0c6f0e35ed0d}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{edition}{5th ed.}
+      \field{note}{With a foreword by S. J. Patterson}
+      \field{title}{A course of modern analysis---an introduction to the general theory of infinite processes and of analytic functions with an account of the principal transcendental functions}
+      \field{year}{2021}
+      \field{pages}{lii+668}
+      \range{pages}{-1}
+    \endentry
+    \entry{Yoruk}{misc}{}
+      \name{author}{1}{}{%
+        {{hash=9e4f93dcc5fb962a3281415db0a2f656}{%
+           family={Yörük},
+           familyi={Y\bibinitperiod},
+           given={Oğuzhan},
+           giveni={O\bibinitperiod}}}%
+      }
+      \strng{namehash}{9e4f93dcc5fb962a3281415db0a2f656}
+      \strng{fullhash}{9e4f93dcc5fb962a3281415db0a2f656}
+      \strng{bibnamehash}{9e4f93dcc5fb962a3281415db0a2f656}
+      \strng{authorbibnamehash}{9e4f93dcc5fb962a3281415db0a2f656}
+      \strng{authornamehash}{9e4f93dcc5fb962a3281415db0a2f656}
+      \strng{authorfullhash}{9e4f93dcc5fb962a3281415db0a2f656}
+      \field{sortinit}{Y}
+      \field{sortinithash}{fd67ad5a9ef0f7456bdd9aab10fe1495}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{http://repository.bilkent.edu.tr/handle/11693/50635}}
+      \field{note}{Master thesis, Bilkent University}
+      \field{title}{Which algebraic {K3} surfaces doubly cover an {E}nriques surface: a computational approach}
+      \field{year}{2019}
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

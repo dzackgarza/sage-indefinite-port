@@ -1,7 +1,8 @@
 """Typed loaders for the oracle corpus in this directory.
 
-Provenance and extraction method for every file are recorded in ``DATA_SOURCES.md``; the
-acceptance criteria binding fixtures to plan phases are in ``oracle_manifest.yaml``.
+Every file is produced by a committed script in ``references/extract`` from sources vendored
+under ``references/vendor``; ``oracle_manifest.yaml`` indexes file, script and sources, and
+``DATA_SOURCES.md`` describes each dataset and its checks.
 
 Upstream stores each lattice as the Gram matrix of its bilinear form in the standard basis
 of ``Z^n``; the preamble's category constructor takes that Gram directly,
@@ -20,28 +21,7 @@ FIXTURES_DIR = Path(__file__).parent
 
 type Vector = list[int]
 type Gram = list[list[int]]
-
-
-class Provenance(TypedDict, total=False):
-    kind: Required[str]
-    citation: str
-    paper: str
-    arxiv: str
-    table: int
-    row: int
-    section: str
-    sections: list[str]
-    theorem: str
-    author: str
-    code: str
-    path: str
-    repo: str
-
-
-class GroupSpec(TypedDict, total=False):
-    internal_name: Required[str]
-    construction: Required[str]
-    source_notation: str
+type PermutationImages = tuple[int, ...]
 
 
 class OrbitCounts(TypedDict, total=False):
@@ -50,14 +30,347 @@ class OrbitCounts(TypedDict, total=False):
     flag_orbits: int
 
 
+class TableRowSource(TypedDict, total=False):
+    kind: Required[str]
+    citation: Required[str]
+    file: Required[str]
+    table: Required[str]
+    line: int
+    lines: str
+
+
+class TextSource(TypedDict):
+    kind: str
+    file: str
+    lines: str
+
+
+class BookSource(TypedDict):
+    kind: str
+    citation: str
+    location: str
+
+
+class CitedTextSource(TypedDict):
+    kind: str
+    citation: str
+    file: str
+    lines: str
+
+
+class LineSource(TypedDict):
+    kind: str
+    file: str
+    line: int
+
+
 class Enriques87Case(TypedDict):
     case: int
-    minimal_degree: int | None
-    polarization_orbit_length: int | None
+    S: str
+    walls: list[int]
+    subsets_in_class: int
+    face_polarization: Vector
+    face_polarization_norm: int
+    group_order: int
     line_orbits: int
     plane_orbits: int
     flag_orbits: int
-    source: Provenance
+    minimal_degree: int
+    phi_h_min: int
+    source: TableRowSource
+
+
+class ClassicalIndexSources(TypedDict):
+    count: TextSource
+    display: TextSource
+    order_of_O_plus_F2: TextSource
+
+
+class ClassicalIndex(TypedDict):
+    """[O+(N):Gamma_h] and |bar Gamma_h| = [Gamma_h : tilde O+(N)] for a classical polarization."""
+
+    degree: int
+    case: int
+    index_in_O_plus_N: int
+    gamma_h_over_stable_order: int
+    source: ClassicalIndexSources
+
+
+class InconsistentClassicalIndex(TypedDict):
+    """A classical case whose text disagrees with Table 1; the unprefixed values are the table's."""
+
+    degree: int
+    case: int
+    index_in_O_plus_N: int
+    gamma_h_over_stable_order: int
+    stated_index_in_O_plus_N: int
+    stated_gamma_h_over_stable_order: int
+    quotient_of_displayed_numbers: int
+    source: ClassicalIndexSources
+
+
+class EnriquesClassicalIndices(TypedDict):
+    consistent_with_table: list[ClassicalIndex]
+    inconsistent_with_table: list[InconsistentClassicalIndex]
+
+
+class PolarizationOrbitCount(TypedDict):
+    lattice: str
+    two_d: int
+    g: int
+    primitive_vector_orbits: int
+    gamma_conjugacy_classes: int
+    primitive_vector_orbits_up_to_2d: int
+    gamma_conjugacy_classes_up_to_2d: int
+    source: TableRowSource
+
+
+class IsometryPair(TypedDict, total=False):
+    id: Required[str]
+    gram1: Required[Gram]
+    gram2: Required[Gram]
+    signature: Required[list[int]]
+    isometric: Required[bool]
+    certificate: Required[str]
+    witness: list[list[int]]
+    witness_convention: str
+    source: Required[dict[str, object]]
+
+
+class AllcockRank3Lattice(TypedDict):
+    id: str
+    gram: Gram
+    elementary_divisors: list[int]
+    simple_roots: list[Vector]
+    num_simple_roots: int
+    weyl_group_id: int
+    lattice_id: int
+    convention: str
+    source: FileSource
+
+
+class DefiniteOrthogonalGroupOrder(TypedDict):
+    id: str
+    gram: Gram
+    signature: list[int]
+    orthogonal_group_order: int
+    run_in_oscar_ci: bool
+    source: list[LineSource]
+
+
+class DefiniteIsometryTest(TypedDict):
+    id: str
+    gram_1: Gram
+    gram_2: Gram
+    signature_1: list[int]
+    signature_2: list[int]
+    isometric: bool
+    source: list[LineSource]
+
+
+class GroupIsomorphismType(TypedDict):
+    isomorphism_type: str
+    order: int
+
+
+class RootLatticeGroups(TypedDict):
+    id: str
+    gram: Gram
+    signature: list[int]
+    stable_orthogonal_group: GroupIsomorphismType
+    special_orthogonal_group: GroupIsomorphismType
+    special_stable_orthogonal_group: GroupIsomorphismType
+    source: list[LineSource]
+
+
+class HeckeReducedAutomorphismGroupOrder(TypedDict):
+    lattice: str
+    hecke_reduced_automorphism_group_order: int
+    source: LineSource
+
+
+class OscarLatticeOracles(TypedDict):
+    vinberg: list[dict[str, object]]
+    discriminant_images: list[dict[str, object]]
+    isometry_groups: list[dict[str, object]]
+    definite_orthogonal_group_orders: list[DefiniteOrthogonalGroupOrder]
+    definite_isometry_tests: list[DefiniteIsometryTest]
+    root_lattice_groups: list[RootLatticeGroups]
+    hecke_reduced_automorphism_group_orders: list[HeckeReducedAutomorphismGroupOrder]
+
+
+class DTowerBoundary(TypedDict):
+    id: str
+    N: int
+    lattice: str
+    gram: Gram
+    signature: list[int]
+    group: str
+    type_iii_points: int
+    type_ii_curves: int
+    type_ii_labels: list[str]
+    incidences: list[list[str]]
+    source: dict[str, TextSource]
+
+
+class OrbitInvariant(TypedDict):
+    invariant: str
+    isomorphism_class: str
+
+
+class AllcockEnriquesPeriodLattice(TypedDict):
+    id: str
+    lattice: str
+    gram: Gram
+    signature: list[int]
+    group: str
+    norm_minus_one_vector_orbits: int
+    primitive_isotropic_vector_orbits: list[OrbitInvariant]
+    isotropic_plane_orbits: list[OrbitInvariant]
+    source: dict[str, TextSource]
+
+
+class E10VectorOrbit(TypedDict):
+    lattice: str
+    h_squared: int
+    phi: int | None
+    stabilizer_image_index_in_O_E10_F2: int
+    source: TableRowSource
+
+
+class E10VectorOrbits(TypedDict):
+    orbits: list[E10VectorOrbit]
+    source: dict[str, dict[str, object]]
+
+
+class LabelledRoot(TypedDict):
+    label: int
+    vector: Vector
+
+
+class E10OrbitRepresentative(TypedDict):
+    degree: int
+    gamma_class: int
+    g_coefficients: list[int]
+    vector: Vector
+    source_line: int
+
+
+class E10FundamentalDomain(TypedDict):
+    lattice: str
+    gram: Gram
+    simple_roots: list[LabelledRoot]
+    extreme_rays: list[Vector]
+    extreme_ray_gram: Gram
+    orthogonal_group_equals_weyl_group: bool
+    weyl_vector_norm: int
+    orbit_representatives: list[E10OrbitRepresentative]
+    source: dict[str, dict[str, object]]
+
+
+class NamedMatrix(TypedDict):
+    name: str
+    matrix: list[list[int]]
+
+
+class MertensPoint(TypedDict):
+    point: Vector
+    neighbours: int
+
+
+class MertensGenerators(TypedDict):
+    id: str
+    gram: Gram
+    signature: list[int]
+    isometry_convention: str
+    omega: str
+    omega_generators: list[NamedMatrix]
+    mertens_d_perfect_points: list[MertensPoint]
+    source: dict[str, object]
+
+
+class BinaryFormGenerators(TypedDict):
+    id: str
+    form: list[int]
+    gram: Gram
+    discriminant: int
+    automorphism_group_generators: list[list[list[int]]]
+    isometry_convention: str
+    source: FileSource
+
+
+class BinaryFormGeneratorCount(TypedDict):
+    """How many generators Hecke's automorphism_group_generators returns; Hecke's output, not a group invariant."""
+
+    id: str
+    form: list[int]
+    gram: Gram
+    discriminant: int
+    hecke_generator_count: int
+    source: FileSource
+
+
+class BinaryFormImproper(TypedDict):
+    id: str
+    form: list[int]
+    gram: Gram
+    discriminant: int
+    has_improper_automorphism: bool
+    source: FileSource
+
+
+class BinaryFormAutomorphisms(TypedDict):
+    explicit_generators: list[BinaryFormGenerators]
+    generator_counts: list[BinaryFormGeneratorCount]
+    improper_automorphisms: list[BinaryFormImproper]
+
+
+class DTowerTypeCount(TypedDict):
+    N: int
+    type_ii_components: int
+    type_ii_from_genus_of_d: int
+    type_ii_from_even_unimodular: int
+    type_iii_components: int
+    group_note: str
+    derivation: str
+    source: dict[str, TextSource]
+
+
+class GenusOfD(TypedDict):
+    n: int
+    root_sublattices: list[str]
+
+
+class FHatComponent(TypedDict):
+    label: str
+    type: str
+    dimension_in_F_hat: int
+    geometric_meaning: str
+    quartic_case: str
+    source: TableRowSource
+
+
+class DTowerGroupSources(TypedDict):
+    gamma_n: TextSource
+    decoration: TextSource
+    uniqueness: TextSource
+    definition: TextSource
+    index: TextSource
+
+
+class DTowerGroup(TypedDict):
+    group: str
+    decoration: str
+    index_in_O_plus: str
+    source: DTowerGroupSources
+
+
+class DTower(TypedDict):
+    gamma: DTowerGroup
+    boundary_pictures: list[DTowerBoundary]
+    type_counts: list[DTowerTypeCount]
+    genus_of_d: list[GenusOfD]
+    f18_hat_type_ii: list[FHatComponent]
 
 
 class LorentzianPerfectCase(TypedDict):
@@ -65,8 +378,9 @@ class LorentzianPerfectCase(TypedDict):
     dimension: int
     gram: Gram
     has_isotropic: bool
-    isotropic_count: int | None
-    total_count: int | None
+    isotropic_count: int
+    total_count: int
+    source: FileSource
 
 
 class PermutationGroupData(TypedDict):
@@ -81,19 +395,10 @@ class DoubleCosetCase(TypedDict):
     small_group_order: int
     num_vectors: int
     index: int
-    group_h: PermutationGroupData
     group_g: PermutationGroupData
+    group_h: PermutationGroupData
     vectors: list[Vector]
-    source: Provenance
-
-
-class Citation(TypedDict, total=False):
-    kind: Required[str]
-    citation: Required[str]
-    chapter: int
-    section: str
-    statements: list[str]
-    quote: str
+    source: FileSource
 
 
 class CitedGram(TypedDict):
@@ -112,34 +417,20 @@ class SpinorGenusPair(TypedDict):
     spinor_genera_in_genus: int
     classes_in_genus: int
     integrally_equivalent: bool
-    source: Citation
-
-
-class OrderConvention(TypedDict):
-    quote: str
-    source: Citation
-
-
-class RootLatticeAutomorphismCase(TypedDict, total=False):
-    id: Required[str]
-    name: Required[str]
-    gram: Required[Gram]
-    g0: Required[int]
-    g1: Required[int]
-    order: Required[int]
-    source: Required[Citation]
-    gram_source: Provenance
-
-
-class RootLatticeAutomorphismOrders(TypedDict):
-    order_convention: OrderConvention
-    gram_convention: str
-    cases: list[RootLatticeAutomorphismCase]
+    source: BookSource
 
 
 class ConwaySloaneCases(TypedDict):
     spinor_genus_pair_determinant_minus_128: SpinorGenusPair
-    root_lattice_automorphism_orders: RootLatticeAutomorphismOrders
+
+
+class FileSource(TypedDict, total=False):
+    kind: Required[str]
+    file: Required[str]
+    index: int
+    line: int
+    point_numbering: str
+    gram_constructor: str
 
 
 class IsotropicDecisionCase(TypedDict):
@@ -147,6 +438,7 @@ class IsotropicDecisionCase(TypedDict):
     dimension: int
     gram: Gram
     has_isotropic: bool
+    source: FileSource
 
 
 class ReflectiveFormCase(TypedDict):
@@ -154,6 +446,7 @@ class ReflectiveFormCase(TypedDict):
     dimension: int
     gram: Gram
     num_simple_roots: int
+    source: FileSource
 
 
 class LorentzianEquivalenceCase(TypedDict):
@@ -161,7 +454,9 @@ class LorentzianEquivalenceCase(TypedDict):
     dimension: int
     mat1: Gram
     mat2: Gram
-    transporter_witness: list[list[int]] | None
+    transporter_witness: list[list[int]]
+    witness_convention: str
+    source: FileSource
 
 
 class LorentzianStabilizerCase(TypedDict):
@@ -170,19 +465,24 @@ class LorentzianStabilizerCase(TypedDict):
     gram: Gram
     generators: list[list[list[int]]]
     num_generators: int
+    source: FileSource
 
 
 class RootSystemCase(TypedDict):
     id: str
-    num_roots: int
     dimension: int
+    gram: Gram
+    gram_source: FileSource
+    num_roots: int
     roots: list[Vector]
+    source: FileSource
 
 
 class ClassifiedSimplices(TypedDict):
     dimension: int
     count: int
     simplices: list[list[Vector]]
+    source: FileSource
 
 
 class ClassificationSimplices(TypedDict):
@@ -194,22 +494,58 @@ class ClassificationSimplices(TypedDict):
 class CiIndefiniteCompCase(TypedDict):
     id: str
     components: list[str]
-    signature: list[int]
-    rank: int
     k_dim: int
-    source: Provenance
+    gram: Gram
+    rank: int
+    signature: list[int]
+    source: FileSource
+
+
+class TitsBuildingCounts(TypedDict):
+    points: int
+    curves: int
+    edges: int
 
 
 class DawesBuildingCase(TypedDict):
     id: str
-    name: str
-    construction: str
-    signature: list[int]
-    rank: int
-    det: int
+    lattice: str
     gram: Gram
-    group: GroupSpec
-    source: Provenance
+    signature: list[int]
+    group: str
+    building: TitsBuildingCounts
+    source: dict[str, TextSource]
+
+
+class FigureSource(TypedDict):
+    kind: str
+    file: str
+    lines: str
+    label: str
+
+
+class DawesIncidenceGraph(TypedDict):
+    """Point-curve incidence graph of a building, keyed by DawesBuildingCase.id."""
+
+    building_id: str
+    points: list[int]
+    curves: list[int]
+    point_curve_incidences: list[list[int]]
+    source: FigureSource
+
+
+class DawesIndexChain(TypedDict):
+    id: str
+    chain: list[str]
+    indices: list[int]
+    total_index: int
+    source: TextSource
+
+
+class DawesBuildings(TypedDict):
+    buildings: list[DawesBuildingCase]
+    incidence_graphs: list[DawesIncidenceGraph]
+    index_chains: list[DawesIndexChain]
 
 
 class LatticeSpec(TypedDict):
@@ -236,11 +572,7 @@ class ComponentPreservingGroupData(TypedDict):
     counts: OrbitCounts
     line_representatives: list[IsotropicRepresentative]
     plane_representatives: list[IsotropicRepresentative]
-
-
-class OrbitDecompositionNotes(TypedDict):
-    lines: str
-    planes: str
+    source: CitedTextSource
 
 
 class StableGroupData(TypedDict):
@@ -248,20 +580,27 @@ class StableGroupData(TypedDict):
     construction: str
     source_notation: str
     counts: OrbitCounts
-    orbit_decompositions: OrbitDecompositionNotes
+    source: CitedTextSource
+
+
+class EnriquesDiscriminantImageSources(TypedDict):
+    order: CitedTextSource
+    surjectivity: CitedTextSource
+
+
+class EnriquesDiscriminantImage(TypedDict):
+    O_qN_order: int
+    O_qN_isomorphism_type: str
+    image_of_O_N_is_all_of_O_qN: bool
+    source: EnriquesDiscriminantImageSources
 
 
 class UnpolarizedEnriques(TypedDict):
     id: str
     lattice: LatticeSpec
     component_preserving_group: ComponentPreservingGroupData
+    discriminant_image: EnriquesDiscriminantImage
     stable_component_preserving_group: StableGroupData
-    source: Provenance
-
-
-class PrimitiveVectorTransitivity(TypedDict):
-    tested_represented_norms: list[int]
-    expected_orbits_per_norm: int
 
 
 class K3UnimodularLattice(TypedDict):
@@ -272,99 +611,136 @@ class K3UnimodularLattice(TypedDict):
     det: int
     is_even: bool
     is_unimodular: bool
-    discriminant_group_order: int
-    stable_group_identity: str
-    primitive_vector_transitivity: PrimitiveVectorTransitivity
-    source: Provenance
+    primitive_vector_orbits: str
+    tested_represented_norms: list[int]
+    source: TextSource
 
 
-class TypeIIComponent(TypedDict):
-    index: int
-    quotient_root_type: str
-    cartan_type: list[str]
+class BailyBorelBoundary(TypedDict, total=False):
+    type_iii_points: int
+    type_ii_curves: Required[int]
+    point_curve_incidences: int
 
 
-class PolarizedK3Stratum(TypedDict):
+class DegreeTwoSources(TypedDict):
+    boundary: BookSource
+    root_types: BookSource
+
+
+class DegreeTwoK3(TypedDict):
     id: str
     construction: str
     signature: list[int]
     rank: int
     det: int
-    is_even: bool
-    group: GroupSpec
-    baily_borel_counts: OrbitCounts
-    type_ii_boundary_components: list[TypeIIComponent]
-    source: Provenance
+    baily_borel_boundary: BailyBorelBoundary
+    type_ii_root_types: list[str]
+    source: DegreeTwoSources
 
 
-class AttwellDuvalCase(TypedDict):
-    d: int
-    omega_d: int
-    expected_cusps: int
+class DegreeFourSources(TypedDict):
+    boundary: BookSource
+    generalised_types: BookSource
 
 
-class AttwellDuvalFamily(TypedDict):
+class DegreeFourK3(TypedDict):
     id: str
-    formula: str
-    test_cases: list[AttwellDuvalCase]
-    source: Provenance
-
-
-class K3ModularStrata(TypedDict):
-    k3_unimodular_lattice: K3UnimodularLattice
-    degree_two_polarized_k3: PolarizedK3Stratum
-    degree_four_polarized_k3: PolarizedK3Stratum
-    attwell_duval_cusp_family: AttwellDuvalFamily
-
-
-class StructuralRule(TypedDict):
-    id: str
-    theorem: str
-    kind: str
-
-
-class EnriquesInvolutionCase(TypedDict):
-    id: str
-    ambient_lattice: str
-    fixed_sublattice: str
-    anti_fixed_sublattice: str
-    gluing_subgroup: str
-    source: Provenance
-
-
-class CentralizerInvolutions(TypedDict):
-    orthogonal_direct_sum_rule: StructuralRule
-    gluing_overlattice_rule: StructuralRule
-    stable_intersection_rule: StructuralRule
-    enriques_involution_k3: EnriquesInvolutionCase
-
-
-class ManifestLattice(TypedDict, total=False):
-    construction: Required[str]
+    construction: str
     signature: list[int]
     rank: int
     det: int
-    is_even: bool
-    is_unimodular: bool
+    baily_borel_boundary: BailyBorelBoundary
+    type_ii_generalised_types: list[str]
+    source: DegreeFourSources
 
 
-class ManifestGroup(TypedDict, total=False):
-    construction: Required[str | dict[str, list[dict[str, str]]]]
-    internal_name: str
-    source_notation: str
+class TypeIICorrespondence(TypedDict):
+    statement: str
+    group: str
+    source: BookSource
+
+
+class K3ModularStrata(TypedDict):
+    type_ii_correspondence: TypeIICorrespondence
+    k3_unimodular_lattice: K3UnimodularLattice
+    degree_two_polarized_k3: DegreeTwoK3
+    degree_four_polarized_k3: DegreeFourK3
+
+
+class CentralizerCase(TypedDict, total=False):
+    id: Required[str]
+    gram: Required[Gram]
+    signature: Required[list[int]]
+    isometry: Required[list[list[int]]]
+    isometry_order: Required[int]
+    isometry_convention: Required[str]
+    centralizer_image_order: int
+    centralizer_image_is_all_of_O_qL: bool
+    source: Required[TextSource]
+
+
+class InvolutionClassCount(TypedDict):
+    id: str
+    genus_representative_gram: Gram
+    signature: list[int]
+    characteristic_polynomial: str
+    isometry_order: int
+    classes_in_genus: int
+    local_classes: int
+    meaning: str
+    source: TextSource
+
+
+class LatticeClassCount(TypedDict):
+    """How many classes of lattices with isometry (L, f) OSCAR's call returns, for an explicit lattice."""
+
+    id: str
+    gram: Gram
+    signature: list[int]
+    isometry_order: int
+    oscar_call: str
+    class_count: int
+    recorded_properties: list[str]
+    source: TextSource
+
+
+class DefiniteClassCount(TypedDict):
+    id: str
+    gram: Gram
+    signature: list[int]
+    oscar_call: str
+    class_count: int
+    recorded_properties: list[str]
+    source: TextSource
+
+
+class HermitianGenusClassCount(TypedDict):
+    """As LatticeClassCount, for hermitian-type classes specified by signature pairs and determinant."""
+
+    id: str
+    oscar_call: str
+    class_count: int
+    recorded_properties: list[str]
+    source: TextSource
+
+
+class IsometryCentralizers(TypedDict):
+    centralizer_cases: list[CentralizerCase]
+    definite_centralizer_cases: list[CentralizerCase]
+    involution_classes: list[InvolutionClassCount]
+    lattice_class_counts: list[LatticeClassCount]
+    hermitian_genus_class_counts: list[HermitianGenusClassCount]
+    definite_class_counts: list[DefiniteClassCount]
 
 
 class OracleEntry(TypedDict, total=False):
-    id: Required[str]
-    source: Required[Provenance]
-    authoritative_outputs: Required[list[str]]
-    lattice: ManifestLattice
-    group: ManifestGroup
-    group_family: dict[str, str | int]
-    domain: dict[str, str]
-    expected: dict[str, int | str | list[int] | list[str]]
-    fixture_file: str
-    formula: str
+    fixture_file: Required[str]
+    extraction: Required[str | None]
+    runtime: Required[str | None]
+    kind: Required[str]
+    sources: Required[list[str]]
+    vendored: bool
+    note: str
 
 
 class OracleManifest(TypedDict):
@@ -401,10 +777,10 @@ def load_k3_modular_strata() -> K3ModularStrata:
         return data
 
 
-def load_dawes_buildings() -> list[DawesBuildingCase]:
-    """Independent Tits-building computations of Dawes for three lattices."""
+def load_dawes_buildings() -> DawesBuildings:
+    """Dawes's published Tits buildings and index chain (arXiv:2205.10601, 2108.06236)."""
     with open(FIXTURES_DIR / "dawes_buildings.json", encoding="utf-8") as f:
-        data: list[DawesBuildingCase] = json.load(f)
+        data: DawesBuildings = json.load(f)
         return data
 
 
@@ -430,17 +806,93 @@ def load_double_coset_cases() -> list[DoubleCosetCase]:
 
 
 def load_conway_sloane_cases() -> ConwaySloaneCases:
-    """Conway--Sloane: the same-genus, non-equivalent ternary pair (51a)/(51b) of Chapter 15 §11,
-    and the root-lattice automorphism orders of Chapter 4 (A2, A3, D4, E6, E7, E8)."""
+    """Conway--Sloane: the same-genus, non-equivalent ternary pair (51a)/(51b) of Chapter 15 §11."""
     with open(FIXTURES_DIR / "conway_sloane_cases.json", encoding="utf-8") as f:
         data: ConwaySloaneCases = json.load(f)
         return data
 
 
-def load_centralizer_involutions() -> CentralizerInvolutions:
-    """Structural identities for involution centralizers and the Enriques involution."""
-    with open(FIXTURES_DIR / "centralizer_involutions.json", encoding="utf-8") as f:
-        data: CentralizerInvolutions = json.load(f)
+def load_isometry_centralizers() -> IsometryCentralizers:
+    """Centralizer images and involution-class counts recorded in OSCAR's tests."""
+    with open(FIXTURES_DIR / "isometry_centralizers.json", encoding="utf-8") as f:
+        data: IsometryCentralizers = json.load(f)
+        return data
+
+
+def load_enriques_classical_indices() -> EnriquesClassicalIndices:
+    """[O+(N):Gamma_h] for the classical degree 2, 6, 10 polarizations (Dutour Sikirić--Hulek, Classical cases)."""
+    with open(FIXTURES_DIR / "enriques_classical_indices.json", encoding="utf-8") as f:
+        data: EnriquesClassicalIndices = json.load(f)
+        return data
+
+
+def load_enriques_polarization_orbits() -> list[PolarizationOrbitCount]:
+    """O(U + E8(-1))-orbit counts of primitive vectors of norm 2..72 (Dutour Sikirić--Hulek)."""
+    with open(FIXTURES_DIR / "enriques_polarization_orbits.json", encoding="utf-8") as f:
+        data: list[PolarizationOrbitCount] = json.load(f)
+        return data
+
+
+def load_indefinite_isometry_pairs() -> list[IsometryPair]:
+    """Indefinite pairs with certified isometry verdicts from Indefinite.jl and Hecke tests."""
+    with open(FIXTURES_DIR / "indefinite_isometry_pairs.json", encoding="utf-8") as f:
+        data: list[IsometryPair] = json.load(f)
+        return data
+
+
+def load_allcock_rank3_reflective() -> list[AllcockRank3Lattice]:
+    """Allcock's 8,595 reflective Lorentzian lattices of rank 3 with their simple roots."""
+    with open(FIXTURES_DIR / "allcock_rank3_reflective.json", encoding="utf-8") as f:
+        data: list[AllcockRank3Lattice] = json.load(f)
+        return data
+
+
+def load_oscar_lattice_oracles() -> OscarLatticeOracles:
+    """Vinberg roots, discriminant images and isometry-group orders recorded in OSCAR's tests."""
+    with open(FIXTURES_DIR / "oscar_lattice_oracles.json", encoding="utf-8") as f:
+        data: OscarLatticeOracles = json.load(f)
+        return data
+
+
+def load_dtower_boundaries() -> DTower:
+    """Baily--Borel boundaries of F(N) = Gamma(N) \\ D(Lambda_N), Lambda_N = U^2 + D_{N-2} (Laza--O'Grady)."""
+    with open(FIXTURES_DIR / "dtower_boundaries.json", encoding="utf-8") as f:
+        data: DTower = json.load(f)
+        return data
+
+
+def load_allcock_i_2_10_orbits() -> AllcockEnriquesPeriodLattice:
+    """Orbits of norm -1 vectors, isotropic lines and planes in I_{2,10} (Allcock, Cor. 3-4)."""
+    with open(FIXTURES_DIR / "allcock_i_2_10_orbits.json", encoding="utf-8") as f:
+        data: AllcockEnriquesPeriodLattice = json.load(f)
+        return data
+
+
+def load_e10_vector_orbits() -> E10VectorOrbits:
+    """O(E10)-orbits of primitive vectors of norm 0..10 with stabilizer indices (Brandhorst--Gonzalez-Alonso)."""
+    with open(FIXTURES_DIR / "e10_vector_orbits.json", encoding="utf-8") as f:
+        data: E10VectorOrbits = json.load(f)
+        return data
+
+
+def load_e10_fundamental_domain() -> E10FundamentalDomain:
+    """U + E8(-1): simple roots, chamber rays, and orbit representatives of norm <= 30 (DH section 3)."""
+    with open(FIXTURES_DIR / "e10_fundamental_domain.json", encoding="utf-8") as f:
+        data: E10FundamentalDomain = json.load(f)
+        return data
+
+
+def load_mertens_generators() -> MertensGenerators:
+    """Generators of O^+(L) for Mertens's det -155 example (arXiv:1303.3478)."""
+    with open(FIXTURES_DIR / "mertens_generators.json", encoding="utf-8") as f:
+        data: MertensGenerators = json.load(f)
+        return data
+
+
+def load_binary_form_automorphisms() -> BinaryFormAutomorphisms:
+    """Automorphism-group facts for indefinite binary forms recorded by Hecke's QuadBin tests."""
+    with open(FIXTURES_DIR / "binary_form_automorphisms.json", encoding="utf-8") as f:
+        data: BinaryFormAutomorphisms = json.load(f)
         return data
 
 
@@ -460,7 +912,7 @@ def load_reflective_forms() -> list[ReflectiveFormCase]:
 
 def load_lorentzian_equivalence_cases() -> list[LorentzianEquivalenceCase]:
     """145 pairs of equivalent Lorentzian forms with exact transporters (28B_LorentzianPerfStabEqui)."""
-    with open(FIXTURES_DIR / "lorentzian_equivalence_146.json", encoding="utf-8") as f:
+    with open(FIXTURES_DIR / "lorentzian_equivalence_145.json", encoding="utf-8") as f:
         data: list[LorentzianEquivalenceCase] = json.load(f)
         return data
 
@@ -474,7 +926,7 @@ def load_lorentzian_stabilizer_cases() -> list[LorentzianStabilizerCase]:
 
 def load_root_systems() -> list[RootSystemCase]:
     """103 simple root systems of reflective forms (01_RatIntAutomorphy)."""
-    with open(FIXTURES_DIR / "root_systems_56.json", encoding="utf-8") as f:
+    with open(FIXTURES_DIR / "root_systems_103.json", encoding="utf-8") as f:
         data: list[RootSystemCase] = json.load(f)
         return data
 

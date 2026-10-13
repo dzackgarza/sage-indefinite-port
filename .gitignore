@@ -20,5 +20,9 @@ build/
 .ai-review-ci/
 .ruff_cache/
 
+# Reading copies from the local Zotero library (copyrighted; not vendored)
+references/vendor/zotero/
+
 # Reference repository clones
-references/*/
+references/polyhedral_common/
+references/Indefinite.jl/

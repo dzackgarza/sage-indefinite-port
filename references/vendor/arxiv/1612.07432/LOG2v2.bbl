@@ -1,0 +1,257 @@
+\providecommand{\bysame}{\leavevmode\hbox to3em{\hrulefill}\thinspace}
+\providecommand{\MR}{\relax\ifhmode\unskip\space\fi MR }
+% \MRhref is called by the amsart/book/proc definition of \MR.
+\providecommand{\MRhref}[2]{%
+  \href{http://www.ams.org/mathscinet-getitem?mr=#1}{#2}
+}
+\providecommand{\href}[2]{#2}
+\begin{thebibliography}{AGLV98}
+
+\bibitem[ACT11]{act}
+D.~Allcock, J.~A. Carlson, and D.~Toledo, \emph{The moduli space of cubic
+  threefolds as a ball quotient}, Mem. Amer. Math. Soc. \textbf{209} (2011),
+  no.~985, xii+70.
+
+\bibitem[AGLV98]{arnold}
+V.~I. Arnol'd, V.~V. Goryunov, O.~V. Lyashko, and V.~A. Vasil{'}ev,
+  \emph{Singularity theory. {I}}, Springer-Verlag, Berlin, 1998.
+
+\bibitem[Ale02]{alexeevag}
+V.~Alexeev, \emph{Complete moduli in the presence of semiabelian group action},
+  Ann. of Math. (2) \textbf{155} (2002), no.~3, 611--708.
+
+\bibitem[And16]{andblow}
+M.~Andreatta, \emph{Lifting weighetd blow-ups},
+  https://arxiv.org/abs/1609.00156, 09 2016.
+
+\bibitem[Dol75]{dolgachevs}
+I.~V. Dolgachev, \emph{Automorphic forms, and quasihomogeneous singularities},
+  Funkcional. Anal. i Prilo\v zen. \textbf{9} (1975), no.~2, 67--68.
+
+\bibitem[Dol96]{dolgachevm}
+\bysame, \emph{Mirror symmetry for lattice polarized {$K3$} surfaces}, J. Math.
+  Sci. \textbf{81} (1996), no.~3, 2599--2630, Algebraic geometry, 4.
+
+\bibitem[dPW00]{dpw}
+A.~A. du~Plessis and C.~T.~C. Wall, \emph{Singular hypersurfaces, versality,
+  and {G}orenstein algebras}, J. Algebraic Geom. \textbf{9} (2000), no.~2,
+  309--322.
+
+\bibitem[Ebe99]{ebeling}
+W.~Ebeling, \emph{Strange duality, mirror symmetry, and the {L}eech lattice},
+  Singularity theory ({L}iverpool, 1996), London Math. Soc. Lecture Note Ser.,
+  vol. 263, Cambridge Univ. Press, Cambridge, 1999, pp.~xv--xvi, 55--77.
+
+\bibitem[Fri83]{friedman-mon}
+R.~Friedman, \emph{A degenerating family of quintic surfaces with trivial
+  monodromy}, Duke Math. J. \textbf{50} (1983), no.~1, 203--214.
+
+\bibitem[Fri84]{friedmanannals}
+\bysame, \emph{A new proof of the global {T}orelli theorem for {$K3$}
+  surfaces}, Ann. of Math. (2) \textbf{120} (1984), no.~2, 237--269.
+
+\bibitem[Fri13]{friedmananti}
+\bysame, \emph{On the ample cone of a rational surface with an anticanonical
+  cycle}, Algebra Number Theory \textbf{7} (2013), no.~6, 1481--1504.
+
+\bibitem[Gal13]{gallardo}
+P.~Gallardo, \emph{On the {GIT} quotient of quintic surfaces}, arXiv:1310.3534,
+  2013.
+
+\bibitem[GHK15]{ghk}
+M.~Gross, P.~Hacking, and S.~Keel, \emph{Moduli of surfaces with an
+  anti-canonical cycle}, Compos. Math. \textbf{151} (2015), no.~2, 265--291.
+
+\bibitem[Hac04]{hacking}
+P.~Hacking, \emph{Compact moduli of plane curves}, Duke Math. J. \textbf{124}
+  (2004), no.~2, 213--257.
+
+\bibitem[Has00]{hassett}
+B.~Hassett, \emph{Local stable reduction of plane curve singularities}, J.
+  Reine Angew. Math. \textbf{520} (2000), 169--194.
+
+\bibitem[Has05]{hassg2}
+\bysame, \emph{Classical and minimal models of the moduli space of curves of
+  genus two}, Geometric methods in algebra and number theory, Progr. Math.,
+  vol. 235, Birkh{\"a}user Boston, Boston, MA, 2005, pp.~169--192. \MR{2166084}
+
+\bibitem[HH09]{hh1}
+B.~Hassett and D.~Hyeon, \emph{Log canonical models for the moduli space of
+  curves: the first divisorial contraction}, Trans. Amer. Math. Soc.
+  \textbf{361} (2009), no.~8, 4471--4489.
+
+\bibitem[HH13]{hh2}
+\bysame, \emph{Log minimal model program for the moduli space of stable curves:
+  the first flip}, Ann. of Math. (2) \textbf{177} (2013), no.~3, 911--968.
+
+\bibitem[HM98]{hm}
+J.~Harris and I.~Morrison, \emph{Moduli of curves}, Graduate Texts in
+  Mathematics, vol. 187, Springer-Verlag, New York, 1998.
+
+\bibitem[HN17]{hn}
+L.H. Halle and J.~Nicaise, \emph{Motivic zeta functions of degenerating
+  {C}alabi-{Y}au varieties}, to appear in Math. Ann. (arXiv:1701.09155), 2017.
+
+\bibitem[Igu62]{igusag2}
+J.~Igusa, \emph{On {S}iegel modular forms of genus two}, Amer. J. Math.
+  \textbf{84} (1962), 175--200.
+
+\bibitem[IKKR15]{ikkr}
+A.~Iliev, G.~Kapustka, M.~Kapustka, and K.~Ranestad, \emph{{EPW} cubes},
+  arXiv:1505.02389, 2015.
+
+\bibitem[Kir85]{kirwan}
+F.~C. Kirwan, \emph{Partial desingularisations of quotients of nonsingular
+  varieties and their {B}etti numbers}, Ann. of Math. (2) \textbf{122} (1985),
+  no.~1, 41--85.
+
+\bibitem[Kir89]{kirwanhyp}
+\bysame, \emph{Moduli spaces of degree {$d$} hypersurfaces in {${\bf P}_n$}},
+  Duke Math. J. \textbf{58} (1989), no.~1, 39--78.
+
+\bibitem[KK10]{kk}
+J.~Koll{\'a}r and S.~J. Kov{\'a}cs, \emph{Log canonical singularities are {D}u
+  {B}ois}, J. Amer. Math. Soc. \textbf{23} (2010), no.~3, 791--813.
+
+\bibitem[KL04]{kimlee}
+H.~Kim and Y.~Lee, \emph{Log canonical thresholds of semistable plane curves},
+  Math. Proc. Cambridge Philos. Soc. \textbf{137} (2004), no.~2, 273--280.
+
+\bibitem[KLSV17]{klsv}
+J.~Koll\'ar, R.~Laza, G.~Sacc\`a, and C.~Voisin, \emph{Remarks on degenerations
+  of hyper-{K}\"ahler manifolds}, arXiv:1704.02731, 2017.
+
+\bibitem[KM92]{kollmori3flips}
+J.~Koll{{\'a}}r and S.~Mori, \emph{Classification of three-dimensional flips},
+  J. Amer. Math. Soc. \textbf{5} (1992), no.~3, 533--703.
+
+\bibitem[KM98]{km}
+J.~Koll{\'a}r and S.~Mori, \emph{Birational geometry of algebraic varieties},
+  Cambridge Tracts in Mathematics, vol. 134, Cambridge University Press,
+  Cambridge, 1998.
+
+\bibitem[KSB88]{ksb}
+J.~Koll{\'a}r and N.~I. Shepherd-Barron, \emph{Threefolds and deformations of
+  surface singularities}, Invent. Math. \textbf{91} (1988), no.~2, 299--338.
+
+\bibitem[Laz09]{gitcubic}
+R.~Laza, \emph{The moduli space of cubic fourfolds}, J. Algebraic Geom.
+  \textbf{18} (2009), no.~3, 511--545.
+
+\bibitem[Laz10]{cubic4fold}
+\bysame, \emph{The moduli space of cubic fourfolds via the period map}, Ann. of
+  Math. (2) \textbf{172} (2010), no.~1, 673--711.
+
+\bibitem[Laz16]{k3pairs}
+\bysame, \emph{The {KSBA} compactification for the moduli space of degree two
+  {$K3$} pairs}, J. Eur. Math. Soc. (JEMS) \textbf{18} (2016), no.~2, 225--279.
+
+\bibitem[LO16]{log1}
+R.~Laza and K.~G. O'Grady, \emph{Birational geometry of the moduli space of
+  quartic {$K3$} surfaces}, arXiv:1607.01324, 07 2016.
+
+\bibitem[Loo81]{lanti}
+E.~Looijenga, \emph{Rational surfaces with an anticanonical cycle}, Ann. of
+  Math. (2) \textbf{114} (1981), no.~2, 267--322.
+
+\bibitem[Loo83]{ltriangle1}
+\bysame, \emph{The smoothing components of a triangle singularity. {I}},
+  Singularities, {P}art 2 ({A}rcata, {C}alif., 1981), Proc. Sympos. Pure Math.,
+  vol.~40, Amer. Math. Soc., Providence, RI, 1983, pp.~173--183.
+
+\bibitem[Loo84]{ltriangle2}
+\bysame, \emph{The smoothing components of a triangle singularity. {II}}, Math.
+  Ann. \textbf{269} (1984), no.~3, 357--387.
+
+\bibitem[Loo86]{looijengavancouver}
+\bysame, \emph{New compactifications of locally symmetric varieties},
+  Proceedings of the 1984 Vancouver conference in algebraic geometry
+  (Providence, RI), CMS Conf. Proc., vol.~6, Amer. Math. Soc., 1986,
+  pp.~341--364.
+
+\bibitem[Loo03a]{looijenga1}
+\bysame, \emph{Compactifications defined by arrangements. {I}. {T}he ball
+  quotient case}, Duke Math. J. \textbf{118} (2003), no.~1, 151--187.
+
+\bibitem[Loo03b]{looijengacompact}
+\bysame, \emph{Compactifications defined by arrangements. {II}. {L}ocally
+  symmetric varieties of type {IV}}, Duke Math. J. \textbf{119} (2003), no.~3,
+  527--588.
+
+\bibitem[Loo09]{lcubic}
+\bysame, \emph{The period map for cubic fourfolds}, Invent. Math. \textbf{177}
+  (2009), no.~1, 213--233.
+
+\bibitem[LS07]{ls}
+E.~Looijenga and R.~Swierstra, \emph{The period map for cubic threefolds},
+  Compos. Math. \textbf{143} (2007), no.~4, 1037--1049.
+
+\bibitem[Oda12]{odakacy}
+Y.~Odaka, \emph{The {C}alabi conjecture and {K}-stability}, Int. Math. Res.
+  Not. IMRN (2012), no.~10, 2272--2288.
+
+\bibitem[Oda13]{odaka}
+\bysame, \emph{The {GIT} stability of polarized varieties via discrepancy},
+  Ann. of Math. (2) \textbf{177} (2013), no.~2, 645--661.
+
+\bibitem[O'G15]{epwperiods}
+K.~G. O'Grady, \emph{Periods of double {EPW}-sextics}, Math. Z. \textbf{280}
+  (2015), no.~1-2, 485--524.
+
+\bibitem[O'G16]{epw}
+\bysame, \emph{Moduli of double {EPW}-sextics}, Memoirs of the American
+  Mathematical Society \textbf{240} (2016), no.~1136, 1--172.
+
+\bibitem[SB83a]{sbnef}
+N.~I. Shepherd-Barron, \emph{Degenerations with numerically effective canonical
+  divisor}, The birational geometry of degenerations (Cambridge, Mass., 1981),
+  Progr. Math., vol.~29, Birkh\"auser Boston, Boston, MA, 1983, pp.~33--84.
+
+\bibitem[SB83b]{sbpolarization}
+\bysame, \emph{Extending polarizations on families of {$K3$} surfaces}, The
+  birational geometry of degenerations (Cambridge, Mass., 1981), Progr. Math.,
+  vol.~29, Birkh\"auser Boston, Mass., 1983, pp.~135--171.
+
+\bibitem[Sca87]{scattone}
+F.~Scattone, \emph{On the compactification of moduli spaces for algebraic
+  {$K3$} surfaces}, Mem. Amer. Math. Soc. \textbf{70} (1987), no.~374, x+86.
+
+\bibitem[Sha79]{shahinsignificant}
+J.~Shah, \emph{Insignificant limit singularities of surfaces and their mixed
+  {H}odge structure}, Ann. of Math. (2) \textbf{109} (1979), no.~3, 497--536.
+
+\bibitem[Sha80]{shah}
+\bysame, \emph{A complete moduli space for {$K3$} surfaces of degree {$2$}},
+  Ann. of Math. (2) \textbf{112} (1980), no.~3, 485--510.
+
+\bibitem[Sha81]{shah4}
+\bysame, \emph{Degenerations of {$K3$} surfaces of degree {$4$}}, Trans. Amer.
+  Math. Soc. \textbf{263} (1981), no.~2, 271--308.
+
+\bibitem[ST99]{shustin}
+E.~Shustin and I.~Tyomkin, \emph{Versal deformation of algebraic hypersurfaces
+  with isolated singularities}, Math. Ann. \textbf{313} (1999), no.~2,
+  297--314.
+
+\bibitem[Ste81]{steenbrinkinsignificant}
+J.~H.~M. Steenbrink, \emph{Cohomologically insignificant degenerations},
+  Compositio Math. \textbf{42} (1980/81), no.~3, 315--320.
+
+\bibitem[Tha96]{thaddeus}
+M.~Thaddeus, \emph{Geometric invariant theory and flips}, J. Amer. Math. Soc.
+  \textbf{9} (1996), no.~3, 691--723.
+
+\bibitem[Ura84]{urabee12}
+T.~Urabe, \emph{On quartic surfaces and sextic curves with singularities of
+  type {$\tilde E_8,\;T_{2,3,7},\;E_{12}$}}, Publ. Res. Inst. Math. Sci.
+  \textbf{20} (1984), no.~6, 1185--1245.
+
+\bibitem[WX14]{wangxu}
+X.~Wang and C.~Xu, \emph{Nonexistence of asymptotic {GIT} compactification},
+  Duke Math. J. \textbf{163} (2014), no.~12, 2217--2241.
+
+\bibitem[Yon90]{yonemura}
+T.~Yonemura, \emph{Hypersurface simple {$K3$} singularities}, Tohoku Math. J.
+  (2) \textbf{42} (1990), no.~3, 351--380.
+
+\end{thebibliography}

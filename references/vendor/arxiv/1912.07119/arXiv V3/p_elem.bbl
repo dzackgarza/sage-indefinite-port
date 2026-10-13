@@ -1,0 +1,327 @@
+\begin{thebibliography}{{LMF}20}
+
+\bibitem[AS08]{autom_k3_ord3}
+M.~Artebani and A.~Sarti.
+\newblock Non-symplectic automorphisms of order 3 on {$K3$} surfaces.
+\newblock {\em Math. Ann.}, 342(4):903--921, 2008.
+
+\bibitem[AST11]{autom_k3}
+M.~Artebani, A.~Sarti, and S.~Taki.
+\newblock {$K3$} surfaces with non-symplectic automorphisms of prime order.
+\newblock {\em Math. Z.}, 268(1-2):507--533, 2011.
+\newblock With an appendix by Shigeyuki Kond\={o}.
+
+\bibitem[AV15]{amerik_verbitsky_mbm}
+E.~Amerik and M.~Verbitsky.
+\newblock Rational curves on hyperk\"{a}hler manifolds.
+\newblock {\em Int. Math. Res. Not. IMRN}, (23):13009--13045, 2015.
+
+\bibitem[Bay82]{fluckiger:unimodular}
+E.~Bayer.
+\newblock Unimodular {H}ermitian and skew-{H}ermitian forms.
+\newblock {\em J. Algebra}, 74(2):341--373, 1982.
+
+\bibitem[BCMS16]{bcms_p=23}
+S.~Boissi\`ere, C.~Camere, G.~Mongardi, and A.~Sarti.
+\newblock Isometries of ideal lattices and hyperk\"ahler manifolds.
+\newblock {\em Int. Math. Res. Not. IMRN}, (4):963--977, 2016.
+
+\bibitem[BCS16]{bcs}
+S.~Boissi\`ere, C.~Camere, and A.~Sarti.
+\newblock Classification of automorphisms on a deformation family of
+  hyper-{K}\"ahler four-folds by {$p$}-elementary lattices.
+\newblock {\em Kyoto J. Math.}, 56(3):465--499, 2016.
+
+\bibitem[BCS19]{bcs:ball}
+S.~Boissi\`ere, C.~Camere, and A.~Sarti.
+\newblock Complex ball quotients from manifolds of {$K3^{[n]}$}-type.
+\newblock {\em J. Pure Appl. Algebra}, 223(3):1123--1138, 2019.
+
+\bibitem[Bea83a]{beauville_rmks}
+A.~Beauville.
+\newblock Some remarks on {K}\"ahler manifolds with {$c_{1}=0$}.
+\newblock In {\em Classification of algebraic and analytic manifolds ({K}atata,
+  1982)}, volume~39 of {\em Progr. Math.}, pages 1--26. Birkh\"auser Boston,
+  Boston, MA, 1983.
+
+\bibitem[Bea83b]{beauville}
+A.~Beauville.
+\newblock Vari\'et\'es {K}\"ahleriennes dont la premi\`ere classe de {C}hern
+  est nulle.
+\newblock {\em J. Differential Geom.}, 18(4):755--782, 1983.
+
+\bibitem[BF20]{bayer-fluckiger:unimodular-charpoly}
+E.~Bayer-Fluckiger.
+\newblock Isometries of lattices and {H}asse principles.
+\newblock {\em arXiv:2001.07094}, 2020.
+
+\bibitem[BNWS11]{bnws_kum}
+S.~Boissi\`ere, M.~Nieper-Wi{\ss}kirchen, and A.~Sarti.
+\newblock Higher dimensional {E}nriques varieties and automorphisms of
+  generalized {K}ummer varieties.
+\newblock {\em J. Math. Pures Appl. (9)}, 95(5):553--563, 2011.
+
+\bibitem[BNWS13]{smith}
+S.~Boissi{\`e}re, M.~Nieper-Wisskirchen, and A.~Sarti.
+\newblock Smith theory and irreducible holomorphic symplectic manifolds.
+\newblock {\em J. Topol.}, 6(2):361--390, 2013.
+
+\bibitem[Cam16]{camere:lattice-polarized-ihs}
+C.~Camere.
+\newblock Lattice polarized irreducible holomorphic symplectic manifolds.
+\newblock {\em Ann. Inst. Fourier (Grenoble)}, 66(2):687--709, 2016.
+
+\bibitem[CC19]{CC}
+C.~Camere and Al. Cattaneo.
+\newblock Non-symplectic automorphisms of odd prime order on manifolds of
+  {$K3^{[n]}$}-type.
+\newblock {\em Manuscripta Math. doi:10.1007/s00229-019-01163-4}, 2019.
+
+\bibitem[CCC20]{CCC}
+C.~Camere, {Al.} Cattaneo, and {An.} Cattaneo.
+\newblock Non-symplectic involutions of manifolds of {$K3^{[n]}$}-type.
+\newblock {\em Nagoya Math. J. doi:10.1017/nmj.2019.43}, 2020.
+
+\bibitem[CKKM19]{ckkm_twisted}
+C.~Camere, G.~Kapustka, M.~Kapustka, and G.~Mongardi.
+\newblock Verra four-folds, twisted sheaves, and the last involution.
+\newblock {\em Int. Math. Res. Not. IMRN}, (21):6661--6710, 2019.
+
+\bibitem[CS99]{conway_sloane}
+J.~H. Conway and N.~J.~A. Sloane.
+\newblock {\em Sphere packings, lattices and groups}, volume 290 of {\em
+  Grundlehren der Mathematischen Wissenschaften}.
+\newblock Springer-Verlag, New York, third edition, 1999.
+\newblock With additional contributions by E. Bannai, R. E. Borcherds, J.
+  Leech, S. P. Norton, A. M. Odlyzko, R. A. Parker, L. Queen and B. B. Venkov.
+
+\bibitem[DK07]{dolgachev-kondo}
+I.~V. Dolgachev and S.~Kond\={o}.
+\newblock Moduli of {$K3$} surfaces and complex ball quotients.
+\newblock In {\em Arithmetic and geometry around hypergeometric functions},
+  volume 260 of {\em Progr. Math.}, pages 43--100. Birkh\"{a}user, Basel, 2007.
+
+\bibitem[Ebe13]{ebeling}
+W.~Ebeling.
+\newblock {\em Lattices and codes}.
+\newblock Advanced Lectures in Mathematics. Springer Spektrum, Wiesbaden, third
+  edition, 2013.
+\newblock A course partially based on lectures by Friedrich Hirzebruch.
+
+\bibitem[Fre82]{freedman}
+M.~H. Freedman.
+\newblock The topology of four-dimensional manifolds.
+\newblock {\em J. Differential Geometry}, 17(3):357--453, 1982.
+
+\bibitem[Fuj87]{fujiki_relation}
+A.~Fujiki.
+\newblock On the de {R}ham cohomology group of a compact {K}\"ahler symplectic
+  manifold.
+\newblock In {\em Algebraic geometry, {S}endai, 1985}, volume~10 of {\em Adv.
+  Stud. Pure Math.}, pages 105--165. North-Holland, Amsterdam, 1987.
+
+\bibitem[Gro20]{grossi:nonsymplectic}
+A.~Grossi.
+\newblock Nonsymplectic automorphisms of irreducible symplectic manifolds of
+  {OG}$_6$ type.
+\newblock {\em arXiv:2004.12694}, 2020.
+
+\bibitem[GS09]{garbagnati_sarti}
+A.~Garbagnati and A.~Sarti.
+\newblock Elliptic fibrations and symplectic automorphisms on {$K3$} surfaces.
+\newblock {\em Comm. Algebra}, 37(10):3601--3631, 2009.
+
+\bibitem[Hor73]{horikawa:I}
+E.~Horikawa.
+\newblock On deformations of holomorphic maps. {I}.
+\newblock {\em J. Math. Soc. Japan}, 25:372--396, 1973.
+
+\bibitem[Hor76]{horikawa:III}
+E.~Horikawa.
+\newblock On deformations of holomorphic maps. {III}.
+\newblock {\em Math. Ann.}, 222(3):275--282, 1976.
+
+\bibitem[Huy99]{huybr_basic}
+D.~Huybrechts.
+\newblock Compact hyper-{K}\"ahler manifolds: basic results.
+\newblock {\em Invent. Math.}, 135(1):63--113, 1999.
+
+\bibitem[Jac62]{jacobowitz}
+R.~Jacobowitz.
+\newblock Hermitian forms over local fields.
+\newblock {\em Amer. J. Math.}, 84:441--465, 1962.
+
+\bibitem[Jou16]{joumaa:order2}
+M.~Joumaah.
+\newblock Non-symplectic involutions of irreducible symplectic manifolds of
+  {$K3^{[n]}$}-type.
+\newblock {\em Math. Z.}, 283(3-4):761--790, 2016.
+
+\bibitem[Kir16]{kirschmer:hermitian}
+M.~Kirschmer.
+\newblock Definite quadratic and hermitian forms with small class number.
+\newblock {\em Habilitationsschrift, RWTH Aachen University}, 2016.
+
+\bibitem[Kir19a]{kirschmer:unimodular}
+M.~Kirschmer.
+\newblock Automorphisms of even unimodular lattices over number fields.
+\newblock {\em J. Number Theory}, 197:121--134, 2019.
+
+\bibitem[Kir19b]{kirschmer:determinants}
+Markus Kirschmer.
+\newblock Determinant groups of {H}ermitian lattices over local fields.
+\newblock {\em Arch. Math. (Basel)}, 113(4):337--347, 2019.
+
+\bibitem[KN19]{nebe-kirschmer:binary-hermitian}
+M.~Kirschmer and G.~Nebe.
+\newblock Binary hermitian lattices over number fields.
+\newblock {\em Exp. Math. doi:10.1080/10586458.2019.1618756}, 2019.
+
+\bibitem[Kne66]{kneser:strong-approx}
+M.~Kneser.
+\newblock Strong approximation.
+\newblock In {\em Algebraic {G}roups and {D}iscontinuous {S}ubgroups ({P}roc.
+  {S}ympos. {P}ure {M}ath., {B}oulder, {C}olo., 1965)}, pages 187--196. Amer.
+  Math. Soc., Providence, R.I., 1966.
+
+\bibitem[Kne02]{kneser}
+M.~Kneser.
+\newblock {\em Quadratische {F}ormen}.
+\newblock Springer-Verlag, Berlin, 2002.
+\newblock Revised and edited in collaboration with Rudolf Scharlau.
+
+\bibitem[Kon18]{kondo}
+S.~Kond\={o}.
+\newblock A survey of finite groups of symplectic automorphisms of {$K3$}
+  surfaces.
+\newblock {\em J. Phys. A}, 51(5):053003, 17, 2018.
+
+\bibitem[{LMF}20]{lmfdb}
+The {LMFDB Collaboration}.
+\newblock The {L}-functions and modular forms database.
+\newblock \url{http://www.lmfdb.org}, 2020.
+\newblock [Online; accessed 30 March 2020].
+
+\bibitem[Mar11]{markman}
+E.~Markman.
+\newblock A survey of {T}orelli and monodromy results for
+  holomorphic-symplectic varieties.
+\newblock In {\em Complex and differential geometry}, volume~8 of {\em Springer
+  Proc. Math.}, pages 257--322. Springer, Heidelberg, 2011.
+
+\bibitem[MM09]{miranda_morrison:embeddings}
+R.~Miranda and D.~R. Morrison.
+\newblock Embeddings of integral quadratic forms, 2009.
+
+\bibitem[MM17]{markman_mehrotra}
+E.~Markman and S.~Mehrotra.
+\newblock Hilbert schemes of {$K3$} surfaces are dense in moduli.
+\newblock {\em Math. Nachr.}, 290(5-6):876--884, 2017.
+
+\bibitem[Mon16]{mongardi:monodromy}
+G.~Mongardi.
+\newblock On the monodromy of irreducible symplectic manifolds.
+\newblock {\em Algebr. Geom.}, 3(3):385--391, 2016.
+
+\bibitem[MR19]{mongardi_rapagnetta}
+G.~Mongardi and A.~Rapagnetta.
+\newblock Monodromy and birational geometry of {O}’{G}rady’s sixfolds.
+\newblock {\em arXiv:1909.07173}, 2019.
+
+\bibitem[MTW18]{mongardi_tari_wandel:kummer}
+G.~Mongardi, K.~Tari, and M.~Wandel.
+\newblock Prime order automorphisms of generalised {K}ummer fourfolds.
+\newblock {\em Manuscripta Math.}, 155(3-4):449--469, 2018.
+
+\bibitem[MW15]{mongardi_wandel:induced}
+G.~Mongardi and M.~Wandel.
+\newblock Induced automorphisms on irreducible symplectic manifolds.
+\newblock {\em J. Lond. Math. Soc. (2)}, 92(1):123--143, 2015.
+
+\bibitem[MW17]{mongardi_wandel_OG}
+G.~Mongardi and M.~Wandel.
+\newblock Automorphisms of {O}'{G}rady's manifolds acting trivially on
+  cohomology.
+\newblock {\em Algebr. Geom.}, 4(1):104--119, 2017.
+
+\bibitem[Neb13]{nebe:automorphisms-unimodular}
+G.~Nebe.
+\newblock On automorphisms of extremal even unimodular lattices.
+\newblock {\em Int. J. Number Theory}, 9(8):1933--1959, 2013.
+
+\bibitem[Nik79]{nikulin}
+V.~V. Nikulin.
+\newblock Integer symmetric bilinear forms and some of their geometric
+  applications.
+\newblock {\em Izv. Akad. Nauk SSSR Ser. Mat.}, 43(1):111--177, 238, 1979.
+
+\bibitem[O'G99]{ogrady10}
+K.~G. O'Grady.
+\newblock Desingularized moduli spaces of sheaves on a {$K3$}.
+\newblock {\em J. Reine Angew. Math.}, 512:49--117, 1999.
+
+\bibitem[O'G03]{ogrady6}
+K.~G. O'Grady.
+\newblock A new six-dimensional irreducible symplectic variety.
+\newblock {\em J. Algebraic Geom.}, 12(3):435--505, 2003.
+
+\bibitem[Ono20]{onorati}
+C.~Onorati.
+\newblock On the monodromy group of desingularised moduli spaces of sheaves on
+  {K3} surfaces.
+\newblock {\em arXiv:2002.04129}, 2020.
+
+\bibitem[Que81]{quebbemann}
+H.-G. Quebbemann.
+\newblock Zur {K}lassifikation unimodularer {G}itter mit {I}sometrie von
+  {P}rimzahlordnung.
+\newblock {\em J. Reine Angew. Math.}, 326:158--170, 1981.
+
+\bibitem[Rap07]{rapagnetta_OG6}
+A.~Rapagnetta.
+\newblock Topological invariants of {O}'{G}rady's six dimensional irreducible
+  symplectic variety.
+\newblock {\em Math. Z.}, 256(1):1--34, 2007.
+
+\bibitem[Rap08]{rapagnetta_OG10}
+A.~Rapagnetta.
+\newblock On the {B}eauville form of the known irreducible symplectic
+  varieties.
+\newblock {\em Math. Ann.}, 340(1):77--95, 2008.
+
+\bibitem[Sch85]{scharlau}
+W.~Scharlau.
+\newblock {\em Quadratic and {H}ermitian forms}, volume 270 of {\em Grundlehren
+  der Mathematischen Wissenschaften}.
+\newblock Springer-Verlag, Berlin, 1985.
+
+\bibitem[Shi64]{shimura:unitary}
+G.~Shimura.
+\newblock Arithmetic of unitary groups.
+\newblock {\em Ann. of Math. (2)}, 79:369--409, 1964.
+
+\bibitem[Shi77]{shimura:abelian}
+G.~Shimura.
+\newblock On abelian varieties with complex multiplication.
+\newblock {\em Proc. London Math. Soc. (3)}, 34(1):65--86, 1977.
+
+\bibitem[vdB52]{blij}
+F.~van~der Blij.
+\newblock Binary quadratic forms of discriminant {$-23$}.
+\newblock {\em Nederl. Akad. Wetensch. Proc. Ser. A. {\bf 55} = Indagationes
+  Math.}, 14:498--503, 1952.
+
+\bibitem[Ver13]{verbitsky}
+M.~Verbitsky.
+\newblock Mapping class group and a global {T}orelli theorem for
+  hyperk\"{a}hler manifolds.
+\newblock {\em Duke Math. J.}, 162(15):2929--2986, 2013.
+\newblock Appendix A by Eyal Markman.
+
+\bibitem[Was97]{washington:cyclotomic_fields}
+L.~C. Washington.
+\newblock {\em Introduction to cyclotomic fields}, volume~83 of {\em Graduate
+  Texts in Mathematics}.
+\newblock Springer-Verlag, New York, second edition, 1997.
+
+\end{thebibliography}
