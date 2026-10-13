@@ -366,24 +366,37 @@ class _Edgewalk:
         # VinAl otherwise derives its own list from the form determinant,
         # which need not equal the admissible lengths of this lattice.
         engine.root_lengths = list(self.norms)
-        initial_rays = engine.FundCone()
-        # vinberg.h FundCone selects original V1 roots of prescribed
-        # length; VinAl.FundCone instead returns primitive cone rays.
-        # Recover the actual accepted root on each chosen direction.
+        # vinberg.h FundCone -> GetFacetOneDomain: select one member of
+        # each perpendicular root pair by a regular linear functional,
+        # and retain the original normed roots on the extreme cone rays.
+        # Lexicographic sign is a deterministic regular functional for this
+        # finite integral root family, unlike VinAl.FundCone's primitive
+        # ray representatives.
         initial_roots = [
             root
             for norm in engine.root_lengths
             for root in engine.Roots_decomposed_into(engine.V([0] * engine.n), norm)
             if engine.IsRoot(root)
         ]
-        engine.roots = [
-            next(
-                root for root in initial_roots
-                if matrix(SageQQ, [vector(SageQQ, root), vector(SageQQ, ray)]).rank() == 1
-                and vector(SageQQ, root).dot_product(vector(SageQQ, ray)) > 0
-            )
-            for ray in initial_rays
+        positive = [
+            root for root in initial_roots
+            if next((entry for entry in root if entry), 0) > 0
         ]
+        if positive:
+            positive_cone = RationalPolyhedralCones(self.lattice).from_rays(
+                self.element(tuple(int(entry) for entry in root)) for root in positive
+            )
+            rays = tuple(self.row(ray) for ray in positive_cone.primitive_rays())
+            engine.roots = [
+                root for root in positive
+                if any(
+                    matrix(SageQQ, [vector(SageQQ, root), ray]).rank() == 1
+                    and vector(SageQQ, root).dot_product(ray) > 0
+                    for ray in rays
+                )
+            ]
+        else:
+            engine.roots = []
 
         def accepted_vertex() -> _Vertex | None:
             roots = tuple(self.element(tuple(int(entry) for entry in root)) for root in engine.roots)
