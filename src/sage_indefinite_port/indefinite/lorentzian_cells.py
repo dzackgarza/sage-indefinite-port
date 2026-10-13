@@ -141,6 +141,12 @@ class LorentzianPerfectCell:
         normalized_sign = 1 if int(positive) == 1 else -1
         if any(normalized_sign * square not in self.allowed_squares for square in squares):
             raise ValueError(f"a perfect cell may contain only vectors with normalized square in {self.allowed_squares}")
+        # Lorentzian.g:303-312 (LORENTZ_CheckCorrectnessVectorFamily):
+        # the augmented vectors (1,v) span an affine hyperplane of rank n.
+        # Both GetOnePerfect and DoFlipping certify this before returning.
+        augmented = matrix(SageQQ, [[1, *row] for row in rows])
+        if augmented.rank() != gram.nrows():
+            raise ArithmeticError("a perfect-cell vector family must have augmented rank equal to the lattice rank")
 
     def configuration(self) -> Parent:
         r"""The marked lattice (L, Z^S -> L) of the cell's vectors, an object of Ar(Lattices)."""
