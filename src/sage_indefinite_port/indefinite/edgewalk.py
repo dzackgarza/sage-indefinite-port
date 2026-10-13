@@ -376,6 +376,11 @@ class _Edgewalk:
                     if self.norm(generator) < 0:
                         return _Vertex(generator, self.ordinary_vertex_roots(generator))
                     return _Vertex(generator, roots)
+            # vinberg.h GetOneInteriorVertex is reached only when the
+            # accepted feasible constraint matrix has full ambient rank.
+            if equations.rank() < self.rank:
+                bound *= 2
+                continue
             candidates: list[_Vertex] = []
             for ray in chamber.primitive_rays():
                 generator = -ray
