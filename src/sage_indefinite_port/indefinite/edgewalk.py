@@ -354,7 +354,7 @@ class _Edgewalk:
         timelike = self.lattice.negative_vector()
         roots = self.ordinary_vertex_roots(timelike)
         if self.span_rank(roots) == self.rank - 1:
-            return _Vertex(timelike, roots)
+            return _Vertex(timelike, self.ordinary_vertex_roots(timelike, require_full=True))
         bound = 8
         while True:
             chamber = self.lattice.fundamental_chamber(
@@ -375,7 +375,7 @@ class _Edgewalk:
                     generator = -generator
                 if self.norm(generator) <= 0 and self.pairing(generator, timelike) < 0:
                     if self.norm(generator) < 0:
-                        return _Vertex(generator, self.ordinary_vertex_roots(generator))
+                        return _Vertex(generator, self.ordinary_vertex_roots(generator, require_full=True))
                     return self.initial_isotropic_vertex(generator)
             # vinberg.h GetOneInteriorVertex is reached only when the
             # accepted feasible constraint matrix has full ambient rank.
@@ -403,7 +403,7 @@ class _Edgewalk:
                 )
                 if self.norm(corner.generator) < 0:
                     return _Vertex(
-                        corner.generator, self.ordinary_vertex_roots(corner.generator)
+                        corner.generator, self.ordinary_vertex_roots(corner.generator, require_full=True)
                     )
                 # The accepted affine roots span k-perp and positively span
                 # k. Every subsequent Vinberg root pairs nonpositively with
@@ -411,7 +411,7 @@ class _Edgewalk:
                 return self.initial_isotropic_vertex(corner.generator)
             bound *= 2
 
-    def ordinary_vertex_roots(self, timelike: _Vector) -> _Roots:
+    def ordinary_vertex_roots(self, timelike: _Vector, *, require_full: bool = False) -> _Roots:
         """A simple system of all ambient reflective roots perpendicular to k.
 
         Lexicographic positivity is a regular ordering on this finite root
@@ -437,6 +437,10 @@ class _Edgewalk:
         # Use geometric rays only to identify which original roots span
         # the selected cone, retaining each root's prescribed norm.
         rays = RationalPolyhedralCones(self.lattice).from_rays(positive).primitive_rays()
+        if require_full and len(rays) != self.rank - 1:
+            # edgewalk.h get_simple_cone_from_lattice requires exactly
+            # dimSpace selected walls for an ordinary starting vertex.
+            raise ArithmeticError("ordinary initial cone has incorrect simple-root count")
         return tuple(
             next(
                 root for root in positive
