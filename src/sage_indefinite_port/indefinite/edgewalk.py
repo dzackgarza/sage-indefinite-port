@@ -378,6 +378,15 @@ class _Edgewalk:
             for root in engine.Roots_decomposed_into(engine.V([0] * engine.n), norm)
             if engine.IsRoot(root)
         ]
+        # GetFacetOneDomain first reduces the root coordinate columns to
+        # their actual span, and GetFacetOneDomain_ListIdx requires at least
+        # twice that reduced dimension in the nonempty root family.
+        if initial_roots:
+            reduced_dimension = matrix(SageQQ, initial_roots).rank()
+            if len(initial_roots) < 2 * reduced_dimension:
+                raise ArithmeticError(
+                    "initial Vinberg root family has fewer than twice its rank in roots"
+                )
         positive = [
             root for root in initial_roots
             if next((entry for entry in root if entry), 0) > 0
