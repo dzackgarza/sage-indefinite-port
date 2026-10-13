@@ -1008,7 +1008,10 @@ class _Edgewalk:
             )
         root = next((point for point in candidates if point in root_locus), None)
         if root is None:
-            return self.report([], bool(self.lattice.is_isotropic()), (), [])
+            # An empty root system has no reflecting walls. In particular,
+            # rational isotropy does not certify reflectivity: the trivial
+            # reflection group has infinite-volume chamber in H^1.
+            return self.report([], False, (), [])
         generator = self.primitive(self.perpendicular_rows((self.row(root),)).row(0))
         initial = _Vertex(generator, (root,))
         if self.lattice.is_isotropic():
