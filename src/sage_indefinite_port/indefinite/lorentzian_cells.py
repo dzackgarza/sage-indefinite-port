@@ -986,7 +986,10 @@ def _kernel_flipping(
         if total_rows == critical_rows:
             lower = middle
             continue
-        if critical_rows.issubset(total_rows):
+        # C++ lorentzian_perfect.h:781, first exit: ListTotal is a
+        # subset of CritSet (not the reverse). The strict branch above
+        # already ruled out equality.
+        if total_rows.issubset(critical_rows):
             return total, normal, test_direction_row, max_scal
         break
     while True:
@@ -1007,5 +1010,7 @@ def _kernel_flipping(
         test_direction_row = test_direction.column(0)
         max_scal = (critical_first * gram * test_direction)[0]
         total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
-        if critical_rows.issubset(_vector_rows(total)):
+        # C++ lorentzian_perfect.h:828, second exit has the same
+        # ListTotal-subset-of-CritSet orientation.
+        if _vector_rows(total).issubset(critical_rows):
             return total, normal, test_direction_row, max_scal
