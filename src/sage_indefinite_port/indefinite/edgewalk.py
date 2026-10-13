@@ -1052,8 +1052,16 @@ class _Edgewalk:
             )
             return tuple(sorted(closure, key=_key))
 
+        certified_root_count = 0
+
         def try_reflectivity_certificate() -> AllcockEdgewalkReport | None:
+            # LORENTZ_RunEdgewalkAlgorithm::f_try_terminate tests the dual
+            # description only when the closed root orbit has grown.
+            nonlocal certified_root_count
             roots = certified_roots()
+            if len(roots) <= certified_root_count:
+                return None
+            certified_root_count = len(roots)
             if self.root_chamber_certificate(roots):
                 return self.report(vertices, True, roots, isometries)
             return None
