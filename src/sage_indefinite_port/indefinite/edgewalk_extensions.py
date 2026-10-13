@@ -73,9 +73,11 @@ def _diagram_extension_labels(coxeter_rows: list[list[Integer]], spherical: bool
             labels[index] = value
         candidates.append(tuple(labels))
 
-    # Source: edges of type A/B/G2 and the parallel rank-two case.
-    for i in range(n):
-        for label in (Integer(3), Integer(4), Integer(6)):
+    # The pinned FindDiagramExtensions_Efficient emits the disconnected A1,
+    # then the single-edge Dynkin enlargements, and only subsequently its
+    # disconnected A1/G2/parallel cases. Keep diagram-first output ordering.
+    for label in (Integer(3), Integer(4), Integer(6)):
+        for i in range(n):
             add(((i, label),))
     if not spherical:
         for i in isolated:
