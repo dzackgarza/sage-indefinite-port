@@ -406,9 +406,14 @@ class _Edgewalk:
         # NextRoot yields those roots individually; use the backend's called
         # decomposition helpers so an intermediate root cannot end the search.
         for component, norm in engine.IterateRootDecompositions():
+            # vinberg.h FindRoot_filter/fct_CVP retains every norm-k
+            # candidate satisfying all accepted wall inequalities. VinAl's
+            # IsNewRoot additionally rejects linearly dependent candidates;
+            # that is not the upstream filter and can discard actual walls.
             new_roots = [
                 root for root in engine.Roots_decomposed_into(component, norm)
-                if engine.IsNewRoot(root)
+                if engine.IsRoot(root)
+                and all(root.inner_product(wall) <= 0 for wall in engine.roots)
             ]
             if not new_roots:
                 continue
