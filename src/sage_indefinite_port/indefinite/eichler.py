@@ -24,7 +24,7 @@ from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometry
 from dzack_research.preamble.categories.modules.framed.formed.discriminant_modules import DiscriminantQuadraticModules
 from dzack_research.preamble.categories.rational_integral_stabilizers import IntegralStructureAction
 from dzack_research.preamble.categories.sets.finite_ordered_sets import finite_ordered_set
-from dzack_research.preamble.categories.sets.indexed_families import finite_indexed_family_from_values, IndexedFamily, finite_indexed_family
+from dzack_research.preamble.categories.sets.indexed_families import IndexedFamily, finite_indexed_family, finite_indexed_family_from_values
 from sage.structure.element import RingElement
 
 

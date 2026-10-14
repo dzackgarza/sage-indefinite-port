@@ -17,7 +17,7 @@ from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometry
 from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
 from dzack_research.preamble.categories.reduction_complexes import LorentzianPerfectDomainTraversal, PerfectDomainOrbitAdjacency
 from dzack_research.preamble.categories.sets.finite_ordered_sets import finite_ordered_set
-from dzack_research.preamble.categories.sets.indexed_families import finite_indexed_family_from_values, finite_indexed_family
+from dzack_research.preamble.categories.sets.indexed_families import finite_indexed_family, finite_indexed_family_from_values
 from dzack_research.preamble.categories.vector_configurations import VectorConfigurations
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.matrix.constructor import matrix

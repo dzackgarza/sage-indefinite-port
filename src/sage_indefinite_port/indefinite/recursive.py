@@ -20,11 +20,11 @@ Definite lattices are the preamble's; signature (1, n) is the Lorentzian leaf (#
 
 from dataclasses import dataclass
 
-from dzack_research.preamble.categories.sets.indexed_families import finite_indexed_family_from_values
 from dzack_research.preamble.all import ZZ, Lattices
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.modules.pure.modules import Modules, ModulesOverIntegralDomains
 from dzack_research.preamble.categories.rational_integral_stabilizers import IntegralStructureAction
+from dzack_research.preamble.categories.sets.indexed_families import finite_indexed_family_from_values
 
 from sage_indefinite_port.indefinite.eichler import OrbitCoverModel
 from sage_indefinite_port.indefinite.lorentzian_cells import lorentzian_isometry, lorentzian_orthogonal_group_generators
