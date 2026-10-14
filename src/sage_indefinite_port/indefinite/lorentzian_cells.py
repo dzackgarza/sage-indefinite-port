@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import cached_property
@@ -12,7 +12,7 @@ from typing import Literal
 
 from dzack_research.preamble.all import Groups, Lattices
 from dzack_research.preamble.categories.group.g_sets import FiniteGSets
-from dzack_research.preamble.categories.group.groups import GroupMorphism
+from dzack_research.preamble.categories.group.groups import GroupMorphism, OwnedGroups
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
 from dzack_research.preamble.categories.reduction_complexes import LorentzianPerfectDomainTraversal, PerfectDomainOrbitAdjacency
@@ -20,6 +20,7 @@ from dzack_research.preamble.categories.sets.finite_ordered_sets import finite_o
 from dzack_research.preamble.categories.sets.indexed_families import finite_indexed_family, finite_indexed_family_from_values
 from dzack_research.preamble.categories.vector_configurations import VectorConfigurations
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
+from sage.groups.perm_gps.permgroup_element import PermutationGroupElement
 from sage.matrix.constructor import matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
@@ -201,7 +202,7 @@ class LorentzianPerfectLocalBackend:
         """
         generators = self.cell_stabilizer(cell)
         free = Groups.Free(index_set=finite_ordered_set(range(len(generators))))
-        return free.Mor(cell.lattice.O())({position: generator for position, generator in enumerate(generators)})
+        return OwnedGroups().Mor(free, cell.lattice.O())({position: generator for position, generator in enumerate(generators)})
 
     @cached_method
     def facet_action(self, cell: LorentzianPerfectCell) -> Parent:
@@ -217,24 +218,31 @@ class LorentzianPerfectLocalBackend:
             pairings = covector_rows * ray_rows.transpose()
             facets = tuple(frozenset(position for position in range(len(vectors)) if pairings[facet, position] == 0) for facet in range(len(covectors)))
 
-        lift = self.facet_lift(cell)
         # Lorentzian.g:1318-1322 (PermutationStabilizer := GRP_int) and
         # OnSetsGroupFormalism: the stabilizer acts on facets through its
-        # permutation action on the cell's rays. Each generator's ray
-        # permutation is computed once. Sage composes permutations left to
-        # right, so sending a generator to its inverse permutation makes the
-        # free extension a homomorphism; inverting its value gives the action.
-        symmetric = Groups.S(len(vectors))
-        inverse_ray_permutations = {
-            position: symmetric([vectors.index(generator(point)) + 1 for point in vectors]).inverse() for position, generator in enumerate(self.cell_stabilizer(cell))
-        }
-        ray_action = lift.domain().Mor(symmetric)(inverse_ray_permutations)
+        # permutation action on the cell's rays.
+        ray_action = self.point_permutation_action(cell, vectors)
 
         def act(word, facet: FacetIncidence) -> FacetIncidence:
-            permutation = ray_action(word).inverse()
+            permutation = ray_action(word)
             return frozenset(int(permutation(position + 1)) - 1 for position in facet)
 
-        return FiniteGSets(lift.domain())(facets, act)
+        return FiniteGSets(self.facet_lift(cell).domain())(facets, act)
+
+    def point_permutation_action(self, cell: LorentzianPerfectCell, points: tuple[Lattices.ElementMethods, ...]) -> Callable[[GroupMorphism], PermutationGroupElement]:
+        r"""Words in the stabilizer generators of the cell, acting on a finite stable family of points as permutations.
+
+        Each generator's permutation of the points is computed once and words are
+        evaluated in the symmetric group. Sage composes permutations left to right,
+        so sending a generator to its inverse permutation makes the free extension a
+        homomorphism; the inverse of its value is the action of the word.
+        """
+        symmetric = Groups.S(len(points))
+        inverse_permutations = {
+            position: symmetric([points.index(generator(point)) + 1 for point in points]).inverse() for position, generator in enumerate(self.cell_stabilizer(cell))
+        }
+        extension = OwnedGroups().Mor(self.facet_lift(cell).domain(), symmetric)(inverse_permutations)
+        return lambda word: extension(word).inverse()
 
     def facet_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[FacetIncidence, ...], ...]:
         return tuple(tuple(orbit.points()) for orbit in self.facet_action(cell).orbits())
@@ -508,14 +516,14 @@ class MarkedCellOrbitAlgorithm:
 
     def local_stabilizer_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[Lattices.ElementMethods, ...], ...]:
         marks = self.local_marks(cell)
-        lift = self.complex().local_backend().facet_lift(cell)
+        backend = self.complex().local_backend()
+        mark_action = backend.point_permutation_action(cell, marks)
         positions = tuple(range(len(marks)))
 
         def act(word, position: int) -> int:
-            isometry = lift(word)
-            return marks.index(isometry(marks[position]))
+            return int(mark_action(word)(position + 1)) - 1
 
-        return tuple(tuple(marks[position] for position in sorted(orbit.points())) for orbit in FiniteGSets(lift.domain())(positions, act).orbits())
+        return tuple(tuple(marks[position] for position in sorted(orbit.points())) for orbit in FiniteGSets(backend.facet_lift(cell).domain())(positions, act).orbits())
 
     def transport_marks(self, adjacency: LorentzianCellAdjacency) -> tuple[tuple[Lattices.ElementMethods, Lattices.ElementMethods], ...]:
         transporter = adjacency.transporter

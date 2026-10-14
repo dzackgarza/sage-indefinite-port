@@ -204,7 +204,12 @@ class OrbitCoverModel:
         cosets = envelope.stabilizer_of_lattice().right_cosets()
         envelope_square = envelope.scale**2 * square
         found: list[Lattices.ElementMethods] = []
-        for content in square_divisors(envelope_square) if envelope_square else (1,):
+        # sigma(v) for v primitive in L is c times a primitive vector of E with c dividing the
+        # exponent of E / sigma(L). For a nonzero square c^2 also divides the square; for norm 0
+        # only the exponent bounds c, so every divisor of it is a possible content.
+        exponent = int(envelope.similarity.cokernel().exponent())
+        contents = square_divisors(envelope_square) if envelope_square else tuple(divisor for divisor in range(1, exponent + 1) if exponent % divisor == 0)
+        for content in contents:
             for primitive in self.model.covering_vector_representatives(envelope_square // content**2):
                 for representative in cosets:
                     moved = representative(self.model.lattice().scalar_multiple(content, primitive))

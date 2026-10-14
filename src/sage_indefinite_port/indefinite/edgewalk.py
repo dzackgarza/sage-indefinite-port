@@ -61,6 +61,14 @@ def edgewalk_fundamental_domain(
     return _Edgewalk(lattice).walk()
 
 
+def _integer(entry) -> int:
+    r"""An integral coordinate; a rational entry with a denominator is a defect, not a value to truncate."""
+    rational = SageQQ(entry)
+    if rational.denominator() != 1:
+        raise ArithmeticError(f"the coordinate {entry} of a lattice vector is not integral")
+    return int(rational)
+
+
 def _key(vector_: _Vector) -> _Key:
     coordinates = vector_.to_vector()
     return tuple(int(coordinates(label)) for label in vector_.parent().module_generating_set())
@@ -139,7 +147,7 @@ class _Edgewalk:
 
     def element(self, row: _RationalRow | _Key) -> _Vector:
         ring = self.lattice.base_ring()
-        return self.lattice.linear_combination({label: ring(int(entry)) for label, entry in zip(self.labels, row, strict=True) if entry})
+        return self.lattice.linear_combination({label: ring(_integer(entry)) for label, entry in zip(self.labels, row, strict=True) if entry})
 
     def rational_element(self, row: _RationalRow) -> Lattices.ElementMethods:
         return self.rational.linear_combination(
@@ -348,14 +356,14 @@ class _Edgewalk:
         # the assumption that the family is centrally symmetric. A count
         # alone cannot establish the required opposite-root correspondence.
         if initial_roots:
-            root_rows = [tuple(int(entry) for entry in root) for root in initial_roots]
+            root_rows = [tuple(_integer(entry) for entry in root) for root in initial_roots]
             multiplicities = {}
             for row in root_rows:
                 multiplicities[row] = multiplicities.get(row, 0) + 1
             if any(multiplicities.get(row, 0) != multiplicities.get(tuple(-entry for entry in row), 0) for row in multiplicities):
                 raise ArithmeticError("Vinberg perpendicular roots do not form opposite pairs")
         if positive:
-            positive_cone = RationalPolyhedralCones(self.lattice).from_rays(self.element(tuple(int(entry) for entry in root)) for root in positive)
+            positive_cone = RationalPolyhedralCones(self.lattice).from_rays(self.element(tuple(_integer(entry) for entry in root)) for root in positive)
             rays = tuple(self.row(ray) for ray in positive_cone.primitive_rays())
             # GetFacetOneDomain_ListIdx selects nonredundant *indices*;
             # parallel root vectors cannot both survive its reduction.
@@ -375,7 +383,7 @@ class _Edgewalk:
             engine.roots = []
 
         def accepted_vertex() -> _Vertex | None:
-            roots = tuple(self.element(tuple(int(entry) for entry in root)) for root in engine.roots)
+            roots = tuple(self.element(tuple(_integer(entry) for entry in root)) for root in engine.roots)
             if not roots:
                 return None
             equations = matrix(SageQQ, [self.row(root) * self.gram for root in roots])
@@ -434,7 +442,7 @@ class _Edgewalk:
             # vinberg.h ReduceListRoot removes generators redundant in the
             # accepted root cone. Keep the original normed root vectors,
             # using primitive rays only to identify their directions.
-            ambient_roots = tuple(self.element(tuple(int(entry) for entry in root)) for root in engine.roots)
+            ambient_roots = tuple(self.element(tuple(_integer(entry) for entry in root)) for root in engine.roots)
             extreme = RationalPolyhedralCones(self.lattice).from_rays(ambient_roots).primitive_rays()
             # ReduceListRoot/get_non_redundant_indices preserves the order
             # of the original family. Keep its first normed representative
@@ -586,7 +594,7 @@ class _Edgewalk:
     @staticmethod
     def plane_element(plane: Lattices.ParentMethods, coordinates: _RationalRow) -> _Vector:
         ring = plane.base_ring()
-        return plane.linear_combination({label: ring(int(entry)) for label, entry in zip(plane.module_generating_set(), coordinates, strict=True) if entry})
+        return plane.linear_combination({label: ring(_integer(entry)) for label, entry in zip(plane.module_generating_set(), coordinates, strict=True) if entry})
 
     @staticmethod
     def plane_primitive(plane: Lattices.ParentMethods, coordinates: _RationalRow) -> _Vector:
@@ -900,7 +908,7 @@ class _Edgewalk:
         return tuple(directions[int(orbit.representative())] for orbit in direction_orbits)
 
     def binary_walk(self) -> AllcockEdgewalkReport:
-        """A binary chamber has two ordinary ends, or one wall in the split case."""
+        """A binary chamber is a compact segment between two walls (anisotropic), or a ray from one wall to a cusp (split, not reflective)."""
         root_locus = self.lattice.reflective_root_locus()
         # In the rationally split binary case, a nonzero norm fibre is
         # finite: after factoring the form over Q, its two integral linear
@@ -920,7 +928,11 @@ class _Edgewalk:
         generator = self.primitive(self.perpendicular_rows((self.row(root),)).row(0))
         initial = _Vertex(generator, (root,))
         if self.lattice.is_isotropic():
-            return self.report([initial], True, initial.roots, [])
+            # Allcock section 8: the walk from the wall ends at the primitive
+            # isotropic vector, an ideal point of H^1. The chamber is a ray of
+            # infinite length, so W(L) has no finite-volume chamber; the
+            # preamble's signature (1,1) treatment says the same.
+            return self.report([initial], False, initial.roots, [])
         neighbor = self.edge_step(initial, (), root)
         category = VectorConfigurations(self.lattice.base_ring())
         symmetry = category.spanning_isometry(
