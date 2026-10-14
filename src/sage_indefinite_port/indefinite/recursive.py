@@ -20,6 +20,7 @@ Definite lattices are the preamble's; signature (1, n) is the Lorentzian leaf (#
 
 from dataclasses import dataclass
 
+from dzack_research.preamble.categories.sets.indexed_families import finite_indexed_family_from_values
 from dzack_research.preamble.all import ZZ, Lattices
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.modules.pure.modules import Modules, ModulesOverIntegralDomains
@@ -104,7 +105,7 @@ class EichlerRecursion:
         rational = lattice.base_change(lattice.base_ring().fraction_field_map())
         inclusion = ModulesOverIntegralDomains(lattice.base_ring())(lattice).generic_fibre_map()
         space = inclusion.codomain()
-        split = lattice.vector_configuration((vector, *(perpendicular(point) for point in complement.module_generators())))
+        split = lattice.vector_configuration(finite_indexed_family_from_values(None, (vector, *(perpendicular(point) for point in complement.module_generators()))))
         denominator = split.inclusion().cokernel().exponent()
         scale = rational.base_ring().one() / rational.base_ring()(denominator)
         containing = Modules(lattice.base_ring()).Mono(split, space)(

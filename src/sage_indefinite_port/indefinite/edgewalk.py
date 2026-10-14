@@ -16,6 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import cmp_to_key
 
+from dzack_research.preamble.categories.sets.indexed_families import finite_indexed_family_from_values
 from dzack_research.preamble.all import ZZ, HyperbolicLattices, Lattices
 from dzack_research.preamble.categories.group.g_sets import FiniteGSets
 from dzack_research.preamble.categories.hyperbolic_lattices import AllcockEdgewalkReport
@@ -333,9 +334,9 @@ class _Edgewalk:
         plane_rows = self.perpendicular_rows(
             tuple(self.row(root) for root in simple_roots)
         )
-        plane = self.rational.vector_configuration(
+        plane = self.rational.vector_configuration(finite_indexed_family_from_values(None, 
             [self.rational_element(row) for row in plane_rows.rows()]
-        )
+        ))
         negative = self.rational_row(plane.inclusion()(plane.vector_of_sign(-1)))
         if self.pair(negative, self.row(k)) > 0:
             negative = -negative
@@ -634,9 +635,9 @@ class _Edgewalk:
         if self.norm(k) < 0:
             oriented_basis = matrix(SageQQ, [r0, self.row(k)])
         else:
-            plane = self.rational.vector_configuration(
+            plane = self.rational.vector_configuration(finite_indexed_family_from_values(None, 
                 [self.rational_element(row) for row in plane_basis.rows()]
-            )
+            ))
             positive = self.rational_row(plane.inclusion()(plane.vector_of_sign(1)))
             if self.pair(positive, self.row(k)) > 0:
                 positive = -positive
@@ -689,9 +690,9 @@ class _Edgewalk:
         r0_coordinates = basis.transpose().solve_right(r0.column()).column(0)
         r0_vector = self.plane_primitive(plane_lattice, r0_coordinates)
 
-        perpendicular = self.lattice.vector_configuration(
+        perpendicular = self.lattice.vector_configuration(finite_indexed_family_from_values(None, 
             list(roots)
-        ).orthogonal_complement()
+        )).orthogonal_complement()
         # For divisor one C=L, so C cap P is already the perpendicular
         # sublattice. There is no second integral intersection to compute.
         intersection = (
@@ -711,12 +712,12 @@ class _Edgewalk:
             raise ArithmeticError(
                 "the perpendicular intersection must be integral in the projected lattice"
             )
-        sublattice = plane_lattice.vector_configuration(
+        sublattice = plane_lattice.vector_configuration(finite_indexed_family_from_values(None, 
             [
                 self.plane_element(plane_lattice, row)
                 for row in intersection_coordinates.rows()
             ]
-        )
+        ))
         return _EdgePlane(
             constraint,
             basis,
@@ -968,9 +969,9 @@ class _Edgewalk:
     def isotropic_next_vertex(
         self, roots: _Roots, discarded: _Vector, k: _Vector
     ) -> _Vertex:
-        perpendicular = self.lattice.vector_configuration(
+        perpendicular = self.lattice.vector_configuration(finite_indexed_family_from_values(None, 
             list(roots)
-        ).orthogonal_complement()
+        )).orthogonal_complement()
         plane = perpendicular.inclusion().domain()
         choices: dict[_Key, _Vector] = {}
         for isotropic in plane.primitive_isotropic_vectors():
@@ -1191,9 +1192,9 @@ class _Edgewalk:
         configurations = [self.vertex_configuration(initial)]
         seen: set[tuple[_Key, ...]] = {self.identity_key}
         isometries: list[LatticeIsometryMethods] = []
-        invariant = self.lattice.vector_configuration(
+        invariant = self.lattice.vector_configuration(finite_indexed_family_from_values(None, 
             list(self.lattice.module_generators())
-        )
+        ))
 
         def admit(isometry: LatticeIsometryMethods) -> bool:
             r"""Record a new symmetry of the polyhedron; False once the group they generate is infinite."""

@@ -24,7 +24,7 @@ from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometry
 from dzack_research.preamble.categories.modules.framed.formed.discriminant_modules import DiscriminantQuadraticModules
 from dzack_research.preamble.categories.rational_integral_stabilizers import IntegralStructureAction
 from dzack_research.preamble.categories.sets.finite_ordered_sets import finite_ordered_set
-from dzack_research.preamble.categories.sets.indexed_families import IndexedFamily, finite_indexed_family
+from dzack_research.preamble.categories.sets.indexed_families import finite_indexed_family_from_values, IndexedFamily, finite_indexed_family
 from sage.structure.element import RingElement
 
 
@@ -42,14 +42,14 @@ class EichlerEnvelope:
     def __init__(self, lattice: Lattices.ParentMethods) -> None:
         first = lattice.isotropic_vector()
         first_partner = first.hyperbolic_partner()
-        first_plane = lattice.vector_configuration([first, first_partner])
+        first_plane = lattice.vector_configuration(finite_indexed_family_from_values(None, [first, first_partner]))
         complement = first_plane.orthogonal_complement()
         complement_lattice = complement.inclusion().domain()
         second = complement_lattice.isotropic_vector()
         second_partner = second.hyperbolic_partner()
         embed = complement.inclusion()
         second, second_partner = embed(second), embed(second_partner)
-        planes = lattice.vector_configuration([first, first_partner, second, second_partner])
+        planes = lattice.vector_configuration(finite_indexed_family_from_values(None, [first, first_partner, second, second_partner]))
         kernel = planes.orthogonal_complement()
         kernel_lattice = kernel.inclusion().domain()
         hyperbolic_plane = Lattices(lattice.base_ring())("U")
@@ -63,7 +63,7 @@ class EichlerEnvelope:
         source = (first, first_partner, second, second_partner) + tuple(kernel.inclusion()(vector) for vector in kernel_lattice.module_generators())
         target = (first_pairing * e_1, f_1, second_pairing * e_2, f_2) + tuple(complement_embedding(vector) for vector in kernel_lattice.module_generators())
         fraction_map = lattice.base_ring().fraction_field_map()
-        spanned = lattice.vector_configuration(list(source))
+        spanned = lattice.vector_configuration(finite_indexed_family_from_values(None, list(source)))
         span_to_envelope = spanned.inclusion().domain().hom(list(target), codomain=self.envelope).base_change(fraction_map)
         rational_inclusion = spanned.inclusion().base_change(fraction_map)
         rational_lattice = lattice.base_change(fraction_map)
