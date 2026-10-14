@@ -373,7 +373,13 @@ class _Edgewalk:
         for coordinates in GetIntegerPoints(coset_basis):
             representative = engine.V(coordinates)
             quotient = (-representative.inner_product(engine.v0)) // norm_shift
-            engine.W.append(representative - quotient * engine.v0)
+            normalized = representative - quotient * engine.v0
+            # GetVinbergAux uses QuoInt/ResInt to place each class in
+            # the fundamental timelike strip, 0 <= -<w,v0> < -v0^2.
+            height = -normalized.inner_product(engine.v0)
+            if not 0 <= height < norm_shift:
+                raise ArithmeticError("Vinberg coset representative leaves timelike strip")
+            engine.W.append(normalized)
         # vinberg.h GetVinbergFromG supplies the caller's root-length set.
         # VinAl otherwise derives its own list from the form determinant,
         # which need not equal the admissible lengths of this lattice.
