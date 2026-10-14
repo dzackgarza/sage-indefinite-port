@@ -380,6 +380,15 @@ class _Edgewalk:
             if not 0 <= height < norm_shift:
                 raise ArithmeticError("Vinberg coset representative leaves timelike strip")
             engine.W.append(normalized)
+        # IterateRootDecompositions starts at candidate index 1, reserving
+        # index 0 for the zero translation class. Preserve every nonzero
+        # representative's relative enumeration order while making that
+        # indexing convention explicit for the backend's coset table.
+        zero = engine.V([0] * engine.n)
+        if engine.W.count(zero) != 1:
+            raise ArithmeticError("Vinberg translation classes lack a unique zero class")
+        engine.W.remove(zero)
+        engine.W.insert(0, zero)
         # vinberg.h GetVinbergFromG supplies the caller's root-length set.
         # VinAl otherwise derives its own list from the form determinant,
         # which need not equal the admissible lengths of this lattice.
