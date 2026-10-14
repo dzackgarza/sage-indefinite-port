@@ -1085,14 +1085,7 @@ class _Edgewalk:
         """
         if not roots:
             return False
-        dual = self.lattice.dual_module()
-        inequalities = []
-        for root in roots:
-            row = -(_coordinate_row(self.lattice, root, SageQQ) * self.gram)
-            inequalities.append(dual.linear_combination({
-                label: self.lattice.base_ring()(int(entry))
-                for label, entry in zip(self.labels, row, strict=True) if entry
-            }))
+        inequalities = tuple(-root.to_covector() for root in roots)
         chamber = RationalPolyhedralCones(self.lattice).from_halfspaces(inequalities)
         if not chamber.is_pointed():
             return False
