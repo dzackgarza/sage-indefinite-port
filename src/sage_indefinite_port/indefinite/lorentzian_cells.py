@@ -226,8 +226,7 @@ class LorentzianPerfectLocalBackend:
         # free extension a homomorphism; inverting its value gives the action.
         symmetric = Groups.S(len(vectors))
         inverse_ray_permutations = {
-            position: symmetric([vectors.index(generator(point)) + 1 for point in vectors]).inverse()
-            for position, generator in enumerate(self.cell_stabilizer(cell))
+            position: symmetric([vectors.index(generator(point)) + 1 for point in vectors]).inverse() for position, generator in enumerate(self.cell_stabilizer(cell))
         }
         ray_action = lift.domain().Mor(symmetric)(inverse_ray_permutations)
 
