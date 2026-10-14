@@ -26,3 +26,4 @@ references/vendor/zotero/
 # Reference repository clones
 references/polyhedral_common/
 references/Indefinite.jl/
+.tmp/

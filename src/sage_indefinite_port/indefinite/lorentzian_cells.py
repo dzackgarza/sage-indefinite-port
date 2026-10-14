@@ -997,19 +997,14 @@ def _kernel_flipping(
         if total_rows == critical_rows:
             lower = middle
             continue
-        # C++ lorentzian_perfect.h:781, first exit: ListTotal is a
-        # subset of CritSet (not the reverse). The strict branch above
-        # already ruled out equality.
-        if total_rows.issubset(critical_rows):
+        # Lorentzian.g:924-930, EXIT 1: the shell strictly contains CritSet.
+        if critical_rows.issubset(total_rows):
             return total, normal, test_direction_row, max_scal
         break
     while True:
         if not total:
             raise ArithmeticError("perfect-cell flipping reached an empty positive-vector shell")
-        # polyhedral_common@a55fcb7b src_lorentzian/lorentzian_perfect.h:798-824.
-        # The second exit requires the new shell to contain the critical set.
-        # Unlike the older GAP Lorentzian.g:949-965, the pinned later C++
-        # source does not also require the chosen temporary vector to persist.
+        # Lorentzian.g:944-966, second scheme.
         new_vector = total[0]
         expanded = vector(SageQQ, [1, *_coordinate_row(lattice, new_vector, SageQQ)])
         denominator = direction_normal.dot_product(expanded)
@@ -1021,8 +1016,6 @@ def _kernel_flipping(
         test_direction_row = test_direction.column(0)
         max_scal = (critical_first * gram * test_direction)[0]
         total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
-        # Pinned polyhedral_common lorentzian_perfect.h:827 tests the
-        # second exit against CritSet alone. The temporary wall vector
-        # selects the shift but is not an admissible extra exit member.
-        if _vector_rows(total).issubset(critical_rows):
+        # Lorentzian.g:959, EXIT 2: the shell contains CritSet and eVect.
+        if (critical_rows | _vector_rows((new_vector,))).issubset(_vector_rows(total)):
             return total, normal, test_direction_row, max_scal
