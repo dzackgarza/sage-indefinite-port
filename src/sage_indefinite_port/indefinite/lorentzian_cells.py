@@ -213,21 +213,27 @@ class LorentzianPerfectLocalBackend:
         ray_rows = matrix(SageQQ, [_coordinate_row(cell.lattice, point, SageQQ) for point in vectors])
         facets: tuple[FacetIncidence, ...] = ()
         if covectors:
-            covector_rows = matrix(SageQQ, [
-                [_rational(covector.to_vector()(label)) for label in labels]
-                for covector in covectors
-            ])
+            covector_rows = matrix(SageQQ, [[_rational(covector.to_vector()(label)) for label in labels] for covector in covectors])
             pairings = covector_rows * ray_rows.transpose()
-            facets = tuple(
-                frozenset(position for position in range(len(vectors)) if pairings[facet, position] == 0)
-                for facet in range(len(covectors))
-            )
+            facets = tuple(frozenset(position for position in range(len(vectors)) if pairings[facet, position] == 0) for facet in range(len(covectors)))
 
         lift = self.facet_lift(cell)
+        # Lorentzian.g:1318-1322 (PermutationStabilizer := GRP_int) and
+        # OnSetsGroupFormalism: the stabilizer acts on facets through its
+        # permutation action on the cell's rays. Each generator's ray
+        # permutation is computed once. Sage composes permutations left to
+        # right, so sending a generator to its inverse permutation makes the
+        # free extension a homomorphism; inverting its value gives the action.
+        symmetric = Groups.S(len(vectors))
+        inverse_ray_permutations = {
+            position: symmetric([vectors.index(generator(point)) + 1 for point in vectors]).inverse()
+            for position, generator in enumerate(self.cell_stabilizer(cell))
+        }
+        ray_action = lift.domain().Mor(symmetric)(inverse_ray_permutations)
 
         def act(word, facet: FacetIncidence) -> FacetIncidence:
-            isometry = lift(word)
-            return frozenset(vectors.index(isometry(vectors[position])) for position in facet)
+            permutation = ray_action(word).inverse()
+            return frozenset(int(permutation(position + 1)) - 1 for position in facet)
 
         return FiniteGSets(lift.domain())(facets, act)
 
@@ -908,9 +914,7 @@ def _negative_direction_in_span(
     while True:
         rows = perturbation * spanning_rows
         restricted = rows * gram * rows.transpose()
-        framed = Lattices(rational.base_ring())(
-            [[_owned_rational(lattice, restricted[i, j]) for j in range(restricted.ncols())] for i in range(restricted.nrows())]
-        )
+        framed = Lattices(rational.base_ring())([[_owned_rational(lattice, restricted[i, j]) for j in range(restricted.ncols())] for i in range(restricted.nrows())])
         negative = framed.vector_of_sign(-1)
         if negative is None:
             raise ArithmeticError("the outside-ray span has no negative direction")
