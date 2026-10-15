@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import cached_property
@@ -10,9 +10,7 @@ from itertools import product
 from random import choice, randrange, shuffle
 from typing import Literal
 
-from dzack_research.preamble.all import Groups, Lattices
-from dzack_research.preamble.categories.group.g_sets import FiniteGSets
-from dzack_research.preamble.categories.group.groups import GroupMorphism, OwnedGroups
+from dzack_research.preamble.all import Lattices
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
 from dzack_research.preamble.categories.reduction_complexes import LorentzianPerfectDomainTraversal, PerfectDomainOrbitAdjacency
@@ -21,7 +19,6 @@ from dzack_research.preamble.categories.sets.finite_ordered_sets import finite_o
 from dzack_research.preamble.categories.sets.indexed_families import finite_indexed_family
 from dzack_research.preamble.categories.sets.set_categories import Sets
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
-from sage.groups.perm_gps.permgroup_element import PermutationGroupElement
 from sage.matrix.constructor import matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
@@ -193,60 +190,48 @@ class LorentzianPerfectLocalBackend:
         r"""Generators of O(L)_[S], the stabilizer of the cell's family up to reindexing."""
         return tuple(cell.lattice.O().stabilizer(self.cell_family(cell)).group_generators())
 
-    @cached_method
-    def facet_lift(self, cell: LorentzianPerfectCell) -> GroupMorphism:
-        r"""Evaluate words in the given integral cell-stabilizer generators.
+    def point_permutations(self, cell: LorentzianPerfectCell, points: tuple[Lattices.ElementMethods, ...]) -> tuple[tuple[int, ...], ...]:
+        r"""Each cell-stabilizer generator's permutation of a finite stable family of points, as position images."""
+        positions = {point: position for position, point in enumerate(points)}
+        return tuple(tuple(positions[generator(point)] for point in points) for generator in self.cell_stabilizer(cell))
 
-        The source's finite facet-orbit calculation requires the action of
-        these generators, not construction of the infinite arithmetic matrix
-        subgroup of O(L) in its general group backend.
+    @cached_method
+    def facet_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[tuple[FacetIncidence, LatticeIsometryMethods], ...], ...]:
+        r"""Orbits of Aut((L, S)) on the facets spanned by S, each facet paired with an element carrying the orbit's first facet onto it.
+
+        Lorentzian.g:1318-1322 (PermutationStabilizer := GRP_int) and
+        OnSetsGroupFormalism: the stabilizer acts on facets through its
+        permutation action on the cell's rays. The orbits and transversal are
+        a Schreier traversal over the generators' ray permutations.
         """
-        generators = self.cell_stabilizer(cell)
-        free = Groups.Free(index_set=finite_ordered_set(range(len(generators))))
-        return OwnedGroups().Mor(free, cell.lattice.O())({position: generator for position, generator in enumerate(generators)})
-
-    @cached_method
-    def facet_action(self, cell: LorentzianPerfectCell) -> Parent:
-        r"""The finite action of Aut((L, S)) on the facets spanned by S."""
         vectors = cell.vector_configuration
         cone = RationalPolyhedralCones(cell.lattice).from_rays(vectors)
         covectors = tuple(cone.facet_covectors())
+        if not covectors:
+            return ()
         labels = tuple(cell.lattice.module_generating_set())
         ray_rows = matrix(SageQQ, [_coordinate_row(cell.lattice, point, SageQQ) for point in vectors])
-        facets: tuple[FacetIncidence, ...] = ()
-        if covectors:
-            covector_rows = matrix(SageQQ, [[_rational(covector.to_vector()(label)) for label in labels] for covector in covectors])
-            pairings = covector_rows * ray_rows.transpose()
-            facets = tuple(frozenset(position for position in range(len(vectors)) if pairings[facet, position] == 0) for facet in range(len(covectors)))
-
-        # Lorentzian.g:1318-1322 (PermutationStabilizer := GRP_int) and
-        # OnSetsGroupFormalism: the stabilizer acts on facets through its
-        # permutation action on the cell's rays.
-        ray_action = self.point_permutation_action(cell, vectors)
-
-        def act(word, facet: FacetIncidence) -> FacetIncidence:
-            permutation = ray_action(word)
-            return frozenset(int(permutation(position + 1)) - 1 for position in facet)
-
-        return FiniteGSets(self.facet_lift(cell).domain())(facets, act)
-
-    def point_permutation_action(self, cell: LorentzianPerfectCell, points: tuple[Lattices.ElementMethods, ...]) -> Callable[[GroupMorphism], PermutationGroupElement]:
-        r"""Words in the stabilizer generators of the cell, acting on a finite stable family of points as permutations.
-
-        Each generator's permutation of the points is computed once and words are
-        evaluated in the symmetric group. Sage composes permutations left to right,
-        so sending a generator to its inverse permutation makes the free extension a
-        homomorphism; the inverse of its value is the action of the word.
-        """
-        symmetric = Groups.S(len(points))
-        inverse_permutations = {
-            position: symmetric([points.index(generator(point)) + 1 for point in points]).inverse() for position, generator in enumerate(self.cell_stabilizer(cell))
-        }
-        extension = OwnedGroups().Mor(self.facet_lift(cell).domain(), symmetric)(inverse_permutations)
-        return lambda word: extension(word).inverse()
-
-    def facet_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[FacetIncidence, ...], ...]:
-        return tuple(tuple(orbit.points()) for orbit in self.facet_action(cell).orbits())
+        covector_rows = matrix(SageQQ, [[_rational(covector.to_vector()(label)) for label in labels] for covector in covectors])
+        pairings = covector_rows * ray_rows.transpose()
+        facets = [frozenset(position for position in range(len(vectors)) if pairings[facet, position] == 0) for facet in range(len(covectors))]
+        generators = self.cell_stabilizer(cell)
+        permutations = self.point_permutations(cell, vectors)
+        identity = cell.lattice.Aut().identity()
+        unvisited = set(facets)
+        orbits = []
+        for start in facets:
+            if start not in unvisited:
+                continue
+            unvisited.discard(start)
+            orbit = [(start, identity)]
+            for facet, element in orbit:
+                for generator, permutation in zip(generators, permutations, strict=True):
+                    image = frozenset(permutation[position] for position in facet)
+                    if image in unvisited:
+                        unvisited.discard(image)
+                        orbit.append((image, generator * element))
+            orbits.append(tuple(orbit))
+        return tuple(orbits)
 
     def flip_across(self, cell: LorentzianPerfectCell, facet: FacetIncidence) -> LorentzianPerfectCell | None:
         normalized = _lorentzian_view(cell.lattice)
@@ -335,7 +320,7 @@ class LorentzianPerfectComplex:
         source = representatives[self._traversal_position]
         new_representatives: list[LorentzianPerfectCell] = []
         for orbit in backend.facet_orbits(source):
-            facet = orbit[0]
+            facet = orbit[0][0]
             neighbor = backend.flip_across(source, facet)
             if neighbor is None:
                 # A boundary face has no adjacent perfect cell or side pairing.
@@ -357,9 +342,7 @@ class LorentzianPerfectComplex:
                 transporter = self.lattice().Aut().identity()
             if transporter is None:
                 raise ArithmeticError("a quotient-cell adjacency has no transporter to its selected target representative")
-            action = backend.facet_action(source)
-            for incident in orbit:
-                symmetry = backend.facet_lift(source)(action.transporter_witness(facet, incident))
+            for incident, symmetry in orbit:
                 self._traversal_adjacencies.append(LorentzianCellAdjacency(source, incident, target, symmetry * transporter))
         self._traversal_position += 1
         return tuple(new_representatives)
@@ -560,13 +543,19 @@ class MarkedCellOrbitAlgorithm:
     def local_stabilizer_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[Lattices.ElementMethods, ...], ...]:
         marks = self.local_marks(cell)
         backend = self.complex().local_backend()
-        mark_action = backend.point_permutation_action(cell, marks)
-        positions = tuple(range(len(marks)))
-
-        def act(word, position: int) -> int:
-            return int(mark_action(word)(position + 1)) - 1
-
-        return tuple(tuple(marks[position] for position in sorted(orbit.points())) for orbit in FiniteGSets(backend.facet_lift(cell).domain())(positions, act).orbits())
+        permutations = backend.point_permutations(cell, marks)
+        unvisited = set(range(len(marks)))
+        orbits = []
+        while unvisited:
+            orbit = [min(unvisited)]
+            unvisited.discard(orbit[0])
+            for position in orbit:
+                for permutation in permutations:
+                    if permutation[position] in unvisited:
+                        unvisited.discard(permutation[position])
+                        orbit.append(permutation[position])
+            orbits.append(tuple(marks[position] for position in sorted(orbit)))
+        return tuple(orbits)
 
     def transport_marks(self, adjacency: LorentzianCellAdjacency) -> tuple[tuple[Lattices.ElementMethods, Lattices.ElementMethods], ...]:
         transporter = adjacency.transporter
