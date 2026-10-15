@@ -16,6 +16,7 @@ from dzack_research.preamble.categories.group.groups import GroupMorphism, Owned
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
 from dzack_research.preamble.categories.reduction_complexes import LorentzianPerfectDomainTraversal, PerfectDomainOrbitAdjacency
+from dzack_research.preamble.categories.schemes.polytopes import ConvexPolytopes
 from dzack_research.preamble.categories.sets.finite_ordered_sets import finite_ordered_set
 from dzack_research.preamble.categories.sets.indexed_families import finite_indexed_family
 from dzack_research.preamble.categories.sets.set_categories import Sets
@@ -505,7 +506,62 @@ class MarkedCellOrbitAlgorithm:
             zero = cell.lattice.base_ring().zero()
             return tuple(vector for vector in cell.vector_configuration if vector.q() == zero)
         cone = RationalPolyhedralCones(cell.lattice).from_rays(cell.vector_configuration)
-        return tuple(vector for vector in cone.vectors_of_square(self._norm) if vector.content() == 1)
+        found: dict[tuple[int, ...], Lattices.ElementMethods] = {}
+        for subcone in cone.triangulation().values():
+            for mark in self._subcone_vectors_of_square(cone, subcone):
+                found[tuple(int(mark.to_vector()(label)) for label in cell.lattice.module_generating_set())] = mark
+        return tuple(mark for mark in found.values() if mark.content() == 1)
+
+    def _subcone_vectors_of_square(self, cone: Parent, subcone: Parent) -> tuple[Lattices.ElementMethods, ...]:
+        r"""The lattice vectors of square n in one simplicial piece of a cell's cone.
+
+        A lattice vector of the piece is sum c_i r_i with c_i in (1/D)Z_{>=0}, D the
+        ray-span saturation index. The rays pair with one sign, so every term of
+        q = sum c_i c_j b(r_i, r_j) has the sign of n: c_i^2 q(r_i) <= |n| bounds a
+        timelike ray, and for an isotropic ray some other c_j >= 1/D gives
+        2 c_i b(r_i, r_j) / D <= |n|. The lattice points of the bounding
+        parallelotope are kept when their square is n.
+        """
+        lattice = cone.ambient_lattice()
+        rays = tuple(subcone.primitive_rays())
+        pairings = [[int(lattice.b(left, right)) for right in rays] for left in rays]
+        sign = 1 if sum(sum(row) for row in pairings) > 0 else -1
+        signed = [[sign * entry for entry in row] for row in pairings]
+        if any(entry < 0 for row in signed for entry in row):
+            raise ArithmeticError(f"the rays {rays} of a cell's cone do not pair with one sign, as rays of the closed positive cone do")
+        target = sign * int(self._norm)
+        index = int(cone.ray_span_saturation_index(subcone))
+        bounds: list[tuple[int, int]] = []
+        for position in range(len(rays)):
+            if signed[position][position] > 0:
+                bound = Integer((target * index**2) // signed[position][position]).isqrt()
+            else:
+                partners = [signed[position][other] for other in range(len(rays)) if other != position]
+                if not partners:
+                    continue
+                if min(partners) == 0:
+                    raise ArithmeticError(f"the isotropic ray {rays[position]} is orthogonal to another ray of its piece")
+                bound = (target * index**2) // (2 * min(partners))
+            bounds.append((position, int(bound)))
+        if not bounds:
+            return ()
+        labels = tuple(lattice.module_generating_set())
+        steps = [
+            tuple(Fraction(bound, index) * int(rays[position].to_vector()(label)) for label in labels)
+            for position, bound in bounds
+        ]
+        vertices = {tuple(Fraction(0) for _label in labels)}
+        for step in steps:
+            vertices |= {tuple(x + y for x, y in zip(vertex, step, strict=True)) for vertex in vertices}
+        coordinates = lattice.base_ring().free_module(lattice.module_generating_set())
+        points = ConvexPolytopes(coordinates)(sorted(vertices)).integral_points()
+        square = lattice.base_ring()(self._norm)
+        ring = lattice.base_ring()
+        vectors = (
+            lattice.linear_combination({label: ring(int(point.to_vector()(label))) for label in labels if point.to_vector()(label)})
+            for point in points
+        )
+        return tuple(vector for vector in vectors if vector.q() == square)
 
     def local_stabilizer_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[Lattices.ElementMethods, ...], ...]:
         marks = self.local_marks(cell)
