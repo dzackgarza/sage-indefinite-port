@@ -65,7 +65,7 @@ def _dawes_groups(case):
             return [lattice_.O_plus(), _stable_o_plus(lattice_)]
         case "dawes_L2_gamma2":
             v = basis(lattice_)[4]
-            assert v.q() == -2
+            assert int(v.q()) == -2
             return [_o_plus_fixing(lattice_, v.divided_discriminant_class())]
     raise AssertionError(f"no group for {case['id']}")
 

@@ -67,7 +67,7 @@ def test_ambiguous_binary_form_has_an_improper_automorphism(case) -> None:
 
     computed = lattice(case["gram"]).O().group_generators()
 
-    assert any(generator.determinant() == -1 for generator in computed)
+    assert any(int(generator.determinant()) == -1 for generator in computed)
 
 
 @pytest.mark.parametrize("case", load_lorentzian_stabilizer_cases(), ids=lambda case: case["id"])
