@@ -546,10 +546,7 @@ class MarkedCellOrbitAlgorithm:
         if not bounds:
             return ()
         labels = tuple(lattice.module_generating_set())
-        steps = [
-            tuple(Fraction(bound, index) * int(rays[position].to_vector()(label)) for label in labels)
-            for position, bound in bounds
-        ]
+        steps = [tuple(Fraction(bound, index) * int(rays[position].to_vector()(label)) for label in labels) for position, bound in bounds]
         vertices = {tuple(Fraction(0) for _label in labels)}
         for step in steps:
             vertices |= {tuple(x + y for x, y in zip(vertex, step, strict=True)) for vertex in vertices}
@@ -557,10 +554,7 @@ class MarkedCellOrbitAlgorithm:
         points = ConvexPolytopes(coordinates)(sorted(vertices)).integral_points()
         square = lattice.base_ring()(self._norm)
         ring = lattice.base_ring()
-        vectors = (
-            lattice.linear_combination({label: ring(int(point.to_vector()(label))) for label in labels if point.to_vector()(label)})
-            for point in points
-        )
+        vectors = (lattice.linear_combination({label: ring(int(point.to_vector()(label))) for label in labels if point.to_vector()(label)}) for point in points)
         return tuple(vector for vector in vectors if vector.q() == square)
 
     def local_stabilizer_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[Lattices.ElementMethods, ...], ...]:
