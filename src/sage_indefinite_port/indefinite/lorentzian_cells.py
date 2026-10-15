@@ -17,8 +17,8 @@ from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometry
 from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
 from dzack_research.preamble.categories.reduction_complexes import LorentzianPerfectDomainTraversal, PerfectDomainOrbitAdjacency
 from dzack_research.preamble.categories.sets.finite_ordered_sets import finite_ordered_set
-from dzack_research.preamble.categories.sets.indexed_families import finite_indexed_family, finite_indexed_family_from_values
-from dzack_research.preamble.categories.vector_configurations import VectorConfigurations
+from dzack_research.preamble.categories.sets.indexed_families import finite_indexed_family
+from dzack_research.preamble.categories.sets.set_categories import Sets
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.groups.perm_gps.permgroup_element import PermutationGroupElement
 from sage.matrix.constructor import matrix
@@ -32,7 +32,7 @@ from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ as SageQQ
 from sage.sets.real_set import RealSet
-from sage.structure.element import RingElement
+from sage.structure.element import Element, RingElement
 from sage.structure.parent import Parent
 
 from sage_indefinite_port.invariants import AttackProfile
@@ -149,10 +149,6 @@ class LorentzianPerfectCell:
         if augmented.rank() != gram.nrows():
             raise ArithmeticError("a perfect-cell vector family must have augmented rank equal to the lattice rank")
 
-    def configuration(self) -> Parent:
-        r"""The marked lattice (L, Z^S -> L) of the cell's vectors, an object of Ar(Lattices)."""
-        return self.lattice.vector_configuration(finite_indexed_family_from_values(None, list(self.vector_configuration)))
-
 
 @dataclass(frozen=True)
 class LorentzianCellAdjacency:
@@ -186,11 +182,15 @@ class LorentzianPerfectLocalBackend:
         return LorentzianPerfectCell(lattice, vectors, allowed_squares)
 
     @cached_method
+    def cell_family(self, cell: LorentzianPerfectCell) -> Element:
+        r"""The cell's vectors as the family S: I -> L in Sets().Mor(I, L)."""
+        vectors = cell.vector_configuration
+        return Sets().Mor(Sets.Δ[len(vectors) - 1], cell.lattice)(lambda index: vectors[int(index)])
+
+    @cached_method
     def cell_stabilizer(self, cell: LorentzianPerfectCell) -> tuple[LatticeIsometryMethods, ...]:
-        r"""Generators of Aut((L, S)) for the cell's vector configuration S."""
-        return tuple(
-            VectorConfigurations(cell.lattice.base_ring()).spanning_automorphism_generators(cell.lattice, cell.vector_configuration, (0,) * len(cell.vector_configuration))
-        )
+        r"""Generators of O(L)_[S], the stabilizer of the cell's family up to reindexing."""
+        return tuple(cell.lattice.O().stabilizer(self.cell_family(cell)).group_generators())
 
     @cached_method
     def facet_lift(self, cell: LorentzianPerfectCell) -> GroupMorphism:
@@ -287,14 +287,7 @@ class LorentzianPerfectLocalBackend:
         r"""An element of Isom((L, S), (L, T)) for the cells' configurations, or None."""
         if source.allowed_squares != target.allowed_squares:
             raise ValueError("an isometry of perfect cells must preserve their prescribed normalized-norm locus")
-        return VectorConfigurations(source.lattice.base_ring()).spanning_isometry(
-            source.lattice,
-            source.vector_configuration,
-            (0,) * len(source.vector_configuration),
-            target.lattice,
-            target.vector_configuration,
-            (0,) * len(target.vector_configuration),
-        )
+        return source.lattice.O().transporter(self.cell_family(source), self.cell_family(target))
 
 
 class LorentzianPerfectComplex:

@@ -21,10 +21,7 @@ from dzack_research.preamble.categories.group.g_sets import FiniteGSets
 from dzack_research.preamble.categories.hyperbolic_lattices import AllcockEdgewalkReport
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
-from dzack_research.preamble.categories.sets.indexed_families import finite_indexed_family_from_values
-from dzack_research.preamble.categories.vector_configurations import (
-    VectorConfigurations,
-)
+from dzack_research.preamble.categories.sets.set_categories import Sets
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.matrix.constructor import matrix
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
@@ -34,6 +31,7 @@ from sage.rings.integer import Integer
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ as SageQQ
+from sage.structure.element import Element
 from sage.structure.parent import Parent
 
 from sage_indefinite_port.indefinite.edgewalk_extensions import (
@@ -288,7 +286,7 @@ class _Edgewalk:
         # simple walls, orient by b(kP,k)<0 and complete the cusp by the
         # source's affine-line equation fibres.
         plane_rows = self.perpendicular_rows(tuple(self.row(root) for root in simple_roots))
-        plane = self.rational.vector_configuration(finite_indexed_family_from_values(None, [self.rational_element(row) for row in plane_rows.rows()]))
+        plane = self.rational.subobject_on([self.rational_element(row) for row in plane_rows.rows()])
         negative = self.rational_row(plane.inclusion()(plane.vector_of_sign(-1)))
         if self.pair(negative, self.row(k)) > 0:
             negative = -negative
@@ -532,7 +530,7 @@ class _Edgewalk:
         if self.norm(k) < 0:
             oriented_basis = matrix(SageQQ, [r0, self.row(k)])
         else:
-            plane = self.rational.vector_configuration(finite_indexed_family_from_values(None, [self.rational_element(row) for row in plane_basis.rows()]))
+            plane = self.rational.subobject_on([self.rational_element(row) for row in plane_basis.rows()])
             positive = self.rational_row(plane.inclusion()(plane.vector_of_sign(1)))
             if self.pair(positive, self.row(k)) > 0:
                 positive = -positive
@@ -568,7 +566,7 @@ class _Edgewalk:
         r0_coordinates = basis.transpose().solve_right(r0.column()).column(0)
         r0_vector = self.plane_primitive(plane_lattice, r0_coordinates)
 
-        perpendicular = self.lattice.vector_configuration(finite_indexed_family_from_values(None, list(roots))).orthogonal_complement()
+        perpendicular = self.lattice.subobject_on(list(roots)).orthogonal_complement()
         # For divisor one C=L, so C cap P is already the perpendicular
         # sublattice. There is no second integral intersection to compute.
         intersection = perpendicular if divisor == 1 else constraint.intersection(perpendicular)
@@ -579,9 +577,7 @@ class _Edgewalk:
         intersection_coordinates = basis.transpose().solve_right(intersection_rows.transpose()).transpose()
         if any(entry.denominator() != 1 for entry in intersection_coordinates.list()):
             raise ArithmeticError("the perpendicular intersection must be integral in the projected lattice")
-        sublattice = plane_lattice.vector_configuration(
-            finite_indexed_family_from_values(None, [self.plane_element(plane_lattice, row) for row in intersection_coordinates.rows()])
-        )
+        sublattice = plane_lattice.subobject_on([self.plane_element(plane_lattice, row) for row in intersection_coordinates.rows()])
         return _EdgePlane(
             constraint,
             basis,
@@ -787,7 +783,7 @@ class _Edgewalk:
         return tuple(accepted)
 
     def isotropic_next_vertex(self, roots: _Roots, discarded: _Vector, k: _Vector) -> _Vertex:
-        perpendicular = self.lattice.vector_configuration(finite_indexed_family_from_values(None, list(roots))).orthogonal_complement()
+        perpendicular = self.lattice.subobject_on(list(roots)).orthogonal_complement()
         plane = perpendicular.inclusion().domain()
         choices: dict[_Key, _Vector] = {}
         for isotropic in plane.primitive_isotropic_vectors():
@@ -834,19 +830,25 @@ class _Edgewalk:
             directions.append((included, omitted[0]))
         return tuple(directions)
 
+    def coloured_family(self, pairs: tuple[tuple[_Vector, int], ...]) -> Element:
+        r"""The coloured family i -> (v_i, c_i) in Sets().Mor(I, L x {0, 1, 2})."""
+        colours = Sets.Δ[2]
+        points = Sets().product((self.lattice, colours))
+        return Sets().Mor(Sets.Δ[len(pairs) - 1], points)(lambda index: points((pairs[int(index)][0], colours[pairs[int(index)][1]])))
+
     @cached_method
-    def vertex_configuration(self, vertex: _Vertex) -> tuple[_Roots, tuple[int, ...]]:
+    def vertex_configuration(self, vertex: _Vertex) -> Element:
         r"""The coloured configuration of the vertex: its roots, the vertex, and at an ideal vertex its neighbours."""
         vectors = [*vertex.roots, vertex.generator]
-        colours = [1] * len(vertex.roots) + [2]
+        colours = [0] * len(vertex.roots) + [1]
         if self.norm(vertex.generator) == 0:
             adjacent: dict[_Key, _Vector] = {}
             for roots, discarded in self.edge_directions(vertex):
                 neighbour = self.edge_step(vertex, roots, discarded).generator
                 adjacent.setdefault(_key(neighbour), neighbour)
             vectors.extend(adjacent[key] for key in sorted(adjacent))
-            colours.extend([3] * len(adjacent))
-        return tuple(vectors), tuple(colours)
+            colours.extend([2] * len(adjacent))
+        return self.coloured_family(tuple(zip(vectors, colours, strict=True)))
 
     def isometry_key(self, isometry: LatticeIsometryMethods) -> tuple[_Key, ...]:
         return tuple(_key(isometry(generator)) for generator in self.lattice.module_generators())
@@ -934,14 +936,10 @@ class _Edgewalk:
             # preamble's signature (1,1) treatment says the same.
             return self.report([initial], False, initial.roots, [])
         neighbor = self.edge_step(initial, (), root)
-        category = VectorConfigurations(self.lattice.base_ring())
-        symmetry = category.spanning_isometry(
-            self.lattice,
-            (root, generator),
-            (1, 2),
-            self.lattice,
-            (*neighbor.roots, neighbor.generator),
-            (1, 2),
+        (neighbor_root,) = neighbor.roots
+        symmetry = self.lattice.O().transporter(
+            self.coloured_family(((root, 0), (generator, 1))),
+            self.coloured_family(((neighbor_root, 0), (neighbor.generator, 1))),
         )
         return self.report(
             [initial, neighbor],
@@ -961,7 +959,7 @@ class _Edgewalk:
         configurations = [self.vertex_configuration(initial)]
         seen: set[tuple[_Key, ...]] = {self.identity_key}
         isometries: list[LatticeIsometryMethods] = []
-        invariant = self.lattice.vector_configuration(finite_indexed_family_from_values(None, list(self.lattice.module_generators())))
+        invariant = self.lattice.subobject_on(list(self.lattice.module_generators()))
 
         def admit(isometry: LatticeIsometryMethods) -> bool:
             r"""Record a new symmetry of the polyhedron; False once the group they generate is infinite."""
@@ -1006,11 +1004,10 @@ class _Edgewalk:
             return certificate
 
         position = 0
-        configuration_category = VectorConfigurations(self.lattice.base_ring())
         while position < len(vertices):
             vertex = vertices[position]
             configuration = configurations[position]
-            local_generators = tuple(configuration_category.spanning_automorphism_generators(self.lattice, *configuration))
+            local_generators = tuple(self.lattice.O().stabilizer(configuration).group_generators())
             for automorphism in local_generators:
                 previous_generators = len(isometries)
                 if not admit(automorphism):
@@ -1022,7 +1019,7 @@ class _Edgewalk:
             for roots, discarded in self.edge_orbits(vertex, local_generators):
                 neighbour = self.edge_step(vertex, roots, discarded)
                 neighbour_configuration = self.vertex_configuration(neighbour)
-                isometries_to_neighbour = (configuration_category.spanning_isometry(self.lattice, *known, self.lattice, *neighbour_configuration) for known in configurations)
+                isometries_to_neighbour = (self.lattice.O().transporter(known, neighbour_configuration) for known in configurations)
                 transporter = next(
                     (isometry for isometry in isometries_to_neighbour if isometry is not None),
                     None,

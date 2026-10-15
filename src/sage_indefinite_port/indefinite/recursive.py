@@ -25,7 +25,6 @@ from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometry
 from dzack_research.preamble.categories.modules.orbit_spans import OrbitSpanConstructions
 from dzack_research.preamble.categories.modules.pure.modules import Modules, ModulesOverIntegralDomains
 from dzack_research.preamble.categories.rational_integral_stabilizers import IntegralStructureAction
-from dzack_research.preamble.categories.sets.indexed_families import finite_indexed_family_from_values
 from sage.matrix.constructor import matrix
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
 from sage.rings.integer_ring import ZZ as SageZZ
@@ -52,6 +51,7 @@ def _rational_isometry(source: Lattices.ParentMethods, target: Lattices.ParentMe
     source_labels = tuple(source.module_generating_set())
     target_labels = tuple(target.module_generating_set())
     field = rational_target.base_ring()
+
     def image(label):
         row = transformation.row(source_labels.index(label))
         return rational_target.linear_combination(
@@ -234,7 +234,7 @@ class EichlerRecursion:
         rational = lattice.base_change(lattice.base_ring().fraction_field_map())
         inclusion = ModulesOverIntegralDomains(lattice.base_ring())(lattice).generic_fibre_map()
         space = inclusion.codomain()
-        split = lattice.vector_configuration(finite_indexed_family_from_values(None, (vector, *(perpendicular(point) for point in complement.module_generators()))))
+        split = lattice.subobject_on((vector, *(perpendicular(point) for point in complement.module_generators())))
         denominator = split.inclusion().cokernel().exponent()
         scale = rational.base_ring().one() / rational.base_ring()(denominator)
         containing = Modules(lattice.base_ring()).Mono(split, space)(
