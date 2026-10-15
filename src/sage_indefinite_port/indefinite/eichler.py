@@ -60,7 +60,8 @@ class EichlerEnvelope:
         self.envelope = hyperbolic_plane + hyperbolic_plane + kernel_lattice
         self.model = self.envelope.two_u_eichler_model_from_represented_biproduct()
         e_1, f_1, e_2, f_2 = self.model.hyperbolic_basis()
-        complement_embedding = self.envelope.biproduct_factors()[-1].inclusion()
+        # The biproduct (U + U) + K is binary; its last injection is K -> E.
+        complement_embedding = self.envelope.injection(len(self.envelope.biproduct_factors()) - 1)
         first_pairing = lattice.b(first, first_partner)
         second_pairing = lattice.b(second, second_partner)
         source = (first, first_partner, second, second_partner) + tuple(kernel.inclusion()(vector) for vector in kernel_lattice.module_generators())
@@ -70,21 +71,20 @@ class EichlerEnvelope:
         # The span basis is echelonized; each basis vector is an integral combination of the
         # independent family source, and its image is the same combination of target.
         labels = tuple(lattice.module_generating_set())
-        source_rows = matrix(SageQQ, [[vector.to_vector()(label) for label in labels] for vector in source])
+        source_rows = matrix(SageQQ, [[int(vector.to_vector()(label)) for label in labels] for vector in source])
         span_inclusion = spanned.inclusion()
         span_images = []
         for generator in span_inclusion.domain().module_generators():
             image = span_inclusion(generator)
-            coefficients = source_rows.solve_left(vector_space_element([image.to_vector()(label) for label in labels]))
+            coefficients = source_rows.solve_left(vector_space_element([int(image.to_vector()(label)) for label in labels]))
             if any(entry.denominator() != 1 for entry in coefficients):
                 raise ArithmeticError("a span basis vector must be an integral combination of the spanning family")
             span_images.append(sum((lattice.base_ring()(int(entry)) * image_vector for entry, image_vector in zip(coefficients, target, strict=True)), self.envelope.zero()))
         span_to_envelope = span_inclusion.domain().hom(span_images, codomain=self.envelope).base_change(fraction_map)
         rational_inclusion = spanned.inclusion().base_change(fraction_map)
         rational_lattice = lattice.base_change(fraction_map)
-        self.rational_isometry = rational_lattice.hom(
-            [span_to_envelope(rational_inclusion.lift(vector)) for vector in rational_lattice.module_generators()],
-            codomain=self.envelope.base_change(fraction_map),
+        self.rational_isometry = rational_lattice.Isom(self.envelope.base_change(fraction_map))(
+            lambda label: span_to_envelope(rational_inclusion.lift(rational_lattice.module_generator(label)))
         )
         self.similarity = self.rational_isometry.integral_similarity(lattice, self.envelope)
         self.scale = self.similarity.scale()

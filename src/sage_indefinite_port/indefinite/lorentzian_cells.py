@@ -270,10 +270,10 @@ class LorentzianPerfectLocalBackend:
         return LorentzianPerfectCell(cell.lattice, returned, cell.allowed_squares)
 
     def cell_transporter(self, source: LorentzianPerfectCell, target: LorentzianPerfectCell) -> LatticeIsometryMethods | None:
-        r"""An element of Isom((L, S), (L, T)) for the cells' configurations, or None."""
+        r"""An element of Isom((L, S), (M, T)) for the cells' configurations, or None."""
         if source.allowed_squares != target.allowed_squares:
             raise ValueError("an isometry of perfect cells must preserve their prescribed normalized-norm locus")
-        return source.lattice.O().transporter(self.cell_family(source), self.cell_family(target))
+        return source.lattice.Isom(target.lattice).transporter(self.cell_family(source), self.cell_family(target))
 
 
 class LorentzianPerfectComplex:
