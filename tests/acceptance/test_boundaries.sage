@@ -144,7 +144,7 @@ def _lambda_n(n: int) -> list[list[int]]:
 def _gamma(lattice_):
     """Gamma(N) = {phi in O^+(Lambda_N) : phi(xi) = xi} for a decoration xi, q(xi) = 1 mod 2Z."""
     form = lattice_.discriminant_group()
-    one = form.quadratic_value_module()(1)
+    one = form.quadratic_value_module()(1r)
     decorations = [x for x in form.elements() if form.q(x) == one]
     assert decorations, f"{lattice_} has no decoration"
     return _o_plus_fixing(lattice_, decorations[0])
@@ -216,7 +216,7 @@ def _gamma_h(face_polarization):
 
     involution = Involutions.I_En
     invariant = involution.primitive_extension().invariant
-    transport = lattice(_E10["gram"]).twist(2).Isom(invariant).an_element()
+    transport = lattice(_E10["gram"]).twist(2r).Isom(invariant).an_element()
     polarization = invariant.inclusion()(transport(element(transport.domain(), face_polarization)))
     anti_invariant_group = involution.polarized(polarization).coinvariant_extension_subgroup()
     anti_invariant = anti_invariant_group.supergroup().domain()
