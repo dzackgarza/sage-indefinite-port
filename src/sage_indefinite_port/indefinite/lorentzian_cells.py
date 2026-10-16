@@ -10,7 +10,7 @@ from itertools import product
 from random import choice, randrange, shuffle
 from typing import Literal
 
-from dzack_research.preamble.all import Lattices
+from dzack_research.preamble.all import FormModules, FramedFreeModules, Lattices
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
 from dzack_research.preamble.categories.reduction_complexes import LorentzianPerfectDomainTraversal, PerfectDomainOrbitAdjacency
@@ -621,7 +621,7 @@ class MarkedCellOrbitAlgorithm:
         return tuple(global_orbits)
 
 
-def _coordinate_row[S: RingElement](lattice: Lattices.ParentMethods, element: Lattices.ElementMethods, ring: Parent[S]) -> FreeModuleElement[S]:
+def _coordinate_row[S: RingElement](lattice: FramedFreeModules.ParentMethods, element: FramedFreeModules.ElementMethods, ring: Parent[S]) -> FreeModuleElement[S]:
     coordinates = element.to_vector()
     return vector(ring, tuple(ring(int(coordinates(label))) for label in lattice.module_generating_set()))
 
@@ -685,6 +685,9 @@ def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]
     best_norm: Integer | None = None
     without_improvement = 0
     gram_l1 = sum(abs(entry) for entry in gram.list())
+    ring = lattice.base_ring()
+    module = lattice.unformed_module()
+    bilinear_forms = module.bilinear_hom_space(ring)
     while True:
         perturbed_gram = perturbation * gram * perturbation.transpose()
         if perturbation == identity_matrix(SageZZ, rank):
@@ -693,8 +696,8 @@ def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]
         else:
             # The unimodular change of frame is applied to the *form* before
             # the general positive-vector primitive, exactly as upstream.
-            ring = lattice.base_ring()
-            framed = Lattices(ring)([[ring(int(perturbed_gram[i, j])) for j in range(rank)] for i in range(rank)])
+            form = bilinear_forms([[ring(int(perturbed_gram[i, j])) for j in range(rank)] for i in range(rank)])
+            framed = FormModules(ring)(form)
             found = _coordinate_row(framed, framed.positive_vector(), SageZZ)
         current = perturbation.transpose() * found.column()
         improved = current.column(0)
