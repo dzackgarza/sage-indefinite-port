@@ -14,6 +14,10 @@ ai_review_ci_default_branch := "main"
 default:
     @just --list
 
+# Run ambient SageMath QC through the central implementation.
+ambient:
+    @just -f ~/ai-review-ci/justfiles/sage.just -d . ambient
+
 # Run commit-tier SageMath QC through the central implementation.
 test-commit:
     @just -f ~/ai-review-ci/justfiles/sage.just -d . test-commit
