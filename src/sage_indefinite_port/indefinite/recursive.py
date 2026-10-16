@@ -26,13 +26,12 @@ from dzack_research.preamble.categories.modules.orbit_spans import OrbitSpanCons
 from dzack_research.preamble.categories.modules.pure.modules import Modules, ModulesOverIntegralDomains
 from dzack_research.preamble.categories.rational_integral_stabilizers import IntegralStructureAction
 from sage.matrix.constructor import matrix
-from sage.matrix.matrix_rational_dense import Matrix_rational_dense
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
 from sage.structure.parent import Parent
 
 from sage_indefinite_port.indefinite.eichler import OrbitCoverModel
-from sage_indefinite_port.indefinite.lorentzian_cells import _coordinate_row, _gram_matrix, lorentzian_isometry, lorentzian_orthogonal_group_generators
+from sage_indefinite_port.indefinite.lorentzian_cells import _coordinate_row, lorentzian_isometry, lorentzian_orthogonal_group_generators
 from sage_indefinite_port.invariants import AttackProfile, LatticePrefilter, VectorPrefilter
 
 _UNTWIST = Lattices(ZZ).twist_functor(-1)
@@ -43,82 +42,64 @@ def _untwisted(isometry: LatticeIsometryMethods, profile: AttackProfile) -> Latt
     return isometry if profile.sign == 1 else _UNTWIST(isometry)
 
 
-def _rational_isometry(source: Lattices.ParentMethods, target: Lattices.ParentMethods, transformation: Matrix_rational_dense) -> LatticeIsometryMethods:
-    r"""Reconstruct the rational isometry L -> M whose row action, from coordinates of L to coordinates of M, is ``transformation``."""
+def _extend_perpendicular_isometry(
+    source_reduction,
+    target_reduction,
+    source_basis: tuple[Lattices.ElementMethods, ...],
+    images: tuple[Lattices.ElementMethods, ...],
+) -> tuple[LatticeIsometryMethods, int]:
+    r"""Extend a supplied isometry of I^perp using the preamble Witt operation.
+
+    The specialized source, Indefinite.jl@374a5ebb Lorentzian.g:115–249,
+    selects a rational extension of an isometry between coisotropic subspaces.
+    The preamble owns that extension and its affine norm-correction equations.
+    This adapter only expresses the supplied images of a basis of I^perp as
+    the partial isometry on the preamble's actual perpendicular subobjects,
+    then reads the extension's denominator ideal.
+    """
+    source = source_reduction.isotropic_embedding().codomain()
+    target = target_reduction.isotropic_embedding().codomain()
     fraction_map = source.base_ring().fraction_field_map()
     rational_source = source.base_change(fraction_map)
     rational_target = target.base_change(fraction_map)
-    source_labels = tuple(source.module_generating_set())
-    target_labels = tuple(target.module_generating_set())
-    field = rational_target.base_ring()
+    source_inclusion = source_reduction.orthogonal_complement().inclusion().base_change(fraction_map)
+    target_inclusion = target_reduction.orthogonal_complement().inclusion().base_change(fraction_map)
+    source_perpendicular = source_inclusion.domain()
+    target_perpendicular = target_inclusion.domain()
+    if len(source_basis) != int(source_perpendicular.module_rank()) or len(images) != len(source_basis):
+        raise ValueError("the perpendicular partial isometry needs images of a full chosen basis")
 
-    def image(label):
-        row = transformation.row(source_labels.index(label))
-        return rational_target.linear_combination(
-            {target: field(int(entry.numerator())) / field(int(entry.denominator())) for target, entry in zip(target_labels, row) if entry}
+    basis = matrix(SageQQ, [_coordinate_row(source, vector, SageQQ) for vector in source_basis])
+    if basis.rank() != len(source_basis):
+        raise ValueError("the selected perpendicular generators are linearly dependent")
+    target_labels = tuple(target.module_generating_set())
+    target_field = rational_target.base_ring()
+
+    def rationalize(point):
+        coordinates = point.to_vector()
+        return rational_target.linear_combination({label: target_field(int(coordinates(label))) for label in target_labels if coordinates(label)})
+
+    partial_images = tuple(target_inclusion.lift(rationalize(point)) for point in images)
+
+    def partial_image(label):
+        source_point = source_inclusion(source_perpendicular.module_generator(label))
+        coefficients = basis.solve_left(_coordinate_row(rational_source, source_point, SageQQ))
+        return sum(
+            (
+                target_perpendicular.scalar_multiple(
+                    target_field(int(coefficient.numerator())) / target_field(int(coefficient.denominator())),
+                    image,
+                )
+                for coefficient, image in zip(coefficients, partial_images, strict=True)
+                if coefficient
+            ),
+            target_perpendicular.zero(),
         )
 
-    return rational_source.Isom(rational_target)(image)
-
-
-type _ExtensionSystem = tuple[
-    Lattices.ParentMethods, Matrix_rational_dense, Matrix_rational_dense, Matrix_rational_dense, Matrix_rational_dense, Matrix_rational_dense, Matrix_rational_dense
-]
-"""The target M, the image rows, the image rows of J, the candidate images of W, the pairing A and the defect B."""
-
-
-class _IsotropicExtension:
-    r"""Extensions to L of an isometry of N = J-perp, for J a primitive totally isotropic sublattice.
-
-    Lorentzian.g:115-249, LORENTZ_ExtendOrthogonalIsotropicIsomorphism (and its codimension-one
-    case :4-50). With a rational complement W of N, the image of each w in W is fixed modulo J_Q by
-    its pairings with the image of N; writing the images as P + X J, the remaining conditions
-    b(w'_i, w'_l) = b(w_i, w_l) read X A + A^T X^T = B with A = (b(J, P)), linear in X because J
-    is totally isotropic. ``one`` selects one rational extension; the complete
-    integral homogeneous kernel is supplied by the preamble's perpendicular kernel.
-    """
-
-    def __init__(self, lattice: Lattices.ParentMethods, isotropic: tuple[Lattices.ElementMethods, ...], perpendicular: tuple[Lattices.ElementMethods, ...]) -> None:
-        self.lattice = lattice
-        self.gram = _gram_matrix(lattice).change_ring(SageQQ)
-        self.isotropic_rows = matrix(SageQQ, [_coordinate_row(lattice, point, SageQQ) for point in isotropic])
-        self.perpendicular = perpendicular
-        perpendicular_rows = matrix(SageQQ, [_coordinate_row(lattice, point, SageQQ) for point in perpendicular])
-        if perpendicular_rows.rank() != perpendicular_rows.nrows():
-            raise ValueError("the perpendicular sublattice must be given by a basis")
-        if (perpendicular_rows * self.gram * self.isotropic_rows.transpose()) != 0 or (self.isotropic_rows * self.gram * self.isotropic_rows.transpose()) != 0:
-            raise ValueError("J must be totally isotropic and perpendicular to N")
-        self.perpendicular_rows = perpendicular_rows
-        self.complement_rows = _rational_complement(perpendicular_rows)
-        self.source_rows = perpendicular_rows.stack(self.complement_rows)
-
-    def _solve(self, images: tuple[Lattices.ElementMethods, ...]) -> _ExtensionSystem:
-        r"""The candidate images of W, the pairing A[m, l] = b(j'_m, P_l) and the defect B, in the target M of ``images``."""
-        target = images[0].parent()
-        target_gram = _gram_matrix(target).change_ring(SageQQ)
-        image_rows = matrix(SageQQ, [_coordinate_row(target, image, SageQQ) for image in images])
-        system = image_rows * target_gram
-        candidates = matrix(SageQQ, [system.solve_right(self.perpendicular_rows * self.gram * row) for row in self.complement_rows])
-        isotropic_images = image_rows.matrix_from_rows(range(self.isotropic_rows.nrows()))
-        pairing = isotropic_images * target_gram * candidates.transpose()
-        defect = self.complement_rows * self.gram * self.complement_rows.transpose() - candidates * target_gram * candidates.transpose()
-        return target, target_gram, image_rows, isotropic_images, candidates, pairing, defect
-
-    def one(self, images: tuple[Lattices.ElementMethods, ...]) -> tuple[LatticeIsometryMethods, int]:
-        r"""One extension of the isometry of N sending the basis of N, in order, to ``images``, and the denominator of its matrix."""
-        target, target_gram, image_rows, isotropic_images, candidates, pairing, defect = self._solve(images)
-        # With A[m, l] = b(j'_m, P_l) the conditions read X A + (X A)^T = B; X = (B/2) A^-1 solves them.
-        solution = (defect / 2) * pairing.inverse()
-        target_rows = image_rows.stack(candidates + solution * isotropic_images)
-        if target_rows * target_gram * target_rows.transpose() != self.source_rows * self.gram * self.source_rows.transpose():
-            raise ArithmeticError("the isotropic extension does not preserve the form")
-        transformation = self.source_rows.inverse() * target_rows
-        return _rational_isometry(self.lattice, target, transformation), int(transformation.denominator())
-
-
-def _rational_complement(rows: Matrix_rational_dense) -> Matrix_rational_dense:
-    r"""Fundamental.g:509-515, SubspaceCompletionRational: Euclidean nullspace."""
-    return rows.right_kernel_matrix()
+    partial = source_perpendicular.Isom(target_perpendicular)(partial_image)
+    extension = partial.witt_extension(source_inclusion, target_inclusion)
+    (denominator,) = tuple(extension.denominator_ideal(source, target).ideal_generators())
+    return extension, int(denominator)
 
 
 @dataclass(frozen=True)
@@ -205,7 +186,7 @@ class EichlerRecursion:
         Aut(N) for N = J-perp is Hom(K, J) x| (O(K) x Gamma) with K = J-perp/J and Gamma the
         allowed action on J (trivial for a pointed vector, +-1 for a line, GL(J) for a plane, the
         flag stabilizer for a flag), given as images of the vectors of J. Its generators are
-        extended to L (:class:`_IsotropicExtension`), the kernel generators at the common
+        extended by the preamble Witt operation, the kernel generators at the common
         denominator of those extensions are adjoined, and the stabilizer of L in the rational group
         they generate is the stabilizer of J (with its marking). Every element preserves N, so the
         orbit span of L is computed inside L/D for D = 2 d^2 e^2 a, where d is that denominator,
@@ -219,7 +200,6 @@ class EichlerRecursion:
         labels = tuple(quotient.module_generating_set())
         lifts = {label: perpendicular(frame(label)) for label in labels}
         basis = (*isotropic, *(lifts[label] for label in labels))
-        extension = _IsotropicExtension(lattice, tuple(isotropic), basis)
 
         def lift(element):
             coordinates = element.to_vector()
@@ -235,7 +215,7 @@ class EichlerRecursion:
         for sheared in range(len(labels)):
             for point in isotropic:
                 image_families.append((*isotropic, *(lifted + point if position == sheared else lifted for position, lifted in enumerate(frame))))
-        extended = [extension.one(images) for images in image_families]
+        extended = [_extend_perpendicular_isometry(reduction, reduction, basis, images) for images in image_families]
         denominator = SageZZ.one()
         for _isometry, entry_denominator in extended:
             denominator = denominator.lcm(entry_denominator)
@@ -364,9 +344,8 @@ class EichlerRecursion:
             coordinates = element.to_vector()
             return sum((target_lattice.scalar_multiple(coordinates(label), target_lifts[label]) for label in target_labels if coordinates(label)), target_lattice.zero())
 
-        extension = _IsotropicExtension(source_lattice, tuple(source), (*source, *source_lifts))
         images = (*target, *(target_lift(reduced(source_quotient.module_generator(label))) for label in source_labels))
-        rational_transport, _denominator = extension.one(images)
+        rational_transport, _denominator = _extend_perpendicular_isometry(source_reduction, target_reduction, (*source, *source_lifts), images)
         if rational_transport.is_integral_on(source_lattice, target_lattice):
             return target_lattice.integral_isometry(rational_transport, source=source_lattice)
         fraction_map = source_lattice.base_ring().fraction_field_map()
