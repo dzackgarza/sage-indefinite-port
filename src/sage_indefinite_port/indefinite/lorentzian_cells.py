@@ -769,6 +769,7 @@ class _PositiveVectorEnumerator:
         self.allowed_squares = allowed_squares
         timelike, scale = _primitive_integral_direction(lattice, tuple(SageQQ(entry) for entry in rational_direction))
         self.timelike = timelike
+        self.scale = scale
         self.scaled_max = SageQQ(max_scal) * scale
         square = SageQQ(int(timelike.q()))
         if square <= 0:
@@ -803,6 +804,7 @@ class _PositiveVectorEnumerator:
                 return multiplier, vectors
         return None
 
+    @cached_method
     def vectors_at_multiplier(self, multiplier: int) -> tuple[Lattices.ElementMethods, ...]:
         target = self.base_target.parent().scalar_multiple(_owned_rational(self.lattice, SageQQ(multiplier)), self.base_target)
         bound = _owned_rational(self.lattice, -(SageQQ(multiplier) ** 2) * self.base_bound)
@@ -849,13 +851,17 @@ def _search_initial_vectors(lattice: Lattices.ParentMethods, direction: tuple[Ra
     gram = _gram_matrix(lattice).change_ring(SageQQ)
     direction_row = vector(SageQQ, direction)
     max_scal = (direction_row * gram * direction_row.column())[0]
+    enumerator = _PositiveVectorEnumerator(lattice, direction, max_scal, allowed_squares)
+    if enumerator.scaled_max <= 0:
+        raise ArithmeticError("the initial positive-vector shell bound must be positive")
     while True:
-        vectors = _first_positive_shell(lattice, direction, max_scal, allowed_squares)
-        if vectors:
-            return vectors
+        first = enumerator.first_shell()
+        if first is not None:
+            return first[1]
         # Lorentzian.g:411–423 increases MaxScal by one, rather than
         # exponentially expanding the search interval.
         max_scal += 1
+        enumerator.scaled_max += enumerator.scale
 
 
 def _source_mid_value(lower: Rational, upper: Rational) -> Rational:
