@@ -5,17 +5,18 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from itertools import combinations
+from typing import SupportsInt, cast
 
 from dzack_research.preamble.all import CoxeterDiagrams, Lattices
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.matrix.constructor import matrix
 from sage.modules.free_module_element import vector
-from sage.rings.infinity import Infinity
+from sage.rings.infinity import Infinity, PlusInfinity
 from sage.rings.integer import Integer
 from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ
 
-type CoxeterLabel = Integer | type(Infinity)
+type CoxeterLabel = Integer | PlusInfinity
 
 _FOUR_COS_SQUARED: dict[CoxeterLabel, Rational] = {
     Integer(2): QQ(0),
@@ -87,10 +88,7 @@ def _diagram_extension_labels(coxeter_rows: list[list[Integer]], spherical: bool
             raise ArithmeticError("a Dynkin extension triple must use distinct vertices")
         add((first, three), (second, three), (third, three))
 
-    adjacency = tuple(
-        tuple(j for j in range(n) if j != i and coxeter_rows[i][j] != two)
-        for i in range(n)
-    )
+    adjacency = tuple(tuple(j for j in range(n) if j != i and coxeter_rows[i][j] != two) for i in range(n))
     degrees = tuple(len(neighbors) for neighbors in adjacency)
     isolated = tuple(i for i in range(n) if degrees[i] == 0)
     components: list[tuple[int, ...]] = []
@@ -504,8 +502,8 @@ def _diagram_extension_labels(coxeter_rows: list[list[Integer]], spherical: bool
         for first, second in combinations(isolated, 2):
             for third in middle_a3:
                 triple(first, second, third)
-        for vertices in combinations(isolated, 4):
-            add(*((vertex, three) for vertex in vertices))
+        for four_vertices in combinations(isolated, 4):
+            add(*((vertex, three) for vertex in four_vertices))
 
     # The source inserts these classified families directly.  Its CheckDiagram
     # test is conditional on SANITY_CHECK_EFFICIENT_ENUMERATION, not part of
@@ -523,12 +521,9 @@ def _extensions(
 ) -> tuple[NormedDynkinExtension, ...]:
     if not roots:
         return tuple(NormedDynkinExtension((QQ.zero(),) * int(lattice.rank()), QQ(norm), QQ(norm)) for norm in norms)
-    coordinates = matrix(
-        QQ,
-        [[QQ(int(root.to_vector()(label))) for label in lattice.module_generating_set()] for root in roots],
-    )
+    coordinates = matrix([[QQ(int(cast(SupportsInt, root.to_vector()(label)))) for label in lattice.module_generating_set()] for root in roots])
     gram = _engine_component_matrix(lattice.gram_tensor()).change_ring(QQ)
-    pairings = coordinates * gram * coordinates.transpose()
+    pairings = coordinates * gram * coordinates.T
     root_norms = tuple(pairings[i, i] for i in range(len(roots)))
     if not pairings.is_positive_definite():
         raise ValueError(f"the roots {roots} span a form that is not positive definite: they are not the walls through a point of hyperbolic space")
@@ -543,7 +538,7 @@ def _extensions(
             label = next((edge for edge, value in _FOUR_COS_SQUARED.items() if squares == value), None)
             if label is None:
                 raise ValueError("the supplied roots have noncrystallographic Coxeter pairings")
-            coxeter_rows[i][j] = coxeter_rows[j][i] = Integer(-1) if label == Infinity else label
+            coxeter_rows[i][j] = coxeter_rows[j][i] = Integer(-1) if isinstance(label, PlusInfinity) else label
 
     # ComputePossibleExtensions, coxeter_dynkin.h:2210–2336: each diagram is
     # visited before its compatible norms, in the supplied norm order.
@@ -560,8 +555,8 @@ def _extensions(
                 scalar_products.append(-square.sqrt())
             if len(scalar_products) != len(roots):
                 continue
-            weights = inverse * vector(QQ, scalar_products)
-            projected_square = vector(QQ, scalar_products).dot_product(weights)
+            weights = inverse * vector(scalar_products)
+            projected_square = QQ(vector(scalar_products).dot_product(weights))
             out.append(NormedDynkinExtension(tuple(weights * coordinates), new_norm - projected_square, new_norm))
     return tuple(out)
 
