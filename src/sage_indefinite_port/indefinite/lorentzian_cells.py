@@ -1041,11 +1041,11 @@ def _kernel_flipping(
             raise ArithmeticError("a critical perfect-cell shell disappeared during flipping")
         _first_multiplier, total = first
         total_rows = _vector_rows(total)
-        # Lorentzian.g:920-923 / lorentzian_perfect.h:757: a shell
-        # containing every critical point cannot have fewer distinct
-        # points than the critical family.
-        if critical_rows.issubset(total_rows) and len(critical) > len(total):
-            raise ArithmeticError("a Lorentzian shell lost multiplicity of its critical configuration")
+        # Lorentzian.g:922-923: a shell strictly contained in the critical
+        # configuration is an impossible intermediate result. GAP's
+        # IsSubset(CritSet, ListTotal) means ListTotal is a subset of CritSet.
+        if total_rows.issubset(critical_rows) and len(critical) > len(total):
+            raise ArithmeticError("a Lorentzian shell is a proper subset of its critical configuration")
         if total_rows == critical_rows:
             lower = middle
             continue
