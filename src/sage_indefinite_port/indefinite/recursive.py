@@ -320,7 +320,7 @@ class EichlerRecursion:
         if reduced is None:
             return None
         rational_transport = reduced.extension_across(source, target)
-        if rational_transport.is_integral_on(source_lattice):
+        if rational_transport.is_integral_on(source_lattice, target_lattice):
             return target_lattice.integral_isometry(rational_transport, source=source_lattice)
         fraction_map = source_lattice.base_ring().fraction_field_map()
         restriction = Modules(fraction_map.codomain()).restriction_of_scalars(fraction_map)

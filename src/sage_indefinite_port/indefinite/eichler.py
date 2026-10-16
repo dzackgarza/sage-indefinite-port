@@ -20,13 +20,12 @@ from math import isqrt
 
 from dzack_research.preamble.all import Lattices
 from dzack_research.preamble.categories.eichler_criterion import TwoUEichlerModel
-from dzack_research.preamble.categories.group.g_objects import GObjects
+from dzack_research.preamble.categories.group.g_sets import FiniteGSets
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.modules.framed.formed.discriminant_modules import DiscriminantQuadraticModules
 from dzack_research.preamble.categories.rational_integral_stabilizers import IntegralStructureAction
 from dzack_research.preamble.categories.sets.finite_ordered_sets import finite_ordered_set
 from dzack_research.preamble.categories.sets.indexed_families import IndexedFamily, finite_indexed_family
-from dzack_research.preamble.categories.sets.set_categories import Sets
 from sage.graphs.graph import Graph
 from sage.groups.perm_gps.permgroup_named import SymmetricGroup
 from sage.matrix.constructor import matrix
@@ -318,17 +317,18 @@ class OrbitCoverModel:
 
         classes = complement.covering_discriminant_classes(square)
         # IndefiniteForms.g:181-224, SetListClassesOrbitwise(GRPeasy).
-        # Every easy isometry preserves the distinguished 2U summand and K;
-        # restrict to K, then let the resulting finite discriminant group act
-        # on the source's list of admissible discriminant classes.
+        # The canonical inclusion A_K -> A_(2U+K) is an isomorphism, since
+        # 2U is unimodular. GetEasyIsometries can permute a hyperbolic block
+        # of K with either distinguished U, so its isometries need not
+        # preserve K itself. Transfer their action through the *full*
+        # discriminant group, rather than restricting their lattice maps to K.
         easy = OrbitCoverModel.source_easy_generators(model)
-        image_generators = tuple(
-            complement.O()(lambda label, isometry=isometry: inclusion.lift(isometry(inclusion(complement.module_generator(label))))).discriminant_morphism()
-            for isometry in easy
-        )
-        image = discriminant.orthogonal_group().subgroup(image_generators)
-        action = GObjects(image, Sets()).on_set(classes, lambda automorphism, point: automorphism(point))
-        selected = finite_ordered_set(tuple(orbit.representative() for orbit in action.orbits()))
+        discriminant_inclusion = inclusion.discriminant_inclusion()
+        ambient_discriminant = lattice.discriminant_group()
+        image = ambient_discriminant.orthogonal_group().subgroup(tuple(isometry.discriminant_morphism() for isometry in easy))
+        embedded_classes = finite_ordered_set(tuple(discriminant_inclusion(point) for point in classes))
+        action = FiniteGSets(image)(embedded_classes, lambda automorphism, point: automorphism(point))
+        selected = finite_ordered_set(tuple(discriminant_inclusion.lift(orbit.representative()) for orbit in action.orbits()))
         return finite_indexed_family(selected, representative, name=f"Eichler covering vectors of square {square} in {lattice}")
 
     @staticmethod
