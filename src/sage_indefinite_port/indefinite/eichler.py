@@ -223,10 +223,7 @@ class OrbitCoverModel:
                 case "discriminant-lift":
                     return discriminant_lifts[datum]
                 case _:
-                    raise ValueError(
-                        f"{label!r} does not name a generator of O(2U + K) for {model}: its kind "
-                        f"{kind!r} is not a known kind of generator"
-                    )
+                    raise ValueError(f"{label!r} does not name a generator of O(2U + K) for {model}: its kind {kind!r} is not a known kind of generator")
 
         return finite_indexed_family(
             labels,
