@@ -52,6 +52,8 @@ class IsotropicInduction:
             case 0:
                 return ()
             case 1:
+                if not lattice.is_isotropic():
+                    return ()
                 orbits = MarkedCellOrbitAlgorithm(LorentzianPerfectComplex(lattice, ZERO_SQUARES), 0).global_orbits()
                 return tuple(orbit[0] for orbit in orbits)
             case _:
