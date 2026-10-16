@@ -56,116 +56,463 @@ def _norm_ratio_allows(label: CoxeterLabel, old_norm: Rational, new_norm: Ration
 
 
 def _diagram_extension_labels(coxeter_rows: list[list[Integer]], spherical: bool) -> tuple[tuple[CoxeterLabel, ...], ...]:
-    r"""Admissible diagram extensions (coxeter_dynkin.h:715–1671).
+    r"""Pinned FindDiagramExtensions_Efficient, coxeter_dynkin.h:710–1671.
 
-    The reference constructs at most four noncommuting bonds using finite
-    and affine Dynkin types. The Coxeter category certifies each resulting
-    diagram before the root-norm test.
+    Enumerate the spherical and affine Dynkin extension families in source
+    order, rather than an arbitrary bounded bond search. The preamble
+    Coxeter-diagram predicate identifies the existing irreducible components;
+    admissibility of each extension comes from the pinned classification.
     """
     n = len(coxeter_rows)
-    base: tuple[CoxeterLabel, ...] = (Integer(2),) * n
-    candidates: list[tuple[CoxeterLabel, ...]] = [base]
-    isolated = tuple(i for i in range(n) if all(coxeter_rows[i][j] == 2 for j in range(n) if i != j))
+    two, three, four, six = tuple(Integer(i) for i in (2, 3, 4, 6))
+    basic: tuple[CoxeterLabel, ...] = (two,) * n
+    candidates: list[tuple[CoxeterLabel, ...]] = [basic]
 
-    def add(entries: tuple[tuple[int, CoxeterLabel], ...]) -> None:
-        labels = list(base)
-        for index, value in entries:
+    def add(*bonds: tuple[int, CoxeterLabel]) -> None:
+        labels = list(basic)
+        for index, value in bonds:
             labels[index] = value
         candidates.append(tuple(labels))
 
-    # FindDiagramExtensions_Efficient, coxeter_dynkin.h:1036–1197:
-    # disconnected A1; A(n-1) end and isolated A1 to A_n; A/B extensions;
-    # D/E extensions; G2; F4; affine extensions; parallel I1 last.
-    # The accepted diagram order is relevant to edgewalk tie breaking.
+    def one(index: int, value: CoxeterLabel = three) -> None:
+        add((index, value))
+
+    def pair(first: int, second: int, value_first: CoxeterLabel = three, value_second: CoxeterLabel = three) -> None:
+        if first == second:
+            raise ArithmeticError("a Dynkin extension pair must use different vertices")
+        add((first, value_first), (second, value_second))
+
+    def triple(first: int, second: int, third: int) -> None:
+        if len({first, second, third}) != 3:
+            raise ArithmeticError("a Dynkin extension triple must use distinct vertices")
+        add((first, three), (second, three), (third, three))
+
+    adjacency = tuple(
+        tuple(j for j in range(n) if j != i and coxeter_rows[i][j] != two)
+        for i in range(n)
+    )
+    degrees = tuple(len(neighbors) for neighbors in adjacency)
+    isolated = tuple(i for i in range(n) if degrees[i] == 0)
     components: list[tuple[int, ...]] = []
-    unseen = set(range(n))
-    while unseen:
-        first = min(unseen)
-        component = {first}
+    component_index = [-1] * n
+    component_sizes = [0] * n
+    for first in range(n):
+        if component_index[first] != -1:
+            continue
+        seen = {first}
         fringe = [first]
         while fringe:
-            current = fringe.pop()
-            for neighbor in range(n):
-                if neighbor not in component and coxeter_rows[current][neighbor] != 2 and neighbor != current:
-                    component.add(neighbor)
+            for neighbor in adjacency[fringe.pop()]:
+                if neighbor not in seen:
+                    seen.add(neighbor)
                     fringe.append(neighbor)
-        unseen.difference_update(component)
-        components.append(tuple(sorted(component)))
+        component = tuple(sorted(seen))
+        index = len(components)
+        components.append(component)
+        for vertex in component:
+            component_index[vertex] = index
+            component_sizes[vertex] = len(component)
 
-    # A_n paths: ends extend by bond 3, and B_n by bond 4.
-    paths: list[tuple[int, ...]] = []
+    # coxeter_dynkin.h:765–1034, type-dependent eligible attachments.
+    # A parabolic component remains disjoint from admissible new components.
+    a2: list[tuple[int, ...]] = []
+    a3: list[tuple[int, ...]] = []
+    an: list[tuple[int, ...]] = []
+    vert_a2: list[int] = []
+    vert_g2: list[int] = []
+    middle_a3: list[int] = []
+    ends_a3: list[int] = []
+    ends_a4: list[int] = []
+    ends_a5: list[int] = []
+    ends_f4: list[int] = []
+    center_d4: list[int] = []
+    expand_b: list[int] = []
+    expand_minus_one_b: list[int] = []
+    nonexpand_b: list[int] = []
+    expand_d: list[int] = []
+    expand_minus_one_d: list[int] = []
+    nonexpand_d: list[int] = []
+    minus_one_a: list[int] = []
+    minus_two_a: list[int] = []
+    minus_three_a: list[int] = []
+    dist2_e6: list[int] = []
+    dist1_e6: list[int] = []
+    dist3_e7: list[int] = []
+    dist2_e7: list[int] = []
+    dist4_e8: list[int] = []
+
     for component in components:
-        if len(component) < 2:
+        size = len(component)
+        if size == 1:
             continue
-        degrees = {vertex: sum(coxeter_rows[vertex][neighbor] != 2 for neighbor in component if neighbor != vertex) for vertex in component}
-        if all(coxeter_rows[i][j] == 3 for i in component for j in component if i != j and coxeter_rows[i][j] != 2) and sorted(degrees.values()) == [1, 1] + [2] * (
-            len(component) - 2
-        ):
-            paths.append(tuple(vertex for vertex in component if degrees[vertex] == 1))
+        diagram = CoxeterDiagrams()([[coxeter_rows[i][j] for j in component] for i in component])
+        if diagram.is_parabolic():
+            continue
+        if not diagram.is_elliptic():
+            raise ValueError("Dynkin extensions require spherical or affine components")
+        label = str(diagram.label())
+        kind = "B" if label.startswith(("B", "C")) else ("G" if label.startswith("I2(6)") else label[0])
+        if kind == "A":
+            if size == 2:
+                a2.append(component)
+                an.append(component)
+                vert_a2.extend(component)
+            else:
+                ends = tuple(i for i in component if degrees[i] == 1)
+                an.append(ends)
+                if size == 3:
+                    a3.append(ends)
+                    ends_a3.extend(ends)
+                    middle_a3.extend(i for i in component if degrees[i] == 2)
+                if size == 4:
+                    ends_a4.extend(ends)
+                if size == 5:
+                    ends_a5.extend(ends)
+                predecessors = []
+                for position, end in enumerate(ends):
+                    if position == 0 or size > 3:
+                        predecessor = adjacency[end][0]
+                        predecessors.append(predecessor)
+                        minus_one_a.append(predecessor)
+                if size > 4:
+                    prior = []
+                    first = True
+                    for predecessor in predecessors:
+                        for neighbor in adjacency[predecessor]:
+                            if neighbor not in ends:
+                                if first or size > 5:
+                                    prior.append(neighbor)
+                                    minus_two_a.append(neighbor)
+                                first = False
+                    if size == 7:
+                        first = True
+                        for predecessor in prior:
+                            for neighbor in adjacency[predecessor]:
+                                if neighbor not in predecessors:
+                                    if first:
+                                        minus_three_a.append(neighbor)
+                                    first = False
+        elif kind == "B":
+            if size == 2:
+                expand_b.extend(component)
+            else:
+                for vertex in component:
+                    if degrees[vertex] == 1:
+                        bond = coxeter_rows[vertex][adjacency[vertex][0]]
+                        if bond == three:
+                            expand_b.append(vertex)
+                            expand_minus_one_b.append(adjacency[vertex][0])
+                        if bond == four:
+                            nonexpand_b.append(vertex)
+        elif kind == "D":
+            if size == 4:
+                expand_d.extend(vertex for vertex in component if degrees[vertex] == 1)
+                center_d4.extend(vertex for vertex in component if degrees[vertex] == 3)
+            else:
+                center = next(vertex for vertex in component if degrees[vertex] == 3)
+                for vertex in component:
+                    if degrees[vertex] == 1:
+                        if adjacency[vertex][0] == center:
+                            nonexpand_d.append(vertex)
+                        else:
+                            expand_d.append(vertex)
+                            expand_minus_one_d.append(adjacency[vertex][0])
+        elif kind == "G" and size == 2:
+            vert_g2.extend(component)
+        elif kind == "F" and size == 4:
+            ends_f4.extend(vertex for vertex in component if degrees[vertex] == 1)
+        elif kind == "E":
+            center = next(vertex for vertex in component if degrees[vertex] == 3)
+            for neighbor in adjacency[center]:
+                previous, current, length = center, neighbor, 1
+                while degrees[current] != 1:
+                    following = next(i for i in adjacency[current] if i != previous)
+                    previous, current = current, following
+                    length += 1
+                if size == 6:
+                    if length == 2:
+                        dist2_e6.append(current)
+                    if length == 1:
+                        dist1_e6.append(current)
+                elif size == 7:
+                    if length == 3:
+                        dist3_e7.append(current)
+                    if length == 2:
+                        dist2_e7.append(current)
+                elif size == 8 and length == 4:
+                    dist4_e8.append(current)
 
-    for ends in paths:
+    # coxeter_dynkin.h:1036–1197: spherical one-bond extensions.
+    for ends in an:
         for vertex in ends:
-            add(((vertex, Integer(3)),))
+            one(vertex)
     for vertex in isolated:
-        add(((vertex, Integer(3)),))
-    for ends in paths:
+        one(vertex)
+    for ends in an:
         for vertex in ends:
-            add(((vertex, Integer(4)),))
+            one(vertex, four)
     for vertex in isolated:
-        add(((vertex, Integer(4)),))
+        one(vertex, four)
+    for vertex in (*expand_b, *expand_d, *minus_one_a):
+        one(vertex)
+    for family, size in ((minus_two_a, 5), (nonexpand_d, 5), (minus_two_a, 6), (nonexpand_d, 6)):
+        for vertex in family:
+            if component_sizes[vertex] == size:
+                one(vertex)
+    for vertex in dist2_e6:
+        one(vertex)
+    for family, size in ((minus_two_a, 7), (nonexpand_d, 7)):
+        for vertex in family:
+            if component_sizes[vertex] == size:
+                one(vertex)
+    for vertex in dist3_e7:
+        one(vertex)
+    for vertex in isolated:
+        one(vertex, six)
+    for vertex in nonexpand_b:
+        if component_sizes[vertex] == 3:
+            one(vertex)
 
-    # The other spherical one-bond constructors in
-    # FindDiagramExtensions_Efficient: B_n from B_{n-1}, D/E from A/D/E,
-    # G2 from A1, and F4 from B3. Candidate classification retains the
-    # upstream component order rather than sorting accepted diagrams.
-    for vertex in range(n):
-        add(((vertex, Integer(3)),))
-    for vertex in isolated:
-        add(((vertex, Integer(6)),))
-    for vertex in range(n):
-        add(((vertex, Integer(4)),))
     if not spherical:
-        # The affine cases follow the spherical cases in the source, then
-        # I1(infinity) follows all other one-bond cases.
-        for label in (Integer(3), Integer(4), Integer(6)):
-            for vertex in range(n):
-                add(((vertex, label),))
+        # Affine single-bond cases, retaining the pinned insertion order.
+        for vertex in expand_d:
+            one(vertex, four)
+        for vertex in expand_minus_one_b:
+            one(vertex)
+        for vertex in middle_a3:
+            one(vertex, four)
+        for vertex in expand_b:
+            one(vertex, four)
+        for vertex in (*expand_minus_one_d, *center_d4, *dist1_e6, *minus_three_a, *dist2_e7):
+            one(vertex)
+        for family in (nonexpand_d, minus_two_a):
+            for vertex in family:
+                if component_sizes[vertex] == 8:
+                    one(vertex)
+        for vertex in (*dist4_e8, *vert_g2):
+            one(vertex)
+        for vertex in vert_a2:
+            one(vertex, six)
+        for vertex in ends_f4:
+            one(vertex)
+        for vertex in nonexpand_b:
+            if component_sizes[vertex] == 4:
+                one(vertex)
         for vertex in isolated:
-            add(((vertex, Infinity),))
-    # Source: finite A/B/D/E/F and affine A/B/C/D/E/F/G extensions,
-    # with admissibility checked using the Coxeter classification.
-    for i, j in combinations(range(n), 2):
-        add(((i, Integer(3)), (j, Integer(3))))
-        add(((i, Integer(3)), (j, Integer(4))))
-        add(((i, Integer(4)), (j, Integer(3))))
-        if not spherical and i in isolated and j in isolated:
-            add(((i, Integer(4)), (j, Integer(4))))
-            add(((i, Integer(3)), (j, Integer(6))))
-            add(((i, Integer(6)), (j, Integer(3))))
-    # Source: D4 and the higher D/E triples, plus affine triples.
-    for subset in combinations(range(n), 3):
-        add(tuple((i, Integer(3)) for i in subset))
-        if not spherical and all(i in isolated for i in subset):
-            for singled in subset:
-                add(tuple((i, Integer(4) if i == singled else Integer(3)) for i in subset))
-    if not spherical:
-        for subset in combinations(isolated, 4):
-            add(tuple((i, Integer(3)) for i in subset))
+            one(vertex, Infinity)
 
-    rows = [list(row) + [Integer(2)] for row in coxeter_rows]
-    rows.append([Integer(2)] * n + [Integer(1)])
-    accepted: list[tuple[CoxeterLabel, ...]] = []
-    seen: set[tuple[CoxeterLabel, ...]] = set()
-    for candidate in candidates:
-        if candidate in seen:
-            continue
-        seen.add(candidate)
-        for i, label in enumerate(candidate):
-            rows[i][-1] = rows[-1][i] = Integer(-1) if label == Infinity else Integer(label)
-        diagram = CoxeterDiagrams()(rows)
-        if diagram.is_elliptic() or (not spherical and diagram.is_parabolic()):
-            accepted.append(candidate)
-    return tuple(accepted)
+    # coxeter_dynkin.h:1199–1453: two-bond families.
+    for left_group, right_group in combinations(an, 2):
+        for left in left_group:
+            for right in right_group:
+                pair(left, right)
+    for left in isolated:
+        for group in an:
+            for right in group:
+                pair(left, right)
+    for left, right in combinations(isolated, 2):
+        pair(left, right)
+    for left in isolated:
+        for right in isolated:
+            if left != right:
+                pair(left, right, four, three)
+    for left in isolated:
+        for group in an:
+            for right in group:
+                pair(left, right, four, three)
+    for left in expand_b:
+        for group in an:
+            for right in group:
+                pair(left, right)
+    for left in expand_b:
+        for right in isolated:
+            pair(left, right)
+    for left in middle_a3:
+        for group in an:
+            for right in group:
+                if component_index[left] != component_index[right]:
+                    pair(left, right)
+    for left in middle_a3:
+        for right in isolated:
+            pair(left, right)
+    for left in expand_d:
+        for group in an:
+            for right in group:
+                pair(left, right)
+    for left in expand_d:
+        for right in isolated:
+            pair(left, right)
+    # E6 from A4+A1, E7 from A5+A1, and the A4+A2 variant.
+    for left in isolated:
+        for right in minus_one_a:
+            if component_sizes[right] == 4:
+                pair(left, right)
+    for left in isolated:
+        for right in minus_one_a:
+            if component_sizes[right] == 5:
+                pair(left, right)
+    for left in vert_a2:
+        for right in minus_one_a:
+            if component_sizes[right] == 4:
+                pair(left, right)
+    for left in isolated:
+        for right in nonexpand_d:
+            if component_sizes[right] == 5:
+                pair(left, right)
+    for left in dist2_e6:
+        for right in isolated:
+            pair(left, right)
+    for left in isolated:
+        for right in minus_one_a:
+            if component_sizes[right] == 6:
+                pair(left, right)
+    for left in minus_one_a:
+        if component_sizes[left] == 4:
+            for right in ends_a3:
+                pair(left, right)
+    for left in nonexpand_d:
+        if component_sizes[left] == 5:
+            for right in vert_a2:
+                pair(left, right)
+    for left in vert_a2:
+        for right in isolated:
+            pair(left, right, four, three)
+
+    if not spherical:
+        # Affine two-bond cases from pinned coxeter_dynkin.h.
+        for ends in an:
+            pair(ends[0], ends[1])
+        for left in expand_b:
+            for right in middle_a3:
+                pair(left, right)
+        for left in isolated:
+            for right in middle_a3:
+                pair(left, right, four, three)
+        for left in expand_b:
+            for right in expand_d:
+                pair(left, right)
+        for left in isolated:
+            for right in expand_d:
+                pair(left, right, four, three)
+        for left, right in combinations(expand_b, 2):
+            if component_index[left] != component_index[right]:
+                pair(left, right)
+        for left in isolated:
+            for right in expand_b:
+                pair(left, right, four, three)
+        for left, right in combinations(isolated, 2):
+            pair(left, right, four, four)
+        for left in isolated:
+            for right in isolated:
+                if component_index[left] != component_index[right]:
+                    pair(left, right, three, six)
+        for left, right in combinations(middle_a3, 2):
+            pair(left, right)
+        for left in middle_a3:
+            for right in expand_d:
+                pair(left, right)
+        for left, right in combinations(expand_d, 2):
+            if component_index[left] != component_index[right]:
+                pair(left, right)
+        for left in minus_two_a:
+            if component_sizes[left] == 5:
+                for right in isolated:
+                    pair(left, right)
+        for left in minus_one_a:
+            if component_sizes[left] == 5:
+                for right in vert_a2:
+                    pair(left, right)
+        for left in nonexpand_d:
+            if component_sizes[left] == 6:
+                for right in isolated:
+                    pair(left, right)
+        for left in minus_one_a:
+            if component_sizes[left] == 7:
+                for right in isolated:
+                    pair(left, right)
+        for left in minus_one_a:
+            if component_sizes[left] == 4:
+                for right in ends_a4:
+                    if component_index[left] != component_index[right]:
+                        pair(left, right)
+        for left in nonexpand_d:
+            if component_sizes[left] == 5:
+                for right in ends_a3:
+                    pair(left, right)
+        for left in dist2_e6:
+            for right in vert_a2:
+                pair(left, right)
+        for left in dist3_e7:
+            for right in isolated:
+                pair(left, right)
+        for left in ends_a3:
+            for right in isolated:
+                pair(left, right, four, three)
+        for left in vert_a2:
+            for right in vert_a2:
+                if component_index[left] != component_index[right]:
+                    pair(left, right, four, three)
+        for left in nonexpand_b:
+            if component_sizes[left] == 3:
+                for right in isolated:
+                    pair(left, right)
+
+    # coxeter_dynkin.h:1454–1671: exceptional triple and quadruple bonds.
+    for first_group, second_group in combinations(a2, 2):
+        for first in first_group:
+            for second in second_group:
+                for third in isolated:
+                    triple(first, second, third)
+    for first in vert_a2:
+        for second in ends_a3:
+            for third in isolated:
+                triple(first, second, third)
+    for first in vert_a2:
+        for second in ends_a4:
+            for third in isolated:
+                triple(first, second, third)
+    for first, second, third in combinations(isolated, 3):
+        triple(first, second, third)
+    for first, second in combinations(isolated, 2):
+        for group in an:
+            for third in group:
+                triple(first, second, third)
+    if not spherical:
+        for first_group, second_group, third_group in combinations(a2, 3):
+            for first in first_group:
+                for second in second_group:
+                    for third in third_group:
+                        triple(first, second, third)
+        for first_group, second_group in combinations(a3, 2):
+            for first in first_group:
+                for second in second_group:
+                    for third in isolated:
+                        triple(first, second, third)
+        for first in vert_a2:
+            for second in ends_a5:
+                for third in isolated:
+                    triple(first, second, third)
+        for vertices in combinations(isolated, 3):
+            for singled in vertices:
+                add(*((vertex, four if vertex == singled else three) for vertex in vertices))
+        for first, second in combinations(isolated, 2):
+            for third in expand_b:
+                triple(first, second, third)
+        for first, second in combinations(isolated, 2):
+            for third in expand_d:
+                triple(first, second, third)
+        for first, second in combinations(isolated, 2):
+            for third in middle_a3:
+                triple(first, second, third)
+        for vertices in combinations(isolated, 4):
+            add(*((vertex, three) for vertex in vertices))
+
+    # The source inserts these classified families directly.  Its CheckDiagram
+    # test is conditional on SANITY_CHECK_EFFICIENT_ENUMERATION, not part of
+    # FindDiagramExtensions_Efficient's execution path: reconstructing an
+    # owned Coxeter diagram for every candidate changes the algorithm and
+    # dominates large edgewalks.
+    return tuple(candidates)
 
 
 def _extensions(

@@ -96,7 +96,14 @@ def test_vinberg_coxeter_diagram_has_oscars_edges() -> None:
     roots = _computed_roots(case["gram"])
     root_gram = _root_gram(case["gram"], roots)
 
-    edges = sum(1 for i in range(len(roots)) for j in range(i + 1, len(roots)) if root_gram[i][j])
+    # Oscar.jl/test/NumberTheory/vinberg.jl:43-47 counts intersecting walls,
+    # including orthogonal ones, by k^2 / (q_i q_j) <= 1.
+    edges = sum(
+        1
+        for i in range(len(roots))
+        for j in range(i + 1, len(roots))
+        if root_gram[i][j] ** 2 <= root_gram[i][i] * root_gram[j][j]
+    )
 
     assert edges == case["coxeter_diagram_edges"]
 
