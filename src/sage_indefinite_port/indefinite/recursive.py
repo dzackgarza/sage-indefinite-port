@@ -74,10 +74,8 @@ class _IsotropicExtension:
     case :4-50). With a rational complement W of N, the image of each w in W is fixed modulo J_Q by
     its pairings with the image of N; writing the images as P + X J, the remaining conditions
     b(w'_i, w'_l) = b(w_i, w_l) read X A + A^T X^T = B with A = (b(J, P)), linear in X because J
-    is totally isotropic. ``one`` is the extension at one solution; ``kernel_generators(d)`` are
-    the isometries I + T/d over a saturated integral basis T of the homogeneous solutions, which
-    fix N pointwise (``get_kernel_generating_set``). For rank J = 1 the homogeneous space is zero
-    and the extension is unique. The computation is lowered to rational coordinates once.
+    is totally isotropic. ``one`` selects one rational extension; the complete
+    integral homogeneous kernel is supplied by the preamble's perpendicular kernel.
     """
 
     def __init__(self, lattice: Lattices.ParentMethods, isotropic: tuple[Lattices.ElementMethods, ...], perpendicular: tuple[Lattices.ElementMethods, ...]) -> None:
@@ -117,54 +115,10 @@ class _IsotropicExtension:
         transformation = self.source_rows.inverse() * target_rows
         return _rational_isometry(self.lattice, target, transformation), int(transformation.denominator())
 
-    def kernel_generators(self, denominator: int) -> tuple[LatticeIsometryMethods, ...]:
-        r"""The generators I + T/d of get_kernel_generating_set(d) for the identity of N."""
-        _target, _target_gram, _image_rows, _isotropic_images, _candidates, pairing, _defect = self._solve(self.perpendicular)
-        rank = self.isotropic_rows.nrows()
-        if rank == 1:
-            return ()
-        directions = []
-        # Homogeneous solutions: X A antisymmetric, i.e. X = S A^-1 for S antisymmetric.
-        for i in range(rank):
-            for l in range(i + 1, rank):
-                antisymmetric = matrix(SageQQ, rank, rank)
-                antisymmetric[i, l], antisymmetric[l, i] = 1, -1
-                shift = antisymmetric * pairing.inverse() * self.isotropic_rows
-                zero = matrix(SageQQ, len(self.perpendicular), self.gram.nrows())
-                directions.append(self.source_rows.inverse() * zero.stack(shift))
-        flattened = matrix(SageQQ, [direction.list() for direction in directions])
-        saturated = _integral_saturation(flattened)
-        size = self.gram.nrows()
-        identity = matrix(SageQQ, size, size, 1)
-        generators = []
-        for row in saturated.rows():
-            transformation = identity + matrix(SageQQ, size, size, list(row)) / denominator
-            if transformation * self.gram * transformation.transpose() != self.gram:
-                raise ArithmeticError("a kernel generator does not preserve the form")
-            generators.append(_rational_isometry(self.lattice, self.lattice, transformation))
-        return tuple(generators)
-
 
 def _rational_complement(rows: Matrix_rational_dense) -> Matrix_rational_dense:
-    r"""SubspaceCompletionRational: standard basis vectors completing the row space of ``rows``."""
-    size = rows.ncols()
-    completion = []
-    current = rows
-    for index in range(size):
-        unit = matrix(SageQQ, 1, size, {(0, index): 1})
-        if current.stack(unit).rank() > current.rank():
-            current = current.stack(unit)
-            completion.append(unit.row(0))
-    return matrix(SageQQ, completion)
-
-
-def _integral_saturation(rows: Matrix_rational_dense) -> Matrix_rational_dense:
-    r"""IntegralSpaceSaturation: a basis of the integral points of the rational span of ``rows``."""
-    denominator = SageZZ.one()
-    for entry in rows.list():
-        denominator = denominator.lcm(SageQQ(entry).denominator())
-    integral = (rows * denominator).change_ring(SageZZ)
-    return integral.saturation().change_ring(SageQQ)
+    r"""Fundamental.g:509-515, SubspaceCompletionRational: Euclidean nullspace."""
+    return rows.right_kernel_matrix()
 
 
 @dataclass(frozen=True)
@@ -255,7 +209,7 @@ class EichlerRecursion:
         denominator of those extensions are adjoined, and the stabilizer of L in the rational group
         they generate is the stabilizer of J (with its marking). Every element preserves N, so the
         orbit span of L is computed inside L/D for D = 2 d^2 e^2 a, where d is that denominator,
-        e = |disc K| and a = |det b(J, W)| (issue #18); leaving that module raises.
+        e = |disc K| and a = |coker(L -> J^*)| (issue #18); leaving that module raises.
         """
         lattice = isotropic[0].parent()
         reduction = lattice.primitive_isotropic_subobject(*isotropic).isotropic_reduction()
@@ -285,12 +239,41 @@ class EichlerRecursion:
         denominator = SageZZ.one()
         for _isometry, entry_denominator in extended:
             denominator = denominator.lcm(entry_denominator)
-        generators = (*(isometry for isometry, _entry_denominator in extended), *extension.kernel_generators(int(denominator)))
-        rational = lattice.base_change(lattice.base_ring().fraction_field_map())
+        # Lorentzian.g:115-249 supplies 1 + T/d for every generator T of the
+        # saturated integral homogeneous module. The preamble supplies 1 + T
+        # through the complete pointwise-perpendicular kernel. Since T kills
+        # N=J^perp and has image in J contained in N, T_i T_j = 0: the scaled
+        # generators give exactly the source's (1/d)-parameter module.
+        field_map = lattice.base_ring().fraction_field_map()
+        rational = lattice.base_change(field_map)
+        inverse_denominator = rational.base_ring().one() / rational.base_ring()(int(denominator))
+        kernel_generators = []
+        for integral_generator in reduction.pointwise_perpendicular_kernel().group_generators():
+            rational_generator = integral_generator.base_change(field_map)
+
+            def scaled_image(label):
+                point = rational.module_generator(label)
+                return point + rational.scalar_multiple(inverse_denominator, rational_generator(point) - point)
+
+            kernel_generators.append(rational.Isom(rational)(scaled_image))
+        generators = (*(isometry for isometry, _entry_denominator in extended), *kernel_generators)
         inclusion = ModulesOverIntegralDomains(lattice.base_ring())(lattice).generic_fibre_map()
         space = inclusion.codomain()
-        pairing = abs((extension.isotropic_rows * extension.gram * extension.complement_rows.transpose()).determinant())
-        bound = 2 * int(denominator) ** 2 * int(quotient.discriminant()) ** 2 * int(pairing.numerator())
+        # Unlike the rational coordinate complement, the pairing L -> J^*
+        # determines the invariant index a in D=2d^2e^2a intrinsically.
+        isotropic_lattice = reduction.isotropic_sublattice()
+        isotropic_inclusion = reduction.isotropic_embedding()
+        dual = isotropic_lattice.dual_module()
+        isotropic_labels = tuple(isotropic_lattice.module_generating_set())
+        pairing = lattice.module_category().Mor(lattice, dual)(
+            lambda label: dual.linear_combination(
+                {
+                    isotropic_label: lattice.b(lattice.module_generator(label), isotropic_inclusion(isotropic_lattice.module_generator(isotropic_label)))
+                    for isotropic_label in isotropic_labels
+                }
+            )
+        )
+        bound = 2 * int(denominator) ** 2 * abs(int(quotient.discriminant())) ** 2 * int(pairing.index())
         scale = rational.base_ring().one() / rational.base_ring()(bound)
         containing = Modules(lattice.base_ring()).Mono(lattice, space)(
             lambda label: space.wrap(rational.scalar_multiple(scale, inclusion(lattice.module_generator(label)).underlying_element()))
@@ -393,8 +376,55 @@ class EichlerRecursion:
         return None if correction is None else target_lattice.integral_isometry(correction.inverse() * rational_transport, source=source_lattice)
 
     def _isotropic_pointed_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
-        r"""An element of Isom((L, v), (M, w)) for isotropic v, w: the marking v -> w is fixed, Gamma is trivial."""
-        return self.isotropic_subspace_isometry((source,), (target,), ())
+        r"""Isom of primitive isotropic marked vectors, with the full target correction.
+
+        IndefiniteForms.g:1605-1650 first selects a reduction isometry. The
+        preamble's marked-line lift torsor supplies its entire integral fibre;
+        if that fibre is empty, the source's integral-equivalence correction
+        still ranges over the target's full reduced orthogonal-group action.
+        """
+        source_lattice, target_lattice = source.parent(), target.parent()
+        source_reduction = source_lattice.primitive_isotropic_subobject(source).isotropic_reduction()
+        target_reduction = target_lattice.primitive_isotropic_subobject(target).isotropic_reduction()
+        reduced = self.isometry(source_reduction.quotient_lattice(), target_reduction.quotient_lattice())
+        if reduced is None:
+            return None
+        torsor = source_reduction.rational_lifts(target_reduction, reduced)
+        integral_locus = torsor.integral_members()
+        empty = integral_locus.is_empty()
+        if empty is not True and empty is not False:
+            raise ValueError("the integral marked-line lift locus has undecided emptiness")
+
+        fraction_map = source_lattice.base_ring().fraction_field_map()
+        source_inclusion = ModulesOverIntegralDomains(source_lattice.base_ring())(source_lattice).generic_fibre_map()
+        target_inclusion = ModulesOverIntegralDomains(target_lattice.base_ring())(target_lattice).generic_fibre_map()
+        source_vector = source_inclusion(source).underlying_element()
+        target_vector = target_inclusion(target).underlying_element()
+        rational_transport = torsor.base_point()
+        # The reduction's chosen primitive generator may differ by a global
+        # sign from the supplied pointed marking (IndefiniteForms.g:1637-1642).
+        mapped = rational_transport(source_vector)
+        negate = mapped == -target_vector
+        if not negate and mapped != target_vector:
+            raise ArithmeticError("the rational reduction lift does not carry the marked isotropic line onto the requested target")
+        if negate:
+            target_rational = target_lattice.base_change(fraction_map)
+            negative_identity = target_rational.Isom(target_rational)(lambda label: -target_rational.module_generator(label))
+            rational_transport = negative_identity * rational_transport
+
+        if empty is False:
+            integral = torsor.integral_base_point()
+            if negate:
+                integral = negative_identity * integral
+            return target_lattice.integral_isometry(integral, source=source_lattice)
+
+        # Emptiness for this one reduction map does not decide Isom((L,v),(M,w)).
+        # Search its other target reduction actions using the complete rational
+        # stabilizer and the integral-structure transporter, as in the source.
+        restriction = Modules(fraction_map.codomain()).restriction_of_scalars(fraction_map)
+        image = restriction(rational_transport) * source_inclusion
+        correction = self.isotropic_stabilizer_action((target,), ()).transporter(image)
+        return None if correction is None else target_lattice.integral_isometry(correction.inverse() * rational_transport, source=source_lattice)
 
     def _split_isotropic_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
         r"""For e of divisibility one in an even lattice, L = U + e^perp/e; an isometry is id_U plus one of the reductions."""
