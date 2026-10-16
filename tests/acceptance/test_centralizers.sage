@@ -12,7 +12,6 @@ OSCAR's own centralizer computation is the recorded oracle only, never the route
 
 import pytest
 
-from sage_indefinite_port.readiness import UnfinishedCapability
 from tests.acceptance.consumer import (
     MARKED_AUTOMORPHISMS,
     isometry_from_rows,
@@ -27,7 +26,6 @@ _DATA = load_isometry_centralizers()
 
 
 @pytest.mark.parametrize("case", _DATA["centralizer_cases"], ids=lambda case: case["id"])
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_centralizer_images_match_oscar(case) -> None:
     require(MARKED_AUTOMORPHISMS)
 

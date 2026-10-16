@@ -19,7 +19,7 @@ from __future__ import annotations
 from math import isqrt
 
 from dzack_research.preamble.all import Lattices
-from dzack_research.preamble.categories.eichler_criterion import TwoUEichlerModel, TwoUFullGeneratingDatum
+from dzack_research.preamble.categories.eichler_criterion import TwoUEichlerModel
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.modules.framed.formed.discriminant_modules import DiscriminantQuadraticModules
 from dzack_research.preamble.categories.rational_integral_stabilizers import IntegralStructureAction
@@ -29,6 +29,7 @@ from sage.matrix.constructor import matrix
 from sage.modules.free_module_element import vector as vector_space_element
 from sage.rings.rational_field import QQ as SageQQ
 from sage.structure.element import RingElement
+from sage.structure.sage_object import SageObject
 
 
 def square_divisors(integer: int) -> tuple[int, ...]:
@@ -37,6 +38,73 @@ def square_divisors(integer: int) -> tuple[int, ...]:
     if value == 0:
         raise ValueError("zero has infinitely many square divisors: covers of norm 0 are by primitive isotropic vectors only")
     return tuple(divisor for divisor in range(1, isqrt(value) + 1) if value % (divisor * divisor) == 0)
+
+
+class TwoUFullGeneratingDatum(SageObject):
+    r"""Finite generators supplied by the ``2U`` approximate-model theorem.
+
+    Let ``A`` be the finite-generator approximate subgroup, let ``v`` be the
+    selected primitive base vector, and let ``r_i`` run through the approximate
+    orbit representatives lying in the full ``O(L)``-orbit of ``v``.  Choose
+    ``t_i`` with ``t_i(v)=r_i`` and generators of ``P_v=Stab(v)``.  Since the
+    approximate-model oracle says every vector in that full orbit is
+    ``A``-equivalent to some ``r_i``, the elementary orbit argument gives
+
+    ``O(L) = < A, P_v, t_i >``.
+
+    The object retains precisely those finite families.  It does not claim a
+    word algorithm in the approximate subgroup beyond the sourced oracle.
+    """
+
+    def __init__(
+        self,
+        model,
+        square,
+        base_vector,
+        approximate_generators,
+        stabilizer_generators,
+        orbit_representatives,
+        orbit_transporters,
+        generating_family,
+    ) -> None:
+        self._model = model
+        self._square = square
+        self._base_vector = base_vector
+        self._approximate_generators = approximate_generators
+        self._stabilizer_generators = stabilizer_generators
+        self._orbit_representatives = orbit_representatives
+        self._orbit_transporters = orbit_transporters
+        self._generating_family = generating_family
+
+    def model(self):
+        return self._model
+
+    def lattice(self):
+        return self.model().lattice()
+
+    def square(self):
+        return self._square
+
+    def base_vector(self):
+        return self._base_vector
+
+    def approximate_generators(self):
+        return self._approximate_generators
+
+    def stabilizer_generators(self):
+        return self._stabilizer_generators
+
+    def orbit_representatives(self):
+        return self._orbit_representatives
+
+    def orbit_transporters(self):
+        return self._orbit_transporters
+
+    def generating_family(self):
+        return self._generating_family
+
+    def __repr__(self) -> str:
+        return f"Finite 2U orthogonal generating datum for {self.lattice()}"
 
 
 class EichlerEnvelope:
@@ -60,8 +128,7 @@ class EichlerEnvelope:
         self.envelope = hyperbolic_plane + hyperbolic_plane + kernel_lattice
         self.model = self.envelope.two_u_eichler_model_from_represented_biproduct()
         e_1, f_1, e_2, f_2 = self.model.hyperbolic_basis()
-        # The biproduct (U + U) + K is binary; its last injection is K -> E.
-        complement_embedding = self.envelope.injection(len(self.envelope.biproduct_factors()) - 1)
+        complement_embedding = self.model.complement_inclusion()
         first_pairing = lattice.b(first, first_partner)
         second_pairing = lattice.b(second, second_partner)
         source = (first, first_partner, second, second_partner) + tuple(kernel.inclusion()(vector) for vector in kernel_lattice.module_generators())
@@ -107,6 +174,62 @@ class EichlerEnvelope:
 
 class OrbitCoverModel:
     r"""The approximate subgroup A_L of O(L) and the covering lists of the Eichler recursion."""
+
+    @staticmethod
+    def source_generating_family(model: TwoUEichlerModel):
+        r"""Return the represented source-defined finite family inside ``O(2U+K)``.
+
+        The family retains five mathematically different sources of
+        isometries: the two determinant-model ``SL_2(ZZ)`` actions, the
+        chosen generators of ``O(K)`` extended by the identity on ``2U``,
+        the selected ``K``-direction Eichler transvections, and explicit
+        lifts of generators of ``O(A_L)``.  Labels retain those sources even
+        when two labels happen to determine the same lattice isometry.
+
+        This is generating *data*, not a claim that the generated subgroup is
+        the full orthogonal group.  That equality belongs to the recursive
+        generation theorem and its parabolic-stabilizer hypotheses.
+        """
+        from dzack_research.preamble.categories.sets.finite_ordered_sets import (
+            finite_ordered_set,
+        )
+        from dzack_research.preamble.categories.sets.indexed_families import (
+            finite_indexed_family,
+        )
+
+        special_linear_generators = model.special_linear_group().group_generators()
+        complement_generators = model.orthogonal_complement().O().group_generators()
+        eichler = model.complement_eichler_transvections()
+        discriminant_lifts = model.lattice().O().discriminant_orthogonal_group_generator_lifts()
+        labels = finite_ordered_set(
+            tuple(("left-SL2", generator) for generator in special_linear_generators)
+            + tuple(("right-SL2", generator) for generator in special_linear_generators)
+            + tuple(("O(K)", generator) for generator in complement_generators)
+            + tuple(("Eichler", label) for label in eichler.index_set())
+            + tuple(("discriminant-lift", label) for label in discriminant_lifts.index_set())
+        )
+
+        def generator(label):
+            kind, datum = label
+            match kind:
+                case "left-SL2":
+                    return model.left_action(datum)
+                case "right-SL2":
+                    return model.right_action(datum)
+                case "O(K)":
+                    return model.complement_action(datum)
+                case "Eichler":
+                    return eichler[datum]
+                case "discriminant-lift":
+                    return discriminant_lifts[datum]
+                case _:
+                    raise ValueError(f"{label!r} does not name a generator of O(2U + K) for {model}: its kind {kind!r} is not a known kind of generator")
+
+        return finite_indexed_family(
+            labels,
+            generator,
+            name=f"Source-defined Eichler generating family in O({model.lattice()})",
+        )
 
     @staticmethod
     def split_generating_family(model: TwoUEichlerModel) -> IndexedFamily[int, LatticeIsometryMethods]:
@@ -274,5 +397,6 @@ class OrbitCoverModel:
 __all__ = [
     "EichlerEnvelope",
     "OrbitCoverModel",
+    "TwoUFullGeneratingDatum",
     "square_divisors",
 ]

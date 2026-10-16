@@ -9,7 +9,6 @@ OSCAR's spinor-norm tests.
 
 import pytest
 
-from sage_indefinite_port.readiness import UnfinishedCapability
 from tests.acceptance.consumer import (
     MARKED_AUTOMORPHISMS,
     assert_same_finite_images,
@@ -26,7 +25,6 @@ from tests.fixtures.oracle_fixtures import (
 )
 
 
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_mertens_omega_and_minus_one_generate_o_l() -> None:
     require(MARKED_AUTOMORPHISMS)
 
@@ -45,7 +43,6 @@ def test_mertens_omega_and_minus_one_generate_o_l() -> None:
     load_binary_form_automorphisms()["explicit_generators"],
     ids=lambda case: case["id"],
 )
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_binary_form_generators_match_hecke(case) -> None:
     require(MARKED_AUTOMORPHISMS)
 
@@ -61,7 +58,6 @@ def test_binary_form_generators_match_hecke(case) -> None:
     load_binary_form_automorphisms()["improper_automorphisms"],
     ids=lambda case: case["id"],
 )
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_ambiguous_binary_form_has_an_improper_automorphism(case) -> None:
     require(MARKED_AUTOMORPHISMS)
 
@@ -71,7 +67,6 @@ def test_ambiguous_binary_form_has_an_improper_automorphism(case) -> None:
 
 
 @pytest.mark.parametrize("case", load_lorentzian_stabilizer_cases(), ids=lambda case: case["id"])
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_lorentzian_generators_match_polyhedral_common(case) -> None:
     require(MARKED_AUTOMORPHISMS)
 
@@ -80,7 +75,6 @@ def test_lorentzian_generators_match_polyhedral_common(case) -> None:
     assert_same_finite_images(case["gram"], computed, case["generators"])
 
 
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_orthogonal_group_of_the_hyperbolic_plane_has_order_four() -> None:
     require(MARKED_AUTOMORPHISMS)
 
@@ -93,7 +87,6 @@ _IMAGE_CASES = [case for case in load_oscar_lattice_oracles()["discriminant_imag
 
 
 @pytest.mark.parametrize("case", _IMAGE_CASES, ids=lambda case: case["id"])
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_discriminant_images_match_oscar(case) -> None:
     """|O(q_L)|, the image of O(L), and the image of O^+(L) = ker sn_R (OSCAR's image_in_Oq_signed)."""
     require(MARKED_AUTOMORPHISMS)
@@ -105,7 +98,6 @@ def test_discriminant_images_match_oscar(case) -> None:
     assert discriminant_image_order(lattice_, lattice_.O_plus().group_generators()) == case["image_in_Oq_signed_order"]
 
 
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q() -> None:
     require(MARKED_AUTOMORPHISMS)
 
@@ -115,7 +107,6 @@ def test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q() -> None:
     assert lattice_.O().discriminant_image().cardinality() == lattice_.discriminant_group().orthogonal_group().cardinality()
 
 
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_signed_discriminant_image_of_u_plus_minus_three_is_all_of_o_q() -> None:
     require(MARKED_AUTOMORPHISMS)
 

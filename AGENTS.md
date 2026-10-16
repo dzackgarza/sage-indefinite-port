@@ -191,6 +191,18 @@ Before authoring or revising any specialized routine:
 
 # Architecture and Dependencies
 
+- **Sage runtime on this host** (verified 2026-10-17): Docker is installed by
+  Snap at `/snap/bin/docker`, not `/usr/bin/docker`. The `sage-dev-develop`
+  container is already running. Use
+  `/usr/bin/sg docker -c '/snap/bin/docker ...'` to access it; an unsuccessful
+  `command -v docker` does not mean Docker is unavailable.
+  The wrapper `~/.local/bin/sage` calls `docker` from `PATH`, and the preamble
+  Julia bridge requires `/home/dzack/.juliaup/bin/julia`. The tracked `.envrc`
+  configures `PATH`, `SAGE_BIN`, `SAGE_PYTHON_BIN`, `SAGE_PREPARSE_BIN`, and
+  `SAGE_JULIA_COMMAND` for the container-backed Sage and central QC recipes.
+  Verified with `sage --version` (SageMath 11.0.beta1) and a preamble import.
+  Keep one Sage mathematical test process at a time.
+
 - **The `research` preamble is the lattice substrate and a co-developed dependency**:
   This repository consumes `dzack_research.preamble` (categories, formed modules, lattices, isometries, discriminant modules) from the checkout at `/home/dzack/research/src`. `.envrc` puts it on `PYTHONPATH` and `MYPYPATH`; `pyproject.toml` declares `dzack-research`.
   - **Use the preamble's own classes and types**: annotate with `Lattice` (and `Lattice.Element`), `LatticeIsometry`, `LatticeIsometryHomset`, and the tensor and presented-module classes. Never add Protocol, stub, or facade types over the preamble, and never edit `sys.path`.

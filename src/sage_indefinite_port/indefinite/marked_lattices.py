@@ -27,7 +27,6 @@ from sage_indefinite_port.indefinite.isotropic_induction import ARROWS, Flag, Is
 from sage_indefinite_port.indefinite.lorentzian_cells import NONNEGATIVE_SQUARES, LorentzianPerfectComplex, MarkedCellOrbitAlgorithm
 from sage_indefinite_port.indefinite.recursive import EichlerRecursion
 from sage_indefinite_port.invariants import AttackProfile
-from sage_indefinite_port.readiness import unfinished
 
 LATTICES = Lattices(ZZ)
 FLAGS = Cat().Mor(FiniteOrdinalCategory(3), LATTICES)
@@ -61,7 +60,6 @@ def _flag(marked: Parent) -> Flag:
     return second(first(next(iter(first.domain().module_generators())))), plane
 
 
-@unfinished(18)
 def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsometryMethods | None:
     r"""The isometry of an isomorphism of marked lattices ``source -> target`` in ``category``, or ``None`` when there is none."""
     match category:
@@ -84,7 +82,6 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
     raise ValueError(f"{category} is not a category of marked lattices this port decides: Lattices, a coslice <n>/Lattices, Ar(Lattices) or Fun([2], Lattices)")
 
 
-@unfinished(18)
 def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
     r"""Generators of the automorphism group of a marked lattice in ``category``, as a finite ordered set of isometries of L."""
     match category:
@@ -121,7 +118,6 @@ def _pointed_classes(category: Category, lattice: Lattices.ParentMethods, square
     return tuple(category.object(base.hom([vector_], codomain=lattice)) for vector_ in vectors)
 
 
-@unfinished(18)
 def primitive_marking_classes(category: Category, source: Parent | Morphism, lattice: Parent) -> Parent:
     r"""One marked lattice for each isomorphism class of primitive markings of ``lattice`` of shape ``source``.
 
