@@ -13,7 +13,6 @@ from collections import Counter
 
 import pytest
 
-from sage_indefinite_port.readiness import UnfinishedCapability
 from tests.acceptance.consumer import (
     MARKED_AUTOMORPHISMS,
     MARKED_CLASSES,
@@ -48,7 +47,6 @@ def _automorphism_rows(marked):
     return [rows_of(underlying_isometry(generator)) for generator in automorphisms(category, marked).group_generators()]
 
 
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_vector_stabilizer_has_oscars_order() -> None:
     require(MARKED_AUTOMORPHISMS)
 
@@ -62,7 +60,6 @@ def test_vector_stabilizer_has_oscars_order() -> None:
 
 
 @pytest.mark.parametrize("square", sorted(Counter(orbit["h_squared"] for orbit in load_e10_vector_orbits()["orbits"])))
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso(square) -> None:
     require(MARKED_CLASSES, MARKED_AUTOMORPHISMS)
 
@@ -83,7 +80,6 @@ def _reflection_rows(gram, root) -> list[list[int]]:
 
 
 @pytest.mark.parametrize("root", _E10["simple_roots"], ids=lambda root: f"r_{root['label']}")
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_equivalence_witness_carries_a_representative_to_its_reflection(root) -> None:
     require(MARKED_ISOMETRY)
 

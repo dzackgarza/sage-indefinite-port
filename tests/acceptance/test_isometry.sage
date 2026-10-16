@@ -9,7 +9,6 @@ isometric.
 
 import pytest
 
-from sage_indefinite_port.readiness import UnfinishedCapability
 from tests.acceptance.consumer import (
     MARKED_ISOMETRY,
     is_witness,
@@ -34,7 +33,6 @@ def _assert_isometric(source_gram, target_gram) -> None:
 
 
 @pytest.mark.parametrize("case", load_indefinite_isometry_pairs(), ids=lambda case: case["id"])
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_isometry_verdicts_match_certified_pairs(case) -> None:
     require(MARKED_ISOMETRY)
 
@@ -46,7 +44,6 @@ def test_isometry_verdicts_match_certified_pairs(case) -> None:
 
 
 @pytest.mark.parametrize("case", load_lorentzian_equivalence_cases(), ids=lambda case: case["id"])
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_lorentzian_pairs_are_isometric(case) -> None:
     require(MARKED_ISOMETRY)
 
@@ -55,7 +52,6 @@ def test_lorentzian_pairs_are_isometric(case) -> None:
     _assert_isometric(case["mat1"], case["mat2"])
 
 
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_conway_sloane_same_genus_pair_is_not_isometric() -> None:
     require(MARKED_ISOMETRY)
 
@@ -73,7 +69,6 @@ def _unimodular_change_of_basis(rank: int) -> list[list[int]]:
 
 
 @pytest.mark.parametrize("case", load_ci_indefinite_comp(), ids=lambda case: case["id"])
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_change_of_basis_gives_an_isometric_lattice(case) -> None:
     require(MARKED_ISOMETRY)
 
