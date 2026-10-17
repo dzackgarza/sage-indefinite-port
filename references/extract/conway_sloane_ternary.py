@@ -2,7 +2,11 @@
 # /// script
 # requires-python = ">=3.12"
 # ///
-"""Extract Conway--Sloane Ch. 15 Sec. 11, (51a,b), from vendored book text."""
+"""Extract Conway--Sloane Ch. 15 Sec. 11 from a local licensed reading copy.
+
+The book is deliberately not committed (see .gitignore). A local copy must be
+provided; missing source files fail explicitly rather than manufacturing data.
+"""
 
 import json
 import re
@@ -13,6 +17,8 @@ TARGET = Path("tests/fixtures/conway_sloane_cases.json")
 
 
 def main() -> None:
+    if not SOURCE.is_file():
+        raise FileNotFoundError(f"Conway--Sloane primary source is not distributed: supply your local reading copy at {SOURCE}")
     lines = SOURCE.read_text(encoding="utf-8").splitlines()
     positions = [i for i, line in enumerate(lines) if "We illustrate by finding two inequivalent indefinite ternary forms" in line]
     assert len(positions) == 1, "Conway--Sloane example must occur exactly once"

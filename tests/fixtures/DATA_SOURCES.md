@@ -171,7 +171,7 @@ This document records the exact provenance, source files, authors, publications,
 
   - The group: Scattone Proposition 5.4.7 and Corollary 5.4.8(2). For squarefree $k$, $E \mapsto E^\perp/E$ is a bijection from the $O(\Lambda_{2k})$-orbits of primitive isotropic planes onto $G(k)$, so there are $h(k)$ of them (`type_ii_correspondence`). The Type III point is stated for $O_-(L_k)$, not $O(\Lambda_{2k})$.
 
-  - Scattone's values are extracted from the vendored primary memoir at `references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md`, including the boundary statement (lines 3740–3770), Proposition 5.4.7/Corollary 5.4.8 (3224–3250), equation (6.2.1) (3850–3860), and §6.3 (3932–3948). The extractor checks 4 and 9 classes and parses each displayed root-system type.
+  - Scattone's values are extracted from a local reading copy of the primary memoir at `references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md`, including the boundary statement (lines 3740–3770), Proposition 5.4.7/Corollary 5.4.8 (3224–3250), equation (6.2.1) (3850–3860), and §6.3 (3932–3948). The extractor checks 4 and 9 classes and parses each displayed root-system type. This copyrighted reading copy is deliberately excluded from Git by `.gitignore`, so it must be supplied locally; regeneration is not self-contained in a fresh clone.
 
 - **Extraction**: `uv run references/extract/k3_strata.py`.
 
@@ -183,7 +183,7 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Primary Source**: J. H. Conway and N. J. A. Sloane, *Sphere Packings, Lattices and Groups*, 3rd ed., Springer, 1999, Chapter 15, §11, equations (51a) and (51b): two inequivalent indefinite ternary forms of determinant $-128$ in the genus $\mathrm{I}_{2,1}(2 \times 64)$ of $\mathrm{diag}\{-1, 64, 2\}$, which has two spinor genera and hence two classes.
 
-- **Extraction**: `uv run references/extract/conway_sloane_ternary.py` parses both displayed ternary matrices directly from the vendored book text at `references/vendor/zotero/T2WVLTDB-conway-sloane-1999-splag/extracted.md:12933-12942`. The script asserts symmetry, determinant `-128`, signature `(2,1)` via the binary indefinite block, and the book's two-class statement.
+- **Extraction**: `uv run references/extract/conway_sloane_ternary.py` parses both displayed ternary matrices directly from a local copyrighted reading copy at `references/vendor/zotero/T2WVLTDB-conway-sloane-1999-splag/extracted.md:12933-12942`. The script asserts symmetry, determinant `-128`, signature `(2,1)` via the binary indefinite block, and the book's two-class statement. The reading copy is not committed and must be supplied locally; the fixture cannot be regenerated in a fresh clone without it.
 
 ### Baily–Borel Boundaries of the D-Tower (Laza–O'Grady)
 

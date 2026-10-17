@@ -1,5 +1,5 @@
 version: "2"
-description: 'Index of the oracle corpus: each fixture file, the committed script that extracts it, and the vendored sources it cites. Expected values live only in the fixtures.'
+description: 'Index of the oracle corpus: each fixture file and committed extraction script. Book reading copies under references/vendor/zotero are local-only and not included in Git; expected values live only in the fixtures.'
 oracles:
   - fixture_file: enriques_87_polarizations.json
     extraction: references/extract/dh23_polarizations.py

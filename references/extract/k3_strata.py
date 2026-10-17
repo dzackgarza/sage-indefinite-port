@@ -2,9 +2,9 @@
 # /// script
 # requires-python = ">=3.12"
 # ///
-"""Extract tests/fixtures/k3_modular_strata.json from the vendored K3 literature.
+"""Extract tests/fixtures/k3_modular_strata.json from local primary sources.
 
-The Scattone boundary counts and types are parsed from the pinned primary memoir;
+The Scattone boundary counts and types are parsed from a local licensed primary memoir;
 Eichler's criterion is checked against the vendored arXiv TeX.
 
 - K3 lattice: Eichler's criterion, Gritsenko--Hulek--Sankaran arXiv:1012.4155,
@@ -19,7 +19,7 @@ Eichler's criterion is checked against the vendored arXiv TeX.
   the O(L_k)-orbits of primitive isotropic planes E are in bijection with G(k) by
   E -> E^perp/E, so there are h(k) of them.
 
-Scattone's values are read directly from the vendored memoir extraction.
+Scattone's values are read from a locally supplied memoir copy, not distributed in Git.
 
 Run from the repository root: uv run references/extract/k3_strata.py
 """
@@ -57,6 +57,8 @@ def root_systems(source: str) -> list[str]:
 
 def main() -> None:
     eichler = cite(ARXIV / "1012.4155/main.tex", 3036, 3041, r"\label{lem:eichler}", "two orthogonal isotropic planes", "determined by two invariants")
+    if not MEMOIR.is_file():
+        raise FileNotFoundError(f"Scattone primary source is not distributed: supply your local reading copy at {MEMOIR}")
     lines = MEMOIR.read_text(encoding="utf-8").splitlines()
     boundary = source_excerpt(lines, 3740, 3770, "adding one point p and h(k) curves", "boundary curves")
     degree_two_types = source_excerpt(lines, 3850, 3860, r"\tag{6.2.1}", r"\mathrm{A} _ {1}")
