@@ -417,6 +417,59 @@ class OrbitCoverModel:
         inverse = envelope.rational_isometry.inverse()
         return tuple(self.lattice.integral_isometry(inverse * generator * envelope.rational_isometry) for generator in stabilizer.group_generators())
 
+    def _pullback_envelope_vector(self, point: Lattices.ElementMethods, coset: LatticeIsometryMethods) -> Lattices.ElementMethods | None:
+        """Lift a rational coset image from the envelope through the integral similarity, if possible."""
+        envelope = self.envelope
+        if envelope is None:
+            raise ValueError("an envelope coset requires a nonsplit model")
+        envelope_lattice = self.model.lattice()
+        rational_envelope = envelope.rational_isometry.codomain()
+        labels = tuple(envelope_lattice.module_generating_set())
+        coordinates = point.to_vector()
+        rational_point = rational_envelope.linear_combination({label: rational_envelope.base_ring()(int(coordinates(label))) for label in labels if coordinates(label)})
+        moved = coset(rational_point).to_vector()
+        if any(moved(label).denominator() != 1 for label in labels):
+            return None
+        integral_point = envelope_lattice.linear_combination({label: envelope_lattice.base_ring()(int(moved(label))) for label in labels if moved(label)})
+        if not envelope.similarity.is_in_image(integral_point):
+            return None
+        return envelope.similarity.lift(integral_point)
+
+    def one_representative(self, square: int) -> Lattices.ElementMethods | None:
+        r"""Port ``GetOneOrbitRepresentative`` (IndefiniteForms.g:416-423, 801-824).
+
+        First try the distinguished hyperbolic representative and the envelope
+        cosets. If it misses the original lattice, the source falls back to
+        the complete covering list, including nonprimitive multiples when the
+        square is nonzero. At the least positive represented norm, every
+        representing vector is primitive.
+        """
+        if self.envelope is None:
+            if square % 2:
+                return None
+            e, f, _e_prime, _f_prime = self.model.hyperbolic_basis()
+            return e + self.lattice.scalar_multiple(self.lattice.base_ring()(square // 2), f)
+
+        envelope = self.envelope
+        envelope_square = envelope.scale**2 * square
+        if envelope_square % 2 == 0:
+            e, f, _e_prime, _f_prime = self.model.hyperbolic_basis()
+            candidate = e + self.model.lattice().scalar_multiple(self.model.lattice().base_ring()(envelope_square // 2), f)
+            coset_space = envelope.stabilizer_of_lattice().right_cosets()
+            section = coset_space.right_coset_section()
+            for coset in coset_space:
+                lifted = self._pullback_envelope_vector(candidate, section(coset))
+                if lifted is not None:
+                    return lifted
+        if square == 0:
+            covers = self.primitive_covering_vectors(0)
+            return covers[0] if covers else None
+        for content in square_divisors(square):
+            covers = self.primitive_covering_vectors(square // (content * content))
+            if covers:
+                return self.lattice.scalar_multiple(content, covers[0])
+        return None
+
     def primitive_covering_vectors(self, square: int) -> tuple[Lattices.ElementMethods, ...]:
         r"""Primitive vectors of the square meeting every O(L)-orbit of primitive vectors of that square."""
         if self.envelope is None:
@@ -440,25 +493,13 @@ class OrbitCoverModel:
         # the potentially enormous norm.  The necessary square-divisibility
         # restriction then selects exactly the same possible contents.
         contents = tuple(int(divisor) for divisor in SageZZ(exponent).divisors() if envelope_square == 0 or envelope_square % (int(divisor) ** 2) == 0)
-        envelope_lattice = self.model.lattice()
-        rational_envelope = envelope.rational_isometry.codomain()
-        rational_ring = rational_envelope.base_ring()
-        integers = envelope_lattice.base_ring()
-        labels = tuple(envelope_lattice.module_generating_set())
         for content in contents:
             for primitive in self.model.covering_vector_representatives(envelope_square // content**2):
                 point = self.model.lattice().scalar_multiple(content, primitive)
-                rational_point = rational_envelope.linear_combination({label: rational_ring(int(point.to_vector()(label))) for label in labels if point.to_vector()(label)})
                 for representative in cosets:
-                    rational_moved = representative(rational_point).to_vector()
-                    # Only an integral t p lies in E, and only a vector of E can be sigma(v).
-                    if any(rational_moved(label).denominator() != 1 for label in labels):
-                        continue
-                    moved = envelope_lattice.linear_combination({label: integers(int(rational_moved(label))) for label in labels if rational_moved(label)})
-                    if envelope.similarity.is_in_image(moved):
-                        vector = envelope.similarity.lift(moved)
-                        if vector.is_primitive():
-                            found.append(vector)
+                    vector = self._pullback_envelope_vector(point, representative)
+                    if vector is not None and vector.is_primitive():
+                        found.append(vector)
         return tuple(found)
 
     def covering_vectors(self, square: int, content: int) -> tuple[Lattices.ElementMethods, ...]:
@@ -468,11 +509,14 @@ class OrbitCoverModel:
         return tuple(self.lattice.scalar_multiple(content, vector) for vector in self.primitive_covering_vectors(square // (content * content)))
 
     def splitting_vector(self) -> Lattices.ElementMethods:
-        r"""A primitive vector of positive norm: e + f of the first hyperbolic plane, of norm 2, through the envelope when needed."""
-        e_1, f_1, _e_2, _f_2 = self.model.hyperbolic_basis()
-        if self.envelope is None:
-            return e_1 + f_1
-        return self.lattice.positive_vector()
+        r"""The first represented positive norm, as in ``GetFirstNorm`` (IndefiniteForms.g:1131-1142)."""
+        square = 2 if self.lattice.is_even() else 1
+        increment = 2 if self.lattice.is_even() else 1
+        while True:
+            representative = self.one_representative(square)
+            if representative is not None:
+                return representative
+            square += increment
 
 
 __all__ = [
