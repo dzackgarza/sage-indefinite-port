@@ -18,8 +18,9 @@ TARGET = Path("tests/fixtures/conway_sloane_cases.json")
 
 def main() -> None:
     lines = SOURCE.read_text(encoding="utf-8").splitlines()
-    assert "two spinor genera and two classes" in lines[4]
-    assert "determinant -128" in lines[4]
+    factual_note = "\n".join(line.removeprefix("% ") for line in lines if line.startswith("% "))
+    assert "two spinor genera and two classes" in factual_note
+    assert "determinant -128" in factual_note
     display = "\n".join(lines)
     # Parse the two displayed matrix environments, not the preceding binary matrices.
     pair = re.search(r"\$\$\s*\( a \).*?\$\$", display, re.S)
