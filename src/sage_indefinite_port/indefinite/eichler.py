@@ -27,6 +27,7 @@ from dzack_research.preamble.categories.sets.indexed_families import IndexedFami
 from sage.graphs.graph import Graph
 from sage.groups.perm_gps.permgroup_named import SymmetricGroup
 from sage.matrix.constructor import matrix
+from sage.misc.cachefunc import cached_method
 from sage.modules.free_module_element import vector as vector_space_element
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
@@ -110,19 +111,44 @@ class TwoUFullGeneratingDatum(SageObject):
 
 
 class EichlerEnvelope:
-    r"""The similarity sigma = N phi: L -> E = U + U + K of Dutour Sikirić's hyperplane-basis step."""
+    r"""The similarity sigma = N phi: L -> E = U + U + K of Dutour Sikirić's hyperplane-basis step.
+
+    For an odd integral lattice, first use its canonical even index-two
+    sublattice L_even = ker(q mod 2).  It has the same rational quadratic
+    space; hence its Eichler hyperplane basis supplies the same rational
+    isometry, whose restriction to L is cleared by the similarity.  The
+    finite-index integral-structure descent is unchanged.
+    """
 
     def __init__(self, lattice: Lattices.ParentMethods) -> None:
-        first = lattice.isotropic_vector()
+        construction_lattice = lattice
+        even_inclusion = None
+        if not lattice.is_even():
+            generators = tuple(lattice.module_generators())
+            parities = tuple(int(generator.q()) % 2 for generator in generators)
+            odd_position = next(index for index, parity in enumerate(parities) if parity)
+            odd_generator = generators[odd_position]
+            even_subobject = lattice.subobject_on(
+                tuple(
+                    2 * generator if index == odd_position else generator - parity * odd_generator
+                    for index, (generator, parity) in enumerate(zip(generators, parities, strict=True))
+                )
+            )
+            even_inclusion = even_subobject.inclusion()
+            construction_lattice = even_inclusion.domain()
+            if not construction_lattice.is_even():
+                raise ArithmeticError("the kernel of the norm-parity homomorphism must be even")
+
+        first = construction_lattice.isotropic_vector()
         first_partner = first.hyperbolic_partner()
-        first_plane = lattice.subobject_on([first, first_partner])
+        first_plane = construction_lattice.subobject_on([first, first_partner])
         complement = first_plane.orthogonal_complement()
         complement_lattice = complement.inclusion().domain()
         second = complement_lattice.isotropic_vector()
         second_partner = second.hyperbolic_partner()
         embed = complement.inclusion()
         second, second_partner = embed(second), embed(second_partner)
-        planes = lattice.subobject_on([first, first_partner, second, second_partner])
+        planes = construction_lattice.subobject_on([first, first_partner, second, second_partner])
         kernel = planes.orthogonal_complement()
         kernel_lattice = kernel.inclusion().domain()
         hyperbolic_plane = Lattices(lattice.base_ring())("U")
@@ -131,15 +157,15 @@ class EichlerEnvelope:
         self.model = self.envelope.two_u_eichler_model_from_represented_biproduct()
         e_1, f_1, e_2, f_2 = self.model.hyperbolic_basis()
         complement_embedding = self.model.complement_inclusion()
-        first_pairing = lattice.b(first, first_partner)
-        second_pairing = lattice.b(second, second_partner)
+        first_pairing = construction_lattice.b(first, first_partner)
+        second_pairing = construction_lattice.b(second, second_partner)
         source = (first, first_partner, second, second_partner) + tuple(kernel.inclusion()(vector) for vector in kernel_lattice.module_generators())
         target = (first_pairing * e_1, f_1, second_pairing * e_2, f_2) + tuple(complement_embedding(vector) for vector in kernel_lattice.module_generators())
         fraction_map = lattice.base_ring().fraction_field_map()
-        spanned = lattice.subobject_on(list(source))
+        spanned = construction_lattice.subobject_on(list(source))
         # The span basis is echelonized; each basis vector is an integral combination of the
         # independent family source, and its image is the same combination of target.
-        labels = tuple(lattice.module_generating_set())
+        labels = tuple(construction_lattice.module_generating_set())
         source_rows = matrix(SageQQ, [[int(vector.to_vector()(label)) for label in labels] for vector in source])
         span_inclusion = spanned.inclusion()
         span_images = []
@@ -148,17 +174,30 @@ class EichlerEnvelope:
             coefficients = source_rows.solve_left(vector_space_element([int(image.to_vector()(label)) for label in labels]))
             if any(entry.denominator() != 1 for entry in coefficients):
                 raise ArithmeticError("a span basis vector must be an integral combination of the spanning family")
-            span_images.append(sum((lattice.base_ring()(int(entry)) * image_vector for entry, image_vector in zip(coefficients, target, strict=True)), self.envelope.zero()))
+            span_images.append(
+                sum(
+                    (construction_lattice.base_ring()(int(entry)) * image_vector for entry, image_vector in zip(coefficients, target, strict=True)),
+                    self.envelope.zero(),
+                )
+            )
         span_to_envelope = span_inclusion.domain().hom(span_images, codomain=self.envelope).base_change(fraction_map)
         rational_inclusion = spanned.inclusion().base_change(fraction_map)
-        rational_lattice = lattice.base_change(fraction_map)
-        self.rational_isometry = rational_lattice.Isom(self.envelope.base_change(fraction_map))(
-            lambda label: span_to_envelope(rational_inclusion.lift(rational_lattice.module_generator(label)))
+        rational_construction = construction_lattice.base_change(fraction_map)
+        construction_to_envelope = rational_construction.Isom(self.envelope.base_change(fraction_map))(
+            lambda label: span_to_envelope(rational_inclusion.lift(rational_construction.module_generator(label)))
         )
+        if even_inclusion is None:
+            self.rational_isometry = construction_to_envelope
+        else:
+            rational_original = lattice.base_change(fraction_map)
+            rational_even_inclusion = even_inclusion.base_change(fraction_map)
+            even_to_original = rational_construction.Isom(rational_original)(lambda label: rational_even_inclusion(rational_construction.module_generator(label)))
+            self.rational_isometry = construction_to_envelope * even_to_original.inverse()
         self.similarity = self.rational_isometry.integral_similarity(lattice, self.envelope)
         self.scale = self.similarity.scale()
         self.fraction_map = fraction_map
 
+    @cached_method
     def stabilizer_of_lattice(self) -> IntegralStructureAction:
         r"""The action of the rational group generated by A_E on the integral structures of E tensor Q, at phi(L)."""
         rational_envelope = self.rational_isometry.codomain()
@@ -362,7 +401,7 @@ class OrbitCoverModel:
 
     def __init__(self, lattice: Lattices.ParentMethods) -> None:
         self.lattice = lattice
-        if lattice.splits_two_hyperbolic_planes():
+        if lattice.is_even() and lattice.splits_two_hyperbolic_planes():
             self.envelope = None
             self.model = lattice.two_u_eichler_model_from_represented_biproduct()
         else:
