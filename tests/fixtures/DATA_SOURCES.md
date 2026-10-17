@@ -183,7 +183,7 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Primary Source**: J. H. Conway and N. J. A. Sloane, *Sphere Packings, Lattices and Groups*, 3rd ed., Springer, 1999, Chapter 15, §11, equations (51a) and (51b): two inequivalent indefinite ternary forms of determinant $-128$ in the genus $\mathrm{I}_{2,1}(2 \times 64)$ of $\mathrm{diag}\{-1, 64, 2\}$, which has two spinor genera and hence two classes.
 
-- **Transcription**: both Gram matrices are transcribed from the book; the record has no extraction script.
+- **Extraction**: `uv run references/extract/conway_sloane_ternary.py` parses both displayed ternary matrices directly from the vendored book text at `references/vendor/zotero/T2WVLTDB-conway-sloane-1999-splag/extracted.md:12933-12942`. The script asserts symmetry, determinant `-128`, signature `(2,1)` via the binary indefinite block, and the book's two-class statement.
 
 ### Baily–Borel Boundaries of the D-Tower (Laza–O'Grady)
 

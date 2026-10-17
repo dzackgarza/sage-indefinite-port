@@ -160,8 +160,8 @@ oracles:
     sources:
       - references/vendor/polyhedral_common@1592b246/CI_tests/DoubleCosets/DBL
   - fixture_file: conway_sloane_cases.json
-    extraction: null
-    runtime: null
+    extraction: references/extract/conway_sloane_ternary.py
+    runtime: uv
     kind: published_text
     sources:
-      - J. H. Conway and N. J. A. Sloane, Sphere Packings, Lattices and Groups, 3rd ed., Springer, 1999, Ch. 15, Sec. 11, eqs. (51a), (51b)
+      - references/vendor/zotero/T2WVLTDB-conway-sloane-1999-splag/extracted.md
