@@ -26,6 +26,7 @@ def main() -> None:
     assert pair is not None, "missing (51a)/(51b) displayed pair"
     environments = re.findall(r"\\begin\{array\} \{ l l l \}(.*?)\\end\{array\}", pair.group(), re.S)
     assert len(environments) == 2, f"expected two ternary forms, got {len(environments)}"
+
     def parse_matrix(env: str) -> list[list[int]]:
         rows = []
         for row in re.split(r"\\\\", env):
@@ -36,15 +37,15 @@ def main() -> None:
         return rows
 
     a, b = map(parse_matrix, environments)
+
     def det3(m: list[list[int]]) -> int:
-        return (m[0][0]*(m[1][1]*m[2][2]-m[1][2]*m[2][1])
-                - m[0][1]*(m[1][0]*m[2][2]-m[1][2]*m[2][0])
-                + m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0]))
+        return m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0])
+
     for gram in (a, b):
         assert gram == [list(row) for row in zip(*gram)]
         assert det3(gram) == -128
         assert gram[2][2] == 2 and gram[0][0] < 0 and gram[1][1] > 0
-        assert gram[0][0]*gram[1][1]-gram[0][1]**2 == -64
+        assert gram[0][0] * gram[1][1] - gram[0][1] ** 2 == -64
     record = {
         "spinor_genus_pair_determinant_minus_128": {
             "id": "cs99_ch15_sec11_forms_51ab",
@@ -65,7 +66,7 @@ def main() -> None:
         }
     }
     TARGET.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
-    print(f"extracted {TARGET} from {SOURCE}:{start+1}-{start+10}")
+    print(f"extracted {TARGET} from {SOURCE}:{start + 1}-{start + 10}")
 
 
 if __name__ == "__main__":
