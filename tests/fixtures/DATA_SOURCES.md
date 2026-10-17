@@ -183,7 +183,7 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Primary Source**: J. H. Conway and N. J. A. Sloane, *Sphere Packings, Lattices and Groups*, 3rd ed., Springer, 1999, Chapter 15, §11, equations (51a) and (51b): two inequivalent indefinite ternary forms of determinant $-128$ in the genus $\mathrm{I}_{2,1}(2 \times 64)$ of $\mathrm{diag}\{-1, 64, 2\}$, which has two spinor genera and hence two classes.
 
-- **Extraction**: `uv run references/extract/conway_sloane_ternary.py` parses both displayed ternary matrices directly from a local copyrighted reading copy at `references/vendor/zotero/T2WVLTDB-conway-sloane-1999-splag/extracted.md:12933-12942`. The script asserts symmetry, determinant `-128`, signature `(2,1)` via the binary indefinite block, and the book's two-class statement. The reading copy is not committed and must be supplied locally; the fixture cannot be regenerated in a fresh clone without it.
+- **Extraction**: `uv run references/extract/conway_sloane_ternary.py` parses both displayed ternary matrices from the committed short mathematical-data transcription `references/source-data/conway_sloane_ch15_sec11_51ab.tex`. The transcription was checked against the local primary reading copy at Chapter 15, §11, equations (51a)/(51b) (local lines 12933–12942). It contains only the displayed matrices and factual genus/class annotations, not the copyrighted reading copy. The script asserts symmetry, determinant `-128`, signature `(2,1)` via the binary indefinite block, and the cited two-class statement; regeneration no longer depends on local unpublished files.
 
 ### Baily–Borel Boundaries of the D-Tower (Laza–O'Grady)
 

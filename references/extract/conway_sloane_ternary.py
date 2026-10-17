@@ -2,31 +2,25 @@
 # /// script
 # requires-python = ">=3.12"
 # ///
-"""Extract Conway--Sloane Ch. 15 Sec. 11 from a local licensed reading copy.
+"""Regenerate the published Conway--Sloane ternary pair from an equation extract.
 
-The book is deliberately not committed (see .gitignore). A local copy must be
-provided; missing source files fail explicitly rather than manufacturing data.
+The committed source is a short transcription of the original displayed
+mathematical data (Ch. 15, Sec. 11, (51a)/(51b)), not a copy of the book.
 """
 
 import json
 import re
 from pathlib import Path
 
-SOURCE = Path("references/vendor/zotero/T2WVLTDB-conway-sloane-1999-splag/extracted.md")
+SOURCE = Path("references/source-data/conway_sloane_ch15_sec11_51ab.tex")
 TARGET = Path("tests/fixtures/conway_sloane_cases.json")
 
 
 def main() -> None:
-    if not SOURCE.is_file():
-        raise FileNotFoundError(f"Conway--Sloane primary source is not distributed: supply your local reading copy at {SOURCE}")
     lines = SOURCE.read_text(encoding="utf-8").splitlines()
-    positions = [i for i, line in enumerate(lines) if "We illustrate by finding two inequivalent indefinite ternary forms" in line]
-    assert len(positions) == 1, "Conway--Sloane example must occur exactly once"
-    start = positions[0]
-    assert "two spinor genera and hence two classes" in lines[start]
-    assert "determinant" in lines[start]
-    assert "The matrix (51b) is therefore a representative for the second class" in " ".join(lines[start : start + 10])
-    display = "\n".join(lines[start : start + 10])
+    assert "two spinor genera and two classes" in lines[4]
+    assert "determinant -128" in lines[4]
+    display = "\n".join(lines)
     # Parse the two displayed matrix environments, not the preceding binary matrices.
     pair = re.search(r"\$\$\s*\( a \).*?\$\$", display, re.S)
     assert pair is not None, "missing (51a)/(51b) displayed pair"
@@ -72,7 +66,7 @@ def main() -> None:
         }
     }
     TARGET.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
-    print(f"extracted {TARGET} from {SOURCE}:{start + 1}-{start + 10}")
+    print(f"extracted {TARGET} from {SOURCE}")
 
 
 if __name__ == "__main__":
