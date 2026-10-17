@@ -171,7 +171,7 @@ This document records the exact provenance, source files, authors, publications,
 
   - The group: Scattone Proposition 5.4.7 and Corollary 5.4.8(2). For squarefree $k$, $E \mapsto E^\perp/E$ is a bijection from the $O(\Lambda_{2k})$-orbits of primitive isotropic planes onto $G(k)$, so there are $h(k)$ of them (`type_ii_correspondence`). The Type III point is stated for $O_-(L_k)$, not $O(\Lambda_{2k})$.
 
-  - Scattone's values are extracted from a local reading copy of the primary memoir at `references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md`, including the boundary statement (lines 3740–3770), Proposition 5.4.7/Corollary 5.4.8 (3224–3250), equation (6.2.1) (3850–3860), and §6.3 (3932–3948). The extractor checks 4 and 9 classes and parses each displayed root-system type. This copyrighted reading copy is deliberately excluded from Git by `.gitignore`, so it must be supplied locally; regeneration is not self-contained in a fresh clone.
+  - The Scattone classifications are independently reproduced in two committed scholarly sources: Alexeev–Engel–Thompson arXiv:1205.3144 (`ksba.tex`:256,263) gives the unique degree-2 cusp and four Type II labels; arXiv:2502.04301 (`main.tex`:274–296) states the isotropic-plane correspondence and gives the nine degree-4 generalized types. The extractor parses their actual TeX classifications and checks the class counts. It does not require the copyrighted local Scattone memoir. The memoir remains the cited original publication, not a distributed source file.
 
 - **Extraction**: `uv run references/extract/k3_strata.py`.
 

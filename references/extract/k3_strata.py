@@ -2,10 +2,11 @@
 # /// script
 # requires-python = ">=3.12"
 # ///
-"""Extract tests/fixtures/k3_modular_strata.json from local primary sources.
+"""Extract K3 orbit and boundary strata from the committed source TeX.
 
-The Scattone boundary counts and types are parsed from a local licensed primary memoir;
-Eichler's criterion is checked against the vendored arXiv TeX.
+The primary Scattone memoir is not distributed. The published boundary
+classifications are reproduced in the vendored arXiv manuscripts and extracted
+from those cited mathematical statements instead.
 
 - K3 lattice: Eichler's criterion, Gritsenko--Hulek--Sankaran arXiv:1012.4155,
   Lemma lem:eichler. For unimodular L the discriminant group is trivial, so the
@@ -19,7 +20,8 @@ Eichler's criterion is checked against the vendored arXiv TeX.
   the O(L_k)-orbits of primitive isotropic planes E are in bijection with G(k) by
   E -> E^perp/E, so there are h(k) of them.
 
-Scattone's values are read from a locally supplied memoir copy, not distributed in Git.
+The published Scattone classifications are cross-checked in the committed
+secondary papers; no copyrighted local reading copy is required.
 
 Run from the repository root: uv run references/extract/k3_strata.py
 """
@@ -31,7 +33,8 @@ from pathlib import Path
 ARXIV = Path("references/vendor/arxiv")
 SCATTONE = "F. Scattone, On the compactification of moduli spaces for algebraic K3 surfaces, Mem. Amer. Math. Soc. 70 (1987), no. 374"
 TARGET = Path("tests/fixtures/k3_modular_strata.json")
-MEMOIR = Path("references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md")
+DEGREE_TWO = ARXIV / "1205.3144/ksba.tex"
+DEGREE_FOUR = ARXIV / "2502.04301/main.tex"
 
 
 def cite(path: Path, first: int, last: int, *needles: str) -> dict[str, str]:
@@ -41,50 +44,51 @@ def cite(path: Path, first: int, last: int, *needles: str) -> dict[str, str]:
     return {"kind": "published_text", "file": str(path), "lines": f"{first}-{last}"}
 
 
-def source_excerpt(lines: list[str], first: int, last: int, *needles: str) -> dict[str, str]:
-    excerpt = "\n".join(lines[first - 1 : last])
-    for needle in needles:
-        assert needle in excerpt, f"{MEMOIR}:{first}-{last} does not contain {needle!r}"
-    return {"kind": "published_text", "file": str(MEMOIR), "lines": f"{first}-{last}"}
-
-
 def root_systems(source: str) -> list[str]:
     """Read root-system factors from Scattone's displayed equations."""
-    components = re.findall(r"(?:\\mathrm\{([ADE])\}|(?<![a-zA-Z])([ADE]))\s*_\s*\{\s*(\d(?:\s*\d)*)\s*\}(?:\s*\^\s*\{\s*(\d+)\s*\})?", source)
+    components = re.findall(r"(?:\\mathrm\{([ADE])\}|(?<![a-zA-Z])([ADE]))\s*_\s*(?:\{\s*(\d+(?:\s*\d)*)\s*\}|(\d+))(?:\s*\^\s*\{\s*(\d+)\s*\})?", source)
     assert components, "no ADE factors recognized"
-    return [f"{a or b}{int(n.replace(' ', ''))}" for a, b, n, exponent in components for _ in range(int(exponent or "1"))]
+    return [f"{a or b}{int((n or bare).replace(' ', ''))}" for a, b, n, bare, exponent in components for _ in range(int(exponent or "1"))]
 
 
 def main() -> None:
     eichler = cite(ARXIV / "1012.4155/main.tex", 3036, 3041, r"\label{lem:eichler}", "two orthogonal isotropic planes", "determined by two invariants")
-    if not MEMOIR.is_file():
-        raise FileNotFoundError(f"Scattone primary source is not distributed: supply your local reading copy at {MEMOIR}")
-    lines = MEMOIR.read_text(encoding="utf-8").splitlines()
-    boundary = source_excerpt(lines, 3740, 3770, "adding one point p and h(k) curves", "boundary curves")
-    degree_two_types = source_excerpt(lines, 3850, 3860, r"\tag{6.2.1}", r"\mathrm{A} _ {1}")
-    degree_four = source_excerpt(lines, 3932, 3948, "Degree four", "generalized) types")
-    correspondence = source_excerpt(lines, 3224, 3250, "Proposition 5.4.7", "Corollary 5.4.8", "if k is squarefree")
-    h_count_text = "\n".join(lines[3757:3773])
-    h_counts = {int(k): int(n) for k, n in re.findall(r"h\((\d+)\)\s*=\s*(\d+)", h_count_text)}
-    assert h_counts == {1: 4, 2: 9}, f"unexpected Scattone h(k): {h_counts}"
-    degree_two_display = "\n".join(lines[3852:3857])
-    two_types = ["+".join(root_systems(item)) for item in re.findall(r"(.*?)(?:,|\\tag\{6\.2\.1\})", degree_two_display) if "\\mathrm" in item]
-    assert len(two_types) == h_counts[1], two_types
-    degree_four_display = "\n".join(lines[3939:3947])
-    display_match = re.search(r"\\begin\{array\}\{l\}(.*?)\\end\{array\}", degree_four_display, re.S)
-    assert display_match is not None, "missing degree-four type array"
-    four_types = []
-    for label in re.split(r",|\\\\", display_match.group(1)):
-        factors = root_systems(label) if re.search(r"(?:\\mathrm|[ADE] _)", label) else []
-        minus_four = "<-4>" if re.search(r"<\s*-\s*4\s*>", label) else None
-        if minus_four:
-            factors.insert(0, minus_four)
-        if factors:
-            four_types.append("+".join(factors))
-    assert len(four_types) == h_counts[2], four_types
-    # Canonical form of each ADE multiset, independent of printed factor order.
+    two_source = DEGREE_TWO.read_text(encoding="utf-8").splitlines()
+    four_source = DEGREE_FOUR.read_text(encoding="utf-8").splitlines()
+    two_statement = two_source[262]  # degree-two Type II labels in the arithmetic discussion
+    assert "For degree $2$" in two_statement and "four Type II components" in two_statement
+    two_types = []
+    for label in re.findall(r"\$([^$]+)\$", two_statement.split("correspond to the root lattices", 1)[1]):
+        if not re.search(r"[ADE]_", label):
+            continue
+        multiplicity = re.search(r"(\d+)([ADE])_(?:\{(\d+)\}|(\d+))", label)
+        if multiplicity:
+            count, kind, subscript, bare = multiplicity.groups()
+            label = label.replace(multiplicity.group(), "")
+            factors = [f"{kind}{subscript or bare}"] * int(count)
+        else:
+            factors = []
+        two_types.append("+".join(factors + root_systems(label)))
+    assert len(two_types) == 4, two_types
     two_types = sorted("+".join(sorted(t.split("+"))) for t in two_types)
-    four_types = sorted("+".join(sorted(t.split("+"))) for t in four_types)
+    assert len(set(two_types)) == 4
+
+    two_boundary = cite(DEGREE_TWO, 252, 256, "four curves", "single point")
+    degree_two_types = cite(DEGREE_TWO, 262, 264, "four Type II components", "A_{17}")
+    four_statement = four_source[292]  # Scattone's nine generalized types reproduced verbatim
+    assert "A_{11}+E_6" in four_statement and "D_{17}" in four_statement
+    four_types = []
+    for label in re.split(r",\s*|,\\\\", four_statement):
+        factors = root_systems(label) if re.search(r"[ADE]_", label) else []
+        if re.search(r"\\langle\s*-4\s*\\rangle", label):
+            factors.insert(0, "<-4>")
+        if factors:
+            four_types.append("+".join(sorted(factors)))
+    four_types = sorted(four_types)
+    assert len(four_types) == 9 and len(set(four_types)) == 9, four_types
+    degree_four = cite(DEGREE_FOUR, 289, 296, "A_{11}+E_6", "9 boundary curves")
+    correspondence = cite(DEGREE_FOUR, 273, 282, "5.4.7", "I^\\perp/I", "boundary curve")
+    h_counts = {1: len(two_types), 2: len(four_types)}
     record = {
         "type_ii_correspondence": {
             "statement": (
@@ -114,7 +118,7 @@ def main() -> None:
             "det": 2,
             "baily_borel_boundary": {"type_iii_points": 1, "type_ii_curves": h_counts[1], "point_curve_incidences": h_counts[1]},
             "type_ii_root_types": two_types,
-            "source": {"boundary": boundary, "root_types": degree_two_types},
+            "source": {"boundary": two_boundary, "root_types": degree_two_types},
         },
         "degree_four_polarized_k3": {
             "id": "k3_degree_four_modular_variety",
@@ -124,7 +128,7 @@ def main() -> None:
             "det": 4,
             "baily_borel_boundary": {"type_ii_curves": h_counts[2]},
             "type_ii_generalised_types": four_types,
-            "source": {"boundary": boundary, "generalised_types": degree_four},
+            "source": {"boundary": degree_four, "generalised_types": degree_four},
         },
     }
     TARGET.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")

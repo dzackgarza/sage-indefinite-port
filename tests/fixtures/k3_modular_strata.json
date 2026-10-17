@@ -4,8 +4,8 @@
     "group": "O(Lambda_{2k})",
     "source": {
       "kind": "published_text",
-      "file": "references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md",
-      "lines": "3224-3250"
+      "file": "references/vendor/arxiv/2502.04301/main.tex",
+      "lines": "273-282"
     }
   },
   "k3_unimodular_lattice": {
@@ -56,13 +56,13 @@
     "source": {
       "boundary": {
         "kind": "published_text",
-        "file": "references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md",
-        "lines": "3740-3770"
+        "file": "references/vendor/arxiv/1205.3144/ksba.tex",
+        "lines": "252-256"
       },
       "root_types": {
         "kind": "published_text",
-        "file": "references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md",
-        "lines": "3850-3860"
+        "file": "references/vendor/arxiv/1205.3144/ksba.tex",
+        "lines": "262-264"
       }
     }
   },
@@ -92,13 +92,13 @@
     "source": {
       "boundary": {
         "kind": "published_text",
-        "file": "references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md",
-        "lines": "3740-3770"
+        "file": "references/vendor/arxiv/2502.04301/main.tex",
+        "lines": "289-296"
       },
       "generalised_types": {
         "kind": "published_text",
-        "file": "references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md",
-        "lines": "3932-3948"
+        "file": "references/vendor/arxiv/2502.04301/main.tex",
+        "lines": "289-296"
       }
     }
   }

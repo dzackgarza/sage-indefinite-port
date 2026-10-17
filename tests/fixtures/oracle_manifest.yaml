@@ -77,7 +77,8 @@ oracles:
     kind: published_text
     sources:
       - references/vendor/arxiv/1012.4155/main.tex
-      - references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md
+      - references/vendor/arxiv/1205.3144/ksba.tex
+      - references/vendor/arxiv/2502.04301/main.tex
   - fixture_file: indefinite_isometry_pairs.json
     extraction: references/extract/isometry_pairs.py
     runtime: sage
