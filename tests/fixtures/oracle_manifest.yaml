@@ -77,7 +77,7 @@ oracles:
     kind: published_text
     sources:
       - references/vendor/arxiv/1012.4155/main.tex
-      - F. Scattone, On the compactification of moduli spaces for algebraic K3 surfaces, Mem. Amer. Math. Soc. 70 (1987), no. 374, Prop. 5.4.7, Cor. 5.4.8, Section 6
+      - references/vendor/zotero/SF7T3C8G-scattone-1987-memoir/extracted.md
   - fixture_file: indefinite_isometry_pairs.json
     extraction: references/extract/isometry_pairs.py
     runtime: sage
