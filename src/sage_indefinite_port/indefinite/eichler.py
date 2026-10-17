@@ -16,8 +16,6 @@ vectors of sigma(L).
 
 from __future__ import annotations
 
-from math import isqrt
-
 from dzack_research.preamble.all import Lattices
 from dzack_research.preamble.categories.eichler_criterion import TwoUEichlerModel
 from dzack_research.preamble.categories.group.g_sets import FiniteGSets
@@ -41,7 +39,7 @@ def square_divisors(integer: int) -> tuple[int, ...]:
     value = abs(int(integer))
     if value == 0:
         raise ValueError("zero has infinitely many square divisors: covers of norm 0 are by primitive isotropic vectors only")
-    return tuple(divisor for divisor in range(1, isqrt(value) + 1) if value % (divisor * divisor) == 0)
+    return tuple(int(divisor) for divisor in SageZZ(value).divisors() if value % (int(divisor) ** 2) == 0)
 
 
 class TwoUFullGeneratingDatum(SageObject):
@@ -396,8 +394,13 @@ class OrbitCoverModel:
         # sigma(v) for v primitive in L is c times a primitive vector of E with c dividing the
         # exponent of E / sigma(L). For a nonzero square c^2 also divides the square; for norm 0
         # only the exponent bounds c, so every divisor of it is a possible content.
+        # Indeed, the class of the primitive E-vector in E/sigma(L) has exact
+        # order c: a smaller multiple in sigma(L) would divide primitive v in L.
         exponent = int(envelope.similarity.cokernel().exponent())
-        contents = square_divisors(envelope_square) if envelope_square else tuple(divisor for divisor in range(1, exponent + 1) if exponent % divisor == 0)
+        # Enumerate divisors of the finite quotient exponent, not divisors of
+        # the potentially enormous norm.  The necessary square-divisibility
+        # restriction then selects exactly the same possible contents.
+        contents = tuple(int(divisor) for divisor in SageZZ(exponent).divisors() if envelope_square == 0 or envelope_square % (int(divisor) ** 2) == 0)
         envelope_lattice = self.model.lattice()
         rational_envelope = envelope.rational_isometry.codomain()
         rational_ring = rational_envelope.base_ring()

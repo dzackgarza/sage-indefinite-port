@@ -425,7 +425,7 @@ class _Edgewalk:
             choices = {norm: engine.W[index % len(engine.W)] + (index // len(engine.W)) * engine.v0 for norm, index in candidates.items()}
             norm = min(
                 engine.root_lengths,
-                key=lambda length: float(-engine.v0.inner_product(choices[length])) ** 0.5,
+                key=lambda length: -engine.v0.inner_product(choices[length]),
             )
             component = choices[norm]
             candidates[norm] += 1

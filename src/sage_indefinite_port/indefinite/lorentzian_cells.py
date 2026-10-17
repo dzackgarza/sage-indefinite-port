@@ -170,12 +170,15 @@ class LorentzianPerfectLocalBackend:
             expanded = matrix(SageQQ, [[1, *_coordinate_row(normalized, item, SageQQ)] for item in normalized_vectors])
             nullspace = expanded.right_kernel_matrix()
             directions = nullspace.matrix_from_columns(range(1, nullspace.ncols())) * gram.inverse()
+            directions = matrix(SageQQ, [_source_remove_fraction(row) for row in directions.rows()])
             outside_direction = _negative_direction_in_span(normalized, directions, normalized_vectors, base_normal)
             direction_covector = gram * outside_direction.column()
             critical_row = _coordinate_row(normalized, normalized_vectors[0], SageQQ)
             direction_scalar = (critical_row * direction_covector)[0]
             normal_direction = vector(SageQQ, [-direction_scalar, *direction_covector.column(0)])
             normalized_vectors, base_normal, _test_direction, _max_scal = _kernel_flipping(normalized, normalized_vectors, base_normal, normal_direction, allowed_squares)
+            # LORENTZ_GetOnePerfect normalizes its affine support after each flip.
+            base_normal = _source_remove_fraction(base_normal)
         vectors = tuple(_transfer(lattice, item) for item in normalized_vectors)
         return LorentzianPerfectCell(lattice, vectors, allowed_squares)
 
@@ -256,7 +259,7 @@ class LorentzianPerfectLocalBackend:
         outside = _coordinate_row(normalized, vectors[nonincident], SageQQ)
         if direction.dot_product(outside) < 0:
             direction = -direction
-        normal_direction = vector(SageQQ, [0, *direction])
+        normal_direction = _source_remove_fraction(vector(SageQQ, [0, *direction]))
         expanded = matrix(SageQQ, [[1, *_coordinate_row(normalized, item, SageQQ)] for item in vectors])
         base_nullspace = expanded.right_kernel_matrix()
         if base_nullspace.nrows() != 1:
@@ -264,6 +267,7 @@ class LorentzianPerfectLocalBackend:
         base_normal = base_nullspace.row(0)
         if vector(SageQQ, base_normal[1:]).dot_product(outside) <= 0:
             base_normal = -base_normal
+        base_normal = _source_remove_fraction(base_normal)
         critical = tuple(vectors[position] for position in sorted(facet))
         flipped, _normal, _direction, _max_scal = _kernel_flipping(normalized, critical, base_normal, normal_direction, cell.allowed_squares)
         returned = tuple(_transfer(cell.lattice, item) for item in flipped)
@@ -291,7 +295,7 @@ class LorentzianPerfectComplex:
         self._allowed_squares = allowed_squares
         self._local_backend = LorentzianPerfectLocalBackend()
         self._traversal_representatives: list[LorentzianPerfectCell] | None = None
-        self._traversal_representative_buckets: dict[tuple[tuple[int, ...], tuple[int, ...]], list[LorentzianPerfectCell]] = {}
+        self._traversal_representative_buckets: dict[tuple[tuple[int, ...], tuple[int, ...], tuple[tuple[int, tuple[int, ...]], ...]], list[LorentzianPerfectCell]] = {}
         self._traversal_adjacencies: list[LorentzianCellAdjacency] = []
         self._traversal_position = 0
 
@@ -401,19 +405,25 @@ class LorentzianPerfectComplex:
         return self.component_preserving_generators() + (negation,)
 
 
-def _perfect_form_hash_key(cell: LorentzianPerfectCell) -> tuple[tuple[int, ...], tuple[int, ...]]:
-    r"""Return the exact pairing multisets used by upstream f_hash.
+def _perfect_form_hash_key(cell: LorentzianPerfectCell) -> tuple[tuple[int, ...], tuple[int, ...], tuple[tuple[int, tuple[int, ...]], ...]]:
+    r"""Return the upstream pairing multisets, refined by vertex pairing spectra.
 
     ComputeInvariantPerfectForm hashes the multiplicities of diagonal and
-    off-diagonal Gram pairings of the configuration. Keeping the exact
-    multisets as the Python dictionary key avoids hash collisions while
-    retaining precisely the same necessary isometry invariant.
+    off-diagonal Gram pairings of the configuration. The upstream integral
+    isomorphism test then canonicalizes its weighted Gram graph
+    (PolytopeEquiStabInt.h:194-220). Each vertex's diagonal value and
+    multiset of incident weights are preserved by any graph isomorphism;
+    their sorted family therefore refines the initial hash without excluding
+    any possible transporter. The exact isometry test remains mandatory.
     """
     rows = matrix(SageZZ, [_coordinate_row(cell.lattice, point, SageZZ) for point in cell.vector_configuration])
     pairings = rows * _gram_matrix(cell.lattice) * rows.transpose()
     diagonal = tuple(sorted(int(pairings[index, index]) for index in range(rows.nrows())))
     off_diagonal = tuple(sorted(int(pairings[left, right]) for left in range(rows.nrows()) for right in range(left + 1, rows.nrows())))
-    return diagonal, off_diagonal
+    vertex_spectra = tuple(
+        sorted((int(pairings[index, index]), tuple(sorted(int(pairings[index, other]) for other in range(rows.nrows()) if other != index))) for index in range(rows.nrows()))
+    )
+    return diagonal, off_diagonal, vertex_spectra
 
 
 def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode) -> LorentzianPerfectDomainTraversal:
@@ -628,6 +638,21 @@ def _coordinate_row[S: RingElement](lattice: FramedFreeModules.ParentMethods, el
 
 def _rational(entry: RingElement) -> Rational:
     return SageQQ(int(entry.numerator())) / SageQQ(int(entry.denominator()))
+
+
+def _source_remove_fraction(row: FreeModuleElement[Rational]) -> FreeModuleElement[Rational]:
+    r"""Primitive affine normal, as in Fractions.g:38-66."""
+    entries = tuple(SageQQ(entry) for entry in row)
+    if not any(entries):
+        return vector(SageQQ, entries)
+    denominator = SageZZ.one()
+    for entry in entries:
+        denominator = denominator.lcm(SageZZ(entry.denominator()))
+    integral = tuple(SageZZ(denominator * entry) for entry in entries)
+    content = SageZZ.zero()
+    for entry in integral:
+        content = content.gcd(entry)
+    return vector(SageQQ, (entry // content for entry in integral))
 
 
 def _lorentzian_view(lattice: Lattices.ParentMethods) -> Lattices.ParentMethods:
@@ -1029,9 +1054,9 @@ def _kernel_flipping(
         middle = _source_mid_value(lower, upper)
         normal = base_normal + middle * direction_normal
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
-        test_direction_row = test_direction.column(0)
-        square = (test_direction.transpose() * gram * test_direction)[0, 0]
-        max_scal = (critical_first * gram * test_direction)[0]
+        test_direction_row = _source_remove_fraction(test_direction.column(0))
+        square = (test_direction_row * gram * test_direction_row.column())[0]
+        max_scal = (critical_first * gram * test_direction_row.column())[0]
         if square <= 0 or max_scal <= 0:
             upper = middle
             continue
@@ -1065,8 +1090,8 @@ def _kernel_flipping(
         shift = -base_normal.dot_product(expanded) / denominator
         normal = base_normal + shift * direction_normal
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
-        test_direction_row = test_direction.column(0)
-        max_scal = (critical_first * gram * test_direction)[0]
+        test_direction_row = _source_remove_fraction(test_direction.column(0))
+        max_scal = (critical_first * gram * test_direction_row.column())[0]
         total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
         # Lorentzian.g:959, EXIT 2: the shell contains CritSet and eVect.
         if (critical_rows | _vector_rows((new_vector,))).issubset(_vector_rows(total)):
