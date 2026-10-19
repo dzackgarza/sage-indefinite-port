@@ -40,6 +40,10 @@ from sage_indefinite_port.indefinite.edgewalk_extensions import (
     parabolic_extensions,
 )
 from sage_indefinite_port.indefinite.edgewalk_rank2 import anisotropic_cycle
+from sage_indefinite_port.indefinite.edgewalk_scalars import _integer, _rational
+from sage_indefinite_port.indefinite.lorentzian_cells import (
+    binary_split_vectors_of_square,
+)
 
 type _Vector = Lattices.ElementMethods
 type _Roots = tuple[_Vector, ...]
@@ -56,20 +60,35 @@ def edgewalk_fundamental_domain(
     fundamental polyhedron of the reflection group W(L), as elements of ``lattice``, and whether
     ``lattice`` is reflective.
     """
+    if int(lattice.rank()) > 2 and not lattice.is_isotropic():
+        from sage_indefinite_port.indefinite.indefinite_reduction import indefinite_reduced_presentation
+
+        reduction = indefinite_reduced_presentation(lattice)
+        result = _Edgewalk(reduction.reduced).walk()
+        inverse = reduction.isometry
+        cones = RationalPolyhedralCones(lattice)
+        return AllcockEdgewalkReport(
+            lattice,
+            reflective=result.is_reflective(),
+            simple_roots=tuple(inverse(root) for root in result.simple_roots()),
+            vertices=tuple(
+                cones.from_rays(
+                    tuple(inverse(ray) for ray in cone.primitive_rays()),
+                    wall_roots=tuple(inverse(root) for root in cone.wall_roots()),
+                )
+                for cone in result.vertices()
+            ),
+            isometry_generators=tuple(
+                inverse * generator * inverse.inverse()
+                for generator in result.polyhedron_isometry_generators()
+            ),
+        )
     return _Edgewalk(lattice).walk()
-
-
-def _integer(entry) -> int:
-    r"""An integral coordinate; a rational entry with a denominator is a defect, not a value to truncate."""
-    rational = SageQQ(entry)
-    if rational.denominator() != 1:
-        raise ArithmeticError(f"the coordinate {entry} of a lattice vector is not integral")
-    return int(rational)
 
 
 def _key(vector_: _Vector) -> _Key:
     coordinates = vector_.to_vector()
-    return tuple(int(coordinates(label)) for label in vector_.parent().module_generating_set())
+    return tuple(_integer(coordinates(label)) for label in vector_.parent().module_generating_set())
 
 
 def _oriented_determinant(left: _Key, right: _Key) -> int:
@@ -95,6 +114,28 @@ def _signed_sqrt_compare(sign_left: int, square_left: Rational, sign_right: int,
     if sign_left > 0:
         return -1 if square_left < square_right else 1
     return -1 if square_left > square_right else 1
+
+
+def _primitive_positive_direction(entries) -> tuple[int, ...]:
+    """Primitive integral direction, retaining its orientation."""
+    from functools import reduce
+    from math import gcd
+
+    coordinates = tuple(_integer(entry) for entry in entries)
+    divisor = reduce(gcd, coordinates, 0)
+    if not divisor:
+        return coordinates
+    return tuple(entry // divisor for entry in coordinates)
+
+
+def _same_positive_ray(left, right) -> bool:
+    """Exact positive collinearity of nonzero integral vectors."""
+    a = tuple(_integer(x) for x in left)
+    b = tuple(_integer(x) for x in right)
+    pivot = next((i for i, x in enumerate(a) if x), None)
+    if pivot is None:
+        return False
+    return a[pivot] * b[pivot] > 0 and all(a[pivot] * b[i] == b[pivot] * a[i] for i in range(len(a)))
 
 
 @dataclass(frozen=True)
@@ -149,7 +190,12 @@ class _Edgewalk:
 
     def rational_element(self, row: _RationalRow) -> Lattices.ElementMethods:
         return self.rational.linear_combination(
-            {label: self.field(int(SageQQ(entry).numerator())) / self.field(int(SageQQ(entry).denominator())) for label, entry in zip(self.labels, row, strict=True) if entry}
+            {
+                label: self.field(int(_rational(entry).numerator()))
+                / self.field(int(_rational(entry).denominator()))
+                for label, entry in zip(self.labels, row, strict=True)
+                if entry
+            }
         )
 
     def row(self, vector_: _Vector) -> _RationalRow:
@@ -159,7 +205,7 @@ class _Edgewalk:
         coordinates = vector_.to_vector()
         return vector(
             SageQQ,
-            [SageQQ(int(coordinates(label).numerator())) / SageQQ(int(coordinates(label).denominator())) for label in self.labels],
+            [_rational(coordinates(label)) for label in self.labels],
         )
 
     def pair(self, left: _RationalRow, right: _RationalRow) -> Rational:
@@ -177,8 +223,8 @@ class _Edgewalk:
         r"""The primitive vector of L on the ray of a nonzero rational row."""
         denominator = SageZZ.one()
         for entry in row:
-            denominator = denominator.lcm(SageQQ(entry).denominator())
-        scaled = self.element(tuple(SageZZ(denominator * entry) for entry in row))
+            denominator = denominator.lcm(_rational(entry).denominator())
+        scaled = self.element(tuple(SageZZ(_integer(denominator * entry)) for entry in row))
         content = int(scaled.content())
         return self.element(tuple(entry // content for entry in _key(scaled)))
 
@@ -215,7 +261,7 @@ class _Edgewalk:
         projected_roots: list[tuple[_Vector, _Vector]] = []
 
         for norm in self.norms:
-            constraint = self.constraint(SageQQ(norm))
+            constraint = self.constraint(_rational(norm))
             intersection = constraint.intersection(perpendicular)
             intersection_inclusion = intersection.inclusion()
 
@@ -225,7 +271,7 @@ class _Edgewalk:
             }
             projection = intersection.module_category().Mor(intersection, reduction)(projected_generators)
             image = reduction.subobject_on(tuple(projected_generators.values()))
-            for root in image.vectors_of_square(reduction.base_ring()(norm)):
+            for root in image.vectors_of_square(reduction.base_ring()(_integer(norm))):
                 projected = image.inclusion()(root)
                 lifted = intersection_inclusion(projection.lift(projected))
                 if self.norm(lifted) != norm:
@@ -240,7 +286,7 @@ class _Edgewalk:
 
         def quotient_row(point: _Vector) -> _RationalRow:
             coordinates = point.to_vector()
-            return vector(SageQQ, [SageQQ(int(coordinates(label))) for label in labels])
+            return vector(SageQQ, [_rational(coordinates(label)) for label in labels])
 
         projected_rows = tuple(quotient_row(projected) for projected, _root in projected_roots)
         if matrix(SageQQ, projected_rows).rank() != rank:
@@ -259,7 +305,7 @@ class _Edgewalk:
             raise ArithmeticError("the projected root list contains a zero vector")
         parameter = 0
         while True:
-            splitting = vector(SageQQ, [SageQQ(parameter) ** degree for degree in range(rank)])
+            splitting = vector(SageQQ, [SageQQ(int(parameter)) ** degree for degree in range(rank)])
             if all(splitting.dot_product(row) != 0 for row in projected_rows):
                 break
             parameter += 1
@@ -310,9 +356,9 @@ class _Edgewalk:
         # root system after its initial finite cone and after each new root,
         # stopping on the first feasible nonpositive ray. The preamble's
         # VinAl backend supplies the actual root-decomposition enumeration.
-        from vinal import GetIntegerPoints, VinAl
+        from vinal import IterateIntegerPoints, VinAl
 
-        engine = VinAl(self.gram, vector(SageZZ, _key(timelike)), False, None)
+        engine = VinAl(self.gram, vector(SageZZ, _key(timelike)), False, None, initialize_cosets=False)
         # vinberg.h GetVinbergAux: enumerate translation classes of the
         # saturated perpendicular lattice together with v0, and reduce
         # each representative by the quotient of -<w,v0> and -v0^2.
@@ -321,7 +367,7 @@ class _Edgewalk:
         coset_basis = matrix(SageZZ, tuple(engine.V1.gens()) + (engine.v0,))
         norm_shift = -engine.v0.inner_product(engine.v0)
         engine.W = []
-        for coordinates in GetIntegerPoints(coset_basis):
+        for coordinates in IterateIntegerPoints(coset_basis):
             representative = engine.V(coordinates)
             quotient = (-representative.inner_product(engine.v0)) // norm_shift
             normalized = representative - quotient * engine.v0
@@ -367,13 +413,12 @@ class _Edgewalk:
             # parallel root vectors cannot both survive its reduction.
             chosen = []
             used_rays = set()
+            ray_by_direction = {_primitive_positive_direction(ray): index for index, ray in enumerate(rays)}
             for root in positive:
-                row = vector(SageQQ, root)
-                for index, ray in enumerate(rays):
-                    if index not in used_rays and matrix(SageQQ, [row, ray]).rank() == 1 and row.dot_product(ray) > 0:
-                        chosen.append(root)
-                        used_rays.add(index)
-                        break
+                index = ray_by_direction.get(_primitive_positive_direction(root))
+                if index is not None and index not in used_rays:
+                    chosen.append(root)
+                    used_rays.add(index)
             if len(used_rays) != len(rays):
                 raise ArithmeticError("initial Vinberg cone ray has no normed root")
             engine.roots = chosen
@@ -421,14 +466,19 @@ class _Edgewalk:
         # val = -<v0, a>. VinAl instead uses val/sqrt(k), so its iterator
         # does not reproduce the C++ candidate sequence.
         candidates = {norm: 1 for norm in engine.root_lengths}
+        coset_heights = tuple(-engine.v0.inner_product(w) for w in engine.W)
+        period = len(coset_heights)
+        if not period:
+            raise ArithmeticError("Vinberg decomposition has no coset representatives")
         while True:
-            choices = {norm: engine.W[index % len(engine.W)] + (index // len(engine.W)) * engine.v0 for norm, index in candidates.items()}
             norm = min(
                 engine.root_lengths,
-                key=lambda length: -engine.v0.inner_product(choices[length]),
+                key=lambda length: coset_heights[candidates[length] % period]
+                + (candidates[length] // period) * norm_shift,
             )
-            component = choices[norm]
-            candidates[norm] += 1
+            index = candidates[norm]
+            component = engine.W[index % period] + (index // period) * engine.v0
+            candidates[norm] = index + 1
             # vinberg.h FindRoot_filter/fct_CVP retains every norm-k
             # candidate satisfying all accepted wall inequalities. VinAl's
             # IsNewRoot additionally rejects linearly dependent candidates;
@@ -448,13 +498,15 @@ class _Edgewalk:
             ray_rows = tuple(self.row(ray) for ray in extreme)
             reduced = []
             retained_directions = set()
+            # Compare primitive directions once per accepted root rather
+            # than testing every root against every extremal ray.
+            ray_by_direction = {_primitive_positive_direction(row): index for index, row in enumerate(ray_rows)}
             for root in engine.roots:
-                row = vector(SageQQ, root)
-                for index, ray_row in enumerate(ray_rows):
-                    if index not in retained_directions and matrix(SageQQ, [row, ray_row]).rank() == 1 and row.dot_product(ray_row) > 0:
-                        reduced.append(root)
-                        retained_directions.add(index)
-                        break
+                direction = _primitive_positive_direction(root)
+                index = ray_by_direction.get(direction)
+                if index is not None and index not in retained_directions:
+                    reduced.append(root)
+                    retained_directions.add(index)
             if len(retained_directions) != len(ray_rows):
                 raise ArithmeticError("Vinberg cone ray has no accepted normed root")
             engine.roots = reduced
@@ -472,7 +524,7 @@ class _Edgewalk:
         complement = inclusion.domain()
         positive: list[_Vector] = []
         for norm in self.norms:
-            for point in complement.vectors_of_square(complement.base_ring()(norm)):
+            for point in complement.vectors_of_square(complement.base_ring()(_integer(norm))):
                 root = inclusion(point)
                 if next(entry for entry in _key(root) if entry) < 0:
                     continue
@@ -493,9 +545,10 @@ class _Edgewalk:
             # edgewalk.h get_simple_cone_from_lattice requires exactly
             # dimSpace selected walls for an ordinary starting vertex.
             raise ArithmeticError("ordinary initial cone has incorrect simple-root count")
-        return tuple(
-            next(root for root in positive if matrix(SageQQ, [self.row(root), self.row(ray)]).rank() == 1 and self.row(root).dot_product(self.row(ray)) > 0) for ray in rays
-        )
+        roots_by_direction = {}
+        for root in positive:
+            roots_by_direction.setdefault(_primitive_positive_direction(_key(root)), root)
+        return tuple(roots_by_direction[_primitive_positive_direction(_key(ray))] for ray in rays)
 
     def constraint(self, norm: Rational) -> Parent:
         r"""C = {v in L : 2 b(v, L) / norm in Z}, the vectors whose reflection of that norm is integral."""
@@ -597,10 +650,16 @@ class _Edgewalk:
         r"""The primitive vector of the plane lattice on the ray of nonzero rational coordinates."""
         denominator = SageZZ.one()
         for entry in coordinates:
-            denominator = denominator.lcm(SageQQ(entry).denominator())
+            denominator = denominator.lcm(_rational(entry).denominator())
         scaled = _Edgewalk.plane_element(plane, vector(SageQQ, [denominator * entry for entry in coordinates]))
-        content = int(scaled.content())
-        return _Edgewalk.plane_element(plane, vector(SageQQ, [entry // content for entry in _key(scaled)]))
+        entries = _key(scaled)
+        content = SageZZ(int(scaled.content()))
+        if content == 0:
+            raise ValueError("the zero vector does not determine a primitive ray")
+        primitive = vector(SageZZ, (SageZZ(int(entry)).quo_rem(content)[0] for entry in entries))
+        if any(SageZZ(int(entry)) % content for entry in entries):
+            raise ArithmeticError("content does not divide the integral ray coordinates")
+        return _Edgewalk.plane_element(plane, primitive)
 
     @cached_method
     def binary_candidates(
@@ -611,7 +670,10 @@ class _Edgewalk:
         norm: Rational,
         residual: Rational,
     ) -> _Roots:
-        if residual <= 0:
+        # The pinned fixed-norm factorization admits negative residual
+        # squares as well as positive ones. Only the zero-square case lacks
+        # a finite signed factor-pair enumeration.
+        if residual == 0:
             return ()
         edge = self.edge_plane(roots, discarded, k, norm)
         plane, scale, r0 = edge.plane, edge.scale, edge.r0
@@ -620,25 +682,41 @@ class _Edgewalk:
             square = scale * residual
             if square.denominator() != 1:
                 return ()
-            vectors = [item for item in plane.vectors_of_square(ZZ(int(square))) if _oriented_determinant(_key(r0), _key(item)) > 0]
+            # Pinned edgewalk.h:921-961 uses the *entire* signed factor-pair
+            # enumeration, including imprimitive vectors, before ordering
+            # roots and checking their ambient integral reconstructions.
+            # A vector-orbit representative family is not that candidate set.
+            vectors = [
+                item for item in binary_split_vectors_of_square(plane, int(square))
+                if _oriented_determinant(_key(r0), _key(item)) > 0
+            ]
             if self.norm(k) < 0:
                 vectors = [item for item in vectors if plane.b(r0, item) > 0]
             vectors.sort(key=lambda item: cmp_to_key(_orientation_compare)(_key(item)))
             work_vectors.extend(vectors)
         else:
-            cycle = anisotropic_cycle(plane, scale * SageQQ(norm), r0)
+            cycle = anisotropic_cycle(plane, scale * _rational(norm), r0)
             if cycle is None:
                 return ()
             automorph, representatives = cycle
             multiples: list[_Vector] = []
+            target_square = _rational(scale * residual)
             for item in representatives:
-                square = SageQQ(int(item.q()))
-                multiplier = 1
-                while multiplier * multiplier * square <= scale * norm:
-                    candidate = plane.scalar_multiple(plane.base_ring()(multiplier), item)
-                    if SageQQ(int(candidate.q())) == scale * residual:
-                        multiples.append(candidate)
-                    multiplier += 1
+                square = _rational(item.q())
+                if square == 0:
+                    continue
+                multiplier_square = target_square / square
+                if multiplier_square <= 0 or multiplier_square.denominator() != 1:
+                    continue
+                multiplier_square_int = SageZZ(_integer(multiplier_square))
+                if not multiplier_square_int.is_square():
+                    continue
+                multiplier = multiplier_square_int.sqrt()
+                if multiplier > 0:
+                    candidate = plane.scalar_multiple(plane.base_ring()(_integer(multiplier)), item)
+                    if _rational(candidate.q()) != target_square:
+                        raise ArithmeticError("anisotropic multiplier has incorrect square")
+                    multiples.append(candidate)
             # lorentzian_linalg.h:70-143,
             # GetMatrixExponentSublattice_TrivClass: first find the least
             # positive power preserving C cap Pi, then the order of its
@@ -690,8 +768,8 @@ class _Edgewalk:
         return tuple(answer.values())
 
     def candidate_compare(self, left: _Candidate, right: _Candidate, k: _Vector) -> int:
-        left_scal = -SageQQ(int(self.pairing(left.alpha, k)))
-        right_scal = -SageQQ(int(self.pairing(right.alpha, k)))
+        left_scal = -_rational(self.pairing(left.alpha, k))
+        right_scal = -_rational(self.pairing(right.alpha, k))
         left_sign = (left_scal > 0) - (left_scal < 0)
         right_sign = (right_scal > 0) - (right_scal < 0)
         first = _signed_sqrt_compare(
@@ -758,7 +836,7 @@ class _Edgewalk:
             root = self.cusp_root(self.constraint(extension.norm), extension.u_component, k)
             if root is None:
                 continue
-            scalar = -SageQQ(int(self.pairing(previous, root)))
+            scalar = -_rational(self.pairing(previous, root))
             sign = (scalar > 0) - (scalar < 0)
             candidates.append((sign, scalar * scalar / extension.norm, extension.norm, root))
 
@@ -912,13 +990,15 @@ class _Edgewalk:
     def binary_walk(self) -> AllcockEdgewalkReport:
         """A binary chamber is a compact segment between two walls (anisotropic), or a ray from one wall to a cusp (split, not reflective)."""
         root_locus = self.lattice.reflective_root_locus()
-        # In the rationally split binary case, a nonzero norm fibre is
-        # finite: after factoring the form over Q, its two integral linear
-        # factors have a prescribed nonzero product. Enumerate that actual
-        # fibre. In the anisotropic case it can be infinite, and the
-        # preamble's finite orbit-representative computation is required.
+        # The rationally split binary branch must use the *unreduced*
+        # signed-factor fibre from two_dim_lorentzian.h:623-685.  In
+        # particular, the root-locus test follows enumeration, not primitive
+        # filtering or orbit identification; the same ordering is used by
+        # edgewalk.h:921-961 when searching a split edge plane.  In the
+        # anisotropic case the fibre can be infinite, so take the preamble's
+        # finite complete orbit-representative family instead.
         if self.lattice.is_isotropic():
-            candidates = (point for norm in self.norms for point in self.lattice.vectors_of_square(ZZ(norm)))
+            candidates = (point for norm in self.norms for point in binary_split_vectors_of_square(self.lattice, norm))
         else:
             candidates = (point for norm in self.norms for point in self.lattice.binary_fixed_norm_representatives(ZZ(norm)))
         root = next((point for point in candidates if point in root_locus), None)

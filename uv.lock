@@ -1847,7 +1847,7 @@ wheels = [
 [[package]]
 name = "vinal"
 version = "0.1.0"
-source = { git = "https://github.com/dzackgarza/vinal#7b4d0836d550dcdb2613708febfa18255e0f71d5" }
+source = { git = "https://github.com/dzackgarza/vinal#1b90f3141b329f914d5c85f1260522efe19794c6" }
 dependencies = [
     { name = "numpy" },
     { name = "scipy" },
