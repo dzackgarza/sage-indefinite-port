@@ -9,32 +9,50 @@ The nodes below decompose that contract; they do not replace it or make the hand
 Unchecked nodes denote remaining acceptance obligations, not absent implementation.
 Use current source and results to select work; historical observations below are not instructions to redo an implementation already present.
 
-## Current execution order (owner correction, 2026-10-20)
+## Current execution order
 
-1. Finish the selected source-mapped algorithm unit against its complete pinned routine and helper graph.
-   Retain the existing source correspondence and repair missing branches together; do not discover the specification one fixture at a time.
+Use AGENTS.md "Choose the next action from the actual state".
+The current issue's full source translation and consumer obligation persist across turns; an interrupted fixture does not become a new performance project.
 
-2. Test its known failing consumer directly, then the affected family.
-   A successful earlier prefix is not the next diagnostic task unless the change affects it.
+### Resume point: CELLS consumer verification, then independent families
 
-3. Exercise the other independent families serially, retaining unresolved cases.
-   Use full inventory runs without fail-fast.
-   A diagnostic cutoff on one case must not continually suppress results from every later family.
+- **Implemented, not fully verified:** the current perfect-domain traversal and the extension/kernel/lift integrations in recursive.py.
+  The latter already calls partial.witt_extension, pointwise_perpendicular_kernel().group_generators(), and rational_lifts(...).integral_members(). Verify their complete use rather than rewriting those calls from historical descriptions.
 
-4. Finish the remaining algorithm units and their actual provider integrations, then complete the final-source corpus, justified readiness release, and gates.
+- **Latest broad result:** `.tmp/accept-original-full-20261020.log` records 37 perfect-domain cases passing, followed by interruption of Result_Enumeration_37 at the diagnostic 1,800-second limit.
+  Its source manifest identifies that run; it is not evidence for subsequent edits.
+  No wrong mathematical answer was established for case 37.
 
-Current evidence: the October 20 run collected 26,840 cases, passed 37 perfect-domain cases, and was interrupted at Result_Enumeration_37 by its runner's 1,800-second limit.
-This does not establish a mathematical failure or a runtime requirement.
-The prepared retry repeats that prefix and cutoff; do not reuse it as the default validation plan.
-Start with the unresolved consumer when diagnosing that route, allow a justified long run, and obtain independent family results as well.
+- **Next consumer:** `tests/acceptance/test_perfect_domains.sage::test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_37]`. Check whether the existing run has ended and whether its relevant source changed.
+  If a new run is needed, run this node directly on the current snapshot without the arbitrary diagnostic cutoff.
+  Do not start the prepared `20261020b` runner, which repeats the first 37 cases with the same cutoff.
 
-Current source already calls partial.witt_extension, the reduction's pointwise_perpendicular_kernel, and rational_lifts(...).integral_members() in recursive.py.
-EXTEND and POINTED therefore require source-correspondence and consumer verification of the existing integration, plus any concrete repairs; they are not instructions to implement those calls again.
-Their presence alone does not establish the complete algorithm or provider behavior.
+- **After that result:** a mathematical failure or exception goes back to the first divergent pinned source step; a pass advances to the complete affected perfect-domain family.
+  An externally interrupted run stays unresolved while other independent families are exercised.
+  Do not claim completion from any of these partial results.
 
-A diagnostic cutoff may bound an investigation, but it does not establish an acceptance budget.
-Preserve any explicitly sourced owner/issue runtime requirement.
-The previous 30-minute orthogonal-group claim below requires its authoritative source to be identified before it can gate acceptance; it must never be applied by analogy to perfect domains or another family.
+- **Other required work:** follow CELLS, EDGEWALK, EXTEND, POINTED, BOUND, PARABOLIC, RECURSION, ORBITS, ARITHMETIC and CENTRALIZERS below.
+  For each, subtract the implementation actually present and the applicable consumer evidence before authoring.
+  While a long consumer runs, complete independent missing source steps without changing its snapshot.
+  Finish all A_* families, then RELEASE, TYPES and FINAL. Do not wait for every family to be repaired before learning the results of the independent ones.
+
+The prior handoff's 30-minute orthogonal-group claim needs its authoritative source before it is treated as an acceptance bound.
+It supplies no bound for perfect domains or any other family.
+No required case or existing explicit owner budget is removed by this correction.
+
+### Decisions that must survive a continuation
+
+| Existing evidence | Next action; disallowed restart |
+| --- | --- |
+| Case 37 interrupted after 37 passes | Run case 37 directly or continue independent families; do not replay the prefix or infer a speed defect. |
+| The binary edgewalk caller requires the full signed factor family | Translate that complete source enumeration and its filtering order; do not fix only the failing norm or invent a substitute search. |
+| recursive.py contains the assigned provider calls | Verify their complete use and frozen consumers; do not restart implementation from the old missing-call diagnosis. |
+| A targeted repaired consumer passes | Advance to its affected family; do not select another local optimization. |
+| A continuation begins while the same long run is live | Reuse the run and advance independent implementation; do not restart discovery or duplicate execution. |
+| A relevant dependency changed | Recheck consumers affected by that change; retain unrelated source correspondence and results. |
+
+This table specifies work selection, not new acceptance assertions or a separate review procedure.
+Final acceptance still exercises the entire frozen obligation.
 
 ## Sources, scope, and execution constraints
 

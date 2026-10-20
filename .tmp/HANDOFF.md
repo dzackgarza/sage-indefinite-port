@@ -1,19 +1,29 @@
 # Handoff: finish the entire sage-indefinite-port
 
-## Immediate continuation: finish the assigned algorithm unit
+## Immediate continuation
 
-Owner correction, 2026-10-20: follow AGENTS.md "Execution priority" and TODO.md "Current execution order".
-Do not restart the old provider investigation or a full-suite passing prefix merely because this handoff lists them first.
+Resume TODO.md "Resume point: CELLS consumer verification, then independent families" using the decision table in AGENTS.md.
+This is the continuation point; the historical diagnoses below do not select a different assignment.
 
-The October 20 full runner passed 37 perfect-domain cases before its diagnostic 1,800-second cutoff interrupted Result_Enumeration_37. That is an unresolved computation, not evidence it should finish within 30 minutes.
-Diagnose that exact consumer if needed, or allow it to complete detached.
-Obtain results for the other independent families in serial runs; use no fail-fast in an inventory run.
-Retain all unresolved cases for complete final acceptance.
-Do not repeat the prepared retry's prefix and arbitrary cutoff as the work loop.
+The exact pending node is:
 
-Current recursive.py already contains partial.witt_extension, reduction.pointwise_perpendicular_kernel().group_generators(), and source_reduction.rational_lifts(...).integral_members(). Verify their complete use against the source and frozen consumers; do not reimplement these calls from the stale missing-work descriptions.
-The historical provider findings below require reproduction before selecting any provider repair.
-Source changes and diagnostic results are partial progress; the full original obligation remains outstanding.
+```text
+tests/acceptance/test_perfect_domains.sage::test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_37]
+```
+
+The last broad run is `.tmp/accept-original-full-20261020.log`, with its adjacent source manifest, exit and timing files.
+It passed 37 cases before a diagnostic cutoff.
+Check for an existing live run before launching anything.
+Use a current source snapshot and the exact node, without replaying the prefix or imposing the same unsupported 30-minute limit.
+A completed result advances to the affected family; a wrong result or exception requires repairing the precise source mismatch; an interruption remains owed while independent families continue.
+
+The current recursive.py already calls the assigned Witt-extension, pointwise-perpendicular-kernel and rational-lift operations.
+Their complete integration and consumers are unverified, not unimplemented.
+Historical provider findings below need current reproduction before any provider edit.
+Preserve the full completion table; do not replace it with the current specimen.
+
+When the next action changes, replace this continuation point with the exact remaining step, source correspondence and result/job pointer.
+Do not append another competing handoff or restart completed investigation on a new turn.
 
 ## 1. Ambient task
 
