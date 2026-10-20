@@ -151,6 +151,45 @@ The GitHub issue tree rooted at #4 is the only plan: its work units are the leaf
 Take the next unit with `uvx --from git+https://github.com/dzackgarza/itree itree next dzackgarza/sage-indefinite-port`, work it to the acceptance in its issue body, commit, close it with `itree close`, and take the next unit in the same turn.
 A turn that ends with a ready unit untouched stops the repository until someone notices.
 
+# Execution priority: finish algorithm units (owner correction, 2026-10-20)
+
+Keep the assigned issue's complete obligation fixed through continuations and
+individual fixture failures. Use the existing translation map to account for the
+selected source routine's branches, called helpers, enumeration scope, termination,
+and assigned provider operations before implementing it. Read the relevant source
+once; revisit it when a specific unresolved correspondence requires it. Do not
+turn that accounting into a separate audit project or reconstruct it every turn.
+
+Complete the source-mapped algorithm unit, then exercise its actual consumers.
+A failing specimen locates a missing or incorrect source step; repair that step
+across its callers, rather than choosing the next task solely from the next
+fixture failure. Existing code is not missing merely because it is unverified.
+Keep that distinction current in TODO.md and .tmp/HANDOFF.md, with source and
+consumer-result pointers; do not create another ledger or planning hierarchy.
+
+For a known failure, run the exact affected consumer first. Once it is resolved,
+run its affected family. Do not replay a passing prefix to reach the same failure
+unless a source/dependency change could affect that prefix. Complete inventory
+runs collect outcomes across families without fail-fast. An interrupted or
+unresolved case stays explicitly owed; continue other independent families in
+separate serial runs rather than hiding them behind it. Those diagnostic results
+do not replace the complete final-source acceptance required by the issue.
+
+A diagnostic wall-clock cutoff is not an algorithmic runtime requirement or
+proof that a computation is too slow. Preserve explicit owner/issue acceptance
+bounds where they exist; cite their origin before treating elapsed time as a
+failure. In particular, the runner's --timeout=1800 is not a perfect-domain
+requirement. Let finite required computations run detached with logs. Optimize
+only from a demonstrated source divergence, redundant computation, resource
+failure, or an actual required runtime bound; a timer expiring is not that evidence.
+
+While one mathematical run executes, continue independent source-mapped work
+without changing the source/dependencies used by that run. Use an immutable
+snapshot if continuing edits would affect it. A provider gap blocks only consumers
+that need that provider. Final acceptance, frozen cases, and readiness release
+remain unchanged. Preserve coherent implementation checkpoints and their precise
+verification limits so a continuation advances instead of rediscovering them.
+
 # Nonnegotiable: port the existing algorithm; do not design a new one
 
 **This project is a port, not an algorithm-development project.** The specialized algorithms in scope have already been implemented in the pinned open-source reference. The task is to translate **that implementation** into native Sage/Python, replacing its low-level and generic callees with the assigned Sage backends or research preamble operations. Do not search for alternative algorithms, reinvent an algorithm, or describe a known upstream algorithm as an open problem. The no-C++-build rule below prohibits compiling the reference; it does **not** authorize replacing its mathematics.
