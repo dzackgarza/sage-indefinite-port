@@ -148,7 +148,7 @@ agent-memory maintain move <key> --to global/advice
 # Taking Work
 
 The GitHub issue tree rooted at #4 is the only plan: its work units are the leaf issues, their blocked-by links are the dependency edges, and each unit's body holds its obligation and acceptance. Issue bodies cite "map §N" in [references/source-to-sage-translation-map.md](references/source-to-sage-translation-map.md).
-Take the next unit with `uvx --from git+https://github.com/dzackgarza/itree itree next dzackgarza/sage-indefinite-port`, work it to the acceptance in its issue body, commit, close it with `itree close`, and take the next unit in the same turn.
+Select a unit with `uvx --from git+https://github.com/dzackgarza/itree itree next dzackgarza/sage-indefinite-port` only when no unit is assigned, after completing and closing the assigned unit, or when an evidenced dependency change invalidates that selection. A continuation retains its assigned unit and exact unfinished operation; it does not repeat selection. Work the unit to the acceptance in its issue body, commit, close it with `itree close`, and take the next unit in the same turn.
 A turn that ends with a ready unit untouched stops the repository until someone notices.
 
 # Execution: complete the assigned port obligation
@@ -158,19 +158,6 @@ A continuation, local failure, profile, or passing specimen does not select a ne
 assignment. TODO.md holds the remaining work; .tmp/HANDOFF.md holds the current
 continuation point. Update those existing documents only when the next action
 changes. Do not create another plan, receipt, audit, or progress ledger.
-
-## Choose the next action from the actual state
-
-| Observed state | Required next action |
-| --- | --- |
-| A run is still executing | Reuse its process/log; do not launch a duplicate. Continue independent implementation without editing its source snapshot. |
-| An exact consumer failed with a wrong result or exception | Locate the first divergence from the pinned routine and its callees. Repair the complete source step, including its other branches and callers; run that consumer directly. |
-| A diagnostic timer interrupted a case | Record it as interrupted. Do not infer a defect or start optimization. Run it detached without that diagnostic cutoff, or retain it as owed while running independent families serially. |
-| The exact repaired consumer passes | Run the affected family; do not keep polishing that specimen. |
-| A source step exists but has no consumer evidence | Verify its source correspondence and run its frozen consumers. Do not implement it again. |
-| A source step or specialized helper is absent | Translate that step and its called helpers from the pinned source. Do not wait for another failing example to reveal each omitted branch. |
-| A provider operation is absent | Keep its dependent consumers unresolved, record the exact provider contract at its owner, and continue independent port implementation against that API. |
-| The assigned unit's full implementation and consumers are satisfied | Release its justified readiness markers and finish its issue acceptance; take the next existing ready unit. |
 
 Within a selected algorithm unit, use the existing translation map to identify
 its complete source routine/helper boundary and frozen consumer files. Account for
@@ -184,16 +171,15 @@ a prerequisite audit of the entire repository.
 
 A repair's first rerun is the exact failed node. Run earlier passing nodes again
 only when changed code or dependencies can affect them, or during required final
-acceptance. After the targeted check, run its affected family. Complete inventory
-runs omit fail-fast and collect the full outcomes. Separately run independent
-families when one remains interrupted; keep every omitted case explicitly owed.
+acceptance. After the targeted check, run its affected family. Keep every omitted case explicitly owed. Choose fail-fast or continued collection
+according to the diagnostic needed; neither changes the final acceptance inventory.
 These development runs do not waive the full final-source corpus.
 
 Do not add a wall-clock budget to a mathematical requirement. Use an explicit
 owner/issue budget where one exists, naming its source. The runner's 1,800-second
-cutoff establishes no bound on perfect-domain enumeration. A profiling session
-must answer a concrete source discrepancy or required execution problem; its
-output alone cannot assign the next optimization. A slow successful computation
+cutoff establishes no bound on perfect-domain enumeration. A diagnostic timeout alone establishes neither a mathematical defect nor an
+unacceptable runtime. Performance work needs evidence of the actual cost and
+its effect on completing the required computation; profiling may supply that evidence. A slow successful computation
 returns to the next missing capability or consumer check. Implement source-faithful
 improvements needed for actual failures; do not invent faster algorithms.
 

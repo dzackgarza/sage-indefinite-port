@@ -2,7 +2,7 @@
 
 ## Immediate continuation
 
-Resume TODO.md "Resume point: CELLS consumer verification, then independent families" using the decision table in AGENTS.md.
+Resume TODO.md "Resume point: CELLS consumer verification, then independent families" under AGENTS.md "Taking Work".
 This is the continuation point; the historical diagnoses below do not select a different assignment.
 
 The exact pending node is:

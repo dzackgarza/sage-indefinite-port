@@ -11,7 +11,7 @@ Use current source and results to select work; historical observations below are
 
 ## Current execution order
 
-Use AGENTS.md "Choose the next action from the actual state".
+Retain the current assignment under AGENTS.md "Taking Work".
 The current issue's full source translation and consumer obligation persist across turns; an interrupted fixture does not become a new performance project.
 
 ### Resume point: CELLS consumer verification, then independent families
@@ -40,19 +40,27 @@ The prior handoff's 30-minute orthogonal-group claim needs its authoritative sou
 It supplies no bound for perfect domains or any other family.
 No required case or existing explicit owner budget is removed by this correction.
 
-### Decisions that must survive a continuation
+### Historical basis for the instruction correction (2026-10-20)
 
-| Existing evidence | Next action; disallowed restart |
-| --- | --- |
-| Case 37 interrupted after 37 passes | Run case 37 directly or continue independent families; do not replay the prefix or infer a speed defect. |
-| The binary edgewalk caller requires the full signed factor family | Translate that complete source enumeration and its filtering order; do not fix only the failing norm or invent a substitute search. |
-| recursive.py contains the assigned provider calls | Verify their complete use and frozen consumers; do not restart implementation from the old missing-call diagnosis. |
-| A targeted repaired consumer passes | Advance to its affected family; do not select another local optimization. |
-| A continuation begins while the same long run is live | Reuse the run and advance independent implementation; do not restart discovery or duplicate execution. |
-| A relevant dependency changed | Recheck consumers affected by that change; retain unrelated source correspondence and results. |
+The October 19 recording shows that a continuation rule already existed before this documentation repair.
+At 05:31 UTC the agent read the workstream context, which explicitly said to continue the unfinished operation, avoid setup and issue rereads, and rerun the selector only after closure or an evidenced dependency change.
+At 05:32 it reread AGENTS/TODO and ran `itree next`; at 06:08 it read both again and reran the selector.
+Both calls returned the same unfinished issue, #33. The recording establishes repeated selection despite an available instruction; it does not establish how much total project delay this caused.
+Its workstream attribution does not identify whether those calls used the same model conversation.
 
-This table specifies work selection, not new acceptance assertions or a separate review procedure.
-Final acceptance still exercises the entire frozen obligation.
+Primary evidence: local recording `~/.config/chat-on-steroids/sessions/2026-10-16-6ba3012a/events.jsonl`, lines 13519–13523 and 13574–13579. The first range contains the actual instruction read, selector invocation and result; the second contains the repeated invocation and result.
+These are executed calls, not an agent's retrospective summary.
+
+The correction removes the unconditional selector instruction from AGENTS.md's Taking Work section and makes its entry condition agree with the continuation instruction.
+Adding another reminder to resume was not a demonstrated remedy: the history already contained that reminder.
+Whether the corrected entry point changes execution remains unverified.
+No active worker was changed for this repair.
+
+The previous planning analysis also overstated its evidence.
+The `accept-original-full-20261020` log shows an interruption at a diagnostic cutoff, not violation of an established perfect-domain runtime requirement.
+The prepared `20261020b` runner repeats the prefix, but its preparation does not prove a second run occurred.
+Neither is evidence that repeated full-prefix execution caused the observed rate.
+The scenario table previously here is withdrawn; it was not a reconstruction of established historical misconduct.
 
 ## Sources, scope, and execution constraints
 
