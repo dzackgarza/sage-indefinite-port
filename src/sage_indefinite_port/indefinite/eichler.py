@@ -39,6 +39,7 @@ from dzack_research.preamble.categories.sets.indexed_families import (
 )
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.graphs.graph import Graph
+from sage.groups.perm_gps.permgroup import PermutationGroup
 from sage.matrix.constructor import identity_matrix, matrix
 from sage.misc.cachefunc import cached_method
 from sage.modules.free_module_element import vector as vector_space_element
@@ -659,11 +660,18 @@ class OrbitCoverModel:
         inclusion = model.complement_inclusion()
         e, f, _e_prime, _f_prime = model.hyperbolic_basis()
 
-        def representative(discriminant_class: DiscriminantQuadraticModules.ElementMethods) -> Lattices.ElementMethods:
+        def scaled_lift(discriminant_class: DiscriminantQuadraticModules.ElementMethods) -> tuple[RingElement, Lattices.ElementMethods]:
+            r"""The order d of the class and k = d*y in K for a dual lift y (eClass3 of :610-625)."""
             discriminant_class = discriminant(discriminant_class)
             order = ring(int(discriminant_class.additive_order()))
             dual_lift = discriminant.dual_lattice_lift(discriminant_class)
-            k = correlation.lift(dual_lift.parent().scalar_multiple(order, dual_lift))
+            return order, correlation.lift(dual_lift.parent().scalar_multiple(order, dual_lift))
+
+        classes = tuple(complement.covering_discriminant_classes(square))
+        lifts = {discriminant_class: scaled_lift(discriminant_class) for discriminant_class in classes}
+
+        def representative(discriminant_class: DiscriminantQuadraticModules.ElementMethods) -> Lattices.ElementMethods:
+            order, k = lifts[discriminant_class]
             numerator = square - complement.q(k)
             denominator = ring(2) * order * order
             coefficient = numerator // denominator
@@ -671,20 +679,29 @@ class OrbitCoverModel:
                 raise ArithmeticError("a covering discriminant class must give an integral hyperbolic coefficient")
             return lattice.scalar_multiple(order, e) + lattice.scalar_multiple(order * coefficient, f) + inclusion(k)
 
-        classes = complement.covering_discriminant_classes(square)
-        # IndefiniteForms.g:181-224, SetListClassesOrbitwise(GRPeasy).
-        # The canonical inclusion A_K -> A_(2U+K) is an isomorphism, since
-        # 2U is unimodular. GetEasyIsometries can permute a hyperbolic block
-        # of K with either distinguished U, so its isometries need not
-        # preserve K itself. Transfer their action through the *full*
-        # discriminant group, rather than restricting their lattice maps to K.
-        easy = OrbitCoverModel.source_easy_generators(model)
-        discriminant_inclusion = inclusion.discriminant_inclusion()
-        ambient_discriminant = lattice.discriminant_group()
-        image = ambient_discriminant.orthogonal_group().subgroup(tuple(isometry.discriminant_morphism() for isometry in easy))
-        embedded_classes = finite_ordered_set(tuple(discriminant_inclusion(point) for point in classes))
-        action = FiniteGSets(image)(embedded_classes, lambda automorphism, point: automorphism(point))
-        selected = finite_ordered_set(tuple(discriminant_inclusion.lift(orbit.representative()) for orbit in action.orbits()))
+        # SetListClassesOrbitwise(GRPeasy), ApproximateModels.h:313-405.  A
+        # class y of K^#/K is extended by zero to E = 2U + K, and the class of
+        # g(y) in E^#/E is read off as its coordinates modulo 1 (VectorModulo1
+        # of QmatInv * v, :337-356).  A_K -> A_E is an isomorphism since 2U is
+        # unimodular, so every image is one of the listed classes, even when a
+        # GRPeasy element moves a hyperbolic block of K onto a distinguished
+        # U.  With y = k/d this is the vector of E-coordinates of g(k) modulo d.
+        labels = tuple(lattice.module_generating_set())
+
+        def residue(vector: Lattices.ElementMethods, order: RingElement) -> tuple[SageQQ, ...]:
+            coordinates = vector.to_vector()
+            modulus = int(order)
+            return tuple(SageQQ(int(coordinates(label)) % modulus) / modulus for label in labels)
+
+        positions = {residue(inclusion(k), order): position for position, (order, k) in enumerate(lifts[point] for point in classes)}
+        permutations = [
+            [positions[residue(isometry(inclusion(k)), order)] + 1 for order, k in (lifts[point] for point in classes)]
+            for isometry in OrbitCoverModel.source_easy_generators(model)
+        ]
+        # DecomposeOrbitPoint_FullRepr (:394-400): one class per orbit of the
+        # permutation group of GRPeasy on the classes.
+        orbits = PermutationGroup(permutations, domain=range(1, len(classes) + 1)).orbits() if classes else ()
+        selected = finite_ordered_set(tuple(classes[orbit[0] - 1] for orbit in orbits))
         return finite_indexed_family(selected, representative, name=f"Eichler covering vectors of square {square} in {lattice}")
 
     @staticmethod
