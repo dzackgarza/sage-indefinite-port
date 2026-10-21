@@ -42,13 +42,12 @@ from sage.groups.perm_gps.permgroup import PermutationGroup
 from sage.matrix.constructor import identity_matrix, matrix
 from sage.misc.cachefunc import cached_method
 from sage.modules.free_module_element import vector as vector_space_element
-from sage.quadratic_forms.qfsolve import qfsolve
-from sage.rings.integer import Integer as SageInteger
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
 from sage.structure.element import RingElement
 from sage.structure.sage_object import SageObject
 
+from sage_indefinite_port.indefinite.exact_isotropic import find_isotropic_exact
 from sage_indefinite_port.indefinite.indefinite_reduction import (
     _compute_indefinite_reduction,
     _gram_l1,
@@ -86,9 +85,8 @@ def _source_find_isotropic(gram):
 
     The source first searches its two indefinite-LLL passes for an
     isotropic vector, then its isotropic-mode indefinite reduction, and
-    finally the exact solver on the reduced form. Its exact solver is
-    Sage's qfsolve, the same PARI-backed operation used by the preamble's
-    lattice.isotropic_vector(); no quadratic-solving algorithm is copied.
+    finally the exact solver on the reduced form: FindIsotropicExact
+    (Isotropic.h:279-306), translated in exact_isotropic for every rank.
     As in the source, the intermediate result is an integer coordinate
     vector. Only the returned hyperbolic pair becomes lattice elements.
     """
@@ -98,7 +96,7 @@ def _source_find_isotropic(gram):
         return vector_space_element(SageZZ, gram.right_kernel_matrix().row(0))
 
     def raise_vector(coordinates):
-        if isinstance(coordinates, SageInteger):
+        if coordinates is None:
             return None
         rational = vector_space_element(SageQQ, coordinates)
         integral = rational * rational.denominator()
@@ -113,7 +111,7 @@ def _source_find_isotropic(gram):
 
     if rank <= 2:
         # FindIsotropicExact: skip the LLL and reduction branches.
-        return raise_vector(qfsolve(gram.change_ring(SageQQ)))
+        return raise_vector(find_isotropic_exact(gram))
 
     def easy_vector(form):
         # get_isotropic_easy_method, Isotropic.h:76-112.
@@ -163,8 +161,8 @@ def _source_find_isotropic(gram):
     reduction, reduced_gram, isotropic = _compute_indefinite_reduction(gram, look_for_isotropic=True)
     if isotropic is not None:
         return raise_vector(isotropic)
-    exact_coordinates = qfsolve(reduced_gram.change_ring(SageQQ))
-    if isinstance(exact_coordinates, SageInteger):
+    exact_coordinates = find_isotropic_exact(reduced_gram)
+    if exact_coordinates is None:
         return None
     return raise_vector(reduction.transpose() * exact_coordinates)
 
