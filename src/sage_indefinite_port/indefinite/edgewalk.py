@@ -158,16 +158,19 @@ class _EdgePlane:
     r"""The rank-two lattice of an edge: the projection Pi of the root sublattice C onto the edge plane (span of the edge's roots)^perp.
 
     ``plane`` is Pi with its form scaled by ``scale`` to be integral, in the oriented basis ``basis``
-    (rational rows of L tensor Q); ``r0`` is the edge's orientation vector in Pi; ``intersection``
-    is the embedded sublattice C cap Pi whose quotient controls the period.
+    (rational rows of L tensor Q); ``r0`` is the edge's orientation vector in Pi.
+    ``constraint_inverse`` inverts the rows of a basis of C, so a row v of L tensor Q lies in C
+    exactly when ``v * constraint_inverse`` is integral (edgewalk.h:905, SolutionIntMat(Latt, v_T)).
+    ``intersection`` holds the rows, in the coordinates of ``basis``, of a basis of C cap P, the
+    sublattice of Pi whose quotient controls the period (edgewalk.h:803, Expr_t).
     """
 
-    constraint: Parent
+    constraint_inverse: Matrix_rational_dense
     basis: Matrix_rational_dense
     plane: Lattices.ParentMethods
     scale: Integer
     r0: _Vector
-    intersection: Parent
+    intersection: Matrix_rational_dense
 
 
 class _Edgewalk:
@@ -814,6 +817,15 @@ class _Edgewalk:
         )
 
     @cached_method
+    def edge_perpendicular(self, roots: _Roots) -> Parent:
+        r"""The sublattice L cap P of the edge plane P = (span of the edge's roots)^perp.
+
+        edgewalk.h:598 computes Pplane once per edge; only Latt = C_N varies
+        with the root norm (edgewalk.h:761-764, IntersectionLattice_VectorSpace).
+        """
+        return self.lattice.subobject_on(list(roots)).orthogonal_complement()
+
+    @cached_method
     def edge_plane_for_divisor(self, roots: _Roots, discarded: _Vector, k: _Vector, divisor: int) -> _EdgePlane:
         root_rows = tuple(self.row(root) for root in roots)
         plane_basis = self.perpendicular_rows(root_rows)
@@ -872,25 +884,31 @@ class _Edgewalk:
         r0_coordinates = basis.transpose().solve_right(r0.column()).column(0)
         r0_vector = self.plane_primitive(plane_lattice, r0_coordinates)
 
-        perpendicular = self.lattice.subobject_on(list(roots)).orthogonal_complement()
-        # For divisor one C=L, so C cap P is already the perpendicular
-        # sublattice. There is no second integral intersection to compute.
-        intersection = perpendicular if divisor == 1 else constraint.intersection(perpendicular)
-        intersection_rows = matrix(
-            SageQQ,
-            [self.row(intersection.inclusion()(generator)) for generator in intersection.inclusion().domain().module_generators()],
-        )
+        # edgewalk.h:763-764, Basis_P_inter_LN = IntersectionLattice_VectorSpace(Latt, Pplane):
+        # C cap P on the same coordinate rows as the projection above. A
+        # vector c * B of C (B the rows of a basis of C) lies in P exactly
+        # when it pairs to zero with every edge wall, so the coefficient
+        # lattice of C cap P is the integral left kernel of B G R^T.
+        if constraint_rows.nrows() != self.rank or constraint_rows.rank() != self.rank:
+            raise ArithmeticError("the module generators of C_N must be a basis of a full-rank sublattice")
+        equations = constraint_rows * self.gram * wall_matrix.transpose()
+        denominator = SageZZ.one()
+        for entry in equations.list():
+            denominator = denominator.lcm(entry.denominator())
+        coefficients = (denominator * equations).change_ring(SageZZ).left_kernel().basis_matrix()
+        intersection_rows = coefficients.change_ring(SageQQ) * constraint_rows
+        if intersection_rows.nrows() != 2:
+            raise ArithmeticError("C cap P must have rank two")
         intersection_coordinates = basis.transpose().solve_right(intersection_rows.transpose()).transpose()
         if any(entry.denominator() != 1 for entry in intersection_coordinates.list()):
             raise ArithmeticError("the perpendicular intersection must be integral in the projected lattice")
-        sublattice = plane_lattice.subobject_on([self.plane_element(plane_lattice, row) for row in intersection_coordinates.rows()])
         return _EdgePlane(
-            constraint,
+            constraint_rows.inverse(),
             basis,
             plane_lattice,
             scale,
             r0_vector,
-            sublattice,
+            intersection_coordinates,
         )
 
     @staticmethod
@@ -957,16 +975,28 @@ class _Edgewalk:
         # action on Pi/(C cap Pi). The source tests integral membership
         # in the sublattice and then the induced finite quotient action,
         # not the generally larger order in GL(2, Z/exp(Pi/S)).
-        embedding = edge.intersection.inclusion()
-        period = automorph
+        # On coordinate rows of Pi the period acts by x -> x * A, A the rows
+        # of the images of the basis (edgewalk.h:833, TheMat.transpose() * v).
+        # With M the rows of a basis of S = C cap Pi, h preserves S exactly
+        # when M h M^{-1} is integral, and acts trivially on Pi/S exactly
+        # when (h - 1) M^{-1} is integral.
+        action = matrix(SageQQ, [_key(automorph(point)) for point in plane.module_generators()])
+        sublattice = edge.intersection
+        sublattice_inverse = sublattice.inverse()
+        identity = identity_matrix(SageQQ, 2)
+
+        def integral(product: Matrix_rational_dense) -> bool:
+            return all(entry.denominator() == 1 for entry in product.list())
+
+        period = action
         preserving_order = 1
-        while not all(embedding.is_in_image(period(embedding(point))) for point in edge.intersection.module_generators()):
-            period = automorph * period
+        while not integral(sublattice * period * sublattice_inverse):
+            period = period * action
             preserving_order += 1
         quotient_order = 1
         quotient_power = period
-        while not all(embedding.is_in_image(quotient_power(point) - point) for point in plane.module_generators()):
-            quotient_power = period * quotient_power
+        while not integral((quotient_power - identity) * sublattice_inverse):
+            quotient_power = quotient_power * period
             quotient_order += 1
         period_order = preserving_order * quotient_order
 
@@ -1024,11 +1054,12 @@ class _Edgewalk:
             ambient = component + edge.basis.transpose() * vector(SageQQ, _key(work_vector))
             if any(entry.denominator() != 1 for entry in ambient):
                 continue
-            root = self.element(tuple(ambient))
-            # edgewalk.h get_next_anisotropic/get_next_isotropic: every
-            # integral candidate must belong to the norm-specific lattice.
-            if not edge.constraint.inclusion().is_in_image(root):
+            # edgewalk.h:905,988 get_next_anisotropic/get_next_isotropic:
+            # SolutionIntMat(Latt, v_T), every integral candidate must
+            # belong to the norm-specific lattice.
+            if any(entry.denominator() != 1 for entry in ambient * edge.constraint_inverse):
                 continue
+            root = self.element(tuple(ambient))
             if self.pair(ambient, ambient) != extension.norm:
                 raise ArithmeticError("rank-two reconstruction changed the root norm")
             # edgewalk.h get_next_anisotropic/get_next_isotropic returns the
@@ -1134,7 +1165,7 @@ class _Edgewalk:
         return tuple(accepted)
 
     def isotropic_next_vertex(self, roots: _Roots, discarded: _Vector, k: _Vector) -> _Vertex:
-        perpendicular = self.lattice.subobject_on(list(roots)).orthogonal_complement()
+        perpendicular = self.edge_perpendicular(roots)
         plane = perpendicular.inclusion().domain()
         choices: dict[_Key, _Vector] = {}
         for isotropic in plane.primitive_isotropic_vectors():
