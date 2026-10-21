@@ -58,7 +58,10 @@ ci-provision-sage:
     # The preamble's Julia bridge (OSCAR comparisons) runs this Julia, the
     # version the local juliaup provides.
     mkdir -p {{ci_dir}}/julia
-    curl -fsSL https://julialang-s3.julialang.org/bin/linux/x64/1.12/julia-1.12.5-linux-x86_64.tar.gz | tar -xz -C {{ci_dir}}/julia --strip-components=1
+    # The image has no curl; Sage's Python fetches the tarball.
+    "$sage_python" -c 'import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])' \
+        https://julialang-s3.julialang.org/bin/linux/x64/1.12/julia-1.12.5-linux-x86_64.tar.gz {{ci_dir}}/julia.tar.gz
+    tar -xzf {{ci_dir}}/julia.tar.gz -C {{ci_dir}}/julia --strip-components=1
 
 # CI only: the bridge's Julia environment, instantiated and precompiled into the default depot.
 ci-provision-julia:
