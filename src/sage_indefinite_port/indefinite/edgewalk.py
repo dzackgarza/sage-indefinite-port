@@ -269,20 +269,41 @@ class _Edgewalk:
         rank = int(reduction.rank())
         projected_roots: list[tuple[_Vector, _Vector]] = []
 
-        for norm in self.norms:
-            constraint = self.constraint(_rational(norm))
-            intersection = constraint.intersection(perpendicular)
-            intersection_inclusion = intersection.inclusion()
+        # Coordinate rows, as for the edge planes: the rows of a basis of
+        # k^perp in L, and the rows of their images in the framing of the
+        # quotient k^perp/k (the projection pi of edgewalk.h:1955-1968,
+        # LatticeProjectionFramework onto the complement of k in k^perp).
+        perpendicular_rows = matrix(SageQQ, [self.row(perpendicular_inclusion(generator)) for generator in perpendicular.module_generators()])
+        quotient_rows = matrix(SageQQ, [_key(quotient_projection(generator)) for generator in perpendicular.module_generators()])
+        k_column = self.gram * self.row(k).column()
 
-            projected_generators = {
-                label: quotient_projection(perpendicular_inclusion.lift(intersection_inclusion(intersection.module_generator(label))))
-                for label in intersection.module_generating_set()
-            }
-            projection = intersection.module_category().Mor(intersection, reduction)(projected_generators)
-            image = reduction.subobject_on(tuple(projected_generators.values()))
+        for norm in self.norms:
+            # edgewalk.h:1951-1954: Latt_inter_NSP = IntersectionLattice(Latt, NSP),
+            # the integral left kernel of B G k on the rows B of a basis of C_N.
+            constraint = self.constraint(_rational(norm))
+            constraint_rows = matrix(SageQQ, [self.row(constraint.inclusion()(generator)) for generator in constraint.inclusion().domain().module_generators()])
+            if constraint_rows.nrows() != self.rank or constraint_rows.rank() != self.rank:
+                raise ArithmeticError("the module generators of C_N must be a basis of a full-rank sublattice")
+            equations = constraint_rows * k_column
+            denominator = SageZZ.one()
+            for entry in equations.list():
+                denominator = denominator.lcm(entry.denominator())
+            intersection_rows = (denominator * equations).change_ring(SageZZ).left_kernel().basis_matrix().change_ring(SageQQ) * constraint_rows
+            # fr.BasisProj (edgewalk.h:1955-1960): the projected generators,
+            # read through the perpendicular basis and the quotient framing.
+            projected_rows = perpendicular_rows.solve_left(intersection_rows) * quotient_rows
+            if any(entry.denominator() != 1 for entry in projected_rows.list()):
+                raise ArithmeticError("the projection of C_N cap k^perp must be integral in k^perp/k")
+            hermite, transformation = projected_rows.change_ring(SageZZ).echelon_form(transformation=True)
+            image_rank = hermite.rank()
+            image_basis = hermite.matrix_from_rows(range(image_rank)).change_ring(SageQQ)
+            lift_rows = transformation.matrix_from_rows(range(image_rank)).change_ring(SageQQ) * intersection_rows
+            image = reduction.subobject_on(tuple(self.plane_element(reduction, row) for row in image_basis.rows()))
             for root in image.vectors_of_square(reduction.base_ring()(_integer(norm))):
                 projected = image.inclusion()(root)
-                lifted = intersection_inclusion(projection.lift(projected))
+                # fr.GetOnePreimage (edgewalk.h:2010): one preimage in C_N cap k^perp.
+                coefficients = image_basis.solve_left(vector(SageQQ, _key(projected)))
+                lifted = self.element(tuple(coefficients * lift_rows))
                 if self.norm(lifted) != norm:
                     raise ArithmeticError("the isotropic-reduction lift changed a prescribed root norm")
                 projected_roots.append((projected, lifted))
