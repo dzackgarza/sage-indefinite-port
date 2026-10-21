@@ -369,29 +369,24 @@ class EichlerEnvelope:
         source = (first, first_partner, second, second_partner) + tuple(kernel.inclusion()(vector) for vector in kernel_lattice.module_generators())
         target = (first_pairing * e_1, f_1, second_pairing * e_2, f_2) + tuple(complement_embedding(vector) for vector in kernel_lattice.module_generators())
         fraction_map = lattice.base_ring().fraction_field_map()
-        spanned = construction_lattice.subobject_on(list(source))
-        # The span basis is echelonized; each basis vector is an integral combination of the
-        # independent family source, and its image is the same combination of target.
+        # ApproximateModels.h:1256-1272: FullBasis (the rows of ``source``) is a
+        # rational basis of L tensor Q, and preEmbed = Inverse(EmbedSimpInv *
+        # FullBasis) writes each basis vector of L in the envelope basis. That
+        # inverse is the coordinate solve below; no sublattice spanned by
+        # ``source`` is constructed.
         labels = tuple(construction_lattice.module_generating_set())
+        envelope_labels = tuple(self.envelope.module_generating_set())
         source_rows = matrix(SageQQ, [[int(vector.to_vector()(label)) for label in labels] for vector in source])
-        span_inclusion = spanned.inclusion()
-        span_images = []
-        for generator in span_inclusion.domain().module_generators():
-            image = span_inclusion(generator)
-            coefficients = source_rows.solve_left(vector_space_element([int(image.to_vector()(label)) for label in labels]))
-            if any(entry.denominator() != 1 for entry in coefficients):
-                raise ArithmeticError("a span basis vector must be an integral combination of the spanning family")
-            span_images.append(
-                sum(
-                    (construction_lattice.base_ring()(int(entry)) * image_vector for entry, image_vector in zip(coefficients, target, strict=True)),
-                    self.envelope.zero(),
-                )
-            )
-        span_to_envelope = span_inclusion.domain().hom(span_images, codomain=self.envelope).base_change(fraction_map)
-        rational_inclusion = spanned.inclusion().base_change(fraction_map)
+        target_rows = matrix(SageQQ, [[int(vector.to_vector()(label)) for label in envelope_labels] for vector in target])
+        images = source_rows.inverse() * target_rows
         rational_construction = construction_lattice.base_change(fraction_map)
-        construction_to_envelope = rational_construction.Isom(self.envelope.base_change(fraction_map))(
-            lambda label: span_to_envelope(rational_inclusion.lift(rational_construction.module_generator(label)))
+        rational_envelope = self.envelope.base_change(fraction_map)
+        field = rational_envelope.base_ring()
+        image_rows = {label: images.row(position) for position, label in enumerate(labels)}
+        construction_to_envelope = rational_construction.Isom(rational_envelope)(
+            lambda label: rational_envelope.linear_combination(
+                {envelope_labels[column]: field(int(value.numerator())) / field(int(value.denominator())) for column, value in enumerate(image_rows[label]) if value}
+            )
         )
         if even_inclusion is None:
             self.rational_isometry = construction_to_envelope
