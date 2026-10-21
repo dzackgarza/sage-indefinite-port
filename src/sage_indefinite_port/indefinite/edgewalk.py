@@ -1229,23 +1229,25 @@ class _Edgewalk:
         return tuple(directions)
 
     def coloured_family(self, pairs: tuple[tuple[_Vector, int], ...]) -> Element:
-        r"""The coloured family i -> (v_i, c_i) in Sets().Mor(I, L x {0, 1, 2})."""
-        colours = Sets.Δ[2]
+        r"""The coloured family i -> (v_i, c_i) in Sets().Mor(I, L x {0, 1})."""
+        colours = Sets.Δ[1]
         points = Sets().product((self.lattice, colours))
         return Sets().Mor(Sets.Δ[len(pairs) - 1], points)(lambda index: points((pairs[int(index)][0], colours[pairs[int(index)][1]])))
 
     @cached_method
     def vertex_configuration(self, vertex: _Vertex) -> Element:
-        r"""The coloured configuration of the vertex: its roots, the vertex, and at an ideal vertex its neighbours."""
+        r"""The coloured configuration of the vertex: its roots (colour 0) and the vertex (colour 1).
+
+        # source: fund_domain_vertices.h:128-162 GetInitialComputation (map_v: roots 1, gen 2)
+
+        At an ideal vertex the family spans the degenerate hyperplane k^perp,
+        and its stabilizer and transporters are the ``isotropstabequiv``
+        computations of fund_domain_vertices.h:466-838 (selected in
+        edgewalk.h:1170-1199 gen_fund_domain_fund_info), which the
+        coloured-family stabilizer of ``O(L)`` performs for such families.
+        """
         vectors = [*vertex.roots, vertex.generator]
         colours = [0] * len(vertex.roots) + [1]
-        if self.norm(vertex.generator) == 0:
-            adjacent: dict[_Key, _Vector] = {}
-            for roots, discarded in self.edge_directions(vertex):
-                neighbour = self.edge_step(vertex, roots, discarded).generator
-                adjacent.setdefault(_key(neighbour), neighbour)
-            vectors.extend(adjacent[key] for key in sorted(adjacent))
-            colours.extend([2] * len(adjacent))
         return self.coloured_family(tuple(zip(vectors, colours, strict=True)))
 
     def isometry_key(self, isometry: LatticeIsometryMethods) -> tuple[_Key, ...]:
