@@ -655,16 +655,26 @@ class OrbitCoverModel:
         square = ring(square)
         complement = model.orthogonal_complement()
         discriminant = complement.discriminant_group()
-        correlation = complement.correlation_morphism()
         inclusion = model.complement_inclusion()
         e, f, _e_prime, _f_prime = model.hyperbolic_basis()
+
+        # eClass2 = Ginv * eClass1 (:610-625): the correlation K -> K^# has
+        # matrix G on the selected bases (lattices.py correlation_morphism), so
+        # a dual lift with dual-basis coordinates c is y = G^-1 c in K tensor Q.
+        complement_labels = tuple(complement.module_generating_set())
+        gram_inverse = _engine_component_matrix(complement.gram_tensor()).change_ring(SageQQ).inverse()
 
         def scaled_lift(discriminant_class: DiscriminantQuadraticModules.ElementMethods) -> tuple[RingElement, Lattices.ElementMethods]:
             r"""The order d of the class and k = d*y in K for a dual lift y (eClass3 of :610-625)."""
             discriminant_class = discriminant(discriminant_class)
             order = ring(int(discriminant_class.additive_order()))
             dual_lift = discriminant.dual_lattice_lift(discriminant_class)
-            return order, correlation.lift(dual_lift.parent().scalar_multiple(order, dual_lift))
+            dual_coordinates = dual_lift.to_vector()
+            dual_labels = tuple(dual_lift.parent().module_generating_set())
+            scaled = int(order) * gram_inverse * vector_space_element(SageQQ, [int(dual_coordinates(label)) for label in dual_labels])
+            if scaled.denominator() != 1:
+                raise ArithmeticError("the order of a discriminant class must clear the denominators of its dual lift")
+            return order, complement.linear_combination({label: ring(int(value)) for label, value in zip(complement_labels, scaled, strict=True) if value})
 
         classes = tuple(complement.covering_discriminant_classes(square))
         lifts = {discriminant_class: scaled_lift(discriminant_class) for discriminant_class in classes}
