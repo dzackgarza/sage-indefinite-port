@@ -74,8 +74,7 @@ def _extend_perpendicular_isometry(
     Lorentzian.g:115-249 LORENTZ_ExtendOrthogonalIsotropicIsomorphism
     get_one_transformation (rank-two I, IndefiniteForms.g:1097-1106, :1685-1686).
     The source's Subspace1/Subspace2 are a basis of N=I^perp and its images;
-    here they are ``source_basis`` and ``images``, read as the partial
-    isometry N_Q -> N'_Q. Its extension to L_Q -> M_Q, the Euclidean-nullspace
+    here they are ``source_basis`` and ``images``. Its extension to L_Q -> M_Q, the Euclidean-nullspace
     complement (Fundamental.g:509-516), the pairing equations
     (SpecialEquationSolving, Lorentzian.g:53-99) and the prime-denominator
     elimination (Fundamental.g:751-794) belong to the preamble's
@@ -89,27 +88,29 @@ def _extend_perpendicular_isometry(
     target = target_reduction.isotropic_embedding().codomain()
     fraction_map = source.base_ring().fraction_field_map()
     field = fraction_map.codomain()
-    source_inclusion = source_reduction.orthogonal_complement().inclusion().base_change(fraction_map)
-    target_inclusion = target_reduction.orthogonal_complement().inclusion().base_change(fraction_map)
-    source_perpendicular = source_inclusion.domain()
-    target_perpendicular = target_inclusion.domain()
-    if len(source_basis) != int(source_perpendicular.module_rank()) or len(images) != len(source_basis):
+    rank = int(source_reduction.orthogonal_complement().inclusion().domain().module_rank())
+    if len(source_basis) != rank or len(images) != rank:
         raise ValueError("the perpendicular partial isometry needs images of a full chosen basis")
+    rational_source = source.base_change(fraction_map)
+    rational_target = target.base_change(fraction_map)
     source_rationalize = ModulesOverIntegralDomains(source.base_ring())(source).generic_fibre_map()
     target_rationalize = ModulesOverIntegralDomains(target.base_ring())(target).generic_fibre_map()
-    # The free module F on the chosen basis, with F -> N_Q (the basis) and
-    # F -> N'_Q (its images): the partial isometry is the second composed
-    # with the inverse of the first. Lifting through F -> N_Q rejects a family
-    # that is not a basis of N_Q.
-    frame = field.free_module(len(source_basis))
+    # The source's Subspace1 and Subspace2 are the rows of the two families.
+    # Here they are the maps D -> L_Q and D -> M_Q out of the rational
+    # lattice D on the basis, with the Gram pulled back along the first; the
+    # partial isometry is the identity of D. No coordinate solve is needed.
+    frame = field.free_module(rank)
     labels = tuple(frame.module_generating_set())
-    basis_map = Modules(field).Mor(frame, source_perpendicular)(
-        dict(zip(labels, (source_inclusion.lift(source_rationalize(point).underlying_element()) for point in source_basis), strict=True))
+    gram = rational_source.gram_tensor().pullback(
+        Modules(field).Mor(frame, rational_source)(dict(zip(labels, (source_rationalize(point).underlying_element() for point in source_basis), strict=True)))
     )
-    image_map = Modules(field).Mor(frame, target_perpendicular)(
-        dict(zip(labels, (target_inclusion.lift(target_rationalize(point).underlying_element()) for point in images), strict=True))
+    span = Lattices(field)([[gram[row, column] for column in range(rank)] for row in range(rank)])
+    span_labels = tuple(span.module_generating_set())
+    source_inclusion = Modules(field).Mor(span, rational_source)(
+        dict(zip(span_labels, (source_rationalize(point).underlying_element() for point in source_basis), strict=True))
     )
-    partial = source_perpendicular.Isom(target_perpendicular)(lambda label: image_map(basis_map.lift(source_perpendicular.module_generator(label))))
+    target_inclusion = Modules(field).Mor(span, rational_target)(dict(zip(span_labels, (target_rationalize(point).underlying_element() for point in images), strict=True)))
+    partial = span.Isom(span).identity()
     extension = partial.witt_extension(source_inclusion, target_inclusion)
     (denominator,) = tuple(extension.denominator_ideal(source, target).ideal_generators())
     return extension, int(denominator)
