@@ -21,7 +21,6 @@ from dzack_research.preamble.categories.reduction_complexes import (
     LorentzianPerfectDomainTraversal,
     PerfectDomainOrbitAdjacency,
 )
-from dzack_research.preamble.categories.schemes.polytopes import ConvexPolytopes
 from dzack_research.preamble.categories.sets.finite_ordered_sets import (
     finite_ordered_set,
 )
@@ -1271,17 +1270,25 @@ class MarkedCellOrbitAlgorithm:
     def _subcone_vectors_of_square(self, cone: Parent, subcone: Parent) -> tuple[Lattices.ElementMethods, ...]:
         r"""The lattice vectors of square n in one simplicial piece of a cell's cone.
 
-        A lattice vector of the piece is sum c_i r_i with c_i in (1/D)Z_{>=0}, D the
-        ray-span saturation index. The rays pair with one sign, so every term of
-        q = sum c_i c_j b(r_i, r_j) has the sign of n: c_i^2 q(r_i) <= |n| bounds a
-        timelike ray, and for an isotropic ray some other c_j >= 1/D gives
-        2 c_i b(r_i, r_j) / D <= |n|. The lattice points of the bounding
-        parallelotope are kept when their square is n.
+        Let R be the matrix of the piece's primitive rays r_i and D = |det R|. A lattice
+        vector of the piece is v = sum c_i r_i with C = D c in Z_{>=0}^k, and C mod D runs
+        over the D residues of L / (sum Z r_i) (Smith form of R). The rays pair with one
+        sign, so after that sign every pairing b_ij is nonnegative and
+        D^2 q(v) = sum C_i C_j b_ij is monotone in each C_i. A timelike ray has
+        C_i^2 b_ii <= D^2 |n|; a null ray needs a positively paired partner with C_j >= 1,
+        so 2 C_i b_ij <= D^2 |n|. Each residue class is enumerated by depth-first search
+        within these bounds, pruning a branch once its square exceeds |n|.
         """
         lattice = cone.ambient_lattice()
-        rays = tuple(subcone.primitive_rays())
+        # Search the timelike rays first: a null ray's coefficient raises
+        # the square only once a positively paired coefficient is nonzero.
+        rays = tuple(sorted(subcone.primitive_rays(), key=lambda ray: ray.q() == lattice.base_ring().zero()))
         if not rays:
             return ()
+        labels = tuple(lattice.module_generating_set())
+        rank = len(rays)
+        if rank != len(labels):
+            raise ArithmeticError("a simplicial piece of a full-dimensional cell cone must be full-dimensional")
         pairings = [[int(lattice.b(left, right)) for right in rays] for left in rays]
         # A simplicial face contained in a null ray has identically zero
         # quadratic form. It contributes no positive-norm marks, regardless
@@ -1296,41 +1303,64 @@ class MarkedCellOrbitAlgorithm:
         target = sign * int(self._norm)
         if target <= 0:
             raise ArithmeticError("positive-square marks require a nonzero norm with the sign of the cone")
-        index = int(cone.ray_span_saturation_index(subcone))
-        bounds: list[tuple[int, int]] = []
-        for position in range(len(rays)):
+        ray_matrix = matrix(SageZZ, [[int(ray.to_vector()(label)) for label in labels] for ray in rays])
+        determinant = abs(int(ray_matrix.det()))
+        if determinant == 0:
+            raise ArithmeticError("the rays of a simplicial piece must be independent")
+        scaled_target = target * determinant * determinant
+        bounds = []
+        for position in range(rank):
             if signed[position][position] > 0:
-                bound = Integer((target * index**2) // signed[position][position]).isqrt()
+                bounds.append(int(Integer(scaled_target // signed[position][position]).isqrt()))
             else:
-                partners = [signed[position][other] for other in range(len(rays)) if other != position and signed[position][other] > 0]
+                partners = [signed[position][other] for other in range(rank) if other != position and signed[position][other] > 0]
                 if not partners:
                     raise ArithmeticError(f"the isotropic ray {rays[position]} has no positive pairing in its simplicial piece")
                 # A positive-norm vector involving this null ray must have
                 # a nonzero coefficient on at least one positively paired
                 # ray. Zero pairings with other rays impose no constraint;
                 # they must not be used as the minimum positive pairing.
-                bound = (target * index**2) // (2 * min(partners))
-            bounds.append((position, int(bound)))
-        if not bounds:
-            return ()
-        labels = tuple(lattice.module_generating_set())
-        steps = []
-        for position, bound in bounds:
-            ray_coordinates = rays[position].to_vector()
-            steps.append(tuple(Fraction(bound, index) * int(ray_coordinates(label)) for label in labels))
-        vertices = {tuple(Fraction(0) for _label in labels)}
-        for step in steps:
-            vertices |= {tuple(x + y for x, y in zip(vertex, step, strict=True)) for vertex in vertices}
-        coordinates = lattice.base_ring().free_module(lattice.module_generating_set())
-        points = ConvexPolytopes(coordinates)(sorted(vertices)).integral_points()
-        square = lattice.base_ring()(self._norm)
+                bounds.append(scaled_target // (2 * min(partners)))
+        # Residues of L modulo the ray span: with S = U R V, the rows of
+        # V^{-1} form a basis W of L with sum Z r_i = sum s_i Z W_i.
+        smith, _left, right = ray_matrix.smith_form()
+        basis = right.inverse()
+        adjugate = (ray_matrix.change_ring(SageQQ).inverse() * determinant).change_ring(SageZZ)
+        diagonal = [int(smith[index, index]) for index in range(rank)]
+        found: list[Lattices.ElementMethods] = []
         ring = lattice.base_ring()
-        vectors = (
-            lattice.linear_combination({label: ring(entry) for label, entry in zip(labels, coordinates_, strict=True) if entry})
-            for point in points
-            for coordinates_ in [tuple(point.to_vector()(label) for label in labels)]
-        )
-        return tuple(vector for vector in vectors if vector.q() == square and subcone.contains(vector))
+
+        def search(scaled: list[int], paired: list[int], square: int, position: int) -> None:
+            if position == rank:
+                if square == scaled_target:
+                    row = vector(SageZZ, scaled) * ray_matrix
+                    if any(entry % determinant for entry in row):
+                        raise ArithmeticError("a residue-class combination of the rays is not a lattice vector")
+                    found.append(lattice.linear_combination({label: ring(int(entry) // determinant) for label, entry in zip(labels, row, strict=True) if entry}))
+                return
+            start = scaled[position]
+            while scaled[position] <= bounds[position] and square <= scaled_target:
+                search(scaled, paired, square, position + 1)
+                # D^2 q(C + D e_i) = D^2 q(C) + 2 D (bC)_i + D^2 b_ii.
+                square += 2 * determinant * paired[position] + determinant * determinant * signed[position][position]
+                for other in range(rank):
+                    paired[other] += determinant * signed[other][position]
+                scaled[position] += determinant
+            steps = (scaled[position] - start) // determinant
+            for other in range(rank):
+                paired[other] -= steps * determinant * signed[other][position]
+            scaled[position] = start
+
+        for digits in product(*(range(entry) for entry in diagonal)):
+            representative = vector(SageZZ, digits) * basis
+            # D c = representative * adj(R) (up to the sign of det R); its
+            # residues mod D are the scaled coefficients of the class.
+            numerators = representative * adjugate
+            scaled = [int(entry) % determinant for entry in numerators]
+            paired = [sum(signed[row][column] * scaled[column] for column in range(rank)) for row in range(rank)]
+            square = sum(scaled[row] * paired[row] for row in range(rank))
+            search(scaled, paired, square, 0)
+        return tuple(found)
 
     def local_stabilizer_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[Lattices.ElementMethods, ...], ...]:
         marks = self.local_marks(cell)
