@@ -29,6 +29,7 @@ from dzack_research.preamble.categories.sets.indexed_families import (
 )
 from dzack_research.preamble.categories.sets.set_categories import Sets
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
+from sage.geometry.triangulation.point_configuration import PointConfiguration
 from sage.groups.perm_gps.permgroup_named import SymmetricGroup
 from sage.matrix.constructor import matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
@@ -1258,17 +1259,32 @@ class MarkedCellOrbitAlgorithm:
             zero = cell.lattice.base_ring().zero()
             marks = tuple(ray for ray in self.complex().local_backend().cell_cone(cell).primitive_rays() if ray.q() == zero)
         else:
-            cone = RationalPolyhedralCones(cell.lattice).from_rays(cell.vector_configuration)
+            lattice = cell.lattice
+            labels = tuple(lattice.module_generating_set())
+            gram = _gram_matrix(lattice)
+            ray_rows = [vector(SageZZ, [int(ray.to_vector()(label)) for label in labels]) for ray in self.complex().local_backend().cell_cone(cell).primitive_rays()]
+            # The rays of a pointed cone in the closed positive cone all pair
+            # positively with the interior vector w = sum of the rays, so the
+            # cone is the cone over the polytope of the points r / b(r, w); a
+            # triangulation of that point configuration covers the cone by
+            # simplicial cones on rays.
+            interior = sum(ray_rows[1:], ray_rows[0])
+            heights = [(row * gram * interior) for row in ray_rows]
+            if any(height <= 0 for height in heights):
+                raise ArithmeticError("the rays of a perfect cell must pair positively with its interior vector")
+            points = PointConfiguration([[SageQQ(entry) / height for entry in row] for row, height in zip(ray_rows, heights, strict=True)])
             found: dict[tuple[int, ...], Lattices.ElementMethods] = {}
-            for subcone in cone.triangulation().values():
-                for mark in self._subcone_vectors_of_square(cone, subcone):
-                    found[tuple(int(mark.to_vector()(label)) for label in cell.lattice.module_generating_set())] = mark
-            marks = tuple(mark for mark in found.values() if mark.content() == 1)
+            for simplex in points.placing_triangulation():
+                for row in self._simplicial_vectors_of_square(gram, [ray_rows[position] for position in simplex]):
+                    key = tuple(int(entry) for entry in row)
+                    if key not in found and gcd(*key) == 1:
+                        found[key] = lattice.linear_combination({label: lattice.base_ring()(entry) for label, entry in zip(labels, key, strict=True) if entry})
+            marks = tuple(found.values())
         self._local_mark_cache[key] = marks
         return marks
 
-    def _subcone_vectors_of_square(self, cone: Parent, subcone: Parent) -> tuple[Lattices.ElementMethods, ...]:
-        r"""The lattice vectors of square n in one simplicial piece of a cell's cone.
+    def _simplicial_vectors_of_square(self, gram: Matrix_integer_dense, ray_rows: list[FreeModuleElement[Integer]]) -> tuple[FreeModuleElement[Integer], ...]:
+        r"""The coordinate rows of the lattice vectors of square n in the simplicial cone on ray_rows.
 
         Let R be the matrix of the piece's primitive rays r_i and D = |det R|. A lattice
         vector of the piece is v = sum c_i r_i with C = D c in Z_{>=0}^k, and C mod D runs
@@ -1279,17 +1295,16 @@ class MarkedCellOrbitAlgorithm:
         so 2 C_i b_ij <= D^2 |n|. Each residue class is enumerated by depth-first search
         within these bounds, pruning a branch once its square exceeds |n|.
         """
-        lattice = cone.ambient_lattice()
+        ray_rows = list(ray_rows)
         # Search the timelike rays first: a null ray's coefficient raises
         # the square only once a positively paired coefficient is nonzero.
-        rays = tuple(sorted(subcone.primitive_rays(), key=lambda ray: ray.q() == lattice.base_ring().zero()))
-        if not rays:
-            return ()
-        labels = tuple(lattice.module_generating_set())
-        rank = len(rays)
-        if rank != len(labels):
+        ray_rows.sort(key=lambda row: (row * gram * row) == 0)
+        rank = len(ray_rows)
+        if rank != gram.nrows():
             raise ArithmeticError("a simplicial piece of a full-dimensional cell cone must be full-dimensional")
-        pairings = [[int(lattice.b(left, right)) for right in rays] for left in rays]
+        ray_matrix = matrix(SageZZ, ray_rows)
+        pairing_matrix = ray_matrix * gram * ray_matrix.transpose()
+        pairings = [[int(pairing_matrix[i, j]) for j in range(rank)] for i in range(rank)]
         # A simplicial face contained in a null ray has identically zero
         # quadratic form. It contributes no positive-norm marks, regardless
         # of the ambient lattice's signature. In particular, choosing the
@@ -1299,11 +1314,10 @@ class MarkedCellOrbitAlgorithm:
         sign = 1 if sum(sum(row) for row in pairings) > 0 else -1
         signed = [[sign * entry for entry in row] for row in pairings]
         if any(entry < 0 for row in signed for entry in row):
-            raise ArithmeticError(f"the rays {rays} of a cell's cone do not pair with one sign, as rays of the closed positive cone do")
+            raise ArithmeticError(f"the rays {ray_rows} of a cell's cone do not pair with one sign, as rays of the closed positive cone do")
         target = sign * int(self._norm)
         if target <= 0:
             raise ArithmeticError("positive-square marks require a nonzero norm with the sign of the cone")
-        ray_matrix = matrix(SageZZ, [[int(ray.to_vector()(label)) for label in labels] for ray in rays])
         determinant = abs(int(ray_matrix.det()))
         if determinant == 0:
             raise ArithmeticError("the rays of a simplicial piece must be independent")
@@ -1315,7 +1329,7 @@ class MarkedCellOrbitAlgorithm:
             else:
                 partners = [signed[position][other] for other in range(rank) if other != position and signed[position][other] > 0]
                 if not partners:
-                    raise ArithmeticError(f"the isotropic ray {rays[position]} has no positive pairing in its simplicial piece")
+                    raise ArithmeticError(f"the isotropic ray {ray_rows[position]} has no positive pairing in its simplicial piece")
                 # A positive-norm vector involving this null ray must have
                 # a nonzero coefficient on at least one positively paired
                 # ray. Zero pairings with other rays impose no constraint;
@@ -1327,8 +1341,7 @@ class MarkedCellOrbitAlgorithm:
         basis = right.inverse()
         adjugate = (ray_matrix.change_ring(SageQQ).inverse() * determinant).change_ring(SageZZ)
         diagonal = [int(smith[index, index]) for index in range(rank)]
-        found: list[Lattices.ElementMethods] = []
-        ring = lattice.base_ring()
+        found: list[FreeModuleElement[Integer]] = []
 
         def search(scaled: list[int], paired: list[int], square: int, position: int) -> None:
             if position == rank:
@@ -1336,7 +1349,7 @@ class MarkedCellOrbitAlgorithm:
                     row = vector(SageZZ, scaled) * ray_matrix
                     if any(entry % determinant for entry in row):
                         raise ArithmeticError("a residue-class combination of the rays is not a lattice vector")
-                    found.append(lattice.linear_combination({label: ring(int(entry) // determinant) for label, entry in zip(labels, row, strict=True) if entry}))
+                    found.append(vector(SageZZ, [int(entry) // determinant for entry in row]))
                 return
             start = scaled[position]
             while scaled[position] <= bounds[position] and square <= scaled_target:
