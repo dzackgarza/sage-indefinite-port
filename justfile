@@ -38,6 +38,10 @@ ci_dir := ".tmp/ci"
 ci-provision-sage:
     #!/usr/bin/env bash
     set -euo pipefail
+    # Sage is a meson-python editable install that rebuilds on import; print
+    # that rebuild, and fail here if Sage does not import.
+    export MESONPY_EDITABLE_VERBOSE=1
+    "$SAGE_BIN" -python -c 'import sage.all'
     "$SAGE_BIN" -pip install --quiet "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard
     # dzack-research from its main branch, cloned without submodules: pip's
     # git install recurses into them, and one is an SSH-only workspace.
