@@ -12,6 +12,7 @@ from math import gcd, isqrt
 from random import choice, randrange, shuffle
 from typing import Literal, cast, overload
 
+import numpy as np
 from dzack_research.preamble.all import FormModules, FramedFreeModules, Lattices
 from dzack_research.preamble.categories.definite_lattices import LatticeReduction
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
@@ -27,7 +28,6 @@ from dzack_research.preamble.categories.sets.finite_ordered_sets import (
 from dzack_research.preamble.categories.sets.indexed_families import (
     finite_indexed_family,
 )
-from dzack_research.preamble.categories.sets.set_categories import Sets
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.groups.perm_gps.permgroup_named import SymmetricGroup
 from sage.libs.gap.libgap import libgap
@@ -45,7 +45,7 @@ from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ as SageQQ
 from sage.rings.real_double import RDF
 from sage.sets.real_set import RealSet
-from sage.structure.element import Element, RingElement
+from sage.structure.element import RingElement
 from sage.structure.parent import Parent
 
 from sage_indefinite_port.indefinite.indefinite_reduction import _indefinite_reduction
@@ -398,34 +398,6 @@ class LorentzianPerfectLocalBackend:
             normal_direction = vector(SageQQ, [-direction_scalar, *direction_covector.column(0)])
             critical, base_normal, _test_direction, _max_scal = _kernel_flipping(normalized, critical, base_normal, normal_direction, allowed_squares)
         return LorentzianPerfectCell(lattice, critical, allowed_squares)
-
-    @cached_method
-    def cell_family(self, cell: LorentzianPerfectCell) -> Element:
-        r"""The perfect-cell family with its intrinsic pairing-spectrum colouring.
-
-        The colour of a vector is its norm together with the multiset of
-        pairings against the other vectors. An isometry of configurations
-        preserves these colours, and conversely every pairing-preserving
-        bijection preserves them. Thus the coloured and uncoloured families
-        have exactly the same integral stabilizers and transporters, while
-        the labelled-graph engine can distinguish the colour classes before
-        searching for a pairing-graph isomorphism.
-        """
-        vectors = cell.vector_configuration
-        rows = matrix(SageZZ, [_coordinate_row(cell.lattice, point, SageZZ) for point in vectors])
-        pairings = rows * _gram_matrix(cell.lattice) * rows.transpose()
-        signatures = tuple(
-            (
-                int(pairings[i, i]),
-                gcd(*(int(entry) for entry in rows.row(i))),
-                tuple(sorted(int(pairings[i, j]) for j in range(len(vectors)) if i != j)),
-            )
-            for i in range(len(vectors))
-        )
-        classes = {signature: index for index, signature in enumerate(sorted(set(signatures)))}
-        colours = Sets.Δ[len(classes) - 1]
-        points = Sets().product((cell.lattice, colours))
-        return Sets().Mor(Sets.Δ[len(vectors) - 1], points)(lambda index: points((vectors[int(index)], colours[classes[signatures[int(index)]]])))
 
     @cached_method
     def cell_stabilizer(self, cell: LorentzianPerfectCell) -> tuple[LatticeIsometryMethods, ...]:
@@ -965,16 +937,7 @@ class LorentzianPerfectComplex:
         self._allowed_squares = allowed_squares
         self._local_backend = LorentzianPerfectLocalBackend()
         self._traversal_representatives: list[LorentzianPerfectCell] | None = None
-        self._traversal_representative_buckets: dict[
-            tuple[
-                tuple[int, ...],
-                tuple[int, ...],
-                tuple[tuple[int, tuple[int, ...]], ...],
-                tuple[int, ...],
-                tuple[int, ...],
-            ],
-            list[LorentzianPerfectCell],
-        ] = {}
+        self._traversal_representative_buckets: dict[PerfectFormKey, list[LorentzianPerfectCell]] = {}
         self._traversal_adjacencies: list[LorentzianCellAdjacency] = []
         self._traversal_processed: set[int] = set()
         self._traversal_facet_orbits = {}
@@ -1107,38 +1070,45 @@ class LorentzianPerfectComplex:
         return self.component_preserving_generators() + (negation,)
 
 
-def _perfect_form_hash_key(
-    cell: LorentzianPerfectCell,
-) -> tuple[
-    tuple[int, ...],
-    tuple[int, ...],
-    tuple[tuple[int, tuple[int, ...]], ...],
-    tuple[int, ...],
-    tuple[int, ...],
-]:
-    r"""The upstream pairing multisets, refined by integral configuration invariants.
+type PerfectFormKey = tuple[tuple[tuple[int, int], ...], tuple[tuple[int, int], ...], tuple[int, ...], tuple[int, ...]]
 
-    ComputeInvariantPerfectForm hashes the multiplicities of diagonal and
-    off-diagonal Gram pairings of the configuration. The upstream integral
-    isomorphism test then canonicalizes its weighted Gram graph
-    (PolytopeEquiStabInt.h:194-220). Each vertex's diagonal value and
-    multiset of incident weights are preserved by any graph isomorphism;
-    their sorted family therefore refines the initial hash without excluding
-    any possible transporter. Further necessary integral conditions are the
-    configuration's Smith invariants and the contents of its individual
-    vectors: row permutations and integral unimodular coordinate changes
-    preserve both. The exact isometry test remains mandatory.
+_PAIRING_BLOCK_ROWS = 1024
+
+
+def _perfect_form_hash_key(cell: LorentzianPerfectCell) -> PerfectFormKey:
+    r"""ComputeInvariantPerfectForm (lorentzian_perfect.h:1212-1256), with two integral invariants.
+
+    The source streams the configuration's Gram pairings and keeps the
+    multiplicity of each diagonal value and of each off-diagonal value
+    b(v_i, v_j), i < j.  The pairings are streamed here in blocks of rows, so
+    no n x n matrix is formed.  The configuration's Smith invariants and the
+    contents of its vectors are further necessary conditions for an integral
+    isometry, read off the n x rank row matrix.  The exact isometry test
+    remains mandatory.
     """
-    rows = matrix(SageZZ, cell.rows)
-    pairings = rows * _gram_matrix(cell.lattice) * rows.transpose()
-    diagonal = tuple(sorted(int(pairings[index, index]) for index in range(rows.nrows())))
-    off_diagonal = tuple(sorted(int(pairings[left, right]) for left in range(rows.nrows()) for right in range(left + 1, rows.nrows())))
-    vertex_spectra = tuple(
-        sorted((int(pairings[index, index]), tuple(sorted(int(pairings[index, other]) for other in range(rows.nrows()) if other != index))) for index in range(rows.nrows()))
+    rows = np.array(cell.rows, dtype=np.int64)
+    gram = np.array([[int(entry) for entry in row] for row in _gram_matrix(cell.lattice).rows()], dtype=np.int64)
+    # Every pairing is bounded by rank^2 max|v|^2 max|G|; the int64 products are exact below 2^62.
+    bound = rows.shape[1] ** 2 * int(np.abs(rows).max()) ** 2 * int(np.abs(gram).max())
+    if bound >= 2**62:
+        raise ArithmeticError("perfect-cell pairings exceed exact 64-bit integer arithmetic")
+    covectors = rows @ gram
+    diagonal = Counter(int(value) for value in np.einsum("ij,ij->i", covectors, rows))
+    all_pairs: Counter[int] = Counter()
+    for start in range(0, rows.shape[0], _PAIRING_BLOCK_ROWS):
+        block = rows[start : start + _PAIRING_BLOCK_ROWS] @ covectors.T
+        values, counts = np.unique(block, return_counts=True)
+        all_pairs.update(dict(zip((int(value) for value in values), (int(count) for count in counts), strict=True)))
+    # The full square counts each unordered pair twice and the diagonal once.
+    off_diagonal = {value: (all_pairs[value] - diagonal.get(value, 0)) // 2 for value in all_pairs}
+    smith_invariants = tuple(int(entry) for entry in matrix(SageZZ, cell.rows).elementary_divisors())
+    vector_contents = tuple(sorted(gcd(*row) for row in cell.rows))
+    return (
+        tuple(sorted(diagonal.items())),
+        tuple(sorted((value, count) for value, count in off_diagonal.items() if count)),
+        smith_invariants,
+        vector_contents,
     )
-    smith_invariants = tuple(int(entry) for entry in rows.elementary_divisors())
-    vector_contents = tuple(sorted(gcd(*(int(entry) for entry in row)) for row in rows.rows()))
-    return diagonal, off_diagonal, vertex_spectra, smith_invariants, vector_contents
 
 
 def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode) -> LorentzianPerfectDomainTraversal:
