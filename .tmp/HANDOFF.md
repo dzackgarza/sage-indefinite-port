@@ -7,21 +7,11 @@ The full remaining obligation is in TODO.md, and Now never narrows it.
 
 ## Now
 
-**Unit:** #15. **Node:** CELLS → A_PERFECT (TODO.md row A_PERFECT). **Selection:** already made; do not run `itree next` until #15 is closed.
+**Coordinator:** the Claude session that rewrote this protocol is running the port with parallel agents, one per file: edgewalk (`edgewalk*.py`), recursion (`recursive.py`), parabolic (`isotropic_induction.py`), Eichler (`eichler.py`), and perfect cells plus orthogonal groups (`lorentzian_cells.py`, `indefinite_reduction.py`, `groupoid_cache.py`, `marked_lattices.py`). Do not edit those files while it runs.
 
-**Acceptance:** the first CI Acceptance run is for the push of `implement/lorentzian-completion` made on 2026-10-21 (AGENTS.md "Running Sage" says how to find and read it).
-Until it finishes, work from the known failure below.
+**Research fixes in progress** (uncommitted, in `/home/dzack/research/.tmp/wt-port-fix`): small-family `engine_permutation`; general-codimension `witt_extension`; `invariant_module_construction` without `is_finite()` on infinite groups; setwise sublattice stabilizer on `O_plus()`. Still open: `right_coset_section` re-admission (`g_sets.py:682`), non-spanning families in `_coordinate_basis_data`, E10 orbit-span speed.
 
-**Steps, in order:**
-
-1. Repair the known A_PERFECT failure.
-   `test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_1]` raises `ArithmeticError: the exact-distance isotropic shell returned a nonisotropic vector` in `_ambient_vectors` (`lorentzian_cells.py`, called from `vectors_at_multiplier` / `first_shell` / `_search_initial_vectors` / `initial_cell`); traceback in `.tmp/accept-perfect-final-20261021g.log`. Hypothesis: the rewritten exact-distance shell (`_fixed_distance_vectors` and its LLL transport) diverges from the pinned isotropic initial-vector step, since the Oct 20 source passed isotropic cases 0–38 (`.tmp/accept-original-full-20261020i.log`). Read the pinned step `_search_initial_vectors` translates, run this one node locally (AGENTS.md "Running Sage"), locate the divergence, fix it there, commit, push.
-
-2. When the Acceptance run finishes, download `acceptance-summary` and write its per-family counts here.
-   Every A_PERFECT failure becomes the next step of this node.
-   A failure in another family is that family's diagnostic pointer in its TODO.md row; it does not displace this node.
-
-3. While no local check is needed, take up EXTEND (TODO.md row EXTEND, #18). Compare `_IsotropicExtension` in `src/sage_indefinite_port/indefinite/recursive.py` with items 1–2 of `.tmp/probe/extension-callee-correspondence.md`. Commit each correction and record the correspondence as source comments.
+**Acceptance:** CI Acceptance on each push, in `ghcr.io/dzackgarza/sage-indefinite-port-sage:py314`.
 
 ## State
 
