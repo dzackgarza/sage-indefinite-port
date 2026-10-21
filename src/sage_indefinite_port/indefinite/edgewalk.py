@@ -881,14 +881,21 @@ class _Edgewalk:
         r0_coordinates = basis.transpose().solve_right(r0.column()).column(0)
         r0_vector = self.plane_primitive(plane_lattice, r0_coordinates)
 
-        perpendicular = self.edge_perpendicular(roots)
-        # For divisor one C=L, so C cap P is already the perpendicular
-        # sublattice. There is no second integral intersection to compute.
-        intersection = perpendicular if divisor == 1 else constraint.intersection(perpendicular)
-        intersection_rows = matrix(
-            SageQQ,
-            [self.row(intersection.inclusion()(generator)) for generator in intersection.inclusion().domain().module_generators()],
-        )
+        # edgewalk.h:763-764, Basis_P_inter_LN = IntersectionLattice_VectorSpace(Latt, Pplane):
+        # C cap P on the same coordinate rows as the projection above. A
+        # vector c * B of C (B the rows of a basis of C) lies in P exactly
+        # when it pairs to zero with every edge wall, so the coefficient
+        # lattice of C cap P is the integral left kernel of B G R^T.
+        if constraint_rows.nrows() != self.rank or constraint_rows.rank() != self.rank:
+            raise ArithmeticError("the module generators of C_N must be a basis of a full-rank sublattice")
+        equations = constraint_rows * self.gram * wall_matrix.transpose()
+        denominator = SageZZ.one()
+        for entry in equations.list():
+            denominator = denominator.lcm(entry.denominator())
+        coefficients = (denominator * equations).change_ring(SageZZ).left_kernel().basis_matrix()
+        intersection_rows = coefficients.change_ring(SageQQ) * constraint_rows
+        if intersection_rows.nrows() != 2:
+            raise ArithmeticError("C cap P must have rank two")
         intersection_coordinates = basis.transpose().solve_right(intersection_rows.transpose()).transpose()
         if any(entry.denominator() != 1 for entry in intersection_coordinates.list()):
             raise ArithmeticError("the perpendicular intersection must be integral in the projected lattice")
