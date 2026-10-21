@@ -371,17 +371,18 @@ class EichlerRecursion:
         field_map = lattice.base_ring().fraction_field_map()
         rational = lattice.base_change(field_map)
         inverse_denominator = rational.base_ring().one() / rational.base_ring()(int(denominator))
+        inclusion = ModulesOverIntegralDomains(lattice.base_ring())(lattice).generic_fibre_map()
         kernel_generators = []
         for integral_generator in reduction.pointwise_perpendicular_kernel().group_generators():
-            rational_generator = integral_generator.base_change(field_map)
-
-            def scaled_image(label, generator=rational_generator):
-                point = rational.module_generator(label)
-                return point + rational.scalar_multiple(inverse_denominator, generator(point) - point)
+            # T = generator - 1 is read on the integral basis and rationalized;
+            # 1 + T/d is the rational map with those scaled images.
+            def scaled_image(label, generator=integral_generator):
+                point = lattice.module_generator(label)
+                direction = inclusion(generator(point) - point).underlying_element()
+                return rational.module_generator(label) + rational.scalar_multiple(inverse_denominator, direction)
 
             kernel_generators.append(rational.Isom(rational)(scaled_image))
         generators = (*(isometry for isometry, _entry_denominator in extended), *kernel_generators)
-        inclusion = ModulesOverIntegralDomains(lattice.base_ring())(lattice).generic_fibre_map()
         space = inclusion.codomain()
         # Unlike the rational coordinate complement, the pairing L -> J^*
         # determines the invariant index a in D=2d^2e^2a intrinsically.
