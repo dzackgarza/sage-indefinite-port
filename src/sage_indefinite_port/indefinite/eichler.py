@@ -418,6 +418,21 @@ class EichlerEnvelope:
         bound = rational_envelope.integral_structure(scaled_generators)
         return IntegralStructureAction(rational_envelope.O().subgroup(generators), image).with_stable_containing_bound(bound)
 
+    @cached_method
+    def right_coset_transversal(self) -> tuple[LatticeIsometryMethods, ...]:
+        r"""Rational isometries t with A_E = union of G_L t: ListCoset of ApproximateModels.h:1318-1332.
+
+        The pointed orbit G/G_L of phi(L) has the representative map
+        p |-> t_p with t_p(phi(L)) = p, so G = union of t_p G_L and
+        G = union of G_L t_p^-1.  The inverses are used only as rational
+        isometries acting on vectors of E tensor Q (get_vector_representatives,
+        :1374-1390); they are not re-admitted as words of the generated
+        subgroup, whose membership the preamble does not decide.
+        """
+        coset_space = self.stabilizer_of_lattice().right_cosets()
+        representative = coset_space.representative_map()
+        return tuple(~representative(point) for point in coset_space)
+
 
 class OrbitCoverModel:
     r"""The approximate subgroup A_L of O(L) and the covering lists of the Eichler recursion."""
@@ -757,10 +772,8 @@ class OrbitCoverModel:
             if int(witness.q()) != square:
                 raise ArithmeticError("the identity-coset lift has the wrong norm")
             return witness
-        coset_space = envelope.stabilizer_of_lattice().right_cosets()
-        section = coset_space.right_coset_section()
-        for coset in coset_space:
-            lifted = self._pullback_envelope_vector(candidate, section(coset))
+        for coset in envelope.right_coset_transversal():
+            lifted = self._pullback_envelope_vector(candidate, coset)
             if lifted is not None:
                 return lifted
         # :1466-1471: the first vector of the covering list of norm X.
@@ -793,9 +806,7 @@ class OrbitCoverModel:
         # sigma(v) = c g p with g in A_E and p a covering representative; writing g = h t with
         # h in the stabilizer of phi(L) and t a right-coset representative, v is A_L-equivalent
         # to sigma^-1(c t p). So t ranges over a transversal of the right cosets G_L t.
-        coset_space = envelope.stabilizer_of_lattice().right_cosets()
-        section = coset_space.right_coset_section()
-        cosets = tuple(section(point) for point in coset_space)
+        cosets = envelope.right_coset_transversal()
         envelope_square = envelope.scale**2 * square
         found: list[Lattices.ElementMethods] = []
         # sigma(v) for v primitive in L is c times a primitive vector of E with c dividing the
