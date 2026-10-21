@@ -33,9 +33,9 @@ from sage_indefinite_port.indefinite.indefinite_reduction import (
 )
 from sage_indefinite_port.indefinite.lorentzian_cells import (
     NONNEGATIVE_SQUARES,
-    LorentzianPerfectComplex,
     MarkedCellOrbitAlgorithm,
     binary_split_primitive_vector_classes,
+    perfect_complex,
 )
 from sage_indefinite_port.indefinite.recursive import EichlerRecursion
 from sage_indefinite_port.invariants import AttackProfile
@@ -75,7 +75,7 @@ class IsotropicInduction:
                 # The integral isometry reduced -> lattice transports the
                 # complete orbit representatives, as res.B.transpose() does.
                 reduction = indefinite_reduced_presentation(lattice)
-                orbits = MarkedCellOrbitAlgorithm(LorentzianPerfectComplex(reduction.reduced, NONNEGATIVE_SQUARES), 0).global_orbits()
+                orbits = MarkedCellOrbitAlgorithm(perfect_complex(reduction.reduced, NONNEGATIVE_SQUARES), 0).global_orbits()
                 return tuple(reduction.isometry(orbit[0]) for orbit in orbits)
             case _:
                 return tuple(vector_class.representative for vector_class in self.recursion.primitive_vector_classes(lattice, 0))
