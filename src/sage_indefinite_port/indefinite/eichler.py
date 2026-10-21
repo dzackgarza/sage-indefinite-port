@@ -751,10 +751,36 @@ class OrbitCoverModel:
         """
         if self.envelope is None:
             return tuple(self.model.approximate_generating_family())
+        # :1337-1349 forms fGen = Embed * eGen * EmbedInv for each stabilizer
+        # generator and requires it to be integral.  In rows, with R the
+        # matrix of phi (row i the E-coordinates of phi(e_i)) and G that of a
+        # generator, phi^-1 g phi has matrix R G R^-1.  Equal matrices give
+        # equal generators and the identity generates nothing; a Schreier
+        # family contains both, so each distinct matrix is kept once.
         envelope = self.envelope
-        stabilizer = envelope.stabilizer_of_lattice().stabilizer()
-        inverse = envelope.rational_isometry.inverse()
-        return tuple(self.lattice.integral_isometry(inverse * generator * envelope.rational_isometry) for generator in stabilizer.group_generators())
+        rational = envelope.rational_isometry
+        rational_lattice, rational_envelope = rational.domain(), rational.codomain()
+        lattice_labels = tuple(self.lattice.module_generating_set())
+        envelope_labels = tuple(rational_envelope.module_generating_set())
+
+        def coordinates(vector: Lattices.ElementMethods) -> list[SageQQ]:
+            values = vector.to_vector()
+            return [SageQQ(int(values(label).numerator())) / int(values(label).denominator()) for label in envelope_labels]
+
+        embedding = matrix(SageQQ, [coordinates(rational(rational_lattice.module_generator(label))) for label in lattice_labels])
+        embedding_inverse = embedding.inverse()
+        identity = identity_matrix(SageQQ, len(lattice_labels))
+        conjugates: dict[tuple[int, ...], LatticeIsometryMethods] = {}
+        for generator in envelope.stabilizer_of_lattice().stabilizer().group_generators():
+            conjugate = embedding * matrix(SageQQ, [coordinates(generator(rational_envelope.module_generator(label))) for label in envelope_labels]) * embedding_inverse
+            if conjugate.denominator() != 1:
+                raise ArithmeticError("a stabilizer generator of phi(L) must conjugate to an integral isometry of L")
+            if conjugate == identity:
+                continue
+            key = tuple(int(entry) for entry in conjugate.list())
+            if key not in conjugates:
+                conjugates[key] = self.lattice.O()(tuple(self.lattice([int(entry) for entry in row]) for row in conjugate.rows()))
+        return tuple(conjugates.values())
 
     def _pullback_envelope_vector(self, point: Lattices.ElementMethods, coset: LatticeIsometryMethods) -> Lattices.ElementMethods | None:
         """Lift a rational coset image from the envelope through the integral similarity, if possible."""
