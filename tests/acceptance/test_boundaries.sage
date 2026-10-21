@@ -10,7 +10,6 @@ arXiv:1607.01324), Scattone's K3 boundaries of degree 2 and 4 (Mem. AMS 374, Â§Â
 
 import pytest
 
-from sage_indefinite_port.readiness import UnfinishedCapability
 from tests.acceptance.consumer import (
     MARKED_AUTOMORPHISMS,
     MARKED_CLASSES,
@@ -65,13 +64,12 @@ def _dawes_groups(case):
             return [lattice_.O_plus(), _stable_o_plus(lattice_)]
         case "dawes_L2_gamma2":
             v = basis(lattice_)[4]
-            assert v.q() == -2
+            assert int(v.q()) == -2
             return [_o_plus_fixing(lattice_, v.divided_discriminant_class())]
     raise AssertionError(f"no group for {case['id']}")
 
 
 @pytest.mark.parametrize("case", _DAWES["buildings"], ids=lambda case: case["id"])
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_dawes_buildings_have_the_published_counts(case) -> None:
     require(MARKED_CLASSES)
 
@@ -82,7 +80,6 @@ def test_dawes_buildings_have_the_published_counts(case) -> None:
 
 
 @pytest.mark.parametrize("graph", _DAWES["incidence_graphs"], ids=lambda graph: graph["building_id"])
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_dawes_building_incidence_graph_is_the_published_figure(graph) -> None:
     require(MARKED_CLASSES)
 
@@ -100,7 +97,6 @@ def test_dawes_building_incidence_graph_is_the_published_figure(graph) -> None:
     assert computed == published
 
 
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_dawes_last_index_in_the_chain_is_the_discriminant_image_of_o_plus() -> None:
     require(MARKED_AUTOMORPHISMS)
 
@@ -144,14 +140,13 @@ def _lambda_n(n: int) -> list[list[int]]:
 def _gamma(lattice_):
     """Gamma(N) = {phi in O^+(Lambda_N) : phi(xi) = xi} for a decoration xi, q(xi) = 1 mod 2Z."""
     form = lattice_.discriminant_group()
-    one = form.quadratic_value_module()(1)
+    one = form.quadratic_value_module()(1r)
     decorations = [x for x in form.elements() if form.q(x) == one]
     assert decorations, f"{lattice_} has no decoration"
     return _o_plus_fixing(lattice_, decorations[0])
 
 
 @pytest.mark.parametrize("case", _DTOWER["type_counts"], ids=lambda case: f"N_{case['N']}")
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_dtower_boundary_component_counts(case) -> None:
     require(MARKED_CLASSES)
 
@@ -163,7 +158,6 @@ def test_dtower_boundary_component_counts(case) -> None:
 
 
 @pytest.mark.parametrize("picture", _DTOWER["boundary_pictures"], ids=lambda picture: picture["id"])
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_dtower_boundary_pictures(picture) -> None:
     require(MARKED_CLASSES)
 
@@ -181,7 +175,6 @@ def _lambda_2k(k: int) -> list[list[int]]:
     return [list(row) for row in block_diagonal_matrix([hyperbolic, hyperbolic, e8, e8, matrix(ZZ, [[-2 * k]])]).rows()]
 
 
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_degree_two_k3_type_ii_components_and_root_types() -> None:
     require(MARKED_CLASSES)
 
@@ -192,7 +185,6 @@ def test_degree_two_k3_type_ii_components_and_root_types() -> None:
     assert sorted(sublattice_of(plane).isotropic_reduction().norm_two_root_types() for plane in planes) == sorted(case["type_ii_root_types"])
 
 
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_degree_four_k3_has_nine_type_ii_components() -> None:
     require(MARKED_CLASSES)
 
@@ -216,7 +208,7 @@ def _gamma_h(face_polarization):
 
     involution = Involutions.I_En
     invariant = involution.primitive_extension().invariant
-    transport = lattice(_E10["gram"]).twist(2).Isom(invariant).an_element()
+    transport = lattice(_E10["gram"]).twist(2r).Isom(invariant).an_element()
     polarization = invariant.inclusion()(transport(element(transport.domain(), face_polarization)))
     anti_invariant_group = involution.polarized(polarization).coinvariant_extension_subgroup()
     anti_invariant = anti_invariant_group.supergroup().domain()
@@ -224,7 +216,6 @@ def _gamma_h(face_polarization):
 
 
 @pytest.mark.parametrize("case", _ENRIQUES, ids=lambda case: f"case_{case['case']}")
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_enriques_modular_groups_match_dutour_sikiric_hulek(case) -> None:
     require(MARKED_CLASSES, MARKED_AUTOMORPHISMS)
 
@@ -243,7 +234,6 @@ def test_enriques_modular_groups_match_dutour_sikiric_hulek(case) -> None:
     load_enriques_classical_indices()["consistent_with_table"] + load_enriques_classical_indices()["inconsistent_with_table"],
     ids=lambda case: f"degree_{case['degree']}",
 )
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_classical_polarization_indices(case) -> None:
     require(MARKED_AUTOMORPHISMS)
 

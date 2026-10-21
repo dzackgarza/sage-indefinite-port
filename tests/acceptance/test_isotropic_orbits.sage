@@ -13,7 +13,6 @@ group of these sources.
 
 import pytest
 
-from sage_indefinite_port.readiness import UnfinishedCapability
 from tests.acceptance.consumer import (
     MARKED_AUTOMORPHISMS,
     MARKED_CLASSES,
@@ -37,7 +36,6 @@ from tests.fixtures.oracle_fixtures import (
 
 
 @pytest.mark.parametrize("case", load_isotropic_cases(), ids=lambda case: case["id"])
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors(case) -> None:
     require(MARKED_CLASSES)
 
@@ -51,7 +49,6 @@ def _n():
     return lattice(_N["lattice"]["gram"])
 
 
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_o_plus_n_has_two_line_and_two_plane_orbits() -> None:
     require(MARKED_CLASSES)
 
@@ -62,7 +59,6 @@ def test_o_plus_n_has_two_line_and_two_plane_orbits() -> None:
     assert len(subgroup_classes(n.O_plus(), isotropic_classes(n, 2))) == counts["plane_orbits"]
 
 
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_stable_o_plus_n_orbits_match_dutour_sikiric_hulek() -> None:
     require(MARKED_CLASSES)
 
@@ -75,7 +71,6 @@ def test_stable_o_plus_n_orbits_match_dutour_sikiric_hulek() -> None:
     assert len(subgroup_classes(group, flag_classes(n))) == counts["flag_orbits"]
 
 
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_o_n_maps_onto_o_of_the_discriminant_form() -> None:
     require(MARKED_AUTOMORPHISMS)
 
@@ -91,7 +86,6 @@ def _published(n, key):
 
 
 @pytest.mark.parametrize("rank", [1, 2])
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_published_representatives_lie_in_distinct_o_plus_orbits(rank) -> None:
     require(MARKED_CLASSES, MARKED_ISOMETRY)
 
@@ -110,7 +104,6 @@ def test_published_representatives_lie_in_distinct_o_plus_orbits(rank) -> None:
     _N["component_preserving_group"]["line_representatives"] + _N["component_preserving_group"]["plane_representatives"],
     ids=lambda rep: rep["id"],
 )
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_stabilizer_images_have_dutour_sikiric_hulek_indices(representative) -> None:
     require(MARKED_AUTOMORPHISMS)
 
@@ -129,7 +122,6 @@ _PARITY = {"I_{1,9}": False, "II_{1,9}": True, "E8(-1)": True, "I_{0,8}": False}
 
 
 @pytest.mark.parametrize("rank, key", [(1, "primitive_isotropic_vector_orbits"), (2, "isotropic_plane_orbits")])
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_i_2_10_isotropic_classes_are_one_odd_and_one_even(rank, key) -> None:
     require(MARKED_CLASSES)
 

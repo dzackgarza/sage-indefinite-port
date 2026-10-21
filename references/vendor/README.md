@@ -6,7 +6,7 @@ Retrieved 2026-10-07.
 
 | Directory | Origin | Version |
 | --- | --- | --- |
-| `polyhedral_common@1592b246/CI_tests/` | https://github.com/MathieuDutSik/polyhedral_common | `1592b2463bc7a04d94e900bf8efbada607405d8d` |
+| `polyhedral_common@1592b246/CI_tests/`, `src_lorentzian/`, `src_indefinite/`, `src_isotropy/` | https://github.com/MathieuDutSik/polyhedral_common | `1592b2463bc7a04d94e900bf8efbada607405d8d` |
 | `Indefinite.jl@374a5ebb/` | https://github.com/MathieuDutSik/Indefinite.jl | `374a5ebb5ae33e5688fd95052a4c68cbc91ae6aa` |
 | `GeometryDatabase_Rank3_Lorentzian_lattices@63a9067a/` | https://github.com/MathieuDutSik/GeometryDatabase_Rank3_Lorentzian_lattices (Allcock's rank-3 table) | `63a9067af160505ffbdba0f38198bb20b6cfcb34` |
 | `Oscar.jl@d135b70b/test/` | https://github.com/oscar-system/Oscar.jl | `d135b70b6432b18a00701dfc1d4b2c11164d663c` |

@@ -168,13 +168,13 @@ def flag_category():
 
 def marked_sublattice(lattice_, vectors):
     """The marked lattice (L, I -> L) for the sublattice I spanned by the vectors."""
-    return sublattice_category().object(lattice_.vector_configuration(list(vectors)).inclusion())
+    return sublattice_category().object(lattice_.subobject_on(list(vectors)).inclusion())
 
 
 def sublattice_of(marked):
     """The sublattice I of a marked lattice (L, I -> L), as a preamble subobject of L."""
     arrow = marked.arrow()
-    return arrow.codomain().vector_configuration([arrow(generator) for generator in basis(arrow.domain())])
+    return arrow.codomain().subobject_on([arrow(generator) for generator in basis(arrow.domain())])
 
 
 def totally_isotropic_source(rank):
