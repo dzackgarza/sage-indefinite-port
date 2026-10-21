@@ -34,9 +34,8 @@ from dzack_research.preamble.categories.rational_integral_stabilizers import (
     IntegralStructureAction,
 )
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
-from sage.matrix.constructor import identity_matrix, matrix
+from sage.matrix.constructor import identity_matrix
 from sage.rings.integer_ring import ZZ as SageZZ
-from sage.rings.rational_field import QQ as SageQQ
 from sage.structure.parent import Parent
 
 from sage_indefinite_port.indefinite.eichler import OrbitCoverModel
@@ -45,7 +44,6 @@ from sage_indefinite_port.indefinite.indefinite_reduction import (
     indefinite_reduced_presentation,
 )
 from sage_indefinite_port.indefinite.lorentzian_cells import (
-    _coordinate_row,
     lorentzian_isometry,
     lorentzian_orthogonal_group_generators,
 )
@@ -71,53 +69,47 @@ def _extend_perpendicular_isometry(
 ) -> tuple[LatticeIsometryMethods, int]:
     r"""Extend a supplied isometry of I^perp using the preamble Witt operation.
 
-    The specialized source, Indefinite.jl@374a5ebb Lorentzian.g:115–249,
-    selects a rational extension of an isometry between coisotropic subspaces.
-    The preamble owns that extension and its affine norm-correction equations.
-    This adapter only expresses the supplied images of a basis of I^perp as
-    the partial isometry on the preamble's actual perpendicular subobjects,
-    then reads the extension's denominator ideal.
+    source: Lorentzian.g:4-50 LORENTZ_ExtendOrthogonalIsotropicIsomorphism_Dim1
+    (rank-one I, called from IndefiniteForms.g:1029 and :1638) and
+    Lorentzian.g:115-249 LORENTZ_ExtendOrthogonalIsotropicIsomorphism
+    get_one_transformation (rank-two I, IndefiniteForms.g:1097-1106, :1685-1686).
+    The source's Subspace1/Subspace2 are a basis of N=I^perp and its images;
+    here they are ``source_basis`` and ``images``, read as the partial
+    isometry N_Q -> N'_Q. Its extension to L_Q -> M_Q, the Euclidean-nullspace
+    complement (Fundamental.g:509-516), the pairing equations
+    (SpecialEquationSolving, Lorentzian.g:53-99) and the prime-denominator
+    elimination (Fundamental.g:751-794) belong to the preamble's
+    ``witt_extension``. For rank-one I the extension is unique (an isometry
+    fixing the hyperplane v^perp pointwise of a nondegenerate space with
+    isotropic normal is trivial), so the choice of complement does not
+    change the result. ``GetDenominatorMatrix`` (IndefiniteForms.g:1105) is
+    the denominator ideal of the extension from L to M.
     """
     source = source_reduction.isotropic_embedding().codomain()
     target = target_reduction.isotropic_embedding().codomain()
     fraction_map = source.base_ring().fraction_field_map()
-    rational_source = source.base_change(fraction_map)
-    rational_target = target.base_change(fraction_map)
+    field = fraction_map.codomain()
     source_inclusion = source_reduction.orthogonal_complement().inclusion().base_change(fraction_map)
     target_inclusion = target_reduction.orthogonal_complement().inclusion().base_change(fraction_map)
     source_perpendicular = source_inclusion.domain()
     target_perpendicular = target_inclusion.domain()
     if len(source_basis) != int(source_perpendicular.module_rank()) or len(images) != len(source_basis):
         raise ValueError("the perpendicular partial isometry needs images of a full chosen basis")
-
-    basis = matrix(SageQQ, [_coordinate_row(source, vector, SageQQ) for vector in source_basis])
-    if basis.rank() != len(source_basis):
-        raise ValueError("the selected perpendicular generators are linearly dependent")
-    target_labels = tuple(target.module_generating_set())
-    target_field = rational_target.base_ring()
-
-    def rationalize(point):
-        coordinates = point.to_vector()
-        return rational_target.linear_combination({label: target_field(int(coordinates(label))) for label in target_labels if coordinates(label)})
-
-    partial_images = tuple(target_inclusion.lift(rationalize(point)) for point in images)
-
-    def partial_image(label):
-        source_point = source_inclusion(source_perpendicular.module_generator(label))
-        coefficients = basis.solve_left(_coordinate_row(rational_source, source_point, SageQQ))
-        return sum(
-            (
-                target_perpendicular.scalar_multiple(
-                    target_field(int(coefficient.numerator())) / target_field(int(coefficient.denominator())),
-                    image,
-                )
-                for coefficient, image in zip(coefficients, partial_images, strict=True)
-                if coefficient
-            ),
-            target_perpendicular.zero(),
-        )
-
-    partial = source_perpendicular.Isom(target_perpendicular)(partial_image)
+    source_rationalize = ModulesOverIntegralDomains(source.base_ring())(source).generic_fibre_map()
+    target_rationalize = ModulesOverIntegralDomains(target.base_ring())(target).generic_fibre_map()
+    # The free module F on the chosen basis, with F -> N_Q (the basis) and
+    # F -> N'_Q (its images): the partial isometry is the second composed
+    # with the inverse of the first. Lifting through F -> N_Q rejects a family
+    # that is not a basis of N_Q.
+    frame = field.free_module(len(source_basis))
+    labels = tuple(frame.module_generating_set())
+    basis_map = Modules(field).Mor(frame, source_perpendicular)(
+        dict(zip(labels, (source_inclusion.lift(source_rationalize(point).underlying_element()) for point in source_basis), strict=True))
+    )
+    image_map = Modules(field).Mor(frame, target_perpendicular)(
+        dict(zip(labels, (target_inclusion.lift(target_rationalize(point).underlying_element()) for point in images), strict=True))
+    )
+    partial = source_perpendicular.Isom(target_perpendicular)(lambda label: image_map(basis_map.lift(source_perpendicular.module_generator(label))))
     extension = partial.witt_extension(source_inclusion, target_inclusion)
     (denominator,) = tuple(extension.denominator_ideal(source, target).ideal_generators())
     return extension, int(denominator)
@@ -303,6 +295,9 @@ class EichlerRecursion:
     def _lattice_action(self, vector: Lattices.ElementMethods) -> IntegralStructureAction:
         r"""The rational extensions acting at L, with a finite stable containing module.
 
+        source: IndefiniteForms.g:988-1052 INDEF_FORM_GetVectorStructure for q(v) != 0:
+        each generator of O(v^perp) is extended by the identity on v
+        (``PmatInv * ExpandMatrix(eEndoRed) * Pmat``, :1019-1020).
         N=Zv+v-perp has finite index in L and is stable under every extension.
         If d annihilates L/N, then L is contained in the stable module N/d.
         This is the boundedness hypothesis for the finite residue computation.
@@ -327,7 +322,11 @@ class EichlerRecursion:
     ) -> IntegralStructureAction:
         r"""The stabilizer problem of the primitive totally isotropic J = span(isotropic), at L.
 
-        IndefiniteForms.g:1533-1545 (vectors) and :1060-1130, :1711-1725 (k-planes and flags):
+        source: IndefiniteForms.g:1555-1568 INDEF_FORM_StabilizerVector with :988-1052
+        INDEF_FORM_GetVectorStructure (isotropic v), and :1060-1131
+        INDEF_FORM_GetRec_IsotropicKplane MapOrthogonalSublatticeGroup with :1710-1723
+        INDEF_FORM_Stabilizer_IsotropicKstuff_Kernel (k-planes and flags); the stabilizer
+        of L is MatrixIntegral_Stabilizer.
         Aut(N) for N = J-perp is Hom(K, J) x| (O(K) x Gamma) with K = J-perp/J and Gamma the
         allowed action on J (trivial for a pointed vector, +-1 for a line, GL(J) for a plane, the
         flag stabilizer for a flag), given as images of the vectors of J. Its generators are
@@ -449,29 +448,21 @@ class EichlerRecursion:
         correction = self._lattice_action(target).transporter(image)
         return None if correction is None else target_lattice.integral_isometry(correction.inverse() * rational_transport, source=source_lattice)
 
-    def isotropic_subspace_isometry(
-        self, source: tuple[Lattices.ElementMethods, ...], target: tuple[Lattices.ElementMethods, ...], radical_images: tuple[tuple[Lattices.ElementMethods, ...], ...]
-    ) -> LatticeIsometryMethods | None:
-        r"""An isometry L -> M carrying J = span(source) onto J' = span(target), compatible with the marking.
+    def _reduced_isotropic_extension(self, source_reduction, target_reduction, source, target, reduced) -> LatticeIsometryMethods:
+        r"""The rational extension L_Q -> M_Q of the integral isometry N -> N' that ``reduced`` determines.
 
-        INDEF_FORM_Equivalence_IsotropicKstuff_Kernel and INDEF_FORM_EquivalenceVector
-        (IndefiniteForms.g:1607-1690). An isometry psi of the reductions K -> K' gives an isometry
-        of the perpendicular lattices sending the basis of J to the basis of J' and the frame lift
-        of k to the frame lift of psi(k); one extension of it
-        (LORENTZ_ExtendOrthogonalIsotropicIsomorphism) is a rational isometry L -> M. When it is
-        not integral, Kernel_Equivalence_Qmat looks for an element g of the extended stabilizer
-        group of J' with g composed with it integral: the transporter of
-        :meth:`isotropic_stabilizer_action` at J', with the same allowed action ``radical_images``
-        on J' (images of ``target``), which absorbs the choice of basis of J'.
+        source: IndefiniteForms.g:1623-1641 (vectors) and :1673-1686 (k-planes and
+        flags). The source's ``test`` is an integral isometry of the perpendicular
+        lattices N=J^perp -> N'=J'^perp; here it sends the basis ``source`` of J to
+        ``target`` and the frame lift of each k in K=N/J to the frame lift of
+        ``reduced(k)``. Both families are Z-bases of N and N', so this is an
+        integral isometry onto N' and carries the marking as given (the sign
+        normalization of :1639-1641 is then the identity). Its extension is
+        ``LORENTZ_ExtendOrthogonalIsotropicIsomorphism``.
         """
-        source_lattice, target_lattice = source[0].parent(), target[0].parent()
-        source_reduction = source_lattice.primitive_isotropic_subobject(*source).isotropic_reduction()
-        target_reduction = target_lattice.primitive_isotropic_subobject(*target).isotropic_reduction()
+        target_lattice = target[0].parent()
         source_quotient = source_reduction.quotient_lattice()
         target_quotient = target_reduction.quotient_lattice()
-        reduced = self.isometry(source_quotient, target_quotient)
-        if reduced is None:
-            return None
         source_labels = tuple(source_quotient.module_generating_set())
         target_labels = tuple(target_quotient.module_generating_set())
         source_frame = source_reduction.coordinate_frame()
@@ -487,6 +478,28 @@ class EichlerRecursion:
 
         images = (*target, *(target_lift(reduced(source_quotient.module_generator(label))) for label in source_labels))
         rational_transport, _denominator = _extend_perpendicular_isometry(source_reduction, target_reduction, (*source, *source_lifts), images)
+        return rational_transport
+
+    def _isotropic_correction(
+        self,
+        rational_transport: LatticeIsometryMethods,
+        source_lattice,
+        target: tuple[Lattices.ElementMethods, ...],
+        radical_images: tuple[tuple[Lattices.ElementMethods, ...], ...],
+    ) -> LatticeIsometryMethods | None:
+        r"""source: IndefiniteForms.g:1569-1604 Kernel_Equivalence_Qmat.
+
+        An integral ``EquivRat`` is returned as it is (:1578-1580). Otherwise
+        the source searches its extended stabilizer group of J (:1581-1590,
+        MatrixIntegral_Equivalence_Bis) for g with ``EquivRat * g`` integral.
+        Here the same search is the integral-structure transporter of the
+        conjugate group at J' (:meth:`isotropic_stabilizer_action`), with the
+        allowed action ``radical_images`` on J'. The transport must carry N onto
+        N' integrally (:meth:`_reduced_isotropic_extension`); every group element
+        preserves N', so a correction exists exactly when an isometry with the
+        marking exists.
+        """
+        target_lattice = target[0].parent()
         if rational_transport.is_integral_on(source_lattice, target_lattice):
             return target_lattice.integral_isometry(rational_transport, source=source_lattice)
         fraction_map = source_lattice.base_ring().fraction_field_map()
@@ -495,13 +508,42 @@ class EichlerRecursion:
         correction = self.isotropic_stabilizer_action(tuple(target), radical_images).transporter(image)
         return None if correction is None else target_lattice.integral_isometry(correction.inverse() * rational_transport, source=source_lattice)
 
-    def _isotropic_pointed_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
-        r"""Isom of primitive isotropic marked vectors, with the full target correction.
+    def isotropic_subspace_isometry(
+        self, source: tuple[Lattices.ElementMethods, ...], target: tuple[Lattices.ElementMethods, ...], radical_images: tuple[tuple[Lattices.ElementMethods, ...], ...]
+    ) -> LatticeIsometryMethods | None:
+        r"""An isometry L -> M carrying J = span(source) onto J' = span(target), compatible with the marking.
 
-        IndefiniteForms.g:1605-1650 first selects a reduction isometry. The
-        preamble's marked-line lift torsor supplies its entire integral fibre;
-        if that fibre is empty, the source's integral-equivalence correction
-        still ranges over the target's full reduced orthogonal-group action.
+        source: IndefiniteForms.g:1660-1694 INDEF_FORM_Equivalence_IsotropicKstuff_Kernel.
+        An isometry psi of the reductions K -> K' (``f_equiv``, :1673) gives an
+        isometry of the perpendicular lattices, its rational extension
+        (:meth:`_reduced_isotropic_extension`), and Kernel_Equivalence_Qmat
+        (:meth:`_isotropic_correction`), whose group's allowed action
+        ``radical_images`` on J' (images of ``target``) absorbs the choice of
+        basis of J'.
+        """
+        source_lattice = source[0].parent()
+        target_lattice = target[0].parent()
+        source_reduction = source_lattice.primitive_isotropic_subobject(*source).isotropic_reduction()
+        target_reduction = target_lattice.primitive_isotropic_subobject(*target).isotropic_reduction()
+        reduced = self.isometry(source_reduction.quotient_lattice(), target_reduction.quotient_lattice())
+        if reduced is None:
+            return None
+        rational_transport = self._reduced_isotropic_extension(source_reduction, target_reduction, source, target, reduced)
+        return self._isotropic_correction(rational_transport, source_lattice, target, radical_images)
+
+    def _isotropic_pointed_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
+        r"""Isom of primitive isotropic marked vectors.
+
+        source: IndefiniteForms.g:1605-1651 INDEF_FORM_EquivalenceVector, isotropic
+        branch. ``test`` (:1623) is a recursive isometry of the reductions; the
+        rational transport extends the integral isometry of perpendicular
+        lattices it determines and is integral already in the Ansatz case
+        (:1578). Otherwise the preamble's marked-line lift torsor supplies the
+        complete integral fibre over this reduction isometry (port-design
+        "Isometry-extension fibres"). An empty fibre for this one reduction map
+        does not make the pointed Isom empty: Kernel_Equivalence_Qmat then
+        ranges over the full stabilizer of the marked vector, which acts on K
+        through all of O(K).
         """
         source_lattice, target_lattice = source.parent(), target.parent()
         source_reduction = source_lattice.primitive_isotropic_subobject(source).isotropic_reduction()
@@ -509,41 +551,27 @@ class EichlerRecursion:
         reduced = self.isometry(source_reduction.quotient_lattice(), target_reduction.quotient_lattice())
         if reduced is None:
             return None
+        rational_transport = self._reduced_isotropic_extension(source_reduction, target_reduction, (source,), (target,), reduced)
+        if rational_transport.is_integral_on(source_lattice, target_lattice):
+            return target_lattice.integral_isometry(rational_transport, source=source_lattice)
+
         torsor = source_reduction.rational_lifts(target_reduction, reduced)
-        integral_locus = torsor.integral_members()
-        empty = integral_locus.is_empty()
-
-        fraction_map = source_lattice.base_ring().fraction_field_map()
-        source_inclusion = ModulesOverIntegralDomains(source_lattice.base_ring())(source_lattice).generic_fibre_map()
-        target_inclusion = ModulesOverIntegralDomains(target_lattice.base_ring())(target_lattice).generic_fibre_map()
-        source_vector = source_inclusion(source).underlying_element()
-        target_vector = target_inclusion(target).underlying_element()
-        rational_transport = torsor.base_point()
-        # The reduction's chosen primitive generator may differ by a global
-        # sign from the supplied pointed marking (IndefiniteForms.g:1637-1642).
-        mapped = rational_transport(source_vector)
-        negate = mapped == -target_vector
-        if not negate and mapped != target_vector:
-            raise ArithmeticError("the rational reduction lift does not carry the marked isotropic line onto the requested target")
-        if negate:
-            target_rational = target_lattice.base_change(fraction_map)
-            negative_identity = target_rational.Isom(target_rational)(lambda label: -target_rational.module_generator(label))
-            rational_transport = negative_identity * rational_transport
-
-        if empty is False:
+        if torsor.integral_members().is_empty() is False:
             integral = torsor.integral_base_point()
-            if negate:
-                integral = negative_identity * integral
+            # The torsor fixes the reductions' chosen line generators; when one
+            # is the negative of the supplied marking, the global sign of
+            # IndefiniteForms.g:1639-1641 is applied against the actual vectors.
+            fraction_map = source_lattice.base_ring().fraction_field_map()
+            source_vector = ModulesOverIntegralDomains(source_lattice.base_ring())(source_lattice).generic_fibre_map()(source).underlying_element()
+            target_vector = ModulesOverIntegralDomains(target_lattice.base_ring())(target_lattice).generic_fibre_map()(target).underlying_element()
+            mapped = integral(source_vector)
+            if mapped == -target_vector:
+                target_rational = target_lattice.base_change(fraction_map)
+                integral = target_rational.Isom(target_rational)(lambda label: -target_rational.module_generator(label)) * integral
+            elif mapped != target_vector:
+                raise ArithmeticError("the integral reduction lift does not carry the marked isotropic line onto the requested target")
             return target_lattice.integral_isometry(integral, source=source_lattice)
-
-        # Even when the lift-locus emptiness is undecided, the full target
-        # stabilizer's integral-structure transporter decides whether a
-        # correction of this rational transport carries L onto M.  Emptiness
-        # for one fixed reduction map does not decide pointed isometry.
-        restriction = Modules(fraction_map.codomain()).restriction_of_scalars(fraction_map)
-        image = restriction(rational_transport) * source_inclusion
-        correction = self.isotropic_stabilizer_action((target,), ()).transporter(image)
-        return None if correction is None else target_lattice.integral_isometry(correction.inverse() * rational_transport, source=source_lattice)
+        return self._isotropic_correction(rational_transport, source_lattice, (target,), ())
 
     def _split_isotropic_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
         r"""For e of divisibility one in an even lattice, L = U + e^perp/e; an isometry is id_U plus one of the reductions."""
