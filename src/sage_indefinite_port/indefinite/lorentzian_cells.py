@@ -311,7 +311,17 @@ def lorentzian_isometry(source: Lattices.ParentMethods, target: Lattices.ParentM
             return None
         if source.is_isotropic():
             return next(iter(_binary_split_isometries(source, target)), None)
-    return perfect_complex(source, NONNEGATIVE_SQUARES).isometry_to(perfect_complex(target, NONNEGATIVE_SQUARES))
+    # LORENTZ_TestEquivalenceMatrices_Reduced (lorentzian_perfect.h:1887-1975)
+    # traverses the complex of one form and tests each new cell against one
+    # perfect cell of the other. Isom(L, M) is empty exactly when Isom(M, L)
+    # is, so traverse whichever complex this session has already explored
+    # further and invert its witness.
+    source_complex = perfect_complex(source, NONNEGATIVE_SQUARES)
+    target_complex = perfect_complex(target, NONNEGATIVE_SQUARES)
+    if target_complex.explored_cell_count() > source_complex.explored_cell_count():
+        witness = target_complex.isometry_to(source_complex)
+        return None if witness is None else witness.inverse()
+    return source_complex.isometry_to(target_complex)
 
 
 def _gram_matrix(lattice: Lattices.ParentMethods) -> Matrix_integer_dense:
@@ -1030,6 +1040,10 @@ class LorentzianPerfectComplex:
             self._traversal_adjacencies.append(LorentzianCellAdjacency(source, facet, target, transporter))
         self._traversal_processed.add(source_position)
         return tuple(new_representatives)
+
+    def explored_cell_count(self) -> int:
+        r"""The number of quotient cells whose facets the traversal has already flipped."""
+        return len(self._traversal_processed)
 
     def isometry_to(self, target: LorentzianPerfectComplex) -> LatticeIsometryMethods | None:
         if self.allowed_squares() != target.allowed_squares():
