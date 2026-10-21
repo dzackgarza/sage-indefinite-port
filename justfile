@@ -71,6 +71,8 @@ ci-provision-sage:
 ci-provision-julia:
     #!/usr/bin/env bash
     set -euo pipefail
+    # sage_julia_bridge resolves its Julia at import.
+    export SAGE_JULIA_COMMAND="$PWD/{{ci_dir}}/julia/bin/julia"
     sage_python="$("$SAGE_BIN" -python -c 'import sys; print(sys.executable)')"
     env_dir="$("$sage_python" -c 'import pathlib, sage_julia_bridge; print(pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env")')"
     {{ci_dir}}/julia/bin/julia --project="$env_dir" -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
@@ -79,6 +81,8 @@ ci-provision-julia:
 ci-julia-key:
     #!/usr/bin/env bash
     set -euo pipefail
+    # sage_julia_bridge resolves its Julia at import.
+    export SAGE_JULIA_COMMAND="$PWD/{{ci_dir}}/julia/bin/julia"
     sage_python="$("$SAGE_BIN" -python -c 'import sys; print(sys.executable)')"
     "$sage_python" -c 'import hashlib, pathlib, sage_julia_bridge; print("julia-depot-" + hashlib.sha256((pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env" / "Manifest.toml").read_bytes()).hexdigest()[:16])'
 
