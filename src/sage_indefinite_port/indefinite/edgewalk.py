@@ -814,6 +814,15 @@ class _Edgewalk:
         )
 
     @cached_method
+    def edge_perpendicular(self, roots: _Roots) -> Parent:
+        r"""The sublattice L cap P of the edge plane P = (span of the edge's roots)^perp.
+
+        edgewalk.h:598 computes Pplane once per edge; only Latt = C_N varies
+        with the root norm (edgewalk.h:761-764, IntersectionLattice_VectorSpace).
+        """
+        return self.lattice.subobject_on(list(roots)).orthogonal_complement()
+
+    @cached_method
     def edge_plane_for_divisor(self, roots: _Roots, discarded: _Vector, k: _Vector, divisor: int) -> _EdgePlane:
         root_rows = tuple(self.row(root) for root in roots)
         plane_basis = self.perpendicular_rows(root_rows)
@@ -872,7 +881,7 @@ class _Edgewalk:
         r0_coordinates = basis.transpose().solve_right(r0.column()).column(0)
         r0_vector = self.plane_primitive(plane_lattice, r0_coordinates)
 
-        perpendicular = self.lattice.subobject_on(list(roots)).orthogonal_complement()
+        perpendicular = self.edge_perpendicular(roots)
         # For divisor one C=L, so C cap P is already the perpendicular
         # sublattice. There is no second integral intersection to compute.
         intersection = perpendicular if divisor == 1 else constraint.intersection(perpendicular)
@@ -1134,7 +1143,7 @@ class _Edgewalk:
         return tuple(accepted)
 
     def isotropic_next_vertex(self, roots: _Roots, discarded: _Vector, k: _Vector) -> _Vertex:
-        perpendicular = self.lattice.subobject_on(list(roots)).orthogonal_complement()
+        perpendicular = self.edge_perpendicular(roots)
         plane = perpendicular.inclusion().domain()
         choices: dict[_Key, _Vector] = {}
         for isotropic in plane.primitive_isotropic_vectors():
