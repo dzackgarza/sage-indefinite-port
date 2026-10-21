@@ -1456,7 +1456,7 @@ Define:
 class LorentzianPerfectCell:
     lattice: IntegralQuadraticLattice
     vector_configuration: tuple[LatticeElement, ...]
-    mode: str                     # "total" or "isotropic"
+    allowed_squares: RealSet      # normalized square in [0,+infinity) or {0}
 
 
 @dataclass(frozen=True)
@@ -1469,12 +1469,18 @@ class LorentzianCellAdjacency:
 
 ```python
 class LorentzianPerfectLocalBackend:
-    def initial_cell(self, L, mode): ...
+    def initial_cell(self, L, allowed_squares: RealSet): ...
     def cell_stabilizer(self, C): ...
     def facet_orbits(self, C): ...
     def flip_across(self, C, facet): ...
     def cell_transporter(self, C1, C2): ...
 ```
+
+The two algorithms are constrained by actual normalized quadratic-value loci:
+`[0,+infinity)` for the closed nonnegative cone and `{0}` for the isotropic fibre.
+The historical string selector in the frozen `perfect_domain_traversal(L, mode)`
+entry point is translated at that boundary, never propagated through local cells,
+flips, or the lattice-vector enumerator.
 
 ## 12.2 Keep these functions native initially
 
