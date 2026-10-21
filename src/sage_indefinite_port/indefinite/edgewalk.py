@@ -708,7 +708,7 @@ class _Edgewalk:
                 # GetOneInteriorVertex uses the covectors -G*r. The
                 # lattice's algebraic correlation produces these directly,
                 # without assuming that primal and dual generator labels agree.
-                inequalities = tuple(-root.to_covector() for root in roots)
+                inequalities = tuple(self.wall_covector(root) for root in roots)
                 cone = RationalPolyhedralCones(self.lattice).from_halfspaces(inequalities)
                 # GetOneInteriorVertex (vinberg.h:833-909) accepts the first
                 # nonspacelike extreme ray of the feasible cone, regardless
@@ -1287,6 +1287,11 @@ class _Edgewalk:
         _positive, negative = fixed.inclusion().domain().signature_pair()
         return None if int(negative) == 0 else fixed
 
+    @cached_method
+    def wall_covector(self, root: _Vector) -> Element:
+        r"""The covector -b(root, -) of a wall inequality, computed once per root (-G * root, vinberg.h:1366 and edgewalk.h:1721)."""
+        return -root.to_covector()
+
     def root_chamber_certificate(self, roots: _Roots) -> bool:
         r"""Upstream LORENTZ_RunEdgewalkAlgorithm dual-description ray test.
 
@@ -1296,7 +1301,7 @@ class _Edgewalk:
         """
         if not roots:
             return False
-        inequalities = tuple(-root.to_covector() for root in roots)
+        inequalities = tuple(self.wall_covector(root) for root in roots)
         chamber = RationalPolyhedralCones(self.lattice).from_halfspaces(inequalities)
         if not chamber.is_pointed():
             return False
