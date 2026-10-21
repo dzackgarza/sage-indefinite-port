@@ -43,8 +43,11 @@ ci-provision-sage:
     # git install recurses into them, and one is an SSH-only workspace.
     mkdir -p {{ci_dir}}
     git clone --quiet --depth 1 https://github.com/dzackgarza/research {{ci_dir}}/research
-    "$SAGE_BIN" -pip install --quiet -e {{ci_dir}}/research
-    "$SAGE_BIN" -pip install --quiet --no-deps -e .
+    # uv, not pip: research declares tree-sitter-sage and sage-stubs only in
+    # [tool.uv.sources], which pip ignores.
+    sage_python="$("$SAGE_BIN" -python -c 'import sys; print(sys.executable)')"
+    uv pip install --quiet --python "$sage_python" -e {{ci_dir}}/research
+    uv pip install --quiet --python "$sage_python" --no-deps -e .
     # VinAl's Sage module is src/sage/vinal.py in its checkout (see .envrc), at
     # the commit uv.lock pins.
     vinal_rev="$(sed -n 's|^source = { git = "https://github.com/dzackgarza/vinal#\([0-9a-f]*\)" }$|\1|p' uv.lock)"
