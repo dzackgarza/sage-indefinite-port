@@ -1,6 +1,7 @@
 # Review Guidelines for Agent Work
 
-Moved verbatim from AGENTS.md. Applies when reviewing a completion claim in this repository.
+Moved verbatim from AGENTS.md.
+Applies when reviewing a completion claim in this repository.
 
 These are additional requirements for reviewing agent work.
 They do not replace the reviewer’s normal role, repo-specific standards, or technical judgment.
@@ -87,10 +88,15 @@ Review comments are not implementation specs.
 The worker must translate accepted feedback into first-principles remediation requirements before assigning implementation.
 
 For each comment:
+
 - Identify the concern.
+
 - Identify the proposed fix.
+
 - Decide whether the concern is true under global + repo policy.
+
 - Decide whether the proposed fix preserves those policies.
+
 - If the concern is true but the fix is wrong, apply a policy-compatible remediation.
 
 ## Writing the Review

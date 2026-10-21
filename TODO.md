@@ -41,8 +41,7 @@ This file changes only to record an acceptance (commit and run directory, as in 
   Port module paths below are relative to `src/sage_indefinite_port/`; research module paths are relative to `src/dzack_research/preamble/`.
 
 The live port issues #33, #15, #18, and #36 are open.
-Their blocked-by edges impose `#33 → #15 → #18 → #36`, with additional direct prerequisites from #33 to #18/#36 and from #15 to #36.
-Closed historical leaves retain their original obligations where absorbed into these issues.
+Their blocked-by edges impose `#33 → #15 → #18 → #36`, with additional direct prerequisites from #33 to #18/#36 and from #15 to #36. Closed historical leaves retain their original obligations where absorbed into these issues.
 
 ## Dependency graph
 
@@ -134,8 +133,7 @@ Its source anchors are `Lorentzian.g:115–249`, `Fundamental.g:471–516,751–
 
 ## Frozen acceptance nodes
 
-A node is accepted at commit C when an A run of its full file at C exits 0 with every case passing (AGENTS.md "Running Sage").
-Write the commit and run directory into the node's `Accepted at` cell.
+A node is accepted at commit C when an A run of its full file at C exits 0 with every case passing (AGENTS.md "Running Sage"). Write the commit and run directory into the node's `Accepted at` cell.
 Runs against uncommitted source, fail-fast runs, interrupted runs and helper probes accept nothing; they appear here only as diagnostic pointers.
 The population counts are scope checks, not new assertions or permission to omit additional cases.
 
@@ -158,8 +156,7 @@ Old logs stay intact; new evidence goes in new run directories.
 
 - [ ] **RELEASE — Release only proven capabilities.
   Depends on all A_* nodes.** Recount every `@unfinished` (`src/sage_indefinite_port/readiness.py`) and xfail against current source.
-  Map each marker to its whole obligation, remove justified markers in their own commits, and verify ordinary consumer execution without `--runxfail`.
-  Each #15/#18 issue closure must cite its actual complete acceptance and committed source; marker removal does not replace missing algorithm or ownership work.
+  Map each marker to its whole obligation, remove justified markers in their own commits, and verify ordinary consumer execution without `--runxfail`. Each #15/#18 issue closure must cite its actual complete acceptance and committed source; marker removal does not replace missing algorithm or ownership work.
 
 - [ ] **TYPES — Discharge #36. Depends on RELEASE and accepted #15/#18.** On settled interfaces, classify every remaining mypy error by its actual owner; fix local algorithm types here and inherited defects in their owning repository under its QC and exclusive worktree ownership.
   No suppressions, `Any`, casts, or fake stubs.
