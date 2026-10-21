@@ -22,7 +22,6 @@ from random import choice, randrange, sample
 
 from dzack_research.preamble.all import Lattices
 from dzack_research.preamble.categories.eichler_criterion import TwoUEichlerModel
-from dzack_research.preamble.categories.group.g_sets import FiniteGSets
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.modules.framed.formed.discriminant_modules import (
     DiscriminantQuadraticModules,
@@ -39,6 +38,7 @@ from dzack_research.preamble.categories.sets.indexed_families import (
 )
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.graphs.graph import Graph
+from sage.groups.perm_gps.permgroup import PermutationGroup
 from sage.matrix.constructor import identity_matrix, matrix
 from sage.misc.cachefunc import cached_method
 from sage.modules.free_module_element import vector as vector_space_element
@@ -369,29 +369,24 @@ class EichlerEnvelope:
         source = (first, first_partner, second, second_partner) + tuple(kernel.inclusion()(vector) for vector in kernel_lattice.module_generators())
         target = (first_pairing * e_1, f_1, second_pairing * e_2, f_2) + tuple(complement_embedding(vector) for vector in kernel_lattice.module_generators())
         fraction_map = lattice.base_ring().fraction_field_map()
-        spanned = construction_lattice.subobject_on(list(source))
-        # The span basis is echelonized; each basis vector is an integral combination of the
-        # independent family source, and its image is the same combination of target.
+        # ApproximateModels.h:1256-1272: FullBasis (the rows of ``source``) is a
+        # rational basis of L tensor Q, and preEmbed = Inverse(EmbedSimpInv *
+        # FullBasis) writes each basis vector of L in the envelope basis. That
+        # inverse is the coordinate solve below; no sublattice spanned by
+        # ``source`` is constructed.
         labels = tuple(construction_lattice.module_generating_set())
+        envelope_labels = tuple(self.envelope.module_generating_set())
         source_rows = matrix(SageQQ, [[int(vector.to_vector()(label)) for label in labels] for vector in source])
-        span_inclusion = spanned.inclusion()
-        span_images = []
-        for generator in span_inclusion.domain().module_generators():
-            image = span_inclusion(generator)
-            coefficients = source_rows.solve_left(vector_space_element([int(image.to_vector()(label)) for label in labels]))
-            if any(entry.denominator() != 1 for entry in coefficients):
-                raise ArithmeticError("a span basis vector must be an integral combination of the spanning family")
-            span_images.append(
-                sum(
-                    (construction_lattice.base_ring()(int(entry)) * image_vector for entry, image_vector in zip(coefficients, target, strict=True)),
-                    self.envelope.zero(),
-                )
-            )
-        span_to_envelope = span_inclusion.domain().hom(span_images, codomain=self.envelope).base_change(fraction_map)
-        rational_inclusion = spanned.inclusion().base_change(fraction_map)
+        target_rows = matrix(SageQQ, [[int(vector.to_vector()(label)) for label in envelope_labels] for vector in target])
+        images = source_rows.inverse() * target_rows
         rational_construction = construction_lattice.base_change(fraction_map)
-        construction_to_envelope = rational_construction.Isom(self.envelope.base_change(fraction_map))(
-            lambda label: span_to_envelope(rational_inclusion.lift(rational_construction.module_generator(label)))
+        rational_envelope = self.envelope.base_change(fraction_map)
+        field = rational_envelope.base_ring()
+        image_rows = {label: images.row(position) for position, label in enumerate(labels)}
+        construction_to_envelope = rational_construction.Isom(rational_envelope)(
+            lambda label: rational_envelope.linear_combination(
+                {envelope_labels[column]: field(int(value.numerator())) / field(int(value.denominator())) for column, value in enumerate(image_rows[label]) if value}
+            )
         )
         if even_inclusion is None:
             self.rational_isometry = construction_to_envelope
@@ -660,15 +655,32 @@ class OrbitCoverModel:
         square = ring(square)
         complement = model.orthogonal_complement()
         discriminant = complement.discriminant_group()
-        correlation = complement.correlation_morphism()
         inclusion = model.complement_inclusion()
         e, f, _e_prime, _f_prime = model.hyperbolic_basis()
 
-        def representative(discriminant_class: DiscriminantQuadraticModules.ElementMethods) -> Lattices.ElementMethods:
+        # eClass2 = Ginv * eClass1 (:610-625): the correlation K -> K^# has
+        # matrix G on the selected bases (lattices.py correlation_morphism), so
+        # a dual lift with dual-basis coordinates c is y = G^-1 c in K tensor Q.
+        complement_labels = tuple(complement.module_generating_set())
+        gram_inverse = _engine_component_matrix(complement.gram_tensor()).change_ring(SageQQ).inverse()
+
+        def scaled_lift(discriminant_class: DiscriminantQuadraticModules.ElementMethods) -> tuple[RingElement, Lattices.ElementMethods]:
+            r"""The order d of the class and k = d*y in K for a dual lift y (eClass3 of :610-625)."""
             discriminant_class = discriminant(discriminant_class)
             order = ring(int(discriminant_class.additive_order()))
             dual_lift = discriminant.dual_lattice_lift(discriminant_class)
-            k = correlation.lift(dual_lift.parent().scalar_multiple(order, dual_lift))
+            dual_coordinates = dual_lift.to_vector()
+            dual_labels = tuple(dual_lift.parent().module_generating_set())
+            scaled = int(order) * gram_inverse * vector_space_element(SageQQ, [int(dual_coordinates(label)) for label in dual_labels])
+            if scaled.denominator() != 1:
+                raise ArithmeticError("the order of a discriminant class must clear the denominators of its dual lift")
+            return order, complement.linear_combination({label: ring(int(value)) for label, value in zip(complement_labels, scaled, strict=True) if value})
+
+        classes = tuple(complement.covering_discriminant_classes(square))
+        lifts = {discriminant_class: scaled_lift(discriminant_class) for discriminant_class in classes}
+
+        def representative(discriminant_class: DiscriminantQuadraticModules.ElementMethods) -> Lattices.ElementMethods:
+            order, k = lifts[discriminant_class]
             numerator = square - complement.q(k)
             denominator = ring(2) * order * order
             coefficient = numerator // denominator
@@ -676,20 +688,29 @@ class OrbitCoverModel:
                 raise ArithmeticError("a covering discriminant class must give an integral hyperbolic coefficient")
             return lattice.scalar_multiple(order, e) + lattice.scalar_multiple(order * coefficient, f) + inclusion(k)
 
-        classes = complement.covering_discriminant_classes(square)
-        # IndefiniteForms.g:181-224, SetListClassesOrbitwise(GRPeasy).
-        # The canonical inclusion A_K -> A_(2U+K) is an isomorphism, since
-        # 2U is unimodular. GetEasyIsometries can permute a hyperbolic block
-        # of K with either distinguished U, so its isometries need not
-        # preserve K itself. Transfer their action through the *full*
-        # discriminant group, rather than restricting their lattice maps to K.
-        easy = OrbitCoverModel.source_easy_generators(model)
-        discriminant_inclusion = inclusion.discriminant_inclusion()
-        ambient_discriminant = lattice.discriminant_group()
-        image = ambient_discriminant.orthogonal_group().subgroup(tuple(isometry.discriminant_morphism() for isometry in easy))
-        embedded_classes = finite_ordered_set(tuple(discriminant_inclusion(point) for point in classes))
-        action = FiniteGSets(image)(embedded_classes, lambda automorphism, point: automorphism(point))
-        selected = finite_ordered_set(tuple(discriminant_inclusion.lift(orbit.representative()) for orbit in action.orbits()))
+        # SetListClassesOrbitwise(GRPeasy), ApproximateModels.h:313-405.  A
+        # class y of K^#/K is extended by zero to E = 2U + K, and the class of
+        # g(y) in E^#/E is read off as its coordinates modulo 1 (VectorModulo1
+        # of QmatInv * v, :337-356).  A_K -> A_E is an isomorphism since 2U is
+        # unimodular, so every image is one of the listed classes, even when a
+        # GRPeasy element moves a hyperbolic block of K onto a distinguished
+        # U.  With y = k/d this is the vector of E-coordinates of g(k) modulo d.
+        labels = tuple(lattice.module_generating_set())
+
+        def residue(vector: Lattices.ElementMethods, order: RingElement) -> tuple[SageQQ, ...]:
+            coordinates = vector.to_vector()
+            modulus = int(order)
+            return tuple(SageQQ(int(coordinates(label)) % modulus) / modulus for label in labels)
+
+        positions = {residue(inclusion(k), order): position for position, (order, k) in enumerate(lifts[point] for point in classes)}
+        permutations = [
+            [positions[residue(isometry(inclusion(k)), order)] + 1 for order, k in (lifts[point] for point in classes)]
+            for isometry in OrbitCoverModel.source_easy_generators(model)
+        ]
+        # DecomposeOrbitPoint_FullRepr (:394-400): one class per orbit of the
+        # permutation group of GRPeasy on the classes.
+        orbits = PermutationGroup(permutations, domain=range(1, len(classes) + 1)).orbits() if classes else ()
+        selected = finite_ordered_set(tuple(classes[orbit[0] - 1] for orbit in orbits))
         return finite_indexed_family(selected, representative, name=f"Eichler covering vectors of square {square} in {lattice}")
 
     @staticmethod
@@ -740,10 +761,36 @@ class OrbitCoverModel:
         """
         if self.envelope is None:
             return tuple(self.model.approximate_generating_family())
+        # :1337-1349 forms fGen = Embed * eGen * EmbedInv for each stabilizer
+        # generator and requires it to be integral.  In rows, with R the
+        # matrix of phi (row i the E-coordinates of phi(e_i)) and G that of a
+        # generator, phi^-1 g phi has matrix R G R^-1.  Equal matrices give
+        # equal generators and the identity generates nothing; a Schreier
+        # family contains both, so each distinct matrix is kept once.
         envelope = self.envelope
-        stabilizer = envelope.stabilizer_of_lattice().stabilizer()
-        inverse = envelope.rational_isometry.inverse()
-        return tuple(self.lattice.integral_isometry(inverse * generator * envelope.rational_isometry) for generator in stabilizer.group_generators())
+        rational = envelope.rational_isometry
+        rational_lattice, rational_envelope = rational.domain(), rational.codomain()
+        lattice_labels = tuple(self.lattice.module_generating_set())
+        envelope_labels = tuple(rational_envelope.module_generating_set())
+
+        def coordinates(vector: Lattices.ElementMethods) -> list[SageQQ]:
+            values = vector.to_vector()
+            return [SageQQ(int(values(label).numerator())) / int(values(label).denominator()) for label in envelope_labels]
+
+        embedding = matrix(SageQQ, [coordinates(rational(rational_lattice.module_generator(label))) for label in lattice_labels])
+        embedding_inverse = embedding.inverse()
+        identity = identity_matrix(SageQQ, len(lattice_labels))
+        conjugates: dict[tuple[int, ...], LatticeIsometryMethods] = {}
+        for generator in envelope.stabilizer_of_lattice().stabilizer().group_generators():
+            conjugate = embedding * matrix(SageQQ, [coordinates(generator(rational_envelope.module_generator(label))) for label in envelope_labels]) * embedding_inverse
+            if conjugate.denominator() != 1:
+                raise ArithmeticError("a stabilizer generator of phi(L) must conjugate to an integral isometry of L")
+            if conjugate == identity:
+                continue
+            key = tuple(int(entry) for entry in conjugate.list())
+            if key not in conjugates:
+                conjugates[key] = self.lattice.O()(tuple(self.lattice([int(entry) for entry in row]) for row in conjugate.rows()))
+        return tuple(conjugates.values())
 
     def _pullback_envelope_vector(self, point: Lattices.ElementMethods, coset: LatticeIsometryMethods) -> Lattices.ElementMethods | None:
         """Lift a rational coset image from the envelope through the integral similarity, if possible."""
