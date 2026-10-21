@@ -37,8 +37,43 @@ jobs:
           include = [{"family": f, "shard": i, "shards": n} for f, n in shards.items() for i in range(n)]
           print("matrix=" + json.dumps({"include": include}))
           PY
+  julia:
+    # Instantiates OSCAR once into the Julia depot cache that every shard restores.
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    container:
+      image: ghcr.io/dzackgarza/sage-indefinite-port-sage:py314
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+      options: --user root
+    env:
+      SAGE_BIN: /home/sage/sage/sage
+    outputs:
+      key: ${{ steps.key.outputs.key }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: extractions/setup-just@v4
+        with:
+          github-token: ${{ github.token }}
+      - run: just ci-provision-sage
+      - id: key
+        run: echo "key=$(just ci-julia-key)" >> "$GITHUB_OUTPUT"
+      - id: restore
+        uses: actions/cache/restore@v4
+        with:
+          path: /github/home/.julia
+          key: ${{ steps.key.outputs.key }}
+      - if: steps.restore.outputs.cache-hit != 'true'
+        run: just ci-provision-julia
+      - if: steps.restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: /github/home/.julia
+          key: ${{ steps.key.outputs.key }}
   family:
-    needs: plan
+    needs: [plan, julia]
     name: ${{ matrix.family }} ${{ matrix.shard }}/${{ matrix.shards }}
     runs-on: ubuntu-latest
     timeout-minutes: 360
@@ -62,6 +97,11 @@ jobs:
         with:
           github-token: ${{ github.token }}
       - run: just ci-provision-sage
+      - uses: actions/cache/restore@v4
+        with:
+          path: /github/home/.julia
+          key: ${{ needs.julia.outputs.key }}
+          fail-on-cache-miss: true
       - run: just ci-acceptance ${{ matrix.family }} ${{ matrix.shard }} ${{ matrix.shards }}
       - if: always()
         uses: actions/upload-artifact@v4
