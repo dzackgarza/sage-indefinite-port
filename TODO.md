@@ -9,7 +9,7 @@ An unchecked node is a remaining obligation, not a claim that its implementation
 
 This file is not read at the start of a turn.
 `.tmp/HANDOFF.md` Now names the node being worked; read that node's row here when you take it up.
-This file changes only to record an acceptance (commit and run directory, as in AGENTS.md "Running Sage") or to add an obligation found in an issue body that the DAG lacks.
+This file changes only to record an acceptance (commit and Acceptance run URL, as in AGENTS.md "Running Sage") or to add an obligation found in an issue body that the DAG lacks.
 
 ## Sources, scope, and execution constraints
 
@@ -37,7 +37,7 @@ This file changes only to record an acceptance (commit and run directory, as in 
   A necessary API or case change belongs to #33, with its reason recorded before adopting it.
   Probes diagnose failures; they live in `.tmp/probe/` and never replace frozen cases.
 
-- Runs, commits, and gates follow AGENTS.md: snapshot runs, one Sage process, no killing, commit every edit.
+- Runs, commits, and gates follow AGENTS.md: acceptance runs in CI on every push; local runs check one case; commit and push every edit.
   Port module paths below are relative to `src/sage_indefinite_port/`; research module paths are relative to `src/dzack_research/preamble/`.
 
 The live port issues #33, #15, #18, and #36 are open.
@@ -133,7 +133,7 @@ Its source anchors are `Lorentzian.g:115–249`, `Fundamental.g:471–516,751–
 
 ## Frozen acceptance nodes
 
-A node is accepted at commit C when an A run of its full file at C exits 0 with every case passing (AGENTS.md "Running Sage"). Write the commit and run directory into the node's `Accepted at` cell.
+A node is accepted at commit C when every shard of its file passes in the CI Acceptance run for C (AGENTS.md "Running Sage"). Write the commit and run URL into the node's `Accepted at` cell.
 Runs against uncommitted source, fail-fast runs, interrupted runs and helper probes accept nothing; they appear here only as diagnostic pointers.
 The population counts are scope checks, not new assertions or permission to omit additional cases.
 
@@ -163,7 +163,7 @@ Old logs stay intact; new evidence goes in new run directories.
   Acceptance: `just test-push` passes mypy and #36's last commit removes the deferred-type-checking rule from `AGENTS.md`. Until then, any authorized push exception must satisfy the exact `MYPY-DEFER-7Q4K` trailer/count contract; an import crash or other gate failure never qualifies.
 
 - [ ] **FINAL — Prove and close the original #4 result.
-  Depends on TYPES.** Run the complete frozen suite as one A run, and `just test-commit`, `just test-push`, and `just test-ci`, on the final committed port revision with the research provider commit recorded.
+  Depends on TYPES.** Require an Acceptance run in which every family passes, and `just test-commit`, `just test-push`, and `just test-ci`, on the final committed port revision with the research provider commit recorded.
   Discharge every existing `[unverified]` contract and verify every original leaf obligation, public research-to-port entry point, witness, fixture family, and marker.
   Close eligible issue units through `itree close` with their evidence and reconcile the claim/queue on release.
   #4 stays open while any required implementation, provider behavior, acceptance case, or gate remains unresolved.

@@ -8,8 +8,8 @@ It changes only when the user asks for a change.
 
 | Document | Holds | Changes when |
 | --- | --- | --- |
-| `.tmp/HANDOFF.md` | **Now**: the single current action, the running Sage process (if any), open decisions | A step finishes or a result arrives. Replace the section, never append to it |
-| `TODO.md` | The complete remaining obligation as a dependency DAG, with acceptance records | A node is accepted (commit + run directory), or an obligation is found that the DAG lacks |
+| `.tmp/HANDOFF.md` | **Now**: the single current action, the newest Acceptance run for the branch, open decisions | A step finishes or a result arrives. Replace the section, never append to it |
+| `TODO.md` | The complete remaining obligation as a dependency DAG, with acceptance records | A node is accepted (commit + Acceptance run URL), or an obligation is found that the DAG lacks |
 | Issue tree rooted at #4 | Unit ownership, blocked-by order, each unit's acceptance text | Unit selection and closure only |
 | `references/port-design.md`, `references/source-to-sage-translation-map.md` | Frozen API, ownership split, source anchors | Only through #33 |
 | `references/review-guidelines.md` | How completion claims are judged | When the user asks |
@@ -31,7 +31,7 @@ The protocol is the same either way.
 3. **Before the turn ends:**
    - Leave no uncommitted source edits. Commit them (see Commits).
    - If the step finished or a result arrived, replace Now with the next step.
-     Now names one action, its source anchor or failing node, and the run in flight.
+     Now names one action, its source anchor or failing node, and the newest Acceptance run.
      It holds no history.
 
 Continuation prompts do not change this protocol:
@@ -43,7 +43,7 @@ Continuation prompts do not change this protocol:
 - A message that gives a concrete technical correction is applied to the current action.
   It does not restart orientation.
 - A generic per-command limit (such as "keep each command under five minutes") limits your foreground tool call.
-  It never limits a detached Sage run, and it is never a reason to stop one (see Running Sage).
+  It fits the local single-case checks of Running Sage; it never applies to CI's Acceptance runs.
 
 # Taking work
 
@@ -58,12 +58,12 @@ A unit is closed with `itree close` only when every acceptance node it owns in T
 
 # Commits
 
-- **Commit every coherent source edit before you launch a Sage process, before you start an edit for a different node, and before the turn ends.**
+- **Commit every coherent source edit before you start an edit for a different node and before the turn ends, and push it** (Running Sage: CI tests only pushed commits).
   Work-in-progress commits are normal: subject `wip(#15): <what changed>`, body naming the source anchor or failing node.
   A WIP commit claims nothing.
   Never accumulate uncommitted source across turns.
 - **Readiness is the only thing that waits for acceptance.**
-  Removing an `@unfinished` decorator or an xfail marker is its own commit, made only after the family's acceptance run passed (TODO.md RELEASE).
+  Removing an `@unfinished` decorator or an xfail marker is its own commit, made only after the family's Acceptance run passed (TODO.md RELEASE).
   All other source is committed as it is written.
 - **The acceptance suite is frozen.**
   `tests/acceptance/` and `tests/fixtures/` change only by readiness-marker removal, or by a #33 change whose reason was recorded on #33 before the edit.
@@ -87,58 +87,40 @@ A unit is closed with `itree close` only when every acceptance node it owns in T
 
 # Running Sage
 
-**Every Sage test run executes against a committed snapshot, not the working tree.**
-Editing the working tree therefore never affects a run in flight and is never a reason to stop, restart, or duplicate one.
+**Acceptance is CI's job, never this machine's.**
+Every push runs the whole frozen suite in `.github/workflows/acceptance.yml`: each family file is split into shards on hosted runners, inside the same Sage image as the local `sage-dev-develop` container, against research `main` as pushed to GitHub.
+Never run a whole family file, or the whole suite, locally, and never wait on one.
 
-**One Sage test process at a time.**
-While one runs, you start no other Sage process.
-You keep reading pinned source, translating, and committing for any node.
+- A family node is *accepted at commit C* when every shard of its file passes in the Acceptance run for C.
+  Record that in the node's TODO.md row (commit, run URL).
+  A later commit does not revoke it during development; FINAL needs one Acceptance run at the final revision in which every family passes.
+- **The run's failure list is the work queue.**
+  `gh run list --workflow acceptance.yml --branch "$(git branch --show-current)" -L 1` names the newest run; once it has finished, `gh run download <id> -n acceptance-summary` gives `acceptance-failures.md`, every non-passing node with its message.
+  Take the first failing node of the node Now names, and record the run in Now.
+  Read a run once, after it finishes. Do not poll a run in progress: push, and keep translating.
+- **Push after every commit series that changes `src/`.** CI knows only pushed commits.
+  The push gate and its deferred-mypy exception are in Commits.
 
-**Never kill a run.**
-Elapsed time, a newer commit, a better idea, and an impatient prompt are not reasons.
-A run ends by itself; only the user stops one.
+**Local runs check one case.**
+While translating a step, run exactly one node id, or one `.tmp/probe/` script, against the working tree:
 
-**Check a run at most once per turn**, with `cat $r/exit; tail -n 3 $r/log`.
-If `exit` is absent, the run is still going.
-Do not loop, sleep, or poll, and do not inspect `/proc` or `ps`.
+- Before launching, write into Now the hypothesis, the node, and what each outcome changes about the next edit.
+- Give it a foreground `timeout` you choose, and `-o faulthandler_timeout=<seconds>` below that timeout, so a hang leaves a stack.
+  When it times out, the next step is to read that stack and the pinned source for the step it shows.
+  Never relaunch a variant of the same check.
+- A local result is a diagnostic. It never accepts a node.
+- Several of your own checks may run at once, and you may stop your own. Leave Sage and pytest processes you did not start alone.
 
-There are two kinds of run:
-
-- **Acceptance run (A)**: one whole frozen family file, or the whole of `tests/acceptance`.
-  No `-x`, no `timeout`, `--runxfail`.
-  A family node is *accepted at commit C* when its A run at C exits 0 with every case passing.
-  Record that in the node's TODO.md row (commit, run directory).
-  A later commit does not revoke it during development; FINAL reruns every family at the final revision.
-  When an A run fails, its first failing node becomes the next diagnostic target.
-- **Diagnostic run (D)**: exactly one node or one `.tmp/probe/` script.
-  Before launching, write three things into Now: the hypothesis, the node, and what each outcome changes about the next edit.
-  A D run may carry a `timeout` chosen at launch; add `-o faulthandler_timeout=<seconds>` so that a hang leaves a stack.
-  When a D run times out, the next step is to read that stack and the pinned source for the step it shows.
-  Never relaunch a variant of the same diagnostic.
-
-Launch, with only `NAME` and `NODE` changed (`NAME`: `perfect`, `reflective`, …, or `diag-<topic>`; `NODE`: the test path or node id, plus any D-run options):
+With `NODE` set to one node id:
 
 ```sh
 cd /home/dzack/gitclones/sage-indefinite-port
-NAME=perfect
-NODE=tests/acceptance/test_perfect_domains.sage
-r=$PWD/.tmp/runs/$NAME-$(git rev-parse --short HEAD)
-mkdir -p "$r/port" "$r/research"
-git rev-parse HEAD > "$r/commit"
-git -C /home/dzack/research rev-parse HEAD > "$r/research_commit"
-git archive HEAD | tar -x -C "$r/port"
-git -C /home/dzack/research archive HEAD src | tar -x -C "$r/research"
-printf '%s\n' "$NODE" > "$r/node"
-/usr/bin/sg docker -c "/snap/bin/docker exec -d -u root -w $r/port sage-dev-develop sh -c 'export PYTHONPATH=/home/dzack/ai-review-ci/tool-artifacts/pytest_plugins:$r/port/src:$r/port:/home/dzack/gitclones/vinal/src/sage:$r/research/src:/home/dzack/research/.venv/lib/python3.14/site-packages; date -u -Is > $r/started; /usr/bin/sage -python -c \"import sage.all,sys,pytest; sys.exit(pytest.main(sys.argv[1:]))\" -p qc_sage_session $NODE --runxfail -vv --tb=long > $r/log 2>&1; echo \$? > $r/exit'"
+NODE='tests/acceptance/test_perfect_domains.sage::test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_1]'
+/usr/bin/sg docker -c "/snap/bin/docker exec -u root -w $PWD sage-dev-develop sh -c 'export PYTHONPATH=/home/dzack/ai-review-ci/tool-artifacts/pytest_plugins:$PWD/src:$PWD:/home/dzack/gitclones/vinal/src/sage:/home/dzack/research/src:/home/dzack/research/.venv/lib/python3.14/site-packages; timeout 900 /usr/bin/sage -python -c \"import sage.all,sys,pytest; sys.exit(pytest.main(sys.argv[1:]))\" -p qc_sage_session \"$NODE\" --runxfail -vv --tb=long -o faulthandler_timeout=840'"
 ```
 
-The `docker exec -d` call returns at once.
-Write the run directory `$r` into Now's `Running:` line.
-If a connector safety check refuses the launch, you are blocked: record the refusal under Now's open decisions and continue with work that needs no Sage process.
+If a connector safety check refuses a command, you are blocked: record the refusal under Now's open decisions and continue with work that needs no Sage process.
 Do not rephrase the command to get past the refusal.
-Leave Sage and pytest processes you did not start alone.
-The research provider is the committed `HEAD` of `/home/dzack/research` main.
-Its uncommitted files belong to another writer and are excluded by the snapshot.
 
 # Diagnosing and reading source
 
@@ -147,8 +129,6 @@ Its uncommitted files belong to another writer and are excluded by the snapshot.
 - Do not inventory `TODO`, `NotImplemented`, or fallback markers across the repository.
 - A slow or interrupted case is not a defect by itself.
   Investigate performance only under TODO.md PERFORMANCE: with a profile or stack from the actual failing case.
-- A run against uncommitted source, or with `-x`, is at most a diagnostic.
-  It never accepts a node.
 
 # Nonnegotiable: port the existing algorithm; do not design a new one
 
@@ -180,7 +160,7 @@ Before authoring or revising any specialized routine:
   An unsuccessful `command -v docker` does not mean Docker is unavailable.
   The preamble Julia bridge requires `/home/dzack/.juliaup/bin/julia`.
   The tracked `.envrc` configures `PATH`, `SAGE_BIN`, `SAGE_PYTHON_BIN`, `SAGE_PREPARSE_BIN`, `SAGE_JULIA_COMMAND` and `PYTHONPATH` for the container-backed Sage and the central QC recipes.
-  Test runs use the launch in Running Sage, not `.envrc`'s working-tree paths.
+  Local checks use the command in Running Sage.
 - **The `research` preamble is the lattice substrate and a co-developed dependency**:
   This repository consumes `dzack_research.preamble` (categories, formed modules, lattices, isometries, discriminant modules) from the checkout at `/home/dzack/research/src`. `.envrc` puts it on `PYTHONPATH` and `MYPYPATH`; `pyproject.toml` declares `dzack-research`.
   - **Use the preamble's own classes and types**: annotate with `Lattice` (and `Lattice.Element`), `LatticeIsometry`, `LatticeIsometryHomset`, and the tensor and presented-module classes. Never add Protocol, stub, or facade types over the preamble, and never edit `sys.path`.
@@ -240,9 +220,8 @@ correspondence, or failure materially changes the next implementation action;
 do not create notebook entries as receipts for ordinary tool calls or probes.
 Investigations must resolve a question needed for the next source correction
 or complete consumer validation, not become a recurring activity of their own.
-While a long test runs, continue independent pinned implementation work; its
-result is valid only for the exact source revision and evidence recorded by the
-runner required in TODO.md.
+Acceptance runs in CI; while one runs, continue pinned implementation work.
+Its result holds only for the commit it ran on.
 
 Plan work is card-backed. Create and update plan cards with `agent-memory plan add` and `agent-memory plan update`, not `agent-memory add --type plan`.
 
