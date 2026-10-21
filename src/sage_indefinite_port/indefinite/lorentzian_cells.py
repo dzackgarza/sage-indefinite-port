@@ -6,7 +6,7 @@ from collections import Counter
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from fractions import Fraction
-from functools import cached_property
+from functools import cache, cached_property
 from itertools import product
 from math import gcd, isqrt
 from random import choice, randrange, shuffle
@@ -260,6 +260,16 @@ def binary_split_primitive_vector_classes(lattice: Lattices.ParentMethods, squar
     return tuple(representatives)
 
 
+@cache
+def perfect_complex(lattice: Lattices.ParentMethods, allowed_squares: RealSet) -> LorentzianPerfectComplex:
+    r"""The perfect-domain complex of a lattice, memoized as IndefiniteForms.g:1173-1299 memoizes its groups.
+
+    The traversal of a complex is deterministic data of the lattice; every consumer of
+    the same lattice shares its cells, stabilizers and side pairings.
+    """
+    return LorentzianPerfectComplex(lattice, allowed_squares)
+
+
 def lorentzian_orthogonal_group_generators(lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
     r"""Generators of O(L), with the pinned split rank-two branch."""
     if int(lattice.rank()) == 1:
@@ -268,7 +278,7 @@ def lorentzian_orthogonal_group_generators(lattice: Lattices.ParentMethods) -> t
         return (lattice.Isom(lattice)({label: negative}),)
     if int(lattice.rank()) == 2 and lattice.is_isotropic():
         return _binary_split_isometries(lattice, lattice)
-    return LorentzianPerfectComplex(lattice, NONNEGATIVE_SQUARES).full_orthogonal_group_generators()
+    return perfect_complex(lattice, NONNEGATIVE_SQUARES).full_orthogonal_group_generators()
 
 
 def lorentzian_isometry(source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
@@ -291,7 +301,7 @@ def lorentzian_isometry(source: Lattices.ParentMethods, target: Lattices.ParentM
             return None
         if source.is_isotropic():
             return next(iter(_binary_split_isometries(source, target)), None)
-    return LorentzianPerfectComplex(source, NONNEGATIVE_SQUARES).isometry_to(LorentzianPerfectComplex(target, NONNEGATIVE_SQUARES))
+    return perfect_complex(source, NONNEGATIVE_SQUARES).isometry_to(perfect_complex(target, NONNEGATIVE_SQUARES))
 
 
 def _gram_matrix(lattice: Lattices.ParentMethods) -> Matrix_integer_dense:
@@ -1116,7 +1126,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         allowed_squares = ZERO_SQUARES
     else:
         raise ValueError(f"unsupported perfect-domain selection {mode!r}")
-    complex_ = LorentzianPerfectComplex(lattice, allowed_squares)
+    complex_ = perfect_complex(lattice, allowed_squares)
     backend = complex_.local_backend()
     cones = RationalPolyhedralCones(lattice)
     cells = complex_.quotient_cells()
@@ -1243,6 +1253,7 @@ class MarkedCellOrbitAlgorithm:
         self._complex = complex_
         self._norm = norm
         self._local_mark_cache: dict[int, tuple[Lattices.ElementMethods, ...]] = {}
+        self._local_mark_row_cache: dict[int, tuple[tuple[int, ...], ...]] = {}
 
     def complex(self) -> LorentzianPerfectComplex:
         return self._complex
@@ -1276,9 +1287,9 @@ class MarkedCellOrbitAlgorithm:
             found: dict[tuple[int, ...], Lattices.ElementMethods] = {}
             for simplex in points.placing_triangulation():
                 for row in self._simplicial_vectors_of_square(gram, [ray_rows[position] for position in simplex]):
-                    key = tuple(int(entry) for entry in row)
-                    if key not in found and gcd(*key) == 1:
-                        found[key] = lattice.linear_combination({label: lattice.base_ring()(entry) for label, entry in zip(labels, key, strict=True) if entry})
+                    coordinates = tuple(int(entry) for entry in row)
+                    if coordinates not in found and gcd(*coordinates) == 1:
+                        found[coordinates] = lattice.linear_combination({label: lattice.base_ring()(entry) for label, entry in zip(labels, coordinates, strict=True) if entry})
             marks = tuple(found.values())
         self._local_mark_cache[key] = marks
         return marks
@@ -1392,25 +1403,38 @@ class MarkedCellOrbitAlgorithm:
             orbits.append(tuple(marks[position] for position in sorted(orbit)))
         return tuple(orbits)
 
+    def _mark_rows(self, cell: LorentzianPerfectCell) -> tuple[tuple[int, ...], ...]:
+        key = id(cell)
+        if key not in self._local_mark_row_cache:
+            self._local_mark_row_cache[key] = tuple(tuple(int(entry) for entry in _coordinate_row(cell.lattice, mark, SageZZ)) for mark in self.local_marks(cell))
+        return self._local_mark_row_cache[key]
+
     def transport_marks(self, adjacency: LorentzianCellAdjacency) -> tuple[tuple[Lattices.ElementMethods, Lattices.ElementMethods], ...]:
         transporter = adjacency.transporter
         if transporter is None:
             raise ArithmeticError("a marked quotient adjacency needs a transporter")
+        lattice = adjacency.source.lattice
         source = adjacency.source.vector_configuration
-        facet = RationalPolyhedralCones(adjacency.source.lattice).from_rays(tuple(source[position] for position in sorted(adjacency.facet)))
-        source_marks = tuple(mark for mark in self.local_marks(adjacency.source) if facet.contains(mark))
+        # The facet is the face of the source cone cut out by the normal of
+        # its rays' span, so a mark of the source cell lies on the facet
+        # exactly when it is orthogonal (in coordinates) to that normal.
+        facet_rows = matrix(SageQQ, [_coordinate_row(lattice, source[position], SageQQ) for position in sorted(adjacency.facet)])
+        normals = facet_rows.right_kernel_matrix()
+        if normals.nrows() != 1:
+            raise ArithmeticError("a perfect-cell facet must span a hyperplane")
+        normal = normals.row(0)
+        source_marks = self.local_marks(adjacency.source)
+        source_by_coordinates = {row: mark for row, mark in zip(self._mark_rows(adjacency.source), source_marks, strict=True) if vector(SageQQ, row).dot_product(normal) == 0}
         target_marks = self.local_marks(adjacency.target)
-        labels = adjacency.source.lattice.module_generating_set()
-        source_by_coordinates = {tuple(int(mark.to_vector()(label)) for label in labels): mark for mark in source_marks}
-        if len(source_by_coordinates) != len(source_marks):
-            raise ArithmeticError("a facet contains duplicate marks")
+        labels = tuple(lattice.module_generating_set())
+        # In row coordinates the transporter acts by x -> x * action.
+        action = matrix(SageZZ, [_coordinate_row(lattice, transporter(lattice.module_generator(label)), SageZZ) for label in labels])
         transported = []
-        for target_mark in target_marks:
-            source_mark = transporter(target_mark)
-            key = tuple(int(source_mark.to_vector()(label)) for label in labels)
-            if key in source_by_coordinates:
-                transported.append((source_by_coordinates[key], target_mark))
-        if len(transported) != len(source_marks):
+        for row, target_mark in zip(self._mark_rows(adjacency.target), target_marks, strict=True):
+            image = tuple(int(entry) for entry in vector(SageZZ, row) * action)
+            if image in source_by_coordinates:
+                transported.append((source_by_coordinates[image], target_mark))
+        if len(transported) != len(source_by_coordinates):
             raise ArithmeticError("a facet mark has no unique mark in the target representative")
         return tuple(transported)
 
@@ -1420,17 +1444,12 @@ class MarkedCellOrbitAlgorithm:
         nodes = [(cell_position, orbit_position) for cell_position, cell_orbits in enumerate(local) for orbit_position in range(len(cell_orbits))]
         graph: dict[tuple[int, int], set[tuple[int, int]]] = {node: set() for node in nodes}
         local_mark_positions = tuple(
-            {
-                tuple(int(mark.to_vector()(label)) for label in cell.lattice.module_generating_set()): orbit_position
-                for orbit_position, orbit in enumerate(cell_orbits)
-                for mark in orbit
-            }
+            {tuple(int(entry) for entry in _coordinate_row(cell.lattice, mark, SageZZ)): orbit_position for orbit_position, orbit in enumerate(cell_orbits) for mark in orbit}
             for cell, cell_orbits in zip(cells, local, strict=True)
         )
 
         def local_orbit_position(cell_position: int, mark: Lattices.ElementMethods) -> int:
-            labels = cells[cell_position].lattice.module_generating_set()
-            key = tuple(int(mark.to_vector()(label)) for label in labels)
+            key = tuple(int(entry) for entry in _coordinate_row(cells[cell_position].lattice, mark, SageZZ))
             try:
                 return local_mark_positions[cell_position][key]
             except KeyError as exc:
@@ -1463,8 +1482,7 @@ class MarkedCellOrbitAlgorithm:
             seen_marks: set[tuple[int, ...]] = set()
             for cell_position, orbit_position in sorted(component):
                 for mark in local[cell_position][orbit_position]:
-                    labels = cells[cell_position].lattice.module_generating_set()
-                    key = tuple(int(mark.to_vector()(label)) for label in labels)
+                    key = tuple(int(entry) for entry in _coordinate_row(cells[cell_position].lattice, mark, SageZZ))
                     if key not in seen_marks:
                         seen_marks.add(key)
                         marks.append(mark)
@@ -2175,8 +2193,12 @@ def _upper_bound(gram: Matrix_rational_dense, base_normal: FreeModuleElement[Rat
     restricted = basis * gram * basis.transpose()
     a, b, c = restricted[0, 0], restricted[0, 1], restricted[1, 1]
     discriminant = b * b - a * c
+    # Lorentzian.g:721-728 (GetRationalIsotropyVectors): a negative
+    # discriminant contradicts signature (1,1); an irrational root gives none.
+    if discriminant < 0:
+        raise ArithmeticError("the flip plane must have signature (1,1)")
     isotropic_bound: Rational | None = None
-    if discriminant > 0 and SageQQ(discriminant).is_square():
+    if SageQQ(discriminant).is_square():
         root = SageQQ(discriminant).sqrt()
         candidates = ((-b + root) / c, (-b - root) / c) if c != 0 else ((-a / (2 * b),) if b != 0 else ())
         positive = [value for value in candidates if value > 0]
