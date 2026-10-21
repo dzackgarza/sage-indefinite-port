@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import cache, cached_property
@@ -311,7 +311,17 @@ def lorentzian_isometry(source: Lattices.ParentMethods, target: Lattices.ParentM
             return None
         if source.is_isotropic():
             return next(iter(_binary_split_isometries(source, target)), None)
-    return perfect_complex(source, NONNEGATIVE_SQUARES).isometry_to(perfect_complex(target, NONNEGATIVE_SQUARES))
+    # LORENTZ_TestEquivalenceMatrices_Reduced (lorentzian_perfect.h:1887-1975)
+    # traverses the complex of one form and tests each new cell against one
+    # perfect cell of the other. Isom(L, M) is empty exactly when Isom(M, L)
+    # is, so traverse whichever complex this session has already explored
+    # further and invert its witness.
+    source_complex = perfect_complex(source, NONNEGATIVE_SQUARES)
+    target_complex = perfect_complex(target, NONNEGATIVE_SQUARES)
+    if target_complex.explored_cell_count() > source_complex.explored_cell_count():
+        witness = target_complex.isometry_to(source_complex)
+        return None if witness is None else witness.inverse()
+    return source_complex.isometry_to(target_complex)
 
 
 def _gram_matrix(lattice: Lattices.ParentMethods) -> Matrix_integer_dense:
@@ -360,23 +370,24 @@ class LorentzianPerfectLocalBackend:
     def initial_cell(self, lattice: Lattices.ParentMethods, allowed_squares: RealSet) -> LorentzianPerfectCell:
         normalized = _lorentzian_view(lattice)
         direction = _positive_direction(normalized)
-        normalized_vectors = _search_initial_vectors(normalized, direction, allowed_squares)
+        # The search runs on coordinate rows; L and its normalized twist share them.
+        critical = _search_initial_vectors(normalized, direction, allowed_squares)
         gram = _gram_matrix(normalized).change_ring(SageQQ)
         central = vector(SageQQ, direction)
-        first = _coordinate_row(normalized, normalized_vectors[0], SageQQ)
+        first = vector(SageQQ, critical[0])
         scalar = (central * gram * first.column())[0]
         base_normal = vector(SageQQ, [-scalar, *(gram * central.column()).column(0)])
-        while matrix(SageQQ, [_coordinate_row(normalized, item, SageQQ) for item in normalized_vectors]).rank() < int(lattice.module_rank()):
-            expanded = matrix(SageQQ, [[1, *_coordinate_row(normalized, item, SageQQ)] for item in normalized_vectors])
+        while matrix(SageQQ, critical).rank() < int(lattice.module_rank()):
+            expanded = matrix(SageQQ, [[1, *row] for row in critical])
             nullspace = expanded.right_kernel_matrix()
             directions = nullspace.matrix_from_columns(range(1, nullspace.ncols())) * gram.inverse()
-            outside_direction = _negative_direction_in_span(normalized, directions, normalized_vectors, base_normal)
+            outside_direction = _negative_direction_in_span(normalized, directions, critical, base_normal)
             direction_covector = gram * outside_direction.column()
-            critical_row = _coordinate_row(normalized, normalized_vectors[0], SageQQ)
+            critical_row = vector(SageQQ, critical[0])
             direction_scalar = (critical_row * direction_covector)[0]
             normal_direction = vector(SageQQ, [-direction_scalar, *direction_covector.column(0)])
-            normalized_vectors, base_normal, _test_direction, _max_scal = _kernel_flipping(normalized, normalized_vectors, base_normal, normal_direction, allowed_squares)
-        vectors = tuple(_transfer(lattice, item) for item in normalized_vectors)
+            critical, base_normal, _test_direction, _max_scal = _kernel_flipping(normalized, critical, base_normal, normal_direction, allowed_squares)
+        vectors = tuple(_ambient_element(lattice, row) for row in critical)
         return LorentzianPerfectCell(lattice, vectors, allowed_squares)
 
     @cached_method
@@ -534,9 +545,9 @@ class LorentzianPerfectLocalBackend:
         if vector(SageQQ, base_normal[1:]).dot_product(outside) <= 0:
             base_normal = -base_normal
         base_normal = _source_remove_fraction(base_normal)
-        critical = tuple(vectors[position] for position in sorted(facet))
+        critical = tuple(tuple(int(entry) for entry in _coordinate_row(normalized, vectors[position], SageZZ)) for position in sorted(facet))
         flipped, _normal, _direction, _max_scal = _kernel_flipping(normalized, critical, base_normal, normal_direction, cell.allowed_squares)
-        returned = tuple(_transfer(cell.lattice, item) for item in flipped)
+        returned = tuple(_ambient_element(cell.lattice, row) for row in flipped)
         return LorentzianPerfectCell(cell.lattice, returned, cell.allowed_squares)
 
     @cached_method
@@ -1030,6 +1041,10 @@ class LorentzianPerfectComplex:
             self._traversal_adjacencies.append(LorentzianCellAdjacency(source, facet, target, transporter))
         self._traversal_processed.add(source_position)
         return tuple(new_representatives)
+
+    def explored_cell_count(self) -> int:
+        r"""The number of quotient cells whose facets the traversal has already flipped."""
+        return len(self._traversal_processed)
 
     def isometry_to(self, target: LorentzianPerfectComplex) -> LatticeIsometryMethods | None:
         if self.allowed_squares() != target.allowed_squares():
@@ -2217,13 +2232,17 @@ class _PositiveVectorEnumerator:
         )
         self.base_target = self.inclusion.base_change(fraction_map).lift(translation)
         self.base_bound = (self.d * self.d) / square
+        self.partner_row = partner_row
+        # Rows are the images of the kernel generators: x in K maps to x * inclusion_rows.
+        kernel_images = (self.inclusion(self.kernel.module_generator(label)) for label in self.kernel.module_generating_set())
+        self.inclusion_rows = matrix(SageZZ, [_coordinate_row(lattice, image, SageZZ) for image in kernel_images])
 
     def max_multiplier(self) -> int | None:
         if self.scaled_max <= 0:
             return None
         return int(self.scaled_max / self.d)
 
-    def first_shell(self) -> tuple[int, tuple[Lattices.ElementMethods, ...]] | None:
+    def first_shell(self) -> tuple[int, tuple[tuple[int, ...], ...]] | None:
         maximum = self.max_multiplier()
         if maximum is None:
             return None
@@ -2234,7 +2253,8 @@ class _PositiveVectorEnumerator:
         return None
 
     @cached_method
-    def vectors_at_multiplier(self, multiplier: int) -> tuple[Lattices.ElementMethods, ...]:
+    def vectors_at_multiplier(self, multiplier: int) -> tuple[tuple[int, ...], ...]:
+        r"""The coordinate rows of the shell vectors at this multiplier; elements are raised only for a returned cell."""
         target = self.base_target.parent().scalar_multiple(_owned_rational(self.lattice, SageQQ(multiplier)), self.base_target)
         bound = _owned_rational(self.lattice, -(SageQQ(multiplier) ** 2) * self.base_bound)
         # Preserve the pinned Lorentzian.g:369-373 closest-vector API here.
@@ -2244,12 +2264,11 @@ class _PositiveVectorEnumerator:
         distances = self.kernel.close_vectors(target, bound)
         return self._ambient_vectors(multiplier, tuple(distances.index_set()))
 
-    def _ambient_vectors(self, multiplier: int, close_vectors: tuple[Lattices.ElementMethods, ...]) -> tuple[Lattices.ElementMethods, ...]:
-        shift = self.lattice.scalar_multiple(self.lattice.base_ring()(multiplier), self.partner)
-        result: list[Lattices.ElementMethods] = []
+    def _ambient_vectors(self, multiplier: int, close_vectors: tuple[Lattices.ElementMethods, ...]) -> tuple[tuple[int, ...], ...]:
+        shift = multiplier * self.partner_row
+        result: list[tuple[int, ...]] = []
         for close in close_vectors:
-            candidate = shift + self.inclusion(close)
-            row = _coordinate_row(self.lattice, candidate, SageZZ)
+            row = shift + vector(SageZZ, [int(coordinate) for coordinate in close]) * self.inclusion_rows
             candidate_square = int(row * self.gram * row)
             # Lorentzian.g:377-385 verifies both the scalar-product shell
             # and norm after reconstructing each closest-vector solution.
@@ -2262,14 +2281,14 @@ class _PositiveVectorEnumerator:
             # the closest-vector solutions, which lie within the distance.
             if candidate_square not in self.allowed_squares:
                 continue
-            result.append(candidate)
+            result.append(tuple(int(entry) for entry in row))
         return tuple(result)
 
 
 def _first_positive_shell(
     lattice: Lattices.ParentMethods, rational_direction: tuple[Rational, ...], max_scal: Rational, allowed_squares: RealSet
-) -> tuple[Lattices.ElementMethods, ...]:
-    r"""The vectors of the first nonempty shell with 0 < b(v, t) <= max_scal, or ()."""
+) -> tuple[tuple[int, ...], ...]:
+    r"""The coordinate rows of the first nonempty shell with 0 < b(v, t) <= max_scal, or ()."""
     enumerator = _PositiveVectorEnumerator(lattice, rational_direction, max_scal, allowed_squares)
     if enumerator.scaled_max <= 0:
         raise ArithmeticError(f"the positive-vector shells below {max_scal} along {rational_direction} are empty by definition: the bound must be positive")
@@ -2277,7 +2296,7 @@ def _first_positive_shell(
     return () if first is None else first[1]
 
 
-def _search_initial_vectors(lattice: Lattices.ParentMethods, direction: tuple[Rational, ...], allowed_squares: RealSet) -> tuple[Lattices.ElementMethods, ...]:
+def _search_initial_vectors(lattice: Lattices.ParentMethods, direction: tuple[Rational, ...], allowed_squares: RealSet) -> tuple[tuple[int, ...], ...]:
     r"""The first shell along the direction, following LORENTZ_SearchInitialVectorOpt's successive integral bounds."""
     if allowed_squares == ZERO_SQUARES and not lattice.is_isotropic():
         raise ValueError(f"{lattice} is anisotropic: it has no isotropic perfect cells")
@@ -2297,9 +2316,9 @@ def _search_initial_vectors(lattice: Lattices.ParentMethods, direction: tuple[Ra
         if maximum is None:
             raise ArithmeticError("the initial positive-vector shell bound became nonpositive")
         for multiplier in range(next_multiplier, maximum + 1):
-            vectors = enumerator.vectors_at_multiplier(multiplier)
-            if vectors:
-                return vectors
+            rows = enumerator.vectors_at_multiplier(multiplier)
+            if rows:
+                return rows
         next_multiplier = max(next_multiplier, maximum + 1)
         # Lorentzian.g:411–423 increases MaxScal by one, rather than
         # exponentially expanding the search interval.
@@ -2424,7 +2443,7 @@ def _upper_bound(gram: Matrix_rational_dense, base_normal: FreeModuleElement[Rat
 def _negative_direction_in_span(
     lattice: Lattices.ParentMethods,
     spanning_rows: Matrix_rational_dense,
-    critical: tuple[Lattices.ElementMethods, ...],
+    critical: tuple[tuple[int, ...], ...],
     base_normal: FreeModuleElement[Rational],
 ) -> FreeModuleElement[Rational]:
     r"""The negative direction accepted by Lorentzian.g's GetOneOutsideRay.
@@ -2447,7 +2466,7 @@ def _negative_direction_in_span(
         negative_row = vector(SageQQ, [_rational(coordinates(label)) for label in framed.module_generating_set()])
         direction = negative_row * rows
         covector = gram * direction.column()
-        scalars = {(_coordinate_row(lattice, point, SageQQ) * covector)[0] for point in critical}
+        scalars = {(vector(SageQQ, row) * covector)[0] for row in critical}
         if len(scalars) != 1:
             raise ArithmeticError("the GetOneOutsideRay direction must pair equally with every critical vector")
         (scalar,) = scalars
@@ -2471,37 +2490,35 @@ def _negative_direction_in_span(
         perturbation *= modification
 
 
-def _vector_rows(vectors: Iterable[Lattices.ElementMethods]) -> set[tuple[int, ...]]:
-    return {tuple(int(entry) for entry in _coordinate_row(item.parent(), item, SageZZ)) for item in vectors}
-
-
 def _kernel_flipping(
     lattice: Lattices.ParentMethods,
-    critical: tuple[Lattices.ElementMethods, ...],
+    critical: tuple[tuple[int, ...], ...],
     base_normal: FreeModuleElement[Rational],
     direction_normal: FreeModuleElement[Rational],
     allowed_squares: RealSet,
-) -> tuple[tuple[Lattices.ElementMethods, ...], FreeModuleElement[Rational], FreeModuleElement[Rational], Rational]:
+) -> tuple[tuple[tuple[int, ...], ...], FreeModuleElement[Rational], FreeModuleElement[Rational], Rational]:
+    r"""LORENTZ_Kernel_Flipping (Lorentzian.g:842-968) on coordinate rows of the critical set."""
     gram = _gram_matrix(lattice).change_ring(SageQQ)
     # Lorentzian.g:853-860. Both affine normals annihilate the critical
     # configuration and are independent. Those are hypotheses of the
     # one-parameter wall crossing, not optional diagnostics.
     if matrix(SageQQ, [base_normal, direction_normal]).rank() != 2:
         raise ArithmeticError("Lorentzian flip normals must be independent")
-    for point in critical:
-        augmented = vector(SageQQ, [1, *_coordinate_row(lattice, point, SageQQ)])
+    for row in critical:
+        augmented = vector(SageQQ, [1, *row])
         if base_normal.dot_product(augmented) != 0 or direction_normal.dot_product(augmented) != 0:
             raise ArithmeticError("both Lorentzian flip normals must vanish on the critical vectors")
-        if allowed_squares == ZERO_SQUARES and point.q() != lattice.base_ring().zero():
+        point = vector(SageQQ, row)
+        if allowed_squares == ZERO_SQUARES and point * gram * point != 0:
             raise ArithmeticError("an isotropic flip requires isotropic critical vectors")
     upper = _upper_bound(gram, base_normal, direction_normal)
     if upper is None:
         raise ArithmeticError("the flip direction ends at a forbidden isotropic boundary")
     lower = SageQQ.zero()
     inverse = gram.inverse()
-    critical_first = _coordinate_row(lattice, critical[0], SageQQ)
-    critical_rows = _vector_rows(critical)
-    total: tuple[Lattices.ElementMethods, ...] = ()
+    critical_first = vector(SageQQ, critical[0])
+    critical_rows = set(critical)
+    total: tuple[tuple[int, ...], ...] = ()
     while True:
         middle = _source_mid_value(lower, upper)
         normal = base_normal + middle * direction_normal
@@ -2517,12 +2534,11 @@ def _kernel_flipping(
         if first is None:
             raise ArithmeticError("a critical perfect-cell shell disappeared during flipping")
         _first_multiplier, total = first
-        total_rows = _vector_rows(total)
-        # Lorentzian.g:920-923 / lorentzian_perfect.h:757: a shell
-        # containing every critical point cannot have fewer distinct
-        # points than the critical family.
-        if critical_rows.issubset(total_rows) and len(critical) > len(total):
-            raise ArithmeticError("a Lorentzian shell lost multiplicity of its critical configuration")
+        total_rows = set(total)
+        # Lorentzian.g:922-924: IsSubset(CritSet, Set(ListTotal)) with
+        # |CritSet| > |ListTotal| is a bug; a shell inside CritSet equals it.
+        if total_rows.issubset(critical_rows) and len(critical_rows) > len(total_rows):
+            raise ArithmeticError("a Lorentzian shell is a proper subset of its critical configuration")
         if total_rows == critical_rows:
             lower = middle
             continue
@@ -2534,8 +2550,8 @@ def _kernel_flipping(
         if not total:
             raise ArithmeticError("perfect-cell flipping reached an empty positive-vector shell")
         # Lorentzian.g:944-966, second scheme.
-        new_vector = total[0]
-        expanded = vector(SageQQ, [1, *_coordinate_row(lattice, new_vector, SageQQ)])
+        new_row = total[0]
+        expanded = vector(SageQQ, [1, *new_row])
         denominator = direction_normal.dot_product(expanded)
         if denominator == 0:
             raise ArithmeticError("the flip direction is parallel to a newly found wall")
@@ -2546,5 +2562,5 @@ def _kernel_flipping(
         max_scal = (critical_first * gram * test_direction)[0]
         total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
         # Lorentzian.g:959, EXIT 2: the shell contains CritSet and eVect.
-        if (critical_rows | _vector_rows((new_vector,))).issubset(_vector_rows(total)):
+        if (critical_rows | {new_row}).issubset(set(total)):
             return total, normal, test_direction_row, max_scal
