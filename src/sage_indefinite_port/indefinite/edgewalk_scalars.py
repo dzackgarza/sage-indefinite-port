@@ -15,7 +15,7 @@ def _rational(entry) -> Rational:
 
 def _integer(entry) -> int:
     r"""An integral coordinate; a rational entry with a denominator is a defect, not a value to truncate."""
-    integer = int(entry)
-    if entry != integer:
+    value = _rational(entry)
+    if value.denominator() != 1:
         raise ArithmeticError(f"the coordinate {entry} of a lattice vector is not integral")
-    return integer
+    return int(value)

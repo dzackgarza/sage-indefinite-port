@@ -207,8 +207,12 @@ class _Edgewalk:
             }
         )
 
+    @cached_method
     def row(self, vector_: _Vector) -> _RationalRow:
-        return vector(SageQQ, _key(vector_))
+        r"""The immutable rational coordinate row of a lattice vector, read once per vector."""
+        coordinates = vector(SageQQ, _key(vector_))
+        coordinates.set_immutable()
+        return coordinates
 
     def rational_row(self, vector_: Lattices.ElementMethods) -> _RationalRow:
         coordinates = vector_.to_vector()
