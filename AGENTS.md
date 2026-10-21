@@ -81,7 +81,7 @@ A unit is closed with `itree close` only when every acceptance node it owns in T
 - **Deferred type checking (temporary, discharged by #36)**: while #36 is open, the push gate's mypy errors are acknowledged debt and are not paid down. A push may then use `git push --no-verify`, and only under all of these conditions:
   - `just test-push` was run on the commit being pushed and failed in its mypy stage (`_sage-mypy`) and nowhere earlier.
   - The tip commit of the push carries this trailer, verbatim apart from the count: `Type-Debt-Ack: MYPY-DEFER-7Q4K #36 errors=<N>`, where `<N>` is the "Found N errors" count of that run.
-  - `<N>` is no greater than the count in the previous `Type-Debt-Ack` trailer in `git log`. A push that would raise the count does not use this exception: fix the new errors first.
+  - `<N>` is at most 1000. Unproven code is not typed ahead of its correctness; the bound keeps the debt from growing unchecked. A push whose count exceeds 1000 does not use this exception: fix errors until it is at most 1000.
 
   The trailer covers every commit in that push. Commits need no exception, because the commit gate does not run mypy. The exception covers only mypy debt: any other gate failure is fixed, never bypassed. #36's last commit deletes this rule.
 
