@@ -63,14 +63,18 @@ jobs:
       - id: restore
         uses: actions/cache/restore@v4
         with:
-          path: /github/home/.julia
+          path: |
+            /github/home/.julia
+            /home/sage/sage/local/var/lib/sage/venv-python3.14/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
           key: ${{ steps.key.outputs.key }}
       - if: steps.restore.outputs.cache-hit != 'true'
         run: just ci-provision-julia
       - if: steps.restore.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: /github/home/.julia
+          path: |
+            /github/home/.julia
+            /home/sage/sage/local/var/lib/sage/venv-python3.14/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
           key: ${{ steps.key.outputs.key }}
   family:
     needs: [plan, julia]
@@ -99,7 +103,9 @@ jobs:
       - run: just ci-provision-sage
       - uses: actions/cache/restore@v4
         with:
-          path: /github/home/.julia
+          path: |
+            /github/home/.julia
+            /home/sage/sage/local/var/lib/sage/venv-python3.14/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
           key: ${{ needs.julia.outputs.key }}
           fail-on-cache-miss: true
       - run: just ci-acceptance ${{ matrix.family }} ${{ matrix.shard }} ${{ matrix.shards }}

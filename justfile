@@ -77,14 +77,16 @@ ci-provision-julia:
     env_dir="$("$sage_python" -c 'import pathlib, sage_julia_bridge; print(pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env")')"
     {{ci_dir}}/julia/bin/julia --project="$env_dir" -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
 
-# CI only: the cache key of the bridge's Julia environment (its Manifest).
+# CI only: the cache key of the bridge's Julia environment (its Project; the
+# installed package ships no Manifest, so the julia job resolves one and the
+# cache carries it).
 ci-julia-key:
     #!/usr/bin/env bash
     set -euo pipefail
     # sage_julia_bridge resolves its Julia at import.
     export SAGE_JULIA_COMMAND="$PWD/{{ci_dir}}/julia/bin/julia"
     sage_python="$("$SAGE_BIN" -python -c 'import sys; print(sys.executable)')"
-    "$sage_python" -c 'import hashlib, pathlib, sage_julia_bridge; print("julia-depot-" + hashlib.sha256((pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env" / "Manifest.toml").read_bytes()).hexdigest()[:16])'
+    "$sage_python" -c 'import hashlib, pathlib, sage_julia_bridge; print("julia-depot-" + hashlib.sha256((pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env" / "Project.toml").read_bytes()).hexdigest()[:16])'
 
 # CI only: run one shard of one frozen acceptance family; results land in .tmp/ci/results/<family>-<shard>.
 ci-acceptance family shard shards:
