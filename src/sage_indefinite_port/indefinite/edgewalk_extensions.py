@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from functools import lru_cache
 from itertools import combinations
-from typing import SupportsInt, cast
 
 from dzack_research.preamble.all import CoxeterDiagrams, Lattices
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
@@ -15,6 +15,8 @@ from sage.rings.infinity import Infinity, PlusInfinity
 from sage.rings.integer import Integer
 from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ
+
+from .edgewalk_scalars import _rational
 
 type CoxeterLabel = Integer | PlusInfinity
 
@@ -56,7 +58,25 @@ def _norm_ratio_allows(label: CoxeterLabel, old_norm: Rational, new_norm: Ration
     return True
 
 
+@lru_cache(maxsize=4096)
+def _irreducible_coxeter_kind(rows: tuple[tuple[int, ...], ...]) -> tuple[bool, str]:
+    """Classify an irreducible Coxeter component once per labelled diagram."""
+    diagram = CoxeterDiagrams()([list(row) for row in rows])
+    if diagram.is_parabolic():
+        return True, ""
+    if not diagram.is_elliptic():
+        raise ValueError("Dynkin extensions require spherical or affine components")
+    label = str(diagram.label())
+    kind = "B" if label.startswith(("B", "C")) else ("G" if label.startswith("I2(6)") else label[0])
+    return False, kind
+
+
 def _diagram_extension_labels(coxeter_rows: list[list[Integer]], spherical: bool) -> tuple[tuple[CoxeterLabel, ...], ...]:
+    return _cached_diagram_extension_labels(tuple(tuple(int(entry) for entry in row) for row in coxeter_rows), spherical)
+
+
+@lru_cache(maxsize=4096)
+def _cached_diagram_extension_labels(coxeter_rows: tuple[tuple[int, ...], ...], spherical: bool) -> tuple[tuple[CoxeterLabel, ...], ...]:
     r"""Pinned FindDiagramExtensions_Efficient, coxeter_dynkin.h:710–1671.
 
     Enumerate the spherical and affine Dynkin extension families in source
@@ -143,13 +163,9 @@ def _diagram_extension_labels(coxeter_rows: list[list[Integer]], spherical: bool
         size = len(component)
         if size == 1:
             continue
-        diagram = CoxeterDiagrams()([[coxeter_rows[i][j] for j in component] for i in component])
-        if diagram.is_parabolic():
+        parabolic, kind = _irreducible_coxeter_kind(tuple(tuple(int(coxeter_rows[i][j]) for j in component) for i in component))
+        if parabolic:
             continue
-        if not diagram.is_elliptic():
-            raise ValueError("Dynkin extensions require spherical or affine components")
-        label = str(diagram.label())
-        kind = "B" if label.startswith(("B", "C")) else ("G" if label.startswith("I2(6)") else label[0])
         if kind == "A":
             if size == 2:
                 a2.append(component)
@@ -520,8 +536,8 @@ def _extensions(
     labels: tuple[CoxeterLabel, ...],
 ) -> tuple[NormedDynkinExtension, ...]:
     if not roots:
-        return tuple(NormedDynkinExtension((QQ.zero(),) * int(lattice.rank()), QQ(norm), QQ(norm)) for norm in norms)
-    coordinates = matrix([[QQ(int(cast(SupportsInt, root.to_vector()(label)))) for label in lattice.module_generating_set()] for root in roots])
+        return tuple(NormedDynkinExtension((QQ.zero(),) * int(lattice.rank()), _rational(norm), _rational(norm)) for norm in norms)
+    coordinates = matrix([[_rational(root.to_vector()(label)) for label in lattice.module_generating_set()] for root in roots])
     gram = _engine_component_matrix(lattice.gram_tensor()).change_ring(QQ)
     pairings = coordinates * gram * coordinates.T
     root_norms = tuple(pairings[i, i] for i in range(len(roots)))
@@ -544,7 +560,7 @@ def _extensions(
     # visited before its compatible norms, in the supplied norm order.
     out: list[NormedDynkinExtension] = []
     for diagram in _diagram_extension_labels(coxeter_rows, spherical=labels == _FINITE_LABELS):
-        for new_norm in (QQ(norm) for norm in norms):
+        for new_norm in (_rational(norm) for norm in norms):
             if any(not _norm_ratio_allows(label, old_norm, new_norm) for label, old_norm in zip(diagram, root_norms, strict=True)):
                 continue
             scalar_products: list[Rational] = []
@@ -556,7 +572,7 @@ def _extensions(
             if len(scalar_products) != len(roots):
                 continue
             weights = inverse * vector(scalar_products)
-            projected_square = QQ(vector(scalar_products).dot_product(weights))
+            projected_square = _rational(vector(scalar_products).dot_product(weights))
             out.append(NormedDynkinExtension(tuple(weights * coordinates), new_norm - projected_square, new_norm))
     return tuple(out)
 

@@ -21,18 +21,39 @@ Definite lattices are the preamble's; signature (1, n) is the Lorentzian leaf (#
 from dataclasses import dataclass
 
 from dzack_research.preamble.all import ZZ, Lattices
+from dzack_research.preamble.categories.group.groups import OwnedGroups
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
-from dzack_research.preamble.categories.modules.orbit_spans import OrbitSpanConstructions
-from dzack_research.preamble.categories.modules.pure.modules import Modules, ModulesOverIntegralDomains
-from dzack_research.preamble.categories.rational_integral_stabilizers import IntegralStructureAction
-from sage.matrix.constructor import matrix
+from dzack_research.preamble.categories.modules.orbit_spans import (
+    OrbitSpanConstructions,
+)
+from dzack_research.preamble.categories.modules.pure.modules import (
+    Modules,
+    ModulesOverIntegralDomains,
+)
+from dzack_research.preamble.categories.rational_integral_stabilizers import (
+    IntegralStructureAction,
+)
+from dzack_research.preamble.tensors.tensor import _engine_component_matrix
+from sage.matrix.constructor import identity_matrix, matrix
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
 from sage.structure.parent import Parent
 
 from sage_indefinite_port.indefinite.eichler import OrbitCoverModel
-from sage_indefinite_port.indefinite.lorentzian_cells import _coordinate_row, lorentzian_isometry, lorentzian_orthogonal_group_generators
-from sage_indefinite_port.invariants import AttackProfile, LatticePrefilter, VectorPrefilter
+from sage_indefinite_port.indefinite.groupoid_cache import IsometryGroupoidCache
+from sage_indefinite_port.indefinite.indefinite_reduction import (
+    indefinite_reduced_presentation,
+)
+from sage_indefinite_port.indefinite.lorentzian_cells import (
+    _coordinate_row,
+    lorentzian_isometry,
+    lorentzian_orthogonal_group_generators,
+)
+from sage_indefinite_port.invariants import (
+    AttackProfile,
+    LatticePrefilter,
+    VectorPrefilter,
+)
 
 _UNTWIST = Lattices(ZZ).twist_functor(-1)
 
@@ -113,16 +134,107 @@ class VectorClass:
 class EichlerRecursion:
     r"""The recursion; every general step is a preamble operation."""
 
+    def __init__(self) -> None:
+        # IndefiniteForms.g:1173-1310: the groupoid database is shared by
+        # every recursive orthogonal-group and lattice-equivalence request.
+        self._groupoid = IsometryGroupoidCache()
+
+    def _degenerate_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
+        r"""IndefiniteForms.g:853–901, 1496–1511: extend O(C) over the radical.
+
+        The presentation of ``lattice`` is ``C ⊕ R`` with Gram ``C ⊕ 0``.
+        Every integral isometry has block rows ``[A B; 0 D]``, where
+        ``A`` preserves C, ``D`` belongs to GL(R), and B is arbitrary.
+        The source extends the generators of O(C) and GL(R) and adjoining
+        the first-radical-coordinate shears e_i -> e_i + z_1: the GL(R)
+        action supplies the other coordinates of B.
+        """
+        gram = _engine_component_matrix(lattice.gram_tensor()).change_ring(SageZZ)
+        size, nonsingular_rank = gram.nrows(), gram.rank()
+        assert nonsingular_rank < size
+        if any(gram[i, j] for i in range(nonsingular_rank, size) for j in range(size)):
+            raise ArithmeticError("the radical must occupy the final Gram coordinates")
+        complement_gram = gram.matrix_from_rows_and_columns(range(nonsingular_rank), range(nonsingular_rank))
+        complement = lattice.lattice_category()([[int(entry) for entry in row] for row in complement_gram.rows()])
+        matrices = []
+        if nonsingular_rank:
+            for generator in self.orthogonal_group_generators(complement):
+                top = tuple(tuple(int(value) for value in generator(point).to_vector()) for point in complement.module_generators())
+                block = identity_matrix(SageZZ, size)
+                for row in range(nonsingular_rank):
+                    for column in range(nonsingular_rank):
+                        block[row, column] = top[row][column]
+                matrices.append(block)
+        radical_rank = size - nonsingular_rank
+        general_linear = OwnedGroups().GL(radical_rank, lattice.base_ring())
+        for generator in general_linear.group_generators():
+            action = general_linear._to_engine(generator).matrix()
+            block = identity_matrix(SageZZ, size)
+            for i in range(radical_rank):
+                for j in range(radical_rank):
+                    block[nonsingular_rank + i, nonsingular_rank + j] = SageZZ(action[i, j])
+            matrices.append(block)
+        for row in range(nonsingular_rank):
+            block = identity_matrix(SageZZ, size)
+            block[row, nonsingular_rank] = 1
+            matrices.append(block)
+        return tuple(lattice.O()(tuple(lattice(list(row)) for row in block.rows())) for block in matrices)
+
+    def _degenerate_isometry(self, source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
+        r"""IndefiniteForms.g:1387–1423: split radicals, identify them, and extend the nondegenerate witness."""
+        source_reduction = indefinite_reduced_presentation(source)
+        target_reduction = indefinite_reduced_presentation(target)
+        left, right = source_reduction.reduced, target_reduction.reduced
+        left_gram = _engine_component_matrix(left.gram_tensor()).change_ring(SageZZ)
+        right_gram = _engine_component_matrix(right.gram_tensor()).change_ring(SageZZ)
+        size, rank = left_gram.nrows(), left_gram.rank()
+        if rank != right_gram.rank():
+            return None
+        known, cached = self._groupoid.cached_isometry(left, right)
+        if known:
+            return None if cached is None else target_reduction.isometry * cached * source_reduction.isometry.inverse()
+        left_complement_gram = left_gram.matrix_from_rows_and_columns(range(rank), range(rank))
+        right_complement_gram = right_gram.matrix_from_rows_and_columns(range(rank), range(rank))
+        left_complement = left.lattice_category()([[int(entry) for entry in row] for row in left_complement_gram.rows()])
+        right_complement = right.lattice_category()([[int(entry) for entry in row] for row in right_complement_gram.rows()])
+        complement_witness = self.isometry(left_complement, right_complement) if rank else None
+        if rank and complement_witness is None:
+            self._groupoid.record_isometry(left, right, None)
+            return None
+        extension = identity_matrix(SageZZ, size)
+        if complement_witness is not None:
+            for row, point in enumerate(left_complement.module_generators()):
+                coordinates = tuple(int(value) for value in complement_witness(point).to_vector())
+                for column, coefficient in enumerate(coordinates):
+                    extension[row, column] = coefficient
+        reduced_witness = left.Isom(right)(tuple(right(list(row)) for row in extension.rows()))
+        self._groupoid.record_isometry(left, right, reduced_witness)
+        return target_reduction.isometry * reduced_witness * source_reduction.isometry.inverse()
+
     def orthogonal_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
         if lattice.is_definite():
             return tuple(lattice.O().group_generators())
-        profile = AttackProfile.from_lattice(lattice)
-        match profile.positive_index:
-            case 1:
-                generators = lorentzian_orthogonal_group_generators(profile.signed_view)
-            case _:
-                generators = self._generation_step(profile.signed_view)
-        return tuple(_untwisted(generator, profile) for generator in generators)
+        # IndefiniteForms.g:1474-1494: reduce before the memoized group
+        # computation, then conjugate its generators back to the input form.
+        # The reduction's isometry is directed from the reduced lattice to L.
+        reduction = indefinite_reduced_presentation(lattice)
+        cached = self._groupoid.cached_group(reduction.reduced)
+        if cached is not None:
+            return tuple(reduction.isometry * generator * reduction.isometry.inverse() for generator in cached)
+        if not reduction.reduced.is_nondegenerate():
+            # IndefiniteForms.g:1496–1511 applies ExtendIsometryGroup to
+            # the nondegenerate quotient before transporting the generators.
+            reduced_generators = self._degenerate_group_generators(reduction.reduced)
+        else:
+            profile = AttackProfile.from_lattice(reduction.reduced)
+            match profile.positive_index:
+                case 1:
+                    generators = lorentzian_orthogonal_group_generators(profile.signed_view)
+                case _:
+                    generators = self._generation_step(profile.signed_view)
+            reduced_generators = tuple(_untwisted(generator, profile) for generator in generators)
+        self._groupoid.record_group(reduction.reduced, reduced_generators)
+        return tuple(reduction.isometry * generator * reduction.isometry.inverse() for generator in reduced_generators)
 
     def _generation_step(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
         model = OrbitCoverModel(lattice)
@@ -133,16 +245,34 @@ class EichlerRecursion:
         return model.approximate_generators() + self.pointed_automorphism_generators(vector) + transporters
 
     def isometry(self, source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
+        # IndefiniteForms.g:1387–1423 splits the radical *before* the
+        # nondegenerate genus/discriminant prefilters and memoized recursion.
+        if source.is_nondegenerate() != target.is_nondegenerate():
+            return None
+        if not source.is_nondegenerate():
+            if source.module_rank() != target.module_rank():
+                return None
+            return self._degenerate_isometry(source, target)
         if LatticePrefilter.from_lattice(source) != LatticePrefilter.from_lattice(target):
             return None
         if source.is_even() and source.genus() != target.genus():
             return None
+        if not source.is_definite():
+            source_reduction = indefinite_reduced_presentation(source)
+            target_reduction = indefinite_reduced_presentation(target)
+            reduced_witness = self._indefinite_isometry(source_reduction.reduced, target_reduction.reduced)
+            if reduced_witness is None:
+                return None
+            return target_reduction.isometry * reduced_witness * source_reduction.isometry.inverse()
         if source.is_definite():
             homset = source.Isom(target)
             return None if homset.is_empty() else homset.an_element()
         return self._indefinite_isometry(source, target)
 
     def _indefinite_isometry(self, source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
+        known, cached = self._groupoid.cached_isometry(source, target)
+        if known:
+            return cached
         source_profile = AttackProfile.from_lattice(source)
         target_profile = AttackProfile.from_lattice(target)
         signed_source, signed_target = source_profile.signed_view, target_profile.signed_view
@@ -150,10 +280,25 @@ class EichlerRecursion:
             case 1:
                 witness = lorentzian_isometry(signed_source, signed_target)
             case _:
-                vector = OrbitCoverModel(signed_source).splitting_vector()
-                covering = OrbitCoverModel(signed_target).covering_vectors(int(vector.q()), int(vector.content()))
-                witness = next((isometry for candidate in covering if (isometry := self.pointed_isometry(vector, candidate)) is not None), None)
-        return None if witness is None else _untwisted(witness, source_profile)
+                source_model = OrbitCoverModel(signed_source)
+                target_model = OrbitCoverModel(signed_target)
+                vector = source_model.splitting_vector()
+                square, content = int(vector.q()), int(vector.content())
+                # IndefiniteForms.g:1320-1359 and
+                # ApproximateModels.h:GetCoveringOrbitRepresentatives: enumerate
+                # the full target covering family at the source's first norm,
+                # testing its pointed isometries in order. A separate
+                # GetOneOrbitRepresentative trial is not part of this kernel:
+                # it can demand an additional exact pointed equivalence and
+                # does not replace any covering case.
+                covering = target_model.covering_vectors(square, content)
+                witness = next(
+                    (isometry for candidate in covering if (isometry := self.pointed_isometry(vector, candidate)) is not None),
+                    None,
+                )
+        result = None if witness is None else _untwisted(witness, source_profile)
+        self._groupoid.record_isometry(source, target, result)
+        return result
 
     def _lattice_action(self, vector: Lattices.ElementMethods) -> IntegralStructureAction:
         r"""The rational extensions acting at L, with a finite stable containing module.
@@ -231,9 +376,9 @@ class EichlerRecursion:
         for integral_generator in reduction.pointwise_perpendicular_kernel().group_generators():
             rational_generator = integral_generator.base_change(field_map)
 
-            def scaled_image(label):
+            def scaled_image(label, generator=rational_generator):
                 point = rational.module_generator(label)
-                return point + rational.scalar_multiple(inverse_denominator, rational_generator(point) - point)
+                return point + rational.scalar_multiple(inverse_denominator, generator(point) - point)
 
             kernel_generators.append(rational.Isom(rational)(scaled_image))
         generators = (*(isometry for isometry, _entry_denominator in extended), *kernel_generators)
@@ -241,18 +386,14 @@ class EichlerRecursion:
         space = inclusion.codomain()
         # Unlike the rational coordinate complement, the pairing L -> J^*
         # determines the invariant index a in D=2d^2e^2a intrinsically.
-        isotropic_lattice = reduction.isotropic_sublattice()
         isotropic_inclusion = reduction.isotropic_embedding()
-        dual = isotropic_lattice.dual_module()
-        isotropic_labels = tuple(isotropic_lattice.module_generating_set())
-        pairing = lattice.module_category().Mor(lattice, dual)(
-            lambda label: dual.linear_combination(
-                {
-                    isotropic_label: lattice.b(lattice.module_generator(label), isotropic_inclusion(isotropic_lattice.module_generator(isotropic_label)))
-                    for isotropic_label in isotropic_labels
-                }
-            )
-        )
+        # The pairing L -> I^* is i^* composed with the metric map,
+        # where i: I -> L. Dualization is represented on the opposite
+        # category, so its input is the reversed arrow op(L) -> op(I).
+        dualization = Modules(lattice.base_ring()).dualization()
+        opposite = dualization.domain()
+        opposite_inclusion = opposite.Mor(opposite.object(lattice), opposite.object(isotropic_inclusion.domain()))(isotropic_inclusion)
+        pairing = dualization(opposite_inclusion) * lattice.metric_map()
         bound = 2 * int(denominator) ** 2 * abs(int(quotient.discriminant())) ** 2 * int(pairing.index())
         scale = rational.base_ring().one() / rational.base_ring()(bound)
         containing = Modules(lattice.base_ring()).Mono(lattice, space)(
@@ -371,8 +512,6 @@ class EichlerRecursion:
         torsor = source_reduction.rational_lifts(target_reduction, reduced)
         integral_locus = torsor.integral_members()
         empty = integral_locus.is_empty()
-        if empty is not True and empty is not False:
-            raise ValueError("the integral marked-line lift locus has undecided emptiness")
 
         fraction_map = source_lattice.base_ring().fraction_field_map()
         source_inclusion = ModulesOverIntegralDomains(source_lattice.base_ring())(source_lattice).generic_fibre_map()
@@ -397,9 +536,10 @@ class EichlerRecursion:
                 integral = negative_identity * integral
             return target_lattice.integral_isometry(integral, source=source_lattice)
 
-        # Emptiness for this one reduction map does not decide Isom((L,v),(M,w)).
-        # Search its other target reduction actions using the complete rational
-        # stabilizer and the integral-structure transporter, as in the source.
+        # Even when the lift-locus emptiness is undecided, the full target
+        # stabilizer's integral-structure transporter decides whether a
+        # correction of this rational transport carries L onto M.  Emptiness
+        # for one fixed reduction map does not decide pointed isometry.
         restriction = Modules(fraction_map.codomain()).restriction_of_scalars(fraction_map)
         image = restriction(rational_transport) * source_inclusion
         correction = self.isotropic_stabilizer_action((target,), ()).transporter(image)

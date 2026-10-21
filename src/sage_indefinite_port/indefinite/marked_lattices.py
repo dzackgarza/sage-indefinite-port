@@ -15,16 +15,36 @@ the other components.
 """
 
 from dzack_research.preamble.all import ZZ, Cat, Lattices
-from dzack_research.preamble.categories.abstract_categories.arrow_categories import CosliceCategory
-from dzack_research.preamble.categories.abstract_categories.products import FiniteOrdinalCategory
+from dzack_research.preamble.categories.abstract_categories.arrow_categories import (
+    CosliceCategory,
+)
+from dzack_research.preamble.categories.abstract_categories.products import (
+    FiniteOrdinalCategory,
+)
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
-from dzack_research.preamble.categories.sets.finite_ordered_sets import finite_ordered_set
+from dzack_research.preamble.categories.sets.finite_ordered_sets import (
+    finite_ordered_set,
+)
 from sage.categories.category import Category
 from sage.categories.morphism import Morphism
 from sage.structure.parent import Parent
 
-from sage_indefinite_port.indefinite.isotropic_induction import ARROWS, Flag, IsotropicInduction, UnsupportedRankError
-from sage_indefinite_port.indefinite.lorentzian_cells import NONNEGATIVE_SQUARES, LorentzianPerfectComplex, MarkedCellOrbitAlgorithm
+from sage_indefinite_port.indefinite.indefinite_reduction import (
+    indefinite_reduced_presentation,
+)
+from sage_indefinite_port.indefinite.isotropic_induction import (
+    ARROWS,
+    Flag,
+    IsotropicInduction,
+    UnsupportedRankError,
+)
+from sage_indefinite_port.indefinite.lorentzian_cells import (
+    NONNEGATIVE_SQUARES,
+    LorentzianPerfectComplex,
+    MarkedCellOrbitAlgorithm,
+    _transfer,
+    binary_split_primitive_vector_classes,
+)
 from sage_indefinite_port.indefinite.recursive import EichlerRecursion
 from sage_indefinite_port.invariants import AttackProfile
 
@@ -105,15 +125,25 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
 
 def _pointed_classes(category: Category, lattice: Lattices.ParentMethods, square: int) -> tuple[Parent, ...]:
     profile = AttackProfile.from_lattice(lattice)
-    match profile.positive_index, square:
-        case 0, _:
-            raise ValueError(f"{lattice} is definite: its vector classes are the preamble's")
-        case 1, 0:
-            vectors = INDUCTION.isotropic_vector_classes(lattice)
-        case 1, _:
-            vectors = tuple(orbit[0] for orbit in MarkedCellOrbitAlgorithm(LorentzianPerfectComplex(lattice, NONNEGATIVE_SQUARES), square).global_orbits())
-        case _:
-            vectors = tuple(vector_class.representative for vector_class in RECURSION.primitive_vector_classes(lattice, square))
+    if profile.positive_index == 1 and int(lattice.rank()) == 2 and tuple(map(int, lattice.signature_pair())) == (1, 1) and lattice.is_isotropic():
+        # The pinned binary split dispatcher covers both timelike and
+        # spacelike squares; perfect cells cover only the closed positive cone.
+        vectors = binary_split_primitive_vector_classes(lattice, square)
+    else:
+        match profile.positive_index, square:
+            case 0, _:
+                raise ValueError(f"{lattice} is definite: its vector classes are the preamble's")
+            case 1, 0:
+                vectors = INDUCTION.isotropic_vector_classes(lattice)
+            case 1, _:
+                signed_square = profile.sign * square
+                reduction = indefinite_reduced_presentation(profile.signed_view)
+                vectors = tuple(
+                    _transfer(lattice, reduction.isometry(orbit[0]))
+                    for orbit in MarkedCellOrbitAlgorithm(LorentzianPerfectComplex(reduction.reduced, NONNEGATIVE_SQUARES), signed_square).global_orbits()
+                )
+            case _:
+                vectors = tuple(vector_class.representative for vector_class in RECURSION.primitive_vector_classes(lattice, square))
     base = category.base_object()
     return tuple(category.object(base.hom([vector_], codomain=lattice)) for vector_ in vectors)
 

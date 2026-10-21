@@ -16,23 +16,44 @@ vectors of sigma(L).
 
 from __future__ import annotations
 
+from math import gcd
+from random import choice, randrange, sample
+
 from dzack_research.preamble.all import Lattices
 from dzack_research.preamble.categories.eichler_criterion import TwoUEichlerModel
 from dzack_research.preamble.categories.group.g_sets import FiniteGSets
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
-from dzack_research.preamble.categories.modules.framed.formed.discriminant_modules import DiscriminantQuadraticModules
-from dzack_research.preamble.categories.rational_integral_stabilizers import IntegralStructureAction
-from dzack_research.preamble.categories.sets.finite_ordered_sets import finite_ordered_set
-from dzack_research.preamble.categories.sets.indexed_families import IndexedFamily, finite_indexed_family
+from dzack_research.preamble.categories.modules.framed.formed.discriminant_modules import (
+    DiscriminantQuadraticModules,
+)
+from dzack_research.preamble.categories.rational_integral_stabilizers import (
+    IntegralStructureAction,
+)
+from dzack_research.preamble.categories.sets.finite_ordered_sets import (
+    finite_ordered_set,
+)
+from dzack_research.preamble.categories.sets.indexed_families import (
+    IndexedFamily,
+    finite_indexed_family,
+)
+from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.graphs.graph import Graph
-from sage.groups.perm_gps.permgroup_named import SymmetricGroup
-from sage.matrix.constructor import matrix
+from sage.matrix.constructor import identity_matrix, matrix
 from sage.misc.cachefunc import cached_method
 from sage.modules.free_module_element import vector as vector_space_element
+from sage.quadratic_forms.qfsolve import qfsolve
+from sage.rings.integer import Integer as SageInteger
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
 from sage.structure.element import RingElement
 from sage.structure.sage_object import SageObject
+
+from sage_indefinite_port.indefinite.indefinite_reduction import (
+    _compute_indefinite_reduction,
+    _gram_l1,
+    _indefinite_lll,
+    _random_signed_permutation,
+)
 
 
 def square_divisors(integer: int) -> tuple[int, ...]:
@@ -41,6 +62,184 @@ def square_divisors(integer: int) -> tuple[int, ...]:
     if value == 0:
         raise ValueError("zero has infinitely many square divisors: covers of norm 0 are by primitive isotropic vectors only")
     return tuple(int(divisor) for divisor in SageZZ(value).divisors() if value % (int(divisor) ** 2) == 0)
+
+
+def _source_random_matrix_perturbation(rank: int):
+    """GetRandomMatrixPerturbation (IndefiniteFormsFundamental.g:11-30).
+
+    Random signed permutation, or one elementary shear/diagonal sign.
+    """
+    step = identity_matrix(SageZZ, rank)
+    if randrange(2) == 0:
+        step = matrix(SageZZ, rank, rank)
+        for row, column in enumerate(sample(range(rank), rank)):
+            step[row, column] = choice((-1, 1))
+    else:
+        step[randrange(rank), randrange(rank)] = choice((-1, 1))
+    return step
+
+
+def _source_find_isotropic(gram):
+    """INDEF_FindIsotropic/FindIsotropic, pinned ApproximateModels.h:130-166
+    and Isotropic.h:76-198,252-377.
+
+    The source first searches its two indefinite-LLL passes for an
+    isotropic vector, then its isotropic-mode indefinite reduction, and
+    finally the exact solver on the reduced form. Its exact solver is
+    Sage's qfsolve, the same PARI-backed operation used by the preamble's
+    lattice.isotropic_vector(); no quadratic-solving algorithm is copied.
+    As in the source, the intermediate result is an integer coordinate
+    vector. Only the returned hyperbolic pair becomes lattice elements.
+    """
+    rank = gram.nrows()
+    if gram.rank() < rank:
+        # INDEF_FindIsotropic: the first row of the integral nullspace.
+        return vector_space_element(SageZZ, gram.right_kernel_matrix().row(0))
+
+    def raise_vector(coordinates):
+        if isinstance(coordinates, SageInteger):
+            return None
+        rational = vector_space_element(SageQQ, coordinates)
+        integral = rational * rational.denominator()
+        entries = tuple(int(entry) for entry in integral)
+        content = gcd(*entries)
+        if content == 0:
+            raise ArithmeticError("indefinite isotropic search returned the zero vector")
+        result = vector_space_element(SageZZ, [entry // content for entry in entries])
+        if result.dot_product(gram * result) != 0:
+            raise ArithmeticError("indefinite isotropic search returned an invalid witness")
+        return result
+
+    if rank <= 2:
+        # FindIsotropicExact: skip the LLL and reduction branches.
+        return raise_vector(qfsolve(gram.change_ring(SageQQ)))
+
+    def easy_vector(form):
+        # get_isotropic_easy_method, Isotropic.h:76-112.
+        for i in range(rank):
+            if form[i, i] == 0:
+                entries = [0] * rank
+                entries[i] = 1
+                return vector_space_element(SageZZ, entries)
+        for i in range(rank):
+            for j in range(i + 1, rank):
+                if form[i, j] == 0 and form[i, i] + form[j, j] == 0:
+                    entries = [0] * rank
+                    entries[i] = entries[j] = 1
+                    return vector_space_element(SageZZ, entries)
+        return None
+
+    transform = identity_matrix(SageZZ, rank)
+    working = gram
+    # FindIsotropic_LLL_nfixed makes exactly two attempts.
+    for _ in range(2):
+        step_transform = identity_matrix(SageZZ, rank)
+        step_working = working
+        previous_norm = _gram_l1(step_working)
+        immediate = easy_vector(step_working)
+        if immediate is not None:
+            return raise_vector(transform.transpose() * immediate)
+        while True:
+            step, reduced, isotropic = _indefinite_lll(step_working)
+            if isotropic is not None:
+                return raise_vector(transform.transpose() * step_transform.transpose() * isotropic)
+            step_transform = step * step_transform
+            step_working = reduced
+            immediate = easy_vector(step_working)
+            if immediate is not None:
+                return raise_vector(transform.transpose() * step_transform.transpose() * immediate)
+            next_norm = _gram_l1(step_working)
+            if next_norm >= previous_norm:
+                break
+            previous_norm = next_norm
+            perturbation = _random_signed_permutation(rank)
+            step_transform = perturbation * step_transform
+            step_working = perturbation * step_working * perturbation.transpose()
+        perturbation = _random_signed_permutation(rank)
+        transform = perturbation * transform
+        working = perturbation * working * perturbation.transpose()
+
+    reduction, reduced_gram, isotropic = _compute_indefinite_reduction(gram, look_for_isotropic=True)
+    if isotropic is not None:
+        return raise_vector(isotropic)
+    exact_coordinates = qfsolve(reduced_gram.change_ring(SageQQ))
+    if isinstance(exact_coordinates, SageInteger):
+        return None
+    return raise_vector(reduction.transpose() * exact_coordinates)
+
+
+def _source_hyperbolic_pair(lattice: Lattices.ParentMethods):
+    """GetHyperbolicPlane, polyhedral_common ApproximateModels.h:996-1180.
+
+    The pinned C++ revision of IndefiniteForms.g:465-534 maintains a set
+    of sampled isotropic vectors, retrying an insertion at most 100 times
+    for distinctness. For each sample it computes the least nonzero
+    pairing with the set, retaining the first minimal-pairing pair. It
+    exits on 10 subsequent samples at that level or 20 above it, with
+    both counters reset by a strict improvement. These are the *C++*
+    stopping branches, not the older GAP revision's 100 occurrences.
+
+    The pair has positive integral pairing; unlike a U-splitting, that
+    pairing need not be 1 or the divisibility of the first vector.
+    """
+    gram = _engine_component_matrix(lattice.gram_tensor()).change_ring(SageZZ)
+    rank = gram.nrows()
+    if rank < 2:
+        raise ValueError("an isotropic hyperbolic pair needs rank at least two")
+    labels = tuple(lattice.module_generating_set())
+    witnesses = {}
+    perturbation = identity_matrix(SageZZ, rank)
+    best_pairing = None
+    best_pair = None
+    at_level = 0
+    no_change = 0
+
+    def insert_vector():
+        nonlocal perturbation
+        repeats = 0
+        while True:
+            perturbation *= _source_random_matrix_perturbation(rank)
+            changed_gram = perturbation * gram * perturbation.transpose()
+            selected = _source_find_isotropic(changed_gram)
+            if selected is None:
+                raise ValueError("the source isotropic search found no vector")
+            original_row = selected * perturbation
+            key = tuple(int(entry) for entry in original_row)
+            if original_row.dot_product(gram * original_row) != 0:
+                raise ArithmeticError("the perturbed isotropic vector is not isotropic")
+            if key not in witnesses or repeats == 100:
+                witnesses[key] = original_row
+                return original_row
+            repeats += 1
+
+    while True:
+        candidate = insert_vector()
+        minimum = None
+        partner = None
+        # std::set orders vector coordinates lexicographically, and ties
+        # retain the first partner: only strict improvements replace it.
+        for key in sorted(witnesses):
+            previous = witnesses[key]
+            pairing = int(previous.dot_product(gram * candidate))
+            if pairing and (minimum is None or abs(pairing) < minimum):
+                minimum = abs(pairing)
+                partner = previous if pairing > 0 else -previous
+        if minimum is None:
+            continue
+        if best_pairing is None or minimum < best_pairing:
+            best_pairing = minimum
+            best_pair = (candidate, partner)
+            at_level = 0
+            no_change = 0
+        elif minimum == best_pairing:
+            at_level += 1
+        else:
+            no_change += 1
+        if at_level == 10 or no_change == 20:
+            result = tuple(lattice.linear_combination({label: lattice.base_ring()(int(value)) for label, value in zip(labels, row, strict=True) if value}) for row in best_pair)
+            if any(point.q() != lattice.base_ring().zero() for point in result) or int(lattice.b(result[0], result[1])) != best_pairing:
+                raise ArithmeticError("the sampled hyperbolic pair failed its Gram certificate")
+            return result
 
 
 class TwoUFullGeneratingDatum(SageObject):
@@ -139,13 +338,11 @@ class EichlerEnvelope:
             if not construction_lattice.is_even():
                 raise ArithmeticError("the kernel of the norm-parity homomorphism must be even")
 
-        first = construction_lattice.isotropic_vector()
-        first_partner = first.hyperbolic_partner()
+        first, first_partner = _source_hyperbolic_pair(construction_lattice)
         first_plane = construction_lattice.subobject_on([first, first_partner])
         complement = first_plane.orthogonal_complement()
         complement_lattice = complement.inclusion().domain()
-        second = complement_lattice.isotropic_vector()
-        second_partner = second.hyperbolic_partner()
+        second, second_partner = _source_hyperbolic_pair(complement_lattice)
         embed = complement.inclusion()
         second, second_partner = embed(second), embed(second_partner)
         planes = construction_lattice.subobject_on([first, first_partner, second, second_partner])
@@ -237,40 +434,89 @@ class OrbitCoverModel:
         components = tuple(tuple(sorted(component)) for component in graph.connected_components())
         blocks = tuple(gram.matrix_from_rows_and_columns(component, component) for component in components)
 
-        easy_generators = []
+        # Pinned polyhedral_common ApproximateModels.h:824-964: insert the
+        # identity, full automorphisms of *both signs* of definite block,
+        # the swap and negative identity of each aU block, and every
+        # pairwise isometric definite/aU-block interchange. In particular,
+        # equal Gram matrices are not the only interchangeable blocks.
+        easy_generators = [lattice.O().identity()]
+        definite_blocks = []
         for component, block in zip(components, blocks, strict=True):
-            if not block.is_positive_definite():
-                continue
-            # ArithmeticAutomorphismGroup on the positive-definite Gram block.
-            block_lattice = Lattices(ring)([[ring(int(block[row, column])) for column in range(block.ncols())] for row in range(block.nrows())])
-            block_labels = tuple(block_lattice.module_generating_set())
-            for isometry in block_lattice.O().group_generators():
-                images = list(basis)
-                for position, label in enumerate(block_labels):
-                    coordinates = isometry(block_lattice.module_generator(label)).to_vector()
-                    images[component[position]] = sum(
-                        (
-                            lattice.scalar_multiple(coordinates(inner_label), basis[component[inner_position]])
-                            for inner_position, inner_label in enumerate(block_labels)
-                            if coordinates(inner_label)
-                        ),
-                        lattice.zero(),
-                    )
-                easy_generators.append(model._isometry_on_model_basis(tuple(images)))
+            definite = block.is_positive_definite() or (-block).is_positive_definite()
+            block_lattice = Lattices(ring)([[ring(int(block[row, column])) for column in range(block.ncols())] for row in range(block.nrows())]) if definite else None
+            definite_blocks.append(block_lattice)
+            if definite:
+                labels = tuple(block_lattice.module_generating_set())
+                for isometry in block_lattice.O().group_generators():
+                    images = list(basis)
+                    for position, label in enumerate(labels):
+                        coordinates = isometry(block_lattice.module_generator(label)).to_vector()
+                        images[component[position]] = sum(
+                            (
+                                lattice.scalar_multiple(coordinates(inner_label), basis[component[inner_position]])
+                                for inner_position, inner_label in enumerate(labels)
+                                if coordinates(inner_label)
+                            ),
+                            lattice.zero(),
+                        )
+                    easy_generators.append(model._isometry_on_model_basis(tuple(images)))
+            elif len(component) == 2 and block[0, 0] == 0 and block[1, 1] == 0:
+                # INDEF_FORM_AutU, including the possibly nonunimodular aU.
+                swap_images = list(basis)
+                swap_images[component[0]], swap_images[component[1]] = (basis[component[1]], basis[component[0]])
+                easy_generators.append(model._isometry_on_model_basis(tuple(swap_images)))
+                negate_images = list(basis)
+                for index in component:
+                    negate_images[index] = -basis[index]
+                easy_generators.append(model._isometry_on_model_basis(tuple(negate_images)))
 
-        # Source: full symmetric group on each family of identical Gram blocks.
-        for first, block in enumerate(blocks):
-            if any(block == previous for previous in blocks[:first]):
-                continue
-            positions = tuple(position for position, candidate in enumerate(blocks) if candidate == block)
-            if len(positions) < 2:
-                continue
-            for permutation in SymmetricGroup(len(positions)).gens():
+        for first in range(len(blocks)):
+            for second in range(first + 1, len(blocks)):
+                left, right = blocks[first], blocks[second]
+                if left.nrows() != right.nrows():
+                    continue
                 images = list(basis)
-                for position, source_index in enumerate(positions):
-                    target_index = positions[int(permutation(position + 1)) - 1]
-                    for source_basis_index, target_basis_index in zip(components[source_index], components[target_index], strict=True):
-                        images[source_basis_index] = basis[target_basis_index]
+                if definite_blocks[first] is not None and definite_blocks[second] is not None:
+                    # INDEF_FORM_TestEquivalence_PosNeg uses an exact definite
+                    # Isom witness, not literal equality of two presentations.
+                    left_positive = left.is_positive_definite()
+                    if left_positive != right.is_positive_definite():
+                        continue
+                    left_lattice, right_lattice = definite_blocks[first], definite_blocks[second]
+                    homset = left_lattice.Isom(right_lattice)
+                    if homset.is_empty():
+                        continue
+                    witness = homset.an_element()
+                    inverse = witness.inverse()
+                    left_labels = tuple(left_lattice.module_generating_set())
+                    right_labels = tuple(right_lattice.module_generating_set())
+                    for position, label in enumerate(left_labels):
+                        coordinates = witness(left_lattice.module_generator(label)).to_vector()
+                        images[components[first][position]] = sum(
+                            (
+                                lattice.scalar_multiple(coordinates(other), basis[components[second][other_position]])
+                                for other_position, other in enumerate(right_labels)
+                                if coordinates(other)
+                            ),
+                            lattice.zero(),
+                        )
+                    for position, label in enumerate(right_labels):
+                        coordinates = inverse(right_lattice.module_generator(label)).to_vector()
+                        images[components[second][position]] = sum(
+                            (
+                                lattice.scalar_multiple(coordinates(other), basis[components[first][other_position]])
+                                for other_position, other in enumerate(left_labels)
+                                if coordinates(other)
+                            ),
+                            lattice.zero(),
+                        )
+                elif len(components[first]) == 2 and left[0, 0] == left[1, 1] == right[0, 0] == right[1, 1] == 0 and left[0, 1] == right[0, 1]:
+                    # INDEF_FORM_IsU and its equal-scale identity transporter.
+                    for position in range(2):
+                        images[components[first][position]] = basis[components[second][position]]
+                        images[components[second][position]] = basis[components[first][position]]
+                else:
+                    continue
                 easy_generators.append(model._isometry_on_model_basis(tuple(images)))
 
         return tuple(easy_generators)
@@ -280,9 +526,9 @@ class OrbitCoverModel:
         r"""IndefiniteForms.g:593–680,175–320: GetEasyIsometries and GetApproximateGroup.
 
         Use the graph of nonzero Gram entries in the represented 2U + K basis.
-        GetEasyIsometries inserts each positive-definite component's full
-        automorphism group and the permutations of components with identical
-        Gram matrices. The source then adds both SL_2(ZZ) actions and
+        GetEasyIsometries inserts both signs of definite-block automorphisms,
+        the aU-block involutions and the interchanges of isometric blocks.
+        The source then adds both SL_2(ZZ) actions and
         transvections for the four coordinate isotropic vectors.
         """
         lattice = model.lattice()
@@ -455,6 +701,16 @@ class OrbitCoverModel:
         if envelope_square % 2 == 0:
             e, f, _e_prime, _f_prime = self.model.hyperbolic_basis()
             candidate = e + self.model.lattice().scalar_multiple(self.model.lattice().base_ring()(envelope_square // 2), f)
+            # ApproximateModels.h:1372-1400 tests this representative against
+            # every coset of the integral-structure stabilizer.  Its identity
+            # coset is necessarily in that transversal.  Test the exact
+            # identity-coset equation before constructing the full finite
+            # action; failure still follows the source's exhaustive search.
+            if envelope.similarity.is_in_image(candidate):
+                witness = envelope.similarity.lift(candidate)
+                if int(witness.q()) != square:
+                    raise ArithmeticError("the identity-coset lift has the wrong norm")
+                return witness
             coset_space = envelope.stabilizer_of_lattice().right_cosets()
             section = coset_space.right_coset_section()
             for coset in coset_space:

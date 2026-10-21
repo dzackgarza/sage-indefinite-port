@@ -20,12 +20,22 @@ isotropic classes of K and every stabilizer generating set.
 from collections.abc import Iterator
 
 from dzack_research.preamble.all import ZZ, Cat, Lattices
-from dzack_research.preamble.categories.abstract_categories.products import FiniteOrdinalCategory
+from dzack_research.preamble.categories.abstract_categories.products import (
+    FiniteOrdinalCategory,
+)
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from sage.arith.misc import xgcd
 from sage.structure.parent import Parent
 
-from sage_indefinite_port.indefinite.lorentzian_cells import ZERO_SQUARES, LorentzianPerfectComplex, MarkedCellOrbitAlgorithm
+from sage_indefinite_port.indefinite.indefinite_reduction import (
+    indefinite_reduced_presentation,
+)
+from sage_indefinite_port.indefinite.lorentzian_cells import (
+    NONNEGATIVE_SQUARES,
+    LorentzianPerfectComplex,
+    MarkedCellOrbitAlgorithm,
+    binary_split_primitive_vector_classes,
+)
 from sage_indefinite_port.indefinite.recursive import EichlerRecursion
 from sage_indefinite_port.invariants import AttackProfile
 
@@ -54,8 +64,18 @@ class IsotropicInduction:
             case 1:
                 if not lattice.is_isotropic():
                     return ()
-                orbits = MarkedCellOrbitAlgorithm(LorentzianPerfectComplex(lattice, ZERO_SQUARES), 0).global_orbits()
-                return tuple(orbit[0] for orbit in orbits)
+                if int(lattice.rank()) == 2 and tuple(map(int, lattice.signature_pair())) == (1, 1):
+                    return binary_split_primitive_vector_classes(lattice, 0)
+                # CombinedAlgorithms.h:2483-2492 applies IndefiniteReduction
+                # before the Lorentzian orbit dispatcher. The pinned
+                # lorentzian_perfect.h:1625-1644 enumerates the TOTAL perfect
+                # cells even for square zero, extracting their null vertices;
+                # the isotropic-only perfect-cell mode is a different routine.
+                # The integral isometry reduced -> lattice transports the
+                # complete orbit representatives, as res.B.transpose() does.
+                reduction = indefinite_reduced_presentation(lattice)
+                orbits = MarkedCellOrbitAlgorithm(LorentzianPerfectComplex(reduction.reduced, NONNEGATIVE_SQUARES), 0).global_orbits()
+                return tuple(reduction.isometry(orbit[0]) for orbit in orbits)
             case _:
                 return tuple(vector_class.representative for vector_class in self.recursion.primitive_vector_classes(lattice, 0))
 
@@ -79,12 +99,14 @@ class IsotropicInduction:
         reduction = self.reduction(lattice, line)
         quotient = reduction.quotient_lattice()
         levi_image = self.recursion.levi_image(line)
-        orthogonal_group = quotient.O().subgroup(self.recursion.orthogonal_group_generators(quotient))
+        orthogonal_group = quotient.O()
         perpendicular = reduction.orthogonal_complement().inclusion()
         for isotropic in self.isotropic_vector_classes(quotient):
             line_stabilizer = quotient.O().subgroup(self.recursion.line_stabilizer_generators(isotropic))
-            for coset in orthogonal_group.double_cosets(levi_image, line_stabilizer):
-                lifted = perpendicular(reduction.projection().lift(coset(isotropic)))
+            double_cosets = orthogonal_group.double_cosets(levi_image, line_stabilizer)
+            section = double_cosets.double_coset_section()
+            for coset in double_cosets:
+                lifted = perpendicular(reduction.projection().lift(section(coset)(isotropic)))
                 yield line, lattice.primitive_isotropic_subobject(line, lifted)
 
     def flag_classes(self, lattice: Lattices.ParentMethods) -> tuple[Flag, ...]:

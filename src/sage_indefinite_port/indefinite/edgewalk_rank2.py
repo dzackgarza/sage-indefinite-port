@@ -13,6 +13,8 @@ from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational import Rational
 from sage.rings.rational_field import QQ as SageQQ
 
+from .edgewalk_scalars import _rational
+
 type _Vector = Lattices.ElementMethods
 type _Point = tuple[int, int]
 type _Pair = tuple[_Point, _Point]
@@ -28,11 +30,14 @@ class _OrientedBinaryCycle:
 
     def coordinates(self, point: _Vector) -> tuple[int, ...]:
         coordinates = point.to_vector()
-        return tuple(int(coordinates(label)) for label in self.lattice.module_generating_set())
+        values = tuple(_rational(coordinates(label)) for label in self.lattice.module_generating_set())
+        if any(value.denominator() != 1 for value in values):
+            raise ArithmeticError("an integral binary lattice vector has nonintegral coordinates")
+        return tuple(int(value) for value in values)
 
     def point(self, coordinates: _Point) -> _Vector:
         ring = self.lattice.base_ring()
-        return self.lattice.linear_combination({label: ring(entry) for label, entry in zip(self.lattice.module_generating_set(), coordinates, strict=True)})
+        return self.lattice.linear_combination({label: ring(int(entry)) for label, entry in zip(self.lattice.module_generating_set(), coordinates, strict=True)})
 
     def pairing(self, left: _Point, right: _Point) -> int:
         a, b, c = self.form
@@ -44,7 +49,9 @@ class _OrientedBinaryCycle:
         rl = self.pairing(right, left)
         ll = self.pairing(left, left)
         radicand = rl * rl - rr * (ll - bound)
-        root = SageZZ(radicand).isqrt()
+        if rr <= 0 or radicand < 0:
+            raise ArithmeticError("canonical companion requires a positive right norm and real hyperbola intersection")
+        root = SageZZ(int(radicand)).isqrt()
         multiple = (-rl + int(root)) // rr
         return left[0] + multiple * right[0], left[1] + multiple * right[1]
 
@@ -55,15 +62,25 @@ class _OrientedBinaryCycle:
         decreases the sum of its nonnegative coordinates in that pair, as in
         Allcock's Promised algorithm. No iteration cap decides nonexistence.
         """
+        if self.pairing(right, right) <= 0 or right[0] * left[1] - right[1] * left[0] != 1:
+            raise ValueError("Promised requires a positive right vector and oriented unimodular pair")
+        # An M-supplement lies outside the *interior* of the future
+        # hyperbola's convex hull.  A vector of square > M in the opposite
+        # time component is still a valid supplement; only a future vector
+        # of square > M lies strictly inside that hull (Allcock, section 8).
+        if self.pairing(left, left) > bound and self.pairing(right, left) > 0:
+            raise ValueError("Promised requires an M-supplement outside the future hyperbola's convex hull")
         while True:
             middle = right[0] + left[0], right[1] + left[1]
-            # Allcock, Algorithm Promised, step [Go right?]: the test is
-            # m·l < 0, not m·r < 0. The negative pairing certifies that
-            # the left sector contains no eligible next vector.
-            if self.pairing(middle, middle) <= bound or self.pairing(middle, left) < 0:
+            # Allcock's pinned Promised algorithm tests the pairing with
+            # the right endpoint. Testing the left endpoint can return a
+            # vector whose square exceeds the prescribed bound.
+            if self.pairing(middle, middle) <= bound or self.pairing(middle, right) < 0:
                 left = middle
                 continue
             if self.pairing(left, left) >= 0 and self.pairing(right, left) > 0:
+                if self.pairing(left, left) > bound:
+                    raise ArithmeticError("Promised returned a vector above its norm bound")
                 return left, (-right[0], -right[1])
             # Allcock, proof following Algorithm Promised and the
             # performance recurrence: the left sector has basis (m,l).
@@ -104,7 +121,7 @@ class _OrientedBinaryCycle:
             return None
         coordinates = self.coordinates(start)
         initial_point = coordinates[0], coordinates[1]
-        _gcd, first, second = SageZZ(coordinates[0]).xgcd(SageZZ(coordinates[1]))
+        _gcd, first, second = SageZZ(int(coordinates[0])).xgcd(SageZZ(int(coordinates[1])))
         companion = -int(second), int(first)
         # Shorter requires the q(start)-supplement, even when bound < q(start).
         companion = self.canonical_companion(int(start.q()), initial_point, companion)
@@ -121,11 +138,17 @@ class _OrientedBinaryCycle:
             left = self.canonical_companion(bound, right, left)
             if self.characteristic(right, left) == initial:
                 final = matrix(SageQQ, (right, left))
-                period = (frame.inverse() * final).change_ring(SageZZ)
+                rational_period = frame.inverse() * final
+                if any(entry.denominator() != 1 for entry in rational_period.list()):
+                    raise ArithmeticError("the binary period does not preserve the integral lattice")
+                period = rational_period.change_ring(SageZZ)
+                gram = matrix(SageZZ, ((self.form[0], self.form[1]), (self.form[1], self.form[2])))
+                if period * gram * period.transpose() != gram or period.det() != 1:
+                    raise ArithmeticError("the binary period is not an orientation-preserving isometry")
                 images = tuple(self.point((int(row[0]), int(row[1]))) for row in period.rows())
                 return self.lattice.Isom(self.lattice)(images), tuple(self.point(point) for point in representatives)
 
 
 def anisotropic_cycle(lattice: Lattices.ParentMethods, bound: Rational, start: _Vector) -> tuple[LatticeIsometryMethods, tuple[_Vector, ...]] | None:
     """The positive oriented period and all primitive representatives after start."""
-    return _OrientedBinaryCycle(lattice).cycle(int(SageQQ(bound).floor()), start)
+    return _OrientedBinaryCycle(lattice).cycle(int(_rational(bound).floor()), start)

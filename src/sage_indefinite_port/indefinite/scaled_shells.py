@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from dzack_research.preamble.all import NN, Lattices
-from dzack_research.preamble.categories.sets.set_categories import CartesianProductsOfSets, Sets
+from dzack_research.preamble.categories.sets.set_categories import (
+    CartesianProductsOfSets,
+    Sets,
+)
 from sage.structure.element import RingElement
 
 
