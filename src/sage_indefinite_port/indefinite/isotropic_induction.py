@@ -273,9 +273,11 @@ class IsotropicInduction:
         )
 
     def _stabilizer_generators(self, isotropic: tuple[Vector, ...], radical_images: tuple[tuple[Vector, ...], ...]) -> tuple[LatticeIsometryMethods, ...]:
-        lattice = isotropic[0].parent()
+        # source: IndefiniteForms.g:1710-1723 INDEF_FORM_Stabilizer_IsotropicKstuff_Kernel, whose
+        # MatrixIntegral_Stabilizer conjugates the generators back to integral matrices on Z^n
+        # (GroupAction.g:869-886); the action reads each one on the basis of L once.
         action = self.recursion.isotropic_stabilizer_action(isotropic, radical_images)
-        return tuple(lattice.integral_isometry(generator) for generator in action.stabilizer().group_generators())
+        return tuple(action.lattice_automorphism(generator) for generator in action.stabilizer().group_generators())
 
     def line_automorphism_generators(self, lattice: Lattices.ParentMethods, line: Vector) -> tuple[LatticeIsometryMethods, ...]:
         r"""Aut((L, Zu)): Gamma = {+-1} on the line (IndefiniteForms.g:1711-1725 with k = 1)."""
