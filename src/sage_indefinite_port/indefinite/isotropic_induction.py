@@ -1,10 +1,11 @@
 r"""Primitive isotropic lines, planes and flags of an indefinite lattice up to isometry (map §13).
 
-The induction of references/port-design.md, "Isotropic induction": for a line class Zu with
-K = u^perp/u and H the image of Aut((L, Zu)) in O(K), the H-orbits of isotropic lines of K are
-the double cosets H \ O(K) / Aut((K, Zx)) over the O(K)-classes of isotropic lines Zx, and each
-gives the flag (Zu, J) with J the saturation of the lift of the line through u. Those are the
-flag classes with first term Zu; planes are the flags' second terms deduplicated by Isom.
+The induction of references/port-design.md, "Isotropic induction", as CombinedAlgorithms.h:
+2192-2394 computes it: for a line class Zu with K = u^perp/u, G the rational group of the line
+(extensions of Aut(u^perp)) and G_L = Aut((L, Zu)) its integral stabilizer, the planes through u
+over an O(K)-class of isotropic lines Zx are the G-translates of span(u, x~), and their
+G_L-orbits are met by the double cosets V \ G / G_L of a subgroup V of the plane stabilizer in
+the finite residue action on G/G_L. Candidates are deduplicated by exact plane or flag Isom.
 
 Stabilizers and isometries of lines, planes and flags follow IndefiniteForms.g:1607-1725: the
 automorphisms of J-perp, Hom(K, J) x| (O(K) x Gamma) with Gamma the allowed action on J ({+-1}
@@ -36,7 +37,10 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     MarkedCellOrbitAlgorithm,
     binary_split_primitive_vector_classes,
 )
-from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+from sage_indefinite_port.indefinite.recursive import (
+    EichlerRecursion,
+    _extend_perpendicular_isometry,
+)
 from sage_indefinite_port.invariants import AttackProfile
 
 ARROWS = Cat().Mor(FiniteOrdinalCategory(2), Lattices(ZZ))
@@ -94,29 +98,124 @@ class IsotropicInduction:
         isometry = self.recursion.pointed_isometry(source, target)
         return isometry if isometry is not None else self.recursion.pointed_isometry(source, -target)
 
+    @staticmethod
+    def _frame_lifts(reduction: Parent) -> tuple[tuple, dict]:
+        r"""The labels of K = u^perp/u and their frame lifts into u^perp <= L, as the recursion's line action uses them."""
+        perpendicular = reduction.orthogonal_complement().inclusion()
+        frame = reduction.coordinate_frame()
+        labels = tuple(reduction.quotient_lattice().module_generating_set())
+        return labels, {label: perpendicular(frame(label)) for label in labels}
+
+    @staticmethod
+    def _lift(lattice: Lattices.ParentMethods, labels: tuple, lifts: dict, element: Vector) -> Vector:
+        r"""The frame lift into u^perp of a vector of K (eRec.TheCompl * eRec.NSP applied to it)."""
+        coordinates = element.to_vector()
+        return sum((lattice.scalar_multiple(coordinates(label), lifts[label]) for label in labels if coordinates(label)), lattice.zero())
+
+    def _plane_stabilizer_generators(self, reduction: Parent, line: Vector, isotropic: Vector) -> tuple:
+        r"""Rational generators of V: the plane span(u, x~) stabilizer inside the line's rational group G.
+
+        # source: CombinedAlgorithms.h:1975-2075 f_stab_plane_v, with :821-877
+        # ExtendIsometryGroup_IsotropicOrth and :776-817 ExtendIsometryGroup_Triangular (sd = one
+        # block of dimension 1), mapped by :496-534 MapOrthogonalSublatticeGroupUsingSublattice.
+        Images of the basis (u, frame lifts) of N = u^perp: -Id_N; the extensions of Aut((K, x))
+        (u fixed); the GL(1) block sign u -> -u; the shears frame_i -> frame_i + u. The source's
+        third family, x~ -> x~ + u with a completion of (u, x~) fixed, is k -> k + phi(k) u for a
+        functional phi of K with phi(x) = 1, a product of the frame shears, so it adds nothing.
+
+        Deviation: the source lifts V with the Sublattice computed for G so that V lies in G. For
+        a line the restriction G -> Aut(N) is injective: an isometry fixing N = u^perp pointwise
+        sends u' (b(u, u') = 1) to u' + a u, and isotropy of the image gives 2a = 0. The
+        extension of an N-automorphism to L tensor Q is therefore unique, extension is a
+        homomorphism, and the extensions below lie in G = isotropic_stabilizer_action((u,), (-u,)),
+        whose generators are extensions of generators of the same group of N-automorphisms.
+        """
+        lattice = line.parent()
+        quotient = reduction.quotient_lattice()
+        labels, lifts = self._frame_lifts(reduction)
+        frame = tuple(lifts[label] for label in labels)
+        basis = (line, *frame)
+        families = [(-line, *(-lifted for lifted in frame))]
+        for automorphism in self.recursion.pointed_automorphism_generators(isotropic):
+            families.append((line, *(self._lift(lattice, labels, lifts, automorphism(quotient.module_generator(label))) for label in labels)))
+        families.append((-line, *frame))
+        for sheared in range(len(frame)):
+            families.append((line, *(lifted + line if position == sheared else lifted for position, lifted in enumerate(frame))))
+        return tuple(_extend_perpendicular_isometry(reduction, reduction, basis, images)[0] for images in families)
+
+    @staticmethod
+    def _integral_image(lattice: Lattices.ParentMethods, element: object, vector: Vector) -> Vector:
+        r"""The image of a vector of L under a rational isometry that preserves u^perp, as a vector of L."""
+        rational = lattice.base_change(lattice.base_ring().fraction_field_map())
+        labels = tuple(lattice.module_generating_set())
+        coordinates = vector.to_vector()
+        rational_point = rational.linear_combination({label: rational.base_ring()(int(coordinates(label))) for label in labels if coordinates(label)})
+        moved = element(rational_point).to_vector()
+        if any(moved(label).denominator() != 1 for label in labels):
+            raise ArithmeticError(f"{element} does not preserve u^perp integrally: it carries {vector} to a nonintegral vector")
+        return lattice.linear_combination({label: lattice.base_ring()(int(moved(label))) for label in labels if moved(label)})
+
     def flags_through(self, lattice: Lattices.ParentMethods, line: Vector) -> Iterator[Flag]:
-        r"""One flag (Zu, J) per Aut((L, Zu))-orbit of isotropic planes J through u."""
+        r"""Flags (Zu, J) meeting every Aut((L, Zu))-orbit of isotropic planes J through u.
+
+        # source: CombinedAlgorithms.h:2259-2377 SpanRepresentatives with :2076-2190
+        # f_double_cosets (METHOD_GENERATION_DOUBLE_COSETS, the default of :2396-2402);
+        # IndefiniteForms.g:1800-1860 fGetRepresentatives is the right-coset variant.
+        For each isotropic class x of K = u^perp/u with frame lift x~ in N = u^perp, G (the
+        rational line group, IndefiniteForms.g:1060-1130) carries span(u, x~) onto every plane
+        through u over the O(K)-orbit of x, since such a plane is the preimage in N of its line in
+        K. With G_L = Aut((L, Zu)) and V <= Stab_G(span(u, x~)), the double cosets V t G_L give
+        G = union of G_L t^-1 V, so the planes span(u, t^-1(x~)) meet every G_L-orbit. They may
+        repeat an orbit when V is smaller than the plane stabilizer; the callers deduplicate by
+        exact isometry, as the source's fInsert does. The source's
+        ExhaustiveMatrixRightCosetSimplifications and ExhaustiveVectorSimplification only shorten
+        representatives and are not translated.
+        """
         reduction = self.reduction(lattice, line)
         quotient = reduction.quotient_lattice()
-        levi_image = self.recursion.levi_image(line)
-        orthogonal_group = quotient.O()
-        perpendicular = reduction.orthogonal_complement().inclusion()
+        labels, lifts = self._frame_lifts(reduction)
+        action = self.recursion.isotropic_stabilizer_action((line,), ((-line,),))
+        group = action.rational_group()
         for isotropic in self.isotropic_vector_classes(quotient):
-            line_stabilizer = quotient.O().subgroup(self.recursion.line_stabilizer_generators(isotropic))
-            double_cosets = orthogonal_group.double_cosets(levi_image, line_stabilizer)
+            lifted = self._lift(lattice, labels, lifts, isotropic)
+            stabilizer = group.subgroup(self._plane_stabilizer_generators(reduction, line, isotropic))
+            double_cosets = action.double_cosets(stabilizer)
             section = double_cosets.double_coset_section()
-            for coset in double_cosets:
-                lifted = perpendicular(reduction.projection().lift(section(coset)(isotropic)))
-                yield line, lattice.primitive_isotropic_subobject(line, lifted)
+            for orbit in double_cosets:
+                image = self._integral_image(lattice, ~section(orbit), lifted)
+                yield line, lattice.primitive_isotropic_subobject(line, image)
 
     def flag_classes(self, lattice: Lattices.ParentMethods) -> tuple[Flag, ...]:
-        return tuple(flag for line in self.isotropic_vector_classes(lattice) for flag in self.flags_through(lattice, line))
+        r"""One flag per O(L)-orbit of isotropic flags of ranks (1, 2).
+
+        # source: CombinedAlgorithms.h:2192-2394 INDEF_FORM_GetOrbit_IsotropicKstuff_Method with
+        # sd = seq_dims_flag(2): fInsert (:2238-2258) keeps a candidate unless it is
+        # flag-equivalent to a kept one (IndefiniteForms.g:1784-1799, :1887-1971). Flags whose
+        # lines lie in different O(L)-orbits are never equivalent, so each candidate is compared
+        # with the kept flags through its own line only. The invariant prefilter of fInsert
+        # (INDEF_FORM_Invariant of the reduction) is the LatticePrefilter that
+        # EichlerRecursion.isometry applies to the reductions inside flag_isometry.
+        """
+        kept: list[Flag] = []
+        for line in self.isotropic_vector_classes(lattice):
+            through: list[Flag] = []
+            for flag in self.flags_through(lattice, line):
+                if all(self.flag_isometry(other, flag) is None for other in through):
+                    through.append(flag)
+            kept.extend(through)
+        return tuple(kept)
 
     def plane_classes(self, lattice: Lattices.ParentMethods) -> tuple[Parent, ...]:
+        r"""One plane per O(L)-orbit of primitive totally isotropic planes.
+
+        # source: CombinedAlgorithms.h:2192-2394 with sd = seq_dims_plane(2) (IndefiniteForms.g:
+        # 1774-1883): every candidate of every line class, kept unless plane-equivalent to a kept plane.
+        """
         kept: list[Parent] = []
-        for _line, plane in self.flag_classes(lattice):
-            if all(self.plane_isometry(plane, other) is None for other in kept):
-                kept.append(plane)
+        for line in self.isotropic_vector_classes(lattice):
+            for _line, plane in self.flags_through(lattice, line):
+                if all(self.plane_isometry(other, plane) is None for other in kept):
+                    kept.append(plane)
         return tuple(kept)
 
     def flag_isometry(self, source: Flag, target: Flag) -> LatticeIsometryMethods | None:
