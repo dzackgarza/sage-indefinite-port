@@ -8,9 +8,13 @@ A prefilter may reject or bucket candidates; it never decides equivalence.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from fractions import Fraction
 
 from dzack_research.preamble.categories.lattices import Lattices
+from dzack_research.preamble.tensors.tensor import _engine_component_matrix
+from sage.matrix.constructor import matrix as SageMatrix
+from sage.matrix.matrix_integer_dense import Matrix_integer_dense
+from sage.modules.free_module_element import vector as SageVector
+from sage.rings.integer_ring import ZZ as SageZZ
 
 
 @dataclass(frozen=True)
@@ -46,25 +50,41 @@ class AttackProfile:
         return cls(lattice, lattice.twist(-lattice.base_ring().one()), -1, negative, positive)
 
 
+_GRAMS: dict[int, tuple[Lattices.ParentMethods, Matrix_integer_dense]] = {}
+
+
+def _gram(lattice: Lattices.ParentMethods) -> Matrix_integer_dense:
+    r"""The Gram matrix of a lattice on its framing, lowered once per lattice."""
+    if id(lattice) not in _GRAMS:
+        _GRAMS[id(lattice)] = (lattice, _engine_component_matrix(lattice.gram_tensor()).change_ring(SageZZ))
+    return _GRAMS[id(lattice)][1]
+
+
 @dataclass(frozen=True)
 class VectorPrefilter:
-    r"""O(L)-invariants of a vector v: q(v), content, div(v), and the order and norm of its class v/div(v) in A_L.
+    r"""O(L)-invariants of a vector v: those of INDEF_FORM_InvariantVector.
 
-    For a primitive isotropic v it also holds the prefilter of v^perp/v.
+    # source: IndefiniteFormFundamental.h:124-138 INDEF_FORM_InvariantVector (IndefiniteFormsFundamental.g:91),
+    # compared first by CombinedAlgorithms.h:1816-1817 / IndefiniteForms.g:1607 INDEF_FORM_EquivalenceVector.
+    The source records the rank of L, q(v), the index of b(v, L) (``div``), the content
+    (``RemoveFractionVectorPlusCoeff(v)``) and INDEF_FORM_Invariant of the Gram matrix of
+    v^perp (IndefiniteFormFundamental.h:75-88: rank, the determinant of the nondegenerate part,
+    the signature with its zero count, and parity). For a vector of L these signature and
+    determinant entries are functions of L, q(v), the content and div(v); the parity of v^perp
+    is the one independent entry, read here from an integral basis of v^perp.
     """
 
     norm: int
     content: int
     divisibility: int
-    class_order: int
-    class_norm: Fraction
-    isotropic_reduction: LatticePrefilter | None
+    perpendicular_even: bool
 
     @classmethod
     def from_vector(cls, vector: Lattices.ElementMethods) -> VectorPrefilter:
-        norm = int(vector.q())
-        content = int(vector.content())
-        divisibility = int(vector.div())
-        discriminant_class = vector.divided_discriminant_class()
-        reduction = LatticePrefilter.from_lattice(vector.isotropic_reduction()) if norm == 0 and content == 1 else None
-        return cls(norm, content, divisibility, int(discriminant_class.order()), Fraction(norm, divisibility * divisibility), reduction)
+        lattice = vector.parent()
+        gram = _gram(lattice)
+        coordinates = vector.to_vector()
+        row = SageVector(SageZZ, [int(coordinates(label)) for label in lattice.module_generating_set()])
+        perpendicular = SageMatrix(SageZZ, [gram * row]).right_kernel_matrix()
+        perpendicular_even = all((basis * gram * basis) % 2 == 0 for basis in perpendicular.rows())
+        return cls(int(vector.q()), int(vector.content()), int(vector.div()), perpendicular_even)
