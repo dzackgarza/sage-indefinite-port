@@ -330,9 +330,19 @@ def _gram_matrix(lattice: Lattices.ParentMethods) -> Matrix_integer_dense:
 
 @dataclass(frozen=True)
 class LorentzianPerfectCell:
+    r"""A perfect cell, held as the coordinate rows of its vector configuration.
+
+    The configuration is the cell's defining datum; its lattice elements are
+    raised on first request.
+    """
+
     lattice: Lattices.ParentMethods
-    vector_configuration: tuple[Lattices.ElementMethods, ...]
+    rows: tuple[tuple[int, ...], ...]
     allowed_squares: RealSet
+
+    @cached_property
+    def vector_configuration(self) -> tuple[Lattices.ElementMethods, ...]:
+        return tuple(_ambient_element(self.lattice, row) for row in self.rows)
 
     def __post_init__(self) -> None:
         if self.allowed_squares not in (NONNEGATIVE_SQUARES, ZERO_SQUARES):
@@ -341,7 +351,7 @@ class LorentzianPerfectCell:
         if int(positive) != 1 and int(negative) != 1:
             raise ValueError(f"a Lorentzian perfect cell needs signature (1,n) or (n,1), but {self.lattice} has signature {self.lattice.signature_pair()}")
         gram = _gram_matrix(self.lattice)
-        rows = tuple(_coordinate_row(self.lattice, point, SageZZ) for point in self.vector_configuration)
+        rows = tuple(vector(SageZZ, row) for row in self.rows)
         squares = tuple(int(row * gram * row) for row in rows)
         normalized_sign = 1 if int(positive) == 1 else -1
         if any(normalized_sign * square not in self.allowed_squares for square in squares):
@@ -387,8 +397,7 @@ class LorentzianPerfectLocalBackend:
             direction_scalar = (critical_row * direction_covector)[0]
             normal_direction = vector(SageQQ, [-direction_scalar, *direction_covector.column(0)])
             critical, base_normal, _test_direction, _max_scal = _kernel_flipping(normalized, critical, base_normal, normal_direction, allowed_squares)
-        vectors = tuple(_ambient_element(lattice, row) for row in critical)
-        return LorentzianPerfectCell(lattice, vectors, allowed_squares)
+        return LorentzianPerfectCell(lattice, critical, allowed_squares)
 
     @cached_method
     def cell_family(self, cell: LorentzianPerfectCell) -> Element:
@@ -470,7 +479,7 @@ class LorentzianPerfectLocalBackend:
         if not covectors:
             return ()
         labels = tuple(cell.lattice.module_generating_set())
-        ray_rows = matrix(SageQQ, [_coordinate_row(cell.lattice, point, SageQQ) for point in vectors])
+        ray_rows = matrix(SageQQ, cell.rows)
         covector_rows = matrix(SageQQ, [[_rational(covector.to_vector()(label)) for label in labels] for covector in covectors])
         pairings = covector_rows * ray_rows.transpose()
         facets = [frozenset(position for position in range(len(vectors)) if pairings[facet, position] == 0) for facet in range(len(covectors))]
@@ -515,7 +524,7 @@ class LorentzianPerfectLocalBackend:
 
     def flip_across(self, cell: LorentzianPerfectCell, facet: FacetIncidence) -> LorentzianPerfectCell | None:
         normalized = _lorentzian_view(cell.lattice)
-        vectors = cell.vector_configuration
+        vectors = cell.rows
         if not facet or any(position < 0 or position >= len(vectors) for position in facet):
             raise ValueError("a perfect-cell facet must be a nonempty incidence subset")
         nonincident = next((position for position in range(len(vectors)) if position not in facet), None)
@@ -526,18 +535,19 @@ class LorentzianPerfectLocalBackend:
         # With null basis (u,v), the cone is {a u + b v : a,b >= 0}; crossing
         # the face b=0 yields ab < 0 and leaves the admissible cone. Do not
         # try the source's interior-facet flip across a boundary face.
-        if int(cell.lattice.module_rank()) == 2 and all(cell.lattice.q(vectors[position]) == 0 for position in facet):
+        gram = _gram_matrix(normalized)
+        if int(cell.lattice.module_rank()) == 2 and all(vector(SageZZ, vectors[position]) * gram * vector(SageZZ, vectors[position]) == 0 for position in facet):
             return None
-        selected = matrix(SageQQ, [_coordinate_row(normalized, vectors[position], SageQQ) for position in sorted(facet)])
+        selected = matrix(SageQQ, [vectors[position] for position in sorted(facet)])
         facet_nullspace = selected.right_kernel_matrix()
         if facet_nullspace.nrows() != 1:
             raise ArithmeticError("a perfect-cell facet must have one normal direction")
         direction = facet_nullspace.row(0)
-        outside = _coordinate_row(normalized, vectors[nonincident], SageQQ)
+        outside = vector(SageQQ, vectors[nonincident])
         if direction.dot_product(outside) < 0:
             direction = -direction
         normal_direction = _source_remove_fraction(vector(SageQQ, [0, *direction]))
-        expanded = matrix(SageQQ, [[1, *_coordinate_row(normalized, item, SageQQ)] for item in vectors])
+        expanded = matrix(SageQQ, [[1, *row] for row in vectors])
         base_nullspace = expanded.right_kernel_matrix()
         if base_nullspace.nrows() != 1:
             raise ArithmeticError("a perfect cell must have a unique affine supporting functional")
@@ -545,10 +555,9 @@ class LorentzianPerfectLocalBackend:
         if vector(SageQQ, base_normal[1:]).dot_product(outside) <= 0:
             base_normal = -base_normal
         base_normal = _source_remove_fraction(base_normal)
-        critical = tuple(tuple(int(entry) for entry in _coordinate_row(normalized, vectors[position], SageZZ)) for position in sorted(facet))
+        critical = tuple(vectors[position] for position in sorted(facet))
         flipped, _normal, _direction, _max_scal = _kernel_flipping(normalized, critical, base_normal, normal_direction, cell.allowed_squares)
-        returned = tuple(_ambient_element(cell.lattice, row) for row in flipped)
-        return LorentzianPerfectCell(cell.lattice, returned, cell.allowed_squares)
+        return LorentzianPerfectCell(cell.lattice, flipped, cell.allowed_squares)
 
     @cached_method
     def _integral_configuration_invariants(self, cell: LorentzianPerfectCell):
@@ -560,7 +569,7 @@ class LorentzianPerfectLocalBackend:
         without replacing the integral-isometry decision by a hash.
         """
         rank = int(cell.lattice.module_rank())
-        rows = matrix(SageZZ, [_coordinate_row(cell.lattice, point, SageZZ) for point in cell.vector_configuration])
+        rows = matrix(SageZZ, cell.rows)
         pairings = rows * _gram_matrix(cell.lattice) * rows.transpose()
         coordinates = tuple(tuple(int(entry) for entry in row) for row in rows.rows())
         n = rows.nrows()
@@ -631,10 +640,8 @@ class LorentzianPerfectLocalBackend:
             raise ValueError("an isometry of perfect cells must preserve their prescribed normalized-norm locus")
         if generators_only and (not all_images or source is not target):
             raise ValueError("stabilizer-generator search requires one identical source and target perfect cell")
-        vectors_source = source.vector_configuration
-        vectors_target = target.vector_configuration
-        n = len(vectors_source)
-        if n != len(vectors_target):
+        n = len(source.rows)
+        if n != len(target.rows):
             return () if all_images else None
         rank = int(source.lattice.module_rank())
         if rank != int(target.lattice.module_rank()):
@@ -999,7 +1006,7 @@ class LorentzianPerfectComplex:
         # order. It does not expand the representatives in FIFO order.
         source_position = min(
             (index for index in range(len(representatives)) if index not in self._traversal_processed),
-            key=lambda index: (len(representatives[index].vector_configuration), index),
+            key=lambda index: (len(representatives[index].rows), index),
         )
         source = representatives[source_position]
         new_representatives: list[LorentzianPerfectCell] = []
@@ -1122,7 +1129,7 @@ def _perfect_form_hash_key(
     vectors: row permutations and integral unimodular coordinate changes
     preserve both. The exact isometry test remains mandatory.
     """
-    rows = matrix(SageZZ, [_coordinate_row(cell.lattice, point, SageZZ) for point in cell.vector_configuration])
+    rows = matrix(SageZZ, cell.rows)
     pairings = rows * _gram_matrix(cell.lattice) * rows.transpose()
     diagonal = tuple(sorted(int(pairings[index, index]) for index in range(rows.nrows())))
     off_diagonal = tuple(sorted(int(pairings[left, right]) for left in range(rows.nrows()) for right in range(left + 1, rows.nrows())))
@@ -1162,7 +1169,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     facet_covectors_by_incidence = {}
     for cell in cells:
         labels = tuple(cell.lattice.module_generating_set())
-        rows = matrix(SageQQ, [_coordinate_row(cell.lattice, point, SageQQ) for point in cell.vector_configuration])
+        rows = matrix(SageQQ, cell.rows)
         by_incidence = {}
         for covector in cell_cones[id(cell)].facet_covectors():
             coordinate = covector.to_vector()
@@ -1332,11 +1339,11 @@ class MarkedCellOrbitAlgorithm:
         if transporter is None:
             raise ArithmeticError("a marked quotient adjacency needs a transporter")
         lattice = adjacency.source.lattice
-        source = adjacency.source.vector_configuration
+        source = adjacency.source.rows
         # The facet is the face of the source cone cut out by the normal of
         # its rays' span, so a mark of the source cell lies on the facet
         # exactly when it is orthogonal (in coordinates) to that normal.
-        facet_rows = matrix(SageQQ, [_coordinate_row(lattice, source[position], SageQQ) for position in sorted(adjacency.facet)])
+        facet_rows = matrix(SageQQ, [source[position] for position in sorted(adjacency.facet)])
         normals = facet_rows.right_kernel_matrix()
         if normals.nrows() != 1:
             raise ArithmeticError("a perfect-cell facet must span a hyperplane")
@@ -1439,8 +1446,8 @@ class MarkedCellOrbitAlgorithm:
             if transporter is None:
                 raise ArithmeticError("a marked quotient adjacency needs a transporter")
             lattice = adjacency.source.lattice
-            configuration = adjacency.source.vector_configuration
-            facet_rows = matrix(SageQQ, [_coordinate_row(lattice, configuration[position], SageQQ) for position in sorted(adjacency.facet)])
+            configuration = adjacency.source.rows
+            facet_rows = matrix(SageQQ, [configuration[position] for position in sorted(adjacency.facet)])
             normals = facet_rows.right_kernel_matrix()
             if normals.nrows() != 1:
                 raise ArithmeticError("a perfect-cell facet must span a hyperplane")
