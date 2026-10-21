@@ -11,6 +11,7 @@ concurrency:
   cancel-in-progress: false
 permissions:
   contents: read
+  packages: read
 jobs:
   plan:
     runs-on: ubuntu-latest
@@ -42,8 +43,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     container:
-      # The image the local sage-dev-develop container runs (Sage 11.0.beta1, Python 3.14).
-      image: sagemath/sagemath-dev@sha256:2928e82688bf4f182ae1f9a03187cfdb2b4ea4c4f0e902963c8130c1959666d9
+      # ci/sage.Dockerfile, built by sage-image.yml: the local sage-dev-develop
+      # Sage (11.0.beta1) on Python 3.14.
+      image: ghcr.io/dzackgarza/sage-indefinite-port-sage:py314
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
       options: --user root
     env:
       SAGE_BIN: /home/sage/sage/sage
