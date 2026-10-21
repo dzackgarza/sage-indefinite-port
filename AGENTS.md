@@ -78,12 +78,12 @@ A unit is closed with `itree close` only when every acceptance node it owns in T
 - **Red gate protocol**: The first time a commit gate, hook, or QC stage goes red, diagnosing that failure becomes the current task. Stop authoring; root-cause and fix the gate, or report it as a blocker with a reproducer. Never keep writing code behind a red gate, and never accumulate uncommitted work around one. A gate that is red on two consecutive commit attempts is a defect to diagnose, not an environment condition to wait out.
 - **Claim freshness — no off-ledger work**: At every claim and every release, reconcile the shared queue/claim state against actual repository state across all branches before selecting work. Never select work from a queue older than your last branch sync. All authoring requires a live claim; batch-committing a body of work authored off-ledger is prohibited.
 - **The `[unverified]` commit tag**: `[unverified]` may appear in a commit message only while the repository's verification phase is formally deferred by a named contract, and every `[unverified]` commit must name the contract or terminal phase that discharges it.
-- **Deferred type checking (temporary, discharged by #36)**: while #36 is open, mypy errors are acknowledged debt and are not paid down. Every push uses `git push --no-verify`, because the push gate's later stage runs the whole acceptance suite locally (Running Sage: acceptance is CI's job). The conditions:
-  - The commit gate passed on every pushed commit. Commit hooks always run.
-  - The tip commit of the push carries this trailer, verbatim apart from the count: `Type-Debt-Ack: MYPY-DEFER-7Q4K #36 errors=<N>`, where `<N>` is the "Found N errors" count of the most recent mypy run over `src/` (the push gate's `_sage-mypy` stage).
-  - `<N>` is at most 1000. Unproven code is not typed ahead of its correctness; the bound keeps the debt from growing unchecked. When the count exceeds 1000, fix errors until it is at most 1000 before pushing.
+- **Deferred type checking (temporary, discharged by #36)**: while #36 is open, the push gate's mypy errors are acknowledged debt and are not paid down. A push may then use `git push --no-verify`, and only under all of these conditions:
+  - `just test-push` was run on the commit being pushed and failed in its mypy stage (`_sage-mypy`) and nowhere earlier.
+  - The tip commit of the push carries this trailer, verbatim apart from the count: `Type-Debt-Ack: MYPY-DEFER-7Q4K #36 errors=<N>`, where `<N>` is the "Found N errors" count of that run.
+  - `<N>` is at most 1000. Unproven code is not typed ahead of its correctness; the bound keeps the debt from growing unchecked. A push whose count exceeds 1000 does not use this exception: fix errors until it is at most 1000.
 
-  The trailer covers every commit in that push. The push skips only the push gate's mypy and local-suite stages; a commit-gate failure is fixed, never bypassed, and acceptance failures are CI's failure list. #36's last commit deletes this rule.
+  The trailer covers every commit in that push. Commits need no exception, because the commit gate does not run mypy. The exception covers only mypy debt: any other gate failure is fixed, never bypassed. #36's last commit deletes this rule.
 
 # Running Sage
 
