@@ -317,6 +317,15 @@ class EichlerEnvelope:
     space; hence its Eichler hyperplane basis supplies the same rational
     isometry, whose restriction to L is cleared by the similarity.  The
     finite-index integral-structure descent is unchanged.
+
+    source: ApproximateModels.h:1215-1289 GetEichlerHyperplaneBasis (two
+    GetHyperbolicPlane calls, :995-1180, the second on the integral
+    perpendicular of the first; EmbedSimpInv = diag(1/a1, 1, 1/a2, 1, ...),
+    so b1 -> a1 e1, b2 -> f1, b3 -> a2 e2, b4 -> f2; Embed is the cleared
+    inverse and scal its squared multiplier).  Deviation: the pinned source
+    requires an even form (is_eichler_canonical, :246; EnumerateVectorOver-
+    Discriminant halves norms).  For odd L the construction runs on the even
+    sublattice above, which spans the same rational space.
     """
 
     def __init__(self, lattice: Lattices.ParentMethods) -> None:
@@ -530,6 +539,19 @@ class OrbitCoverModel:
         the aU-block involutions and the interchanges of isometric blocks.
         The source then adds both SL_2(ZZ) actions and
         transvections for the four coordinate isotropic vectors.
+
+        source: ApproximateModels.h:406-529 GetApproximateGroup, :823-967
+        GetEasyIsometries.  Deviation: both pinned revisions evaluate
+        GetApproximateGroup before SetListClassesOrbitwise(GRPeasy) installs
+        GRPstart (ApproximateModels.h:1309 before :1355; IndefiniteForms.g
+        builds ApproximateGroup at record construction, :424), so their
+        approximate group omits GRPeasy while their covering classes are
+        reduced modulo GRPeasy.  A class c' = eps(c) dropped by that
+        reduction is then reached only through eps, outside the group.  Here
+        GRPeasy is a generating subfamily, which makes the GRPeasy-orbit
+        reduction of :307-405 a valid covering reduction; every element is an
+        integral isometry of the model, so the generated group is still a
+        subgroup of O(L) containing the source's.
         """
         lattice = model.lattice()
         complement = model.orthogonal_complement()
@@ -576,6 +598,20 @@ class OrbitCoverModel:
         forces primitivity and divisibility exactly d. IndefiniteForms.g
         SetListClassesOrbitwise first keeps one class per orbit of GRPeasy:
         the other classes are already carried to these by the easy subgroup.
+
+        source: ApproximateModels.h:548-717 EnumerateVectorOverDiscriminant
+        and :718-758 GetCoveringOrbitRepresentatives (per content, below).
+        The source's admissibility test A[e3]/2 = X/2 mod d followed by its
+        w-correction accepts exactly the classes with
+        q_A(x) = X/d^2 mod 2Z: e3 = d y and e3 + d w = d(y + w) have the same
+        norm modulo 2d^2, since b(y, w) is integral and q(w) even, so the
+        correction is solvable only with w = 0.  Those classes are
+        ``covering_discriminant_classes(square)``, and then m = (X - q(k)) /
+        (2 d^2) is integral.  Deviation: the source places d, d u in the
+        second hyperbolic plane (e', f'); here they are in the first plane
+        (e, f).  GRPeasy interchanges the two equal U blocks, so the two
+        vectors are equivalent under the approximate group and the covering
+        guarantee is the same.
         """
         lattice = model.lattice()
         ring = lattice.base_ring()
@@ -655,7 +691,11 @@ class OrbitCoverModel:
             self.model = self.envelope.model
 
     def approximate_generators(self) -> tuple[LatticeIsometryMethods, ...]:
-        r"""Generators of A_L: the Eichler subgroup of the 2U model, preserving L when L is reached through the envelope."""
+        r"""Generators of A_L: the Eichler subgroup of the 2U model, preserving L when L is reached through the envelope.
+
+        source: ApproximateModels.h:1309-1349 (LinearSpace_Stabilizer_RightCoset
+        of Embed under the model group, conjugated by Embed) and :1401-1408.
+        """
         if self.envelope is None:
             return tuple(self.model.approximate_generating_family())
         envelope = self.envelope
@@ -696,27 +736,34 @@ class OrbitCoverModel:
             e, f, _e_prime, _f_prime = self.model.hyperbolic_basis()
             return e + self.lattice.scalar_multiple(self.lattice.base_ring()(square // 2), f)
 
+        # source: ApproximateModels.h:1436-1472 GetOneOrbitRepresentative (envelope case),
+        # calling :759-791 on the scaled norm Xscal = X * scal.
         envelope = self.envelope
         envelope_square = envelope.scale**2 * square
-        if envelope_square % 2 == 0:
-            e, f, _e_prime, _f_prime = self.model.hyperbolic_basis()
-            candidate = e + self.model.lattice().scalar_multiple(self.model.lattice().base_ring()(envelope_square // 2), f)
-            # ApproximateModels.h:1372-1400 tests this representative against
-            # every coset of the integral-structure stabilizer.  Its identity
-            # coset is necessarily in that transversal.  Test the exact
-            # identity-coset equation before constructing the full finite
-            # action; failure still follows the source's exhaustive search.
-            if envelope.similarity.is_in_image(candidate):
-                witness = envelope.similarity.lift(candidate)
-                if int(witness.q()) != square:
-                    raise ArithmeticError("the identity-coset lift has the wrong norm")
-                return witness
-            coset_space = envelope.stabilizer_of_lattice().right_cosets()
-            section = coset_space.right_coset_section()
-            for coset in coset_space:
-                lifted = self._pullback_envelope_vector(candidate, section(coset))
-                if lifted is not None:
-                    return lifted
+        if envelope_square % 2:
+            # :766-776 and :1449-1451: the even envelope has no vector of odd
+            # norm Xscal, so the source returns no representative and does not
+            # reach the covering fallback.
+            return None
+        e, f, _e_prime, _f_prime = self.model.hyperbolic_basis()
+        candidate = e + self.model.lattice().scalar_multiple(self.model.lattice().base_ring()(envelope_square // 2), f)
+        # :1456-1461 tests this representative against every coset of the
+        # integral-structure stabilizer and keeps the first lift.  The
+        # identity coset is necessarily in that transversal.  Test the exact
+        # identity-coset equation before constructing the full finite
+        # action; failure still follows the source's exhaustive search.
+        if envelope.similarity.is_in_image(candidate):
+            witness = envelope.similarity.lift(candidate)
+            if int(witness.q()) != square:
+                raise ArithmeticError("the identity-coset lift has the wrong norm")
+            return witness
+        coset_space = envelope.stabilizer_of_lattice().right_cosets()
+        section = coset_space.right_coset_section()
+        for coset in coset_space:
+            lifted = self._pullback_envelope_vector(candidate, section(coset))
+            if lifted is not None:
+                return lifted
+        # :1466-1471: the first vector of the covering list of norm X.
         if square == 0:
             covers = self.primitive_covering_vectors(0)
             return covers[0] if covers else None
@@ -727,7 +774,19 @@ class OrbitCoverModel:
         return None
 
     def primitive_covering_vectors(self, square: int) -> tuple[Lattices.ElementMethods, ...]:
-        r"""Primitive vectors of the square meeting every O(L)-orbit of primitive vectors of that square."""
+        r"""Primitive vectors of the square meeting every O(L)-orbit of primitive vectors of that square.
+
+        source: ApproximateModels.h:1409-1435 GetCoveringOrbitRepresentatives
+        with :1363-1392 get_vector_representatives.  The source lists vectors
+        of every content in L, through every square divisor of Xscal
+        (:735-753), but for X = 0 only E-primitive vectors (:729-731).  The
+        frozen consumer asks for L-primitive vectors: sigma(v) = c p with p
+        E-primitive and c the exact order of p in E / sigma(L), so c runs
+        over the divisors of that exponent with c^2 | Xscal.  For X != 0 this
+        is the source's list restricted to L-primitive vectors; for X = 0 it
+        also covers L-primitive v whose image has E-content c > 1, which the
+        source's X = 0 branch omits.
+        """
         if self.envelope is None:
             return tuple(self.model.covering_vector_representatives(square))
         envelope = self.envelope
@@ -765,7 +824,12 @@ class OrbitCoverModel:
         return tuple(self.lattice.scalar_multiple(content, vector) for vector in self.primitive_covering_vectors(square // (content * content)))
 
     def splitting_vector(self) -> Lattices.ElementMethods:
-        r"""The first represented positive norm, as in ``GetFirstNorm`` (IndefiniteForms.g:1131-1142)."""
+        r"""The first represented positive norm, as in ``GetFirstNorm`` (IndefiniteForms.g:1131-1142).
+
+        source: ApproximateModels.h:1482-1497 GetFirstNorm tries X = 1, 2, ...
+        An even lattice represents no odd X, so its odd trials return nothing
+        (one_representative returns None for odd Xscal) and are skipped.
+        """
         square = 2 if self.lattice.is_even() else 1
         increment = 2 if self.lattice.is_even() else 1
         while True:
