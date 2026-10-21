@@ -1,0 +1,82 @@
+# The frozen acceptance suite, on every push. Each family file is split into
+# shards (pytest-shard) so no job nears the 6-hour hosted-runner limit; the
+# summary job collates every shard into one failure list.
+name: Acceptance
+on:
+  push: {}
+  workflow_dispatch: {}
+concurrency:
+  # A newer push replaces a queued run but never cancels one in progress.
+  group: acceptance-${{ github.ref }}
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - id: plan
+        # family=shards; the family is tests/acceptance/test_<family>.sage.
+        run: |
+          python3 - >> "$GITHUB_OUTPUT" <<'PY'
+          import json
+          shards = {
+              "perfect_domains": 8,
+              "reflective": 20,
+              "orthogonal_group": 4,
+              "isometry": 8,
+              "vector_stabilizers": 6,
+              "vector_orbits": 4,
+              "isotropic_orbits": 16,
+              "boundaries": 6,
+              "centralizers": 1,
+          }
+          include = [{"family": f, "shard": i, "shards": n} for f, n in shards.items() for i in range(n)]
+          print("matrix=" + json.dumps({"include": include}))
+          PY
+  family:
+    needs: plan
+    name: ${{ matrix.family }} ${{ matrix.shard }}/${{ matrix.shards }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    container:
+      # The image the local sage-dev-develop container runs (Sage 11.0.beta1, Python 3.14).
+      image: sagemath/sagemath-dev@sha256:2928e82688bf4f182ae1f9a03187cfdb2b4ea4c4f0e902963c8130c1959666d9
+      options: --user root
+    env:
+      SAGE_BIN: /home/sage/sage/sage
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: extractions/setup-just@v4
+        with:
+          github-token: ${{ github.token }}
+      - run: just ci-provision-sage
+      - run: just ci-acceptance ${{ matrix.family }} ${{ matrix.shard }} ${{ matrix.shards }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-${{ matrix.family }}-${{ matrix.shard }}
+          path: .tmp/ci/results/
+  summary:
+    needs: family
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: acceptance-*
+          path: results
+          merge-multiple: true
+      - run: python3 ci/acceptance_summary.py results | tee -a "$GITHUB_STEP_SUMMARY" acceptance-failures.md
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-summary
+          path: acceptance-failures.md

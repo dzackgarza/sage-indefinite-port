@@ -29,3 +29,38 @@ test-push:
 # Run CI acceptance QC through the central implementation.
 test-ci:
     @just -f ~/ai-review-ci/justfiles/sage.just -d . test-ci
+
+# The acceptance workflow's jobs run inside the Sage image named in
+# .github/workflows/acceptance.yml; these two recipes are its only steps.
+ci_dir := ".tmp/ci"
+
+# CI only: install the acceptance dependencies into the Sage image's interpreter.
+ci-provision-sage:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    "$SAGE_BIN" -pip install --quiet "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard
+    # Pulls dzack-research from its main branch and, through it, vinal.
+    "$SAGE_BIN" -pip install --quiet -e .
+    # VinAl's Sage module is src/sage/vinal.py in its checkout (see .envrc), at
+    # the commit uv.lock pins.
+    vinal_rev="$(sed -n 's|^source = { git = "https://github.com/dzackgarza/vinal#\([0-9a-f]*\)" }$|\1|p' uv.lock)"
+    test -n "$vinal_rev"
+    mkdir -p {{ci_dir}}
+    git clone --quiet https://github.com/dzackgarza/vinal {{ci_dir}}/vinal
+    git -C {{ci_dir}}/vinal -c advice.detachedHead=false checkout --quiet "$vinal_rev"
+    git clone --quiet --depth 1 https://github.com/dzackgarza/ai-review-ci {{ci_dir}}/ai-review-ci
+
+# CI only: run one shard of one frozen acceptance family; results land in .tmp/ci/results/<family>-<shard>.
+ci-acceptance family shard shards:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    out={{ci_dir}}/results/{{family}}-{{shard}}
+    mkdir -p "$out"
+    git rev-parse HEAD > "$out/commit"
+    "$SAGE_BIN" -python -c 'import json, importlib.metadata as m; print(json.loads(m.distribution("dzack-research").read_text("direct_url.json"))["vcs_info"]["commit_id"])' > "$out/research_commit"
+    export PYTHONPATH="$PWD/{{ci_dir}}/ai-review-ci/tool-artifacts/pytest_plugins:$PWD/src:$PWD:$PWD/{{ci_dir}}/vinal/src/sage"
+    # SIGINT before the job's hard limit, so pytest still writes the JUnit
+    # report for every case that finished.
+    timeout --signal=INT 345m "$SAGE_BIN" -python -c 'import sage.all, sys, pytest; sys.exit(pytest.main(sys.argv[1:]))' \
+        -p qc_sage_session tests/acceptance/test_{{family}}.sage --runxfail -rA --tb=long \
+        --shard-id={{shard}} --num-shards={{shards}} --junitxml="$out/junit.xml" 2>&1 | tee "$out/log"
