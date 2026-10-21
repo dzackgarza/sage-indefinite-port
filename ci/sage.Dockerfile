@@ -13,11 +13,13 @@ RUN set -eux; \
     ./configure --with-python="$python314"; \
     make -j"$(nproc)" build; \
     test "$(./sage -python -c 'import sys; print(sys.version_info[:2])')" = "(3, 14)"; \
-    rm -rf local/var/lib/sage/venv-python3.12 upstream; \
-    uv cache clean
+    rm -rf upstream; \
+    uv cache clean; \
+    MESONPY_EDITABLE_VERBOSE=1 ./sage -python -c 'import sage.all'
 
-# One layer, so the Python 3.12 venv and source tarballs removed above do not
-# stay in the image underneath.
+# One layer, so the source tarballs removed above do not stay in the image
+# underneath. The Python 3.12 venv stays: the editable sagelib build, which
+# re-runs ninja on import, compiles against its numpy headers.
 FROM scratch
 COPY --from=build / /
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
