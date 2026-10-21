@@ -22,7 +22,6 @@ from random import choice, randrange, sample
 
 from dzack_research.preamble.all import Lattices
 from dzack_research.preamble.categories.eichler_criterion import TwoUEichlerModel
-from dzack_research.preamble.categories.group.g_sets import FiniteGSets
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.modules.framed.formed.discriminant_modules import (
     DiscriminantQuadraticModules,
