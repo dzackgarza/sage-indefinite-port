@@ -135,6 +135,18 @@ def _binary_split_isometries(source: Lattices.ParentMethods, target: Lattices.Pa
     return tuple(result)
 
 
+def _binary_split_automorphisms(lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
+    r"""Generators of O(L) for a split binary L: TwoDimIsotropic_AutomGenerator (two_dim_lorentzian.h:491-530).
+
+    The source keeps the integral signed null-line permutations and requires at least two of
+    them (the identity and -1).
+    """
+    generators = _binary_split_isometries(lattice, lattice)
+    if len(generators) < 2:
+        raise ArithmeticError("a split binary lattice has at least the automorphisms 1 and -1")
+    return generators
+
+
 def binary_split_vectors_of_square(lattice: Lattices.ParentMethods, square: int) -> tuple[Lattices.ElementMethods, ...]:
     r"""All integral vectors of nonzero square in a split Lorentzian plane.
 
@@ -224,9 +236,7 @@ def binary_split_primitive_vector_classes(lattice: Lattices.ParentMethods, squar
     candidates = {tuple(int(entry) for entry in row): element(row) for row in rows}
     if not candidates:
         return ()
-    generators = _binary_split_isometries(lattice, lattice)
-    if not generators:
-        raise ArithmeticError("the split binary isometry enumeration omitted the identity")
+    generators = _binary_split_automorphisms(lattice)
     # As in TwoDimIsotropic_OrbitRepresentative, traverse the full orbit
     # under the null-line isometry generators, not just the initial list.
     # The initial list is nevertheless exhaustive: leaving it is an error.
@@ -277,7 +287,7 @@ def lorentzian_orthogonal_group_generators(lattice: Lattices.ParentMethods) -> t
         negative = lattice.linear_combination({label: -lattice.base_ring().one()})
         return (lattice.Isom(lattice)({label: negative}),)
     if int(lattice.rank()) == 2 and lattice.is_isotropic():
-        return _binary_split_isometries(lattice, lattice)
+        return _binary_split_automorphisms(lattice)
     return perfect_complex(lattice, NONNEGATIVE_SQUARES).full_orthogonal_group_generators()
 
 
