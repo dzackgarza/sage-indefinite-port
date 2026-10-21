@@ -1324,45 +1324,29 @@ class _Edgewalk:
         return tuple(directions[int(orbit.representative())] for orbit in direction_orbits)
 
     def binary_walk(self) -> AllcockEdgewalkReport:
-        """A binary chamber is a compact segment between two walls (anisotropic), or a ray from one wall to a cusp (split, not reflective)."""
-        root_locus = self.lattice.reflective_root_locus()
-        # The rationally split binary branch must use the *unreduced*
-        # signed-factor fibre from two_dim_lorentzian.h:623-685.  In
-        # particular, the root-locus test follows enumeration, not primitive
-        # filtering or orbit identification; the same ordering is used by
-        # edgewalk.h:921-961 when searching a split edge plane.  In the
-        # anisotropic case the fibre can be infinite, so take the preamble's
-        # finite complete orbit-representative family instead.
+        """The edgewalk of a binary lattice: a compact segment between two walls, or no finite chamber.
+
+        # source: edgewalk.h:2147-2188 StandardEdgewalkAnalysis, with rank two.
+
+        ``isotropic_vinberg`` starts at an isotropic vector when there is one
+        (edgewalk.h:2119-2126). Its quotient k^perp/k is zero, so the
+        projected root list of get_simple_cone is empty and the source raises
+        NonReflectivityException "list of roots is empty" (edgewalk.h:1984-1989).
+        Otherwise Vinberg supplies a vertex k on one wall r (GetOneVertex,
+        get_simple_cone), its single facet is l_ui = [], v_disc = r, and
+        EdgewalkProcedure finds the next wall. That vertex is inserted unless
+        it is equivalent to k (edgewalk.h:1449-1537 func_insert_vertex), and
+        its own edge returns to k.
+        """
         if self.lattice.is_isotropic():
-            candidates = (point for norm in self.norms for point in binary_split_vectors_of_square(self.lattice, norm))
-        else:
-            candidates = (point for norm in self.norms for point in self.lattice.binary_fixed_norm_representatives(ZZ(norm)))
-        root = next((point for point in candidates if point in root_locus), None)
-        if root is None:
-            # An empty root system has no reflecting walls. In particular,
-            # rational isotropy does not certify reflectivity: the trivial
-            # reflection group has infinite-volume chamber in H^1.
             return self.report([], False, (), [])
-        generator = self.primitive(self.perpendicular_rows((self.row(root),)).row(0))
-        initial = _Vertex(generator, (root,))
-        if self.lattice.is_isotropic():
-            # Allcock section 8: the walk from the wall ends at the primitive
-            # isotropic vector, an ideal point of H^1. The chamber is a ray of
-            # infinite length, so W(L) has no finite-volume chamber; the
-            # preamble's signature (1,1) treatment says the same.
-            return self.report([initial], False, initial.roots, [])
+        initial = self.initial_vertex()
+        (root,) = initial.roots
         neighbor = self.edge_step(initial, (), root)
         (neighbor_root,) = neighbor.roots
-        symmetry = self.lattice.O().transporter(
-            self.coloured_family(((root, 0), (generator, 1))),
-            self.coloured_family(((neighbor_root, 0), (neighbor.generator, 1))),
-        )
-        return self.report(
-            [initial, neighbor],
-            True,
-            (*initial.roots, *neighbor.roots),
-            [] if symmetry is None else [symmetry],
-        )
+        symmetry = self.lattice.O().transporter(self.vertex_configuration(initial), self.vertex_configuration(neighbor))
+        vertices = [initial] if symmetry is not None else [initial, neighbor]
+        return self.report(vertices, True, (root, neighbor_root), [] if symmetry is None else [symmetry])
 
     def walk(self) -> AllcockEdgewalkReport:
         if self.rank == 2:
