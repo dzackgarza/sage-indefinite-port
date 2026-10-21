@@ -339,15 +339,16 @@ class _Edgewalk:
             if all(splitting.dot_product(row) != 0 for row in projected_rows):
                 break
             parameter += 1
-        positive = [(projected, root) for (projected, root), row in zip(projected_roots, projected_rows, strict=True) if splitting.dot_product(row) > 0]
-        cone = RationalPolyhedralCones(reduction).from_rays([projected for projected, _root in positive])
+        positive = [(projected, root, row) for (projected, root), row in zip(projected_roots, projected_rows, strict=True) if splitting.dot_product(row) > 0]
+        cone = RationalPolyhedralCones(reduction).from_rays([projected for projected, _root, _row in positive])
         simple_roots: list[_Vector] = []
         simple_projected_rows: list[_RationalRow] = []
         for ray in cone.primitive_rays():
             ray_row = quotient_row(ray)
-            for projected, root in positive:
-                root_row = quotient_row(projected)
-                if matrix(SageQQ, [ray_row, root_row]).rank() == 1 and reduction.b(ray, projected) > 0:
+            # get_one_root (edgewalk.h:2001-2022): the admissible root on this
+            # ray, i.e. a positive multiple of it (the quotient is definite).
+            for _projected, root, root_row in positive:
+                if matrix(SageQQ, [ray_row, root_row]).rank() == 1 and ray_row.dot_product(root_row) > 0:
                     simple_roots.append(root)
                     simple_projected_rows.append(root_row)
                     break
