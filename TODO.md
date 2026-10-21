@@ -19,17 +19,11 @@ The current issue's full source translation and consumer obligation persist acro
 - **Implemented, not fully verified:** the current perfect-domain traversal and the extension/kernel/lift integrations in recursive.py.
   The latter already calls partial.witt_extension, pointwise_perpendicular_kernel().group_generators(), and rational_lifts(...).integral_members(). Verify their complete use rather than rewriting those calls from historical descriptions.
 
-- **Latest broad result:** `.tmp/accept-original-full-20261020.log` records 37 perfect-domain cases passing, followed by interruption of Result_Enumeration_37 at the diagnostic 1,800-second limit.
-  Its source manifest identifies that run; it is not evidence for subsequent edits.
-  No wrong mathematical answer was established for case 37.
+- **Latest broad result:** `.tmp/accept-original-full-20261020i.log` records passes for all 40 total-mode cases and isotropic-mode cases 0–38, then stops at isotropic `Result_Enumeration_39`; the worker ended that runner with exit 143 on October 20 at 18:59 UTC. Its pretest of total-mode `Result_Enumeration_37` also passed on an earlier source snapshot. Subsequent source edits invalidate those results as final-revision acceptance, but **repeating total-mode case 37 is not the current assigned first failure**.
 
-- **Next consumer:** `tests/acceptance/test_perfect_domains.sage::test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_37]`. Check whether the existing run has ended and whether its relevant source changed.
-  If a new run is needed, run this node directly on the current snapshot without the arbitrary diagnostic cutoff.
-  Do not start the prepared `20261020b` runner, which repeats the first 37 cases with the same cutoff.
+- **Next consumer:** the worker-prepared `.tmp/accept-perfect-current-20261021.runner.sh` runs the **entire** `tests/acceptance/test_perfect_domains.sage` file with durable source manifest, stdout/stderr, and real exit status. At October 20 21:31 UTC, its 37-entry `.sources` manifest matched the available port and research provider files, but no `.started`, `.log`, or `.exit` existed and no corresponding Sage-port pytest was running. The original mathematical worker owns launching and interpreting this runner, not a steward or a duplicate sender. A new source edit requires fresh source provenance and final-revision rerun.
 
-- **After that result:** a mathematical failure or exception goes back to the first divergent pinned source step; a pass advances to the complete affected perfect-domain family.
-  An externally interrupted run stays unresolved while other independent families are exercised.
-  Do not claim completion from any of these partial results.
+- **After the full consumer:** correct an actual first failing original case at its pinned source step, if any; retain every unrun family and the release/type/final gates. An interrupted or earlier-source run cannot discharge any complete frozen acceptance family.
 
 - **Other required work:** follow CELLS, EDGEWALK, EXTEND, POINTED, BOUND, PARABOLIC, RECURSION, ORBITS, ARITHMETIC and CENTRALIZERS below.
   For each, subtract the implementation actually present and the applicable consumer evidence before authoring.

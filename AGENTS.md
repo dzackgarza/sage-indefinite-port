@@ -132,6 +132,23 @@ agent-memory add --scope project --type context --title <title> --content <conte
 agent-memory add --scope project --type reference --title <title> --content <content>
 ```
 
+## Technical continuity
+
+An automatic continuation does not reset the current mathematical task. Reuse
+already established issue, source, and test context rather than reconstructing
+it with repeated status queries, source reads, and memory calls. Retrieve a
+specific project-memory entry only when a required fact is genuinely missing
+or its recorded source assumptions have changed.
+
+Record a durable checkpoint when a new mathematical result, source
+correspondence, or failure materially changes the next implementation action;
+do not create notebook entries as receipts for ordinary tool calls or probes.
+Investigations must resolve a question needed for the next source correction
+or complete consumer validation, not become a recurring activity of their own.
+While a long test runs, continue independent pinned implementation work; its
+result is valid only for the exact source revision and evidence recorded by the
+runner required in TODO.md.
+
 Plan work is card-backed. Create and update plan cards with `agent-memory plan add` and `agent-memory plan update`, not `agent-memory add --type plan`.
 
 Use `agent-memory retrieve <key>`, `agent-memory update <key>`, and `agent-memory delete <key>` for memory CRUD.
@@ -249,12 +266,18 @@ Before authoring or revising any specialized routine:
   configures `PATH`, `SAGE_BIN`, `SAGE_PYTHON_BIN`, `SAGE_PREPARSE_BIN`, and
   `SAGE_JULIA_COMMAND` for the container-backed Sage and central QC recipes.
   Verified with `sage --version` (SageMath 11.0.beta1) and a preamble import.
-  Keep one Sage mathematical test process at a time.
+  Keep one Sage mathematical test process at a time. The five-minute
+  connector-command limit applies to launching or inspecting a detached test,
+  **not** to the mathematical test process itself. Run complete frozen-family
+  acceptance detached with durable source hashes, stdout/stderr and exit code;
+  do not impose a five-minute timeout on a full family or substitute serial
+  five-minute batches for its required whole-file verdict. A bounded focused
+  diagnostic may time out, but that is an unresolved case, not acceptance.
 
 - **The `research` preamble is the lattice substrate and a co-developed dependency**:
   This repository consumes `dzack_research.preamble` (categories, formed modules, lattices, isometries, discriminant modules) from the checkout at `/home/dzack/research/src`. `.envrc` puts it on `PYTHONPATH` and `MYPYPATH`; `pyproject.toml` declares `dzack-research`.
   - **Use the preamble's own classes and types**: annotate with `Lattice` (and `Lattice.Element`), `LatticeIsometry`, `LatticeIsometryHomset`, and the tensor and presented-module classes. Never add Protocol, stub, or facade types over the preamble, and never edit `sys.path`.
-  - **Fix preamble defects upstream**: a missing annotation, a class reachable only from a private module, or a wrong result in the preamble is fixed in `research` under its own QC. Port code is written against the corrected or planned API meanwhile and does not wait (see "Working Against the Frozen API"). No local workaround, no fallback to raw SageMath lattices (their indefinite support is insufficient), no reinvention of lattice, discriminant, or formed-category infrastructure here.
+  - **Fix preamble defects upstream**: a missing annotation, a class reachable only from a private module, or a wrong result in the preamble is fixed in `research` under its own QC **by its exclusive repository owner**; the Sage port worker does not edit, stage, or commit in research while its separate workstream is active (see "Working Against the Frozen API"). Port code is written against the corrected or planned API meanwhile and does not wait. No local workaround, no fallback to raw SageMath lattices (their indefinite support is insufficient), no reinvention of lattice, discriminant, or formed-category infrastructure here.
   - **Ownership**: `research` owns mathematical interfaces and independently reusable primitive computations. This repository owns approximate models, coverings, indefinite recursion and traversal, binary edgewalk cycles, scaled first-success searches and arithmetic parabolic assembly. Research may dispatch public methods to these port algorithms. Invariant decomposition and gluing from supplied component groups are research primitives; non-scalar centralizers need an identified computational route and cannot be assigned to research merely by their name. The complete centralizer consumer obligation remains in #18. The operation-by-operation split is in `references/port-design.md`.
 
 - **NEVER BUILD THE C++ CODE**:

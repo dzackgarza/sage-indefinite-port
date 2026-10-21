@@ -13,8 +13,9 @@ tests/acceptance/test_perfect_domains.sage::test_perfect_domain_orbit_counts_mat
 
 The last broad run is `.tmp/accept-original-full-20261020.log`, with its adjacent source manifest, exit and timing files.
 It passed 37 cases before a diagnostic cutoff.
-Check for an existing live run before launching anything.
-Use a current source snapshot and the exact node, without replaying the prefix or imposing the same unsupported 30-minute limit.
+The follow-up exact-node diagnostic `.tmp/diag-perfect37-20261020.log` produced no test verdict or exit sidecar. Its PID 1157669 was absent at 2026-10-20 08:45 UTC; do not count its CPU time as acceptance.
+The current `lorentzian_cells.py` (SHA-256 `9b7b627dabe37290f58742c7b5e5e249243131e742d9011fafee8c0545d5c0b2`) caches exact target H-columns and transported cones by the target representative and integral action matrix, reuses identity transports, recovers source faces from their exact facet equations, and enumerates primitive isotropic rays from the actual cell cone. Both original public tests with id `Result_Enumeration_0` passed on this source (2 passed, 78 deselected), but the pending `Result_Enumeration_37` and complete perfect-domain family have no new verdict.
+The 29-entry manifest `.tmp/accept-original-full-20261020e.sources` verifies this source and its detached runner `.tmp/accept-original-full-20261020e.runner.sh`, preserving all nine original public families and removing the earlier unsupported per-test timeout flag. The Docker detached launch was refused again by Core2 safety checks; runner `e` has not started. Obtain an authorized detached container launch with durable exit sidecars; do not count an older-source diagnostic or the two selected cases as full acceptance.
 A completed result advances to the affected family; a wrong result or exception requires repairing the precise source mismatch; an interruption remains owed while independent families continue.
 
 The current recursive.py already calls the assigned Witt-extension, pointwise-perpendicular-kernel and rational-lift operations.
