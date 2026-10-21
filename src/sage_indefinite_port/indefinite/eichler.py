@@ -16,6 +16,7 @@ vectors of sigma(L).
 
 from __future__ import annotations
 
+import weakref
 from math import gcd
 from random import choice, randrange, sample
 
@@ -434,11 +435,30 @@ class EichlerEnvelope:
         return tuple(~representative(point) for point in coset_space)
 
 
+_EASY_GENERATORS: dict[int, tuple[LatticeIsometryMethods, ...]] = {}
+"""GRPeasy per live 2U model, keyed by the model's identity (see source_easy_generators)."""
+
+
 class OrbitCoverModel:
     r"""The approximate subgroup A_L of O(L) and the covering lists of the Eichler recursion."""
 
     @staticmethod
     def source_easy_generators(model: TwoUEichlerModel) -> tuple[LatticeIsometryMethods, ...]:
+        r"""GRPeasy of ``model``, computed once per model.
+
+        It serves both the approximate group and the class-orbit refinement,
+        as the source computes it once (ApproximateModels.h:1353).  The model
+        is not hashable, so the datum is held by the model's identity for the
+        model's lifetime.
+        """
+        key = id(model)
+        if key not in _EASY_GENERATORS:
+            _EASY_GENERATORS[key] = OrbitCoverModel._computed_easy_generators(model)
+            weakref.finalize(model, _EASY_GENERATORS.pop, key)
+        return _EASY_GENERATORS[key]
+
+    @staticmethod
+    def _computed_easy_generators(model: TwoUEichlerModel) -> tuple[LatticeIsometryMethods, ...]:
         r"""Port GetEasyIsometries, IndefiniteForms.g:593–680.
 
         Extract the actual connected Gram blocks, extend positive-definite
@@ -463,7 +483,10 @@ class OrbitCoverModel:
         # the swap and negative identity of each aU block, and every
         # pairwise isometric definite/aU-block interchange. In particular,
         # equal Gram matrices are not the only interchangeable blocks.
-        easy_generators = [lattice.O().identity()]
+        # The source inserts the identity first (ApproximateModels.h:842); it
+        # generates nothing, and every generator costs one evaluation of each
+        # downstream finite action, so it is omitted.
+        easy_generators = []
         definite_blocks = []
         for component, block in zip(components, blocks, strict=True):
             definite = block.is_positive_definite() or (-block).is_positive_definite()
@@ -576,7 +599,11 @@ class OrbitCoverModel:
         isotropic = model.hyperbolic_basis()
         e, f, e_prime, f_prime = isotropic
         embedded = tuple(inclusion(point) for point in complement.module_generators())
-        perpendicular = ((e, e_prime, f_prime), (f, e_prime, f_prime), (e, f, e_prime), (e, f, f_prime))
+        # A basis of the isotropic point's perpendicular, less the point
+        # itself: E_{f,f} is the identity (q(f) = 0 and (y,f)f - (y,f)f = 0),
+        # and E_{f,x} is additive in x (ApproximateModels.h:62-76), so the
+        # source's E_{f, basis of f-perp} (:505-520) generate the same group.
+        perpendicular = ((e_prime, f_prime), (e_prime, f_prime), (e, f), (e, f))
         transvections = tuple((point, vector) for point, subbasis in zip(isotropic, perpendicular, strict=True) for vector in (*subbasis, *embedded))
         linear = tuple(model.special_linear_group().group_generators())
         easy_count, linear_count = len(easy_generators), len(linear)
@@ -819,8 +846,11 @@ class OrbitCoverModel:
         # the potentially enormous norm.  The necessary square-divisibility
         # restriction then selects exactly the same possible contents.
         contents = tuple(int(divisor) for divisor in SageZZ(exponent).divisors() if envelope_square == 0 or envelope_square % (int(divisor) ** 2) == 0)
+        # One covering list per reduced square Xscal / c^2: for X = 0 every
+        # content reduces to the same square, whose list is computed once.
+        representatives = {reduced: tuple(self.model.covering_vector_representatives(reduced)) for reduced in {envelope_square // content**2 for content in contents}}
         for content in contents:
-            for primitive in self.model.covering_vector_representatives(envelope_square // content**2):
+            for primitive in representatives[envelope_square // content**2]:
                 point = self.model.lattice().scalar_multiple(content, primitive)
                 for representative in cosets:
                     vector = self._pullback_envelope_vector(point, representative)
