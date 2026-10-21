@@ -26,24 +26,33 @@ def _gram_l1(gram):
 
 
 def _indefinite_gram_schmidt(gram, basis):
-    """GramSchmidtOrthonormalization (lines 43-84)."""
+    """GramSchmidtOrthonormalization (lines 43-84), on the Gram matrix of the basis.
+
+    With P = B G B^T, the source's coefficients and squared norms are
+    mu_ij = (P_ij - sum_{k<j} mu_jk mu_ik N_k) / N_j and
+    N_i = P_ii - sum_{k<i} mu_ik^2 N_k. When N_i = 0 the source returns the
+    isotropic residual b_i - sum_j mu_ij b*_j, whose coordinates in the
+    basis are tracked in ``coefficients`` (b*_j = sum_k C_jk b_k).
+    """
     rank = gram.nrows()
+    pairings = (basis * gram * basis.transpose()).change_ring(SageQQ)
     mu = matrix(SageQQ, rank, rank)
-    qgram = gram.change_ring(SageQQ)
-    orthogonal = []
     norms = []
+    coefficients = []
     for i in range(rank):
-        residual = vector(SageQQ, basis.row(i))
+        row = [SageQQ.zero()] * rank
+        row[i] = SageQQ.one()
         for j in range(i):
-            value = residual.dot_product(qgram * orthogonal[j]) / norms[j]
+            value = (pairings[i, j] - sum(mu[j, k] * mu[i, k] * norms[k] for k in range(j))) / norms[j]
             mu[i, j] = value
-            residual -= value * orthogonal[j]
-        square = residual.dot_product(qgram * residual)
+            for k in range(j + 1):
+                row[k] -= value * coefficients[j][k]
+        square = pairings[i, i] - sum(mu[i, k] ** 2 * norms[k] for k in range(i))
         if square == 0:
-            return None, None, None, residual
-        orthogonal.append(residual)
+            return None, None, vector(SageQQ, row) * basis.change_ring(SageQQ)
+        coefficients.append(row)
         norms.append(square)
-    return orthogonal, norms, mu, None
+    return norms, mu, None
 
 
 def _indefinite_lll(gram):
@@ -60,7 +69,7 @@ def _indefinite_lll(gram):
         return basis, gram, isotropic
     k = 1
     while True:
-        _, norms, mu, isotropic = _indefinite_gram_schmidt(gram, basis)
+        norms, mu, isotropic = _indefinite_gram_schmidt(gram, basis)
         if isotropic is not None:
             return basis, basis * gram * basis.transpose(), isotropic
         for i in range(rank - 1, -1, -1):
