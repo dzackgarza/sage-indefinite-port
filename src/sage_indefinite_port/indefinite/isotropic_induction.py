@@ -55,9 +55,20 @@ class UnsupportedRankError(ValueError):
 class IsotropicInduction:
     def __init__(self, recursion: EichlerRecursion) -> None:
         self.recursion = recursion
+        self._line_classes: dict[int, tuple[Lattices.ParentMethods, tuple[Vector, ...]]] = {}
+        self._candidates: dict[tuple[int, tuple[int, ...]], tuple[Lattices.ParentMethods, tuple[Flag, ...]]] = {}
 
     def isotropic_vector_classes(self, lattice: Lattices.ParentMethods) -> tuple[Vector, ...]:
-        r"""One primitive isotropic vector per O(L)-orbit: none for definite L, marked cells for positive index 1, the recursion beyond."""
+        r"""One primitive isotropic vector per O(L)-orbit: none for definite L, marked cells for positive index 1, the recursion beyond.
+
+        The representatives are computed once per lattice (the source's ListOrbit), so line,
+        plane and flag classes of one lattice share them and the candidates built on them.
+        """
+        if id(lattice) not in self._line_classes:
+            self._line_classes[id(lattice)] = (lattice, self._computed_isotropic_vector_classes(lattice))
+        return self._line_classes[id(lattice)][1]
+
+    def _computed_isotropic_vector_classes(self, lattice: Lattices.ParentMethods) -> tuple[Vector, ...]:
         profile = AttackProfile.from_lattice(lattice)
         match profile.positive_index:
             case 0:
@@ -143,16 +154,24 @@ class IsotropicInduction:
         source's ExhaustiveMatrixRightCosetSimplifications and ExhaustiveVectorSimplification
         only shorten representatives and are not translated.
         """
-        reduction = self.reduction(lattice, line)
-        quotient = reduction.quotient_lattice()
-        labels, lifts = self._frame_lifts(reduction)
-        cosets = self.recursion.isotropic_stabilizer_action((line,), ((-line,),)).right_cosets()
-        section = cosets.right_coset_section()
-        transversal = tuple(section(point) for point in cosets)
-        for isotropic in self.isotropic_vector_classes(quotient):
-            lifted = self._lift(lattice, labels, lifts, isotropic)
-            for coset in transversal:
-                yield line, lattice.primitive_isotropic_subobject(line, self._integral_image(lattice, coset, lifted))
+        # The candidates through a line are data of (L, u); plane_classes and flag_classes both
+        # read them, and building the line action and its cosets dominates their cost.
+        coordinates = line.to_vector()
+        key = (id(lattice), tuple(int(coordinates(label)) for label in lattice.module_generating_set()))
+        if key not in self._candidates:
+            reduction = self.reduction(lattice, line)
+            quotient = reduction.quotient_lattice()
+            labels, lifts = self._frame_lifts(reduction)
+            cosets = self.recursion.isotropic_stabilizer_action((line,), ((-line,),)).right_cosets()
+            section = cosets.right_coset_section()
+            transversal = tuple(section(point) for point in cosets)
+            candidates = tuple(
+                (line, lattice.primitive_isotropic_subobject(line, self._integral_image(lattice, coset, self._lift(lattice, labels, lifts, isotropic))))
+                for isotropic in self.isotropic_vector_classes(quotient)
+                for coset in transversal
+            )
+            self._candidates[key] = (lattice, candidates)
+        return iter(self._candidates[key][1])
 
     def flag_classes(self, lattice: Lattices.ParentMethods) -> tuple[Flag, ...]:
         r"""One flag per O(L)-orbit of isotropic flags of ranks (1, 2).
