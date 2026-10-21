@@ -269,20 +269,41 @@ class _Edgewalk:
         rank = int(reduction.rank())
         projected_roots: list[tuple[_Vector, _Vector]] = []
 
-        for norm in self.norms:
-            constraint = self.constraint(_rational(norm))
-            intersection = constraint.intersection(perpendicular)
-            intersection_inclusion = intersection.inclusion()
+        # Coordinate rows, as for the edge planes: the rows of a basis of
+        # k^perp in L, and the rows of their images in the framing of the
+        # quotient k^perp/k (the projection pi of edgewalk.h:1955-1968,
+        # LatticeProjectionFramework onto the complement of k in k^perp).
+        perpendicular_rows = matrix(SageQQ, [self.row(perpendicular_inclusion(generator)) for generator in perpendicular.module_generators()])
+        quotient_rows = matrix(SageQQ, [_key(quotient_projection(generator)) for generator in perpendicular.module_generators()])
+        k_column = self.gram * self.row(k).column()
 
-            projected_generators = {
-                label: quotient_projection(perpendicular_inclusion.lift(intersection_inclusion(intersection.module_generator(label))))
-                for label in intersection.module_generating_set()
-            }
-            projection = intersection.module_category().Mor(intersection, reduction)(projected_generators)
-            image = reduction.subobject_on(tuple(projected_generators.values()))
+        for norm in self.norms:
+            # edgewalk.h:1951-1954: Latt_inter_NSP = IntersectionLattice(Latt, NSP),
+            # the integral left kernel of B G k on the rows B of a basis of C_N.
+            constraint = self.constraint(_rational(norm))
+            constraint_rows = matrix(SageQQ, [self.row(constraint.inclusion()(generator)) for generator in constraint.inclusion().domain().module_generators()])
+            if constraint_rows.nrows() != self.rank or constraint_rows.rank() != self.rank:
+                raise ArithmeticError("the module generators of C_N must be a basis of a full-rank sublattice")
+            equations = constraint_rows * k_column
+            denominator = SageZZ.one()
+            for entry in equations.list():
+                denominator = denominator.lcm(entry.denominator())
+            intersection_rows = (denominator * equations).change_ring(SageZZ).left_kernel().basis_matrix().change_ring(SageQQ) * constraint_rows
+            # fr.BasisProj (edgewalk.h:1955-1960): the projected generators,
+            # read through the perpendicular basis and the quotient framing.
+            projected_rows = perpendicular_rows.solve_left(intersection_rows) * quotient_rows
+            if any(entry.denominator() != 1 for entry in projected_rows.list()):
+                raise ArithmeticError("the projection of C_N cap k^perp must be integral in k^perp/k")
+            hermite, transformation = projected_rows.change_ring(SageZZ).echelon_form(transformation=True)
+            image_rank = hermite.rank()
+            image_basis = hermite.matrix_from_rows(range(image_rank)).change_ring(SageQQ)
+            lift_rows = transformation.matrix_from_rows(range(image_rank)).change_ring(SageQQ) * intersection_rows
+            image = reduction.subobject_on(tuple(self.plane_element(reduction, row) for row in image_basis.rows()))
             for root in image.vectors_of_square(reduction.base_ring()(_integer(norm))):
                 projected = image.inclusion()(root)
-                lifted = intersection_inclusion(projection.lift(projected))
+                # fr.GetOnePreimage (edgewalk.h:2010): one preimage in C_N cap k^perp.
+                coefficients = image_basis.solve_left(vector(SageQQ, _key(projected)))
+                lifted = self.element(tuple(coefficients * lift_rows))
                 if self.norm(lifted) != norm:
                     raise ArithmeticError("the isotropic-reduction lift changed a prescribed root norm")
                 projected_roots.append((projected, lifted))
@@ -1229,23 +1250,25 @@ class _Edgewalk:
         return tuple(directions)
 
     def coloured_family(self, pairs: tuple[tuple[_Vector, int], ...]) -> Element:
-        r"""The coloured family i -> (v_i, c_i) in Sets().Mor(I, L x {0, 1, 2})."""
-        colours = Sets.Δ[2]
+        r"""The coloured family i -> (v_i, c_i) in Sets().Mor(I, L x {0, 1})."""
+        colours = Sets.Δ[1]
         points = Sets().product((self.lattice, colours))
         return Sets().Mor(Sets.Δ[len(pairs) - 1], points)(lambda index: points((pairs[int(index)][0], colours[pairs[int(index)][1]])))
 
     @cached_method
     def vertex_configuration(self, vertex: _Vertex) -> Element:
-        r"""The coloured configuration of the vertex: its roots, the vertex, and at an ideal vertex its neighbours."""
+        r"""The coloured configuration of the vertex: its roots (colour 0) and the vertex (colour 1).
+
+        # source: fund_domain_vertices.h:128-162 GetInitialComputation (map_v: roots 1, gen 2)
+
+        At an ideal vertex the family spans the degenerate hyperplane k^perp,
+        and its stabilizer and transporters are the ``isotropstabequiv``
+        computations of fund_domain_vertices.h:466-838 (selected in
+        edgewalk.h:1170-1199 gen_fund_domain_fund_info), which the
+        coloured-family stabilizer of ``O(L)`` performs for such families.
+        """
         vectors = [*vertex.roots, vertex.generator]
         colours = [0] * len(vertex.roots) + [1]
-        if self.norm(vertex.generator) == 0:
-            adjacent: dict[_Key, _Vector] = {}
-            for roots, discarded in self.edge_directions(vertex):
-                neighbour = self.edge_step(vertex, roots, discarded).generator
-                adjacent.setdefault(_key(neighbour), neighbour)
-            vectors.extend(adjacent[key] for key in sorted(adjacent))
-            colours.extend([2] * len(adjacent))
         return self.coloured_family(tuple(zip(vectors, colours, strict=True)))
 
     def isometry_key(self, isometry: LatticeIsometryMethods) -> tuple[_Key, ...]:
@@ -1322,45 +1345,29 @@ class _Edgewalk:
         return tuple(directions[int(orbit.representative())] for orbit in direction_orbits)
 
     def binary_walk(self) -> AllcockEdgewalkReport:
-        """A binary chamber is a compact segment between two walls (anisotropic), or a ray from one wall to a cusp (split, not reflective)."""
-        root_locus = self.lattice.reflective_root_locus()
-        # The rationally split binary branch must use the *unreduced*
-        # signed-factor fibre from two_dim_lorentzian.h:623-685.  In
-        # particular, the root-locus test follows enumeration, not primitive
-        # filtering or orbit identification; the same ordering is used by
-        # edgewalk.h:921-961 when searching a split edge plane.  In the
-        # anisotropic case the fibre can be infinite, so take the preamble's
-        # finite complete orbit-representative family instead.
+        """The edgewalk of a binary lattice: a compact segment between two walls, or no finite chamber.
+
+        # source: edgewalk.h:2147-2188 StandardEdgewalkAnalysis, with rank two.
+
+        ``isotropic_vinberg`` starts at an isotropic vector when there is one
+        (edgewalk.h:2119-2126). Its quotient k^perp/k is zero, so the
+        projected root list of get_simple_cone is empty and the source raises
+        NonReflectivityException "list of roots is empty" (edgewalk.h:1984-1989).
+        Otherwise Vinberg supplies a vertex k on one wall r (GetOneVertex,
+        get_simple_cone), its single facet is l_ui = [], v_disc = r, and
+        EdgewalkProcedure finds the next wall. That vertex is inserted unless
+        it is equivalent to k (edgewalk.h:1449-1537 func_insert_vertex), and
+        its own edge returns to k.
+        """
         if self.lattice.is_isotropic():
-            candidates = (point for norm in self.norms for point in binary_split_vectors_of_square(self.lattice, norm))
-        else:
-            candidates = (point for norm in self.norms for point in self.lattice.binary_fixed_norm_representatives(ZZ(norm)))
-        root = next((point for point in candidates if point in root_locus), None)
-        if root is None:
-            # An empty root system has no reflecting walls. In particular,
-            # rational isotropy does not certify reflectivity: the trivial
-            # reflection group has infinite-volume chamber in H^1.
             return self.report([], False, (), [])
-        generator = self.primitive(self.perpendicular_rows((self.row(root),)).row(0))
-        initial = _Vertex(generator, (root,))
-        if self.lattice.is_isotropic():
-            # Allcock section 8: the walk from the wall ends at the primitive
-            # isotropic vector, an ideal point of H^1. The chamber is a ray of
-            # infinite length, so W(L) has no finite-volume chamber; the
-            # preamble's signature (1,1) treatment says the same.
-            return self.report([initial], False, initial.roots, [])
+        initial = self.initial_vertex()
+        (root,) = initial.roots
         neighbor = self.edge_step(initial, (), root)
         (neighbor_root,) = neighbor.roots
-        symmetry = self.lattice.O().transporter(
-            self.coloured_family(((root, 0), (generator, 1))),
-            self.coloured_family(((neighbor_root, 0), (neighbor.generator, 1))),
-        )
-        return self.report(
-            [initial, neighbor],
-            True,
-            (*initial.roots, *neighbor.roots),
-            [] if symmetry is None else [symmetry],
-        )
+        symmetry = self.lattice.O().transporter(self.vertex_configuration(initial), self.vertex_configuration(neighbor))
+        vertices = [initial] if symmetry is not None else [initial, neighbor]
+        return self.report(vertices, True, (root, neighbor_root), [] if symmetry is None else [symmetry])
 
     def walk(self) -> AllcockEdgewalkReport:
         if self.rank == 2:
