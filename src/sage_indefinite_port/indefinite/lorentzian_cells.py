@@ -1992,8 +1992,8 @@ class _PositiveVectorEnumerator:
                 raise ArithmeticError("a close-vector shell returned a vector outside its prescribed pairing fibre")
             if candidate_square < 0:
                 raise ArithmeticError("a close-vector shell returned a negative-norm vector")
-            if self.allowed_squares == ZERO_SQUARES and candidate_square != 0:
-                raise ArithmeticError("the exact-distance isotropic shell returned a nonisotropic vector")
+            # Lorentzian.g:382-388: the isotropic option keeps fNorm = 0 among
+            # the closest-vector solutions, which lie within the distance.
             if candidate_square not in self.allowed_squares:
                 continue
             result.append(candidate)
