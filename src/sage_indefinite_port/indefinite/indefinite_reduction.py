@@ -6,6 +6,7 @@ The preamble LatticeReduction retains an exact integral isometry.
 
 from __future__ import annotations
 
+from functools import cache
 from random import choice, randrange
 
 from dzack_research.preamble.categories.definite_lattices import (
@@ -382,11 +383,14 @@ def _indefinite_reduction(gram):
     return basis, reduced
 
 
+@cache
 def indefinite_reduced_presentation(lattice) -> LatticeReduction:
     """Isometric pre-reduction for the pinned group/isometry recursion.
 
     IndefiniteForms.g:1379-1388,1480-1492; the change of presentation
     is raised through the existing preamble LatticeReduction constructor.
+    The randomized reduction is memoized per lattice, so every consumer of a
+    lattice works in one reduced presentation and shares its perfect complex.
     """
     original = _engine_component_matrix(lattice.gram_tensor()).change_ring(SageZZ)
     # IndefiniteForms.g:1379-1383 and :1480-1485 call IndefiniteReduction,
