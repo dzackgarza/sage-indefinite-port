@@ -39,13 +39,16 @@ ci-provision-sage:
     #!/usr/bin/env bash
     set -euo pipefail
     "$SAGE_BIN" -pip install --quiet "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard
-    # Pulls dzack-research from its main branch and, through it, vinal.
-    "$SAGE_BIN" -pip install --quiet -e .
+    # dzack-research from its main branch, cloned without submodules: pip's
+    # git install recurses into them, and one is an SSH-only workspace.
+    mkdir -p {{ci_dir}}
+    git clone --quiet --depth 1 https://github.com/dzackgarza/research {{ci_dir}}/research
+    "$SAGE_BIN" -pip install --quiet -e {{ci_dir}}/research
+    "$SAGE_BIN" -pip install --quiet --no-deps -e .
     # VinAl's Sage module is src/sage/vinal.py in its checkout (see .envrc), at
     # the commit uv.lock pins.
     vinal_rev="$(sed -n 's|^source = { git = "https://github.com/dzackgarza/vinal#\([0-9a-f]*\)" }$|\1|p' uv.lock)"
     test -n "$vinal_rev"
-    mkdir -p {{ci_dir}}
     git clone --quiet https://github.com/dzackgarza/vinal {{ci_dir}}/vinal
     git -C {{ci_dir}}/vinal -c advice.detachedHead=false checkout --quiet "$vinal_rev"
     git clone --quiet --depth 1 https://github.com/dzackgarza/ai-review-ci {{ci_dir}}/ai-review-ci
@@ -57,7 +60,7 @@ ci-acceptance family shard shards:
     out={{ci_dir}}/results/{{family}}-{{shard}}
     mkdir -p "$out"
     git rev-parse HEAD > "$out/commit"
-    "$SAGE_BIN" -python -c 'import json, importlib.metadata as m; print(json.loads(m.distribution("dzack-research").read_text("direct_url.json"))["vcs_info"]["commit_id"])' > "$out/research_commit"
+    git -C {{ci_dir}}/research rev-parse HEAD > "$out/research_commit"
     export PYTHONPATH="$PWD/{{ci_dir}}/ai-review-ci/tool-artifacts/pytest_plugins:$PWD/src:$PWD:$PWD/{{ci_dir}}/vinal/src/sage"
     # SIGINT before the job's hard limit, so pytest still writes the JUnit
     # report for every case that finished.
