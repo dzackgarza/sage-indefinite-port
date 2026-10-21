@@ -2217,13 +2217,17 @@ class _PositiveVectorEnumerator:
         )
         self.base_target = self.inclusion.base_change(fraction_map).lift(translation)
         self.base_bound = (self.d * self.d) / square
+        self.partner_row = partner_row
+        # Rows are the images of the kernel generators: x in K maps to x * inclusion_rows.
+        kernel_images = (self.inclusion(self.kernel.module_generator(label)) for label in self.kernel.module_generating_set())
+        self.inclusion_rows = matrix(SageZZ, [_coordinate_row(lattice, image, SageZZ) for image in kernel_images])
 
     def max_multiplier(self) -> int | None:
         if self.scaled_max <= 0:
             return None
         return int(self.scaled_max / self.d)
 
-    def first_shell(self) -> tuple[int, tuple[Lattices.ElementMethods, ...]] | None:
+    def first_shell(self) -> tuple[int, tuple[tuple[int, ...], ...]] | None:
         maximum = self.max_multiplier()
         if maximum is None:
             return None
@@ -2234,7 +2238,8 @@ class _PositiveVectorEnumerator:
         return None
 
     @cached_method
-    def vectors_at_multiplier(self, multiplier: int) -> tuple[Lattices.ElementMethods, ...]:
+    def vectors_at_multiplier(self, multiplier: int) -> tuple[tuple[int, ...], ...]:
+        r"""The coordinate rows of the shell vectors at this multiplier; elements are raised only for a returned cell."""
         target = self.base_target.parent().scalar_multiple(_owned_rational(self.lattice, SageQQ(multiplier)), self.base_target)
         bound = _owned_rational(self.lattice, -(SageQQ(multiplier) ** 2) * self.base_bound)
         # Preserve the pinned Lorentzian.g:369-373 closest-vector API here.
@@ -2244,12 +2249,11 @@ class _PositiveVectorEnumerator:
         distances = self.kernel.close_vectors(target, bound)
         return self._ambient_vectors(multiplier, tuple(distances.index_set()))
 
-    def _ambient_vectors(self, multiplier: int, close_vectors: tuple[Lattices.ElementMethods, ...]) -> tuple[Lattices.ElementMethods, ...]:
-        shift = self.lattice.scalar_multiple(self.lattice.base_ring()(multiplier), self.partner)
-        result: list[Lattices.ElementMethods] = []
+    def _ambient_vectors(self, multiplier: int, close_vectors: tuple[Lattices.ElementMethods, ...]) -> tuple[tuple[int, ...], ...]:
+        shift = multiplier * self.partner_row
+        result: list[tuple[int, ...]] = []
         for close in close_vectors:
-            candidate = shift + self.inclusion(close)
-            row = _coordinate_row(self.lattice, candidate, SageZZ)
+            row = shift + vector(SageZZ, [int(coordinate) for coordinate in close]) * self.inclusion_rows
             candidate_square = int(row * self.gram * row)
             # Lorentzian.g:377-385 verifies both the scalar-product shell
             # and norm after reconstructing each closest-vector solution.
@@ -2262,14 +2266,14 @@ class _PositiveVectorEnumerator:
             # the closest-vector solutions, which lie within the distance.
             if candidate_square not in self.allowed_squares:
                 continue
-            result.append(candidate)
+            result.append(tuple(int(entry) for entry in row))
         return tuple(result)
 
 
 def _first_positive_shell(
     lattice: Lattices.ParentMethods, rational_direction: tuple[Rational, ...], max_scal: Rational, allowed_squares: RealSet
-) -> tuple[Lattices.ElementMethods, ...]:
-    r"""The vectors of the first nonempty shell with 0 < b(v, t) <= max_scal, or ()."""
+) -> tuple[tuple[int, ...], ...]:
+    r"""The coordinate rows of the first nonempty shell with 0 < b(v, t) <= max_scal, or ()."""
     enumerator = _PositiveVectorEnumerator(lattice, rational_direction, max_scal, allowed_squares)
     if enumerator.scaled_max <= 0:
         raise ArithmeticError(f"the positive-vector shells below {max_scal} along {rational_direction} are empty by definition: the bound must be positive")
@@ -2297,9 +2301,9 @@ def _search_initial_vectors(lattice: Lattices.ParentMethods, direction: tuple[Ra
         if maximum is None:
             raise ArithmeticError("the initial positive-vector shell bound became nonpositive")
         for multiplier in range(next_multiplier, maximum + 1):
-            vectors = enumerator.vectors_at_multiplier(multiplier)
-            if vectors:
-                return vectors
+            rows = enumerator.vectors_at_multiplier(multiplier)
+            if rows:
+                return tuple(_ambient_element(lattice, row) for row in rows)
         next_multiplier = max(next_multiplier, maximum + 1)
         # Lorentzian.g:411–423 increases MaxScal by one, rather than
         # exponentially expanding the search interval.
@@ -2501,7 +2505,7 @@ def _kernel_flipping(
     inverse = gram.inverse()
     critical_first = _coordinate_row(lattice, critical[0], SageQQ)
     critical_rows = _vector_rows(critical)
-    total: tuple[Lattices.ElementMethods, ...] = ()
+    total: tuple[tuple[int, ...], ...] = ()
     while True:
         middle = _source_mid_value(lower, upper)
         normal = base_normal + middle * direction_normal
@@ -2517,25 +2521,24 @@ def _kernel_flipping(
         if first is None:
             raise ArithmeticError("a critical perfect-cell shell disappeared during flipping")
         _first_multiplier, total = first
-        total_rows = _vector_rows(total)
-        # Lorentzian.g:920-923 / lorentzian_perfect.h:757: a shell
-        # containing every critical point cannot have fewer distinct
-        # points than the critical family.
-        if critical_rows.issubset(total_rows) and len(critical) > len(total):
-            raise ArithmeticError("a Lorentzian shell lost multiplicity of its critical configuration")
+        total_rows = set(total)
+        # Lorentzian.g:922-924: IsSubset(CritSet, Set(ListTotal)) with
+        # |CritSet| > |ListTotal| is a bug; a shell inside CritSet equals it.
+        if total_rows.issubset(critical_rows) and len(critical_rows) > len(total_rows):
+            raise ArithmeticError("a Lorentzian shell is a proper subset of its critical configuration")
         if total_rows == critical_rows:
             lower = middle
             continue
         # Lorentzian.g:924-930, EXIT 1: the shell strictly contains CritSet.
         if critical_rows.issubset(total_rows):
-            return total, normal, test_direction_row, max_scal
+            return tuple(_ambient_element(lattice, row) for row in total), normal, test_direction_row, max_scal
         break
     while True:
         if not total:
             raise ArithmeticError("perfect-cell flipping reached an empty positive-vector shell")
         # Lorentzian.g:944-966, second scheme.
-        new_vector = total[0]
-        expanded = vector(SageQQ, [1, *_coordinate_row(lattice, new_vector, SageQQ)])
+        new_row = total[0]
+        expanded = vector(SageQQ, [1, *new_row])
         denominator = direction_normal.dot_product(expanded)
         if denominator == 0:
             raise ArithmeticError("the flip direction is parallel to a newly found wall")
@@ -2546,5 +2549,5 @@ def _kernel_flipping(
         max_scal = (critical_first * gram * test_direction)[0]
         total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
         # Lorentzian.g:959, EXIT 2: the shell contains CritSet and eVect.
-        if (critical_rows | _vector_rows((new_vector,))).issubset(_vector_rows(total)):
-            return total, normal, test_direction_row, max_scal
+        if (critical_rows | {new_row}).issubset(set(total)):
+            return tuple(_ambient_element(lattice, row) for row in total), normal, test_direction_row, max_scal
