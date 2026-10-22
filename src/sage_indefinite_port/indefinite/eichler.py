@@ -810,10 +810,9 @@ class OrbitCoverModel:
         if self.envelope is None:
             return tuple(self.model.approximate_generating_family())
         # :1337-1349 forms fGen = Embed * eGen * EmbedInv for each stabilizer
-        # generator of phi(L); the action's lattice_automorphism is that
-        # restriction to L, read from the generator's row-action matrix.
-        action = self.envelope.stabilizer_of_lattice()
-        return tuple(action.lattice_automorphism(generator) for generator in action.stabilizer().group_generators())
+        # generator of phi(L): the stabilizer's generators restricted to L,
+        # read from their row-action matrices by the action.
+        return self.envelope.stabilizer_of_lattice().lattice_automorphism_generators()
 
     def _pullback_envelope_vector(self, point: Lattices.ElementMethods, coset: LatticeIsometryMethods) -> Lattices.ElementMethods | None:
         """Lift a rational coset image from the envelope through the integral similarity, if possible."""
