@@ -34,7 +34,8 @@ from dzack_research.preamble.categories.rational_integral_stabilizers import (
     IntegralStructureAction,
 )
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
-from sage.matrix.constructor import identity_matrix
+from sage.matrix.constructor import identity_matrix, matrix
+from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.structure.parent import Parent
 
@@ -116,6 +117,39 @@ def _extend_perpendicular_isometry(
     return extension, int(denominator)
 
 
+def _column_matrix(isometry: LatticeIsometryMethods) -> Matrix_integer_dense:
+    r"""The integer matrix whose column ``j`` holds the coordinates of the image of generator ``j``."""
+    domain, codomain = isometry.domain(), isometry.codomain()
+    labels = tuple(codomain.module_generating_set())
+    images = tuple(isometry(generator).to_vector() for generator in domain.module_generators())
+    return matrix(SageZZ, [[int(image(label)) for image in images] for label in labels])
+
+
+def _conjugated(transport: LatticeIsometryMethods, generators: tuple[LatticeIsometryMethods, ...]) -> tuple[LatticeIsometryMethods, ...]:
+    r"""The generators ``h`` of O(R) carried to L by ``transport: R -> L``, each built once from ``P H P^-1``.
+
+    source: IndefiniteForms.g:1487 ``Inverse(RecRed.B) * eGen1 * RecRed.B``.
+    Each conjugate is constructed from the images of the generators of L, so
+    later evaluations do not compose the three maps again.
+    """
+    lattice = transport.codomain()
+    change = _column_matrix(transport)
+    inverse = change.inverse().change_ring(SageZZ)
+    group = lattice.O()
+    return tuple(group(tuple(lattice(list(column)) for column in (change * _column_matrix(generator) * inverse).columns())) for generator in generators)
+
+
+def _transported(target_transport: LatticeIsometryMethods, witness: LatticeIsometryMethods, source_transport: LatticeIsometryMethods) -> LatticeIsometryMethods:
+    r"""``target_transport * witness * source_transport^-1``, built once from its column matrix.
+
+    source: IndefiniteForms.g:1389 ``Inverse(RecRed2.B) * test * RecRed1.B`` and
+    :1419 (the degenerate extension ``Inverse(FullBasis2) * TheEquivTest * FullBasis1``).
+    """
+    source, target = source_transport.codomain(), target_transport.codomain()
+    columns = _column_matrix(target_transport) * _column_matrix(witness) * _column_matrix(source_transport).inverse().change_ring(SageZZ)
+    return source.Isom(target)(tuple(target(list(column)) for column in columns.columns()))
+
+
 @dataclass(frozen=True)
 class VectorClass:
     r"""An O(L)-orbit of primitive vectors: a representative, and the isometries of L found carrying it to the other covering vectors of its orbit."""
@@ -186,7 +220,7 @@ class EichlerRecursion:
             return None
         known, cached = self._groupoid.cached_isometry(left, right)
         if known:
-            return None if cached is None else target_reduction.isometry * cached * source_reduction.isometry.inverse()
+            return None if cached is None else _transported(target_reduction.isometry, cached, source_reduction.isometry)
         left_complement_gram = left_gram.matrix_from_rows_and_columns(range(rank), range(rank))
         right_complement_gram = right_gram.matrix_from_rows_and_columns(range(rank), range(rank))
         left_complement = left.lattice_category()([[int(entry) for entry in row] for row in left_complement_gram.rows()])
@@ -203,7 +237,7 @@ class EichlerRecursion:
                     extension[row, column] = coefficient
         reduced_witness = left.Isom(right)(tuple(right(list(row)) for row in extension.rows()))
         self._groupoid.record_isometry(left, right, reduced_witness)
-        return target_reduction.isometry * reduced_witness * source_reduction.isometry.inverse()
+        return _transported(target_reduction.isometry, reduced_witness, source_reduction.isometry)
 
     def orthogonal_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
         if lattice.is_definite():
@@ -223,7 +257,7 @@ class EichlerRecursion:
         reduction = indefinite_reduced_presentation(lattice)
         cached = self._groupoid.cached_group(reduction.reduced)
         if cached is not None:
-            return tuple(reduction.isometry * generator * reduction.isometry.inverse() for generator in cached)
+            return _conjugated(reduction.isometry, cached)
         if not reduction.reduced.is_nondegenerate():
             # IndefiniteForms.g:1496–1511 applies ExtendIsometryGroup to
             # the nondegenerate quotient before transporting the generators.
@@ -237,7 +271,7 @@ class EichlerRecursion:
                     generators = self._generation_step(profile.signed_view)
             reduced_generators = tuple(_untwisted(generator, profile) for generator in generators)
         self._groupoid.record_group(reduction.reduced, reduced_generators)
-        return tuple(reduction.isometry * generator * reduction.isometry.inverse() for generator in reduced_generators)
+        return _conjugated(reduction.isometry, reduced_generators)
 
     def _model(self, lattice: Lattices.ParentMethods) -> OrbitCoverModel:
         r"""The approximate model of ``lattice``, built once per lattice (IndefiniteForms.g:1338, :1346, :1450, :1530)."""
@@ -272,7 +306,7 @@ class EichlerRecursion:
             reduced_witness = self._indefinite_isometry(source_reduction.reduced, target_reduction.reduced)
             if reduced_witness is None:
                 return None
-            return target_reduction.isometry * reduced_witness * source_reduction.isometry.inverse()
+            return _transported(target_reduction.isometry, reduced_witness, source_reduction.isometry)
         # IndefiniteForms.g:1239-1273 INDEF_FORM_TestEquivalence_Memoize
         # records every exact verdict, the definite kernel's (:1326)
         # included, so later O(K) requests are transported along it.
