@@ -9,44 +9,29 @@ rules are in [AGENTS.md](../AGENTS.md).
 
 ## Now
 
-**First, repair a confirmed source importability defect on the published branch.**
-At the last source-bearing commit `69a456e`, parsing
-`src/sage_indefinite_port/indefinite/lorentzian_cells.py` fails at line
-2052: `except ArithmeticError, OverflowError, RuntimeError, TypeError, ValueError:`
-is invalid Python syntax. The exception types require parentheses. This was
-confirmed against the published code at `2777a40` using `ast.parse` without
-running Sage or touching the frozen tests. Apply the local syntax repair,
-check that the file parses, and commit/push it before attempting an acceptance
-case. Do **not** reinterpret this one-line syntax error as a missing algorithm.
+**Continue the centralizer finite-image gluing consumer.** The source-backed
+route is pinned `Oscar.jl@d135b70b` `lattices_with_isometry.jl:1772–1789` and
+`embeddings.jl::_glue_stabilizers` (3134–3196). Recursively compute the component
+centralizer discriminant images, impose glue compatibility with the existing
+finite-action operations, and descend to the ambient discriminant form. This
+must not require unavailable full arithmetic unitary generators. Its owner is
+`research`; the real consumer is `f.centralizer_discriminant_image()` and the
+five unchanged cases in `tests/acceptance/test_centralizers.sage`.
 
-**Selected obligation: #15 EDGEWALK / A_REFLECTIVE.** Use the *current*
-branch and its latest **completed** Acceptance report to isolate a failing
-branch-representative reflective case in
-`tests/acceptance/test_reflective.sage`, starting at the
-`test_simple_root_counts_match_polyhedral_common` consumer when still failing.
-Trace that case through
-`src/sage_indefinite_port/indefinite/edgewalk.py` and
-`edgewalk_extensions.py` to the
-[translation map](../references/source-to-sage-translation-map.md) and the
-pinned `Lorentzian.g` / Allcock binary-cycle source.
-Correct the precise algorithm/callee divergence; keep the frozen test unchanged.
+Fetch the current branch/provider before resuming; parallel source work may
+already have completed this step. The coisotropic extension and degenerate cusp
+configuration providers are published at research `fdcd0208e0af9b3711b1590c310603749e4435ca`.
+The syntax defect described in the earlier handoff is repaired at port
+`471391d`; the isotropic signed-view and integral-isometry integration repair
+is published at `904e752`. Do not repeat either repair.
 
-Before changing EDGEWALK, compare the remote `port/edgewalk` branch with the
-integration branch **for the affected routines only**. It has an unmerged
-source correction at `386f9b8`; do not discard or blindly merge it. The
-port algorithm needs starting corners, cusp/root candidates, next-wall selection,
-oriented binary-cycle stopping and reflectivity/termination, with exact
-source-correspondence. Record a representative set covering the pinned
-algorithm's ranks, signatures, and branches, not simply a passing subset.
-
-**Diagnostic starting point, not current verdict:** the fully reported
-[Acceptance run 39667397208](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/39667397208)
-on port `30799df`, research `0a70597c04` exposed three reflective error
-families: domain-construction `ValueError`, string-formatting `TypeError`,
-and nonsquare-matrix `ValueError`. Source and provider have changed since;
-check whether each failure remains on the latest committed revision before
-editing. Fix one demonstrated route rather than infer thousands of distinct
-algorithm bugs from the number of repeated cases.
+Small public Sage examples now establish the two frozen perfect-domain cases
+`Result_Enumeration_0` and `_1` in both modes; EDGEWALK on `U+<2>` and
+`diag(-3,1,1)` with the exact three-root Gram tables; split/higher-index vector
+orbits; and the stable-group splitting of the isotropic lines of `U(2)`.
+These are branch evidence, not a claim that the full acceptance corpus passed.
+Continue implementation across the remaining families under the current MVP
+phase directive in [AGENTS.md](../AGENTS.md); do not wait for full CI or #36.
 
 ## Published starting state
 

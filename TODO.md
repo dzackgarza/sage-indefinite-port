@@ -1,10 +1,13 @@
 # Remaining port work: dependency DAG
 
 Finish the pinned indefinite-lattice port through the frozen public research operations.
-Completion requires the specialized algorithms, their assigned generic callees, the unchanged
-upstream fixtures and the case evidence required by the accepted #33 criteria, plus final
-public consumers and settled type debt. Exhaustive long-tail case coverage is not a
-development completion gate for families with branch-representative sampling.
+Functional MVP completion requires working general implementations, their assigned
+generic callees, real public consumers, and small independently checkable examples
+for the implemented mathematical branches. The user's 2026-10-22 MVP directive
+supersedes older full-file, type, performance and refinement gates in this DAG.
+Keep every frozen fixture and the complete CI workflow; its long-tail failures
+remain evidence for later work and do not gate functional publication. A known
+missing general branch remains an implementation obligation.
 
 The [issue tree rooted at #4](https://github.com/dzackgarza/sage-indefinite-port/issues/4) owns implementation claims, issue dependencies, and acceptance.
 The nodes below decompose that contract; they do not replace it, and they
@@ -84,8 +87,8 @@ flowchart TD
     LIFTS -.-> POINTED & PARABOLIC
     A_PERFECT & A_REFLECTIVE & A_GROUPS & A_ISOMETRY --> RELEASE[Justified readiness and xfail release]
     A_STABILIZERS & A_VECTORS & A_ISOTROPIC & A_BOUNDARIES & A_CENTRALIZERS --> RELEASE
-    RELEASE --> TYPES[Discharge #36 type debt]
-    TYPES --> FINAL[Final revision: full gates and original issue closure]
+    RELEASE --> FINAL[Functional MVP: algorithms and small public examples]
+    FINAL -.-> TYPES[Later refinement: #36 type debt]
 ```
 
 Run each family once its algorithm and provider prerequisites are available, rather than waiting for all other families.
@@ -137,15 +140,17 @@ A mathematical deviation needs a source-backed proof or counterexample on its ow
 | **ORBITS / #18** | RECURSION | Finish all fixed-norm vector and rank-at-most-two isotropic line/plane/flag classification: finite double-coset actions, saturation, exact identifications, representatives, stabilizers, and witnesses. Trace the full pinned dispatcher for zero/negative norms, spacelike cases, and higher-index Eichler covers. A restriction in one Lorentzian helper does not prove a project-wide source gap. Obtain missing headers and preserve the existing full orbit scopes. Discharge A_VECTORS/A_ISOTROPIC. |
 | **ARITHMETIC / #18** | ORBITS | Supply ambient indefinite groups, orbits, stabilizers, and finite discriminant/character actions to generic preimage and orbit-splitting computations. Reconstruct subgroup representatives, witnesses, stabilizers, and boundary labels; verify coinvariant extension and selected enumeration. Retain all absorbed #19–#22 obligations. Discharge A_BOUNDARIES and the arithmetic subgroup cases elsewhere in the suite. |
 | **CENTRALIZERS / #18** | RECURSION | Supply the indefinite component orthogonal-group computations to research's invariant-decomposition and compatible-gluing construction. Verify every finite-order frozen case, including discriminant images. For a non-scalar component, identify its actual computational route and hypotheses; full component O(L) or a subgroup predicate is insufficient. Research #397 owns its independent computation; #18 retains the full consumer obligation. Discharge A_CENTRALIZERS. |
-| **PERFORMANCE / #18** | Conditional, inside the affected algorithm node | Investigate only a demonstrated source divergence, repeated computation, resource failure, or violation of an explicitly sourced runtime requirement, with a profile or `faulthandler` stack from the actual failing case. A timeout alone establishes none of these; neither does the historical 30-minute/2153-second orthogonal-group comparison, whose budget has no authoritative source. For E10, profile the current committed path on the actually failing
-consumer (the 536 generator images where applicable); relevant generic
-computations include family sections, fixed-map Smith preimages, isometry
-equality and finite-action word sections. The timed consumer and the 536 generator images decide whether performance is fixed. |
+| **PERFORMANCE / #18** | Deferred until functional MVP | Do not profile, benchmark, optimize or tune runtime during this phase. If an essential small correctness example cannot execute, repair its immediate correctness/importability defect and resume implementation. Preserve expensive cases for later CI-reported work. |
 
 EXTEND, POINTED, and BOUND use the existing [source/callee correspondence and bound proof](https://github.com/dzackgarza/sage-indefinite-port/issues/18#issuecomment-6217015400).
 Its source anchors are `Lorentzian.g:115–249`, `Fundamental.g:471–516,751–794`, and `IndefiniteForms.g:988–1055,1605–1650`. The correspondence is an implementation obligation, not proof that current code implements it.
 
 ## Frozen acceptance nodes
+
+The historical case requirements below remain the full regression obligations.
+They are not functional MVP completion or publication gates. Current MVP evidence
+uses small real consumers with independent answers, exact witnesses, and recorded
+port/provider revisions; retain uncovered branches explicitly.
 
 A node is accepted at an exact committed revision using the complete criterion
 specified in its row. For the families covered by [#33's October 22
@@ -198,7 +203,7 @@ case or drop an assertion to form the cited evidence sample.
   Type/style reports are nonblocking while implementation is underway.
 
 - [ ] **FINAL — Close original issue #4.
-  Depends on RELEASE and TYPES.** On one final committed port revision with
+  Functional MVP depends on RELEASE; TYPES is deferred.** On one final committed port revision with
   the research provider revision recorded, obtain passing results for each
   family's required cases (representative branch samples where #33 authorizes
   them, full-file cases where specified above) and the public research-to-port

@@ -5,6 +5,18 @@ This project translates the specialized indefinite-form algorithms of the
 consuming the mathematical operations of [research](https://github.com/dzackgarza/research).
 It is **a port of existing algorithms**, not an algorithm-design project.
 
+## Current functional MVP phase
+
+The user's 2026-10-22 MVP directive supersedes older completion and refinement
+gates below. Complete every algorithm family and its real public consumers;
+verify each implemented mathematical branch on small, independently justified
+examples. Publish coherent functional changes without waiting for the complete
+acceptance matrix. Preserve the full frozen CI suite as nonblocking long-tail
+evidence. Performance, typing (#36), formatting, refactoring, exhaustive
+coverage and repeated audits are deferred until functional MVP delivery.
+Repair only defects that block the required mathematical computations or their
+small correctness examples. Do not report an unimplemented branch as complete.
+
 ## Sources of authority
 
 | Source | Responsibility |
@@ -114,9 +126,9 @@ explicitly cited branch-representative samples pass; conversely, an
 interrupted/missing shard cannot be counted as passed. The final revision
 requires its chosen case IDs to pass under the same revision/provider.
 
-In a capable local Sage environment, run one focused node or diagnostic
-to locate the next failing source step. That is diagnostic evidence, not
-acceptance. Do not launch an entire family locally, repeatedly poll queued
+In a capable local Sage environment, run selected small production consumers
+with independent expected answers. These establish the exercised MVP branches;
+they do not establish unexecuted frozen cases. Do not launch an entire family locally, repeatedly poll queued
 CI, or substitute local machine-specific `.tmp` logs for published proof.
 If the cloud runtime lacks Sage, use the committed source/fixture data and
 GitHub Actions; local Snap Docker, `sage-dev-develop`, the former

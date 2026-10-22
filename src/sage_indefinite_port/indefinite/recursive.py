@@ -655,6 +655,13 @@ class EichlerRecursion:
             raise ValueError(
                 f"{lattice} has positive index {profile.positive_index}: vector classes here need positive index at least 2; the Lorentzian case is marked cells (#15)"
             )
+        # Real positive and negative index at least two does not imply
+        # rational isotropy: diag(2, 2, -6, -6), for example, is anisotropic
+        # by descent modulo 3.  Its zero-square fibre has no primitive
+        # vectors, so decide that empty case before requesting the two
+        # rational hyperbolic pairs of the Eichler envelope.
+        if square == 0 and not lattice.is_isotropic():
+            return ()
         buckets: dict[VectorPrefilter, list[tuple[Lattices.ElementMethods, list[LatticeIsometryMethods]]]] = {}
         for candidate in self._model(profile.signed_view).primitive_covering_vectors(profile.sign * int(square)):
             bucket = buckets.setdefault(VectorPrefilter.from_vector(candidate), [])
