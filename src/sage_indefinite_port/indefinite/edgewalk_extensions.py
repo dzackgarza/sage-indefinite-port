@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from itertools import combinations
 
-from dzack_research.preamble.all import CoxeterDiagrams, Lattices
+from dzack_research.preamble.all import Lattices
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.matrix.constructor import matrix
 from sage.modules.free_module_element import vector
@@ -58,17 +58,146 @@ def _norm_ratio_allows(label: CoxeterLabel, old_norm: Rational, new_norm: Ration
     return True
 
 
-@lru_cache(maxsize=4096)
-def _irreducible_coxeter_kind(rows: tuple[tuple[int, ...], ...]) -> tuple[bool, str]:
-    """Classify an irreducible Coxeter component once per labelled diagram."""
-    diagram = CoxeterDiagrams()([list(row) for row in rows])
-    if diagram.is_parabolic():
-        return True, ""
-    if not diagram.is_elliptic():
-        raise ValueError("Dynkin extensions require spherical or affine components")
-    label = str(diagram.label())
-    kind = "B" if label.startswith(("B", "C")) else ("G" if label.startswith("I2(6)") else label[0])
-    return False, kind
+_INFINITE_LABEL = -1
+r"""The Coxeter label of parallel walls in the integer rows passed below (``practical_infinity``)."""
+
+
+def _recognize_irreducible_diagram(rows: tuple[tuple[int, ...], ...]) -> tuple[str, int] | None:
+    r"""The type and rank of a connected spherical or Euclidean Coxeter diagram, or ``None``.
+
+    # source: coxeter_dynkin.h:305-640 RecognizeIrreducibleSphericalEuclideanDiagram
+
+    ``rows`` is the Coxeter matrix of the component (2 for commuting walls).
+    A connected graph has exactly one cycle when it has as many edges as
+    vertices and more than one when it has more (GRAPH_FindAllCycles).
+    """
+    size = len(rows)
+    if size == 1:
+        return "A", 1
+    adjacency = tuple(tuple(j for j in range(size) if j != i and rows[i][j] != 2) for i in range(size))
+    degrees = tuple(len(neighbours) for neighbours in adjacency)
+    isolated_adjacent = tuple(rows[i][adjacency[i][-1]] if adjacency[i] else None for i in range(size))
+    multiplicity: dict[int, int] = {}
+    higher_edges = 0
+    edges = 0
+    for i in range(size):
+        for j in adjacency[i]:
+            if j > i:
+                edges += 1
+                multiplicity[rows[i][j]] = multiplicity.get(rows[i][j], 0) + 1
+                if rows[i][j] != 3:
+                    higher_edges += 1
+    degree_one = [i for i in range(size) if degrees[i] == 1]
+    degree_two = [i for i in range(size) if degrees[i] == 2]
+    degree_three = [i for i in range(size) if degrees[i] == 3]
+    degree_four = [i for i in range(size) if degrees[i] == 4]
+    if any(degree > 4 for degree in degrees):
+        return None
+    if degree_four:
+        if size != 5 or len(degree_four) != 1 or len(degree_one) != 4 or degree_two or degree_three:
+            return None
+        centre = degree_four[0]
+        if any(rows[i][centre] != 3 for i in range(size) if i != centre):
+            return None
+        return "tildeD", 4
+    if edges > size:
+        return None
+    if edges == size:
+        if len(degree_two) != size or higher_edges:
+            return None
+        return "tildeA", size - 1
+    if len(degree_one) == 2 and len(degree_two) == size - 2 and not higher_edges:
+        return "A", size
+    if len(degree_three) > 2:
+        return None
+    if len(degree_three) == 2:
+        if higher_edges:
+            return None
+        for centre in degree_three:
+            if sum(1 for neighbour in adjacency[centre] if degrees[neighbour] == 1) != 2:
+                return None
+        return "tildeD", size - 1
+    if not degree_three:
+        if multiplicity.get(4, 0) == 2:
+            if higher_edges != 2:
+                return None
+            if any(isolated_adjacent[vertex] != 4 for vertex in degree_one):
+                return None
+            return "tildeC", size - 1
+        if multiplicity.get(4, 0) == 1:
+            if size == 2:
+                return "B", 2
+            if higher_edges != 1:
+                return None
+            single = sum(1 for vertex in degree_one if isolated_adjacent[vertex] == 3)
+            four = sum(1 for vertex in degree_one if isolated_adjacent[vertex] == 4)
+            if single == 2:
+                if size == 4:
+                    return "F", 4
+                if size == 5:
+                    return "tildeF", 4
+            if four == 1 and single == 1:
+                return "B", size
+            return None
+        if multiplicity.get(5, 0) == 1:
+            if size == 2:
+                return "H", 2
+            if size > 5:
+                return None
+            single = sum(1 for vertex in degree_one if isolated_adjacent[vertex] == 3)
+            five = sum(1 for vertex in degree_one if isolated_adjacent[vertex] == 5)
+            if single == 1 and five == 1 and size in (3, 4):
+                return "H", size
+            return None
+        if multiplicity.get(6, 0) == 1:
+            if higher_edges != 1:
+                return None
+            if size == 2:
+                return "G", 2
+            if size == 3:
+                return "tildeG", 2
+            return None
+        if size == 2:
+            return ("tildeI", 1) if rows[0][1] == _INFINITE_LABEL else ("I", 2)
+        return None
+    (centre,) = degree_three
+    if multiplicity.get(4, 0) == 1:
+        leaves = [neighbour for neighbour in adjacency[centre] if degrees[neighbour] == 1]
+        simple_leaves = [neighbour for neighbour in leaves if isolated_adjacent[neighbour] == 3]
+        if len(leaves) == 3:
+            return ("tildeB", 3) if len(simple_leaves) == 2 else None
+        if len(leaves) != 2 or len(simple_leaves) != 2:
+            return None
+        if any(isolated_adjacent[vertex] == 4 for vertex in degree_one):
+            return "tildeB", size - 1
+        return None
+    if higher_edges:
+        return None
+    lengths: dict[int, int] = {}
+    for neighbour in adjacency[centre]:
+        previous, current, length = centre, neighbour, 1
+        while degrees[current] != 1:
+            following = next(vertex for vertex in adjacency[current] if vertex != previous)
+            previous, current = current, following
+            length += 1
+        lengths[length] = lengths.get(length, 0) + 1
+    if lengths.get(1, 0) == 3:
+        return "D", 4
+    if lengths.get(1, 0) == 2:
+        return "D", size
+    if lengths.get(1, 0) == 1 and lengths.get(2, 0) == 2:
+        return "E", 6
+    if lengths.get(1, 0) == 1 and lengths.get(2, 0) == 1 and lengths.get(3, 0) == 1:
+        return "E", 7
+    if lengths.get(1, 0) == 1 and lengths.get(2, 0) == 1 and lengths.get(4, 0) == 1:
+        return "E", 8
+    if lengths.get(2, 0) == 3:
+        return "tildeE", 6
+    if lengths.get(1, 0) == 1 and lengths.get(3, 0) == 2:
+        return "tildeE", 7
+    if lengths.get(1, 0) == 1 and lengths.get(2, 0) == 1 and lengths.get(5, 0) == 1:
+        return "tildeE", 8
+    return None
 
 
 def _diagram_extension_labels(coxeter_rows: list[list[Integer]], spherical: bool) -> tuple[tuple[CoxeterLabel, ...], ...]:
@@ -163,9 +292,11 @@ def _cached_diagram_extension_labels(coxeter_rows: tuple[tuple[int, ...], ...], 
         size = len(component)
         if size == 1:
             continue
-        parabolic, kind = _irreducible_coxeter_kind(tuple(tuple(int(coxeter_rows[i][j]) for j in component) for i in component))
-        if parabolic:
-            continue
+        # coxeter_dynkin.h:820-827: every component must be spherical or Euclidean.
+        recognized = _recognize_irreducible_diagram(tuple(tuple(int(coxeter_rows[i][j]) for j in component) for i in component))
+        if recognized is None:
+            raise ValueError("The recognition did not get something Euclidean or Spherical")
+        kind, _rank = recognized
         if kind == "A":
             if size == 2:
                 a2.append(component)
@@ -554,7 +685,7 @@ def _extensions(
             label = next((edge for edge, value in _FOUR_COS_SQUARED.items() if squares == value), None)
             if label is None:
                 raise ValueError("the supplied roots have noncrystallographic Coxeter pairings")
-            coxeter_rows[i][j] = coxeter_rows[j][i] = Integer(-1) if isinstance(label, PlusInfinity) else label
+            coxeter_rows[i][j] = coxeter_rows[j][i] = Integer(_INFINITE_LABEL) if isinstance(label, PlusInfinity) else label
 
     # ComputePossibleExtensions, coxeter_dynkin.h:2210–2336: each diagram is
     # visited before its compatible norms, in the supplied norm order.

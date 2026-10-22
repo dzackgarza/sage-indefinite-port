@@ -207,8 +207,12 @@ class _Edgewalk:
             }
         )
 
+    @cached_method
     def row(self, vector_: _Vector) -> _RationalRow:
-        return vector(SageQQ, _key(vector_))
+        r"""The immutable rational coordinate row of a lattice vector, read once per vector."""
+        coordinates = vector(SageQQ, _key(vector_))
+        coordinates.set_immutable()
+        return coordinates
 
     def rational_row(self, vector_: Lattices.ElementMethods) -> _RationalRow:
         coordinates = vector_.to_vector()
@@ -339,15 +343,16 @@ class _Edgewalk:
             if all(splitting.dot_product(row) != 0 for row in projected_rows):
                 break
             parameter += 1
-        positive = [(projected, root) for (projected, root), row in zip(projected_roots, projected_rows, strict=True) if splitting.dot_product(row) > 0]
-        cone = RationalPolyhedralCones(reduction).from_rays([projected for projected, _root in positive])
+        positive = [(projected, root, row) for (projected, root), row in zip(projected_roots, projected_rows, strict=True) if splitting.dot_product(row) > 0]
+        cone = RationalPolyhedralCones(reduction).from_rays([projected for projected, _root, _row in positive])
         simple_roots: list[_Vector] = []
         simple_projected_rows: list[_RationalRow] = []
         for ray in cone.primitive_rays():
             ray_row = quotient_row(ray)
-            for projected, root in positive:
-                root_row = quotient_row(projected)
-                if matrix(SageQQ, [ray_row, root_row]).rank() == 1 and reduction.b(ray, projected) > 0:
+            # get_one_root (edgewalk.h:2001-2022): the admissible root on this
+            # ray, i.e. a positive multiple of it (the quotient is definite).
+            for _projected, root, root_row in positive:
+                if matrix(SageQQ, [ray_row, root_row]).rank() == 1 and ray_row.dot_product(root_row) > 0:
                     simple_roots.append(root)
                     simple_projected_rows.append(root_row)
                     break
@@ -621,7 +626,11 @@ class _Edgewalk:
         # VinAl backend supplies the actual root-decomposition enumeration.
         from vinal import IterateIntegerPoints, VinAl
 
-        engine = VinAl(self.gram, vector(SageZZ, _key(timelike)), False, None, initialize_cosets=False)
+        # vinberg.h GetVinbergAux works with the integral Gram G and its
+        # integral complement Morth of v0. VinAl computes v0^perp as the
+        # right kernel of the Gram row of v0, which is an integral submodule
+        # only when that row is integral, so it needs G over ZZ.
+        engine = VinAl(matrix(SageZZ, self.gram), vector(SageZZ, _key(timelike)), False, None, initialize_cosets=False)
         # vinberg.h GetVinbergAux: enumerate translation classes of the
         # saturated perpendicular lattice together with v0, and reduce
         # each representative by the quotient of -<w,v0> and -v0^2.
@@ -708,7 +717,7 @@ class _Edgewalk:
                 # GetOneInteriorVertex uses the covectors -G*r. The
                 # lattice's algebraic correlation produces these directly,
                 # without assuming that primal and dual generator labels agree.
-                inequalities = tuple(-root.to_covector() for root in roots)
+                inequalities = tuple(self.wall_covector(root) for root in roots)
                 cone = RationalPolyhedralCones(self.lattice).from_halfspaces(inequalities)
                 # GetOneInteriorVertex (vinberg.h:833-909) accepts the first
                 # nonspacelike extreme ray of the feasible cone, regardless
@@ -1287,6 +1296,11 @@ class _Edgewalk:
         _positive, negative = fixed.inclusion().domain().signature_pair()
         return None if int(negative) == 0 else fixed
 
+    @cached_method
+    def wall_covector(self, root: _Vector) -> Element:
+        r"""The covector -b(root, -) of a wall inequality, computed once per root (-G * root, vinberg.h:1366 and edgewalk.h:1721)."""
+        return -root.to_covector()
+
     def root_chamber_certificate(self, roots: _Roots) -> bool:
         r"""Upstream LORENTZ_RunEdgewalkAlgorithm dual-description ray test.
 
@@ -1296,7 +1310,7 @@ class _Edgewalk:
         """
         if not roots:
             return False
-        inequalities = tuple(-root.to_covector() for root in roots)
+        inequalities = tuple(self.wall_covector(root) for root in roots)
         chamber = RationalPolyhedralCones(self.lattice).from_halfspaces(inequalities)
         if not chamber.is_pointed():
             return False
