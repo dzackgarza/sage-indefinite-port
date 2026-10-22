@@ -626,7 +626,11 @@ class _Edgewalk:
         # VinAl backend supplies the actual root-decomposition enumeration.
         from vinal import IterateIntegerPoints, VinAl
 
-        engine = VinAl(self.gram, vector(SageZZ, _key(timelike)), False, None, initialize_cosets=False)
+        # vinberg.h GetVinbergAux works with the integral Gram G and its
+        # integral complement Morth of v0. VinAl computes v0^perp as the
+        # right kernel of the Gram row of v0, which is an integral submodule
+        # only when that row is integral, so it needs G over ZZ.
+        engine = VinAl(matrix(SageZZ, self.gram), vector(SageZZ, _key(timelike)), False, None, initialize_cosets=False)
         # vinberg.h GetVinbergAux: enumerate translation classes of the
         # saturated perpendicular lattice together with v0, and reduce
         # each representative by the quotient of -<w,v0> and -v0^2.
