@@ -9,31 +9,36 @@ rules are in [AGENTS.md](../AGENTS.md).
 
 ## Now
 
-**Continue the centralizer finite-image gluing consumer.** The source-backed
-route is pinned `Oscar.jl@d135b70b` `lattices_with_isometry.jl:1772–1789` and
-`embeddings.jl::_glue_stabilizers` (3134–3196). Recursively compute the component
-centralizer discriminant images, impose glue compatibility with the existing
-finite-action operations, and descend to the ambient discriminant form. This
-must not require unavailable full arithmetic unitary generators. Its owner is
-`research`; the real consumer is `f.centralizer_discriminant_image()` and the
-five unchanged cases in `tests/acceptance/test_centralizers.sage`.
+**Finish the constructive higher-index route when the rational Witt index is
+less than two.** The exact public failure is
+`O(diag(2,2,-6,-6)).group_generators()`: `EichlerRecursion._generation_step`
+constructs `OrbitCoverModel`, and `EichlerEnvelope` raises
+`ValueError: the source isotropic search found no vector` at its first pair.
+For `U+<2,-4>` the second rational hyperbolic pair does not exist. The pinned
+`CombinedAlgorithms.h:895–924,984–1016` selects this route by the real indices;
+`ApproximateModels.h:1216–1289,1301–1308` constructs two rational pairs inside
+the original space. Do not assume real index at least two proves that hypothesis.
 
-Fetch the current branch/provider before resuming; parallel source work may
-already have completed this step. The coisotropic extension and degenerate cusp
-configuration providers are published at research `fdcd0208e0af9b3711b1590c310603749e4435ca`.
-The syntax defect described in the earlier handoff is repaired at port
-`471391d`; the isotropic signed-view and integral-isometry integration repair
-is published at `904e752`. Do not repeat either repair.
+This affects full orthogonal groups, integral isometry witnesses and nonzero
+vector classes. At rational Witt index one it also affects isotropic vector
+and line classes, which still call `primitive_vector_classes(L,0)` and its
+cover model. Rationally anisotropic zero fibres are correctly empty; the
+native Witt-index check also makes plane and flag families empty whenever
+the rational Witt index is less than two. The
+general native spinor-genus **decision** now works, but its rational weak
+approximation is not an integral witness and does not close this construction
+obligation. Do not substitute a bounded search or report MVP completion.
 
-Small public Sage examples now establish the two frozen perfect-domain cases
-`Result_Enumeration_0` and `_1` in both modes; EDGEWALK on `U+<2>` and
-`diag(-3,1,1)` with the exact three-root Gram tables; split/higher-index vector
-orbits; and the stable-group splitting of the isotropic lines of `U(2)`.
-These are branch evidence, not a claim that the full acceptance corpus passed.
-Continue implementation across the remaining families under the current MVP
-phase directive in [AGENTS.md](../AGENTS.md); do not wait for full CI or #36.
+The native centralizer gluing, general CM image, primitive embedding/spacelike,
+finite-image, coisotropic lift, cusp equality, zero-rank root and native
+Witt-index repairs are published in research `2024cb764e4e28ceb818f82f2b1075291ce83a68`
+and its ancestors. Port `59227592439cdccd859e9282bc02ced2a977a3c4` contains the
+spacelike integration, empty plane/flag decision and earlier syntax,
+signed-view, parabolic and anisotropic-zero repairs. Fetch current tips before editing. The small public examples and
+their exact limits are recorded in [TODO.md](../TODO.md#functional-mvp-evidence-from-the-current-implementation-work).
+Do not repeat completed repairs, wait for full CI, or start #36 refinement.
 
-## Published starting state
+## Historical published starting state
 
 - Last source-bearing integration revision before the documentation handoff:
   `69a456e419a2be42da682039addc5fbe79b861eb` (2026-10-22).
@@ -67,11 +72,10 @@ phase directive in [AGENTS.md](../AGENTS.md); do not wait for full CI or #36.
 
 The complete outstanding dependency graph is [TODO.md](../TODO.md) and the
 [issue #4 tree](https://github.com/dzackgarza/sage-indefinite-port/issues/4).
-After EDGEWALK, unresolved port obligations include the #18 parabolic,
-recursive, orbit, boundary and centralizer consumers and research-owned
-`FINITE`/`LIFTS` provider contracts. **Do not assume an outstanding TODO
-node means its entire implementation is absent.** Identify the precise
-remaining failing branch before authoring.
+The current constructive frontier is the action above; the functional
+evidence table records the implemented consumers and provider contracts.
+**Do not assume an outstanding TODO node means its entire implementation is
+absent.** Identify the precise remaining branch before authoring.
 
 The [October 22 amendment to #33](https://github.com/dzackgarza/sage-indefinite-port/issues/33#issuecomment-6343829665)
 replaces exhaustive-case completion for large families with evidence from a
