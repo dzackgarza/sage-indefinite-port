@@ -168,7 +168,8 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 case rank:
                     raise UnsupportedRankError(f"isotropic sublattices of rank {rank}: the isotropic induction covers ranks 1 and 2")
         case _ if category is FLAGS:
-            classes = tuple(FLAGS.object(_flag_marking(line, plane)) for line, plane in INDUCTION.flag_classes(lattice))
+            # A diagram on the finite ordinal [2] is read from its two consecutive arrows.
+            classes = tuple(FLAGS(_flag_marking(line, plane)) for line, plane in INDUCTION.flag_classes(lattice))
         case _:
             raise ValueError(f"{category} is not a category of marked lattices this port classifies: a coslice <n>/Lattices, Ar(Lattices) or Fun([2], Lattices)")
     return finite_ordered_set(classes)
