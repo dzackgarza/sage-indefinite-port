@@ -135,6 +135,19 @@ def _pointed_classes(category: Category, lattice: Lattices.ParentMethods, square
                 raise ValueError(f"{lattice} is definite: its vector classes are the preamble's")
             case 1, 0:
                 vectors = INDUCTION.isotropic_vector_classes(lattice)
+            case 1, _ if profile.sign * square < 0:
+                # These vectors lie outside the positive cone covered by
+                # perfect cells.  Classify their rank-one primitive
+                # embeddings by the generic Nikulin genus/gluing algorithm
+                # at its research owner (pinned OSCAR embeddings.jl,
+                # d135b70b, primitive_embeddings(::ZZGenus, ::ZZLat)).
+                base = category.base_object()
+                return tuple(
+                    category.object(embedding)
+                    for embedding in base.Emb(lattice).primitive_embedding_class_representatives(
+                        classification="emb"
+                    )
+                )
             case 1, _:
                 signed_square = profile.sign * square
                 reduction = indefinite_reduced_presentation(profile.signed_view)
