@@ -91,9 +91,19 @@ class IsotropicInduction:
                 # the isotropic-only perfect-cell mode is a different routine.
                 # The integral isometry reduced -> lattice transports the
                 # complete orbit representatives, as res.B.transpose() does.
-                reduction = indefinite_reduced_presentation(lattice)
+                # CombinedAlgorithms.h:1702-1706 passes the signed attack
+                # form to the Lorentzian dispatcher.  For signature (n, 1)
+                # this is -L; isotropic vectors have the same coordinates,
+                # but must be returned as elements of the original L.
+                reduction = indefinite_reduced_presentation(profile.signed_view)
                 orbits = MarkedCellOrbitAlgorithm(perfect_complex(reduction.reduced, NONNEGATIVE_SQUARES), 0).global_orbits()
-                return tuple(reduction.isometry(orbit[0]) for orbit in orbits)
+                representatives = tuple(reduction.isometry(orbit[0]) for orbit in orbits)
+                if profile.sign == 1:
+                    return representatives
+                return tuple(
+                    lattice.linear_combination({label: representative.to_vector()(label) for label in lattice.module_generating_set()})
+                    for representative in representatives
+                )
             case _:
                 return tuple(vector_class.representative for vector_class in self.recursion.primitive_vector_classes(lattice, 0))
 
@@ -277,7 +287,8 @@ class IsotropicInduction:
         # MatrixIntegral_Stabilizer conjugates the generators back to integral matrices on Z^n
         # (GroupAction.g:869-886); the action reads each one on the basis of L once.
         action = self.recursion.isotropic_stabilizer_action(isotropic, radical_images)
-        return tuple(action.lattice_automorphism(generator) for generator in action.stabilizer().group_generators())
+        lattice = isotropic[0].parent()
+        return tuple(lattice.integral_isometry(generator) for generator in action.stabilizer().group_generators())
 
     def line_automorphism_generators(self, lattice: Lattices.ParentMethods, line: Vector) -> tuple[LatticeIsometryMethods, ...]:
         r"""Aut((L, Zu)): Gamma = {+-1} on the line (IndefiniteForms.g:1711-1725 with k = 1)."""
