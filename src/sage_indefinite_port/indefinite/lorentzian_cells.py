@@ -2049,7 +2049,7 @@ def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integ
                     eigen_norm = sum(abs(eigen_entry) for eigen_entry in direction)
                     if eigen_norm:
                         eigen_iterators.append(make_approx_iterator(tuple(eigen_entry / eigen_norm for eigen_entry in direction)))
-    except ArithmeticError, OverflowError, RuntimeError, TypeError, ValueError:
+    except (ArithmeticError, OverflowError, RuntimeError, TypeError, ValueError):
         # This branch only accelerates the exact search. Overflow or failure
         # in the floating eigensolver must not disable its exact directions.
         eigen_iterators.clear()
