@@ -208,9 +208,14 @@ class _Edgewalk:
         )
 
     @cached_method
+    def key(self, vector_: _Vector) -> _Key:
+        r"""The integral coordinate tuple of a lattice vector, read once per vector."""
+        return _key(vector_)
+
+    @cached_method
     def row(self, vector_: _Vector) -> _RationalRow:
         r"""The immutable rational coordinate row of a lattice vector, read once per vector."""
-        coordinates = vector(SageQQ, _key(vector_))
+        coordinates = vector(SageQQ, self.key(vector_))
         coordinates.set_immutable()
         return coordinates
 
@@ -1281,7 +1286,7 @@ class _Edgewalk:
         return self.coloured_family(tuple(zip(vectors, colours, strict=True)))
 
     def isometry_key(self, isometry: LatticeIsometryMethods) -> tuple[_Key, ...]:
-        return tuple(_key(isometry(generator)) for generator in self.lattice.module_generators())
+        return tuple(self.key(isometry(generator)) for generator in self.lattice.module_generators())
 
     @staticmethod
     def common_fixed_space(invariant: Parent, isometry: LatticeIsometryMethods) -> Parent | None:
@@ -1349,10 +1354,10 @@ class _Edgewalk:
     def edge_orbits(self, vertex: _Vertex, local_generators: tuple[LatticeIsometryMethods, ...]) -> tuple[tuple[_Roots, _Vector], ...]:
         """Outgoing edges modulo the supplied full vertex stabilizer."""
         directions = self.edge_directions(vertex)
-        direction_positions = {frozenset(_key(root) for root in roots): index for index, (roots, _discarded) in enumerate(directions)}
+        direction_positions = {frozenset(self.key(root) for root in roots): index for index, (roots, _discarded) in enumerate(directions)}
 
         def act_on_direction(isometry: LatticeIsometryMethods, index: int) -> int:
-            return direction_positions[frozenset(_key(isometry(root)) for root in directions[index][0])]
+            return direction_positions[frozenset(self.key(isometry(root)) for root in directions[index][0])]
 
         local_group = self.lattice.O().subgroup(local_generators)
         direction_orbits = FiniteGSets(local_group)(tuple(range(len(directions))), act_on_direction).orbits()
@@ -1414,9 +1419,9 @@ class _Edgewalk:
             # LORENTZ_RunEdgewalkAlgorithm::f_try_terminate: close the
             # accumulated walls under every discovered chamber symmetry.
             group = self.lattice.O().subgroup(tuple(isometries))
-            seeds = tuple({_key(root): root for vertex in vertices for root in vertex.roots}.values())
+            seeds = tuple({self.key(root): root for vertex in vertices for root in vertex.roots}.values())
             closure = FiniteGSets(group).from_finite_orbits(seeds, lambda isometry, root: isometry(root))
-            return tuple(sorted(closure, key=_key))
+            return tuple(sorted(closure, key=self.key))
 
         certified_root_count = 0
 
