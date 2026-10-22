@@ -1,6 +1,6 @@
 # Data Sources and Provenance
 
-This document records the exact provenance, source files, authors, publications, and extraction methods for every dataset in [`tests/fixtures/`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures).
+This document records the exact provenance, source files, authors, publications, and extraction methods for every dataset in [`tests/fixtures/`](./).
 
 * * *
 

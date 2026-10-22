@@ -1,237 +1,155 @@
-# sage-indefinite-port: agent contract
+# Sage indefinite lattice port — agent instructions
 
-This repository ports the pinned indefinite-lattice algorithms of `Indefinite.jl@374a5ebb` and `polyhedral_common@1592b246` (plus the Allcock edgewalk paper) into native Sage/Python on top of the `research` preamble.
+This project translates the specialized indefinite-form algorithms of the
+[committed pinned sources](references/vendor/README.md) into Sage/Python,
+consuming the mathematical operations of [research](https://github.com/dzackgarza/research).
+It is **a port of existing algorithms**, not an algorithm-design project.
 
-This file says how to work.
-It is short on purpose: you are expected to know it, not to re-read it every turn.
-It changes only when the user asks for a change.
+## Sources of authority
 
-| Document | Holds | Changes when |
-| --- | --- | --- |
-| `.tmp/HANDOFF.md` | **Now**: the single current action, the newest Acceptance run for the branch, open decisions | A step finishes or a result arrives. Replace the section, never append to it |
-| `TODO.md` | The complete remaining obligation as a dependency DAG, with acceptance records | A node is accepted (commit + Acceptance run URL), or an obligation is found that the DAG lacks |
-| Issue tree rooted at #4 | Unit ownership, blocked-by order, each unit's acceptance text | Unit selection and closure only |
-| `references/port-design.md`, `references/source-to-sage-translation-map.md` | Frozen API, ownership split, source anchors | Only through #33 |
-| `references/review-guidelines.md` | How completion claims are judged | When the user asks |
-| `references/contribution-policies.md`, `references/preamble-api.md` | Imported architecture policies, the preamble surface to consume | When the user asks |
+| Source | Responsibility |
+| --- | --- |
+| [Issue #4](https://github.com/dzackgarza/sage-indefinite-port/issues/4), [#33](https://github.com/dzackgarza/sage-indefinite-port/issues/33), [#15](https://github.com/dzackgarza/sage-indefinite-port/issues/15), [#18](https://github.com/dzackgarza/sage-indefinite-port/issues/18), [#36](https://github.com/dzackgarza/sage-indefinite-port/issues/36) | Original obligation, ownership, issue dependencies and acceptance |
+| [TODO.md](TODO.md) | Remaining algorithm, dependency and acceptance obligations; a checked node needs source-backed evidence |
+| [`.tmp/HANDOFF.md`](.tmp/HANDOFF.md) | One concrete **Now** action, its source/consumer and latest known remote revision; replace obsolete Now rather than append a history |
+| [Port design](references/port-design.md), [assignments](references/port-design.md#implementation-assignments), [translation map](references/source-to-sage-translation-map.md) | Frozen API, owner split, exact upstream routine locations |
+| [Vendored source and Allcock paper](references/vendor/README.md) | **Algorithm authority**; translation notes never replace source |
+| [Acceptance workflow](.github/workflows/acceptance.yml), [oracle manifest](tests/fixtures/oracle_manifest.yaml) | Frozen executable cases and results for exact published revisions |
 
-Writing in these documents is not progress.
-A turn whose only output is a document edit has done no port work unless that edit records a run result or a commit.
+## Entry and continuity
 
-# The turn protocol
+For a **new cloud checkout**, work from
+`implement/lorentzian-completion` (not default `main`).
+Read this document once, then `.tmp/HANDOFF.md` **Now** and the relevant
+TODO/issue/source sections. Fetch the branch and identify its current commit and
+newest *completed* Acceptance run before changing it. If the handoff commit or
+selected failure predates newer code/results, replace Now with the actual next
+unresolved implementation step; do not enact its stale instructions.
 
-A turn can last thirty seconds or several hours, and you may be a fresh agent with no memory of the last turn.
-The protocol is the same either way.
+A normal continuation starts with the current Now action and its precise
+source/consumer, rather than repeat source-wide surveys, re-read the entire DAG,
+or reselect work. The handoff is **not** proof that named people or agents remain
+active. Separate branch tips can contain unmerged work without an active owner.
+Never overwrite or discard another checkout's dirty source. Use a dedicated
+worktree/branch for parallel work and integrate only demonstrated relevant diffs.
 
-1. **Read the Now section of `.tmp/HANDOFF.md`.** That is the whole orientation.
-   Do not re-read AGENTS.md, TODO.md, or the handoff in full.
-   Do not run `itree next`, `agent-memory retrieve`, `gh issue view`, `git log` surveys, `ps` sweeps, or repository-wide greps to rebuild context.
-   If the step needs a fact that Now does not state, read only the file section or line range Now points to.
-2. **Do the next step of the Now action.**
-3. **Before the turn ends:**
-   - Leave no uncommitted source edits. Commit them (see Commits).
-   - If the step finished or a result arrived, replace Now with the next step.
-     Now names one action, its source anchor or failing node, and the newest Acceptance run.
-     It holds no history.
+The issue tree rooted at #4 is the work plan. Use
+`uvx --from git+https://github.com/dzackgarza/itree itree next dzackgarza/sage-indefinite-port`
+only when selecting a new unit after completion or an evidenced dependency
+change. A unit closes only when its entire accepted obligation is discharged;
+releasing a PR, a narrowed example, or a marker alone does not close it.
 
-Continuation prompts do not change this protocol:
+## Source-faithful implementation
 
-- "Continue", or any message that only carries connector or workstream bookkeeping, means: do step 2.
-- An instruction to read AGENTS.md/TODO.md and select a unit with `itree next` is already satisfied by Now.
-  Now records that selection's result.
-  Repeat the selection only under the conditions in Taking Work.
-- A message that gives a concrete technical correction is applied to the current action.
-  It does not restart orientation.
-- A generic per-command limit (such as "keep each command under five minutes") limits your foreground tool call.
-  It fits the local single-case checks of Running Sage; it never applies to CI's Acceptance runs.
+1. Open the **actual pinned routine and its called helpers** before changing
+   its specialized port: `references/vendor/Indefinite.jl@374a5ebb`,
+   `references/vendor/polyhedral_common@1592b246`, and
+   `references/vendor/arxiv/2110.03784` for Allcock's edgewalk.
+   Use the translation map for navigation; record exact source symbols/lines
+   beside the corresponding implementation.
+2. Preserve the source algorithm's cases, mathematics, enumeration, stopping
+   rules, certificates and exact witnesses. Translate generic callees into
+   existing Sage/research operations. No alternative algorithms, bounded
+   heuristic shortcuts, basis-dependent stand-ins, ad-hoc facades or duplicate
+   arithmetic primitives in place of the specialized source route.
+   Account explicitly for an unavoidable representation/callee substitution
+   against its source contract. A mathematical departure needs a pinned-source
+   proof or counterexample on the owning issue.
+3. **Do not compile or invoke** upstream C++ code. Production is native
+   Sage/Python with exact standard backends and the formed-lattice preamble.
+   Do not bypass the owned lattice, morphism, homset or tensor interfaces with
+   raw matrices. Never introduce `Any` escapes, forged stubs,
+   `sys.path` changes or weakened exceptions to silence failures.
+4. The frozen public mathematical objects are the research preamble's lattice,
+   element, morphism and tensor objects. Pointed markings are fixed in the
+   coslice, moving sublattice/configuration markings use the arrow category,
+   and flags use `Fun([2], Lattices)`. Their Isom/Aut questions differ.
+   Preserve those distinctions and their complete construction data.
 
-# Taking work
+**Division of work.** `research` owns generic kernels, fibres, equation and
+module arithmetic, partial-isometry extension, rational/integral lift loci,
+finite configurations/actions from supplied data, group sections and general
+gluing. This port owns indefinite/Lorentzian search, perfect-domain flips and
+quotients, Allcock cycles, approximate and Eichler recursion, parabolic
+compatibility-image discovery, orbit classification, and specialized group
+assembly. The concrete assignment is in
+[port design](references/port-design.md#implementation-assignments).
+Calling an unresolved generic `.group_generators()` is not an implementation
+of a specialized parabolic algorithm.
 
-The issue tree rooted at #4 is the only plan.
-Its work units are the leaf issues, its blocked-by links are the dependency edges, and each unit's body holds its obligation and acceptance.
-Issue bodies cite "map §N" in [references/source-to-sage-translation-map.md](references/source-to-sage-translation-map.md).
-`TODO.md` refines the open units into nodes; it does not narrow them.
+A defect in a generic research operation is reported at its research issue
+with the input contract, failed consumer and exact provider revision.
+Continue independent port work against the frozen API rather than changing
+research source in the port worktree. Do not claim an upstream research
+operation is correct merely because its public name exists.
 
-Run `uvx --from git+https://github.com/dzackgarza/itree itree next dzackgarza/sage-indefinite-port` only when Now says `SELECT`: the assigned unit was closed with `itree close`, or an evidenced dependency change invalidated it.
-Selection and release are also the only points at which claim and queue state is reconciled across branches (see Commit gates).
-A unit is closed with `itree close` only when every acceptance node it owns in TODO.md is accepted.
+## Tests and acceptance
 
-# Commits
+The [frozen acceptance modules](tests/acceptance/) and
+[fixtures](tests/fixtures/) are not edited, deleted or weakened to make a
+port case pass. A legitimate fixture/API correction goes through #33 with its
+reason recorded before the change. Diagnostic probes belong outside the frozen
+suite; their local `.tmp/probe` history is optional and is **not** part of
+the cloud checkout's required inputs.
 
-- **Commit every coherent source edit before you start an edit for a different node and before the turn ends, and push it** (Running Sage: CI tests only pushed commits).
-  Work-in-progress commits are normal: subject `wip(#15): <what changed>`, body naming the source anchor or failing node.
-  A WIP commit claims nothing.
-  Never accumulate uncommitted source across turns.
-- **Readiness is the only thing that waits for acceptance.**
-  Removing an `@unfinished` decorator or an xfail marker is its own commit, made only after the family's Acceptance run passed (TODO.md RELEASE).
-  All other source is committed as it is written.
-- **The acceptance suite is frozen.**
-  `tests/acceptance/` and `tests/fixtures/` change only by readiness-marker removal, or by a #33 change whose reason was recorded on #33 before the edit.
-  Helper checks, probes and scratch tests live in `.tmp/probe/` and are never placed under `tests/`.
-  Before every commit, `git diff --cached --stat -- tests/` must be empty or marker-only.
-- **Every source edit has a stated purpose:** a pinned source step being translated (file:line), or a failing acceptance node with the divergence you located.
-  While #36 is open, an edit whose purpose is mypy, pyright, or style cleanliness is not made, except where the commit gate itself rejects the commit.
-  Performance edits need the evidence TODO.md PERFORMANCE requires.
-- **Commit hooks always run.**
-  The machine-wide QC lock can hold a commit for tens of minutes; that wait does not permit bypassing a hook.
-  If the hook is still waiting when the turn ends, record that in Now.
-- **Red gate protocol**: The first time a commit gate, hook, or QC stage goes red, diagnosing that failure becomes the current task. Stop authoring; root-cause and fix the gate, or report it as a blocker with a reproducer. Never keep writing code behind a red gate, and never accumulate uncommitted work around one. A gate that is red on two consecutive commit attempts is a defect to diagnose, not an environment condition to wait out.
-- **Claim freshness — no off-ledger work**: At every claim and every release, reconcile the shared queue/claim state against actual repository state across all branches before selecting work. Never select work from a queue older than your last branch sync. All authoring requires a live claim; batch-committing a body of work authored off-ledger is prohibited.
-- **The `[unverified]` commit tag**: `[unverified]` may appear in a commit message only while the repository's verification phase is formally deferred by a named contract, and every `[unverified]` commit must name the contract or terminal phase that discharges it.
-- **Deferred type checking (temporary, discharged by #36)**: while #36 is open, the push gate's mypy errors are acknowledged debt and are not paid down. A push may then use `git push --no-verify`, and only under all of these conditions:
-  - `just test-push` was run on the commit being pushed and failed in its mypy stage (`_sage-mypy`) and nowhere earlier.
-  - The tip commit of the push carries this trailer, verbatim apart from the count: `Type-Debt-Ack: MYPY-DEFER-7Q4K #36 errors=<N>`, where `<N>` is the "Found N errors" count of the whole-tree mypy run on that commit: `_sage-mypy` with `QC_TIER=ambient` exported (`( export QC_TIER=ambient; just -f ~/ai-review-ci/justfiles/sage.just -d . _sage-mypy )`). The push gate's own mypy stage checks only files changed since the upstream branch, so its count is not the debt.
-  - `<N>` is at most 1000. Unproven code is not typed ahead of its correctness; the bound keeps the debt from growing unchecked. A push whose count exceeds 1000 does not use this exception: fix errors until it is at most 1000.
+**Accepted criterion (2026-10-22, [#33 amendment](https://github.com/dzackgarza/sage-indefinite-port/issues/33#issuecomment-6343829665)):**
+`A_REFLECTIVE`, `A_GROUPS` and `A_ISOTROPIC` use a
+**branch-representative sample** of unchanged cases exercising *every*
+branch of the pinned algorithm. The other families use the exact criteria
+in the TODO acceptance table, which identifies where sample evidence applies.
+Record selected case IDs, covered and uncovered branches, ranks/signatures,
+passing results and the exact commit. A sample must not avoid a genuinely
+distinct case branch or alter any assertion. Full-corpus failures outside the
+sample remain defects to record, **not** reasons to declare the sample or
+the entire port correct. Long-tail exhaustive coverage does not gate the
+agreed milestones.
 
-  The trailer covers every commit in that push. Commits need no exception, because the commit gate does not run mypy. The exception covers only mypy debt: any other gate failure is fixed, never bypassed. #36's last commit deletes this rule.
+GitHub [Acceptance](.github/workflows/acceptance.yml) runs the full frozen
+suite in sharded Sage jobs on every push using the
+`ghcr.io/dzackgarza/sage-indefinite-port-sage:py314` image; the run
+installs the published `research` branch and records its commit.
+Use the exact run/artifact for the revision under discussion. Job status
+alone cannot prove a case passed. A full workflow can be red while the
+explicitly cited branch-representative samples pass; conversely, an
+interrupted/missing shard cannot be counted as passed. The final revision
+requires its chosen case IDs to pass under the same revision/provider.
 
-# Running Sage
+In a capable local Sage environment, run one focused node or diagnostic
+to locate the next failing source step. That is diagnostic evidence, not
+acceptance. Do not launch an entire family locally, repeatedly poll queued
+CI, or substitute local machine-specific `.tmp` logs for published proof.
+If the cloud runtime lacks Sage, use the committed source/fixture data and
+GitHub Actions; local Snap Docker, `sage-dev-develop`, the former
+`/home/dzack/research` tree and local Zotero files are not prerequisites.
 
-**Acceptance is CI's job, never this machine's.**
-Every push runs the whole frozen suite in `.github/workflows/acceptance.yml`: each family file is split into shards on hosted runners, inside the same Sage image as the local `sage-dev-develop` container, against research `main` as pushed to GitHub.
-Never run a whole family file, or the whole suite, locally, and never wait on one.
+## Commit, publication and diagnostics
 
-- A family node is *accepted at commit C* when every shard of its file passes in the Acceptance run for C.
-  Record that in the node's TODO.md row (commit, run URL).
-  A later commit does not revoke it during development; FINAL needs one Acceptance run at the final revision in which every family passes.
-- **The run's failure list is the work queue.**
-  `gh run list --workflow acceptance.yml --branch "$(git branch --show-current)" -L 1` names the newest run; once it has finished, `gh run download <id> -n acceptance-summary` gives `acceptance-failures.md`, every non-passing node with its message.
-  Take the first failing node of the node Now names, and record the run in Now.
-  Read a run once, after it finishes. Do not poll a run in progress: push, and keep translating.
-- **Push after every commit series that changes `src/`.** CI knows only pushed commits.
-  The push gate and its deferred-mypy exception are in Commits.
+- Commit each coherent source change, including WIP progress where required;
+  identify the pinned source step or failed consumer. Push so CI tests the exact
+  revision. Preserve all unrelated work and claim state.
+- Local `just test-commit` checks only staged Python/JSON/TOML syntax;
+  `just test-push` checks only outgoing committed syntax.
+  Both delegate to [ai-review-ci](https://github.com/dzackgarza/ai-review-ci)
+  when installed. They **do not** run mypy, the full suite, formatters or
+  mandatory PR review. No type-debt exception trailer or `--no-verify`
+  workaround is required for these old gates.
+- Type debt belongs to [#36](https://github.com/dzackgarza/sage-indefinite-port/issues/36)
+  after algorithms/consumers have settled. CI may report types/style/debt,
+  but during development such findings are retained, **nonblocking**
+  diagnostics; they do not divert the current mathematical implementation.
+- There are currently no active `@unfinished` wrappers or acceptance
+  xfails. Do not invent marker-removal work or infer readiness from their
+  absence. Public capability is judged by actual consumer behavior.
+- Treat a red **actual local syntax check** as an immediate defect in the
+  committed source. Treat other CI failures as evidence to route to their
+  algorithm/provider owner; investigate concrete failing cases instead of
+  performing broad cleanup, optimization or repetitive diagnostics.
+- The final issue #4 closure requires the TODO acceptance evidence and public
+  research-to-port consumers, with a recorded port and provider revision.
+  `just test-ci` is a nonblocking diagnostic collection, not a substitute
+  for the frozen Acceptance workflow.
 
-**Local runs check one case.**
-While translating a step, run exactly one node id, or one `.tmp/probe/` script, against the working tree:
-
-- Before launching, write into Now the hypothesis, the node, and what each outcome changes about the next edit.
-- Give it a foreground `timeout` you choose, and `-o faulthandler_timeout=<seconds>` below that timeout, so a hang leaves a stack.
-  When it times out, the next step is to read that stack and the pinned source for the step it shows.
-  Never relaunch a variant of the same check.
-- A local result is a diagnostic. It never accepts a node.
-- Several of your own checks may run at once, and you may stop your own. Leave Sage and pytest processes you did not start alone.
-
-With `NODE` set to one node id:
-
-```sh
-cd /home/dzack/gitclones/sage-indefinite-port
-NODE='tests/acceptance/test_perfect_domains.sage::test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_1]'
-/usr/bin/sg docker -c "/snap/bin/docker exec -u root -w $PWD sage-dev-develop sh -c 'export PYTHONPATH=/home/dzack/ai-review-ci/tool-artifacts/pytest_plugins:$PWD/src:$PWD:/home/dzack/gitclones/vinal/src/sage:/home/dzack/research/src:/home/dzack/research/.venv/lib/python3.14/site-packages; timeout 900 /usr/bin/sage -python -c \"import sage.all,sys,pytest; sys.exit(pytest.main(sys.argv[1:]))\" -p qc_sage_session \"$NODE\" --runxfail -vv --tb=long -o faulthandler_timeout=840'"
-```
-
-If a connector safety check refuses a command, you are blocked: record the refusal under Now's open decisions and continue with work that needs no Sage process.
-Do not rephrase the command to get past the refusal.
-
-# Diagnosing and reading source
-
-- Read a pinned routine and its helpers once, then record the correspondence as a comment at the port function (`# source: Lorentzian.g:971-1032 LORENTZ_GetOnePerfect`).
-  Afterwards re-read only the source lines for the step you are changing.
-- Do not inventory `TODO`, `NotImplemented`, or fallback markers across the repository.
-- A slow or interrupted case is not a defect by itself.
-  Investigate performance only under TODO.md PERFORMANCE: with a profile or stack from the actual failing case.
-
-# Nonnegotiable: port the existing algorithm; do not design a new one
-
-**This project is a port, not an algorithm-development project.** The specialized algorithms in scope have already been implemented in the pinned open-source reference. The task is to translate **that implementation** into native Sage/Python, replacing its low-level and generic callees with the assigned Sage backends or research preamble operations. Do not search for alternative algorithms, reinvent an algorithm, or describe a known upstream algorithm as an open problem. The no-C++-build rule below prohibits compiling the reference; it does **not** authorize replacing its mathematics.
-
-Before authoring or revising any specialized routine:
-
-1. **Read the pinned source first**, including the routine's called helpers, not just its name or a summary. Use `references/vendor/Indefinite.jl@374a5ebb` and `references/vendor/polyhedral_common@1592b246`, and the vendored Allcock algorithm paper at `references/vendor/arxiv/2110.03784/` for edgewalk, as indexed by `references/source-to-sage-translation-map.md`. Identify the exact source symbol, file and line span for the routine and its relevant dependencies. The translation map is a navigation aid; the source is the algorithm specification. If a referenced implementation is absent from a sparse vendored snapshot, obtain that reference instead of improvising an algorithm.
-2. **Translate, don't substitute.** Preserve the source algorithm's branching, mathematical invariants, enumeration scope, termination conditions, certificate checks, and treatment of boundary/exceptional cases. Replace a generic called operation (e.g. lattice algebra, exact CVP, polyhedral faces, finite-action calculations) with the corresponding existing backend/preamble primitive; do not replace the specialized caller with a newly devised search, shortcut, oracle, heuristic, or enumeration bound. In particular, a basis-dependent fast path or a special-case formula that avoids repairing the source algorithm's general path is **not** completion.
-3. **Account for each deviation.** When a direct line-by-line translation is impossible because of representations or dependency contracts, identify the specific source step, the assigned callee in Sage/preamble, and why the translation has the *same inputs, outputs and mathematical guarantees*. A proposed mathematical change requires a source-backed proof or a concrete counterexample to the reference, recorded on the owning issue **before** adopting the change. Do not silently change the algorithm to get a fixture passing. If the source itself is incomplete under the issue's full acceptance, that is unresolved implementation, not permission to invent a replacement.
-4. **Validate against the original full obligation**, using the frozen consumer paths and every applicable upstream fixture (not an xfail, a sample, a local helper-only check, or counts alone). A discrepancy requires locating the precise divergence from the pinned source and fixing it at that step. Passing on a subset never closes a unit requiring all cases.
-
-**Current source anchors for #15:** `Lorentzian.g:315–429` (`LORENTZ_FindPositiveVectors`, `LORENTZ_SearchInitialVector`), `:705–968` (`GetUpperBound`, `LORENTZ_Kernel_Flipping`), `:971–1232` (`LORENTZ_GetShortPositiveVector`, `LORENTZ_GetOnePerfect`, `LORENTZ_DoFlipping`), and `:1239–1371` (complete perfect-cell quotient traversal), plus `IndefiniteFormsFundamental.g:11–30` (the perturbation helper). Allcock edgewalk and binary-cycle source correspondences belong to the same rule. These anchors must be read before editing the corresponding port bodies. A prose comment citing a source line is **not** evidence of equivalence when the code does something else.
-
-# Working against the frozen API
-
-- **The API is frozen, and work is written against it.** The boundary is frozen in #33 and [references/port-design.md](references/port-design.md). The design separates public mathematical owners from computational owners. A preamble method may dispatch to this port. Planned primitive names may be called before implementation, but a missing specialized algorithm remains port work.
-- **Preamble deficiencies are never blockers.** A missing, wrong or restricted preamble operation is filed (or found) as a research issue that names the planned API, and port work continues against that name. A call into an unimplemented operation fails at run time. That decides only whether acceptance cases pass, never whether port work proceeds. No port issue is blocked by a research issue; blocked-by edges connect port units only.
-- **One active worker owns each working tree.** While `research` has its own active managed workstream, this port's worker does not edit, stage or commit in `/home/dzack/research`, even for a narrow generic preamble fix. Record the exact source-derived defect at its research owner and continue the independent port implementation against the frozen API, retaining the failed acceptance case until its dependency exists. If the current port task truly cannot proceed without that other repository's implementation, the fleet's serial-blocker rule governs a temporary workstream switch; two workers must not compete for the research index or modify one another's uncommitted source. An explicitly assigned serial upstream-repair interval has one worker in that repository and ends before the port worker resumes.
-- **Separate operation ownership from implementation routes.** Research accepts a computation only when its implementation needs no knowledge of the specialized upstream algorithms being ported here and it is a reasonably primitive mathematical construction usable independently in other problems. State its given data, hypotheses, output and independent route. Public ownership of a kernel, fibre, section or centralizer does not assign every algorithm answering that operation to research. Generic image/word-section computations consume supplied generators; they do not discover arithmetic parabolic generators or their liftable image. Research owns independent equation solvers, partial-isometry extension and pointwise-perpendicular kernels. The port owns specialized searches, compatibility-action construction, image discovery and recursive assembly. Neither source residency nor indefiniteness alone assigns ownership. See [port design](references/port-design.md#assigning-a-computation).
-- **Use the concrete assignments.** [Implementation assignments](references/port-design.md#implementation-assignments) names the actual functions and repair owners on both sides. In particular, implement `IsotropicInduction.line_automorphism_generators`, `plane_automorphism_generators`, `flag_automorphism_generators` and the isotropic branch of `EichlerRecursion.pointed_automorphism_generators` here. Calling research's unresolved parabolic `.group_generators()` does not implement them. Consume research's independent `R.rational_lifts(...).integral_members()` and `R.pointwise_perpendicular_kernel()` computations. Move the copied binary cycle and scaled-shell multiplier search here, and implement Eichler approximate/cover/full-group assembly here; frozen preamble names may dispatch to those implementations. Research's matching instructions are in `/home/dzack/research/AGENTS.md`, “Concrete boundary with sage-indefinite-port”.
-- **No new tests.** The acceptance suite (tests/acceptance, built in #33) is the only suite and is frozen. No unit adds, edits or weakens a case. A capability lands by removing the xfail markers that cite its unit. Changing a case, or changing the frozen API, means reopening #33 with the reason.
-- **State questions as mathematics.** Orbit, stabilizer and equivalence questions are Isom and Aut of marked lattices: diagrams of lattice morphisms ending at L, with natural isomorphisms as morphisms (references/port-design.md, "Marked lattices"). A pointed lattice ⟨n⟩ → L lives in the coslice ⟨n⟩/Lattices (the marking is fixed pointwise); sublattices and configurations live in the arrow category Ar(Lattices) (the marking may move by an automorphism of its domain); flags live in Fun([2], Lattices). Do not introduce ad-hoc vocabulary ("transporter", "stabilizer data", "full generating data") for constructions that have standard names.
-
-# Architecture and dependencies
-
-- **Sage runtime on this host**: Docker is installed by Snap at `/snap/bin/docker`, not `/usr/bin/docker`.
-  The `sage-dev-develop` container is already running; reach it with `/usr/bin/sg docker -c '/snap/bin/docker ...'`.
-  An unsuccessful `command -v docker` does not mean Docker is unavailable.
-  The preamble Julia bridge requires `/home/dzack/.juliaup/bin/julia`.
-  The tracked `.envrc` configures `PATH`, `SAGE_BIN`, `SAGE_PYTHON_BIN`, `SAGE_PREPARSE_BIN`, `SAGE_JULIA_COMMAND` and `PYTHONPATH` for the container-backed Sage and the central QC recipes.
-  Local checks use the command in Running Sage.
-- **The `research` preamble is the lattice substrate and a co-developed dependency**:
-  This repository consumes `dzack_research.preamble` (categories, formed modules, lattices, isometries, discriminant modules) from the checkout at `/home/dzack/research/src`. `.envrc` puts it on `PYTHONPATH` and `MYPYPATH`; `pyproject.toml` declares `dzack-research`.
-  - **Use the preamble's own classes and types**: annotate with `Lattice` (and `Lattice.Element`), `LatticeIsometry`, `LatticeIsometryHomset`, and the tensor and presented-module classes. Never add Protocol, stub, or facade types over the preamble, and never edit `sys.path`.
-  - **Fix preamble defects upstream**: a missing annotation, a class reachable only from a private module, or a wrong result in the preamble is fixed in `research` under its own QC **by its exclusive repository owner**; the Sage port worker does not edit, stage, or commit in research while its separate workstream is active (see "Working against the frozen API"). Port code is written against the corrected or planned API meanwhile and does not wait. No local workaround, no fallback to raw SageMath lattices (their indefinite support is insufficient), no reinvention of lattice, discriminant, or formed-category infrastructure here.
-  - **Ownership**: `research` owns mathematical interfaces and independently reusable primitive computations. This repository owns approximate models, coverings, indefinite recursion and traversal, binary edgewalk cycles, scaled first-success searches and arithmetic parabolic assembly. Research may dispatch public methods to these port algorithms. Invariant decomposition and gluing from supplied component groups are research primitives; non-scalar centralizers need an identified computational route and cannot be assigned to research merely by their name. The complete centralizer consumer obligation remains in #18. The operation-by-operation split is in `references/port-design.md`.
-  - The preamble surface to consume, not reinvent, is listed in [references/preamble-api.md](references/preamble-api.md).
-    The architecture policies every edit obeys are in [references/contribution-policies.md](references/contribution-policies.md).
-- **NEVER BUILD THE C++ CODE**:
-  **Do NOT attempt to compile, build, configure, or invoke C++ compilation toolchains** for `polyhedral_common` or any other C++ source in `references/`.
-  The upstream C++ codebase in `references/polyhedral_common` is strictly a reference implementation for algorithm extraction, logic translation, and structural understanding.
-  All production algorithms in this repository MUST be implemented as native SageMath / Python code delegating low-level operations to standard system backends (FLINT for exact integer linear algebra, Normaliz / cddlib / PPL for polyhedral cones). Research supplies independent primitive computations, including exact module algebra, specified equation fibres, partial-isometry extension, finite configurations and finite actions from supplied effective data. This port supplies specialized indefinite Isom, Aut, orbit, search and assembly algorithms. Reuse generic GAP/Bliss/backend operations through their owners. A claimed primitive gap must state its independent contract and input data; the output of this port cannot be assumed as its own prerequisite.
-
-# What is built here
-
-Consume the existing foundational formed algebra. Development in this repository focuses on:
-
-1. **Lorentzian perfect-domain reduction**: Traversal of the $(1,n)$ reduction complex for $O^\Omega(L)$ and $O(L)$ generators.
-2. **$2U$-Eichler approximate models & Higher-Witt-index recursion**: Generating $A(L)$ and lifting covering sets to full $O(L)$ for Witt index $\geq 2$.
-3. **Parabolic recursion & Isotropic orbit decomposition**: Compose research's group actions, sections and kernels with recursive reduced-group computations to obtain cusp and flag stabilizers and the frozen rank-at-most-two isotropic orbits.
-4. **Centralizer and arithmetic-subgroup consumers**: Supply indefinite orthogonal-group and orbit computations to research's general centralizer, gluing and subgroup operations; verify all frozen consumer cases.
-
-<!-- agent-memory:start -->
-# Agent memory
-
-This repository uses the central agent memory vault at `/home/dzack/.agent-memory-vault`.
-
-Project memory key: `projects/github.com__dzackgarza__sage-indefinite-port/index`.
-
-Repository `.agents` and `.hermes` paths are symlinks to the same vault-owned project directory.
-
-Before changing architecture, search both project and global memory:
-
-```bash
-agent-memory search --scope both "<task or subsystem>"
-```
-
-Record durable repo-specific lessons with:
-
-```bash
-agent-memory add --scope project --type decision --title <title> --content <content>
-agent-memory add --scope project --type trap --title <title> --content <content>
-agent-memory add --scope project --type advice --title <title> --content <content>
-agent-memory add --scope project --type context --title <title> --content <content>
-agent-memory add --scope project --type reference --title <title> --content <content>
-```
-
-## Technical continuity
-
-An automatic continuation does not reset the current mathematical task. Reuse
-already established issue, source, and test context rather than reconstructing
-it with repeated status queries, source reads, and memory calls. Retrieve a
-specific project-memory entry only when a required fact is genuinely missing
-or its recorded source assumptions have changed.
-
-Record a durable checkpoint when a new mathematical result, source
-correspondence, or failure materially changes the next implementation action;
-do not create notebook entries as receipts for ordinary tool calls or probes.
-Investigations must resolve a question needed for the next source correction
-or complete consumer validation, not become a recurring activity of their own.
-Acceptance runs in CI; while one runs, continue pinned implementation work.
-Its result holds only for the commit it ran on.
-
-Plan work is card-backed. Create and update plan cards with `agent-memory plan add` and `agent-memory plan update`, not `agent-memory add --type plan`.
-
-Use `agent-memory retrieve <key>`, `agent-memory update <key>`, and `agent-memory delete <key>` for memory CRUD.
-
-The vault should be committed at all times. Treat staged or unstaged vault changes as an ephemeral error state. Before normal memory work resumes, load the bundled vault-maintenance skill with `agent-memory maintain skill vault-maintenance` and follow its referenced check, repair, and commit workflows.
-
-Move reusable lessons during maintenance with:
-
-```bash
-agent-memory maintain move <key> --to global/advice
-```
-<!-- agent-memory:end -->
+Do not require a local agent-memory vault, home-directory paths, or a running
+coordinator to resume cloud work. Durable mathematical decisions belong in
+the owning source/issue; the tracked handoff records only the next actionable
+step, not an activity log.

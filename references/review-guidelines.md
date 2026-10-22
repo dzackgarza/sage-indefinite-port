@@ -1,6 +1,5 @@
 # Review Guidelines for Agent Work
 
-Moved verbatim from AGENTS.md.
 Applies when reviewing a completion claim in this repository.
 
 These are additional requirements for reviewing agent work.
@@ -25,6 +24,16 @@ The evidence is the original issue or task, the code diff, tests, source/runtime
 Preserve the original success condition.
 Read the original issue or task before accepting any restatement of it.
 Keep its quantifiers intact: “all,” “complete,” "full subset," “zero remaining,” and similar terms cannot be quietly narrowed to examples, partial coverage, known blockers, or whatever the PR happened to touch.
+Apply the **currently accepted** issue contract, including the
+[2026-10-22 amendment to #33](https://github.com/dzackgarza/sage-indefinite-port/issues/33#issuecomment-6343829665):
+for the designated large acceptance families, the requirement is a
+branch-representative sample exercising every pinned algorithm branch, not
+exhaustive long-tail execution. Such a sample must name its case IDs, ranks,
+signatures and covered/uncovered branches, retain every frozen assertion,
+and leave failures outside the sample visible as outstanding defects.
+The full-file requirements of `A_PERFECT`, `A_ISOMETRY` and
+`A_CENTRALIZERS` remain unchanged. Do not apply superseded full-family
+gates or invent looser examples in place of the accepted samples.
 
 Nothing required may disappear silently.
 A required work family must be implemented, explicitly falsified, or validly reclassified with evidence that satisfies the issue’s own standard.
