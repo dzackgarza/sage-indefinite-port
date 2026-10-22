@@ -26,6 +26,7 @@ from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometry
 from dzack_research.preamble.categories.modules.framed.formed.discriminant_modules import (
     DiscriminantQuadraticModules,
 )
+from dzack_research.preamble.categories.modules.pure.modules import Modules
 from dzack_research.preamble.categories.rational_integral_stabilizers import (
     IntegralStructureAction,
 )
@@ -413,14 +414,18 @@ class EichlerEnvelope:
         generators = tuple(
             rational_envelope.O()(tuple(rational_vector(row) for row in generator.rows())) for generator in OrbitCoverModel.source_generator_matrices(self.model)
         )
-        rational_lattice = self.rational_isometry.domain()
-        image = rational_envelope.integral_structure(tuple(self.rational_isometry(rational_lattice.module_generator(label)) for label in self.lattice.module_generating_set()))
         # sigma = N phi is integral, so phi(L) lies in (1/N)E, which the integral
         # generators of A_E preserve: the stable containing module.
         inverse_scale = rational_envelope.base_ring().one() / rational_envelope.base_ring()(self.scale)
         labels = rational_envelope.module_generating_set()
         scaled_generators = tuple(rational_envelope.scalar_multiple(inverse_scale, rational_envelope.module_generator(label)) for label in labels)
         bound = rational_envelope.integral_structure(scaled_generators)
+        # The selected lattice is L itself, included in Res(E tensor Q) by phi,
+        # so the action restricts stabilizer elements to automorphisms of L
+        # (lattice_automorphism: Embed * eGen * EmbedInv, ApproximateModels.h:1337-1349).
+        space = bound.codomain()
+        rational_lattice = self.rational_isometry.domain()
+        image = Modules(self.lattice.base_ring()).Mono(self.lattice, space)(lambda label: space.wrap(self.rational_isometry(rational_lattice.module_generator(label))))
         return IntegralStructureAction(rational_envelope.O().subgroup(generators), image).with_stable_containing_bound(bound)
 
     @cached_method
@@ -805,35 +810,10 @@ class OrbitCoverModel:
         if self.envelope is None:
             return tuple(self.model.approximate_generating_family())
         # :1337-1349 forms fGen = Embed * eGen * EmbedInv for each stabilizer
-        # generator and requires it to be integral.  In rows, with R the
-        # matrix of phi (row i the E-coordinates of phi(e_i)) and G that of a
-        # generator, phi^-1 g phi has matrix R G R^-1.  Equal matrices give
-        # equal generators and the identity generates nothing; a Schreier
-        # family contains both, so each distinct matrix is kept once.
-        envelope = self.envelope
-        rational = envelope.rational_isometry
-        rational_lattice, rational_envelope = rational.domain(), rational.codomain()
-        lattice_labels = tuple(self.lattice.module_generating_set())
-        envelope_labels = tuple(rational_envelope.module_generating_set())
-
-        def coordinates(vector: Lattices.ElementMethods) -> list[SageQQ]:
-            values = vector.to_vector()
-            return [SageQQ(int(values(label).numerator())) / int(values(label).denominator()) for label in envelope_labels]
-
-        embedding = matrix(SageQQ, [coordinates(rational(rational_lattice.module_generator(label))) for label in lattice_labels])
-        embedding_inverse = embedding.inverse()
-        identity = identity_matrix(SageQQ, len(lattice_labels))
-        conjugates: dict[tuple[int, ...], LatticeIsometryMethods] = {}
-        for generator in envelope.stabilizer_of_lattice().stabilizer().group_generators():
-            conjugate = embedding * matrix(SageQQ, [coordinates(generator(rational_envelope.module_generator(label))) for label in envelope_labels]) * embedding_inverse
-            if conjugate.denominator() != 1:
-                raise ArithmeticError("a stabilizer generator of phi(L) must conjugate to an integral isometry of L")
-            if conjugate == identity:
-                continue
-            key = tuple(int(entry) for entry in conjugate.list())
-            if key not in conjugates:
-                conjugates[key] = self.lattice.O()(tuple(self.lattice([int(entry) for entry in row]) for row in conjugate.rows()))
-        return tuple(conjugates.values())
+        # generator of phi(L); the action's lattice_automorphism is that
+        # restriction to L, read from the generator's row-action matrix.
+        action = self.envelope.stabilizer_of_lattice()
+        return tuple(action.lattice_automorphism(generator) for generator in action.stabilizer().group_generators())
 
     def _pullback_envelope_vector(self, point: Lattices.ElementMethods, coset: LatticeIsometryMethods) -> Lattices.ElementMethods | None:
         """Lift a rational coset image from the envelope through the integral similarity, if possible."""
