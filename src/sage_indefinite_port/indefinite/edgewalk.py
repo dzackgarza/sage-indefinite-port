@@ -26,6 +26,7 @@ from dzack_research.preamble.categories.sets.set_categories import Sets
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.geometry.polyhedron.constructor import Polyhedron
 from sage.matrix.constructor import identity_matrix, matrix
+from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
 from sage.misc.cachefunc import cached_method
 from sage.modules.free_module_element import FreeModuleElement, vector
@@ -1285,6 +1286,17 @@ class _Edgewalk:
         colours = [0] * len(vertex.roots) + [1]
         return self.coloured_family(tuple(zip(vectors, colours, strict=True)))
 
+    @cached_method
+    def isometry_matrix(self, isometry: LatticeIsometryMethods) -> Matrix_integer_dense:
+        r"""The integer matrix of an isometry on coordinate rows: row ``i`` is the image of the ``i``-th framing vector."""
+        transformation = matrix(SageZZ, self.isometry_key(isometry))
+        transformation.set_immutable()
+        return transformation
+
+    def act_on_key(self, isometry: LatticeIsometryMethods, key: _Key) -> _Key:
+        r"""The integral key of the image of the vector with integral key ``key``."""
+        return tuple(int(entry) for entry in vector(SageZZ, key) * self.isometry_matrix(isometry))
+
     def isometry_key(self, isometry: LatticeIsometryMethods) -> tuple[_Key, ...]:
         return tuple(self.key(isometry(generator)) for generator in self.lattice.module_generators())
 
@@ -1418,10 +1430,14 @@ class _Edgewalk:
         def certified_roots() -> _Roots:
             # LORENTZ_RunEdgewalkAlgorithm::f_try_terminate: close the
             # accumulated walls under every discovered chamber symmetry.
+            # compute_full_root_orbit_iter (edgewalk.h:1215-1257) applies the
+            # generators to coordinate rows (iter_isom->transpose() * v); the
+            # orbit is closed on integral keys, with each generator's matrix
+            # (rows: images of the framing) read once.
             group = self.lattice.O().subgroup(tuple(isometries))
-            seeds = tuple({self.key(root): root for vertex in vertices for root in vertex.roots}.values())
-            closure = FiniteGSets(group).from_finite_orbits(seeds, lambda isometry, root: isometry(root))
-            return tuple(sorted(closure, key=self.key))
+            seeds = tuple({self.key(root) for vertex in vertices for root in vertex.roots})
+            closure = FiniteGSets(group).from_finite_orbits(seeds, lambda isometry, key: self.act_on_key(isometry, key))
+            return tuple(self.element(key) for key in sorted(closure))
 
         certified_root_count = 0
 
