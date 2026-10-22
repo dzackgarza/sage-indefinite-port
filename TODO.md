@@ -167,3 +167,67 @@ Old logs stay intact; new evidence goes in new run directories.
   Discharge every existing `[unverified]` contract and verify every original leaf obligation, public research-to-port entry point, witness, fixture family, and marker.
   Close eligible issue units through `itree close` with their evidence and reconcile the claim/queue on release.
   #4 stays open while any required implementation, provider behavior, acceptance case, or gate remains unresolved.
+
+## Outstanding work recorded 2026-10-22 (verbatim)
+
+*Diagnostic record of the measured state at Acceptance run `30799df`, recorded verbatim as delivered.
+The obligations remain the nodes above; this section supplies the failure counts those nodes must be judged against.*
+
+### What's actually left
+
+Measured from the newest completed Acceptance run (port `30799df`, research `0a70597c04`, 2026-10-21T20:06Z) — not from the TODO table, which is stale.
+
+| Family | pass / fail | Outstanding defect |
+|---|---|---|
+| perfect_domains | 80 / 0 | ✅ accepted |
+| isometry | 158 / 0 | ✅ passes, but TODO still shows `[ ]` |
+| orthogonal_group | 7 / 0 | shard `orthogonal_group-0` produced no report (setup failure or hard timeout) — the timed consumer and 536 generator images never ran |
+| isotropic_orbits | 6124 / 1 | `'PreimageSubgroups.parent_class' object has no attribute 'stabilizer'` (provider gap); 3 shards produced no report |
+| boundaries | 6 / 7 | 3× `ValueError: the specified subspaces must have codimension one`; 3× `membership … is undecided; supply a word witness`; 1× `PariError: sorry, qfsolve, dim >= 10 is not yet implemented` |
+| centralizers | 0 / 5 | 2× `tensor.matrix needs a ring as its first argument`; 3× finitely-presented-module membership `TypeError` |
+| vector_orbits | 52 / 9 | all 9: `PariError: the PARI stack overflows` |
+| vector_stabilizers | 15 / 2 | both: same PARI stack overflow |
+| reflective | 493 / 17033 | three defects: 16,154× `ValueError: must be in the domain or a list, tuple or string`; 844× `TypeError: not all arguments converted during string formatting`; 35× `ValueError: must be a square matrix` |
+
+The 17k reflective failures are **one or two bugs**, not 17,526 independent ones — all in `test_simple_root_counts_match_polyhedral_common`, concentrated in the same code path.
+Same for the 11 PARI stack overflows (one sizing bug) and the 6 PARI/sublattice errors.
+So the remaining work is defect-bounded, not feature-bounded: something like eight distinct defects plus two provider gaps.
+
+### Beyond the families
+
+- **Contract nodes:** `SCOPE` and `CONTRACT (#33)` are still unchecked, though the suite and API are clearly frozen and in use.
+  `FINITE` and `LIFTS` are research-owned (#401); research main has `2687e575da` but nobody recorded whether it discharges them.
+
+- **Provider gaps recorded in HANDOFF:** `right_coset_section` re-admission (`g_sets.py:682`), non-spanning families in `_coordinate_basis_data`, E10 orbit-span speed.
+
+- **`TYPES` (#36):** mypy debt deferred with the `MYPY-DEFER-7Q4K` ≤1000 bound; unpayable until the families are accepted.
+
+- **`FINAL`:** one Acceptance run at the final revision where every family passes, plus `just test-commit`, `test-push`, `test-ci`, then `itree close` on the leaf units.
+
+- **`RELEASE` is effectively moot:** there are **zero** `@unfinished` decorators in `src/` and **zero** xfail markers in `tests/acceptance/`. Every failure above is a real failure.
+  That also means the markers were released before acceptance, contrary to the release rule — worth a decision, since TODO still lists the node as open.
+
+### State that will mislead the next worker
+
+- `.tmp/HANDOFF.md` Now is a fossil: it names a coordinator running five agents per file and uncommitted research fixes in `/home/dzack/research/.tmp/wt-port-fix`. Those agents are dead and two of the five branches are already merged into HEAD.
+
+- TODO's acceptance table records only `A_PERFECT`; the run above also accepted `A_ISOMETRY` (158/158) and would accept `A_GROUPS` if shard 0 reported.
+
+- **5 commits are unpushed** (`origin/implement/lorentzian-completion..HEAD`), including the merged flag-marking work; two Acceptance runs for that branch have been sitting `pending`/`in_progress` for 5 and 8.5 hours.
+  Nothing about the current revision is measured.
+
+### The shortest correct queue
+
+1. Kill or fix the two stalled CI runs; push is already 5 commits ahead.
+
+2. Reflective: fix the `must be in the domain or a list, tuple or string` path first — 16,154 of 17,033 cases.
+
+3. The PARI stack overflow (11 cases across two families) — likely one allocation/config fix.
+
+4. Boundaries/centralizers: `codimension one`, `word witness`, `tensor.matrix` ring argument.
+
+5. `PreimageSubgroups.stabilizer` is research's; record it there and continue.
+
+6. Then re-run and update the TODO rows with commit + run URL.
+
+That is a day or two of defect work plus CI latency — not another week of optimization.
