@@ -9,6 +9,16 @@ rules are in [AGENTS.md](../AGENTS.md).
 
 ## Now
 
+**First, repair a confirmed source importability defect on the published branch.**
+At the last source-bearing commit `69a456e`, parsing
+`src/sage_indefinite_port/indefinite/lorentzian_cells.py` fails at line
+2052: `except ArithmeticError, OverflowError, RuntimeError, TypeError, ValueError:`
+is invalid Python syntax. The exception types require parentheses. This was
+confirmed against the published code at `2777a40` using `ast.parse` without
+running Sage or touching the frozen tests. Apply the local syntax repair,
+check that the file parses, and commit/push it before attempting an acceptance
+case. Do **not** reinterpret this one-line syntax error as a missing algorithm.
+
 **Selected obligation: #15 EDGEWALK / A_REFLECTIVE.** Use the *current*
 branch and its latest **completed** Acceptance report to isolate a failing
 branch-representative reflective case in
@@ -40,11 +50,12 @@ algorithm bugs from the number of repeated cases.
 
 ## Published starting state
 
-- Recorded integration commit: `69a456e419a2be42da682039addc5fbe79b861eb`
-  (2026-10-22 18:31 UTC). This commit and the upstream branch matched when
-  the handoff was prepared. **It is a starting revision, not a pinned working
-  target.** Fetch immediately; if a newer revision has a complete result, use
-  that result and replace this Now action as appropriate.
+- Last source-bearing integration revision before the documentation handoff:
+  `69a456e419a2be42da682039addc5fbe79b861eb` (2026-10-22).
+  Subsequent documentation commits may advance the branch without changing
+  that source. Fetch the **current remote tip** before editing; if a newer
+  source revision has repaired the import defect or changed the selected
+  failure, use the new evidence instead of repeating the old step.
 - [Latest branch Acceptance runs](https://github.com/dzackgarza/sage-indefinite-port/actions/workflows/acceptance.yml):
   the recorded latest run for `69a456e` is
   [39832125180](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/39832125180).
@@ -99,9 +110,8 @@ was an ancestor of `69a456e` at preparation time.
 Use GitHub Actions for complete acceptance and its retained run artifacts;
 source is published, and CI provisions the image and current `research` main.
 The local `just test-commit` and `just test-push` commands are **syntax-only**
-development checks. The former local whole-suite push gate, mandatory PR
-review, type-debt push exception, and now-dead agent/coordinator arrangements
-have no authority in this handoff.
+development checks. These check the staged or outgoing changes respectively,
+not necessarily preexisting syntax defects elsewhere in the source tree.
 
 After a real source correction and a pushed revision, update **Now** to the
 next failing source/consumer with its exact commit and Acceptance run; replace

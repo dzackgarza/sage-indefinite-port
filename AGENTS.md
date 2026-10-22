@@ -131,15 +131,17 @@ GitHub Actions; local Snap Docker, `sage-dev-develop`, the former
   `just test-push` checks only outgoing committed syntax.
   Both delegate to [ai-review-ci](https://github.com/dzackgarza/ai-review-ci)
   when installed. They **do not** run mypy, the full suite, formatters or
-  mandatory PR review. No type-debt exception trailer or `--no-verify`
-  workaround is required for these old gates.
+  mandatory PR review. An existing invalid source file can escape these
+  *changed-files-only* checks; test the precise imported source for syntax
+  when an acceptance import reports a parsing error.
 - Type debt belongs to [#36](https://github.com/dzackgarza/sage-indefinite-port/issues/36)
   after algorithms/consumers have settled. CI may report types/style/debt,
   but during development such findings are retained, **nonblocking**
   diagnostics; they do not divert the current mathematical implementation.
-- There are currently no active `@unfinished` wrappers or acceptance
-  xfails. Do not invent marker-removal work or infer readiness from their
-  absence. Public capability is judged by actual consumer behavior.
+- At the recorded source revision there were no active `@unfinished`
+  wrappers or acceptance xfails. Do not invent marker-removal work or infer
+  readiness from their absence. Public capability is judged by actual
+  consumer behavior.
 - Treat a red **actual local syntax check** as an immediate defect in the
   committed source. Treat other CI failures as evidence to route to their
   algorithm/provider owner; investigate concrete failing cases instead of

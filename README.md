@@ -27,11 +27,11 @@ The CI workflow provisions Sage and installs the published `research` dependency
 
 ## Local development checks
 
-The shared [ai-review-ci](https://github.com/dzackgarza/ai-review-ci) checkout is used only when the following delegated `just` recipes run locally:
+The shared [ai-review-ci](https://github.com/dzackgarza/ai-review-ci) checkout is used when the following delegated `just` recipes run locally:
 
 ```bash
 just test-commit  # staged Python/JSON/TOML syntax
 just test-push    # outgoing committed Python/JSON/TOML syntax
 ```
 
-Neither command performs a full test suite, typing pass, format pass or PR review. Complete acceptance is in GitHub Actions; additional quality reports are nonblocking development diagnostics. A cloud checkout need not reproduce the original Linux machine's local Docker, Zotero, agent-memory vault or `.tmp/probe` logs. Use the committed pinned sources and GitHub CI instead.
+Neither command performs a full test suite, typing pass, format pass or PR review. Complete acceptance is in GitHub Actions; additional quality reports are nonblocking development diagnostics. A cloud checkout uses the committed pinned sources and CI without any private local machine state.
