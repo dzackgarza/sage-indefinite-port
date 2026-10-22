@@ -1,6 +1,8 @@
 name: PR QC and Slop Review
+# Pre-v1: PR policy review is opt-in; substantive implementation and
+# mathematical acceptance are not subject to automatic PR QC.
 on:
-  pull_request: {}
+  workflow_dispatch: {}
 jobs:
   qc-ci:
     uses: dzackgarza/ai-review-ci/.github/workflows/_qc.yml@main
