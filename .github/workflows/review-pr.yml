@@ -1,6 +1,8 @@
 name: PR QC
+# Pre-v1: PR policy review is opt-in. Ordinary implementation publication and
+# mathematical acceptance proceed on development branches without PR gates.
 on:
-  pull_request: {}
+  workflow_dispatch: {}
 jobs:
   qc-ci:
     uses: dzackgarza/ai-review-ci/.github/workflows/_qc.yml@main
