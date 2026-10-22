@@ -231,3 +231,14 @@ So the remaining work is defect-bounded, not feature-bounded: something like eig
 6. Then re-run and update the TODO rows with commit + run URL.
 
 That is a day or two of defect work plus CI latency — not another week of optimization.
+
+### Scope update (user, 2026-10-22)
+
+> Clearing ALL of the cases is a long-tail optimization. Clearing SOME of them as evidence of correctness is all that's really required to advance the project.
+
+This supersedes the reading of the counts above. What it changes:
+
+- **The failure counts measure distance to full coverage, not distance to the next unit of progress.** A representative sample that demonstrates the algorithm is correct advances the project; the remainder is long-tail coverage.
+- **Reflective's 16,154-case defect is still the highest-value single fix** (it is one bug on one code path), but it is not a prerequisite for demonstrating reflectivity.
+- **The frozen acceptance table is now narrower than the requirement.** `A_REFLECTIVE` says "all 17,526 reflective/root/chamber cases", `A_GROUPS` "the whole file", `A_ISOTROPIC` "all 8,832 cases", and `FINAL` requires "an Acceptance run in which every family passes". Changing a frozen criterion belongs to #33, with the reason recorded there before adoption; this note records the decision so that change is made deliberately rather than by quietly sampling.
+- **The sample must not be arbitrary.** A sample that omits the ranks and signatures where the algorithm branches proves nothing (AGENTS.md, "Slices and Samples"). Choose the cases that exercise each branch of the pinned routine, and say which branches the sample covers and which it does not.
