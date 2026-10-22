@@ -236,6 +236,11 @@ class IsotropicInduction:
         # (INDEF_FORM_Invariant of the reduction) is the LatticePrefilter that
         # EichlerRecursion.isometry applies to the reductions inside flag_isometry.
         """
+        # A rational totally isotropic plane exists exactly when the Witt
+        # index is at least two.  In particular a Witt-index-one lattice
+        # has no flags of ranks (1, 2), independently of its line orbits.
+        if int(lattice.witt_index()) < 2:
+            return ()
         kept: list[Flag] = []
         for line in self.isotropic_vector_classes(lattice):
             through: list[Flag] = []
@@ -251,6 +256,8 @@ class IsotropicInduction:
         # source: CombinedAlgorithms.h:2192-2394 with sd = seq_dims_plane(2) (IndefiniteForms.g:
         # 1774-1883): every candidate of every line class, kept unless plane-equivalent to a kept plane.
         """
+        if int(lattice.witt_index()) < 2:
+            return ()
         kept: list[Parent] = []
         for line in self.isotropic_vector_classes(lattice):
             for _line, plane in self.flags_through(lattice, line):
