@@ -372,6 +372,69 @@ class LorentzianCellAdjacency:
     transporter: LatticeIsometryMethods | None
 
 
+_PAIRING_BLOCK_ROWS = 1024
+
+
+class _ConfigurationPairings:
+    r"""The Gram pairings b(v_i, v_j) of a vector configuration, read from its n x rank rows.
+
+    Rows of the n x n pairing matrix are produced in blocks and single
+    entries and columns on request, so the matrix is never stored.
+    """
+
+    def __init__(self, rows: tuple[tuple[int, ...], ...], gram: Matrix_integer_dense) -> None:
+        self.rows = np.array(rows, dtype=np.int64)
+        form = np.array([[int(entry) for entry in row] for row in gram.rows()], dtype=np.int64)
+        # Every pairing is bounded by rank^2 max|v|^2 max|G|; products below 2^40 leave room for colour codes.
+        bound = self.rows.shape[1] ** 2 * int(np.abs(self.rows).max()) ** 2 * int(np.abs(form).max())
+        if bound >= 2**40:
+            raise ArithmeticError("perfect-cell pairings exceed exact 64-bit integer arithmetic")
+        self.covectors = self.rows @ form
+
+    def __len__(self) -> int:
+        return self.rows.shape[0]
+
+    def __getitem__(self, index: tuple[int, int]) -> int:
+        left, right = index
+        return int(self.covectors[left] @ self.rows[right])
+
+    def diagonal(self):
+        return np.einsum("ij,ij->i", self.covectors, self.rows)
+
+    def column(self, index: int):
+        # The form is symmetric, so column j holds b(v_l, v_j) for every l.
+        return self.rows @ self.covectors[index]
+
+    def blocks(self):
+        for start in range(0, len(self), _PAIRING_BLOCK_ROWS):
+            yield start, self.covectors[start : start + _PAIRING_BLOCK_ROWS] @ self.rows.T
+
+
+def _row_multiset(row, own_value: int) -> tuple[tuple[int, int], ...]:
+    r"""The multiset of a pairing row's entries other than the vertex's own, as sorted (value, count)."""
+    values, counts = np.unique(row, return_counts=True)
+    entries = ((int(value), int(count) - (1 if int(value) == own_value else 0)) for value, count in zip(values, counts, strict=True))
+    return tuple(entry for entry in entries if entry[1])
+
+
+def _refined_signatures(pairings: _ConfigurationPairings, colours: tuple[int, ...], modulus: int) -> tuple[tuple[int, tuple[tuple[int, int], ...]], ...]:
+    r"""Each vertex's colour with the multiset of (pairing, neighbour colour), coded as pairing * modulus + colour."""
+    colour_array = np.array(colours, dtype=np.int64)
+    signatures = []
+    for start, block in pairings.blocks():
+        codes = block * modulus + colour_array[None, :]
+        for offset, row in enumerate(codes):
+            index = start + offset
+            signatures.append((colours[index], _row_multiset(row, int(row[index]))))
+    return tuple(signatures)
+
+
+def _anchor_profile(pairings: _ConfigurationPairings, colours: tuple[int, ...], anchors: tuple[int, ...]) -> Counter:
+    r"""The multiset of (colour, pairings with the anchors) over the configuration."""
+    columns = np.stack([pairings.column(anchor) for anchor in anchors], axis=1)
+    return Counter((colours[index], tuple(int(entry) for entry in columns[index])) for index in range(len(pairings)))
+
+
 class LorentzianPerfectLocalBackend:
     @cached_method
     def cell_cone(self, cell: LorentzianPerfectCell):
@@ -533,42 +596,24 @@ class LorentzianPerfectLocalBackend:
 
     @cached_method
     def _integral_configuration_invariants(self, cell: LorentzianPerfectCell):
-        r"""Exact Gram and determinantal-divisor data, computed once per cell.
+        r"""Exact pairing data of a configuration, computed once per cell.
 
         The quotient traversal compares each representative with many
-        neighboring cells. Pairings and exterior-square contents depend
-        only on the individual configuration. Cache these exact witnesses
-        without replacing the integral-isometry decision by a hash.
+        neighboring cells. The pairings and each vertex's pairing spectrum
+        depend only on the configuration; the pairings are read from the
+        n x rank rows on request, never stored as an n x n matrix. Cache these
+        exact witnesses without replacing the integral-isometry decision by a
+        hash.
         """
-        rank = int(cell.lattice.module_rank())
         rows = matrix(SageZZ, cell.rows)
-        pairings = rows * _gram_matrix(cell.lattice) * rows.transpose()
-        coordinates = tuple(tuple(int(entry) for entry in row) for row in rows.rows())
-        n = rows.nrows()
-        divisors = [[0] * n for _ in range(n)]
-        for i in range(n):
-            u = coordinates[i]
-            for j in range(i + 1, n):
-                v = coordinates[j]
-                value = gcd(*(u[a] * v[b] - u[b] * v[a] for a in range(rank) for b in range(a + 1, rank)))
-                divisors[i][j] = divisors[j][i] = value
-        pair_divisors = tuple(tuple(row) for row in divisors)
-        spectra = tuple(
-            (
-                int(pairings[i, i]),
-                gcd(*coordinates[i]),
-                tuple(sorted((int(pairings[i, j]), pair_divisors[i][j]) for j in range(n) if j != i)),
-            )
-            for i in range(n)
-        )
-        return (
-            rows,
-            pairings,
-            pair_divisors,
-            spectra,
-            Counter(coordinates),
-            rows.elementary_divisors(),
-        )
+        pairings = _ConfigurationPairings(cell.rows, _gram_matrix(cell.lattice))
+        norms = pairings.diagonal()
+        spectra = []
+        for start, block in pairings.blocks():
+            for offset, row in enumerate(block):
+                index = start + offset
+                spectra.append((int(norms[index]), gcd(*cell.rows[index]), _row_multiset(row, int(row[index]))))
+        return rows, pairings, tuple(spectra), Counter(cell.rows), rows.elementary_divisors()
 
     @overload
     def cell_transporter(
@@ -601,8 +646,8 @@ class LorentzianPerfectLocalBackend:
         r"""An exact integral isometry transporting one entire perfect-cell configuration.
 
         A spanning subfamily of rank r determines an isometry uniquely from
-        its r images. Enumerate all norm-, pairing-, and determinantal-divisor-
-        compatible target images of a fixed source basis; at each leaf verify
+        its r images. Enumerate all norm- and pairing-compatible target images
+        of a fixed source basis; at each leaf verify
         integrality, unimodularity, the entire Gram form, and the exact
         multiset of configuration vectors. No partial graph isomorphism is
         treated as a certificate, and no potential integral transporter is
@@ -627,22 +672,8 @@ class LorentzianPerfectLocalBackend:
         target_gram = _gram_matrix(target.lattice)
         if source_gram.det() != target_gram.det() or source.lattice.signature_pair() != target.lattice.signature_pair():
             return () if all_images else None
-        (
-            source_rows,
-            source_pairings,
-            source_pair_divisors,
-            source_spectra,
-            source_multiset,
-            source_smith,
-        ) = self._integral_configuration_invariants(source)
-        (
-            target_rows,
-            target_pairings,
-            target_pair_divisors,
-            target_spectra,
-            target_multiset,
-            target_smith,
-        ) = self._integral_configuration_invariants(target)
+        source_rows, source_pairings, source_spectra, source_multiset, source_smith = self._integral_configuration_invariants(source)
+        target_rows, target_pairings, target_spectra, target_multiset, target_smith = self._integral_configuration_invariants(target)
         # This exact certificate subsumes any graph-isomorphism search.
         if not all_images and source.lattice is target.lattice and source_multiset == target_multiset:
             return source.lattice.Aut().identity()
@@ -655,20 +686,18 @@ class LorentzianPerfectLocalBackend:
         target_colours = tuple(colour_numbers[signature] for signature in target_spectra)
 
         # Refine the two coloured, integral-weighted configuration graphs
+        # (the vertex-coloured Gram graph of LinPolytopeIntegral_Isomorphism_GramMat)
         # simultaneously by their complete neighbour-colour distributions.
         # Each refinement signature consists entirely of integral-isometry
         # invariants: the preceding colour and the multiset of (pairing,
-        # wedge-content, neighbour-colour) triples. The partition only
-        # splits, hence reaches a fixed point after finitely many steps.
-        # Every integral transporter preserves all refinement stages; a
-        # discrepancy in the colour multiplicities is an exact obstruction.
+        # neighbour-colour) pairs. The partition only splits, hence reaches a
+        # fixed point after finitely many steps. Every integral transporter
+        # preserves all refinement stages; a discrepancy in the colour
+        # multiplicities is an exact obstruction.
         while True:
-            source_refined = tuple(
-                (source_colours[i], tuple(sorted((int(source_pairings[i, j]), source_pair_divisors[i][j], source_colours[j]) for j in range(n) if i != j))) for i in range(n)
-            )
-            target_refined = tuple(
-                (target_colours[i], tuple(sorted((int(target_pairings[i, j]), target_pair_divisors[i][j], target_colours[j]) for j in range(n) if i != j))) for i in range(n)
-            )
+            modulus = len(set(source_colours) | set(target_colours))
+            source_refined = _refined_signatures(source_pairings, source_colours, modulus)
+            target_refined = _refined_signatures(target_pairings, target_colours, modulus)
             refined_numbers = {signature: index for index, signature in enumerate(sorted(set(source_refined) | set(target_refined)))}
             refined_source_colours = tuple(refined_numbers[signature] for signature in source_refined)
             refined_target_colours = tuple(refined_numbers[signature] for signature in target_refined)
@@ -689,7 +718,7 @@ class LorentzianPerfectLocalBackend:
         for j, colour in enumerate(target_colours):
             buckets.setdefault(colour, []).append(j)
         # A partial isometry i -> j constrains every further basis image
-        # k -> l by the exact Gram pairing and exterior-square content.
+        # k -> l by the exact Gram pairing.
         # Only images of the selected basis occur as anchors. Index their
         # possible target neighbours by the exact pairing signature, and
         # materialize a compatibility fibre only when backtracking needs it.
@@ -697,7 +726,7 @@ class LorentzianPerfectLocalBackend:
         # configuration size even when the search rejects its first branch.
         compatible_images = {}
         target_neighbour_signatures = {}
-        # Each target anchor has the same exact pairing/wedge signature
+        # Each target anchor has the same exact pairing signature
         # partition regardless of the source vertex assigned to it.
         # Build its immutable fibres once; backtracking only intersects them.
 
@@ -756,13 +785,9 @@ class LorentzianPerfectLocalBackend:
                 source_anchors = tuple(k for k, _ in anchors)
                 target_anchors = tuple(v for _, v in anchors)
                 if source_anchors not in source_anchor_profiles:
-                    source_anchor_profiles[source_anchors] = Counter(
-                        (source_colours[i], tuple((int(source_pairings[i, k]), source_pair_divisors[i][k]) for k in source_anchors)) for i in range(n)
-                    )
+                    source_anchor_profiles[source_anchors] = _anchor_profile(source_pairings, source_colours, source_anchors)
                 if target_anchors not in target_anchor_profiles:
-                    target_anchor_profiles[target_anchors] = Counter(
-                        (target_colours[j], tuple((int(target_pairings[j, v]), target_pair_divisors[j][v]) for v in target_anchors)) for j in range(n)
-                    )
+                    target_anchor_profiles[target_anchors] = _anchor_profile(target_pairings, target_colours, target_anchors)
                 source_profiles = source_anchor_profiles[source_anchors]
                 target_profiles = target_anchor_profiles[target_anchors]
                 if source_profiles != target_profiles:
@@ -821,11 +846,10 @@ class LorentzianPerfectLocalBackend:
                         # to v. Reuse it across distinct partial assignments.
                         if v not in target_neighbour_signatures:
                             neighbours = {}
-                            for l in range(n):
-                                signature = (target_colours[l], target_pairings[l, v], target_pair_divisors[l][v])
-                                neighbours.setdefault(signature, set()).add(l)
+                            for l, pairing in enumerate(target_pairings.column(v)):
+                                neighbours.setdefault((target_colours[l], int(pairing)), set()).add(l)
                             target_neighbour_signatures[v] = {signature: frozenset(indices) for signature, indices in neighbours.items()}
-                        signature = (source_colours[i], source_pairings[i, k], source_pair_divisors[i][k])
+                        signature = (source_colours[i], source_pairings[i, k])
                         compatible_images[key] = target_neighbour_signatures[v].get(signature, frozenset())
                     admissible_images.intersection_update(compatible_images[key])
                     if not admissible_images:
@@ -1071,8 +1095,6 @@ class LorentzianPerfectComplex:
 
 
 type PerfectFormKey = tuple[tuple[tuple[int, int], ...], tuple[tuple[int, int], ...], tuple[int, ...], tuple[int, ...]]
-
-_PAIRING_BLOCK_ROWS = 1024
 
 
 def _perfect_form_hash_key(cell: LorentzianPerfectCell) -> PerfectFormKey:
