@@ -17,6 +17,13 @@ coverage and repeated audits are deferred until functional MVP delivery.
 Repair only defects that block the required mathematical computations or their
 small correctness examples. Do not report an unimplemented branch as complete.
 
+The v1 boundary sets delivery priority, not the eventual functional scope.
+Cases unsupported by the pinned upstream, including higher-real-index forms
+of rational Witt index zero or one, remain explicit **post-v1 requirements**.
+Retain their inputs, required outputs and public consumers in the open backlog.
+An upstream limitation explains the additional implementation work; it does
+not cancel the requirement. These deferred cases do not gate v1 delivery.
+
 ## Sources of authority
 
 | Source | Responsibility |

@@ -9,11 +9,14 @@ rules are in [AGENTS.md](../AGENTS.md).
 
 ## Now
 
-**The functional MVP is delivered for the pinned source algorithms.** Its
+**The pinned algorithm routes for v1 are implemented.** Their
 small public-consumer examples are recorded in
 [TODO.md](../TODO.md#functional-mvp-evidence-from-the-current-implementation-work).
-The former instruction to invent a higher-index route for rational Witt
-index less than two was incorrect and is withdrawn.
+Higher-real-index cases of rational Witt index less than two remain wanted
+functionality. Their implementation is **open post-v1 work**, recorded in
+[POST_V1_LOW_WITT](../TODO.md#post-v1-functional-requirements). They do not
+gate v1 delivery. The previous wording withdrawing this obligation was
+incorrect; the delivery phase changes, while the requirement remains.
 
 The complete pinned Julia/GAP/executable chain has the same two-rational-plane
 requirement as the port. The reference paper's Theorems 4.4–4.6 establish the
@@ -23,8 +26,9 @@ forms `diag(2,2,-6,-6)` and `U+<2,-4>` lie outside that guarantee. The reference
 contains no separate branch for them; its `QmatExt` remains in the same
 rational quadratic space. The port's reduction, envelope, covering families,
 recursive stabilizers and integral-witness corrections are present. See the
-[source-backed applicability correction](../TODO.md#upstream-applicability-correction-to-the-former-mvp-blocker)
-for the public dispatch and the separate vector-orbit hypotheses.
+[upstream implementation context](../TODO.md#upstream-applicability-and-post-v1-implementation-context)
+for the public dispatch and the separate vector-orbit hypotheses. This
+explains the additional post-v1 work without removing the required behavior.
 
 The native centralizer gluing, general CM image, primitive embedding/spacelike,
 finite-image, coisotropic lift, cusp equality, zero-rank root and native
@@ -34,8 +38,9 @@ spacelike integration, empty plane/flag decision and earlier syntax,
 signed-view, parabolic and anisotropic-zero repairs. The source comparison
 was made at port `bccf3dcae47bfb16a70dce73e55b7247865546f7`; subsequent
 documentation commits do not change those algorithms. Fetch current tips
-before editing. Full frozen regression acceptance and #36 refinement remain
-separate, deferred work; neither is claimed complete by the MVP delivery.
+before editing. Full frozen regression acceptance, #36 refinement and the
+post-v1 functional requirements remain open; MVP delivery does not mark the
+broader project complete.
 
 ## Historical published starting state
 
@@ -72,7 +77,11 @@ separate, deferred work; neither is claimed complete by the MVP delivery.
 The complete outstanding dependency graph is [TODO.md](../TODO.md) and the
 [issue #4 tree](https://github.com/dzackgarza/sage-indefinite-port/issues/4).
 The functional evidence table records the implemented consumers and provider
-contracts. The former low-Witt entry is not an outstanding port branch.
+contracts. The low-Witt functionality remains an outstanding requirement in
+the explicit post-v1 backlog, including groups, integral witnesses, vector
+and line classes, stabilizers, transporters and their downstream consumers.
+These are functional implementation requirements, separate from the deferred
+regression, performance, typing and refactoring work.
 **Do not assume an outstanding TODO node means its entire implementation is
 absent.** Identify the precise remaining branch before authoring.
 

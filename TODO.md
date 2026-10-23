@@ -8,6 +8,8 @@ supersedes older full-file, type, performance and refinement gates in this DAG.
 Keep every frozen fixture and the complete CI workflow; its long-tail failures
 remain evidence for later work and do not gate functional publication. A known
 missing general branch remains an implementation obligation.
+Post-v1 functionality stays open with its required results recorded, including
+cases for which the pinned upstream supplies no implementation.
 
 The [issue tree rooted at #4](https://github.com/dzackgarza/sage-indefinite-port/issues/4) owns implementation claims, issue dependencies, and acceptance.
 The nodes below decompose that contract; they do not replace it, and they
@@ -184,12 +186,14 @@ case or drop an assertion to form the cited evidence sample.
 
 ## Functional MVP evidence from the current implementation work
 
-**Functional MVP status: delivered for the pinned source algorithms.** The
-algorithm families and public consumers below are implemented and have small
+**V1 functional status: the pinned algorithm routes are implemented.** The
+algorithm families and public consumers below have small
 independently justified examples. Full historical acceptance and refinement
-remain separate obligations. The lower-rational-Witt-index entry in the
-previous status was an inherited source limitation, not an untranslated
-algorithm branch; its source-backed correction follows the evidence table.
+remain separate obligations, together with the post-v1 functional backlog.
+The lower-rational-Witt-index cases are still required functionality. Their
+inherited source limitation makes them post-v1 work; it does not remove them
+from the project. The open requirements and implementation context follow
+the evidence table.
 
 The verified changes are published in port `59227592439cdccd859e9282bc02ced2a977a3c4`
 and research `2024cb764e4e28ceb818f82f2b1075291ce83a68`, including the earlier
@@ -215,7 +219,7 @@ Acceptance workflow remain unchanged.
 | Finite and lift providers | Both named frozen `FINITE` provider tests pass, including literal finite images without selecting an order and preservation of undecided equality. Public rational-lift loci have the required integral witness for the marked `U` swap and an empty integral locus for `U -> U(2)`. Coisotropic swaps, shears, a cusp configuration and a conjugated plane check exact form preservation, restrictions and integrality. |
 | General indefinite isometry decisions | The native Hecke spinor-genus route decides the public Conway--Sloane (51a)/(51b) same-genus pair negatively and a changed integral basis positively. Its exact comparison-index arithmetic also passes for rational Witt indices 0 and 1; the public positive calls on those two forms use the one-spinor-genus shortcut. No rational approximation is returned as an integral witness. |
 
-### Upstream applicability: correction to the former MVP blocker
+### Upstream applicability and post-v1 implementation context
 
 The full pinned Julia/GAP/executable dispatch has no separate constructive
 route for higher-real-index forms of rational Witt index zero or one.
@@ -244,8 +248,34 @@ The public failure for `diag(2,2,-6,-6)` and the absent second pair for
 `U+<2,-4>` therefore record inherited applicability limits. The complete
 source trace and comparison with port `bccf3dcae47bfb16a70dce73e55b7247865546f7`
 found no omitted reference branch for those inputs. They do not add a new
-algorithm-design obligation to the functional port. No source behavior,
-frozen assertion, or regression result is changed by this correction.
+v1 release gate. Complete support remains required as post-v1 functionality,
+tracked explicitly below. The upstream findings describe the implementation
+gap; they do not close it or narrow the eventual public contract.
+
+## Post-v1 functional requirements
+
+- [ ] **POST_V1_LOW_WITT — Complete constructive support when both real
+  signature indices are at least two and the rational Witt index is zero
+  or one.** Status: open; deferred until after v1. This is required
+  functionality, not a discarded input class or completed item.
+
+  | Required capability | Remaining result |
+  | --- | --- |
+  | Full orthogonal groups | Compute complete integral generating families, including for `diag(2,2,-6,-6)` and `U+<2,-4>`. |
+  | Integral isometry | Retain the existing exact equivalence decision and complete construction of an exact integral witness whenever equivalence holds; the Boolean spinor-genus decision does not discharge the witness requirement. |
+  | Fixed-norm vector classes | Complete nonzero-norm orbit classification with the existing primitive/nonprimitive API semantics, stabilizers and transporters. |
+  | Isotropic vectors and lines at Witt index one | Compute complete primitive norm-zero and isotropic-line classes, with stabilizers and exact transporters. |
+  | Recursive and downstream consumers | Carry this support through marked isometries, stabilizer and orbit recursion, arithmetic subgroup splitting, boundary computations and component-centralizer constructions whenever their component or reduced lattices enter this regime. |
+
+  Preserve the two rank-four examples above as explicit future correctness
+  cases, including changed-basis witness checks. Completion requires a
+  justified general construction and real public-consumer evidence, not
+  merely suppressing the current failure or returning an empty result.
+  The supported empty primitive norm-zero vector and isotropic-line families
+  at Witt index zero and
+  empty plane/flag families at Witt index below two remain valid existing
+  results; they do not fulfill the constructive requirements in this table.
+  The upstream applicability analysis above is retained to guide this work.
 
 ## Release and terminal nodes
 
