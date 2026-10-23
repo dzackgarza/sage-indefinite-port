@@ -9,34 +9,33 @@ rules are in [AGENTS.md](../AGENTS.md).
 
 ## Now
 
-**Finish the constructive higher-index route when the rational Witt index is
-less than two.** The exact public failure is
-`O(diag(2,2,-6,-6)).group_generators()`: `EichlerRecursion._generation_step`
-constructs `OrbitCoverModel`, and `EichlerEnvelope` raises
-`ValueError: the source isotropic search found no vector` at its first pair.
-For `U+<2,-4>` the second rational hyperbolic pair does not exist. The pinned
-`CombinedAlgorithms.h:895–924,984–1016` selects this route by the real indices;
-`ApproximateModels.h:1216–1289,1301–1308` constructs two rational pairs inside
-the original space. Do not assume real index at least two proves that hypothesis.
+**The functional MVP is delivered for the pinned source algorithms.** Its
+small public-consumer examples are recorded in
+[TODO.md](../TODO.md#functional-mvp-evidence-from-the-current-implementation-work).
+The former instruction to invent a higher-index route for rational Witt
+index less than two was incorrect and is withdrawn.
 
-This affects full orthogonal groups, integral isometry witnesses and nonzero
-vector classes. At rational Witt index one it also affects isotropic vector
-and line classes, which still call `primitive_vector_classes(L,0)` and its
-cover model. Rationally anisotropic zero fibres are correctly empty; the
-native Witt-index check also makes plane and flag families empty whenever
-the rational Witt index is less than two. The
-general native spinor-genus **decision** now works, but its rational weak
-approximation is not an integral witness and does not close this construction
-obligation. Do not substitute a bounded search or report MVP completion.
+The complete pinned Julia/GAP/executable chain has the same two-rational-plane
+requirement as the port. The reference paper's Theorems 4.4–4.6 establish the
+general Aut/Isom recursion for `max(p,q) >= 5`, which ensures that every
+higher-index recursive stage has the two required planes. The rank-four
+forms `diag(2,2,-6,-6)` and `U+<2,-4>` lie outside that guarantee. The reference
+contains no separate branch for them; its `QmatExt` remains in the same
+rational quadratic space. The port's reduction, envelope, covering families,
+recursive stabilizers and integral-witness corrections are present. See the
+[source-backed applicability correction](../TODO.md#upstream-applicability-correction-to-the-former-mvp-blocker)
+for the public dispatch and the separate vector-orbit hypotheses.
 
 The native centralizer gluing, general CM image, primitive embedding/spacelike,
 finite-image, coisotropic lift, cusp equality, zero-rank root and native
 Witt-index repairs are published in research `2024cb764e4e28ceb818f82f2b1075291ce83a68`
 and its ancestors. Port `59227592439cdccd859e9282bc02ced2a977a3c4` contains the
 spacelike integration, empty plane/flag decision and earlier syntax,
-signed-view, parabolic and anisotropic-zero repairs. Fetch current tips before editing. The small public examples and
-their exact limits are recorded in [TODO.md](../TODO.md#functional-mvp-evidence-from-the-current-implementation-work).
-Do not repeat completed repairs, wait for full CI, or start #36 refinement.
+signed-view, parabolic and anisotropic-zero repairs. The source comparison
+was made at port `bccf3dcae47bfb16a70dce73e55b7247865546f7`; subsequent
+documentation commits do not change those algorithms. Fetch current tips
+before editing. Full frozen regression acceptance and #36 refinement remain
+separate, deferred work; neither is claimed complete by the MVP delivery.
 
 ## Historical published starting state
 
@@ -72,8 +71,8 @@ Do not repeat completed repairs, wait for full CI, or start #36 refinement.
 
 The complete outstanding dependency graph is [TODO.md](../TODO.md) and the
 [issue #4 tree](https://github.com/dzackgarza/sage-indefinite-port/issues/4).
-The current constructive frontier is the action above; the functional
-evidence table records the implemented consumers and provider contracts.
+The functional evidence table records the implemented consumers and provider
+contracts. The former low-Witt entry is not an outstanding port branch.
 **Do not assume an outstanding TODO node means its entire implementation is
 absent.** Identify the precise remaining branch before authoring.
 

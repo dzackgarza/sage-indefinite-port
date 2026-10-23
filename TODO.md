@@ -184,6 +184,13 @@ case or drop an assertion to form the cited evidence sample.
 
 ## Functional MVP evidence from the current implementation work
 
+**Functional MVP status: delivered for the pinned source algorithms.** The
+algorithm families and public consumers below are implemented and have small
+independently justified examples. Full historical acceptance and refinement
+remain separate obligations. The lower-rational-Witt-index entry in the
+previous status was an inherited source limitation, not an untranslated
+algorithm branch; its source-backed correction follows the evidence table.
+
 The verified changes are published in port `59227592439cdccd859e9282bc02ced2a977a3c4`
 and research `2024cb764e4e28ceb818f82f2b1075291ce83a68`, including the earlier
 provider publications `fdcd0208`, `6659a043` and `dee0024c`. The examples below
@@ -208,17 +215,37 @@ Acceptance workflow remain unchanged.
 | Finite and lift providers | Both named frozen `FINITE` provider tests pass, including literal finite images without selecting an order and preservation of undecided equality. Public rational-lift loci have the required integral witness for the marked `U` swap and an empty integral locus for `U -> U(2)`. Coisotropic swaps, shears, a cusp configuration and a conjugated plane check exact form preservation, restrictions and integrality. |
 | General indefinite isometry decisions | The native Hecke spinor-genus route decides the public Conway--Sloane (51a)/(51b) same-genus pair negatively and a changed integral basis positively. Its exact comparison-index arithmetic also passes for rational Witt indices 0 and 1; the public positive calls on those two forms use the one-spinor-genus shortcut. No rational approximation is returned as an integral witness. |
 
-**Known constructive obligation, not refinement debt:** when both real indices
-are at least two but the rational Witt index is less than two, the current
-`OrbitCoverModel` still asks for two rational hyperbolic pairs. The concrete
-public call `O(diag(2,2,-6,-6)).group_generators()` raises
-`ValueError: the source isotropic search found no vector` at the first pair.
-The pinned `CombinedAlgorithms.h` dispatch and
-`ApproximateModels.h::GetEichlerHyperplaneBasis` have the same construction
-requirement. Full groups, integral isometry witnesses, nonzero vector classes,
-and the zero-vector/line classes at Witt index one remain unresolved in this
-regime. The native spinor-genus predicate does not supply those constructions.
-This known general branch keeps the functional MVP and issue #4 open.
+### Upstream applicability: correction to the former MVP blocker
+
+The full pinned Julia/GAP/executable dispatch has no separate constructive
+route for higher-real-index forms of rational Witt index zero or one.
+`CombinedAlgorithms.h:887–1034,1078–1259,1899–1972,2542–2639` performs
+reduction, radical splitting and cached equivalence before selecting its
+definite, Lorentzian or approximate-model branch. The higher-index branch
+calls `ApproximateModels.h:1216–1308`, which finds two rational hyperbolic
+planes in the original space. The GAP `QmatExt` at
+`IndefiniteForms.g:738` is a same-rank containing lattice after those planes
+have been found, not an enlargement that removes this hypothesis.
+
+These are the hypotheses of the reference algorithm, not an outstanding
+translation. In the vendored
+[Dutour Sikirić–Hulek paper, §§4.3–4.4](https://arxiv.org/html/2302.01679v2#S4.SS3),
+Theorem 4.4 guarantees an approximate model for signature `p,q >= 2` and
+dimension at least seven. Theorems 4.5–4.6 give general Aut/Isom algorithms
+for `max(p,q) >= 5`; their induction reduces `min(p,q)` while retaining the
+larger index, so every approximate-model stage meets Theorem 4.4. Theorem
+4.8 gives general fixed-norm vector representatives for `max(p,q) >= 6`
+and `min(p,q) >= 2`. Theorem 4.10 constructs isotropic subspaces by calling
+that vector algorithm on the lattice and its successive reductions; it
+provides no additional low-Witt branch. Smaller inputs handled by existing
+definite, Lorentzian or split cases, including `2U`, remain supported.
+
+The public failure for `diag(2,2,-6,-6)` and the absent second pair for
+`U+<2,-4>` therefore record inherited applicability limits. The complete
+source trace and comparison with port `bccf3dcae47bfb16a70dce73e55b7247865546f7`
+found no omitted reference branch for those inputs. They do not add a new
+algorithm-design obligation to the functional port. No source behavior,
+frozen assertion, or regression result is changed by this correction.
 
 ## Release and terminal nodes
 
