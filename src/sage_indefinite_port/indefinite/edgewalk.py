@@ -190,7 +190,7 @@ class _Edgewalk:
         # The congruence matrix and its homogeneous integral kernel in
         # Get_DataMapping depend on the root norm, not the affine coset.
         # They are reused for every height of one Vinberg search.
-        self._vinberg_mapping_engine = None
+        self._vinberg_mapping_perpendicular = None
         self._vinberg_mapping_cache = {}
         self._vinberg_polytope_cache = {}
 
@@ -379,7 +379,7 @@ class _Edgewalk:
         previous = self.primitive(negative)
         return _Vertex(k, self.cusp_roots(tuple(simple_roots), k, previous))
 
-    def _vinberg_polytope_roots(self, engine, shift, directions, positive_gram, center, radius, root_norm, walls) -> tuple:
+    def _vinberg_polytope_roots(self, shift, directions, positive_gram, center, radius, root_norm, walls) -> _Roots:
         r"""Exact full-rank ``FindRoot_filter/fct_CVP_Poly`` branch.
 
         This is the Bareiss spherical recursion and LP facet pruning of
@@ -418,7 +418,7 @@ class _Edgewalk:
         ambient_gram = matrix(SageZZ, self.gram)
         inequalities = []
         for wall in walls:
-            covector = -(ambient_gram * vector(SageZZ, wall))
+            covector = -(ambient_gram * vector(SageZZ, self.key(wall)))
             inequalities.append((SageQQ(covector.dot_product(shift)),) + tuple(SageQQ(covector.dot_product(column)) for column in transformed_directions.columns()))
 
         def last_true(predicate):
@@ -512,14 +512,14 @@ class _Edgewalk:
                     raise ArithmeticError("Vinberg's constrained spherical norm witness is invalid")
                 if any((2 * pairing) % root_norm for pairing in ambient_gram * candidate):
                     raise ArithmeticError("Vinberg's constrained root-integrality witness is invalid")
-                if any(candidate.dot_product(ambient_gram * vector(SageZZ, wall)) > 0 for wall in walls):
+                if any(candidate.dot_product(ambient_gram * vector(SageZZ, self.key(wall))) > 0 for wall in walls):
                     raise ArithmeticError("Vinberg's constrained facet witness is invalid")
-                roots.append(engine.V(candidate))
+                roots.append(self.element(tuple(candidate)))
 
         enumerate_level(dimension - 1, minors[-1] * radius)
         return tuple(roots)
 
-    def _vinberg_decomposed_roots(self, engine, component, root_norm: int, walls=None) -> tuple:
+    def _vinberg_decomposed_roots(self, perpendicular, component: _Vector, root_norm: int, walls=None) -> _Roots:
         r"""Exact ``Get_DataMapping`` and spherical solutions for one Vinberg coset.
 
         The source solves ``2 G(a+Mw) = k h`` over the integers before
@@ -534,14 +534,15 @@ class _Edgewalk:
         """
         gram = matrix(SageZZ, self.gram)
         n = gram.nrows()
-        a = vector(SageZZ, component)
-        if self._vinberg_mapping_engine is not engine:
-            self._vinberg_mapping_engine = engine
+        a = vector(SageZZ, self.key(component))
+        if self._vinberg_mapping_perpendicular is not perpendicular:
+            self._vinberg_mapping_perpendicular = perpendicular
             self._vinberg_mapping_cache.clear()
             self._vinberg_polytope_cache.clear()
         prepared = self._vinberg_mapping_cache.get(root_norm)
         if prepared is None:
-            orthogonal = matrix(SageZZ, tuple(engine.V1.gens())).transpose()
+            inclusion = perpendicular.inclusion()
+            orthogonal = matrix(SageZZ, [self.key(inclusion(generator)) for generator in inclusion.domain().module_generators()]).transpose()
             if orthogonal.nrows() != n or orthogonal.ncols() != n - 1:
                 raise ArithmeticError("Vinberg's perpendicular lattice has incorrect rank")
             if root_norm in (1, 2):
@@ -592,8 +593,8 @@ class _Edgewalk:
         radius = SageQQ(root_norm - shift.dot_product(gram * shift)) + center.dot_product(positive_gram * center)
         if radius < 0:
             return ()
-        if walls and matrix(SageZZ, tuple(walls)).rank() == n:
-            return self._vinberg_polytope_roots(engine, shift, directions, positive_gram, center, radius, root_norm, walls)
+        if walls and matrix(SageZZ, [self.key(wall) for wall in walls]).rank() == n:
+            return self._vinberg_polytope_roots(shift, directions, positive_gram, center, radius, root_norm, walls)
         roots = []
         for coordinates, square in backend.close_vector_coordinates(center, radius):
             if square != radius:
@@ -603,7 +604,7 @@ class _Edgewalk:
                 raise ArithmeticError("Vinberg's spherical solution has incorrect norm")
             if any((2 * pairing) % root_norm for pairing in gram * row):
                 raise ArithmeticError("Vinberg's spherical solution is not a root")
-            roots.append(engine.V(row))
+            roots.append(self.element(tuple(row)))
         return tuple(roots)
 
     def initial_vertex(self) -> _Vertex | None:
@@ -627,64 +628,59 @@ class _Edgewalk:
             return _Vertex(timelike, roots)
         # vinberg.h FindRoots_Kernel / FindOneInitialRay: examine the accepted
         # root system after its initial finite cone and after each new root,
-        # stopping on the first feasible nonpositive ray. The preamble's
-        # VinAl backend supplies the actual root-decomposition enumeration.
-        from vinal import IterateIntegerPoints, VinAl
-
-        # vinberg.h GetVinbergAux works with the integral Gram G and its
-        # integral complement Morth of v0. VinAl computes v0^perp as the
-        # right kernel of the Gram row of v0, which is an integral submodule
-        # only when that row is integral, so it needs G over ZZ.
-        engine = VinAl(matrix(SageZZ, self.gram), vector(SageZZ, _key(timelike)), False, None, initialize_cosets=False)
-        # vinberg.h GetVinbergAux: enumerate translation classes of the
-        # saturated perpendicular lattice together with v0, and reduce
-        # each representative by the quotient of -<w,v0> and -v0^2.
-        # VinAl sorts the unnormalized representatives, which changes the
-        # source's decomposition sequence; reconstruct W before searching.
-        coset_basis = matrix(SageZZ, tuple(engine.V1.gens()) + (engine.v0,))
-        norm_shift = -engine.v0.inner_product(engine.v0)
-        engine.W = []
-        for coordinates in IterateIntegerPoints(coset_basis):
-            representative = engine.V(coordinates)
-            quotient = (-representative.inner_product(engine.v0)) // norm_shift
-            normalized = representative - quotient * engine.v0
+        # stopping on the first feasible nonpositive ray.
+        #
+        # GetVinbergAux (vinberg.h:213-307) takes the saturated integral
+        # perpendicular and ComputeTranslationClasses for
+        # L / (v0^perp + Z*v0).  Use that exact module cokernel and its
+        # preimage map, with the zero class first as required by the source
+        # iterator's initial index 1.  Different lifts of a class differ by
+        # a perpendicular vector after the height normalization below, so
+        # the subsequent complete affine root fibre is unchanged.
+        perpendicular = timelike.orthogonal_complement()
+        perpendicular_inclusion = perpendicular.inclusion()
+        perpendicular_generators = tuple(perpendicular_inclusion(generator) for generator in perpendicular_inclusion.domain().module_generators())
+        split = self.lattice.subobject_on((*perpendicular_generators, timelike))
+        projection = split.inclusion().cokernel_projection()
+        quotient = projection.codomain()
+        representatives = (self.lattice.zero(),) + tuple(projection.preimage(residue) for residue in quotient if residue != quotient.zero())
+        norm_shift = -self.norm(timelike)
+        cosets = []
+        for representative in representatives:
+            multiple = (-self.pairing(representative, timelike)) // norm_shift
+            normalized = representative - multiple * timelike
             # GetVinbergAux uses QuoInt/ResInt to place each class in
             # the fundamental timelike strip, 0 <= -<w,v0> < -v0^2.
-            height = -normalized.inner_product(engine.v0)
+            height = -self.pairing(normalized, timelike)
             if not 0 <= height < norm_shift:
                 raise ArithmeticError("Vinberg coset representative leaves timelike strip")
-            engine.W.append(normalized)
-        # vinberg.h GetVinbergFromG supplies the caller's root-length set.
-        # VinAl otherwise derives its own list from the form determinant,
-        # which need not equal the admissible lengths of this lattice.
-        engine.root_lengths = list(self.norms)
+            cosets.append(normalized)
         # vinberg.h FundCone -> GetFacetOneDomain: select one member of
         # each perpendicular root pair by a regular linear functional,
         # and retain the original normed roots on the extreme cone rays.
         # Lexicographic sign is a deterministic regular functional for this
-        # finite integral root family, unlike VinAl.FundCone's primitive
-        # ray representatives.
-        initial_roots = [root for norm in engine.root_lengths for root in self._vinberg_decomposed_roots(engine, engine.V([0] * engine.n), norm)]
+        # finite integral root family.
+        initial_roots = [root for norm in self.norms for root in self._vinberg_decomposed_roots(perpendicular, self.lattice.zero(), norm)]
         # GetFacetOneDomain first reduces the root coordinate columns to
         # their actual span, and GetFacetOneDomain_ListIdx requires at least
         # twice that reduced dimension in the nonempty root family.
         if initial_roots:
-            reduced_dimension = matrix(SageQQ, initial_roots).rank()
+            reduced_dimension = self.span_rank(tuple(initial_roots))
             if len(initial_roots) < 2 * reduced_dimension:
                 raise ArithmeticError("initial Vinberg root family has fewer than twice its rank in roots")
-        positive = [root for root in initial_roots if next((entry for entry in root if entry), 0) > 0]
+        positive = [root for root in initial_roots if next((entry for entry in self.key(root) if entry), 0) > 0]
         # GetFacetOneDomain_ListIdx allocates exactly half the roots on
         # the assumption that the family is centrally symmetric. A count
         # alone cannot establish the required opposite-root correspondence.
         if initial_roots:
-            root_rows = [tuple(_integer(entry) for entry in root) for root in initial_roots]
+            root_rows = [self.key(root) for root in initial_roots]
             multiplicities = {}
             for row in root_rows:
                 multiplicities[row] = multiplicities.get(row, 0) + 1
             if any(multiplicities.get(row, 0) != multiplicities.get(tuple(-entry for entry in row), 0) for row in multiplicities):
                 raise ArithmeticError("Vinberg perpendicular roots do not form opposite pairs")
         if positive:
-            positive_cone = RationalPolyhedralCones(self.lattice).from_rays(self.element(tuple(_integer(entry) for entry in root)) for root in positive)
+            positive_cone = RationalPolyhedralCones(self.lattice).from_rays(positive)
             rays = tuple(self.row(ray) for ray in positive_cone.primitive_rays())
             # GetFacetOneDomain_ListIdx selects nonredundant *indices*;
             # parallel root vectors cannot both survive its reduction.
@@ -692,18 +688,18 @@ class _Edgewalk:
             used_rays = set()
             ray_by_direction = {_primitive_positive_direction(ray): index for index, ray in enumerate(rays)}
             for root in positive:
-                index = ray_by_direction.get(_primitive_positive_direction(root))
+                index = ray_by_direction.get(_primitive_positive_direction(self.key(root)))
                 if index is not None and index not in used_rays:
                     chosen.append(root)
                     used_rays.add(index)
             if len(used_rays) != len(rays):
                 raise ArithmeticError("initial Vinberg cone ray has no normed root")
-            engine.roots = chosen
+            accepted_roots = chosen
         else:
-            engine.roots = []
+            accepted_roots = []
 
         def accepted_vertex() -> _Vertex | None:
-            roots = tuple(self.element(tuple(_integer(entry) for entry in root)) for root in engine.roots)
+            roots = tuple(accepted_roots)
             if not roots:
                 return None
             equations = matrix(SageQQ, [self.row(root) * self.gram for root in roots])
@@ -740,40 +736,38 @@ class _Edgewalk:
         if initial is not None:
             return initial
         # vinberg.h FindRoots_Kernel tests its exit only after every root
-        # belonging to one decomposition request has been inserted. VinAl's
-        # NextRoot yields those roots individually; use the backend's called
-        # decomposition helpers so an intermediate root cannot end the search.
+        # belonging to one decomposition request has been inserted, so an
+        # intermediate root cannot end the search.
         # vinberg.h IterateRootDecompositions::get_k (pinned 1592b246)
         # prioritizes each length's next coset by val/sqrt(val), with
-        # val = -<v0, a>. VinAl instead uses val/sqrt(k), so its iterator
-        # does not reproduce the C++ candidate sequence.
-        candidates = {norm: 1 for norm in engine.root_lengths}
-        coset_heights = tuple(-engine.v0.inner_product(w) for w in engine.W)
+        # val = -<v0, a>.
+        candidates = {norm: 1 for norm in self.norms}
+        coset_heights = tuple(-self.pairing(timelike, representative) for representative in cosets)
         period = len(coset_heights)
         if not period:
             raise ArithmeticError("Vinberg decomposition has no coset representatives")
         while True:
             norm = min(
-                engine.root_lengths,
+                self.norms,
                 key=lambda length: coset_heights[candidates[length] % period] + (candidates[length] // period) * norm_shift,
             )
             index = candidates[norm]
-            component = engine.W[index % period] + (index // period) * engine.v0
+            component = cosets[index % period] + (index // period) * timelike
             candidates[norm] = index + 1
             # vinberg.h FindRoot_filter/fct_CVP retains every norm-k
-            # candidate satisfying all accepted wall inequalities. VinAl's
-            # IsNewRoot additionally rejects linearly dependent candidates;
-            # that is not the upstream filter and can discard actual walls.
+            # candidate satisfying all accepted wall inequalities.
             new_roots = [
-                root for root in self._vinberg_decomposed_roots(engine, component, norm, walls=engine.roots) if all(root.inner_product(wall) <= 0 for wall in engine.roots)
+                root
+                for root in self._vinberg_decomposed_roots(perpendicular, component, norm, walls=accepted_roots)
+                if all(self.pairing(root, wall) <= 0 for wall in accepted_roots)
             ]
             if not new_roots:
                 continue
-            engine.roots.extend(new_roots)
+            accepted_roots.extend(new_roots)
             # vinberg.h ReduceListRoot removes generators redundant in the
             # accepted root cone. Keep the original normed root vectors,
             # using primitive rays only to identify their directions.
-            ambient_roots = tuple(self.element(tuple(_integer(entry) for entry in root)) for root in engine.roots)
+            ambient_roots = tuple(accepted_roots)
             extreme = RationalPolyhedralCones(self.lattice).from_rays(ambient_roots).primitive_rays()
             # ReduceListRoot/get_non_redundant_indices preserves the order
             # of the original family. Keep its first normed representative
@@ -784,15 +778,15 @@ class _Edgewalk:
             # Compare primitive directions once per accepted root rather
             # than testing every root against every extremal ray.
             ray_by_direction = {_primitive_positive_direction(row): index for index, row in enumerate(ray_rows)}
-            for root in engine.roots:
-                direction = _primitive_positive_direction(root)
+            for root in accepted_roots:
+                direction = _primitive_positive_direction(self.key(root))
                 index = ray_by_direction.get(direction)
                 if index is not None and index not in retained_directions:
                     reduced.append(root)
                     retained_directions.add(index)
             if len(retained_directions) != len(ray_rows):
                 raise ArithmeticError("Vinberg cone ray has no accepted normed root")
-            engine.roots = reduced
+            accepted_roots = reduced
             initial = accepted_vertex()
             if initial is not None:
                 return initial
