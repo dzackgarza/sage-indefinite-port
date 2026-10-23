@@ -195,9 +195,16 @@ inherited source limitation makes them post-v1 work; it does not remove them
 from the project. The open requirements and implementation context follow
 the evidence table.
 
-The verified changes are published in port `59227592439cdccd859e9282bc02ced2a977a3c4`
-and research `2024cb764e4e28ceb818f82f2b1075291ce83a68`, including the earlier
-provider publications `fdcd0208`, `6659a043` and `dee0024c`. The examples below
+The latest functional repairs are published in port
+`666d5a50cd3501aca5ee07eb04f7e2bcabfcc672` and research
+`ec87ab857183f91d5fa03ed1a6e2678667763411`. They complete the native Vinberg
+starting-corner route, public radical Aut/Isom dispatch and base cases,
+selected marked/arithmetic stabilizer generators, finite-character
+intersection cosets, coslice subgroup transporters, and owned split
+isotropic witnesses. Earlier verified changes are in port
+`59227592439cdccd859e9282bc02ced2a977a3c4` and research
+`2024cb764e4e28ceb818f82f2b1075291ce83a68`, including provider publications
+`fdcd0208`, `6659a043` and `dee0024c`. The examples below
 were run as the individual fixes landed, through the real public consumers
 unless a private arithmetic check is explicitly identified. They are not a
 complete acceptance run on one final revision. Frozen tests and the full
@@ -207,17 +214,27 @@ Acceptance workflow remain unchanged.
 | --- | --- |
 | Perfect domains | Frozen `Result_Enumeration_0` and `_1`: respectively one and two total cells, one isotropic cell each, with completion and group certificates. |
 | Allcock EDGEWALK | `U+<2>` and `diag(-3,1,1)` produce the independently recorded three-wall Gram tables; the examples exercise finite and ideal corners and the anisotropic binary cycle. |
+| Nontrivial starting corner and nonreflectivity | The compact hexagon `[-1] + [[3,1],[1,7]]` starts with a rootless perpendicular and returns the six-wall Gram from pinned Allcock Weyl group 123, lattice 9. `U+<46>` returns a nonreflective certificate after three vertices; its integral symmetry has fixed Gram `[3/46]`, with no timelike fixed vector. |
 | Orthogonal groups and integral isometries | `O(2U)` and `O(2U+<-2>)` have mod-3 images of orders 1152 and 103680; generators preserve the form and have integral inverses. A changed-basis isometry has an exact witness, while opposite parity obstructs isometry. `O(diag(1,-2))` has the expected Pell-generated mod-3 dihedral image of order 8. |
+| Radical Aut/Isom | Public `Isom(<2>+0, [[2,2],[2,2]])` returns an integral unimodular witness; `<2>+0` versus `<4>+0` is empty. The public groups of `<2>+0`, `U+0`, and `0^2` have mod-3 image orders 12, 72, and 48, as required by the split-radical semidirect product. |
 | Parabolic and pointed constructions | The plane and flag stabilizers in `2U` have mod-3 images of orders 144 and 36. Opposite planes and flags have exact witnesses. The divisibility-four isotropic pointed example requires the full quotient-group correction when the first reduced lift is nonintegral, and returns an integral witness. |
 | Vector and isotropic classes | Split `U` and higher-index `2U` have the expected zero and nonzero primitive classes. The new spacelike route on `U+<-2>` has exactly two norm-minus-two classes of divisibilities 1 and 2, with pointed witnesses; odd norm in this even lattice is empty. Rationally anisotropic `diag(2,2,-6,-6)` has empty zero-vector and isotropic-line families. |
 | Rational Witt index and empty plane families | Native hyperbolic splitting returns indices 0, 1 and 2 for `diag(2,2,-6,-6)`, `U+<2,-4>` and `2U`. Public plane and flag families are empty for the first two and each have one class for `2U`. Zero and definite spaces return zero as an owned `ZZ` element. |
 | Arithmetic subgroup actions | The stable subgroup splits the full-group line orbit of `U(2)` into two. The determinant-character quotient of `O(U)` has order 2; `SO(U)` has two line/cusp classes, and no subgroup transporter exchanges the coordinate lines. |
+| Complete character intersections | For `Gamma = SO(2U) cap O_plus(2U)`, the character image has order 4 and the subgroup image order 1. Primitive square-minus-two vectors have one full-group and one subgroup class. A positive Eichler transporter lies in Gamma; the vector stabilizer image modulo 3 has order 12. Opposite plane rulings have no Gamma transporter. |
 | Boundaries | `2U` has one point cusp, one curve cusp and one incidence. Divisibility, character label, discriminant class, quotient `U`, and the rank-zero quotient's determinant, discriminant order and empty root type all agree with the explicit model. |
+| Arithmetic boundary generators | The same Gamma has one line cusp, two plane cusps and two incidences, with witnesses in Gamma. Its plane stabilizer has mod-3 image order 72. The specified split-plane quotient in `2U+A2(-1)` has signature `(0,2)`, determinant 3 and root type `A2`. |
 | Centralizers and finite gluing | All five frozen centralizer cases passed at provider `6659a043`, with orders 2, 4, 72, 96 and 24192. The later general-CM implementation passes the mixed-component case based on fixture 88, still of image order 96. Nontrivial glue examples `U(2)` with a swap and `2I_3` with a 3-cycle have glue indices 2 and 3 and image orders 2 and 3. |
 | General CM arithmetic | Over `Q(zeta_5)`, inert, ramified and split local quotients, the relative/absolute different distinction and the trace dual pass exact checks. The public `A4+(-A4)` Coxeter centralizer image has order 8, independently generated by explicit commuting integral isometries. |
 | Native primitive embeddings | Primitive extensions of `<2>+<-2>` include the direct sum and the unimodular extension; nonprimitive glue for `<8>+<-2>` is excluded. `U(2) -> U+<8>` has two fixed-source embedding classes and one unmarked sublattice class. `<-1> -> U+<-1>` has two classes with even and odd unimodular perpendiculars, retaining the original unscaled parents. |
 | Finite and lift providers | Both named frozen `FINITE` provider tests pass, including literal finite images without selecting an order and preservation of undecided equality. Public rational-lift loci have the required integral witness for the marked `U` swap and an empty integral locus for `U -> U(2)`. Coisotropic swaps, shears, a cusp configuration and a conjugated plane check exact form preservation, restrictions and integrality. |
 | General indefinite isometry decisions | The native Hecke spinor-genus route decides the public Conway--Sloane (51a)/(51b) same-genus pair negatively and a changed integral basis positively. Its exact comparison-index arithmetic also passes for rational Witt indices 0 and 1; the public positive calls on those two forms use the one-spinor-genus shortcut. No rational approximation is returned as an integral witness. |
+
+The larger `2U+A2(-1)` arithmetic orbit calculation reached the expected
+character image but was stopped as an expensive example. Its full orbit
+split and arithmetic Levi image are not claimed as verified here. The
+smaller `2U` examples exercise the implemented character-intersection,
+transporter and stabilizer routes; full frozen acceptance remains CI debt.
 
 ### Upstream applicability and post-v1 implementation context
 

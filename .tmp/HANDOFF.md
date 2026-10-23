@@ -9,38 +9,28 @@ rules are in [AGENTS.md](../AGENTS.md).
 
 ## Now
 
-**The pinned algorithm routes for v1 are implemented.** Their
-small public-consumer examples are recorded in
+**The functional MVP is implemented and published against the pinned
+upstream algorithms.** The latest code revisions are port
+`666d5a50cd3501aca5ee07eb04f7e2bcabfcc672` and research
+`ec87ab857183f91d5fa03ed1a6e2678667763411`. The continuation repaired actual
+public-consumer omissions: Vinberg starting corners, radical Aut/Isom,
+marked and arithmetic stabilizer generators, character-intersection cosets,
+coslice subgroup transporters, and an isotropic transporter that lost its
+isometry parent. Small native Sage examples pass, including the compact
+six-wall hexagon, a nonreflective certificate, radical group images
+12/72/48, and the `SO(2U) cap O_plus(2U)` boundary counts 1/2/2 with
+stabilizer image 72. Exact evidence and limits are in
 [TODO.md](../TODO.md#functional-mvp-evidence-from-the-current-implementation-work).
-Higher-real-index cases of rational Witt index less than two remain wanted
-functionality. Their implementation is **open post-v1 work**, recorded in
-[POST_V1_LOW_WITT](../TODO.md#post-v1-functional-requirements). They do not
-gate v1 delivery. The previous wording withdrawing this obligation was
-incorrect; the delivery phase changes, while the requirement remains.
 
-The complete pinned Julia/GAP/executable chain has the same two-rational-plane
-requirement as the port. The reference paper's Theorems 4.4–4.6 establish the
-general Aut/Isom recursion for `max(p,q) >= 5`, which ensures that every
-higher-index recursive stage has the two required planes. The rank-four
-forms `diag(2,2,-6,-6)` and `U+<2,-4>` lie outside that guarantee. The reference
-contains no separate branch for them; its `QmatExt` remains in the same
-rational quadratic space. The port's reduction, envelope, covering families,
-recursive stabilizers and integral-witness corrections are present. See the
-[upstream implementation context](../TODO.md#upstream-applicability-and-post-v1-implementation-context)
-for the public dispatch and the separate vector-orbit hypotheses. This
-explains the additional post-v1 work without removing the required behavior.
-
-The native centralizer gluing, general CM image, primitive embedding/spacelike,
-finite-image, coisotropic lift, cusp equality, zero-rank root and native
-Witt-index repairs are published in research `2024cb764e4e28ceb818f82f2b1075291ce83a68`
-and its ancestors. Port `59227592439cdccd859e9282bc02ced2a977a3c4` contains the
-spacelike integration, empty plane/flag decision and earlier syntax,
-signed-view, parabolic and anisotropic-zero repairs. The source comparison
-was made at port `bccf3dcae47bfb16a70dce73e55b7247865546f7`; subsequent
-documentation commits do not change those algorithms. Fetch current tips
-before editing. Full frozen regression acceptance, #36 refinement and the
-post-v1 functional requirements remain open; MVP delivery does not mark the
-broader project complete.
+Do not restart the completed source-dispatch investigation or require the
+full frozen acceptance matrix before recognizing this MVP delivery.
+The retained source-shared extensions are open post-v1 requirements:
+[low rational Witt index, #40](https://github.com/dzackgarza/sage-indefinite-port/issues/40)
+and [degenerate ambient vector markings, #41](https://github.com/dzackgarza/sage-indefinite-port/issues/41).
+Their explicit inputs and outputs remain required. Full frozen regression
+acceptance and #36 refinement also remain open. Fetch current tips before
+any subsequent implementation work; the broader project is not closed by
+the MVP milestone.
 
 ## Historical published starting state
 
