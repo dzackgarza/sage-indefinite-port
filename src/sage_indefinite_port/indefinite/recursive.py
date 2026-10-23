@@ -645,7 +645,12 @@ class EichlerRecursion:
         reduced = self.isometry(source_complement, target_complement)
         if reduced is None:
             return None
-        split = hyperbolic_plane.identity_morphism().biproduct_map(reduced, source=source_splitting.codomain(), target=target_splitting.codomain())
+        split_map = hyperbolic_plane.identity_morphism().biproduct_map(reduced, source=source_splitting.codomain(), target=target_splitting.codomain())
+        # The biproduct operation returns a module map.  Its summands are
+        # isometries, so retain that structure before composing the splittings.
+        split = source_splitting.codomain().Isom(target_splitting.codomain())(
+            lambda label: split_map(source_splitting.codomain().module_generator(label))
+        )
         return target_splitting.inverse() * split * source_splitting
 
     def primitive_vector_classes(self, lattice: Lattices.ParentMethods, square: int) -> tuple[VectorClass, ...]:
