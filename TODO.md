@@ -258,6 +258,7 @@ gap; they do not close it or narrow the eventual public contract.
   signature indices are at least two and the rational Witt index is zero
   or one.** Status: open; deferred until after v1. This is required
   functionality, not a discarded input class or completed item.
+  Tracked in [issue #40](https://github.com/dzackgarza/sage-indefinite-port/issues/40).
 
   | Required capability | Remaining result |
   | --- | --- |
@@ -276,6 +277,16 @@ gap; they do not close it or narrow the eventual public contract.
   empty plane/flag families at Witt index below two remain valid existing
   results; they do not fulfill the constructive requirements in this table.
   The upstream applicability analysis above is retained to guide this work.
+
+- [ ] **POST_V1_DEGENERATE_MARKINGS — Extend pointed/vector equivalence,
+  stabilizers and orbit consumers to degenerate ambient lattices.**
+  Tracked in [issue #41](https://github.com/dzackgarza/sage-indefinite-port/issues/41).
+  The pinned GAP and C++ public vector routines require full ambient rank
+  before their nonzero-norm branch. Retain the `<2> + 0` examples
+  `(1,0) -> (1,1)`, the order-two stabilizer of `(1,0)`, and the distinct
+  congruence outcomes `(5,1) -> (5,6)` and `(5,1) -> (5,2)` as extension
+  requirements. This does not defer the supported unmarked radical
+  Aut/Isom algorithms.
 
 ## Release and terminal nodes
 
