@@ -632,18 +632,31 @@ class _Edgewalk:
         #
         # GetVinbergAux (vinberg.h:213-307) takes the saturated integral
         # perpendicular and ComputeTranslationClasses for
-        # L / (v0^perp + Z*v0).  Use that exact module cokernel and its
-        # preimage map, with the zero class first as required by the source
-        # iterator's initial index 1.  Different lifts of a class differ by
-        # a perpendicular vector after the height normalization below, so
-        # the subsequent complete affine root fibre is unchanged.
+        # L / (v0^perp + Z*v0).  Its pinned basic_common_cpp@995fd625
+        # MAT_MatrixInt.h:2881-2958 traverses the classes breadth first,
+        # starting at zero and adding the ambient basis vectors in order.
+        # Preserve that order through the actual module cokernel: the root
+        # iterator starts at index 1 and consumes W sequentially.  Neither
+        # ComputeTranslationClasses nor GetVinbergAux sorts by height.
         perpendicular = timelike.orthogonal_complement()
         perpendicular_inclusion = perpendicular.inclusion()
         perpendicular_generators = tuple(perpendicular_inclusion(generator) for generator in perpendicular_inclusion.domain().module_generators())
         split = self.lattice.subobject_on((*perpendicular_generators, timelike))
         projection = split.inclusion().cokernel_projection()
         quotient = projection.codomain()
-        representatives = (self.lattice.zero(),) + tuple(projection.preimage(residue) for residue in quotient if residue != quotient.zero())
+        representatives = [self.lattice.zero()]
+        residues = [quotient.zero()]
+        generators = tuple(self.lattice.module_generators())
+        next_representative = 0
+        while next_representative < len(representatives):
+            representative = representatives[next_representative]
+            for generator in generators:
+                candidate = representative + generator
+                residue = projection(candidate)
+                if residue not in residues:
+                    residues.append(residue)
+                    representatives.append(candidate)
+            next_representative += 1
         norm_shift = -self.norm(timelike)
         cosets = []
         for representative in representatives:
