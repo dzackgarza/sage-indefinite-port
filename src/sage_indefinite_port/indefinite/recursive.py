@@ -211,7 +211,7 @@ class EichlerRecursion:
             block = identity_matrix(SageZZ, size)
             block[row, nonsingular_rank] = 1
             matrices.append(block)
-        return tuple(lattice.O()(tuple(lattice(list(row)) for row in block.rows())) for block in matrices)
+        return tuple(lattice.O()(tuple(_from_column(lattice, row) for row in block.rows())) for block in matrices)
 
     def _degenerate_isometry(self, source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
         r"""IndefiniteForms.g:1387–1423: split radicals, identify them, and extend the nondegenerate witness."""
@@ -240,7 +240,7 @@ class EichlerRecursion:
                 coordinates = tuple(int(value) for value in complement_witness(point).to_vector())
                 for column, coefficient in enumerate(coordinates):
                     extension[row, column] = coefficient
-        reduced_witness = left.Isom(right)(tuple(right(list(row)) for row in extension.rows()))
+        reduced_witness = left.Isom(right)(tuple(_from_column(right, row) for row in extension.rows()))
         self._groupoid.record_isometry(left, right, reduced_witness)
         return _transported(target_reduction.isometry, reduced_witness, source_reduction.isometry)
 
