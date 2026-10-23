@@ -187,10 +187,10 @@ class EichlerRecursion:
         assert nonsingular_rank < size
         if any(gram[i, j] for i in range(nonsingular_rank, size) for j in range(size)):
             raise ArithmeticError("the radical must occupy the final Gram coordinates")
-        complement_gram = gram.matrix_from_rows_and_columns(range(nonsingular_rank), range(nonsingular_rank))
-        complement = lattice.lattice_category()([[int(entry) for entry in row] for row in complement_gram.rows()])
         matrices = []
         if nonsingular_rank:
+            complement_gram = gram.matrix_from_rows_and_columns(range(nonsingular_rank), range(nonsingular_rank))
+            complement = lattice.lattice_category()([[int(entry) for entry in row] for row in complement_gram.rows()])
             for generator in self.orthogonal_group_generators(complement):
                 top = tuple(tuple(int(value) for value in generator(point).to_vector()) for point in complement.module_generators())
                 block = identity_matrix(SageZZ, size)
@@ -226,16 +226,16 @@ class EichlerRecursion:
         known, cached = self._groupoid.cached_isometry(left, right)
         if known:
             return None if cached is None else _transported(target_reduction.isometry, cached, source_reduction.isometry)
-        left_complement_gram = left_gram.matrix_from_rows_and_columns(range(rank), range(rank))
-        right_complement_gram = right_gram.matrix_from_rows_and_columns(range(rank), range(rank))
-        left_complement = left.lattice_category()([[int(entry) for entry in row] for row in left_complement_gram.rows()])
-        right_complement = right.lattice_category()([[int(entry) for entry in row] for row in right_complement_gram.rows()])
-        complement_witness = self.isometry(left_complement, right_complement) if rank else None
-        if rank and complement_witness is None:
-            self._groupoid.record_isometry(left, right, None)
-            return None
         extension = identity_matrix(SageZZ, size)
-        if complement_witness is not None:
+        if rank:
+            left_complement_gram = left_gram.matrix_from_rows_and_columns(range(rank), range(rank))
+            right_complement_gram = right_gram.matrix_from_rows_and_columns(range(rank), range(rank))
+            left_complement = left.lattice_category()([[int(entry) for entry in row] for row in left_complement_gram.rows()])
+            right_complement = right.lattice_category()([[int(entry) for entry in row] for row in right_complement_gram.rows()])
+            complement_witness = self.isometry(left_complement, right_complement)
+            if complement_witness is None:
+                self._groupoid.record_isometry(left, right, None)
+                return None
             for row, point in enumerate(left_complement.module_generators()):
                 coordinates = tuple(int(value) for value in complement_witness(point).to_vector())
                 for column, coefficient in enumerate(coordinates):
