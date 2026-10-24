@@ -889,6 +889,9 @@ class LorentzianPerfectLocalBackend:
             admissible = set(candidates_for_choice)
             for j in candidates_for_choice:
                 if generators_only:
+                    # A witness found in an earlier sibling can enlarge H.
+                    # The current sibling list was fixed before that
+                    # discovery, so recompute the H_a-orbit partition.
                     if version != len(group_permutations):
                         fixer = subgroup
                         for assigned_target in images.values():
@@ -1055,6 +1058,14 @@ class LorentzianPerfectComplex:
     def isometry_to(self, target: LorentzianPerfectComplex) -> LatticeIsometryMethods | None:
         if self.allowed_squares() != target.allowed_squares():
             raise ValueError("an isometry of perfect-domain complexes must preserve the prescribed normalized-norm locus")
+        # An integral isometry preserves the rank, inertia and determinant.
+        # Check these before either complex starts its potentially expensive
+        # perfect-domain enumeration; they are necessary even when the
+        # configuration hash happens to coincide.
+        source_gram = _gram_matrix(self.lattice())
+        target_gram = _gram_matrix(target.lattice())
+        if source_gram.nrows() != target_gram.nrows() or source_gram.det() != target_gram.det() or self.lattice().signature_pair() != target.lattice().signature_pair():
+            return None
         self._ensure_traversal_started()
         target._ensure_traversal_started()
         representatives = self._traversal_representatives
