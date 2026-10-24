@@ -2614,7 +2614,7 @@ def _kernel_flipping(
                 lower = middle
                 seen_second_scheme_states.clear()
                 current_shift = middle
-                force_interval_probe = False
+                force_interval_probe = True
                 continue
             # The probe has found a shell beyond the current tied wall. Use
             # its vectors to recover the next exact rational wall parameter,
