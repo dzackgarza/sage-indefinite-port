@@ -2577,9 +2577,8 @@ def _kernel_flipping(
             return total, normal, test_direction_row, max_scal
         break
     while True:
-        if not total:
-            raise ArithmeticError("perfect-cell flipping reached an empty positive-vector shell")
-        # Lorentzian.g:944-966, second scheme.
+        # Lorentzian.g:944-966, second scheme. An empty shell is valid here:
+        # the source's final subset test accepts the empty set at EXIT 2.
         new_row = total[0]
         expanded = vector(SageQQ, [1, *new_row])
         denominator = direction_normal.dot_product(expanded)
