@@ -2598,7 +2598,7 @@ def _kernel_flipping(
             if middle <= lower or middle >= upper:
                 raise ArithmeticError("the second flip scheme exhausted its exact parameter interval")
             normal = base_normal + middle * direction_normal
-            test_direction = inverse * vector(SageQQ(normal[1:]).column())
+            test_direction = inverse * vector(SageQQ, normal[1:]).column()
             test_direction_row = _source_remove_fraction(test_direction.column(0))
             square = (test_direction_row * gram * test_direction_row.column())[0]
             max_scal = (critical_first * gram * test_direction_row.column())[0]
@@ -2630,7 +2630,7 @@ def _kernel_flipping(
             seen_second_scheme_states.add(state)
             continue
         normal = next_normal
-        test_direction = inverse * vector(SageQQ(normal[1:]).column())
+        test_direction = inverse * vector(SageQQ, normal[1:]).column()
         test_direction_row = _source_remove_fraction(test_direction.column(0))
         max_scal = (critical_first * gram * test_direction_row.column())[0]
         total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
