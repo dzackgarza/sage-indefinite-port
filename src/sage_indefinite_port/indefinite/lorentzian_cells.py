@@ -2078,7 +2078,9 @@ def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integ
                     # infinite steps into ApproxIterator: they cannot
                     # produce the pinned nearest-integer approximants.
                     if eigen_norm and all(isfinite(entry) for entry in direction) and isfinite(eigen_norm):
-                        eigen_iterators.append(make_approx_iterator(tuple(eigen_entry / eigen_norm for eigen_entry in direction)))
+                        normalized = tuple(eigen_entry / eigen_norm for eigen_entry in direction)
+                        if all(isfinite(entry) and (entry == 0 or abs(entry) >= 1.0 / float.fromhex('0x1.fffffffffffffp+1023')) for entry in normalized):
+                            eigen_iterators.append(make_approx_iterator(normalized))
     except (ArithmeticError, OverflowError, RuntimeError, TypeError, ValueError):
         # This branch only accelerates the exact search. Overflow or failure
         # in the floating eigensolver must not disable its exact directions.
