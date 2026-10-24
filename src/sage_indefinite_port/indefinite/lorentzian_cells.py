@@ -2610,6 +2610,8 @@ def _kernel_flipping(
                 return next_total, normal, test_direction_row, max_scal
             if set(next_total) == set(total):
                 lower = middle
+                seen_second_scheme_states.clear()
+                current_shift = middle
                 continue
             total = next_total
             lower = middle
