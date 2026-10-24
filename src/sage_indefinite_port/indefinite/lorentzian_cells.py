@@ -2577,32 +2577,33 @@ def _kernel_flipping(
             return total, normal, test_direction_row, max_scal
         break
     while True:
-        # Lorentzian.g:944-966, second scheme. The entry shell contains
-        # a newly discovered vector; the recomputed shell may be empty,
-        # in which case the final subset test accepts EXIT 2.
-        # The source's ListTotal[1] is a newly discovered wall with a
-        # nonzero pairing against the flip direction. Our shell enumerator
-        # has a different ordering, so choose from the genuinely new walls
-        # rather than assuming its first element has the source's position.
-        new_row = next(
-            (
-                row
-                for row in total
-                if row not in critical_rows
-                and direction_normal.dot_product(vector(SageQQ, [1, *row])) != 0
-            ),
-            None,
+        # Lorentzian.g:944-966, second scheme. The reference chooses its
+        # first newly discovered wall, but shell enumeration here has a
+        # different ordering. Try each transverse new wall: the exact EXIT 2
+        # subset test identifies a valid choice without depending on order.
+        candidates = tuple(
+            row
+            for row in total
+            if row not in critical_rows
+            and direction_normal.dot_product(vector(SageQQ, [1, *row])) != 0
         )
-        if new_row is None:
+        if not candidates:
             raise ArithmeticError("the second flip shell has no new wall transverse to the flip direction")
-        expanded = vector(SageQQ, [1, *new_row])
-        denominator = direction_normal.dot_product(expanded)
-        shift = -base_normal.dot_product(expanded) / denominator
-        normal = base_normal + shift * direction_normal
-        test_direction = inverse * vector(SageQQ, normal[1:]).column()
-        test_direction_row = _source_remove_fraction(test_direction.column(0))
-        max_scal = (critical_first * gram * test_direction_row.column())[0]
-        total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
-        # Lorentzian.g:959, EXIT 2: the shell lies inside CritSet plus eVect.
-        if set(total).issubset(critical_rows | {new_row}):
-            return total, normal, test_direction_row, max_scal
+        next_shell = None
+        for new_row in candidates:
+            expanded = vector(SageQQ, [1, *new_row])
+            denominator = direction_normal.dot_product(expanded)
+            shift = -base_normal.dot_product(expanded) / denominator
+            normal = base_normal + shift * direction_normal
+            test_direction = inverse * vector(SageQQ, normal[1:]).column()
+            test_direction_row = _source_remove_fraction(test_direction.column(0))
+            max_scal = (critical_first * gram * test_direction_row.column())[0]
+            candidate_shell = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
+            # Lorentzian.g:959, EXIT 2: the shell lies inside CritSet plus eVect.
+            if set(candidate_shell).issubset(critical_rows | {new_row}):
+                return candidate_shell, normal, test_direction_row, max_scal
+            if next_shell is None or set(candidate_shell) < set(next_shell):
+                next_shell = candidate_shell
+        if next_shell is None or set(next_shell) == set(total):
+            raise ArithmeticError("the second flip scheme made no progress across its candidate walls")
+        total = next_shell
