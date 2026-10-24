@@ -2628,7 +2628,7 @@ def _kernel_flipping(
                     for row in next_total
                     if row not in critical_rows
                     and direction_normal.dot_product(vector(SageQQ, [1, *row])) != 0
-                    and lower < -base_normal.dot_product(vector(SageQQ, [1, *row]))
+                    and middle < -base_normal.dot_product(vector(SageQQ, [1, *row]))
                     / direction_normal.dot_product(vector(SageQQ, [1, *row])) < upper
                 }
             )
