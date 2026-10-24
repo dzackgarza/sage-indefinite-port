@@ -2591,9 +2591,11 @@ def _kernel_flipping(
     if current_shift is None:
         raise ArithmeticError("the flip parameter direction is zero")
     lower = max(lower, current_shift)
+    force_interval_probe = False
     while True:
         state = (tuple(total), tuple(normal))
-        if state in seen_second_scheme_states:
+        if force_interval_probe or state in seen_second_scheme_states:
+            force_interval_probe = True
             middle = _source_mid_value(lower, upper)
             if middle <= lower or middle >= upper:
                 raise ArithmeticError("the second flip scheme exhausted its exact parameter interval")
@@ -2612,11 +2614,12 @@ def _kernel_flipping(
                 lower = middle
                 seen_second_scheme_states.clear()
                 current_shift = middle
+                force_interval_probe = False
                 continue
-            total = next_total
-            lower = middle
-            seen_second_scheme_states.clear()
-            current_shift = middle
+            # The shell changed between the known lower endpoint and this
+            # midpoint. Keep the lower-end shell and bisect that bracket.
+            upper = middle
+            force_interval_probe = True
             continue
         seen_second_scheme_states.add(state)
         new_row = next(
@@ -2634,6 +2637,7 @@ def _kernel_flipping(
             # parameter (typically because the shell is tied at the wall).
             # Do not jump backwards to that wall; force an exact interval probe.
             seen_second_scheme_states.add(state)
+            force_interval_probe = True
             continue
         normal = next_normal
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
