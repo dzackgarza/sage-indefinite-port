@@ -428,6 +428,8 @@ def _row_multiset(row, own_value: int) -> tuple[tuple[int, int], ...]:
 
 def _refined_signatures(pairings: _ConfigurationPairings, colours: tuple[int, ...], modulus: int) -> tuple[tuple[int, tuple[tuple[int, int], ...]], ...]:
     r"""Each vertex's colour with the multiset of (pairing, neighbour colour), coded as pairing * modulus + colour."""
+    if modulus <= 0 or len(colours) != len(pairings):
+        raise ValueError("refinement requires one colour per configuration vector and a positive modulus")
     # Pairings are exact int64, but the refinement encoding multiplies
     # them by the number of colour classes.  That product need not fit
     # int64 even when every pairing does.  Promote before multiplication.
