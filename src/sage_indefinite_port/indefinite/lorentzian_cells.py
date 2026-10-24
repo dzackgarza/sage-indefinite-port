@@ -2593,6 +2593,7 @@ def _kernel_flipping(
                 for row in total
                 if row not in critical_rows
                 and direction_normal.dot_product(vector(SageQQ, [1, *row])) != 0
+                and normal.dot_product(vector(SageQQ, [1, *row])) != 0
             ),
             None,
         )
