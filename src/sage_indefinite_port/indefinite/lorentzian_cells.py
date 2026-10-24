@@ -2557,21 +2557,20 @@ def _kernel_flipping(
         if square <= 0 or max_scal <= 0:
             upper = middle
             continue
-        enumerator = _PositiveVectorEnumerator(lattice, tuple(test_direction_row), max_scal, allowed_squares)
-        first = enumerator.first_shell()
-        if first is None:
-            raise ArithmeticError("a critical perfect-cell shell disappeared during flipping")
-        _first_multiplier, total = first
+        # Lorentzian.g:918 evaluates the shortest shell, which may be empty
+        # at an intermediate rational wall parameter.  An empty shell is
+        # handled by EXIT 1 as a subset of CritSet, not as an exception.
+        total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
         total_rows = set(total)
-        # Lorentzian.g:922-924: IsSubset(CritSet, Set(ListTotal)) with
-        # |CritSet| > |ListTotal| is a bug; a shell inside CritSet equals it.
-        if total_rows.issubset(critical_rows) and len(critical_rows) > len(total_rows):
-            raise ArithmeticError("a Lorentzian shell is a proper subset of its critical configuration")
+        # Lorentzian.g:922-924 rejects the impossible cardinality combination
+        # CritSet subset ListTotal and |CritSet| > |ListTotal|.
+        if critical_rows.issubset(total_rows) and len(critical_rows) > len(total_rows):
+            raise ArithmeticError("the critical configuration cannot exceed a shell containing it")
         if total_rows == critical_rows:
             lower = middle
             continue
-        # Lorentzian.g:924-930, EXIT 1: the shell strictly contains CritSet.
-        if critical_rows.issubset(total_rows):
+        # Lorentzian.g:924-930, EXIT 1: the shell lies inside CritSet.
+        if total_rows.issubset(critical_rows):
             return total, normal, test_direction_row, max_scal
         break
     while True:
@@ -2589,6 +2588,6 @@ def _kernel_flipping(
         test_direction_row = test_direction.column(0)
         max_scal = (critical_first * gram * test_direction)[0]
         total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
-        # Lorentzian.g:959, EXIT 2: the shell contains CritSet and eVect.
-        if (critical_rows | {new_row}).issubset(set(total)):
+        # Lorentzian.g:959, EXIT 2: the shell lies inside CritSet plus eVect.
+        if set(total).issubset(critical_rows | {new_row}):
             return total, normal, test_direction_row, max_scal
