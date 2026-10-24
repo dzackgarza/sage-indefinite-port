@@ -2275,6 +2275,8 @@ class _PositiveVectorEnumerator:
     @cached_method
     def vectors_at_multiplier(self, multiplier: int) -> tuple[tuple[int, ...], ...]:
         r"""The coordinate rows of the shell vectors at this multiplier; elements are raised only for a returned cell."""
+        if multiplier <= 0:
+            raise ValueError("the positive-vector shell multiplier must be positive")
         target = self.base_target.parent().scalar_multiple(_owned_rational(self.lattice, SageQQ(multiplier)), self.base_target)
         bound = _owned_rational(self.lattice, -(SageQQ(multiplier) ** 2) * self.base_bound)
         # Preserve the pinned Lorentzian.g:369-373 closest-vector API here.
