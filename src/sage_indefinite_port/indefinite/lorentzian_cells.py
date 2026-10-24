@@ -2580,13 +2580,23 @@ def _kernel_flipping(
         # Lorentzian.g:944-966, second scheme. The entry shell contains
         # a newly discovered vector; the recomputed shell may be empty,
         # in which case the final subset test accepts EXIT 2.
-        if not total:
-            raise ArithmeticError("the second flip scheme has no new wall vector")
-        new_row = total[0]
+        # The source's ListTotal[1] is a newly discovered wall with a
+        # nonzero pairing against the flip direction. Our shell enumerator
+        # has a different ordering, so choose from the genuinely new walls
+        # rather than assuming its first element has the source's position.
+        new_row = next(
+            (
+                row
+                for row in total
+                if row not in critical_rows
+                and direction_normal.dot_product(vector(SageQQ, [1, *row])) != 0
+            ),
+            None,
+        )
+        if new_row is None:
+            raise ArithmeticError("the second flip shell has no new wall transverse to the flip direction")
         expanded = vector(SageQQ, [1, *new_row])
         denominator = direction_normal.dot_product(expanded)
-        if denominator == 0:
-            raise ArithmeticError("the flip direction is parallel to a newly found wall")
         shift = -base_normal.dot_product(expanded) / denominator
         normal = base_normal + shift * direction_normal
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
