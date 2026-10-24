@@ -2572,6 +2572,13 @@ def _kernel_flipping(
         if total_rows == critical_rows:
             lower = middle
             continue
+        # The caller LORENTZ_GetOnePerfect immediately accepts a critical set
+        # of full linear rank. A shortest shell can add several tied vectors
+        # at once; if that shell already spans L, it is the completed perfect
+        # configuration and must not be forced through EXIT 2's one-new-wall
+        # condition (which is only needed while the configuration is deficient).
+        if matrix(SageQQ, total).rank() == int(lattice.module_rank()):
+            return total, normal, test_direction_row, max_scal
         # Lorentzian.g:924-930, EXIT 1: the shell lies inside CritSet.
         if total_rows.issubset(critical_rows):
             return total, normal, test_direction_row, max_scal
