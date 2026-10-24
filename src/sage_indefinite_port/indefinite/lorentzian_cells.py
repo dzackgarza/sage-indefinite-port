@@ -416,9 +416,14 @@ class _ConfigurationPairings:
 
 def _row_multiset(row, own_value: int) -> tuple[tuple[int, int], ...]:
     r"""The multiset of a pairing row's entries other than the vertex's own, as sorted (value, count)."""
-    values, counts = np.unique(row, return_counts=True)
-    entries = ((int(value), int(count) - (1 if int(value) == own_value else 0)) for value, count in zip(values, counts, strict=True))
-    return tuple(entry for entry in entries if entry[1])
+    # NumPy's unique/sort on object arrays is not an integral-arithmetic
+    # primitive.  Counter retains arbitrary-precision codes without casting
+    # them back to a fixed-width dtype; subtract exactly one self-pairing.
+    counts = Counter(int(value) for value in row)
+    counts[own_value] -= 1
+    if counts[own_value] < 0:
+        raise ArithmeticError("the diagonal pairing is absent from its row")
+    return tuple(sorted((value, count) for value, count in counts.items() if count))
 
 
 def _refined_signatures(pairings: _ConfigurationPairings, colours: tuple[int, ...], modulus: int) -> tuple[tuple[int, tuple[tuple[int, int], ...]], ...]:
