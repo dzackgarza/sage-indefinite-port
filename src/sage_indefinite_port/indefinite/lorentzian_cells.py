@@ -2555,8 +2555,8 @@ def _kernel_flipping(
         normal = base_normal + middle * direction_normal
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
         test_direction_row = _source_remove_fraction(test_direction.column(0))
-        square = (test_direction.transpose() * gram * test_direction)[0, 0]
-        max_scal = (critical_first * gram * test_direction)[0]
+        square = (test_direction_row * gram * test_direction_row.column())[0]
+        max_scal = (critical_first * gram * test_direction_row.column())[0]
         if square <= 0 or max_scal <= 0:
             upper = middle
             continue
@@ -2589,7 +2589,7 @@ def _kernel_flipping(
         normal = base_normal + shift * direction_normal
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
         test_direction_row = _source_remove_fraction(test_direction.column(0))
-        max_scal = (critical_first * gram * test_direction)[0]
+        max_scal = (critical_first * gram * test_direction_row.column())[0]
         total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
         # Lorentzian.g:959, EXIT 2: the shell lies inside CritSet plus eVect.
         if set(total).issubset(critical_rows | {new_row}):
