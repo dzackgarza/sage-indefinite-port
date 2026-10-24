@@ -2577,24 +2577,45 @@ def _kernel_flipping(
             return total, normal, test_direction_row, max_scal
         break
     seen_second_scheme_states: set[tuple[tuple[tuple[int, ...], ...], tuple[Rational, ...]]] = set()
+    # The source's second scheme crosses a wall by recomputing its parameter
+    # from a newly discovered vector.  If the shortest shell contains several
+    # vectors tied on that wall, this recomputation returns the same parameter
+    # and the source loop cannot progress.  In that degenerate case, bisect
+    # the remaining admissible parameter interval until the shortest shell
+    # changes; this preserves the exact wall arrangement and avoids choosing
+    # an arbitrary perturbation size.
+    current_shift = next(
+        (SageQQ(normal[i] - base_normal[i]) / SageQQ(direction_normal[i]) for i in range(len(normal)) if direction_normal[i]),
+        None,
+    )
+    if current_shift is None:
+        raise ArithmeticError("the flip parameter direction is zero")
+    lower = max(lower, current_shift)
     while True:
-        # Lorentzian.g:944-966, second scheme. The reference shell has a
-        # different ordering here, so choose the first new wall transverse to
-        # the flip direction and apply the source's exact recompute-and-test
-        # loop. Directional shells need not be nested, so no size/subset
-        # monotonicity assumption is valid.
         state = (tuple(total), tuple(normal))
         if state in seen_second_scheme_states:
-            raise ArithmeticError("the second flip scheme repeated a shell and supporting normal")
+            middle = _source_mid_value(lower, upper)
+            if middle <= lower or middle >= upper:
+                raise ArithmeticError("the second flip scheme exhausted its exact parameter interval")
+            normal = base_normal + middle * direction_normal
+            test_direction = inverse * vector(SageQQ(normal[1:]).column())
+            test_direction_row = _source_remove_fraction(test_direction.column(0))
+            square = (test_direction_row * gram * test_direction_row.column())[0]
+            max_scal = (critical_first * gram * test_direction_row.column())[0]
+            if square <= 0 or max_scal <= 0:
+                upper = middle
+                continue
+            next_total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
+            if set(next_total) == set(total):
+                lower = middle
+                continue
+            total = next_total
+            seen_second_scheme_states.clear()
+            current_shift = middle
+            continue
         seen_second_scheme_states.add(state)
         new_row = next(
-            (
-                row
-                for row in total
-                if row not in critical_rows
-                and direction_normal.dot_product(vector(SageQQ, [1, *row])) != 0
-                and normal.dot_product(vector(SageQQ, [1, *row])) != 0
-            ),
+            (row for row in total if row not in critical_rows and direction_normal.dot_product(vector(SageQQ, [1, *row])) != 0),
             None,
         )
         if new_row is None:
@@ -2602,12 +2623,16 @@ def _kernel_flipping(
         expanded = vector(SageQQ, [1, *new_row])
         denominator = direction_normal.dot_product(expanded)
         shift = -base_normal.dot_product(expanded) / denominator
-        normal = base_normal + shift * direction_normal
-        test_direction = inverse * vector(SageQQ, normal[1:]).column()
+        next_normal = base_normal + shift * direction_normal
+        if next_normal == normal:
+            lower = max(lower, shift)
+            # Force the next iteration through the exact interval bisection.
+            seen_second_scheme_states.add(state)
+            continue
+        normal = next_normal
+        test_direction = inverse * vector(SageQQ(normal[1:]).column())
         test_direction_row = _source_remove_fraction(test_direction.column(0))
         max_scal = (critical_first * gram * test_direction_row.column())[0]
         total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
-        # Lorentzian.g:959, EXIT 2: the recomputed shell lies in CritSet plus
-        # the wall just crossed.
         if set(total).issubset(critical_rows | {new_row}):
             return total, normal, test_direction_row, max_scal
