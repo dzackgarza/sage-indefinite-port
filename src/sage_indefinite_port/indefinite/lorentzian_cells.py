@@ -2577,8 +2577,11 @@ def _kernel_flipping(
             return total, normal, test_direction_row, max_scal
         break
     while True:
-        # Lorentzian.g:944-966, second scheme. An empty shell is valid here:
-        # the source's final subset test accepts the empty set at EXIT 2.
+        # Lorentzian.g:944-966, second scheme. The entry shell contains
+        # a newly discovered vector; the recomputed shell may be empty,
+        # in which case the final subset test accepts EXIT 2.
+        if not total:
+            raise ArithmeticError("the second flip scheme has no new wall vector")
         new_row = total[0]
         expanded = vector(SageQQ, [1, *new_row])
         denominator = direction_normal.dot_product(expanded)
