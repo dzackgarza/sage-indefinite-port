@@ -2625,9 +2625,10 @@ def _kernel_flipping(
         denominator = direction_normal.dot_product(expanded)
         shift = -base_normal.dot_product(expanded) / denominator
         next_normal = base_normal + shift * direction_normal
-        if next_normal == normal:
-            lower = max(lower, shift)
-            # Force the next iteration through the exact interval bisection.
+        if shift <= lower or shift >= upper or next_normal == normal:
+            # The selected shortest vector's wall is not ahead of the current
+            # parameter (typically because the shell is tied at the wall).
+            # Do not jump backwards to that wall; force an exact interval probe.
             seen_second_scheme_states.add(state)
             continue
         normal = next_normal
