@@ -13,7 +13,7 @@ from random import choice, randrange, shuffle
 from typing import Literal, cast, overload
 
 import numpy as np
-from dzack_research.preamble.all import FormModules, FramedFreeModules, Lattices
+from dzack_research.preamble.all import FramedFreeModules, Lattices
 from dzack_research.preamble.categories.definite_lattices import LatticeReduction
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.modules.pure.modules import _engine_matrix
@@ -2125,20 +2125,14 @@ def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]
     best_norm: Integer | None = None
     without_improvement = 0
     gram_l1 = sum(abs(entry) for entry in gram.list())
-    ring = lattice.base_ring()
-    module = lattice.unformed_module()
-    bilinear_forms = module.bilinear_hom_space(ring)
     while True:
         perturbed_gram = perturbation * gram * perturbation.transpose()
-        if perturbation == identity_matrix(SageZZ, rank):
-            positive = lattice.positive_vector()
-            found = _coordinate_row(lattice, positive, SageZZ)
-        else:
-            # The unimodular change of frame is applied to the *form* before
-            # the general positive-vector primitive, exactly as upstream.
-            form = bilinear_forms([[ring(int(perturbed_gram[i, j])) for j in range(rank)] for i in range(rank)])
-            framed = FormModules(ring)(form)
-            found = _coordinate_row(framed, framed.positive_vector(), SageZZ)
+        # Positivity.h:614-624 takes the *integral* positive witness of the
+        # perturbed Gram matrix from GetIntegralPositiveVector_allmeth.  Its
+        # V2 approximation iterators are implemented above.  Calling the
+        # preamble's positive_vector instead silently substituted its
+        # different exact diagonalization algorithm for this source step.
+        found = vector(SageZZ, _integral_positive_vector_allmeth(perturbed_gram))
         current = perturbation.transpose() * found.column()
         improved = current.column(0)
         while True:
