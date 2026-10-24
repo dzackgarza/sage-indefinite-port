@@ -2606,6 +2606,8 @@ def _kernel_flipping(
                 upper = middle
                 continue
             next_total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
+            if set(next_total).issubset(critical_rows):
+                return next_total, normal, test_direction_row, max_scal
             if set(next_total) == set(total):
                 lower = middle
                 continue
