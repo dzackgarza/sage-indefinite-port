@@ -423,10 +423,13 @@ def _row_multiset(row, own_value: int) -> tuple[tuple[int, int], ...]:
 
 def _refined_signatures(pairings: _ConfigurationPairings, colours: tuple[int, ...], modulus: int) -> tuple[tuple[int, tuple[tuple[int, int], ...]], ...]:
     r"""Each vertex's colour with the multiset of (pairing, neighbour colour), coded as pairing * modulus + colour."""
-    colour_array = np.array(colours, dtype=np.int64)
+    # Pairings are exact int64, but the refinement encoding multiplies
+    # them by the number of colour classes.  That product need not fit
+    # int64 even when every pairing does.  Promote before multiplication.
+    colour_array = np.array(colours, dtype=object)
     signatures = []
     for start, block in pairings.blocks():
-        codes = block * modulus + colour_array[None, :]
+        codes = block.astype(object) * modulus + colour_array[None, :]
         for offset, row in enumerate(codes):
             index = start + offset
             signatures.append((colours[index], _row_multiset(row, int(row[index]))))
