@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 from functools import cache, cached_property
 from itertools import product
-from math import gcd, isqrt
+from math import gcd, isfinite, isqrt
 from random import choice, randrange, shuffle
 from typing import Literal, cast, overload
 
@@ -2074,7 +2074,10 @@ def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integ
                 for eigenvector in eigenvectors:
                     direction = tuple(float(entry.real()) for entry in eigenvector)
                     eigen_norm = sum(abs(eigen_entry) for eigen_entry in direction)
-                    if eigen_norm:
+                    # The optional floating branch must not admit NaN or
+                    # infinite steps into ApproxIterator: they cannot
+                    # produce the pinned nearest-integer approximants.
+                    if eigen_norm and all(isfinite(entry) for entry in direction) and isfinite(eigen_norm):
                         eigen_iterators.append(make_approx_iterator(tuple(eigen_entry / eigen_norm for eigen_entry in direction)))
     except (ArithmeticError, OverflowError, RuntimeError, TypeError, ValueError):
         # This branch only accelerates the exact search. Overflow or failure
