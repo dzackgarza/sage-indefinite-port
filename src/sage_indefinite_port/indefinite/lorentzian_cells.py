@@ -9,6 +9,7 @@ from fractions import Fraction
 from functools import cache, cached_property
 from itertools import product
 from math import gcd, isfinite, isqrt
+from sys import float_info
 from random import choice, randrange, shuffle
 from typing import Literal, cast, overload
 
@@ -2079,7 +2080,7 @@ def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integ
                     # produce the pinned nearest-integer approximants.
                     if eigen_norm and all(isfinite(entry) for entry in direction) and isfinite(eigen_norm):
                         normalized = tuple(eigen_entry / eigen_norm for eigen_entry in direction)
-                        if all(isfinite(entry) and (entry == 0 or abs(entry) >= 1.0 / float.fromhex('0x1.fffffffffffffp+1023')) for entry in normalized):
+                        if all(isfinite(entry) and (entry == 0 or abs(entry) >= 1.0 / float_info.max) for entry in normalized):
                             eigen_iterators.append(make_approx_iterator(normalized))
     except (ArithmeticError, OverflowError, RuntimeError, TypeError, ValueError):
         # This branch only accelerates the exact search. Overflow or failure
