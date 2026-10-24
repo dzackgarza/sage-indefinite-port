@@ -383,12 +383,16 @@ class _ConfigurationPairings:
     """
 
     def __init__(self, rows: tuple[tuple[int, ...], ...], gram: Matrix_integer_dense) -> None:
-        self.rows = np.array(rows, dtype=np.int64)
-        form = np.array([[int(entry) for entry in row] for row in gram.rows()], dtype=np.int64)
-        # Every pairing is bounded by rank^2 max|v|^2 max|G|; products below 2^40 leave room for colour codes.
-        bound = self.rows.shape[1] ** 2 * int(np.abs(self.rows).max()) ** 2 * int(np.abs(form).max())
+        # Bound with Python integers *before* conversion: np.abs(-2**63)
+        # overflows, and converting an out-of-range lattice coefficient to
+        # int64 must not silently change the integral Gram pairing.
+        maximum_row = max(abs(int(entry)) for row in rows for entry in row)
+        maximum_gram = max(abs(int(entry)) for row in gram.rows() for entry in row)
+        bound = gram.nrows() ** 2 * maximum_row ** 2 * maximum_gram
         if bound >= 2**40:
             raise ArithmeticError("perfect-cell pairings exceed exact 64-bit integer arithmetic")
+        self.rows = np.array(rows, dtype=np.int64)
+        form = np.array([[int(entry) for entry in row] for row in gram.rows()], dtype=np.int64)
         self.covectors = self.rows @ form
 
     def __len__(self) -> int:
@@ -1108,12 +1112,14 @@ def _perfect_form_hash_key(cell: LorentzianPerfectCell) -> PerfectFormKey:
     isometry, read off the n x rank row matrix.  The exact isometry test
     remains mandatory.
     """
-    rows = np.array(cell.rows, dtype=np.int64)
-    gram = np.array([[int(entry) for entry in row] for row in _gram_matrix(cell.lattice).rows()], dtype=np.int64)
-    # Every pairing is bounded by rank^2 max|v|^2 max|G|; the int64 products are exact below 2^62.
-    bound = rows.shape[1] ** 2 * int(np.abs(rows).max()) ** 2 * int(np.abs(gram).max())
+    exact_gram = _gram_matrix(cell.lattice)
+    maximum_row = max(abs(int(entry)) for row in cell.rows for entry in row)
+    maximum_gram = max(abs(int(entry)) for row in exact_gram.rows() for entry in row)
+    bound = exact_gram.nrows() ** 2 * maximum_row ** 2 * maximum_gram
     if bound >= 2**62:
         raise ArithmeticError("perfect-cell pairings exceed exact 64-bit integer arithmetic")
+    rows = np.array(cell.rows, dtype=np.int64)
+    gram = np.array([[int(entry) for entry in row] for row in exact_gram.rows()], dtype=np.int64)
     covectors = rows @ gram
     diagonal = Counter(int(value) for value in np.einsum("ij,ij->i", covectors, rows))
     all_pairs: Counter[int] = Counter()
