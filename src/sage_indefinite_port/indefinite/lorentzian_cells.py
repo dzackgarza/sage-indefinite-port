@@ -474,7 +474,10 @@ class LorentzianPerfectLocalBackend:
             critical_row = vector(SageQQ, critical[0])
             direction_scalar = (critical_row * direction_covector)[0]
             normal_direction = vector(SageQQ, [-direction_scalar, *direction_covector.column(0)])
-            critical, base_normal, _test_direction, _max_scal = _kernel_flipping(normalized, critical, base_normal, normal_direction, allowed_squares)
+            critical, flipped_normal, _test_direction, _max_scal = _kernel_flipping(normalized, critical, base_normal, normal_direction, allowed_squares)
+            # Lorentzian.g:1194: normalize the returned supporting normal
+            # before the next wall-crossing step.
+            base_normal = _source_remove_fraction(flipped_normal)
         return LorentzianPerfectCell(lattice, critical, allowed_squares)
 
     @cached_method
