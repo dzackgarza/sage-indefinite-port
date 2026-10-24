@@ -2636,7 +2636,7 @@ def _kernel_flipping(
                     if row not in critical_rows
                     and direction_normal.dot_product(vector(SageQQ, [1, *row])) != 0
                     and lower < -base_normal.dot_product(vector(SageQQ, [1, *row]))
-                    / direction_normal.dot_product(vector(SageQQ, [1, *row])) <= middle
+                    / direction_normal.dot_product(vector(SageQQ, [1, *row])) <= upper
                 }
             )
             if wall_parameters:
