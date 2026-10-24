@@ -2604,6 +2604,6 @@ def _kernel_flipping(
                 return candidate_shell, normal, test_direction_row, max_scal
             if next_shell is None or set(candidate_shell) < set(next_shell):
                 next_shell = candidate_shell
-        if next_shell is None or set(next_shell) == set(total):
-            raise ArithmeticError("the second flip scheme made no progress across its candidate walls")
+        if next_shell is None or not set(next_shell) < set(total):
+            raise ArithmeticError("the second flip scheme did not strictly shrink the positive-vector shell")
         total = next_shell
