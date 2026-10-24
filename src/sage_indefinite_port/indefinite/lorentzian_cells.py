@@ -2614,7 +2614,7 @@ def _kernel_flipping(
                 current_shift = middle
                 continue
             total = next_total
-            lower = middle
+            upper = middle
             seen_second_scheme_states.clear()
             current_shift = middle
             continue
