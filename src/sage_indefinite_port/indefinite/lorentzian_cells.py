@@ -2616,8 +2616,35 @@ def _kernel_flipping(
                 current_shift = middle
                 force_interval_probe = False
                 continue
-            # The shell changed between the known lower endpoint and this
-            # midpoint. Keep the lower-end shell and bisect that bracket.
+            # The probe has found a shell beyond the current tied wall. Use
+            # its vectors to recover the next exact rational wall parameter,
+            # rather than bisecting indefinitely toward an arbitrary real
+            # limit. Ignore walls behind the current endpoint and the cone
+            # boundary itself.
+            wall_parameters = sorted(
+                {
+                    -base_normal.dot_product(vector(SageQQ, [1, *row]))
+                    / direction_normal.dot_product(vector(SageQQ, [1, *row]))
+                    for row in next_total
+                    if row not in critical_rows
+                    and direction_normal.dot_product(vector(SageQQ, [1, *row])) != 0
+                    and lower < -base_normal.dot_product(vector(SageQQ, [1, *row]))
+                    / direction_normal.dot_product(vector(SageQQ, [1, *row])) < upper
+                }
+            )
+            if wall_parameters:
+                current_shift = wall_parameters[0]
+                lower = current_shift
+                normal = base_normal + current_shift * direction_normal
+                test_direction = inverse * vector(SageQQ, normal[1:]).column()
+                test_direction_row = _source_remove_fraction(test_direction.column(0))
+                max_scal = (critical_first * gram * test_direction_row.column())[0]
+                total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
+                if set(total).issubset(critical_rows):
+                    return total, normal, test_direction_row, max_scal
+                seen_second_scheme_states.clear()
+                force_interval_probe = True
+                continue
             upper = middle
             force_interval_probe = True
             continue
