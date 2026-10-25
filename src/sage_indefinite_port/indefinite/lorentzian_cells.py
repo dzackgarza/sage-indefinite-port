@@ -2611,11 +2611,19 @@ def _kernel_flipping(
         # does not advance the wall crossing, so refine the first-scheme
         # interval rather than entering EXIT 2 with a zero/no-op denominator.
         excluded = set(excluded_wall_rows) | critical_rows
-        if not any(
-            row not in excluded
-            and direction_normal.dot_product(vector(SageQQ, [1, *row])) != 0
-            for row in total
-        ):
+        has_new_wall = False
+        for row in total:
+            if row in excluded:
+                continue
+            expanded = vector(SageQQ, [1, *row])
+            denominator = direction_normal.dot_product(expanded)
+            if denominator == 0:
+                continue
+            shift = -base_normal.dot_product(expanded) / denominator
+            if base_normal + shift * direction_normal != normal:
+                has_new_wall = True
+                break
+        if not has_new_wall:
             lower = middle
             continue
         break
