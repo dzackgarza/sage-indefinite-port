@@ -2572,7 +2572,10 @@ class _PositiveVectorEnumerator:
         # rule because the resulting basis controls both CVP coordinates and
         # their recursive enumeration order.
         basis_l1 = sum(abs(entry) for entry in kernel_rows.list())
-        while True:
+        # LLL on a zero-dimensional kernel has no Gram matrix entries; in
+        # dimension one both direct and dual reductions are necessarily the
+        # identity, so neither case needs to enter GAP's matrix routine.
+        while kernel_rows.nrows() > 1:
             changed = False
             for dual in (False, True):
                 basis_gram = kernel_rows * kernel_rows.transpose()
