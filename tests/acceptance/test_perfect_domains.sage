@@ -49,3 +49,24 @@ def test_lazy_neighbor_cones_retain_exact_transformed_rays() -> None:
         assert common_face.is_face_of(adjacency.source())
         assert common_face.is_face_of(neighbor)
         assert adjacency.target_representative().transport(adjacency.target_to_neighbor()).is_equal_to(neighbor)
+
+
+def test_facet_orbit_permutation_view_materializes_exact_isometries() -> None:
+    """The public owned-isometry view agrees with the internal Schreier permutations."""
+    require(PERFECT_DOMAINS)
+
+    case = next(case for case in load_lorentzian_perfect_domains() if case["id"] == "Result_Enumeration_1")
+    complex_ = lattice(case["gram"]).lorentzian_reduction_complex()
+    cell = complex_.quotient_cells()[0]
+    backend = complex_.local_backend()
+    permutation_orbits = backend.facet_orbit_permutations(cell)
+    isometry_orbits = backend.facet_orbits(cell)
+
+    assert tuple(tuple(facet for facet, _ in orbit) for orbit in permutation_orbits) == tuple(
+        tuple(facet for facet, _ in orbit) for orbit in isometry_orbits
+    )
+    for permutation_orbit, isometry_orbit in zip(permutation_orbits, isometry_orbits, strict=True):
+        for (facet, permutation), (isometry_facet, isometry) in zip(permutation_orbit, isometry_orbit, strict=True):
+            assert facet == isometry_facet
+            for position, image_position in enumerate(permutation):
+                assert isometry(cell.vector_configuration[position]) == cell.vector_configuration[image_position]
