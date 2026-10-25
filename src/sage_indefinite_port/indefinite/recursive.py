@@ -456,7 +456,27 @@ class EichlerRecursion:
         opposite = dualization.domain()
         opposite_inclusion = opposite.Mor(opposite.object(lattice), opposite.object(isotropic_inclusion.domain()))(isotropic_inclusion)
         pairing = dualization(opposite_inclusion) * lattice.metric_map()
-        bound = 2 * int(denominator) ** 2 * abs(int(quotient.discriminant())) ** 2 * int(pairing.index())
+        # Here pairing is a map between finite free ZZ-modules L -> J*. Its
+        # cokernel is finite, and its order is the product of the nonzero Smith
+        # entries of its coordinate matrix. Compute that exact index from these
+        # presentations: the generic provider's index() currently delegates to
+        # cardinality() on a represented torsion module whose construction does
+        # not yet supply a decided finite cardinality.
+        pairing_domain_labels = tuple(pairing.domain().module_generating_set())
+        pairing_codomain_labels = tuple(pairing.codomain().module_generating_set())
+        pairing_rows = tuple(
+            tuple(pairing(pairing.domain().module_generator(label)).to_vector()(target_label) for target_label in pairing_codomain_labels)
+            for label in pairing_domain_labels
+        )
+        pairing_matrix = matrix(SageZZ, pairing_rows)
+        pairing_rank = int(pairing_matrix.rank())
+        if pairing_rank != len(pairing_codomain_labels):
+            raise ArithmeticError("the isotropic pairing L -> J* must have finite cokernel")
+        smith = pairing_matrix.smith_form()[0]
+        pairing_index = SageZZ.one()
+        for position in range(pairing_rank):
+            pairing_index *= abs(smith[position, position])
+        bound = 2 * int(denominator) ** 2 * abs(int(quotient.discriminant())) ** 2 * int(pairing_index)
         scale = rational.base_ring().one() / rational.base_ring()(bound)
         containing = Modules(lattice.base_ring()).Mono(lattice, space)(
             lambda label: space.wrap(rational.scalar_multiple(scale, inclusion(lattice.module_generator(label)).underlying_element()))

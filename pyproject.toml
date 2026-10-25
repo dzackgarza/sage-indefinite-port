@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Port of indefinite lattices and orthogonal groups to SageMath."
 requires-python = ">=3.14"
 dependencies = [
-    "dzack-research @ git+https://github.com/dzackgarza/research",
+    "dzack-research @ git+https://github.com/dzackgarza/research@f44e76f18e2e9cec43b09a846e2e74bca5fd50f6",
 ]
 
 [build-system]

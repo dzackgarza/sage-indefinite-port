@@ -87,6 +87,18 @@ def test_divisibility_two_isotropic_pointed_isometry_has_exact_witness() -> None
     assert all(lattice_.b(witness(left), witness(right)) == lattice_.b(left, right) for left in basis for right in basis)
 
 
+def test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound() -> None:
+    """The pairing L -> (Zv)^* has finite cokernel of order four in this example."""
+    lattice_ = lattice([[0, 4, 0], [4, 0, 0], [0, 0, -8]])
+    marked = element(lattice_, [1, 0, 0])
+    assert int(marked.q()) == 0
+    assert int(marked.content()) == 1
+    assert int(marked.div()) == 4
+
+    action = EichlerRecursion().isotropic_stabilizer_action((marked,), ())
+    assert action.stable_containing_bound() is not None
+
+
 def _automorphism_rows(marked):
     category = pointed_category(marked_vector(marked).q())
     return [rows_of(underlying_isometry(generator)) for generator in automorphisms(category, marked).group_generators()]

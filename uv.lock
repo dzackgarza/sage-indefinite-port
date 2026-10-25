@@ -296,7 +296,7 @@ wheels = [
 [[package]]
 name = "dzack-research"
 version = "0.1.1"
-source = { git = "https://github.com/dzackgarza/research#c7495f69356b8bfbf430e1af1aaff88a4db70b44" }
+source = { git = "https://github.com/dzackgarza/research?rev=f44e76f18e2e9cec43b09a846e2e74bca5fd50f6#f44e76f18e2e9cec43b09a846e2e74bca5fd50f6" }
 dependencies = [
     { name = "haystack-ai" },
     { name = "pandoc-config" },
@@ -1553,7 +1553,7 @@ wheels = [
 [[package]]
 name = "sage-categories"
 version = "0.1.0"
-source = { git = "https://github.com/dzackgarza/sage-categories.git?rev=66efc15bf5050a527f1bb4ff3bff8542e3d83203#66efc15bf5050a527f1bb4ff3bff8542e3d83203" }
+source = { git = "https://github.com/dzackgarza/sage-categories.git?rev=484727f4f9605836ba409962e0c750c9366d3312#484727f4f9605836ba409962e0c750c9366d3312" }
 dependencies = [
     { name = "attrs" },
     { name = "makefun" },
@@ -1582,7 +1582,7 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "dzack-research", git = "https://github.com/dzackgarza/research" }]
+requires-dist = [{ name = "dzack-research", git = "https://github.com/dzackgarza/research?rev=f44e76f18e2e9cec43b09a846e2e74bca5fd50f6" }]
 
 [package.metadata.requires-dev]
 dev = [
