@@ -2294,6 +2294,10 @@ class _PositiveVectorEnumerator:
             {label: _owned_rational(lattice, alpha * timelike_row[position] - partner_row[position]) for position, label in enumerate(lattice.module_generating_set())}
         )
         self.base_target = self.inclusion.base_change(fraction_map).lift(translation)
+        self.base_target_parent = self.base_target.parent()
+        self.base_target_labels = tuple(self.base_target_parent.module_generating_set())
+        target_coordinates = self.base_target.to_vector()
+        self.base_target_coordinates = tuple(target_coordinates(label) for label in self.base_target_labels)
         self.base_bound = (self.d * self.d) / square
         self.partner_row = partner_row
         # Rows are the images of the kernel generators: x in K maps to x * inclusion_rows.
@@ -2320,7 +2324,18 @@ class _PositiveVectorEnumerator:
         r"""The coordinate rows of the shell vectors at this multiplier; elements are raised only for a returned cell."""
         if multiplier <= 0:
             raise ValueError("the positive-vector shell multiplier must be positive")
-        target = self.base_target.parent().scalar_multiple(_owned_rational(self.lattice, SageQQ(multiplier)), self.base_target)
+        # Scale the cached exact coordinate vector directly. The generic
+        # scalar-action morphism repeatedly flattens owned categories here;
+        # this is the same module element as scalar_multiple, assembled once
+        # through the owning module's linear-combination constructor.
+        scalar = _owned_rational(self.lattice, SageQQ(multiplier))
+        target = self.base_target_parent.linear_combination(
+            {
+                label: scalar * coordinate
+                for label, coordinate in zip(self.base_target_labels, self.base_target_coordinates, strict=True)
+                if coordinate
+            }
+        )
         bound = _owned_rational(self.lattice, -(SageQQ(multiplier) ** 2) * self.base_bound)
         # Preserve the pinned Lorentzian.g:369-373 closest-vector API here.
         # The specialized exact-sphere recursion is tested independently, but
