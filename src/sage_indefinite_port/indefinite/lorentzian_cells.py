@@ -2267,8 +2267,22 @@ class _PositiveVectorEnumerator:
         # Gram covector was just computed above, so use its coordinates
         # directly instead of re-entering the generic categorical pairing
         # iterator for the same finite gcd.
-        self.d = SageQQ(gcd(*(int(entry) for entry in self.timelike_covector.column(0))))
-        self.partner = timelike.bezout_partner()
+        pairing_coordinates = tuple(int(entry) for entry in self.timelike_covector.column(0))
+        self.d = SageQQ(gcd(*pairing_coordinates))
+        # bezout_partner() computes the same coefficients by factoring the
+        # generic categorical pairing map.  Its coordinate matrix is already
+        # available, so use exact extended gcd and lift the resulting vector
+        # through the lattice's owned coordinate constructor instead.
+        bezout = [0] * len(pairing_coordinates)
+        divisor = 0
+        for position, coordinate in enumerate(pairing_coordinates):
+            next_divisor, left, right = SageZZ(divisor).xgcd(SageZZ(coordinate))
+            bezout = [int(left) * entry for entry in bezout]
+            bezout[position] = int(right)
+            divisor = int(next_divisor)
+        if divisor != int(self.d) or sum(a * b for a, b in zip(pairing_coordinates, bezout, strict=True)) != int(self.d):
+            raise ArithmeticError("the integral Bezout partner does not realize the direction divisibility")
+        self.partner = _ambient_element(lattice, tuple(SageZZ(entry) for entry in bezout))
         self.inclusion = timelike.orthogonal_complement().inclusion()
         self.kernel = self.inclusion.domain()
         fraction_map = lattice.base_ring().fraction_field_map()
