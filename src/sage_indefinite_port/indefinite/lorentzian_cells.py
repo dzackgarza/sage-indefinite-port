@@ -1217,6 +1217,21 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             by_incidence[incidence] = covector
         facet_covectors_by_incidence[id(cell)] = by_incidence
     ambient_labels = tuple(lattice.module_generating_set())
+    dual = lattice.dual_module()
+    dual_labels = tuple(dual.module_generating_set())
+    # Keep the target cone's exact H-presentation in owned dual coordinates.
+    # Transporting those rows is cheaper than reconstructing a V-to-H
+    # presentation for every member of a large facet-stabilizer orbit.
+    target_h_columns = {}
+    for cell in cells:
+        cone = cell_cones[id(cell)]
+        inequalities = tuple(cone.halfspace_covectors())
+        equations = tuple(cone.equation_covectors())
+        columns = tuple(tuple(int(coordinate(label)) for label in dual_labels) for covector in (*inequalities, *equations) for coordinate in (covector.to_vector(),))
+        target_h_columns[id(cell)] = (
+            len(inequalities),
+            matrix(SageZZ, len(dual_labels), len(columns), lambda row, col, _columns=columns: _columns[col][row]),
+        )
     neighbor_cache = {}
     identity_action = identity_matrix(SageZZ, len(ambient_labels))
     adjacencies = []
@@ -1244,14 +1259,16 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                     inverse_action = action.change_ring(SageQQ).inverse()
                     if any(entry.denominator() != 1 for entry in inverse_action.list()):
                         raise ArithmeticError("a perfect-domain side pairing is not an integral automorphism")
-                    # Construct the transformed cone from its exact ray
-                    # generators.  Rebuilding a V-representation from the
-                    # transformed 104-facet H-presentation for every member
-                    # of a facet orbit dominates the rank-five acceptance
-                    # cases; the isometry already supplies the transformed
-                    # rays, so no H-to-V reconstruction is needed here.
-                    neighbor = cones.from_rays(
-                        tuple(target_to_neighbour(ray) for ray in adjacency.target.vector_configuration)
+                    inverse_action = inverse_action.change_ring(SageZZ)
+                    inequality_count, columns = target_h_columns[id(adjacency.target)]
+                    images = inverse_action * columns
+                    transported = tuple(
+                        dual.linear_combination({label: dual.base_ring()(int(entry)) for label, entry in zip(dual_labels, image, strict=True) if entry})
+                        for image in images.columns()
+                    )
+                    neighbor = cones.from_halfspaces(
+                        transported[:inequality_count],
+                        equation_covectors=transported[inequality_count:],
                     )
                 neighbor_cache[action_key] = neighbor
             # The Schreier orbit records the exact source facet incidence;
