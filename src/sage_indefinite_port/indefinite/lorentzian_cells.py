@@ -2544,6 +2544,98 @@ def _upper_bound(gram: Matrix_rational_dense, base_normal: FreeModuleElement[Rat
     return upper
 
 
+def _source_some_negative_vector(gram: Matrix_rational_dense) -> tuple[Integer, ...]:
+    r"""Port ``GetSomeNegativeVector`` from PositivitySymmetricMatrices.g:173-190.
+
+    Diagonalize the rational symmetric form by the source's radical split and
+    orthogonal Gram--Schmidt procedure. Normalize each nonpositive diagonal
+    direction by its largest coordinate, then apply the source's increasing
+    integer-multiplier/nearest-integer search in diagonal-direction order.
+    """
+    if gram.nrows() != gram.ncols() or gram != gram.transpose():
+        raise ValueError("negative-vector search requires a symmetric Gram matrix")
+    rank = int(gram.nrows())
+    if not rank:
+        raise ValueError("the zero-dimensional form has no negative vector")
+    radical = cast(Matrix_rational_dense, gram.right_kernel_matrix())
+    radical_rank = int(radical.nrows())
+    pivot_columns = set(radical.echelon_form().pivots())
+    transform = cast(Matrix_rational_dense, matrix(cast(Parent, SageQQ), rank, rank, 0))
+    for i in range(radical_rank):
+        for j in range(rank):
+            transform[i, j] = radical[i, j]
+    row_index = radical_rank
+    for column_index in range(rank):
+        if column_index not in pivot_columns:
+            transform[row_index, column_index] = 1
+            row_index += 1
+    reduced = cast(Matrix_rational_dense, transform * gram * transform.transpose())
+    if any(reduced[i, j] for i in range(radical_rank) for j in range(rank)):
+        raise ArithmeticError("the radical basis does not split orthogonally")
+    dimension = rank - radical_rank
+    nondegenerate = cast(
+        Matrix_rational_dense,
+        reduced.matrix_from_rows_and_columns(range(radical_rank, rank), range(radical_rank, rank)),
+    )
+    orthogonal_basis: list[FreeModuleElement[Rational]] = []
+    for _ in range(dimension):
+        if not orthogonal_basis:
+            complement = identity_matrix(cast(Parent, SageQQ), dimension)
+        else:
+            previous = matrix(cast(Parent, SageQQ), orthogonal_basis)
+            complement = cast(
+                Matrix_rational_dense,
+                (nondegenerate * previous.transpose()).left_kernel_matrix(),
+            )
+        restricted = cast(Matrix_rational_dense, complement * nondegenerate * complement.transpose())
+        selected: list[Rational] | None = None
+        for i in range(int(restricted.nrows())):
+            if restricted[i, i]:
+                selected = [SageQQ.one() if j == i else SageQQ.zero() for j in range(int(restricted.nrows()))]
+                break
+        if selected is None:
+            for i in range(int(restricted.nrows())):
+                for j in range(i + 1, int(restricted.ncols())):
+                    if restricted[i, j]:
+                        selected = [SageQQ.one() if k in (i, j) else SageQQ.zero() for k in range(int(restricted.nrows()))]
+                        break
+                if selected is not None:
+                    break
+        if selected is None:
+            raise ArithmeticError("nondegenerate Gram--Schmidt step has no nonisotropic vector")
+        orthogonal_basis.append(vector(SageQQ, selected) * complement)
+    diagonalizer = matrix(cast(Parent, SageQQ), orthogonal_basis) if orthogonal_basis else identity_matrix(cast(Parent, SageQQ), 0)
+    block = identity_matrix(cast(Parent, SageQQ), rank)
+    for i in range(dimension):
+        for j in range(dimension):
+            block[radical_rank + i, radical_rank + j] = diagonalizer[i, j]
+    transform = cast(Matrix_rational_dense, block * transform)
+    diagonal = cast(Matrix_rational_dense, transform * gram * transform.transpose())
+    if any(diagonal[i, j] for i in range(rank) for j in range(rank) if i != j):
+        raise ArithmeticError("source symmetric diagonalization left off-diagonal entries")
+    if not any(diagonal[i, i] < 0 for i in range(rank)):
+        raise ValueError("the Gram matrix has no negative direction")
+    candidates: list[tuple[Rational, ...]] = []
+    for i in range(rank):
+        if diagonal[i, i] > 0:
+            continue
+        row = tuple(SageQQ(entry) for entry in transform.row(i))
+        scale = max(abs(entry) for entry in row)
+        if scale:
+            candidates.append(tuple(entry / scale for entry in row))
+    if not candidates:
+        raise ValueError("the Gram matrix has no nonpositive diagonal direction")
+    multiplier = 1
+    while True:
+        for row in candidates:
+            # Fractions.g:138-148, NearestInteger rounds ties toward +infinity.
+            integral = tuple(SageZZ((multiplier * entry + SageQQ(1) / 2).floor()) for entry in row)
+            candidate = vector(SageZZ, integral)
+            if (candidate * gram * candidate.column())[0] < 0:
+                return integral
+        multiplier += 1
+
+
 def _negative_direction_in_span(
     lattice: Lattices.ParentMethods,
     spanning_rows: Matrix_rational_dense,
@@ -2557,7 +2649,6 @@ def _negative_direction_in_span(
     inadmissible isotropic endpoint. A single arbitrary negative vector is
     insufficient for that algorithm.
     """
-    rational = lattice.base_change(lattice.base_ring().fraction_field_map())
     gram = _gram_matrix(lattice).change_ring(SageQQ)
     dimension = spanning_rows.nrows()
     if dimension == 1 and excluded_directions:
@@ -2569,12 +2660,7 @@ def _negative_direction_in_span(
     while True:
         rows = perturbation * spanning_rows
         restricted = rows * gram * rows.transpose()
-        framed = Lattices(rational.base_ring())([[_owned_rational(lattice, restricted[i, j]) for j in range(restricted.ncols())] for i in range(restricted.nrows())])
-        negative = framed.vector_of_sign(-1)
-        if negative is None:
-            raise ArithmeticError("the outside-ray span has no negative direction")
-        coordinates = negative.to_vector()
-        negative_row = vector(SageQQ, [_rational(coordinates(label)) for label in framed.module_generating_set()])
+        negative_row = vector(SageQQ, _source_some_negative_vector(restricted))
         direction = negative_row * rows
         covector = gram * direction.column()
         scalars = {(vector(SageQQ, row) * covector)[0] for row in critical}
