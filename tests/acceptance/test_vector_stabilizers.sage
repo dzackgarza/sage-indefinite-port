@@ -87,6 +87,21 @@ def test_divisibility_two_isotropic_pointed_isometry_has_exact_witness() -> None
     assert all(lattice_.b(witness(left), witness(right)) == lattice_.b(left, right) for left in basis for right in basis)
 
 
+def test_split_divisibility_one_pointed_isometry_carries_actual_negative_marking() -> None:
+    lattice_ = lattice([[0, 1], [1, 0]])
+    source = element(lattice_, [1, 0])
+    target = -source
+    assert int(source.q()) == int(target.q()) == 0
+    assert int(source.content()) == int(target.content()) == 1
+    assert int(source.div()) == int(target.div()) == 1
+
+    witness = EichlerRecursion().pointed_isometry(source, target)
+    assert witness is not None
+    assert witness(source) == target
+    basis = tuple(lattice_.module_generators())
+    assert all(lattice_.b(witness(left), witness(right)) == lattice_.b(left, right) for left in basis for right in basis)
+
+
 def test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound() -> None:
     """The pairing L -> (Zv)^* has finite cokernel of order four in this example."""
     lattice_ = lattice([[0, 4, 0], [4, 0, 0], [0, 0, -8]])
@@ -109,12 +124,13 @@ def test_divisibility_four_isotropic_plane_stabilizer_constructs_exact_containin
             [0, 0, 4, 0],
         ]
     )
-    plane = (element(lattice_, [1, 0, 0, 0]), element(lattice_, [0, 0, 1, 0]))
-    assert all(int(vector.q()) == 0 and int(vector.content()) == 1 and int(vector.div()) == 4 for vector in plane)
-    assert lattice_.b(plane[0], plane[1]) == 0
-
-    action = EichlerRecursion().isotropic_stabilizer_action(plane, ())
-    assert action.stable_containing_bound() is not None
+    first = element(lattice_, [1, 0, 0, 0])
+    second = element(lattice_, [0, 0, 1, 0])
+    for plane in ((first, second), (first + second, second)):
+        assert all(int(vector.q()) == 0 and int(vector.content()) == 1 and int(vector.div()) == 4 for vector in plane)
+        assert lattice_.b(plane[0], plane[1]) == 0
+        action = EichlerRecursion().isotropic_stabilizer_action(plane, ())
+        assert action.stable_containing_bound() is not None
 
 
 def _automorphism_rows(marked):
