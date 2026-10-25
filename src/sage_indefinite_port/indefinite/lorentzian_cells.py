@@ -2658,8 +2658,14 @@ class _PositiveVectorEnumerator:
                     SageZZ,
                     [[SageZZ(int(entry)) for entry in row] for row in gap_basis_reduction["transformation"]],
                 )
+                reduced_basis_gram = matrix(
+                    SageZZ,
+                    [[SageZZ(int(entry)) for entry in row] for row in gap_basis_reduction["remainder"]],
+                )
                 if abs(int(basis_transform.det())) != 1:
                     raise ArithmeticError("the pinned kernel-basis reduction returned a non-unimodular transform")
+                if basis_transform * basis_gram * basis_transform.transpose() != reduced_basis_gram:
+                    raise ArithmeticError("GAP's kernel-basis LLL transform does not reproduce its returned reduced Gram")
                 if dual:
                     basis_transform = basis_transform.inverse().transpose()
                 candidate_basis = basis_transform * kernel_rows
@@ -2715,6 +2721,8 @@ class _PositiveVectorEnumerator:
                 SageZZ,
                 [[SageZZ(int(entry)) for entry in row] for row in gap_reduction["remainder"]],
             )
+            if direct_transform * adjugate_gram * direct_transform.transpose() != reduced_adjugate:
+                raise ArithmeticError("GAP's dual-LLL source transform does not reproduce its returned reduced adjugate")
             if self.enumeration_transform * kernel_gram_integer * self.enumeration_transform.transpose() != kernel_gram_integer.det() * reduced_adjugate.inverse():
                 raise ArithmeticError("the dual-LLL enumeration transform does not reproduce the dual-reduced Gram")
         else:
