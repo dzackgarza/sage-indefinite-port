@@ -2638,7 +2638,7 @@ def _kernel_flipping(
         # vector, in GAP's one-based indexing), recompute the affine normal
         # through that wall, and apply EXIT 2. The source does not constrain
         # this parameter to the first-scheme bisection interval.
-        state = (tuple(total), tuple(normal))
+        state = (tuple(sorted(total)), tuple(normal))
         if state in seen_second_scheme_states:
             # The same shell at the same normal cannot cross another wall.
             raise _NoTransverseFlipWall("the outside ray repeats a tied shortest shell")
