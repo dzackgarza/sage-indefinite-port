@@ -32,10 +32,11 @@ stopping rule. The dual basis transform is explicitly integral after inverse-
 transpose, and the exact reduced-Gram identities are checked. Five targeted
 helper regressions and twelve additional deterministic-seed random sublattice
 checks passed, including square and rectangular row-lattice reduction cases.
-The quadratic pairing bound is now rescaled by `scale^2` when a rational
-input direction is lowered to its primitive integral representative; the
-successive unit-bound search increments by the same `scale^2`. A targeted
-regression verifies this conversion on nonintegral scales. The primitive-direction lowering helper now has its actual two-value contract
+The initial quadratic pairing bound is rescaled by `scale^2` when a rational
+input direction is lowered to its primitive integral representative; after
+that conversion, the pinned integral search increments `MaxScal` by exactly
+one. Targeted regressions cover both the initial conversion and the subsequent
+unit increments. The primitive-direction lowering helper now has its actual two-value contract
 (`TheMult`, primitive integral coordinates) in both its signature and call site,
 with regressions verifying the pinned `RemoveFractionPlusCoef` scale on
 fractional and nonprimitive integral rays, rejecting empty/zero inputs, and

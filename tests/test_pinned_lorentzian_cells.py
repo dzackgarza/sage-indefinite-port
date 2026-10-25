@@ -7,6 +7,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _PositiveVectorEnumerator,
     _dual_lll_enumeration_key,
     _integral_direction_pairing_bound,
+    _next_integral_pairing_bound,
     _pinned_integer_covector_kernel,
     _pinned_positive_gcd_dot,
     _pinned_sublattice_basis_reduction,
@@ -248,3 +249,7 @@ def test_rational_direction_bound_scales_quadratically() -> None:
     assert _integral_direction_pairing_bound(QQ(2) / 3, QQ(3) / 2) == QQ(3) / 2
     assert _integral_direction_pairing_bound(QQ(7), QQ(1)) == QQ(7)
     assert _integral_direction_pairing_bound(QQ(5) / 4, QQ(4) / 3) == QQ(20) / 9
+    # After lowering, MaxScal belongs to the integral primitive vector and
+    # the source advances it by one, independently of the initial scale.
+    assert _next_integral_pairing_bound(QQ(20) / 9) == QQ(29) / 9
+    assert _next_integral_pairing_bound(QQ(3) / 2) == QQ(5) / 2

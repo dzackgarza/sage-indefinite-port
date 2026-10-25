@@ -2512,12 +2512,17 @@ def _primitive_integral_direction(
 
 
 def _integral_direction_pairing_bound(max_scal: Rational, scale: Rational) -> Rational:
-    r"""Convert a quadratic bound on ``x=v/scale`` to the integral ray ``v``.
+    r"""Convert an initial quadratic bound on ``x=v/scale`` to integral ``v``.
 
-    Since ``q(v)=scale^2*q(x)``, the integral-vector search must scale a
-    quadratic bound by the square of the primitive-direction multiplier.
+    Since ``q(v)=scale^2*q(x)``, the initial bound scales quadratically. Once
+    in integral coordinates, the pinned source increments this bound by one.
     """
     return SageQQ(max_scal) * SageQQ(scale) ** 2
+
+
+def _next_integral_pairing_bound(bound: Rational) -> Rational:
+    r"""Advance the source's integral ``MaxScal`` by exactly one."""
+    return SageQQ(bound) + 1
 
 
 def _pinned_positive_gcd_dot(values: tuple[int, ...]) -> tuple[int, tuple[int, ...]]:
@@ -2939,7 +2944,7 @@ def _search_initial_vectors(lattice: Lattices.ParentMethods, direction: tuple[Ra
         # Lorentzian.g:411–423 increases MaxScal by one, rather than
         # exponentially expanding the search interval.
         max_scal += 1
-        enumerator.scaled_max += enumerator.scale**2
+        enumerator.scaled_max = _next_integral_pairing_bound(enumerator.scaled_max)
 
 
 def _source_mid_value(lower: Rational, upper: Rational) -> Rational:
