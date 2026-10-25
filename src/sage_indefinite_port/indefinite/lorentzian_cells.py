@@ -2231,8 +2231,10 @@ def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]
         perturbation *= modification
 
 
-def _primitive_integral_direction(lattice: Lattices.ParentMethods, coordinates: tuple[Rational, ...]) -> tuple[Lattices.ElementMethods, Rational]:
-    r"""The primitive vector t of L on the ray of a rational direction u, and the scale s with u = t / s."""
+def _primitive_integral_direction(
+    lattice: Lattices.ParentMethods, coordinates: tuple[Rational, ...]
+) -> tuple[Lattices.ElementMethods, Rational, tuple[Integer, ...]]:
+    r"""The primitive vector on a rational ray, its scale, and its exact coordinates."""
     if len(coordinates) != int(lattice.module_rank()):
         raise ValueError("the rational direction must have the lattice rank")
     if not any(coordinates):
@@ -2240,10 +2242,13 @@ def _primitive_integral_direction(lattice: Lattices.ParentMethods, coordinates: 
     denominator = SageZZ.one()
     for entry in coordinates:
         denominator = denominator.lcm(SageZZ(SageQQ(entry).denominator()))
-    scaled = _ambient_element(lattice, tuple(SageZZ(SageQQ(entry) * denominator) for entry in coordinates))
-    content = int(scaled.content())
-    primitive = _ambient_element(lattice, tuple(int(entry) // content for entry in _coordinate_row(lattice, scaled, SageZZ)))
-    return primitive, SageQQ(denominator) / SageQQ(content)
+    scaled_coordinates = tuple(SageZZ(SageQQ(entry) * denominator) for entry in coordinates)
+    content = SageZZ(gcd(*(int(entry) for entry in scaled_coordinates)))
+    if content <= 0:
+        raise ArithmeticError("a nonzero rational direction has positive integral content")
+    primitive_coordinates = tuple(SageZZ(entry // content) for entry in scaled_coordinates)
+    primitive = _ambient_element(lattice, primitive_coordinates)
+    return primitive, SageQQ(denominator) / SageQQ(content), primitive_coordinates
 
 
 class _PositiveVectorEnumerator:
@@ -2260,13 +2265,15 @@ class _PositiveVectorEnumerator:
         self.lattice = lattice
         self.gram = _gram_matrix(lattice)
         self.allowed_squares = allowed_squares
-        timelike, scale = _primitive_integral_direction(lattice, tuple(SageQQ(entry) for entry in rational_direction))
+        timelike, scale, timelike_coordinates = _primitive_integral_direction(
+            lattice, tuple(SageQQ(entry) for entry in rational_direction)
+        )
         self.timelike = timelike
-        self.timelike_row = _coordinate_row(lattice, timelike, SageZZ)
+        self.timelike_row = vector(SageZZ, timelike_coordinates)
         self.timelike_covector = self.gram * self.timelike_row.column()
         self.scale = scale
         self.scaled_max = SageQQ(max_scal) * scale
-        square = SageQQ(int(timelike.q()))
+        square = SageQQ((self.timelike_row * self.gram * self.timelike_row.column())[0])
         if square <= 0:
             raise ValueError("positive-vector enumeration needs a timelike direction")
         # div(t) is gcd(b(t,e_i)) over the integral basis.  The exact
