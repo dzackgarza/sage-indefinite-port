@@ -67,6 +67,15 @@ def test_gap_lll_transformation_uses_row_congruence_orientation() -> None:
     assert dual_transform * gram.adjugate() * dual_transform.transpose() == dual_reduced
     enumeration_transform = dual_transform.inverse().transpose()
     assert enumeration_transform * gram * enumeration_transform.transpose() == gram.det() * dual_reduced.change_ring(QQ).inverse()
+    # Exercise the production ordering key against the actual pinned dual-LLL
+    # transform, not only a separately chosen nonsymmetric unimodular matrix.
+    candidates = (vector(ZZ, (4, 2, 1)), vector(ZZ, (3, 0, 2)), vector(ZZ, (1, 5, 0)), vector(ZZ, (0, 1, 3)))
+    assert tuple(sorted(candidates, key=lambda x: _dual_lll_enumeration_key(tuple(x), dual_transform))) == (
+        candidates[3], candidates[2], candidates[1], candidates[0]
+    )
+    assert tuple(sorted(candidates, key=lambda x: _dual_lll_enumeration_key(tuple(x), dual_transform.transpose()))) != (
+        candidates[3], candidates[2], candidates[1], candidates[0]
+    )
 
 
 def test_dual_lll_candidates_sort_in_reduced_column_coordinates() -> None:
