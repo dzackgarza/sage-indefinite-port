@@ -74,17 +74,21 @@ def test_dual_lll_candidates_sort_in_reduced_column_coordinates() -> None:
     from sage.all import ZZ, matrix, vector
 
     transform = matrix(ZZ, [[1, 2, 0], [0, 1, 1], [0, 0, 1]])
-    original_rows = (vector(ZZ, (4, 2, 1)), vector(ZZ, (3, 0, 2)), vector(ZZ, (1, 5, 0)))
-    reduced_columns = tuple(
-        tuple((transform * row.column())[i, 0] for i in range(transform.nrows()))
-        for row in original_rows
+    reduced_columns = (vector(ZZ, (3, 2, 2)), vector(ZZ, (11, 5, 0)), vector(ZZ, (8, 3, 1)))
+    # CVPSolver reconstructs x=P^{-1}y. Recover the original columns from
+    # deliberately out-of-order recursive coordinates and check the inverse.
+    original_columns = tuple(transform.inverse() * reduced.column() for reduced in reduced_columns)
+    assert tuple(tuple(column[i, 0] for i in range(3)) for column in original_columns) == (
+        (3, 0, 2), (1, 5, 0), (4, 2, 1)
     )
-    assert reduced_columns == ((8, 3, 1), (3, 2, 2), (11, 5, 0))
-    expected_order = (original_rows[2], original_rows[0], original_rows[1])
-    assert tuple(sorted(original_rows, key=lambda row: _dual_lll_enumeration_key(tuple(row), transform))) == expected_order
+    assert tuple(tuple((transform * column)[i, 0] for i in range(3)) for column in original_columns) == tuple(
+        tuple(column) for column in reduced_columns
+    )
+    expected_order = (original_columns[1], original_columns[2], original_columns[0])
+    assert tuple(sorted(original_columns, key=lambda column: _dual_lll_enumeration_key(tuple(column[i, 0] for i in range(3)), transform))) == expected_order
     # The transpose gives a different order on this nonsymmetric transform;
     # this guards against accidentally using Q^{-1}=P^T instead of P.
-    assert tuple(sorted(original_rows, key=lambda row: _dual_lll_enumeration_key(tuple(row), transform.transpose()))) != expected_order
+    assert tuple(sorted(original_columns, key=lambda column: _dual_lll_enumeration_key(tuple(column[i, 0] for i in range(3)), transform.transpose()))) != expected_order
 
 
 def test_pinned_positive_gcd_dot_matches_exact_coefficients() -> None:
