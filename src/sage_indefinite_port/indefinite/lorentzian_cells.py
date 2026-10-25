@@ -1300,6 +1300,8 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             coordinate = covector.to_vector()
             normal = vector(SageQQ, (_rational(coordinate(label)) for label in labels))
             incidence = frozenset(position for position, row in enumerate(rows.rows()) if row.dot_product(normal) == 0)
+            if not incidence or rows.matrix_from_rows(sorted(incidence)).rank() != rows.ncols() - 1:
+                raise ArithmeticError("a minimized H-presentation covector does not define a codimension-one extreme-ray face")
             if incidence in by_incidence:
                 raise ArithmeticError("distinct perfect-cell facets have the same extreme-ray incidence")
             by_incidence[incidence] = covector
