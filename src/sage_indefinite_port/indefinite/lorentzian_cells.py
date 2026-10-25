@@ -469,12 +469,22 @@ class LorentzianPerfectLocalBackend:
             expanded = matrix(SageQQ, [[1, *row] for row in critical])
             nullspace = expanded.right_kernel_matrix()
             directions = nullspace.matrix_from_columns(range(1, nullspace.ncols())) * gram.inverse()
-            outside_direction = _negative_direction_in_span(normalized, directions, critical, base_normal)
-            direction_covector = gram * outside_direction.column()
-            critical_row = vector(SageQQ, critical[0])
-            direction_scalar = (critical_row * direction_covector)[0]
-            normal_direction = vector(SageQQ, [-direction_scalar, *direction_covector.column(0)])
-            critical, flipped_normal, _test_direction, _max_scal = _kernel_flipping(normalized, critical, base_normal, normal_direction, allowed_squares)
+            while True:
+                outside_direction = _negative_direction_in_span(normalized, directions, critical, base_normal)
+                direction_covector = gram * outside_direction.column()
+                critical_row = vector(SageQQ, critical[0])
+                direction_scalar = (critical_row * direction_covector)[0]
+                normal_direction = vector(SageQQ, [-direction_scalar, *direction_covector.column(0)])
+                try:
+                    critical, flipped_normal, _test_direction, _max_scal = _kernel_flipping(
+                        normalized, critical, base_normal, normal_direction, allowed_squares
+                    )
+                except _NoTransverseFlipWall:
+                    # As in the pinned GetOneOutsideRay loop, change the
+                    # negative ray when its admissible parameter direction
+                    # is tangent to every wall in the first shortest shell.
+                    continue
+                break
             # Lorentzian.g:1194: normalize the returned supporting normal
             # before the next wall-crossing step.
             base_normal = _source_remove_fraction(flipped_normal)
@@ -2521,6 +2531,10 @@ def _negative_direction_in_span(
         perturbation *= modification
 
 
+class _NoTransverseFlipWall(ArithmeticError):
+    """The chosen outside ray is admissible but tangent to its first new shell."""
+
+
 def _kernel_flipping(
     lattice: Lattices.ParentMethods,
     critical: tuple[tuple[int, ...], ...],
@@ -2582,6 +2596,17 @@ def _kernel_flipping(
         # Lorentzian.g:924-930, EXIT 1: the shell lies inside CritSet.
         if total_rows.issubset(critical_rows):
             return total, normal, test_direction_row, max_scal
+        # The reference assumes the first newly discovered shortest wall is
+        # transverse to the chosen parameter direction. For nongeneric
+        # directions, a whole tied shell may be parallel to that direction;
+        # continue the exact first-scheme interval search until a transverse
+        # wall appears instead of entering EXIT 2 with a zero denominator.
+        if not any(
+            row not in critical_rows
+            and direction_normal.dot_product(vector(SageQQ, [1, *row])) != 0
+            for row in total
+        ):
+            raise _NoTransverseFlipWall("the outside ray is tangent to every wall in the first new shortest shell")
         break
     seen_second_scheme_states: set[tuple[tuple[tuple[int, ...], ...], tuple[Rational, ...]]] = set()
     while True:
