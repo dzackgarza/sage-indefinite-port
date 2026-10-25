@@ -2500,7 +2500,13 @@ def _negative_direction_in_span(
     """
     rational = lattice.base_change(lattice.base_ring().fraction_field_map())
     gram = _gram_matrix(lattice).change_ring(SageQQ)
-    perturbation = identity_matrix(SageZZ, spanning_rows.nrows())
+    dimension = spanning_rows.nrows()
+    if dimension == 1 and excluded_directions:
+        # A one-dimensional rational span has exactly one projective
+        # direction. Repeatedly changing its basis cannot produce a ray
+        # distinct from an already rejected one.
+        raise ArithmeticError("a rejected outside ray spans the entire one-dimensional negative space")
+    perturbation = identity_matrix(SageZZ, dimension)
     while True:
         rows = perturbation * spanning_rows
         restricted = rows * gram * rows.transpose()
@@ -2524,7 +2530,6 @@ def _negative_direction_in_span(
             return direction
         # IndefiniteFormsFundamental.g:11-30, GetRandomMatrixPerturbation.
         # These changes of basis preserve the rational span of the rows.
-        dimension = spanning_rows.nrows()
         modification = identity_matrix(SageZZ, dimension)
         if choice((1, 2)) == 1:
             permutation = list(range(dimension))
