@@ -253,3 +253,41 @@ def test_rational_direction_bound_scales_quadratically() -> None:
     # the source advances it by one, independently of the initial scale.
     assert _next_integral_pairing_bound(QQ(20) / 9) == QQ(29) / 9
     assert _next_integral_pairing_bound(QQ(3) / 2) == QQ(5) / 2
+
+
+def test_initial_vector_search_advances_integral_bound_without_rescanning() -> None:
+    """MaxScal advances by one and each multiplier is visited at most once."""
+    from sage.all import QQ, ZZ, matrix
+    from sage_indefinite_port.indefinite import lorentzian_cells as cells
+
+    visited = []
+
+    class Enumerator:
+        def __init__(self, lattice, direction, max_scal, allowed_squares):
+            self.scale = QQ(2)
+            self.d = ZZ(2)
+            self.scaled_max = cells._integral_direction_pairing_bound(max_scal, self.scale)
+
+        def max_multiplier(self):
+            return int(self.scaled_max / self.d)
+
+        def vectors_at_multiplier(self, multiplier):
+            visited.append((self.scaled_max, multiplier))
+            return ((1, 0),) if multiplier == 2 else ()
+
+    class TimelikeLattice:
+        def is_isotropic(self):
+            return True
+
+    original_gram = cells._gram_matrix
+    original_enumerator = cells._PositiveVectorEnumerator
+    try:
+        cells._gram_matrix = lambda lattice: matrix(ZZ, [[1, 0], [0, 1]])
+        cells._PositiveVectorEnumerator = Enumerator
+        result = cells._search_initial_vectors(TimelikeLattice(), (QQ(1) / 2, QQ(1) / 2), {ZZ.zero()})
+    finally:
+        cells._gram_matrix = original_gram
+        cells._PositiveVectorEnumerator = original_enumerator
+
+    assert result == ((1, 0),)
+    assert visited == [(QQ(1) / 2 * 4, 1), (QQ(1) / 2 * 4 + 2, 2)]
