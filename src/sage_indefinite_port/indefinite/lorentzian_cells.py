@@ -469,8 +469,11 @@ class LorentzianPerfectLocalBackend:
             expanded = matrix(SageQQ, [[1, *row] for row in critical])
             nullspace = expanded.right_kernel_matrix()
             directions = nullspace.matrix_from_columns(range(1, nullspace.ncols())) * gram.inverse()
+            rejected_outside_directions: list[FreeModuleElement[Rational]] = []
             while True:
-                outside_direction = _negative_direction_in_span(normalized, directions, critical, base_normal)
+                outside_direction = _negative_direction_in_span(
+                    normalized, directions, critical, base_normal, rejected_outside_directions
+                )
                 direction_covector = gram * outside_direction.column()
                 critical_row = vector(SageQQ, critical[0])
                 direction_scalar = (critical_row * direction_covector)[0]
@@ -480,9 +483,10 @@ class LorentzianPerfectLocalBackend:
                         normalized, critical, base_normal, normal_direction, allowed_squares
                     )
                 except _NoTransverseFlipWall:
-                    # As in the pinned GetOneOutsideRay loop, change the
-                    # negative ray when its admissible parameter direction
-                    # is tangent to every wall in the first shortest shell.
+                    # GetOneOutsideRay changes its basis frame on a rejected
+                    # ray. Exclude its projective direction explicitly so the
+                    # next exact negative-vector search cannot return it again.
+                    rejected_outside_directions.append(outside_direction)
                     continue
                 break
             # Lorentzian.g:1194: normalize the returned supporting normal
@@ -2486,6 +2490,7 @@ def _negative_direction_in_span(
     spanning_rows: Matrix_rational_dense,
     critical: tuple[tuple[int, ...], ...],
     base_normal: FreeModuleElement[Rational],
+    excluded_directions: list[FreeModuleElement[Rational]] | None = None,
 ) -> FreeModuleElement[Rational]:
     r"""The negative direction accepted by Lorentzian.g's GetOneOutsideRay.
 
@@ -2512,7 +2517,10 @@ def _negative_direction_in_span(
             raise ArithmeticError("the GetOneOutsideRay direction must pair equally with every critical vector")
         (scalar,) = scalars
         normal = vector(SageQQ, [-scalar, *covector.column(0)])
-        if _upper_bound(gram, base_normal, normal) is not None:
+        if _upper_bound(gram, base_normal, normal) is not None and all(
+            matrix(SageQQ, [direction, excluded]).rank() == 2
+            for excluded in (excluded_directions or [])
+        ):
             return direction
         # IndefiniteFormsFundamental.g:11-30, GetRandomMatrixPerturbation.
         # These changes of basis preserve the rational span of the rows.
