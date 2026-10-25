@@ -2540,7 +2540,7 @@ def _pinned_integer_covector_kernel(covector: tuple[int, ...]) -> Matrix_integer
         if size == 2:
             return pair_gcd(values[0], values[1])
         previous = gcd_transform(values[:-1])
-        pair = pair_gcd(gcd(values[:-1]), values[-1])
+        pair = pair_gcd(gcd(*values[:-1]), values[-1])
         result = matrix(SageZZ, size, size)
         for i in range(size - 1):
             result[i, 0] = pair[0, 0] * previous[i, 0]
