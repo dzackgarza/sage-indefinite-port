@@ -2581,6 +2581,7 @@ def _kernel_flipping(
     critical_first = vector(SageQQ, critical[0])
     critical_rows = set(critical)
     total: tuple[tuple[int, ...], ...] = ()
+    no_wall_shells: set[tuple[tuple[int, ...], ...]] = set()
     while True:
         middle = _source_mid_value(lower, upper)
         normal = base_normal + middle * direction_normal
@@ -2624,6 +2625,10 @@ def _kernel_flipping(
                 has_new_wall = True
                 break
         if not has_new_wall:
+            shell_state = tuple(total)
+            if shell_state in no_wall_shells:
+                raise _NoTransverseFlipWall("the same shortest shell repeatedly offers no new transverse wall")
+            no_wall_shells.add(shell_state)
             lower = middle
             continue
         break
