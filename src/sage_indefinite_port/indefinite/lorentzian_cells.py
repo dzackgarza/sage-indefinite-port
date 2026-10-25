@@ -1332,8 +1332,13 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # for every member of a facet-stabilizer orbit (104 times on the
             # rank-five U+<1,1,5> case).  Generate the same face directly from
             # its known rays; redundant rays, if any, do not change the cone.
-            source_rays = adjacency.source.vector_configuration
-            common_face = cones.from_rays(tuple(source_rays[position] for position in sorted(incident)))
+            face_rows = tuple(adjacency.source.rows[position] for position in sorted(incident))
+            face_engine = Polyhedron(
+                vertices=[(0,) * len(ambient_labels)],
+                rays=[tuple(SageQQ(entry) for entry in row) for row in face_rows],
+                base_ring=SageQQ,
+            )
+            common_face = _cone_from_engine_polyhedron(lattice, face_engine)
             adjacencies.append(
                 PerfectDomainOrbitAdjacency(
                     cell_cones[id(adjacency.source)],
