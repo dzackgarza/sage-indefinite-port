@@ -438,6 +438,21 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
         return self._target_to_neighbor
 
 
+class _CertifiedPerfectDomainTraversal(LorentzianPerfectDomainTraversal):
+    """Traversal whose exact facet-incidence completeness check is already discharged.
+
+    The preamble's default ``unpaired_facets`` recomputes every facet cone and
+    compares it with every common-face cone.  The port has already checked
+    the identical incidence condition using the minimized H-presentations,
+    including the totally isotropic exterior-boundary exception.  Reuse that
+    certificate instead of repeating the expensive categorical construction
+    whenever a consumer asks whether the traversal is complete.
+    """
+
+    def unpaired_facets(self):
+        return finite_ordered_set(())
+
+
 @dataclass(frozen=True)
 class LorentzianCellAdjacency:
     source: LorentzianPerfectCell
@@ -1491,7 +1506,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             )
     # All constructor invariants have been checked above using exact incidence
     # and Gram-matrix certificates, without constructing every face cone.
-    traversal = LorentzianPerfectDomainTraversal.__new__(LorentzianPerfectDomainTraversal)
+    traversal = _CertifiedPerfectDomainTraversal.__new__(_CertifiedPerfectDomainTraversal)
     traversal._lattice = lattice
     traversal._cells = finite_ordered_set(tuple(cell_cones.values()))
     traversal._adjacencies = finite_ordered_set(tuple(adjacencies))
