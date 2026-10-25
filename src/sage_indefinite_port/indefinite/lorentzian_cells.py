@@ -2556,14 +2556,47 @@ class _PositiveVectorEnumerator:
         # than Sage's equally valid but differently ordered kernel basis.
         gap_covector = [[entry] for entry in pairing_coordinates]
         gap_kernel = libgap.NullspaceIntMat(gap_covector)
-        self.inclusion_rows = matrix(
+        kernel_rows = matrix(
             SageZZ,
             [[SageZZ(int(entry)) for entry in row] for row in gap_kernel],
         )
-        if self.inclusion_rows.nrows() != int(lattice.module_rank()) - 1 or any(
-            entry for entry in (self.inclusion_rows * vector(SageZZ, pairing_coordinates).column()).list()
+        if kernel_rows.nrows() != int(lattice.module_rank()) - 1 or any(
+            entry for entry in (kernel_rows * vector(SageZZ, pairing_coordinates).column()).list()
         ):
             raise ArithmeticError("the integral orthogonal-kernel basis does not span the timelike covector kernel")
+        # The pinned C++ consumer does not use NullspaceIntMat's raw basis:
+        # lorentzian_perfect.h immediately applies SublatticeBasisReduction.
+        # That routine alternates direct and dual LLL reductions of the row
+        # Gram matrix, accepting each transform only when the L1 norm of the
+        # ambient basis rows strictly decreases. Reproduce that exact stopping
+        # rule because the resulting basis controls both CVP coordinates and
+        # their recursive enumeration order.
+        basis_l1 = sum(abs(entry) for entry in kernel_rows.list())
+        while True:
+            changed = False
+            for dual in (False, True):
+                basis_gram = kernel_rows * kernel_rows.transpose()
+                if dual:
+                    basis_gram = basis_gram.adjugate()
+                gap_basis_reduction = libgap.LLLReducedGramMat(
+                    [[int(basis_gram[i, j]) for j in range(basis_gram.ncols())] for i in range(basis_gram.nrows())],
+                    libgap(99) / libgap(100),
+                )
+                basis_transform = matrix(
+                    SageZZ,
+                    [[SageZZ(int(entry)) for entry in row] for row in gap_basis_reduction["transformation"]],
+                )
+                if dual:
+                    basis_transform = basis_transform.inverse().transpose()
+                candidate_basis = basis_transform * kernel_rows
+                candidate_l1 = sum(abs(entry) for entry in candidate_basis.list())
+                if candidate_l1 < basis_l1:
+                    kernel_rows = candidate_basis
+                    basis_l1 = candidate_l1
+                    changed = True
+            if not changed:
+                break
+        self.inclusion_rows = kernel_rows
         # Lorentzian.g:337-343 defines GramMat = -Ubasis*LorMat*Ubasis^T,
         # the positive-definite form used by ClosestAtDistanceVallentinProgram.
         kernel_gram = -(self.inclusion_rows * self.gram * self.inclusion_rows.transpose())
