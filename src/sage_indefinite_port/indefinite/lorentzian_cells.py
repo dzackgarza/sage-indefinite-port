@@ -2247,8 +2247,7 @@ def _primitive_integral_direction(
     if content <= 0:
         raise ArithmeticError("a nonzero rational direction has positive integral content")
     primitive_coordinates = tuple(SageZZ(entry // content) for entry in scaled_coordinates)
-    primitive = _ambient_element(lattice, primitive_coordinates)
-    return primitive, SageQQ(denominator) / SageQQ(content), primitive_coordinates
+    return SageQQ(denominator) / SageQQ(content), primitive_coordinates
 
 
 class _PositiveVectorEnumerator:
@@ -2265,10 +2264,9 @@ class _PositiveVectorEnumerator:
         self.lattice = lattice
         self.gram = _gram_matrix(lattice)
         self.allowed_squares = allowed_squares
-        timelike, scale, timelike_coordinates = _primitive_integral_direction(
+        scale, timelike_coordinates = _primitive_integral_direction(
             lattice, tuple(SageQQ(entry) for entry in rational_direction)
         )
-        self.timelike = timelike
         self.timelike_row = vector(SageZZ, timelike_coordinates)
         self.timelike_covector = self.gram * self.timelike_row.column()
         self.scale = scale
