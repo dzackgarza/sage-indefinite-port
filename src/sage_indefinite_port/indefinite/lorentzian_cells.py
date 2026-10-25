@@ -2488,7 +2488,12 @@ def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]
 def _primitive_integral_direction(
     coordinates: tuple[Rational, ...],
 ) -> tuple[Rational, tuple[Integer, ...]]:
-    r"""The primitive vector on a rational ray, its scale, and its exact coordinates."""
+    r"""Return ``(TheMult, TheVect)`` as in ``RemoveFractionPlusCoef``.
+
+    For nonzero rational coordinates ``x``, the returned positive multiplier
+    ``m`` and primitive integral tuple ``v`` satisfy ``x = v / m`` exactly.
+    This is the source contract used to scale ``MaxScal`` before enumeration.
+    """
     if not coordinates:
         raise ValueError("the rational direction must have positive dimension")
     if not any(coordinates):
