@@ -66,8 +66,8 @@ def test_gap_lll_transformation_uses_row_congruence_orientation() -> None:
     assert enumeration_transform * gram * enumeration_transform.transpose() == gram.det() * dual_reduced.change_ring(QQ).inverse()
 
 
-def test_dual_lll_candidates_sort_in_reduced_row_coordinates() -> None:
-    """CVPSolver maps reduced rows y to original rows x=y*T."""
+def test_dual_lll_candidates_sort_in_reduced_column_coordinates() -> None:
+    """CVPSolver maps reduced columns y to original columns x=T^{-1}y."""
     from sage.all import ZZ, matrix, vector
 
     transform = matrix(ZZ, [[1, 2, 0], [0, 1, 1], [0, 0, 1]])
