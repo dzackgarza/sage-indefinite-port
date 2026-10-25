@@ -78,9 +78,11 @@ def test_dual_lll_candidates_sort_in_reduced_column_coordinates() -> None:
         for row in original_rows
     )
     assert reduced_columns == ((8, 3, 1), (3, 2, 2), (11, 5, 0))
-    assert tuple(sorted(original_rows, key=lambda row: _dual_lll_enumeration_key(tuple(row), transform))) == (
-        original_rows[2], original_rows[0], original_rows[1]
-    )
+    expected_order = (original_rows[2], original_rows[0], original_rows[1])
+    assert tuple(sorted(original_rows, key=lambda row: _dual_lll_enumeration_key(tuple(row), transform))) == expected_order
+    # The transpose gives a different order on this nonsymmetric transform;
+    # this guards against accidentally using Q^{-1}=P^T instead of P.
+    assert tuple(sorted(original_rows, key=lambda row: _dual_lll_enumeration_key(tuple(row), transform.transpose()))) != expected_order
 
 
 def test_pinned_positive_gcd_dot_matches_exact_coefficients() -> None:
