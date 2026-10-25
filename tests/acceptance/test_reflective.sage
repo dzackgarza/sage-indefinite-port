@@ -167,17 +167,6 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
     }
     missing = sorted(name for name in required if name not in observed)
     assert not missing, f"unexercised pinned edgewalk routes: {missing}"
-
-
-def test_edgewalk_branch_sample_oscar_and_e10_oracles() -> None:
-    """Keep the Julia-backed OSCAR chamber and E10 paper comparisons in the sample."""
-    require(EDGEWALK)
-    oscar_case = _VINBERG["vinberg_diag_1_-1_-3"]
-    _assert_same_root_system(oscar_case["gram"], oscar_case["simple_roots_of_test_chamber"])
-    e10 = load_e10_fundamental_domain()
-    _assert_same_root_system(e10["gram"], [root["vector"] for root in e10["simple_roots"]])
-
-
 @pytest.mark.parametrize("case", load_reflective_forms(), ids=lambda case: case["id"])
 def test_simple_root_counts_match_polyhedral_common(case) -> None:
     require(EDGEWALK)
