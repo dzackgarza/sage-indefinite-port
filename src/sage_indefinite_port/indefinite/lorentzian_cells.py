@@ -1275,7 +1275,6 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         basis_positions, inverse_source_basis = source_basis_data[source_key]
         orbit_permutations = backend._facet_orbit_permutations[source_key]
         for orbit_position, (incident, symmetry) in enumerate(orbit):
-            target_to_neighbour = symmetry * adjacency.transporter
             # In row coordinates g(v)=vM. A covector column a cutting out
             # a>=0 on the target becomes M^{-1}a on its image. Since g is
             # integral unimodular, the transformed H-data remain integral.
@@ -1297,12 +1296,16 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # elements use the same exact permutation-composition law.
             action = transporter_action * symmetry_action
             if orbit_position == min(1, len(orbit) - 1):
+                reference_map = symmetry * adjacency.transporter
                 reference_action = matrix(
                     SageZZ,
-                    [_coordinate_row(lattice, target_to_neighbour(basis_vector), SageZZ) for basis_vector in ambient_basis],
+                    [_coordinate_row(lattice, reference_map(basis_vector), SageZZ) for basis_vector in ambient_basis],
                 )
                 if action != reference_action:
                     raise ArithmeticError("the Schreier permutation and categorical side-pairing actions disagree")
+            if action * ambient_gram * action.transpose() != ambient_gram or abs(action.det()) != 1:
+                raise ArithmeticError("a Schreier side-pairing action is not an integral lattice isometry")
+            target_to_neighbour = lattice.O()(tuple(lattice([int(entry) for entry in row]) for row in action.rows()))
             target_cone = cell_cones[id(adjacency.target)]
             action_key = (id(adjacency.target), tuple(int(entry) for entry in action.list()))
             neighbor = neighbor_cache.get(action_key)
