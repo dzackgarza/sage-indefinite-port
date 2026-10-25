@@ -138,6 +138,17 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
     )
     assert any(square == 0 for square in vertex_squares)
     assert any(square < 0 for square in vertex_squares)
+    # Provider revisions may discover a finite extension before the whole
+    # walk reaches its isotropic fallback. Exercise that exact routine on the
+    # recorded U+<2> initial edge independently of whether edge_step needs it.
+    fallback_walk = _Edgewalk(_hyperbolic([[0, 1, 0], [1, 0, 0], [0, 0, 2]]))
+    fallback_start = fallback_walk.initial_isotropic_vertex() or fallback_walk.initial_vertex()
+    assert fallback_start is not None
+    fallback_roots, fallback_discarded = fallback_walk.edge_directions(fallback_start)[0]
+    fallback_vertex = fallback_walk.isotropic_next_vertex(
+        fallback_roots, fallback_discarded, fallback_start.generator
+    )
+    assert fallback_vertex.generator.q() == 0
     nonreflective = _hyperbolic([[0, 1, 0], [1, 0, 0], [0, 0, 46]]).allcock_edgewalk()
     assert not nonreflective.is_reflective()
     assert len(nonreflective.vertices()) == 3
