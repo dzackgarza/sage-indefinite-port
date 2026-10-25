@@ -35,10 +35,12 @@ checks passed, including square and rectangular row-lattice reduction cases.
 Arbitrary pairing bounds are rescaled linearly by `scale` when a rational
 input direction is lowered to its primitive integral representative. The
 initial search bound is a special case: the pinned source initializes it to
-`q(primitive_direction)`, so `_search_initial_vectors` first multiplies
-`q(rational_direction)` by `scale`, then the constructor's linear conversion
-produces `q(primitive_direction) = scale^2*q(rational_direction)`. After that
-initial bound, the integral search increments `MaxScal` by exactly one.
+`q(primitive_direction)`. `_search_initial_vectors` now computes that value
+directly from the primitive integral row and the original Gram matrix, then
+passes that row and exact norm into the enumerator with unit scale. This avoids
+reconstructing the integral norm indirectly from the rational direction and
+fraction-clearing multiplier. After that initial bound, the integral search
+increments `MaxScal` by exactly one.
 Targeted regressions cover both the initial conversion and subsequent unit
 increments. The linear-bound correction has been checked against the pinned
 source: `LORENTZ_SearchInitialVectorOpt` initializes `MaxScal` to `q(direction)`,
