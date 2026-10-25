@@ -2613,7 +2613,11 @@ class _PositiveVectorEnumerator:
         target_coordinates = self.inclusion_rows.transpose().change_ring(SageQQ).solve_right(translation)
         if self.inclusion_rows.transpose().change_ring(SageQQ) * target_coordinates != translation:
             raise ArithmeticError("the Bezout translation is not in the rational orthogonal-kernel span")
-        self.base_target_coordinates = tuple(SageQQ(entry) for entry in target_coordinates.column(0))
+        # The source sets eTrans = eBasSol - alpha*eVect = -m*(alpha*t-h).
+        # LORENTZ_FindPositiveVectors then calls LATT_near(GramMat, -eSol, d),
+        # and LATT_near negates its target once more before FindAtMostDistVectors.
+        # The actual CVP center is therefore eSol = -m*w, not +m*w.
+        self.base_target_coordinates = tuple(-SageQQ(entry) for entry in target_coordinates.column(0))
         # The rational field's selected engine is Sage QQ for this integral
         # lattice leaf. Retain these private arithmetic coordinates locally;
         # only the resulting coefficients are raised back into the owned ring.
