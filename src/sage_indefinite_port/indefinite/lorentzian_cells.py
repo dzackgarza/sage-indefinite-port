@@ -899,16 +899,15 @@ class LorentzianPerfectLocalBackend:
 
         if source_rows.rank() != rank or target_rows.rank() != rank:
             raise ArithmeticError("a perfect-cell vector configuration does not span its lattice")
-        # Source basis selection does not depend on the eventual transporter.
-        # A rare spectrum minimizes the initial image search; subsequent
-        # choices are constrained by the existing source basis.
-        basis = []
-        while len(basis) < rank:
-            eligible = [i for i in range(n) if i not in basis and source_rows.matrix_from_rows([*basis, i]).rank() == len(basis) + 1]
-            if not eligible:
-                raise ArithmeticError("failed to select a basis of a spanning perfect-cell configuration")
-            basis.append(min(eligible, key=lambda i: (len(buckets[source_colours[i]]), i)))
-        basis = tuple(basis)
+        # A rare spectrum minimizes the initial image search. Select the
+        # lexicographically first independent rows in that rarity ordering
+        # from one exact elimination, rather than recomputing the rank of
+        # every candidate prefix at every basis position.
+        rarity_order = tuple(sorted(range(n), key=lambda i: (len(buckets[source_colours[i]]), i)))
+        ordered_rows = source_rows.matrix_from_rows(rarity_order)
+        basis = tuple(rarity_order[int(position)] for position in ordered_rows.transpose().pivots())
+        if len(basis) != rank:
+            raise ArithmeticError("failed to select a basis of a spanning perfect-cell configuration")
         source_basis = source_rows.matrix_from_rows(basis)
         inverse_source_basis = source_basis.change_ring(SageQQ).inverse()
 
