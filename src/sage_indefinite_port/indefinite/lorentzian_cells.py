@@ -2770,12 +2770,11 @@ def _kernel_flipping(
             has_new_wall = True
             break
         if not has_new_wall:
-            if not excluded_wall_rows:
-                # In GetOnePerfect the outside ray is selectable. A shell
-                # with no transverse new wall invalidates this ray; retry the
-                # pinned GetOneOutsideRay search instead of bisecting forever
-                # through distinct shells tangent to the same direction.
-                raise _NoTransverseFlipWall("the outside ray is tangent to every new wall in its shortest shell")
+            # A tied shell can differ from CritSet while all its new walls
+            # are tangent to this parameter direction. Refine the pinned
+            # first-scheme interval to the next shell; reject the ray only if
+            # the same no-wall shell recurs, rather than discarding every
+            # outside ray whose first new shell is tangent.
             shell_state = tuple(sorted(total))
             if shell_state in no_wall_shells:
                 raise _NoTransverseFlipWall("the same shortest shell repeatedly offers no new transverse wall")
