@@ -379,7 +379,7 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
     the exact primitive extreme rays transformed by the integral action.
     """
 
-    def __init__(self, source, target, *, facet_normal_row, face_rows, action, target_to_neighbor_factory, neighbor_factory, common_face_factory):
+    def __init__(self, source, target, target_to_neighbor, *, facet_normal_row, face_rows, action, neighbor_factory, common_face_factory):
         lattice = source.ambient_lattice()
         if target.ambient_lattice() is not lattice:
             raise ValueError("a certified perfect-domain adjacency must lie in one ambient lattice")
@@ -412,8 +412,7 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
         self._neighbor_factory = neighbor_factory
         self._common_face = None
         self._common_face_factory = common_face_factory
-        self._target_to_neighbor = None
-        self._target_to_neighbor_factory = target_to_neighbor_factory
+        self._target_to_neighbor = target_to_neighbor
         self._action = action
 
     def neighbor(self):
@@ -435,9 +434,7 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
         return self._common_face
 
     def target_to_neighbor(self):
-        """Materialize the owned lattice isometry only when a consumer requests it."""
-        if self._target_to_neighbor is None:
-            self._target_to_neighbor = self._target_to_neighbor_factory()
+        """Return the owned lattice isometry represented by the exact action matrix."""
         return self._target_to_neighbor
 
 
@@ -1295,7 +1292,11 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         labels = tuple(cell.lattice.module_generating_set())
         rows = matrix(SageQQ, cell.rows)
         by_incidence = {}
-        for covector in cell_cones[id(cell)].facet_covectors():
+        # The cone's stored H-presentation already is the minimized facet
+        # family. `facet_covectors()` constructs every facet cone merely to
+        # recover these same normals, which is prohibitively expensive on
+        # high-facet cells.
+        for covector in cell_cones[id(cell)].halfspace_covectors():
             coordinate = covector.to_vector()
             normal = vector(SageQQ, (_rational(coordinate(label)) for label in labels))
             incidence = frozenset(position for position, row in enumerate(rows.rows()) if row.dot_product(normal) == 0)
