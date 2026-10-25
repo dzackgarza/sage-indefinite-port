@@ -2598,6 +2598,8 @@ class _PositiveVectorEnumerator:
             )
             if self.enumeration_transform * adjugate_gram * self.enumeration_transform.transpose() != reduced_adjugate:
                 raise ArithmeticError("GAP's dual-LLL transformation does not reproduce its reduced adjugate Gram")
+            if self.enumeration_transform * adjugate_gram * self.enumeration_transform.transpose() != reduced_adjugate:
+                raise ArithmeticError("GAP's dual-LLL transformation does not reproduce its reduced adjugate Gram")
         else:
             self.enumeration_transform = identity_matrix(SageZZ, kernel_gram_integer.nrows())
         self.cvp_engine = _ExactCVPEngine._from_positive_engine_gram(lattice.base_ring(), kernel_gram_integer)
