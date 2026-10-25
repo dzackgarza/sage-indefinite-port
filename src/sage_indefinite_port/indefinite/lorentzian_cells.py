@@ -2599,13 +2599,6 @@ def _kernel_flipping(
         if total_rows == critical_rows:
             lower = middle
             continue
-        # The caller LORENTZ_GetOnePerfect immediately accepts a critical set
-        # of full linear rank. A shortest shell can add several tied vectors
-        # at once; if that shell already spans L, it is the completed perfect
-        # configuration and must not be forced through EXIT 2's one-new-wall
-        # condition (which is only needed while the configuration is deficient).
-        if matrix(SageQQ, total).rank() == int(lattice.module_rank()):
-            return total, normal, test_direction_row, max_scal
         # Lorentzian.g:924-930, EXIT 1: the shell lies inside CritSet.
         if total_rows.issubset(critical_rows):
             return total, normal, test_direction_row, max_scal
@@ -2636,24 +2629,25 @@ def _kernel_flipping(
         seen_second_scheme_states.add(state)
         if not total:
             raise ArithmeticError("the second flip scheme requires a nonempty shortest shell")
-        new_row = next(
-            (
-                row
-                for row in total
-                if row not in critical_rows
-                and direction_normal.dot_product(vector(SageQQ, [1, *row])) != 0
-            ),
-            None,
-        )
-        if new_row is None:
-            # Every new wall in this tied shell is parallel to the parameter
-            # direction. The repeated-state branch probes the adjacent exact
-            # shell instead of dividing by zero or reusing the same normal.
-            continue
-        expanded = vector(SageQQ, [1, *new_row])
-        denominator = direction_normal.dot_product(expanded)
-        shift = -base_normal.dot_product(expanded) / denominator
-        normal = base_normal + shift * direction_normal
+        wall = None
+        for row in total:
+            if row in critical_rows:
+                continue
+            expanded = vector(SageQQ, [1, *row])
+            denominator = direction_normal.dot_product(expanded)
+            if denominator == 0:
+                continue
+            shift = -base_normal.dot_product(expanded) / denominator
+            candidate_normal = base_normal + shift * direction_normal
+            if candidate_normal != normal:
+                wall = (row, candidate_normal)
+                break
+        if wall is None:
+            # Every new wall in this tied shell either is tangent to the
+            # parameter direction or coincides with the current wall. Reject
+            # this outside ray rather than repeating the same supporting normal.
+            raise _NoTransverseFlipWall("the shortest shell has no new wall beyond the current supporting normal")
+        new_row, normal = wall
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
         test_direction_row = _source_remove_fraction(test_direction.column(0))
         max_scal = (critical_first * gram * test_direction_row.column())[0]
