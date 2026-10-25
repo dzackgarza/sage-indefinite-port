@@ -2747,9 +2747,10 @@ class _PositiveVectorEnumerator:
             if abs(int(direct_transform.det())) != 1:
                 raise ArithmeticError("GAP's dual-LLL source transform is not unimodular")
             # CVPSolver calls LLLreducedBasisDual, not LLLreducedBasis on
-            # adj(G) directly. ClassicLLL.h defines its returned row transform
-            # as Q=(P^{-1})^T, where P is the transformation returned by LLL
-            # on adj(G). The enumeration coordinates therefore use Q, not P.
+            # adj(G) directly. ClassicLLL.h returns Q=(P^{-1})^T as the basis
+            # transform and uses it for the reduced Gram identity below. The
+            # recursive coordinates themselves are y=P*x; retain P separately
+            # in enumeration_order_transform for ordering returned candidates.
             self.enumeration_transform = direct_transform.inverse().transpose()
             # CVPSolver returns Pmat Q=P^{-T} and reconstructs original rows
             # x=y*Q^T=y*P^{-1}. Therefore recursive coordinates are y=x*P,
