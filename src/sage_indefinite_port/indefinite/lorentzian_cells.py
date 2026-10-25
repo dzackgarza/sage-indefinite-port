@@ -2584,9 +2584,9 @@ def _pinned_sublattice_basis_reduction(basis: Matrix_integer_dense) -> Matrix_in
             if transform * gram * transform.transpose() != reduced_gram:
                 raise ArithmeticError("the pinned sublattice LLL transform misses its reduced Gram")
             if dual:
-                # Inverse(P) is integral because P is unimodular. GAP's
-                # source Tint matrix keeps this exact integral parent; Sage's
-                # generic inverse otherwise promotes the candidate basis to QQ.
+                # The GAP call above reduces adj(G) directly and returns P
+                # with P*adj(G)*P^T=R. ClassicLLL.h's dual basis transform is
+                # Q=P^{-T}, giving Q*G*Q^T=det(G)*R^{-1}. Preserve Q over ZZ.
                 transform = matrix(SageZZ, transform.inverse().transpose())
                 expected_candidate_gram = basis_gram.det() * reduced_gram.inverse()
             else:
