@@ -1345,20 +1345,20 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 if action == identity_action:
                     neighbor = target_cone
                 else:
-                    # The exact integral isometry is already known.  Transform
-                    # the stored coordinate rows in Sage's engine instead of
-                    # converting every ray through the owned category for
-                    # each member of a large facet-stabilizer orbit.
-                    # Use the engine's already minimized extreme-ray list,
-                    # not the full perfect-vector configuration.  The latter
-                    # contains many redundant vectors and rerunning exact
-                    # redundancy elimination for every side pairing is the
-                    # dominant cost on rank-five cells with 100+ facets.
-                    extreme_rows = matrix(SageZZ, target_cone._engine.rays_list())
-                    transformed_rows = extreme_rows * action
+                    # Transport the target's minimized H-presentation by
+                    # M^{-1} on covector columns (the row action is x -> xM).
+                    # Reconstructing a V-presentation from 100+ transformed
+                    # rays for every side pairing is slower on the rank-five
+                    # acceptance cells.
+                    inverse_action = action.inverse().change_ring(SageQQ)
+
+                    def transport_relation(relation):
+                        covector = inverse_action * vector(SageQQ, relation.A()).column()
+                        return (SageQQ(relation.b()), *(SageQQ(entry) for entry in covector.column(0)))
+
                     engine_cone = Polyhedron(
-                        vertices=[(0,) * len(ambient_labels)],
-                        rays=[tuple(SageQQ(entry) for entry in row) for row in transformed_rows.rows()],
+                        ieqs=[transport_relation(inequality) for inequality in target_cone._engine.inequalities()],
+                        eqns=[transport_relation(equation) for equation in target_cone._engine.equations()],
                         base_ring=SageQQ,
                     )
                     neighbor = _cone_from_engine_polyhedron(lattice, engine_cone)
