@@ -10,6 +10,7 @@ import pytest
 from sage_indefinite_port.indefinite.lorentzian_cells import (
     LorentzianPerfectLocalBackend,
     NONNEGATIVE_SQUARES,
+    _dual_lll_enumeration_key,
     _pinned_integer_covector_kernel,
     _pinned_positive_gcd_dot,
     perfect_complex,
@@ -77,9 +78,7 @@ def test_dual_lll_candidates_sort_in_reduced_column_coordinates() -> None:
         for row in original_rows
     )
     assert reduced_columns == ((8, 3, 1), (3, 2, 2), (11, 5, 0))
-    # CVPSolver reconstructs original columns as x=P^{-1}y; hence y=P*x.
-    # The recursive enumeration visits coordinate 2 outermost and 0 innermost.
-    assert tuple(sorted(original_rows, key=lambda row: tuple((transform * row.column())[i, 0] for i in (2, 1, 0)))) == (
+    assert tuple(sorted(original_rows, key=lambda row: _dual_lll_enumeration_key(tuple(row), transform))) == (
         original_rows[2], original_rows[0], original_rows[1]
     )
 

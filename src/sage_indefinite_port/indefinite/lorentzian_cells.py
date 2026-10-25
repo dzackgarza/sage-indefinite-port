@@ -2540,6 +2540,19 @@ def _pinned_positive_gcd_dot(values: tuple[int, ...]) -> tuple[int, tuple[int, .
     return divisor, tuple(coefficients)
 
 
+def _dual_lll_enumeration_key(
+    coordinates: tuple[int, ...], transform: Matrix_integer_dense
+) -> tuple[Integer, ...]:
+    """Order a CVP result by the pinned recursive coordinates ``P*x``.
+
+    ``CVPSolver`` reconstructs the original column as ``x=P^{-1}y`` for the
+    dual-LLL reduction, so the recursive enumerator's coordinates are ``y=P*x``.
+    Its last coordinate is the outer loop and coordinate zero the inner loop.
+    """
+    reduced = transform * vector(SageZZ, coordinates).column()
+    return tuple(reduced[index, 0] for index in reversed(range(transform.nrows())))
+
+
 def _pinned_integer_covector_kernel(covector: tuple[int, ...]) -> Matrix_integer_dense:
     r"""Reproduce ``basic_common_cpp::NullspaceIntVect`` for an integral row.
 
@@ -2826,21 +2839,10 @@ class _PositiveVectorEnumerator:
         # and indexed-family object for every intermediate shell candidate.
         distances = self.cvp_engine.close_vector_coordinates(target, bound)
         close_coordinates = tuple(coordinates for coordinates, _square in distances)
-        # computeIt_Gen_Kernel starts at coordinate dim-1 and increments that
-        # coordinate before backtracking toward zero. CVPSolver uses column
-        # coordinates: its dual-LLL Pmat is Q=P^{-T}, and reconstructs the
-        # original column x=Q^T*y=P^{-1}*y. Thus reduced coordinates are
-        # y=P*x. Apply P to the coordinate column, not as a row-vector product.
+        # CVPSolver's dual-LLL map gives recursive coordinates y=P*x;
+        # the shared key follows computeIt_Gen_Kernel's outer-to-inner order.
         transform = self.enumeration_order_transform
-        close_coordinates = tuple(
-            sorted(
-                close_coordinates,
-                key=lambda coordinates: tuple(
-                    (transform * vector(SageZZ, coordinates).column())[index, 0]
-                    for index in reversed(range(transform.nrows()))
-                ),
-            )
-        )
+        close_coordinates = tuple(sorted(close_coordinates, key=lambda c: _dual_lll_enumeration_key(c, transform)))
         return self._ambient_vectors(multiplier, close_coordinates)
 
     def _ambient_vectors(self, multiplier: int, close_coordinates: tuple[tuple[Integer, ...], ...]) -> tuple[tuple[int, ...], ...]:
