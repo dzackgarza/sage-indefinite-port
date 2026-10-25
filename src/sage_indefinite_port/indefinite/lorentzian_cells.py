@@ -1357,12 +1357,10 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         source_key = id(adjacency.source)
         if source_key not in source_basis_data:
             source_rows = matrix(SageQQ, adjacency.source.rows)
-            basis_positions = []
-            for position in range(source_rows.nrows()):
-                if source_rows.matrix_from_rows([*basis_positions, position]).rank() == len(basis_positions) + 1:
-                    basis_positions.append(position)
-                    if len(basis_positions) == len(ambient_labels):
-                        break
+            # Pivot columns of the transpose select independent original
+            # rows in one exact elimination, instead of recomputing rank for
+            # every candidate prefix of the extreme-ray family.
+            basis_positions = list(source_rows.transpose().pivots())
             if len(basis_positions) != len(ambient_labels):
                 raise ArithmeticError("a source perfect-cell configuration does not span the ambient lattice")
             source_basis_data[source_key] = (tuple(basis_positions), source_rows.matrix_from_rows(basis_positions).inverse())
