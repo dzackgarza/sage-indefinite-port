@@ -2599,6 +2599,12 @@ def _kernel_flipping(
         if total_rows == critical_rows:
             lower = middle
             continue
+        # The caller LORENTZ_GetOnePerfect accepts a critical configuration
+        # as soon as it spans the ambient lattice. This also matters for a
+        # facet flip: a tied shortest shell can already be full rank while
+        # every newly discovered wall coincides with the sampled normal.
+        if matrix(SageQQ, total).rank() == int(lattice.module_rank()):
+            return total, normal, test_direction_row, max_scal
         # Lorentzian.g:924-930, EXIT 1: the shell lies inside CritSet.
         if total_rows.issubset(critical_rows):
             return total, normal, test_direction_row, max_scal
@@ -2629,22 +2635,26 @@ def _kernel_flipping(
         seen_second_scheme_states.add(state)
         if not total:
             raise ArithmeticError("the second flip scheme requires a nonempty shortest shell")
-        # Lorentzian.g:945 uses ListTotal[1], not an arbitrary wall from the
-        # tied shell. Preserve that ordering exactly; if this first wall is
-        # critical, tangent, or coincident with the current wall, reject the
-        # outside ray and let GetOneOutsideRay choose another direction.
-        new_row = total[0]
-        if new_row in critical_rows:
-            raise _NoTransverseFlipWall("the first shortest-shell vector is already critical")
-        expanded = vector(SageQQ, [1, *new_row])
-        denominator = direction_normal.dot_product(expanded)
-        if denominator == 0:
-            raise _NoTransverseFlipWall("the first shortest-shell wall is tangent to the flip direction")
-        shift = -base_normal.dot_product(expanded) / denominator
-        candidate_normal = base_normal + shift * direction_normal
-        if candidate_normal == normal:
-            raise _NoTransverseFlipWall("the first shortest-shell wall coincides with the current supporting normal")
-        normal = candidate_normal
+        # The port's closest-vector backend does not preserve GAP's exact
+        # Vallentin enumeration order, so total[0] may be an already-critical
+        # tied vector. Select the first genuinely new transverse wall; EXIT 2
+        # below certifies that this wall is the only new vector in the shell.
+        wall = None
+        for row in total:
+            if row in critical_rows:
+                continue
+            expanded = vector(SageQQ, [1, *row])
+            denominator = direction_normal.dot_product(expanded)
+            if denominator == 0:
+                continue
+            shift = -base_normal.dot_product(expanded) / denominator
+            candidate_normal = base_normal + shift * direction_normal
+            if candidate_normal != normal:
+                wall = (row, candidate_normal)
+                break
+        if wall is None:
+            raise _NoTransverseFlipWall("the shortest shell has no new transverse wall beyond the current normal")
+        new_row, normal = wall
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
         test_direction_row = _source_remove_fraction(test_direction.column(0))
         max_scal = (critical_first * gram * test_direction_row.column())[0]
