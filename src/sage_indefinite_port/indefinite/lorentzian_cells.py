@@ -2567,7 +2567,12 @@ def _source_some_negative_vector(gram: Matrix_rational_dense) -> tuple[Integer, 
     rank = int(gram.nrows())
     if not rank:
         raise ValueError("the zero-dimensional form has no negative vector")
-    radical = cast(Matrix_rational_dense, gram.right_kernel_matrix())
+    # Use Sage's exact left-kernel basis backend, as in the already ported
+    # symmetric diagonalization below.  The generic ``right_kernel_matrix``
+    # convenience path stalls on the rank-five rational Gram in
+    # Result_Enumeration_29; symmetry identifies the left radical with the
+    # row radical required here.
+    radical = cast(Matrix_rational_dense, gram.left_kernel().basis_matrix())
     radical_rank = int(radical.nrows())
     pivot_columns = set(radical.echelon_form().pivots())
     transform = cast(Matrix_rational_dense, matrix(cast(Parent, SageQQ), rank, rank, 0))
@@ -2595,7 +2600,7 @@ def _source_some_negative_vector(gram: Matrix_rational_dense) -> tuple[Integer, 
             previous = matrix(cast(Parent, SageQQ), orthogonal_basis)
             complement = cast(
                 Matrix_rational_dense,
-                (nondegenerate * previous.transpose()).left_kernel_matrix(),
+                (nondegenerate * previous.transpose()).left_kernel().basis_matrix(),
             )
         restricted = cast(Matrix_rational_dense, complement * nondegenerate * complement.transpose())
         selected: list[Rational] | None = None
