@@ -10,6 +10,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _pinned_sublattice_basis_reduction,
 )
 
+
 def test_gap_lll_transformation_uses_row_congruence_orientation() -> None:
     """The GAP provider's transformation acts by P G P^T, not P^T G P."""
     from sage.all import QQ, ZZ, matrix, libgap
@@ -99,6 +100,7 @@ def test_pinned_sublattice_basis_reduction_preserves_row_lattice() -> None:
     assert abs(change.det()) == 1
     assert sum(abs(entry) for entry in reduced.list()) <= sum(abs(entry) for entry in basis.list())
     assert change * basis == reduced
+    assert _pinned_sublattice_basis_reduction(reduced) == reduced
 
     # The kernel supplied by NullspaceIntVect is rectangular in ambient
     # coordinates; exercise the same reducer on a rank-three sublattice of Z^4.
@@ -109,6 +111,7 @@ def test_pinned_sublattice_basis_reduction_preserves_row_lattice() -> None:
     assert all(entry.denominator() == 1 for entry in rectangular_change.list())
     assert abs(rectangular_change.det()) == 1
     assert rectangular_change * rectangular == rectangular_reduced
+    assert _pinned_sublattice_basis_reduction(rectangular_reduced) == rectangular_reduced
 
 
 def test_pinned_integer_covector_kernel_matches_exact_contract() -> None:
