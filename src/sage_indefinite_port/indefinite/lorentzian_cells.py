@@ -1428,13 +1428,12 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             facet_normal_row = vector(
                 SageQQ, (_rational(facet_normal.to_vector()(label)) for label in ambient_labels)
             )
-            if orbit_position == 0:
-                if frozenset(
-                    position
-                    for position, row in enumerate(adjacency.source.rows)
-                    if vector(SageQQ, row).dot_product(facet_normal_row) == 0
-                ) != incident:
-                    raise ArithmeticError("the Schreier facet incidence disagrees with its exact supporting covector")
+            if frozenset(
+                position
+                for position, row in enumerate(adjacency.source.rows)
+                if vector(SageQQ, row).dot_product(facet_normal_row) == 0
+            ) != incident:
+                raise ArithmeticError("the Schreier facet incidence disagrees with its exact supporting covector")
             # Retain the exact extreme-ray incidence as the face certificate.
             # The shared face cone is built below from the source's existing
             # H-presentation and this facet's supporting covector.
