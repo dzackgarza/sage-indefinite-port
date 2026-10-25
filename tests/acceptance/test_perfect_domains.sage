@@ -52,6 +52,7 @@ def test_gap_lll_transformation_uses_row_congruence_orientation() -> None:
     transform = matrix(ZZ, [[ZZ(int(entry)) for entry in row] for row in record["transformation"]])
     reduced = matrix(ZZ, [[ZZ(int(entry)) for entry in row] for row in record["remainder"]])
 
+    assert transform == matrix(ZZ, [[0, -1, 1], [0, -1, 2], [1, -3, 0]])
     assert abs(transform.det()) == 1
     assert transform * gram * transform.transpose() == reduced
     assert transform.transpose() * gram * transform != reduced
@@ -62,6 +63,7 @@ def test_gap_lll_transformation_uses_row_congruence_orientation() -> None:
     )
     dual_transform = matrix(ZZ, [[ZZ(int(entry)) for entry in row] for row in dual_record["transformation"]])
     dual_reduced = matrix(ZZ, [[ZZ(int(entry)) for entry in row] for row in dual_record["remainder"]])
+    assert dual_transform == matrix(ZZ, [[1, 0, 0], [3, 1, 1], [6, 2, 1]])
     assert dual_transform * gram.adjugate() * dual_transform.transpose() == dual_reduced
     enumeration_transform = dual_transform.inverse().transpose()
     assert enumeration_transform * gram * enumeration_transform.transpose() == gram.det() * dual_reduced.change_ring(QQ).inverse()
