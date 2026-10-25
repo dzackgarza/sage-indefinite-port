@@ -15,7 +15,7 @@ from typing import Literal, cast, overload
 
 import numpy as np
 from dzack_research.preamble.all import FramedFreeModules, Lattices
-from dzack_research.preamble.categories.definite_lattices import LatticeReduction
+from dzack_research.preamble.categories.definite_lattices import LatticeReduction, _ExactCVPEngine
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.rings.ring_foundation import _owned_engine_element
 from dzack_research.preamble.categories.modules.pure.modules import _engine_matrix
@@ -2305,9 +2305,13 @@ class _PositiveVectorEnumerator:
         # Lorentzian.g:337-343 defines GramMat = -Ubasis*LorMat*Ubasis^T,
         # the positive-definite form used by ClosestAtDistanceVallentinProgram.
         kernel_gram = -(self.inclusion_rows * self.gram * self.inclusion_rows.transpose())
-        self.kernel = Lattices(SageZZ)(
-            [[SageZZ(kernel_gram[i, j]) for j in range(kernel_gram.ncols())] for i in range(kernel_gram.nrows())]
+        kernel_gram_integer = matrix(
+            SageZZ,
+            kernel_gram.nrows(),
+            kernel_gram.ncols(),
+            [SageZZ(kernel_gram[i, j]) for i in range(kernel_gram.nrows()) for j in range(kernel_gram.ncols())],
         )
+        self.cvp_engine = _ExactCVPEngine._from_positive_engine_gram(lattice.base_ring(), kernel_gram_integer)
         # The base-change map is the identity on these Gram coordinates. Build
         # K tensor QQ directly instead of invoking generic formed-module base
         # change, whose determinant/equip path is disproportionate for each
@@ -2379,7 +2383,7 @@ class _PositiveVectorEnumerator:
         # Use the same exact PARI-backed CVP engine as close_vectors, but its
         # coordinate-level primitive avoids allocating an owned lattice vector
         # and indexed-family object for every intermediate shell candidate.
-        distances = self.kernel._exact_cvp_engine().close_vector_coordinates(target, bound)
+        distances = self.cvp_engine.close_vector_coordinates(target, bound)
         close_coordinates = tuple(coordinates for coordinates, _square in distances)
         return self._ambient_vectors(multiplier, close_coordinates)
 
