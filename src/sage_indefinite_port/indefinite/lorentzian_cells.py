@@ -2312,6 +2312,9 @@ class _PositiveVectorEnumerator:
         if self.inclusion_rows.transpose().change_ring(SageQQ) * target_coordinates != translation:
             raise ArithmeticError("the Bezout translation is not in the rational orthogonal-kernel span")
         self.base_target_coordinates = tuple(SageQQ(entry) for entry in target_coordinates.column(0))
+        self.base_target_owned_coordinates = tuple(
+            _owned_rational(lattice, coordinate) for coordinate in self.base_target_coordinates
+        )
         self.base_target = self.base_target_parent.linear_combination(
             {
                 label: _owned_rational(lattice, coordinate)
@@ -2349,8 +2352,8 @@ class _PositiveVectorEnumerator:
         scalar = _owned_rational(self.lattice, SageQQ(multiplier))
         target = self.base_target_parent.linear_combination(
             {
-                label: scalar * _owned_rational(self.lattice, coordinate)
-                for label, coordinate in zip(self.base_target_labels, self.base_target_coordinates, strict=True)
+                label: scalar * coordinate
+                for label, coordinate in zip(self.base_target_labels, self.base_target_owned_coordinates, strict=True)
                 if coordinate
             }
         )
