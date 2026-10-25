@@ -93,15 +93,17 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
         original = getattr(cls, name)
 
         def wrapped(self, *args, **kwargs):
+            result = original(self, *args, **kwargs)
             observed[f"{cls.__name__}.{name}"] = True
-            return original(self, *args, **kwargs)
+            return result
 
         monkeypatch.setattr(cls, name, wrapped)
 
     for name in (
         "initial_isotropic_vertex", "initial_vertex", "ordinary_vertex_roots",
-        "cusp_root", "cusp_roots", "isotropic_next_vertex", "finite_extensions",
-        "edge_step", "edge_directions",
+        "cusp_root", "cusp_roots", "extension_roots", "vertex_from_root",
+        "isotropic_next_vertex", "finite_extensions",
+        "edge_step", "edge_directions", "binary_walk",
     ):
         instrument(_Edgewalk, name)
     for name in ("cycle", "promised_step", "canonical_companion", "shorter_pair", "reduced_start_pair"):
@@ -145,12 +147,20 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
     compact_hexagon = _hyperbolic([[-1, 0, 0], [0, 3, 1], [0, 1, 7]]).allcock_edgewalk()
     assert compact_hexagon.is_reflective()
     assert len(compact_hexagon.simple_roots()) == 6
+    binary = _hyperbolic([[1, 0], [0, -2]]).allcock_edgewalk()
+    assert binary.is_reflective()
+    assert len(binary.simple_roots()) == 2
+    binary_isotropic = _hyperbolic([[0, 1], [1, 0]]).allcock_edgewalk()
+    assert not binary_isotropic.is_reflective()
+    assert len(binary_isotropic.simple_roots()) == 0
+    assert len(binary_isotropic.vertices()) == 0
 
     required = {
         "_Edgewalk.initial_isotropic_vertex", "_Edgewalk.initial_vertex",
         "_Edgewalk.ordinary_vertex_roots", "_Edgewalk.cusp_root", "_Edgewalk.cusp_roots",
+        "_Edgewalk.extension_roots", "_Edgewalk.vertex_from_root",
         "_Edgewalk.isotropic_next_vertex", "_Edgewalk.finite_extensions",
-        "_Edgewalk.edge_step", "_Edgewalk.edge_directions",
+        "_Edgewalk.edge_step", "_Edgewalk.edge_directions", "_Edgewalk.binary_walk",
         "_OrientedBinaryCycle.cycle", "_OrientedBinaryCycle.promised_step",
         "_OrientedBinaryCycle.canonical_companion", "_OrientedBinaryCycle.shorter_pair",
         "_OrientedBinaryCycle.reduced_start_pair",
