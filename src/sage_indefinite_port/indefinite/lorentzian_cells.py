@@ -374,17 +374,18 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
     check the common-face condition. On cells with 100+ facets, repeating
     that enumeration for every side pairing dominates traversal time. This
     constructor verifies the same face conditions by exact rank, membership,
-    and supporting-covector checks, and verifies transport by equality of
-    primitive extreme-ray sets under the integral action matrix.
+    and supporting-covector checks. The actual neighbor and common-face cones
+    are materialized lazily; when requested, the neighbor is checked against
+    the exact primitive extreme rays transformed by the integral action.
     """
 
-    def __init__(self, source, target, common_face, target_to_neighbor, *, facet_normal_row, face_rows, action, neighbor_factory):
+    def __init__(self, source, target, target_to_neighbor, *, facet_normal_row, face_rows, action, neighbor_factory, common_face_factory):
         lattice = source.ambient_lattice()
-        if any(cell.ambient_lattice() is not lattice for cell in (target, common_face)):
+        if target.ambient_lattice() is not lattice:
             raise ValueError("a certified perfect-domain adjacency must lie in one ambient lattice")
         rank = len(tuple(lattice.module_generating_set()))
         rows = matrix(SageQQ, face_rows)
-        if rows.rank() != rank - 1 or int(common_face._engine.dim()) != rank - 1:
+        if rows.rank() != rank - 1:
             raise ArithmeticError("the proposed common face does not have codimension one")
         normal = vector(SageQQ, facet_normal_row)
 
@@ -409,7 +410,8 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
         self._target = target
         self._neighbor = None
         self._neighbor_factory = neighbor_factory
-        self._common_face = common_face
+        self._common_face = None
+        self._common_face_factory = common_face_factory
         self._target_to_neighbor = target_to_neighbor
         self._action = action
 
@@ -424,6 +426,12 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
                 raise ArithmeticError("the supplied isometry does not carry the target cell onto the proposed neighbor")
             self._neighbor = neighbor
         return self._neighbor
+
+    def common_face(self):
+        """Materialize the common face cone only when a consumer requests it."""
+        if self._common_face is None:
+            self._common_face = self._common_face_factory()
+        return self._common_face
 
 
 @dataclass(frozen=True)
@@ -1418,22 +1426,25 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # rank-five U+<1,1,5> case).  Generate the same face directly from
             # its known rays; redundant rays, if any, do not change the cone.
             face_rows = tuple(adjacency.source.rows[position] for position in sorted(incident))
-            face_engine = Polyhedron(
-                vertices=[(0,) * len(ambient_labels)],
-                rays=[tuple(SageQQ(entry) for entry in row) for row in face_rows],
-                base_ring=SageQQ,
-            )
-            common_face = _cone_from_engine_polyhedron(lattice, face_engine)
+
+            def common_face_factory(face_rows=face_rows):
+                face_engine = Polyhedron(
+                    vertices=[(0,) * len(ambient_labels)],
+                    rays=[tuple(SageQQ(entry) for entry in row) for row in face_rows],
+                    base_ring=SageQQ,
+                )
+                return _cone_from_engine_polyhedron(lattice, face_engine)
+
             adjacencies.append(
                 _CertifiedPerfectDomainOrbitAdjacency(
                     cell_cones[id(adjacency.source)],
                     cell_cones[id(adjacency.target)],
-                    common_face,
                     target_to_neighbour,
                     facet_normal_row=facet_normal_row,
                     face_rows=face_rows,
                     action=action,
                     neighbor_factory=neighbor_factory,
+                    common_face_factory=common_face_factory,
                 )
             )
     cones_by_position = tuple(cell_cones[id(cell)] for cell in cells)
