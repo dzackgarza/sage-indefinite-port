@@ -2795,19 +2795,19 @@ def _kernel_flipping(
             lower = middle
             continue
         break
-    seen_second_scheme_states: set[tuple[tuple[tuple[int, ...], ...], tuple[Rational, ...]]] = set()
+    seen_second_scheme_walls: dict[
+        tuple[tuple[tuple[int, ...], ...], tuple[Rational, ...]], set[tuple[int, ...]]
+    ] = {}
     while True:
-        # Exact port of Lorentzian.g:944-966: use ListTotal[1] (the first
-        # vector, in GAP's one-based indexing), recompute the affine normal
-        # through that wall, and apply EXIT 2. The source does not constrain
-        # this parameter to the first-scheme bisection interval.
+        # Exact port of Lorentzian.g:944-966: choose the first available
+        # shortest-shell wall, recompute its affine normal, and apply EXIT 2.
+        # GAP's list order can vary across equal-length vectors; the owned
+        # close-vector backend is stable, so exhaust transverse tied walls
+        # before declaring this ray unable to progress.
         state = (tuple(sorted(total)), tuple(normal))
-        if state in seen_second_scheme_states:
-            # The same shell at the same normal cannot cross another wall.
-            raise _NoTransverseFlipWall("the outside ray repeats a tied shortest shell")
-        seen_second_scheme_states.add(state)
         if not total:
             raise ArithmeticError("the second flip scheme requires a nonempty shortest shell")
+        tried_walls = seen_second_scheme_walls.setdefault(state, set())
         # Lorentzian.g:944-950 selects ListTotal[1] verbatim. The owned
         # close-vector backend has a different iteration order, so select the
         # first vector in that same tied shell whose wall is transverse to the
@@ -2815,14 +2815,17 @@ def _kernel_flipping(
         # can select one of those before any genuinely new vector.
         wall = None
         for row in total:
+            if row in tried_walls:
+                continue
             expanded = vector(SageQQ, [1, *row])
             denominator = direction_normal.dot_product(expanded)
             if denominator:
                 wall = (row, expanded, denominator)
                 break
         if wall is None:
-            raise _NoTransverseFlipWall("the shortest shell has no wall transverse to the flip direction")
+            raise _NoTransverseFlipWall("the tied shortest shell has no untried transverse wall")
         new_row, expanded, denominator = wall
+        tried_walls.add(new_row)
         shift = -base_normal.dot_product(expanded) / denominator
         normal = base_normal + shift * direction_normal
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
