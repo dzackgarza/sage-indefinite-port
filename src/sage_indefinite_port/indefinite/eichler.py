@@ -770,12 +770,18 @@ class OrbitCoverModel:
 
         recursion = EichlerRecursion()
         representatives = model.covering_vector_representatives(square)
-        if int(representatives.cardinality()) == 0:
+        # The family is explicitly indexed by a finite ordered set. Testing
+        # that index set avoids routing a decidable finite emptiness question
+        # through cardinality() on its represented torsion-module values;
+        # the pinned provider's generic cardinality path currently rejects
+        # those values before reaching the family-level finite decision.
+        representative_labels = tuple(representatives.index_set())
+        if not representative_labels:
             raise ValueError("full-group assembly requires a nonempty primitive covering family")
-        base_label = next(iter(representatives.index_set()))
+        base_label = representative_labels[0]
         base_vector = representatives.value(base_label)
         witnesses: dict[DiscriminantQuadraticModules.ElementMethods, LatticeIsometryMethods] = {}
-        for label in representatives.index_set():
+        for label in representative_labels:
             witness = recursion.pointed_isometry(base_vector, representatives.value(label))
             if witness is not None:
                 witnesses[label] = witness
