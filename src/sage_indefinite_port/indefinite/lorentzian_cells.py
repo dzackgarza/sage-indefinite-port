@@ -379,7 +379,7 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
     the exact primitive extreme rays transformed by the integral action.
     """
 
-    def __init__(self, source, target, target_to_neighbor, *, facet_normal_row, face_rows, action, neighbor_factory, common_face_factory):
+    def __init__(self, source, target, *, facet_normal_row, face_rows, action, target_to_neighbor_factory, neighbor_factory, common_face_factory):
         lattice = source.ambient_lattice()
         if target.ambient_lattice() is not lattice:
             raise ValueError("a certified perfect-domain adjacency must lie in one ambient lattice")
@@ -412,7 +412,8 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
         self._neighbor_factory = neighbor_factory
         self._common_face = None
         self._common_face_factory = common_face_factory
-        self._target_to_neighbor = target_to_neighbor
+        self._target_to_neighbor = None
+        self._target_to_neighbor_factory = target_to_neighbor_factory
         self._action = action
 
     def neighbor(self):
@@ -432,6 +433,12 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
         if self._common_face is None:
             self._common_face = self._common_face_factory()
         return self._common_face
+
+    def target_to_neighbor(self):
+        """Materialize the owned lattice isometry only when a consumer requests it."""
+        if self._target_to_neighbor is None:
+            self._target_to_neighbor = self._target_to_neighbor_factory()
+        return self._target_to_neighbor
 
 
 @dataclass(frozen=True)
@@ -1352,15 +1359,19 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 raise ArithmeticError("a Schreier stabilizer permutation does not induce an integral lattice isometry")
             if action * ambient_gram * action.transpose() != ambient_gram or abs(action.det()) != 1:
                 raise ArithmeticError("a Schreier side-pairing action is not an integral lattice isometry")
+            # The Schreier composition is already the owned categorical
+            # isometry for this facet. Reuse it directly rather than rebuilding
+            # the same map from all ambient generator images; that constructor
+            # repeats indexed-family and module-morphism setup per facet.
+            target_to_neighbour = symmetry * adjacency.transporter
             if orbit_position == min(1, len(orbit) - 1):
-                reference_map = symmetry * adjacency.transporter
+                reference_map = target_to_neighbour
                 reference_action = matrix(
                     SageZZ,
                     [_coordinate_row(lattice, reference_map(basis_vector), SageZZ) for basis_vector in ambient_basis],
                 )
                 if action != reference_action:
                     raise ArithmeticError("the Schreier permutation and categorical side-pairing actions disagree")
-            target_to_neighbour = lattice.O()(tuple(lattice([int(entry) for entry in row]) for row in action.rows()))
             target_cone = cell_cones[id(adjacency.target)]
             action_key = (id(adjacency.target), tuple(int(entry) for entry in action.list()))
 
