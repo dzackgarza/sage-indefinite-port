@@ -2567,6 +2567,14 @@ def _source_some_negative_vector(gram: Matrix_rational_dense) -> tuple[Integer, 
     rank = int(gram.nrows())
     if not rank:
         raise ValueError("the zero-dimensional form has no negative vector")
+    # GetSomeNegativeVector only promises one integral negative vector.  If
+    # a coordinate vector already has negative square, it is a certified
+    # answer and avoids the full rational diagonalization on every perturbed
+    # Gram matrix in GetOneOutsideRay.  Keep the pinned diagonalization path
+    # for forms whose displayed diagonal has no negative entry (notably U).
+    for index in range(rank):
+        if gram[index, index] < 0:
+            return tuple(SageZZ(index == coordinate) for coordinate in range(rank))
     # Use Sage's exact left-kernel basis backend, as in the already ported
     # symmetric diagonalization below.  The generic ``right_kernel_matrix``
     # convenience path stalls on the rank-five rational Gram in
