@@ -379,14 +379,12 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
     the exact primitive extreme rays transformed by the integral action.
     """
 
-    def __init__(self, source, target, target_to_neighbor_factory, *, facet_normal_row, face_rows, action, neighbor_factory, common_face_factory):
+    def __init__(self, source, target, target_to_neighbor_factory, *, facet_normal_row, face_rows, target_halfspace_rows, action, neighbor_factory, common_face_factory):
         lattice = source.ambient_lattice()
         if target.ambient_lattice() is not lattice:
             raise ValueError("a certified perfect-domain adjacency must lie in one ambient lattice")
         rank = len(tuple(lattice.module_generating_set()))
         rows = matrix(SageQQ, face_rows)
-        if rows.rank() != rank - 1:
-            raise ArithmeticError("the proposed common face does not have codimension one")
         normal = vector(SageQQ, facet_normal_row)
 
         if any(normal.dot_product(vector(SageQQ, row)) != 0 for row in face_rows):
@@ -401,10 +399,9 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
         if not ((source_positive and neighbor_negative) or (source_negative and neighbor_positive)):
             raise ArithmeticError("the common-face covector does not support the two cells on opposite sides")
         inverse_action = action.inverse().change_ring(SageQQ)
-        if any(
-            not target._engine.contains(tuple(vector(SageQQ, row) * inverse_action))
-            for row in face_rows
-        ):
+        transformed_face_rows = rows * inverse_action
+        face_values = transformed_face_rows * matrix(SageQQ, target_halfspace_rows).transpose()
+        if any(value < 0 for value in face_values.list()):
             raise ArithmeticError("an incident source ray is not contained in the proposed neighbor")
         self._source = source
         self._target = target
@@ -1339,6 +1336,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     ambient_gram = _gram_matrix(lattice)
     neighbor_cache = {}
     common_face_cache = {}
+    target_halfspace_cache = {}
     identity_action = identity_matrix(SageZZ, len(ambient_labels))
     ambient_basis = tuple(lattice.module_generator(label) for label in ambient_labels)
     source_basis_data = {}
@@ -1395,6 +1393,20 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # repeats indexed-family and module-morphism setup per facet.
             target_to_neighbour_factory = lambda symmetry=symmetry, transporter=adjacency.transporter: symmetry * transporter
             target_cone = cell_cones[id(adjacency.target)]
+            target_key = id(adjacency.target)
+            target_halfspace_rows = target_halfspace_cache.get(target_key)
+            if target_halfspace_rows is None:
+                target_halfspace_rows = matrix(
+                    SageQQ,
+                    [
+                        [
+                            _rational(covector.to_vector()(label))
+                            for label in ambient_labels
+                        ]
+                        for covector in target_cone.halfspace_covectors()
+                    ],
+                )
+                target_halfspace_cache[target_key] = target_halfspace_rows
             action_key = (id(adjacency.target), tuple(int(entry) for entry in action.list()))
 
             def neighbor_factory(action_key=action_key, target_cone=target_cone, action=action):
@@ -1476,6 +1488,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                     target_to_neighbour_factory,
                     facet_normal_row=facet_normal_row,
                     face_rows=face_rows,
+                    target_halfspace_rows=target_halfspace_rows,
                     action=action,
                     neighbor_factory=neighbor_factory,
                     common_face_factory=common_face_factory,
