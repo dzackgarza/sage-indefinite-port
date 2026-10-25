@@ -577,23 +577,14 @@ class LorentzianPerfectLocalBackend:
             expanded = matrix(SageQQ, [[1, *row] for row in critical])
             nullspace = expanded.right_kernel_matrix()
             directions = nullspace.matrix_from_columns(range(1, nullspace.ncols())) * gram.inverse()
-            rejected_outside_directions: list[FreeModuleElement[Rational]] = []
-            while True:
-                outside_direction = _negative_direction_in_span(
-                    normalized, directions, critical, base_normal, rejected_outside_directions
-                )
-                direction_covector = gram * outside_direction.column()
-                critical_row = vector(SageQQ, critical[0])
-                direction_scalar = (critical_row * direction_covector)[0]
-                normal_direction = vector(SageQQ, [-direction_scalar, *direction_covector.column(0)])
-                try:
-                    critical, flipped_normal, _test_direction, _max_scal = _kernel_flipping(
-                        normalized, critical, base_normal, normal_direction, allowed_squares
-                    )
-                except _NoTransverseFlipWall:
-                    rejected_outside_directions.append(outside_direction)
-                    continue
-                break
+            outside_direction = _negative_direction_in_span(normalized, directions, critical, base_normal)
+            direction_covector = gram * outside_direction.column()
+            critical_row = vector(SageQQ, critical[0])
+            direction_scalar = (critical_row * direction_covector)[0]
+            normal_direction = vector(SageQQ, [-direction_scalar, *direction_covector.column(0)])
+            critical, flipped_normal, _test_direction, _max_scal = _kernel_flipping(
+                normalized, critical, base_normal, normal_direction, allowed_squares
+            )
             # Lorentzian.g:1194: normalize the returned supporting normal
             # before the next wall-crossing step.
             base_normal = _source_remove_fraction(flipped_normal)
@@ -2654,6 +2645,12 @@ class _PositiveVectorEnumerator:
             if candidate_square not in self.allowed_squares:
                 continue
             result.append(tuple(int(entry) for entry in row))
+        # Indefinite.jl's pinned LATT_near delegates to ``sv_near`` and emits
+        # the vectors in nearest-first order.  On this affine fibre the
+        # squared distance differs from q(row) by a constant, so nearest-first
+        # is descending q(row).  Preserve the CVP backend's order among equal
+        # norms; the perfect-domain flip consumes the first returned vector.
+        result.sort(key=lambda row: -int(vector(SageZZ, row) * self.gram * vector(SageZZ, row)))
         return tuple(result)
 
 
@@ -2974,10 +2971,6 @@ def _negative_direction_in_span(
         perturbation *= modification
 
 
-class _NoTransverseFlipWall(ArithmeticError):
-    """The chosen outside ray has no transverse wall in its shortest shell."""
-
-
 def _kernel_flipping(
     lattice: Lattices.ParentMethods,
     critical: tuple[tuple[int, ...], ...],
@@ -3007,7 +3000,6 @@ def _kernel_flipping(
     critical_first = vector(SageQQ, critical[0])
     critical_rows = set(critical)
     total: tuple[tuple[int, ...], ...] = ()
-    seen_second_directions: set[tuple[int, ...]] = set()
     while True:
         middle = _source_mid_value(lower, upper)
         normal = base_normal + middle * direction_normal
@@ -3037,101 +3029,22 @@ def _kernel_flipping(
         # contained in CritSet. Do not add a transversality prefilter here:
         # the pinned algorithm selects ListTotal[1] verbatim in scheme two.
         break
-    tried_walls_by_shell: dict[tuple[tuple[int, ...], ...], set[tuple[int, ...]]] = {}
-    crossed_rows_by_shift: dict[Rational, set[tuple[int, ...]]] = {}
-    last_shift: Rational | None = None
     while True:
-        # Exact port of Lorentzian.g:944-966: choose ListTotal[1] verbatim,
-        # recompute its affine normal, and apply EXIT 2.
         if not total:
             raise ArithmeticError("the second flip scheme requires a nonempty shortest shell")
-        new_row = None
-        expanded = None
-        denominator = SageQQ.zero()
-        crossed_rows: set[tuple[int, ...]] = set()
-        # The owned exact sphere enumerator does not reproduce GAP's order
-        # among tied shortest vectors. Select a transverse wall from the same
-        # shell; this preserves the geometric wall-crossing condition without
-        # allowing a backend ordering difference to cause division by zero.
-        shell_state = tuple(sorted(total))
-        tried_walls = tried_walls_by_shell.setdefault(shell_state, set())
-        for candidate in total:
-            if candidate in tried_walls or candidate in critical_rows:
-                continue
-            candidate_expanded = vector(SageQQ, [1, *candidate])
-            candidate_denominator = direction_normal.dot_product(candidate_expanded)
-            candidate_shift_numerator = base_normal.dot_product(candidate_expanded)
-            # GAP's ListTotal order puts a genuinely new wall first. The
-            # owned sphere enumerator can instead put an old critical vector
-            # first; that gives shift=0 and repeats the same shell forever.
-            # Require a new, transverse wall that actually changes the normal.
-            if candidate_denominator and candidate_shift_numerator:
-                new_row, expanded, denominator = candidate, candidate_expanded, candidate_denominator
-                shift = -candidate_shift_numerator / candidate_denominator
-                last_shift = shift
-                # The sphere backend returns every vector in the first
-                # pairing shell, so several new vectors can define the same
-                # wall and have the same exact flip parameter. Treat that
-                # tied wall as one crossing rather than repeatedly changing
-                # the normal by the same shift for each vector.
-                crossed_rows = {
-                    row for row in total
-                    if row not in critical_rows
-                    and direction_normal.dot_product(vector(SageQQ, [1, *row])) != 0
-                    and -base_normal.dot_product(vector(SageQQ, [1, *row]))
-                        / direction_normal.dot_product(vector(SageQQ, [1, *row])) == shift
-                }
-                accumulated_crossed = crossed_rows_by_shift.setdefault(shift, set())
-                accumulated_crossed.update(crossed_rows)
-                crossed_rows = accumulated_crossed
-                tried_walls.update(crossed_rows)
-                break
-        if new_row is None or expanded is None:
-            # The preceding crossing can return the same complete shortest
-            # shell. At this point all its new rows have already been crossed
-            # at their exact wall parameters; this is precisely EXIT 2, not a
-            # missing-wall error.
-            if last_shift is not None and set(total).issubset(
-                critical_rows | crossed_rows_by_shift.get(last_shift, set())
-            ):
-                return total, normal, test_direction_row, max_scal
-            # Every newly encountered shortest vector is tangent to the
-            # flip direction. Since it is also on the current test wall,
-            # it lies on the base supporting wall as well. These are omitted
-            # critical vectors, not a wall to cross: enlarge the critical
-            # configuration without changing the supporting normal.
-            tangent_new = tuple(row for row in total if row not in critical_rows)
-            if tangent_new and all(
-                base_normal.dot_product(vector(SageQQ, [1, *row])) == 0
-                and direction_normal.dot_product(vector(SageQQ, [1, *row])) == 0
-                for row in tangent_new
-            ):
-                enlarged = tuple(sorted(critical_rows | set(tangent_new)))
-                return enlarged, normal, test_direction_row, max_scal
-            details = tuple(
-                (row, row in critical_rows,
-                 base_normal.dot_product(vector(SageQQ, [1, *row])),
-                 direction_normal.dot_product(vector(SageQQ, [1, *row])))
-                for row in total if row not in critical_rows
-            )
-            raise _NoTransverseFlipWall(f"the tied shortest shell has no transverse wall: {details!r}")
+        # Lorentzian.g:952 selects ListTotal[1] verbatim. The near-vector
+        # backend's nearest-first ordering is part of this algorithm's input.
+        expanded = vector(SageQQ, [1, *total[0]])
+        denominator = direction_normal.dot_product(expanded)
+        if denominator == 0:
+            raise ArithmeticError("the first nearest vector does not determine a flip parameter")
         shift = -base_normal.dot_product(expanded) / denominator
         normal = base_normal + shift * direction_normal
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
         test_direction_row = _source_remove_fraction(test_direction.column(0))
-        direction_key = tuple(int(entry) for entry in test_direction_row)
-        first_nonzero = next((entry for entry in direction_key if entry), 0)
-        if first_nonzero < 0:
-            direction_key = tuple(-entry for entry in direction_key)
-        if direction_key in seen_second_directions:
-            # This wall changes the affine normal but not the projective
-            # direction. It cannot advance the shortest-shell search; mark
-            # the wall as tried and let the tied-shell loop select another.
-            continue
-        seen_second_directions.add(direction_key)
         max_scal = (critical_first * gram * test_direction_row.column())[0]
         total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
-        # Lorentzian.g:959, EXIT 2: ListTotal is contained in CritSet plus
-        # the single wall crossed in this iteration.
-        if set(total).issubset(critical_rows | crossed_rows):
+        # Lorentzian.g:959-966, EXIT 2: ListTotal is contained in CritSet
+        # together with the single vector selected above.
+        if set(total).issubset(critical_rows | {tuple(int(entry) for entry in expanded[1:])}):
             return total, normal, test_direction_row, max_scal
