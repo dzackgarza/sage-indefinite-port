@@ -2664,16 +2664,16 @@ class _PositiveVectorEnumerator:
         close_coordinates = tuple(coordinates for coordinates, _square in distances)
         # computeIt_Gen_Kernel starts at coordinate dim-1 and increments that
         # coordinate before backtracking toward zero. Thus dim-1 is the primary
-        # ordering key and coordinate zero varies fastest. CVPSolver returns
-        # coordinates in the original kernel basis; multiplying by the dual
-        # LLL transform recovers the recursive coordinates up to the common
-        # affine-coset translation.
+        # ordering key and coordinate zero varies fastest. For row-basis change
+        # T G T^T = Gred, original coordinates x and reduced coordinates y
+        # satisfy x = y T, so y = x T^{-1}. Applying T to x reverses this map.
         transform = self.enumeration_transform
+        inverse_transform = transform.inverse()
         close_coordinates = tuple(
             sorted(
                 close_coordinates,
                 key=lambda coordinates: tuple(
-                    (transform * vector(SageZZ, coordinates))[index]
+                    (vector(SageZZ, coordinates) * inverse_transform)[index]
                     for index in reversed(range(transform.nrows()))
                 ),
             )
