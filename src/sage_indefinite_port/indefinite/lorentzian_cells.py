@@ -2570,17 +2570,28 @@ class _PositiveVectorEnumerator:
             kernel_gram.ncols(),
             [SageZZ(kernel_gram[i, j]) for i in range(kernel_gram.nrows()) for j in range(kernel_gram.ncols())],
         )
-        # LATT_near's CVPSolver first applies LLLreducedBasisDual to this
-        # Gram matrix. ClassicLLL.h:246-284 reduces adj(G). Sage's LLL_gram
-        # returns the column transform U; reduced coset coordinates are U^T
-        # times original coordinates, up to the common coset-reduction shift.
-        # Keep that map to restore the recursive coordinate order.
+        # LATT_near's CVPSolver applies LLLreducedBasisDual. Its vendored
+        # ClassicLLL.h implementation is adapted from GAP's
+        # LLLReducedGramMat, which returns the exact integral row transform
+        # as ``transformation``. Use that same algorithm on adj(G): Sage's
+        # LLL_gram may choose a different reduced basis and therefore a
+        # different first shortest vector.
         if kernel_gram_integer.nrows() > 1:
             adjugate_gram = kernel_gram_integer.adjugate()
-            lll_columns = adjugate_gram.LLL_gram()
-            self.enumeration_transform = lll_columns.transpose().change_ring(SageZZ)
+            gap_gram = [
+                [int(adjugate_gram[row, column]) for column in range(adjugate_gram.ncols())]
+                for row in range(adjugate_gram.nrows())
+            ]
+            # ClassicLLL.h fixes the Lovasz parameter at y=99/100; GAP's
+            # default is 3/4, so pass the pinned value explicitly.
+            gap_reduction = libgap.LLLReducedGramMat(gap_gram, libgap(99) / libgap(100))
+            gap_transform = gap_reduction.transformation
+            self.enumeration_transform = matrix(
+                SageZZ,
+                [[SageZZ(int(entry)) for entry in row] for row in gap_transform],
+            )
             if abs(int(self.enumeration_transform.det())) != 1:
-                raise ArithmeticError("the dual-LLL enumeration transform is not unimodular")
+                raise ArithmeticError("GAP's dual-LLL enumeration transform is not unimodular")
         else:
             self.enumeration_transform = identity_matrix(SageZZ, kernel_gram_integer.nrows())
         self.cvp_engine = _ExactCVPEngine._from_positive_engine_gram(lattice.base_ring(), kernel_gram_integer)
