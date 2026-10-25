@@ -2797,6 +2797,10 @@ class _PositiveVectorEnumerator:
         else:
             self.enumeration_transform = identity_matrix(SageZZ, kernel_gram_integer.nrows())
             self.enumeration_order_transform = self.enumeration_transform
+        if self.enumeration_transform * self.enumeration_order_transform.transpose() != identity_matrix(
+            SageZZ, kernel_gram_integer.nrows()
+        ):
+            raise ArithmeticError("dual-LLL CVP reconstruction and recursive ordering transforms are not inverse-transposes")
         self.cvp_engine = _ExactCVPEngine._from_positive_engine_gram(lattice.base_ring(), kernel_gram_integer)
         alpha = self.d / square
         timelike_row = self.timelike_row

@@ -38,6 +38,7 @@ def test_gap_lll_transformation_uses_row_congruence_orientation() -> None:
     assert dual_transform == matrix(ZZ, [[1, 0, 0], [3, 1, 1], [6, 2, 1]])
     assert dual_transform * gram.adjugate() * dual_transform.transpose() == dual_reduced
     enumeration_transform = dual_transform.inverse().transpose()
+    assert enumeration_transform * dual_transform.transpose() == matrix.identity(ZZ, 3)
     assert enumeration_transform * gram * enumeration_transform.transpose() == gram.det() * dual_reduced.change_ring(QQ).inverse()
     # Exercise the production ordering key against the actual pinned dual-LLL
     # transform, not only a separately chosen nonsymmetric unimodular matrix.
