@@ -23,7 +23,7 @@ stabilizer image 72. Exact evidence and limits are in
 [TODO.md](../TODO.md#functional-mvp-evidence-from-the-current-implementation-work).
 
 Current source-bearing follow-up: pinned #33/#15 perfect-domain CVP construction
-is on `implement/lorentzian-completion`, source revision `e240197` with the
+is on `implement/lorentzian-completion`, source revision `3ce9a98` with the
 standalone source-contract tests in `tests/test_pinned_lorentzian_cells.py`.
 The positive-vector backend extracts
 the pinned `SublatticeBasisReductionKernel`, alternating direct/dual LLL on the
@@ -32,6 +32,9 @@ stopping rule. The dual basis transform is explicitly integral after inverse-
 transpose, and the exact reduced-Gram identities are checked. Five targeted
 helper regressions and twelve additional deterministic-seed random sublattice
 checks passed, including square and rectangular row-lattice reduction cases.
+The CVP ordering helper documents the exact affine coordinate map `y=P*x+s`;
+its regression checks that target-dependent constant shifts preserve ordering
+and that the transpose gives a different order on the pinned nonsymmetric case.
 Ordinary pytest collection currently fails in the local Sage environment at
 `ModuleNotFoundError: sage.categories.ordered_fields`; Python compilation and
 source-level direct helper execution work. The full frozen
