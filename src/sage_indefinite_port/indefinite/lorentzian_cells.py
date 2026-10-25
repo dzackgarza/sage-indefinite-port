@@ -2789,6 +2789,7 @@ def _kernel_flipping(
         # contained in CritSet. Do not add a transversality prefilter here:
         # the pinned algorithm selects ListTotal[1] verbatim in scheme two.
         break
+    tried_walls_by_shell: dict[tuple[tuple[int, ...], ...], set[tuple[int, ...]]] = {}
     while True:
         # Exact port of Lorentzian.g:944-966: choose ListTotal[1] verbatim,
         # recompute its affine normal, and apply EXIT 2.
@@ -2801,11 +2802,16 @@ def _kernel_flipping(
         # among tied shortest vectors. Select a transverse wall from the same
         # shell; this preserves the geometric wall-crossing condition without
         # allowing a backend ordering difference to cause division by zero.
+        shell_state = tuple(sorted(total))
+        tried_walls = tried_walls_by_shell.setdefault(shell_state, set())
         for candidate in total:
+            if candidate in tried_walls:
+                continue
             candidate_expanded = vector(SageQQ, [1, *candidate])
             candidate_denominator = direction_normal.dot_product(candidate_expanded)
             if candidate_denominator:
                 new_row, expanded, denominator = candidate, candidate_expanded, candidate_denominator
+                tried_walls.add(candidate)
                 break
         if new_row is None or expanded is None:
             raise _NoTransverseFlipWall("the tied shortest shell has no transverse wall")
