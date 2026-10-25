@@ -2553,6 +2553,54 @@ def _dual_lll_enumeration_key(
     return tuple(reduced[index, 0] for index in reversed(range(transform.nrows())))
 
 
+def _pinned_sublattice_basis_reduction(basis: Matrix_integer_dense) -> Matrix_integer_dense:
+    r"""Reproduce ``SublatticeBasisReductionKernel`` from pinned ClassicLLL.h.
+
+    Alternate direct and dual LLL on the row Gram matrix, accepting a
+    unimodular row transform only when the ambient basis's entrywise L1 norm
+    strictly decreases. This stopping rule fixes the basis used by CVP.
+    """
+    reduced_basis = matrix(SageZZ, basis)
+    norm = sum(abs(entry) for entry in reduced_basis.list())
+    while reduced_basis.nrows() > 1:
+        changed = False
+        for dual in (False, True):
+            basis_gram = reduced_basis * reduced_basis.transpose()
+            gram = basis_gram.adjugate() if dual else basis_gram
+            reduction = libgap.LLLReducedGramMat(
+                [[int(gram[i, j]) for j in range(gram.ncols())] for i in range(gram.nrows())],
+                libgap(99) / libgap(100),
+            )
+            transform = matrix(
+                SageZZ,
+                [[SageZZ(int(entry)) for entry in row] for row in reduction["transformation"]],
+            )
+            reduced_gram = matrix(
+                SageZZ,
+                [[SageZZ(int(entry)) for entry in row] for row in reduction["remainder"]],
+            )
+            if abs(int(transform.det())) != 1:
+                raise ArithmeticError("the pinned sublattice LLL transform is not unimodular")
+            if transform * gram * transform.transpose() != reduced_gram:
+                raise ArithmeticError("the pinned sublattice LLL transform misses its reduced Gram")
+            if dual:
+                transform = transform.inverse().transpose()
+                expected_candidate_gram = basis_gram.det() * reduced_gram.inverse()
+            else:
+                expected_candidate_gram = reduced_gram
+            candidate = transform * reduced_basis
+            if candidate * candidate.transpose() != expected_candidate_gram:
+                raise ArithmeticError("the pinned sublattice transform misses its exact reduced Gram identity")
+            candidate_norm = sum(abs(entry) for entry in candidate.list())
+            if candidate_norm < norm:
+                reduced_basis = candidate
+                norm = candidate_norm
+                changed = True
+        if not changed:
+            break
+    return reduced_basis
+
+
 def _pinned_integer_covector_kernel(covector: tuple[int, ...]) -> Matrix_integer_dense:
     r"""Reproduce ``basic_common_cpp::NullspaceIntVect`` for an integral row.
 
@@ -2680,53 +2728,10 @@ class _PositiveVectorEnumerator:
         kernel_smith = kernel_rows.smith_form()[0]
         if any(kernel_smith[i, i] != 1 for i in range(kernel_rows.nrows())):
             raise ArithmeticError("the integral orthogonal-kernel basis is not saturated")
-        # The pinned C++ consumer does not use NullspaceIntMat's raw basis:
-        # lorentzian_perfect.h immediately applies SublatticeBasisReduction.
-        # That routine alternates direct and dual LLL reductions of the row
-        # Gram matrix, accepting each transform only when the L1 norm of the
-        # ambient basis rows strictly decreases. Reproduce that exact stopping
-        # rule because the resulting basis controls both CVP coordinates and
-        # their recursive enumeration order.
-        basis_l1 = sum(abs(entry) for entry in kernel_rows.list())
-        # LLL on a zero-dimensional kernel has no Gram matrix entries; in
-        # dimension one both direct and dual reductions are necessarily the
-        # identity, so neither case needs to enter GAP's matrix routine.
-        while kernel_rows.nrows() > 1:
-            changed = False
-            for dual in (False, True):
-                basis_gram = kernel_rows * kernel_rows.transpose()
-                if dual:
-                    basis_gram = basis_gram.adjugate()
-                gap_basis_reduction = libgap.LLLReducedGramMat(
-                    [[int(basis_gram[i, j]) for j in range(basis_gram.ncols())] for i in range(basis_gram.nrows())],
-                    libgap(99) / libgap(100),
-                )
-                basis_transform = matrix(
-                    SageZZ,
-                    [[SageZZ(int(entry)) for entry in row] for row in gap_basis_reduction["transformation"]],
-                )
-                reduced_basis_gram = matrix(
-                    SageZZ,
-                    [[SageZZ(int(entry)) for entry in row] for row in gap_basis_reduction["remainder"]],
-                )
-                if abs(int(basis_transform.det())) != 1:
-                    raise ArithmeticError("the pinned kernel-basis reduction returned a non-unimodular transform")
-                if basis_transform * basis_gram * basis_transform.transpose() != reduced_basis_gram:
-                    raise ArithmeticError("GAP's kernel-basis LLL transform does not reproduce its returned reduced Gram")
-                if dual:
-                    basis_transform = basis_transform.inverse().transpose()
-                candidate_basis = basis_transform * kernel_rows
-                if candidate_basis * candidate_basis.transpose() != basis_transform * (kernel_rows * kernel_rows.transpose()) * basis_transform.transpose():
-                    raise ArithmeticError("the pinned kernel-basis transform does not preserve its exact Gram identity")
-                if any(entry for entry in (candidate_basis * vector(SageZZ, pairing_coordinates).column()).list()):
-                    raise ArithmeticError("the pinned kernel-basis transform left the timelike covector kernel")
-                candidate_l1 = sum(abs(entry) for entry in candidate_basis.list())
-                if candidate_l1 < basis_l1:
-                    kernel_rows = candidate_basis
-                    basis_l1 = candidate_l1
-                    changed = True
-            if not changed:
-                break
+        # The pinned C++ consumer immediately applies SublatticeBasisReduction
+        # to NullspaceIntVect's ordered kernel basis. Its alternating direct/
+        # dual LLL and strict ambient-L1 stopping rule control the subsequent CVP.
+        kernel_rows = _pinned_sublattice_basis_reduction(kernel_rows)
         self.inclusion_rows = kernel_rows
         # Lorentzian.g:337-343 defines GramMat = -Ubasis*LorMat*Ubasis^T,
         # the positive-definite form used by ClosestAtDistanceVallentinProgram.

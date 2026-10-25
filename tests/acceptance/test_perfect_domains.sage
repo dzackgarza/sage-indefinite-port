@@ -13,6 +13,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _dual_lll_enumeration_key,
     _pinned_integer_covector_kernel,
     _pinned_positive_gcd_dot,
+    _pinned_sublattice_basis_reduction,
     perfect_complex,
     perfect_domain_traversal,
 )
@@ -114,6 +115,20 @@ def test_pinned_positive_gcd_dot_matches_exact_coefficients() -> None:
         divisor, coefficients = _pinned_positive_gcd_dot(values)
         assert (divisor, coefficients) == expected
         assert sum(a * b for a, b in zip(values, coefficients, strict=True)) == divisor
+
+
+def test_pinned_sublattice_basis_reduction_preserves_row_lattice() -> None:
+    """Alternating direct/dual LLL decreases L1 without changing the lattice."""
+    from sage.all import ZZ, matrix
+
+    basis = matrix(ZZ, [[10, 1, 0], [9, 1, 1], [1, 0, 8]])
+    reduced = _pinned_sublattice_basis_reduction(basis)
+    assert reduced == matrix(ZZ, [[-1, 0, 1], [-1, -1, 0], [3, -3, 3]])
+    change = reduced * basis.inverse()
+    assert all(entry.denominator() == 1 for entry in change.list())
+    assert abs(change.det()) == 1
+    assert sum(abs(entry) for entry in reduced.list()) <= sum(abs(entry) for entry in basis.list())
+    assert change * basis == reduced
 
 
 def test_pinned_integer_covector_kernel_matches_exact_contract() -> None:
