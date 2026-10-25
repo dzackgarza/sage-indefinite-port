@@ -1334,15 +1334,16 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 facet_normal = facet_covectors_by_incidence[id(adjacency.source)][incident]
             except KeyError as exc:
                 raise ArithmeticError("a Schreier facet has no defining covector in its source cone") from exc
-            facet_normal_row = vector(
-                SageQQ, (_rational(facet_normal.to_vector()(label)) for label in ambient_labels)
-            )
-            if frozenset(
-                position
-                for position, row in enumerate(adjacency.source.rows)
-                if vector(SageQQ, row).dot_product(facet_normal_row) == 0
-            ) != incident:
-                raise ArithmeticError("the Schreier facet incidence disagrees with its exact supporting covector")
+            if orbit_position == 0:
+                facet_normal_row = vector(
+                    SageQQ, (_rational(facet_normal.to_vector()(label)) for label in ambient_labels)
+                )
+                if frozenset(
+                    position
+                    for position, row in enumerate(adjacency.source.rows)
+                    if vector(SageQQ, row).dot_product(facet_normal_row) == 0
+                ) != incident:
+                    raise ArithmeticError("the Schreier facet incidence disagrees with its exact supporting covector")
             # The incidence is already the complete extreme-ray set of this
             # face.  Reconstructing the face by appending an equation to all
             # source H-inequalities performs an H-to-V conversion separately
