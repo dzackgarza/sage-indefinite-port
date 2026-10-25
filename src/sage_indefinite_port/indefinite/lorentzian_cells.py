@@ -1324,9 +1324,8 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # exact integral action; check a nontrivial Schreier element in
             # each facet orbit against the owned categorical morphism.
             action = transporter_action * symmetry_action
-            if orbit_position == 0:
-                if symmetry_action * ambient_gram * symmetry_action.transpose() != ambient_gram or abs(symmetry_action.det()) != 1:
-                    raise ArithmeticError("a Schreier stabilizer permutation does not induce an integral lattice isometry")
+            if symmetry_action * ambient_gram * symmetry_action.transpose() != ambient_gram or abs(symmetry_action.det()) != 1:
+                raise ArithmeticError("a Schreier stabilizer permutation does not induce an integral lattice isometry")
             if action * ambient_gram * action.transpose() != ambient_gram or abs(action.det()) != 1:
                 raise ArithmeticError("a Schreier side-pairing action is not an integral lattice isometry")
             if orbit_position == min(1, len(orbit) - 1):
