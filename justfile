@@ -43,10 +43,15 @@ ci-provision-sage:
     export MESONPY_EDITABLE_VERBOSE=1
     "$SAGE_BIN" -python -c 'import sage.all'
     "$SAGE_BIN" -pip install --quiet "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard
-    # dzack-research from its main branch, cloned without submodules: pip's
-    # git install recurses into them, and one is an SSH-only workspace.
+    # The acceptance contract is against this exact research API revision.
+    # Tracking main is not reproducible and currently imports a Sage category
+    # absent from the pinned CI Sage image (sage.categories.ordered_fields).
+    # Keep the clone shallow and fetch the exact provider commit explicitly.
     mkdir -p {{ci_dir}}
     git clone --quiet --depth 1 https://github.com/dzackgarza/research {{ci_dir}}/research
+    research_rev="f44e76f18e2e9cec43b09a846e2e74bca5fd50f6"
+    git -C {{ci_dir}}/research fetch --quiet --depth 1 origin "$research_rev"
+    git -C {{ci_dir}}/research -c advice.detachedHead=false checkout --quiet "$research_rev"
     # uv, not pip: research declares tree-sitter-sage and sage-stubs only in
     # [tool.uv.sources], which pip ignores.
     sage_python="$("$SAGE_BIN" -python -c 'import sys; print(sys.executable)')"
