@@ -2801,15 +2801,21 @@ def _kernel_flipping(
         seen_second_scheme_states.add(state)
         if not total:
             raise ArithmeticError("the second flip scheme requires a nonempty shortest shell")
-        # Lorentzian.g:944-950 selects ListTotal[1] verbatim, even when
-        # that vector is another vertex of the current cell. Replacing this
-        # by a search for a vector outside the cell changes the algorithm and
-        # can reject every admissible outside ray at a tied shortest shell.
-        new_row = total[0]
-        expanded = vector(SageQQ, [1, *new_row])
-        denominator = direction_normal.dot_product(expanded)
-        if denominator == 0:
-            raise _NoTransverseFlipWall("the source-selected shortest-shell wall is parallel to the flip direction")
+        # Lorentzian.g:944-950 selects ListTotal[1] verbatim. The owned
+        # close-vector backend has a different iteration order, so select the
+        # first vector in that same tied shell whose wall is transverse to the
+        # parameter direction. Do not exclude old-cell vertices: the source
+        # can select one of those before any genuinely new vector.
+        wall = None
+        for row in total:
+            expanded = vector(SageQQ, [1, *row])
+            denominator = direction_normal.dot_product(expanded)
+            if denominator:
+                wall = (row, expanded, denominator)
+                break
+        if wall is None:
+            raise _NoTransverseFlipWall("the shortest shell has no wall transverse to the flip direction")
+        new_row, expanded, denominator = wall
         shift = -base_normal.dot_product(expanded) / denominator
         normal = base_normal + shift * direction_normal
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
