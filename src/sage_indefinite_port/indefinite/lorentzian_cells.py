@@ -2612,16 +2612,20 @@ def _kernel_flipping(
                 lower = middle
                 seen_second_scheme_states.clear()
                 continue
-            new_row = next(
-                (row for row in probe_total if row not in critical_rows and direction_normal.dot_product(vector(SageQQ, [1, *row])) != 0),
+            wall = next(
+                (
+                    (row, -base_normal.dot_product(vector(SageQQ, [1, *row])) / denominator)
+                    for row in probe_total
+                    if row not in critical_rows
+                    for denominator in (direction_normal.dot_product(vector(SageQQ, [1, *row])),)
+                    if denominator != 0
+                    and base_normal + (-base_normal.dot_product(vector(SageQQ, [1, *row])) / denominator) * direction_normal != normal
+                ),
                 None,
             )
-            if new_row is None:
-                upper = middle
-                continue
-            expanded = vector(SageQQ, [1, *new_row])
-            denominator = direction_normal.dot_product(expanded)
-            shift = -base_normal.dot_product(expanded) / denominator
+            if wall is None:
+                raise ArithmeticError("the adjacent shortest shell contains no wall that changes the supporting normal")
+            new_row, shift = wall
             normal = base_normal + shift * direction_normal
             test_direction = inverse * vector(SageQQ, normal[1:]).column()
             test_direction_row = _source_remove_fraction(test_direction.column(0))
@@ -2634,11 +2638,22 @@ def _kernel_flipping(
         seen_second_scheme_states.add(state)
         if not total:
             raise ArithmeticError("the second flip scheme requires a nonempty shortest shell")
-        new_row = total[0]
+        new_row = next(
+            (
+                row
+                for row in total
+                if row not in critical_rows
+                and direction_normal.dot_product(vector(SageQQ, [1, *row])) != 0
+            ),
+            None,
+        )
+        if new_row is None:
+            # Every new wall in this tied shell is parallel to the parameter
+            # direction. The repeated-state branch probes the adjacent exact
+            # shell instead of dividing by zero or reusing the same normal.
+            continue
         expanded = vector(SageQQ, [1, *new_row])
         denominator = direction_normal.dot_product(expanded)
-        if denominator == 0:
-            raise ArithmeticError("the first shortest-shell vector does not determine a flip parameter")
         shift = -base_normal.dot_product(expanded) / denominator
         normal = base_normal + shift * direction_normal
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
