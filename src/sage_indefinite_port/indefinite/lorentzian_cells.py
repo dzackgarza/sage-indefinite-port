@@ -2676,7 +2676,11 @@ def _negative_direction_in_span(
     # integral representatives up to sign. Precompute the rejected rays once
     # rather than rebuilding a matrix and performing elimination per trial.
     excluded_keys = {projective_key(direction) for direction in (excluded_directions or [])}
-    perturbation = identity_matrix(SageZZ, dimension)
+    # Keep the exact perturbation over QQ, matching the rational span basis.
+    # Mixed ZZ/QQ matrix multiplication dispatches through the generic Sage
+    # coercion graph on every random trial; embedding these unimodular entries
+    # once preserves the source transformations without that repeated dispatch.
+    perturbation = identity_matrix(SageQQ, dimension)
     while True:
         rows = perturbation * spanning_rows
         restricted = rows * gram * rows.transpose()
@@ -2695,11 +2699,11 @@ def _negative_direction_in_span(
             return direction
         # IndefiniteFormsFundamental.g:11-30, GetRandomMatrixPerturbation.
         # These changes of basis preserve the rational span of the rows.
-        modification = identity_matrix(SageZZ, dimension)
+        modification = identity_matrix(SageQQ, dimension)
         if choice((1, 2)) == 1:
             permutation = list(range(dimension))
             shuffle(permutation)
-            modification = matrix(SageZZ, dimension, dimension)
+            modification = matrix(SageQQ, dimension, dimension)
             for index, image in enumerate(permutation):
                 modification[index, image] = choice((-1, 1))
         else:
