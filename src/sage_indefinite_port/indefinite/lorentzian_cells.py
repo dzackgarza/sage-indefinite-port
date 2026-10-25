@@ -410,7 +410,7 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
                 for row in transformed_face_rows.rows()
             )
         else:
-            face_values = transformed_face_rows * matrix(SageQQ, target_halfspace_rows).transpose()
+            face_values = transformed_face_rows * target_halfspace_rows.transpose()
             contained = all(value >= 0 for value in face_values.list())
         if not contained:
             raise ArithmeticError("an incident source ray is not contained in the proposed neighbor")
