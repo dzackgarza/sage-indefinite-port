@@ -638,12 +638,13 @@ class LorentzianPerfectLocalBackend:
 
     @cached_method
     def facet_orbit_permutations(self, cell: LorentzianPerfectCell) -> tuple[tuple[tuple[FacetIncidence, tuple[int, ...]], ...], ...]:
-        r"""Orbits of Aut((L, S)) on the facets spanned by S, each facet paired with an element carrying the orbit's first facet onto it.
+        r"""Orbits of Aut((L, S)) on facets, paired with their exact ray-permutation transversals.
 
         Lorentzian.g:1318-1322 (PermutationStabilizer := GRP_int) and
         OnSetsGroupFormalism: the stabilizer acts on facets through its
-        permutation action on the cell's rays. The orbits and transversal are
-        a Schreier traversal over the generators' ray permutations.
+        permutation action on the cell's rays. The Schreier transversals are
+        retained as ray permutations; ``facet_orbits`` materializes the owned
+        lattice isometries only for callers requiring categorical morphisms.
         """
         vectors = cell.vector_configuration
         cone = self.cell_cone(cell)
