@@ -2801,6 +2801,19 @@ def _kernel_flipping(
                 tried_walls.add(candidate)
                 break
         if new_row is None or expanded is None:
+            # Every newly encountered shortest vector is tangent to the
+            # flip direction. Since it is also on the current test wall,
+            # it lies on the base supporting wall as well. These are omitted
+            # critical vectors, not a wall to cross: enlarge the critical
+            # configuration without changing the supporting normal.
+            tangent_new = tuple(row for row in total if row not in critical_rows)
+            if tangent_new and all(
+                base_normal.dot_product(vector(SageQQ, [1, *row])) == 0
+                and direction_normal.dot_product(vector(SageQQ, [1, *row])) == 0
+                for row in tangent_new
+            ):
+                enlarged = tuple(sorted(critical_rows | set(tangent_new)))
+                return enlarged, normal, test_direction_row, max_scal
             raise _NoTransverseFlipWall("the tied shortest shell has no transverse wall")
         shift = -base_normal.dot_product(expanded) / denominator
         normal = base_normal + shift * direction_normal
