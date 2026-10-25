@@ -37,16 +37,6 @@ def test_isotropic_mode_counts_match_polyhedral_common(case) -> None:
     assert len(perfect_domain_traversal(lattice(case["gram"]), "isotropic").cells()) == case["isotropic_count"]
 
 
-
-
-
-
-
-
-
-
-
-
 def test_lazy_neighbor_cones_retain_exact_transformed_rays() -> None:
     """Materializing a deferred side-pairing cone checks its exact ray certificate."""
     require(PERFECT_DOMAINS)

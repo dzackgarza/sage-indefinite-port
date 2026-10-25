@@ -23,20 +23,18 @@ stabilizer image 72. Exact evidence and limits are in
 [TODO.md](../TODO.md#functional-mvp-evidence-from-the-current-implementation-work).
 
 Current source-bearing follow-up: pinned #33/#15 perfect-domain CVP construction
-is on `implement/lorentzian-completion`, source revision `9cfe1db`. It extracts
+is on `implement/lorentzian-completion`, source revision `9cfe1db` with the
+rectangular basis regression at `08dc1bb`. The positive-vector backend extracts
 the pinned `SublatticeBasisReductionKernel`, alternating direct/dual LLL on the
 ordered `NullspaceIntVect` kernel basis with the strict ambient entrywise L1
-stopping rule. The dual basis transform is explicitly returned to the integral
-parent after inverse-transpose, and both reduced-Gram identities are checked.
-The acceptance regression pins the exact square-basis result and now also covers
-a rectangular rank-three sublattice of Z^4, verifying exact output, integral
-unimodular row-lattice change, and norm decrease. Both targeted cases pass.
-The full frozen `A_PERFECT` traversal remains the acceptance obligation. Each
-push triggers the sharded [Acceptance workflow](https://github.com/dzackgarza/sage-indefinite-port/actions/workflows/acceptance.yml);
-use the run attached to the current branch tip and consume its case-level
-results rather than treating queued/running status as a verdict.
-The local host lacks the provisioned project Sage category dependencies; the
-standalone helper tests do not claim the public consumer passed locally.
+stopping rule. The dual basis transform is explicitly integral after inverse-
+transpose, and the exact reduced-Gram identities are checked. The source-level
+regressions have been moved out of the frozen acceptance corpus into
+`tests/test_pinned_lorentzian_cells.py`; five targeted helper regressions pass,
+including square and rectangular row-lattice reduction cases. The full frozen
+`A_PERFECT` traversal remains the acceptance obligation. The local host lacks
+the provisioned project Sage category dependencies, so standalone helper tests
+do not claim that the public consumer passed locally.
 
 Do not restart the completed source-dispatch investigation or require the
 full frozen acceptance matrix before recognizing this MVP delivery.
