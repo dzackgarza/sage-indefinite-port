@@ -336,6 +336,7 @@ def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
     enumerator = object.__new__(cells._PositiveVectorEnumerator)
     engine = CVPEngine()
     enumerator.rational_field = object()
+    enumerator.lattice = object()
     enumerator.base_target_engine_coordinates = (QQ(1) / 2, -QQ(2) / 3)
     enumerator.base_bound = QQ(5) / 7
     enumerator.cvp_engine = engine
