@@ -7,7 +7,13 @@ through the preamble's reduction complex, whose generators must generate O(L).
 
 import pytest
 
-from sage_indefinite_port.indefinite.lorentzian_cells import LorentzianPerfectLocalBackend, NONNEGATIVE_SQUARES, perfect_complex, perfect_domain_traversal
+from sage_indefinite_port.indefinite.lorentzian_cells import (
+    LorentzianPerfectLocalBackend,
+    NONNEGATIVE_SQUARES,
+    _pinned_integer_covector_kernel,
+    perfect_complex,
+    perfect_domain_traversal,
+)
 from tests.acceptance.consumer import PERFECT_DOMAINS, lattice, require
 from tests.fixtures.oracle_fixtures import load_lorentzian_perfect_domains
 
@@ -30,6 +36,28 @@ def test_isotropic_mode_counts_match_polyhedral_common(case) -> None:
     require(PERFECT_DOMAINS)
 
     assert len(perfect_domain_traversal(lattice(case["gram"]), "isotropic").cells()) == case["isotropic_count"]
+
+
+def test_pinned_integer_covector_kernel_matches_exact_contract() -> None:
+    """The source-ordered integral kernel is annihilated and saturated."""
+    from sage.all import ZZ, matrix, vector
+
+    cases = (
+        (2, 3),
+        (0, 6, 9),
+        (6, 10, 15),
+        (0, 0, 1, 2),
+        (7, 0, 0),
+        (-12, 18, 0, -30, 42),
+    )
+    for covector in cases:
+        kernel = _pinned_integer_covector_kernel(covector)
+        assert kernel.nrows() == len(covector) - 1
+        assert kernel * vector(ZZ, covector).column() == 0
+        assert all(factor == 1 for factor in kernel.smith_form()[0].diagonal())
+
+    zero_covector = (0, 0, 0)
+    assert _pinned_integer_covector_kernel(zero_covector) == matrix.identity(ZZ, 3)
 
 
 def test_lazy_neighbor_cones_retain_exact_transformed_rays() -> None:
