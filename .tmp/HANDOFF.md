@@ -23,7 +23,7 @@ stabilizer image 72. Exact evidence and limits are in
 [TODO.md](../TODO.md#functional-mvp-evidence-from-the-current-implementation-work).
 
 Current source-bearing follow-up: pinned #33/#15 perfect-domain CVP construction
-is on `implement/lorentzian-completion`, source revision `0ee93a5` with the
+is on `implement/lorentzian-completion`, source revision `114eb17` with the
 standalone source-contract tests in `tests/test_pinned_lorentzian_cells.py`.
 The positive-vector backend extracts
 the pinned `SublatticeBasisReductionKernel`, alternating direct/dual LLL on the
@@ -35,7 +35,8 @@ checks passed, including square and rectangular row-lattice reduction cases.
 The primitive-direction lowering helper now has its actual two-value contract
 (`TheMult`, primitive integral coordinates) in both its signature and call site,
 with a regression verifying the pinned `RemoveFractionPlusCoef` scale on
-fractional and nonprimitive integral rays. The CVP ordering helper documents
+fractional and nonprimitive integral rays. The corrected helper was directly
+executed against those regression cases. The CVP ordering helper documents
 the exact affine coordinate map `y=P*x+s`;
 its regression checks that target-dependent constant shifts preserve ordering
 and that the transpose gives a different order on the pinned nonsymmetric case.
