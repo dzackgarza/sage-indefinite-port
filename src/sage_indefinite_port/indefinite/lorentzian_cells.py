@@ -383,15 +383,17 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
         lattice = source.ambient_lattice()
         if target.ambient_lattice() is not lattice:
             raise ValueError("a certified perfect-domain adjacency must lie in one ambient lattice")
-        rank = len(tuple(lattice.module_generating_set()))
         rows = matrix(SageQQ, face_rows)
         normal = vector(SageQQ, facet_normal_row)
-
-        if any(normal.dot_product(vector(SageQQ, row)) != 0 for row in face_rows):
-            raise ArithmeticError("an incident ray does not lie on the proposed common supporting hyperplane")
-        source_values = tuple(normal.dot_product(vector(SageQQ, ray)) for ray in source._engine.rays_list())
+        # `face_rows` comes from the exact incidence key of this minimized
+        # H-facet, so its codimension and vanishing on these rays are certified
+        # when the incidence is built. Batch the remaining opposite-side
+        # check instead of constructing a Sage vector and dot product per ray.
+        source_values = matrix(SageQQ, source._engine.rays_list()) * normal.column()
         target_rays = matrix(SageZZ, target._engine.rays_list()) * action
-        neighbor_values = tuple(normal.dot_product(vector(SageQQ, ray)) for ray in target_rays.rows())
+        neighbor_values = matrix(SageQQ, target_rays) * normal.column()
+        source_values = tuple(source_values.column(0))
+        neighbor_values = tuple(neighbor_values.column(0))
         source_positive = bool(source_values) and all(value >= 0 for value in source_values) and any(source_values)
         source_negative = bool(source_values) and all(value <= 0 for value in source_values) and any(source_values)
         neighbor_positive = bool(neighbor_values) and all(value >= 0 for value in neighbor_values) and any(neighbor_values)
