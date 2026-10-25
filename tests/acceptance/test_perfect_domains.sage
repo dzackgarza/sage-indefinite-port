@@ -11,6 +11,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     LorentzianPerfectLocalBackend,
     NONNEGATIVE_SQUARES,
     _pinned_integer_covector_kernel,
+    _pinned_positive_gcd_dot,
     perfect_complex,
     perfect_domain_traversal,
 )
@@ -36,6 +37,21 @@ def test_isotropic_mode_counts_match_polyhedral_common(case) -> None:
     require(PERFECT_DOMAINS)
 
     assert len(perfect_domain_traversal(lattice(case["gram"]), "isotropic").cells()) == case["isotropic_count"]
+
+
+def test_pinned_positive_gcd_dot_matches_exact_coefficients() -> None:
+    """The source GCD-dot recurrence fixes the affine closest-vector center."""
+    cases = (
+        ((6, 10, 15), (1, (-14, 7, 1))),
+        ((-12, 18, 0, -30, 42), (6, (1, 1, 0, 0, 0))),
+        ((0, 0, 9), (9, (0, 0, 1))),
+        ((-5, 0, 0), (5, (-1, 0, 0))),
+        ((0, 0, 0), (0, (0, 0, 0))),
+    )
+    for values, expected in cases:
+        divisor, coefficients = _pinned_positive_gcd_dot(values)
+        assert (divisor, coefficients) == expected
+        assert sum(a * b for a, b in zip(values, coefficients, strict=True)) == divisor
 
 
 def test_pinned_integer_covector_kernel_matches_exact_contract() -> None:

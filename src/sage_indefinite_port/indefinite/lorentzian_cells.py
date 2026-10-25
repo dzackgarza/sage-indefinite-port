@@ -2504,6 +2504,40 @@ def _primitive_integral_direction(
     return SageQQ(denominator) / SageQQ(content), primitive_coordinates
 
 
+def _pinned_positive_gcd_dot(values: tuple[int, ...]) -> tuple[int, tuple[int, ...]]:
+    r"""Reproduce ``ComputeGcdDot`` followed by ``PositivityNormalizeGcdDot``.
+
+    The returned coefficients satisfy ``dot(values, coefficients) = gcd(values)``
+    with positive gcd. Their exact choice fixes the affine CVP center in the
+    pinned perfect-domain consumer.
+    """
+    if not values:
+        raise ValueError("the gcd-dot input must be nonempty")
+    divisor = int(values[0])
+    coefficients = [1] + [0] * (len(values) - 1)
+    for position in range(1, len(values)):
+        other = int(values[position])
+        if divisor == 0 and other == 0:
+            a, b, next_divisor = 0, 0, 0
+        else:
+            f = abs(divisor)
+            fm = 1 if divisor >= 0 else -1
+            g = abs(other)
+            gm = 0
+            while g:
+                quotient = f // g
+                f, fm, g, gm = g, gm, f - quotient * g, fm - quotient * gm
+            next_divisor = f
+            a = fm
+            b = 0 if other == 0 else (f - fm * divisor) // other
+        divisor = next_divisor
+        coefficients = [a * coefficient for coefficient in coefficients]
+        coefficients[position] = b
+    if divisor < 0:
+        return -divisor, tuple(-coefficient for coefficient in coefficients)
+    return divisor, tuple(coefficients)
+
+
 def _pinned_integer_covector_kernel(covector: tuple[int, ...]) -> Matrix_integer_dense:
     r"""Reproduce ``basic_common_cpp::NullspaceIntVect`` for an integral row.
 
@@ -2604,19 +2638,12 @@ class _PositiveVectorEnumerator:
         self.d = SageQQ(gcd(*pairing_coordinates))
         fraction_map = lattice.base_ring().fraction_field_map()
         self.rational_field = fraction_map.codomain()
-        # bezout_partner() computes the same coefficients by factoring the
-        # generic categorical pairing map. The exact coordinate row is already
-        # available, so retain it directly instead of constructing and then
-        # decoding an owned lattice vector.
-        bezout = [0] * len(pairing_coordinates)
-        divisor = 0
-        for position, coordinate in enumerate(pairing_coordinates):
-            next_divisor, left, right = SageZZ(divisor).xgcd(SageZZ(coordinate))
-            bezout = [int(left) * entry for entry in bezout]
-            bezout[position] = int(right)
-            divisor = int(next_divisor)
+        # Match the pinned ComputeGcdDot/PositivityNormalizeGcdDot coefficient
+        # recurrence exactly: a different valid Bezout partner changes the
+        # affine CVP center and therefore the first candidate used by flipping.
+        divisor, bezout = _pinned_positive_gcd_dot(pairing_coordinates)
         if divisor != int(self.d) or sum(a * b for a, b in zip(pairing_coordinates, bezout, strict=True)) != int(self.d):
-            raise ArithmeticError("the integral Bezout partner does not realize the direction divisibility")
+            raise ArithmeticError("the pinned gcd-dot partner does not realize the direction divisibility")
         partner_row = vector(SageZZ, bezout)
         # lorentzian_perfect.h calls NullspaceIntVect, not GAP's
         # NullspaceIntMat. Reproduce the pinned C++ Euclidean-gcd transform:
