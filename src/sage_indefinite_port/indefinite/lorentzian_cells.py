@@ -2606,17 +2606,18 @@ def _kernel_flipping(
         # Lorentzian.g:924-930, EXIT 1: the shell lies inside CritSet.
         if total_rows.issubset(critical_rows):
             return total, normal, test_direction_row, max_scal
-        # The reference assumes the first newly discovered shortest wall is
-        # transverse to the chosen parameter direction. For nongeneric
-        # directions, a whole tied shell may be parallel to that direction;
-        # continue the exact first-scheme interval search until a transverse
-        # wall appears instead of entering EXIT 2 with a zero denominator.
+        # Old-cell vertices are not candidate new walls during a facet flip.
+        # A tied shell containing only those vertices (or tangent new vectors)
+        # does not advance the wall crossing, so refine the first-scheme
+        # interval rather than entering EXIT 2 with a zero/no-op denominator.
+        excluded = set(excluded_wall_rows) | critical_rows
         if not any(
-            row not in critical_rows
+            row not in excluded
             and direction_normal.dot_product(vector(SageQQ, [1, *row])) != 0
             for row in total
         ):
-            raise _NoTransverseFlipWall("the outside ray is tangent to every wall in the first new shortest shell")
+            lower = middle
+            continue
         break
     seen_second_scheme_states: set[tuple[tuple[tuple[int, ...], ...], tuple[Rational, ...]]] = set()
     while True:
