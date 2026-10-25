@@ -2682,10 +2682,12 @@ def _negative_direction_in_span(
             raise ArithmeticError("the GetOneOutsideRay direction must pair equally with every critical vector")
         (scalar,) = scalars
         normal = vector(SageQQ, [-scalar, *covector.column(0)])
-        if _upper_bound(gram, base_normal, normal) is not None and all(
-            matrix(SageQQ, [direction, excluded]).rank() == 2
-            for excluded in (excluded_directions or [])
-        ):
+        # Reject already explored projective rays before the expensive exact
+        # affine-cone bound. The predicate is unchanged; only its evaluation
+        # order avoids recomputing the same bound for rejected directions.
+        if all(matrix(SageQQ, [direction, excluded]).rank() == 2 for excluded in (excluded_directions or [])) and _upper_bound(
+            gram, base_normal, normal
+        ) is not None:
             return direction
         # IndefiniteFormsFundamental.g:11-30, GetRandomMatrixPerturbation.
         # These changes of basis preserve the rational span of the rows.
