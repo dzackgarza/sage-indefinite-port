@@ -2308,7 +2308,13 @@ class _PositiveVectorEnumerator:
         self.kernel = Lattices(SageZZ)(
             [[SageZZ(kernel_gram[i, j]) for j in range(kernel_gram.ncols())] for i in range(kernel_gram.nrows())]
         )
-        self.base_target_parent = self.kernel.base_change(fraction_map)
+        # The base-change map is the identity on these Gram coordinates. Build
+        # K tensor QQ directly instead of invoking generic formed-module base
+        # change, whose determinant/equip path is disproportionate for each
+        # newly sampled shell direction.
+        self.base_target_parent = Lattices(self.rational_field)(
+            [[int(kernel_gram[i, j]) for j in range(kernel_gram.ncols())] for i in range(kernel_gram.nrows())]
+        )
         self.base_target_labels = tuple(self.base_target_parent.module_generating_set())
         alpha = self.d / square
         timelike_row = self.timelike_row
