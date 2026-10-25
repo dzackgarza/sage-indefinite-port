@@ -4,6 +4,7 @@ These probes are deliberately separate from the frozen acceptance corpus.
 """
 
 from sage_indefinite_port.indefinite.lorentzian_cells import (
+    _PositiveVectorEnumerator,
     _dual_lll_enumeration_key,
     _pinned_integer_covector_kernel,
     _pinned_positive_gcd_dot,
@@ -231,7 +232,7 @@ def test_ambient_vectors_reconstructs_exact_shell_and_filters_squares() -> None:
         allowed_squares={ZZ.zero()},
     )
     close_coordinates = ((1, 0), (0, 1), (0, 0))
-    result = _ambient_vectors(enumerator, 1, close_coordinates)
+    result = _PositiveVectorEnumerator._ambient_vectors(enumerator, 1, close_coordinates)
     assert result == ((1, 1, 0), (1, 0, 1))
     for row in result:
         ambient = vector(ZZ, row)

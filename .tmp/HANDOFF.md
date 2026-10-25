@@ -23,7 +23,7 @@ stabilizer image 72. Exact evidence and limits are in
 [TODO.md](../TODO.md#functional-mvp-evidence-from-the-current-implementation-work).
 
 Current source-bearing follow-up: pinned #33/#15 perfect-domain CVP construction
-is on `implement/lorentzian-completion`, source revision `c06375a` with the
+is on `implement/lorentzian-completion`, source revision `db38fa2` with the
 standalone source-contract tests in `tests/test_pinned_lorentzian_cells.py`.
 The positive-vector backend extracts
 the pinned `SublatticeBasisReductionKernel`, alternating direct/dual LLL on the
@@ -44,7 +44,10 @@ its regression checks that target-dependent constant shifts preserve ordering
 and that the transpose gives a different order on the pinned nonsymmetric case.
 The latest targeted regression exercises the production `_ambient_vectors`
 reconstruction on a Lorentzian diagonal form: it verifies the pairing fibre,
-exact isotropic norm, and filtering of a positive-norm candidate.
+exact isotropic norm, and filtering of a positive-norm candidate. That test
+calls `_PositiveVectorEnumerator._ambient_vectors` explicitly, so it is runnable
+as a normal test module rather than relying on a helper injected by the scratch
+AST harness.
 The current branch tip has not yet been accepted by the frozen full-family run;
 see the current case-level Acceptance results before asserting completion.
 Ordinary pytest collection currently fails in the local Sage environment at
