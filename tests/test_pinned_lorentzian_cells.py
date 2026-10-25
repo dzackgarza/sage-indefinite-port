@@ -251,6 +251,13 @@ def test_ambient_vectors_reconstructs_exact_shell_and_filters_squares() -> None:
     assert result == ((2, 2, 0), (2, 0, 2), (2, 0, 0))
     assert all(int(vector(ZZ, row) * lorentzian * vector(ZZ, row)) in {0, 4} for row in result)
 
+    try:
+        _PositiveVectorEnumerator._ambient_vectors(enumerator, 2, ((3, 0),))
+    except ArithmeticError as error:
+        assert "negative-norm" in str(error)
+    else:
+        raise AssertionError("a negative-norm reconstructed candidate was accepted")
+
 
 def test_rational_direction_bound_scales_quadratically() -> None:
     """Quadratic norms and their pairing bounds scale by scale squared."""
