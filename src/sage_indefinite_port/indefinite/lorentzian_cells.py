@@ -2312,14 +2312,6 @@ class _PositiveVectorEnumerator:
             [SageZZ(kernel_gram[i, j]) for i in range(kernel_gram.nrows()) for j in range(kernel_gram.ncols())],
         )
         self.cvp_engine = _ExactCVPEngine._from_positive_engine_gram(lattice.base_ring(), kernel_gram_integer)
-        # The base-change map is the identity on these Gram coordinates. Build
-        # K tensor QQ directly instead of invoking generic formed-module base
-        # change, whose determinant/equip path is disproportionate for each
-        # newly sampled shell direction.
-        self.base_target_parent = Lattices(self.rational_field)(
-            [[int(kernel_gram[i, j]) for j in range(kernel_gram.ncols())] for i in range(kernel_gram.nrows())]
-        )
-        self.base_target_labels = tuple(self.base_target_parent.module_generating_set())
         alpha = self.d / square
         timelike_row = self.timelike_row
         partner_row = _coordinate_row(lattice, self.partner, SageZZ)
@@ -2335,13 +2327,6 @@ class _PositiveVectorEnumerator:
         # lattice leaf. Retain these private arithmetic coordinates locally;
         # only the resulting coefficients are raised back into the owned ring.
         self.base_target_engine_coordinates = tuple(SageQQ(coordinate) for coordinate in self.base_target_coordinates)
-        self.base_target = self.base_target_parent.linear_combination(
-            {
-                label: _owned_rational(lattice, coordinate, field=self.rational_field)
-                for label, coordinate in zip(self.base_target_labels, self.base_target_coordinates, strict=True)
-                if coordinate
-            }
-        )
         self.base_bound = (self.d * self.d) / square
         self.partner_row = partner_row
 
@@ -2370,12 +2355,9 @@ class _PositiveVectorEnumerator:
         # this is the same module element as scalar_multiple, assembled once
         # through the owning module's linear-combination constructor.
         scalar = SageQQ(multiplier)
-        target = self.base_target_parent.linear_combination(
-            {
-                label: _owned_engine_element(self.rational_field, scalar * coordinate)
-                for label, coordinate in zip(self.base_target_labels, self.base_target_engine_coordinates, strict=True)
-                if coordinate
-            }
+        target = tuple(
+            _owned_engine_element(self.rational_field, scalar * coordinate)
+            for coordinate in self.base_target_engine_coordinates
         )
         bound = _owned_rational(
             self.lattice, (SageQQ(multiplier) ** 2) * self.base_bound, field=self.rational_field
