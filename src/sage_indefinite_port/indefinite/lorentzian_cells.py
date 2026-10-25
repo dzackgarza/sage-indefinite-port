@@ -2504,6 +2504,68 @@ def _primitive_integral_direction(
     return SageQQ(denominator) / SageQQ(content), primitive_coordinates
 
 
+def _pinned_integer_covector_kernel(covector: tuple[int, ...]) -> Matrix_integer_dense:
+    r"""Reproduce ``basic_common_cpp::NullspaceIntVect`` for an integral row.
+
+    The pinned implementation clears the first nonzero column, then builds
+    its kernel from the recursive ``ComputeGCD_information`` unimodular
+    transform. The transform matters here because its row order feeds the
+    subsequent LLL and CVP enumeration.
+    """
+    rank = len(covector)
+    if rank == 0:
+        return matrix(SageZZ, 0, 0)
+    pivot = next((i for i, value in enumerate(covector) if value), None)
+    if pivot is None:
+        return identity_matrix(SageZZ, rank)
+
+    def pair_gcd(m: int, n: int) -> Matrix_integer_dense:
+        if m == 0 and n == 0:
+            return identity_matrix(SageZZ, 2)
+        f = abs(m)
+        fm = 1 if m >= 0 else -1
+        g = abs(n)
+        gm = 0
+        while g:
+            quotient = f // g
+            f, fm, g, gm = g, gm, f - quotient * g, fm - quotient * gm
+        coefficient_m = fm
+        coefficient_n = 0 if n == 0 else (f - fm * m) // n
+        return matrix(SageZZ, [[coefficient_m, -n // f], [coefficient_n, m // f]])
+
+    def gcd_transform(values: tuple[int, ...]) -> Matrix_integer_dense:
+        size = len(values)
+        if size == 1:
+            return identity_matrix(SageZZ, 1)
+        if size == 2:
+            return pair_gcd(values[0], values[1])
+        previous = gcd_transform(values[:-1])
+        pair = pair_gcd(gcd(values[:-1]), values[-1])
+        result = matrix(SageZZ, size, size)
+        for i in range(size - 1):
+            result[i, 0] = pair[0, 0] * previous[i, 0]
+        result[size - 1, 0] = pair[1, 0]
+        for i in range(size - 2):
+            for j in range(size - 1):
+                result[j, i + 1] = previous[j, i + 1]
+        for i in range(size - 1):
+            result[i, size - 1] = pair[0, 1] * previous[i, 0]
+        result[size - 1, size - 1] = pair[1, 1]
+        return result
+
+    nonpivot = tuple(i for i in range(rank) if i != pivot)
+    values = (int(covector[pivot]),) + tuple(int(covector[i]) for i in nonpivot)
+    transform = gcd_transform(values)
+    result = matrix(SageZZ, rank - 1, rank)
+    for i in range(rank - 1):
+        result[i, pivot] = transform[0, i + 1]
+        for j, column in enumerate(nonpivot):
+            result[i, column] = transform[j + 1, i + 1]
+    if any(entry for entry in (result * vector(SageZZ, covector).column()).list()):
+        raise ArithmeticError("pinned integer covector-kernel construction failed its annihilation identity")
+    return result
+
+
 class _PositiveVectorEnumerator:
     r"""Vectors v of L with q(v) >= 0 (total) or q(v) = 0 (isotropic) and 0 < b(v, t) <= max, by multiplier.
 
@@ -2550,16 +2612,11 @@ class _PositiveVectorEnumerator:
         if divisor != int(self.d) or sum(a * b for a, b in zip(pairing_coordinates, bezout, strict=True)) != int(self.d):
             raise ArithmeticError("the integral Bezout partner does not realize the direction divisibility")
         partner_row = vector(SageZZ, bezout)
-        # Lorentzian.g:345-346 uses GAP's NullspaceIntMat on the transposed
-        # integral covector. Its particular saturated basis is part of the
-        # subsequent CVP enumeration order, so use the same provider rather
-        # than Sage's equally valid but differently ordered kernel basis.
-        gap_covector = [[entry] for entry in pairing_coordinates]
-        gap_kernel = libgap.NullspaceIntMat(gap_covector)
-        kernel_rows = matrix(
-            SageZZ,
-            [[SageZZ(int(entry)) for entry in row] for row in gap_kernel],
-        )
+        # lorentzian_perfect.h calls NullspaceIntVect, not GAP's
+        # NullspaceIntMat. Reproduce the pinned C++ Euclidean-gcd transform:
+        # the resulting saturated basis has a source-defined row order that
+        # determines subsequent LLL and recursive CVP enumeration order.
+        kernel_rows = _pinned_integer_covector_kernel(pairing_coordinates)
         if kernel_rows.nrows() != int(lattice.module_rank()) - 1 or any(
             entry for entry in (kernel_rows * vector(SageZZ, pairing_coordinates).column()).list()
         ):
