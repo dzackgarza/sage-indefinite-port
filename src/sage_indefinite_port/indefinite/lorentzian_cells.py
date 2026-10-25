@@ -2589,18 +2589,23 @@ class _PositiveVectorEnumerator:
             # default is 3/4, so pass the pinned value explicitly.
             gap_reduction = libgap.LLLReducedGramMat(gap_gram, libgap(99) / libgap(100))
             gap_transform = gap_reduction["transformation"]
-            self.enumeration_transform = matrix(
+            direct_transform = matrix(
                 SageZZ,
                 [[SageZZ(int(entry)) for entry in row] for row in gap_transform],
             )
-            if abs(int(self.enumeration_transform.det())) != 1:
-                raise ArithmeticError("GAP's dual-LLL enumeration transform is not unimodular")
+            if abs(int(direct_transform.det())) != 1:
+                raise ArithmeticError("GAP's dual-LLL source transform is not unimodular")
+            # CVPSolver calls LLLreducedBasisDual, not LLLreducedBasis on
+            # adj(G) directly. ClassicLLL.h defines its returned row transform
+            # as Q=(P^{-1})^T, where P is the transformation returned by LLL
+            # on adj(G). The enumeration coordinates therefore use Q, not P.
+            self.enumeration_transform = direct_transform.inverse().transpose()
             reduced_adjugate = matrix(
                 SageZZ,
                 [[SageZZ(int(entry)) for entry in row] for row in gap_reduction["remainder"]],
             )
-            if self.enumeration_transform * adjugate_gram * self.enumeration_transform.transpose() != reduced_adjugate:
-                raise ArithmeticError("GAP's dual-LLL transformation does not reproduce its reduced adjugate Gram")
+            if self.enumeration_transform * kernel_gram_integer * self.enumeration_transform.transpose() != kernel_gram_integer.det() * reduced_adjugate.inverse():
+                raise ArithmeticError("the dual-LLL enumeration transform does not reproduce the dual-reduced Gram")
         else:
             self.enumeration_transform = identity_matrix(SageZZ, kernel_gram_integer.nrows())
         self.cvp_engine = _ExactCVPEngine._from_positive_engine_gram(lattice.base_ring(), kernel_gram_integer)
