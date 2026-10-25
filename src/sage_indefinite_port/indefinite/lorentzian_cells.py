@@ -19,7 +19,7 @@ from dzack_research.preamble.categories.definite_lattices import LatticeReductio
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.rings.ring_foundation import _owned_engine_element
 from dzack_research.preamble.categories.modules.pure.modules import _engine_matrix
-from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
+from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones, _cone_from_engine_polyhedron
 from dzack_research.preamble.categories.reduction_complexes import (
     LorentzianPerfectDomainTraversal,
     PerfectDomainOrbitAdjacency,
@@ -33,6 +33,7 @@ from dzack_research.preamble.categories.sets.indexed_families import (
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.groups.perm_gps.permgroup_named import SymmetricGroup
 from sage.libs.gap.libgap import libgap
+from sage.geometry.polyhedron.constructor import Polyhedron
 from sage.matrix.constructor import matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
@@ -1230,21 +1231,6 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         facet_covectors_by_incidence[id(cell)] = by_incidence
     ambient_labels = tuple(lattice.module_generating_set())
     ambient_gram = _gram_matrix(lattice)
-    dual = lattice.dual_module()
-    dual_labels = tuple(dual.module_generating_set())
-    # Keep the target cone's exact H-presentation in owned dual coordinates.
-    # Transporting those rows is cheaper than reconstructing a V-to-H
-    # presentation for every member of a large facet-stabilizer orbit.
-    target_h_columns = {}
-    for cell in cells:
-        cone = cell_cones[id(cell)]
-        inequalities = tuple(cone.halfspace_covectors())
-        equations = tuple(cone.equation_covectors())
-        columns = tuple(tuple(int(coordinate(label)) for label in dual_labels) for covector in (*inequalities, *equations) for coordinate in (covector.to_vector(),))
-        target_h_columns[id(cell)] = (
-            len(inequalities),
-            matrix(SageZZ, len(dual_labels), len(columns), lambda row, col, _columns=columns: _columns[col][row]),
-        )
     neighbor_cache = {}
     identity_action = identity_matrix(SageZZ, len(ambient_labels))
     ambient_basis = tuple(lattice.module_generator(label) for label in ambient_labels)
@@ -1313,20 +1299,17 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 if action == identity_action:
                     neighbor = target_cone
                 else:
-                    inverse_action = action.change_ring(SageQQ).inverse()
-                    if any(entry.denominator() != 1 for entry in inverse_action.list()):
-                        raise ArithmeticError("a perfect-domain side pairing is not an integral automorphism")
-                    inverse_action = inverse_action.change_ring(SageZZ)
-                    inequality_count, columns = target_h_columns[id(adjacency.target)]
-                    images = inverse_action * columns
-                    transported = tuple(
-                        dual.linear_combination({label: dual.base_ring()(int(entry)) for label, entry in zip(dual_labels, image, strict=True) if entry})
-                        for image in images.columns()
+                    # The exact integral isometry is already known.  Transform
+                    # the stored coordinate rows in Sage's engine instead of
+                    # converting every ray through the owned category for
+                    # each member of a large facet-stabilizer orbit.
+                    transformed_rows = matrix(SageZZ, adjacency.target.rows) * action
+                    engine_cone = Polyhedron(
+                        vertices=[(0,) * len(ambient_labels)],
+                        rays=[tuple(SageQQ(entry) for entry in row) for row in transformed_rows.rows()],
+                        base_ring=SageQQ,
                     )
-                    neighbor = cones.from_halfspaces(
-                        transported[:inequality_count],
-                        equation_covectors=transported[inequality_count:],
-                    )
+                    neighbor = _cone_from_engine_polyhedron(lattice, engine_cone)
                 neighbor_cache[action_key] = neighbor
             # The Schreier orbit records the exact source facet incidence;
             # its cached supporting covector cuts out that face.
