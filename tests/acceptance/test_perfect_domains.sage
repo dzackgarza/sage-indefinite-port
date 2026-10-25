@@ -7,7 +7,7 @@ through the preamble's reduction complex, whose generators must generate O(L).
 
 import pytest
 
-from sage_indefinite_port.indefinite.lorentzian_cells import perfect_domain_traversal
+from sage_indefinite_port.indefinite.lorentzian_cells import NONNEGATIVE_SQUARES, perfect_complex, perfect_domain_traversal
 from tests.acceptance.consumer import PERFECT_DOMAINS, lattice, require
 from tests.fixtures.oracle_fixtures import load_lorentzian_perfect_domains
 
@@ -56,7 +56,7 @@ def test_facet_orbit_permutation_view_materializes_exact_isometries() -> None:
     require(PERFECT_DOMAINS)
 
     case = next(case for case in load_lorentzian_perfect_domains() if case["id"] == "Result_Enumeration_1")
-    complex_ = lattice(case["gram"]).lorentzian_reduction_complex()
+    complex_ = perfect_complex(lattice(case["gram"]), NONNEGATIVE_SQUARES)
     cell = complex_.quotient_cells()[0]
     backend = complex_.local_backend()
     permutation_orbits = backend.facet_orbit_permutations(cell)
