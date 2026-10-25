@@ -2349,7 +2349,7 @@ class _PositiveVectorEnumerator:
         scalar = _owned_rational(self.lattice, SageQQ(multiplier))
         target = self.base_target_parent.linear_combination(
             {
-                label: scalar * coordinate
+                label: scalar * _owned_rational(self.lattice, coordinate)
                 for label, coordinate in zip(self.base_target_labels, self.base_target_coordinates, strict=True)
                 if coordinate
             }
@@ -2676,6 +2676,12 @@ def _kernel_flipping(
                 has_new_wall = True
                 break
         if not has_new_wall:
+            if not excluded_wall_rows:
+                # In GetOnePerfect the outside ray is selectable. A shell
+                # with no transverse new wall invalidates this ray; retry the
+                # pinned GetOneOutsideRay search instead of bisecting forever
+                # through distinct shells tangent to the same direction.
+                raise _NoTransverseFlipWall("the outside ray is tangent to every new wall in its shortest shell")
             shell_state = tuple(sorted(total))
             if shell_state in no_wall_shells:
                 raise _NoTransverseFlipWall("the same shortest shell repeatedly offers no new transverse wall")
