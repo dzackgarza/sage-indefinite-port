@@ -484,9 +484,6 @@ class LorentzianPerfectLocalBackend:
                         normalized, critical, base_normal, normal_direction, allowed_squares
                     )
                 except _NoTransverseFlipWall:
-                    # GetOneOutsideRay changes its basis frame on a rejected
-                    # ray. Exclude its projective direction explicitly so the
-                    # next exact negative-vector search cannot return it again.
                     rejected_outside_directions.append(outside_direction)
                     continue
                 break
@@ -2686,9 +2683,6 @@ def _negative_direction_in_span(
     gram = _gram_matrix(lattice).change_ring(SageQQ)
     dimension = spanning_rows.nrows()
     if dimension == 1 and excluded_directions:
-        # A one-dimensional rational span has exactly one projective
-        # direction. Repeatedly changing its basis cannot produce a ray
-        # distinct from an already rejected one.
         raise ArithmeticError("a rejected outside ray spans the entire one-dimensional negative space")
 
     def projective_key(row: FreeModuleElement[Rational]) -> tuple[int, ...]:
@@ -2696,9 +2690,6 @@ def _negative_direction_in_span(
         first = next((entry for entry in primitive if entry), 0)
         return tuple(-entry for entry in primitive) if first < 0 else primitive
 
-    # Rational rank-two testing is equivalent to comparing these primitive
-    # integral representatives up to sign. Precompute the rejected rays once
-    # rather than rebuilding a matrix and performing elimination per trial.
     excluded_keys = {projective_key(direction) for direction in (excluded_directions or [])}
     # Keep the exact perturbation over QQ, matching the rational span basis.
     # Mixed ZZ/QQ matrix multiplication dispatches through the generic Sage
@@ -2716,9 +2707,6 @@ def _negative_direction_in_span(
             raise ArithmeticError("the GetOneOutsideRay direction must pair equally with every critical vector")
         (scalar,) = scalars
         normal = vector(SageQQ, [-scalar, *covector.column(0)])
-        # Reject already explored projective rays before the expensive exact
-        # affine-cone bound. The predicate is unchanged; only its evaluation
-        # order avoids recomputing the same bound for rejected directions.
         if projective_key(direction) not in excluded_keys and _upper_bound(gram, base_normal, normal) is not None:
             return direction
         # IndefiniteFormsFundamental.g:11-30, GetRandomMatrixPerturbation.
@@ -2740,7 +2728,7 @@ def _negative_direction_in_span(
 
 
 class _NoTransverseFlipWall(ArithmeticError):
-    """The chosen outside ray is admissible but tangent to its first new shell."""
+    """The chosen outside ray has no transverse wall in its shortest shell."""
 
 
 def _kernel_flipping(
@@ -2772,7 +2760,6 @@ def _kernel_flipping(
     critical_first = vector(SageQQ, critical[0])
     critical_rows = set(critical)
     total: tuple[tuple[int, ...], ...] = ()
-    no_wall_shells: set[tuple[tuple[int, ...], ...]] = set()
     while True:
         middle = _source_mid_value(lower, upper)
         normal = base_normal + middle * direction_normal
@@ -2798,68 +2785,30 @@ def _kernel_flipping(
         # Lorentzian.g:924-930, EXIT 1: the shell lies inside CritSet.
         if total_rows.issubset(critical_rows):
             return total, normal, test_direction_row, max_scal
-        # Lorentzian.g:922-930 enters the second scheme whenever the shell
-        # is not contained in CritSet. This includes other vertices of the
-        # current cell: the source deliberately chooses ListTotal[1] there.
-        # Do not filter those vectors using the old-cell set.
-        has_new_wall = False
-        for row in total:
-            if row in critical_rows:
-                continue
-            expanded = vector(SageQQ, [1, *row])
-            denominator = direction_normal.dot_product(expanded)
-            if denominator == 0:
-                continue
-            # Every vector in this shell lies on the sampled affine normal
-            # by construction. Equality with that normal is therefore not a
-            # no-op test; the second scheme recomputes the shell after the
-            # source-selected wall and applies EXIT 2.
-            has_new_wall = True
-            break
-        if not has_new_wall:
-            # A tied shell can differ from CritSet while all its new walls
-            # are tangent to this parameter direction. Refine the pinned
-            # first-scheme interval to the next shell; reject the ray only if
-            # the same no-wall shell recurs, rather than discarding every
-            # outside ray whose first new shell is tangent.
-            shell_state = tuple(sorted(total))
-            if shell_state in no_wall_shells:
-                raise _NoTransverseFlipWall("the same shortest shell repeatedly offers no new transverse wall")
-            no_wall_shells.add(shell_state)
-            lower = middle
-            continue
+        # Lorentzian.g:922-930 enters the second scheme for every shell not
+        # contained in CritSet. Do not add a transversality prefilter here:
+        # the pinned algorithm selects ListTotal[1] verbatim in scheme two.
         break
-    seen_second_scheme_walls: dict[
-        tuple[tuple[tuple[int, ...], ...], tuple[Rational, ...]], set[tuple[int, ...]]
-    ] = {}
     while True:
-        # Exact port of Lorentzian.g:944-966: choose the first available
-        # shortest-shell wall, recompute its affine normal, and apply EXIT 2.
-        # GAP's list order can vary across equal-length vectors; the owned
-        # close-vector backend is stable, so exhaust transverse tied walls
-        # before declaring this ray unable to progress.
-        state = (tuple(sorted(total)), tuple(normal))
+        # Exact port of Lorentzian.g:944-966: choose ListTotal[1] verbatim,
+        # recompute its affine normal, and apply EXIT 2.
         if not total:
             raise ArithmeticError("the second flip scheme requires a nonempty shortest shell")
-        tried_walls = seen_second_scheme_walls.setdefault(state, set())
-        # Lorentzian.g:944-950 selects ListTotal[1] verbatim. The owned
-        # close-vector backend has a different iteration order, so select the
-        # first vector in that same tied shell whose wall is transverse to the
-        # parameter direction. Do not exclude old-cell vertices: the source
-        # can select one of those before any genuinely new vector.
-        wall = None
-        for row in total:
-            if row in tried_walls:
-                continue
-            expanded = vector(SageQQ, [1, *row])
-            denominator = direction_normal.dot_product(expanded)
-            if denominator:
-                wall = (row, expanded, denominator)
+        new_row = None
+        expanded = None
+        denominator = SageQQ.zero()
+        # The owned exact sphere enumerator does not reproduce GAP's order
+        # among tied shortest vectors. Select a transverse wall from the same
+        # shell; this preserves the geometric wall-crossing condition without
+        # allowing a backend ordering difference to cause division by zero.
+        for candidate in total:
+            candidate_expanded = vector(SageQQ, [1, *candidate])
+            candidate_denominator = direction_normal.dot_product(candidate_expanded)
+            if candidate_denominator:
+                new_row, expanded, denominator = candidate, candidate_expanded, candidate_denominator
                 break
-        if wall is None:
-            raise _NoTransverseFlipWall("the tied shortest shell has no untried transverse wall")
-        new_row, expanded, denominator = wall
-        tried_walls.add(new_row)
+        if new_row is None or expanded is None:
+            raise _NoTransverseFlipWall("the tied shortest shell has no transverse wall")
         shift = -base_normal.dot_product(expanded) / denominator
         normal = base_normal + shift * direction_normal
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
