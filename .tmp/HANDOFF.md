@@ -22,16 +22,19 @@ six-wall hexagon, a nonreflective certificate, radical group images
 stabilizer image 72. Exact evidence and limits are in
 [TODO.md](../TODO.md#functional-mvp-evidence-from-the-current-implementation-work).
 
-Current source-bearing follow-up: pinned #33/#15 perfect-domain CVP ordering is at
-`ad9a437` (`implement/lorentzian-completion`). The dual-LLL CVP enumerator now
-orders original candidate columns by the direct adjugate-LLL transform `P*x`,
-not its transpose; the acceptance regression explicitly rejects the transposed
-ordering on a nonsymmetric unimodular example. Branch Acceptance run
-[40236850967](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40236850967)
-is the current revision's full-family run and is pending; do not treat it as a
-verdict. The local host lacks the provisioned Sage category dependency, so only
-source-level helper regressions have run locally. Continue with the actual
-frozen `A_PERFECT` consumer result, not another algebra-only probe.
+Current source-bearing follow-up: pinned #33/#15 perfect-domain CVP construction is at
+`8a77764` (`implement/lorentzian-completion`). It now reproduces the pinned
+`SublatticeBasisReductionKernel`: alternate direct/dual LLL of the ordered
+`NullspaceIntVect` kernel basis and accept a transform only when its ambient
+entrywise L1 norm strictly decreases. The extracted helper checks unimodularity
+and exact direct/dual reduced-Gram identities. The acceptance regression pins
+an exact reduced basis and verifies its integral unimodular change of basis.
+The current full-family Acceptance run is
+[40238213627](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40238213627),
+against `8a77764`; it is pending, not a verdict. Continue from the exact
+`A_PERFECT` public consumer, not another standalone arithmetic probe. The local
+host does not have the provisioned project Sage category dependencies, so do
+not claim the full consumer has passed locally.
 
 Do not restart the completed source-dispatch investigation or require the
 full frozen acceptance matrix before recognizing this MVP delivery.
