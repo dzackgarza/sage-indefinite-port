@@ -2666,6 +2666,16 @@ def _negative_direction_in_span(
         # direction. Repeatedly changing its basis cannot produce a ray
         # distinct from an already rejected one.
         raise ArithmeticError("a rejected outside ray spans the entire one-dimensional negative space")
+
+    def projective_key(row: FreeModuleElement[Rational]) -> tuple[int, ...]:
+        primitive = tuple(int(entry) for entry in _source_remove_fraction(row))
+        first = next((entry for entry in primitive if entry), 0)
+        return tuple(-entry for entry in primitive) if first < 0 else primitive
+
+    # Rational rank-two testing is equivalent to comparing these primitive
+    # integral representatives up to sign. Precompute the rejected rays once
+    # rather than rebuilding a matrix and performing elimination per trial.
+    excluded_keys = {projective_key(direction) for direction in (excluded_directions or [])}
     perturbation = identity_matrix(SageZZ, dimension)
     while True:
         rows = perturbation * spanning_rows
@@ -2681,9 +2691,7 @@ def _negative_direction_in_span(
         # Reject already explored projective rays before the expensive exact
         # affine-cone bound. The predicate is unchanged; only its evaluation
         # order avoids recomputing the same bound for rejected directions.
-        if all(matrix(SageQQ, [direction, excluded]).rank() == 2 for excluded in (excluded_directions or [])) and _upper_bound(
-            gram, base_normal, normal
-        ) is not None:
+        if projective_key(direction) not in excluded_keys and _upper_bound(gram, base_normal, normal) is not None:
             return direction
         # IndefiniteFormsFundamental.g:11-30, GetRandomMatrixPerturbation.
         # These changes of basis preserve the rational span of the rows.
