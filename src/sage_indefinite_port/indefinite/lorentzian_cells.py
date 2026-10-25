@@ -2629,25 +2629,22 @@ def _kernel_flipping(
         seen_second_scheme_states.add(state)
         if not total:
             raise ArithmeticError("the second flip scheme requires a nonempty shortest shell")
-        wall = None
-        for row in total:
-            if row in critical_rows:
-                continue
-            expanded = vector(SageQQ, [1, *row])
-            denominator = direction_normal.dot_product(expanded)
-            if denominator == 0:
-                continue
-            shift = -base_normal.dot_product(expanded) / denominator
-            candidate_normal = base_normal + shift * direction_normal
-            if candidate_normal != normal:
-                wall = (row, candidate_normal)
-                break
-        if wall is None:
-            # Every new wall in this tied shell either is tangent to the
-            # parameter direction or coincides with the current wall. Reject
-            # this outside ray rather than repeating the same supporting normal.
-            raise _NoTransverseFlipWall("the shortest shell has no new wall beyond the current supporting normal")
-        new_row, normal = wall
+        # Lorentzian.g:945 uses ListTotal[1], not an arbitrary wall from the
+        # tied shell. Preserve that ordering exactly; if this first wall is
+        # critical, tangent, or coincident with the current wall, reject the
+        # outside ray and let GetOneOutsideRay choose another direction.
+        new_row = total[0]
+        if new_row in critical_rows:
+            raise _NoTransverseFlipWall("the first shortest-shell vector is already critical")
+        expanded = vector(SageQQ, [1, *new_row])
+        denominator = direction_normal.dot_product(expanded)
+        if denominator == 0:
+            raise _NoTransverseFlipWall("the first shortest-shell wall is tangent to the flip direction")
+        shift = -base_normal.dot_product(expanded) / denominator
+        candidate_normal = base_normal + shift * direction_normal
+        if candidate_normal == normal:
+            raise _NoTransverseFlipWall("the first shortest-shell wall coincides with the current supporting normal")
+        normal = candidate_normal
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
         test_direction_row = _source_remove_fraction(test_direction.column(0))
         max_scal = (critical_first * gram * test_direction_row.column())[0]
