@@ -1432,12 +1432,9 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                     if vector(SageQQ, row).dot_product(facet_normal_row) == 0
                 ) != incident:
                     raise ArithmeticError("the Schreier facet incidence disagrees with its exact supporting covector")
-            # The incidence is already the complete extreme-ray set of this
-            # face.  Reconstructing the face by appending an equation to all
-            # source H-inequalities performs an H-to-V conversion separately
-            # for every member of a facet-stabilizer orbit (104 times on the
-            # rank-five U+<1,1,5> case).  Generate the same face directly from
-            # its known rays; redundant rays, if any, do not change the cone.
+            # Retain the exact extreme-ray incidence as the face certificate.
+            # The shared face cone is built below from the source's existing
+            # H-presentation and this facet's supporting covector.
             face_rows = tuple(adjacency.source.rows[position] for position in sorted(incident))
 
             face_key = (id(adjacency.source), incident)
