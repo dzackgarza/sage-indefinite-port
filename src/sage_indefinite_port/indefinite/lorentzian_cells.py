@@ -3031,8 +3031,8 @@ def _kernel_flipping(
     while True:
         if not total:
             raise ArithmeticError("the second flip scheme requires a nonempty shortest shell")
-        # Lorentzian.g:952 selects ListTotal[1] verbatim. The near-vector
-        # backend's nearest-first ordering is part of this algorithm's input.
+        # Lorentzian.g:952 selects ListTotal[1] verbatim. Preserve the
+        # enumerator's first result; do not substitute a norm-based ordering.
         expanded = vector(SageQQ, [1, *total[0]])
         denominator = direction_normal.dot_product(expanded)
         if denominator == 0:
