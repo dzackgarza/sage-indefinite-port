@@ -198,3 +198,10 @@ def test_primitive_integral_direction_matches_fraction_multiplier() -> None:
         assert scale == expected_scale
         assert primitive == expected_primitive
         assert vector(QQ, coordinates) == vector(ZZ, primitive).change_ring(QQ) / scale
+    for invalid in ((), (QQ(0),), (QQ(0), QQ(0))):
+        try:
+            _primitive_integral_direction(invalid)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"zero-dimensional or zero direction accepted: {invalid}")
