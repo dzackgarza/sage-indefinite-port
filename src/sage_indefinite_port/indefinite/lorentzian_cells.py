@@ -379,7 +379,7 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
     the exact primitive extreme rays transformed by the integral action.
     """
 
-    def __init__(self, source, target, target_to_neighbor, *, facet_normal_row, face_rows, action, neighbor_factory, common_face_factory):
+    def __init__(self, source, target, target_to_neighbor_factory, *, facet_normal_row, face_rows, action, neighbor_factory, common_face_factory):
         lattice = source.ambient_lattice()
         if target.ambient_lattice() is not lattice:
             raise ValueError("a certified perfect-domain adjacency must lie in one ambient lattice")
@@ -412,7 +412,8 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
         self._neighbor_factory = neighbor_factory
         self._common_face = None
         self._common_face_factory = common_face_factory
-        self._target_to_neighbor = target_to_neighbor
+        self._target_to_neighbor = None
+        self._target_to_neighbor_factory = target_to_neighbor_factory
         self._action = action
 
     def neighbor(self):
@@ -434,7 +435,9 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
         return self._common_face
 
     def target_to_neighbor(self):
-        """Return the owned lattice isometry represented by the exact action matrix."""
+        """Construct and cache the owned lattice isometry only when requested."""
+        if self._target_to_neighbor is None:
+            self._target_to_neighbor = self._target_to_neighbor_factory()
         return self._target_to_neighbor
 
 
@@ -1383,9 +1386,9 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # isometry for this facet. Reuse it directly rather than rebuilding
             # the same map from all ambient generator images; that constructor
             # repeats indexed-family and module-morphism setup per facet.
-            target_to_neighbour = symmetry * adjacency.transporter
+            target_to_neighbour_factory = lambda symmetry=symmetry, transporter=adjacency.transporter: symmetry * transporter
             if orbit_position == min(1, len(orbit) - 1):
-                reference_map = target_to_neighbour
+                reference_map = target_to_neighbour_factory()
                 reference_action = matrix(
                     SageZZ,
                     [_coordinate_row(lattice, reference_map(basis_vector), SageZZ) for basis_vector in ambient_basis],
@@ -1472,7 +1475,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 _CertifiedPerfectDomainOrbitAdjacency(
                     cell_cones[id(adjacency.source)],
                     cell_cones[id(adjacency.target)],
-                    target_to_neighbour,
+                    target_to_neighbour_factory,
                     facet_normal_row=facet_normal_row,
                     face_rows=face_rows,
                     action=action,
