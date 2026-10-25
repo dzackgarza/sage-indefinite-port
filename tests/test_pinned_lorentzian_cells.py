@@ -212,3 +212,28 @@ def test_primitive_integral_direction_matches_fraction_multiplier() -> None:
         pass
     else:
         raise AssertionError("a direction with the wrong lattice rank was accepted")
+
+
+def test_ambient_vectors_reconstructs_exact_shell_and_filters_squares() -> None:
+    """The kernel-coordinate candidates reconstruct to the prescribed fibre."""
+    from types import SimpleNamespace
+
+    from sage.all import ZZ, matrix, vector
+
+    lorentzian = matrix(ZZ, [[1, 0, 0], [0, -1, 0], [0, 0, -1]])
+    enumerator = SimpleNamespace(
+        partner_row=vector(ZZ, (1, 0, 0)),
+        inclusion_rows=matrix(ZZ, [[0, 1, 0], [0, 0, 1]]),
+        gram=lorentzian,
+        timelike_covector=vector(ZZ, (1, 0, 0)).column(),
+        d=ZZ.one(),
+        scaled_max=ZZ(2),
+        allowed_squares={ZZ.zero()},
+    )
+    close_coordinates = ((1, 0), (0, 1), (0, 0))
+    result = _ambient_vectors(enumerator, 1, close_coordinates)
+    assert result == ((1, 1, 0), (1, 0, 1))
+    for row in result:
+        ambient = vector(ZZ, row)
+        assert ambient * lorentzian * ambient.column() == 0
+        assert (ambient * enumerator.timelike_covector)[0] == 1
