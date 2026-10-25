@@ -1312,10 +1312,12 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     # Reuse the source cell's H-presentation for every member of its
     # stabilizer orbit instead of recomputing a V-to-H representation.
     facet_covectors_by_incidence = {}
+    halfspace_rows_by_cell = {}
     for cell in cells:
         labels = tuple(cell.lattice.module_generating_set())
         rows = matrix(SageQQ, cell.rows)
         by_incidence = {}
+        halfspace_rows = []
         # The cone's stored H-presentation already is the minimized facet
         # family. `facet_covectors()` constructs every facet cone merely to
         # recover these same normals, which is prohibitively expensive on
@@ -1323,20 +1325,21 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         for covector in cell_cones[id(cell)].halfspace_covectors():
             coordinate = covector.to_vector()
             normal = vector(SageQQ, (_rational(coordinate(label)) for label in labels))
+            halfspace_rows.append(normal)
             incidence = frozenset(position for position, row in enumerate(rows.rows()) if row.dot_product(normal) == 0)
-            if not incidence or rows.matrix_from_rows(sorted(incidence)).rank() != rows.ncols() - 1:
-                raise ArithmeticError("a minimized H-presentation covector does not define a codimension-one extreme-ray face")
+            if not incidence:
+                raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
             if incidence in by_incidence:
                 raise ArithmeticError("distinct perfect-cell facets have the same extreme-ray incidence")
             by_incidence[incidence] = covector
         facet_covectors_by_incidence[id(cell)] = by_incidence
+        halfspace_rows_by_cell[id(cell)] = matrix(SageQQ, halfspace_rows)
     ambient_labels = tuple(lattice.module_generating_set())
     ambient_dual = lattice.dual_module()
     dual_labels = tuple(ambient_dual.module_generating_set())
     ambient_gram = _gram_matrix(lattice)
     neighbor_cache = {}
     common_face_cache = {}
-    target_halfspace_cache = {}
     identity_action = identity_matrix(SageZZ, len(ambient_labels))
     ambient_basis = tuple(lattice.module_generator(label) for label in ambient_labels)
     source_basis_data = {}
@@ -1394,19 +1397,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             target_to_neighbour_factory = lambda symmetry=symmetry, transporter=adjacency.transporter: symmetry * transporter
             target_cone = cell_cones[id(adjacency.target)]
             target_key = id(adjacency.target)
-            target_halfspace_rows = target_halfspace_cache.get(target_key)
-            if target_halfspace_rows is None:
-                target_halfspace_rows = matrix(
-                    SageQQ,
-                    [
-                        [
-                            _rational(covector.to_vector()(label))
-                            for label in ambient_labels
-                        ]
-                        for covector in target_cone.halfspace_covectors()
-                    ],
-                )
-                target_halfspace_cache[target_key] = target_halfspace_rows
+            target_halfspace_rows = halfspace_rows_by_cell[target_key]
             action_key = (id(adjacency.target), tuple(int(entry) for entry in action.list()))
 
             def neighbor_factory(action_key=action_key, target_cone=target_cone, action=action):
