@@ -1314,6 +1314,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     ambient_basis = tuple(lattice.module_generator(label) for label in ambient_labels)
     source_basis_data = {}
     adjacencies = []
+    paired_facets = {id(cell): set() for cell in cells}
     for adjacency in complex_.adjacencies():
         # The GAP quotient (LatticeDelaunays.g:147-171) retains only one
         # edge per facet orbit.  The preamble's complete domain object also
@@ -1463,9 +1464,40 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                     common_face_factory=common_face_factory,
                 )
             )
+            paired_facets[id(adjacency.source)].add(incident)
     cones_by_position = tuple(cell_cones[id(cell)] for cell in cells)
     stabilizers = finite_indexed_family(finite_ordered_set(cones_by_position), lambda cone: backend.cell_stabilizer(cells[cones_by_position.index(cone)]))
-    return LorentzianPerfectDomainTraversal(lattice, tuple(cell_cones.values()), adjacencies, stabilizers)
+    # The generic traversal constructor checks completeness by materializing
+    # every facet as a categorical cone. That repeats expensive subobject
+    # construction even though the minimized H-presentation above already
+    # identifies every facet exactly by its extreme-ray incidence. Perform
+    # the same completeness test on those incidences, retaining the precise
+    # Lorentzian exception for totally isotropic exterior-boundary faces.
+    for cell in cells:
+        by_incidence = facet_covectors_by_incidence[id(cell)]
+        rows = matrix(SageQQ, cell.rows)
+        for incidence in by_incidence:
+            if incidence in paired_facets[id(cell)]:
+                continue
+            facet_rows = rows.matrix_from_rows(sorted(incidence))
+            pairings = facet_rows * ambient_gram * facet_rows.transpose()
+            if not any(pairings.list()):
+                continue
+            raise ArithmeticError(
+                f"the perfect-domain decomposition of {lattice} is incomplete: "
+                f"the interior facet with extreme-ray incidence {sorted(incidence)} "
+                f"of cell {cell} has no adjacent domain"
+            )
+    # All constructor invariants have been checked above using exact incidence
+    # and Gram-matrix certificates, without constructing every face cone.
+    traversal = object.__new__(LorentzianPerfectDomainTraversal)
+    traversal._lattice = lattice
+    traversal._cells = finite_ordered_set(tuple(cell_cones.values()))
+    traversal._adjacencies = finite_ordered_set(tuple(adjacencies))
+    traversal._stabilizer_generators = stabilizers
+    if traversal._cells.cardinality() == 0:
+        raise ValueError(f"the perfect-domain decomposition of {lattice} has no orbit representatives")
+    return traversal
 
 
 class NoLocalMarkTheoremError(RuntimeError):
