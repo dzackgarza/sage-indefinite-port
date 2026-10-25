@@ -2769,12 +2769,10 @@ class _PositiveVectorEnumerator:
         target_coordinates = self.inclusion_rows.transpose().change_ring(SageQQ).solve_right(translation)
         if self.inclusion_rows.transpose().change_ring(SageQQ) * target_coordinates != translation:
             raise ArithmeticError("the Bezout translation is not in the rational orthogonal-kernel span")
-        # The source sets eTrans = eBasSol - alpha*eVect = -m*(alpha*t-h),
-        # so eSol has coordinates -m*w.  But the public consumer calls
-        # ClosestAtDistanceVallentinProgram(GramMat, -eSol, d): its CVP center
-        # is -eSol = +m*w.  LATT_near preserves the semantic target despite its
-        # internal coset negation and final coordinate subtraction (see
-        # CVPSolver::at_most_dist_vectors in pinned Shvec_exact.h).
+        # Both pinned consumers have the same semantic CVP center. C++ forms
+        # eTrans = alpha*eVect-eBasSol = w and passes its coordinates directly;
+        # the older GAP wrapper forms -w and negates eSol at its call boundary.
+        # Here target_coordinates solves Ubasis^T*w = alpha*t-h, so retain +w.
         self.base_target_coordinates = tuple(SageQQ(entry) for entry in target_coordinates.column(0))
         # The rational field's selected engine is Sage QQ for this integral
         # lattice leaf. Retain these private arithmetic coordinates locally;
