@@ -2585,7 +2585,7 @@ class _PositiveVectorEnumerator:
             # ClassicLLL.h fixes the Lovasz parameter at y=99/100; GAP's
             # default is 3/4, so pass the pinned value explicitly.
             gap_reduction = libgap.LLLReducedGramMat(gap_gram, libgap(99) / libgap(100))
-            gap_transform = gap_reduction.transformation
+            gap_transform = gap_reduction["transformation"]
             self.enumeration_transform = matrix(
                 SageZZ,
                 [[SageZZ(int(entry)) for entry in row] for row in gap_transform],
@@ -2594,7 +2594,7 @@ class _PositiveVectorEnumerator:
                 raise ArithmeticError("GAP's dual-LLL enumeration transform is not unimodular")
             reduced_adjugate = matrix(
                 SageZZ,
-                [[SageZZ(int(entry)) for entry in row] for row in gap_reduction.remainder],
+                [[SageZZ(int(entry)) for entry in row] for row in gap_reduction["remainder"]],
             )
             if self.enumeration_transform * adjugate_gram * self.enumeration_transform.transpose() != reduced_adjugate:
                 raise ArithmeticError("GAP's dual-LLL transformation does not reproduce its reduced adjugate Gram")
