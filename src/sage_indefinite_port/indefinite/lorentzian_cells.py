@@ -2564,6 +2564,12 @@ class _PositiveVectorEnumerator:
             entry for entry in (kernel_rows * vector(SageZZ, pairing_coordinates).column()).list()
         ):
             raise ArithmeticError("the integral orthogonal-kernel basis does not span the timelike covector kernel")
+        # A rank-correct integral kernel can still span a proper finite-index
+        # sublattice. The pinned NullspaceIntMat/NullspaceIntVect contract is a
+        # saturated Z-kernel; check its Smith factors before any basis reduction.
+        kernel_smith = kernel_rows.smith_form()[0]
+        if any(kernel_smith[i, i] != 1 for i in range(kernel_rows.nrows())):
+            raise ArithmeticError("the integral orthogonal-kernel basis is not saturated")
         # The pinned C++ consumer does not use NullspaceIntMat's raw basis:
         # lorentzian_perfect.h immediately applies SublatticeBasisReduction.
         # That routine alternates direct and dual LLL reductions of the row
