@@ -1317,23 +1317,32 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         labels = tuple(cell.lattice.module_generating_set())
         rows = matrix(SageQQ, cell.rows)
         by_incidence = {}
-        halfspace_rows = []
+        covectors = tuple(cell_cones[id(cell)].halfspace_covectors())
+        halfspace_rows = matrix(
+            SageQQ,
+            [
+                [_rational(covector.to_vector()(label)) for label in labels]
+                for covector in covectors
+            ],
+        )
+        incidence_matrix = rows * halfspace_rows.transpose()
         # The cone's stored H-presentation already is the minimized facet
         # family. `facet_covectors()` constructs every facet cone merely to
         # recover these same normals, which is prohibitively expensive on
         # high-facet cells.
-        for covector in cell_cones[id(cell)].halfspace_covectors():
-            coordinate = covector.to_vector()
-            normal = vector(SageQQ, (_rational(coordinate(label)) for label in labels))
-            halfspace_rows.append(normal)
-            incidence = frozenset(position for position, row in enumerate(rows.rows()) if row.dot_product(normal) == 0)
+        for covector_position, covector in enumerate(covectors):
+            incidence = frozenset(
+                position
+                for position in range(rows.nrows())
+                if incidence_matrix[position, covector_position] == 0
+            )
             if not incidence:
                 raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
             if incidence in by_incidence:
                 raise ArithmeticError("distinct perfect-cell facets have the same extreme-ray incidence")
             by_incidence[incidence] = covector
         facet_covectors_by_incidence[id(cell)] = by_incidence
-        halfspace_rows_by_cell[id(cell)] = matrix(SageQQ, halfspace_rows)
+        halfspace_rows_by_cell[id(cell)] = halfspace_rows
     ambient_labels = tuple(lattice.module_generating_set())
     ambient_dual = lattice.dual_module()
     dual_labels = tuple(ambient_dual.module_generating_set())
