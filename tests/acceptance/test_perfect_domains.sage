@@ -48,3 +48,4 @@ def test_lazy_neighbor_cones_retain_exact_transformed_rays() -> None:
         assert int(common_face.dimension()) == int(traversal.lattice().rank()) - 1
         assert common_face.is_face_of(adjacency.source())
         assert common_face.is_face_of(neighbor)
+        assert adjacency.target_representative().transport(adjacency.target_to_neighbor()).is_equal_to(neighbor)
