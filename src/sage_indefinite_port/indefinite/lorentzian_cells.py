@@ -17,6 +17,7 @@ import numpy as np
 from dzack_research.preamble.all import FramedFreeModules, Lattices
 from dzack_research.preamble.categories.definite_lattices import LatticeReduction
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
+from dzack_research.preamble.categories.rings.ring_foundation import _owned_engine_element
 from dzack_research.preamble.categories.modules.pure.modules import _engine_matrix
 from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
 from dzack_research.preamble.categories.reduction_complexes import (
@@ -2312,9 +2313,11 @@ class _PositiveVectorEnumerator:
         if self.inclusion_rows.transpose().change_ring(SageQQ) * target_coordinates != translation:
             raise ArithmeticError("the Bezout translation is not in the rational orthogonal-kernel span")
         self.base_target_coordinates = tuple(SageQQ(entry) for entry in target_coordinates.column(0))
-        self.base_target_owned_coordinates = tuple(
-            _owned_rational(lattice, coordinate) for coordinate in self.base_target_coordinates
-        )
+        self.rational_field = self.base_target_parent.base_ring()
+        # The rational field's selected engine is Sage QQ for this integral
+        # lattice leaf. Retain these private arithmetic coordinates locally;
+        # only the resulting coefficients are raised back into the owned ring.
+        self.base_target_engine_coordinates = tuple(SageQQ(coordinate) for coordinate in self.base_target_coordinates)
         self.base_target = self.base_target_parent.linear_combination(
             {
                 label: _owned_rational(lattice, coordinate)
@@ -2349,11 +2352,11 @@ class _PositiveVectorEnumerator:
         # scalar-action morphism repeatedly flattens owned categories here;
         # this is the same module element as scalar_multiple, assembled once
         # through the owning module's linear-combination constructor.
-        scalar = _owned_rational(self.lattice, SageQQ(multiplier))
+        scalar = SageQQ(multiplier)
         target = self.base_target_parent.linear_combination(
             {
-                label: scalar * coordinate
-                for label, coordinate in zip(self.base_target_labels, self.base_target_owned_coordinates, strict=True)
+                label: _owned_engine_element(self.rational_field, scalar * coordinate)
+                for label, coordinate in zip(self.base_target_labels, self.base_target_engine_coordinates, strict=True)
                 if coordinate
             }
         )
