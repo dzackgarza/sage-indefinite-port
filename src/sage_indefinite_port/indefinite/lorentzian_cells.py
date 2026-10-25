@@ -1309,6 +1309,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     dual_labels = tuple(ambient_dual.module_generating_set())
     ambient_gram = _gram_matrix(lattice)
     neighbor_cache = {}
+    common_face_cache = {}
     identity_action = identity_matrix(SageZZ, len(ambient_labels))
     ambient_basis = tuple(lattice.module_generator(label) for label in ambient_labels)
     source_basis_data = {}
@@ -1439,13 +1440,19 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # its known rays; redundant rays, if any, do not change the cone.
             face_rows = tuple(adjacency.source.rows[position] for position in sorted(incident))
 
-            def common_face_factory(face_rows=face_rows):
-                face_engine = Polyhedron(
-                    vertices=[(0,) * len(ambient_labels)],
-                    rays=[tuple(SageQQ(entry) for entry in row) for row in face_rows],
-                    base_ring=SageQQ,
-                )
-                return _cone_from_engine_polyhedron(lattice, face_engine)
+            face_key = (id(adjacency.source), incident)
+
+            def common_face_factory(face_key=face_key, source_cone=cell_cones[id(adjacency.source)], facet_normal=facet_normal):
+                cached = common_face_cache.get(face_key)
+                if cached is None:
+                    # The facet is already given by this exact supporting
+                    # covector. Intersect the existing H-presentation rather
+                    # than converting its known rays through a fresh V/H
+                    # polyhedron; every Schreier representative of this face
+                    # shares the resulting owned cone.
+                    cached = source_cone.face_on_covector(facet_normal)
+                    common_face_cache[face_key] = cached
+                return cached
 
             adjacencies.append(
                 _CertifiedPerfectDomainOrbitAdjacency(
