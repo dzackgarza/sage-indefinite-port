@@ -2780,6 +2780,7 @@ def _kernel_flipping(
         new_row = None
         expanded = None
         denominator = SageQQ.zero()
+        crossed_rows: set[tuple[int, ...]] = set()
         # The owned exact sphere enumerator does not reproduce GAP's order
         # among tied shortest vectors. Select a transverse wall from the same
         # shell; this preserves the geometric wall-crossing condition without
@@ -2798,7 +2799,20 @@ def _kernel_flipping(
             # Require a new, transverse wall that actually changes the normal.
             if candidate_denominator and candidate_shift_numerator:
                 new_row, expanded, denominator = candidate, candidate_expanded, candidate_denominator
-                tried_walls.add(candidate)
+                shift = -candidate_shift_numerator / candidate_denominator
+                # The sphere backend returns every vector in the first
+                # pairing shell, so several new vectors can define the same
+                # wall and have the same exact flip parameter. Treat that
+                # tied wall as one crossing rather than repeatedly changing
+                # the normal by the same shift for each vector.
+                crossed_rows = {
+                    row for row in total
+                    if row not in critical_rows
+                    and direction_normal.dot_product(vector(SageQQ, [1, *row])) != 0
+                    and -base_normal.dot_product(vector(SageQQ, [1, *row]))
+                        / direction_normal.dot_product(vector(SageQQ, [1, *row])) == shift
+                }
+                tried_walls.update(crossed_rows)
                 break
         if new_row is None or expanded is None:
             # Every newly encountered shortest vector is tangent to the
@@ -2814,7 +2828,13 @@ def _kernel_flipping(
             ):
                 enlarged = tuple(sorted(critical_rows | set(tangent_new)))
                 return enlarged, normal, test_direction_row, max_scal
-            raise _NoTransverseFlipWall("the tied shortest shell has no transverse wall")
+            details = tuple(
+                (row, row in critical_rows,
+                 base_normal.dot_product(vector(SageQQ, [1, *row])),
+                 direction_normal.dot_product(vector(SageQQ, [1, *row])))
+                for row in total if row not in critical_rows
+            )
+            raise _NoTransverseFlipWall(f"the tied shortest shell has no transverse wall: {details!r}")
         shift = -base_normal.dot_product(expanded) / denominator
         normal = base_normal + shift * direction_normal
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
@@ -2833,5 +2853,5 @@ def _kernel_flipping(
         total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
         # Lorentzian.g:959, EXIT 2: ListTotal is contained in CritSet plus
         # the single wall crossed in this iteration.
-        if set(total).issubset(critical_rows | {new_row}):
+        if set(total).issubset(critical_rows | crossed_rows):
             return total, normal, test_direction_row, max_scal
