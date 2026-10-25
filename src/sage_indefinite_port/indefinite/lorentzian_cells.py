@@ -2283,26 +2283,44 @@ class _PositiveVectorEnumerator:
         if divisor != int(self.d) or sum(a * b for a, b in zip(pairing_coordinates, bezout, strict=True)) != int(self.d):
             raise ArithmeticError("the integral Bezout partner does not realize the direction divisibility")
         self.partner = _ambient_element(lattice, tuple(SageZZ(entry) for entry in bezout))
-        self.inclusion = timelike.orthogonal_complement().inclusion()
-        self.kernel = self.inclusion.domain()
+        # Lorentzian.g:330-343 uses NullspaceIntMat on the integral
+        # covector, then works in that basis for the closest-vector problem.
+        # Construct the same saturated integral kernel directly instead of
+        # routing through the generic categorical orthogonal-complement and
+        # inclusion factorizations for every new shell enumerator.
+        pairing_row = matrix(SageZZ, [pairing_coordinates])
+        self.inclusion_rows = pairing_row.right_kernel_matrix()
+        if self.inclusion_rows.nrows() != int(lattice.module_rank()) - 1 or any(
+            entry for entry in (self.inclusion_rows * vector(SageZZ, pairing_coordinates).column()).list()
+        ):
+            raise ArithmeticError("the integral orthogonal-kernel basis does not span the timelike covector kernel")
+        kernel_gram = self.inclusion_rows * self.gram * self.inclusion_rows.transpose()
+        self.kernel = Lattices(SageZZ)(
+            [[SageZZ(kernel_gram[i, j]) for j in range(kernel_gram.ncols())] for i in range(kernel_gram.nrows())]
+        )
         fraction_map = lattice.base_ring().fraction_field_map()
-        rational = lattice.base_change(fraction_map)
+        self.base_target_parent = self.kernel.base_change(fraction_map)
+        self.base_target_labels = tuple(self.base_target_parent.module_generating_set())
         alpha = self.d / square
         timelike_row = self.timelike_row
         partner_row = _coordinate_row(lattice, self.partner, SageZZ)
-        translation = rational.linear_combination(
-            {label: _owned_rational(lattice, alpha * timelike_row[position] - partner_row[position]) for position, label in enumerate(lattice.module_generating_set())}
+        translation = vector(
+            SageQQ,
+            [alpha * timelike_row[position] - partner_row[position] for position in range(len(timelike_row))],
+        ).column()
+        target_coordinates = self.inclusion_rows.transpose().change_ring(SageQQ).solve_right(translation)
+        if self.inclusion_rows.transpose().change_ring(SageQQ) * target_coordinates != translation:
+            raise ArithmeticError("the Bezout translation is not in the rational orthogonal-kernel span")
+        self.base_target_coordinates = tuple(SageQQ(entry) for entry in target_coordinates.column(0))
+        self.base_target = self.base_target_parent.linear_combination(
+            {
+                label: _owned_rational(lattice, coordinate)
+                for label, coordinate in zip(self.base_target_labels, self.base_target_coordinates, strict=True)
+                if coordinate
+            }
         )
-        self.base_target = self.inclusion.base_change(fraction_map).lift(translation)
-        self.base_target_parent = self.base_target.parent()
-        self.base_target_labels = tuple(self.base_target_parent.module_generating_set())
-        target_coordinates = self.base_target.to_vector()
-        self.base_target_coordinates = tuple(target_coordinates(label) for label in self.base_target_labels)
         self.base_bound = (self.d * self.d) / square
         self.partner_row = partner_row
-        # Rows are the images of the kernel generators: x in K maps to x * inclusion_rows.
-        kernel_images = (self.inclusion(self.kernel.module_generator(label)) for label in self.kernel.module_generating_set())
-        self.inclusion_rows = matrix(SageZZ, [_coordinate_row(lattice, image, SageZZ) for image in kernel_images])
 
     def max_multiplier(self) -> int | None:
         if self.scaled_max <= 0:
