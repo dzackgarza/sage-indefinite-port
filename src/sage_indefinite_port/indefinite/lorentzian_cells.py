@@ -378,9 +378,9 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
     primitive extreme-ray sets under the integral action matrix.
     """
 
-    def __init__(self, source, target, neighbor, common_face, target_to_neighbor, *, facet_normal_row, face_rows, action):
+    def __init__(self, source, target, common_face, target_to_neighbor, *, facet_normal_row, face_rows, action, neighbor_factory):
         lattice = source.ambient_lattice()
-        if any(cell.ambient_lattice() is not lattice for cell in (target, neighbor, common_face)):
+        if any(cell.ambient_lattice() is not lattice for cell in (target, common_face)):
             raise ValueError("a certified perfect-domain adjacency must lie in one ambient lattice")
         rank = len(tuple(lattice.module_generating_set()))
         rows = matrix(SageQQ, face_rows)
@@ -391,25 +391,39 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
         if any(normal.dot_product(vector(SageQQ, row)) != 0 for row in face_rows):
             raise ArithmeticError("an incident ray does not lie on the proposed common supporting hyperplane")
         source_values = tuple(normal.dot_product(vector(SageQQ, ray)) for ray in source._engine.rays_list())
-        neighbor_values = tuple(normal.dot_product(vector(SageQQ, ray)) for ray in neighbor._engine.rays_list())
+        target_rays = matrix(SageZZ, target._engine.rays_list()) * action
+        neighbor_values = tuple(normal.dot_product(vector(SageQQ, ray)) for ray in target_rays.rows())
         source_positive = bool(source_values) and all(value >= 0 for value in source_values) and any(source_values)
         source_negative = bool(source_values) and all(value <= 0 for value in source_values) and any(source_values)
         neighbor_positive = bool(neighbor_values) and all(value >= 0 for value in neighbor_values) and any(neighbor_values)
         neighbor_negative = bool(neighbor_values) and all(value <= 0 for value in neighbor_values) and any(neighbor_values)
         if not ((source_positive and neighbor_negative) or (source_negative and neighbor_positive)):
             raise ArithmeticError("the common-face covector does not support the two cells on opposite sides")
-        if any(not neighbor._engine.contains(tuple(SageQQ(entry) for entry in row)) for row in face_rows):
+        inverse_action = action.inverse().change_ring(SageQQ)
+        if any(
+            not target._engine.contains(tuple(vector(SageQQ, row) * inverse_action))
+            for row in face_rows
+        ):
             raise ArithmeticError("an incident source ray is not contained in the proposed neighbor")
-        target_rays = matrix(SageZZ, target._engine.rays_list()) * action
-        expected_rays = {tuple(int(entry) for entry in row) for row in target_rays.rows()}
-        actual_rays = {tuple(int(entry) for entry in row) for row in neighbor._engine.rays_list()}
-        if expected_rays != actual_rays:
-            raise ArithmeticError("the supplied isometry does not carry the target cell onto the proposed neighbor")
         self._source = source
         self._target = target
-        self._neighbor = neighbor
+        self._neighbor = None
+        self._neighbor_factory = neighbor_factory
         self._common_face = common_face
         self._target_to_neighbor = target_to_neighbor
+        self._action = action
+
+    def neighbor(self):
+        """Materialize the exact adjacent cone only when a consumer requests it."""
+        if self._neighbor is None:
+            neighbor = self._neighbor_factory()
+            target_rays = matrix(SageZZ, self._target._engine.rays_list()) * self._action
+            expected_rays = {tuple(int(entry) for entry in row) for row in target_rays.rows()}
+            actual_rays = {tuple(int(entry) for entry in row) for row in neighbor._engine.rays_list()}
+            if expected_rays != actual_rays:
+                raise ArithmeticError("the supplied isometry does not carry the target cell onto the proposed neighbor")
+            self._neighbor = neighbor
+        return self._neighbor
 
 
 @dataclass(frozen=True)
@@ -1275,6 +1289,8 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             by_incidence[incidence] = covector
         facet_covectors_by_incidence[id(cell)] = by_incidence
     ambient_labels = tuple(lattice.module_generating_set())
+    ambient_dual = lattice.dual_module()
+    dual_labels = tuple(ambient_dual.module_generating_set())
     ambient_gram = _gram_matrix(lattice)
     neighbor_cache = {}
     identity_action = identity_matrix(SageZZ, len(ambient_labels))
@@ -1339,29 +1355,46 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             target_to_neighbour = lattice.O()(tuple(lattice([int(entry) for entry in row]) for row in action.rows()))
             target_cone = cell_cones[id(adjacency.target)]
             action_key = (id(adjacency.target), tuple(int(entry) for entry in action.list()))
-            neighbor = neighbor_cache.get(action_key)
-            if neighbor is None:
+
+            def neighbor_factory(action_key=action_key, target_cone=target_cone, action=action):
+                cached = neighbor_cache.get(action_key)
+                if cached is not None:
+                    return cached
                 if action == identity_action:
                     neighbor = target_cone
                 else:
                     # Transport the target's minimized H-presentation by
                     # M^{-1} on covector columns (the row action is x -> xM).
-                    # Reconstructing a V-presentation from 100+ transformed
-                    # rays for every side pairing is slower on the rank-five
-                    # acceptance cells.
+                    # This expensive H-to-V conversion is deferred until a
+                    # consumer actually asks for the concrete neighbor cone;
+                    # the traversal certificate below needs only exact rays.
                     inverse_action = action.inverse().change_ring(SageQQ)
 
-                    def transport_relation(relation):
-                        covector = inverse_action * vector(SageQQ, relation.A()).column()
-                        return (SageQQ(relation.b()), *(SageQQ(entry) for entry in covector.column(0)))
+                    def transport_covector(covector):
+                        coordinates = covector.to_vector()
+                        column = vector(
+                            SageQQ,
+                            (_rational(coordinates(label)) for label in dual_labels),
+                        ).column()
+                        transformed = inverse_action * column
+                        if any(entry.denominator() != 1 for entry in transformed.column(0)):
+                            raise ArithmeticError("a unimodular side pairing produced a nonintegral facet covector")
+                        return ambient_dual.linear_combination(
+                            {
+                                label: ambient_dual.base_ring()(int(entry))
+                                for label, entry in zip(dual_labels, transformed.column(0), strict=True)
+                                if entry
+                            }
+                        )
 
-                    engine_cone = Polyhedron(
-                        ieqs=[transport_relation(inequality) for inequality in target_cone._engine.inequalities()],
-                        eqns=[transport_relation(equation) for equation in target_cone._engine.equations()],
-                        base_ring=SageQQ,
+                    neighbor = cones.from_halfspaces(
+                        tuple(transport_covector(covector) for covector in target_cone.halfspace_covectors()),
+                        equation_covectors=tuple(
+                            transport_covector(covector) for covector in target_cone.equation_covectors()
+                        ),
                     )
-                    neighbor = _cone_from_engine_polyhedron(lattice, engine_cone)
                 neighbor_cache[action_key] = neighbor
+                return neighbor
             # The Schreier orbit records the exact source facet incidence;
             # its cached supporting covector cuts out that face.
             try:
@@ -1395,12 +1428,12 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 _CertifiedPerfectDomainOrbitAdjacency(
                     cell_cones[id(adjacency.source)],
                     cell_cones[id(adjacency.target)],
-                    neighbor,
                     common_face,
                     target_to_neighbour,
                     facet_normal_row=facet_normal_row,
                     face_rows=face_rows,
                     action=action,
+                    neighbor_factory=neighbor_factory,
                 )
             )
     cones_by_position = tuple(cell_cones[id(cell)] for cell in cells)
