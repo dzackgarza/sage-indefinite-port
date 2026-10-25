@@ -241,6 +241,16 @@ def test_ambient_vectors_reconstructs_exact_shell_and_filters_squares() -> None:
         assert ambient * lorentzian * ambient.column() == 0
         assert (ambient * enumerator.timelike_covector)[0] == 1
 
+    # At multiplier two, retain both the isotropic shell and an explicitly
+    # allowed positive square, while discarding the square-three candidate.
+    enumerator.scaled_max = ZZ(2)
+    enumerator.allowed_squares = {ZZ.zero(), ZZ(4)}
+    result = _PositiveVectorEnumerator._ambient_vectors(
+        enumerator, 2, ((2, 0), (0, 2), (0, 0), (1, 0))
+    )
+    assert result == ((2, 2, 0), (2, 0, 2), (2, 0, 0))
+    assert all(int(vector(ZZ, row) * lorentzian * vector(ZZ, row)) in {0, 4} for row in result)
+
 
 def test_rational_direction_bound_scales_quadratically() -> None:
     """Quadratic norms and their pairing bounds scale by scale squared."""
