@@ -2926,16 +2926,15 @@ def _search_initial_vectors(lattice: Lattices.ParentMethods, direction: tuple[Ra
     gram = _gram_matrix(lattice).change_ring(SageQQ)
     direction_row = vector(SageQQ, direction)
     direction_square = (direction_row * gram * direction_row.column())[0]
-    scale, _primitive_direction = _primitive_integral_direction(
+    scale, primitive_direction = _primitive_integral_direction(
         tuple(SageQQ(entry) for entry in direction),
         expected_rank=int(lattice.module_rank()),
     )
     # The source initializes MaxScal to q(t) for its integral direction t.
-    # The enumerator subsequently converts this pairing bound linearly to its
-    # primitive integral coordinates, so pre-scale q(direction) once here to
-    # obtain q(primitive_direction) after that conversion.
-    max_scal = direction_square * scale
-    enumerator = _PositiveVectorEnumerator(lattice, direction, max_scal, allowed_squares)
+    # Lower the direction here and pass q(scale*direction) directly, avoiding
+    # a second rational-to-integral conversion inside the enumerator.
+    max_scal = direction_square * scale**2
+    enumerator = _PositiveVectorEnumerator(lattice, primitive_direction, max_scal, allowed_squares)
     if enumerator.scaled_max <= 0:
         raise ArithmeticError("the initial positive-vector shell bound must be positive")
     # Each failed bound has already exhausted every multiplier up to its

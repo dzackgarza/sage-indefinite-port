@@ -282,7 +282,9 @@ def test_initial_vector_search_advances_integral_bound_without_rescanning() -> N
 
     class Enumerator:
         def __init__(self, lattice, direction, max_scal, allowed_squares):
-            self.scale = QQ(2)
+            assert tuple(direction) == (ZZ(1), ZZ(1))
+            assert max_scal == 2
+            self.scale = QQ(1)
             self.d = ZZ(2)
             self.scaled_max = cells._integral_direction_pairing_bound(max_scal, self.scale)
 
@@ -313,9 +315,9 @@ def test_initial_vector_search_advances_integral_bound_without_rescanning() -> N
 
     assert result == ((1, 0),)
     # The source initializes MaxScal to q of the integral primitive
-    # direction: q((1,1))=2, not q((1/2,1/2))=1/2. The bound then advances
-    # by one until multiplier two becomes available; multiplier one is not
-    # rescanned.
+    # direction: q((1,1))=2, not q((1/2,1/2))=1/2. The direction and bound
+    # are lowered together before constructing the enumerator; its scale is
+    # then one. The bound advances by one and multiplier one is not rescanned.
     assert visited == [(QQ(2), 1), (QQ(4), 2)]
     assert bounds == [QQ(2), QQ(3), QQ(4)]
 
