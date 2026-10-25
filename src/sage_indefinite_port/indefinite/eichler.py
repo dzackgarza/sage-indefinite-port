@@ -67,9 +67,8 @@ def square_divisors(integer: int) -> tuple[int, ...]:
 def _source_random_matrix_perturbation(rank: int):
     """GetRandomMatrixPerturbation (IndefiniteFormsFundamental.g:11-30).
 
-    Random signed permutation, or one elementary shear (and a sign change
-    in rank one).  The latter must be unimodular: overwriting a diagonal 1
-    with -1 produces 0, not a diagonal sign change.
+    Random signed permutation, or one elementary entry replacement, exactly
+    as in the pinned GAP source (including the diagonal replacement case).
     """
     step = identity_matrix(SageZZ, rank)
     if randrange(2) == 0:
@@ -77,14 +76,7 @@ def _source_random_matrix_perturbation(rank: int):
         for row, column in enumerate(sample(range(rank), rank)):
             step[row, column] = choice((-1, 1))
     else:
-        if rank == 1:
-            step[0, 0] = choice((-1, 1))
-        else:
-            row = randrange(rank)
-            column = randrange(rank - 1)
-            if column >= row:
-                column += 1
-            step[row, column] = choice((-1, 1))
+        step[randrange(rank), randrange(rank)] = choice((-1, 1))
     return step
 
 
