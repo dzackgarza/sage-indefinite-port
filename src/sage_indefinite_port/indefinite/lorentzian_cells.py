@@ -400,8 +400,17 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
             raise ArithmeticError("the common-face covector does not support the two cells on opposite sides")
         inverse_action = action.inverse().change_ring(SageQQ)
         transformed_face_rows = rows * inverse_action
-        face_values = transformed_face_rows * matrix(SageQQ, target_halfspace_rows).transpose()
-        if any(value < 0 for value in face_values.list()):
+        if target.equation_covectors():
+            # The usual perfect-cell cones are full-dimensional. Preserve
+            # the exact equation test for a lower-dimensional target too.
+            contained = all(
+                target._engine.contains(tuple(row))
+                for row in transformed_face_rows.rows()
+            )
+        else:
+            face_values = transformed_face_rows * matrix(SageQQ, target_halfspace_rows).transpose()
+            contained = all(value >= 0 for value in face_values.list())
+        if not contained:
             raise ArithmeticError("an incident source ray is not contained in the proposed neighbor")
         self._source = source
         self._target = target
