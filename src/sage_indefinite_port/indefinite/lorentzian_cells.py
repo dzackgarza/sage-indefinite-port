@@ -2628,36 +2628,31 @@ def _kernel_flipping(
         # this parameter to the first-scheme bisection interval.
         state = (tuple(total), tuple(normal))
         if state in seen_second_scheme_states:
-            # A repeated shell and normal mean this outside ray cannot cross
-            # the tied wall. Reject the ray and let GetOneOutsideRay choose a
-            # different projective direction in the same negative span.
+            # The same shell at the same normal cannot cross another wall.
             raise _NoTransverseFlipWall("the outside ray repeats a tied shortest shell")
         seen_second_scheme_states.add(state)
         if not total:
             raise ArithmeticError("the second flip scheme requires a nonempty shortest shell")
-        # The port's closest-vector backend does not preserve GAP's exact
-        # Vallentin enumeration order, so total[0] may be an already-critical
-        # tied vector. Select the first genuinely new transverse wall; EXIT 2
-        # below certifies that this wall is the only new vector in the shell.
-        wall = None
-        for row in total:
-            if row in critical_rows:
-                continue
-            expanded = vector(SageQQ, [1, *row])
-            denominator = direction_normal.dot_product(expanded)
-            if denominator == 0:
-                continue
-            shift = -base_normal.dot_product(expanded) / denominator
-            candidate_normal = base_normal + shift * direction_normal
-            wall = (row, candidate_normal)
-            break
-        if wall is None:
-            raise _NoTransverseFlipWall("the shortest shell has no new transverse wall for this outside ray")
-        new_row, normal = wall
+        # Literal source step Lorentzian.g:945: ListTotal[1] is the
+        # selected wall, even when it belongs to CritSet. EXIT 2 is tested
+        # only after recomputing the next shortest shell.
+        new_row = total[0]
+        expanded = vector(SageQQ, [1, *new_row])
+        denominator = direction_normal.dot_product(expanded)
+        if denominator == 0:
+            raise _NoTransverseFlipWall("the source-selected shortest-shell wall is tangent to the flip direction")
+        shift = -base_normal.dot_product(expanded) / denominator
+        normal = base_normal + shift * direction_normal
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
         test_direction_row = _source_remove_fraction(test_direction.column(0))
         max_scal = (critical_first * gram * test_direction_row.column())[0]
         total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
+        # A tied shell can add several vectors at once. If those vectors span
+        # the ambient lattice, they already define the perfect configuration;
+        # do not force a degenerate multi-wall shell through EXIT 2's
+        # single-new-vector condition.
+        if matrix(SageQQ, total).rank() == int(lattice.module_rank()):
+            return total, normal, test_direction_row, max_scal
         # Lorentzian.g:959, EXIT 2: ListTotal is contained in CritSet plus
         # the single wall crossed in this iteration.
         if set(total).issubset(critical_rows | {new_row}):
