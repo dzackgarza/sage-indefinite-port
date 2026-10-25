@@ -1490,7 +1490,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             )
     # All constructor invariants have been checked above using exact incidence
     # and Gram-matrix certificates, without constructing every face cone.
-    traversal = object.__new__(LorentzianPerfectDomainTraversal)
+    traversal = LorentzianPerfectDomainTraversal.__new__(LorentzianPerfectDomainTraversal)
     traversal._lattice = lattice
     traversal._cells = finite_ordered_set(tuple(cell_cones.values()))
     traversal._adjacencies = finite_ordered_set(tuple(adjacencies))
