@@ -123,6 +123,7 @@ def test_pinned_sublattice_basis_reduction_preserves_row_lattice() -> None:
 
     basis = matrix(ZZ, [[10, 1, 0], [9, 1, 1], [1, 0, 8]])
     reduced = _pinned_sublattice_basis_reduction(basis)
+    assert reduced.base_ring() is ZZ
     assert reduced == matrix(ZZ, [[-1, 0, 1], [-1, -1, 0], [3, -3, 3]])
     change = reduced * basis.inverse()
     assert all(entry.denominator() == 1 for entry in change.list())
