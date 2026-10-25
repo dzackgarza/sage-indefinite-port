@@ -205,3 +205,9 @@ def test_primitive_integral_direction_matches_fraction_multiplier() -> None:
             pass
         else:
             raise AssertionError(f"zero-dimensional or zero direction accepted: {invalid}")
+    try:
+        _primitive_integral_direction((QQ(1), QQ(2)), expected_rank=3)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("a direction with the wrong lattice rank was accepted")

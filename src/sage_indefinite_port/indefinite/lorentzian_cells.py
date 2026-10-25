@@ -2486,7 +2486,7 @@ def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]
 
 
 def _primitive_integral_direction(
-    coordinates: tuple[Rational, ...],
+    coordinates: tuple[Rational, ...], expected_rank: int | None = None
 ) -> tuple[Rational, tuple[Integer, ...]]:
     r"""Return ``(TheMult, TheVect)`` as in ``RemoveFractionPlusCoef``.
 
@@ -2494,6 +2494,8 @@ def _primitive_integral_direction(
     ``m`` and primitive integral tuple ``v`` satisfy ``x = v / m`` exactly.
     This is the source contract used to scale ``MaxScal`` before enumeration.
     """
+    if expected_rank is not None and len(coordinates) != expected_rank:
+        raise ValueError("the rational direction must have the lattice rank")
     if not coordinates:
         raise ValueError("the rational direction must have positive dimension")
     if not any(coordinates):
@@ -2700,7 +2702,8 @@ class _PositiveVectorEnumerator:
         self.gram = _gram_matrix(lattice)
         self.allowed_squares = allowed_squares
         scale, timelike_coordinates = _primitive_integral_direction(
-            tuple(SageQQ(entry) for entry in rational_direction)
+            tuple(SageQQ(entry) for entry in rational_direction),
+            expected_rank=int(lattice.module_rank()),
         )
         self.timelike_row = vector(SageZZ, timelike_coordinates)
         self.timelike_covector = self.gram * self.timelike_row.column()
