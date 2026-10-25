@@ -37,9 +37,29 @@ from tests.fixtures.oracle_fixtures import (
     load_e10_vector_orbits,
     load_oscar_lattice_oracles,
 )
+from sage_indefinite_port.indefinite.recursive import EichlerRecursion
 
 _E10 = load_e10_fundamental_domain()
 _ORDER_O_PLUS_10_2 = 2**21 * 3**5 * 5**2 * 7 * 17 * 31
+
+
+def test_isotropic_pointed_automorphism_generators_preserve_marking_and_form() -> None:
+    """Exercise the rank-one isotropic Witt-extension and kernel assembly on 2U."""
+    lattice_ = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    marked = element(lattice_, [1, 0, 0, 0])
+    assert int(marked.q()) == 0
+    assert int(marked.content()) == 1
+
+    generators = EichlerRecursion().pointed_automorphism_generators(marked)
+    basis = tuple(lattice_.module_generators())
+    assert generators
+    for generator in generators:
+        assert generator(marked) == marked
+        assert all(
+            lattice_.b(generator(left), generator(right)) == lattice_.b(left, right)
+            for left in basis
+            for right in basis
+        )
 
 
 def _automorphism_rows(marked):
