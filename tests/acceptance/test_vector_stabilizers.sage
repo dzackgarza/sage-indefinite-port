@@ -99,6 +99,24 @@ def test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_boun
     assert action.stable_containing_bound() is not None
 
 
+def test_divisibility_four_isotropic_plane_stabilizer_constructs_exact_containing_bound() -> None:
+    """The rank-two pairing L -> J* has cokernel order sixteen in U(4) + U(4)."""
+    lattice_ = lattice(
+        [
+            [0, 4, 0, 0],
+            [4, 0, 0, 0],
+            [0, 0, 0, 4],
+            [0, 0, 4, 0],
+        ]
+    )
+    plane = (element(lattice_, [1, 0, 0, 0]), element(lattice_, [0, 0, 1, 0]))
+    assert all(int(vector.q()) == 0 and int(vector.content()) == 1 and int(vector.div()) == 4 for vector in plane)
+    assert lattice_.b(plane[0], plane[1]) == 0
+
+    action = EichlerRecursion().isotropic_stabilizer_action(plane, ())
+    assert action.stable_containing_bound() is not None
+
+
 def _automorphism_rows(marked):
     category = pointed_category(marked_vector(marked).q())
     return [rows_of(underlying_isometry(generator)) for generator in automorphisms(category, marked).group_generators()]
