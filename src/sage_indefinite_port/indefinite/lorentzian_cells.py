@@ -559,13 +559,6 @@ def _anchor_profile(pairings: _ConfigurationPairings, colours: tuple[int, ...], 
 
 
 class LorentzianPerfectLocalBackend:
-    def __init__(self) -> None:
-        # Schreier transporters retain their exact ray permutations.  The
-        # quotient side-pairing builder can then recover each stabilizer
-        # action matrix from a spanning ray basis, rather than applying a
-        # categorical isometry separately to every ambient basis vector.
-        self._facet_orbit_permutations: dict[int, dict[FacetIncidence, tuple[int, ...]]] = {}
-
     @cached_method
     def cell_cone(self, cell: LorentzianPerfectCell):
         return RationalPolyhedralCones(cell.lattice).from_rays(cell.vector_configuration)
@@ -644,7 +637,7 @@ class LorentzianPerfectLocalBackend:
         return tuple(permutations)
 
     @cached_method
-    def facet_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[tuple[FacetIncidence, LatticeIsometryMethods], ...], ...]:
+    def facet_orbit_permutations(self, cell: LorentzianPerfectCell) -> tuple[tuple[tuple[FacetIncidence, tuple[int, ...]], ...], ...]:
         r"""Orbits of Aut((L, S)) on the facets spanned by S, each facet paired with an element carrying the orbit's first facet onto it.
 
         Lorentzian.g:1318-1322 (PermutationStabilizer := GRP_int) and
@@ -672,18 +665,6 @@ class LorentzianPerfectLocalBackend:
         positions = {tuple(int(entry) for entry in row): index for index, row in enumerate(ray_rows.rows())}
         if len(positions) != len(vectors):
             raise ArithmeticError("a perfect-cell configuration contains repeated rays")
-        basis_positions = tuple(int(index) for index in ray_rows.transpose().pivots())
-        if len(basis_positions) != len(labels):
-            raise ArithmeticError("a perfect-cell configuration does not span its ambient lattice")
-        inverse_basis = ray_rows.matrix_from_rows(basis_positions).inverse()
-
-        def isometry_from_permutation(permutation):
-            image_basis = matrix(SageQQ, [ray_rows[permutation[position]] for position in basis_positions])
-            action = inverse_basis * image_basis
-            if any(entry.denominator() != 1 for entry in action.list()):
-                raise ArithmeticError("a Schreier facet permutation does not induce an integral lattice action")
-            return cell.lattice.O()(tuple(cell.lattice([int(entry) for entry in row]) for row in action.rows()))
-
         permutations = []
         for generator in generators:
             action = matrix(SageZZ, [_coordinate_row(cell.lattice, generator(cell.lattice.module_generator(label)), SageZZ) for label in labels])
@@ -701,7 +682,6 @@ class LorentzianPerfectLocalBackend:
                 raise ArithmeticError("a cell-stabilizer generator fails to permute the facets")
         unvisited = set(facets)
         orbits = []
-        orbit_permutations: dict[FacetIncidence, tuple[int, ...]] = {}
         identity_permutation = tuple(range(len(vectors)))
         for start in facets:
             if start not in unvisited:
@@ -709,16 +689,36 @@ class LorentzianPerfectLocalBackend:
             unvisited.discard(start)
             orbit = [(start, identity_permutation)]
             for facet, element_permutation in orbit:
-                orbit_permutations[facet] = element_permutation
                 for permutation in permutations:
                     image = frozenset(permutation[position] for position in facet)
                     if image in unvisited:
                         unvisited.discard(image)
                         composed = tuple(permutation[element_permutation[position]] for position in range(len(vectors)))
                         orbit.append((image, composed))
-            orbits.append(tuple((facet, isometry_from_permutation(permutation)) for facet, permutation in orbit))
-        self._facet_orbit_permutations[id(cell)] = orbit_permutations
+            orbits.append(tuple(orbit))
         return tuple(orbits)
+
+    @cached_method
+    def facet_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[tuple[FacetIncidence, LatticeIsometryMethods], ...], ...]:
+        """Facet orbits with owned isometries, materialized for this public view."""
+        labels = tuple(cell.lattice.module_generating_set())
+        ray_rows = matrix(SageQQ, cell.rows)
+        basis_positions = tuple(int(index) for index in ray_rows.transpose().pivots())
+        if len(basis_positions) != len(labels):
+            raise ArithmeticError("a perfect-cell configuration does not span its ambient lattice")
+        inverse_basis = ray_rows.matrix_from_rows(basis_positions).inverse()
+        result = []
+        for orbit in self.facet_orbit_permutations(cell):
+            elements = []
+            for facet, permutation in orbit:
+                image_basis = matrix(SageQQ, [ray_rows[permutation[position]] for position in basis_positions])
+                action = inverse_basis * image_basis
+                if any(entry.denominator() != 1 for entry in action.list()):
+                    raise ArithmeticError("a Schreier facet permutation does not induce an integral lattice action")
+                isometry = cell.lattice.O()(tuple(cell.lattice([int(entry) for entry in row]) for row in action.rows()))
+                elements.append((facet, isometry))
+            result.append(tuple(elements))
+        return tuple(result)
 
     def flip_across(self, cell: LorentzianPerfectCell, facet: FacetIncidence) -> LorentzianPerfectCell | None:
         normalized = _lorentzian_view(cell.lattice)
@@ -1165,7 +1165,7 @@ class LorentzianPerfectComplex:
         )
         source = representatives[source_position]
         new_representatives: list[LorentzianPerfectCell] = []
-        source_orbits = backend.facet_orbits(source)
+        source_orbits = backend.facet_orbit_permutations(source)
         source_id = id(source)
         if sum(len(orbit) for orbit in source_orbits) != len({facet for orbit in source_orbits for facet, _ in orbit}):
             raise ArithmeticError("the cell facet-orbit decomposition contains repeated incidences")
@@ -1392,8 +1392,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 raise ArithmeticError("a source perfect-cell configuration does not span the ambient lattice")
             source_basis_data[source_key] = (tuple(basis_positions), source_rows.matrix_from_rows(basis_positions).inverse())
         basis_positions, inverse_source_basis = source_basis_data[source_key]
-        orbit_permutations = backend._facet_orbit_permutations[source_key]
-        for orbit_position, (incident, symmetry) in enumerate(orbit):
+        for incident, symmetry_permutation in orbit:
             # In row coordinates g(v)=vM. A covector column a cutting out
             # a>=0 on the target becomes M^{-1}a on its image. Since g is
             # integral unimodular, the transformed H-data remain integral.
@@ -1401,7 +1400,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # every member of a facet-stabilizer orbit.
             image_basis = matrix(
                 SageQQ,
-                [adjacency.source.rows[orbit_permutations[incident][position]] for position in basis_positions],
+                [adjacency.source.rows[symmetry_permutation[position]] for position in basis_positions],
             )
             symmetry_action = inverse_source_basis * image_basis
             if any(entry.denominator() != 1 for entry in symmetry_action.list()):
@@ -1416,11 +1415,13 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 raise ArithmeticError("a Schreier stabilizer permutation does not induce an integral lattice isometry")
             if action * ambient_gram * action.transpose() != ambient_gram or abs(action.det()) != 1:
                 raise ArithmeticError("a Schreier side-pairing action is not an integral lattice isometry")
-            # The Schreier composition is already the owned categorical
-            # isometry for this facet. Reuse it directly rather than rebuilding
-            # the same map from all ambient generator images; that constructor
-            # repeats indexed-family and module-morphism setup per facet.
-            target_to_neighbour_factory = lambda symmetry=symmetry, transporter=adjacency.transporter: symmetry * transporter
+            # The Schreier permutation determines the exact action matrix.
+            # Defer the owned categorical isometry until a caller requests the
+            # side pairing, rather than constructing one for every orbit facet.
+            target_to_neighbour_factory = (
+                lambda symmetry_action=symmetry_action, transporter=adjacency.transporter, lattice=lattice:
+                lattice.O()(tuple(lattice([int(entry) for entry in row]) for row in symmetry_action.rows())) * transporter
+            )
             target_cone = cell_cones[id(adjacency.target)]
             target_key = id(adjacency.target)
             target_halfspace_rows = halfspace_rows_by_cell[target_key]
