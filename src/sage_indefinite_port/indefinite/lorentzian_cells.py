@@ -2285,9 +2285,9 @@ class _PositiveVectorEnumerator:
         fraction_map = lattice.base_ring().fraction_field_map()
         self.rational_field = fraction_map.codomain()
         # bezout_partner() computes the same coefficients by factoring the
-        # generic categorical pairing map.  Its coordinate matrix is already
-        # available, so use exact extended gcd and lift the resulting vector
-        # through the lattice's owned coordinate constructor instead.
+        # generic categorical pairing map. The exact coordinate row is already
+        # available, so retain it directly instead of constructing and then
+        # decoding an owned lattice vector.
         bezout = [0] * len(pairing_coordinates)
         divisor = 0
         for position, coordinate in enumerate(pairing_coordinates):
@@ -2297,7 +2297,7 @@ class _PositiveVectorEnumerator:
             divisor = int(next_divisor)
         if divisor != int(self.d) or sum(a * b for a, b in zip(pairing_coordinates, bezout, strict=True)) != int(self.d):
             raise ArithmeticError("the integral Bezout partner does not realize the direction divisibility")
-        self.partner = _ambient_element(lattice, tuple(SageZZ(entry) for entry in bezout))
+        partner_row = vector(SageZZ, bezout)
         # Lorentzian.g:330-343 uses NullspaceIntMat on the integral
         # covector, then works in that basis for the closest-vector problem.
         # Construct the same saturated integral kernel directly instead of
@@ -2321,7 +2321,6 @@ class _PositiveVectorEnumerator:
         self.cvp_engine = _ExactCVPEngine._from_positive_engine_gram(lattice.base_ring(), kernel_gram_integer)
         alpha = self.d / square
         timelike_row = self.timelike_row
-        partner_row = _coordinate_row(lattice, self.partner, SageZZ)
         translation = vector(
             SageQQ,
             [alpha * timelike_row[position] - partner_row[position] for position in range(len(timelike_row))],
