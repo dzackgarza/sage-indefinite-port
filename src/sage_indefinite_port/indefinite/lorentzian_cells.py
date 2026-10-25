@@ -1497,6 +1497,12 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     traversal._stabilizer_generators = stabilizers
     if traversal._cells.cardinality() == 0:
         raise ValueError(f"the perfect-domain decomposition of {lattice} has no orbit representatives")
+    if any(cell.ambient_lattice() is not lattice for cell in traversal._cells):
+        raise ValueError(f"the perfect-domain decomposition of {lattice} contains a cell in a different lattice")
+    if any(adjacency.source() not in traversal._cells for adjacency in traversal._adjacencies):
+        raise ValueError("a perfect-domain adjacency starts at a cell outside the orbit representatives")
+    if any(adjacency.target_representative() not in traversal._cells for adjacency in traversal._adjacencies):
+        raise ValueError("a perfect-domain adjacency ends at a cell outside the orbit representatives")
     return traversal
 
 
