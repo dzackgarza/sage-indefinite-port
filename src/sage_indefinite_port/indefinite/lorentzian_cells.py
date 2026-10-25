@@ -623,7 +623,9 @@ class LorentzianPerfectLocalBackend:
             base_normal = -base_normal
         base_normal = _source_remove_fraction(base_normal)
         critical = tuple(vectors[position] for position in sorted(facet))
-        flipped, _normal, _direction, _max_scal = _kernel_flipping(normalized, critical, base_normal, normal_direction, cell.allowed_squares)
+        flipped, _normal, _direction, _max_scal = _kernel_flipping(
+            normalized, critical, base_normal, normal_direction, cell.allowed_squares, excluded_wall_rows=tuple(vectors)
+        )
         return LorentzianPerfectCell(cell.lattice, flipped, cell.allowed_squares)
 
     @cached_method
@@ -2554,6 +2556,8 @@ def _kernel_flipping(
     base_normal: FreeModuleElement[Rational],
     direction_normal: FreeModuleElement[Rational],
     allowed_squares: RealSet,
+    *,
+    excluded_wall_rows: tuple[tuple[int, ...], ...] = (),
 ) -> tuple[tuple[tuple[int, ...], ...], FreeModuleElement[Rational], FreeModuleElement[Rational], Rational]:
     r"""LORENTZ_Kernel_Flipping (Lorentzian.g:842-968) on coordinate rows of the critical set."""
     gram = _gram_matrix(lattice).change_ring(SageQQ)
@@ -2599,12 +2603,6 @@ def _kernel_flipping(
         if total_rows == critical_rows:
             lower = middle
             continue
-        # The caller LORENTZ_GetOnePerfect accepts a critical configuration
-        # as soon as it spans the ambient lattice. This also matters for a
-        # facet flip: a tied shortest shell can already be full rank while
-        # every newly discovered wall coincides with the sampled normal.
-        if matrix(SageQQ, total).rank() == int(lattice.module_rank()):
-            return total, normal, test_direction_row, max_scal
         # Lorentzian.g:924-930, EXIT 1: the shell lies inside CritSet.
         if total_rows.issubset(critical_rows):
             return total, normal, test_direction_row, max_scal
@@ -2633,26 +2631,31 @@ def _kernel_flipping(
         seen_second_scheme_states.add(state)
         if not total:
             raise ArithmeticError("the second flip scheme requires a nonempty shortest shell")
-        # Literal source step Lorentzian.g:945: ListTotal[1] is the
-        # selected wall, even when it belongs to CritSet. EXIT 2 is tested
-        # only after recomputing the next shortest shell.
-        new_row = total[0]
-        expanded = vector(SageQQ, [1, *new_row])
-        denominator = direction_normal.dot_product(expanded)
-        if denominator == 0:
-            raise _NoTransverseFlipWall("the source-selected shortest-shell wall is tangent to the flip direction")
-        shift = -base_normal.dot_product(expanded) / denominator
-        normal = base_normal + shift * direction_normal
+        # GAP's Vallentin enumeration places a genuinely new wall before
+        # the old cell's tied vertices. The categorical close-vector API has
+        # a different iteration order, so recover that semantic selection:
+        # choose the first transverse shortest vector not in the old cell.
+        wall = None
+        excluded = set(excluded_wall_rows) | critical_rows
+        for row in total:
+            if row in excluded:
+                continue
+            expanded = vector(SageQQ, [1, *row])
+            denominator = direction_normal.dot_product(expanded)
+            if denominator == 0:
+                continue
+            shift = -base_normal.dot_product(expanded) / denominator
+            candidate_normal = base_normal + shift * direction_normal
+            if candidate_normal != normal:
+                wall = (row, candidate_normal)
+                break
+        if wall is None:
+            raise _NoTransverseFlipWall("the shortest shell has no new transverse wall outside the old cell")
+        new_row, normal = wall
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
         test_direction_row = _source_remove_fraction(test_direction.column(0))
         max_scal = (critical_first * gram * test_direction_row.column())[0]
         total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
-        # A tied shell can add several vectors at once. If those vectors span
-        # the ambient lattice, they already define the perfect configuration;
-        # do not force a degenerate multi-wall shell through EXIT 2's
-        # single-new-vector condition.
-        if matrix(SageQQ, total).rank() == int(lattice.module_rank()):
-            return total, normal, test_direction_row, max_scal
         # Lorentzian.g:959, EXIT 2: ListTotal is contained in CritSet plus
         # the single wall crossed in this iteration.
         if set(total).issubset(critical_rows | {new_row}):
