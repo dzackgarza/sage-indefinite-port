@@ -1515,7 +1515,15 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             )
             paired_facets[id(adjacency.source)].add(incident)
     cones_by_position = tuple(cell_cones[id(cell)] for cell in cells)
-    stabilizers = finite_indexed_family(finite_ordered_set(cones_by_position), lambda cone: backend.cell_stabilizer(cells[cones_by_position.index(cone)]))
+    # The index set is the actual cone objects, but their source cells are
+    # already known by identity. Searching the cone family with ``index``
+    # invokes polyhedral equality repeatedly and can turn stabilizer assembly
+    # quadratic in the number of quotient cells.
+    cell_by_cone_identity = {id(cone): cell for cell, cone in zip(cells, cones_by_position, strict=True)}
+    stabilizers = finite_indexed_family(
+        finite_ordered_set(cones_by_position),
+        lambda cone: backend.cell_stabilizer(cell_by_cone_identity[id(cone)]),
+    )
     # The generic traversal constructor checks completeness by materializing
     # every facet as a categorical cone. That repeats expensive subobject
     # construction even though the minimized H-presentation above already
