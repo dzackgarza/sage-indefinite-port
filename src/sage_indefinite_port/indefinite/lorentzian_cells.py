@@ -2564,25 +2564,6 @@ def _source_some_negative_vector(gram: Matrix_rational_dense) -> tuple[Integer, 
     rank = int(gram.nrows())
     if not rank:
         raise ValueError("the zero-dimensional form has no negative vector")
-    # GetSomeNegativeVector only promises one integral negative vector.  If
-    # a coordinate vector already has negative square, it is a certified
-    # answer and avoids the full rational diagonalization on every perturbed
-    # Gram matrix in GetOneOutsideRay.  Keep the pinned diagonalization path
-    # for forms whose displayed diagonal has no negative entry (notably U).
-    for index in range(rank):
-        if gram[index, index] < 0:
-            return tuple(SageZZ(index == coordinate) for coordinate in range(rank))
-    # The hyperbolic plane has no negative diagonal entry, but e_i +/- e_j
-    # detects its negative direction immediately. More generally, for each
-    # pair with nonnegative diagonal entries, the smaller of these two
-    # squares is G_ii + G_jj - 2*abs(G_ij). This exact O(n^2) test avoids a
-    # full rational congruence diagonalization for many indefinite forms.
-    for i in range(rank):
-        for j in range(i + 1, rank):
-            off_diagonal = gram[i, j]
-            if gram[i, i] + gram[j, j] < 2 * abs(off_diagonal):
-                sign = -1 if off_diagonal > 0 else 1
-                return tuple(SageZZ(1 if coordinate == i else sign if coordinate == j else 0) for coordinate in range(rank))
     # Use Sage's exact left-kernel basis backend, as in the already ported
     # symmetric diagonalization below.  The generic ``right_kernel_matrix``
     # convenience path stalls on the rank-five rational Gram in
