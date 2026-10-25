@@ -2923,17 +2923,16 @@ def _search_initial_vectors(lattice: Lattices.ParentMethods, direction: tuple[Ra
     r"""The first shell along the direction, following LORENTZ_SearchInitialVectorOpt's successive integral bounds."""
     if allowed_squares == ZERO_SQUARES and not lattice.is_isotropic():
         raise ValueError(f"{lattice} is anisotropic: it has no isotropic perfect cells")
-    gram = _gram_matrix(lattice).change_ring(SageQQ)
-    direction_row = vector(SageQQ, direction)
-    direction_square = (direction_row * gram * direction_row.column())[0]
-    scale, primitive_direction = _primitive_integral_direction(
+    gram = _gram_matrix(lattice)
+    _scale, primitive_direction = _primitive_integral_direction(
         tuple(SageQQ(entry) for entry in direction),
         expected_rank=int(lattice.module_rank()),
     )
     # The source initializes MaxScal to q(t) for its integral direction t.
-    # Lower the direction here and pass q(scale*direction) directly, avoiding
-    # a second rational-to-integral conversion inside the enumerator.
-    max_scal = direction_square * scale**2
+    # Compute that norm directly on the exact primitive integral row instead
+    # of recovering it from q(direction) and the fraction-clearing multiplier.
+    primitive_row = vector(SageZZ, primitive_direction)
+    max_scal = (primitive_row * gram * primitive_row.column())[0]
     enumerator = _PositiveVectorEnumerator(lattice, primitive_direction, max_scal, allowed_squares)
     if enumerator.scaled_max <= 0:
         raise ArithmeticError("the initial positive-vector shell bound must be positive")
