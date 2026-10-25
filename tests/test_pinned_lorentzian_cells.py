@@ -259,16 +259,16 @@ def test_ambient_vectors_reconstructs_exact_shell_and_filters_squares() -> None:
         raise AssertionError("a negative-norm reconstructed candidate was accepted")
 
 
-def test_rational_direction_bound_scales_quadratically() -> None:
-    """Quadratic norms and their pairing bounds scale by scale squared."""
+def test_rational_direction_pairing_bound_scales_linearly() -> None:
+    """A bilinear pairing bound scales linearly with the direction."""
     from sage.all import QQ
 
-    assert _integral_direction_pairing_bound(QQ(2) / 3, QQ(3) / 2) == QQ(3) / 2
+    assert _integral_direction_pairing_bound(QQ(2) / 3, QQ(3) / 2) == QQ(1)
     assert _integral_direction_pairing_bound(QQ(7), QQ(1)) == QQ(7)
-    assert _integral_direction_pairing_bound(QQ(5) / 4, QQ(4) / 3) == QQ(20) / 9
+    assert _integral_direction_pairing_bound(QQ(5) / 4, QQ(4) / 3) == QQ(5) / 3
     # After lowering, MaxScal belongs to the integral primitive vector and
     # the source advances it by one, independently of the initial scale.
-    assert _next_integral_pairing_bound(QQ(20) / 9) == QQ(29) / 9
+    assert _next_integral_pairing_bound(QQ(5) / 3) == QQ(8) / 3
     assert _next_integral_pairing_bound(QQ(3) / 2) == QQ(5) / 2
 
 
@@ -309,8 +309,8 @@ def test_initial_vector_search_advances_integral_bound_without_rescanning() -> N
         cells._PositiveVectorEnumerator = original_enumerator
 
     assert result == ((1, 0),)
-    # The first bound is 2, then it advances through 3 (no new multiplier)
-    # to 4, where multiplier 2 first becomes available. Multiplier 1 is not
-    # revisited at either larger bound.
-    assert visited == [(QQ(1) / 2 * 4, 1), (QQ(1) / 2 * 4 + 2, 2)]
-    assert bounds == [QQ(2), QQ(3), QQ(4)]
+    # The initial pairing bound is q(direction)=1/2, hence 1 after the
+    # linear scale conversion. The bound then advances by one until multiplier
+    # two becomes available; multiplier one is not rescanned.
+    assert visited == [(QQ(2), 1), (QQ(4), 2)]
+    assert bounds == [QQ(1), QQ(2), QQ(3), QQ(4)]

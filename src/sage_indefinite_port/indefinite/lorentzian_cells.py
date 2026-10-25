@@ -2512,12 +2512,14 @@ def _primitive_integral_direction(
 
 
 def _integral_direction_pairing_bound(max_scal: Rational, scale: Rational) -> Rational:
-    r"""Convert an initial quadratic bound on ``x=v/scale`` to integral ``v``.
+    r"""Convert a pairing bound on rational ``x=v/scale`` to integral ``v``.
 
-    Since ``q(v)=scale^2*q(x)``, the initial bound scales quadratically. Once
-    in integral coordinates, the pinned source increments this bound by one.
+    The source's ``MaxScal`` bounds ``b(candidate, x)``; the enumerator checks
+    ``b(candidate, v)`` for the primitive integral representative. Since
+    ``v=scale*x``, this bound scales linearly, not quadratically. The source
+    then increments the integral-coordinate bound by one per failed search.
     """
-    return SageQQ(max_scal) * SageQQ(scale) ** 2
+    return SageQQ(max_scal) * SageQQ(scale)
 
 
 def _next_integral_pairing_bound(bound: Rational) -> Rational:

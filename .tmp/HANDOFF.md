@@ -23,7 +23,7 @@ stabilizer image 72. Exact evidence and limits are in
 [TODO.md](../TODO.md#functional-mvp-evidence-from-the-current-implementation-work).
 
 Current source-bearing follow-up: pinned #33/#15 perfect-domain CVP construction
-is on `implement/lorentzian-completion`, source revision `628a63b` with the
+is on `implement/lorentzian-completion`, source revision `587f879` with the
 standalone source-contract tests in `tests/test_pinned_lorentzian_cells.py`.
 The positive-vector backend extracts
 the pinned `SublatticeBasisReductionKernel`, alternating direct/dual LLL on the
@@ -32,11 +32,13 @@ stopping rule. The dual basis transform is explicitly integral after inverse-
 transpose, and the exact reduced-Gram identities are checked. Five targeted
 helper regressions and twelve additional deterministic-seed random sublattice
 checks passed, including square and rectangular row-lattice reduction cases.
-The initial quadratic pairing bound is rescaled by `scale^2` when a rational
-input direction is lowered to its primitive integral representative; after
-that conversion, the pinned integral search increments `MaxScal` by exactly
-one. Targeted regressions cover both the initial conversion and the subsequent
-unit increments. The search-loop regression also verifies that each multiplier
+The initial pairing bound is rescaled linearly by `scale` when a rational
+input direction is lowered to its primitive integral representative, because
+`MaxScal` bounds a bilinear pairing rather than a quadratic norm. This corrects
+the earlier square-scaling assumption. After that conversion, the pinned
+integral search increments `MaxScal` by exactly one.
+Targeted regressions cover both the initial conversion and subsequent unit
+increments. The search-loop regression also verifies that each multiplier
 is visited at most once while the integral bound advances by one between
 shells, including a bound increase that does not yet expose a new multiplier.
 The primitive-direction lowering helper now has its actual two-value contract
