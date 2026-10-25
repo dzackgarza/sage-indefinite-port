@@ -2247,8 +2247,9 @@ class _PositiveVectorEnumerator:
 
     With t primitive timelike, d = div(t) and h a Bezout partner (b(t, h) = d), a vector with
     b(v, t) = m d is v = m h + x for x in K = t^perp, and q(v) = m^2 d^2 / q(t) + q(x - m w) for
-    w = (d / q(t)) t - h in K tensor Q. K is negative definite, so the admissible x are the close
-    vectors of m w in K within m^2 d^2 / q(t) (on the sphere, in isotropic mode).
+    w = (d / q(t)) t - h in K tensor Q. K is negative definite for q; the closest-vector
+    backend uses the positive-definite Gram matrix -q|K, so admissible x are the close vectors of
+    m w within m^2 d^2 / q(t) (on the sphere, in isotropic mode).
     """
 
     def __init__(self, lattice: Lattices.ParentMethods, rational_direction: tuple[Rational, ...], max_scal: Rational, allowed_squares: RealSet) -> None:
@@ -2295,7 +2296,9 @@ class _PositiveVectorEnumerator:
             entry for entry in (self.inclusion_rows * vector(SageZZ, pairing_coordinates).column()).list()
         ):
             raise ArithmeticError("the integral orthogonal-kernel basis does not span the timelike covector kernel")
-        kernel_gram = self.inclusion_rows * self.gram * self.inclusion_rows.transpose()
+        # Lorentzian.g:337-343 defines GramMat = -Ubasis*LorMat*Ubasis^T,
+        # the positive-definite form used by ClosestAtDistanceVallentinProgram.
+        kernel_gram = -(self.inclusion_rows * self.gram * self.inclusion_rows.transpose())
         self.kernel = Lattices(SageZZ)(
             [[SageZZ(kernel_gram[i, j]) for j in range(kernel_gram.ncols())] for i in range(kernel_gram.nrows())]
         )
@@ -2360,7 +2363,7 @@ class _PositiveVectorEnumerator:
                 if coordinate
             }
         )
-        bound = _owned_rational(self.lattice, -(SageQQ(multiplier) ** 2) * self.base_bound)
+        bound = _owned_rational(self.lattice, (SageQQ(multiplier) ** 2) * self.base_bound)
         # Preserve the pinned Lorentzian.g:369-373 closest-vector API here.
         # The specialized exact-sphere recursion is tested independently, but
         # replacing this reference path changed performance on the frozen
