@@ -625,7 +625,7 @@ class LorentzianPerfectLocalBackend:
         base_normal = _source_remove_fraction(base_normal)
         critical = tuple(vectors[position] for position in sorted(facet))
         flipped, _normal, _direction, _max_scal = _kernel_flipping(
-            normalized, critical, base_normal, normal_direction, cell.allowed_squares, excluded_wall_rows=tuple(vectors)
+            normalized, critical, base_normal, normal_direction, cell.allowed_squares
         )
         return LorentzianPerfectCell(cell.lattice, flipped, cell.allowed_squares)
 
@@ -2708,8 +2708,6 @@ def _kernel_flipping(
     base_normal: FreeModuleElement[Rational],
     direction_normal: FreeModuleElement[Rational],
     allowed_squares: RealSet,
-    *,
-    excluded_wall_rows: tuple[tuple[int, ...], ...] = (),
 ) -> tuple[tuple[tuple[int, ...], ...], FreeModuleElement[Rational], FreeModuleElement[Rational], Rational]:
     r"""LORENTZ_Kernel_Flipping (Lorentzian.g:842-968) on coordinate rows of the critical set."""
     gram = _gram_matrix(lattice).change_ring(SageQQ)
