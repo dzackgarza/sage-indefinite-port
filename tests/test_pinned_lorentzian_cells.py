@@ -69,6 +69,13 @@ def test_dual_lll_candidates_sort_in_reduced_column_coordinates() -> None:
     # The transpose gives a different order on this nonsymmetric transform;
     # this guards against accidentally using Q^{-1}=P^T instead of P.
     assert tuple(sorted(original_columns, key=lambda column: _dual_lll_enumeration_key(tuple(column[i, 0] for i in range(3)), transform.transpose()))) != expected_order
+    # The pinned recursion orders y=P*x+s. A target-dependent affine shift s
+    # is constant across one result list, so it must not alter the order.
+    affine_shift = vector(ZZ, (7, -4, 2))
+    shifted_keys = lambda column: tuple(
+        (transform * column)[i, 0] + affine_shift[i] for i in (2, 1, 0)
+    )
+    assert tuple(sorted(original_columns, key=shifted_keys)) == expected_order
 
 
 def test_pinned_positive_gcd_dot_matches_exact_coefficients() -> None:

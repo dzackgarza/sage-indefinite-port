@@ -2545,9 +2545,12 @@ def _dual_lll_enumeration_key(
 ) -> tuple[Integer, ...]:
     """Order a CVP result by the pinned recursive coordinates ``P*x``.
 
-    ``CVPSolver`` reconstructs the original column as ``x=P^{-1}y`` for the
-    dual-LLL reduction, so the recursive enumerator's coordinates are ``y=P*x``.
-    Its last coordinate is the outer loop and coordinate zero the inner loop.
+    ``CVPSolver`` reconstructs the original column as ``x=P^{-1}(y-s)`` for
+    the dual-LLL reduction, where ``s`` is the fixed ``ReductionMod1vector``
+    translation for this target. Thus ``y=P*x+s``; the same affine shift is
+    added to every candidate in one CVP call and cannot change their order.
+    The recursive enumerator's last coordinate is the outer loop and zero the
+    inner loop, so sorting by reversed ``P*x`` coordinates reproduces it.
     """
     reduced = transform * vector(SageZZ, coordinates).column()
     return tuple(reduced[index, 0] for index in reversed(range(transform.nrows())))
