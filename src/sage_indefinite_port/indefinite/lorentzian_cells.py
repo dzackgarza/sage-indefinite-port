@@ -2941,9 +2941,10 @@ def _search_initial_vectors(lattice: Lattices.ParentMethods, direction: tuple[Ra
             if rows:
                 return rows
         next_multiplier = max(next_multiplier, maximum + 1)
-        # Lorentzian.g:411–423 increases MaxScal by one, rather than
-        # exponentially expanding the search interval.
-        max_scal += 1
+        # Lorentzian.g:411–423 increases the integral MaxScal by one, rather
+        # than exponentially expanding the search interval. The enumerator's
+        # scaled bound is the sole state used to compute the next multiplier;
+        # do not maintain a second, now-unused unscaled bound here.
         enumerator.scaled_max = _next_integral_pairing_bound(enumerator.scaled_max)
 
 
