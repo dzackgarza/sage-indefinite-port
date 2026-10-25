@@ -437,7 +437,16 @@ class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
     def target_to_neighbor(self):
         """Construct and cache the owned lattice isometry only when requested."""
         if self._target_to_neighbor is None:
-            self._target_to_neighbor = self._target_to_neighbor_factory()
+            morphism = self._target_to_neighbor_factory()
+            lattice = self._source.ambient_lattice()
+            basis = tuple(lattice.module_generator(label) for label in lattice.module_generating_set())
+            morphism_action = matrix(
+                SageZZ,
+                [_coordinate_row(lattice, morphism(vector), SageZZ) for vector in basis],
+            )
+            if morphism_action != self._action:
+                raise ArithmeticError("the Schreier permutation and categorical side-pairing actions disagree")
+            self._target_to_neighbor = morphism
         return self._target_to_neighbor
 
 
@@ -1387,14 +1396,6 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # the same map from all ambient generator images; that constructor
             # repeats indexed-family and module-morphism setup per facet.
             target_to_neighbour_factory = lambda symmetry=symmetry, transporter=adjacency.transporter: symmetry * transporter
-            if orbit_position == min(1, len(orbit) - 1):
-                reference_map = target_to_neighbour_factory()
-                reference_action = matrix(
-                    SageZZ,
-                    [_coordinate_row(lattice, reference_map(basis_vector), SageZZ) for basis_vector in ambient_basis],
-                )
-                if action != reference_action:
-                    raise ArithmeticError("the Schreier permutation and categorical side-pairing actions disagree")
             target_cone = cell_cones[id(adjacency.target)]
             action_key = (id(adjacency.target), tuple(int(entry) for entry in action.list()))
 
