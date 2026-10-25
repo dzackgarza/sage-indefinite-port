@@ -309,8 +309,9 @@ def test_initial_vector_search_advances_integral_bound_without_rescanning() -> N
         cells._PositiveVectorEnumerator = original_enumerator
 
     assert result == ((1, 0),)
-    # The initial pairing bound is q(direction)=1/2, hence 1 after the
-    # linear scale conversion. The bound then advances by one until multiplier
-    # two becomes available; multiplier one is not rescanned.
+    # The source initializes MaxScal to q of the integral primitive
+    # direction: q((1,1))=2, not q((1/2,1/2))=1/2. The bound then advances
+    # by one until multiplier two becomes available; multiplier one is not
+    # rescanned.
     assert visited == [(QQ(2), 1), (QQ(4), 2)]
-    assert bounds == [QQ(1), QQ(2), QQ(3), QQ(4)]
+    assert bounds == [QQ(2), QQ(3), QQ(4)]

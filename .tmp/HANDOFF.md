@@ -32,11 +32,13 @@ stopping rule. The dual basis transform is explicitly integral after inverse-
 transpose, and the exact reduced-Gram identities are checked. Five targeted
 helper regressions and twelve additional deterministic-seed random sublattice
 checks passed, including square and rectangular row-lattice reduction cases.
-The initial pairing bound is rescaled linearly by `scale` when a rational
-input direction is lowered to its primitive integral representative, because
-`MaxScal` bounds a bilinear pairing rather than a quadratic norm. This corrects
-the earlier square-scaling assumption. After that conversion, the pinned
-integral search increments `MaxScal` by exactly one.
+Arbitrary pairing bounds are rescaled linearly by `scale` when a rational
+input direction is lowered to its primitive integral representative. The
+initial search bound is a special case: the pinned source initializes it to
+`q(primitive_direction)`, so `_search_initial_vectors` first multiplies
+`q(rational_direction)` by `scale`, then the constructor's linear conversion
+produces `q(primitive_direction) = scale^2*q(rational_direction)`. After that
+initial bound, the integral search increments `MaxScal` by exactly one.
 Targeted regressions cover both the initial conversion and subsequent unit
 increments. The linear-bound correction has been checked against the pinned
 source: `LORENTZ_SearchInitialVectorOpt` initializes `MaxScal` to `q(direction)`,

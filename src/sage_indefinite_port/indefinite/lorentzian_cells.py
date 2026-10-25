@@ -2925,7 +2925,16 @@ def _search_initial_vectors(lattice: Lattices.ParentMethods, direction: tuple[Ra
         raise ValueError(f"{lattice} is anisotropic: it has no isotropic perfect cells")
     gram = _gram_matrix(lattice).change_ring(SageQQ)
     direction_row = vector(SageQQ, direction)
-    max_scal = (direction_row * gram * direction_row.column())[0]
+    direction_square = (direction_row * gram * direction_row.column())[0]
+    scale, _primitive_direction = _primitive_integral_direction(
+        tuple(SageQQ(entry) for entry in direction),
+        expected_rank=int(lattice.module_rank()),
+    )
+    # The source initializes MaxScal to q(t) for its integral direction t.
+    # The enumerator subsequently converts this pairing bound linearly to its
+    # primitive integral coordinates, so pre-scale q(direction) once here to
+    # obtain q(primitive_direction) after that conversion.
+    max_scal = direction_square * scale
     enumerator = _PositiveVectorEnumerator(lattice, direction, max_scal, allowed_squares)
     if enumerator.scaled_max <= 0:
         raise ArithmeticError("the initial positive-vector shell bound must be positive")
