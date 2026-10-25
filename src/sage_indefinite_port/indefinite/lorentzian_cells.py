@@ -2645,12 +2645,11 @@ class _PositiveVectorEnumerator:
             if candidate_square not in self.allowed_squares:
                 continue
             result.append(tuple(int(entry) for entry in row))
-        # Indefinite.jl's pinned LATT_near delegates to ``sv_near`` and emits
-        # the vectors in nearest-first order.  On this affine fibre the
-        # squared distance differs from q(row) by a constant, so nearest-first
-        # is descending q(row).  Preserve the CVP backend's order among equal
-        # norms; the perfect-domain flip consumes the first returned vector.
-        result.sort(key=lambda row: -int(vector(SageZZ, row) * self.gram * vector(SageZZ, row)))
+        # Keep the exact CVP backend's enumeration order. The pinned
+        # LATT_near/FindAtMostDistVectors path orders through its LLL-reduced
+        # basis and recursive coordinate bounds, not by norm; the first row
+        # is consumed by LORENTZ_Kernel_Flipping, so norm sorting is not a
+        # source-faithful substitute for that ordering.
         return tuple(result)
 
 
