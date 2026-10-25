@@ -2370,17 +2370,17 @@ class _PositiveVectorEnumerator:
         bound = _owned_rational(
             self.lattice, (SageQQ(multiplier) ** 2) * self.base_bound, field=self.rational_field
         )
-        # Preserve the pinned Lorentzian.g:369-373 closest-vector API here.
-        # The specialized exact-sphere recursion is tested independently, but
-        # replacing this reference path changed performance on the frozen
-        # perfect-domain orbit-count fixtures.
-        distances = self.kernel.close_vectors(target, bound)
-        return self._ambient_vectors(multiplier, tuple(distances.index_set()))
+        # Use the same exact PARI-backed CVP engine as close_vectors, but its
+        # coordinate-level primitive avoids allocating an owned lattice vector
+        # and indexed-family object for every intermediate shell candidate.
+        distances = self.kernel._exact_cvp_engine().close_vector_coordinates(target, bound)
+        close_coordinates = tuple(coordinates for coordinates, _square in distances)
+        return self._ambient_vectors(multiplier, close_coordinates)
 
-    def _ambient_vectors(self, multiplier: int, close_vectors: tuple[Lattices.ElementMethods, ...]) -> tuple[tuple[int, ...], ...]:
+    def _ambient_vectors(self, multiplier: int, close_coordinates: tuple[tuple[Integer, ...], ...]) -> tuple[tuple[int, ...], ...]:
         shift = multiplier * self.partner_row
         result: list[tuple[int, ...]] = []
-        for close in close_vectors:
+        for close in close_coordinates:
             row = shift + vector(SageZZ, [int(coordinate) for coordinate in close]) * self.inclusion_rows
             candidate_square = int(row * self.gram * row)
             # Lorentzian.g:377-385 verifies both the scalar-product shell
