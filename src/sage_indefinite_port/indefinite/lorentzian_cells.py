@@ -2826,15 +2826,16 @@ class _PositiveVectorEnumerator:
         distances = self.cvp_engine.close_vector_coordinates(target, bound)
         close_coordinates = tuple(coordinates for coordinates, _square in distances)
         # computeIt_Gen_Kernel starts at coordinate dim-1 and increments that
-        # coordinate before backtracking toward zero. CVPSolver reconstructs
-        # original rows as x=y*P^{-1}, so recursive reduced coordinates are
-        # y=x*P. Sorting by Q^{-1}=P^T instead is wrong for nonsymmetric P.
+        # coordinate before backtracking toward zero. CVPSolver uses column
+        # coordinates: its dual-LLL Pmat is Q=P^{-T}, and reconstructs the
+        # original column x=Q^T*y=P^{-1}*y. Thus reduced coordinates are
+        # y=P*x. Apply P to the coordinate column, not as a row-vector product.
         transform = self.enumeration_order_transform
         close_coordinates = tuple(
             sorted(
                 close_coordinates,
                 key=lambda coordinates: tuple(
-                    (vector(SageZZ, coordinates) * transform)[index]
+                    (transform * vector(SageZZ, coordinates).column())[index, 0]
                     for index in reversed(range(transform.nrows()))
                 ),
             )
