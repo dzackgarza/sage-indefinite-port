@@ -2550,13 +2550,16 @@ class _PositiveVectorEnumerator:
         if divisor != int(self.d) or sum(a * b for a, b in zip(pairing_coordinates, bezout, strict=True)) != int(self.d):
             raise ArithmeticError("the integral Bezout partner does not realize the direction divisibility")
         partner_row = vector(SageZZ, bezout)
-        # Lorentzian.g:330-343 uses NullspaceIntMat on the integral
-        # covector, then works in that basis for the closest-vector problem.
-        # Construct the same saturated integral kernel directly instead of
-        # routing through the generic categorical orthogonal-complement and
-        # inclusion factorizations for every new shell enumerator.
-        pairing_row = matrix(SageZZ, [pairing_coordinates])
-        self.inclusion_rows = pairing_row.right_kernel_matrix()
+        # Lorentzian.g:345-346 uses GAP's NullspaceIntMat on the transposed
+        # integral covector. Its particular saturated basis is part of the
+        # subsequent CVP enumeration order, so use the same provider rather
+        # than Sage's equally valid but differently ordered kernel basis.
+        gap_covector = [[entry] for entry in pairing_coordinates]
+        gap_kernel = libgap.NullspaceIntMat(gap_covector)
+        self.inclusion_rows = matrix(
+            SageZZ,
+            [[SageZZ(int(entry)) for entry in row] for row in gap_kernel],
+        )
         if self.inclusion_rows.nrows() != int(lattice.module_rank()) - 1 or any(
             entry for entry in (self.inclusion_rows * vector(SageZZ, pairing_coordinates).column()).list()
         ):
@@ -2596,8 +2599,6 @@ class _PositiveVectorEnumerator:
                 SageZZ,
                 [[SageZZ(int(entry)) for entry in row] for row in gap_reduction["remainder"]],
             )
-            if self.enumeration_transform * adjugate_gram * self.enumeration_transform.transpose() != reduced_adjugate:
-                raise ArithmeticError("GAP's dual-LLL transformation does not reproduce its reduced adjugate Gram")
             if self.enumeration_transform * adjugate_gram * self.enumeration_transform.transpose() != reduced_adjugate:
                 raise ArithmeticError("GAP's dual-LLL transformation does not reproduce its reduced adjugate Gram")
         else:
@@ -2657,10 +2658,12 @@ class _PositiveVectorEnumerator:
         # and indexed-family object for every intermediate shell candidate.
         distances = self.cvp_engine.close_vector_coordinates(target, bound)
         close_coordinates = tuple(coordinates for coordinates, _square in distances)
-        # computeIt_Gen_Kernel enumerates the final coordinate first, then
-        # descends to coordinate zero; each coordinate interval is visited in
-        # increasing order. The affine coset reduction contributes one common
-        # translation, which does not affect the lexicographic order below.
+        # computeIt_Gen_Kernel starts at coordinate dim-1 and increments that
+        # coordinate before backtracking toward zero. Thus dim-1 is the primary
+        # ordering key and coordinate zero varies fastest. CVPSolver returns
+        # coordinates in the original kernel basis; multiplying by the dual
+        # LLL transform recovers the recursive coordinates up to the common
+        # affine-coset translation.
         transform = self.enumeration_transform
         close_coordinates = tuple(
             sorted(
@@ -3082,7 +3085,10 @@ def _kernel_flipping(
         expanded = vector(SageQQ, [1, *total[0]])
         denominator = direction_normal.dot_product(expanded)
         if denominator == 0:
-            raise ArithmeticError("the first nearest vector does not determine a flip parameter")
+            raise ArithmeticError(
+                "the first source-ordered vector does not determine a flip parameter: "
+                f"row={total[0]!r}, critical={tuple(int(entry) for entry in total[0]) in critical_rows}"
+            )
         shift = -base_normal.dot_product(expanded) / denominator
         normal = base_normal + shift * direction_normal
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
