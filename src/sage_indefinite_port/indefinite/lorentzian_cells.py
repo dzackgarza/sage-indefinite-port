@@ -654,7 +654,10 @@ class LorentzianPerfectLocalBackend:
         """
         vectors = cell.vector_configuration
         cone = self.cell_cone(cell)
-        covectors = tuple(cone.facet_covectors())
+        # The stored homogeneous H-presentation is already minimized. Asking
+        # for facet_covectors() reconstructs each face cone only to recover
+        # these same supporting normals, which dominates high-facet cells.
+        covectors = tuple(cone.halfspace_covectors())
         if not covectors:
             return ()
         labels = tuple(cell.lattice.module_generating_set())
