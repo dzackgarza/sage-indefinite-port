@@ -2751,6 +2751,10 @@ class _PositiveVectorEnumerator:
             # as Q=(P^{-1})^T, where P is the transformation returned by LLL
             # on adj(G). The enumeration coordinates therefore use Q, not P.
             self.enumeration_transform = direct_transform.inverse().transpose()
+            # CVPSolver returns Pmat Q=P^{-T} and reconstructs original rows
+            # x=y*Q^T=y*P^{-1}. Therefore recursive coordinates are y=x*P,
+            # where P is the direct LLL transform of adj(G), not Q^{-1}=P^T.
+            self.enumeration_order_transform = direct_transform
             reduced_adjugate = matrix(
                 SageZZ,
                 [[SageZZ(int(entry)) for entry in row] for row in gap_reduction["remainder"]],
@@ -2761,6 +2765,7 @@ class _PositiveVectorEnumerator:
                 raise ArithmeticError("the dual-LLL enumeration transform does not reproduce the dual-reduced Gram")
         else:
             self.enumeration_transform = identity_matrix(SageZZ, kernel_gram_integer.nrows())
+            self.enumeration_order_transform = self.enumeration_transform
         self.cvp_engine = _ExactCVPEngine._from_positive_engine_gram(lattice.base_ring(), kernel_gram_integer)
         alpha = self.d / square
         timelike_row = self.timelike_row
@@ -2821,17 +2826,15 @@ class _PositiveVectorEnumerator:
         distances = self.cvp_engine.close_vector_coordinates(target, bound)
         close_coordinates = tuple(coordinates for coordinates, _square in distances)
         # computeIt_Gen_Kernel starts at coordinate dim-1 and increments that
-        # coordinate before backtracking toward zero. Thus dim-1 is the primary
-        # ordering key and coordinate zero varies fastest. For row-basis change
-        # T G T^T = Gred, original coordinates x and reduced coordinates y
-        # satisfy x = y T, so y = x T^{-1}. Applying T to x reverses this map.
-        transform = self.enumeration_transform
-        inverse_transform = transform.inverse()
+        # coordinate before backtracking toward zero. CVPSolver reconstructs
+        # original rows as x=y*P^{-1}, so recursive reduced coordinates are
+        # y=x*P. Sorting by Q^{-1}=P^T instead is wrong for nonsymmetric P.
+        transform = self.enumeration_order_transform
         close_coordinates = tuple(
             sorted(
                 close_coordinates,
                 key=lambda coordinates: tuple(
-                    (vector(SageZZ, coordinates) * inverse_transform)[index]
+                    (vector(SageZZ, coordinates) * transform)[index]
                     for index in reversed(range(transform.nrows()))
                 ),
             )

@@ -72,17 +72,16 @@ def test_dual_lll_candidates_sort_in_reduced_row_coordinates() -> None:
 
     transform = matrix(ZZ, [[1, 2, 0], [0, 1, 1], [0, 0, 1]])
     original_rows = (vector(ZZ, (4, 2, 1)), vector(ZZ, (3, 0, 2)), vector(ZZ, (1, 5, 0)))
-    inverse_transform = transform.inverse()
-    recovered = tuple(tuple(row * inverse_transform) for row in original_rows)
-    assert recovered == (
-        vector(ZZ, (4, -6, 7)),
-        vector(ZZ, (3, -6, 8)),
-        vector(ZZ, (1, 3, -3)),
+    reduced_rows = tuple(tuple(row * transform) for row in original_rows)
+    assert reduced_rows == (
+        vector(ZZ, (4, 10, 3)),
+        vector(ZZ, (3, 6, 2)),
+        vector(ZZ, (1, 7, 5)),
     )
-    # The recursive enumeration visits coordinate 2 outermost and coordinate
-    # 0 innermost; sort by reversed reduced coordinates y=x*T^{-1}.
-    assert tuple(sorted(original_rows, key=lambda row: tuple((row * inverse_transform)[i] for i in (2, 1, 0)))) == (
-        original_rows[2], original_rows[0], original_rows[1]
+    # CVPSolver reconstructs x=y*P^{-1}; hence y=x*P. The recursive
+    # enumeration visits coordinate 2 outermost and coordinate 0 innermost.
+    assert tuple(sorted(original_rows, key=lambda row: tuple((row * transform)[i] for i in (2, 1, 0)))) == (
+        original_rows[1], original_rows[0], original_rows[2]
     )
 
 
