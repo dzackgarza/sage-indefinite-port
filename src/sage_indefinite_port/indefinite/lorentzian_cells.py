@@ -2511,6 +2511,15 @@ def _primitive_integral_direction(
     return SageQQ(denominator) / SageQQ(content), primitive_coordinates
 
 
+def _integral_direction_pairing_bound(max_scal: Rational, scale: Rational) -> Rational:
+    r"""Convert a quadratic bound on ``x=v/scale`` to the integral ray ``v``.
+
+    Since ``q(v)=scale^2*q(x)``, the integral-vector search must scale a
+    quadratic bound by the square of the primitive-direction multiplier.
+    """
+    return SageQQ(max_scal) * SageQQ(scale) ** 2
+
+
 def _pinned_positive_gcd_dot(values: tuple[int, ...]) -> tuple[int, tuple[int, ...]]:
     r"""Reproduce ``ComputeGcdDot`` followed by ``PositivityNormalizeGcdDot``.
 
@@ -2708,7 +2717,7 @@ class _PositiveVectorEnumerator:
         self.timelike_row = vector(SageZZ, timelike_coordinates)
         self.timelike_covector = self.gram * self.timelike_row.column()
         self.scale = scale
-        self.scaled_max = SageQQ(max_scal) * scale
+        self.scaled_max = _integral_direction_pairing_bound(max_scal, scale)
         square = SageQQ((self.timelike_row * self.gram * self.timelike_row.column())[0])
         if square <= 0:
             raise ValueError("positive-vector enumeration needs a timelike direction")
@@ -2930,7 +2939,7 @@ def _search_initial_vectors(lattice: Lattices.ParentMethods, direction: tuple[Ra
         # Lorentzian.g:411–423 increases MaxScal by one, rather than
         # exponentially expanding the search interval.
         max_scal += 1
-        enumerator.scaled_max += enumerator.scale
+        enumerator.scaled_max += enumerator.scale**2
 
 
 def _source_mid_value(lower: Rational, upper: Rational) -> Rational:

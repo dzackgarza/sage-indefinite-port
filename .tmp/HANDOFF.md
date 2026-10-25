@@ -23,7 +23,7 @@ stabilizer image 72. Exact evidence and limits are in
 [TODO.md](../TODO.md#functional-mvp-evidence-from-the-current-implementation-work).
 
 Current source-bearing follow-up: pinned #33/#15 perfect-domain CVP construction
-is on `implement/lorentzian-completion`, source revision `db38fa2` with the
+is on `implement/lorentzian-completion`, source revision `ffcd27c` with the
 standalone source-contract tests in `tests/test_pinned_lorentzian_cells.py`.
 The positive-vector backend extracts
 the pinned `SublatticeBasisReductionKernel`, alternating direct/dual LLL on the
@@ -32,7 +32,10 @@ stopping rule. The dual basis transform is explicitly integral after inverse-
 transpose, and the exact reduced-Gram identities are checked. Five targeted
 helper regressions and twelve additional deterministic-seed random sublattice
 checks passed, including square and rectangular row-lattice reduction cases.
-The primitive-direction lowering helper now has its actual two-value contract
+The quadratic pairing bound is now rescaled by `scale^2` when a rational
+input direction is lowered to its primitive integral representative; the
+successive unit-bound search increments by the same `scale^2`. A targeted
+regression verifies this conversion on nonintegral scales. The primitive-direction lowering helper now has its actual two-value contract
 (`TheMult`, primitive integral coordinates) in both its signature and call site,
 with regressions verifying the pinned `RemoveFractionPlusCoef` scale on
 fractional and nonprimitive integral rays, rejecting empty/zero inputs, and
