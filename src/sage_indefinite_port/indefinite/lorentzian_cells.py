@@ -2575,11 +2575,14 @@ class _PositiveVectorEnumerator:
         # returns the column transform U; reduced coset coordinates are U^T
         # times original coordinates, up to the common coset-reduction shift.
         # Keep that map to restore the recursive coordinate order.
-        self.enumeration_transform = (
-            kernel_gram_integer.adjugate().LLL_gram().transpose().change_ring(SageZZ)
-            if kernel_gram_integer.nrows() > 1
-            else identity_matrix(SageZZ, kernel_gram_integer.nrows())
-        )
+        if kernel_gram_integer.nrows() > 1:
+            adjugate_gram = kernel_gram_integer.adjugate()
+            lll_columns = adjugate_gram.LLL_gram()
+            self.enumeration_transform = lll_columns.transpose().change_ring(SageZZ)
+            if abs(int(self.enumeration_transform.det())) != 1:
+                raise ArithmeticError("the dual-LLL enumeration transform is not unimodular")
+        else:
+            self.enumeration_transform = identity_matrix(SageZZ, kernel_gram_integer.nrows())
         self.cvp_engine = _ExactCVPEngine._from_positive_engine_gram(lattice.base_ring(), kernel_gram_integer)
         alpha = self.d / square
         timelike_row = self.timelike_row
