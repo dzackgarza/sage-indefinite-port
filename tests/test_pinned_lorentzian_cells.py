@@ -295,6 +295,9 @@ def test_initial_vector_search_advances_integral_bound_without_rescanning() -> N
             return ((1, 0),) if multiplier == 2 else ()
 
     class TimelikeLattice:
+        def module_rank(self):
+            return 2
+
         def is_isotropic(self):
             return True
 
