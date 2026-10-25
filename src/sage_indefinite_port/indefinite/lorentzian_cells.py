@@ -2586,9 +2586,15 @@ class _PositiveVectorEnumerator:
                     SageZZ,
                     [[SageZZ(int(entry)) for entry in row] for row in gap_basis_reduction["transformation"]],
                 )
+                if abs(int(basis_transform.det())) != 1:
+                    raise ArithmeticError("the pinned kernel-basis reduction returned a non-unimodular transform")
                 if dual:
                     basis_transform = basis_transform.inverse().transpose()
                 candidate_basis = basis_transform * kernel_rows
+                if candidate_basis * candidate_basis.transpose() != basis_transform * (kernel_rows * kernel_rows.transpose()) * basis_transform.transpose():
+                    raise ArithmeticError("the pinned kernel-basis transform does not preserve its exact Gram identity")
+                if any(entry for entry in (candidate_basis * vector(SageZZ, pairing_coordinates).column()).list()):
+                    raise ArithmeticError("the pinned kernel-basis transform left the timelike covector kernel")
                 candidate_l1 = sum(abs(entry) for entry in candidate_basis.list())
                 if candidate_l1 < basis_l1:
                     kernel_rows = candidate_basis
