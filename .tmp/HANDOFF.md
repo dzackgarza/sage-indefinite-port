@@ -23,15 +23,18 @@ stabilizer image 72. Exact evidence and limits are in
 [TODO.md](../TODO.md#functional-mvp-evidence-from-the-current-implementation-work).
 
 Current source-bearing follow-up: pinned #33/#15 perfect-domain CVP construction
-is on `implement/lorentzian-completion`, source revision `9cfe1db` with the
-rectangular basis regression at `08dc1bb`. The positive-vector backend extracts
+is on `implement/lorentzian-completion`, source revision `e240197` with the
+standalone source-contract tests in `tests/test_pinned_lorentzian_cells.py`.
+The positive-vector backend extracts
 the pinned `SublatticeBasisReductionKernel`, alternating direct/dual LLL on the
 ordered `NullspaceIntVect` kernel basis with the strict ambient entrywise L1
 stopping rule. The dual basis transform is explicitly integral after inverse-
-transpose, and the exact reduced-Gram identities are checked. The source-level
-regressions have been moved out of the frozen acceptance corpus into
-`tests/test_pinned_lorentzian_cells.py`; five targeted helper regressions pass,
-including square and rectangular row-lattice reduction cases. The full frozen
+transpose, and the exact reduced-Gram identities are checked. Five targeted
+helper regressions and twelve additional deterministic-seed random sublattice
+checks passed, including square and rectangular row-lattice reduction cases.
+Ordinary pytest collection currently fails in the local Sage environment at
+`ModuleNotFoundError: sage.categories.ordered_fields`; Python compilation and
+source-level direct helper execution work. The full frozen
 `A_PERFECT` traversal remains the acceptance obligation. The local host lacks
 the provisioned project Sage category dependencies, so standalone helper tests
 do not claim that the public consumer passed locally.
