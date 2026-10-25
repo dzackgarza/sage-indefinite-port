@@ -12,6 +12,8 @@ from dzack_research.preamble.all import ZZ as PreambleZZ
 from dzack_research.preamble.all import HyperbolicLattices
 
 from tests.acceptance.consumer import EDGEWALK, coordinates, lattice, require
+from sage_indefinite_port.indefinite.edgewalk import _Edgewalk
+from sage_indefinite_port.indefinite.edgewalk_rank2 import _OrientedBinaryCycle
 from tests.fixtures.oracle_fixtures import (
     load_allcock_rank3_reflective,
     load_e10_fundamental_domain,
@@ -64,6 +66,85 @@ def test_u_plus_46_nonreflective_certificate_terminates_after_three_vertices() -
     assert not report.is_reflective()
     assert len(report.vertices()) == 3
     assert len(report.simple_roots()) == 0
+
+
+def test_promised_go_left_preserves_left_supplement() -> None:
+    """Allcock's rank-two Go-left branch must retain the opposite endpoint."""
+    cycle = _OrientedBinaryCycle(lattice([[1, 0], [0, -2]]))
+
+    assert cycle.promised_step(1, (1, 0), (0, 1)) == ((3, 2), (-2, -1))
+
+
+def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
+    """Exercise cusp, finite-corner, next-wall and oriented binary-cycle routes.
+
+    Frozen IDs ``allcock_rk3_4`` and ``allcock_rk3_2`` cover the isotropic
+    cusp and rationally anisotropic branches; ``U+<2>`` is the independently
+    recorded three-wall example with both finite and ideal corners, and
+    ``U+<46>`` covers the nonreflective stop after three vertex orbits. This
+    sample does not claim direct coverage of the rank-two public ``binary_walk``
+    entry point or higher-rank starting-corner cases; the frozen full suite
+    remains unchanged and still runs every recorded case.
+    """
+    require(EDGEWALK)
+    observed = {}
+
+    def instrument(cls, name):
+        original = getattr(cls, name)
+
+        def wrapped(self, *args, **kwargs):
+            observed[f"{cls.__name__}.{name}"] = True
+            return original(self, *args, **kwargs)
+
+        monkeypatch.setattr(cls, name, wrapped)
+
+    for name in (
+        "initial_isotropic_vertex", "initial_vertex", "ordinary_vertex_roots",
+        "cusp_root", "cusp_roots", "isotropic_next_vertex", "finite_extensions",
+        "edge_step", "edge_directions",
+    ):
+        instrument(_Edgewalk, name)
+    for name in ("cycle", "promised_step", "canonical_companion", "shorter_pair", "reduced_start_pair"):
+        instrument(_OrientedBinaryCycle, name)
+
+    cases = load_allcock_rank3_reflective()
+    # The historical table reuses IDs; the exact Gram disambiguates the two
+    # intended branch representatives without depending on list position.
+    isotropic_case = next(
+        case for case in cases
+        if case["id"] == "allcock_rk3_4" and case["gram"] == [[0, -1, 0], [-1, 0, 0], [0, 0, 1]]
+    )
+    anisotropic_case = next(
+        case for case in cases
+        if case["id"] == "allcock_rk3_2" and case["gram"] == [[-3, 0, 0], [0, 1, 0], [0, 0, 1]]
+    )
+    assert _hyperbolic(isotropic_case["gram"]).allcock_edgewalk().is_reflective()
+    assert _hyperbolic(anisotropic_case["gram"]).allcock_edgewalk().is_reflective()
+
+    three_wall = _hyperbolic([[0, 1, 0], [1, 0, 0], [0, 0, 2]]).allcock_edgewalk()
+    assert len(three_wall.simple_roots()) == 3
+    vertex_squares = tuple(
+        int(ray.q())
+        for vertex in three_wall.vertices()
+        for ray in vertex.primitive_rays()
+    )
+    assert any(square == 0 for square in vertex_squares)
+    assert any(square < 0 for square in vertex_squares)
+    nonreflective = _hyperbolic([[0, 1, 0], [1, 0, 0], [0, 0, 46]]).allcock_edgewalk()
+    assert not nonreflective.is_reflective()
+    assert len(nonreflective.vertices()) == 3
+
+    required = {
+        "_Edgewalk.initial_isotropic_vertex", "_Edgewalk.initial_vertex",
+        "_Edgewalk.ordinary_vertex_roots", "_Edgewalk.cusp_root", "_Edgewalk.cusp_roots",
+        "_Edgewalk.isotropic_next_vertex", "_Edgewalk.finite_extensions",
+        "_Edgewalk.edge_step", "_Edgewalk.edge_directions",
+        "_OrientedBinaryCycle.cycle", "_OrientedBinaryCycle.promised_step",
+        "_OrientedBinaryCycle.canonical_companion", "_OrientedBinaryCycle.shorter_pair",
+        "_OrientedBinaryCycle.reduced_start_pair",
+    }
+    missing = sorted(name for name in required if name not in observed)
+    assert not missing, f"unexercised pinned edgewalk routes: {missing}"
 
 
 @pytest.mark.parametrize("case", load_reflective_forms(), ids=lambda case: case["id"])
