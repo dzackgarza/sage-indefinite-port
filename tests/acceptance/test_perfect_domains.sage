@@ -74,6 +74,7 @@ def test_pinned_positive_gcd_dot_matches_exact_coefficients() -> None:
         ((0, 0, 9), (9, (0, 0, 1))),
         ((-5, 0, 0), (5, (-1, 0, 0))),
         ((0, 0, 0), (0, (0, 0, 0))),
+        ((0,), (0, (-1,))),
     )
     for values, expected in cases:
         divisor, coefficients = _pinned_positive_gcd_dot(values)

@@ -2533,7 +2533,9 @@ def _pinned_positive_gcd_dot(values: tuple[int, ...]) -> tuple[int, tuple[int, .
         divisor = next_divisor
         coefficients = [a * coefficient for coefficient in coefficients]
         coefficients[position] = b
-    if divisor < 0:
+    if divisor <= 0:
+        # The pinned PositivityNormalizeGcdDot returns -V when gcd is zero
+        # as well as when it is negative; this matters for a singleton zero.
         return -divisor, tuple(-coefficient for coefficient in coefficients)
     return divisor, tuple(coefficients)
 
