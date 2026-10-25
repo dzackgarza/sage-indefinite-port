@@ -45,4 +45,4 @@ def test_lazy_neighbor_cones_retain_exact_transformed_rays() -> None:
         common_face = adjacency.common_face()
         assert neighbor.ambient_lattice() is traversal.lattice()
         assert common_face.ambient_lattice() is traversal.lattice()
-        assert common_face.dimension() == traversal.lattice().module_rank() - 1
+        assert int(common_face.dimension()) == int(traversal.lattice().rank()) - 1
