@@ -30,3 +30,16 @@ def test_isotropic_mode_counts_match_polyhedral_common(case) -> None:
     require(PERFECT_DOMAINS)
 
     assert len(perfect_domain_traversal(lattice(case["gram"]), "isotropic").cells()) == case["isotropic_count"]
+
+
+def test_lazy_neighbor_cones_retain_exact_transformed_rays() -> None:
+    """Materializing a deferred side-pairing cone checks its exact ray certificate."""
+    require(PERFECT_DOMAINS)
+
+    case = next(case for case in load_lorentzian_perfect_domains() if case["id"] == "Result_Enumeration_1")
+    traversal = lattice(case["gram"]).lorentzian_reduction_complex()
+    adjacencies = tuple(traversal.adjacencies())
+    assert adjacencies
+    for adjacency in adjacencies:
+        neighbor = adjacency.neighbor()
+        assert neighbor.ambient_lattice() is traversal.lattice()
