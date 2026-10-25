@@ -2759,14 +2759,13 @@ def _kernel_flipping(
         # Lorentzian.g:924-930, EXIT 1: the shell lies inside CritSet.
         if total_rows.issubset(critical_rows):
             return total, normal, test_direction_row, max_scal
-        # Old-cell vertices are not candidate new walls during a facet flip.
-        # A tied shell containing only those vertices (or tangent new vectors)
-        # does not advance the wall crossing, so refine the first-scheme
-        # interval rather than entering EXIT 2 with a zero/no-op denominator.
-        excluded = set(excluded_wall_rows) | critical_rows
+        # Lorentzian.g:922-930 enters the second scheme whenever the shell
+        # is not contained in CritSet. This includes other vertices of the
+        # current cell: the source deliberately chooses ListTotal[1] there.
+        # Do not filter those vectors using the old-cell set.
         has_new_wall = False
         for row in total:
-            if row in excluded:
+            if row in critical_rows:
                 continue
             expanded = vector(SageQQ, [1, *row])
             denominator = direction_normal.dot_product(expanded)
@@ -2804,27 +2803,17 @@ def _kernel_flipping(
         seen_second_scheme_states.add(state)
         if not total:
             raise ArithmeticError("the second flip scheme requires a nonempty shortest shell")
-        # GAP's Vallentin enumeration places a genuinely new wall before
-        # the old cell's tied vertices. The categorical close-vector API has
-        # a different iteration order, so recover that semantic selection:
-        # choose the first transverse shortest vector not in the old cell.
-        wall = None
-        excluded = set(excluded_wall_rows) | critical_rows
-        for row in total:
-            if row in excluded:
-                continue
-            expanded = vector(SageQQ, [1, *row])
-            denominator = direction_normal.dot_product(expanded)
-            if denominator == 0:
-                continue
-            shift = -base_normal.dot_product(expanded) / denominator
-            candidate_normal = base_normal + shift * direction_normal
-            if candidate_normal != normal:
-                wall = (row, candidate_normal)
-                break
-        if wall is None:
-            raise _NoTransverseFlipWall("the shortest shell has no new transverse wall outside the old cell")
-        new_row, normal = wall
+        # Lorentzian.g:944-950 selects ListTotal[1] verbatim, even when
+        # that vector is another vertex of the current cell. Replacing this
+        # by a search for a vector outside the cell changes the algorithm and
+        # can reject every admissible outside ray at a tied shortest shell.
+        new_row = total[0]
+        expanded = vector(SageQQ, [1, *new_row])
+        denominator = direction_normal.dot_product(expanded)
+        if denominator == 0:
+            raise _NoTransverseFlipWall("the source-selected shortest-shell wall is parallel to the flip direction")
+        shift = -base_normal.dot_product(expanded) / denominator
+        normal = base_normal + shift * direction_normal
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
         test_direction_row = _source_remove_fraction(test_direction.column(0))
         max_scal = (critical_first * gram * test_direction_row.column())[0]
