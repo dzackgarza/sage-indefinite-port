@@ -86,6 +86,8 @@ def test_pinned_integer_covector_kernel_matches_exact_contract() -> None:
     from sage.all import ZZ, matrix, vector
 
     cases = (
+        ((-7,), ()),
+        ((7,), ()),
         ((2, 3), ((-3, 2),)),
         ((0, 6, 9), ((1, 0, 0), (0, -3, 2))),
         ((6, 10, 15), ((-5, 3, 0), (-30, 15, 2))),
@@ -101,6 +103,7 @@ def test_pinned_integer_covector_kernel_matches_exact_contract() -> None:
 
     zero_covector = (0, 0, 0)
     assert _pinned_integer_covector_kernel(zero_covector) == matrix.identity(ZZ, 3)
+    assert _pinned_integer_covector_kernel((0,)) == matrix.identity(ZZ, 1)
 
 
 def test_lazy_neighbor_cones_retain_exact_transformed_rays() -> None:

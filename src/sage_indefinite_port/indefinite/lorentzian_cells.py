@@ -2592,7 +2592,12 @@ def _pinned_integer_covector_kernel(covector: tuple[int, ...]) -> Matrix_integer
     transform = gcd_transform(values)
     values_column = vector(SageZZ, values).column()
     transformed_values = transform.transpose() * values_column
-    if transformed_values[0, 0] != gcd(*values) or any(transformed_values[i, 0] for i in range(1, rank)):
+    # ComputeGCD_information deliberately leaves a singleton unchanged,
+    # including its sign; for two or more entries ComputePairGcd makes the
+    # gcd nonnegative. A rank-one covector therefore has this source-specific
+    # signed singleton contract even though its kernel is empty.
+    expected_gcd = values[0] if rank == 1 else gcd(*values)
+    if transformed_values[0, 0] != expected_gcd or any(transformed_values[i, 0] for i in range(1, rank)):
         raise ArithmeticError("pinned recursive GCD transform does not isolate the exact covector gcd")
     if abs(int(transform.det())) != 1:
         raise ArithmeticError("pinned recursive GCD transform is not unimodular")
