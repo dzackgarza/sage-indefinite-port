@@ -2708,7 +2708,19 @@ def _negative_direction_in_span(
                 modification[index, image] = choice((-1, 1))
         else:
             index = randrange(dimension)
-            image = randrange(dimension)
+            # The pinned assignment ``eMat[i][j] := +/-1`` is not an
+            # elementary basis change when i == j and the sign is -1: it
+            # replaces the diagonal 1 by 0, making eMat singular.  Here the
+            # perturbation must preserve the span basis, so choose a genuine
+            # off-diagonal shear.  In dimension one the signed-permutation
+            # branch already supplies the only invertible perturbations.
+            if dimension == 1:
+                modification[0, 0] = choice((-1, 1))
+                perturbation *= modification
+                continue
+            image = randrange(dimension - 1)
+            if image >= index:
+                image += 1
             modification[index, image] = choice((-1, 1))
         perturbation *= modification
 
