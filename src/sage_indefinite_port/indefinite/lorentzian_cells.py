@@ -2815,6 +2815,12 @@ def _kernel_flipping(
                 tried_walls.update(crossed_rows)
                 break
         if new_row is None or expanded is None:
+            # The preceding crossing can return the same complete shortest
+            # shell. At this point all its new rows have already been crossed
+            # at their exact wall parameters; this is precisely EXIT 2, not a
+            # missing-wall error.
+            if set(total).issubset(critical_rows | tried_walls):
+                return total, normal, test_direction_row, max_scal
             # Every newly encountered shortest vector is tangent to the
             # flip direction. Since it is also on the current test wall,
             # it lies on the base supporting wall as well. These are omitted
