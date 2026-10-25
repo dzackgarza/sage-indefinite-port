@@ -2570,6 +2570,16 @@ class _PositiveVectorEnumerator:
             kernel_gram.ncols(),
             [SageZZ(kernel_gram[i, j]) for i in range(kernel_gram.nrows()) for j in range(kernel_gram.ncols())],
         )
+        # LATT_near's CVPSolver first applies LLLreducedBasisDual to this
+        # Gram matrix. ClassicLLL.h:246-284 reduces adj(G). Sage's LLL_gram
+        # returns the column transform U; reduced coset coordinates are U^T
+        # times original coordinates, up to the common coset-reduction shift.
+        # Keep that map to restore the recursive coordinate order.
+        self.enumeration_transform = (
+            kernel_gram_integer.adjugate().LLL_gram().transpose().change_ring(SageZZ)
+            if kernel_gram_integer.nrows() > 1
+            else identity_matrix(SageZZ, kernel_gram_integer.nrows())
+        )
         self.cvp_engine = _ExactCVPEngine._from_positive_engine_gram(lattice.base_ring(), kernel_gram_integer)
         alpha = self.d / square
         timelike_row = self.timelike_row
@@ -2625,6 +2635,20 @@ class _PositiveVectorEnumerator:
         # and indexed-family object for every intermediate shell candidate.
         distances = self.cvp_engine.close_vector_coordinates(target, bound)
         close_coordinates = tuple(coordinates for coordinates, _square in distances)
+        # computeIt_Gen_Kernel enumerates the final coordinate first, then
+        # descends to coordinate zero; each coordinate interval is visited in
+        # increasing order. The affine coset reduction contributes one common
+        # translation, which does not affect the lexicographic order below.
+        transform = self.enumeration_transform
+        close_coordinates = tuple(
+            sorted(
+                close_coordinates,
+                key=lambda coordinates: tuple(
+                    (transform * vector(SageZZ, coordinates))[index]
+                    for index in reversed(range(transform.nrows()))
+                ),
+            )
+        )
         return self._ambient_vectors(multiplier, close_coordinates)
 
     def _ambient_vectors(self, multiplier: int, close_coordinates: tuple[tuple[Integer, ...], ...]) -> tuple[tuple[int, ...], ...]:
