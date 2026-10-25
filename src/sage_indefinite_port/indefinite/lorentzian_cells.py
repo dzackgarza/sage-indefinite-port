@@ -2649,11 +2649,10 @@ def _kernel_flipping(
                 continue
             shift = -base_normal.dot_product(expanded) / denominator
             candidate_normal = base_normal + shift * direction_normal
-            if candidate_normal != normal:
-                wall = (row, candidate_normal)
-                break
+            wall = (row, candidate_normal)
+            break
         if wall is None:
-            raise _NoTransverseFlipWall("the shortest shell has no new transverse wall beyond the current normal")
+            raise _NoTransverseFlipWall("the shortest shell has no new transverse wall for this outside ray")
         new_row, normal = wall
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
         test_direction_row = _source_remove_fraction(test_direction.column(0))
