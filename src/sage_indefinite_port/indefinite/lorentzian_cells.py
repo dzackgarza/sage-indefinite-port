@@ -656,6 +656,7 @@ class LorentzianPerfectLocalBackend:
             return ()
         labels = tuple(cell.lattice.module_generating_set())
         ray_rows = matrix(SageQQ, cell.rows)
+        integral_ray_rows = matrix(SageZZ, cell.rows)
         covector_rows = matrix(SageQQ, [[_rational(covector.to_vector()(label)) for label in labels] for covector in covectors])
         pairings = covector_rows * ray_rows.transpose()
         facets = [frozenset(position for position in range(len(vectors)) if pairings[facet, position] == 0) for facet in range(len(covectors))]
@@ -663,14 +664,14 @@ class LorentzianPerfectLocalBackend:
         # Use precisely these generators to form the ray action.  Calling
         # point_permutations here repeats the stabilizer lookup and the
         # categorical basis-action conversion for every generator.
-        positions = {tuple(int(entry) for entry in row): index for index, row in enumerate(ray_rows.rows())}
+        positions = {tuple(int(entry) for entry in row): index for index, row in enumerate(integral_ray_rows.rows())}
         if len(positions) != len(vectors):
             raise ArithmeticError("a perfect-cell configuration contains repeated rays")
         permutations = []
         for generator in generators:
             action = matrix(SageZZ, [_coordinate_row(cell.lattice, generator(cell.lattice.module_generator(label)), SageZZ) for label in labels])
             try:
-                permutations.append(tuple(positions[tuple(int(entry) for entry in row)] for row in (ray_rows * action).rows()))
+                permutations.append(tuple(positions[tuple(row)] for row in (integral_ray_rows * action).rows()))
             except KeyError as exc:
                 raise ArithmeticError("a cell-stabilizer generator does not preserve its rays") from exc
         facet_set = set(facets)
