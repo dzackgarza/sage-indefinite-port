@@ -2625,7 +2625,7 @@ def _kernel_flipping(
                 has_new_wall = True
                 break
         if not has_new_wall:
-            shell_state = tuple(total)
+            shell_state = tuple(sorted(total))
             if shell_state in no_wall_shells:
                 raise _NoTransverseFlipWall("the same shortest shell repeatedly offers no new transverse wall")
             no_wall_shells.add(shell_state)
