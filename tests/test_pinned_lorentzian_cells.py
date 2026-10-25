@@ -261,6 +261,7 @@ def test_initial_vector_search_advances_integral_bound_without_rescanning() -> N
     from sage_indefinite_port.indefinite import lorentzian_cells as cells
 
     visited = []
+    bounds = []
 
     class Enumerator:
         def __init__(self, lattice, direction, max_scal, allowed_squares):
@@ -269,6 +270,7 @@ def test_initial_vector_search_advances_integral_bound_without_rescanning() -> N
             self.scaled_max = cells._integral_direction_pairing_bound(max_scal, self.scale)
 
         def max_multiplier(self):
+            bounds.append(self.scaled_max)
             return int(self.scaled_max / self.d)
 
         def vectors_at_multiplier(self, multiplier):
@@ -290,4 +292,8 @@ def test_initial_vector_search_advances_integral_bound_without_rescanning() -> N
         cells._PositiveVectorEnumerator = original_enumerator
 
     assert result == ((1, 0),)
+    # The first bound is 2, then it advances through 3 (no new multiplier)
+    # to 4, where multiplier 2 first becomes available. Multiplier 1 is not
+    # revisited at either larger bound.
     assert visited == [(QQ(1) / 2 * 4, 1), (QQ(1) / 2 * 4 + 2, 2)]
+    assert bounds == [QQ(2), QQ(3), QQ(4)]
