@@ -23,18 +23,19 @@ stabilizer image 72. Exact evidence and limits are in
 [TODO.md](../TODO.md#functional-mvp-evidence-from-the-current-implementation-work).
 
 Current source-bearing follow-up: pinned #33/#15 perfect-domain CVP construction
-continues on `implement/lorentzian-completion`. The positive-vector backend now
-extracts the pinned `SublatticeBasisReductionKernel`, including the distinction
-between GAP's direct transform on `adj(G)` and the dual basis transform
-`Q=P^{-T}` used to reduce the original Gram matrix. The dual transform is kept
-integral after inversion; a regression pins the exact reduced basis and its
-integral unimodular change of basis. Five targeted helper regressions passed
-against the preceding source revision; the basis-reduction regression also
-passes after the integral-parent correction. The full frozen `A_PERFECT`
-consumer remains the decisive acceptance criterion; use the CI result for the
-pushed source revision, not standalone probes as a substitute. The local host
-lacks the provisioned project Sage category dependencies, so do not claim the
-full public consumer has passed locally.
+is on `implement/lorentzian-completion`, source revision `9cfe1db`. It extracts
+the pinned `SublatticeBasisReductionKernel`, alternating direct/dual LLL on the
+ordered `NullspaceIntVect` kernel basis with the strict ambient entrywise L1
+stopping rule. The dual basis transform is explicitly returned to the integral
+parent after inverse-transpose, and both reduced-Gram identities are checked.
+The acceptance regression pins the exact square-basis result and now also covers
+a rectangular rank-three sublattice of Z^4, verifying exact output, integral
+unimodular row-lattice change, and norm decrease. Both targeted cases pass.
+The full frozen `A_PERFECT` traversal remains the acceptance obligation; run
+[40238906817](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40238906817)
+is pending against the test-only tip `08dc1bb`, so it is not yet a verdict.
+The local host lacks the provisioned project Sage category dependencies; the
+standalone helper tests do not claim the public consumer passed locally.
 
 Do not restart the completed source-dispatch investigation or require the
 full frozen acceptance matrix before recognizing this MVP delivery.
