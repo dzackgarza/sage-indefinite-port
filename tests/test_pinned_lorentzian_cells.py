@@ -318,3 +318,37 @@ def test_initial_vector_search_advances_integral_bound_without_rescanning() -> N
     # rescanned.
     assert visited == [(QQ(2), 1), (QQ(4), 2)]
     assert bounds == [QQ(2), QQ(3), QQ(4)]
+
+
+def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
+    """The pinned CVP receives m*w and the quadratic radius m^2*base_bound."""
+    from sage.all import QQ, ZZ, identity_matrix, vector
+    from sage_indefinite_port.indefinite import lorentzian_cells as cells
+
+    class CVPEngine:
+        def __init__(self):
+            self.call = None
+
+        def close_vector_coordinates(self, target, bound):
+            self.call = (target, bound)
+            return ()
+
+    enumerator = object.__new__(cells._PositiveVectorEnumerator)
+    engine = CVPEngine()
+    enumerator.rational_field = object()
+    enumerator.base_target_engine_coordinates = (QQ(1) / 2, -QQ(2) / 3)
+    enumerator.base_bound = QQ(5) / 7
+    enumerator.cvp_engine = engine
+    enumerator.enumeration_order_transform = identity_matrix(ZZ, 2)
+    enumerator.partner_row = vector(ZZ, (0, 0, 0))
+    original_element = cells._owned_engine_element
+    original_rational = cells._owned_rational
+    try:
+        cells._owned_engine_element = lambda field, value: value
+        cells._owned_rational = lambda lattice, value, field: value
+        assert enumerator.vectors_at_multiplier(3) == ()
+    finally:
+        cells._owned_engine_element = original_element
+        cells._owned_rational = original_rational
+
+    assert engine.call == ((QQ(3) / 2, -QQ(2)), QQ(45) / 7)
