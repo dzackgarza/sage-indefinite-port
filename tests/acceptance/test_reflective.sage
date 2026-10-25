@@ -83,8 +83,8 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
     recorded three-wall example with both finite and ideal corners, and
     ``U+<46>`` covers the nonreflective stop after three vertex orbits. This
     sample does not claim direct coverage of the rank-two public ``binary_walk``
-    entry point or higher-rank starting-corner cases; the frozen full suite
-    remains unchanged and still runs every recorded case.
+    entry point; the frozen full suite remains unchanged and still runs every
+    recorded case.
     """
     require(EDGEWALK)
     observed = {}
@@ -121,6 +121,12 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
     assert _hyperbolic(isotropic_case["gram"]).allcock_edgewalk().is_reflective()
     assert _hyperbolic(anisotropic_case["gram"]).allcock_edgewalk().is_reflective()
 
+    # Keep one independent polyhedral_common root-system oracle in this branch
+    # sample rather than relying only on the full-file parameterizers. The
+    # Julia-backed OSCAR and E10 comparisons are isolated below because the
+    # local Sage runtime may lack Julia.
+    polyhedral_case = load_root_systems()[0]
+    _assert_same_root_system(polyhedral_case["gram"], polyhedral_case["roots"])
     three_wall = _hyperbolic([[0, 1, 0], [1, 0, 0], [0, 0, 2]]).allcock_edgewalk()
     assert len(three_wall.simple_roots()) == 3
     vertex_squares = tuple(
@@ -133,6 +139,12 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
     nonreflective = _hyperbolic([[0, 1, 0], [1, 0, 0], [0, 0, 46]]).allcock_edgewalk()
     assert not nonreflective.is_reflective()
     assert len(nonreflective.vertices()) == 3
+    # The compact hexagon has a rootless initial perpendicular and exercises
+    # the increasing-prefix starting-corner search rather than the direct
+    # full-rank finite-root corner route.
+    compact_hexagon = _hyperbolic([[-1, 0, 0], [0, 3, 1], [0, 1, 7]]).allcock_edgewalk()
+    assert compact_hexagon.is_reflective()
+    assert len(compact_hexagon.simple_roots()) == 6
 
     required = {
         "_Edgewalk.initial_isotropic_vertex", "_Edgewalk.initial_vertex",
@@ -145,6 +157,15 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
     }
     missing = sorted(name for name in required if name not in observed)
     assert not missing, f"unexercised pinned edgewalk routes: {missing}"
+
+
+def test_edgewalk_branch_sample_oscar_and_e10_oracles() -> None:
+    """Keep the Julia-backed OSCAR chamber and E10 paper comparisons in the sample."""
+    require(EDGEWALK)
+    oscar_case = _VINBERG["vinberg_diag_1_-1_-3"]
+    _assert_same_root_system(oscar_case["gram"], oscar_case["simple_roots_of_test_chamber"])
+    e10 = load_e10_fundamental_domain()
+    _assert_same_root_system(e10["gram"], [root["vector"] for root in e10["simple_roots"]])
 
 
 @pytest.mark.parametrize("case", load_reflective_forms(), ids=lambda case: case["id"])
