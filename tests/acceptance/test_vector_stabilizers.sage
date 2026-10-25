@@ -50,10 +50,19 @@ def test_isotropic_pointed_automorphism_generators_preserve_marking_and_form() -
     assert int(marked.q()) == 0
     assert int(marked.content()) == 1
 
-    generators = EichlerRecursion().pointed_automorphism_generators(marked)
+    recursion = EichlerRecursion()
+    line_generators = recursion.line_stabilizer_generators(marked)
+    pointed_generators = recursion.pointed_automorphism_generators(marked)
     basis = tuple(lattice_.module_generators())
-    assert generators
-    for generator in generators:
+    assert line_generators and pointed_generators
+    for generator in line_generators:
+        assert generator(marked) in (marked, -marked)
+        assert all(
+            lattice_.b(generator(left), generator(right)) == lattice_.b(left, right)
+            for left in basis
+            for right in basis
+        )
+    for generator in pointed_generators:
         assert generator(marked) == marked
         assert all(
             lattice_.b(generator(left), generator(right)) == lattice_.b(left, right)
