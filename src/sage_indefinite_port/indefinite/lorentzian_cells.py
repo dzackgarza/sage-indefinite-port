@@ -1281,17 +1281,16 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # per orbit against the owned categorical morphism; all remaining
             # elements use the same exact permutation-composition law.
             action = transporter_action * symmetry_action
+            target_to_neighbour = symmetry * adjacency.transporter
             if orbit_position == min(1, len(orbit) - 1):
-                reference_map = symmetry * adjacency.transporter
                 reference_action = matrix(
                     SageZZ,
-                    [_coordinate_row(lattice, reference_map(basis_vector), SageZZ) for basis_vector in ambient_basis],
+                    [_coordinate_row(lattice, target_to_neighbour(basis_vector), SageZZ) for basis_vector in ambient_basis],
                 )
                 if action != reference_action:
                     raise ArithmeticError("the Schreier permutation and categorical side-pairing actions disagree")
             if action * ambient_gram * action.transpose() != ambient_gram or abs(action.det()) != 1:
                 raise ArithmeticError("a Schreier side-pairing action is not an integral lattice isometry")
-            target_to_neighbour = lattice.O()(tuple(lattice([int(entry) for entry in row]) for row in action.rows()))
             target_cone = cell_cones[id(adjacency.target)]
             action_key = (id(adjacency.target), tuple(int(entry) for entry in action.list()))
             neighbor = neighbor_cache.get(action_key)
