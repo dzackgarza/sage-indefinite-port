@@ -2741,7 +2741,6 @@ def _kernel_flipping(
     critical_first = vector(SageQQ, critical[0])
     critical_rows = set(critical)
     total: tuple[tuple[int, ...], ...] = ()
-    seen_second_directions: set[tuple[int, ...]] = set()
     while True:
         middle = _source_mid_value(lower, upper)
         normal = base_normal + middle * direction_normal
@@ -2806,13 +2805,6 @@ def _kernel_flipping(
         normal = base_normal + shift * direction_normal
         test_direction = inverse * vector(SageQQ, normal[1:]).column()
         test_direction_row = _source_remove_fraction(test_direction.column(0))
-        direction_key = tuple(int(entry) for entry in test_direction_row)
-        first_nonzero = next((entry for entry in direction_key if entry), 0)
-        if first_nonzero < 0:
-            direction_key = tuple(-entry for entry in direction_key)
-        if direction_key in seen_second_directions:
-            raise _NoTransverseFlipWall("the second flip scheme revisited a previously tested projective direction")
-        seen_second_directions.add(direction_key)
         max_scal = (critical_first * gram * test_direction_row.column())[0]
         total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
         # Lorentzian.g:959, EXIT 2: ListTotal is contained in CritSet plus
