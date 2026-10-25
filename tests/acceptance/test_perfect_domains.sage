@@ -131,6 +131,16 @@ def test_pinned_sublattice_basis_reduction_preserves_row_lattice() -> None:
     assert sum(abs(entry) for entry in reduced.list()) <= sum(abs(entry) for entry in basis.list())
     assert change * basis == reduced
 
+    # The kernel supplied by NullspaceIntVect is rectangular in ambient
+    # coordinates; exercise the same reducer on a rank-three sublattice of Z^4.
+    rectangular = matrix(ZZ, [[10, 1, 0, 2], [9, 1, 1, 0], [1, 0, 8, 1]])
+    rectangular_reduced = _pinned_sublattice_basis_reduction(rectangular)
+    assert rectangular_reduced == matrix(ZZ, [[-1, 0, 1, -2], [2, 0, 7, 3], [8, 1, 2, -2]])
+    rectangular_change = rectangular_reduced * rectangular.transpose() * (rectangular * rectangular.transpose()).inverse()
+    assert all(entry.denominator() == 1 for entry in rectangular_change.list())
+    assert abs(rectangular_change.det()) == 1
+    assert rectangular_change * rectangular == rectangular_reduced
+
 
 def test_pinned_integer_covector_kernel_matches_exact_contract() -> None:
     """The source-ordered integral kernel is annihilated and saturated."""
