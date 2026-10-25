@@ -1936,9 +1936,13 @@ def _ambient_element(lattice: Lattices.ParentMethods, coordinates: tuple[Integer
     return lattice.linear_combination({label: ring(int(entry)) for label, entry in zip(labels, coordinates, strict=True) if entry})
 
 
-def _owned_rational(lattice: Lattices.ParentMethods, value: Rational) -> RingElement:
-    field = lattice.base_ring().fraction_field()
-    return field(int(value.numerator())) / field(int(value.denominator()))
+def _owned_rational(
+    lattice: Lattices.ParentMethods, value: Rational, *, field: Parent | None = None
+) -> RingElement:
+    r"""Raise an exact rational through the selected fraction-field realization."""
+    if field is None:
+        field = lattice.base_ring().fraction_field()
+    return _owned_engine_element(field, SageQQ(value))
 
 
 def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integer, ...]:
@@ -2271,6 +2275,8 @@ class _PositiveVectorEnumerator:
         # iterator for the same finite gcd.
         pairing_coordinates = tuple(int(entry) for entry in self.timelike_covector.column(0))
         self.d = SageQQ(gcd(*pairing_coordinates))
+        fraction_map = lattice.base_ring().fraction_field_map()
+        self.rational_field = fraction_map.codomain()
         # bezout_partner() computes the same coefficients by factoring the
         # generic categorical pairing map.  Its coordinate matrix is already
         # available, so use exact extended gcd and lift the resulting vector
@@ -2302,7 +2308,6 @@ class _PositiveVectorEnumerator:
         self.kernel = Lattices(SageZZ)(
             [[SageZZ(kernel_gram[i, j]) for j in range(kernel_gram.ncols())] for i in range(kernel_gram.nrows())]
         )
-        fraction_map = lattice.base_ring().fraction_field_map()
         self.base_target_parent = self.kernel.base_change(fraction_map)
         self.base_target_labels = tuple(self.base_target_parent.module_generating_set())
         alpha = self.d / square
@@ -2316,14 +2321,13 @@ class _PositiveVectorEnumerator:
         if self.inclusion_rows.transpose().change_ring(SageQQ) * target_coordinates != translation:
             raise ArithmeticError("the Bezout translation is not in the rational orthogonal-kernel span")
         self.base_target_coordinates = tuple(SageQQ(entry) for entry in target_coordinates.column(0))
-        self.rational_field = self.base_target_parent.base_ring()
         # The rational field's selected engine is Sage QQ for this integral
         # lattice leaf. Retain these private arithmetic coordinates locally;
         # only the resulting coefficients are raised back into the owned ring.
         self.base_target_engine_coordinates = tuple(SageQQ(coordinate) for coordinate in self.base_target_coordinates)
         self.base_target = self.base_target_parent.linear_combination(
             {
-                label: _owned_rational(lattice, coordinate)
+                label: _owned_rational(lattice, coordinate, field=self.rational_field)
                 for label, coordinate in zip(self.base_target_labels, self.base_target_coordinates, strict=True)
                 if coordinate
             }
@@ -2363,7 +2367,9 @@ class _PositiveVectorEnumerator:
                 if coordinate
             }
         )
-        bound = _owned_rational(self.lattice, (SageQQ(multiplier) ** 2) * self.base_bound)
+        bound = _owned_rational(
+            self.lattice, (SageQQ(multiplier) ** 2) * self.base_bound, field=self.rational_field
+        )
         # Preserve the pinned Lorentzian.g:369-373 closest-vector API here.
         # The specialized exact-sphere recursion is tested independently, but
         # replacing this reference path changed performance on the frozen
