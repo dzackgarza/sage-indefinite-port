@@ -2806,11 +2806,16 @@ def _kernel_flipping(
         shell_state = tuple(sorted(total))
         tried_walls = tried_walls_by_shell.setdefault(shell_state, set())
         for candidate in total:
-            if candidate in tried_walls:
+            if candidate in tried_walls or candidate in critical_rows:
                 continue
             candidate_expanded = vector(SageQQ, [1, *candidate])
             candidate_denominator = direction_normal.dot_product(candidate_expanded)
-            if candidate_denominator:
+            candidate_shift_numerator = base_normal.dot_product(candidate_expanded)
+            # GAP's ListTotal order puts a genuinely new wall first. The
+            # owned sphere enumerator can instead put an old critical vector
+            # first; that gives shift=0 and repeats the same shell forever.
+            # Require a new, transverse wall that actually changes the normal.
+            if candidate_denominator and candidate_shift_numerator:
                 new_row, expanded, denominator = candidate, candidate_expanded, candidate_denominator
                 tried_walls.add(candidate)
                 break
