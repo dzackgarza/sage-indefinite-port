@@ -1229,6 +1229,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             by_incidence[incidence] = covector
         facet_covectors_by_incidence[id(cell)] = by_incidence
     ambient_labels = tuple(lattice.module_generating_set())
+    ambient_gram = _gram_matrix(lattice)
     dual = lattice.dual_module()
     dual_labels = tuple(dual.module_generating_set())
     # Keep the target cone's exact H-presentation in owned dual coordinates.
@@ -1288,8 +1289,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             if any(entry.denominator() != 1 for entry in symmetry_action.list()):
                 raise ArithmeticError("a Schreier stabilizer permutation does not induce an integral lattice action")
             symmetry_action = symmetry_action.change_ring(SageZZ)
-            gram = _gram_matrix(lattice)
-            if symmetry_action * gram * symmetry_action.transpose() != gram or abs(symmetry_action.det()) != 1:
+            if symmetry_action * ambient_gram * symmetry_action.transpose() != ambient_gram or abs(symmetry_action.det()) != 1:
                 raise ArithmeticError("a Schreier stabilizer permutation does not induce an integral lattice isometry")
             # In row coordinates, symmetry * transporter acts by the product
             # M_transporter M_symmetry.  Check one nontrivial Schreier element
