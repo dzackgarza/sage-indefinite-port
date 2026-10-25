@@ -31,9 +31,10 @@ parent after inverse-transpose, and both reduced-Gram identities are checked.
 The acceptance regression pins the exact square-basis result and now also covers
 a rectangular rank-three sublattice of Z^4, verifying exact output, integral
 unimodular row-lattice change, and norm decrease. Both targeted cases pass.
-The full frozen `A_PERFECT` traversal remains the acceptance obligation; run
-[40238906817](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40238906817)
-is pending against the test-only tip `08dc1bb`, so it is not yet a verdict.
+The full frozen `A_PERFECT` traversal remains the acceptance obligation. Each
+push triggers the sharded [Acceptance workflow](https://github.com/dzackgarza/sage-indefinite-port/actions/workflows/acceptance.yml);
+use the run attached to the current branch tip and consume its case-level
+results rather than treating queued/running status as a verdict.
 The local host lacks the provisioned project Sage category dependencies; the
 standalone helper tests do not claim the public consumer passed locally.
 
