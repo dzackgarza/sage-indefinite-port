@@ -2526,7 +2526,12 @@ def _upper_bound(gram: Matrix_rational_dense, base_normal: FreeModuleElement[Rat
     while base_square + 2 * cross * shift + direction_square * shift * shift >= 0:
         shift *= 2
     bounds.append(shift)
-    basis = matrix(SageQQ, [base_vector.column(0), direction_vector.column(0)])
+    basis = matrix(
+        SageQQ,
+        2,
+        gram.nrows(),
+        [*base_vector.column(0), *direction_vector.column(0)],
+    )
     restricted = basis * gram * basis.transpose()
     a, b, c = restricted[0, 0], restricted[0, 1], restricted[1, 1]
     discriminant = b * b - a * c
