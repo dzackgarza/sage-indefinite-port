@@ -39,6 +39,33 @@ def test_isotropic_mode_counts_match_polyhedral_common(case) -> None:
     assert len(perfect_domain_traversal(lattice(case["gram"]), "isotropic").cells()) == case["isotropic_count"]
 
 
+def test_gap_lll_transformation_uses_row_congruence_orientation() -> None:
+    """The GAP provider's transformation acts by P G P^T, not P^T G P."""
+    from sage.all import QQ, ZZ, matrix, libgap
+
+    gram = matrix(ZZ, [[100, 31, 17], [31, 11, 6], [17, 6, 4]])
+    record = libgap.LLLReducedGramMat(
+        [[int(gram[i, j]) for j in range(gram.ncols())] for i in range(gram.nrows())],
+        libgap(99) / libgap(100),
+    )
+    transform = matrix(ZZ, [[ZZ(int(entry)) for entry in row] for row in record["transformation"]])
+    reduced = matrix(ZZ, [[ZZ(int(entry)) for entry in row] for row in record["remainder"]])
+
+    assert abs(transform.det()) == 1
+    assert transform * gram * transform.transpose() == reduced
+    assert transform.transpose() * gram * transform != reduced
+
+    dual_record = libgap.LLLReducedGramMat(
+        [[int(gram.adjugate()[i, j]) for j in range(gram.ncols())] for i in range(gram.nrows())],
+        libgap(99) / libgap(100),
+    )
+    dual_transform = matrix(ZZ, [[ZZ(int(entry)) for entry in row] for row in dual_record["transformation"]])
+    dual_reduced = matrix(ZZ, [[ZZ(int(entry)) for entry in row] for row in dual_record["remainder"]])
+    assert dual_transform * gram.adjugate() * dual_transform.transpose() == dual_reduced
+    enumeration_transform = dual_transform.inverse().transpose()
+    assert enumeration_transform * gram * enumeration_transform.transpose() == gram.det() * dual_reduced.change_ring(QQ).inverse()
+
+
 def test_pinned_positive_gcd_dot_matches_exact_coefficients() -> None:
     """The source GCD-dot recurrence fixes the affine closest-vector center."""
     cases = (
