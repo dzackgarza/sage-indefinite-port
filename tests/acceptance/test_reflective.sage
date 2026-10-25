@@ -55,6 +55,17 @@ def _assert_same_root_system(gram, recorded_roots) -> None:
     assert _canonical_root_graph(_root_gram(gram, computed)) == _canonical_root_graph(_root_gram(gram, recorded_roots))
 
 
+def test_u_plus_46_nonreflective_certificate_terminates_after_three_vertices() -> None:
+    """Pinned Allcock nonreflectivity branch: U + <46> has three vertex orbits."""
+    require(EDGEWALK)
+
+    report = _hyperbolic([[0, 1, 0], [1, 0, 0], [0, 0, 46]]).allcock_edgewalk()
+
+    assert not report.is_reflective()
+    assert len(report.vertices()) == 3
+    assert len(report.simple_roots()) == 0
+
+
 @pytest.mark.parametrize("case", load_reflective_forms(), ids=lambda case: case["id"])
 def test_simple_root_counts_match_polyhedral_common(case) -> None:
     require(EDGEWALK)
