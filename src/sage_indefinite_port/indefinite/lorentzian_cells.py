@@ -367,6 +367,51 @@ class LorentzianPerfectCell:
             raise ArithmeticError("a perfect-cell vector family must have augmented rank equal to the lattice rank")
 
 
+class _CertifiedPerfectDomainOrbitAdjacency(PerfectDomainOrbitAdjacency):
+    """Side pairing certified by exact ray and supporting-covector data.
+
+    The generic adjacency constructor enumerates all faces of both cells to
+    check the common-face condition. On cells with 100+ facets, repeating
+    that enumeration for every side pairing dominates traversal time. This
+    constructor verifies the same face conditions by exact rank, membership,
+    and supporting-covector checks, and verifies transport by equality of
+    primitive extreme-ray sets under the integral action matrix.
+    """
+
+    def __init__(self, source, target, neighbor, common_face, target_to_neighbor, *, facet_normal_row, face_rows, action):
+        lattice = source.ambient_lattice()
+        if any(cell.ambient_lattice() is not lattice for cell in (target, neighbor, common_face)):
+            raise ValueError("a certified perfect-domain adjacency must lie in one ambient lattice")
+        rank = len(tuple(lattice.module_generating_set()))
+        rows = matrix(SageQQ, face_rows)
+        if rows.rank() != rank - 1 or int(common_face._engine.dim()) != rank - 1:
+            raise ArithmeticError("the proposed common face does not have codimension one")
+        normal = vector(SageQQ, facet_normal_row)
+
+        if any(normal.dot_product(vector(SageQQ, row)) != 0 for row in face_rows):
+            raise ArithmeticError("an incident ray does not lie on the proposed common supporting hyperplane")
+        source_values = tuple(normal.dot_product(vector(SageQQ, ray)) for ray in source._engine.rays_list())
+        neighbor_values = tuple(normal.dot_product(vector(SageQQ, ray)) for ray in neighbor._engine.rays_list())
+        source_positive = bool(source_values) and all(value >= 0 for value in source_values) and any(source_values)
+        source_negative = bool(source_values) and all(value <= 0 for value in source_values) and any(source_values)
+        neighbor_positive = bool(neighbor_values) and all(value >= 0 for value in neighbor_values) and any(neighbor_values)
+        neighbor_negative = bool(neighbor_values) and all(value <= 0 for value in neighbor_values) and any(neighbor_values)
+        if not ((source_positive and neighbor_negative) or (source_negative and neighbor_positive)):
+            raise ArithmeticError("the common-face covector does not support the two cells on opposite sides")
+        if any(not neighbor._engine.contains(tuple(SageQQ(entry) for entry in row)) for row in face_rows):
+            raise ArithmeticError("an incident source ray is not contained in the proposed neighbor")
+        target_rays = matrix(SageZZ, target._engine.rays_list()) * action
+        expected_rays = {tuple(int(entry) for entry in row) for row in target_rays.rows()}
+        actual_rays = {tuple(int(entry) for entry in row) for row in neighbor._engine.rays_list()}
+        if expected_rays != actual_rays:
+            raise ArithmeticError("the supplied isometry does not carry the target cell onto the proposed neighbor")
+        self._source = source
+        self._target = target
+        self._neighbor = neighbor
+        self._common_face = common_face
+        self._target_to_neighbor = target_to_neighbor
+
+
 @dataclass(frozen=True)
 class LorentzianCellAdjacency:
     source: LorentzianPerfectCell
@@ -1274,23 +1319,25 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             if any(entry.denominator() != 1 for entry in symmetry_action.list()):
                 raise ArithmeticError("a Schreier stabilizer permutation does not induce an integral lattice action")
             symmetry_action = symmetry_action.change_ring(SageZZ)
-            if symmetry_action * ambient_gram * symmetry_action.transpose() != ambient_gram or abs(symmetry_action.det()) != 1:
-                raise ArithmeticError("a Schreier stabilizer permutation does not induce an integral lattice isometry")
             # In row coordinates, symmetry * transporter acts by the product
-            # M_transporter M_symmetry.  Check one nontrivial Schreier element
-            # per orbit against the owned categorical morphism; all remaining
-            # elements use the same exact permutation-composition law.
+            # M_transporter M_symmetry.  The ray permutation determines the
+            # exact integral action; check a nontrivial Schreier element in
+            # each facet orbit against the owned categorical morphism.
             action = transporter_action * symmetry_action
-            target_to_neighbour = symmetry * adjacency.transporter
+            if orbit_position == 0:
+                if symmetry_action * ambient_gram * symmetry_action.transpose() != ambient_gram or abs(symmetry_action.det()) != 1:
+                    raise ArithmeticError("a Schreier stabilizer permutation does not induce an integral lattice isometry")
+            if action * ambient_gram * action.transpose() != ambient_gram or abs(action.det()) != 1:
+                raise ArithmeticError("a Schreier side-pairing action is not an integral lattice isometry")
             if orbit_position == min(1, len(orbit) - 1):
+                reference_map = symmetry * adjacency.transporter
                 reference_action = matrix(
                     SageZZ,
-                    [_coordinate_row(lattice, target_to_neighbour(basis_vector), SageZZ) for basis_vector in ambient_basis],
+                    [_coordinate_row(lattice, reference_map(basis_vector), SageZZ) for basis_vector in ambient_basis],
                 )
                 if action != reference_action:
                     raise ArithmeticError("the Schreier permutation and categorical side-pairing actions disagree")
-            if action * ambient_gram * action.transpose() != ambient_gram or abs(action.det()) != 1:
-                raise ArithmeticError("a Schreier side-pairing action is not an integral lattice isometry")
+            target_to_neighbour = lattice.O()(tuple(lattice([int(entry) for entry in row]) for row in action.rows()))
             target_cone = cell_cones[id(adjacency.target)]
             action_key = (id(adjacency.target), tuple(int(entry) for entry in action.list()))
             neighbor = neighbor_cache.get(action_key)
@@ -1302,7 +1349,13 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                     # the stored coordinate rows in Sage's engine instead of
                     # converting every ray through the owned category for
                     # each member of a large facet-stabilizer orbit.
-                    transformed_rows = matrix(SageZZ, adjacency.target.rows) * action
+                    # Use the engine's already minimized extreme-ray list,
+                    # not the full perfect-vector configuration.  The latter
+                    # contains many redundant vectors and rerunning exact
+                    # redundancy elimination for every side pairing is the
+                    # dominant cost on rank-five cells with 100+ facets.
+                    extreme_rows = matrix(SageZZ, target_cone._engine.rays_list())
+                    transformed_rows = extreme_rows * action
                     engine_cone = Polyhedron(
                         vertices=[(0,) * len(ambient_labels)],
                         rays=[tuple(SageQQ(entry) for entry in row) for row in transformed_rows.rows()],
@@ -1316,10 +1369,10 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 facet_normal = facet_covectors_by_incidence[id(adjacency.source)][incident]
             except KeyError as exc:
                 raise ArithmeticError("a Schreier facet has no defining covector in its source cone") from exc
+            facet_normal_row = vector(
+                SageQQ, (_rational(facet_normal.to_vector()(label)) for label in ambient_labels)
+            )
             if orbit_position == 0:
-                facet_normal_row = vector(
-                    SageQQ, (_rational(facet_normal.to_vector()(label)) for label in ambient_labels)
-                )
                 if frozenset(
                     position
                     for position, row in enumerate(adjacency.source.rows)
@@ -1340,12 +1393,15 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             )
             common_face = _cone_from_engine_polyhedron(lattice, face_engine)
             adjacencies.append(
-                PerfectDomainOrbitAdjacency(
+                _CertifiedPerfectDomainOrbitAdjacency(
                     cell_cones[id(adjacency.source)],
                     cell_cones[id(adjacency.target)],
                     neighbor,
                     common_face,
                     target_to_neighbour,
+                    facet_normal_row=facet_normal_row,
+                    face_rows=face_rows,
+                    action=action,
                 )
             )
     cones_by_position = tuple(cell_cones[id(cell)] for cell in cells)
