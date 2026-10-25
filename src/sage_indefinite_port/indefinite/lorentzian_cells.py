@@ -2671,10 +2671,12 @@ def _kernel_flipping(
             denominator = direction_normal.dot_product(expanded)
             if denominator == 0:
                 continue
-            shift = -base_normal.dot_product(expanded) / denominator
-            if base_normal + shift * direction_normal != normal:
-                has_new_wall = True
-                break
+            # Every vector in this shell lies on the sampled affine normal
+            # by construction. Equality with that normal is therefore not a
+            # no-op test; the second scheme recomputes the shell after the
+            # source-selected wall and applies EXIT 2.
+            has_new_wall = True
+            break
         if not has_new_wall:
             if not excluded_wall_rows:
                 # In GetOnePerfect the outside ray is selectable. A shell
