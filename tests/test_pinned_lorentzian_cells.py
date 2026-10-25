@@ -8,6 +8,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _pinned_integer_covector_kernel,
     _pinned_positive_gcd_dot,
     _pinned_sublattice_basis_reduction,
+    _primitive_integral_direction,
 )
 
 
@@ -181,3 +182,19 @@ def test_pinned_sublattice_reduction_on_deterministic_full_rank_samples() -> Non
             abs(entry) for entry in basis.list()
         )
         assert _pinned_sublattice_basis_reduction(reduced) == reduced
+
+
+def test_primitive_integral_direction_matches_fraction_multiplier() -> None:
+    """The scale is RemoveFractionPlusCoef's TheMult, not its reciprocal."""
+    from sage.all import QQ, ZZ, vector
+
+    for coordinates, expected_scale, expected_primitive in (
+        ((QQ(2) / 3, QQ(4) / 3), QQ(3) / 2, (1, 2)),
+        ((QQ(2), QQ(0)), QQ(1) / 2, (1, 0)),
+        ((-QQ(3) / 2, QQ(9) / 4), QQ(4) / 3, (-2, 3)),
+        ((QQ(0), QQ(0), QQ(5) / 7), QQ(7) / 5, (0, 0, 1)),
+    ):
+        scale, primitive = _primitive_integral_direction(coordinates)
+        assert scale == expected_scale
+        assert primitive == expected_primitive
+        assert vector(QQ, coordinates) == vector(ZZ, primitive).change_ring(QQ) / scale

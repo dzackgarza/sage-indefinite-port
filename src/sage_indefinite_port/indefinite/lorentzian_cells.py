@@ -2486,11 +2486,11 @@ def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]
 
 
 def _primitive_integral_direction(
-    lattice: Lattices.ParentMethods, coordinates: tuple[Rational, ...]
-) -> tuple[Lattices.ElementMethods, Rational, tuple[Integer, ...]]:
+    coordinates: tuple[Rational, ...],
+) -> tuple[Rational, tuple[Integer, ...]]:
     r"""The primitive vector on a rational ray, its scale, and its exact coordinates."""
-    if len(coordinates) != int(lattice.module_rank()):
-        raise ValueError("the rational direction must have the lattice rank")
+    if not coordinates:
+        raise ValueError("the rational direction must have positive dimension")
     if not any(coordinates):
         raise ValueError("the rational direction must be nonzero")
     denominator = SageZZ.one()
@@ -2695,7 +2695,7 @@ class _PositiveVectorEnumerator:
         self.gram = _gram_matrix(lattice)
         self.allowed_squares = allowed_squares
         scale, timelike_coordinates = _primitive_integral_direction(
-            lattice, tuple(SageQQ(entry) for entry in rational_direction)
+            tuple(SageQQ(entry) for entry in rational_direction)
         )
         self.timelike_row = vector(SageZZ, timelike_coordinates)
         self.timelike_covector = self.gram * self.timelike_row.column()
