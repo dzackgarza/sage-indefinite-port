@@ -672,6 +672,18 @@ class LorentzianPerfectLocalBackend:
         positions = {tuple(int(entry) for entry in row): index for index, row in enumerate(ray_rows.rows())}
         if len(positions) != len(vectors):
             raise ArithmeticError("a perfect-cell configuration contains repeated rays")
+        basis_positions = tuple(int(index) for index in ray_rows.transpose().pivots())
+        if len(basis_positions) != len(labels):
+            raise ArithmeticError("a perfect-cell configuration does not span its ambient lattice")
+        inverse_basis = ray_rows.matrix_from_rows(basis_positions).inverse()
+
+        def isometry_from_permutation(permutation):
+            image_basis = matrix(SageQQ, [ray_rows[permutation[position]] for position in basis_positions])
+            action = inverse_basis * image_basis
+            if any(entry.denominator() != 1 for entry in action.list()):
+                raise ArithmeticError("a Schreier facet permutation does not induce an integral lattice action")
+            return cell.lattice.O()(tuple(cell.lattice([int(entry) for entry in row]) for row in action.rows()))
+
         permutations = []
         for generator in generators:
             action = matrix(SageZZ, [_coordinate_row(cell.lattice, generator(cell.lattice.module_generator(label)), SageZZ) for label in labels])
@@ -679,7 +691,6 @@ class LorentzianPerfectLocalBackend:
                 permutations.append(tuple(positions[tuple(int(entry) for entry in row)] for row in (ray_rows * action).rows()))
             except KeyError as exc:
                 raise ArithmeticError("a cell-stabilizer generator does not preserve its rays") from exc
-        identity = cell.lattice.Aut().identity()
         facet_set = set(facets)
         # Every stabilizer generator preserves the cone, hence must permute
         # its facets.  Verify this before forming Schreier transporters;
@@ -696,16 +707,16 @@ class LorentzianPerfectLocalBackend:
             if start not in unvisited:
                 continue
             unvisited.discard(start)
-            orbit = [(start, identity, identity_permutation)]
-            for facet, element, element_permutation in orbit:
+            orbit = [(start, identity_permutation)]
+            for facet, element_permutation in orbit:
                 orbit_permutations[facet] = element_permutation
-                for generator, permutation in zip(generators, permutations, strict=True):
+                for permutation in permutations:
                     image = frozenset(permutation[position] for position in facet)
                     if image in unvisited:
                         unvisited.discard(image)
                         composed = tuple(permutation[element_permutation[position]] for position in range(len(vectors)))
-                        orbit.append((image, generator * element, composed))
-            orbits.append(tuple((facet, element) for facet, element, _permutation in orbit))
+                        orbit.append((image, composed))
+            orbits.append(tuple((facet, isometry_from_permutation(permutation)) for facet, permutation in orbit))
         self._facet_orbit_permutations[id(cell)] = orbit_permutations
         return tuple(orbits)
 
