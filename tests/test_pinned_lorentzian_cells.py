@@ -151,3 +151,33 @@ def test_pinned_integer_covector_kernel_matches_exact_contract() -> None:
     assert _pinned_integer_covector_kernel(zero_covector) == matrix.identity(ZZ, 3)
     assert _pinned_integer_covector_kernel((0,)) == matrix.identity(ZZ, 1)
 
+
+
+def test_pinned_sublattice_reduction_on_deterministic_full_rank_samples() -> None:
+    """Random-looking small bases preserve their exact row lattices and stop."""
+    import random
+
+    from sage.all import ZZ, matrix
+
+    randomizer = random.Random(150)
+    for case in range(12):
+        rows = 2 + case % 3
+        columns = rows + case % 2
+        while True:
+            basis = matrix(
+                ZZ,
+                rows,
+                columns,
+                [randomizer.randint(-8, 8) for _ in range(rows * columns)],
+            )
+            if basis.rank() == rows:
+                break
+        reduced = _pinned_sublattice_basis_reduction(basis)
+        change = reduced * basis.transpose() * (basis * basis.transpose()).inverse()
+        assert all(entry.denominator() == 1 for entry in change.list())
+        assert abs(change.det()) == 1
+        assert change * basis == reduced
+        assert sum(abs(entry) for entry in reduced.list()) <= sum(
+            abs(entry) for entry in basis.list()
+        )
+        assert _pinned_sublattice_basis_reduction(reduced) == reduced
