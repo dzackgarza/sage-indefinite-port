@@ -2772,6 +2772,8 @@ def _kernel_flipping(
         # the pinned algorithm selects ListTotal[1] verbatim in scheme two.
         break
     tried_walls_by_shell: dict[tuple[tuple[int, ...], ...], set[tuple[int, ...]]] = {}
+    crossed_rows_by_shift: dict[Rational, set[tuple[int, ...]]] = {}
+    last_shift: Rational | None = None
     while True:
         # Exact port of Lorentzian.g:944-966: choose ListTotal[1] verbatim,
         # recompute its affine normal, and apply EXIT 2.
@@ -2800,6 +2802,7 @@ def _kernel_flipping(
             if candidate_denominator and candidate_shift_numerator:
                 new_row, expanded, denominator = candidate, candidate_expanded, candidate_denominator
                 shift = -candidate_shift_numerator / candidate_denominator
+                last_shift = shift
                 # The sphere backend returns every vector in the first
                 # pairing shell, so several new vectors can define the same
                 # wall and have the same exact flip parameter. Treat that
@@ -2812,6 +2815,9 @@ def _kernel_flipping(
                     and -base_normal.dot_product(vector(SageQQ, [1, *row]))
                         / direction_normal.dot_product(vector(SageQQ, [1, *row])) == shift
                 }
+                accumulated_crossed = crossed_rows_by_shift.setdefault(shift, set())
+                accumulated_crossed.update(crossed_rows)
+                crossed_rows = accumulated_crossed
                 tried_walls.update(crossed_rows)
                 break
         if new_row is None or expanded is None:
@@ -2819,7 +2825,9 @@ def _kernel_flipping(
             # shell. At this point all its new rows have already been crossed
             # at their exact wall parameters; this is precisely EXIT 2, not a
             # missing-wall error.
-            if set(total).issubset(critical_rows | tried_walls):
+            if last_shift is not None and set(total).issubset(
+                critical_rows | crossed_rows_by_shift.get(last_shift, set())
+            ):
                 return total, normal, test_direction_row, max_scal
             # Every newly encountered shortest vector is tangent to the
             # flip direction. Since it is also on the current test wall,
