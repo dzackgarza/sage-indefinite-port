@@ -91,6 +91,12 @@ def test_pinned_sublattice_basis_reduction_preserves_row_lattice() -> None:
     """Alternating direct/dual LLL decreases L1 without changing the lattice."""
     from sage.all import ZZ, matrix
 
+    # Zero- and one-row bases are fixed points of the pinned loop: there is
+    # no pair of rows on which either direct or dual LLL can improve the L1 norm.
+    assert _pinned_sublattice_basis_reduction(matrix(ZZ, 0, 3)) == matrix(ZZ, 0, 3)
+    singleton = matrix(ZZ, [[-7, 2, 0]])
+    assert _pinned_sublattice_basis_reduction(singleton) == singleton
+
     basis = matrix(ZZ, [[10, 1, 0], [9, 1, 1], [1, 0, 8]])
     reduced = _pinned_sublattice_basis_reduction(basis)
     assert reduced.base_ring() is ZZ
