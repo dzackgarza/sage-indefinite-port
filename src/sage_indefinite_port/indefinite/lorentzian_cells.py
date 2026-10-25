@@ -2263,7 +2263,11 @@ class _PositiveVectorEnumerator:
         square = SageQQ(int(timelike.q()))
         if square <= 0:
             raise ValueError("positive-vector enumeration needs a timelike direction")
-        self.d = SageQQ(int(timelike.div()))
+        # div(t) is gcd(b(t,e_i)) over the integral basis.  The exact
+        # Gram covector was just computed above, so use its coordinates
+        # directly instead of re-entering the generic categorical pairing
+        # iterator for the same finite gcd.
+        self.d = SageQQ(gcd(*(int(entry) for entry in self.timelike_covector.column(0))))
         self.partner = timelike.bezout_partner()
         self.inclusion = timelike.orthogonal_complement().inclusion()
         self.kernel = self.inclusion.domain()
