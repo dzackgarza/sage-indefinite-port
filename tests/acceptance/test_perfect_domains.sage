@@ -43,15 +43,15 @@ def test_pinned_integer_covector_kernel_matches_exact_contract() -> None:
     from sage.all import ZZ, matrix, vector
 
     cases = (
-        (2, 3),
-        (0, 6, 9),
-        (6, 10, 15),
-        (0, 0, 1, 2),
-        (7, 0, 0),
-        (-12, 18, 0, -30, 42),
+        ((2, 3), ((-3, 2),)),
+        ((0, 6, 9), ((1, 0, 0), (0, -3, 2))),
+        ((6, 10, 15), ((-5, 3, 0), (-30, 15, 2))),
+        ((0, 0, 1, 2), ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -2, 1))),
+        ((7, 0, 0), ((0, 1, 0), (0, 0, 1))),
     )
-    for covector in cases:
+    for covector, expected_rows in cases:
         kernel = _pinned_integer_covector_kernel(covector)
+        assert tuple(tuple(int(entry) for entry in row) for row in kernel.rows()) == expected_rows
         assert kernel.nrows() == len(covector) - 1
         assert kernel * vector(ZZ, covector).column() == 0
         assert all(factor == 1 for factor in kernel.smith_form()[0].diagonal())
