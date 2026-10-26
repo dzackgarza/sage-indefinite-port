@@ -730,7 +730,10 @@ class LorentzianPerfectLocalBackend:
                 image = frozenset(permutation[position] for position in facet)
                 if image not in facet_set:
                     raise ArithmeticError("a cell-stabilizer generator fails to permute the facets")
-        unvisited = set(facets)
+        # Once generator preservation is certified, the complete facet set is
+        # no longer needed separately: the same set can be consumed as the
+        # unvisited frontier during orbit discovery.
+        unvisited = facet_set
         orbits = []
         identity_permutation = tuple(range(len(vectors)))
         for start in facets:
