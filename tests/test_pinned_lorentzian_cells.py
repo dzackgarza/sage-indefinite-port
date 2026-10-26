@@ -27,6 +27,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _pinned_diagonalize_symmetric_matrix,
     _integral_positive_vector_allmeth,
     _source_integral_vector_allmeth,
+    _source_validate_integral_reduction,
     _source_remove_fraction_vector,
     _source_integral_vector_allmeth_v2,
     _source_reconstruct_integral_vector,
@@ -386,6 +387,26 @@ def test_source_remove_fraction_vector_returns_primitive_integral_coordinates() 
     assert _source_remove_fraction_vector((QQ.zero(), QQ.zero())) == (0, 0)
 
 
+def test_source_integral_reduction_rejects_false_basis_certificates() -> None:
+    """The V2 consumer receives only exact unimodular Gram congruences."""
+    from sage.all import ZZ, identity_matrix, matrix
+
+    gram = matrix(ZZ, [[2, 1], [1, -1]])
+    identity = identity_matrix(ZZ, 2)
+    _source_validate_integral_reduction(gram, identity, gram)
+    for basis, reduced in (
+        (2 * identity, 4 * gram),
+        (identity, gram + identity),
+        (matrix(ZZ, [[1, 0], [0, 0]]), gram),
+    ):
+        try:
+            _source_validate_integral_reduction(gram, basis, reduced)
+        except (ValueError, ArithmeticError):
+            pass
+        else:
+            raise AssertionError("invalid integral reduction certificate was accepted")
+
+
 def test_source_integral_vector_allmeth_selects_isotropic_shortcut_exactly() -> None:
     """The generic source wrapper chooses the isotropic branch from inequality semantics."""
     from sage.all import QQ, ZZ, identity_matrix, matrix
@@ -430,7 +451,7 @@ def test_source_integral_vector_allmeth_selects_isotropic_shortcut_exactly() -> 
     def no_isotropic(_gram, *, look_for_isotropic):
         assert look_for_isotropic
         calls.append("isotropic-no-witness")
-        return 2 * identity_matrix(ZZ, 2), 4 * gram, None
+        return identity_matrix(ZZ, 2), gram, None
     fallback = _source_integral_vector_allmeth(
         gram, -QQ.one(), True, reduction=reduction,
         isotropic_reduction=no_isotropic, find_vector=find_vector,

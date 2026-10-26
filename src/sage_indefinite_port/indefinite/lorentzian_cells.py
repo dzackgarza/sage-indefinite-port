@@ -2561,6 +2561,23 @@ def _source_remove_fraction_vector(vector_over_q) -> tuple[Integer, ...]:
     return tuple(entry // content for entry in integral)
 
 
+def _source_validate_integral_reduction(
+    gram: Matrix_integer_dense,
+    basis: Matrix_integer_dense,
+    reduced: Matrix_integer_dense,
+) -> None:
+    r"""Certify the row-basis congruence consumed by GetIntegralVector_allmeth."""
+    rank = int(gram.nrows())
+    if gram.ncols() != rank or basis.nrows() != rank or basis.ncols() != rank:
+        raise ValueError("integral reduction must use square matrices of the Gram dimension")
+    if reduced.nrows() != rank or reduced.ncols() != rank:
+        raise ValueError("reduced Gram matrix has the wrong dimension")
+    if abs(basis.det()) != 1:
+        raise ArithmeticError("integral reduction basis is not unimodular")
+    if reduced != basis * gram * basis.transpose():
+        raise ArithmeticError("integral reduction basis does not certify its reduced Gram matrix")
+
+
 def _source_integral_vector_allmeth(
     gram: Matrix_integer_dense,
     critical_norm: Rational,
@@ -2595,6 +2612,7 @@ def _source_integral_vector_allmeth(
         basis, reduced = reduction(gram)
     else:
         basis, reduced = reduced_result
+    _source_validate_integral_reduction(gram, basis, reduced)
     return find_vector(gram, basis, reduced, critical_norm, strict_inequality)
 
 
