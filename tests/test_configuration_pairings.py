@@ -38,7 +38,12 @@ def test_hyperbolic_plane_pairings_preserve_integral_change_of_basis() -> None:
     # The backtracking cache must stay bounded even if every column is read;
     # otherwise streaming columns eventually retains the full Gram matrix.
     rows = tuple((i, 1) for i in range(80))
-    pairings = _ConfigurationPairings(rows, gram)
+    streaming = _ConfigurationPairings(rows, gram)
+    for i in range(len(rows)):
+        assert tuple(streaming.column(i)) == tuple(i + j for j in range(len(rows)))
+    assert not streaming._column_cache
+
+    pairings = _ConfigurationPairings(rows, gram, cache_columns=True)
     for i in range(len(rows)):
         assert tuple(pairings.column(i)) == tuple(i + j for j in range(len(rows)))
     assert len(pairings._column_cache) == 64

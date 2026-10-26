@@ -492,16 +492,23 @@ class _ConfigurationPairings:
     entries and columns on request, so the matrix is never stored.
     """
 
-    def __init__(self, rows: tuple[tuple[int, ...], ...], gram: Matrix_integer_dense) -> None:
+    def __init__(
+        self,
+        rows: tuple[tuple[int, ...], ...],
+        gram: Matrix_integer_dense,
+        *,
+        cache_columns: bool = False,
+    ) -> None:
         # lorentzian_perfect.h:1212-1256 uses exact scalar products without
         # a coefficient bound. Sage's integer matrices retain that contract
         # for both configuration equivalence and perfect-form invariants.
         self.rows = matrix(SageZZ, rows)
         self.covectors = self.rows * gram.change_ring(SageZZ)
         # Backtracking repeatedly asks for the same anchor columns while
-        # comparing partial configurations. Keep a small bounded cache of
-        # exact scalar columns: an unbounded cache would eventually retain
-        # the full n-by-n Gram matrix, defeating the row-streaming contract.
+        # comparing partial configurations. Enable a small bounded cache only
+        # for that workload: streaming consumers such as perfect-form hashing
+        # visit each column once and must not retain full-length Python tuples.
+        self._cache_columns = cache_columns
         self._column_cache: dict[int, tuple[int, ...]] = {}
 
     def __len__(self) -> int:
@@ -519,10 +526,12 @@ class _ConfigurationPairings:
         # A one-column integer matrix selects Sage's FLINT multiplication;
         # Matrix._matrix_times_vector_ instead builds and sums every column.
         cached = self._column_cache.get(index)
-        if cached is not None:
+        if self._cache_columns and cached is not None:
             return cached
         covector = self.covectors.matrix_from_rows([index]).transpose()
         result = tuple(int(entry) for entry in (self.rows * covector).column(0))
+        if not self._cache_columns:
+            return result
         if len(self._column_cache) >= 64:
             self._column_cache.pop(next(iter(self._column_cache)))
         self._column_cache[index] = result
@@ -783,7 +792,7 @@ class LorentzianPerfectLocalBackend:
         hash.
         """
         rows = matrix(SageZZ, cell.rows)
-        pairings = _ConfigurationPairings(cell.rows, _gram_matrix(cell.lattice))
+        pairings = _ConfigurationPairings(cell.rows, _gram_matrix(cell.lattice), cache_columns=True)
         norms = pairings.diagonal()
         spectra = []
         for start, block in pairings.blocks():
