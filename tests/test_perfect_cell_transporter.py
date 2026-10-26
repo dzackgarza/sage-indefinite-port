@@ -101,3 +101,22 @@ def test_anchor_signature_extension_inserts_at_sorted_source_position() -> None:
         (1, (11, 21, 31)),
         (0, (12, 22, 32)),
     )
+
+
+def test_facet_incidence_streaming_preserves_exact_orbits() -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+    permutation_orbits = backend.facet_orbit_permutations(cell)
+    isometry_orbits = backend.facet_orbits(cell)
+
+    assert tuple(tuple(facet for facet, _ in orbit) for orbit in permutation_orbits) == tuple(
+        tuple(facet for facet, _ in orbit) for orbit in isometry_orbits
+    )
+    for permutation_orbit, isometry_orbit in zip(permutation_orbits, isometry_orbits, strict=True):
+        for (facet, permutation), (isometry_facet, isometry) in zip(
+            permutation_orbit, isometry_orbit, strict=True
+        ):
+            assert facet == isometry_facet
+            for position, image_position in enumerate(permutation):
+                assert isometry(cell.vector_configuration[position]) == cell.vector_configuration[image_position]
