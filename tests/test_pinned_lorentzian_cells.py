@@ -914,6 +914,14 @@ def test_source_positive_search_best_matches_pinned_termination_state() -> None:
         else:
             raise AssertionError(f"inconsistent positive-search state accepted: {state}")
 
+    for invalid_gram in (matrix(ZZ, 0, 0), matrix(ZZ, [[1, 2], [0, 1]])):
+        try:
+            _source_positive_search_best(invalid_gram, worse, None, None, 0)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"invalid positive-search Gram accepted: {invalid_gram}")
+
 
 def test_source_positive_perturbation_reset_uses_strict_factor_1000() -> None:
     """Match Positivity.h:660, including equality at the threshold."""

@@ -2766,7 +2766,9 @@ def _source_positive_search_best(
     without_improvement: int,
 ) -> tuple[FreeModuleElement[Integer] | None, Integer | None, int, bool]:
     r"""Apply the best-vector and termination transition from Positivity.h:641-657."""
-    if gram.nrows() != gram.ncols() or candidate not in SageZZ**gram.nrows():
+    if gram.nrows() == 0 or gram.nrows() != gram.ncols() or gram != gram.transpose():
+        raise ValueError("positive-search state requires a nonempty symmetric Gram matrix")
+    if candidate not in SageZZ**gram.nrows():
         raise ValueError("positive-search candidate and Gram dimensions must agree")
     if not 0 <= without_improvement <= 500:
         raise ValueError("the no-improvement counter must lie in the pinned range 0..500")
