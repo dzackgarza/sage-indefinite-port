@@ -573,12 +573,6 @@ def _refined_signatures(pairings: _ConfigurationPairings, colours: tuple[int, ..
     return tuple(signatures)
 
 
-def _anchor_profile(pairings: _ConfigurationPairings, colours: tuple[int, ...], anchors: tuple[int, ...]) -> Counter:
-    r"""The multiset of (colour, pairings with the anchors) over the configuration."""
-    columns = np.stack([pairings.column(anchor) for anchor in anchors], axis=1)
-    return Counter((colours[index], tuple(int(entry) for entry in columns[index])) for index in range(len(pairings)))
-
-
 class LorentzianPerfectLocalBackend:
     @cached_method
     def cell_cone(self, cell: LorentzianPerfectCell):
@@ -955,11 +949,6 @@ class LorentzianPerfectLocalBackend:
         # Smith data depend on the selected row subset, not its order.
         # Cache proper partial spans; full-rank leaves instead receive
         # the complete integral transporter certificate.
-        # The source profile depends only on the chosen source anchors,
-        # while a target profile depends only on their ordered images.
-        # Backtracking revisits both across many different partial maps.
-        source_anchor_profiles = {}
-        target_anchor_profiles = {}
         stabilizer_elements: list[LatticeIsometryMethods] = []
         if generators_only:
             positions = {tuple(int(entry) for entry in row): index for index, row in enumerate(source_rows.rows())}
@@ -969,25 +958,11 @@ class LorentzianPerfectLocalBackend:
             subgroup = symmetric.subgroup([])
             group_permutations = []
 
-        def backtrack(images, certified_target_basis=None):
+        empty_source_signatures = tuple((colour, ()) for colour in source_colours)
+        empty_target_signatures = tuple((colour, ()) for colour in target_colours)
+
+        def backtrack(images, source_signatures, target_signatures, certified_target_basis=None):
             nonlocal subgroup
-            if images:
-                # Every extension to a configuration isometry must preserve
-                # the complete coloured multiset of pairings to the already
-                # assigned vectors, not merely the pairings among the basis
-                # images. In particular, a wrong candidate for one basis
-                # image is often excluded before trying another basis image.
-                anchors = tuple(sorted(images.items()))
-                source_anchors = tuple(k for k, _ in anchors)
-                target_anchors = tuple(v for _, v in anchors)
-                if source_anchors not in source_anchor_profiles:
-                    source_anchor_profiles[source_anchors] = _anchor_profile(source_pairings, source_colours, source_anchors)
-                if target_anchors not in target_anchor_profiles:
-                    target_anchor_profiles[target_anchors] = _anchor_profile(target_pairings, target_colours, target_anchors)
-                source_profiles = source_anchor_profiles[source_anchors]
-                target_profiles = target_anchor_profiles[target_anchors]
-                if source_profiles != target_profiles:
-                    return None
             if len(images) == rank:
                 target_basis_integral = certified_target_basis if certified_target_basis is not None else target_rows.matrix_from_rows([images[i] for i in basis])
                 if certified_target_basis is None and abs(target_basis_integral.det()) != source_basis_index:
@@ -1114,7 +1089,23 @@ class LorentzianPerfectLocalBackend:
                     # check, and can dominate the cost of each leaf.
                     target_basis_integral = target_rows.matrix_from_rows([images[i] for i in basis])
                     if abs(target_basis_integral.det()) == source_basis_index:
-                        backtrack(images, target_basis_integral)
+                        # Extend exact per-row signatures by the new anchor.
+                        # Source and target entries use the same position in
+                        # the sorted source-anchor order. Passing these rows
+                        # avoids rebuilding all previous pairing columns.
+                        anchor_position = sum(k < choice for k in images if k != choice)
+                        source_column = source_pairings.column(choice)
+                        target_column = target_pairings.column(j)
+                        next_source_signatures = tuple(
+                            (colour, signature[:anchor_position] + (int(source_column[row]),) + signature[anchor_position:])
+                            for row, (colour, signature) in enumerate(source_signatures)
+                        )
+                        next_target_signatures = tuple(
+                            (colour, signature[:anchor_position] + (int(target_column[row]),) + signature[anchor_position:])
+                            for row, (colour, signature) in enumerate(target_signatures)
+                        )
+                        if Counter(next_source_signatures) == Counter(next_target_signatures):
+                            backtrack(images, next_source_signatures, next_target_signatures, target_basis_integral)
                     del images[choice]
                     continue
                 # The chosen source rows are linearly independent. Every
@@ -1131,11 +1122,25 @@ class LorentzianPerfectLocalBackend:
                 if target_selected not in target_submodule_invariants:
                     target_submodule_invariants[target_selected] = tuple(target_partial.elementary_divisors())
                 if source_submodule_invariants[selected] == target_submodule_invariants[target_selected]:
-                    backtrack(images)
+                    # Extend exact per-row signatures only after the cheaper
+                    # rank and Smith obstructions have passed.
+                    anchor_position = sum(k < choice for k in images if k != choice)
+                    source_column = source_pairings.column(choice)
+                    target_column = target_pairings.column(j)
+                    next_source_signatures = tuple(
+                        (colour, signature[:anchor_position] + (int(source_column[row]),) + signature[anchor_position:])
+                        for row, (colour, signature) in enumerate(source_signatures)
+                    )
+                    next_target_signatures = tuple(
+                        (colour, signature[:anchor_position] + (int(target_column[row]),) + signature[anchor_position:])
+                        for row, (colour, signature) in enumerate(target_signatures)
+                    )
+                    if Counter(next_source_signatures) == Counter(next_target_signatures):
+                        backtrack(images, next_source_signatures, next_target_signatures)
                 del images[choice]
             return None
 
-        backtrack({})
+        backtrack({}, empty_source_signatures, empty_target_signatures)
         return tuple(stabilizer_elements)
 
 

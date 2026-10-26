@@ -10,6 +10,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     LorentzianPerfectCell,
     LorentzianPerfectLocalBackend,
     NONNEGATIVE_SQUARES,
+    ZERO_SQUARES,
 )
 from tests.acceptance.consumer import lattice, rows_of
 
@@ -77,3 +78,15 @@ def test_integral_transporter_of_spanning_perfect_cells() -> None:
     assert abs(transform.det()) == 1
     assert transform * gram * transform.transpose() == gram
     assert set(map(tuple, source_rows * transform)) == set(map(tuple, target_rows))
+
+
+def test_all_integral_transporters_extend_exact_anchor_signatures() -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
+    transporters = LorentzianPerfectLocalBackend().cell_transporter(cell, cell, all_images=True)
+    assert len(transporters) == 2
+    for witness in transporters:
+        transform = matrix(ZZ, rows_of(witness))
+        assert abs(transform.det()) == 1
+        assert transform * gram * transform.transpose() == gram
+        assert set(map(tuple, matrix(ZZ, cell.rows) * transform)) == set(cell.rows)
