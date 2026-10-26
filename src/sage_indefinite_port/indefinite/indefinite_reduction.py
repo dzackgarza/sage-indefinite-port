@@ -443,9 +443,9 @@ def _source_subspace_completion_int(kernel_basis, dimension):
 def _indefinite_reduction(gram):
     """IndefiniteReduction, Indefinite_LLL.h:823-930, radical included.
 
-    Integral row HNF with its unimodular transformation computes a
-    primitive integral nullspace and complementary basis, equivalent to
-    the source NullspaceIntMat/SubspaceCompletionInt construction.
+    The source NullspaceIntMat basis is reduced by alternating direct/dual
+    sublattice LLL, then SubspaceCompletionInt supplies the unimodular
+    complement before the nondegenerate block is reduced.
     """
     if gram.nrows() != gram.ncols() or gram != gram.transpose():
         raise ValueError("a Gram matrix must be square and symmetric")

@@ -256,6 +256,26 @@ def test_source_positive_candidate_lift_uses_transposed_unimodular_basis() -> No
         raise AssertionError("a false reduction norm certificate was accepted")
 
 
+def test_indefinite_reduction_integrates_source_radical_and_completion() -> None:
+    """The reduction orchestration preserves congruence with degenerate forms."""
+    from sage.all import ZZ, matrix
+    from sage_indefinite_port.indefinite.indefinite_reduction import _indefinite_reduction
+
+    forms = (
+        matrix(ZZ, [[1, 0, 1], [0, 1, 1], [1, 1, 2]]),
+        matrix(ZZ, [[1, 0, 0], [0, 0, 0], [0, 0, 0]]),
+        matrix(ZZ, [[0, 1, 0], [1, 0, 0], [0, 0, 0]]),
+        matrix(ZZ, 3, 3, 0),
+    )
+    for gram in forms:
+        basis, reduced = _indefinite_reduction(gram)
+        assert abs(basis.det()) == 1
+        assert reduced == basis * gram * basis.transpose()
+        assert reduced.rank() == gram.rank()
+        radical_rank = gram.nrows() - gram.rank()
+        assert not reduced.matrix_from_rows(range(gram.nrows() - radical_rank, gram.nrows()))
+
+
 def test_source_integer_nullspace_reduces_and_completes_radical() -> None:
     """The production nullspace seam returns the pinned reduced primitive row basis."""
     from sage.all import ZZ, matrix
