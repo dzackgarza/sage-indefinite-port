@@ -124,6 +124,12 @@ def _compute_indefinite_reduction(gram, *, look_for_isotropic=False):
     no_improvement = 0
     while True:
         step, reduced, isotropic = _indefinite_lll(working)
+        if step.nrows() != rank or step.ncols() != rank or abs(step.det()) != 1:
+            raise ArithmeticError("indefinite LLL returned a nonunimodular step")
+        if reduced != step * working * step.transpose():
+            raise ArithmeticError("indefinite LLL returned a false Gram certificate")
+        if isotropic is not None and (isotropic * working.change_ring(SageQQ) * isotropic.column())[0] != 0:
+            raise ArithmeticError("indefinite LLL returned a false isotropic certificate")
         if isotropic is not None and look_for_isotropic:
             original = basis.transpose() * isotropic
             if original.dot_product(gram.change_ring(SageQQ) * original):
@@ -140,8 +146,12 @@ def _compute_indefinite_reduction(gram, *, look_for_isotropic=False):
             no_improvement = 0
             best_norm = current_norm
         perturbation = _random_signed_permutation(rank)
+        if abs(perturbation.det()) != 1:
+            raise ArithmeticError("random signed perturbation is not unimodular")
         basis = perturbation * basis
         working = perturbation * working * perturbation.transpose()
+        if working != basis * gram * basis.transpose():
+            raise ArithmeticError("random signed perturbation broke the accumulated Gram congruence")
 
 
 def _simple_indefinite_reduction(gram):

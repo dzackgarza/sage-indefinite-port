@@ -275,6 +275,26 @@ def test_definite_dual_lll_uses_inverse_of_sage_transform() -> None:
     assert direct_reduced == direct * gram * direct.transpose()
 
 
+def test_compute_indefinite_reduction_rejects_false_lll_certificate(monkeypatch) -> None:
+    """The outer isotropic/restart loop validates each inner reduction result."""
+    from sage.all import ZZ, identity_matrix, matrix
+    import sage_indefinite_port.indefinite.indefinite_reduction as reduction
+
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    identity = identity_matrix(ZZ, 2)
+    monkeypatch.setattr(
+        reduction,
+        "_indefinite_lll",
+        lambda current: (identity, current + identity, None),
+    )
+    try:
+        reduction._compute_indefinite_reduction(gram)
+    except ArithmeticError as error:
+        assert "false Gram certificate" in str(error)
+    else:
+        raise AssertionError("a false inner LLL result entered the restart loop")
+
+
 def test_nondegenerate_reduction_rejects_false_operation_certificate(monkeypatch) -> None:
     """Every candidate reduction is checked before its norm can affect the loop."""
     from sage.all import ZZ, identity_matrix, matrix
