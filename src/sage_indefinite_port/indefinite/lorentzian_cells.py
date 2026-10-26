@@ -692,9 +692,10 @@ class LorentzianPerfectLocalBackend:
         # have been recorded.
         facets = []
         while covector_block:
+            covector_coordinates = tuple(covector.to_vector() for covector in covector_block)
             covector_rows = matrix(
                 SageZZ,
-                [[int(covector.to_vector()(label)) for label in labels] for covector in covector_block],
+                [[int(coordinates(label)) for label in labels] for coordinates in covector_coordinates],
             )
             pairing_block = covector_rows * transposed_ray_rows
             for offset in range(len(covector_block)):
