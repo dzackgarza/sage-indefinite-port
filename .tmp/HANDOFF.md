@@ -1,195 +1,49 @@
-# Cloud handoff — sage-indefinite-port
+# Acceptance repair handoff
 
-This is the tracked entry point for the
-[`implement/lorentzian-completion`](https://github.com/dzackgarza/sage-indefinite-port/tree/implement/lorentzian-completion)
-branch. It is a **single-action locator**, not a coordinator reservation,
-activity journal, substitute for [TODO.md](../TODO.md), or claim that older
-local worktrees or agents are still active. Full ownership and source-fidelity
-rules are in [AGENTS.md](../AGENTS.md).
+## Task
+
+Repair the failed mathematical computations across the frozen acceptance
+families, in the port or in research according to operation ownership.
+The scope is isometry, boundaries, centralizers, isotropic orbits,
+orthogonal groups, reflective lattices, vector orbits and vector stabilizers.
+Preserve perfect-domain correctness and every frozen fixture and assertion.
+
+## Completion condition
+
+Every reported failing case must compute its required result. Re-run cases
+whose runners were lost and cases lacking reports. Final evidence must identify
+the same published port and research revisions across all families. Repairs to
+shared research operations require independent mathematical checks at their
+owners. A passing helper or selected example leaves the other cases open.
+
+The reference failure set is Acceptance
+[40205836899](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40205836899),
+port `5c990fd35f20f194afdcd95e0bb3647118298645`, research
+`f44e76f18e2e9cec43b09a846e2e74bca5fd50f6`.
+Download its `acceptance-summary` and individual shard artifacts for exact case
+IDs and tracebacks. Missing JUnit reports require the job logs as well.
+The repair scope remains open for every listed failing family.
 
 ## Now
 
-**The functional MVP is implemented and published against the pinned
-upstream algorithms.** The latest code revisions are port
-`666d5a50cd3501aca5ee07eb04f7e2bcabfcc672` and research
-`ec87ab857183f91d5fa03ed1a6e2678667763411`. The continuation repaired actual
-public-consumer omissions: Vinberg starting corners, radical Aut/Isom,
-marked and arithmetic stabilizer generators, character-intersection cosets,
-coslice subgroup transporters, and an isotropic transporter that lost its
-isometry parent. Small native Sage examples pass, including the compact
-six-wall hexagon, a nonreflective certificate, radical group images
-12/72/48, and the `SO(2U) cap O_plus(2U)` boundary counts 1/2/2 with
-stabilizer image 72. Exact evidence and limits are in
-[TODO.md](../TODO.md#functional-mvp-evidence-from-the-current-implementation-work).
+Resolve research finite presented-module cardinality through the existing
+invariant-factor and quotient-ring computations. The isometry consumer
+`test_change_of_basis_gives_an_isometric_lattice[ci_indef_U_2U_A3]`
+reaches this operation through `IntegralStructureAction.finite_representation`.
+The same error occurs in group, boundary, isotropic and stabilizer cases.
+Research commit `398887702a` changes quotient cardinality; verify its effect.
+Current research also imports `sage.categories.ordered_fields` from
+`categories/rings/commutative_algebra.py`; the local Sage image cannot import
+that module. Repair this integration defect before evaluating the current
+provider and before changing the provider pin.
 
-Current source-bearing follow-up: pinned #33/#15 perfect-domain CVP construction
-is on `implement/lorentzian-completion`, source revision `b16392f` with the
-standalone source-contract tests in `tests/test_pinned_lorentzian_cells.py`.
-The positive-vector backend extracts
-the pinned `SublatticeBasisReductionKernel`, alternating direct/dual LLL on the
-ordered `NullspaceIntVect` kernel basis with the strict ambient entrywise L1
-stopping rule. The dual basis transform is explicitly integral after inverse-
-transpose, and the exact reduced-Gram identities are checked. Five targeted
-helper regressions and twelve additional deterministic-seed random sublattice
-checks passed, including square and rectangular row-lattice reduction cases.
-Arbitrary pairing bounds are rescaled linearly by `scale` when a rational
-input direction is lowered to its primitive integral representative. The
-initial search bound is a special case: the pinned source initializes it to
-`q(primitive_direction)`. `_search_initial_vectors` now computes that value
-directly from the primitive integral row and the original Gram matrix, then
-passes that row and exact norm into the enumerator with unit scale. This avoids
-reconstructing the integral norm indirectly from the rational direction and
-fraction-clearing multiplier. After that initial bound, the integral search
-increments `MaxScal` by exactly one.
-Targeted regressions cover both the initial conversion and subsequent unit
-increments. The linear-bound correction has been checked against the pinned
-source: `LORENTZ_SearchInitialVectorOpt` initializes `MaxScal` to `q(direction)`,
-`LORENTZ_FindPositiveVectors` bounds `b(candidate,direction)`, and the port
-replaces that rational direction by its primitive integral representative.
-The search-loop regression also verifies that each multiplier
-is visited at most once while the integral bound advances by one between
-shells, including a bound increase that does not yet expose a new multiplier.
-The primitive-direction lowering helper now has its actual two-value contract
-(`TheMult`, primitive integral coordinates) in both its signature and call site,
-with regressions verifying the pinned `RemoveFractionPlusCoef` scale on
-fractional and nonprimitive integral rays, rejecting empty/zero inputs, and
-checking that a direction has the lattice rank at its production call site.
-The corrected helper was directly executed against those regression cases.
-The CVP ordering helper documents
-the exact affine coordinate map `y=P*x+s`;
-its regression checks that target-dependent constant shifts preserve ordering
-and that the transpose gives a different order on the pinned nonsymmetric case.
-The latest targeted regression exercises the production `_ambient_vectors`
-reconstruction on a Lorentzian diagonal form: it verifies the pairing fibre,
-exact isotropic norm, filtering of a disallowed positive-norm candidate, and
-retention of explicitly allowed positive-square vectors. That test
-calls `_PositiveVectorEnumerator._ambient_vectors` explicitly, so it is runnable
-as a normal test module rather than relying on a helper injected by the scratch
-AST harness. A CVP multiplier regression checks that `vectors_at_multiplier(m)`
-passes exactly `m*w` as the target and `m^2*base_bound` as the distance bound.
-The production reconstruction now retains the CVP squared distances alongside
-their coordinate rows, rejects distances outside `[0, m^2*base_bound]`, and
-verifies the exact identity `q(v) = m^2*base_bound - distance` for every
-reconstructed ambient vector.
-This check is mandatory for every `_ambient_vectors` call, not an optional
-production branch. The targeted regression checks the identity on a consistent
-Lorentzian shell and rejects an inconsistent distance supplied by the CVP backend. It also
-rejects negative and over-bound squared distances before reconstruction. The
-CVP regression now deliberately returns two coordinate/distance pairs out of order
-under a nontrivial unimodular enumeration transform, with both candidates retained
-so the asserted output order exercises the sort rather than only its filter.
-After pinned-coordinate sorting, it verifies the distances remain paired with
-their coordinates before allowed-square filtering. The mismatch case uses a zero displacement, ensuring
-its actual ambient norm differs from the deliberately supplied positive distance.
-A separate shell regression now checks that an omitted squared-distance entry is
-rejected instead of silently reconstructing a candidate without its CVP certificate.
-Ambient reconstruction also rejects nonintegral coordinate rows before integer
-conversion, preventing a direct caller from silently truncating an invalid row.
-The targeted CVP regression explicitly exercises this malformed-input path.
-Latest exact-sphere follow-up: port commit `1f7c58210f0a2912c08ab37687b6e4228e97d447` requires exact QQ input for LDL, shares the coordinate sphere recursion with the reduced-lattice path, and caches the dual-LLL Gram's LDL certificate across isotropic multiplier shells. Regression coverage includes corrupted cached factors, inexact Gram rejection, and production isotropic/total dispatch. The targeted full test module cannot be collected on this host because the installed Sage lacks `sage.categories.ordered_fields`; source-level Sage probes and syntax checks are the local evidence only.
+Next, classify and repair the remaining tracebacks: polarized equivariant
+lattice extension subgroups, centralizers, isotropic and reflective branches,
+and PARI failures in vector computations. Follow each actual source call;
+retain the pinned algorithms and the public mathematical objects.
 
-The latest Acceptance run for this source is [40294203502](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40294203502), pending at handoff update. Prior branch runs were cancelled before yielding a usable family verdict; do not count them as accepted. Check the case-level results for this exact commit before asserting completion.
-Ordinary pytest collection currently fails in the local Sage environment at
-`ModuleNotFoundError: sage.categories.ordered_fields`; Python compilation and
-source-level direct helper execution work. The full frozen
-`A_PERFECT` traversal remains the acceptance obligation. The local host lacks
-the provisioned project Sage category dependencies, so standalone helper tests
-do not claim that the public consumer passed locally.
-The current source follow-up also preserves the pinned GAP `NullspaceMat`
-row basis throughout the `GetOnePerfect` affine-nullspace and
-`GetSomeNegativeVector` diagonalization paths. `_pinned_nullspace_matrix`
-uses the left-kernel shape (`0 x nrows` for an empty basis, including the
-`0 x 0` case for zero-row input); exact tests cover basis order, rational and
-rectangular matrices, and 60 deterministic symmetric samples, including empty left kernels for
-rectangular full-row-rank inputs. The negative vector helper has
-source-ordered exact-output cases and 32 deterministic integral-congruence
-samples, each certified by a strictly negative norm. The exact
-`NearestInteger` rule is extracted and tested on positive/negative half-integers
-and non-ties, matching GAP's ties-toward-positive-infinity convention.
-Outside-ray directions are individually fraction-cleared as in the pinned
-`GetOneOutsideRay` caller. These are targeted helper results only; they do not
-replace frozen `A_PERFECT` consumer acceptance.
-
-Do not restart the completed source-dispatch investigation or require the
-full frozen acceptance matrix before recognizing this MVP delivery.
-The retained source-shared extensions are open post-v1 requirements:
-[low rational Witt index, #40](https://github.com/dzackgarza/sage-indefinite-port/issues/40)
-and [degenerate ambient vector markings, #41](https://github.com/dzackgarza/sage-indefinite-port/issues/41).
-Their explicit inputs and outputs remain required. Full frozen regression
-acceptance and #36 refinement also remain open. Fetch current tips before
-any subsequent implementation work; the broader project is not closed by
-the MVP milestone.
-
-## Historical published starting state
-
-- Last source-bearing integration revision before the documentation handoff:
-  `69a456e419a2be42da682039addc5fbe79b861eb` (2026-10-22).
-  Subsequent documentation commits may advance the branch without changing
-  that source. Fetch the **current remote tip** before editing; if a newer
-  source revision has repaired the import defect or changed the selected
-  failure, use the new evidence instead of repeating the old step.
-- [Latest branch Acceptance runs](https://github.com/dzackgarza/sage-indefinite-port/actions/workflows/acceptance.yml):
-  the recorded latest run for `69a456e` is
-  [39832125180](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/39832125180).
-  It was pending when the handoff was prepared; **do not count pending or
-  missing shards as passed**. The newest *completed* run known at the time was
-  [39702377287](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/39702377287)
-  on earlier source and failed. The detailed older source-backed failure
-  classifications above are from `39667397208`.
-- `A_PERFECT` is [accepted at `30799df`](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/39667397208)
-  (all eight shards, 80 cases). Earlier reports show 158 isometry cases with
-  no case-level failure, **but one isometry shard reported failure**, so
-  `A_ISOMETRY` is not recorded as accepted. Other acceptance rows in TODO.md
-  remain open until their evidence is recorded; do not promote diagnostic
-  counts to a closure.
-- The pinned [C++/Julia/GAP sources and papers](../references/vendor/README.md),
-  complete [oracle manifest](../tests/fixtures/oracle_manifest.yaml),
-  [public API](../references/preamble-api.md) and
-  [issue/contract details](https://github.com/dzackgarza/sage-indefinite-port/issues/33)
-  are tracked and available remotely. None of the ignored local
-  `.tmp/probe` files, old shell logs, Zotero copies, local agent-memory vault,
-  or host-specific Docker paths is needed to locate the next source step.
-
-## Remaining work and acceptance
-
-The complete outstanding dependency graph is [TODO.md](../TODO.md) and the
-[issue #4 tree](https://github.com/dzackgarza/sage-indefinite-port/issues/4).
-The functional evidence table records the implemented consumers and provider
-contracts. The low-Witt functionality remains an outstanding requirement in
-the explicit post-v1 backlog, including groups, integral witnesses, vector
-and line classes, stabilizers, transporters and their downstream consumers.
-These are functional implementation requirements, separate from the deferred
-regression, performance, typing and refactoring work.
-**Do not assume an outstanding TODO node means its entire implementation is
-absent.** Identify the precise remaining branch before authoring.
-
-The [October 22 amendment to #33](https://github.com/dzackgarza/sage-indefinite-port/issues/33#issuecomment-6343829665)
-replaces exhaustive-case completion for large families with evidence from a
-**branch-representative sample**. Preserve every frozen fixture and assertion;
-include IDs of cited passing cases, branches exercised, cases/branches not
-covered, their commit, and provider revision. The CI workflow still runs
-full long-tail coverage and may fail outside the cited sample. Successful
-sample coverage does not excuse a known uncited defect, and full-suite failure
-alone is not the completion criterion.
-
-Several *remote* branches contain commits not ancestors of the integration
-tip: `port/cells`, `port/edgewalk`, `port/eichler`, `port/parabolic`,
-`finish/handoff-remainder`, and `implement/pinned-indefinite-reduction`.
-These are **potential source deltas, not active-worker ownership claims**.
-Compare only the code required by the selected obligation, and integrate
-applicable proven work instead of restarting it. The `port/recursive` tip
-was an ancestor of `69a456e` at preparation time.
-
-## Remote execution boundary
-
-Use GitHub Actions for complete acceptance and its retained run artifacts;
-source is published, and CI provisions the image and current `research` main.
-The local `just test-commit` and `just test-push` commands are **syntax-only**
-development checks. These check the staged or outgoing changes respectively,
-not necessarily preexisting syntax defects elsewhere in the source tree.
-
-After a real source correction and a pushed revision, update **Now** to the
-next failing source/consumer with its exact commit and Acceptance run; replace
-the existing action rather than append logs, dated status summaries or a
-second plan. Never end at a probe or a report when the assigned algorithm
-still needs implementation.
+Fetch current branch tips before editing. The inspected port tip is
+`4b066e3f973cc80dad5f774a4b69e14d445cfd29`; its Acceptance run
+`40294291516` was pending. Research main has unrelated dirty scheme source;
+preserve it. Older MVP statements and helper-only evidence do not discharge
+this repair task. Post-v1 requirements remain in TODO.md and issues #40/#41.
