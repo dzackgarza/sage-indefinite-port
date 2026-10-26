@@ -2543,10 +2543,10 @@ def _source_graver_k_basis(dimension: int, degree: int) -> tuple[tuple[int, ...]
     then the source's binary sign-pattern order (−1 before +1). Each vector has
     entries in ``{-1,0,1}`` and support size at most ``degree``.
     """
-    if dimension < 1 or not 1 <= degree <= dimension:
-        raise ValueError("Graver K-basis needs 1 <= degree <= dimension")
+    if dimension < 1 or degree < 1:
+        raise ValueError("Graver K-basis needs positive dimension and degree")
     result: list[tuple[int, ...]] = []
-    for support_size in range(1, degree + 1):
+    for support_size in range(1, min(degree, dimension) + 1):
         for support in combinations(range(dimension), support_size):
             for signs in product((-1, 1), repeat=support_size):
                 row = [0] * dimension

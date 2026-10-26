@@ -467,6 +467,16 @@ def test_source_indefinite_short_positive_vector_integrates_pinned_search_loop()
     assert short_result == (ZZ(1), ZZ(0))
     assert len(short_calls) == 1
 
+    # The source always requests degree two, even for a one-dimensional form;
+    # BuildSet(1, 2) simply has no support of size two.
+    rank_one = matrix(ZZ, [[1]])
+    rank_one_result = _source_indefinite_short_positive_vector(
+        rank_one,
+        lambda _perturbed: (ZZ(1),),
+        lambda dimension: identity_matrix(ZZ, dimension),
+    )
+    assert rank_one_result == (ZZ(1),)
+
     # Repeated source elementary perturbations grow a shear until the strict
     # 1000x L1 threshold resets the accumulated frame.
     reset_gram = matrix(ZZ, [[10, 0], [0, 10]])
@@ -560,10 +570,10 @@ def test_source_graver_k_basis_matches_support_and_sign_enumeration() -> None:
     from itertools import combinations, product
 
     for dimension in range(1, 6):
-        for degree in range(1, dimension + 1):
+        for degree in range(1, dimension + 3):
             basis = _source_graver_k_basis(dimension, degree)
             expected = []
-            for size in range(1, degree + 1):
+            for size in range(1, min(degree, dimension) + 1):
                 for support in combinations(range(dimension), size):
                     for signs in product((-1, 1), repeat=size):
                         row = [0] * dimension
@@ -571,10 +581,10 @@ def test_source_graver_k_basis_matches_support_and_sign_enumeration() -> None:
                             row[coordinate] = sign
                         expected.append(tuple(row))
             assert basis == tuple(expected)
-            assert len(basis) == sum(2**size * __import__('math').comb(dimension, size) for size in range(1, degree + 1))
+            assert len(basis) == sum(2**size * __import__('math').comb(dimension, size) for size in range(1, min(degree, dimension) + 1))
             assert len(set(basis)) == len(basis)
 
-    for dimension, degree in ((0, 1), (2, 0), (2, 3)):
+    for dimension, degree in ((0, 1), (2, 0)):
         try:
             _source_graver_k_basis(dimension, degree)
         except ValueError:
