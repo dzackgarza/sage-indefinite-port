@@ -45,7 +45,10 @@ def test_hyperbolic_plane_pairings_preserve_integral_change_of_basis() -> None:
 
     cached_pairings = _ConfigurationPairings(rows, gram, cache_columns=True)
     for start, block in cached_pairings.blocks():
-        assert tuple(block[0]) == tuple(start + j for j in range(len(rows)))
+        assert 0 < len(block) <= 16
+        assert matrix(ZZ, block.tolist()) == matrix(
+            ZZ, [[i + j for j in range(len(rows))] for i in range(start, start + len(block))]
+        )
     assert not cached_pairings._column_cache
 
     pairings = _ConfigurationPairings(rows, gram, cache_columns=True)
