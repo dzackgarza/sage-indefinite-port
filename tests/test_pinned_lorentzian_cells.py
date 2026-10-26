@@ -1855,6 +1855,38 @@ def test_fixed_distance_basis_inverse_is_exact_and_two_sided() -> None:
             raise AssertionError("an invalid fixed-distance basis inverse was accepted")
 
 
+def test_bounded_distance_dual_lll_solutions_match_exact_brute_force() -> None:
+    """The PARI-free bounded CVP recursion preserves exact distances and frame order."""
+    from itertools import product
+
+    from sage.all import QQ, ZZ, matrix, vector
+    from sage_indefinite_port.indefinite.lorentzian_cells import (
+        _bounded_distance_dual_lll_solutions,
+        _positive_ldl_factorization,
+    )
+
+    gram = matrix(QQ, [[2, 1], [1, 3]])
+    target = (QQ(1) / 2, QQ(1) / 3)
+    bound = QQ(4)
+    dual = matrix(ZZ, [[1, 0], [-1, 1]])
+    order = dual.inverse().transpose()
+    reduced_gram = dual * gram * dual.transpose()
+    factorization = _positive_ldl_factorization(reduced_gram)
+    actual = _bounded_distance_dual_lll_solutions(
+        gram, target, bound, dual, order, ldl_factorization=factorization
+    )
+    actual_by_point = dict(actual)
+    expected = {}
+    for coordinates in product(range(-4, 5), repeat=2):
+        difference = vector(QQ, coordinates) - vector(QQ, target)
+        distance = (difference * gram * difference.column())[0]
+        if distance <= bound:
+            expected[tuple(ZZ(entry) for entry in coordinates)] = distance
+    assert actual_by_point == expected
+    assert len(actual) == len(actual_by_point)
+    assert all(distance == expected[coordinates] for coordinates, distance in actual)
+
+
 def test_positive_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() -> None:
     """The fixed-distance sphere uses an exact positive-definite LDL certificate."""
     from sage.all import QQ, RDF, matrix, diagonal_matrix
@@ -1975,3 +2007,44 @@ def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
             assert "outside its exact squared-distance bound" in str(error)
         else:
             raise AssertionError(f"an out-of-bound CVP distance was accepted: {invalid_distance}")
+
+    # Only a PARI stack overflow triggers the exact bounded-LDL fallback; its
+    # target, bound, and inverse-transpose frame are the same pinned CVP data.
+    class FakePariError(Exception):
+        pass
+
+    enumerator.enumeration_transform = matrix(ZZ, [[1, 2], [0, 1]])
+    engine.engine_gram_q = identity_matrix(QQ, 2)
+    engine._engine_target_coordinates = lambda target: tuple(QQ(entry) for entry in target)
+    engine._engine_scalar = lambda scalar: QQ(scalar)
+    enumerator.scaled_max = ZZ(100)
+    enumerator.allowed_squares = {ZZ(79), ZZ(75)}
+    calls = []
+    original_bounded = cells._bounded_distance_dual_lll_solutions
+    original_element = cells._owned_engine_element
+    original_rational = cells._owned_rational
+    original_pari_error = cells.PariError
+    try:
+        cells.PariError = FakePariError
+
+        def stack_overflow(target, bound):
+            raise FakePariError("the PARI stack overflows")
+
+        def bounded(gram, target, bound, dual, order, *, ldl_factorization=None):
+            calls.append((gram, target, bound, dual, order, ldl_factorization))
+            return (((-3, 0), QQ(1)), ((-2, 1), QQ(5)))
+
+        engine.close_vector_coordinates = stack_overflow
+        cells._bounded_distance_dual_lll_solutions = bounded
+        cells._owned_engine_element = lambda field, value: value
+        cells._owned_rational = lambda lattice, value, field: value
+        assert enumerator.vectors_at_multiplier(4) == ((4, 1, 0), (4, 2, 1))
+    finally:
+        cells._bounded_distance_dual_lll_solutions = original_bounded
+        cells._owned_engine_element = original_element
+        cells._owned_rational = original_rational
+        cells.PariError = original_pari_error
+    assert len(calls) == 1
+    assert calls[0][1:3] == ((-QQ(4), QQ.zero()), QQ(80))
+    assert calls[0][3] == enumerator.enumeration_transform
+    assert calls[0][4] == enumerator.enumeration_order_transform

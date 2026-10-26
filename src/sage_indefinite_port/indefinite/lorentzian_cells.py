@@ -14,6 +14,7 @@ from random import choice, randrange, shuffle
 from typing import Literal, cast, overload
 
 import numpy as np
+from cypari2.handle_error import PariError
 from dzack_research.preamble.all import FramedFreeModules, Lattices
 from dzack_research.preamble.categories.definite_lattices import LatticeReduction, _ExactCVPEngine
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
@@ -2178,6 +2179,75 @@ def _fixed_distance_coordinate_solutions(
     return tuple(solutions)
 
 
+def _bounded_distance_coordinate_solutions(
+    gram: Matrix_rational_dense,
+    target: tuple[Rational, ...],
+    squared_distance_bound: Rational,
+    ldl_factorization: tuple[list[list[Rational]], list[Rational]] | None = None,
+) -> tuple[tuple[tuple[Integer, ...], Rational], ...]:
+    r"""Enumerate every integer point in an exact rational-center ellipsoid.
+
+    This is the bounded-CVP operation needed by positive-norm Lorentzian
+    shells. It uses exact LDL pruning rather than the provider's PARI-backed
+    ``close_vectors`` path, whose stack can grow beyond its configured limit
+    on the published E10 vector-orbit cases. Every returned distance is the
+    exact value of ``(x-target)^T gram (x-target)``.
+    """
+    if gram.nrows() != gram.ncols() or gram != gram.transpose():
+        raise ValueError("bounded-distance coordinate enumeration requires a symmetric square Gram matrix")
+    if gram.base_ring() is not SageQQ:
+        raise ValueError("bounded-distance coordinate enumeration requires an exact QQ Gram matrix")
+    rank = int(gram.nrows())
+    if len(target) != rank or any(not isinstance(entry, (int, Integer, Rational)) for entry in target):
+        raise ValueError("bounded-distance target must have exact rational coordinates of the Gram dimension")
+    if not isinstance(squared_distance_bound, (int, Integer, Rational)):
+        raise ValueError("bounded squared distance must be exact rational data")
+    target = tuple(SageQQ(entry) for entry in target)
+    bound = SageQQ(squared_distance_bound)
+    if bound < 0:
+        raise ValueError("bounded squared distance must be nonnegative")
+    if rank == 0:
+        if ldl_factorization is not None:
+            _validate_fixed_distance_ldl_factorization(gram, ldl_factorization)
+        return (((), SageQQ.zero()),)
+    factorization = ldl_factorization if ldl_factorization is not None else _positive_ldl_factorization(gram)
+    lower, diagonal = factorization
+    _validate_fixed_distance_ldl_factorization(gram, factorization)
+    zero = SageQQ.zero()
+    coordinates = [0] * rank
+    solutions: list[tuple[tuple[Integer, ...], Rational]] = []
+
+    def enumerate_coordinate(index: int, accumulated: Rational) -> None:
+        if index < 0:
+            solutions.append((tuple(SageZZ(entry) for entry in coordinates), accumulated))
+            return
+        remaining = bound - accumulated
+        if remaining < 0:
+            return
+        center = target[index] - sum(
+            (lower[later][index] * (coordinates[later] - target[later]) for later in range(index + 1, rank)),
+            zero,
+        )
+        squared_radius = remaining / diagonal[index]
+        radius = isqrt(int(squared_radius.numerator() // squared_radius.denominator()))
+        floor_center = int(center.numerator() // center.denominator())
+        ceil_center = -int((-center).numerator() // (-center).denominator())
+        first = ceil_center - radius - 1
+        last = floor_center + radius + 1
+        while first <= last and diagonal[index] * (SageQQ(first) - center) ** 2 > remaining:
+            first += 1
+        while first <= last and diagonal[index] * (SageQQ(last) - center) ** 2 > remaining:
+            last -= 1
+        for coordinate in range(first, last + 1):
+            term = diagonal[index] * (SageQQ(coordinate) - center) ** 2
+            if term <= remaining:
+                coordinates[index] = coordinate
+                enumerate_coordinate(index - 1, accumulated + term)
+
+    enumerate_coordinate(rank - 1, zero)
+    return tuple(solutions)
+
+
 def _fixed_distance_dual_lll_solutions(
     gram: Matrix_rational_dense,
     target: tuple[Rational, ...],
@@ -2225,6 +2295,51 @@ def _fixed_distance_dual_lll_solutions(
         original_column = inverse_basis * vector(SageZZ, coordinates).column()
         if any(entry.denominator() != 1 for entry in original_column.list()):
             raise ArithmeticError("dual-LLL sphere reconstruction produced nonintegral coordinates")
+        original = tuple(SageZZ(original_column[row, 0]) for row in range(rank))
+        solutions.append((original, distance))
+    return tuple(sorted(solutions, key=lambda item: _dual_lll_enumeration_key(item[0], enumeration_order_transform)))
+
+
+def _bounded_distance_dual_lll_solutions(
+    gram: Matrix_rational_dense,
+    target: tuple[Rational, ...],
+    squared_distance_bound: Rational,
+    dual_transform: Matrix_integer_dense,
+    enumeration_order_transform: Matrix_integer_dense,
+    ldl_factorization: tuple[list[list[Rational]], list[Rational]] | None = None,
+) -> tuple[tuple[tuple[Integer, ...], Rational], ...]:
+    """Enumerate a bounded CVP ellipsoid in the pinned dual-LLL frame."""
+    if gram.nrows() != gram.ncols() or gram.base_ring() is not SageQQ:
+        raise ValueError("bounded-distance dual-LLL enumeration requires a square exact QQ Gram matrix")
+    rank = int(gram.nrows())
+    if len(target) != rank or any(not isinstance(entry, (int, Integer, Rational)) for entry in target):
+        raise ValueError("bounded-distance dual-LLL target must have exact rational coordinates of the Gram dimension")
+    if not isinstance(squared_distance_bound, (int, Integer, Rational)) or SageQQ(squared_distance_bound) < 0:
+        raise ValueError("bounded-distance dual-LLL bound must be exact and nonnegative")
+    for transform in (dual_transform, enumeration_order_transform):
+        if transform.base_ring() not in (SageZZ, SageQQ) or any(
+            not isinstance(entry, (int, Integer, Rational)) or SageQQ(entry).denominator() != 1
+            for entry in transform.list()
+        ):
+            raise ValueError("bounded-distance dual-LLL transforms must have exact integer entries")
+    if dual_transform.nrows() != rank or dual_transform.ncols() != rank:
+        raise ValueError("the bounded-distance dual-LLL transform has incorrect dimensions")
+    if enumeration_order_transform.nrows() != rank or enumeration_order_transform.ncols() != rank:
+        raise ValueError("the bounded-distance enumeration-order transform has incorrect dimensions")
+    if dual_transform * enumeration_order_transform.transpose() != identity_matrix(SageZZ, rank):
+        raise ArithmeticError("the bounded-distance dual-LLL transforms are not inverse-transposes")
+    reduced_gram = dual_transform * gram * dual_transform.transpose()
+    transformed_target_column = enumeration_order_transform * vector(SageQQ, target).column()
+    transformed_target = tuple(SageQQ(transformed_target_column[i, 0]) for i in range(rank))
+    reduced_solutions = _bounded_distance_coordinate_solutions(
+        reduced_gram, transformed_target, squared_distance_bound, ldl_factorization=ldl_factorization
+    )
+    inverse_basis = dual_transform.transpose()
+    solutions = []
+    for coordinates, distance in reduced_solutions:
+        original_column = inverse_basis * vector(SageZZ, coordinates).column()
+        if any(entry.denominator() != 1 for entry in original_column.list()):
+            raise ArithmeticError("dual-LLL bounded-sphere reconstruction produced nonintegral coordinates")
         original = tuple(SageZZ(original_column[row, 0]) for row in range(rank))
         solutions.append((original, distance))
     return tuple(sorted(solutions, key=lambda item: _dual_lll_enumeration_key(item[0], enumeration_order_transform)))
@@ -3430,9 +3545,10 @@ class _PositiveVectorEnumerator:
         )
         # Keep the same exact coordinate Gram, target, and squared-distance
         # bound as close_vectors. Isotropic mode uses the dedicated exact-sphere
-        # recursion; total mode uses the PARI-backed bounded-CVP engine. Both
-        # stay at the coordinate level without allocating owned lattice vectors
-        # or indexed-family objects for intermediate shell candidates.
+        # recursion; total mode keeps PARI-backed bounded CVP and falls back to
+        # exact LDL pruning only when PARI's stack overflows. Both stay at the
+        # coordinate level without allocating owned lattice vectors or indexed
+        # families for intermediate shell candidates.
         if self.allowed_squares == ZERO_SQUARES:
             # The pinned solver.fixed_dist_vectors branch enumerates the
             # exact sphere, not the full ellipsoid followed by a norm filter.
@@ -3447,7 +3563,23 @@ class _PositiveVectorEnumerator:
                 ldl_factorization=self.fixed_distance_ldl_factorization,
             )
         else:
-            distances = self.cvp_engine.close_vector_coordinates(target, bound)
+            try:
+                distances = self.cvp_engine.close_vector_coordinates(target, bound)
+            except PariError as error:
+                # Keep the pinned PARI CVP as the normal path. Its default
+                # stack overflows on several published E10 vector-orbit cases;
+                # only that specific failure falls back to exact bounded LDL
+                # enumeration in the same dual-LLL frame and source order.
+                if "stack overflows" not in str(error):
+                    raise
+                distances = _bounded_distance_dual_lll_solutions(
+                    self.cvp_engine.engine_gram_q,
+                    self.cvp_engine._engine_target_coordinates(target),
+                    self.cvp_engine._engine_scalar(bound),
+                    self.enumeration_transform,
+                    self.enumeration_order_transform,
+                    ldl_factorization=self.fixed_distance_ldl_factorization,
+                )
             # CVPSolver's dual-LLL map gives recursive coordinates y=P*x;
             # the shared key follows computeIt_Gen_Kernel's outer-to-inner order.
             distances = tuple(sorted(distances, key=lambda item: _dual_lll_enumeration_key(item[0], self.enumeration_order_transform)))
