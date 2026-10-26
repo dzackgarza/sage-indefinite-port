@@ -20,6 +20,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _source_random_matrix_perturbation,
     _source_graver_k_basis,
     _source_direct_graver_improvement,
+    _source_should_reset_positive_perturbation,
     _pinned_nullspace_matrix,
     _pinned_diagonalize_symmetric_matrix,
     _integral_positive_vector_allmeth,
@@ -380,6 +381,22 @@ def test_source_random_perturbations_are_the_pinned_unimodular_matrices() -> Non
             pass
         else:
             raise AssertionError(f"invalid perturbation accepted: {invalid}")
+
+
+def test_source_positive_perturbation_reset_uses_strict_factor_1000() -> None:
+    """Match Positivity.h:660, including equality at the threshold."""
+    assert not _source_should_reset_positive_perturbation(0, 0)
+    assert not _source_should_reset_positive_perturbation(1000, 1)
+    assert _source_should_reset_positive_perturbation(1001, 1)
+    assert not _source_should_reset_positive_perturbation(10000, 10)
+    assert _source_should_reset_positive_perturbation(10001, 10)
+    for norms in ((-1, 1), (1, -1)):
+        try:
+            _source_should_reset_positive_perturbation(*norms)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"negative L1 norm accepted: {norms}")
 
 
 def test_source_direct_graver_improvement_matches_literal_ordered_passes() -> None:

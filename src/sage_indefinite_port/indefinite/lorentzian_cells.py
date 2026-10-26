@@ -2582,6 +2582,13 @@ def _source_direct_graver_improvement(
             return improved
 
 
+def _source_should_reset_positive_perturbation(perturbed_l1: int, original_l1: int) -> bool:
+    r"""Apply Positivity.h:660's strict 1000-times L1 reset threshold."""
+    if perturbed_l1 < 0 or original_l1 < 0:
+        raise ValueError("entrywise Gram L1 norms must be nonnegative")
+    return perturbed_l1 > 1000 * original_l1
+
+
 def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]:
     r"""Pinned polyhedral_common@a55fcb7b src_isotropy/Positivity.h:565-673,
     ``INDEFINITE_GetShortPositiveVector``.
@@ -2622,9 +2629,9 @@ def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]
             if best_vector is None:
                 raise ArithmeticError("the positive-vector search has no best vector")
             return tuple(SageQQ(entry) for entry in best_vector)
-        # Lorentzian.g:1090-1093 resets the random frame only at 10000 times
-        # the original entrywise L1 norm, not at 1000.
-        if sum(abs(entry) for entry in perturbed_gram.list()) > 10000 * gram_l1:
+        # Positivity.h:660 resets at a strict factor of 1000.
+        perturbed_l1 = sum(abs(entry) for entry in perturbed_gram.list())
+        if _source_should_reset_positive_perturbation(perturbed_l1, gram_l1):
             perturbation = identity_matrix(SageZZ, rank)
         perturbation *= _source_random_matrix_perturbation(rank)
 
