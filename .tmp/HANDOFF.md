@@ -23,7 +23,7 @@ stabilizer image 72. Exact evidence and limits are in
 [TODO.md](../TODO.md#functional-mvp-evidence-from-the-current-implementation-work).
 
 Current source-bearing follow-up: pinned #33/#15 perfect-domain CVP construction
-is on `implement/lorentzian-completion`, source revision `589dbc1` with the
+is on `implement/lorentzian-completion`, source revision `1b8c1a3` with the
 standalone source-contract tests in `tests/test_pinned_lorentzian_cells.py`.
 The positive-vector backend extracts
 the pinned `SublatticeBasisReductionKernel`, alternating direct/dual LLL on the
@@ -94,6 +94,17 @@ source-level direct helper execution work. The full frozen
 `A_PERFECT` traversal remains the acceptance obligation. The local host lacks
 the provisioned project Sage category dependencies, so standalone helper tests
 do not claim that the public consumer passed locally.
+The current source follow-up also preserves the pinned GAP `NullspaceMat`
+row basis throughout the `GetOnePerfect` affine-nullspace and
+`GetSomeNegativeVector` diagonalization paths. `_pinned_nullspace_matrix`
+uses the left-kernel shape (`0 x nrows` for an empty basis, including the
+`0 x 0` case for zero-row input); exact tests cover basis order, rational and
+rectangular matrices, and 60 deterministic symmetric samples. The negative
+vector helper has source-ordered exact-output cases and 32 deterministic
+integral-congruence samples, each certified by a strictly negative norm.
+Outside-ray directions are individually fraction-cleared as in the pinned
+`GetOneOutsideRay` caller. These are targeted helper results only; they do not
+replace frozen `A_PERFECT` consumer acceptance.
 
 Do not restart the completed source-dispatch investigation or require the
 full frozen acceptance matrix before recognizing this MVP delivery.
