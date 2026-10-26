@@ -12,6 +12,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _pinned_positive_gcd_dot,
     _pinned_sublattice_basis_reduction,
     _primitive_integral_direction,
+    _source_mid_value,
     _quadratic_descent_prefix,
     _upper_bound,
 )
@@ -99,6 +100,46 @@ def test_pinned_positive_gcd_dot_matches_exact_coefficients() -> None:
         divisor, coefficients = _pinned_positive_gcd_dot(values)
         assert (divisor, coefficients) == expected
         assert sum(a * b for a, b in zip(values, coefficients, strict=True)) == divisor
+
+
+def test_source_mid_value_matches_pinned_continued_fraction_sequence() -> None:
+    """Compare the selected middle value with every pinned CF convergent."""
+    from fractions import Fraction
+
+    from sage.all import QQ
+
+    def source_continued_fraction(value: Fraction, level: int) -> Fraction:
+        if value.denominator == 1:
+            return value
+        residue = value.numerator % value.denominator
+        integer = value - Fraction(residue, value.denominator)
+        if level == 0:
+            return integer
+        return integer + 1 / source_continued_fraction(
+            Fraction(value.denominator, residue), level - 1
+        )
+
+    for lower_num in range(-5, 6):
+        for lower_den in range(1, 6):
+            lower = Fraction(lower_num, lower_den)
+            for width_num in range(1, 8):
+                for width_den in range(1, 6):
+                    upper = lower + Fraction(width_num, width_den)
+                    midpoint = (lower + upper) / 2
+                    target_low = (2 * lower + upper) / 3
+                    target_high = (lower + 2 * upper) / 3
+                    expected = None
+                    for level in range(32):
+                        candidate = source_continued_fraction(midpoint, level)
+                        if target_low <= candidate <= target_high:
+                            expected = candidate
+                            break
+                        if candidate == midpoint:
+                            break
+                    assert expected is not None
+                    actual = _source_mid_value(QQ(lower.numerator) / lower.denominator,
+                                               QQ(upper.numerator) / upper.denominator)
+                    assert actual == QQ(expected.numerator) / expected.denominator, (lower, upper, expected, actual)
 
 
 def test_quadratic_descent_prefix_matches_pinned_get_alpha() -> None:
