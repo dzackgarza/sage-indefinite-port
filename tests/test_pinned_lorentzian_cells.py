@@ -39,6 +39,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _pinned_independent_column_indices,
     _outside_ray_directions,
     _quadratic_descent_prefix,
+    _negative_ldl_factorization,
     _upper_bound,
 )
 
@@ -1539,6 +1540,38 @@ def test_initial_vector_search_advances_integral_bound_without_rescanning() -> N
     # then one. The bound advances by one and multiplier one is not rescanned.
     assert visited == [(QQ(2), 1), (QQ(4), 2)]
     assert bounds == [QQ(2), QQ(3), QQ(4)]
+
+
+def test_negative_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() -> None:
+    """The fixed-distance sphere uses an exact positive-definite LDL certificate."""
+    from sage.all import QQ, matrix, diagonal_matrix
+
+    forms = (
+        matrix(QQ, [[1]]),
+        matrix(QQ, [[2, 1], [1, 3]]),
+        matrix(QQ, [[QQ(5) / 2, QQ(1) / 3], [QQ(1) / 3, 2]]),
+        matrix(QQ, [[4, 1, 2], [1, 3, 0], [2, 0, 5]]),
+        diagonal_matrix(QQ, [QQ(1) / 2, 3, 7]),
+    )
+    for gram in forms:
+        lower, diagonal = _negative_ldl_factorization(gram)
+        lower_matrix = matrix(QQ, lower)
+        diagonal_matrix_ = diagonal_matrix(QQ, diagonal)
+        assert lower_matrix.is_lower_triangular()
+        assert all(pivot > 0 for pivot in diagonal)
+        assert lower_matrix * diagonal_matrix_ * lower_matrix.transpose() == gram
+
+    for gram in (
+        matrix(QQ, [[0]]),
+        matrix(QQ, [[1, 2], [2, 1]]),
+        matrix(QQ, [[1, 0], [0, -1]]),
+    ):
+        try:
+            _negative_ldl_factorization(gram)
+        except ArithmeticError as error:
+            assert "negative-definite lattice" in str(error)
+        else:
+            raise AssertionError(f"non-positive-definite Gram matrix accepted: {gram}")
 
 
 def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
