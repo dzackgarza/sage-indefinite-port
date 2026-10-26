@@ -2188,6 +2188,45 @@ def _fixed_distance_coordinate_solutions(
     return tuple(solutions)
 
 
+def _fixed_distance_dual_lll_solutions(
+    gram: Matrix_rational_dense,
+    target: tuple[Rational, ...],
+    squared_distance: Rational,
+    dual_transform: Matrix_integer_dense,
+    enumeration_order_transform: Matrix_integer_dense,
+) -> tuple[tuple[tuple[Integer, ...], Rational], ...]:
+    """Enumerate an exact sphere in the pinned dual-LLL frame, then reconstruct.
+
+    If ``Q`` is the dual transform and ``P`` the recursive coordinate map,
+    the pinned identity is ``Q * P^T = I`` and the reduced Gram is ``Q G Q^T``.
+    Enumerating in that frame preserves the source's reduced-basis pruning;
+    returned coordinates are transported back by ``Q^T`` and ordered by
+    their original pinned recursive coordinates ``P*x``.
+    """
+    rank = int(gram.nrows())
+    if dual_transform.nrows() != rank or dual_transform.ncols() != rank:
+        raise ValueError("the fixed-distance dual-LLL transform has incorrect dimensions")
+    if enumeration_order_transform.nrows() != rank or enumeration_order_transform.ncols() != rank:
+        raise ValueError("the fixed-distance enumeration-order transform has incorrect dimensions")
+    if dual_transform * enumeration_order_transform.transpose() != identity_matrix(SageZZ, rank):
+        raise ArithmeticError("the fixed-distance dual-LLL transforms are not inverse-transposes")
+    reduced_gram = dual_transform * gram * dual_transform.transpose()
+    transformed_target_column = enumeration_order_transform * vector(SageQQ, target).column()
+    transformed_target = tuple(SageQQ(transformed_target_column[i, 0]) for i in range(rank))
+    reduced_solutions = _fixed_distance_coordinate_solutions(
+        reduced_gram, transformed_target, squared_distance
+    )
+    inverse_basis = dual_transform.transpose()
+    solutions = []
+    for coordinates, distance in reduced_solutions:
+        original_column = inverse_basis * vector(SageZZ, coordinates).column()
+        if any(entry.denominator() != 1 for entry in original_column.list()):
+            raise ArithmeticError("dual-LLL sphere reconstruction produced nonintegral coordinates")
+        original = tuple(SageZZ(original_column[row, 0]) for row in range(rank))
+        solutions.append((original, distance))
+    return tuple(sorted(solutions, key=lambda item: _dual_lll_enumeration_key(item[0], enumeration_order_transform)))
+
+
 def _fixed_distance_vectors(
     lattice: Lattices.ParentMethods,
     target: FramedFreeModules.ElementMethods,
@@ -3412,17 +3451,18 @@ class _PositiveVectorEnumerator:
             # exact sphere, not the full ellipsoid followed by a norm filter.
             # Keep its recursive coordinate order by applying the same dual-
             # LLL ordering key used for the at-most-distance branch.
-            distances = _fixed_distance_coordinate_solutions(
+            distances = _fixed_distance_dual_lll_solutions(
                 self.cvp_engine.engine_gram_q,
                 self.cvp_engine._engine_target_coordinates(target),
                 self.cvp_engine._engine_scalar(bound),
+                self.enumeration_transform,
+                self.enumeration_order_transform,
             )
         else:
             distances = self.cvp_engine.close_vector_coordinates(target, bound)
-        # CVPSolver's dual-LLL map gives recursive coordinates y=P*x;
-        # the shared key follows computeIt_Gen_Kernel's outer-to-inner order.
-        transform = self.enumeration_order_transform
-        distances = tuple(sorted(distances, key=lambda item: _dual_lll_enumeration_key(item[0], transform)))
+            # CVPSolver's dual-LLL map gives recursive coordinates y=P*x;
+            # the shared key follows computeIt_Gen_Kernel's outer-to-inner order.
+            distances = tuple(sorted(distances, key=lambda item: _dual_lll_enumeration_key(item[0], self.enumeration_order_transform)))
         close_coordinates = tuple(coordinates for coordinates, _square in distances)
         close_squares = tuple(square for _coordinates, square in distances)
         return self._ambient_vectors(multiplier, close_coordinates, close_squares)

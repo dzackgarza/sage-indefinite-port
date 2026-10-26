@@ -41,6 +41,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _quadratic_descent_prefix,
     _negative_ldl_factorization,
     _fixed_distance_coordinate_solutions,
+    _fixed_distance_dual_lll_solutions,
     _validate_fixed_distance_ldl_factorization,
     _validate_fixed_distance_basis_inverse,
     _upper_bound,
@@ -1597,6 +1598,28 @@ def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
             pass
         else:
             raise AssertionError("invalid fixed-distance sphere input was accepted")
+
+
+def test_fixed_distance_dual_lll_frame_reconstructs_exact_sphere() -> None:
+    """Exact sphere pruning uses the reduced dual-LLL Gram and reconstructs the original frame."""
+    from itertools import product
+    from sage.all import QQ, ZZ, identity_matrix, matrix, vector
+
+    gram = identity_matrix(QQ, 3)
+    target = (QQ(1) / 2, QQ(0), QQ(0))
+    bound = QQ(1) / 4
+    order = matrix(ZZ, [[1, 2, 0], [0, 1, 1], [0, 0, 1]])
+    dual = order.inverse().transpose()
+    actual = _fixed_distance_dual_lll_solutions(gram, target, bound, dual, order)
+    got = {coordinates for coordinates, distance in actual if distance == bound}
+    assert len(got) == len(actual)
+    expected = set()
+    for coordinates in product(range(-4, 5), repeat=3):
+        delta = tuple(QQ(coordinates[i]) - target[i] for i in range(3))
+        if sum((delta[i] * gram[i, j] * delta[j] for i in range(3) for j in range(3)), QQ(0)) == bound:
+            expected.add(tuple(ZZ(value) for value in coordinates))
+    assert got == expected
+    assert tuple(actual) == tuple(sorted(actual, key=lambda item: tuple((order * vector(ZZ, item[0]).column())[i, 0] for i in reversed(range(3)))))
 
 
 def test_fixed_distance_basis_inverse_is_exact_and_two_sided() -> None:
