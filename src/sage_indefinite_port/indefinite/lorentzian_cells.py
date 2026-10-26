@@ -2579,14 +2579,21 @@ def _source_integral_vector_allmeth(
         raise ValueError("the Gram matrix must be square")
     critical_norm = SageQQ(critical_norm)
     isotropic_fine = critical_norm < 0 if strict_inequality else critical_norm <= 0
+    reduced_result = None
     if isotropic_fine:
-        _basis, _reduced, isotropic = isotropic_reduction(gram, look_for_isotropic=True)
+        basis, reduced, isotropic = isotropic_reduction(gram, look_for_isotropic=True)
         if isotropic is not None:
             integral = vector(SageZZ, _source_remove_fraction_vector(isotropic))
             if not any(integral) or (integral * gram * integral.column())[0] != 0:
                 raise ArithmeticError("isotropic reduction did not return a nonzero integral isotropic vector")
             return tuple(integral)
-    basis, reduced = reduction(gram)
+        # ComputeReductionIndefinite already returned the exact reduced pair
+        # used by the source fallback; do not run IndefiniteReduction again.
+        reduced_result = basis, reduced
+    if reduced_result is None:
+        basis, reduced = reduction(gram)
+    else:
+        basis, reduced = reduced_result
     return find_vector(gram, basis, reduced, critical_norm, strict_inequality)
 
 

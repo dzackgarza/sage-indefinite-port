@@ -431,6 +431,18 @@ def test_source_integral_vector_allmeth_selects_isotropic_shortcut_exactly() -> 
     assert negative_critical == (ZZ(1), ZZ(0))
     assert calls == ["isotropic"]
 
+    calls.clear()
+    def no_isotropic(_gram, *, look_for_isotropic):
+        assert look_for_isotropic
+        calls.append("isotropic-no-witness")
+        return 2 * identity_matrix(ZZ, 2), 4 * gram, None
+    fallback = _source_integral_vector_allmeth(
+        gram, -QQ.one(), True, reduction=reduction,
+        isotropic_reduction=no_isotropic, find_vector=find_vector,
+    )
+    assert fallback == (ZZ(0), ZZ(1))
+    assert calls == ["isotropic-no-witness", ("v2", -QQ.one(), True)]
+
 
 def test_integral_positive_vector_consumer_uses_pinned_diagonalization() -> None:
     """The real positive-vector consumer returns exact positive-norm witnesses."""
