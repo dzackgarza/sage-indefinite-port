@@ -174,6 +174,30 @@ def test_pinned_symmetric_diagonalization_returns_exact_congruence_witness() -> 
         assert all(diagonal[i, j] == 0 for i in range(diagonal.nrows()) for j in range(diagonal.ncols()) if i != j)
 
 
+def test_pinned_diagonalizer_handles_deterministic_rational_symmetric_samples() -> None:
+    """Check exact congruence and nonsingularity on degenerate rational samples."""
+    from random import Random
+
+    from sage.all import QQ, matrix
+
+    random = Random(314159265)
+    for size in range(1, 7):
+        for _ in range(10):
+            gram = matrix(
+                QQ,
+                size,
+                size,
+                lambda i, j: QQ(random.randint(-4, 4)) / random.choice((1, 2, 3)) if i <= j else 0,
+            )
+            for i in range(size):
+                for j in range(i):
+                    gram[i, j] = gram[j, i]
+            transform, diagonal = _pinned_diagonalize_symmetric_matrix(gram)
+            assert transform.det() != 0
+            assert transform * gram * transform.transpose() == diagonal
+            assert all(diagonal[i, j] == 0 for i in range(size) for j in range(size) if i != j)
+
+
 def test_pinned_nullspace_preserves_gap_row_basis_order() -> None:
     """The source nullspace rows differ from Sage's canonical kernel basis."""
     from random import Random
