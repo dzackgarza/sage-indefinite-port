@@ -334,7 +334,9 @@ def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
 
         def close_vector_coordinates(self, target, bound):
             self.call = (target, bound)
-            return (((-3, 0), QQ.zero()),)
+            # Deliberately return reverse source order: sorting must keep each
+            # exact squared distance attached to its own coordinate row.
+            return (((-2, 0), QQ.one()), ((-3, 0), QQ.zero()))
 
     enumerator = object.__new__(cells._PositiveVectorEnumerator)
     engine = CVPEngine()

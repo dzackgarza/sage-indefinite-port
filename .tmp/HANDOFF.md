@@ -23,7 +23,7 @@ stabilizer image 72. Exact evidence and limits are in
 [TODO.md](../TODO.md#functional-mvp-evidence-from-the-current-implementation-work).
 
 Current source-bearing follow-up: pinned #33/#15 perfect-domain CVP construction
-is on `implement/lorentzian-completion`, source revision `6596c7a` with the
+is on `implement/lorentzian-completion`, source revision `ae03664` with the
 standalone source-contract tests in `tests/test_pinned_lorentzian_cells.py`.
 The positive-vector backend extracts
 the pinned `SublatticeBasisReductionKernel`, alternating direct/dual LLL on the
@@ -72,7 +72,10 @@ their coordinate rows and verifies the exact identity
 `q(v) = m^2*base_bound - distance` for every reconstructed ambient vector.
 This check is mandatory for every `_ambient_vectors` call, not an optional
 production branch. The targeted regression checks the identity on a consistent
-Lorentzian shell and rejects an inconsistent distance supplied by the CVP backend.
+Lorentzian shell and rejects an inconsistent distance supplied by the CVP backend. The CVP
+regression now deliberately returns two coordinate/distance pairs out of order;
+after pinned-coordinate sorting, it verifies the distances remain paired with
+their coordinates before allowed-square filtering.
 The current branch tip has not yet been accepted by the frozen full-family run;
 see the current case-level Acceptance results before asserting completion.
 Ordinary pytest collection currently fails in the local Sage environment at
