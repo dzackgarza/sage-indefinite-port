@@ -1849,7 +1849,7 @@ def test_fixed_distance_basis_inverse_is_exact_and_two_sided() -> None:
 
 def test_positive_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() -> None:
     """The fixed-distance sphere uses an exact positive-definite LDL certificate."""
-    from sage.all import QQ, matrix, diagonal_matrix
+    from sage.all import QQ, RDF, matrix, diagonal_matrix
 
     forms = (
         matrix(QQ, [[1]]),
