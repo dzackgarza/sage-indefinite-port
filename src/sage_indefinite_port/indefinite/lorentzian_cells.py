@@ -1463,20 +1463,25 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             coordinate = covector.to_vector()
             normal = vector(SageQQ, (_rational(coordinate(label)) for label in labels))
             halfspace_rows.append(normal)
-            # Evaluate the exact covector on all rays through Sage's matrix
-            # backend, then take the complement of its nonzero support.  The
-            # scalar row-dot-product loop performs one Python-level exact
-            # pairing per ray per facet; on the 49,861-ray A7 configuration
-            # that dispatch overhead dominates the incidence extraction.
-            pairings = rows * normal.column()
-            incidence = all_ray_positions.difference(
-                position for position, _column in pairings.nonzero_positions()
-            )
-            if not incidence:
-                raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
-            if incidence in by_incidence:
-                raise ArithmeticError("distinct perfect-cell facets have the same extreme-ray incidence")
-            by_incidence[incidence] = covector
+        # Evaluate bounded blocks of exact covectors against the entire ray
+        # matrix.  A scalar row-dot-product loop costs one Python-level exact
+        # pairing per ray per facet; one matrix-vector product per facet still
+        # repeats backend dispatch.  Blocking the H-presentation amortizes
+        # that dispatch while bounding the temporary pairing matrix.
+        ray_transpose = rows.transpose()
+        block_size = _configuration_pairing_block_size(rows.nrows())
+        for start in range(0, len(halfspace_rows), block_size):
+            stop = min(start + block_size, len(halfspace_rows))
+            pairing_block = matrix(SageQQ, halfspace_rows[start:stop]) * ray_transpose
+            for offset in range(stop - start):
+                incidence = all_ray_positions.difference(
+                    position for position, _column in pairing_block.row(offset).nonzero_positions()
+                )
+                if not incidence:
+                    raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
+                if incidence in by_incidence:
+                    raise ArithmeticError("distinct perfect-cell facets have the same extreme-ray incidence")
+                by_incidence[incidence] = covectors[start + offset]
         facet_covectors_by_incidence[id(cell)] = by_incidence
         halfspace_rows_by_cell[id(cell)] = matrix(SageQQ, halfspace_rows)
     ambient_labels = tuple(lattice.module_generating_set())
