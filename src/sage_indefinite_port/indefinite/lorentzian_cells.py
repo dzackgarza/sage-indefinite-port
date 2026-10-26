@@ -620,8 +620,8 @@ class LorentzianPerfectLocalBackend:
         # still recomputed against the original ray rows and indices.
         labels = tuple(cell.lattice.module_generating_set())
         ray_rows = tuple(
-            tuple(SageQQ(int(coordinates(label))) for label in labels)
-            for coordinates in (_coordinate_row(cell.lattice, ray, SageQQ) for ray in cell.vector_configuration)
+            tuple(SageQQ(int(entry)) for entry in _coordinate_row(cell.lattice, ray, SageQQ))
+            for ray in cell.vector_configuration
         )
         polyhedron = Polyhedron(
             vertices=[(0,) * len(labels)],
