@@ -19,6 +19,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _source_elementary_perturbation,
     _source_random_matrix_perturbation,
     _source_graver_k_basis,
+    _source_direct_graver_improvement,
     _pinned_nullspace_matrix,
     _pinned_diagonalize_symmetric_matrix,
     _integral_positive_vector_allmeth,
@@ -379,6 +380,37 @@ def test_source_random_perturbations_are_the_pinned_unimodular_matrices() -> Non
             pass
         else:
             raise AssertionError(f"invalid perturbation accepted: {invalid}")
+
+
+def test_source_direct_graver_improvement_matches_literal_ordered_passes() -> None:
+    """The production descent performs repeated full Graver-basis passes."""
+    from sage.all import ZZ, matrix, vector
+
+    gram = matrix(ZZ, [[2, 1, 0], [1, -3, 1], [0, 1, 2]])
+    directions = tuple(vector(ZZ, row) for row in _source_graver_k_basis(3, 2))
+    for initial in (vector(ZZ, [4, 3, 1]), vector(ZZ, [-3, 2, 4]), vector(ZZ, [1, 1, 1])):
+        expected = vector(ZZ, initial)
+        while True:
+            changes = 0
+            for direction in directions:
+                before = int((expected * gram * expected.column())[0])
+                mixed = int((expected * gram * direction.column())[0])
+                direction_norm = int((direction * gram * direction.column())[0])
+                alpha = 0
+                source_norm = before
+                while True:
+                    candidate = before + 2 * mixed * (alpha + 1) + direction_norm * (alpha + 1) ** 2
+                    if candidate >= source_norm or candidate <= 0:
+                        break
+                    source_norm = candidate
+                    alpha += 1
+                expected += alpha * direction
+                changes += alpha
+            if changes == 0:
+                break
+        actual = _source_direct_graver_improvement(gram, initial, directions)
+        assert actual == expected
+        assert (actual * gram * actual.column())[0] > 0
 
 
 def test_source_graver_k_basis_matches_support_and_sign_enumeration() -> None:

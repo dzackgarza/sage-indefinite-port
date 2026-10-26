@@ -2552,6 +2552,36 @@ def _source_random_matrix_perturbation(
     return _source_elementary_perturbation(dimension, row, column, sign).change_ring(SageZZ)
 
 
+def _source_direct_graver_improvement(
+    gram: Matrix_integer_dense,
+    initial: FreeModuleElement[Integer],
+    directions: tuple[FreeModuleElement[Integer], ...],
+) -> FreeModuleElement[Integer]:
+    r"""Port ``DirectImprovement`` from Positivity.h:588-603.
+
+    For each source-ordered Graver direction, apply the maximal consecutive
+    positive-norm descent prefix returned by ``GetAlpha``; repeat full passes
+    until an entire pass makes no change.
+    """
+    if gram.nrows() != gram.ncols() or initial not in SageZZ**gram.nrows():
+        raise ValueError("direct Graver improvement requires a matching integral Gram vector")
+    if any(direction not in SageZZ**gram.nrows() for direction in directions):
+        raise ValueError("every Graver direction must have the Gram matrix dimension")
+    improved = vector(SageZZ, initial)
+    while True:
+        changes = 0
+        for direction in directions:
+            base_norm = int((improved * gram * improved.column())[0])
+            mixed = int((improved * gram * direction.column())[0])
+            direction_norm = int((direction * gram * direction.column())[0])
+            alpha = _quadratic_descent_prefix(base_norm, mixed, direction_norm)
+            if alpha:
+                improved += alpha * direction
+                changes += alpha
+        if changes == 0:
+            return improved
+
+
 def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]:
     r"""Pinned polyhedral_common@a55fcb7b src_isotropy/Positivity.h:565-673,
     ``INDEFINITE_GetShortPositiveVector``.
@@ -2580,19 +2610,7 @@ def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]
         # different exact diagonalization algorithm for this source step.
         found = vector(SageZZ, _integral_positive_vector_allmeth(perturbed_gram))
         current = perturbation.transpose() * found.column()
-        improved = current.column(0)
-        while True:
-            changes = 0
-            for direction in directions:
-                current_norm = int((improved * gram * improved.column())[0])
-                mixed = int((improved * gram * direction.column())[0])
-                direction_norm = int((direction * gram * direction.column())[0])
-                alpha = _quadratic_descent_prefix(current_norm, mixed, direction_norm)
-                if alpha:
-                    improved += alpha * direction
-                    changes += alpha
-            if changes == 0:
-                break
+        improved = _source_direct_graver_improvement(gram, current.column(0), directions)
         norm = (improved * gram * improved.column())[0]
         if best_norm is None or norm < best_norm:
             best_vector = improved
