@@ -138,13 +138,19 @@ def test_pinned_column_reduction_matches_greedy_rank_increase() -> None:
     for rows in range(1, 7):
         for columns in range(1, 7):
             for _ in range(8):
-                value = matrix(QQ, rows, columns, lambda i, j: random.randint(-3, 3))
-                selected = _pinned_independent_column_indices(value)
-                assert len(selected) == value.rank()
-                for index, column in enumerate(selected):
-                    assert value.matrix_from_columns(selected[: index + 1]).rank() == index + 1
-                    assert all(previous < column for previous in selected[:index])
-                assert selected == tuple(value.echelon_form().pivots())
+                for denominator in (1, 2, 3):
+                    value = matrix(
+                        QQ,
+                        rows,
+                        columns,
+                        lambda i, j: QQ(random.randint(-3, 3)) / denominator,
+                    )
+                    selected = _pinned_independent_column_indices(value)
+                    assert len(selected) == value.rank()
+                    for index, column in enumerate(selected):
+                        assert value.matrix_from_columns(selected[: index + 1]).rank() == index + 1
+                        assert all(previous < column for previous in selected[:index])
+                    assert selected == tuple(value.echelon_form().pivots())
 
 
 def test_pinned_nullspace_preserves_gap_row_basis_order() -> None:
