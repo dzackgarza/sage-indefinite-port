@@ -2555,8 +2555,9 @@ def _source_remove_fraction_vector(vector_over_q) -> tuple[Integer, ...]:
     content = SageZZ.zero()
     for entry in integral:
         content = content.gcd(abs(entry))
+    # Fractions.g:46-48 returns the zero vector unchanged with multiplier 1.
     if not content:
-        raise ValueError("RemoveFractionVector is undefined for the zero vector")
+        return integral
     return tuple(entry // content for entry in integral)
 
 

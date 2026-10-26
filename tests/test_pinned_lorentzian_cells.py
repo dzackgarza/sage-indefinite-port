@@ -383,12 +383,7 @@ def test_source_remove_fraction_vector_returns_primitive_integral_coordinates() 
     from sage.all import QQ
 
     assert _source_remove_fraction_vector((QQ(1) / 2, -QQ(1) / 2)) == (1, -1)
-    try:
-        _source_remove_fraction_vector((QQ.zero(), QQ.zero()))
-    except ValueError:
-        pass
-    else:
-        raise AssertionError("zero rational vector was accepted")
+    assert _source_remove_fraction_vector((QQ.zero(), QQ.zero())) == (0, 0)
 
 
 def test_source_integral_vector_allmeth_selects_isotropic_shortcut_exactly() -> None:
