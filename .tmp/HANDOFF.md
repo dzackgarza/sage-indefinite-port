@@ -104,6 +104,7 @@ those paths; retain their changes. Post-v1 requirements remain in TODO.md
 and issues #40/#41.
 
 Research main is undergoing a separate move of library source to
-`/home/dzack/gitclones/sage-extensions`; its checkout has unrelated merge
+[sage-extensions](https://github.com/dzackgarza/sage-extensions); the research
+checkout has unrelated merge
 conflicts. Preserve that work. Continue acceptance against the published
 53c48e0 provider until a replacement provider is verified explicitly.
