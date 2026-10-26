@@ -35,15 +35,15 @@ finite-configuration implementation. The image dependency is declared in
 Next work, in order:
 
 1. Obtain complete frozen reports with research
-   `260c6a92c192d879d8a7cf9c988eeef97d4de84b` and the rebuilt image.
+   `07b24a2d3c02921d2a6098c32be0a1a171ce6406` and the rebuilt image.
    Its independent split quadratic forms in dimensions 2, 4 and 10,
    exponent-four hyperbolic form, and bilinear U(2) group assertions pass.
    The unchanged `ci_indef_U_U_E7` isometry assertion also passes locally
    with Bliss. These checks leave the remaining consumers open.
-2. Finish the unchanged I_1_2 isotropic-stabilizer and Enriques case_1
-   boundary consumers in `.tmp/repair-finite-form-consumers.log`. I_1_2
-   has reached subgroup-generator construction after the finite-form
-   operation. Enriques case_1 follows it in the same selected test run.
+2. Finish the unchanged Enriques case_1 boundary consumer in
+   `.tmp/repair-finite-form-consumers.log`. I_1_2 passes its published
+   stabilizer-index assertion in that run. These consumers started with
+   provider 260c6a92 and require final-revision hosted confirmation.
 3. Finish the A7 + diag(1,1,-1) discriminant-image assertion. Its initial
    perfect configuration has 49,861 vectors; the old pairing block retained
    51,057,664 exact scalars, and the hosted shard exited 137. Pairings now
@@ -54,7 +54,11 @@ Next work, in order:
    the remaining reflective, boundary, group, orbit and centralizer cases.
    Check JUnit and revision metadata, not job status alone. The Vinberg
    integer-quotient correction passes the unchanged ListReflect_549, 231,
-   516, 241 and 880 cases. Other reflective cases remain open. Immediate
+   516, 241 and 880 cases. The exact pairing-label comparison repair also
+   passes ListReflect_964 and ListReflect_841. Sage graph equality requires
+   weighted graphs to compare labels; otherwise a canonical graph match can
+   admit a nonisometry. The independent A2 pairing obstructions pass at the
+   provider owner. Other reflective cases remain open. Immediate
    failure reporting now preserves tracebacks before a killed shard exits.
 5. Obtain full frozen Acceptance evidence at one published port/provider
    pair, and carry any further provider repairs to the current library owner.
