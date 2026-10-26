@@ -15,7 +15,7 @@ from typing import Literal, cast, overload
 
 import numpy as np
 from cypari2.handle_error import PariError
-from dzack_research.preamble.all import FramedFreeModules, Lattices
+from dzack_research.preamble.all import FramedFreeModules, Lattices, Sets
 from dzack_research.preamble.categories.definite_lattices import LatticeReduction, _ExactCVPEngine
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.rings.ring_foundation import _owned_engine_element
@@ -807,7 +807,11 @@ class LorentzianPerfectLocalBackend:
     ) -> LatticeIsometryMethods | None | tuple[LatticeIsometryMethods, ...]:
         r"""An exact integral isometry transporting one entire perfect-cell configuration.
 
-        A spanning subfamily of rank r determines an isometry uniquely from
+        Equivalence uses the owned finite-family transporter: a labelled
+        pairing-graph isomorphism followed by integral-structure transport,
+        as in Lorentzian.g:660-696 and AutomorphismPolytope.g:288-339.
+
+        For enumeration, a spanning subfamily of rank r determines an isometry uniquely from
         its r images. Enumerate all norm- and pairing-compatible target images
         of a fixed source basis; at each leaf verify
         integrality, unimodularity, the entire Gram form, and the exact
@@ -834,15 +838,20 @@ class LorentzianPerfectLocalBackend:
         target_gram = _gram_matrix(target.lattice)
         if source_gram.det() != target_gram.det() or source.lattice.signature_pair() != target.lattice.signature_pair():
             return () if all_images else None
-        source_rows, source_pairings, source_spectra, source_multiset, source_smith = self._integral_configuration_invariants(source)
+        if not all_images:
+            source_family = Sets().Mor(Sets.Δ[n - 1], source.lattice)(
+                lambda index: source.vector_configuration[int(index)]
+            )
+            target_family = Sets().Mor(Sets.Δ[n - 1], target.lattice)(
+                lambda index: target.vector_configuration[int(index)]
+            )
+            return source.lattice.Isom(target.lattice).transporter(source_family, target_family)
+        source_rows, source_pairings, source_spectra, _source_multiset, source_smith = self._integral_configuration_invariants(source)
         target_rows, target_pairings, target_spectra, target_multiset, target_smith = self._integral_configuration_invariants(target)
-        # This exact certificate subsumes any graph-isomorphism search.
-        if not all_images and source.lattice is target.lattice and source_multiset == target_multiset:
-            return source.lattice.Aut().identity()
         if source_smith != target_smith:
-            return () if all_images else None
+            return ()
         if Counter(source_spectra) != Counter(target_spectra):
-            return () if all_images else None
+            return ()
         colour_numbers = {signature: index for index, signature in enumerate(sorted(set(source_spectra)))}
         source_colours = tuple(colour_numbers[signature] for signature in source_spectra)
         target_colours = tuple(colour_numbers[signature] for signature in target_spectra)
@@ -864,7 +873,7 @@ class LorentzianPerfectLocalBackend:
             refined_source_colours = tuple(refined_numbers[signature] for signature in source_refined)
             refined_target_colours = tuple(refined_numbers[signature] for signature in target_refined)
             if Counter(refined_source_colours) != Counter(refined_target_colours):
-                return () if all_images else None
+                return ()
             # Refinement signatures contain the old colour, so no two old
             # classes can merge. Once the number of classes stops growing,
             # the partition is equitable and further refinement cannot
@@ -977,20 +986,18 @@ class LorentzianPerfectLocalBackend:
                         for label, row in zip(source_labels, action.rows(), strict=True)
                     }
                 )
-                if all_images:
-                    if generators_only:
-                        try:
-                            permutation = symmetric([positions[tuple(int(entry) for entry in row)] + 1 for row in (source_rows * action).rows()])
-                        except KeyError as exc:
-                            raise ArithmeticError("a certified perfect-cell stabilizer fails to permute its configuration") from exc
-                        if permutation not in subgroup:
-                            stabilizer_elements.append(witness)
-                            group_permutations.append(permutation)
-                            subgroup = symmetric.subgroup(group_permutations)
-                    else:
+                if generators_only:
+                    try:
+                        permutation = symmetric([positions[tuple(int(entry) for entry in row)] + 1 for row in (source_rows * action).rows()])
+                    except KeyError as exc:
+                        raise ArithmeticError("a certified perfect-cell stabilizer fails to permute its configuration") from exc
+                    if permutation not in subgroup:
                         stabilizer_elements.append(witness)
-                    return None
-                return witness
+                        group_permutations.append(permutation)
+                        subgroup = symmetric.subgroup(group_permutations)
+                else:
+                    stabilizer_elements.append(witness)
+                return None
 
             used = set(images.values())
             choice = None
@@ -1081,9 +1088,7 @@ class LorentzianPerfectLocalBackend:
                     # check, and can dominate the cost of each leaf.
                     target_basis_integral = target_rows.matrix_from_rows([images[i] for i in basis])
                     if abs(target_basis_integral.det()) == source_basis_index:
-                        witness = backtrack(images, target_basis_integral)
-                        if witness is not None:
-                            return witness
+                        backtrack(images, target_basis_integral)
                     del images[choice]
                     continue
                 # The chosen source rows are linearly independent. Every
@@ -1100,14 +1105,12 @@ class LorentzianPerfectLocalBackend:
                 if target_selected not in target_submodule_invariants:
                     target_submodule_invariants[target_selected] = tuple(target_partial.elementary_divisors())
                 if source_submodule_invariants[selected] == target_submodule_invariants[target_selected]:
-                    witness = backtrack(images)
-                    if witness is not None:
-                        return witness
+                    backtrack(images)
                 del images[choice]
             return None
 
-        first = backtrack({})
-        return tuple(stabilizer_elements) if all_images else first
+        backtrack({})
+        return tuple(stabilizer_elements)
 
 
 class LorentzianPerfectComplex:

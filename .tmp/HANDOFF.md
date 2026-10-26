@@ -35,18 +35,21 @@ vector-stabilizer shard has a complete passing JUnit report at that pair.
 The reflected-vector r_0 and degree-18 orbit consumers pass there.
 Remaining families are open. Reflective shards 2, 4 and 7 contain assertion
 failures and then exit 137 before writing JUnit; orthogonal-group shard 0
-also exits 137. These runs are incomplete evidence.
+also exits 137 in its final selected case, the A7 + diag(1,1,-1)
+discriminant-image assertion. These runs are incomplete evidence.
 
 The first failure in reflective shard 7 maps to ListReflect_549. Its
 Vinberg coset normalization used QQ division in place of the pinned integer
-QuoInt. The integer-division repair passes that unchanged root-count case.
+QuoInt. The integer-division repair passes that unchanged root-count case and
+ListReflect_231 and ListReflect_516.
 Use subsequent exact failures to determine which other branches need repair.
 
 The I_1_2 isotropic-stabilizer assertion remains open. A captured perfect-cell
 pair has a verified integral witness from the existing research finite-family
-transporter. The current port basis-image search exceeds 180 seconds on that
-same pair; research returns in 87 seconds. The frozen owner split and pinned
-Lorentzian.g:660-696 prescribe the generic configuration transporter.
+transporter. The port now delegates cell equivalence to that operation, following
+Lorentzian.g:660-696. The independent matrix certificate and unchanged
+perfect-domain adjacency and facet-action consumers pass. Run the full
+I_1_2 assertion on this route before claiming that consumer is repaired.
 The diagnostic data and exact certificate are in
 `.tmp/probe/configuration-transporter/`; these are optional local evidence,
 not required checkout inputs. The full I_1_2 consumer has no verified result.
