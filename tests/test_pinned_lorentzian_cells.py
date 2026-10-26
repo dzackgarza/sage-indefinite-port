@@ -321,6 +321,20 @@ def test_source_subspace_completion_int_returns_unimodular_complements() -> None
         raise AssertionError("nonprimitive sublattice unexpectedly completed")
 
 
+def test_source_v2_honors_critical_norm_and_strictness() -> None:
+    """V2 returns the first integral approximant satisfying the requested bound."""
+    from sage.all import QQ, ZZ, identity_matrix, matrix, vector
+
+    gram = matrix(ZZ, [[1, 0], [0, -1]])
+    basis = identity_matrix(ZZ, 2)
+    inclusive = vector(ZZ, _source_integral_vector_allmeth_v2(gram, basis, gram, QQ.one(), False))
+    strict = vector(ZZ, _source_integral_vector_allmeth_v2(gram, basis, gram, QQ.one(), True))
+    assert inclusive == vector(ZZ, [1, 0])
+    assert strict == vector(ZZ, [2, 0])
+    assert (inclusive * gram * inclusive.column())[0] == 1
+    assert (strict * gram * strict.column())[0] == 4
+
+
 def test_source_integral_vector_allmeth_v2_returns_exact_positive_witness() -> None:
     """Exercise the complete V2 iterator consumer with an identity reduction."""
     from sage.all import ZZ, diagonal_matrix, identity_matrix, matrix, vector
