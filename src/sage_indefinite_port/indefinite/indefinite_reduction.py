@@ -360,6 +360,39 @@ def _nondegenerate_reduction(gram):
             return basis, working
 
 
+def _source_subspace_completion_int(kernel_basis, dimension):
+    r"""Port ``SubspaceCompletionInt`` from IndefiniteForms.g:471-497.
+
+    Smith transforms U and V satisfy U*K*V=D. For a primitive rank-d row
+    sublattice, D has d unit pivots; embedding U in the leading block of an
+    n-by-n identity and applying U^{-1}V^{-1} yields the pinned completion.
+    """
+    if dimension < 0 or kernel_basis.ncols() != dimension:
+        raise ValueError("kernel basis and ambient dimension disagree")
+    d = int(kernel_basis.nrows())
+    if d > dimension or kernel_basis.rank() != d:
+        raise ValueError("subspace completion requires independent rows")
+    if d == 0:
+        return identity_matrix(SageZZ, dimension)
+    diagonal, row_transform, column_transform = kernel_basis.smith_form(transformation=True)
+    if row_transform * kernel_basis * column_transform != diagonal:
+        raise ArithmeticError("Smith transformations do not certify the kernel basis")
+    if any(diagonal[i, i] != 1 for i in range(d)) or any(
+        diagonal[i, j] for i in range(d) for j in range(dimension) if i != j
+    ):
+        raise ValueError("the row sublattice is not primitive in the ambient integer lattice")
+    block = identity_matrix(SageZZ, dimension)
+    for i in range(d):
+        for j in range(d):
+            block[i, j] = row_transform[i, j]
+    full_basis = block.inverse() * column_transform.inverse()
+    completion = full_basis.matrix_from_rows(range(d, dimension))
+    combined = completion.stack(kernel_basis)
+    if abs(combined.det()) != 1:
+        raise ArithmeticError("subspace completion did not produce a unimodular basis")
+    return completion
+
+
 def _indefinite_reduction(gram):
     """IndefiniteReduction, Indefinite_LLL.h:823-930, radical included.
 
@@ -373,19 +406,24 @@ def _indefinite_reduction(gram):
     if not rank:
         return identity_matrix(SageZZ, 0), gram
     hnf, unimodular = gram.hermite_form(transformation=True, include_zero_rows=True)
-    nondegenerate_rank = gram.rank()
+    nondegenerate_rank = int(gram.rank())
     if unimodular * gram != hnf or abs(unimodular.det()) != 1:
         raise ArithmeticError("integral nullspace splitting is not unimodular")
-    separated = unimodular * gram * unimodular.transpose()
+    # Indefinite_LLL.h:841-857: extract the primitive integer nullspace,
+    # complete it to a Z-basis, then place the nondegenerate complement first.
+    radical = unimodular.matrix_from_rows(range(nondegenerate_rank, rank))
+    complement = _source_subspace_completion_int(radical, rank)
+    full_basis = complement.stack(radical)
+    separated = full_basis * gram * full_basis.transpose()
     if any(separated[i, j] for i in range(nondegenerate_rank, rank) for j in range(rank)):
-        raise ArithmeticError("the HNF radical basis fails to annihilate the form")
+        raise ArithmeticError("the completed integral radical basis fails to annihilate the form")
     nondegenerate = separated.matrix_from_rows_and_columns(range(nondegenerate_rank), range(nondegenerate_rank))
     step, _ = _nondegenerate_reduction(nondegenerate)
     combined = identity_matrix(SageZZ, rank)
     for i in range(nondegenerate_rank):
         for j in range(nondegenerate_rank):
             combined[i, j] = step[i, j]
-    basis = combined * unimodular
+    basis = combined * full_basis
     reduced = basis * gram * basis.transpose()
     if abs(basis.det()) != 1:
         raise ArithmeticError("indefinite reduction must retain an integral isometry")

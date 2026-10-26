@@ -256,6 +256,31 @@ def test_source_positive_candidate_lift_uses_transposed_unimodular_basis() -> No
         raise AssertionError("a false reduction norm certificate was accepted")
 
 
+def test_source_subspace_completion_int_returns_unimodular_complements() -> None:
+    """The pinned Smith-transform completion extends primitive row lattices."""
+    from sage.all import ZZ, identity_matrix, matrix
+    from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
+
+    cases = (
+        (matrix(ZZ, [[-1, -1, 1]]), 3),
+        (matrix(ZZ, [[1, 0, 1], [0, 1, 1]]), 3),
+        (matrix(ZZ, [], ncols=3), 3),
+        (matrix(ZZ, [[1, 1, 0, 0], [0, 0, 1, 1]]), 4),
+    )
+    for kernel, dimension in cases:
+        completion = _source_subspace_completion_int(kernel, dimension)
+        full_basis = completion.stack(kernel)
+        assert full_basis.nrows() == dimension
+        assert abs(full_basis.det()) == 1
+
+    try:
+        _source_subspace_completion_int(matrix(ZZ, [[2, 0, 0]]), 3)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("nonprimitive sublattice unexpectedly completed")
+
+
 def test_source_integral_vector_allmeth_v2_returns_exact_positive_witness() -> None:
     """Exercise the complete V2 iterator consumer with an identity reduction."""
     from sage.all import ZZ, diagonal_matrix, identity_matrix, matrix, vector
