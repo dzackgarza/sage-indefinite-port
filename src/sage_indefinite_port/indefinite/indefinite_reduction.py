@@ -433,13 +433,13 @@ def _source_subspace_completion_int(kernel_basis, dimension):
         diagonal[i, j] for i in range(d) for j in range(dimension) if i != j
     ):
         raise ValueError("the row sublattice is not primitive in the ambient integer lattice")
+    # Fundamental.g:489-493 starts from NullMat(n,n), copies the d-by-d
+    # Smith row transform into the leading block, then sets the trailing
+    # diagonal entries to one. Preserve that identity tail exactly.
     block = identity_matrix(SageZZ, dimension)
     for i in range(d):
-        # SubspaceCompletionInt overwrites each of the first d rows with the
-        # corresponding Smith left-transform row padded by zeros, not by the
-        # identity tail of the ambient matrix.
-        for j in range(dimension):
-            block[i, j] = row_transform[i, j] if j < d else SageZZ.zero()
+        for j in range(d):
+            block[i, j] = row_transform[i, j]
     full_basis = block.inverse() * column_transform.inverse()
     completion = full_basis.matrix_from_rows(range(d, dimension))
     combined = completion.stack(kernel_basis)

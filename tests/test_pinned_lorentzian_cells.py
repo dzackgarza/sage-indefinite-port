@@ -336,8 +336,8 @@ def test_source_subspace_completion_int_returns_unimodular_complements() -> None
             assert row_transform * kernel * column_transform == diagonal
             block = identity_matrix(ZZ, dimension)
             for i in range(kernel.nrows()):
-                for j in range(dimension):
-                    block[i, j] = row_transform[i, j] if j < kernel.nrows() else ZZ.zero()
+                for j in range(kernel.nrows()):
+                    block[i, j] = row_transform[i, j]
             source_basis = block.inverse() * column_transform.inverse()
             assert full_basis == source_basis
 
