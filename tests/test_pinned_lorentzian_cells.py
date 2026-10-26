@@ -132,6 +132,16 @@ def test_pinned_nullspace_preserves_gap_row_basis_order() -> None:
     assert _pinned_nullspace_matrix(gram) == matrix(QQ, [[-2, 1, 0], [-3, 0, 1]])
     assert _pinned_nullspace_matrix(matrix(QQ, [[1, 0], [0, 1]])).nrows() == 0
 
+    rational_gram = matrix(QQ, [[QQ(1) / 2, 1, QQ(3) / 2], [1, 2, 3]])
+    rational_kernel = _pinned_nullspace_matrix(rational_gram)
+    assert rational_kernel * rational_gram == 0
+    assert rational_kernel.nrows() == 2
+
+    rank_one = matrix(QQ, [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+    rank_one_kernel = _pinned_nullspace_matrix(rank_one)
+    assert rank_one_kernel * rank_one == 0
+    assert rank_one_kernel.nrows() == 2
+
 
 def test_source_negative_vector_respects_radical_and_diagonal_order() -> None:
     """The pinned search selects the first negative-or-zero diagonal row."""
