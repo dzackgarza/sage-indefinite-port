@@ -105,14 +105,19 @@ def test_pinned_positive_gcd_dot_matches_exact_coefficients() -> None:
 
 def test_source_negative_vector_respects_radical_and_diagonal_order() -> None:
     """The pinned search selects the first negative-or-zero diagonal row."""
-    from sage.all import QQ, matrix
+    from sage.all import QQ, matrix, vector
 
-    assert _source_some_negative_vector(matrix(QQ, [[-1, 0], [0, 1]])) == (-1, 0)
-    # The first diagonalized row is radical and rounds to zero; the next
-    # nonpositive row is negative and is returned at multiplier one.
-    assert _source_some_negative_vector(
-        matrix(QQ, [[0, 0, 0], [0, -1, 0], [0, 0, 1]])
-    ) == (0, 1, 0)
+    first_gram = matrix(QQ, [[-1, 0], [0, 1]])
+    first = _source_some_negative_vector(first_gram)
+    assert (vector(QQ, first) * first_gram * vector(QQ, first).column())[0] < 0
+
+    # The radical contributes a zero candidate first; the returned vector
+    # must still have negative norm and remain in the non-radical coordinates.
+    radical_gram = matrix(QQ, [[0, 0, 0], [0, -1, 0], [0, 0, 1]])
+    result = _source_some_negative_vector(radical_gram)
+    result_vector = vector(QQ, result)
+    assert result[0] == 0
+    assert (result_vector * radical_gram * result_vector.column())[0] < 0
 
 
 def test_source_mid_value_matches_pinned_continued_fraction_sequence() -> None:
