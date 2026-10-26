@@ -24,13 +24,12 @@ The full repair condition remains open.
 
 ## Now
 
-Complete the Sage image build
-[40326106441](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40326106441),
-then dispatch Acceptance on the current published port revision. The image
-must pass `Bliss().require()` before a shard runs. The previous image lacks
-`sage.graphs.bliss`; run 40323744944 therefore cannot validate the current
-finite-configuration implementation. The image dependency is declared in
-`ci/sage.Dockerfile` and checked by `ci-provision-sage`.
+Read completed case reports from Acceptance
+[40339136782](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40339136782),
+port `b3f01e016440b405081a61a8517be536475f8ec1`, provider
+`07b24a2d3c02921d2a6098c32be0a1a171ce6406`. The rebuilt Sage image
+passes its required Bliss feature check. Route each actual failing computation
+to its port or provider owner; retain every unchanged acceptance assertion.
 
 Next work, in order:
 
@@ -43,12 +42,16 @@ Next work, in order:
 2. Finish the unchanged Enriques case_1 boundary consumer in
    `.tmp/repair-finite-form-consumers.log`. I_1_2 passes its published
    stabilizer-index assertion in that run. These consumers started with
-   provider 260c6a92 and require final-revision hosted confirmation.
+   provider 260c6a92 and require final-revision hosted confirmation. The
+   unchanged D-tower N_6 boundary counts pass locally with provider 07b24a2;
+   their hosted confirmation remains open.
 3. Finish the A7 + diag(1,1,-1) discriminant-image assertion. Its initial
    perfect configuration has 49,861 vectors; the old pairing block retained
    51,057,664 exact scalars, and the hosted shard exited 137. Pairings now
    stream by row, and the hash counts the pinned upper-triangular multiset
-   directly. The exact x=1 face of x^2-y^2 and a large integral basis change
+   directly. Streamed columns use FLINT integer-matrix multiplication.
+   The current A7 computation passed the initial hash and is computing the
+   exact cone with PPL. The exact x=1 face of x^2-y^2 and a large integral basis change
    verify the invariant. The full A7 consumer is still open.
 4. Read all completed artifacts from the newest Acceptance run and repair
    the remaining reflective, boundary, group, orbit and centralizer cases.
@@ -75,9 +78,10 @@ The isolated provider checkout is `.tmp/research-acceptance-repair`, branch
 `fix/acceptance-quotient-cardinality`. Repairs through 2e204df5 were merged
 into research main at `fdfed1d61c4b2530abb9822c93e457c1d26bc825`.
 The newer finite-form and Bliss repairs are published on the provider branch
-and carried to sage-extensions main at `8ac9197`. The replacement library
-cannot yet replace the pinned provider: its metric dual fails while selecting
-the rational value module, tracked in
+and carried to sage-extensions main. The replacement library cannot yet
+replace the pinned provider. Its selected rational value module is repaired
+at 17a8390. The hyperbolic-plane invariants pass at 180c1e5.
+Presentation-square and lattice-isometry arrow construction still fail, tracked in
 [sage-extensions #1](https://github.com/dzackgarza/sage-extensions/issues/1).
 The independent checks are committed at that owner in
 `tests/test_finite_form_groups.py`. Research main has unrelated merge
