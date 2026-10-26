@@ -164,6 +164,7 @@ def test_pinned_symmetric_diagonalization_returns_exact_congruence_witness() -> 
         matrix(QQ, [[0, 0, 0], [0, -2, 0], [0, 0, 3]]),
         matrix(QQ, [[0, 1], [1, 0]]),
         diagonal_matrix(QQ, [3, -2, 0, 5]),
+        matrix(QQ, 3, 3, 0),
     )
     expected_transforms = (
         matrix(QQ, [[-2, 1, 0], [-3, 0, 1], [0, 0, 1]]),
@@ -171,7 +172,7 @@ def test_pinned_symmetric_diagonalization_returns_exact_congruence_witness() -> 
         matrix(QQ, [[1, 1], [-1, 1]]),
         matrix(QQ, [[0, 0, 1, 0], [1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]]),
     )
-    for gram, expected_transform in zip(forms[:1] + forms[2:3] + forms[3:], expected_transforms, strict=True):
+    for gram, expected_transform in zip((forms[0], forms[2], forms[3], forms[4]), expected_transforms, strict=True):
         transform, _diagonal = _pinned_diagonalize_symmetric_matrix(gram)
         assert transform == expected_transform
 
