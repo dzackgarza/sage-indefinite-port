@@ -2103,6 +2103,68 @@ def _validate_fixed_distance_ldl_factorization(
         raise ArithmeticError("the fixed-distance LDL factorization does not reconstruct its Gram matrix")
 
 
+def _fixed_distance_coordinate_solutions(
+    gram: Matrix_rational_dense,
+    target: tuple[Rational, ...],
+    squared_distance: Rational,
+) -> tuple[tuple[tuple[Integer, ...], Rational], ...]:
+    r"""Enumerate exactly the lattice points on a rational-center sphere.
+
+    The Gram matrix is positive definite. This is the coordinate-level
+    ``fixed_dist_vectors`` operation used by isotropic Lorentzian shells; it
+    avoids enumerating the entire ellipsoid and filtering it afterward.
+    """
+    if gram.nrows() != gram.ncols() or gram != gram.transpose():
+        raise ValueError("fixed-distance coordinate enumeration requires a symmetric square Gram matrix")
+    rank = int(gram.nrows())
+    if len(target) != rank:
+        raise ValueError("fixed-distance target must have the Gram matrix dimension")
+    if any(not isinstance(entry, (int, Integer, Rational)) for entry in target):
+        raise ValueError("fixed-distance target must have exact rational coordinates")
+    target = tuple(SageQQ(entry) for entry in target)
+    bound = SageQQ(squared_distance)
+    if bound < 0:
+        raise ValueError("fixed squared distance must be nonnegative")
+    if rank == 0:
+        return (((), bound),) if bound == 0 else ()
+    lower, diagonal = _negative_ldl_factorization(gram)
+    _validate_fixed_distance_ldl_factorization(gram, (lower, diagonal))
+    zero = SageQQ.zero()
+    coordinates = [0] * rank
+    solutions: list[tuple[tuple[Integer, ...], Rational]] = []
+
+    def enumerate_coordinate(index: int, accumulated: Rational) -> None:
+        if index < 0:
+            if accumulated == bound:
+                solutions.append((tuple(SageZZ(entry) for entry in coordinates), bound))
+            return
+        remaining = bound - accumulated
+        if remaining < 0:
+            return
+        center = target[index] - sum(
+            (lower[later][index] * (coordinates[later] - target[later]) for later in range(index + 1, rank)),
+            zero,
+        )
+        squared_radius = remaining / diagonal[index]
+        radius = isqrt(int(squared_radius.numerator() // squared_radius.denominator()))
+        floor_center = int(center.numerator() // center.denominator())
+        ceil_center = -int((-center).numerator() // (-center).denominator())
+        first = ceil_center - radius - 1
+        last = floor_center + radius + 1
+        while first <= last and diagonal[index] * (SageQQ(first) - center) ** 2 > remaining:
+            first += 1
+        while first <= last and diagonal[index] * (SageQQ(last) - center) ** 2 > remaining:
+            last -= 1
+        for coordinate in range(first, last + 1):
+            term = diagonal[index] * (SageQQ(coordinate) - center) ** 2
+            if term <= remaining:
+                coordinates[index] = coordinate
+                enumerate_coordinate(index - 1, accumulated + term)
+
+    enumerate_coordinate(rank - 1, zero)
+    return tuple(solutions)
+
+
 def _fixed_distance_vectors(
     lattice: Lattices.ParentMethods,
     target: FramedFreeModules.ElementMethods,
@@ -3322,7 +3384,18 @@ class _PositiveVectorEnumerator:
         # Use the same exact PARI-backed CVP engine as close_vectors, but its
         # coordinate-level primitive avoids allocating an owned lattice vector
         # and indexed-family object for every intermediate shell candidate.
-        distances = self.cvp_engine.close_vector_coordinates(target, bound)
+        if self.allowed_squares == ZERO_SQUARES:
+            # The pinned solver.fixed_dist_vectors branch enumerates the
+            # exact sphere, not the full ellipsoid followed by a norm filter.
+            # Keep its recursive coordinate order by applying the same dual-
+            # LLL ordering key used for the at-most-distance branch.
+            distances = _fixed_distance_coordinate_solutions(
+                self.cvp_engine.engine_gram_q,
+                self.cvp_engine._engine_target_coordinates(target),
+                self.cvp_engine._engine_scalar(bound),
+            )
+        else:
+            distances = self.cvp_engine.close_vector_coordinates(target, bound)
         # CVPSolver's dual-LLL map gives recursive coordinates y=P*x;
         # the shared key follows computeIt_Gen_Kernel's outer-to-inner order.
         transform = self.enumeration_order_transform

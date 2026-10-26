@@ -40,6 +40,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _outside_ray_directions,
     _quadratic_descent_prefix,
     _negative_ldl_factorization,
+    _fixed_distance_coordinate_solutions,
     _validate_fixed_distance_ldl_factorization,
     _validate_fixed_distance_basis_inverse,
     _upper_bound,
@@ -1542,6 +1543,43 @@ def test_initial_vector_search_advances_integral_bound_without_rescanning() -> N
     # then one. The bound advances by one and multiplier one is not rescanned.
     assert visited == [(QQ(2), 1), (QQ(4), 2)]
     assert bounds == [QQ(2), QQ(3), QQ(4)]
+
+
+def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
+    """The isotropic shell enumerator returns the exact rational-center sphere."""
+    from itertools import product
+    from sage.all import QQ, matrix
+
+    cases = (
+        (matrix(QQ, [[1]]), (QQ(1) / 2,), QQ(1) / 4),
+        (matrix(QQ, [[2, 1], [1, 3]]), (QQ(1) / 2, QQ(1) / 3), QQ(1) / 2),
+        (matrix(QQ, [[2, 1], [1, 2]]), (QQ(1) / 2, QQ(1) / 2), QQ(1) / 2),
+        (matrix(QQ, [[1, 0], [0, 2]]), (QQ(0), QQ(0)), QQ(1)),
+    )
+    for gram, target, bound in cases:
+        actual = _fixed_distance_coordinate_solutions(gram, target, bound)
+        actual_coordinates = {coordinates for coordinates, distance in actual if distance == bound}
+        expected = set()
+        for coordinates in product(range(-5, 6), repeat=gram.nrows()):
+            delta = tuple(QQ(coordinates[i]) - target[i] for i in range(len(target)))
+            square = sum((delta[i] * gram[i, j] * delta[j] for i in range(len(delta)) for j in range(len(delta))), QQ(0))
+            if square == bound:
+                expected.add(tuple(coordinates))
+        assert actual_coordinates == expected
+        assert all(distance == bound for _coordinates, distance in actual)
+
+    for gram, target, bound in (
+        (matrix(QQ, [[1, 2], [0, 1]]), (QQ(0), QQ(0)), QQ(1)),
+        (matrix(QQ, [[1, 0], [0, 1]]), (QQ(0),), QQ(1)),
+        (matrix(QQ, [[1]]), (0.5,), QQ(1)),
+        (matrix(QQ, [[1]]), (QQ(0),), QQ(-1)),
+    ):
+        try:
+            _fixed_distance_coordinate_solutions(gram, target, bound)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("invalid fixed-distance sphere input was accepted")
 
 
 def test_fixed_distance_basis_inverse_is_exact_and_two_sided() -> None:
