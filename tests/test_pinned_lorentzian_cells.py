@@ -364,7 +364,7 @@ def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
         cells._owned_rational = original_rational
 
     assert engine.call == ((-QQ(3), QQ.zero()), QQ(45))
-    engine.close_vector_coordinates = lambda target, bound: (((-2, 0), QQ.one()),)
+    engine.close_vector_coordinates = lambda target, bound: (((0, 0), QQ.one()),)
     try:
         enumerator.vectors_at_multiplier(2)
     except ArithmeticError as error:
