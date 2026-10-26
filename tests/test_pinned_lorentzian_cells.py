@@ -230,11 +230,12 @@ def test_ambient_vectors_reconstructs_exact_shell_and_filters_squares() -> None:
         gram=lorentzian,
         timelike_covector=vector(ZZ, (1, 0, 0)).column(),
         d=ZZ.one(),
+        base_bound=ZZ(5),
         scaled_max=ZZ(2),
         allowed_squares={ZZ.zero()},
     )
     close_coordinates = ((1, 0), (0, 1), (0, 0))
-    result = _PositiveVectorEnumerator._ambient_vectors(enumerator, 1, close_coordinates)
+    result = _PositiveVectorEnumerator._ambient_vectors(enumerator, 1, close_coordinates, (5, 5, 4))
     assert result == ((1, 1, 0), (1, 0, 1))
     for row in result:
         ambient = vector(ZZ, row)
@@ -246,13 +247,13 @@ def test_ambient_vectors_reconstructs_exact_shell_and_filters_squares() -> None:
     enumerator.scaled_max = ZZ(2)
     enumerator.allowed_squares = {ZZ.zero(), ZZ(4)}
     result = _PositiveVectorEnumerator._ambient_vectors(
-        enumerator, 2, ((2, 0), (0, 2), (0, 0), (1, 0))
+        enumerator, 2, ((2, 0), (0, 2), (0, 0), (1, 0)), (20, 20, 16, 17)
     )
     assert result == ((2, 2, 0), (2, 0, 2), (2, 0, 0))
     assert all(int(vector(ZZ, row) * lorentzian * vector(ZZ, row)) in {0, 4} for row in result)
 
     try:
-        _PositiveVectorEnumerator._ambient_vectors(enumerator, 2, ((3, 0),))
+        _PositiveVectorEnumerator._ambient_vectors(enumerator, 2, ((3, 0),), (25,))
     except ArithmeticError as error:
         assert "negative-norm" in str(error)
     else:
