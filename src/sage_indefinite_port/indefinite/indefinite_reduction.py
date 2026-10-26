@@ -41,6 +41,12 @@ def _indefinite_gram_schmidt(gram, basis):
     basis are tracked in ``coefficients`` (b*_j = sum_k C_jk b_k).
     """
     rank = gram.nrows()
+    if gram.ncols() != rank or gram != gram.transpose():
+        raise ValueError("indefinite Gram-Schmidt requires a symmetric square form")
+    if basis.nrows() != rank or basis.ncols() != rank:
+        raise ValueError("Gram-Schmidt basis must be square of the Gram dimension")
+    if abs(basis.det()) != 1:
+        raise ValueError("Gram-Schmidt basis must be unimodular over the integer lattice")
     pairings = (basis * gram * basis.transpose()).change_ring(SageQQ)
     mu = matrix(SageQQ, rank, rank)
     norms = []

@@ -350,6 +350,27 @@ def test_indefinite_reduction_integrates_source_radical_and_completion() -> None
         assert not reduced.matrix_from_rows(range(gram.nrows() - radical_rank, gram.nrows()))
 
 
+def test_indefinite_gram_schmidt_rejects_invalid_form_or_basis() -> None:
+    """The indefinite Gram-Schmidt source operation requires a lattice Gram basis."""
+    from sage.all import ZZ, identity_matrix, matrix
+    from sage_indefinite_port.indefinite.indefinite_reduction import _indefinite_gram_schmidt
+
+    gram = matrix(ZZ, [[1, 1], [1, -1]])
+    assert _indefinite_gram_schmidt(gram, identity_matrix(ZZ, 2))[0] is not None
+    invalid = (
+        (matrix(ZZ, [[1, 2], [0, 1]]), identity_matrix(ZZ, 2)),
+        (gram, matrix(ZZ, [[1, 0], [0, 0]])),
+        (gram, matrix(ZZ, 2, 3, 0)),
+    )
+    for form, basis in invalid:
+        try:
+            _indefinite_gram_schmidt(form, basis)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("invalid Gram-Schmidt input was accepted")
+
+
 def test_indefinite_lll_nearest_integer_uses_source_half_tie_rule() -> None:
     """The signed LLL size-reduction operation uses GAP's exact nearest integer."""
     from sage.all import QQ
