@@ -6,6 +6,7 @@ from sage.all import ZZ, matrix
 
 from sage_indefinite_port.indefinite.lorentzian_cells import (
     LorentzianPerfectCell,
+    NONNEGATIVE_SQUARES,
     ZERO_SQUARES,
     _ConfigurationPairings,
     _perfect_form_hash_key,
@@ -47,3 +48,13 @@ def test_isotropic_cell_invariants_preserve_integral_change_of_basis() -> None:
     expected = (((0, 2),), ((1, 1),), (1, 1), (1, 1))
     assert _perfect_form_hash_key(cell) == expected
     assert _perfect_form_hash_key(changed_cell) == expected
+
+
+def test_nonnegative_square_face_has_the_exact_pairing_multisets() -> None:
+    """The face x=1 of x^2-y^2 has norms (0,1,0) and pairings (1,2,1)."""
+    cell = LorentzianPerfectCell(
+        lattice([[1, 0], [0, -1]]), ((1, -1), (1, 0), (1, 1)), NONNEGATIVE_SQUARES
+    )
+    assert _perfect_form_hash_key(cell) == (
+        ((0, 2), (1, 1)), ((1, 2), (2, 1)), (1, 1, 0), (1, 1, 1)
+    )

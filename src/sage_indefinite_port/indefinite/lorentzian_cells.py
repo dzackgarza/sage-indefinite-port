@@ -1287,12 +1287,12 @@ def _perfect_form_hash_key(cell: LorentzianPerfectCell) -> PerfectFormKey:
     """
     pairings = _ConfigurationPairings(cell.rows, _gram_matrix(cell.lattice))
     diagonal = Counter(int(value) for value in pairings.diagonal())
-    all_pairs: Counter[int] = Counter()
-    for _start, block in pairings.blocks():
-        values, counts = np.unique(block, return_counts=True)
-        all_pairs.update(dict(zip((int(value) for value in values), (int(count) for count in counts), strict=True)))
-    # The full square counts each unordered pair twice and the diagonal once.
-    off_diagonal = {value: (all_pairs[value] - diagonal.get(value, 0)) // 2 for value in all_pairs}
+    off_diagonal: Counter[int] = Counter()
+    for i in range(len(pairings)):
+        row = pairings.column(i)
+        # The pinned loop counts each unordered pair once, without sorting
+        # or retaining an array of Python scalar objects.
+        off_diagonal.update(int(row[j]) for j in range(i + 1, len(pairings)))
     smith_invariants = tuple(int(entry) for entry in matrix(SageZZ, cell.rows).elementary_divisors())
     vector_contents = tuple(sorted(gcd(*row) for row in cell.rows))
     return (
