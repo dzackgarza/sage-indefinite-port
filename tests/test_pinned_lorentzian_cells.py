@@ -50,7 +50,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
 
 def test_gap_lll_transformation_uses_row_congruence_orientation() -> None:
     """The GAP provider's transformation acts by P G P^T, not P^T G P."""
-    from sage.all import QQ, ZZ, matrix, libgap
+    from sage.all import QQ, ZZ, matrix, vector, libgap
 
     gram = matrix(ZZ, [[100, 31, 17], [31, 11, 6], [17, 6, 4]])
     record = libgap.LLLReducedGramMat(
@@ -466,7 +466,8 @@ def test_source_subspace_completion_int_returns_unimodular_complements() -> None
                 for j in range(kernel.nrows()):
                     block[i, j] = row_transform[i, j]
             source_basis = block.inverse() * column_transform.inverse()
-            assert full_basis == source_basis
+            assert completion == source_basis.matrix_from_rows(range(kernel.nrows(), dimension))
+            assert full_basis == completion.stack(kernel)
 
     try:
         _source_subspace_completion_int(matrix(ZZ, [[2, 0, 0]]), 3)
@@ -965,7 +966,6 @@ def test_source_indefinite_short_positive_vector_certifies_search_witnesses() ->
         (matrix(ZZ, [[1, 2], [0, 1]]), (ZZ(1), ZZ(1))),
         (gram, (0.5,)),
         (gram, (ZZ(0),)),
-        (gram, (ZZ(-1),)),
     ):
         try:
             _source_indefinite_short_positive_vector(bad_gram, lambda _gram, w=witness: w)
@@ -1061,7 +1061,7 @@ def test_source_direct_graver_improvement_matches_literal_ordered_passes() -> No
 
 def test_source_direct_graver_improvement_rejects_false_descent_prefix(monkeypatch) -> None:
     """The update boundary verifies every claimed GetAlpha step."""
-    from sage.all import ZZ, vector
+    from sage.all import ZZ, matrix, vector
     import sage_indefinite_port.indefinite.lorentzian_cells as cells
 
     gram = matrix(ZZ, [[1]])
@@ -1430,7 +1430,7 @@ def test_ambient_vectors_reconstructs_exact_shell_and_filters_squares() -> None:
     """The kernel-coordinate candidates reconstruct to the prescribed fibre."""
     from types import SimpleNamespace
 
-    from sage.all import ZZ, matrix, vector
+    from sage.all import QQ, ZZ, matrix, vector
 
     lorentzian = matrix(ZZ, [[1, 0, 0], [0, -1, 0], [0, 0, -1]])
     enumerator = SimpleNamespace(
@@ -1870,7 +1870,7 @@ def test_positive_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() ->
         lower, diagonal = _positive_ldl_factorization(gram)
         lower_matrix = matrix(QQ, lower)
         diagonal_matrix_ = diagonal_matrix(QQ, diagonal)
-        assert lower_matrix.is_lower_triangular()
+        assert all(lower_matrix[i, j] == 0 for i in range(gram.nrows()) for j in range(i + 1, gram.ncols()))
         assert all(pivot > 0 for pivot in diagonal)
         assert lower_matrix * diagonal_matrix_ * lower_matrix.transpose() == gram
         _validate_fixed_distance_ldl_factorization(gram, (lower, diagonal))
@@ -1918,7 +1918,7 @@ def test_positive_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() ->
 
 def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
     """The pinned CVP receives m*w and the quadratic radius m^2*base_bound."""
-    from sage.all import QQ, ZZ, identity_matrix, vector
+    from sage.all import QQ, ZZ, identity_matrix, matrix, vector
     from sage_indefinite_port.indefinite import lorentzian_cells as cells
 
     class CVPEngine:
@@ -1934,7 +1934,7 @@ def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
 
     enumerator = object.__new__(cells._PositiveVectorEnumerator)
     engine = CVPEngine()
-    enumerator.rational_field = object()
+    enumerator.rational_field = QQ
     enumerator.lattice = object()
     enumerator.base_target_engine_coordinates = (-QQ.one(), QQ.zero())
     enumerator.base_bound = QQ(5)

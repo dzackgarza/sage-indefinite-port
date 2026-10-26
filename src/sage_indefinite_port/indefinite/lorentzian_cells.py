@@ -2545,7 +2545,7 @@ def _pinned_positive_eigen_directions(
     if any(not isfinite(float(entry)) for entry in gram.list()):
         raise ValueError("the Eigen positive-direction search requires finite Gram entries")
     data = cast(
-        list[tuple[ComplexDoubleElement, list[FreeModuleElement[ComplexDoubleElement]], int]],
+        list[tuple[ComplexDoubleElement, list[FreeModuleElement], int]],
         gram.eigenvectors_right(),
     )
     eigenvalues: list[float] = []
@@ -2801,7 +2801,10 @@ def _source_certify_positive_integral_vector(
     r"""Enforce the public positive-vector contract at the consumer boundary."""
     if gram.nrows() != gram.ncols() or len(candidate) != gram.nrows():
         raise ValueError("positive-vector witness dimension must match the Gram matrix")
-    integral_entries = tuple(SageZZ(entry) for entry in candidate)
+    try:
+        integral_entries = tuple(SageZZ(entry) for entry in candidate)
+    except (TypeError, ValueError, ArithmeticError) as error:
+        raise ValueError("positive-vector witness coordinates must be integral") from error
     if any(entry != integer for entry, integer in zip(candidate, integral_entries)):
         raise ValueError("positive-vector witness coordinates must be integral")
     integral = integral_entries
@@ -2974,7 +2977,10 @@ def _source_indefinite_short_positive_vector(
             _source_require_integral_matrix(perturbation, "positive-vector perturbation")
             integral_perturbation = matrix(SageZZ, perturbation)
         except (TypeError, ValueError, ArithmeticError) as error:
-            raise ArithmeticError("positive-vector perturbation is not an exact integral lattice automorphism") from error
+            raise ArithmeticError(
+                "positive-vector perturbation is not an exact integral lattice automorphism: "
+                "expected an exact integral matrix"
+            ) from error
         if integral_perturbation != perturbation or abs(integral_perturbation.det()) != 1:
             raise ArithmeticError("positive-vector perturbation is not an integral lattice automorphism")
         perturbation = integral_perturbation
@@ -2987,7 +2993,10 @@ def _source_indefinite_short_positive_vector(
         # preamble's positive_vector instead silently substituted its
         # different exact diagonalization algorithm for this source step.
         found_raw = tuple(find_positive(perturbed_gram))
-        found = vector(SageZZ, found_raw)
+        try:
+            found = vector(SageZZ, found_raw)
+        except (TypeError, ValueError, ArithmeticError) as error:
+            raise ValueError("positive-vector search witness coordinates must be integral") from error
         if any(entry != integer for entry, integer in zip(found_raw, found)):
             raise ArithmeticError("positive-vector search returned nonintegral coordinates")
         if len(found_raw) != rank or not any(found):
