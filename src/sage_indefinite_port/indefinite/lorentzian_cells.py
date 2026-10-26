@@ -2150,6 +2150,25 @@ def _fixed_distance_coordinate_solutions(
             zero,
         )
         squared_radius = remaining / diagonal[index]
+        if index == 0:
+            # At the innermost coordinate the remaining equation is exactly
+            # D_0 (z-center)^2 = remaining. Solve it directly instead of
+            # traversing every integer in the enclosing interval; this is
+            # the distinction between a fixed-distance sphere and an
+            # at-most-distance ellipsoid enumeration.
+            numerator = int(squared_radius.numerator())
+            denominator = int(squared_radius.denominator())
+            root_numerator = isqrt(numerator)
+            root_denominator = isqrt(denominator)
+            if root_numerator * root_numerator != numerator or root_denominator * root_denominator != denominator:
+                return
+            radius = SageQQ(root_numerator) / SageQQ(root_denominator)
+            candidates = (center,) if radius == 0 else (center - radius, center + radius)
+            for candidate in candidates:
+                if candidate.denominator() == 1:
+                    coordinates[0] = int(candidate)
+                    solutions.append((tuple(SageZZ(entry) for entry in coordinates), bound))
+            return
         radius = isqrt(int(squared_radius.numerator() // squared_radius.denominator()))
         floor_center = int(center.numerator() // center.denominator())
         ceil_center = -int((-center).numerator() // (-center).denominator())
