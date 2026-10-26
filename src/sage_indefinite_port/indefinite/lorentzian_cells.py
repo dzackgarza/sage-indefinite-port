@@ -1467,6 +1467,11 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             coordinate = covector.to_vector()
             normal = vector(SageQQ, (_rational(coordinate(label)) for label in labels))
             halfspace_rows.append(normal)
+        halfspace_matrix = matrix(SageQQ, halfspace_rows)
+        # Keep the single matrix used by the consumer below; retaining both
+        # a Python list of Sage vectors and its dense matrix duplicates the
+        # entire H-normal family for high-facet cells.
+        del halfspace_rows
         # Evaluate bounded blocks of exact covectors against the entire ray
         # matrix.  A scalar row-dot-product loop costs one Python-level exact
         # pairing per ray per facet; one matrix-vector product per facet still
@@ -1474,9 +1479,9 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         # that dispatch while bounding the temporary pairing matrix.
         ray_transpose = rows.transpose()
         block_size = _configuration_pairing_block_size(rows.nrows())
-        for start in range(0, len(halfspace_rows), block_size):
-            stop = min(start + block_size, len(halfspace_rows))
-            pairing_block = matrix(SageQQ, halfspace_rows[start:stop]) * ray_transpose
+        for start in range(0, halfspace_matrix.nrows(), block_size):
+            stop = min(start + block_size, halfspace_matrix.nrows())
+            pairing_block = halfspace_matrix.matrix_from_rows(range(start, stop)) * ray_transpose
             for offset in range(stop - start):
                 incidence = all_ray_positions.difference(
                     pairing_block.row(offset).nonzero_positions()
@@ -1487,7 +1492,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                     raise ArithmeticError("distinct perfect-cell facets have the same extreme-ray incidence")
                 by_incidence[incidence] = covectors[start + offset]
         facet_covectors_by_incidence[id(cell)] = by_incidence
-        halfspace_rows_by_cell[id(cell)] = matrix(SageQQ, halfspace_rows)
+        halfspace_rows_by_cell[id(cell)] = halfspace_matrix
     ambient_labels = tuple(lattice.module_generating_set())
     ambient_dual = lattice.dual_module()
     dual_labels = tuple(ambient_dual.module_generating_set())
