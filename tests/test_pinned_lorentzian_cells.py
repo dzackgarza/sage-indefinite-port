@@ -1606,8 +1606,10 @@ def test_fixed_distance_dual_lll_frame_reconstructs_exact_sphere() -> None:
     from sage.all import QQ, ZZ, identity_matrix, matrix, vector
 
     gram = diagonal_matrix(QQ, [1, 2, 3])
-    target = (QQ(1) / 2, QQ(0), QQ(0))
-    bound = QQ(1) / 4
+    # The shear changes this center by an integral vector in the first
+    # reduced coordinate, so a mistaken untransformed target still fails.
+    target = (QQ(0), QQ(1) / 2, QQ(0))
+    bound = QQ(1) / 2
     order = matrix(ZZ, [[1, 2, 0], [0, 1, 1], [0, 0, 1]])
     dual = order.inverse().transpose()
     actual = _fixed_distance_dual_lll_solutions(gram, target, bound, dual, order)
@@ -1618,7 +1620,10 @@ def test_fixed_distance_dual_lll_frame_reconstructs_exact_sphere() -> None:
         delta = tuple(QQ(coordinates[i]) - target[i] for i in range(3))
         if sum((delta[i] * gram[i, j] * delta[j] for i in range(3) for j in range(3)), QQ(0)) == bound:
             expected.add(tuple(ZZ(value) for value in coordinates))
-    assert got == expected
+    assert got == expected == {
+        (ZZ(0), ZZ(0), ZZ(0)),
+        (ZZ(0), ZZ(1), ZZ(0)),
+    }
     assert tuple(actual) == tuple(sorted(actual, key=lambda item: tuple((order * vector(ZZ, item[0]).column())[i, 0] for i in reversed(range(3)))))
 
     for bad_dual, bad_order, exception in (
