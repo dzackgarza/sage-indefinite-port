@@ -2768,8 +2768,16 @@ def _source_positive_search_best(
     r"""Apply the best-vector and termination transition from Positivity.h:641-657."""
     if gram.nrows() != gram.ncols() or candidate not in SageZZ**gram.nrows():
         raise ValueError("positive-search candidate and Gram dimensions must agree")
-    if without_improvement < 0:
-        raise ValueError("the no-improvement counter must be nonnegative")
+    if not 0 <= without_improvement <= 500:
+        raise ValueError("the no-improvement counter must lie in the pinned range 0..500")
+    if (best_vector is None) != (best_norm is None):
+        raise ValueError("the best positive vector and its norm must be present together")
+    if best_vector is not None:
+        if best_vector not in SageZZ**gram.nrows():
+            raise ValueError("the best positive vector has the wrong dimension")
+        certified_best_norm = SageZZ((best_vector * gram * best_vector.column())[0])
+        if best_norm != certified_best_norm or certified_best_norm <= 0:
+            raise ArithmeticError("the saved best vector and positive norm are inconsistent")
     norm = SageZZ((candidate * gram * candidate.column())[0])
     if norm <= 0:
         raise ValueError("the specialized positive search requires a positive-norm candidate")

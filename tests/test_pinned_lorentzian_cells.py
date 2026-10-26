@@ -904,6 +904,14 @@ def test_source_positive_search_best_matches_pinned_termination_state() -> None:
     best, norm, failures, stop = _source_positive_search_best(gram, worse, best, norm, 499)
     assert best == short and norm == 3 and failures == 500 and stop
 
+    for state in ((first, None, 0), (None, 15, 0), (first, 14, 0), (first, 15, 501)):
+        try:
+            _source_positive_search_best(gram, worse, state[0], state[1], state[2])
+        except (ValueError, ArithmeticError):
+            pass
+        else:
+            raise AssertionError(f"inconsistent positive-search state accepted: {state}")
+
 
 def test_source_positive_perturbation_reset_uses_strict_factor_1000() -> None:
     """Match Positivity.h:660, including equality at the threshold."""
