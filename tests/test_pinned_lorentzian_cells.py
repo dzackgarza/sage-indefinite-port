@@ -20,6 +20,8 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _pinned_nullspace_matrix,
     _pinned_diagonalize_symmetric_matrix,
     _integral_positive_vector_allmeth,
+    _pinned_approximation_iterator,
+    _advance_pinned_approximation_iterator,
     _pinned_independent_column_indices,
     _outside_ray_directions,
     _quadratic_descent_prefix,
@@ -153,6 +155,30 @@ def test_pinned_column_reduction_matches_greedy_rank_increase() -> None:
                         assert value.matrix_from_columns(selected[: index + 1]).rank() == index + 1
                         assert all(previous < column for previous in selected[:index])
                     assert selected == tuple(value.echelon_form().pivots())
+
+
+def test_pinned_approximation_iterator_advances_tied_steps_in_source_order() -> None:
+    """ApproxIterator increments every group tied at its minimum next-time."""
+    from sage.all import QQ
+
+    ordered, nexts, approximation = _pinned_approximation_iterator((QQ(1) / 2, QQ(1) / 3, -QQ(1) / 2))
+    assert ordered == ((QQ(2), ((0, 1), (2, -1))), (QQ(3), ((1, 1),)))
+    assert nexts == [QQ(1), QQ(3) / 2]
+    assert _advance_pinned_approximation_iterator(ordered, nexts, approximation) == [1, 0, -1]
+    assert nexts == [QQ(3), QQ(3) / 2]
+    assert _advance_pinned_approximation_iterator(ordered, nexts, approximation) == [1, 1, -1]
+    assert _advance_pinned_approximation_iterator(ordered, nexts, approximation) == [2, 1, -2]
+
+    float_ordered, float_nexts, float_approximation = _pinned_approximation_iterator((1.0, -0.5))
+    assert _advance_pinned_approximation_iterator(float_ordered, float_nexts, float_approximation) == [1, 0]
+    assert _advance_pinned_approximation_iterator(float_ordered, float_nexts, float_approximation) == [1, -1]
+
+    try:
+        _pinned_approximation_iterator((QQ.zero(), QQ.zero()))
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("zero direction unexpectedly created an ApproxIterator")
 
 
 def test_integral_positive_vector_consumer_uses_pinned_diagonalization() -> None:

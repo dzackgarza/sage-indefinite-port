@@ -2326,6 +2326,50 @@ def _pinned_diagonalize_symmetric_matrix(
     return transform, diagonal_matrix
 
 
+def _pinned_approximation_iterator(
+    direction: tuple[Rational, ...] | tuple[float, ...],
+) -> tuple[
+    tuple[tuple[Rational | float, tuple[tuple[int, int], ...]], ...],
+    list[Rational | float],
+    list[int],
+]:
+    r"""Construct the source ``ApproxIterator`` state for one direction."""
+    groups: dict[Rational | float, list[tuple[int, int]]] = {}
+    for coordinate, entry in enumerate(direction):
+        if entry:
+            if isinstance(entry, float):
+                step: Rational | float = 1.0 / abs(entry)
+                sign = 1 if entry > 0 else -1
+            else:
+                rational_entry = cast(Rational, entry)
+                step = SageQQ.one() / abs(rational_entry)
+                sign = 1 if rational_entry > 0 else -1
+            groups.setdefault(step, []).append((coordinate, sign))
+    if not groups:
+        raise ValueError("ApproxIterator requires a nonzero direction")
+    ordered = tuple((step, tuple(group)) for step, group in sorted(groups.items()))
+    nexts = [step / 2.0 if isinstance(step, float) else cast(Rational, step) / SageQQ(2) for step, _group in ordered]
+    return ordered, nexts, [0] * len(direction)
+
+
+def _advance_pinned_approximation_iterator(
+    ordered: tuple[tuple[Rational | float, tuple[tuple[int, int], ...]], ...],
+    nexts: list[Rational | float],
+    approximation: list[int],
+) -> list[int]:
+    r"""Advance all tied minima exactly as ``ApproxIterator.increment``."""
+    if len(nexts) != len(ordered) or not nexts:
+        raise ValueError("ApproxIterator state must contain one next-time per step")
+    least = min(nexts)
+    for group_index, (step, group) in enumerate(ordered):
+        if nexts[group_index] != least:
+            continue
+        nexts[group_index] = nexts[group_index] + step
+        for coordinate, sign in group:
+            approximation[coordinate] += sign
+    return approximation
+
+
 def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integer, ...]:
     r"""Port of the V2 diagonal/eigen ApproxIterator branch in Positivity.h.
 
@@ -2344,27 +2388,6 @@ def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integ
     qgram = cast(Matrix_rational_dense, reduced.change_ring(SageQQ))
     transform, diagonal_matrix = _pinned_diagonalize_symmetric_matrix(qgram)
 
-    def make_approx_iterator(
-        direction: tuple[Rational, ...] | tuple[float, ...],
-    ) -> tuple[
-        tuple[tuple[Rational | float, tuple[tuple[int, int], ...]], ...],
-        list[Rational | float],
-        list[int],
-    ]:
-        groups: dict[Rational | float, list[tuple[int, int]]] = {}
-        for coordinate, entry in enumerate(direction):
-            if entry:
-                if isinstance(entry, float):
-                    step: Rational | float = 1.0 / abs(entry)
-                    sign = 1 if entry > 0 else -1
-                else:
-                    rational_entry = cast(Rational, entry)
-                    step = SageQQ.one() / abs(rational_entry)
-                    sign = 1 if rational_entry > 0 else -1
-                groups.setdefault(step, []).append((coordinate, sign))
-        ordered = tuple((step, tuple(group)) for step, group in sorted(groups.items()))
-        nexts = [step / 2.0 if isinstance(step, float) else cast(Rational, step) / SageQQ(2) for step, _group in ordered]
-        return ordered, nexts, [0] * rank
 
     iterators: list[
         tuple[
@@ -2381,7 +2404,7 @@ def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integ
         for entry in row:
             norm += abs(entry)
         normalized = tuple(SageQQ(entry) / norm for entry in row)
-        iterators.append(make_approx_iterator(normalized))
+        iterators.append(_pinned_approximation_iterator(normalized))
     # Positivity.h:171-187 and :335-342. These floating eigen-directions are
     # an optimization only; the exact diagonal iterators above are still the
     # guaranteed terminating search. Test the exact integral quadratic value
@@ -2413,7 +2436,7 @@ def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integ
                     if eigen_norm and all(isfinite(entry) for entry in direction) and isfinite(eigen_norm):
                         normalized = tuple(eigen_entry / eigen_norm for eigen_entry in direction)
                         if all(isfinite(entry) and (entry == 0 or abs(entry) >= 1.0 / float_info.max) for entry in normalized):
-                            eigen_iterators.append(make_approx_iterator(normalized))
+                            eigen_iterators.append(_pinned_approximation_iterator(normalized))
     except (ArithmeticError, OverflowError, RuntimeError, TypeError, ValueError):
         # This branch only accelerates the exact search. Overflow or failure
         # in the floating eigensolver must not disable its exact directions.
@@ -2422,13 +2445,7 @@ def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integ
         raise ValueError("the Gram matrix has no positive direction")
     while True:
         for ordered, nexts, approximation in iterators:
-            least = min(nexts)
-            for group_index, (step, group) in enumerate(ordered):
-                if nexts[group_index] != least:
-                    continue
-                nexts[group_index] = cast(Rational, nexts[group_index]) + cast(Rational, step)
-                for coordinate, sign in group:
-                    approximation[coordinate] += sign
+            _advance_pinned_approximation_iterator(ordered, nexts, approximation)
             candidate = vector(SageZZ, approximation)
             if (candidate * reduced * candidate.column())[0] > 0:
                 original = basis.transpose() * candidate.column()
@@ -2440,13 +2457,7 @@ def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integ
                     raise ArithmeticError("positive-vector reduction lost its integral norm witness")
                 return result
         for ordered, nexts, approximation in eigen_iterators:
-            least = min(nexts)
-            for group_index, (step, group) in enumerate(ordered):
-                if nexts[group_index] != least:
-                    continue
-                nexts[group_index] = cast(float, nexts[group_index]) + cast(float, step)
-                for coordinate, sign in group:
-                    approximation[coordinate] += sign
+            _advance_pinned_approximation_iterator(ordered, nexts, approximation)
             candidate = vector(SageZZ, approximation)
             if (candidate * reduced * candidate.column())[0] > 0:
                 original = basis.transpose() * candidate.column()
