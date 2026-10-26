@@ -2370,6 +2370,30 @@ def _advance_pinned_approximation_iterator(
     return approximation
 
 
+def _pinned_positive_diagonal_directions(
+    transform: Matrix_rational_dense,
+    diagonal: Matrix_rational_dense,
+) -> tuple[tuple[Rational, ...], ...]:
+    r"""Port ``GetPositiveDirections_diag`` from Positivity.h:139-160.
+
+    Scan the diagonal in source order, retain strictly positive entries, and
+    normalize each corresponding transformation row by its exact L1 norm.
+    """
+    if diagonal.nrows() != diagonal.ncols() or transform.nrows() != diagonal.nrows() or transform.ncols() != diagonal.ncols():
+        raise ValueError("diagonal directions require matching square transform and Gram matrices")
+    if any(diagonal[i, j] for i in range(diagonal.nrows()) for j in range(diagonal.ncols()) if i != j):
+        raise ValueError("diagonal directions require a diagonal Gram matrix")
+    directions: list[tuple[Rational, ...]] = []
+    for index in range(int(diagonal.nrows())):
+        if diagonal[index, index] > 0:
+            row = tuple(SageQQ(entry) for entry in transform.row(index))
+            norm = sum(abs(entry) for entry in row)
+            if not norm:
+                raise ArithmeticError("a positive diagonal direction has zero transformation row")
+            directions.append(tuple(entry / norm for entry in row))
+    return tuple(directions)
+
+
 def _pinned_positive_eigen_directions(
     gram: Matrix_real_double_dense,
 ) -> tuple[tuple[float, ...], ...]:
@@ -2426,16 +2450,10 @@ def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integ
             list[Rational | float],
             list[int],
         ]
-    ] = []
-    for index in range(rank):
-        if diagonal_matrix[index, index] <= 0:
-            continue
-        row = cast("FreeModuleElement[Rational]", transform.row(index))
-        norm = SageQQ.zero()
-        for entry in row:
-            norm += abs(entry)
-        normalized = tuple(SageQQ(entry) / norm for entry in row)
-        iterators.append(_pinned_approximation_iterator(normalized))
+    ] = [
+        _pinned_approximation_iterator(direction)
+        for direction in _pinned_positive_diagonal_directions(transform, diagonal_matrix)
+    ]
     # Positivity.h:171-187 and :335-342. These floating eigen-directions are
     # an optimization only; the exact diagonal iterators above are still the
     # guaranteed terminating search. Test the exact integral quadratic value

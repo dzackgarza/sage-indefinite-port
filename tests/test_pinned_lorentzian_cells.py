@@ -21,6 +21,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _pinned_diagonalize_symmetric_matrix,
     _integral_positive_vector_allmeth,
     _pinned_positive_eigen_directions,
+    _pinned_positive_diagonal_directions,
     _pinned_approximation_iterator,
     _advance_pinned_approximation_iterator,
     _pinned_independent_column_indices,
@@ -156,6 +157,24 @@ def test_pinned_column_reduction_matches_greedy_rank_increase() -> None:
                         assert value.matrix_from_columns(selected[: index + 1]).rank() == index + 1
                         assert all(previous < column for previous in selected[:index])
                     assert selected == tuple(value.echelon_form().pivots())
+
+
+def test_pinned_positive_diagonal_directions_follow_source_scan_and_l1_norm() -> None:
+    """GetPositiveDirections_diag keeps positive rows in diagonal order."""
+    from sage.all import QQ, matrix
+
+    transform = matrix(QQ, [[1, 2, 0, 0], [0, 1, 1, 0], [2, 0, -2, 1], [1, 0, 0, 0]])
+    diagonal = matrix(QQ, [[2, 0, 0, 0], [0, 0, 0, 0], [0, 0, -3, 0], [0, 0, 0, 5]])
+    assert _pinned_positive_diagonal_directions(transform, diagonal) == (
+        (QQ(1) / 3, QQ(2) / 3, QQ.zero(), QQ.zero()),
+        (QQ(1), QQ.zero(), QQ.zero(), QQ.zero()),
+    )
+    try:
+        _pinned_positive_diagonal_directions(transform, matrix(QQ, [[1, 1], [1, 1]]))
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("nondiagonal Gram matrix accepted")
 
 
 def test_pinned_positive_eigen_directions_preserve_source_row_orientation() -> None:
