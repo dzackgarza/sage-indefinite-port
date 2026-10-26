@@ -126,6 +126,8 @@ def test_initial_cell_nullspace_uses_pinned_gap_row_order() -> None:
 
 def test_pinned_nullspace_preserves_gap_row_basis_order() -> None:
     """The source nullspace rows differ from Sage's canonical kernel basis."""
+    from random import Random
+
     from sage.all import QQ, matrix
 
     gram = matrix(QQ, [[1, 2, 3], [2, 4, 6], [3, 6, 9]])
@@ -145,6 +147,22 @@ def test_pinned_nullspace_preserves_gap_row_basis_order() -> None:
     rank_one_kernel = _pinned_nullspace_matrix(rank_one)
     assert rank_one_kernel * rank_one == 0
     assert rank_one_kernel.nrows() == 2
+
+    random = Random(481516)
+    for size in range(1, 6):
+        for _ in range(12):
+            symmetric = matrix(
+                QQ,
+                size,
+                size,
+                lambda i, j: random.randint(-4, 4) if i <= j else 0,
+            )
+            for i in range(size):
+                for j in range(i):
+                    symmetric[i, j] = symmetric[j, i]
+            kernel = _pinned_nullspace_matrix(symmetric)
+            assert kernel * symmetric == 0
+            assert kernel.nrows() == size - symmetric.rank()
 
 
 def test_source_negative_vector_respects_radical_and_diagonal_order() -> None:
