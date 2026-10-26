@@ -1547,12 +1547,12 @@ def test_initial_vector_search_advances_integral_bound_without_rescanning() -> N
 
 
 def test_isotropic_multiplier_uses_dual_lll_fixed_distance_solver() -> None:
-    """The production isotropic multiplier path calls exact sphere enumeration."""
-    from sage.all import QQ, ZZ, matrix, vector
+    """The production isotropic multiplier path reconstructs exact sphere points."""
+    from sage.all import QQ, ZZ, diagonal_matrix, matrix, vector
     from sage_indefinite_port.indefinite import lorentzian_cells as cells
 
     class CVPEngine:
-        engine_gram_q = matrix(QQ, [[2, 1], [1, 2]])
+        engine_gram_q = diagonal_matrix(QQ, [1, 2, 3])
 
         def _engine_target_coordinates(self, target):
             return tuple(target)
@@ -1566,11 +1566,11 @@ def test_isotropic_multiplier_uses_dual_lll_fixed_distance_solver() -> None:
     enumerator = object.__new__(cells._PositiveVectorEnumerator)
     enumerator.rational_field = object()
     enumerator.lattice = object()
-    enumerator.base_target_engine_coordinates = (QQ(1) / 2, QQ(0))
-    enumerator.base_bound = QQ(1) / 2
+    enumerator.base_target_engine_coordinates = (QQ(0), QQ(1) / 4, QQ(0))
+    enumerator.base_bound = QQ(1) / 8
     enumerator.cvp_engine = CVPEngine()
-    enumerator.enumeration_transform = matrix(ZZ, [[1, 0], [-1, 1]])
-    enumerator.enumeration_order_transform = matrix(ZZ, [[1, 1], [0, 1]])
+    enumerator.enumeration_order_transform = matrix(ZZ, [[1, 2, 0], [0, 1, 1], [0, 0, 1]])
+    enumerator.enumeration_transform = enumerator.enumeration_order_transform.inverse().transpose()
     enumerator.partner_row = vector(ZZ, (1, 1, 0))
     enumerator.inclusion_rows = matrix(ZZ, [[0, 1, 0], [0, 0, 1]])
     enumerator.gram = matrix(ZZ, [[2, 0, 0], [0, -2, 0], [0, 0, -2]])
@@ -1578,23 +1578,22 @@ def test_isotropic_multiplier_uses_dual_lll_fixed_distance_solver() -> None:
     enumerator.d = ZZ(2)
     enumerator.scaled_max = ZZ(4)
     enumerator.allowed_squares = cells.ZERO_SQUARES
-    calls = []
-    original_sphere = cells._fixed_distance_dual_lll_solutions
     original_element = cells._owned_engine_element
     original_rational = cells._owned_rational
     original_ambient = enumerator._ambient_vectors
     try:
-        cells._fixed_distance_dual_lll_solutions = lambda *args: (calls.append(args) or (((0, 0), QQ(2)),))
         cells._owned_engine_element = lambda field, value: value
         cells._owned_rational = lambda lattice, value, field: value
-        enumerator._ambient_vectors = lambda multiplier, coordinates, squares: (multiplier, coordinates, squares)
-        assert enumerator.vectors_at_multiplier(2) == (2, ((0, 0),), (QQ(2),))
+        enumerator._ambient_vectors = lambda multiplier, coordinates, distances: (multiplier, coordinates, distances)
+        assert enumerator.vectors_at_multiplier(2) == (
+            2,
+            ((ZZ(0), ZZ(0), ZZ(0)), (ZZ(0), ZZ(1), ZZ(0))),
+            (QQ(1) / 2, QQ(1) / 2),
+        )
     finally:
-        cells._fixed_distance_dual_lll_solutions = original_sphere
         cells._owned_engine_element = original_element
         cells._owned_rational = original_rational
         enumerator._ambient_vectors = original_ambient
-    assert calls == [(CVPEngine.engine_gram_q, (QQ(1), QQ(0)), QQ(2), enumerator.enumeration_transform, enumerator.enumeration_order_transform)]
 
 
 def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
