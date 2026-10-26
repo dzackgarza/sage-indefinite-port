@@ -334,9 +334,10 @@ def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
 
         def close_vector_coordinates(self, target, bound):
             self.call = (target, bound)
-            # Deliberately return reverse source order: sorting must keep each
-            # exact squared distance attached to its own coordinate row.
-            return (((-2, 0), QQ.one()), ((-3, 0), QQ.zero()))
+            # Deliberately return reverse source order. A nontrivial unimodular
+            # transform orders (-2,1) before (-3,0), and each exact squared
+            # distance must stay attached to its own coordinate row.
+            return (((-2, 1), QQ(2)), ((-3, 0), QQ.zero()))
 
     enumerator = object.__new__(cells._PositiveVectorEnumerator)
     engine = CVPEngine()
@@ -345,7 +346,7 @@ def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
     enumerator.base_target_engine_coordinates = (-QQ.one(), QQ.zero())
     enumerator.base_bound = QQ(5)
     enumerator.cvp_engine = engine
-    enumerator.enumeration_order_transform = identity_matrix(ZZ, 2)
+    enumerator.enumeration_order_transform = matrix(ZZ, [[1, 0], [-2, 1]])
     enumerator.partner_row = vector(ZZ, (1, 1, 0))
     enumerator.inclusion_rows = matrix(ZZ, [[0, 1, 0], [0, 0, 1]])
     enumerator.gram = matrix(ZZ, [[5, 0, 0], [0, -1, 0], [0, 0, -1]])
