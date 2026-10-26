@@ -1731,6 +1731,8 @@ def test_fixed_distance_dual_lll_frame_reconstructs_exact_sphere() -> None:
         (gram, target, bound, identity_matrix(ZZ, 3), order, ArithmeticError),
         (gram, (0.5, QQ(0), QQ(0)), bound, dual, order, ValueError),
         (gram.change_ring(RDF), target, bound, dual, order, ValueError),
+        (matrix(QQ, [[1, 1, 0], [0, 1, 0], [0, 0, 1]]), target, bound, dual, order, ValueError),
+        (diagonal_matrix(QQ, [1, 1, -1]), target, bound, dual, order, ArithmeticError),
         (gram, target, bound, dual.change_ring(RDF), order, ValueError),
         (gram, target, bound, matrix(QQ, [[QQ(1) / 2, 0, 0], [0, 1, 0], [0, 0, 1]]), order, ValueError),
         (gram, target, 0.5, dual, order, ValueError),
