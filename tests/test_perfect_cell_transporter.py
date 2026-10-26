@@ -109,10 +109,27 @@ def test_facet_incidence_streaming_preserves_exact_orbits() -> None:
     backend = LorentzianPerfectLocalBackend()
     permutation_orbits = backend.facet_orbit_permutations(cell)
     isometry_orbits = backend.facet_orbits(cell)
+    word_orbits, generator_permutations = backend._facet_orbit_transversal_words(cell)
 
     assert tuple(tuple(facet for facet, _ in orbit) for orbit in permutation_orbits) == tuple(
         tuple(facet for facet, _ in orbit) for orbit in isometry_orbits
     )
+    assert tuple(tuple(facet for facet, _ in orbit) for orbit in word_orbits) == tuple(
+        tuple(facet for facet, _ in orbit) for orbit in permutation_orbits
+    )
+    for word_orbit, permutation_orbit in zip(word_orbits, permutation_orbits, strict=True):
+        for (facet, word), (permutation_facet, permutation) in zip(word_orbit, permutation_orbit, strict=True):
+            assert facet == permutation_facet
+            composed = tuple(range(len(cell.vector_configuration)))
+            generator_indices = []
+            node = word
+            while node is not None:
+                node, generator_index = node
+                generator_indices.append(generator_index)
+            for generator_index in reversed(generator_indices):
+                generator = generator_permutations[generator_index]
+                composed = tuple(generator[position] for position in composed)
+            assert composed == permutation
     for permutation_orbit, isometry_orbit in zip(permutation_orbits, isometry_orbits, strict=True):
         for (facet, permutation), (isometry_facet, isometry) in zip(
             permutation_orbit, isometry_orbit, strict=True

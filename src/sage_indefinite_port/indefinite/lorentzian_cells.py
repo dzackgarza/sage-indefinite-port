@@ -60,6 +60,7 @@ from sage_indefinite_port.invariants import AttackProfile
 
 type PerfectMode = Literal["total", "isotropic"]
 type FacetIncidence = frozenset[int]
+type SchreierWord = tuple[SchreierWord, int] | None
 
 # The admissible squares in the normalized signature-(1,n) form are actual
 # subsets of R, not a source-level string selector.
@@ -690,6 +691,40 @@ class LorentzianPerfectLocalBackend:
         retained as ray permutations; ``facet_orbits`` materializes the owned
         lattice isometries only for callers requiring categorical morphisms.
         """
+        word_orbits, generator_permutations = self._facet_orbit_transversal_words(cell)
+        ray_count = len(cell.vector_configuration)
+        materialized = []
+        for orbit in word_orbits:
+            materialized_orbit = []
+            for facet, word in orbit:
+                permutation = tuple(range(ray_count))
+                generator_indices = []
+                node = word
+                while node is not None:
+                    node, generator_index = node
+                    generator_indices.append(generator_index)
+                for generator_index in reversed(generator_indices):
+                    generator = generator_permutations[generator_index]
+                    permutation = tuple(generator[position] for position in permutation)
+                materialized_orbit.append((facet, permutation))
+            materialized.append(tuple(materialized_orbit))
+        return tuple(materialized)
+
+    @cached_method
+    def _facet_orbit_transversal_words(
+        self, cell: LorentzianPerfectCell
+    ) -> tuple[
+        tuple[tuple[tuple[FacetIncidence, SchreierWord], ...], ...],
+        tuple[tuple[int, ...], ...],
+    ]:
+        r"""Facet orbits with Schreier transversals stored as generator words.
+
+        The perfect-domain traversal needs each facet's stabilizer witness
+        only to transform a rank-sized lattice basis. Storing a full ray
+        permutation for every facet costs O(number_of_facets * number_of_rays)
+        integers; this internal representation stores generator indices per
+        Schreier step and retains the generator permutations only once.
+        """
         vectors = cell.vector_configuration
         cone = self.cell_cone(cell)
         # The stored homogeneous H-presentation is already minimized. Asking
@@ -698,7 +733,7 @@ class LorentzianPerfectLocalBackend:
         covectors = iter(cone.halfspace_covectors())
         covector_block = tuple(islice(covectors, 16))
         if not covector_block:
-            return ()
+            return (), ()
         labels = tuple(cell.lattice.module_generating_set())
         integral_ray_rows = matrix(SageZZ, cell.rows)
         transposed_ray_rows = integral_ray_rows.transpose()
@@ -749,23 +784,22 @@ class LorentzianPerfectLocalBackend:
         # the complete membership oracle used for those exact checks.
         unvisited = set(facet_set)
         orbits = []
-        identity_permutation = tuple(range(len(vectors)))
+        identity_word = None
         for start in facets:
             if start not in unvisited:
                 continue
             unvisited.discard(start)
-            orbit = [(start, identity_permutation)]
-            for facet, element_permutation in orbit:
-                for permutation in permutations:
+            orbit = [(start, identity_word)]
+            for facet, element_word in orbit:
+                for generator_index, permutation in enumerate(permutations):
                     image = frozenset(permutation[position] for position in facet)
                     if image not in facet_set:
                         raise ArithmeticError("a cell-stabilizer generator fails to permute the facets")
                     if image in unvisited:
                         unvisited.discard(image)
-                        composed = tuple(permutation[element_permutation[position]] for position in range(len(vectors)))
-                        orbit.append((image, composed))
+                        orbit.append((image, (element_word, generator_index)))
             orbits.append(tuple(orbit))
-        return tuple(orbits)
+        return tuple(orbits), tuple(permutations)
 
     @cached_method
     def facet_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[tuple[FacetIncidence, LatticeIsometryMethods], ...], ...]:
@@ -1212,6 +1246,7 @@ class LorentzianPerfectComplex:
         self._traversal_adjacencies: list[LorentzianCellAdjacency] = []
         self._traversal_processed: set[int] = set()
         self._traversal_facet_orbits = {}
+        self._traversal_facet_generators = {}
 
     def lattice(self) -> Lattices.ParentMethods:
         return self._lattice
@@ -1244,11 +1279,12 @@ class LorentzianPerfectComplex:
         )
         source = representatives[source_position]
         new_representatives: list[LorentzianPerfectCell] = []
-        source_orbits = backend.facet_orbit_permutations(source)
+        source_orbits, generator_permutations = backend._facet_orbit_transversal_words(source)
         source_id = id(source)
         if sum(len(orbit) for orbit in source_orbits) != len({facet for orbit in source_orbits for facet, _ in orbit}):
             raise ArithmeticError("the cell facet-orbit decomposition contains repeated incidences")
         self._traversal_facet_orbits[source_id] = {orbit[0][0]: orbit for orbit in source_orbits}
+        self._traversal_facet_generators[source_id] = generator_permutations
         for orbit in source_orbits:
             facet = orbit[0][0]
             neighbor = backend.flip_across(source, facet)
@@ -1450,6 +1486,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         # requires a witness for each actual facet.  Recover those witnesses
         # using the Schreier transversal already computed for this orbit.
         orbit = complex_._traversal_facet_orbits[id(adjacency.source)][adjacency.facet]
+        generator_permutations = complex_._traversal_facet_generators[id(adjacency.source)]
         transporter_action = matrix(
             SageZZ,
             [_coordinate_row(lattice, adjacency.transporter(basis_vector), SageZZ) for basis_vector in ambient_basis],
@@ -1465,30 +1502,36 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 raise ArithmeticError("a source perfect-cell configuration does not span the ambient lattice")
             source_basis_data[source_key] = (tuple(basis_positions), source_rows.matrix_from_rows(basis_positions).inverse())
         basis_positions, inverse_source_basis = source_basis_data[source_key]
-        for incident, symmetry_permutation in orbit:
+        for incident, symmetry_word in orbit:
             # In row coordinates g(v)=vM. A covector column a cutting out
             # a>=0 on the target becomes M^{-1}a on its image. Since g is
             # integral unimodular, the transformed H-data remain integral.
             # This exact transformation avoids a new V-to-H conversion for
             # every member of a facet-stabilizer orbit.
-            image_basis = matrix(
-                SageQQ,
-                [adjacency.source.rows[symmetry_permutation[position]] for position in basis_positions],
-            )
+            image_positions = list(basis_positions)
+            generator_indices = []
+            node = symmetry_word
+            while node is not None:
+                node, generator_index = node
+                generator_indices.append(generator_index)
+            for generator_index in reversed(generator_indices):
+                generator = generator_permutations[generator_index]
+                image_positions = [generator[position] for position in image_positions]
+            image_basis = matrix(SageQQ, [adjacency.source.rows[position] for position in image_positions])
             symmetry_action = inverse_source_basis * image_basis
             if any(entry.denominator() != 1 for entry in symmetry_action.list()):
                 raise ArithmeticError("a Schreier stabilizer permutation does not induce an integral lattice action")
             symmetry_action = symmetry_action.change_ring(SageZZ)
             # In row coordinates, symmetry * transporter acts by the product
-            # M_transporter M_symmetry.  The ray permutation determines the
-            # exact integral action; check a nontrivial Schreier element in
-            # each facet orbit against the owned categorical morphism.
+            # M_transporter M_symmetry. The compact Schreier word determines
+            # the exact integral action on the selected basis; check a
+            # nontrivial Schreier element in each orbit against the owned map.
             action = transporter_action * symmetry_action
             if symmetry_action * ambient_gram * symmetry_action.transpose() != ambient_gram or abs(symmetry_action.det()) != 1:
                 raise ArithmeticError("a Schreier stabilizer permutation does not induce an integral lattice isometry")
             if action * ambient_gram * action.transpose() != ambient_gram or abs(action.det()) != 1:
                 raise ArithmeticError("a Schreier side-pairing action is not an integral lattice isometry")
-            # The Schreier permutation determines the exact action matrix.
+            # The Schreier word determines the exact action matrix.
             # Defer the owned categorical isometry until a caller requests the
             # side pairing, rather than constructing one for every orbit facet.
             target_to_neighbour_factory = (
