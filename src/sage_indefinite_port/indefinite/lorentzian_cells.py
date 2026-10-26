@@ -3129,7 +3129,9 @@ def _pinned_nullspace_matrix(gram: Matrix_rational_dense) -> Matrix_rational_den
     and first-negative-vector search; Sage's canonical basis can change them.
     """
     if gram.nrows() == 0:
-        return identity_matrix(SageQQ, gram.ncols())
+        # NullspaceMat returns left-kernel vectors of length nrows, so the
+        # left kernel of a 0-by-n matrix has the empty 0-by-0 row basis.
+        return matrix(SageQQ, 0, 0)
     gap_rows = [[libgap(SageQQ(entry)) for entry in row] for row in gram.rows()]
     gap_basis = libgap.NullspaceMat(gap_rows)
     rows = [[SageQQ(entry) for entry in row] for row in gap_basis]
