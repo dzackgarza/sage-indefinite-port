@@ -224,6 +224,26 @@ def test_source_negative_vector_certifies_congruence_random_indefinite_forms() -
             assert (candidate * gram * candidate.column())[0] < 0
 
 
+def test_source_negative_vector_certifies_rational_congruence_forms() -> None:
+    """Exercise exact rational congruences, including a degenerate form."""
+    from random import Random
+
+    from sage.all import QQ, diagonal_matrix, identity_matrix, matrix, vector
+
+    random = Random(8675309)
+    for size in range(2, 6):
+        for radical_rank in (0, 1):
+            diagonal = [-1] + [1] * (size - radical_rank - 1) + [0] * radical_rank
+            for _ in range(4):
+                change = identity_matrix(QQ, size)
+                for _ in range(2 * size):
+                    i, j = random.sample(range(size), 2)
+                    change[i, :] = change[i, :] + QQ(random.choice((-3, -1, 1, 3)))/2 * change[j, :]
+                gram = change * diagonal_matrix(QQ, diagonal) * change.transpose()
+                candidate = vector(QQ, _source_some_negative_vector(gram))
+                assert (candidate * gram * candidate.column())[0] < 0
+
+
 def test_source_mid_value_matches_pinned_continued_fraction_sequence() -> None:
     """Compare the selected middle value with every pinned CF convergent."""
     from fractions import Fraction
