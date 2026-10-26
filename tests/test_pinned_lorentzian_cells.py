@@ -1550,6 +1550,9 @@ def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
     from itertools import product
     from sage.all import QQ, ZZ, matrix
 
+    assert _fixed_distance_coordinate_solutions(matrix(QQ, 0, 0), (), QQ(0)) == (((), QQ(0)),)
+    assert _fixed_distance_coordinate_solutions(matrix(QQ, 0, 0), (), QQ(1)) == ()
+
     cases = (
         (matrix(QQ, [[1]]), (QQ(1) / 2,), QQ(1) / 4),
         (matrix(QQ, [[2, 1], [1, 3]]), (QQ(1) / 2, QQ(1) / 3), QQ(1) / 2),
