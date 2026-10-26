@@ -435,8 +435,11 @@ def _source_subspace_completion_int(kernel_basis, dimension):
         raise ValueError("the row sublattice is not primitive in the ambient integer lattice")
     block = identity_matrix(SageZZ, dimension)
     for i in range(d):
-        for j in range(d):
-            block[i, j] = row_transform[i, j]
+        # SubspaceCompletionInt overwrites each of the first d rows with the
+        # corresponding Smith left-transform row padded by zeros, not by the
+        # identity tail of the ambient matrix.
+        for j in range(dimension):
+            block[i, j] = row_transform[i, j] if j < d else SageZZ.zero()
     full_basis = block.inverse() * column_transform.inverse()
     completion = full_basis.matrix_from_rows(range(d, dimension))
     combined = completion.stack(kernel_basis)
