@@ -470,6 +470,12 @@ def _indefinite_reduction(gram):
     if any(separated[i, j] for i in range(nondegenerate_rank, rank) for j in range(rank)):
         raise ArithmeticError("the completed integral radical basis fails to annihilate the form")
     nondegenerate = separated.matrix_from_rows_and_columns(range(nondegenerate_rank), range(nondegenerate_rank))
+    if nondegenerate_rank == 0:
+        # A totally radical form has no block for the nondegenerate LLL stage.
+        # Its Smith-completed basis already certifies the complete reduction.
+        if separated != matrix(SageZZ, rank, rank, 0):
+            raise ArithmeticError("totally radical Gram matrix did not reduce to zero")
+        return full_basis, separated
     step, _ = _nondegenerate_reduction(nondegenerate)
     combined = identity_matrix(SageZZ, rank)
     for i in range(nondegenerate_rank):
