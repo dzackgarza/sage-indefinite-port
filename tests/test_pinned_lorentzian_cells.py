@@ -523,7 +523,7 @@ def test_source_v2_honors_critical_norm_and_strictness() -> None:
 
 def test_source_integral_vector_allmeth_v2_returns_exact_positive_witness() -> None:
     """Exercise the complete V2 iterator consumer with an identity reduction."""
-    from sage.all import ZZ, diagonal_matrix, identity_matrix, matrix, vector
+    from sage.all import QQ, ZZ, diagonal_matrix, identity_matrix, matrix, vector
 
     forms = (
         matrix(ZZ, [[1, 0], [0, -1]]),
@@ -535,6 +535,22 @@ def test_source_integral_vector_allmeth_v2_returns_exact_positive_witness() -> N
         basis = identity_matrix(ZZ, gram.nrows())
         candidate = vector(ZZ, _source_integral_vector_allmeth_v2(gram, basis, gram))
         assert (candidate * gram * candidate.column())[0] > 0
+
+    def no_eigen_directions(_gram):
+        return ()
+
+    rational_basis = matrix(QQ, [[1, QQ(1) / 2], [0, 1]])
+    rational_gram = matrix(QQ, [[1, 0], [0, -1]])
+    rational_reduced = rational_basis * rational_gram * rational_basis.transpose()
+    try:
+        _source_integral_vector_allmeth_v2(
+            rational_gram, rational_basis, rational_reduced,
+            eigen_directions=no_eigen_directions,
+        )
+    except ValueError as error:
+        assert "integral entries" in str(error)
+    else:
+        raise AssertionError("a rational nonintegral reduction basis was accepted")
 
     original = matrix(ZZ, [[2, 1], [1, -1]])
     basis = matrix(ZZ, [[1, 2], [0, 1]])

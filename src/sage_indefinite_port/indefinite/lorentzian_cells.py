@@ -2442,6 +2442,17 @@ def _pinned_positive_eigen_directions(
     )
 
 
+def _source_require_integral_matrix(candidate, name: str) -> None:
+    """Reject rational matrices that merely have an integral determinant."""
+    for entry in candidate.list():
+        try:
+            integer = SageZZ(entry)
+        except (TypeError, ValueError, ArithmeticError) as error:
+            raise ValueError(f"{name} must have integral entries") from error
+        if integer != entry:
+            raise ValueError(f"{name} must have integral entries")
+
+
 def _source_reconstruct_integral_vector(
     gram: Matrix_integer_dense,
     basis: Matrix_integer_dense,
@@ -2491,8 +2502,11 @@ def _source_integral_vector_allmeth_v2(
     """
     if gram.nrows() == 0 or gram.nrows() != gram.ncols():
         raise ValueError("the Gram matrix must be nonempty and square")
-    if basis.nrows() != gram.nrows() or basis.ncols() != gram.ncols() or abs(basis.det()) != 1:
-        raise ValueError("the reduction basis must be a square unimodular matrix")
+    if basis.nrows() != gram.nrows() or basis.ncols() != gram.ncols():
+        raise ValueError("the reduction basis must be a square matrix")
+    _source_require_integral_matrix(basis, "the reduction basis")
+    if abs(basis.det()) != 1:
+        raise ValueError("the reduction basis must be unimodular over the integer lattice")
     if reduced != basis * gram * basis.transpose() or reduced != reduced.transpose():
         raise ArithmeticError("the supplied reduced Gram matrix is not the basis congruence")
     rank = int(reduced.nrows())
@@ -2599,6 +2613,7 @@ def _source_validate_integral_reduction(
         raise ValueError("integral reduction must use square matrices of the Gram dimension")
     if reduced.nrows() != rank or reduced.ncols() != rank:
         raise ValueError("reduced Gram matrix has the wrong dimension")
+    _source_require_integral_matrix(basis, "integral reduction basis")
     if abs(basis.det()) != 1:
         raise ArithmeticError("integral reduction basis is not unimodular")
     if reduced != basis * gram * basis.transpose():
