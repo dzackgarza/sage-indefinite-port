@@ -1626,6 +1626,24 @@ def test_fixed_distance_dual_lll_frame_reconstructs_exact_sphere() -> None:
     }
     assert tuple(actual) == tuple(sorted(actual, key=lambda item: tuple((order * vector(ZZ, item[0]).column())[i, 0] for i in reversed(range(3)))))
 
+    # Deterministic nontrivial Gram/target/frame combinations check the
+    # congruence, target transport and reconstruction together.
+    for gram, target, bound, order in (
+        (matrix(QQ, [[2, 1], [1, 3]]), (QQ(1) / 2, QQ(1) / 3), QQ(1) / 2, matrix(ZZ, [[1, 2], [0, 1]])),
+        (diagonal_matrix(QQ, [1, 2, 3]), (QQ(1) / 2, QQ(0), QQ(0)), QQ(1) / 4, matrix(ZZ, [[1, 0, 0], [1, 1, 0], [0, 0, 1]])),
+        (matrix(QQ, [[2, 1], [1, 2]]), (QQ(0), QQ(1) / 2), QQ(1) / 2, matrix(ZZ, [[1, -1], [0, 1]])),
+    ):
+        dual = order.inverse().transpose()
+        actual = _fixed_distance_dual_lll_solutions(gram, target, bound, dual, order)
+        got = {coordinates for coordinates, distance in actual if distance == bound}
+        expected = set()
+        for coordinates in product(range(-6, 7), repeat=gram.nrows()):
+            delta = tuple(QQ(coordinates[i]) - target[i] for i in range(len(target)))
+            if sum((delta[i] * gram[i, j] * delta[j] for i in range(len(delta)) for j in range(len(delta))), QQ(0)) == bound:
+                expected.add(tuple(ZZ(value) for value in coordinates))
+        assert got == expected
+        assert len(actual) == len(got) and all(distance == bound for _, distance in actual)
+
     for bad_gram, bad_target, bad_dual, bad_order, exception in (
         (gram, target, identity_matrix(ZZ, 2), order, ValueError),
         (gram, target, identity_matrix(ZZ, 3), order, ArithmeticError),
