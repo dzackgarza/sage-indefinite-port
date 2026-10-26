@@ -695,19 +695,21 @@ class LorentzianPerfectLocalBackend:
         ray_count = len(cell.vector_configuration)
         materialized = []
         for orbit in word_orbits:
-            materialized_orbit = []
-            for facet, word in orbit:
-                permutation = tuple(range(ray_count))
-                generator_indices = []
-                node = word
-                while node is not None:
-                    node, generator_index = node
-                    generator_indices.append(generator_index)
-                for generator_index in reversed(generator_indices):
-                    generator = generator_permutations[generator_index]
-                    permutation = tuple(generator[position] for position in permutation)
-                materialized_orbit.append((facet, permutation))
-            materialized.append(tuple(materialized_orbit))
+            facet_set = {facet for facet, _word in orbit}
+            permutations_by_facet = {orbit[0][0]: tuple(range(ray_count))}
+            queue = [orbit[0][0]]
+            for facet in queue:
+                current = permutations_by_facet[facet]
+                for generator in generator_permutations:
+                    image = frozenset(generator[position] for position in facet)
+                    if image not in facet_set:
+                        raise ArithmeticError("a cell-stabilizer generator fails to permute the facets")
+                    if image not in permutations_by_facet:
+                        permutations_by_facet[image] = tuple(generator[position] for position in current)
+                        queue.append(image)
+            if len(permutations_by_facet) != len(orbit):
+                raise ArithmeticError("the compact facet orbit is not connected by its stabilizer generators")
+            materialized.append(tuple((facet, permutations_by_facet[facet]) for facet, _word in orbit))
         return tuple(materialized)
 
     @cached_method
