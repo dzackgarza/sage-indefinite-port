@@ -165,6 +165,7 @@ def test_pinned_symmetric_diagonalization_returns_exact_congruence_witness() -> 
         matrix(QQ, [[0, 1], [1, 0]]),
         diagonal_matrix(QQ, [3, -2, 0, 5]),
         matrix(QQ, 3, 3, 0),
+        matrix(QQ, 0, 0),
     )
     expected_transforms = (
         matrix(QQ, [[-2, 1, 0], [-3, 0, 1], [0, 0, 1]]),
