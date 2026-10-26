@@ -412,6 +412,25 @@ def test_source_indefinite_short_positive_vector_integrates_pinned_search_loop()
     assert short_result == (ZZ(1), ZZ(0))
     assert len(short_calls) == 1
 
+    # Repeated source elementary perturbations grow a shear until the strict
+    # 1000x L1 threshold resets the accumulated frame.
+    reset_gram = matrix(ZZ, [[10, 0], [0, 10]])
+    seen_growth = False
+    reset_observed = []
+    def find_reset(perturbed):
+        nonlocal seen_growth
+        if perturbed[0, 0] > 10000:
+            seen_growth = True
+        elif seen_growth and perturbed[0, 0] == 20:
+            reset_observed.append(True)
+        return (ZZ(1), ZZ(0))
+    def shear(_dimension):
+        from sage.all import matrix
+        return matrix(ZZ, [[1, 1], [0, 1]])
+    reset_result = _source_indefinite_short_positive_vector(reset_gram, find_reset, shear)
+    assert reset_result == (ZZ(1), ZZ(0))
+    assert reset_observed
+
 
 def test_source_positive_search_best_matches_pinned_termination_state() -> None:
     """Best norm, no-improvement count, and both source stop conditions agree."""
