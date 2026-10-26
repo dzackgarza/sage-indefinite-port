@@ -199,12 +199,22 @@ def _simple_indefinite_reduction(gram):
             if found is not None:
                 break
         if found is None:
+            if abs(basis.det()) != 1 or working != basis * gram * basis.transpose():
+                raise ArithmeticError("simple indefinite reduction lost its accumulated Gram certificate")
             return basis, working
         i, j, coefficient = found
+        previous_norm = _gram_l1(working)
+        predicted_improvement = delta(i, j, coefficient)
+        if predicted_improvement <= 0:
+            raise ArithmeticError("simple indefinite reduction selected a nonimproving shear")
         elementary = identity_matrix(SageZZ, rank)
         elementary[i, j] = coefficient
         basis = elementary * basis
         working = elementary * working * elementary.transpose()
+        if abs(elementary.det()) != 1 or working != basis * gram * basis.transpose():
+            raise ArithmeticError("simple indefinite reduction shear broke its exact congruence")
+        if previous_norm - _gram_l1(working) != predicted_improvement:
+            raise ArithmeticError("simple indefinite reduction delta disagrees with the exact L1 norm drop")
 
 
 def _gram_connected_components(gram):

@@ -275,6 +275,21 @@ def test_definite_dual_lll_uses_inverse_of_sage_transform() -> None:
     assert direct_reduced == direct * gram * direct.transpose()
 
 
+def test_simple_indefinite_reduction_certifies_each_l1_descent(monkeypatch) -> None:
+    """The pinned shear search strictly decreases L1 and preserves congruence."""
+    from sage.all import ZZ, matrix
+    import sage_indefinite_port.indefinite.indefinite_reduction as reduction
+
+    monkeypatch.setattr(reduction, "randrange", lambda _n: 0)
+    gram = matrix(ZZ, [[1, 10, 0], [10, 1, 1], [0, 1, -2]])
+    basis, reduced = reduction._simple_indefinite_reduction(gram)
+    assert abs(basis.det()) == 1
+    assert reduced == basis * gram * basis.transpose()
+    assert sum(abs(x) for row in reduced.rows() for x in row) <= sum(
+        abs(x) for row in gram.rows() for x in row
+    )
+
+
 def test_compute_indefinite_reduction_rejects_false_lll_certificate(monkeypatch) -> None:
     """The outer isotropic/restart loop validates each inner reduction result."""
     from sage.all import ZZ, identity_matrix, matrix
