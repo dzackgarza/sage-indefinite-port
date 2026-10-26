@@ -1578,6 +1578,13 @@ def test_isotropic_multiplier_uses_dual_lll_fixed_distance_solver() -> None:
     enumerator.d = ZZ(2)
     enumerator.scaled_max = ZZ(4)
     enumerator.allowed_squares = cells.ZERO_SQUARES
+    cached_factorization = enumerator.fixed_distance_ldl_factorization
+    assert cached_factorization == _positive_ldl_factorization(
+        enumerator.enumeration_transform
+        * enumerator.cvp_engine.engine_gram_q
+        * enumerator.enumeration_transform.transpose()
+    )
+    assert enumerator.fixed_distance_ldl_factorization is cached_factorization
     original_element = cells._owned_engine_element
     original_rational = cells._owned_rational
     original_ambient = enumerator._ambient_vectors

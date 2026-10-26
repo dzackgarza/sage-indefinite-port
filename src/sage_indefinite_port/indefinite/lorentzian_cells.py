@@ -2196,6 +2196,7 @@ def _fixed_distance_dual_lll_solutions(
     squared_distance: Rational,
     dual_transform: Matrix_integer_dense,
     enumeration_order_transform: Matrix_integer_dense,
+    ldl_factorization: tuple[list[list[Rational]], list[Rational]] | None = None,
 ) -> tuple[tuple[tuple[Integer, ...], Rational], ...]:
     """Enumerate an exact sphere in the pinned dual-LLL frame, then reconstruct.
 
@@ -2228,7 +2229,7 @@ def _fixed_distance_dual_lll_solutions(
     transformed_target_column = enumeration_order_transform * vector(SageQQ, target).column()
     transformed_target = tuple(SageQQ(transformed_target_column[i, 0]) for i in range(rank))
     reduced_solutions = _fixed_distance_coordinate_solutions(
-        reduced_gram, transformed_target, squared_distance
+        reduced_gram, transformed_target, squared_distance, ldl_factorization=ldl_factorization
     )
     inverse_basis = dual_transform.transpose()
     solutions = []
@@ -3389,6 +3390,15 @@ class _PositiveVectorEnumerator:
         self.base_bound = (self.d * self.d) / square
         self.partner_row = partner_row
 
+    @cached_property
+    def fixed_distance_ldl_factorization(self) -> tuple[list[list[Rational]], list[Rational]] | None:
+        """Cache the exact LDL certificate for the fixed dual-LLL Gram."""
+        gram = self.cvp_engine.engine_gram_q
+        if gram.nrows() == 0:
+            return None
+        reduced_gram = self.enumeration_transform * gram * self.enumeration_transform.transpose()
+        return _positive_ldl_factorization(reduced_gram)
+
     def max_multiplier(self) -> int | None:
         if self.scaled_max <= 0:
             return None
@@ -3437,6 +3447,7 @@ class _PositiveVectorEnumerator:
                 self.cvp_engine._engine_scalar(bound),
                 self.enumeration_transform,
                 self.enumeration_order_transform,
+                ldl_factorization=self.fixed_distance_ldl_factorization,
             )
         else:
             distances = self.cvp_engine.close_vector_coordinates(target, bound)
