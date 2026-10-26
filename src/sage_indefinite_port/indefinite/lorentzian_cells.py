@@ -608,7 +608,28 @@ def _refined_signatures(pairings: _ConfigurationPairings, colours: tuple[int, ..
 class LorentzianPerfectLocalBackend:
     @cached_method
     def cell_cone(self, cell: LorentzianPerfectCell):
-        return RationalPolyhedralCones(cell.lattice).from_rays(cell.vector_configuration)
+        if len(cell.vector_configuration) < 10_000:
+            return RationalPolyhedralCones(cell.lattice).from_rays(cell.vector_configuration)
+
+        # PPL's generic V-to-H conversion is the current A7 bottleneck: its
+        # initial perfect configuration has 49,861 rays.  Normaliz computes
+        # the same exact rational dual description without changing the owned
+        # cone interface.  Keep the backend switch local to this consumer;
+        # the resulting homogeneous H-representation is normalized into the
+        # same RationalPolyhedralCones object, and facet incidences below are
+        # still recomputed against the original ray rows and indices.
+        labels = tuple(cell.lattice.module_generating_set())
+        ray_rows = tuple(
+            tuple(SageQQ(int(coordinates(label))) for label in labels)
+            for coordinates in (_coordinate_row(cell.lattice, ray, SageQQ) for ray in cell.vector_configuration)
+        )
+        polyhedron = Polyhedron(
+            vertices=[(0,) * len(labels)],
+            rays=ray_rows,
+            base_ring=SageQQ,
+            backend="normaliz",
+        )
+        return _cone_from_engine_polyhedron(cell.lattice, polyhedron)
 
     def initial_cell(self, lattice: Lattices.ParentMethods, allowed_squares: RealSet) -> LorentzianPerfectCell:
         normalized = _lorentzian_view(lattice)
