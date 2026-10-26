@@ -186,6 +186,25 @@ def test_source_negative_vector_respects_radical_and_diagonal_order() -> None:
     assert _source_some_negative_vector(hyperbolic_gram) == (-1, 1, 0)
 
 
+def test_source_negative_vector_certifies_congruence_random_indefinite_forms() -> None:
+    """Every returned source candidate has negative norm after integral congruence."""
+    from random import Random
+
+    from sage.all import QQ, ZZ, diagonal_matrix, identity_matrix, matrix, vector
+
+    random = Random(20261026)
+    for size in range(2, 6):
+        for _ in range(8):
+            change = identity_matrix(ZZ, size)
+            for _ in range(3 * size):
+                i, j = random.sample(range(size), 2)
+                change[i, :] = change[i, :] + random.choice((-2, -1, 1, 2)) * change[j, :]
+            diagonal = diagonal_matrix(QQ, [-1] + [1] * (size - 1))
+            gram = matrix(QQ, change) * diagonal * matrix(QQ, change).transpose()
+            candidate = vector(QQ, _source_some_negative_vector(gram))
+            assert (candidate * gram * candidate.column())[0] < 0
+
+
 def test_source_mid_value_matches_pinned_continued_fraction_sequence() -> None:
     """Compare the selected middle value with every pinned CF convergent."""
     from fractions import Fraction
