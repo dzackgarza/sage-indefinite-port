@@ -253,6 +253,13 @@ def test_ambient_vectors_reconstructs_exact_shell_and_filters_squares() -> None:
     assert all(int(vector(ZZ, row) * lorentzian * vector(ZZ, row)) in {0, 4} for row in result)
 
     try:
+        _PositiveVectorEnumerator._ambient_vectors(enumerator, 2, ((0, 0),), ())
+    except ValueError as error:
+        assert "exactly one squared distance" in str(error)
+    else:
+        raise AssertionError("a CVP result without its paired squared distance was accepted")
+
+    try:
         _PositiveVectorEnumerator._ambient_vectors(enumerator, 2, ((3, 0),), (20,))
     except ArithmeticError as error:
         assert "disagrees with its exact CVP squared distance" in str(error)
