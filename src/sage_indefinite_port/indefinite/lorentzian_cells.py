@@ -2443,7 +2443,9 @@ def _pinned_positive_eigen_directions(
 
 
 def _source_require_integral_matrix(candidate, name: str) -> None:
-    """Reject rational matrices that merely have an integral determinant."""
+    """Require an exact coefficient ring and integral entries."""
+    if not candidate.base_ring().is_exact():
+        raise ValueError(f"{name} must have entries in an exact ring")
     for entry in candidate.list():
         try:
             integer = SageZZ(entry)
@@ -2836,9 +2838,10 @@ def _source_indefinite_short_positive_vector(
         if perturbation.nrows() != rank or perturbation.ncols() != rank:
             raise ArithmeticError("positive-vector perturbation has the wrong dimension")
         try:
+            _source_require_integral_matrix(perturbation, "positive-vector perturbation")
             integral_perturbation = matrix(SageZZ, perturbation)
         except (TypeError, ValueError, ArithmeticError) as error:
-            raise ArithmeticError("positive-vector perturbation is not an integral lattice automorphism") from error
+            raise ArithmeticError("positive-vector perturbation is not an exact integral lattice automorphism") from error
         if integral_perturbation != perturbation or abs(integral_perturbation.det()) != 1:
             raise ArithmeticError("positive-vector perturbation is not an integral lattice automorphism")
         perturbation = integral_perturbation

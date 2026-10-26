@@ -523,7 +523,7 @@ def test_source_v2_honors_critical_norm_and_strictness() -> None:
 
 def test_source_integral_vector_allmeth_v2_returns_exact_positive_witness() -> None:
     """Exercise the complete V2 iterator consumer with an identity reduction."""
-    from sage.all import QQ, ZZ, diagonal_matrix, identity_matrix, matrix, vector
+    from sage.all import QQ, RDF, ZZ, diagonal_matrix, identity_matrix, matrix, vector
 
     forms = (
         matrix(ZZ, [[1, 0], [0, -1]]),
@@ -551,6 +551,17 @@ def test_source_integral_vector_allmeth_v2_returns_exact_positive_witness() -> N
         assert "integral entries" in str(error)
     else:
         raise AssertionError("a rational nonintegral reduction basis was accepted")
+
+    inexact_basis = matrix(RDF, [[1.0, 0.0], [0.0, 1.0]])
+    try:
+        _source_integral_vector_allmeth_v2(
+            rational_gram, inexact_basis, rational_gram,
+            eigen_directions=no_eigen_directions,
+        )
+    except ValueError as error:
+        assert "exact ring" in str(error)
+    else:
+        raise AssertionError("an inexact floating-point reduction basis was accepted")
 
     original = matrix(ZZ, [[2, 1], [1, -1]])
     basis = matrix(ZZ, [[1, 2], [0, 1]])
@@ -836,7 +847,7 @@ def test_source_random_perturbations_are_the_pinned_unimodular_matrices() -> Non
 
 def test_source_indefinite_short_positive_vector_integrates_pinned_search_loop() -> None:
     """Run the complete Graver/reframing/termination loop with deterministic seams."""
-    from sage.all import QQ, ZZ, identity_matrix, matrix
+    from sage.all import QQ, RDF, ZZ, identity_matrix, matrix
 
     gram = matrix(ZZ, [[10, 0], [0, 10]])
     calls = []
@@ -860,6 +871,18 @@ def test_source_indefinite_short_positive_vector_integrates_pinned_search_loop()
         assert "integral lattice automorphism" in str(error)
     else:
         raise AssertionError("a rational nonintegral perturbation was accepted")
+    assert len(calls) == 1
+
+    calls.clear()
+    try:
+        _source_indefinite_short_positive_vector(
+            gram, find_positive,
+            lambda dimension: matrix(RDF, [[1.0, 0.0], [0.0, 1.0]]),
+        )
+    except ArithmeticError as error:
+        assert "exact integral lattice automorphism" in str(error)
+    else:
+        raise AssertionError("an inexact floating-point perturbation was accepted")
     assert len(calls) == 1
 
     short_gram = matrix(ZZ, [[1, 0], [0, -1]])
