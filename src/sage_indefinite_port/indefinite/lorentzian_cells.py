@@ -3675,8 +3675,8 @@ def _negative_direction_in_span(
             return direction
         # IndefiniteFormsFundamental.g:11-30, GetRandomMatrixPerturbation.
         # Match GetRandomMatrixPerturbation verbatim: a diagonal 1 is replaced
-        # by +/-1, while an off-diagonal entry adds an elementary shear. Both
-        # cases are unimodular; do not change the source's perturbation law.
+        # by +/-1, while an off-diagonal entry adds an elementary shear. The
+        # diagonal -1 overwrite is singular in the pinned source; preserve it.
         if choice((1, 2)) == 1:
             permutation = list(range(dimension))
             shuffle(permutation)

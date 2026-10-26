@@ -842,7 +842,7 @@ def test_pinned_nullspace_preserves_gap_row_basis_order() -> None:
             assert kernel.nrows() == size - symmetric.rank()
 
 
-def test_source_random_perturbations_are_the_pinned_unimodular_matrices() -> None:
+def test_source_random_perturbations_match_pinned_matrices() -> None:
     """Check both GetRandomMatrixPerturbation branches, including diagonal shear."""
     from sage.all import QQ, matrix
 
@@ -904,7 +904,7 @@ def test_source_indefinite_short_positive_vector_integrates_pinned_search_loop()
             lambda dimension: matrix(QQ, [[1, QQ(1) / 2], [0, 1]]),
         )
     except ArithmeticError as error:
-        assert "integral lattice automorphism" in str(error)
+        assert "changed under exact integral conversion" in str(error)
     else:
         raise AssertionError("a rational nonintegral perturbation was accepted")
     assert len(calls) == 1
