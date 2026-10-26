@@ -3138,6 +3138,11 @@ def _pinned_nullspace_matrix(gram: Matrix_rational_dense) -> Matrix_rational_den
     return matrix(SageQQ, rows) if rows else matrix(SageQQ, 0, gram.nrows())
 
 
+def _pinned_nearest_integer(value: Rational) -> Integer:
+    r"""GAP ``NearestInteger``: round exact half-integers toward +infinity."""
+    return SageZZ((SageQQ(value) + SageQQ(1) / 2).floor())
+
+
 def _source_some_negative_vector(gram: Matrix_rational_dense) -> tuple[Integer, ...]:
     r"""Port ``GetSomeNegativeVector`` from PositivitySymmetricMatrices.g:173-190.
 
@@ -3222,7 +3227,7 @@ def _source_some_negative_vector(gram: Matrix_rational_dense) -> tuple[Integer, 
     while True:
         for row in candidates:
             # Fractions.g:138-148, NearestInteger rounds ties toward +infinity.
-            integral = tuple(SageZZ((multiplier * entry + SageQQ(1) / 2).floor()) for entry in row)
+            integral = tuple(_pinned_nearest_integer(multiplier * entry) for entry in row)
             candidate = vector(SageZZ, integral)
             if (candidate * gram * candidate.column())[0] < 0:
                 return integral

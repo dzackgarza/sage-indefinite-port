@@ -14,6 +14,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _primitive_integral_direction,
     _source_mid_value,
     _source_some_negative_vector,
+    _pinned_nearest_integer,
     _pinned_nullspace_matrix,
     _outside_ray_directions,
     _quadratic_descent_prefix,
@@ -163,6 +164,24 @@ def test_pinned_nullspace_preserves_gap_row_basis_order() -> None:
             kernel = _pinned_nullspace_matrix(symmetric)
             assert kernel * symmetric == 0
             assert kernel.nrows() == size - symmetric.rank()
+
+
+def test_pinned_nearest_integer_rounds_half_ties_toward_positive_infinity() -> None:
+    """Match Fractions.g:138-148, including negative half-integers."""
+    from sage.all import QQ
+
+    cases = (
+        (QQ(-5) / 2, -2),
+        (QQ(-3) / 2, -1),
+        (QQ(-1) / 2, 0),
+        (QQ(1) / 2, 1),
+        (QQ(3) / 2, 2),
+        (QQ(5) / 2, 3),
+        (QQ(7) / 3, 2),
+        (QQ(-7) / 3, -2),
+    )
+    for value, expected in cases:
+        assert _pinned_nearest_integer(value) == expected
 
 
 def test_source_negative_vector_respects_radical_and_diagonal_order() -> None:
