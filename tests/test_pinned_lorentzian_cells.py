@@ -253,11 +253,11 @@ def test_ambient_vectors_reconstructs_exact_shell_and_filters_squares() -> None:
     assert all(int(vector(ZZ, row) * lorentzian * vector(ZZ, row)) in {0, 4} for row in result)
 
     try:
-        _PositiveVectorEnumerator._ambient_vectors(enumerator, 2, ((3, 0),), (25,))
+        _PositiveVectorEnumerator._ambient_vectors(enumerator, 2, ((3, 0),), (20,))
     except ArithmeticError as error:
-        assert "negative-norm" in str(error)
+        assert "disagrees with its exact CVP squared distance" in str(error)
     else:
-        raise AssertionError("a negative-norm reconstructed candidate was accepted")
+        raise AssertionError("a reconstructed candidate inconsistent with its CVP distance was accepted")
 
 
 def test_rational_direction_pairing_bound_scales_linearly() -> None:

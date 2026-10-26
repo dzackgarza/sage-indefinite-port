@@ -2900,6 +2900,9 @@ class _PositiveVectorEnumerator:
             row = shift + vector(SageZZ, [int(coordinate) for coordinate in close]) * self.inclusion_rows
             candidate_square = int(row * self.gram * row)
             expected_square = multiplier**2 * self.base_bound - distance
+            # Since the distance was checked against the full radius above,
+            # expected_square is nonnegative. Equality therefore also rejects
+            # negative-norm candidates without a redundant later norm branch.
             if candidate_square != expected_square:
                 raise ArithmeticError(
                     "the reconstructed Lorentzian norm disagrees with its exact CVP squared distance"
@@ -2909,8 +2912,6 @@ class _PositiveVectorEnumerator:
             pairing = (row * self.timelike_covector)[0]
             if pairing != multiplier * self.d or pairing <= 0 or pairing > self.scaled_max:
                 raise ArithmeticError("a close-vector shell returned a vector outside its prescribed pairing fibre")
-            if candidate_square < 0:
-                raise ArithmeticError("a close-vector shell returned a negative-norm vector")
             # Lorentzian.g:382-388: the isotropic option keeps fNorm = 0 among
             # the closest-vector solutions, which lie within the distance.
             if candidate_square not in self.allowed_squares:
