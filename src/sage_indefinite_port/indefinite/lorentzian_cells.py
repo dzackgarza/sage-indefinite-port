@@ -2616,11 +2616,29 @@ def _source_integral_vector_allmeth(
     return find_vector(gram, basis, reduced, critical_norm, strict_inequality)
 
 
+def _source_certify_positive_integral_vector(
+    gram: Matrix_integer_dense, candidate: tuple[Integer, ...]
+) -> tuple[Integer, ...]:
+    r"""Enforce the public positive-vector contract at the consumer boundary."""
+    if gram.nrows() != gram.ncols() or len(candidate) != gram.nrows():
+        raise ValueError("positive-vector witness dimension must match the Gram matrix")
+    integral = tuple(SageZZ(entry) for entry in candidate)
+    if not any(integral):
+        raise ArithmeticError("positive-vector search returned the zero vector")
+    witness = vector(SageZZ, integral)
+    norm = SageZZ((witness * gram * witness.column())[0])
+    if norm <= 0:
+        raise ArithmeticError("positive-vector search returned a nonpositive-norm witness")
+    return integral
+
+
 def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integer, ...]:
     r"""Port ``GetIntegralPositiveVector_allmeth`` from Positivity.h:499-518."""
     if gram.nrows() == 0:
         raise ValueError("the Gram matrix has no positive direction")
-    return _source_integral_vector_allmeth(gram, SageQQ.zero(), True)
+    return _source_certify_positive_integral_vector(
+        gram, _source_integral_vector_allmeth(gram, SageQQ.zero(), True)
+    )
 
 
 def _source_graver_k_basis(dimension: int, degree: int) -> tuple[tuple[int, ...], ...]:

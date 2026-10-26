@@ -26,6 +26,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _pinned_nullspace_matrix,
     _pinned_diagonalize_symmetric_matrix,
     _integral_positive_vector_allmeth,
+    _source_certify_positive_integral_vector,
     _source_integral_vector_allmeth,
     _source_validate_integral_reduction,
     _source_remove_fraction_vector,
@@ -405,6 +406,21 @@ def test_source_integral_reduction_rejects_false_basis_certificates() -> None:
             pass
         else:
             raise AssertionError("invalid integral reduction certificate was accepted")
+
+
+def test_source_positive_integral_vector_contract_certifies_exact_norm() -> None:
+    """The public consumer rejects zero, nonpositive, and malformed witnesses."""
+    from sage.all import ZZ, matrix
+
+    gram = matrix(ZZ, [[1, 0], [0, -1]])
+    assert _source_certify_positive_integral_vector(gram, (ZZ(2), ZZ(1))) == (ZZ(2), ZZ(1))
+    for candidate in ((ZZ(0), ZZ(0)), (ZZ(1), ZZ(1)), (ZZ(1),)):
+        try:
+            _source_certify_positive_integral_vector(gram, candidate)
+        except (ValueError, ArithmeticError):
+            pass
+        else:
+            raise AssertionError(f"invalid positive-vector witness accepted: {candidate}")
 
 
 def test_source_integral_vector_allmeth_selects_isotropic_shortcut_exactly() -> None:
