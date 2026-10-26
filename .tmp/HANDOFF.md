@@ -36,12 +36,16 @@ The reflected-vector r_0 and degree-18 orbit consumers pass there.
 Remaining families are open. Reflective shards 2, 4 and 7 contain assertion
 failures and then exit 137 before writing JUnit; orthogonal-group shard 0
 also exits 137 in its final selected case, the A7 + diag(1,1,-1)
-discriminant-image assertion. These runs are incomplete evidence.
+discriminant-image assertion. Its initial perfect configuration has 49,861
+vectors. The old 1024-row block allocated 51,057,664 exact pairings at once.
+The port now streams one row; exact large-coefficient and hash-invariance
+checks pass. Run the full A7 assertion on this change before claiming repair.
+These runs are incomplete evidence.
 
 The first failure in reflective shard 7 maps to ListReflect_549. Its
 Vinberg coset normalization used QQ division in place of the pinned integer
 QuoInt. The integer-division repair passes that unchanged root-count case and
-ListReflect_231 and ListReflect_516.
+ListReflect_231, ListReflect_516, ListReflect_241 and ListReflect_880.
 Use subsequent exact failures to determine which other branches need repair.
 
 The I_1_2 isotropic-stabilizer assertion remains open. A captured perfect-cell
@@ -52,7 +56,8 @@ perfect-domain adjacency and facet-action consumers pass. Run the full
 I_1_2 assertion on this route before claiming that consumer is repaired.
 The diagnostic data and exact certificate are in
 `.tmp/probe/configuration-transporter/`; these are optional local evidence,
-not required checkout inputs. The full I_1_2 consumer has no verified result.
+not required checkout inputs. The full I_1_2 consumer has no verified result. Its current run has reached
+isotropic stabilizer construction beyond the earlier matching step.
 The unchanged Enriques case_1 boundary consumer is also still unresolved.
 
 The corrected Lorentzian flip preserves GAP's IsSubset(A,B) convention.
@@ -97,3 +102,8 @@ Other work is advancing the same port branch, including positive-vector
 validation and bounded CVP. Inspect current branch tips before changing
 those paths; retain their changes. Post-v1 requirements remain in TODO.md
 and issues #40/#41.
+
+Research main is undergoing a separate move of library source to
+`/home/dzack/gitclones/sage-extensions`; its checkout has unrelated merge
+conflicts. Preserve that work. Continue acceptance against the published
+53c48e0 provider until a replacement provider is verified explicitly.

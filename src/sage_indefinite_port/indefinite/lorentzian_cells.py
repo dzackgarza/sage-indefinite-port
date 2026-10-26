@@ -485,9 +485,6 @@ class LorentzianCellAdjacency:
     transporter: LatticeIsometryMethods | None
 
 
-_PAIRING_BLOCK_ROWS = 1024
-
-
 class _ConfigurationPairings:
     r"""The Gram pairings b(v_i, v_j) of a vector configuration, read from its n x rank rows.
 
@@ -517,9 +514,12 @@ class _ConfigurationPairings:
         return self.rows * self.covectors.row(index)
 
     def blocks(self):
-        for start in range(0, len(self), _PAIRING_BLOCK_ROWS):
-            block = self.covectors[start : start + _PAIRING_BLOCK_ROWS, :] * self.rows.transpose()
-            yield start, np.array([list(row) for row in block.rows()], dtype=object)
+        # ComputeInvariantPerfectForm streams pairings (lorentzian_perfect.h:
+        # 1223-1244). Retain one exact row: a perfect cell can have tens of
+        # thousands of vectors, so a fixed block of 1024 rows is too large.
+        for start in range(len(self)):
+            row = self.rows * self.covectors.row(start)
+            yield start, np.array([list(row)], dtype=object)
 
 
 def _row_multiset(row, own_value: int) -> tuple[tuple[int, int], ...]:
@@ -839,6 +839,8 @@ class LorentzianPerfectLocalBackend:
         if source_gram.det() != target_gram.det() or source.lattice.signature_pair() != target.lattice.signature_pair():
             return () if all_images else None
         if not all_images:
+            if source.lattice is target.lattice and Counter(source.rows) == Counter(target.rows):
+                return source.lattice.Aut().identity()
             source_family = Sets().Mor(Sets.Δ[n - 1], source.lattice)(
                 lambda index: source.vector_configuration[int(index)]
             )
