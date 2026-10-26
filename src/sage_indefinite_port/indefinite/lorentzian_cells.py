@@ -575,7 +575,10 @@ class LorentzianPerfectLocalBackend:
         base_normal = vector(SageQQ, [-scalar, *(gram * central.column()).column(0)])
         while matrix(SageQQ, critical).rank() < int(lattice.module_rank()):
             expanded = matrix(SageQQ, [[1, *row] for row in critical])
-            nullspace = expanded.right_kernel_matrix()
+            # Lorentzian.g uses NullspaceMat(TransposedMat(EXT)); retain GAP's
+            # source-ordered row basis because each row feeds a separately
+            # normalized candidate direction in GetOneOutsideRay.
+            nullspace = _pinned_nullspace_matrix(expanded.transpose())
             # Lorentzian.g:1179-1188 applies RemoveFraction to each
             # covector-derived direction separately before GetOneOutsideRay.
             # Normalizing only the span basis globally changes the source's

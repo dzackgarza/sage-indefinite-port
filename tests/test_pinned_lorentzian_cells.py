@@ -116,6 +116,14 @@ def test_outside_ray_span_normalizes_each_source_direction_independently() -> No
     assert all(any(entry for entry in row) for row in directions.rows())
 
 
+def test_initial_cell_nullspace_uses_pinned_gap_row_order() -> None:
+    """The GetOnePerfect affine nullspace is the pinned GAP row basis."""
+    from sage.all import QQ, matrix
+
+    expanded = matrix(QQ, [[1, 1, 0], [1, 0, 1]])
+    assert _pinned_nullspace_matrix(expanded.transpose()) == matrix(QQ, [[-1, 1, 1]])
+
+
 def test_pinned_nullspace_preserves_gap_row_basis_order() -> None:
     """The source nullspace rows differ from Sage's canonical kernel basis."""
     from sage.all import QQ, matrix
