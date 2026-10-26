@@ -1886,11 +1886,12 @@ def test_positive_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() ->
     for gram in (
         matrix(QQ, 0, 0),
         matrix(QQ, [[1, 2], [0, 1]]),
+        matrix(QQ, [[1]]).change_ring(RDF),
     ):
         try:
             _positive_ldl_factorization(gram)
         except ValueError as error:
-            assert "nonempty symmetric Gram matrix" in str(error)
+            assert "nonempty symmetric Gram matrix" in str(error) or "exact QQ Gram matrix" in str(error)
         else:
             raise AssertionError(f"invalid Gram matrix accepted: {gram}")
 

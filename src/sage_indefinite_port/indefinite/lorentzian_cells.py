@@ -2033,6 +2033,8 @@ def _positive_ldl_factorization(gram: Matrix_rational_dense) -> tuple[list[list[
     """Exact ``G = L D L^T`` factorization of a positive-definite Gram matrix."""
     if gram.nrows() == 0 or gram.nrows() != gram.ncols() or gram != gram.transpose():
         raise ValueError("the fixed-distance LDL factorization requires a nonempty symmetric Gram matrix")
+    if gram.base_ring() is not SageQQ:
+        raise ValueError("the fixed-distance LDL factorization requires an exact QQ Gram matrix")
     rank = int(gram.nrows())
     zero = cast(Rational, SageQQ.zero())
     lower: list[list[Rational]] = [[zero for _ in range(rank)] for _ in range(rank)]
