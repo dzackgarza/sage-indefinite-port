@@ -511,14 +511,17 @@ class _ConfigurationPairings:
 
     def column(self, index: int):
         # The form is symmetric, so column j holds b(v_l, v_j) for every l.
-        return self.rows * self.covectors.row(index)
+        # A one-column integer matrix selects Sage's FLINT multiplication;
+        # Matrix._matrix_times_vector_ instead builds and sums every column.
+        covector = self.covectors.matrix_from_rows([index]).transpose()
+        return (self.rows * covector).column(0)
 
     def blocks(self):
         # ComputeInvariantPerfectForm streams pairings (lorentzian_perfect.h:
         # 1223-1244). Retain one exact row: a perfect cell can have tens of
         # thousands of vectors, so a fixed block of 1024 rows is too large.
         for start in range(len(self)):
-            row = self.rows * self.covectors.row(start)
+            row = self.column(start)
             yield start, np.array([list(row)], dtype=object)
 
 
