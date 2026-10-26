@@ -149,12 +149,14 @@ def test_source_negative_vector_respects_radical_and_diagonal_order() -> None:
 
     first_gram = matrix(QQ, [[-1, 0], [0, 1]])
     first = _source_some_negative_vector(first_gram)
+    assert first == (1, 0)
     assert (vector(QQ, first) * first_gram * vector(QQ, first).column())[0] < 0
 
     # The radical contributes a zero candidate first; the returned vector
     # must still have negative norm and remain in the non-radical coordinates.
     radical_gram = matrix(QQ, [[0, 0, 0], [0, -1, 0], [0, 0, 1]])
     result = _source_some_negative_vector(radical_gram)
+    assert result == (0, 1, 0)
     result_vector = vector(QQ, result)
     assert (result_vector * radical_gram * result_vector.column())[0] < 0
 
