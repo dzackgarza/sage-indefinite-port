@@ -556,7 +556,11 @@ class _ConfigurationPairings:
 
 
 def _configuration_pairing_block_size(configuration_size: int) -> int:
-    r"""Bound exact pairing blocks to at most one million entries and 16 rows."""
+    r"""Target one million entries per exact pairing block, capped at 16 rows.
+
+    A single row may itself exceed the target for configurations with more
+    than one million vectors, so the row block has a minimum size of one.
+    """
     if configuration_size < 0:
         raise ValueError("a configuration size cannot be negative")
     return max(1, min(16, 1_000_000 // max(1, configuration_size)))

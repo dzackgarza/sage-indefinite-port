@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from sage.all import ZZ, matrix
 
 from sage_indefinite_port.indefinite.lorentzian_cells import (
@@ -62,6 +64,8 @@ def test_hyperbolic_plane_pairings_preserve_integral_change_of_basis() -> None:
 
 
 def test_configuration_pairing_blocks_have_a_bounded_exact_working_set() -> None:
+    with pytest.raises(ValueError, match="cannot be negative"):
+        _configuration_pairing_block_size(-1)
     assert _configuration_pairing_block_size(0) == 16
     assert _configuration_pairing_block_size(49_861) == 16
     assert _configuration_pairing_block_size(100_000) == 10
