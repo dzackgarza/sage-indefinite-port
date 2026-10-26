@@ -160,6 +160,9 @@ def test_source_negative_vector_respects_radical_and_diagonal_order() -> None:
     result_vector = vector(QQ, result)
     assert (result_vector * radical_gram * result_vector.column())[0] < 0
 
+    hyperbolic_gram = matrix(QQ, [[0, 1, 0], [1, 0, 0], [0, 0, 1]])
+    assert _source_some_negative_vector(hyperbolic_gram) == (-1, 1, 0)
+
 
 def test_source_mid_value_matches_pinned_continued_fraction_sequence() -> None:
     """Compare the selected middle value with every pinned CF convergent."""
