@@ -81,6 +81,8 @@ so the asserted output order exercises the sort rather than only its filter.
 After pinned-coordinate sorting, it verifies the distances remain paired with
 their coordinates before allowed-square filtering. The mismatch case uses a zero displacement, ensuring
 its actual ambient norm differs from the deliberately supplied positive distance.
+A separate shell regression now checks that an omitted squared-distance entry is
+rejected instead of silently reconstructing a candidate without its CVP certificate.
 The current branch tip has not yet been accepted by the frozen full-family run;
 see the current case-level Acceptance results before asserting completion.
 Ordinary pytest collection currently fails in the local Sage environment at
