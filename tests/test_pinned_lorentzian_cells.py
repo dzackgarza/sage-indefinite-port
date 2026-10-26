@@ -1562,6 +1562,17 @@ def test_negative_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() ->
         assert lower_matrix * diagonal_matrix_ * lower_matrix.transpose() == gram
 
     for gram in (
+        matrix(QQ, 0, 0),
+        matrix(QQ, [[1, 2], [0, 1]]),
+    ):
+        try:
+            _negative_ldl_factorization(gram)
+        except ValueError as error:
+            assert "nonempty symmetric Gram matrix" in str(error)
+        else:
+            raise AssertionError(f"invalid Gram matrix accepted: {gram}")
+
+    for gram in (
         matrix(QQ, [[0]]),
         matrix(QQ, [[1, 2], [2, 1]]),
         matrix(QQ, [[1, 0], [0, -1]]),
