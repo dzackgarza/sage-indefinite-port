@@ -19,6 +19,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _source_elementary_perturbation,
     _pinned_nullspace_matrix,
     _pinned_diagonalize_symmetric_matrix,
+    _integral_positive_vector_allmeth,
     _pinned_independent_column_indices,
     _outside_ray_directions,
     _quadratic_descent_prefix,
@@ -152,6 +153,22 @@ def test_pinned_column_reduction_matches_greedy_rank_increase() -> None:
                         assert value.matrix_from_columns(selected[: index + 1]).rank() == index + 1
                         assert all(previous < column for previous in selected[:index])
                     assert selected == tuple(value.echelon_form().pivots())
+
+
+def test_integral_positive_vector_consumer_uses_pinned_diagonalization() -> None:
+    """The real positive-vector consumer returns exact positive-norm witnesses."""
+    from sage.all import ZZ, diagonal_matrix, matrix, vector
+
+    forms = (
+        matrix(ZZ, [[1, 0], [0, -1]]),
+        matrix(ZZ, [[0, 1], [1, 0]]),
+        matrix(ZZ, [[0, 0, 0], [0, 1, 0], [0, 0, -2]]),
+        diagonal_matrix(ZZ, [3, -2, 0, 5]),
+    )
+    for gram in forms:
+        candidate = vector(ZZ, _integral_positive_vector_allmeth(gram))
+        assert candidate in ZZ**gram.nrows()
+        assert (candidate * gram * candidate.column())[0] > 0
 
 
 def test_pinned_symmetric_diagonalization_returns_exact_congruence_witness() -> None:
