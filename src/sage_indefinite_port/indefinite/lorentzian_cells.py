@@ -2253,7 +2253,7 @@ def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integ
     for row_index in range(radical_rank):
         for column_index in range(rank):
             transform[row_index, column_index] = radical[row_index, column_index]
-    pivot_columns = set(radical.echelon_form().pivots())
+    pivot_columns = set(_pinned_independent_column_indices(radical))
     row_index = radical_rank
     for column_index in range(rank):
         if column_index in pivot_columns:
@@ -3138,6 +3138,19 @@ def _pinned_nullspace_matrix(gram: Matrix_rational_dense) -> Matrix_rational_den
     return matrix(SageQQ, rows) if rows else matrix(SageQQ, 0, gram.nrows())
 
 
+def _pinned_independent_column_indices(matrix_work: Matrix_rational_dense) -> tuple[int, ...]:
+    r"""Greedy independent-column selection used by GAP ``ColumnReduction``."""
+    selected: list[int] = []
+    rank = 0
+    for column in range(int(matrix_work.ncols())):
+        candidate = matrix_work.matrix_from_columns([*selected, column])
+        candidate_rank = int(candidate.rank())
+        if candidate_rank > rank:
+            selected.append(column)
+            rank = candidate_rank
+    return tuple(selected)
+
+
 def _pinned_nearest_integer(value: Rational) -> Integer:
     r"""GAP ``NearestInteger``: round exact half-integers toward +infinity."""
     return SageZZ((SageQQ(value) + SageQQ(1) / 2).floor())
@@ -3160,7 +3173,7 @@ def _source_some_negative_vector(gram: Matrix_rational_dense) -> tuple[Integer, 
     # controls the source diagonalizer and the subsequent negative-vector scan.
     radical = _pinned_nullspace_matrix(gram)
     radical_rank = int(radical.nrows())
-    pivot_columns = set(radical.echelon_form().pivots())
+    pivot_columns = set(_pinned_independent_column_indices(radical))
     transform = cast(Matrix_rational_dense, matrix(cast(Parent, SageQQ), rank, rank, 0))
     for i in range(radical_rank):
         for j in range(rank):

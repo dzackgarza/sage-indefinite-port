@@ -18,6 +18,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _source_permutation_sign_matrix,
     _source_elementary_perturbation,
     _pinned_nullspace_matrix,
+    _pinned_independent_column_indices,
     _outside_ray_directions,
     _quadratic_descent_prefix,
     _upper_bound,
@@ -125,6 +126,25 @@ def test_initial_cell_nullspace_uses_pinned_gap_row_order() -> None:
 
     expanded = matrix(QQ, [[1, 1, 0], [1, 0, 1]])
     assert _pinned_nullspace_matrix(expanded.transpose()) == matrix(QQ, [[-1, 1, 1]])
+
+
+def test_pinned_column_reduction_matches_greedy_rank_increase() -> None:
+    """ColumnReduction scans source columns and retains each rank increase."""
+    from random import Random
+
+    from sage.all import QQ, matrix
+
+    random = Random(1618033)
+    for rows in range(1, 7):
+        for columns in range(1, 7):
+            for _ in range(8):
+                value = matrix(QQ, rows, columns, lambda i, j: random.randint(-3, 3))
+                selected = _pinned_independent_column_indices(value)
+                assert len(selected) == value.rank()
+                for index, column in enumerate(selected):
+                    assert value.matrix_from_columns(selected[: index + 1]).rank() == index + 1
+                    assert all(previous < column for previous in selected[:index])
+                assert selected == tuple(value.echelon_form().pivots())
 
 
 def test_pinned_nullspace_preserves_gap_row_basis_order() -> None:
