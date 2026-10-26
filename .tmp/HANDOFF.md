@@ -86,8 +86,9 @@ rejected instead of silently reconstructing a candidate without its CVP certific
 Ambient reconstruction also rejects nonintegral coordinate rows before integer
 conversion, preventing a direct caller from silently truncating an invalid row.
 The targeted CVP regression explicitly exercises this malformed-input path.
-The current branch tip has not yet been accepted by the frozen full-family run;
-see the current case-level Acceptance results before asserting completion.
+Latest exact-sphere follow-up: port commit `1f7c58210f0a2912c08ab37687b6e4228e97d447` requires exact QQ input for LDL, shares the coordinate sphere recursion with the reduced-lattice path, and caches the dual-LLL Gram's LDL certificate across isotropic multiplier shells. Regression coverage includes corrupted cached factors, inexact Gram rejection, and production isotropic/total dispatch. The targeted full test module cannot be collected on this host because the installed Sage lacks `sage.categories.ordered_fields`; source-level Sage probes and syntax checks are the local evidence only.
+
+The latest Acceptance run for this source is [40294203502](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40294203502), pending at handoff update. Prior branch runs were cancelled before yielding a usable family verdict; do not count them as accepted. Check the case-level results for this exact commit before asserting completion.
 Ordinary pytest collection currently fails in the local Sage environment at
 `ModuleNotFoundError: sage.categories.ordered_fields`; Python compilation and
 source-level direct helper execution work. The full frozen
