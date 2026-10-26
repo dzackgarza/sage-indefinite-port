@@ -761,7 +761,7 @@ class LorentzianPerfectLocalBackend:
                 # backend. Taking its complement avoids 49,861 Python-level
                 # matrix-entry lookups per facet in the A7 configuration.
                 incidence = all_ray_positions.difference(pairing_block.row(offset).nonzero_positions())
-                facets.setdefault(incidence, None)
+                facets.setdefault(incidence, True)
             covector_block = tuple(islice(covectors, 16))
         generators = self.cell_stabilizer(cell)
         # Use precisely these generators to form the ray action.  Calling
@@ -778,27 +778,24 @@ class LorentzianPerfectLocalBackend:
             except KeyError as exc:
                 raise ArithmeticError("a cell-stabilizer generator does not preserve its rays") from exc
         facet_set = facets
-        # The orbit traversal below checks each generator image against the
-        # complete facet set as it is encountered. Since every discovered
-        # facet is expanded, this certifies preservation without a separate
-        # pass that constructs every large image frozenset a second time.
-        # Keep a distinct set of unvisited keys: consuming it must not shrink
-        # the complete membership oracle used for those exact checks.
-        unvisited = set(facet_set)
+        # The orbit traversal checks each generator image against the complete
+        # facet membership oracle as it is encountered. Store the unvisited
+        # state in each ordered dictionary value, rather than allocating a
+        # second hash table containing every large incidence key.
         orbits = []
         identity_word = None
         for start in facets:
-            if start not in unvisited:
+            if not facet_set[start]:
                 continue
-            unvisited.discard(start)
+            facet_set[start] = False
             orbit = [(start, identity_word)]
             for facet, element_word in orbit:
                 for generator_index, permutation in enumerate(permutations):
                     image = frozenset(permutation[position] for position in facet)
                     if image not in facet_set:
                         raise ArithmeticError("a cell-stabilizer generator fails to permute the facets")
-                    if image in unvisited:
-                        unvisited.discard(image)
+                    if facet_set[image]:
+                        facet_set[image] = False
                         orbit.append((image, (element_word, generator_index)))
             orbits.append(tuple(orbit))
         return tuple(orbits), tuple(permutations)
