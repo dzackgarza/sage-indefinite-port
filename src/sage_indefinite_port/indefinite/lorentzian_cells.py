@@ -498,6 +498,11 @@ class _ConfigurationPairings:
         # for both configuration equivalence and perfect-form invariants.
         self.rows = matrix(SageZZ, rows)
         self.covectors = self.rows * gram.change_ring(SageZZ)
+        # Backtracking repeatedly asks for the same anchor columns while
+        # comparing partial configurations. Keep a small bounded cache of
+        # exact scalar columns: an unbounded cache would eventually retain
+        # the full n-by-n Gram matrix, defeating the row-streaming contract.
+        self._column_cache: dict[int, tuple[int, ...]] = {}
 
     def __len__(self) -> int:
         return self.rows.nrows()
@@ -513,8 +518,15 @@ class _ConfigurationPairings:
         # The form is symmetric, so column j holds b(v_l, v_j) for every l.
         # A one-column integer matrix selects Sage's FLINT multiplication;
         # Matrix._matrix_times_vector_ instead builds and sums every column.
+        cached = self._column_cache.get(index)
+        if cached is not None:
+            return cached
         covector = self.covectors.matrix_from_rows([index]).transpose()
-        return (self.rows * covector).column(0)
+        result = tuple(int(entry) for entry in (self.rows * covector).column(0))
+        if len(self._column_cache) >= 64:
+            self._column_cache.pop(next(iter(self._column_cache)))
+        self._column_cache[index] = result
+        return result
 
     def blocks(self):
         # ComputeInvariantPerfectForm streams pairings (lorentzian_perfect.h:

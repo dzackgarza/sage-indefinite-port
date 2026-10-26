@@ -35,6 +35,17 @@ def test_hyperbolic_plane_pairings_preserve_integral_change_of_basis() -> None:
         for start, block in pairings.blocks():
             assert matrix(ZZ, block.tolist()) == expected[start : start + len(block), :]
 
+    # The backtracking cache must stay bounded even if every column is read;
+    # otherwise streaming columns eventually retains the full Gram matrix.
+    rows = tuple((i, 1) for i in range(80))
+    pairings = _ConfigurationPairings(rows, gram)
+    for i in range(len(rows)):
+        assert tuple(pairings.column(i)) == tuple(i + j for j in range(len(rows)))
+    assert len(pairings._column_cache) == 64
+    # An evicted column is recomputed exactly and re-enters the bounded cache.
+    assert tuple(pairings.column(0)) == tuple(range(len(rows)))
+    assert len(pairings._column_cache) == 64
+
 
 def test_isotropic_cell_invariants_preserve_integral_change_of_basis() -> None:
     """The primitive null basis of U has norms zero and mutual pairing one."""
