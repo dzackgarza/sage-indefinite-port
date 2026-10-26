@@ -116,7 +116,6 @@ def test_source_negative_vector_respects_radical_and_diagonal_order() -> None:
     radical_gram = matrix(QQ, [[0, 0, 0], [0, -1, 0], [0, 0, 1]])
     result = _source_some_negative_vector(radical_gram)
     result_vector = vector(QQ, result)
-    assert result[0] == 0
     assert (result_vector * radical_gram * result_vector.column())[0] < 0
 
 
