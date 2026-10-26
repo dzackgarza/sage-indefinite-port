@@ -372,3 +372,13 @@ def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
         assert "disagrees with its exact CVP squared distance" in str(error)
     else:
         raise AssertionError("an inconsistent CVP distance was accepted")
+    for invalid_distance in (QQ(-1), QQ(46)):
+        engine.close_vector_coordinates = lambda target, bound, distance=invalid_distance: (
+            ((0, 0), distance),
+        )
+        try:
+            enumerator.vectors_at_multiplier(2)
+        except ArithmeticError as error:
+            assert "outside its exact squared-distance bound" in str(error)
+        else:
+            raise AssertionError(f"an out-of-bound CVP distance was accepted: {invalid_distance}")

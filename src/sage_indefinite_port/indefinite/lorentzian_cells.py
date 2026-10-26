@@ -2894,9 +2894,12 @@ class _PositiveVectorEnumerator:
         if len(close_squares) != len(close_coordinates):
             raise ValueError("each closest-vector coordinate must have exactly one squared distance")
         for index, close in enumerate(close_coordinates):
+            distance = close_squares[index]
+            if distance < 0 or distance > multiplier**2 * self.base_bound:
+                raise ArithmeticError("a closest-vector result lies outside its exact squared-distance bound")
             row = shift + vector(SageZZ, [int(coordinate) for coordinate in close]) * self.inclusion_rows
             candidate_square = int(row * self.gram * row)
-            expected_square = multiplier**2 * self.base_bound - close_squares[index]
+            expected_square = multiplier**2 * self.base_bound - distance
             if candidate_square != expected_square:
                 raise ArithmeticError(
                     "the reconstructed Lorentzian norm disagrees with its exact CVP squared distance"
