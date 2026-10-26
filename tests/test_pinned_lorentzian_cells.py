@@ -1621,6 +1621,17 @@ def test_fixed_distance_dual_lll_frame_reconstructs_exact_sphere() -> None:
     assert got == expected
     assert tuple(actual) == tuple(sorted(actual, key=lambda item: tuple((order * vector(ZZ, item[0]).column())[i, 0] for i in reversed(range(3)))))
 
+    for bad_dual, bad_order, exception in (
+        (identity_matrix(ZZ, 2), order, ValueError),
+        (identity_matrix(ZZ, 3), order, ArithmeticError),
+    ):
+        try:
+            _fixed_distance_dual_lll_solutions(gram, target, bound, bad_dual, bad_order)
+        except exception:
+            pass
+        else:
+            raise AssertionError("incompatible dual-LLL transforms were accepted")
+
 
 def test_fixed_distance_basis_inverse_is_exact_and_two_sided() -> None:
     """A cached inverse is certified before it transports the CVP center."""
