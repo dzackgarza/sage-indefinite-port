@@ -170,6 +170,14 @@ def test_integral_positive_vector_consumer_uses_pinned_diagonalization() -> None
         assert candidate in ZZ**gram.nrows()
         assert (candidate * gram * candidate.column())[0] > 0
 
+    for gram in (matrix(ZZ, [[-1, 0], [0, -2]]), matrix(ZZ, 2, 2, 0)):
+        try:
+            _integral_positive_vector_allmeth(gram)
+        except ValueError as error:
+            assert "no positive direction" in str(error)
+        else:
+            raise AssertionError(f"form without positive direction accepted: {gram}")
+
 
 def test_pinned_symmetric_diagonalization_returns_exact_congruence_witness() -> None:
     """Exercise the production source-ordered diagonalizer on degenerate forms."""
