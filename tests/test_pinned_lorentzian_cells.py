@@ -213,6 +213,24 @@ def test_pinned_positive_eigen_directions_preserve_source_row_orientation() -> N
     assert any(direction != columns[index] for index, direction in enumerate(directions))
 
 
+def test_pinned_positive_eigen_directions_rejects_invalid_double_gram() -> None:
+    """The optional Eigen path requires finite symmetric input before solving."""
+    from math import nan
+
+    from sage.all import RDF, matrix
+
+    for gram in (
+        matrix(RDF, [[1.0, 2.0], [0.0, 1.0]]),
+        matrix(RDF, [[nan, 0.0], [0.0, 1.0]]),
+    ):
+        try:
+            _pinned_positive_eigen_directions(gram)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"invalid double Gram matrix accepted: {gram}")
+
+
 def test_pinned_approximation_iterator_rejects_nonfinite_float_directions() -> None:
     """Optional Eigen acceleration cannot poison iterator ordering with NaN/Inf."""
     from math import inf, nan

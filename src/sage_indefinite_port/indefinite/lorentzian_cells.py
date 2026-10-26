@@ -2411,6 +2411,10 @@ def _pinned_positive_eigen_directions(
     not the eigenvector column itself. Keep that observable source convention
     explicit rather than substituting Sage's right-eigenvector vectors.
     """
+    if gram.nrows() != gram.ncols() or gram != gram.transpose():
+        raise ValueError("the Eigen positive-direction search requires a symmetric square matrix")
+    if any(not isfinite(float(entry)) for entry in gram.list()):
+        raise ValueError("the Eigen positive-direction search requires finite Gram entries")
     data = cast(
         list[tuple[ComplexDoubleElement, list[FreeModuleElement[ComplexDoubleElement]], int]],
         gram.eigenvectors_right(),
@@ -2418,9 +2422,15 @@ def _pinned_positive_eigen_directions(
     eigenvalues: list[float] = []
     eigenvector_columns: list[tuple[float, ...]] = []
     for eigenvalue, vectors, multiplicity in data:
+        eigenvalue_real = float(eigenvalue.real())
+        if not isfinite(eigenvalue_real):
+            raise ArithmeticError("eigensolver returned a nonfinite eigenvalue")
         for eigenvector in vectors:
-            eigenvalues.append(float(eigenvalue.real()))
-            eigenvector_columns.append(tuple(float(entry.real()) for entry in eigenvector))
+            column = tuple(float(entry.real()) for entry in eigenvector)
+            if any(not isfinite(entry) for entry in column):
+                raise ArithmeticError("eigensolver returned a nonfinite eigenvector")
+            eigenvalues.append(eigenvalue_real)
+            eigenvector_columns.append(column)
         if len(vectors) != multiplicity:
             raise ArithmeticError("eigensolver multiplicity disagrees with its returned eigenvectors")
     if len(eigenvalues) != int(gram.nrows()) or any(len(column) != len(eigenvalues) for column in eigenvector_columns):
