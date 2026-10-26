@@ -576,7 +576,17 @@ class LorentzianPerfectLocalBackend:
         while matrix(SageQQ, critical).rank() < int(lattice.module_rank()):
             expanded = matrix(SageQQ, [[1, *row] for row in critical])
             nullspace = expanded.right_kernel_matrix()
-            directions = nullspace.matrix_from_columns(range(1, nullspace.ncols())) * gram.inverse()
+            # Lorentzian.g:1179-1188 applies RemoveFraction to each
+            # covector-derived direction separately before GetOneOutsideRay.
+            # Normalizing only the span basis globally changes the source's
+            # candidate rows and therefore its negative-vector search order.
+            directions = matrix(
+                SageQQ,
+                [
+                    _source_remove_fraction(vector(SageQQ, row[1:]) * gram.inverse())
+                    for row in nullspace.rows()
+                ],
+            )
             outside_direction = _negative_direction_in_span(normalized, directions, critical, base_normal)
             direction_covector = gram * outside_direction.column()
             critical_row = vector(SageQQ, critical[0])

@@ -14,6 +14,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _primitive_integral_direction,
     _source_mid_value,
     _source_some_negative_vector,
+    _source_remove_fraction,
     _quadratic_descent_prefix,
     _upper_bound,
 )
@@ -101,6 +102,20 @@ def test_pinned_positive_gcd_dot_matches_exact_coefficients() -> None:
         divisor, coefficients = _pinned_positive_gcd_dot(values)
         assert (divisor, coefficients) == expected
         assert sum(a * b for a, b in zip(values, coefficients, strict=True)) == divisor
+
+
+def test_outside_ray_span_normalizes_each_source_direction_independently() -> None:
+    """GetOneOutsideRay receives individually primitive direction rows."""
+    from sage.all import QQ, matrix, vector
+
+    gram_inverse = matrix(QQ, [[1, 0], [0, QQ(1) / 2]])
+    nullspace_rows = (vector(QQ, [0, 2, 0]), vector(QQ, [0, 0, 3]))
+    directions = tuple(
+        _source_remove_fraction(vector(QQ, row[1:]) * gram_inverse)
+        for row in nullspace_rows
+    )
+    assert directions == (vector(QQ, [1, 0]), vector(QQ, [0, 1]))
+    assert all(any(entry for entry in row) for row in directions)
 
 
 def test_source_negative_vector_respects_radical_and_diagonal_order() -> None:
