@@ -508,6 +508,18 @@ def test_source_v2_honors_critical_norm_and_strictness() -> None:
     else:
         raise AssertionError("V2 accepted an uncertified exact diagonalization")
 
+    negative = matrix(ZZ, [[-2, 0], [0, -1]])
+    try:
+        _source_integral_vector_allmeth_v2(
+            negative, identity_matrix(ZZ, 2), negative,
+            diagonalize=lambda _gram: (identity_matrix(QQ, 2), negative.change_ring(QQ)),
+            eigen_directions=no_eigen_directions,
+        )
+    except ValueError as error:
+        assert "no positive direction" in str(error)
+    else:
+        raise AssertionError("V2 entered an unbounded iterator search without a positive direction")
+
 
 def test_source_integral_vector_allmeth_v2_returns_exact_positive_witness() -> None:
     """Exercise the complete V2 iterator consumer with an identity reduction."""

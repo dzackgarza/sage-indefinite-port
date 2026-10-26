@@ -2510,6 +2510,8 @@ def _source_integral_vector_allmeth_v2(
         raise ArithmeticError("exact diagonalization failed its Gram congruence certificate")
     if any(diagonal_matrix[i, j] for i in range(rank) for j in range(rank) if i != j):
         raise ArithmeticError("exact diagonalization returned a nondiagonal Gram matrix")
+    if not any(diagonal_matrix[i, i] > 0 for i in range(rank)):
+        raise ValueError("the Gram matrix has no positive direction to approximate")
 
     iterators: list[
         tuple[
