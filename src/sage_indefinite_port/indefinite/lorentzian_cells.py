@@ -3130,7 +3130,7 @@ def _pinned_nullspace_matrix(gram: Matrix_rational_dense) -> Matrix_rational_den
     gap_rows = [[libgap(SageQQ(entry)) for entry in row] for row in gram.rows()]
     gap_basis = libgap.NullspaceMat(gap_rows)
     rows = [[SageQQ(entry) for entry in row] for row in gap_basis]
-    return matrix(SageQQ, len(rows), gram.ncols(), [entry for row in rows for entry in row])
+    return matrix(SageQQ, rows) if rows else matrix(SageQQ, 0, gram.ncols())
 
 
 def _source_some_negative_vector(gram: Matrix_rational_dense) -> tuple[Integer, ...]:
