@@ -2065,6 +2065,21 @@ def _negative_ldl_factorization(gram: Matrix_rational_dense) -> tuple[list[list[
     return lower, diagonal
 
 
+def _validate_fixed_distance_basis_inverse(
+    basis_change: Matrix_rational_dense,
+    inverse: Matrix_rational_dense,
+) -> None:
+    """Certify an exact two-sided inverse before transporting a sphere center."""
+    rank = int(basis_change.nrows())
+    if basis_change.ncols() != rank or inverse.nrows() != rank or inverse.ncols() != rank:
+        raise ValueError("the fixed-distance sphere basis inverse has incorrect dimensions")
+    if basis_change.base_ring() is not SageQQ or inverse.base_ring() is not SageQQ:
+        raise ValueError("the fixed-distance sphere basis inverse must be over exact QQ")
+    identity = identity_matrix(SageQQ, rank)
+    if basis_change * inverse != identity or inverse * basis_change != identity:
+        raise ArithmeticError("the fixed-distance sphere basis inverse is not a two-sided inverse")
+
+
 def _validate_fixed_distance_ldl_factorization(
     gram: Matrix_rational_dense,
     factorization: tuple[list[list[Rational]], list[Rational]],
@@ -2110,19 +2125,18 @@ def _fixed_distance_vectors(
     reduced = cast(Lattices.ParentMethods, reduction.reduced)
     change_of_basis = cast(Matrix_integer_dense, _engine_matrix(reduction.change_of_basis_matrix))
     basis_change = cast(Matrix_rational_dense, change_of_basis.change_ring(SageQQ))
-    target_row = cast("FreeModuleElement[Rational]", _coordinate_row(lattice, target, SageQQ))
+    rank = int(basis_change.nrows())
     inverse = basis_inverse if basis_inverse is not None else cast(Matrix_rational_dense, basis_change.inverse())
+    _validate_fixed_distance_basis_inverse(basis_change, inverse)
+    target_row = cast("FreeModuleElement[Rational]", _coordinate_row(lattice, target, SageQQ))
     target_column = cast(Matrix_rational_dense, inverse * target_row.column())
-    reduced_target = cast("FreeModuleElement[Rational]", vector(cast("Parent[Rational]", SageQQ), tuple(target_column[row, 0] for row in range(int(basis_change.nrows())))))
+    reduced_target = cast("FreeModuleElement[Rational]", vector(cast("Parent[Rational]", SageQQ), tuple(target_column[row, 0] for row in range(rank))))
     if basis_change * target_column != target_row.column():
         raise ArithmeticError("the reduced fixed-distance center was not transported by the basis isomorphism")
     gram = cast(Matrix_rational_dense, -_gram_matrix(reduced).change_ring(SageQQ))
-    rank = int(gram.nrows())
     zero = cast(Rational, SageQQ.zero())
     lower, diagonal = ldl_factorization if ldl_factorization is not None else _negative_ldl_factorization(gram)
     _validate_fixed_distance_ldl_factorization(gram, (lower, diagonal))
-    if basis_change * inverse != identity_matrix(SageQQ, rank) or inverse * basis_change != identity_matrix(SageQQ, rank):
-        raise ArithmeticError("the fixed-distance sphere basis inverse is not a two-sided inverse")
 
     coordinates = [0] * rank
     solutions: list[tuple[int, ...]] = []

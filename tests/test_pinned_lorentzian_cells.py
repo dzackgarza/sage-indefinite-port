@@ -41,6 +41,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _quadratic_descent_prefix,
     _negative_ldl_factorization,
     _validate_fixed_distance_ldl_factorization,
+    _validate_fixed_distance_basis_inverse,
     _upper_bound,
 )
 
@@ -1541,6 +1542,26 @@ def test_initial_vector_search_advances_integral_bound_without_rescanning() -> N
     # then one. The bound advances by one and multiplier one is not rescanned.
     assert visited == [(QQ(2), 1), (QQ(4), 2)]
     assert bounds == [QQ(2), QQ(3), QQ(4)]
+
+
+def test_fixed_distance_basis_inverse_is_exact_and_two_sided() -> None:
+    """A cached inverse is certified before it transports the CVP center."""
+    from sage.all import QQ, RDF, identity_matrix, matrix
+
+    basis = matrix(QQ, [[1, 2], [0, 1]])
+    inverse = matrix(QQ, [[1, -2], [0, 1]])
+    _validate_fixed_distance_basis_inverse(basis, inverse)
+    for bad_basis, bad_inverse, exception in (
+        (basis, identity_matrix(QQ, 1), ValueError),
+        (basis, matrix(QQ, [[1, 0], [0, 1]]), ArithmeticError),
+        (basis.change_ring(RDF), inverse, ValueError),
+    ):
+        try:
+            _validate_fixed_distance_basis_inverse(bad_basis, bad_inverse)
+        except exception:
+            pass
+        else:
+            raise AssertionError("an invalid fixed-distance basis inverse was accepted")
 
 
 def test_negative_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() -> None:
