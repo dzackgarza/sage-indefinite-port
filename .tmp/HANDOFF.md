@@ -20,91 +20,66 @@ The reference failure set is Acceptance
 [40205836899](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40205836899),
 port `5c990fd35f20f194afdcd95e0bb3647118298645`, research
 `f44e76f18e2e9cec43b09a846e2e74bca5fd50f6`.
-Download its `acceptance-summary` and individual shard artifacts for exact case
-IDs and tracebacks. Missing JUnit reports require the job logs as well.
-The repair scope remains open for every listed failing family.
+The full repair condition remains open.
 
 ## Now
 
-Investigate the remaining reflective failures in Acceptance
-[40310936005](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40310936005),
-port `6618e63ce1decc6ccdb42d0ddaa9e33836b1bdaf`, research
-`53c48e0ab7c8f74f9c15f2e0970b11f29376dc23`. Inspect each completed
-shard's JUnit and revision metadata. Every isometry, perfect-domain and
-vector-stabilizer shard has a complete passing JUnit report at that pair.
-The reflected-vector r_0 and degree-18 orbit consumers pass there.
-Remaining families are open. Reflective shards 2, 4 and 7 contain assertion
-failures and then exit 137 before writing JUnit; orthogonal-group shard 0
-also exits 137 in its final selected case, the A7 + diag(1,1,-1)
-discriminant-image assertion. Its initial perfect configuration has 49,861
-vectors. The old 1024-row block allocated 51,057,664 exact pairings at once.
-The port now streams one row; exact large-coefficient and hash-invariance
-checks pass. Run the full A7 assertion on this change before claiming repair.
-These runs are incomplete evidence.
+Finish the real consumers with research
+`260c6a92c192d879d8a7cf9c988eeef97d4de84b`. The pinned provider now uses
+OSCAR normal forms for finite-form orthogonal groups and Bliss certificates
+for finite-configuration transport. The split quadratic forms in dimensions
+2, 4 and 10 and the exponent-four hyperbolic form pass their independent
+order and generator assertions. Finish the selected bilinear U(2) check in
+`.tmp/repair-two-discriminant-fixed.log`; a passing quadratic check does not
+establish the bilinear value-modulus branch.
 
-The first failure in reflective shard 7 maps to ListReflect_549. Its
-Vinberg coset normalization used QQ division in place of the pinned integer
-QuoInt. The integer-division repair passes that unchanged root-count case and
-ListReflect_231, ListReflect_516, ListReflect_241 and ListReflect_880.
-Use subsequent exact failures to determine which other branches need repair.
+Next work, in order:
 
-The I_1_2 isotropic-stabilizer assertion remains open. A captured perfect-cell
-pair has a verified integral witness from the existing research finite-family
-transporter. The port now delegates cell equivalence to that operation, following
-Lorentzian.g:660-696. The independent matrix certificate and unchanged
-perfect-domain adjacency and facet-action consumers pass. Run the full
-I_1_2 assertion on this route before claiming that consumer is repaired.
-The diagnostic data and exact certificate are in
-`.tmp/probe/configuration-transporter/`; these are optional local evidence,
-not required checkout inputs. The full I_1_2 consumer has no verified result. Its current run has reached
-isotropic stabilizer construction beyond the earlier matching step.
-The unchanged Enriques case_1 boundary consumer is also still unresolved.
+1. Finish the unchanged `ci_indef_U_U_E7` isometry assertion in
+   `.tmp/repair-isometry-UUE7-bliss.log`. It fails with MemoryError in the
+   old Sage graph-isomorphism route in Acceptance
+   [40320087648](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40320087648)
+   (port `7e56222`, provider `53c48e0`). Bliss passes the reindexed A2 family
+   and the independent U + E8(-2) full-configuration witness checks.
+2. Re-run unchanged I_1_2 isotropic-stabilizer and Enriques case_1 boundary
+   consumers. Both reach Sage's exhaustive finite-form orthogonal-group
+   search with the old provider. Their prior runs were stopped after that
+   call was identified. The repaired dimension-ten operation now passes its
+   mathematical assertions; the full consumers are still unverified.
+3. Finish the A7 + diag(1,1,-1) discriminant-image assertion. Its initial
+   perfect configuration has 49,861 vectors; the old pairing block retained
+   51,057,664 exact scalars, and the hosted shard exited 137. Pairings now
+   stream by row, and the hash counts the pinned upper-triangular multiset
+   directly. The exact x=1 face of x^2-y^2 and a large integral basis change
+   verify the invariant. The full A7 consumer is still open.
+4. Read all completed artifacts from the newest Acceptance run and repair
+   the remaining reflective, boundary, group, orbit and centralizer cases.
+   Check JUnit and revision metadata, not job status alone. The Vinberg
+   integer-quotient correction passes the unchanged ListReflect_549, 231,
+   516, 241 and 880 cases. Other reflective cases remain open. Immediate
+   failure reporting now preserves tracebacks before a killed shard exits.
+5. Obtain full frozen Acceptance evidence at one published port/provider
+   pair, and carry any further provider repairs to the current library owner.
 
-The corrected Lorentzian flip preserves GAP's IsSubset(A,B) convention.
-Both source exits return the exact supporting face x=1 of x^2-y^2 in the
-independent owner example. Research's OSCAR orthogonal-group adapter has
-verified order 1393459200 and exact generator actions on E8 + <18>.
+Every isometry, perfect-domain and vector-stabilizer shard has a complete
+passing JUnit report at port `6618e63` / research `53c48e0` in
+[40310936005](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40310936005).
+That does not validate subsequent changes. The reflected-vector r_0 and
+degree-18 orbit consumers also pass in that run.
 
-The isolated provider worktree is `.tmp/research-acceptance-repair`, branch
-`fix/acceptance-quotient-cardinality`. Its repairs through 2e204df5 are also
-on research main at `fdfed1d61c4b2530abb9822c93e457c1d26bc825`.
-Preserve unrelated work in both checkouts. Polarized extension groups must
-restrict by O(L^f,h), not the full invariant orthogonal group.
+## Provider and scope boundaries
 
-Acceptance still required, in order:
+The isolated provider checkout is `.tmp/research-acceptance-repair`, branch
+`fix/acceptance-quotient-cardinality`. Repairs through 2e204df5 were merged
+into research main at `fdfed1d61c4b2530abb9822c93e457c1d26bc825`.
+The newer finite-form and Bliss repairs are published on the provider branch.
+Research main is moving library source to
+[sage-extensions](https://github.com/dzackgarza/sage-extensions); its checkout
+has unrelated merge conflicts. Preserve that work. Verify the replacement
+library source before integrating provider changes there.
 
-1. Repair the remaining reflective cases from exact tracebacks. Recover
-   missing reports by running selected individual cases.
-2. Complete the I_1_2 and Enriques case_1 public consumers; use the existing
-   research configuration operation where the pinned algorithm calls it.
-3. Repair every remaining group, boundary, orbit and centralizer failure.
-4. Obtain full frozen Acceptance evidence at one published port/provider pair.
-
-The following unchanged frozen cases pass locally with port source
-`5024411d3fde70e6e475aa2e1e59b334772d61b5` and provider
-`c55fa8a7d5818ff075a7146e394c70a50368d580`:
-
-| Family | Case |
-| --- | --- |
-| boundaries | test_dawes_last_index_in_the_chain_is_the_discriminant_image_of_o_plus |
-| isometry | ci_indef_U_2U_A3 (change of basis and witness) |
-| isotropic_orbits | IsotropicCases_813 |
-| orthogonal_group | test_signed_discriminant_image_of_u_plus_minus_three_is_all_of_o_q |
-| reflective | ListReflect_590 |
-| centralizers | oscar_lattices_with_isometry_110; oscar_lattices_with_isometry_118 |
-
-These are selected local results, not hosted full-family acceptance.
-Research's independent integer residue-cube, polarized U+U, stable-group
-axis-stabilizer and E8 + <18> group examples pass. The full repair condition
-remains open.
-
-Other work is advancing the same port branch, including positive-vector
-validation and bounded CVP. Inspect current branch tips before changing
-those paths; retain their changes. Post-v1 requirements remain in TODO.md
-and issues #40/#41.
-
-Research main is undergoing a separate move of library source to
-[sage-extensions](https://github.com/dzackgarza/sage-extensions); the research
-checkout has unrelated merge
-conflicts. Preserve that work. Continue acceptance against the published
-53c48e0 provider until a replacement provider is verified explicitly.
+Polarized extension groups must restrict by O(L^f,h). Generic arithmetic,
+finite configurations and finite-form groups belong to the library; the
+indefinite searches and specialized group assembly belong to this port.
+Preserve unrelated port work, including positive-vector validation and CVP.
+Post-v1 requirements remain in TODO.md and issues #40/#41.
