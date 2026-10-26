@@ -23,7 +23,7 @@ stabilizer image 72. Exact evidence and limits are in
 [TODO.md](../TODO.md#functional-mvp-evidence-from-the-current-implementation-work).
 
 Current source-bearing follow-up: pinned #33/#15 perfect-domain CVP construction
-is on `implement/lorentzian-completion`, source revision `013e51e` with the
+is on `implement/lorentzian-completion`, source revision `b16392f` with the
 standalone source-contract tests in `tests/test_pinned_lorentzian_cells.py`.
 The positive-vector backend extracts
 the pinned `SublatticeBasisReductionKernel`, alternating direct/dual LLL on the
@@ -102,7 +102,9 @@ uses the left-kernel shape (`0 x nrows` for an empty basis, including the
 rectangular matrices, and 60 deterministic symmetric samples, including empty left kernels for
 rectangular full-row-rank inputs. The negative vector helper has
 source-ordered exact-output cases and 32 deterministic integral-congruence
-samples, each certified by a strictly negative norm.
+samples, each certified by a strictly negative norm. The exact
+`NearestInteger` rule is extracted and tested on positive/negative half-integers
+and non-ties, matching GAP's ties-toward-positive-infinity convention.
 Outside-ray directions are individually fraction-cleared as in the pinned
 `GetOneOutsideRay` caller. These are targeted helper results only; they do not
 replace frozen `A_PERFECT` consumer acceptance.
