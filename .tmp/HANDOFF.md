@@ -56,14 +56,45 @@ change this code/provider pair.
 
 ## Next work, ranked
 
-### Now: establish the actual finite-character coset route for Enriques
+### Now: remove the repeated preamble operations in the discriminant transport
 
-Inspect the selected construction used by the unchanged
-`test_enriques_modular_groups_match_dutour_sikiric_hulek[case_1]` before
-launching another long run. Its full mathematical assertions remain open.
+The Enriques route is now identified and `_gamma_h` for case_1 computes its
+exact result locally in 2609 s. It does not use the generic predicate coset
+path, so the finite-group transversal repair above is not what this case
+needs. The stages of `.tmp/probe_enriques_stages.py`, provider `53d0db2e7d`:
 
-The finite-group GAP transversal repair does not establish that the
-finite-character preimage route uses it. In the pinned provider:
+| stage | seconds |
+| --- | --- |
+| setup: lattice, transport isometry, polarization | 147 |
+| `invariant.O().stabilizer(h).image_under(discriminant_representation)` | 1356 |
+| `_coinvariant_glue_inverse_maps` | 332 |
+| 19 `_coinvariant_discriminant_from_invariant` transports | 400 |
+| `coinvariant_extension_subgroup` (`discriminant_preimage`) | 382 |
+
+The stabilizer image is the port's pointed Aut((M,h)) (`.tmp/probe-enriques-pointed.log`):
+O(h^perp), a definite rank-9 lattice with 21 generators, 732 s; the
+`_lattice_action` stable bound 92 s; the residual stabilizer 86 s. A warm
+definite O(9) call costs 0.1 s (`.tmp/probe_isometry_group_sign.py`), so most
+of the 732 s is the first Julia engine call of the process, not the group.
+
+The transports are dominated by per-element preamble work, not by any group
+algorithm (`.tmp/probe-enriques-profile.log`: 20 conversions, 2081 s under
+cProfile, 10.08M `category.__classcall__`, 20.7M set-element constructions,
+9.2M `__contains__`, 2.0M `_own_ring`, 84k `abelian_group_gps.exponents`).
+That is roughly a hundred thousand preamble operations per converted
+generator for a 12-generator, order-1024 discriminant group.
+
+Next specimen: one conversion of one invariant generator for case_1, timed
+before and after the change. Name the operation that repeats and remove the
+repetition at its owner (the transport's `morphism.inverse()` plus
+`from_morphism` route through `_normalized_form_automorphism` and the finite
+form's engine group). The same overhead multiplies the 2395-vector
+`IsotropicCases_8716` and the 49,861-vector A7 configuration, so measure the
+change on that conversion before rerunning either family. The case also still
+needs `_counts(group)`; no case has completed the unchanged assertion.
+
+The finite-group GAP transversal repair remains unproven for the finite-character
+route. In the pinned provider:
 
 - `categories/group/groups.py::_engine_left_coset_g_set` supplies exact GAP
   cosets for finite engine groups and delegates complete predicate subgroups.
@@ -91,11 +122,7 @@ and `tests/lattices/test_elementary_two_discriminant_groups.sage`.
 The older protected `test_schreier_generating_morphisms.sage` uses a retired
 spelling; preserve its expectation and resolve any bridge at its owner.
 
-The latest Enriques computation used provider `97a43580e3`, reached
-`_coinvariant_discriminant_from_invariant` and repeated presentation lifts,
-and was stopped without a result. Its log is
-`.tmp/repair-transversal-enriques.log`; the O4 owner assertion in that same
-log passes. Provider `53d0db2e7d` additionally repairs an unconditional
+Provider `53d0db2e7d` repairs an unconditional
 f-string in `BiproductModules.from_coproduct_cocone`. The owner biproduct
 universal-map identity assertion passes. That repair is not full Enriques
 acceptance. Earlier local I_1_2 stabilizer-index and D-tower N_6 boundary
