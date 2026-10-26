@@ -22,6 +22,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _source_direct_graver_improvement,
     _source_should_reset_positive_perturbation,
     _source_positive_search_best,
+    _source_indefinite_short_positive_vector,
     _pinned_nullspace_matrix,
     _pinned_diagonalize_symmetric_matrix,
     _integral_positive_vector_allmeth,
@@ -382,6 +383,34 @@ def test_source_random_perturbations_are_the_pinned_unimodular_matrices() -> Non
             pass
         else:
             raise AssertionError(f"invalid perturbation accepted: {invalid}")
+
+
+def test_source_indefinite_short_positive_vector_integrates_pinned_search_loop() -> None:
+    """Run the complete Graver/reframing/termination loop with deterministic seams."""
+    from sage.all import ZZ, identity_matrix, matrix
+
+    gram = matrix(ZZ, [[10, 0], [0, 10]])
+    calls = []
+    def find_positive(perturbed):
+        calls.append(perturbed)
+        assert perturbed == gram
+        return (ZZ(1), ZZ(0))
+    result = _source_indefinite_short_positive_vector(
+        gram, find_positive, lambda dimension: identity_matrix(ZZ, dimension)
+    )
+    assert result == (ZZ(1), ZZ(0))
+    assert len(calls) == 501
+
+    short_gram = matrix(ZZ, [[1, 0], [0, -1]])
+    short_calls = []
+    def find_short(_perturbed):
+        short_calls.append(None)
+        return (ZZ(1), ZZ(0))
+    short_result = _source_indefinite_short_positive_vector(
+        short_gram, find_short, lambda dimension: identity_matrix(ZZ, dimension)
+    )
+    assert short_result == (ZZ(1), ZZ(0))
+    assert len(short_calls) == 1
 
 
 def test_source_positive_search_best_matches_pinned_termination_state() -> None:

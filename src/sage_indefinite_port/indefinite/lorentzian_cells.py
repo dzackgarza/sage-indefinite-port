@@ -2614,20 +2614,22 @@ def _source_positive_search_best(
     return best_vector, best_norm, without_improvement, stop
 
 
-def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]:
-    r"""Pinned polyhedral_common@a55fcb7b src_isotropy/Positivity.h:565-673,
-    ``INDEFINITE_GetShortPositiveVector``.
+def _source_indefinite_short_positive_vector(
+    gram: Matrix_integer_dense,
+    find_positive: Callable[[Matrix_integer_dense], tuple[Integer, ...]],
+    perturbation_factory: Callable[[int], Matrix_integer_dense] = _source_random_matrix_perturbation,
+) -> tuple[Integer, ...]:
+    r"""Port the complete ``INDEFINITE_GetShortPositiveVector`` loop.
 
-    The positive-vector finder is the independent preamble primitive. The
-    Graver-basis descent, randomized unimodular reframing, 500-failure stop,
-    and short-norm stop are the reference's *specialized* search, not a
-    replacement one-shot reduction.
+    The supplied finder is precisely ``GetIntegralPositiveVector_allmeth``;
+    injection exists only to permit deterministic, bounded source-operation
+    tests without importing the entire research category stack.
     """
-    gram = _gram_matrix(lattice)
-    rank = gram.nrows()
-    # GraverBasis.h:42-83, GetGraverKbasis(rank, 2), in source order.
+    if gram.nrows() == 0 or gram.nrows() != gram.ncols() or gram != gram.transpose():
+        raise ValueError("short-positive-vector search requires a nonempty symmetric Gram matrix")
+    rank = int(gram.nrows())
     directions = tuple(vector(SageZZ, row) for row in _source_graver_k_basis(rank, 2))
-
+    gram_l1 = sum(abs(entry) for entry in gram.list())
     perturbation = identity_matrix(SageZZ, rank)
     best_vector: FreeModuleElement[Integer] | None = None
     best_norm: Integer | None = None
@@ -2640,7 +2642,7 @@ def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]
         # V2 approximation iterators are implemented above.  Calling the
         # preamble's positive_vector instead silently substituted its
         # different exact diagonalization algorithm for this source step.
-        found = vector(SageZZ, _integral_positive_vector_allmeth(perturbed_gram))
+        found = vector(SageZZ, find_positive(perturbed_gram))
         current = perturbation.transpose() * found.column()
         improved = _source_direct_graver_improvement(gram, current.column(0), directions)
         best_vector, best_norm, without_improvement, stop = _source_positive_search_best(
@@ -2654,7 +2656,14 @@ def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]
         perturbed_l1 = sum(abs(entry) for entry in perturbed_gram.list())
         if _source_should_reset_positive_perturbation(perturbed_l1, gram_l1):
             perturbation = identity_matrix(SageZZ, rank)
-        perturbation *= _source_random_matrix_perturbation(rank)
+        perturbation *= perturbation_factory(rank)
+
+
+
+def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]:
+    r"""Pinned polyhedral_common@a55fcb7b ``INDEFINITE_GetShortPositiveVector``."""
+    gram = _gram_matrix(lattice)
+    return tuple(SageQQ(entry) for entry in _source_indefinite_short_positive_vector(gram, _integral_positive_vector_allmeth))
 
 
 def _primitive_integral_direction(
