@@ -540,11 +540,16 @@ class _ConfigurationPairings:
 
     def blocks(self):
         # ComputeInvariantPerfectForm streams pairings (lorentzian_perfect.h:
-        # 1223-1244). Retain one exact row: a perfect cell can have tens of
-        # thousands of vectors, so a fixed block of 1024 rows is too large.
-        for start in range(len(self)):
-            row = self.column(start, cache=False)
-            yield start, np.array([list(row)], dtype=object)
+        # 1223-1244). Multiply bounded row blocks using FLINT rather than
+        # issuing one matrix-vector multiplication per row. A 16-by-n block
+        # remains small for the 49,861-ray A7 configuration, while reducing
+        # Python/FLINT dispatches by a factor of sixteen.
+        block_size = 16
+        transposed_rows = self.rows.transpose()
+        for start in range(0, len(self), block_size):
+            stop = min(start + block_size, len(self))
+            pairing_block = self.covectors.matrix_from_rows(range(start, stop)) * transposed_rows
+            yield start, np.array(pairing_block.rows(), dtype=object)
 
 
 def _extend_configuration_signatures(
@@ -1344,11 +1349,14 @@ def _perfect_form_hash_key(cell: LorentzianPerfectCell) -> PerfectFormKey:
     pairings = _ConfigurationPairings(cell.rows, _gram_matrix(cell.lattice))
     diagonal = Counter(int(value) for value in pairings.diagonal())
     off_diagonal: Counter[int] = Counter()
-    for i in range(len(pairings)):
-        row = pairings.column(i)
-        # The pinned loop counts each unordered pair once, without sorting
-        # or retaining an array of Python scalar objects.
-        off_diagonal.update(int(row[j]) for j in range(i + 1, len(pairings)))
+    for start, block in pairings.blocks():
+        for offset, row in enumerate(block):
+            i = start + offset
+            # The pinned loop counts each unordered pair once, without sorting
+            # or retaining an array of Python scalar objects. Bounded row
+            # blocks reduce the FLINT dispatch count while keeping the exact
+            # n-by-n Gram matrix unmaterialized.
+            off_diagonal.update(int(row[j]) for j in range(i + 1, len(pairings)))
     smith_invariants = tuple(int(entry) for entry in matrix(SageZZ, cell.rows).elementary_divisors())
     vector_contents = tuple(sorted(gcd(*row) for row in cell.rows))
     return (
