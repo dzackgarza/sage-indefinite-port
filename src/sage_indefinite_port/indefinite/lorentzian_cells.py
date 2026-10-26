@@ -2425,20 +2425,23 @@ def _pinned_positive_eigen_directions(
     )
 
 
-def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integer, ...]:
-    r"""Port of the V2 diagonal/eigen ApproxIterator branch in Positivity.h.
+def _source_integral_vector_allmeth_v2(
+    gram: Matrix_integer_dense,
+    basis: Matrix_integer_dense,
+    reduced: Matrix_integer_dense,
+) -> tuple[Integer, ...]:
+    r"""Port ``GetIntegralVector_allmeth_V2`` on a supplied reduced form.
 
-    IndefiniteReduction supplies the source's unimodular reduced Gram matrix.
-    Exact rational diagonal directions are interleaved with numerical
-    positive-eigenvalue directions as in GetIntegralVector_allmeth_V2. The
-    exact diagonal family guarantees termination; every candidate is checked
-    against the exact integral Gram matrix before acceptance.
+    This is the ordered exact-diagonal/eigen ApproxIterator consumer. The
+    caller supplies the pinned integral reduction, so this operation can be
+    verified independently of the surrounding Sage category imports.
     """
-    if gram.nrows() == 0:
-        raise ValueError("the Gram matrix has no positive direction")
-    basis, reduced = _indefinite_reduction(gram)
-    # SignatureSymmetric.h:142-200, NullspaceReduction followed by
-    # DiagonalizeNonDegenerateSymmetricMatrix. Store basis vectors as rows.
+    if gram.nrows() == 0 or gram.nrows() != gram.ncols():
+        raise ValueError("the Gram matrix must be nonempty and square")
+    if basis.nrows() != gram.nrows() or basis.ncols() != gram.ncols() or abs(basis.det()) != 1:
+        raise ValueError("the reduction basis must be a square unimodular matrix")
+    if reduced != basis * gram * basis.transpose() or reduced != reduced.transpose():
+        raise ArithmeticError("the supplied reduced Gram matrix is not the basis congruence")
     rank = int(reduced.nrows())
     qgram = cast(Matrix_rational_dense, reduced.change_ring(SageQQ))
     transform, diagonal_matrix = _pinned_diagonalize_symmetric_matrix(qgram)
@@ -2509,6 +2512,14 @@ def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integ
                 if original_norm != reduced_norm or original_norm <= 0:
                     raise ArithmeticError("positive-vector reduction lost its integral norm witness")
                 return result
+
+
+def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integer, ...]:
+    r"""Port ``GetIntegralPositiveVector_allmeth`` from Positivity.h:499-518."""
+    if gram.nrows() == 0:
+        raise ValueError("the Gram matrix has no positive direction")
+    basis, reduced = _indefinite_reduction(gram)
+    return _source_integral_vector_allmeth_v2(gram, basis, reduced)
 
 
 def _source_graver_k_basis(dimension: int, degree: int) -> tuple[tuple[int, ...], ...]:

@@ -26,6 +26,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _pinned_nullspace_matrix,
     _pinned_diagonalize_symmetric_matrix,
     _integral_positive_vector_allmeth,
+    _source_integral_vector_allmeth_v2,
     _pinned_positive_eigen_directions,
     _pinned_positive_diagonal_directions,
     _pinned_approximation_iterator,
@@ -229,6 +230,30 @@ def test_pinned_approximation_iterator_advances_tied_steps_in_source_order() -> 
         pass
     else:
         raise AssertionError("zero direction unexpectedly created an ApproxIterator")
+
+
+def test_source_integral_vector_allmeth_v2_returns_exact_positive_witness() -> None:
+    """Exercise the complete V2 iterator consumer with an identity reduction."""
+    from sage.all import ZZ, diagonal_matrix, identity_matrix, matrix, vector
+
+    forms = (
+        matrix(ZZ, [[1, 0], [0, -1]]),
+        matrix(ZZ, [[0, 1], [1, 0]]),
+        matrix(ZZ, [[0, 0, 0], [0, 1, 0], [0, 0, -2]]),
+        diagonal_matrix(ZZ, [3, -2, 0, 5]),
+    )
+    for gram in forms:
+        basis = identity_matrix(ZZ, gram.nrows())
+        candidate = vector(ZZ, _source_integral_vector_allmeth_v2(gram, basis, gram))
+        assert (candidate * gram * candidate.column())[0] > 0
+
+    negative = diagonal_matrix(ZZ, [-1, -2])
+    try:
+        _source_integral_vector_allmeth_v2(negative, identity_matrix(ZZ, 2), negative)
+    except ValueError as error:
+        assert "no positive direction" in str(error)
+    else:
+        raise AssertionError("V2 iterator accepted a form with no positive direction")
 
 
 def test_integral_positive_vector_consumer_uses_pinned_diagonalization() -> None:
