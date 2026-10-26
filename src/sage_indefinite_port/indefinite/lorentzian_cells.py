@@ -2225,22 +2225,18 @@ def _owned_rational(
     return _owned_engine_element(field, SageQQ(value))
 
 
-def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integer, ...]:
-    r"""Port of the V2 diagonal/eigen ApproxIterator branch in Positivity.h.
+def _pinned_diagonalize_symmetric_matrix(
+    qgram: Matrix_rational_dense,
+) -> tuple[Matrix_rational_dense, Matrix_rational_dense]:
+    r"""Port GAP ``DiagonalizeSymmetricMatrix`` for an exact rational form.
 
-    IndefiniteReduction supplies the source's unimodular reduced Gram matrix.
-    Exact rational diagonal directions are interleaved with numerical
-    positive-eigenvalue directions as in GetIntegralVector_allmeth_V2. The
-    exact diagonal family guarantees termination; every candidate is checked
-    against the exact integral Gram matrix before acceptance.
+    Return the source-ordered congruence transform and its diagonal Gram
+    matrix. ``NullspaceReduction`` and each Gram--Schmidt complement use the
+    pinned GAP nullspace and greedy column-selection conventions.
     """
-    if gram.nrows() == 0:
-        raise ValueError("the Gram matrix has no positive direction")
-    basis, reduced = _indefinite_reduction(gram)
-    # SignatureSymmetric.h:142-200, NullspaceReduction followed by
-    # DiagonalizeNonDegenerateSymmetricMatrix. Store basis vectors as rows.
-    rank = int(reduced.nrows())
-    qgram = cast(Matrix_rational_dense, reduced.change_ring(SageQQ))
+    if qgram.nrows() != qgram.ncols() or qgram != qgram.transpose():
+        raise ValueError("symmetric diagonalization requires a symmetric square matrix")
+    rank = int(qgram.nrows())
     # PositivitySymmetricMatrices.g:27-35 uses GAP NullspaceMat via
     # NullspaceReduction; preserve that row order for the positive-vector
     # diagonalization just as in GetSomeNegativeVector.
@@ -2313,10 +2309,31 @@ def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integ
     diagonal_matrix = cast(Matrix_rational_dense, transform * qgram * transform.transpose())
     if any(diagonal_matrix[i, j] for i in range(rank) for j in range(rank) if i != j):
         raise ArithmeticError("pinned symmetric diagonalization left off-diagonal entries")
-    if transform * reduced.change_ring(SageQQ) * transform.transpose() != diagonal_matrix:
+    if transform * qgram * transform.transpose() != diagonal_matrix:
         raise ArithmeticError("positive-direction diagonalization lost its congruence witness")
     if not transform.det():
         raise ArithmeticError("positive-direction diagonalization is singular")
+
+    return transform, diagonal_matrix
+
+
+def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integer, ...]:
+    r"""Port of the V2 diagonal/eigen ApproxIterator branch in Positivity.h.
+
+    IndefiniteReduction supplies the source's unimodular reduced Gram matrix.
+    Exact rational diagonal directions are interleaved with numerical
+    positive-eigenvalue directions as in GetIntegralVector_allmeth_V2. The
+    exact diagonal family guarantees termination; every candidate is checked
+    against the exact integral Gram matrix before acceptance.
+    """
+    if gram.nrows() == 0:
+        raise ValueError("the Gram matrix has no positive direction")
+    basis, reduced = _indefinite_reduction(gram)
+    # SignatureSymmetric.h:142-200, NullspaceReduction followed by
+    # DiagonalizeNonDegenerateSymmetricMatrix. Store basis vectors as rows.
+    rank = int(reduced.nrows())
+    qgram = cast(Matrix_rational_dense, reduced.change_ring(SageQQ))
+    transform, diagonal_matrix = _pinned_diagonalize_symmetric_matrix(qgram)
 
     def make_approx_iterator(
         direction: tuple[Rational, ...] | tuple[float, ...],

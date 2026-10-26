@@ -18,6 +18,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _source_permutation_sign_matrix,
     _source_elementary_perturbation,
     _pinned_nullspace_matrix,
+    _pinned_diagonalize_symmetric_matrix,
     _pinned_independent_column_indices,
     _outside_ray_directions,
     _quadratic_descent_prefix,
@@ -151,6 +152,26 @@ def test_pinned_column_reduction_matches_greedy_rank_increase() -> None:
                         assert value.matrix_from_columns(selected[: index + 1]).rank() == index + 1
                         assert all(previous < column for previous in selected[:index])
                     assert selected == tuple(value.echelon_form().pivots())
+
+
+def test_pinned_symmetric_diagonalization_returns_exact_congruence_witness() -> None:
+    """Exercise the production source-ordered diagonalizer on degenerate forms."""
+    from sage.all import QQ, diagonal_matrix, matrix
+
+    forms = (
+        matrix(QQ, [[1, 2, 3], [2, 4, 6], [3, 6, 9]]),
+        matrix(QQ, [[0, 1, 0], [1, 0, 0], [0, 0, 1]]),
+        matrix(QQ, [[0, 0, 0], [0, -2, 0], [0, 0, 3]]),
+        matrix(QQ, [[0, 1], [1, 0]]),
+        diagonal_matrix(QQ, [3, -2, 0, 5]),
+    )
+    for gram in forms:
+        transform, diagonal = _pinned_diagonalize_symmetric_matrix(gram)
+        assert transform.nrows() == gram.nrows()
+        assert transform.ncols() == gram.ncols()
+        assert transform.det() != 0
+        assert transform * gram * transform.transpose() == diagonal
+        assert all(diagonal[i, j] == 0 for i in range(diagonal.nrows()) for j in range(diagonal.ncols()) if i != j)
 
 
 def test_pinned_nullspace_preserves_gap_row_basis_order() -> None:
