@@ -1596,6 +1596,68 @@ def test_isotropic_multiplier_uses_dual_lll_fixed_distance_solver() -> None:
         enumerator._ambient_vectors = original_ambient
 
 
+def test_total_multiplier_keeps_bounded_cvp_and_pinned_order() -> None:
+    """The total-vector path remains at-most-distance CVP, not fixed-distance sphere enumeration."""
+    from sage.all import QQ, ZZ, diagonal_matrix, matrix, vector
+    from sage_indefinite_port.indefinite import lorentzian_cells as cells
+
+    order = matrix(ZZ, [[1, 2], [0, 1]])
+    expected = (
+        (ZZ(0), ZZ(0)),
+        (ZZ(1), ZZ(0)),
+        (ZZ(0), ZZ(1)),
+    )
+
+    class CVPEngine:
+        engine_gram_q = diagonal_matrix(QQ, [1, 2])
+
+        def _engine_target_coordinates(self, target):
+            return tuple(target)
+
+        def _engine_scalar(self, scalar):
+            return QQ(scalar)
+
+        def close_vector_coordinates(self, target, bound):
+            assert target == (QQ(1), QQ(0))
+            assert bound == QQ(2)
+            return (
+                ((ZZ(0), ZZ(1)), QQ(1)),
+                ((ZZ(1), ZZ(0)), QQ(2)),
+                ((ZZ(0), ZZ(0)), QQ(0)),
+            )
+
+    enumerator = object.__new__(cells._PositiveVectorEnumerator)
+    enumerator.rational_field = object()
+    enumerator.lattice = object()
+    enumerator.base_target_engine_coordinates = (QQ(1) / 2, QQ(0))
+    enumerator.base_bound = QQ(1) / 2
+    enumerator.cvp_engine = CVPEngine()
+    enumerator.enumeration_transform = order.inverse().transpose()
+    enumerator.enumeration_order_transform = order
+    enumerator.allowed_squares = cells.NONNEGATIVE_SQUARES
+    original_element = cells._owned_engine_element
+    original_rational = cells._owned_rational
+    original_sphere = cells._fixed_distance_dual_lll_solutions
+    original_ambient = enumerator._ambient_vectors
+    try:
+        cells._owned_engine_element = lambda field, value: value
+        cells._owned_rational = lambda lattice, value, field: value
+        cells._fixed_distance_dual_lll_solutions = lambda *args: (_ for _ in ()).throw(
+            AssertionError("total mode must not use fixed-distance sphere enumeration")
+        )
+        enumerator._ambient_vectors = lambda multiplier, coordinates, distances: (multiplier, coordinates, distances)
+        assert enumerator.vectors_at_multiplier(2) == (
+            2,
+            expected,
+            (QQ(0), QQ(2), QQ(1)),
+        )
+    finally:
+        cells._owned_engine_element = original_element
+        cells._owned_rational = original_rational
+        cells._fixed_distance_dual_lll_solutions = original_sphere
+        enumerator._ambient_vectors = original_ambient
+
+
 def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
     """The isotropic shell enumerator returns the exact rational-center sphere."""
     from itertools import product
