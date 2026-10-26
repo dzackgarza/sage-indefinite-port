@@ -34,7 +34,7 @@ from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.groups.perm_gps.permgroup_named import SymmetricGroup
 from sage.libs.gap.libgap import libgap
 from sage.geometry.polyhedron.constructor import Polyhedron
-from sage.matrix.constructor import matrix
+from sage.matrix.constructor import diagonal_matrix, matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
 from sage.matrix.matrix_real_double_dense import Matrix_real_double_dense
@@ -2065,6 +2065,26 @@ def _negative_ldl_factorization(gram: Matrix_rational_dense) -> tuple[list[list[
     return lower, diagonal
 
 
+def _validate_fixed_distance_ldl_factorization(
+    gram: Matrix_rational_dense,
+    factorization: tuple[list[list[Rational]], list[Rational]],
+) -> None:
+    """Validate a cached unit-lower LDL factorization before sphere pruning."""
+    rank = int(gram.nrows())
+    lower, diagonal = factorization
+    if len(lower) != rank or len(diagonal) != rank or any(len(row) != rank for row in lower):
+        raise ValueError("the fixed-distance LDL factorization has incorrect dimensions")
+    for row in range(rank):
+        if lower[row][row] != 1 or any(lower[row][column] != 0 for column in range(row + 1, rank)):
+            raise ArithmeticError("the fixed-distance LDL factorization is not unit lower triangular")
+        if diagonal[row] <= 0:
+            raise ArithmeticError("the fixed-distance LDL factorization has a nonpositive pivot")
+    lower_matrix = matrix(SageQQ, lower)
+    diagonal_matrix_ = diagonal_matrix(SageQQ, diagonal)
+    if lower_matrix * diagonal_matrix_ * lower_matrix.transpose() != gram:
+        raise ArithmeticError("the fixed-distance LDL factorization does not reconstruct its Gram matrix")
+
+
 def _fixed_distance_vectors(
     lattice: Lattices.ParentMethods,
     target: FramedFreeModules.ElementMethods,
@@ -2100,10 +2120,9 @@ def _fixed_distance_vectors(
     rank = int(gram.nrows())
     zero = cast(Rational, SageQQ.zero())
     lower, diagonal = ldl_factorization if ldl_factorization is not None else _negative_ldl_factorization(gram)
-    if len(lower) != rank or len(diagonal) != rank:
-        raise ArithmeticError("the fixed-distance LDL factorization has incorrect rank")
-    if any(len(row) != rank for row in lower):
-        raise ArithmeticError("the fixed-distance LDL factorization has an invalid lower-triangular matrix")
+    _validate_fixed_distance_ldl_factorization(gram, (lower, diagonal))
+    if basis_change * inverse != identity_matrix(SageQQ, rank) or inverse * basis_change != identity_matrix(SageQQ, rank):
+        raise ArithmeticError("the fixed-distance sphere basis inverse is not a two-sided inverse")
 
     coordinates = [0] * rank
     solutions: list[tuple[int, ...]] = []

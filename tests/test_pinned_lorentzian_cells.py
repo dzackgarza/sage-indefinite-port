@@ -40,6 +40,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _outside_ray_directions,
     _quadratic_descent_prefix,
     _negative_ldl_factorization,
+    _validate_fixed_distance_ldl_factorization,
     _upper_bound,
 )
 
@@ -1560,6 +1561,22 @@ def test_negative_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() ->
         assert lower_matrix.is_lower_triangular()
         assert all(pivot > 0 for pivot in diagonal)
         assert lower_matrix * diagonal_matrix_ * lower_matrix.transpose() == gram
+        _validate_fixed_distance_ldl_factorization(gram, (lower, diagonal))
+
+    gram = matrix(QQ, [[2, 1], [1, 3]])
+    valid_lower, valid_diagonal = _negative_ldl_factorization(gram)
+    for bad_factorization in (
+        ([[1, 1], [0, 1]], valid_diagonal),
+        (valid_lower, [valid_diagonal[0], -valid_diagonal[1]]),
+        (valid_lower, [valid_diagonal[0], valid_diagonal[1] + 1]),
+        ([[1]], [QQ(1)]),
+    ):
+        try:
+            _validate_fixed_distance_ldl_factorization(gram, bad_factorization)
+        except (ValueError, ArithmeticError):
+            pass
+        else:
+            raise AssertionError(f"invalid cached LDL factorization accepted: {bad_factorization}")
 
     for gram in (
         matrix(QQ, 0, 0),
