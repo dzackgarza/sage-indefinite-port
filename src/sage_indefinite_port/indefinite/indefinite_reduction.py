@@ -352,13 +352,20 @@ def _nondegenerate_reduction(gram):
                         for j, original_j in enumerate(block):
                             block_basis[original_i, original_j] = step[i, j]
                             block_gram[original_i, original_j] = reduced[i, j]
-                return block_basis * basis, block_gram
+                combined_basis = block_basis * basis
+                if abs(combined_basis.det()) != 1 or block_gram != combined_basis * gram * combined_basis.transpose():
+                    raise ArithmeticError("blockwise indefinite reduction failed its exact basis certificate")
+                return combined_basis, block_gram
             if which == 0:
                 step, candidate, _ = _compute_indefinite_reduction(working)
             elif which == 1:
                 step, candidate = _simple_indefinite_reduction(working)
             else:
                 step, candidate = _definite_lll(working, dual=which == 3)
+            if step.nrows() != rank or step.ncols() != rank or abs(step.det()) != 1:
+                raise ArithmeticError("indefinite reduction operation returned a nonunimodular step")
+            if candidate != step * working * step.transpose():
+                raise ArithmeticError("indefinite reduction operation returned a false Gram certificate")
             current_norm = _gram_l1(candidate)
             if current_norm < best_norm:
                 accepted += 1
