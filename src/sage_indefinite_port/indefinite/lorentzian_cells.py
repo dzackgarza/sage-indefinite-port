@@ -521,16 +521,17 @@ class _ConfigurationPairings:
     def diagonal(self):
         return tuple(self.covectors.row(i).dot_product(self.rows.row(i)) for i in range(len(self)))
 
-    def column(self, index: int):
+    def column(self, index: int, *, cache: bool | None = None):
         # The form is symmetric, so column j holds b(v_l, v_j) for every l.
         # A one-column integer matrix selects Sage's FLINT multiplication;
         # Matrix._matrix_times_vector_ instead builds and sums every column.
+        use_cache = self._cache_columns if cache is None else cache
         cached = self._column_cache.get(index)
-        if self._cache_columns and cached is not None:
+        if use_cache and cached is not None:
             return cached
         covector = self.covectors.matrix_from_rows([index]).transpose()
         result = tuple(int(entry) for entry in (self.rows * covector).column(0))
-        if not self._cache_columns:
+        if not use_cache:
             return result
         if len(self._column_cache) >= 64:
             self._column_cache.pop(next(iter(self._column_cache)))
@@ -542,7 +543,7 @@ class _ConfigurationPairings:
         # 1223-1244). Retain one exact row: a perfect cell can have tens of
         # thousands of vectors, so a fixed block of 1024 rows is too large.
         for start in range(len(self)):
-            row = self.column(start)
+            row = self.column(start, cache=False)
             yield start, np.array([list(row)], dtype=object)
 
 

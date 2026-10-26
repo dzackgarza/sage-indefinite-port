@@ -43,6 +43,11 @@ def test_hyperbolic_plane_pairings_preserve_integral_change_of_basis() -> None:
         assert tuple(streaming.column(i)) == tuple(i + j for j in range(len(rows)))
     assert not streaming._column_cache
 
+    cached_pairings = _ConfigurationPairings(rows, gram, cache_columns=True)
+    for start, block in cached_pairings.blocks():
+        assert tuple(block[0]) == tuple(start + j for j in range(len(rows)))
+    assert not cached_pairings._column_cache
+
     pairings = _ConfigurationPairings(rows, gram, cache_columns=True)
     for i in range(len(rows)):
         assert tuple(pairings.column(i)) == tuple(i + j for j in range(len(rows)))
