@@ -550,11 +550,10 @@ class _ConfigurationPairings:
 def _extend_configuration_signatures(
     signatures: tuple[tuple[int, tuple[int, ...]], ...],
     column: tuple[int, ...],
-    position: int,
 ) -> tuple[tuple[int, tuple[int, ...]], ...]:
-    r"""Insert one exact pairing column at its sorted anchor position."""
+    r"""Append one exact pairing column in the common search-assignment order."""
     return tuple(
-        (colour, signature[:position] + (int(column[row]),) + signature[position:])
+        (colour, signature + (int(column[row]),))
         for row, (colour, signature) in enumerate(signatures)
     )
 
@@ -1122,18 +1121,17 @@ class LorentzianPerfectLocalBackend:
                     # check, and can dominate the cost of each leaf.
                     target_basis_integral = target_rows.matrix_from_rows([images[i] for i in basis])
                     if abs(target_basis_integral.det()) == source_basis_index:
-                        # Extend exact per-row signatures by the new anchor.
-                        # Source and target entries use the same position in
-                        # the sorted source-anchor order. Passing these rows
-                        # avoids rebuilding all previous pairing columns.
-                        anchor_position = sum(k < choice for k in images if k != choice)
+                        # Extend signatures in basis-assignment order. Source
+                        # and target use the same sequence of assigned pairs,
+                        # so no sorting by source index is needed for this
+                        # exact multiset comparison.
                         source_column = source_pairings.column(choice)
                         target_column = target_pairings.column(j)
                         next_source_signatures = _extend_configuration_signatures(
-                            source_signatures, source_column, anchor_position
+                            source_signatures, source_column
                         )
                         next_target_signatures = _extend_configuration_signatures(
-                            target_signatures, target_column, anchor_position
+                            target_signatures, target_column
                         )
                         if Counter(next_source_signatures) == Counter(next_target_signatures):
                             backtrack(images, next_source_signatures, next_target_signatures, target_basis_integral)
@@ -1154,15 +1152,15 @@ class LorentzianPerfectLocalBackend:
                     target_submodule_invariants[target_selected] = tuple(target_partial.elementary_divisors())
                 if source_submodule_invariants[selected] == target_submodule_invariants[target_selected]:
                     # Extend exact per-row signatures only after the cheaper
-                    # rank and Smith obstructions have passed.
-                    anchor_position = sum(k < choice for k in images if k != choice)
+                    # rank and Smith obstructions have passed. The shared
+                    # assignment order keeps source/target coordinates aligned.
                     source_column = source_pairings.column(choice)
                     target_column = target_pairings.column(j)
                     next_source_signatures = _extend_configuration_signatures(
-                        source_signatures, source_column, anchor_position
+                        source_signatures, source_column
                     )
                     next_target_signatures = _extend_configuration_signatures(
-                        target_signatures, target_column, anchor_position
+                        target_signatures, target_column
                     )
                     if Counter(next_source_signatures) == Counter(next_target_signatures):
                         backtrack(images, next_source_signatures, next_target_signatures)

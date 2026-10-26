@@ -93,13 +93,13 @@ def test_all_integral_transporters_extend_exact_anchor_signatures() -> None:
         assert set(map(tuple, matrix(ZZ, cell.rows) * transform)) == set(cell.rows)
 
 
-def test_anchor_signature_extension_inserts_at_sorted_source_position() -> None:
+def test_anchor_signature_extension_appends_in_common_assignment_order() -> None:
     signatures = ((0, (10, 30)), (1, (11, 31)), (0, (12, 32)))
     column = (20, 21, 22)
-    assert _extend_configuration_signatures(signatures, column, 1) == (
-        (0, (10, 20, 30)),
-        (1, (11, 21, 31)),
-        (0, (12, 22, 32)),
+    assert _extend_configuration_signatures(signatures, column) == (
+        (0, (10, 30, 20)),
+        (1, (11, 31, 21)),
+        (0, (12, 32, 22)),
     )
 
 
