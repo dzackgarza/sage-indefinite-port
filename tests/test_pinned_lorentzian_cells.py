@@ -863,6 +863,27 @@ def test_source_indefinite_short_positive_vector_integrates_pinned_search_loop()
     assert reset_observed
 
 
+def test_source_indefinite_short_positive_vector_certifies_search_witnesses() -> None:
+    """The public heuristic rejects malformed witnesses before perturbing again."""
+    from sage.all import ZZ, identity_matrix, matrix
+
+    gram = matrix(ZZ, [[1]])
+    assert _source_indefinite_short_positive_vector(gram, lambda _gram: (ZZ(1),)) == (ZZ(1),)
+    for bad_gram, witness in (
+        (matrix(ZZ, 0, 0), ()),
+        (matrix(ZZ, [[1, 2], [0, 1]]), (ZZ(1), ZZ(1))),
+        (gram, (0.5,)),
+        (gram, (ZZ(0),)),
+        (gram, (ZZ(-1),)),
+    ):
+        try:
+            _source_indefinite_short_positive_vector(bad_gram, lambda _gram, w=witness: w)
+        except (ValueError, ArithmeticError):
+            pass
+        else:
+            raise AssertionError(f"invalid positive-search input or witness accepted: {bad_gram}, {witness}")
+
+
 def test_source_positive_search_best_matches_pinned_termination_state() -> None:
     """Best norm, no-improvement count, and both source stop conditions agree."""
     from sage.all import ZZ, matrix, vector

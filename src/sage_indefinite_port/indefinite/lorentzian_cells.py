@@ -2788,6 +2788,10 @@ def _source_indefinite_short_positive_vector(
     if gram.nrows() == 0 or gram.nrows() != gram.ncols() or gram != gram.transpose():
         raise ValueError("short-positive-vector search requires a nonempty symmetric Gram matrix")
     rank = int(gram.nrows())
+    if rank == 0 or gram.ncols() != rank:
+        raise ValueError("short positive-vector search requires a nonempty square Gram matrix")
+    if gram != gram.transpose():
+        raise ValueError("short positive-vector search requires a symmetric Gram matrix")
     directions = tuple(vector(SageZZ, row) for row in _source_graver_k_basis(rank, 2))
     gram_l1 = sum(abs(entry) for entry in gram.list())
     perturbation = identity_matrix(SageZZ, rank)
@@ -2796,15 +2800,33 @@ def _source_indefinite_short_positive_vector(
     without_improvement = 0
     gram_l1 = sum(abs(entry) for entry in gram.list())
     while True:
+        if perturbation.nrows() != rank or perturbation.ncols() != rank or abs(perturbation.det()) != 1:
+            raise ArithmeticError("positive-vector perturbation is not an integral lattice automorphism")
         perturbed_gram = perturbation * gram * perturbation.transpose()
+        if perturbed_gram != perturbed_gram.transpose() or perturbed_gram != perturbation * gram * perturbation.transpose():
+            raise ArithmeticError("positive-vector perturbation lost its exact Gram congruence")
         # Positivity.h:614-624 takes the *integral* positive witness of the
         # perturbed Gram matrix from GetIntegralPositiveVector_allmeth.  Its
         # V2 approximation iterators are implemented above.  Calling the
         # preamble's positive_vector instead silently substituted its
         # different exact diagonalization algorithm for this source step.
-        found = vector(SageZZ, find_positive(perturbed_gram))
+        found_raw = tuple(find_positive(perturbed_gram))
+        found = vector(SageZZ, found_raw)
+        if any(entry != integer for entry, integer in zip(found_raw, found)):
+            raise ArithmeticError("positive-vector search returned nonintegral coordinates")
+        if len(found_raw) != rank or not any(found):
+            raise ArithmeticError("positive-vector search returned a zero or dimensionally invalid witness")
+        found_norm = SageZZ((found * perturbed_gram * found.column())[0])
+        if found_norm <= 0:
+            raise ArithmeticError("positive-vector search returned a nonpositive-norm witness")
         current = perturbation.transpose() * found.column()
+        current_norm = SageZZ((current.transpose() * gram * current)[0, 0])
+        if current_norm != found_norm:
+            raise ArithmeticError("positive-vector perturbation changed the exact witness norm")
         improved = _source_direct_graver_improvement(gram, current.column(0), directions)
+        improved_norm = SageZZ((improved * gram * improved.column())[0])
+        if improved_norm <= 0 or improved_norm > current_norm:
+            raise ArithmeticError("direct Graver improvement did not preserve positivity and norm descent")
         best_vector, best_norm, without_improvement, stop = _source_positive_search_best(
             gram, improved, best_vector, best_norm, without_improvement
         )
