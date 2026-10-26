@@ -684,6 +684,7 @@ class LorentzianPerfectLocalBackend:
         labels = tuple(cell.lattice.module_generating_set())
         integral_ray_rows = matrix(SageZZ, cell.rows)
         transposed_ray_rows = integral_ray_rows.transpose()
+        all_ray_positions = frozenset(range(len(vectors)))
         # Do not materialize the full |facets|-by-|rays| pairing matrix.
         # A7's initial perfect configuration has 49,861 rays, so retaining
         # every rational pairing alongside the exact incidence sets multiplies
@@ -699,13 +700,10 @@ class LorentzianPerfectLocalBackend:
             )
             pairing_block = covector_rows * transposed_ray_rows
             for offset in range(len(covector_block)):
-                facets.append(
-                    frozenset(
-                        position
-                        for position in range(len(vectors))
-                        if pairing_block[offset, position] == 0
-                    )
-                )
+                # Sage's exact dense row support is computed by the matrix
+                # backend. Taking its complement avoids 49,861 Python-level
+                # matrix-entry lookups per facet in the A7 configuration.
+                facets.append(all_ray_positions.difference(pairing_block.row(offset).nonzero_positions()))
             covector_block = tuple(islice(covectors, 16))
         generators = self.cell_stabilizer(cell)
         # Use precisely these generators to form the ray action.  Calling
