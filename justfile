@@ -42,7 +42,8 @@ ci-provision-sage:
     # that rebuild, and fail here if Sage does not import.
     export MESONPY_EDITABLE_VERBOSE=1
     "$SAGE_BIN" -python -c 'import sage.all'
-    "$SAGE_BIN" -pip install --quiet "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard
+    sage_python="$("$SAGE_BIN" -python -c 'import sys; print(sys.executable)')"
+    uv pip install --quiet --python "$sage_python" "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard pytest-instafail
     # The acceptance contract is against this exact research API revision.
     # Tracking main is not reproducible and currently imports a Sage category
     # absent from the pinned CI Sage image (sage.categories.ordered_fields).
@@ -106,5 +107,5 @@ ci-acceptance family shard shards:
     # SIGINT before the job's hard limit, so pytest still writes the JUnit
     # report for every case that finished.
     timeout --signal=INT 345m "$SAGE_BIN" -python -c 'import sage.all, sys, pytest; sys.exit(pytest.main(sys.argv[1:]))' \
-        -p qc_sage_session tests/acceptance/test_{{family}}.sage --runxfail -rA --tb=long \
+        -p qc_sage_session tests/acceptance/test_{{family}}.sage --runxfail -rA --tb=long --instafail \
         --shard-id={{shard}} --num-shards={{shards}} --junitxml="$out/junit.xml" 2>&1 | tee "$out/log"
