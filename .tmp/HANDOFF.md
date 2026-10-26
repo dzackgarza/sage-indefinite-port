@@ -26,14 +26,25 @@ The repair scope remains open for every listed failing family.
 
 ## Now
 
-Complete the frozen vector consumers using research revision
-`c55fa8a7d5818ff075a7146e394c70a50368d580`. Its definite orthogonal groups
-use the existing OSCAR adapter. The independent lattice E8 + <18> has
-verified group order 1393459200 and exact generator actions. The unchanged
-`test_published_representatives_are_one_per_orbit[18]` and
-`test_equivalence_witness_carries_a_representative_to_its_reflection[r_0]`
-still need results. The definite isometry witness operation still uses PARI
-qfisom; inspect an actual failure before changing that operation.
+Verify the corrected Lorentzian flip at port `5024411` with research
+`c55fa8a7d5818ff075a7146e394c70a50368d580`. The frozen U_2U_A3
+isometry and Dawes discriminant-image cases both reached zero denominators
+because the port reversed GAP's IsSubset(A,B) convention in every flip exit.
+The small supporting face x=1 of x^2-y^2 now returns exactly
+(1,-1), (1,0), (1,1). The frozen vector-orbit consumer also reached the old
+second-scheme loop. Its result remains open.
+
+The current selected frozen run is `.tmp/repair-flip-frozen-consumers.log`,
+using immutable port sources `.tmp/port-5024411/src`. It exercises, in order,
+the Dawes discriminant-image case, original U_2U_A3 isometry,
+`test_published_representatives_are_one_per_orbit[18]`, and
+`test_equivalence_witness_carries_a_representative_to_its_reflection[r_0]`.
+Read its actual outcomes before selecting further repairs.
+
+Research's exact OSCAR orthogonal-group adapter has independently verified
+order 1393459200 and generator actions on E8 + <18>. The definite isometry
+witness operation still uses PARI qfisom; inspect an actual failure before
+changing that operation.
 
 The isolated provider worktree is `.tmp/research-acceptance-repair`, branch
 `fix/acceptance-quotient-cardinality`. Its repairs through c55fa8a7 are also
@@ -43,14 +54,10 @@ restrict by O(L^f,h), not the full invariant orthogonal group.
 
 Acceptance still required, in order:
 
-1. Resolve the original isometry case
-   `test_change_of_basis_gives_an_isometric_lattice[ci_indef_U_2U_A3]`.
-   The quotient cardinality assertion is repaired, but a completed result
-   remains missing. A run with provider ee96afcf produced an incomplete
-   timeout traceback in `_ExactCVPEngine._filtered_candidates`.
-   `.tmp/repair-isometry-diagnosis.md` records competing explanations;
-   `.tmp/repair-isometry-boundaries.log` records a run without that timeout.
-   A partial timeout trace does not identify the currently executing operation.
+1. Finish the selected frozen consumers above. The original isometry
+   completes its finite lattice orbit after the quotient repair; its next
+   observed failure was the corrected flip containment. Earlier interrupted
+   runs and timeout traces are not passing evidence.
 2. Complete the isotropic consumers after exact integer configuration
    pairings. `IsotropicCases_813` has not returned a verified result.
 3. Repair all remaining reflective, group, boundary and vector cases using
