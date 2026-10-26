@@ -57,8 +57,12 @@ def test_gap_lll_transformation_uses_row_congruence_orientation() -> None:
         [[int(gram[i, j]) for j in range(gram.ncols())] for i in range(gram.nrows())],
         libgap(99) / libgap(100),
     )
-    transform = matrix(ZZ, [[ZZ(int(entry)) for entry in row] for row in record["transformation"]])
-    reduced = matrix(ZZ, [[ZZ(int(entry)) for entry in row] for row in record["remainder"]])
+    transform = matrix(
+        ZZ, [[ZZ(int(entry)) for entry in row] for row in record["transformation"]]
+    )
+    reduced = matrix(
+        ZZ, [[ZZ(int(entry)) for entry in row] for row in record["remainder"]]
+    )
 
     assert transform == matrix(ZZ, [[0, -1, 1], [0, -1, 2], [1, -3, 0]])
     assert abs(transform.det()) == 1
@@ -66,25 +70,48 @@ def test_gap_lll_transformation_uses_row_congruence_orientation() -> None:
     assert transform.transpose() * gram * transform != reduced
 
     dual_record = libgap.LLLReducedGramMat(
-        [[int(gram.adjugate()[i, j]) for j in range(gram.ncols())] for i in range(gram.nrows())],
+        [
+            [int(gram.adjugate()[i, j]) for j in range(gram.ncols())]
+            for i in range(gram.nrows())
+        ],
         libgap(99) / libgap(100),
     )
-    dual_transform = matrix(ZZ, [[ZZ(int(entry)) for entry in row] for row in dual_record["transformation"]])
-    dual_reduced = matrix(ZZ, [[ZZ(int(entry)) for entry in row] for row in dual_record["remainder"]])
+    dual_transform = matrix(
+        ZZ, [[ZZ(int(entry)) for entry in row] for row in dual_record["transformation"]]
+    )
+    dual_reduced = matrix(
+        ZZ, [[ZZ(int(entry)) for entry in row] for row in dual_record["remainder"]]
+    )
     assert dual_transform == matrix(ZZ, [[1, 0, 0], [3, 1, 1], [6, 2, 1]])
     assert dual_transform * gram.adjugate() * dual_transform.transpose() == dual_reduced
     enumeration_transform = dual_transform.inverse().transpose()
     assert enumeration_transform * dual_transform.transpose() == matrix.identity(ZZ, 3)
-    assert enumeration_transform * gram * enumeration_transform.transpose() == gram.det() * dual_reduced.change_ring(QQ).inverse()
+    assert (
+        enumeration_transform * gram * enumeration_transform.transpose()
+        == gram.det() * dual_reduced.change_ring(QQ).inverse()
+    )
     # Exercise the production ordering key against the actual pinned dual-LLL
     # transform, not only a separately chosen nonsymmetric unimodular matrix.
-    candidates = (vector(ZZ, (4, 2, 1)), vector(ZZ, (3, 0, 2)), vector(ZZ, (1, 5, 0)), vector(ZZ, (0, 1, 3)))
-    assert tuple(sorted(candidates, key=lambda x: _dual_lll_enumeration_key(tuple(x), dual_transform))) == (
-        candidates[3], candidates[2], candidates[1], candidates[0]
+    candidates = (
+        vector(ZZ, (4, 2, 1)),
+        vector(ZZ, (3, 0, 2)),
+        vector(ZZ, (1, 5, 0)),
+        vector(ZZ, (0, 1, 3)),
     )
-    assert tuple(sorted(candidates, key=lambda x: _dual_lll_enumeration_key(tuple(x), dual_transform.transpose()))) != (
-        candidates[3], candidates[2], candidates[1], candidates[0]
-    )
+    assert tuple(
+        sorted(
+            candidates,
+            key=lambda x: _dual_lll_enumeration_key(tuple(x), dual_transform),
+        )
+    ) == (candidates[3], candidates[2], candidates[1], candidates[0])
+    assert tuple(
+        sorted(
+            candidates,
+            key=lambda x: _dual_lll_enumeration_key(
+                tuple(x), dual_transform.transpose()
+            ),
+        )
+    ) != (candidates[3], candidates[2], candidates[1], candidates[0])
 
 
 def test_dual_lll_candidates_sort_in_reduced_column_coordinates() -> None:
@@ -92,21 +119,48 @@ def test_dual_lll_candidates_sort_in_reduced_column_coordinates() -> None:
     from sage.all import ZZ, matrix, vector
 
     transform = matrix(ZZ, [[1, 2, 0], [0, 1, 1], [0, 0, 1]])
-    reduced_columns = (vector(ZZ, (3, 2, 2)), vector(ZZ, (11, 5, 0)), vector(ZZ, (8, 3, 1)))
+    reduced_columns = (
+        vector(ZZ, (3, 2, 2)),
+        vector(ZZ, (11, 5, 0)),
+        vector(ZZ, (8, 3, 1)),
+    )
     # CVPSolver reconstructs x=P^{-1}y. Recover the original columns from
     # deliberately out-of-order recursive coordinates and check the inverse.
-    original_columns = tuple(transform.inverse() * reduced.column() for reduced in reduced_columns)
-    assert tuple(tuple(column[i, 0] for i in range(3)) for column in original_columns) == (
-        (3, 0, 2), (1, 5, 0), (4, 2, 1)
+    original_columns = tuple(
+        transform.inverse() * reduced.column() for reduced in reduced_columns
     )
-    assert tuple(tuple((transform * column)[i, 0] for i in range(3)) for column in original_columns) == tuple(
-        tuple(column) for column in reduced_columns
-    )
+    assert tuple(
+        tuple(column[i, 0] for i in range(3)) for column in original_columns
+    ) == ((3, 0, 2), (1, 5, 0), (4, 2, 1))
+    assert tuple(
+        tuple((transform * column)[i, 0] for i in range(3))
+        for column in original_columns
+    ) == tuple(tuple(column) for column in reduced_columns)
     expected_order = (original_columns[1], original_columns[2], original_columns[0])
-    assert tuple(sorted(original_columns, key=lambda column: _dual_lll_enumeration_key(tuple(column[i, 0] for i in range(3)), transform))) == expected_order
+    assert (
+        tuple(
+            sorted(
+                original_columns,
+                key=lambda column: _dual_lll_enumeration_key(
+                    tuple(column[i, 0] for i in range(3)), transform
+                ),
+            )
+        )
+        == expected_order
+    )
     # The transpose gives a different order on this nonsymmetric transform;
     # this guards against accidentally using Q^{-1}=P^T instead of P.
-    assert tuple(sorted(original_columns, key=lambda column: _dual_lll_enumeration_key(tuple(column[i, 0] for i in range(3)), transform.transpose()))) != expected_order
+    assert (
+        tuple(
+            sorted(
+                original_columns,
+                key=lambda column: _dual_lll_enumeration_key(
+                    tuple(column[i, 0] for i in range(3)), transform.transpose()
+                ),
+            )
+        )
+        != expected_order
+    )
     # The pinned recursion orders y=P*x+s. A target-dependent affine shift s
     # is constant across one result list, so it must not alter the order.
     affine_shift = vector(ZZ, (7, -4, 2))
@@ -171,7 +225,10 @@ def test_pinned_column_reduction_matches_greedy_rank_increase() -> None:
                     selected = _pinned_independent_column_indices(value)
                     assert len(selected) == value.rank()
                     for index, column in enumerate(selected):
-                        assert value.matrix_from_columns(selected[: index + 1]).rank() == index + 1
+                        assert (
+                            value.matrix_from_columns(selected[: index + 1]).rank()
+                            == index + 1
+                        )
                         assert all(previous < column for previous in selected[:index])
                     assert selected == tuple(value.echelon_form().pivots())
 
@@ -215,7 +272,9 @@ def test_pinned_positive_eigen_directions_preserve_source_row_orientation() -> N
     directions = _pinned_positive_eigen_directions(gram)
     assert directions == expected
     assert all(len(direction) == gram.nrows() for direction in directions)
-    assert any(direction != columns[index] for index, direction in enumerate(directions))
+    assert any(
+        direction != columns[index] for index, direction in enumerate(directions)
+    )
 
 
 def test_pinned_positive_eigen_directions_rejects_invalid_double_gram() -> None:
@@ -246,24 +305,46 @@ def test_pinned_approximation_iterator_rejects_nonfinite_float_directions() -> N
         except ValueError:
             pass
         else:
-            raise AssertionError(f"nonfinite ApproxIterator state accepted: {direction}")
+            raise AssertionError(
+                f"nonfinite ApproxIterator state accepted: {direction}"
+            )
 
 
 def test_pinned_approximation_iterator_advances_tied_steps_in_source_order() -> None:
     """ApproxIterator increments every group tied at its minimum next-time."""
     from sage.all import QQ
 
-    ordered, nexts, approximation = _pinned_approximation_iterator((QQ(1) / 2, QQ(1) / 3, -QQ(1) / 2))
+    ordered, nexts, approximation = _pinned_approximation_iterator(
+        (QQ(1) / 2, QQ(1) / 3, -QQ(1) / 2)
+    )
     assert ordered == ((QQ(2), ((0, 1), (2, -1))), (QQ(3), ((1, 1),)))
     assert nexts == [QQ(1), QQ(3) / 2]
-    assert _advance_pinned_approximation_iterator(ordered, nexts, approximation) == [1, 0, -1]
+    assert _advance_pinned_approximation_iterator(ordered, nexts, approximation) == [
+        1,
+        0,
+        -1,
+    ]
     assert nexts == [QQ(3), QQ(3) / 2]
-    assert _advance_pinned_approximation_iterator(ordered, nexts, approximation) == [1, 1, -1]
-    assert _advance_pinned_approximation_iterator(ordered, nexts, approximation) == [2, 1, -2]
+    assert _advance_pinned_approximation_iterator(ordered, nexts, approximation) == [
+        1,
+        1,
+        -1,
+    ]
+    assert _advance_pinned_approximation_iterator(ordered, nexts, approximation) == [
+        2,
+        1,
+        -2,
+    ]
 
-    float_ordered, float_nexts, float_approximation = _pinned_approximation_iterator((1.0, -0.5))
-    assert _advance_pinned_approximation_iterator(float_ordered, float_nexts, float_approximation) == [1, 0]
-    assert _advance_pinned_approximation_iterator(float_ordered, float_nexts, float_approximation) == [1, -1]
+    float_ordered, float_nexts, float_approximation = _pinned_approximation_iterator(
+        (1.0, -0.5)
+    )
+    assert _advance_pinned_approximation_iterator(
+        float_ordered, float_nexts, float_approximation
+    ) == [1, 0]
+    assert _advance_pinned_approximation_iterator(
+        float_ordered, float_nexts, float_approximation
+    ) == [1, -1]
 
     try:
         _pinned_approximation_iterator((QQ.zero(), QQ.zero()))
@@ -284,8 +365,15 @@ def test_source_positive_candidate_lift_uses_transposed_unimodular_basis() -> No
     expected = basis.transpose() * candidate.column()
     result = _source_reconstruct_integral_vector(gram, basis, reduced, candidate)
     assert result == tuple(expected[i, 0] for i in range(expected.nrows()))
-    assert (vector(ZZ, result) * gram * vector(ZZ, result).column())[0] == (candidate * reduced * candidate.column())[0] > 0
-    assert _source_reconstruct_integral_vector(gram, basis, reduced, vector(ZZ, [0, 1])) is None
+    assert (
+        (vector(ZZ, result) * gram * vector(ZZ, result).column())[0]
+        == (candidate * reduced * candidate.column())[0]
+        > 0
+    )
+    assert (
+        _source_reconstruct_integral_vector(gram, basis, reduced, vector(ZZ, [0, 1]))
+        is None
+    )
 
     invalid_reduced = reduced + matrix(ZZ, [[1, 0], [0, 0]])
     try:
@@ -303,10 +391,14 @@ def test_definite_dual_lll_uses_inverse_of_sage_transform() -> None:
 
     gram = identity_matrix(ZZ, 2)
     sage_transform = matrix(ZZ, [[1, 1], [0, 1]])
-    dual, reduced = _definite_lll(gram, dual=True, lll_gram=lambda _form: sage_transform)
+    dual, reduced = _definite_lll(
+        gram, dual=True, lll_gram=lambda _form: sage_transform
+    )
     assert dual == sage_transform.inverse()
     assert reduced == dual * gram * dual.transpose()
-    direct, direct_reduced = _definite_lll(gram, dual=False, lll_gram=lambda _form: sage_transform)
+    direct, direct_reduced = _definite_lll(
+        gram, dual=False, lll_gram=lambda _form: sage_transform
+    )
     assert direct == sage_transform.transpose()
     assert direct_reduced == direct * gram * direct.transpose()
 
@@ -326,7 +418,9 @@ def test_simple_indefinite_reduction_certifies_each_l1_descent(monkeypatch) -> N
     )
 
 
-def test_compute_indefinite_reduction_rejects_false_lll_certificate(monkeypatch) -> None:
+def test_compute_indefinite_reduction_rejects_false_lll_certificate(
+    monkeypatch,
+) -> None:
     """The outer isotropic/restart loop validates each inner reduction result."""
     from sage.all import ZZ, identity_matrix, matrix
     import sage_indefinite_port.indefinite.indefinite_reduction as reduction
@@ -346,7 +440,9 @@ def test_compute_indefinite_reduction_rejects_false_lll_certificate(monkeypatch)
         raise AssertionError("a false inner LLL result entered the restart loop")
 
 
-def test_nondegenerate_reduction_rejects_false_operation_certificate(monkeypatch) -> None:
+def test_nondegenerate_reduction_rejects_false_operation_certificate(
+    monkeypatch,
+) -> None:
     """Every candidate reduction is checked before its norm can affect the loop."""
     from sage.all import ZZ, identity_matrix, matrix
     import sage_indefinite_port.indefinite.indefinite_reduction as reduction
@@ -369,7 +465,9 @@ def test_nondegenerate_reduction_rejects_false_operation_certificate(monkeypatch
 def test_indefinite_reduction_integrates_source_radical_and_completion() -> None:
     """The reduction orchestration preserves congruence with degenerate forms."""
     from sage.all import ZZ, matrix
-    from sage_indefinite_port.indefinite.indefinite_reduction import _indefinite_reduction
+    from sage_indefinite_port.indefinite.indefinite_reduction import (
+        _indefinite_reduction,
+    )
 
     forms = (
         matrix(ZZ, [[1, 0, 1], [0, 1, 1], [1, 1, 2]]),
@@ -383,13 +481,17 @@ def test_indefinite_reduction_integrates_source_radical_and_completion() -> None
         assert reduced == basis * gram * basis.transpose()
         assert reduced.rank() == gram.rank()
         radical_rank = gram.nrows() - gram.rank()
-        assert not reduced.matrix_from_rows(range(gram.nrows() - radical_rank, gram.nrows()))
+        assert not reduced.matrix_from_rows(
+            range(gram.nrows() - radical_rank, gram.nrows())
+        )
 
 
 def test_indefinite_gram_schmidt_rejects_invalid_form_or_basis() -> None:
     """The indefinite Gram-Schmidt source operation requires a lattice Gram basis."""
     from sage.all import ZZ, identity_matrix, matrix
-    from sage_indefinite_port.indefinite.indefinite_reduction import _indefinite_gram_schmidt
+    from sage_indefinite_port.indefinite.indefinite_reduction import (
+        _indefinite_gram_schmidt,
+    )
 
     gram = matrix(ZZ, [[1, 1], [1, -1]])
     assert _indefinite_gram_schmidt(gram, identity_matrix(ZZ, 2))[0] is not None
@@ -410,7 +512,9 @@ def test_indefinite_gram_schmidt_rejects_invalid_form_or_basis() -> None:
 def test_indefinite_lll_nearest_integer_uses_source_half_tie_rule() -> None:
     """The signed LLL size-reduction operation uses GAP's exact nearest integer."""
     from sage.all import QQ
-    from sage_indefinite_port.indefinite.indefinite_reduction import _source_nearest_integer
+    from sage_indefinite_port.indefinite.indefinite_reduction import (
+        _source_nearest_integer,
+    )
 
     cases = {
         QQ(1) / 2: 0,
@@ -426,7 +530,9 @@ def test_indefinite_lll_nearest_integer_uses_source_half_tie_rule() -> None:
 def test_source_integer_nullspace_reduces_and_completes_radical() -> None:
     """The production nullspace seam returns the pinned reduced primitive row basis."""
     from sage.all import ZZ, matrix
-    from sage_indefinite_port.indefinite.indefinite_reduction import _source_integer_nullspace
+    from sage_indefinite_port.indefinite.indefinite_reduction import (
+        _source_integer_nullspace,
+    )
 
     forms = (
         matrix(ZZ, [[1, 0, 1], [0, 1, 1], [1, 1, 2]]),
@@ -445,7 +551,9 @@ def test_source_integer_nullspace_reduces_and_completes_radical() -> None:
 def test_source_subspace_completion_int_returns_unimodular_complements() -> None:
     """The pinned Smith-transform completion extends primitive row lattices."""
     from sage.all import ZZ, identity_matrix, matrix
-    from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
+    from sage_indefinite_port.indefinite.indefinite_reduction import (
+        _source_subspace_completion_int,
+    )
 
     cases = (
         (matrix(ZZ, [[-1, -1, 1]]), 3),
@@ -459,14 +567,18 @@ def test_source_subspace_completion_int_returns_unimodular_complements() -> None
         assert full_basis.nrows() == dimension
         assert abs(full_basis.det()) == 1
         if kernel.nrows():
-            diagonal, row_transform, column_transform = kernel.smith_form(transformation=True)
+            diagonal, row_transform, column_transform = kernel.smith_form(
+                transformation=True
+            )
             assert row_transform * kernel * column_transform == diagonal
             block = identity_matrix(ZZ, dimension)
             for i in range(kernel.nrows()):
                 for j in range(kernel.nrows()):
                     block[i, j] = row_transform[i, j]
             source_basis = block.inverse() * column_transform.inverse()
-            assert completion == source_basis.matrix_from_rows(range(kernel.nrows(), dimension))
+            assert completion == source_basis.matrix_from_rows(
+                range(kernel.nrows(), dimension)
+            )
             assert full_basis == completion.stack(kernel)
 
     try:
@@ -483,20 +595,37 @@ def test_source_v2_honors_critical_norm_and_strictness() -> None:
 
     gram = matrix(ZZ, [[1, 0], [0, -1]])
     basis = identity_matrix(ZZ, 2)
+
     def diagonalize(_gram):
         return identity_matrix(QQ, 2), matrix(QQ, [[1, 0], [0, -1]])
 
     def no_eigen_directions(_gram):
         return ()
 
-    inclusive = vector(ZZ, _source_integral_vector_allmeth_v2(
-        gram, basis, gram, QQ.one(), False,
-        diagonalize=diagonalize, eigen_directions=no_eigen_directions,
-    ))
-    strict = vector(ZZ, _source_integral_vector_allmeth_v2(
-        gram, basis, gram, QQ.one(), True,
-        diagonalize=diagonalize, eigen_directions=no_eigen_directions,
-    ))
+    inclusive = vector(
+        ZZ,
+        _source_integral_vector_allmeth_v2(
+            gram,
+            basis,
+            gram,
+            QQ.one(),
+            False,
+            diagonalize=diagonalize,
+            eigen_directions=no_eigen_directions,
+        ),
+    )
+    strict = vector(
+        ZZ,
+        _source_integral_vector_allmeth_v2(
+            gram,
+            basis,
+            gram,
+            QQ.one(),
+            True,
+            diagonalize=diagonalize,
+            eigen_directions=no_eigen_directions,
+        ),
+    )
     assert inclusive == vector(ZZ, [1, 0])
     assert strict == vector(ZZ, [2, 0])
     assert (inclusive * gram * inclusive.column())[0] == 1
@@ -504,10 +633,16 @@ def test_source_v2_honors_critical_norm_and_strictness() -> None:
 
     def false_diagonalization(_gram):
         return identity_matrix(QQ, 2), matrix(QQ, [[2, 0], [0, -1]])
+
     try:
         _source_integral_vector_allmeth_v2(
-            gram, basis, gram, QQ.one(), False,
-            diagonalize=false_diagonalization, eigen_directions=no_eigen_directions,
+            gram,
+            basis,
+            gram,
+            QQ.one(),
+            False,
+            diagonalize=false_diagonalization,
+            eigen_directions=no_eigen_directions,
         )
     except ArithmeticError:
         pass
@@ -517,14 +652,21 @@ def test_source_v2_honors_critical_norm_and_strictness() -> None:
     negative = matrix(ZZ, [[-2, 0], [0, -1]])
     try:
         _source_integral_vector_allmeth_v2(
-            negative, identity_matrix(ZZ, 2), negative,
-            diagonalize=lambda _gram: (identity_matrix(QQ, 2), negative.change_ring(QQ)),
+            negative,
+            identity_matrix(ZZ, 2),
+            negative,
+            diagonalize=lambda _gram: (
+                identity_matrix(QQ, 2),
+                negative.change_ring(QQ),
+            ),
             eigen_directions=no_eigen_directions,
         )
     except ValueError as error:
         assert "no positive direction" in str(error)
     else:
-        raise AssertionError("V2 entered an unbounded iterator search without a positive direction")
+        raise AssertionError(
+            "V2 entered an unbounded iterator search without a positive direction"
+        )
 
 
 def test_source_integral_vector_allmeth_v2_returns_exact_positive_witness() -> None:
@@ -550,7 +692,9 @@ def test_source_integral_vector_allmeth_v2_returns_exact_positive_witness() -> N
     rational_reduced = rational_basis * rational_gram * rational_basis.transpose()
     try:
         _source_integral_vector_allmeth_v2(
-            rational_gram, rational_basis, rational_reduced,
+            rational_gram,
+            rational_basis,
+            rational_reduced,
             eigen_directions=no_eigen_directions,
         )
     except ValueError as error:
@@ -561,7 +705,9 @@ def test_source_integral_vector_allmeth_v2_returns_exact_positive_witness() -> N
     inexact_gram = rational_gram.change_ring(RDF)
     try:
         _source_integral_vector_allmeth_v2(
-            inexact_gram, identity_matrix(ZZ, 2), inexact_gram,
+            inexact_gram,
+            identity_matrix(ZZ, 2),
+            inexact_gram,
             eigen_directions=no_eigen_directions,
         )
     except ValueError as error:
@@ -572,7 +718,9 @@ def test_source_integral_vector_allmeth_v2_returns_exact_positive_witness() -> N
     inexact_basis = matrix(RDF, [[1.0, 0.0], [0.0, 1.0]])
     try:
         _source_integral_vector_allmeth_v2(
-            rational_gram, inexact_basis, rational_gram,
+            rational_gram,
+            inexact_basis,
+            rational_gram,
             eigen_directions=no_eigen_directions,
         )
     except ValueError as error:
@@ -638,14 +786,19 @@ def test_source_positive_integral_vector_contract_certifies_exact_norm() -> None
     from sage.all import ZZ, matrix
 
     gram = matrix(ZZ, [[1, 0], [0, -1]])
-    assert _source_certify_positive_integral_vector(gram, (ZZ(2), ZZ(1))) == (ZZ(2), ZZ(1))
+    assert _source_certify_positive_integral_vector(gram, (ZZ(2), ZZ(1))) == (
+        ZZ(2),
+        ZZ(1),
+    )
     for candidate in ((ZZ(0), ZZ(0)), (ZZ(1), ZZ(1)), (ZZ(1),), (0.5, 1)):
         try:
             _source_certify_positive_integral_vector(gram, candidate)
         except (ValueError, ArithmeticError):
             pass
         else:
-            raise AssertionError(f"invalid positive-vector witness accepted: {candidate}")
+            raise AssertionError(
+                f"invalid positive-vector witness accepted: {candidate}"
+            )
 
 
 def test_source_integral_vector_allmeth_rejects_invalid_gram_before_reduction() -> None:
@@ -655,9 +808,15 @@ def test_source_integral_vector_allmeth_rejects_invalid_gram_before_reduction() 
     for gram in (matrix(ZZ, 0, 0), matrix(ZZ, [[1, 2], [0, 1]])):
         try:
             _source_integral_vector_allmeth(
-                gram, QQ.zero(), True,
-                reduction=lambda _gram: (_ for _ in ()).throw(AssertionError("reduction called")),
-                isotropic_reduction=lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("isotropic reduction called")),
+                gram,
+                QQ.zero(),
+                True,
+                reduction=lambda _gram: (_ for _ in ()).throw(
+                    AssertionError("reduction called")
+                ),
+                isotropic_reduction=lambda *_args, **_kwargs: (_ for _ in ()).throw(
+                    AssertionError("isotropic reduction called")
+                ),
             )
         except ValueError:
             pass
@@ -671,48 +830,69 @@ def test_source_integral_vector_allmeth_selects_isotropic_shortcut_exactly() -> 
 
     gram = matrix(ZZ, [[0, 0], [0, 1]])
     calls = []
+
     def isotropic_reduction(_gram, *, look_for_isotropic):
         assert look_for_isotropic
         calls.append("isotropic")
         return identity_matrix(ZZ, 2), gram, (QQ(1) / 2, QQ.zero())
+
     def reduction(_gram):
         calls.append("reduction")
         return identity_matrix(ZZ, 2), gram
+
     def find_vector(_gram, _basis, _reduced, critical_norm, strict_inequality):
         calls.append(("v2", critical_norm, strict_inequality))
         return (ZZ(0), ZZ(1))
 
     isotropic = _source_integral_vector_allmeth(
-        gram, QQ.zero(), False, reduction=reduction,
-        isotropic_reduction=isotropic_reduction, find_vector=find_vector,
+        gram,
+        QQ.zero(),
+        False,
+        reduction=reduction,
+        isotropic_reduction=isotropic_reduction,
+        find_vector=find_vector,
     )
     assert isotropic == (ZZ(1), ZZ(0))
     assert calls == ["isotropic"]
 
     calls.clear()
     positive = _source_integral_vector_allmeth(
-        gram, QQ.zero(), True, reduction=reduction,
-        isotropic_reduction=isotropic_reduction, find_vector=find_vector,
+        gram,
+        QQ.zero(),
+        True,
+        reduction=reduction,
+        isotropic_reduction=isotropic_reduction,
+        find_vector=find_vector,
     )
     assert positive == (ZZ(0), ZZ(1))
     assert calls == ["reduction", ("v2", QQ.zero(), True)]
 
     calls.clear()
     negative_critical = _source_integral_vector_allmeth(
-        gram, -QQ.one(), True, reduction=reduction,
-        isotropic_reduction=isotropic_reduction, find_vector=find_vector,
+        gram,
+        -QQ.one(),
+        True,
+        reduction=reduction,
+        isotropic_reduction=isotropic_reduction,
+        find_vector=find_vector,
     )
     assert negative_critical == (ZZ(1), ZZ(0))
     assert calls == ["isotropic"]
 
     calls.clear()
+
     def no_isotropic(_gram, *, look_for_isotropic):
         assert look_for_isotropic
         calls.append("isotropic-no-witness")
         return identity_matrix(ZZ, 2), gram, None
+
     fallback = _source_integral_vector_allmeth(
-        gram, -QQ.one(), True, reduction=reduction,
-        isotropic_reduction=no_isotropic, find_vector=find_vector,
+        gram,
+        -QQ.one(),
+        True,
+        reduction=reduction,
+        isotropic_reduction=no_isotropic,
+        find_vector=find_vector,
     )
     assert fallback == (ZZ(0), ZZ(1))
     assert calls == ["isotropic-no-witness", ("v2", -QQ.one(), True)]
@@ -730,7 +910,7 @@ def test_integral_positive_vector_consumer_uses_pinned_diagonalization() -> None
     )
     for gram in forms:
         candidate = vector(ZZ, _integral_positive_vector_allmeth(gram))
-        assert candidate in ZZ**gram.nrows()
+        assert candidate in ZZ ** gram.nrows()
         assert (candidate * gram * candidate.column())[0] > 0
 
     for gram in (matrix(ZZ, [[-1, 0], [0, -2]]), matrix(ZZ, 2, 2, 0)):
@@ -761,7 +941,9 @@ def test_pinned_symmetric_diagonalization_returns_exact_congruence_witness() -> 
         matrix(QQ, [[1, 1], [-1, 1]]),
         matrix(QQ, [[0, 0, 1, 0], [1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]]),
     )
-    for gram, expected_transform in zip((forms[0], forms[2], forms[3], forms[4]), expected_transforms, strict=True):
+    for gram, expected_transform in zip(
+        (forms[0], forms[2], forms[3], forms[4]), expected_transforms, strict=True
+    ):
         transform, _diagonal = _pinned_diagonalize_symmetric_matrix(gram)
         assert transform == expected_transform
 
@@ -771,7 +953,12 @@ def test_pinned_symmetric_diagonalization_returns_exact_congruence_witness() -> 
         assert transform.ncols() == gram.ncols()
         assert transform.det() != 0
         assert transform * gram * transform.transpose() == diagonal
-        assert all(diagonal[i, j] == 0 for i in range(diagonal.nrows()) for j in range(diagonal.ncols()) if i != j)
+        assert all(
+            diagonal[i, j] == 0
+            for i in range(diagonal.nrows())
+            for j in range(diagonal.ncols())
+            if i != j
+        )
 
 
 def test_pinned_diagonalizer_handles_deterministic_rational_symmetric_samples() -> None:
@@ -787,7 +974,11 @@ def test_pinned_diagonalizer_handles_deterministic_rational_symmetric_samples() 
                 QQ,
                 size,
                 size,
-                lambda i, j: QQ(random.randint(-4, 4)) / random.choice((1, 2, 3)) if i <= j else 0,
+                lambda i, j: (
+                    QQ(random.randint(-4, 4)) / random.choice((1, 2, 3))
+                    if i <= j
+                    else 0
+                ),
             )
             for i in range(size):
                 for j in range(i):
@@ -795,7 +986,9 @@ def test_pinned_diagonalizer_handles_deterministic_rational_symmetric_samples() 
             transform, diagonal = _pinned_diagonalize_symmetric_matrix(gram)
             assert transform.det() != 0
             assert transform * gram * transform.transpose() == diagonal
-            assert all(diagonal[i, j] == 0 for i in range(size) for j in range(size) if i != j)
+            assert all(
+                diagonal[i, j] == 0 for i in range(size) for j in range(size) if i != j
+            )
 
 
 def test_pinned_nullspace_preserves_gap_row_basis_order() -> None:
@@ -872,16 +1065,20 @@ def test_source_random_perturbations_match_pinned_matrices() -> None:
             raise AssertionError(f"invalid perturbation accepted: {invalid}")
 
 
-def test_source_indefinite_short_positive_vector_integrates_pinned_search_loop() -> None:
+def test_source_indefinite_short_positive_vector_integrates_pinned_search_loop() -> (
+    None
+):
     """Run the complete Graver/reframing/termination loop with deterministic seams."""
     from sage.all import QQ, RDF, ZZ, identity_matrix, matrix
 
     gram = matrix(ZZ, [[10, 0], [0, 10]])
     calls = []
+
     def find_positive(perturbed):
         calls.append(perturbed)
         assert perturbed == gram
         return (ZZ(1), ZZ(0))
+
     result = _source_indefinite_short_positive_vector(
         gram, find_positive, lambda dimension: identity_matrix(ZZ, dimension)
     )
@@ -891,7 +1088,8 @@ def test_source_indefinite_short_positive_vector_integrates_pinned_search_loop()
     calls.clear()
     try:
         _source_indefinite_short_positive_vector(
-            gram, find_positive,
+            gram,
+            find_positive,
             lambda dimension: matrix(QQ, [[1, QQ(1) / 2], [0, 1]]),
         )
     except ArithmeticError as error:
@@ -903,7 +1101,8 @@ def test_source_indefinite_short_positive_vector_integrates_pinned_search_loop()
     calls.clear()
     try:
         _source_indefinite_short_positive_vector(
-            gram, find_positive,
+            gram,
+            find_positive,
             lambda dimension: matrix(RDF, [[1.0, 0.0], [0.0, 1.0]]),
         )
     except ArithmeticError as error:
@@ -914,9 +1113,11 @@ def test_source_indefinite_short_positive_vector_integrates_pinned_search_loop()
 
     short_gram = matrix(ZZ, [[1, 0], [0, -1]])
     short_calls = []
+
     def find_short(_perturbed):
         short_calls.append(None)
         return (ZZ(1), ZZ(0))
+
     short_result = _source_indefinite_short_positive_vector(
         short_gram, find_short, lambda dimension: identity_matrix(ZZ, dimension)
     )
@@ -938,6 +1139,7 @@ def test_source_indefinite_short_positive_vector_integrates_pinned_search_loop()
     reset_gram = matrix(ZZ, [[10, 0], [0, 10]])
     seen_growth = False
     reset_observed = []
+
     def find_reset(perturbed):
         nonlocal seen_growth
         if perturbed[0, 0] > 10000:
@@ -945,10 +1147,15 @@ def test_source_indefinite_short_positive_vector_integrates_pinned_search_loop()
         elif seen_growth and perturbed[0, 0] == 20:
             reset_observed.append(True)
         return (ZZ(1), ZZ(0))
+
     def shear(_dimension):
         from sage.all import matrix
+
         return matrix(ZZ, [[1, 1], [0, 1]])
-    reset_result = _source_indefinite_short_positive_vector(reset_gram, find_reset, shear)
+
+    reset_result = _source_indefinite_short_positive_vector(
+        reset_gram, find_reset, shear
+    )
     assert reset_result == (ZZ(1), ZZ(0))
     assert reset_observed
 
@@ -968,11 +1175,15 @@ def test_source_indefinite_short_positive_vector_certifies_search_witnesses() ->
         (gram, (ZZ(0),)),
     ):
         try:
-            _source_indefinite_short_positive_vector(bad_gram, lambda _gram, w=witness: w)
+            _source_indefinite_short_positive_vector(
+                bad_gram, lambda _gram, w=witness: w
+            )
         except (ValueError, ArithmeticError):
             pass
         else:
-            raise AssertionError(f"invalid positive-search input or witness accepted: {bad_gram}, {witness}")
+            raise AssertionError(
+                f"invalid positive-search input or witness accepted: {bad_gram}, {witness}"
+            )
 
 
 def test_source_positive_search_best_matches_pinned_termination_state() -> None:
@@ -981,27 +1192,43 @@ def test_source_positive_search_best_matches_pinned_termination_state() -> None:
 
     gram = matrix(ZZ, [[1, 0], [0, -1]])
     first = vector(ZZ, [4, 1])
-    best, norm, failures, stop = _source_positive_search_best(gram, first, None, None, 0)
+    best, norm, failures, stop = _source_positive_search_best(
+        gram, first, None, None, 0
+    )
     assert best == first and norm == 15 and failures == 0 and not stop
 
     worse = vector(ZZ, [5, 1])
-    best, norm, failures, stop = _source_positive_search_best(gram, worse, best, norm, failures)
+    best, norm, failures, stop = _source_positive_search_best(
+        gram, worse, best, norm, failures
+    )
     assert best == first and norm == 15 and failures == 1 and not stop
 
     short = vector(ZZ, [2, 1])
-    best, norm, failures, stop = _source_positive_search_best(gram, short, best, norm, failures)
+    best, norm, failures, stop = _source_positive_search_best(
+        gram, short, best, norm, failures
+    )
     assert best == short and norm == 3 and failures == 0 and stop
 
-    best, norm, failures, stop = _source_positive_search_best(gram, worse, best, norm, 499)
+    best, norm, failures, stop = _source_positive_search_best(
+        gram, worse, best, norm, 499
+    )
     assert best == short and norm == 3 and failures == 500 and stop
 
-    for state in ((first, None, 0), (None, 15, 0), (first, 14, 0), (first, 15, 500), (first, 15, 501)):
+    for state in (
+        (first, None, 0),
+        (None, 15, 0),
+        (first, 14, 0),
+        (first, 15, 500),
+        (first, 15, 501),
+    ):
         try:
             _source_positive_search_best(gram, worse, state[0], state[1], state[2])
         except (ValueError, ArithmeticError):
             pass
         else:
-            raise AssertionError(f"inconsistent positive-search state accepted: {state}")
+            raise AssertionError(
+                f"inconsistent positive-search state accepted: {state}"
+            )
 
     for invalid_gram in (matrix(ZZ, 0, 0), matrix(ZZ, [[1, 2], [0, 1]])):
         try:
@@ -1009,7 +1236,9 @@ def test_source_positive_search_best_matches_pinned_termination_state() -> None:
         except ValueError:
             pass
         else:
-            raise AssertionError(f"invalid positive-search Gram accepted: {invalid_gram}")
+            raise AssertionError(
+                f"invalid positive-search Gram accepted: {invalid_gram}"
+            )
 
 
 def test_source_positive_perturbation_reset_uses_strict_factor_1000() -> None:
@@ -1034,7 +1263,11 @@ def test_source_direct_graver_improvement_matches_literal_ordered_passes() -> No
 
     gram = matrix(ZZ, [[2, 1, 0], [1, -3, 1], [0, 1, 2]])
     directions = tuple(vector(ZZ, row) for row in _source_graver_k_basis(3, 2))
-    for initial in (vector(ZZ, [4, 3, 1]), vector(ZZ, [-3, 2, 4]), vector(ZZ, [1, 1, 1])):
+    for initial in (
+        vector(ZZ, [4, 3, 1]),
+        vector(ZZ, [-3, 2, 4]),
+        vector(ZZ, [1, 1, 1]),
+    ):
         expected = vector(ZZ, initial)
         while True:
             changes = 0
@@ -1045,7 +1278,11 @@ def test_source_direct_graver_improvement_matches_literal_ordered_passes() -> No
                 alpha = 0
                 source_norm = before
                 while True:
-                    candidate = before + 2 * mixed * (alpha + 1) + direction_norm * (alpha + 1) ** 2
+                    candidate = (
+                        before
+                        + 2 * mixed * (alpha + 1)
+                        + direction_norm * (alpha + 1) ** 2
+                    )
                     if candidate >= source_norm or candidate <= 0:
                         break
                     source_norm = candidate
@@ -1059,7 +1296,9 @@ def test_source_direct_graver_improvement_matches_literal_ordered_passes() -> No
         assert (actual * gram * actual.column())[0] > 0
 
 
-def test_source_direct_graver_improvement_rejects_false_descent_prefix(monkeypatch) -> None:
+def test_source_direct_graver_improvement_rejects_false_descent_prefix(
+    monkeypatch,
+) -> None:
     """The update boundary verifies every claimed GetAlpha step."""
     from sage.all import ZZ, matrix, vector
     import sage_indefinite_port.indefinite.lorentzian_cells as cells
@@ -1090,7 +1329,10 @@ def test_source_graver_k_basis_matches_support_and_sign_enumeration() -> None:
                             row[coordinate] = sign
                         expected.append(tuple(row))
             assert basis == tuple(expected)
-            assert len(basis) == sum(2**size * __import__('math').comb(dimension, size) for size in range(1, min(degree, dimension) + 1))
+            assert len(basis) == sum(
+                2**size * __import__("math").comb(dimension, size)
+                for size in range(1, min(degree, dimension) + 1)
+            )
             assert len(set(basis)) == len(basis)
 
     for dimension, degree in ((0, 1), (2, 0)):
@@ -1099,7 +1341,9 @@ def test_source_graver_k_basis_matches_support_and_sign_enumeration() -> None:
         except ValueError:
             pass
         else:
-            raise AssertionError(f"invalid Graver K-basis parameters accepted: {(dimension, degree)}")
+            raise AssertionError(
+                f"invalid Graver K-basis parameters accepted: {(dimension, degree)}"
+            )
 
 
 def test_source_random_matrix_perturbation_dispatches_both_pinned_branches() -> None:
@@ -1107,21 +1351,27 @@ def test_source_random_matrix_perturbation_dispatches_both_pinned_branches() -> 
     from sage.all import ZZ, matrix
 
     choices = iter((0, -1, 1, -1))
+
     def choose(options):
         value = next(choices)
         assert value in options
         return value
+
     def reverse(values):
         values.reverse()
 
-    signed = _source_random_matrix_perturbation(3, choose=choose, shuffle_values=reverse)
+    signed = _source_random_matrix_perturbation(
+        3, choose=choose, shuffle_values=reverse
+    )
     assert signed == matrix(ZZ, [[0, 0, -1], [0, 1, 0], [-1, 0, 0]])
 
     choices = iter((1, -1))
+
     def choose_elementary(options):
         value = next(choices)
         assert value in options
         return value
+
     indices = iter((1, 2))
     elementary = _source_random_matrix_perturbation(
         3, choose=choose_elementary, choose_index=lambda _dimension: next(indices)
@@ -1141,12 +1391,19 @@ def test_source_perturbation_matrices_are_unimodular_in_small_dimensions() -> No
             for signs in product((-1, 1), repeat=dimension):
                 signed = _source_permutation_sign_matrix(list(permutation), signs)
                 assert abs(signed.det()) == 1
-                assert all(sum(entry != 0 for entry in row) == 1 for row in signed.rows())
-                assert all(sum(entry != 0 for entry in signed.column(j)) == 1 for j in range(dimension))
+                assert all(
+                    sum(entry != 0 for entry in row) == 1 for row in signed.rows()
+                )
+                assert all(
+                    sum(entry != 0 for entry in signed.column(j)) == 1
+                    for j in range(dimension)
+                )
         for row in range(dimension):
             for column in range(dimension):
                 for sign in (-1, 1):
-                    elementary = _source_elementary_perturbation(dimension, row, column, sign)
+                    elementary = _source_elementary_perturbation(
+                        dimension, row, column, sign
+                    )
                     assert abs(elementary.det()) == 1
                     assert elementary.base_ring() is QQ
 
@@ -1202,7 +1459,9 @@ def test_source_negative_vector_certifies_congruence_random_indefinite_forms() -
             change = identity_matrix(ZZ, size)
             for _ in range(3 * size):
                 i, j = random.sample(range(size), 2)
-                change[i, :] = change[i, :] + random.choice((-2, -1, 1, 2)) * change[j, :]
+                change[i, :] = (
+                    change[i, :] + random.choice((-2, -1, 1, 2)) * change[j, :]
+                )
             diagonal = diagonal_matrix(QQ, [-1] + [1] * (size - 1))
             gram = matrix(QQ, change) * diagonal * matrix(QQ, change).transpose()
             candidate = vector(QQ, _source_some_negative_vector(gram))
@@ -1223,7 +1482,10 @@ def test_source_negative_vector_certifies_rational_congruence_forms() -> None:
                 change = identity_matrix(QQ, size)
                 for _ in range(2 * size):
                     i, j = random.sample(range(size), 2)
-                    change[i, :] = change[i, :] + QQ(random.choice((-3, -1, 1, 3)))/2 * change[j, :]
+                    change[i, :] = (
+                        change[i, :]
+                        + QQ(random.choice((-3, -1, 1, 3))) / 2 * change[j, :]
+                    )
                 gram = change * diagonal_matrix(QQ, diagonal) * change.transpose()
                 candidate = vector(QQ, _source_some_negative_vector(gram))
                 assert (candidate * gram * candidate.column())[0] < 0
@@ -1264,9 +1526,16 @@ def test_source_mid_value_matches_pinned_continued_fraction_sequence() -> None:
                         if candidate == midpoint:
                             break
                     assert expected is not None
-                    actual = _source_mid_value(QQ(lower.numerator) / lower.denominator,
-                                               QQ(upper.numerator) / upper.denominator)
-                    assert actual == QQ(expected.numerator) / expected.denominator, (lower, upper, expected, actual)
+                    actual = _source_mid_value(
+                        QQ(lower.numerator) / lower.denominator,
+                        QQ(upper.numerator) / upper.denominator,
+                    )
+                    assert actual == QQ(expected.numerator) / expected.denominator, (
+                        lower,
+                        upper,
+                        expected,
+                        actual,
+                    )
 
 
 def test_quadratic_descent_prefix_matches_pinned_get_alpha() -> None:
@@ -1285,12 +1554,15 @@ def test_quadratic_descent_prefix_matches_pinned_get_alpha() -> None:
                         break
                     source_norm = candidate_norm
                     expected += 1
-                assert _quadratic_descent_prefix(
-                    base_norm, mixed, direction_norm
-                ) == expected, (base_norm, mixed, direction_norm, expected)
+                assert (
+                    _quadratic_descent_prefix(base_norm, mixed, direction_norm)
+                    == expected
+                ), (base_norm, mixed, direction_norm, expected)
 
 
-def test_flip_upper_bound_uses_rational_isotropic_exit_and_rejects_coincident_exit() -> None:
+def test_flip_upper_bound_uses_rational_isotropic_exit_and_rejects_coincident_exit() -> (
+    None
+):
     """Match GetUpperBound's isotropic root and constant-bound collision."""
     from sage.all import QQ, matrix, vector
 
@@ -1325,7 +1597,9 @@ def test_pinned_sublattice_basis_reduction_preserves_row_lattice() -> None:
     change = reduced * basis.inverse()
     assert all(entry.denominator() == 1 for entry in change.list())
     assert abs(change.det()) == 1
-    assert sum(abs(entry) for entry in reduced.list()) <= sum(abs(entry) for entry in basis.list())
+    assert sum(abs(entry) for entry in reduced.list()) <= sum(
+        abs(entry) for entry in basis.list()
+    )
     assert change * basis == reduced
     assert _pinned_sublattice_basis_reduction(reduced) == reduced
 
@@ -1333,12 +1607,20 @@ def test_pinned_sublattice_basis_reduction_preserves_row_lattice() -> None:
     # coordinates; exercise the same reducer on a rank-three sublattice of Z^4.
     rectangular = matrix(ZZ, [[10, 1, 0, 2], [9, 1, 1, 0], [1, 0, 8, 1]])
     rectangular_reduced = _pinned_sublattice_basis_reduction(rectangular)
-    assert rectangular_reduced == matrix(ZZ, [[-1, 0, 1, -2], [2, 0, 7, 3], [8, 1, 2, -2]])
-    rectangular_change = rectangular_reduced * rectangular.transpose() * (rectangular * rectangular.transpose()).inverse()
+    assert rectangular_reduced == matrix(
+        ZZ, [[-1, 0, 1, -2], [2, 0, 7, 3], [8, 1, 2, -2]]
+    )
+    rectangular_change = (
+        rectangular_reduced
+        * rectangular.transpose()
+        * (rectangular * rectangular.transpose()).inverse()
+    )
     assert all(entry.denominator() == 1 for entry in rectangular_change.list())
     assert abs(rectangular_change.det()) == 1
     assert rectangular_change * rectangular == rectangular_reduced
-    assert _pinned_sublattice_basis_reduction(rectangular_reduced) == rectangular_reduced
+    assert (
+        _pinned_sublattice_basis_reduction(rectangular_reduced) == rectangular_reduced
+    )
 
 
 def test_pinned_integer_covector_kernel_matches_exact_contract() -> None:
@@ -1356,7 +1638,10 @@ def test_pinned_integer_covector_kernel_matches_exact_contract() -> None:
     )
     for covector, expected_rows in cases:
         kernel = _pinned_integer_covector_kernel(covector)
-        assert tuple(tuple(int(entry) for entry in row) for row in kernel.rows()) == expected_rows
+        assert (
+            tuple(tuple(int(entry) for entry in row) for row in kernel.rows())
+            == expected_rows
+        )
         assert kernel.nrows() == len(covector) - 1
         assert kernel * vector(ZZ, covector).column() == 0
         assert all(factor == 1 for factor in kernel.smith_form()[0].diagonal())
@@ -1364,7 +1649,6 @@ def test_pinned_integer_covector_kernel_matches_exact_contract() -> None:
     zero_covector = (0, 0, 0)
     assert _pinned_integer_covector_kernel(zero_covector) == matrix.identity(ZZ, 3)
     assert _pinned_integer_covector_kernel((0,)) == matrix.identity(ZZ, 1)
-
 
 
 def test_pinned_sublattice_reduction_on_deterministic_full_rank_samples() -> None:
@@ -1417,7 +1701,9 @@ def test_primitive_integral_direction_matches_fraction_multiplier() -> None:
         except ValueError:
             pass
         else:
-            raise AssertionError(f"zero-dimensional or zero direction accepted: {invalid}")
+            raise AssertionError(
+                f"zero-dimensional or zero direction accepted: {invalid}"
+            )
     try:
         _primitive_integral_direction((QQ(1), QQ(2)), expected_rank=3)
     except ValueError:
@@ -1444,7 +1730,9 @@ def test_ambient_vectors_reconstructs_exact_shell_and_filters_squares() -> None:
         allowed_squares={ZZ.zero()},
     )
     close_coordinates = ((1, 0), (0, 1), (0, 0))
-    result = _PositiveVectorEnumerator._ambient_vectors(enumerator, 1, close_coordinates, (5, 5, 4))
+    result = _PositiveVectorEnumerator._ambient_vectors(
+        enumerator, 1, close_coordinates, (5, 5, 4)
+    )
     assert result == ((1, 1, 0), (1, 0, 1))
     for row in result:
         ambient = vector(ZZ, row)
@@ -1459,28 +1747,38 @@ def test_ambient_vectors_reconstructs_exact_shell_and_filters_squares() -> None:
         enumerator, 2, ((2, 0), (0, 2), (0, 0), (1, 0)), (20, 20, 16, 17)
     )
     assert result == ((2, 2, 0), (2, 0, 2), (2, 0, 0))
-    assert all(int(vector(ZZ, row) * lorentzian * vector(ZZ, row)) in {0, 4} for row in result)
+    assert all(
+        int(vector(ZZ, row) * lorentzian * vector(ZZ, row)) in {0, 4} for row in result
+    )
 
     try:
         _PositiveVectorEnumerator._ambient_vectors(enumerator, 2, ((0, 0),), ())
     except ValueError as error:
         assert "exactly one squared distance" in str(error)
     else:
-        raise AssertionError("a CVP result without its paired squared distance was accepted")
+        raise AssertionError(
+            "a CVP result without its paired squared distance was accepted"
+        )
 
     try:
-        _PositiveVectorEnumerator._ambient_vectors(enumerator, 2, ((QQ(1) / 2, 0),), (QQ.zero(),))
+        _PositiveVectorEnumerator._ambient_vectors(
+            enumerator, 2, ((QQ(1) / 2, 0),), (QQ.zero(),)
+        )
     except ArithmeticError as error:
         assert "nonintegral lattice coordinates" in str(error)
     else:
-        raise AssertionError("nonintegral CVP lattice coordinates were silently truncated")
+        raise AssertionError(
+            "nonintegral CVP lattice coordinates were silently truncated"
+        )
 
     try:
         _PositiveVectorEnumerator._ambient_vectors(enumerator, 2, ((3, 0),), (20,))
     except ArithmeticError as error:
         assert "disagrees with its exact CVP squared distance" in str(error)
     else:
-        raise AssertionError("a reconstructed candidate inconsistent with its CVP distance was accepted")
+        raise AssertionError(
+            "a reconstructed candidate inconsistent with its CVP distance was accepted"
+        )
 
 
 def test_rational_direction_pairing_bound_scales_linearly() -> None:
@@ -1510,7 +1808,9 @@ def test_initial_vector_search_advances_integral_bound_without_rescanning() -> N
             assert max_scal == 2
             self.scale = QQ(1)
             self.d = ZZ(2)
-            self.scaled_max = cells._integral_direction_pairing_bound(max_scal, self.scale)
+            self.scaled_max = cells._integral_direction_pairing_bound(
+                max_scal, self.scale
+            )
 
         def max_multiplier(self):
             bounds.append(self.scaled_max)
@@ -1532,7 +1832,9 @@ def test_initial_vector_search_advances_integral_bound_without_rescanning() -> N
     try:
         cells._gram_matrix = lambda lattice: matrix(ZZ, [[1, 0], [0, 1]])
         cells._PositiveVectorEnumerator = Enumerator
-        result = cells._search_initial_vectors(TimelikeLattice(), (QQ(1) / 2, QQ(1) / 2), {ZZ.zero()})
+        result = cells._search_initial_vectors(
+            TimelikeLattice(), (QQ(1) / 2, QQ(1) / 2), {ZZ.zero()}
+        )
     finally:
         cells._gram_matrix = original_gram
         cells._PositiveVectorEnumerator = original_enumerator
@@ -1569,8 +1871,12 @@ def test_isotropic_multiplier_uses_dual_lll_fixed_distance_solver() -> None:
     enumerator.base_target_engine_coordinates = (QQ(0), QQ(1) / 4, QQ(0))
     enumerator.base_bound = QQ(1) / 8
     enumerator.cvp_engine = CVPEngine()
-    enumerator.enumeration_order_transform = matrix(ZZ, [[1, 2, 0], [0, 1, 1], [0, 0, 1]])
-    enumerator.enumeration_transform = enumerator.enumeration_order_transform.inverse().transpose()
+    enumerator.enumeration_order_transform = matrix(
+        ZZ, [[1, 2, 0], [0, 1, 1], [0, 0, 1]]
+    )
+    enumerator.enumeration_transform = (
+        enumerator.enumeration_order_transform.inverse().transpose()
+    )
     enumerator.partner_row = vector(ZZ, (1, 1, 0))
     enumerator.inclusion_rows = matrix(ZZ, [[0, 1, 0], [0, 0, 1]])
     enumerator.gram = matrix(ZZ, [[2, 0, 0], [0, -2, 0], [0, 0, -2]])
@@ -1591,7 +1897,11 @@ def test_isotropic_multiplier_uses_dual_lll_fixed_distance_solver() -> None:
     try:
         cells._owned_engine_element = lambda field, value: value
         cells._owned_rational = lambda lattice, value, field: value
-        enumerator._ambient_vectors = lambda multiplier, coordinates, distances: (multiplier, coordinates, distances)
+        enumerator._ambient_vectors = lambda multiplier, coordinates, distances: (
+            multiplier,
+            coordinates,
+            distances,
+        )
         assert enumerator.vectors_at_multiplier(2) == (
             2,
             ((ZZ(0), ZZ(0), ZZ(0)), (ZZ(0), ZZ(1), ZZ(0))),
@@ -1652,7 +1962,11 @@ def test_total_multiplier_keeps_bounded_cvp_and_pinned_order() -> None:
         cells._fixed_distance_dual_lll_solutions = lambda *args: (_ for _ in ()).throw(
             AssertionError("total mode must not use fixed-distance sphere enumeration")
         )
-        enumerator._ambient_vectors = lambda multiplier, coordinates, distances: (multiplier, coordinates, distances)
+        enumerator._ambient_vectors = lambda multiplier, coordinates, distances: (
+            multiplier,
+            coordinates,
+            distances,
+        )
         assert enumerator.vectors_at_multiplier(2) == (
             2,
             expected,
@@ -1673,16 +1987,22 @@ def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
     zero_gram = matrix(QQ, 0, 0)
     assert _fixed_distance_coordinate_solutions(zero_gram, (), QQ(0)) == (((), QQ(0)),)
     assert _fixed_distance_coordinate_solutions(zero_gram, (), QQ(1)) == ()
-    assert _fixed_distance_coordinate_solutions(zero_gram, (), QQ(0), ([], [])) == (((), QQ(0)),)
+    assert _fixed_distance_coordinate_solutions(zero_gram, (), QQ(0), ([], [])) == (
+        ((), QQ(0)),
+    )
     try:
         _fixed_distance_coordinate_solutions(zero_gram, (), QQ(0), ([[1]], [QQ(1)]))
     except (ValueError, ArithmeticError):
         pass
     else:
-        raise AssertionError("rank-zero sphere accepted a malformed cached LDL certificate")
+        raise AssertionError(
+            "rank-zero sphere accepted a malformed cached LDL certificate"
+        )
     # A nonsquare rational squared radius has no rational square root, hence
     # no integer endpoint in rank one.
-    assert _fixed_distance_coordinate_solutions(matrix(QQ, [[1]]), (QQ(0),), QQ(2)) == ()
+    assert (
+        _fixed_distance_coordinate_solutions(matrix(QQ, [[1]]), (QQ(0),), QQ(2)) == ()
+    )
 
     cases = (
         (matrix(QQ, [[1]]), (QQ(1) / 2,), QQ(1) / 4),
@@ -1694,7 +2014,10 @@ def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
     for gram, target, bound in cases:
         actual = _fixed_distance_coordinate_solutions(gram, target, bound)
         cached_ldl = _positive_ldl_factorization(gram)
-        assert _fixed_distance_coordinate_solutions(gram, target, bound, cached_ldl) == actual
+        assert (
+            _fixed_distance_coordinate_solutions(gram, target, bound, cached_ldl)
+            == actual
+        )
         bad_diagonal = list(cached_ldl[1])
         bad_diagonal[0] = -bad_diagonal[0]
         try:
@@ -1704,14 +2027,25 @@ def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
         except ArithmeticError:
             pass
         else:
-            raise AssertionError("fixed-distance enumeration accepted a corrupt cached LDL certificate")
-        actual_coordinates = {coordinates for coordinates, distance in actual if distance == bound}
+            raise AssertionError(
+                "fixed-distance enumeration accepted a corrupt cached LDL certificate"
+            )
+        actual_coordinates = {
+            coordinates for coordinates, distance in actual if distance == bound
+        }
         assert len(actual_coordinates) == len(actual)
         assert all(distance == bound for _coordinates, distance in actual)
         expected = set()
         for coordinates in product(range(-5, 6), repeat=gram.nrows()):
             delta = tuple(QQ(coordinates[i]) - target[i] for i in range(len(target)))
-            square = sum((delta[i] * gram[i, j] * delta[j] for i in range(len(delta)) for j in range(len(delta))), QQ(0))
+            square = sum(
+                (
+                    delta[i] * gram[i, j] * delta[j]
+                    for i in range(len(delta))
+                    for j in range(len(delta))
+                ),
+                QQ(0),
+            )
             if square == bound:
                 expected.add(tuple(coordinates))
         assert actual_coordinates == expected
@@ -1721,10 +2055,11 @@ def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
     # integers in a one-dimensional enclosing interval.
     huge_radius = QQ(10) ** 10
     huge_sphere = _fixed_distance_coordinate_solutions(
-        matrix(QQ, [[1]]), (QQ(0),), huge_radius ** 2
+        matrix(QQ, [[1]]), (QQ(0),), huge_radius**2
     )
     assert {coordinates for coordinates, _distance in huge_sphere} == {
-        (ZZ(-huge_radius),), (ZZ(huge_radius),)
+        (ZZ(-huge_radius),),
+        (ZZ(huge_radius),),
     }
 
     for gram, target, bound in (
@@ -1761,20 +2096,52 @@ def test_fixed_distance_dual_lll_frame_reconstructs_exact_sphere() -> None:
     expected = set()
     for coordinates in product(range(-4, 5), repeat=3):
         delta = tuple(QQ(coordinates[i]) - target[i] for i in range(3))
-        if sum((delta[i] * gram[i, j] * delta[j] for i in range(3) for j in range(3)), QQ(0)) == bound:
+        if (
+            sum(
+                (delta[i] * gram[i, j] * delta[j] for i in range(3) for j in range(3)),
+                QQ(0),
+            )
+            == bound
+        ):
             expected.add(tuple(ZZ(value) for value in coordinates))
-    assert got == expected == {
-        (ZZ(0), ZZ(0), ZZ(0)),
-        (ZZ(0), ZZ(1), ZZ(0)),
-    }
-    assert tuple(actual) == tuple(sorted(actual, key=lambda item: tuple((order * vector(ZZ, item[0]).column())[i, 0] for i in reversed(range(3)))))
+    assert (
+        got
+        == expected
+        == {
+            (ZZ(0), ZZ(0), ZZ(0)),
+            (ZZ(0), ZZ(1), ZZ(0)),
+        }
+    )
+    assert tuple(actual) == tuple(
+        sorted(
+            actual,
+            key=lambda item: tuple(
+                (order * vector(ZZ, item[0]).column())[i, 0] for i in reversed(range(3))
+            ),
+        )
+    )
 
     # Deterministic nontrivial Gram/target/frame combinations check the
     # congruence, target transport and reconstruction together.
     for gram, target, bound, order in (
-        (matrix(QQ, [[2, 1], [1, 3]]), (QQ(1) / 2, QQ(1) / 3), QQ(1) / 2, matrix(ZZ, [[1, 2], [0, 1]])),
-        (diagonal_matrix(QQ, [1, 2, 3]), (QQ(1) / 2, QQ(0), QQ(0)), QQ(1) / 4, matrix(ZZ, [[1, 0, 0], [1, 1, 0], [0, 0, 1]])),
-        (matrix(QQ, [[2, 1], [1, 2]]), (QQ(0), QQ(1) / 2), QQ(1) / 2, matrix(ZZ, [[1, -1], [0, 1]])),
+        (
+            matrix(QQ, [[2, 1], [1, 3]]),
+            (QQ(1) / 2, QQ(1) / 3),
+            QQ(1) / 2,
+            matrix(ZZ, [[1, 2], [0, 1]]),
+        ),
+        (
+            diagonal_matrix(QQ, [1, 2, 3]),
+            (QQ(1) / 2, QQ(0), QQ(0)),
+            QQ(1) / 4,
+            matrix(ZZ, [[1, 0, 0], [1, 1, 0], [0, 0, 1]]),
+        ),
+        (
+            matrix(QQ, [[2, 1], [1, 2]]),
+            (QQ(0), QQ(1) / 2),
+            QQ(1) / 2,
+            matrix(ZZ, [[1, -1], [0, 1]]),
+        ),
     ):
         dual = order.inverse().transpose()
         actual = _fixed_distance_dual_lll_solutions(gram, target, bound, dual, order)
@@ -1782,19 +2149,35 @@ def test_fixed_distance_dual_lll_frame_reconstructs_exact_sphere() -> None:
         expected = set()
         for coordinates in product(range(-6, 7), repeat=gram.nrows()):
             delta = tuple(QQ(coordinates[i]) - target[i] for i in range(len(target)))
-            if sum((delta[i] * gram[i, j] * delta[j] for i in range(len(delta)) for j in range(len(delta))), QQ(0)) == bound:
+            if (
+                sum(
+                    (
+                        delta[i] * gram[i, j] * delta[j]
+                        for i in range(len(delta))
+                        for j in range(len(delta))
+                    ),
+                    QQ(0),
+                )
+                == bound
+            ):
                 expected.add(tuple(ZZ(value) for value in coordinates))
         assert got == expected
-        assert len(actual) == len(got) and all(distance == bound for _, distance in actual)
+        assert len(actual) == len(got) and all(
+            distance == bound for _, distance in actual
+        )
 
     import random
 
     rng = random.Random(1207)
     for rank in range(1, 4):
         for _ in range(10):
-            raw = matrix(ZZ, rank, rank, [rng.randint(-2, 2) for _ in range(rank * rank)])
+            raw = matrix(
+                ZZ, rank, rank, [rng.randint(-2, 2) for _ in range(rank * rank)]
+            )
             gram = (raw * raw.transpose() + identity_matrix(ZZ, rank)).change_ring(QQ)
-            target = tuple(QQ(rng.randint(-2, 2)) / rng.randint(1, 3) for _ in range(rank))
+            target = tuple(
+                QQ(rng.randint(-2, 2)) / rng.randint(1, 3) for _ in range(rank)
+            )
             bound = QQ(rng.randint(0, 5)) / rng.randint(1, 3)
             order = identity_matrix(ZZ, rank)
             if rank > 1:
@@ -1802,33 +2185,62 @@ def test_fixed_distance_dual_lll_frame_reconstructs_exact_sphere() -> None:
             if rank > 2:
                 order[1, 2] = rng.choice((-1, 1))
             dual = order.inverse().transpose()
-            actual = _fixed_distance_dual_lll_solutions(gram, target, bound, dual, order)
+            actual = _fixed_distance_dual_lll_solutions(
+                gram, target, bound, dual, order
+            )
             got = {coordinates for coordinates, distance in actual if distance == bound}
             expected = set()
             for coordinates in product(range(-8, 9), repeat=rank):
                 delta = tuple(QQ(coordinates[i]) - target[i] for i in range(rank))
-                square = sum((delta[i] * gram[i, j] * delta[j] for i in range(rank) for j in range(rank)), QQ(0))
+                square = sum(
+                    (
+                        delta[i] * gram[i, j] * delta[j]
+                        for i in range(rank)
+                        for j in range(rank)
+                    ),
+                    QQ(0),
+                )
                 if square == bound:
                     expected.add(tuple(ZZ(value) for value in coordinates))
             assert expected <= got
-            if all(all(abs(value) <= 8 for value in coordinates) for coordinates in got):
+            if all(
+                all(abs(value) <= 8 for value in coordinates) for coordinates in got
+            ):
                 assert got == expected
-            assert len(actual) == len(got) and all(distance == bound for _, distance in actual)
+            assert len(actual) == len(got) and all(
+                distance == bound for _, distance in actual
+            )
 
     for bad_gram, bad_target, bad_bound, bad_dual, bad_order, exception in (
         (gram, target, bound, identity_matrix(ZZ, 2), order, ValueError),
         (gram, target, bound, identity_matrix(ZZ, 3), order, ArithmeticError),
         (gram, (0.5, QQ(0), QQ(0)), bound, dual, order, ValueError),
         (gram.change_ring(RDF), target, bound, dual, order, ValueError),
-        (matrix(QQ, [[1, 1, 0], [0, 1, 0], [0, 0, 1]]), target, bound, dual, order, ValueError),
+        (
+            matrix(QQ, [[1, 1, 0], [0, 1, 0], [0, 0, 1]]),
+            target,
+            bound,
+            dual,
+            order,
+            ValueError,
+        ),
         (diagonal_matrix(QQ, [1, 1, -1]), target, bound, dual, order, ArithmeticError),
         (gram, target, bound, dual.change_ring(RDF), order, ValueError),
-        (gram, target, bound, matrix(QQ, [[QQ(1) / 2, 0, 0], [0, 1, 0], [0, 0, 1]]), order, ValueError),
+        (
+            gram,
+            target,
+            bound,
+            matrix(QQ, [[QQ(1) / 2, 0, 0], [0, 1, 0], [0, 0, 1]]),
+            order,
+            ValueError,
+        ),
         (gram, target, 0.5, dual, order, ValueError),
         (gram, target, QQ(-1), dual, order, ValueError),
     ):
         try:
-            _fixed_distance_dual_lll_solutions(bad_gram, bad_target, bad_bound, bad_dual, bad_order)
+            _fixed_distance_dual_lll_solutions(
+                bad_gram, bad_target, bad_bound, bad_dual, bad_order
+            )
         except exception:
             pass
         else:
@@ -1896,7 +2308,9 @@ def test_bounded_distance_dual_lll_solutions_match_exact_brute_force() -> None:
                 expected[tuple(ZZ(entry) for entry in coordinates)] = distance
         assert actual_by_point == expected
         assert len(actual) == len(actual_by_point)
-        assert all(distance == expected[coordinates] for coordinates, distance in actual)
+        assert all(
+            distance == expected[coordinates] for coordinates, distance in actual
+        )
 
 
 def test_positive_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() -> None:
@@ -1914,7 +2328,11 @@ def test_positive_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() ->
         lower, diagonal = _positive_ldl_factorization(gram)
         lower_matrix = matrix(QQ, lower)
         diagonal_matrix_ = diagonal_matrix(QQ, diagonal)
-        assert all(lower_matrix[i, j] == 0 for i in range(gram.nrows()) for j in range(i + 1, gram.ncols()))
+        assert all(
+            lower_matrix[i, j] == 0
+            for i in range(gram.nrows())
+            for j in range(i + 1, gram.ncols())
+        )
         assert all(pivot > 0 for pivot in diagonal)
         assert lower_matrix * diagonal_matrix_ * lower_matrix.transpose() == gram
         _validate_fixed_distance_ldl_factorization(gram, (lower, diagonal))
@@ -1933,7 +2351,9 @@ def test_positive_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() ->
         except (ValueError, ArithmeticError):
             pass
         else:
-            raise AssertionError(f"invalid cached LDL factorization accepted: {bad_factorization}")
+            raise AssertionError(
+                f"invalid cached LDL factorization accepted: {bad_factorization}"
+            )
 
     for gram in (
         matrix(QQ, 0, 0),
@@ -1943,7 +2363,9 @@ def test_positive_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() ->
         try:
             _positive_ldl_factorization(gram)
         except ValueError as error:
-            assert "nonempty symmetric Gram matrix" in str(error) or "exact QQ Gram matrix" in str(error)
+            assert "nonempty symmetric Gram matrix" in str(
+                error
+            ) or "exact QQ Gram matrix" in str(error)
         else:
             raise AssertionError(f"invalid Gram matrix accepted: {gram}")
 
@@ -2010,15 +2432,17 @@ def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
     else:
         raise AssertionError("an inconsistent CVP distance was accepted")
     for invalid_distance in (QQ(-1), QQ(46)):
-        engine.close_vector_coordinates = lambda target, bound, distance=invalid_distance: (
-            ((0, 0), distance),
+        engine.close_vector_coordinates = (
+            lambda target, bound, distance=invalid_distance: (((0, 0), distance),)
         )
         try:
             enumerator.vectors_at_multiplier(2)
         except ArithmeticError as error:
             assert "outside its exact squared-distance bound" in str(error)
         else:
-            raise AssertionError(f"an out-of-bound CVP distance was accepted: {invalid_distance}")
+            raise AssertionError(
+                f"an out-of-bound CVP distance was accepted: {invalid_distance}"
+            )
 
     # Only a PARI stack overflow triggers the exact bounded-LDL fallback; its
     # target, bound, and inverse-transpose frame are the same pinned CVP data.
@@ -2027,7 +2451,9 @@ def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
 
     enumerator.enumeration_transform = matrix(ZZ, [[1, 2], [0, 1]])
     engine.engine_gram_q = identity_matrix(QQ, 2)
-    engine._engine_target_coordinates = lambda target: tuple(QQ(entry) for entry in target)
+    engine._engine_target_coordinates = lambda target: tuple(
+        QQ(entry) for entry in target
+    )
     engine._engine_scalar = lambda scalar: QQ(scalar)
     enumerator.scaled_max = ZZ(100)
     enumerator.allowed_squares = {ZZ(79), ZZ(75)}
@@ -2050,7 +2476,10 @@ def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
         cells._bounded_distance_dual_lll_solutions = bounded
         cells._owned_engine_element = lambda field, value: value
         cells._owned_rational = lambda lattice, value, field: value
-        assert enumerator.vectors_at_multiplier(4) == ((4, 1, 0), (4, 2, 1))
+        # The pinned recursive order uses the enumeration-order transform
+        # P = [[1, 0], [-2, 1]] here: reversed P*(-2, 1) = (5, -2) precedes
+        # reversed P*(-3, 0) = (6, -3).
+        assert enumerator.vectors_at_multiplier(4) == ((4, 2, 1), (4, 1, 0))
         engine.close_vector_coordinates = lambda target, bound: (_ for _ in ()).throw(
             FakePariError("a different PARI failure")
         )
