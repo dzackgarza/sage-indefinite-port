@@ -2048,7 +2048,7 @@ def _negative_ldl_factorization(gram: Matrix_rational_dense) -> tuple[list[list[
             ),
         )
         if pivot <= 0:
-            raise ArithmeticError("the fixed-distance sphere requires a negative-definite lattice")
+            raise ArithmeticError("the fixed-distance sphere requires a positive-definite Gram matrix")
         diagonal.append(pivot)
         for row in range(column + 1, rank):
             lower[row][column] = cast(

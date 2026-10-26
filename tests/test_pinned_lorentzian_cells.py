@@ -1820,7 +1820,7 @@ def test_negative_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() ->
         try:
             _negative_ldl_factorization(gram)
         except ArithmeticError as error:
-            assert "negative-definite lattice" in str(error)
+            assert "positive-definite Gram matrix" in str(error)
         else:
             raise AssertionError(f"non-positive-definite Gram matrix accepted: {gram}")
 
