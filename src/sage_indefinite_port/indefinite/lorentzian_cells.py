@@ -7,7 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import cache, cached_property
-from itertools import combinations, product
+from itertools import combinations, islice, product
 from math import gcd, isfinite, isqrt
 from sys import float_info
 from random import choice, randrange, shuffle
@@ -677,13 +677,13 @@ class LorentzianPerfectLocalBackend:
         # The stored homogeneous H-presentation is already minimized. Asking
         # for facet_covectors() reconstructs each face cone only to recover
         # these same supporting normals, which dominates high-facet cells.
-        covectors = tuple(cone.halfspace_covectors())
-        if not covectors:
+        covectors = iter(cone.halfspace_covectors())
+        covector_block = tuple(islice(covectors, 16))
+        if not covector_block:
             return ()
         labels = tuple(cell.lattice.module_generating_set())
         ray_rows = matrix(SageQQ, cell.rows)
         integral_ray_rows = matrix(SageZZ, cell.rows)
-        covector_rows = matrix(SageQQ, [[_rational(covector.to_vector()(label)) for label in labels] for covector in covectors])
         transposed_ray_rows = ray_rows.transpose()
         # Do not materialize the full |facets|-by-|rays| pairing matrix.
         # A7's initial perfect configuration has 49,861 rays, so retaining
@@ -692,10 +692,13 @@ class LorentzianPerfectLocalBackend:
         # blocks instead, discarding each block after its original ray indices
         # have been recorded.
         facets = []
-        for start in range(0, len(covectors), 16):
-            stop = min(start + 16, len(covectors))
-            pairing_block = covector_rows.matrix_from_rows(range(start, stop)) * transposed_ray_rows
-            for offset in range(stop - start):
+        while covector_block:
+            covector_rows = matrix(
+                SageQQ,
+                [[_rational(covector.to_vector()(label)) for label in labels] for covector in covector_block],
+            )
+            pairing_block = covector_rows * transposed_ray_rows
+            for offset in range(len(covector_block)):
                 facets.append(
                     frozenset(
                         position
@@ -703,6 +706,7 @@ class LorentzianPerfectLocalBackend:
                         if pairing_block[offset, position] == 0
                     )
                 )
+            covector_block = tuple(islice(covectors, 16))
         generators = self.cell_stabilizer(cell)
         # Use precisely these generators to form the ray action.  Calling
         # point_permutations here repeats the stabilizer lookup and the
