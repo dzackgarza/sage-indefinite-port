@@ -39,7 +39,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _pinned_independent_column_indices,
     _outside_ray_directions,
     _quadratic_descent_prefix,
-    _negative_ldl_factorization,
+    _positive_ldl_factorization,
     _fixed_distance_coordinate_solutions,
     _fixed_distance_dual_lll_solutions,
     _validate_fixed_distance_ldl_factorization,
@@ -1765,7 +1765,7 @@ def test_fixed_distance_basis_inverse_is_exact_and_two_sided() -> None:
             raise AssertionError("an invalid fixed-distance basis inverse was accepted")
 
 
-def test_negative_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() -> None:
+def test_positive_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() -> None:
     """The fixed-distance sphere uses an exact positive-definite LDL certificate."""
     from sage.all import QQ, matrix, diagonal_matrix
 
@@ -1777,7 +1777,7 @@ def test_negative_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() ->
         diagonal_matrix(QQ, [QQ(1) / 2, 3, 7]),
     )
     for gram in forms:
-        lower, diagonal = _negative_ldl_factorization(gram)
+        lower, diagonal = _positive_ldl_factorization(gram)
         lower_matrix = matrix(QQ, lower)
         diagonal_matrix_ = diagonal_matrix(QQ, diagonal)
         assert lower_matrix.is_lower_triangular()
@@ -1786,7 +1786,7 @@ def test_negative_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() ->
         _validate_fixed_distance_ldl_factorization(gram, (lower, diagonal))
 
     gram = matrix(QQ, [[2, 1], [1, 3]])
-    valid_lower, valid_diagonal = _negative_ldl_factorization(gram)
+    valid_lower, valid_diagonal = _positive_ldl_factorization(gram)
     for bad_factorization in (
         ([[1, 1], [0, 1]], valid_diagonal),
         (valid_lower, [valid_diagonal[0], -valid_diagonal[1]]),
@@ -1806,7 +1806,7 @@ def test_negative_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() ->
         matrix(QQ, [[1, 2], [0, 1]]),
     ):
         try:
-            _negative_ldl_factorization(gram)
+            _positive_ldl_factorization(gram)
         except ValueError as error:
             assert "nonempty symmetric Gram matrix" in str(error)
         else:
@@ -1818,7 +1818,7 @@ def test_negative_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() ->
         matrix(QQ, [[1, 0], [0, -1]]),
     ):
         try:
-            _negative_ldl_factorization(gram)
+            _positive_ldl_factorization(gram)
         except ArithmeticError as error:
             assert "positive-definite Gram matrix" in str(error)
         else:

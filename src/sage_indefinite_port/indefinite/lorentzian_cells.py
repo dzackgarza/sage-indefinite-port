@@ -2029,7 +2029,7 @@ def _coordinate_row[S: RingElement](lattice: FramedFreeModules.ParentMethods, el
     return vector(ring, tuple(ring(_rational(coordinates(label))) for label in lattice.module_generating_set()))
 
 
-def _negative_ldl_factorization(gram: Matrix_rational_dense) -> tuple[list[list[Rational]], list[Rational]]:
+def _positive_ldl_factorization(gram: Matrix_rational_dense) -> tuple[list[list[Rational]], list[Rational]]:
     """Exact ``G = L D L^T`` factorization of a positive-definite Gram matrix."""
     if gram.nrows() == 0 or gram.nrows() != gram.ncols() or gram != gram.transpose():
         raise ValueError("the fixed-distance LDL factorization requires a nonempty symmetric Gram matrix")
@@ -2131,7 +2131,7 @@ def _fixed_distance_coordinate_solutions(
         raise ValueError("fixed squared distance must be nonnegative")
     if rank == 0:
         return (((), bound),) if bound == 0 else ()
-    lower, diagonal = _negative_ldl_factorization(gram)
+    lower, diagonal = _positive_ldl_factorization(gram)
     _validate_fixed_distance_ldl_factorization(gram, (lower, diagonal))
     zero = SageQQ.zero()
     coordinates = [0] * rank
@@ -2274,7 +2274,7 @@ def _fixed_distance_vectors(
         raise ArithmeticError("the reduced fixed-distance center was not transported by the basis isomorphism")
     gram = cast(Matrix_rational_dense, -_gram_matrix(reduced).change_ring(SageQQ))
     zero = cast(Rational, SageQQ.zero())
-    lower, diagonal = ldl_factorization if ldl_factorization is not None else _negative_ldl_factorization(gram)
+    lower, diagonal = ldl_factorization if ldl_factorization is not None else _positive_ldl_factorization(gram)
     _validate_fixed_distance_ldl_factorization(gram, (lower, diagonal))
 
     coordinates = [0] * rank
