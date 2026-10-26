@@ -1603,7 +1603,7 @@ def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
 def test_fixed_distance_dual_lll_frame_reconstructs_exact_sphere() -> None:
     """Exact sphere pruning uses the reduced dual-LLL Gram and reconstructs the original frame."""
     from itertools import product
-    from sage.all import QQ, ZZ, identity_matrix, matrix, vector
+    from sage.all import QQ, RDF, ZZ, identity_matrix, matrix, vector
 
     gram = diagonal_matrix(QQ, [1, 2, 3])
     # The shear changes this center by an integral vector in the first
@@ -1626,12 +1626,16 @@ def test_fixed_distance_dual_lll_frame_reconstructs_exact_sphere() -> None:
     }
     assert tuple(actual) == tuple(sorted(actual, key=lambda item: tuple((order * vector(ZZ, item[0]).column())[i, 0] for i in reversed(range(3)))))
 
-    for bad_dual, bad_order, exception in (
-        (identity_matrix(ZZ, 2), order, ValueError),
-        (identity_matrix(ZZ, 3), order, ArithmeticError),
+    for bad_gram, bad_target, bad_dual, bad_order, exception in (
+        (gram, target, identity_matrix(ZZ, 2), order, ValueError),
+        (gram, target, identity_matrix(ZZ, 3), order, ArithmeticError),
+        (gram, (0.5, QQ(0), QQ(0)), dual, order, ValueError),
+        (gram.change_ring(RDF), target, dual, order, ValueError),
+        (gram, target, dual.change_ring(RDF), order, ValueError),
+        (gram, target, matrix(QQ, [[QQ(1) / 2, 0, 0], [0, 1, 0], [0, 0, 1]]), order, ValueError),
     ):
         try:
-            _fixed_distance_dual_lll_solutions(gram, target, bound, bad_dual, bad_order)
+            _fixed_distance_dual_lll_solutions(bad_gram, bad_target, bound, bad_dual, bad_order)
         except exception:
             pass
         else:

@@ -2203,7 +2203,17 @@ def _fixed_distance_dual_lll_solutions(
     returned coordinates are transported back by ``Q^T`` and ordered by
     their original pinned recursive coordinates ``P*x``.
     """
+    if gram.nrows() != gram.ncols() or gram.base_ring() is not SageQQ:
+        raise ValueError("fixed-distance dual-LLL enumeration requires a square exact QQ Gram matrix")
     rank = int(gram.nrows())
+    if len(target) != rank or any(not isinstance(entry, (int, Integer, Rational)) for entry in target):
+        raise ValueError("fixed-distance dual-LLL target must have exact rational coordinates of the Gram dimension")
+    for transform in (dual_transform, enumeration_order_transform):
+        if transform.base_ring() not in (SageZZ, SageQQ) or any(
+            not isinstance(entry, (int, Integer, Rational)) or SageQQ(entry).denominator() != 1
+            for entry in transform.list()
+        ):
+            raise ValueError("fixed-distance dual-LLL transforms must have exact integer entries")
     if dual_transform.nrows() != rank or dual_transform.ncols() != rank:
         raise ValueError("the fixed-distance dual-LLL transform has incorrect dimensions")
     if enumeration_order_transform.nrows() != rank or enumeration_order_transform.ncols() != rank:
