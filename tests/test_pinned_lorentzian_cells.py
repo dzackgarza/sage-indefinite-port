@@ -1644,6 +1644,34 @@ def test_fixed_distance_dual_lll_frame_reconstructs_exact_sphere() -> None:
         assert got == expected
         assert len(actual) == len(got) and all(distance == bound for _, distance in actual)
 
+    import random
+
+    rng = random.Random(1207)
+    for rank in range(1, 4):
+        for _ in range(10):
+            raw = matrix(ZZ, rank, rank, [rng.randint(-2, 2) for _ in range(rank * rank)])
+            gram = (raw * raw.transpose() + identity_matrix(ZZ, rank)).change_ring(QQ)
+            target = tuple(QQ(rng.randint(-2, 2)) / rng.randint(1, 3) for _ in range(rank))
+            bound = QQ(rng.randint(0, 5)) / rng.randint(1, 3)
+            order = identity_matrix(ZZ, rank)
+            if rank > 1:
+                order[0, 1] = rng.choice((-2, -1, 1, 2))
+            if rank > 2:
+                order[1, 2] = rng.choice((-1, 1))
+            dual = order.inverse().transpose()
+            actual = _fixed_distance_dual_lll_solutions(gram, target, bound, dual, order)
+            got = {coordinates for coordinates, distance in actual if distance == bound}
+            expected = set()
+            for coordinates in product(range(-8, 9), repeat=rank):
+                delta = tuple(QQ(coordinates[i]) - target[i] for i in range(rank))
+                square = sum((delta[i] * gram[i, j] * delta[j] for i in range(rank) for j in range(rank)), QQ(0))
+                if square == bound:
+                    expected.add(tuple(ZZ(value) for value in coordinates))
+            assert expected <= got
+            if all(all(abs(value) <= 8 for value in coordinates) for coordinates in got):
+                assert got == expected
+            assert len(actual) == len(got) and all(distance == bound for _, distance in actual)
+
     for bad_gram, bad_target, bad_dual, bad_order, exception in (
         (gram, target, identity_matrix(ZZ, 2), order, ValueError),
         (gram, target, identity_matrix(ZZ, 3), order, ArithmeticError),
