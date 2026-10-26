@@ -26,24 +26,31 @@ The repair scope remains open for every listed failing family.
 
 ## Now
 
-Finish the unchanged frozen vector consumers with research
-`53c48e0ab7c8f74f9c15f2e0970b11f29376dc23` and port source `5024411`.
-The repaired definite witness backend passes exact change-of-basis, inverse
-and pairing checks for both signs of E8 + <18>, and rejects the independent
-non-isometric binary pair. `.tmp/repair-definite-witness-fixed.log` is the
-current selected run, with reflected-vector `r_0` followed by degree-18
-vector representatives. Both previously exhausted PARI qfisom at 1 GiB;
-the new backend uses OSCAR invariant-sublattice decomposition through the
-existing adapter. Read actual outcomes before further changes.
+Investigate the remaining reflective failures in Acceptance
+[40310936005](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40310936005),
+port `6618e63ce1decc6ccdb42d0ddaa9e33836b1bdaf`, research
+`53c48e0ab7c8f74f9c15f2e0970b11f29376dc23`. Inspect each completed
+shard's JUnit and revision metadata. Every isometry, perfect-domain and
+vector-stabilizer shard has a complete passing JUnit report at that pair.
+The reflected-vector r_0 and degree-18 orbit consumers pass there.
+Remaining families are open. Reflective shards 2, 4 and 7 contain assertion
+failures and then exit 137 before writing JUnit; orthogonal-group shard 0
+also exits 137. These runs are incomplete evidence.
 
-The I_1_2 isotropic-stabilizer assertion remains open. Its instrumented
-single-case run is `.tmp/repair-isotropic-stabilizer-stack.log`, using the
-same source implementation. Repeated samples locate its work in
-`LorentzianPerfectLocalBackend.cell_transporter`, matching perfect cells
-while constructing the ambient orthogonal group. No new assertion failure
-has been observed. The earlier uninstrumented run was interrupted and is
-not passing evidence. `.tmp/repair-isotropic-stabilizer-diagnosis.md`
-records the diagnostic boundary.
+The first failure in reflective shard 7 maps to ListReflect_549. Its
+Vinberg coset normalization used QQ division in place of the pinned integer
+QuoInt. The integer-division repair passes that unchanged root-count case.
+Use subsequent exact failures to determine which other branches need repair.
+
+The I_1_2 isotropic-stabilizer assertion remains open. A captured perfect-cell
+pair has a verified integral witness from the existing research finite-family
+transporter. The current port basis-image search exceeds 180 seconds on that
+same pair; research returns in 87 seconds. The frozen owner split and pinned
+Lorentzian.g:660-696 prescribe the generic configuration transporter.
+The diagnostic data and exact certificate are in
+`.tmp/probe/configuration-transporter/`; these are optional local evidence,
+not required checkout inputs. The full I_1_2 consumer has no verified result.
+The unchanged Enriques case_1 boundary consumer is also still unresolved.
 
 The corrected Lorentzian flip preserves GAP's IsSubset(A,B) convention.
 Both source exits return the exact supporting face x=1 of x^2-y^2 in the
@@ -58,15 +65,12 @@ restrict by O(L^f,h), not the full invariant orthogonal group.
 
 Acceptance still required, in order:
 
-1. Finish the selected vector consumers above and the unchanged isotropic
-   stabilizer case `I_1_2` in `.tmp/repair-isotropic-stabilizer-stack.log`. The original
-   U_2U_A3 isometry now passes its unchanged witness assertion.
-2. Complete the isotropic consumers after exact integer configuration
-   pairings. `IsotropicCases_813` has not returned a verified result.
-3. Repair all remaining reflective, group, boundary and vector cases using
-   exact shard tracebacks, including cases with missing JUnit reports.
-4. Obtain full frozen Acceptance evidence at one published port/provider
-   pair. Run 40299696962 was cancelled and supplies no further evidence.
+1. Repair the remaining reflective cases from exact tracebacks. Recover
+   missing reports by running selected individual cases.
+2. Complete the I_1_2 and Enriques case_1 public consumers; use the existing
+   research configuration operation where the pinned algorithm calls it.
+3. Repair every remaining group, boundary, orbit and centralizer failure.
+4. Obtain full frozen Acceptance evidence at one published port/provider pair.
 
 The following unchanged frozen cases pass locally with port source
 `5024411d3fde70e6e475aa2e1e59b334772d61b5` and provider

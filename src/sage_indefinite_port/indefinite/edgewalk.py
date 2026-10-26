@@ -660,9 +660,9 @@ class _Edgewalk:
         norm_shift = -self.norm(timelike)
         cosets = []
         for representative in representatives:
-            # Sage rational floor division retains its scalar parent;
-            # convert the exact integer before acting on the owned vector.
-            multiple = _integer((-self.pairing(representative, timelike)) // norm_shift)
+            # GetVinbergAux uses integer QuoInt (vinberg.h:258-260).
+            # Division in QQ computes the field quotient, including for //.
+            multiple = _integer(-self.pairing(representative, timelike)) // _integer(norm_shift)
             normalized = representative - multiple * timelike
             # GetVinbergAux uses QuoInt/ResInt to place each class in
             # the fundamental timelike strip, 0 <= -<w,v0> < -v0^2.
