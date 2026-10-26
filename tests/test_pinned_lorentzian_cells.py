@@ -552,6 +552,17 @@ def test_source_integral_vector_allmeth_v2_returns_exact_positive_witness() -> N
     else:
         raise AssertionError("a rational nonintegral reduction basis was accepted")
 
+    inexact_gram = rational_gram.change_ring(RDF)
+    try:
+        _source_integral_vector_allmeth_v2(
+            inexact_gram, identity_matrix(ZZ, 2), inexact_gram,
+            eigen_directions=no_eigen_directions,
+        )
+    except ValueError as error:
+        assert "exact ring" in str(error)
+    else:
+        raise AssertionError("an inexact floating-point Gram matrix was accepted")
+
     inexact_basis = matrix(RDF, [[1.0, 0.0], [0.0, 1.0]])
     try:
         _source_integral_vector_allmeth_v2(
@@ -588,11 +599,21 @@ def test_source_remove_fraction_vector_returns_primitive_integral_coordinates() 
 
 def test_source_integral_reduction_rejects_false_basis_certificates() -> None:
     """The V2 consumer receives only exact unimodular Gram congruences."""
-    from sage.all import ZZ, identity_matrix, matrix
+    from sage.all import RDF, ZZ, identity_matrix, matrix
 
     gram = matrix(ZZ, [[2, 1], [1, -1]])
     identity = identity_matrix(ZZ, 2)
     _source_validate_integral_reduction(gram, identity, gram)
+    for bad_gram, bad_basis, bad_reduced in (
+        (gram.change_ring(RDF), identity, gram),
+        (gram, identity, gram.change_ring(RDF)),
+    ):
+        try:
+            _source_validate_integral_reduction(bad_gram, bad_basis, bad_reduced)
+        except ValueError as error:
+            assert "exact ring" in str(error)
+        else:
+            raise AssertionError("an inexact Gram certificate was accepted")
     for basis, reduced in (
         (2 * identity, 4 * gram),
         (identity, gram + identity),

@@ -2504,6 +2504,8 @@ def _source_integral_vector_allmeth_v2(
     """
     if gram.nrows() == 0 or gram.nrows() != gram.ncols():
         raise ValueError("the Gram matrix must be nonempty and square")
+    _source_require_integral_matrix(gram, "the original Gram matrix")
+    _source_require_integral_matrix(reduced, "the reduced Gram matrix")
     if basis.nrows() != gram.nrows() or basis.ncols() != gram.ncols():
         raise ValueError("the reduction basis must be a square matrix")
     _source_require_integral_matrix(basis, "the reduction basis")
@@ -2615,6 +2617,8 @@ def _source_validate_integral_reduction(
         raise ValueError("integral reduction must use square matrices of the Gram dimension")
     if reduced.nrows() != rank or reduced.ncols() != rank:
         raise ValueError("reduced Gram matrix has the wrong dimension")
+    _source_require_integral_matrix(gram, "original Gram matrix")
+    _source_require_integral_matrix(reduced, "reduced Gram matrix")
     _source_require_integral_matrix(basis, "integral reduction basis")
     if abs(basis.det()) != 1:
         raise ArithmeticError("integral reduction basis is not unimodular")
