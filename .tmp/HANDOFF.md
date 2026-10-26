@@ -65,10 +65,22 @@ Acceptance still required, in order:
 4. Obtain full frozen Acceptance evidence at one published port/provider
    pair. Run 40299696962 was cancelled and supplies no further evidence.
 
-With port 36bf6d5/d0a9b3d and provider ee96afcf, unchanged cases
-`ListReflect_590` and `oscar_lattices_with_isometry_118` pass. Independent
-research examples for integer residue cubes, polarized U+U, and stable-group
-axis stabilizers pass. The full repair condition remains open.
+The following unchanged frozen cases pass locally with port source
+`5024411d3fde70e6e475aa2e1e59b334772d61b5` and provider
+`c55fa8a7d5818ff075a7146e394c70a50368d580`:
+
+| Family | Case |
+| --- | --- |
+| boundaries | test_dawes_last_index_in_the_chain_is_the_discriminant_image_of_o_plus |
+| isotropic_orbits | IsotropicCases_813 |
+| orthogonal_group | test_signed_discriminant_image_of_u_plus_minus_three_is_all_of_o_q |
+| reflective | ListReflect_590 |
+| centralizers | oscar_lattices_with_isometry_110; oscar_lattices_with_isometry_118 |
+
+These are selected local results, not hosted full-family acceptance.
+Research's independent integer residue-cube, polarized U+U, stable-group
+axis-stabilizer and E8 + <18> group examples pass. The full repair condition
+remains open.
 
 Other work is advancing the same port branch, including positive-vector
 validation and bounded CVP. Inspect current branch tips before changing
