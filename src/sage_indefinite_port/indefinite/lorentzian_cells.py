@@ -2618,8 +2618,10 @@ def _source_integral_vector_allmeth(
     admits norm zero. Otherwise run IndefiniteReduction, search its reduced
     form with V2, and reconstruct the certified original-coordinate vector.
     """
-    if gram.nrows() != gram.ncols():
-        raise ValueError("the Gram matrix must be square")
+    if gram.nrows() == 0 or gram.nrows() != gram.ncols():
+        raise ValueError("integral-vector search requires a nonempty square Gram matrix")
+    if gram != gram.transpose():
+        raise ValueError("integral-vector search requires a symmetric Gram matrix")
     critical_norm = SageQQ(critical_norm)
     isotropic_fine = critical_norm < 0 if strict_inequality else critical_norm <= 0
     reduced_result = None

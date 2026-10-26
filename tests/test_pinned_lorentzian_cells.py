@@ -582,6 +582,23 @@ def test_source_positive_integral_vector_contract_certifies_exact_norm() -> None
             raise AssertionError(f"invalid positive-vector witness accepted: {candidate}")
 
 
+def test_source_integral_vector_allmeth_rejects_invalid_gram_before_reduction() -> None:
+    """The public lattice-vector search accepts only nonempty symmetric Gram matrices."""
+    from sage.all import QQ, ZZ, matrix
+
+    for gram in (matrix(ZZ, 0, 0), matrix(ZZ, [[1, 2], [0, 1]])):
+        try:
+            _source_integral_vector_allmeth(
+                gram, QQ.zero(), True,
+                reduction=lambda _gram: (_ for _ in ()).throw(AssertionError("reduction called")),
+                isotropic_reduction=lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("isotropic reduction called")),
+            )
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"invalid Gram matrix accepted: {gram}")
+
+
 def test_source_integral_vector_allmeth_selects_isotropic_shortcut_exactly() -> None:
     """The generic source wrapper chooses the isotropic branch from inequality semantics."""
     from sage.all import QQ, ZZ, identity_matrix, matrix
