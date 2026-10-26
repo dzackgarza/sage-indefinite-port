@@ -2208,6 +2208,8 @@ def _fixed_distance_dual_lll_solutions(
     rank = int(gram.nrows())
     if len(target) != rank or any(not isinstance(entry, (int, Integer, Rational)) for entry in target):
         raise ValueError("fixed-distance dual-LLL target must have exact rational coordinates of the Gram dimension")
+    if not isinstance(squared_distance, (int, Integer, Rational)) or SageQQ(squared_distance) < 0:
+        raise ValueError("fixed-distance dual-LLL squared distance must be exact and nonnegative")
     for transform in (dual_transform, enumeration_order_transform):
         if transform.base_ring() not in (SageZZ, SageQQ) or any(
             not isinstance(entry, (int, Integer, Rational)) or SageQQ(entry).denominator() != 1

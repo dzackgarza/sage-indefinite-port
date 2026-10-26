@@ -1672,16 +1672,18 @@ def test_fixed_distance_dual_lll_frame_reconstructs_exact_sphere() -> None:
                 assert got == expected
             assert len(actual) == len(got) and all(distance == bound for _, distance in actual)
 
-    for bad_gram, bad_target, bad_dual, bad_order, exception in (
-        (gram, target, identity_matrix(ZZ, 2), order, ValueError),
-        (gram, target, identity_matrix(ZZ, 3), order, ArithmeticError),
-        (gram, (0.5, QQ(0), QQ(0)), dual, order, ValueError),
-        (gram.change_ring(RDF), target, dual, order, ValueError),
-        (gram, target, dual.change_ring(RDF), order, ValueError),
-        (gram, target, matrix(QQ, [[QQ(1) / 2, 0, 0], [0, 1, 0], [0, 0, 1]]), order, ValueError),
+    for bad_gram, bad_target, bad_bound, bad_dual, bad_order, exception in (
+        (gram, target, bound, identity_matrix(ZZ, 2), order, ValueError),
+        (gram, target, bound, identity_matrix(ZZ, 3), order, ArithmeticError),
+        (gram, (0.5, QQ(0), QQ(0)), bound, dual, order, ValueError),
+        (gram.change_ring(RDF), target, bound, dual, order, ValueError),
+        (gram, target, bound, dual.change_ring(RDF), order, ValueError),
+        (gram, target, bound, matrix(QQ, [[QQ(1) / 2, 0, 0], [0, 1, 0], [0, 0, 1]]), order, ValueError),
+        (gram, target, 0.5, dual, order, ValueError),
+        (gram, target, QQ(-1), dual, order, ValueError),
     ):
         try:
-            _fixed_distance_dual_lll_solutions(bad_gram, bad_target, bound, bad_dual, bad_order)
+            _fixed_distance_dual_lll_solutions(bad_gram, bad_target, bad_bound, bad_dual, bad_order)
         except exception:
             pass
         else:
