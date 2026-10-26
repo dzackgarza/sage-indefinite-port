@@ -1451,6 +1451,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     for cell in cells:
         labels = tuple(cell.lattice.module_generating_set())
         rows = matrix(SageQQ, cell.rows)
+        all_ray_positions = frozenset(range(rows.nrows()))
         by_incidence = {}
         covectors = tuple(cell_cones[id(cell)].halfspace_covectors())
         halfspace_rows = []
@@ -1462,7 +1463,15 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             coordinate = covector.to_vector()
             normal = vector(SageQQ, (_rational(coordinate(label)) for label in labels))
             halfspace_rows.append(normal)
-            incidence = frozenset(position for position, row in enumerate(rows.rows()) if row.dot_product(normal) == 0)
+            # Evaluate the exact covector on all rays through Sage's matrix
+            # backend, then take the complement of its nonzero support.  The
+            # scalar row-dot-product loop performs one Python-level exact
+            # pairing per ray per facet; on the 49,861-ray A7 configuration
+            # that dispatch overhead dominates the incidence extraction.
+            pairings = rows * normal.column()
+            incidence = all_ray_positions.difference(
+                position for position, _column in pairings.nonzero_positions()
+            )
             if not incidence:
                 raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
             if incidence in by_incidence:
