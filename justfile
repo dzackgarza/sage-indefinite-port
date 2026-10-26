@@ -41,7 +41,7 @@ ci-provision-sage:
     # Sage is a meson-python editable install that rebuilds on import; print
     # that rebuild, and fail here if Sage does not import.
     export MESONPY_EDITABLE_VERBOSE=1
-    "$SAGE_BIN" -python -c 'import sage.all'
+    "$SAGE_BIN" -python -c 'import sage.all; from sage.features.bliss import Bliss; Bliss().require()'
     sage_python="$("$SAGE_BIN" -python -c 'import sys; print(sys.executable)')"
     uv pip install --quiet --python "$sage_python" "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard pytest-instafail
     # The acceptance contract is against this exact research API revision.

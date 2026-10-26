@@ -10,12 +10,12 @@ RUN set -eux; \
     uv python install 3.14.5; \
     python314="$(uv python find --managed-python --resolve-links 3.14.5)"; \
     uv pip install --python "$python314" --break-system-packages setuptools; \
-    ./configure --with-python="$python314"; \
+    ./configure --with-python="$python314" --enable-bliss=yes; \
     make -j"$(nproc)" build; \
     test "$(./sage -python -c 'import sys; print(sys.version_info[:2])')" = "(3, 14)"; \
     rm -rf upstream; \
     uv cache clean; \
-    MESONPY_EDITABLE_VERBOSE=1 ./sage -python -c 'import sage.all'
+    MESONPY_EDITABLE_VERBOSE=1 ./sage -python -c 'import sage.all; from sage.features.bliss import Bliss; Bliss().require()'
 
 # One layer, so the source tarballs removed above do not stay in the image
 # underneath. The Python 3.12 venv stays: the editable sagelib build, which
