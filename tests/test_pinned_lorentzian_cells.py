@@ -377,10 +377,10 @@ def test_indefinite_lll_nearest_integer_uses_source_half_tie_rule() -> None:
     from sage_indefinite_port.indefinite.indefinite_reduction import _source_nearest_integer
 
     cases = {
-        QQ(1) / 2: 1,
-        -QQ(1) / 2: 0,
-        QQ(3) / 2: 2,
-        -QQ(3) / 2: -1,
+        QQ(1) / 2: 0,
+        -QQ(1) / 2: -1,
+        QQ(3) / 2: 1,
+        -QQ(3) / 2: -2,
         QQ(7) / 5: 1,
         -QQ(7) / 5: -1,
     }

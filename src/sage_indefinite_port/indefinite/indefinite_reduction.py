@@ -27,8 +27,13 @@ def _gram_l1(gram):
 
 
 def _source_nearest_integer(value):
-    r"""Port GAP ``NearestInteger`` with exact half-ties toward +infinity."""
-    return SageZZ((SageQQ(value) + SageQQ(1) / 2).floor())
+    r"""Port ``UniversalNearestScalarInteger`` for exact rational scalars.
+
+    The pinned ``basic_common_cpp`` ``NearestInteger_rni`` chooses the lower
+    integer when the fractional part is exactly one half. Thus ties go toward
+    negative infinity, unlike GAP's ``NearestInteger`` convention.
+    """
+    return SageZZ((SageQQ(value) - SageQQ(1) / 2).ceil())
 
 
 def _indefinite_gram_schmidt(gram, basis):
