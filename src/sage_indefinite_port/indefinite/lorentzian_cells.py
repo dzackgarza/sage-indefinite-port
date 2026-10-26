@@ -722,9 +722,14 @@ class LorentzianPerfectLocalBackend:
         # its facets.  Verify this before forming Schreier transporters;
         # otherwise the unvisited-only traversal could silently lose images.
         for permutation in permutations:
-            images = {frozenset(permutation[position] for position in facet) for facet in facet_set}
-            if images != facet_set:
-                raise ArithmeticError("a cell-stabilizer generator fails to permute the facets")
+            # The ray permutation induces an injection on subsets.  Therefore
+            # it permutes this finite facet set iff every image belongs to the
+            # set.  Check membership one image at a time instead of allocating
+            # a second full set of large incidence frozensets per generator.
+            for facet in facet_set:
+                image = frozenset(permutation[position] for position in facet)
+                if image not in facet_set:
+                    raise ArithmeticError("a cell-stabilizer generator fails to permute the facets")
         unvisited = set(facets)
         orbits = []
         identity_permutation = tuple(range(len(vectors)))
