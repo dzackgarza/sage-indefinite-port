@@ -2845,9 +2845,9 @@ def _source_indefinite_short_positive_vector(
             _source_require_integral_matrix(perturbation, "positive-vector perturbation")
             integral_perturbation = matrix(SageZZ, perturbation)
         except (TypeError, ValueError, ArithmeticError) as error:
-            raise ArithmeticError("positive-vector perturbation is not an exact integral lattice automorphism") from error
-        if integral_perturbation != perturbation or abs(integral_perturbation.det()) != 1:
-            raise ArithmeticError("positive-vector perturbation is not an integral lattice automorphism")
+            raise ArithmeticError("positive-vector perturbation is not an exact integral matrix") from error
+        if integral_perturbation != perturbation:
+            raise ArithmeticError("positive-vector perturbation changed under exact integral conversion")
         perturbation = integral_perturbation
         perturbed_gram = perturbation * gram * perturbation.transpose()
         if perturbed_gram != perturbed_gram.transpose():
