@@ -1458,20 +1458,17 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         all_ray_positions = frozenset(range(rows.nrows()))
         by_incidence = {}
         covectors = tuple(cell_cones[id(cell)].halfspace_covectors())
-        halfspace_rows = []
         # The cone's stored H-presentation already is the minimized facet
         # family. `facet_covectors()` constructs every facet cone merely to
         # recover these same normals, which is prohibitively expensive on
         # high-facet cells.
-        for covector in covectors:
-            coordinate = covector.to_vector()
-            normal = vector(SageQQ, (_rational(coordinate(label)) for label in labels))
-            halfspace_rows.append(normal)
-        halfspace_matrix = matrix(SageQQ, halfspace_rows)
-        # Keep the single matrix used by the consumer below; retaining both
-        # a Python list of Sage vectors and its dense matrix duplicates the
-        # entire H-normal family for high-facet cells.
-        del halfspace_rows
+        covector_coordinates = tuple(covector.to_vector() for covector in covectors)
+        halfspace_matrix = matrix(
+            SageQQ,
+            len(covectors),
+            len(labels),
+            lambda row, column: _rational(covector_coordinates[row](labels[column])),
+        )
         # Evaluate bounded blocks of exact covectors against the entire ray
         # matrix.  A scalar row-dot-product loop costs one Python-level exact
         # pairing per ray per facet; one matrix-vector product per facet still
