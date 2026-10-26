@@ -67,6 +67,11 @@ calls `_PositiveVectorEnumerator._ambient_vectors` explicitly, so it is runnable
 as a normal test module rather than relying on a helper injected by the scratch
 AST harness. A CVP multiplier regression checks that `vectors_at_multiplier(m)`
 passes exactly `m*w` as the target and `m^2*base_bound` as the distance bound.
+The production reconstruction now retains the CVP squared distances alongside
+their coordinate rows and verifies the exact identity
+`q(v) = m^2*base_bound - distance` for every reconstructed ambient vector.
+The targeted regression checks the identity on a consistent Lorentzian shell
+and rejects an inconsistent distance supplied by the CVP backend.
 The current branch tip has not yet been accepted by the frozen full-family run;
 see the current case-level Acceptance results before asserting completion.
 Ordinary pytest collection currently fails in the local Sage environment at
