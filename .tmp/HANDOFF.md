@@ -26,25 +26,28 @@ The repair scope remains open for every listed failing family.
 
 ## Now
 
-Verify the corrected Lorentzian flip at port `5024411` with research
-`c55fa8a7d5818ff075a7146e394c70a50368d580`. The frozen U_2U_A3
-isometry and Dawes discriminant-image cases both reached zero denominators
-because the port reversed GAP's IsSubset(A,B) convention in every flip exit.
-The small supporting face x=1 of x^2-y^2 now returns exactly
-(1,-1), (1,0), (1,1). The frozen vector-orbit consumer also reached the old
-second-scheme loop. Its result remains open.
+Repair research `LatticeIsometryMor._witness_matrix` for definite integral
+pairs. At port `5024411` with provider `c55fa8a7`, the unchanged degree-18
+vector-orbit test reaches comparison with the published representatives and
+fails in PARI qfisom. The preceding original U_2U_A3 isometry and Dawes
+boundary case pass. The owner reproducer is an integral shear of E8 + <18>
+in `tests/lattices/test_lattice_isometry_semantic_api.sage` on the isolated
+research branch. Verify both signs and the independent non-isometric binary
+pair after changing the backend. OSCAR 1.8.2 supplies exact definite
+isometries through invariant-sublattice decomposition; its row-action
+witness must be transposed for research's column-image convention.
 
-The current selected frozen run is `.tmp/repair-flip-frozen-consumers.log`,
-using immutable port sources `.tmp/port-5024411/src`. It exercises, in order,
-the Dawes discriminant-image case, original U_2U_A3 isometry,
-`test_published_representatives_are_one_per_orbit[18]`, and
-`test_equivalence_witness_carries_a_representative_to_its_reflection[r_0]`.
-Read its actual outcomes before selecting further repairs.
+The frozen selected run `.tmp/repair-flip-frozen-consumers.log` uses
+immutable port sources `.tmp/port-5024411/src` and provider c55fa8a7.
+Its remaining r_0 vector-stabilizer result is open. The separate
+`.tmp/repair-isotropic-fixed.log` passes IsotropicCases_813 and is still
+computing the I_1_2 stabilizer image. Read the actual outcomes before
+selecting further repairs.
 
-Research's exact OSCAR orthogonal-group adapter has independently verified
-order 1393459200 and generator actions on E8 + <18>. The definite isometry
-witness operation still uses PARI qfisom; inspect an actual failure before
-changing that operation.
+The corrected Lorentzian flip preserves GAP's IsSubset(A,B) convention.
+Both source exits return the exact supporting face x=1 of x^2-y^2 in the
+independent owner example. Research's OSCAR orthogonal-group adapter has
+verified order 1393459200 and exact generator actions on E8 + <18>.
 
 The isolated provider worktree is `.tmp/research-acceptance-repair`, branch
 `fix/acceptance-quotient-cardinality`. Its repairs through c55fa8a7 are also
@@ -54,10 +57,9 @@ restrict by O(L^f,h), not the full invariant orthogonal group.
 
 Acceptance still required, in order:
 
-1. Finish the selected frozen consumers above. The original isometry
-   completes its finite lattice orbit after the quotient repair; its next
-   observed failure was the corrected flip containment. Earlier interrupted
-   runs and timeout traces are not passing evidence.
+1. Finish the selected vector consumers above and the unchanged isotropic
+   stabilizer case `I_1_2` in `.tmp/repair-isotropic-fixed.log`. The original
+   U_2U_A3 isometry now passes its unchanged witness assertion.
 2. Complete the isotropic consumers after exact integer configuration
    pairings. `IsotropicCases_813` has not returned a verified result.
 3. Repair all remaining reflective, group, boundary and vector cases using
@@ -72,6 +74,7 @@ The following unchanged frozen cases pass locally with port source
 | Family | Case |
 | --- | --- |
 | boundaries | test_dawes_last_index_in_the_chain_is_the_discriminant_image_of_o_plus |
+| isometry | ci_indef_U_2U_A3 (change of basis and witness) |
 | isotropic_orbits | IsotropicCases_813 |
 | orthogonal_group | test_signed_discriminant_image_of_u_plus_minus_three_is_all_of_o_q |
 | reflective | ListReflect_590 |
