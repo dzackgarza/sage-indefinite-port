@@ -2281,9 +2281,8 @@ def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integ
             )
         else:
             previous = cast(Matrix_rational_dense, matrix(SageQQ, diagonal_basis))
-            orthogonal_basis = cast(
-                Matrix_rational_dense,
-                cast(Matrix_rational_dense, nondegenerate * previous.transpose()).left_kernel().basis_matrix(),
+            orthogonal_basis = _pinned_nullspace_matrix(
+                cast(Matrix_rational_dense, nondegenerate * previous.transpose())
             )
         restricted = cast(Matrix_rational_dense, orthogonal_basis * nondegenerate * orthogonal_basis.transpose())
         orthogonal_rank = int(orthogonal_basis.nrows())
