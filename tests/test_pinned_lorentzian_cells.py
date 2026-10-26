@@ -166,7 +166,7 @@ def test_pinned_nullspace_preserves_gap_row_basis_order() -> None:
     rational_gram = matrix(QQ, [[QQ(1) / 2, 1, QQ(3) / 2], [1, 2, 3]])
     rational_kernel = _pinned_nullspace_matrix(rational_gram)
     assert rational_kernel * rational_gram == 0
-    assert rational_kernel.nrows() == 2
+    assert rational_kernel.nrows() == rational_gram.nrows() - rational_gram.rank()
 
     rank_one = matrix(QQ, [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
     rank_one_kernel = _pinned_nullspace_matrix(rank_one)
