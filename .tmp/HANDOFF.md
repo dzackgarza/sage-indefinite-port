@@ -24,12 +24,34 @@ The full repair condition remains open.
 
 ## Now
 
-Read completed case reports from Acceptance
-[40339136782](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40339136782),
-port `b3f01e016440b405081a61a8517be536475f8ec1`, provider
-`07b24a2d3c02921d2a6098c32be0a1a171ce6406`. The rebuilt Sage image
-passes its required Bliss feature check. Route each actual failing computation
-to its port or provider owner; retain every unchanged acceptance assertion.
+Resolve the memory failure of unchanged `IsotropicCases_8716`. Acceptance
+[40339136782](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40339136782)
+at port `b3f01e016440b405081a61a8517be536475f8ec1` and provider
+`07b24a2d3c02921d2a6098c32be0a1a171ce6406` killed isotropic shards 2, 7
+and 10 without JUnit. Their progress logs place the active cases at 8716,
+8806 and 8714 respectively. Later killed shards place isotropic 0 at 8666,
+reflective 4 at 7799, reflective 5 at 7528 and reflective 13 at 7551.
+These are progress-log locators, not complete case results. An isolated
+8716 run with a 3 GiB address-space limit reaches `MemoryError` in
+`Tensor.pullback`, materializing the family Gram tensor for the pairing graph.
+
+Provider `daf20e327f0c9e61b72d4e98587d0ff143b6f4aa` is now pinned. It retains the owned lattice Gram tensor and family map at
+the graph adapter, shares exact edge labels, and releases temporary graphs
+and family realizations. Small positive/negative transporter assertions and
+unchanged ListReflect_841/964 pass. The complete 8716 assertion is still open
+in `.tmp/repair-isotropic-8716-certificates.log`, under a 6 GiB address-space
+limit. The prior graph-lifetime probe failed and was stopped during expensive
+pytest argument rendering. The current provider releases each input graph
+and canonical edge list before the next graph, then certifies the composed
+index permutation against the exact colours and pairing/relation tables.
+A virtual-memory limit is not a hosted resident-memory failure certificate.
+
+This provider includes the exact GAP coset realization and its dispatch
+repair at `97a43580e3`. Its nonnormal S3 action, C4 preimage, anisotropic F3
+plane and split four-dimensional F2 form pass their exact action, section
+and Schreier assertions. These repairs are carried to sage-extensions.
+Verify the complete isotropic and Enriques consumers before declaring their
+failure paths repaired.
 
 Next work, in order:
 
@@ -39,10 +61,10 @@ Next work, in order:
    exponent-four hyperbolic form, and bilinear U(2) group assertions pass.
    The unchanged `ci_indef_U_U_E7` isometry assertion also passes locally
    with Bliss. These checks leave the remaining consumers open.
-2. Finish the unchanged Enriques case_1 boundary consumer in
-   `.tmp/repair-finite-form-consumers.log`. I_1_2 passes its published
-   stabilizer-index assertion in that run. These consumers started with
-   provider 260c6a92 and require final-revision hosted confirmation. The
+2. Finish the unchanged Enriques case_1 boundary consumer with provider
+   97a43580e3 in `.tmp/repair-transversal-enriques.log`. The earlier run's
+   I_1_2 assertion passes, but its Enriques computation was superseded by
+   the repaired finite-coset realization. Both require final-revision hosted confirmation. The
    unchanged D-tower N_6 boundary counts pass locally with provider 07b24a2;
    their hosted confirmation remains open.
 3. Finish the A7 + diag(1,1,-1) discriminant-image assertion. Its initial
@@ -51,7 +73,9 @@ Next work, in order:
    stream by row, and the hash counts the pinned upper-triangular multiset
    directly. Streamed columns use FLINT integer-matrix multiplication.
    The current A7 computation passed the initial hash and is computing the
-   exact cone with PPL. The exact x=1 face of x^2-y^2 and a large integral basis change
+   exact cone with PPL. The installed exact Normaliz backend is being probed
+   on the same initial rays in `.tmp/repair-a7-normaliz.log`.
+   The exact x=1 face of x^2-y^2 and a large integral basis change
    verify the invariant. The full A7 consumer is still open.
 4. Read all completed artifacts from the newest Acceptance run and repair
    the remaining reflective, boundary, group, orbit and centralizer cases.
@@ -67,10 +91,10 @@ Next work, in order:
    pair, and carry any further provider repairs to the current library owner.
 
 Every isometry, perfect-domain and vector-stabilizer shard has a complete
-passing JUnit report at port `6618e63` / research `53c48e0` in
-[40310936005](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40310936005).
-That does not validate subsequent changes. The reflected-vector r_0 and
-degree-18 orbit consumers also pass in that run.
+passing JUnit report at port `b3f01e0` / research `07b24a2` in
+[40339136782](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40339136782).
+That does not validate subsequent provider changes. Isotropic shards 8 and
+9 and vector-orbit shard 0 also have passing reports at this pair.
 
 ## Provider and scope boundaries
 
