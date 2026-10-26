@@ -316,8 +316,8 @@ def _definite_lll(gram, *, dual, lll_gram=None):
         lll_gram = lambda form: form.LLL_gram()
     if dual:
         # Sage returns U with U^T adj(G) U reduced. The source row transform
-        # is P=U^T, and the dual vector-family transform is P^-1=U^-T.
-        transform = lll_gram(positive.adjugate()).inverse().transpose()
+        # is P=U^T; ClassicLLL returns Q=P^-T=U^-1 for the original Gram.
+        transform = lll_gram(positive.adjugate()).inverse()
     else:
         transform = lll_gram(positive).transpose()
     transform = transform.change_ring(SageZZ)

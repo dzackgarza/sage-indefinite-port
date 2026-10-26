@@ -260,15 +260,15 @@ def test_source_positive_candidate_lift_uses_transposed_unimodular_basis() -> No
         raise AssertionError("a false reduction norm certificate was accepted")
 
 
-def test_definite_dual_lll_uses_inverse_transpose_of_sage_transform() -> None:
-    """Dual lattice reduction uses the source row-basis transform P^{-1}."""
+def test_definite_dual_lll_uses_inverse_of_sage_transform() -> None:
+    """Dual lattice reduction uses Q=P^{-T} for source row coordinates P=U^T."""
     from sage.all import ZZ, identity_matrix, matrix
     from sage_indefinite_port.indefinite.indefinite_reduction import _definite_lll
 
     gram = identity_matrix(ZZ, 2)
     sage_transform = matrix(ZZ, [[1, 1], [0, 1]])
     dual, reduced = _definite_lll(gram, dual=True, lll_gram=lambda _form: sage_transform)
-    assert dual == sage_transform.inverse().transpose()
+    assert dual == sage_transform.inverse()
     assert reduced == dual * gram * dual.transpose()
     direct, direct_reduced = _definite_lll(gram, dual=False, lll_gram=lambda _form: sage_transform)
     assert direct == sage_transform.transpose()
