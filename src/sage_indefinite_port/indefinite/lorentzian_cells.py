@@ -718,22 +718,13 @@ class LorentzianPerfectLocalBackend:
             except KeyError as exc:
                 raise ArithmeticError("a cell-stabilizer generator does not preserve its rays") from exc
         facet_set = set(facets)
-        # Every stabilizer generator preserves the cone, hence must permute
-        # its facets.  Verify this before forming Schreier transporters;
-        # otherwise the unvisited-only traversal could silently lose images.
-        for permutation in permutations:
-            # The ray permutation induces an injection on subsets.  Therefore
-            # it permutes this finite facet set iff every image belongs to the
-            # set.  Check membership one image at a time instead of allocating
-            # a second full set of large incidence frozensets per generator.
-            for facet in facet_set:
-                image = frozenset(permutation[position] for position in facet)
-                if image not in facet_set:
-                    raise ArithmeticError("a cell-stabilizer generator fails to permute the facets")
-        # Once generator preservation is certified, the complete facet set is
-        # no longer needed separately: the same set can be consumed as the
-        # unvisited frontier during orbit discovery.
-        unvisited = facet_set
+        # The orbit traversal below checks each generator image against the
+        # complete facet set as it is encountered. Since every discovered
+        # facet is expanded, this certifies preservation without a separate
+        # pass that constructs every large image frozenset a second time.
+        # Keep a distinct set of unvisited keys: consuming it must not shrink
+        # the complete membership oracle used for those exact checks.
+        unvisited = set(facet_set)
         orbits = []
         identity_permutation = tuple(range(len(vectors)))
         for start in facets:
@@ -744,6 +735,8 @@ class LorentzianPerfectLocalBackend:
             for facet, element_permutation in orbit:
                 for permutation in permutations:
                     image = frozenset(permutation[position] for position in facet)
+                    if image not in facet_set:
+                        raise ArithmeticError("a cell-stabilizer generator fails to permute the facets")
                     if image in unvisited:
                         unvisited.discard(image)
                         composed = tuple(permutation[element_permutation[position]] for position in range(len(vectors)))
