@@ -2370,6 +2370,37 @@ def _advance_pinned_approximation_iterator(
     return approximation
 
 
+def _pinned_positive_eigen_directions(
+    gram: Matrix_real_double_dense,
+) -> tuple[tuple[float, ...], ...]:
+    r"""Reproduce ``GetPositiveDirections_eigen``'s indexed row extraction.
+
+    The pinned Eigen code reads ``ListVect(i,j)`` from the eigenvector matrix,
+    so its direction is row ``i`` of the matrix whose columns are eigenvectors,
+    not the eigenvector column itself. Keep that observable source convention
+    explicit rather than substituting Sage's right-eigenvector vectors.
+    """
+    data = cast(
+        list[tuple[ComplexDoubleElement, list[FreeModuleElement[ComplexDoubleElement]], int]],
+        gram.eigenvectors_right(),
+    )
+    eigenvalues: list[float] = []
+    eigenvector_columns: list[tuple[float, ...]] = []
+    for eigenvalue, vectors, multiplicity in data:
+        for eigenvector in vectors:
+            eigenvalues.append(float(eigenvalue.real()))
+            eigenvector_columns.append(tuple(float(entry.real()) for entry in eigenvector))
+        if len(vectors) != multiplicity:
+            raise ArithmeticError("eigensolver multiplicity disagrees with its returned eigenvectors")
+    if len(eigenvalues) != int(gram.nrows()) or any(len(column) != len(eigenvalues) for column in eigenvector_columns):
+        raise ArithmeticError("eigensolver returned a dimensionally incomplete eigenbasis")
+    return tuple(
+        tuple(eigenvector_columns[column][row] for column in range(len(eigenvector_columns)))
+        for row, eigenvalue in enumerate(eigenvalues)
+        if eigenvalue > 0
+    )
+
+
 def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integer, ...]:
     r"""Port of the V2 diagonal/eigen ApproxIterator branch in Positivity.h.
 
@@ -2421,22 +2452,14 @@ def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integ
             Matrix_real_double_dense,
             matrix(cast(Parent, RDF), reduced),
         )
-        eigenvector_data = cast(
-            list[tuple[ComplexDoubleElement, list[FreeModuleElement[ComplexDoubleElement]], int]],
-            double_gram.eigenvectors_right(),
-        )
-        for eigenvalue, eigenvectors, _multiplicity in eigenvector_data:
-            if float(eigenvalue.real()) > 0:
-                for eigenvector in eigenvectors:
-                    direction = tuple(float(entry.real()) for entry in eigenvector)
-                    eigen_norm = sum(abs(eigen_entry) for eigen_entry in direction)
-                    # The optional floating branch must not admit NaN or
-                    # infinite steps into ApproxIterator: they cannot
-                    # produce the pinned nearest-integer approximants.
-                    if eigen_norm and all(isfinite(entry) for entry in direction) and isfinite(eigen_norm):
-                        normalized = tuple(eigen_entry / eigen_norm for eigen_entry in direction)
-                        if all(isfinite(entry) and (entry == 0 or abs(entry) >= 1.0 / float_info.max) for entry in normalized):
-                            eigen_iterators.append(_pinned_approximation_iterator(normalized))
+        for direction in _pinned_positive_eigen_directions(double_gram):
+            eigen_norm = sum(abs(eigen_entry) for eigen_entry in direction)
+            # The optional floating branch must not admit NaN or infinite
+            # steps into ApproxIterator.
+            if eigen_norm and all(isfinite(entry) for entry in direction) and isfinite(eigen_norm):
+                normalized = tuple(eigen_entry / eigen_norm for eigen_entry in direction)
+                if all(isfinite(entry) and (entry == 0 or abs(entry) >= 1.0 / float_info.max) for entry in normalized):
+                    eigen_iterators.append(_pinned_approximation_iterator(normalized))
     except (ArithmeticError, OverflowError, RuntimeError, TypeError, ValueError):
         # This branch only accelerates the exact search. Overflow or failure
         # in the floating eigensolver must not disable its exact directions.

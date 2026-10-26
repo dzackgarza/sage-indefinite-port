@@ -20,6 +20,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _pinned_nullspace_matrix,
     _pinned_diagonalize_symmetric_matrix,
     _integral_positive_vector_allmeth,
+    _pinned_positive_eigen_directions,
     _pinned_approximation_iterator,
     _advance_pinned_approximation_iterator,
     _pinned_independent_column_indices,
@@ -155,6 +156,30 @@ def test_pinned_column_reduction_matches_greedy_rank_increase() -> None:
                         assert value.matrix_from_columns(selected[: index + 1]).rank() == index + 1
                         assert all(previous < column for previous in selected[:index])
                     assert selected == tuple(value.echelon_form().pivots())
+
+
+def test_pinned_positive_eigen_directions_preserve_source_row_orientation() -> None:
+    """The Eigen consumer reads rows of its eigenvector matrix, not columns."""
+    from sage.all import RDF, matrix
+
+    gram = matrix(RDF, [[2.0, 1.0], [1.0, 2.0]])
+    data = gram.eigenvectors_right()
+    eigenvalues = []
+    columns = []
+    for eigenvalue, vectors, multiplicity in data:
+        assert len(vectors) == multiplicity
+        for eigenvector in vectors:
+            eigenvalues.append(float(eigenvalue.real()))
+            columns.append(tuple(float(entry.real()) for entry in eigenvector))
+    expected = tuple(
+        tuple(columns[column][row] for column in range(len(columns)))
+        for row, eigenvalue in enumerate(eigenvalues)
+        if eigenvalue > 0
+    )
+    directions = _pinned_positive_eigen_directions(gram)
+    assert directions == expected
+    assert all(len(direction) == gram.nrows() for direction in directions)
+    assert any(direction != columns[index] for index, direction in enumerate(directions))
 
 
 def test_pinned_approximation_iterator_advances_tied_steps_in_source_order() -> None:
