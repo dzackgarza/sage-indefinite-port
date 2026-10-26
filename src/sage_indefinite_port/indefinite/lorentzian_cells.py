@@ -2339,9 +2339,13 @@ def _pinned_approximation_iterator(
     r"""Construct the source ``ApproxIterator`` state for one direction."""
     groups: dict[Rational | float, list[tuple[int, int]]] = {}
     for coordinate, entry in enumerate(direction):
+        if isinstance(entry, float) and not isfinite(entry):
+            raise ValueError("ApproxIterator floating directions must be finite")
         if entry:
             if isinstance(entry, float):
                 step: Rational | float = 1.0 / abs(entry)
+                if not isfinite(step):
+                    raise ValueError("ApproxIterator floating steps must be finite")
                 sign = 1 if entry > 0 else -1
             else:
                 rational_entry = cast(Rational, entry)

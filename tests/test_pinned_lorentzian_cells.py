@@ -213,6 +213,19 @@ def test_pinned_positive_eigen_directions_preserve_source_row_orientation() -> N
     assert any(direction != columns[index] for index, direction in enumerate(directions))
 
 
+def test_pinned_approximation_iterator_rejects_nonfinite_float_directions() -> None:
+    """Optional Eigen acceleration cannot poison iterator ordering with NaN/Inf."""
+    from math import inf, nan
+
+    for direction in ((nan, 1.0), (inf, 1.0), (1e-320, 1.0)):
+        try:
+            _pinned_approximation_iterator(direction)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"nonfinite ApproxIterator state accepted: {direction}")
+
+
 def test_pinned_approximation_iterator_advances_tied_steps_in_source_order() -> None:
     """ApproxIterator increments every group tied at its minimum next-time."""
     from sage.all import QQ
