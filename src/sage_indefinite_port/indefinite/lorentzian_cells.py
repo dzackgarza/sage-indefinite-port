@@ -2816,8 +2816,15 @@ def _source_indefinite_short_positive_vector(
     best_norm: Integer | None = None
     without_improvement = 0
     while True:
-        if perturbation.nrows() != rank or perturbation.ncols() != rank or abs(perturbation.det()) != 1:
+        if perturbation.nrows() != rank or perturbation.ncols() != rank:
+            raise ArithmeticError("positive-vector perturbation has the wrong dimension")
+        try:
+            integral_perturbation = matrix(SageZZ, perturbation)
+        except (TypeError, ValueError, ArithmeticError) as error:
+            raise ArithmeticError("positive-vector perturbation is not an integral lattice automorphism") from error
+        if integral_perturbation != perturbation or abs(integral_perturbation.det()) != 1:
             raise ArithmeticError("positive-vector perturbation is not an integral lattice automorphism")
+        perturbation = integral_perturbation
         perturbed_gram = perturbation * gram * perturbation.transpose()
         if perturbed_gram != perturbed_gram.transpose():
             raise ArithmeticError("positive-vector perturbation lost Gram symmetry")

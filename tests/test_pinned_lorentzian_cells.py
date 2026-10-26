@@ -808,7 +808,7 @@ def test_source_random_perturbations_are_the_pinned_unimodular_matrices() -> Non
 
 def test_source_indefinite_short_positive_vector_integrates_pinned_search_loop() -> None:
     """Run the complete Graver/reframing/termination loop with deterministic seams."""
-    from sage.all import ZZ, identity_matrix, matrix
+    from sage.all import QQ, ZZ, identity_matrix, matrix
 
     gram = matrix(ZZ, [[10, 0], [0, 10]])
     calls = []
@@ -821,6 +821,18 @@ def test_source_indefinite_short_positive_vector_integrates_pinned_search_loop()
     )
     assert result == (ZZ(1), ZZ(0))
     assert len(calls) == 501
+
+    calls.clear()
+    try:
+        _source_indefinite_short_positive_vector(
+            gram, find_positive,
+            lambda dimension: matrix(QQ, [[1, QQ(1) / 2], [0, 1]]),
+        )
+    except ArithmeticError as error:
+        assert "integral lattice automorphism" in str(error)
+    else:
+        raise AssertionError("a rational nonintegral perturbation was accepted")
+    assert len(calls) == 1
 
     short_gram = matrix(ZZ, [[1, 0], [0, -1]])
     short_calls = []
