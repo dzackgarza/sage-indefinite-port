@@ -451,7 +451,7 @@ def test_source_positive_integral_vector_contract_certifies_exact_norm() -> None
 
     gram = matrix(ZZ, [[1, 0], [0, -1]])
     assert _source_certify_positive_integral_vector(gram, (ZZ(2), ZZ(1))) == (ZZ(2), ZZ(1))
-    for candidate in ((ZZ(0), ZZ(0)), (ZZ(1), ZZ(1)), (ZZ(1),)):
+    for candidate in ((ZZ(0), ZZ(0)), (ZZ(1), ZZ(1)), (ZZ(1),), (0.5, 1)):
         try:
             _source_certify_positive_integral_vector(gram, candidate)
         except (ValueError, ArithmeticError):

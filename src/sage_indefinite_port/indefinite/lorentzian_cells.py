@@ -2633,7 +2633,10 @@ def _source_certify_positive_integral_vector(
     r"""Enforce the public positive-vector contract at the consumer boundary."""
     if gram.nrows() != gram.ncols() or len(candidate) != gram.nrows():
         raise ValueError("positive-vector witness dimension must match the Gram matrix")
-    integral = tuple(SageZZ(entry) for entry in candidate)
+    integral_entries = tuple(SageZZ(entry) for entry in candidate)
+    if any(entry != integer for entry, integer in zip(candidate, integral_entries)):
+        raise ValueError("positive-vector witness coordinates must be integral")
+    integral = integral_entries
     if not any(integral):
         raise ArithmeticError("positive-vector search returned the zero vector")
     witness = vector(SageZZ, integral)
