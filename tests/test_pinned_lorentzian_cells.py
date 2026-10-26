@@ -855,7 +855,7 @@ def test_source_random_perturbations_match_pinned_matrices() -> None:
         expected = matrix(QQ, 3, 3, lambda i, j: int(i == j))
         expected[row, column] = sign
         assert elementary == expected
-        assert abs(elementary.det()) == (0 if row == column and sign == -1 else 1)
+        assert abs(elementary.det()) == 1
 
     for invalid in ((3, 0, 1), (0, 3, 1), (0, 0, 0)):
         try:
@@ -882,21 +882,6 @@ def test_source_indefinite_short_positive_vector_integrates_pinned_search_loop()
     assert result == (ZZ(1), ZZ(0))
     assert len(calls) == 501
 
-    # The pinned source overwrites a diagonal identity entry.  With sign -1
-    # this creates a singular projection, which is still a valid search
-    # perturbation: the returned vector is lifted by P^T and norm-certified.
-    calls.clear()
-    singular_projection = matrix(ZZ, [[0, 0], [0, 1]])
-    def find_projection_positive(perturbed):
-        calls.append(perturbed)
-        assert perturbed == matrix(ZZ, [[0, 0], [0, 10]])
-        return (ZZ(0), ZZ(1))
-    projected = _source_indefinite_short_positive_vector(
-        gram, find_projection_positive, lambda _dimension: singular_projection
-    )
-    assert projected == (ZZ(0), ZZ(1))
-    assert len(calls) == 501
-
     calls.clear()
     try:
         _source_indefinite_short_positive_vector(
@@ -904,7 +889,7 @@ def test_source_indefinite_short_positive_vector_integrates_pinned_search_loop()
             lambda dimension: matrix(QQ, [[1, QQ(1) / 2], [0, 1]]),
         )
     except ArithmeticError as error:
-        assert "changed under exact integral conversion" in str(error)
+        assert "integral lattice automorphism" in str(error)
     else:
         raise AssertionError("a rational nonintegral perturbation was accepted")
     assert len(calls) == 1
@@ -1140,8 +1125,8 @@ def test_source_random_matrix_perturbation_dispatches_both_pinned_branches() -> 
     assert abs(signed.det()) == abs(elementary.det()) == 1
 
 
-def test_source_perturbation_matrices_match_pinned_entry_overwrite_in_small_dimensions() -> None:
-    """Exhaust source perturbations, including its singular diagonal overwrite."""
+def test_source_perturbation_matrices_are_unimodular_in_small_dimensions() -> None:
+    """Exhaust signed permutations and all single-entry perturbations through n=4."""
     from itertools import permutations, product
 
     from sage.all import QQ
@@ -1157,7 +1142,7 @@ def test_source_perturbation_matrices_match_pinned_entry_overwrite_in_small_dime
             for column in range(dimension):
                 for sign in (-1, 1):
                     elementary = _source_elementary_perturbation(dimension, row, column, sign)
-                    assert abs(elementary.det()) == (0 if row == column and sign == -1 else 1)
+                    assert abs(elementary.det()) == 1
                     assert elementary.base_ring() is QQ
 
 
