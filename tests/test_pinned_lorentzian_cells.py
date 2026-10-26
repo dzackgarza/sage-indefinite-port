@@ -1559,6 +1559,8 @@ def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
     for gram, target, bound in cases:
         actual = _fixed_distance_coordinate_solutions(gram, target, bound)
         actual_coordinates = {coordinates for coordinates, distance in actual if distance == bound}
+        assert len(actual_coordinates) == len(actual)
+        assert all(distance == bound for _coordinates, distance in actual)
         expected = set()
         for coordinates in product(range(-5, 6), repeat=gram.nrows()):
             delta = tuple(QQ(coordinates[i]) - target[i] for i in range(len(target)))
@@ -1566,7 +1568,6 @@ def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
             if square == bound:
                 expected.add(tuple(coordinates))
         assert actual_coordinates == expected
-        assert all(distance == bound for _coordinates, distance in actual)
 
     for gram, target, bound in (
         (matrix(QQ, [[1, 2], [0, 1]]), (QQ(0), QQ(0)), QQ(1)),
