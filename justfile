@@ -50,7 +50,7 @@ ci-provision-sage:
     # Keep the clone shallow and fetch the exact provider commit explicitly.
     mkdir -p {{ci_dir}}
     git clone --quiet --depth 1 https://github.com/dzackgarza/research {{ci_dir}}/research
-    research_rev="53d0db2e7d0c2ddb96617cfb361a43c18235d1d2"
+    research_rev="067b584cb302d087fa3de7cee146d0d513fae3bc"
     git -C {{ci_dir}}/research fetch --quiet --depth 1 origin "$research_rev"
     git -C {{ci_dir}}/research -c advice.detachedHead=false checkout --quiet "$research_rev"
     # uv, not pip: research declares tree-sitter-sage and sage-stubs only in
