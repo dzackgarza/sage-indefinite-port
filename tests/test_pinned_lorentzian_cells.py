@@ -1678,6 +1678,8 @@ def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
     )
     for gram, target, bound in cases:
         actual = _fixed_distance_coordinate_solutions(gram, target, bound)
+        cached_ldl = _positive_ldl_factorization(gram)
+        assert _fixed_distance_coordinate_solutions(gram, target, bound, cached_ldl) == actual
         actual_coordinates = {coordinates for coordinates, distance in actual if distance == bound}
         assert len(actual_coordinates) == len(actual)
         assert all(distance == bound for _coordinates, distance in actual)

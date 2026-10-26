@@ -2107,6 +2107,7 @@ def _fixed_distance_coordinate_solutions(
     gram: Matrix_rational_dense,
     target: tuple[Rational, ...],
     squared_distance: Rational,
+    ldl_factorization: tuple[list[list[Rational]], list[Rational]] | None = None,
 ) -> tuple[tuple[tuple[Integer, ...], Rational], ...]:
     r"""Enumerate exactly the lattice points on a rational-center sphere.
 
@@ -2131,8 +2132,9 @@ def _fixed_distance_coordinate_solutions(
         raise ValueError("fixed squared distance must be nonnegative")
     if rank == 0:
         return (((), bound),) if bound == 0 else ()
-    lower, diagonal = _positive_ldl_factorization(gram)
-    _validate_fixed_distance_ldl_factorization(gram, (lower, diagonal))
+    factorization = ldl_factorization if ldl_factorization is not None else _positive_ldl_factorization(gram)
+    lower, diagonal = factorization
+    _validate_fixed_distance_ldl_factorization(gram, factorization)
     zero = SageQQ.zero()
     coordinates = [0] * rank
     solutions: list[tuple[tuple[Integer, ...], Rational]] = []
@@ -2251,8 +2253,9 @@ def _fixed_distance_vectors(
 
     This is the fixed-distance branch of ``lorentzian_perfect.h:289-299``.
     Unlike filtering ``close_vectors`` after enumerating its entire sublevel
-    ellipsoid, the exact LDL recursion prunes a coordinate as soon as its
-    accumulated square exceeds the prescribed distance.
+    ellipsoid, this shares the exact coordinate-level sphere recursion with
+    the positive-vector shell path. Both prune on the prescribed distance and
+    solve the innermost coordinate equation directly.
     """
     bound = cast(Rational, -_rational(signed_distance))
     if bound < 0:
@@ -2273,54 +2276,17 @@ def _fixed_distance_vectors(
     if basis_change * target_column != target_row.column():
         raise ArithmeticError("the reduced fixed-distance center was not transported by the basis isomorphism")
     gram = cast(Matrix_rational_dense, -_gram_matrix(reduced).change_ring(SageQQ))
-    zero = cast(Rational, SageQQ.zero())
     lower, diagonal = ldl_factorization if ldl_factorization is not None else _positive_ldl_factorization(gram)
-    _validate_fixed_distance_ldl_factorization(gram, (lower, diagonal))
-
-    coordinates = [0] * rank
-    solutions: list[tuple[int, ...]] = []
-
-    def enumerate_coordinate(index: int, accumulated: Rational) -> None:
-        if index < 0:
-            if accumulated == bound:
-                solutions.append(tuple(coordinates))
-            return
-        remaining = bound - accumulated
-        if remaining < 0:
-            return
-        center = cast(
-            Rational,
-            reduced_target[index]
-            - sum(
-                (lower[later][index] * (coordinates[later] - reduced_target[later]) for later in range(index + 1, rank)),
-                zero,
-            ),
+    solutions = tuple(
+        coordinates
+        for coordinates, _distance in _fixed_distance_coordinate_solutions(
+            gram,
+            tuple(SageQQ(entry) for entry in reduced_target),
+            bound,
+            ldl_factorization=(lower, diagonal),
         )
-        squared_radius = cast(Rational, remaining / diagonal[index])
-        radius = isqrt(int(squared_radius.numerator() // squared_radius.denominator()))
-        floor_center = int(center.numerator() // center.denominator())
-        ceil_center = -int((-center).numerator() // (-center).denominator())
-        # For r=floor(sqrt(squared_radius)), every integer in the true
-        # interval lies in [ceil(center)-r-1, floor(center)+r+1]. Exact
-        # comparisons below trim the endpoints. This also covers rational
-        # centers and square or nonsquare squared radii uniformly.
-        first_coordinate = ceil_center - radius - 1
-        last_coordinate = floor_center + radius + 1
-        # The conservative endpoints may include one extra integer when the
-        # radius is nonintegral. Remove those endpoints exactly. The squared
-        # distance is monotone away from the center, so this leaves precisely
-        # the integer interval satisfying the remaining-distance inequality.
-        while first_coordinate <= last_coordinate and diagonal[index] * (SageQQ(first_coordinate) - center) ** 2 > remaining:
-            first_coordinate += 1
-        while first_coordinate <= last_coordinate and diagonal[index] * (SageQQ(last_coordinate) - center) ** 2 > remaining:
-            last_coordinate -= 1
-        for coordinate in range(first_coordinate, last_coordinate + 1):
-            term = cast(Rational, diagonal[index] * (SageQQ(coordinate) - center) ** 2)
-            if term <= remaining:
-                coordinates[index] = coordinate
-                enumerate_coordinate(index - 1, cast(Rational, accumulated + term))
+    )
 
-    enumerate_coordinate(rank - 1, zero)
     isometry = cast(Callable[[Lattices.ElementMethods], Lattices.ElementMethods], reduction.isometry)
     results: list[Lattices.ElementMethods] = []
     original_gram = cast(Matrix_rational_dense, -_gram_matrix(lattice).change_ring(SageQQ))
