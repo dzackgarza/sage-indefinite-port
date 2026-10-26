@@ -17,6 +17,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _pinned_nearest_integer,
     _source_permutation_sign_matrix,
     _source_elementary_perturbation,
+    _source_random_matrix_perturbation,
     _pinned_nullspace_matrix,
     _pinned_diagonalize_symmetric_matrix,
     _integral_positive_vector_allmeth,
@@ -377,6 +378,34 @@ def test_source_random_perturbations_are_the_pinned_unimodular_matrices() -> Non
             pass
         else:
             raise AssertionError(f"invalid perturbation accepted: {invalid}")
+
+
+def test_source_random_matrix_perturbation_dispatches_both_pinned_branches() -> None:
+    """The public random perturbation operation composes the pinned constructors."""
+    from sage.all import ZZ, matrix
+
+    choices = iter((0, -1, 1, -1))
+    def choose(options):
+        value = next(choices)
+        assert value in options
+        return value
+    def reverse(values):
+        values.reverse()
+
+    signed = _source_random_matrix_perturbation(3, choose=choose, shuffle_values=reverse)
+    assert signed == matrix(ZZ, [[0, 0, -1], [0, 1, 0], [-1, 0, 0]])
+
+    choices = iter((1, -1))
+    def choose_elementary(options):
+        value = next(choices)
+        assert value in options
+        return value
+    indices = iter((1, 2))
+    elementary = _source_random_matrix_perturbation(
+        3, choose=choose_elementary, choose_index=lambda _dimension: next(indices)
+    )
+    assert elementary == matrix(ZZ, [[1, 0, 0], [0, 1, -1], [0, 0, 1]])
+    assert abs(signed.det()) == abs(elementary.det()) == 1
 
 
 def test_source_perturbation_matrices_are_unimodular_in_small_dimensions() -> None:

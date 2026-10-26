@@ -2511,6 +2511,27 @@ def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integ
                 return result
 
 
+def _source_random_matrix_perturbation(
+    dimension: int,
+    *,
+    choose: Callable[[tuple[int, ...]], int] = choice,
+    shuffle_values: Callable[[list[int]], None] = shuffle,
+    choose_index: Callable[[int], int] = randrange,
+) -> Matrix_integer_dense:
+    r"""Port ``GetRandomMatrixPerturbation`` from Positivity.h:536-559."""
+    if dimension < 1:
+        raise ValueError("a random matrix perturbation needs positive dimension")
+    if choose((0, 1)) == 0:
+        permutation = list(range(dimension))
+        shuffle_values(permutation)
+        signs = tuple(choose((-1, 1)) for _ in range(dimension))
+        return _source_permutation_sign_matrix(permutation, signs).change_ring(SageZZ)
+    row = choose_index(dimension)
+    column = choose_index(dimension)
+    sign = choose((-1, 1))
+    return _source_elementary_perturbation(dimension, row, column, sign).change_ring(SageZZ)
+
+
 def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]:
     r"""Pinned polyhedral_common@a55fcb7b src_isotropy/Positivity.h:565-673,
     ``INDEFINITE_GetShortPositiveVector``.
@@ -2579,16 +2600,7 @@ def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]
         # the original entrywise L1 norm, not at 1000.
         if sum(abs(entry) for entry in perturbed_gram.list()) > 10000 * gram_l1:
             perturbation = identity_matrix(SageZZ, rank)
-        modification = identity_matrix(SageZZ, rank)
-        if choice((0, 1)) == 0:
-            permutation = list(range(rank))
-            shuffle(permutation)
-            modification = matrix(SageZZ, rank, rank)
-            for index, image in enumerate(permutation):
-                modification[index, image] = choice((-1, 1))
-        else:
-            modification[randrange(rank), randrange(rank)] = choice((-1, 1))
-        perturbation *= modification
+        perturbation *= _source_random_matrix_perturbation(rank)
 
 
 def _primitive_integral_direction(
