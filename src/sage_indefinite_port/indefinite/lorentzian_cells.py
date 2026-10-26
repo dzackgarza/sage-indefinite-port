@@ -1475,7 +1475,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             pairing_block = matrix(SageQQ, halfspace_rows[start:stop]) * ray_transpose
             for offset in range(stop - start):
                 incidence = all_ray_positions.difference(
-                    position for position, _column in pairing_block.row(offset).nonzero_positions()
+                    pairing_block.row(offset).nonzero_positions()
                 )
                 if not incidence:
                     raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
