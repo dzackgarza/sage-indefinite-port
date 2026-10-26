@@ -192,6 +192,27 @@ def test_source_random_perturbations_are_the_pinned_unimodular_matrices() -> Non
             raise AssertionError(f"invalid perturbation accepted: {invalid}")
 
 
+def test_source_perturbation_matrices_are_unimodular_in_small_dimensions() -> None:
+    """Exhaust signed permutations and all single-entry perturbations through n=4."""
+    from itertools import permutations, product
+
+    from sage.all import QQ
+
+    for dimension in range(1, 5):
+        for permutation in permutations(range(dimension)):
+            for signs in product((-1, 1), repeat=dimension):
+                signed = _source_permutation_sign_matrix(list(permutation), signs)
+                assert abs(signed.det()) == 1
+                assert all(sum(entry != 0 for entry in row) == 1 for row in signed.rows())
+                assert all(sum(entry != 0 for entry in signed.column(j)) == 1 for j in range(dimension))
+        for row in range(dimension):
+            for column in range(dimension):
+                for sign in (-1, 1):
+                    elementary = _source_elementary_perturbation(dimension, row, column, sign)
+                    assert abs(elementary.det()) == 1
+                    assert elementary.base_ring() is QQ
+
+
 def test_pinned_nearest_integer_rounds_half_ties_toward_positive_infinity() -> None:
     """Match Fractions.g:138-148, including negative half-integers."""
     from sage.all import QQ
