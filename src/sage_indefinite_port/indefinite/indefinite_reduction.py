@@ -303,7 +303,7 @@ def _approximate_indefinite_reduction(gram):
     return basis, basis * gram * basis.transpose()
 
 
-def _definite_lll(gram, *, dual):
+def _definite_lll(gram, *, dual, lll_gram=None):
     """ClassicLLL.h:40-284 via Sage's exact Gram LLL.
 
     Sage's LLL_gram returns column coordinates U with U^T G U reduced,
@@ -312,11 +312,14 @@ def _definite_lll(gram, *, dual):
     original Gram, as in ClassicLLL.h:246-284.
     """
     positive = gram if gram.is_positive_definite() else -gram
+    if lll_gram is None:
+        lll_gram = lambda form: form.LLL_gram()
     if dual:
-        # P = U^T on the dual form, hence P^(-T) = U^(-1).
-        transform = positive.adjugate().LLL_gram().inverse()
+        # Sage returns U with U^T adj(G) U reduced. The source row transform
+        # is P=U^T, and the dual vector-family transform is P^-1=U^-T.
+        transform = lll_gram(positive.adjugate()).inverse().transpose()
     else:
-        transform = positive.LLL_gram().transpose()
+        transform = lll_gram(positive).transpose()
     transform = transform.change_ring(SageZZ)
     return transform, transform * gram * transform.transpose()
 
