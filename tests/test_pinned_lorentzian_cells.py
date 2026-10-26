@@ -15,6 +15,8 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _source_mid_value,
     _source_some_negative_vector,
     _pinned_nearest_integer,
+    _source_permutation_sign_matrix,
+    _source_elementary_perturbation,
     _pinned_nullspace_matrix,
     _outside_ray_directions,
     _quadratic_descent_prefix,
@@ -164,6 +166,30 @@ def test_pinned_nullspace_preserves_gap_row_basis_order() -> None:
             kernel = _pinned_nullspace_matrix(symmetric)
             assert kernel * symmetric == 0
             assert kernel.nrows() == size - symmetric.rank()
+
+
+def test_source_random_perturbations_are_the_pinned_unimodular_matrices() -> None:
+    """Check both GetRandomMatrixPerturbation branches, including diagonal shear."""
+    from sage.all import QQ, matrix
+
+    signed_permutation = _source_permutation_sign_matrix([2, 0, 1], (-1, 1, -1))
+    assert signed_permutation == matrix(QQ, [[0, 0, -1], [1, 0, 0], [0, -1, 0]])
+    assert abs(signed_permutation.det()) == 1
+
+    for row, column, sign in ((0, 1, 1), (2, 0, -1), (1, 1, 1)):
+        elementary = _source_elementary_perturbation(3, row, column, sign)
+        expected = matrix(QQ, 3, 3, lambda i, j: int(i == j))
+        expected[row, column] = sign
+        assert elementary == expected
+        assert abs(elementary.det()) == 1
+
+    for invalid in ((3, 0, 1), (0, 3, 1), (0, 0, 0)):
+        try:
+            _source_elementary_perturbation(3, *invalid)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"invalid perturbation accepted: {invalid}")
 
 
 def test_pinned_nearest_integer_rounds_half_ties_toward_positive_infinity() -> None:

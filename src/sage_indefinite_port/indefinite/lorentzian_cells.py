@@ -3280,18 +3280,41 @@ def _negative_direction_in_span(
         # Match GetRandomMatrixPerturbation verbatim: a diagonal 1 is replaced
         # by +/-1, while an off-diagonal entry adds an elementary shear. Both
         # cases are unimodular; do not change the source's perturbation law.
-        modification = identity_matrix(SageQQ, dimension)
         if choice((1, 2)) == 1:
             permutation = list(range(dimension))
             shuffle(permutation)
-            modification = matrix(SageQQ, dimension, dimension)
-            for index, image in enumerate(permutation):
-                modification[index, image] = choice((-1, 1))
+            signs = tuple(choice((-1, 1)) for _ in range(dimension))
+            modification = _source_permutation_sign_matrix(permutation, signs)
         else:
             index = randrange(dimension)
             image = randrange(dimension)
-            modification[index, image] = choice((-1, 1))
+            sign = choice((-1, 1))
+            modification = _source_elementary_perturbation(dimension, index, image, sign)
         perturbation *= modification
+
+
+def _source_permutation_sign_matrix(
+    permutation: list[int], signs: tuple[int, ...]
+) -> Matrix_rational_dense:
+    r"""The signed permutation branch of GetRandomMatrixPerturbation."""
+    dimension = len(permutation)
+    if sorted(permutation) != list(range(dimension)) or len(signs) != dimension or any(s not in (-1, 1) for s in signs):
+        raise ValueError("a signed permutation requires a permutation and one sign per row")
+    result = matrix(SageQQ, dimension, dimension)
+    for index, image in enumerate(permutation):
+        result[index, image] = signs[index]
+    return result
+
+
+def _source_elementary_perturbation(
+    dimension: int, row: int, column: int, sign: int
+) -> Matrix_rational_dense:
+    r"""The identity-with-one-entry branch of GetRandomMatrixPerturbation."""
+    if dimension < 1 or not 0 <= row < dimension or not 0 <= column < dimension or sign not in (-1, 1):
+        raise ValueError("an elementary perturbation needs valid indices and sign ±1")
+    result = identity_matrix(SageQQ, dimension)
+    result[row, column] = sign
+    return result
 
 
 def _kernel_flipping(
