@@ -1549,7 +1549,7 @@ def test_initial_vector_search_advances_integral_bound_without_rescanning() -> N
 def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
     """The isotropic shell enumerator returns the exact rational-center sphere."""
     from itertools import product
-    from sage.all import QQ, ZZ, matrix
+    from sage.all import QQ, RDF, ZZ, matrix
 
     assert _fixed_distance_coordinate_solutions(matrix(QQ, 0, 0), (), QQ(0)) == (((), QQ(0)),)
     assert _fixed_distance_coordinate_solutions(matrix(QQ, 0, 0), (), QQ(1)) == ()
@@ -1603,7 +1603,7 @@ def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
 def test_fixed_distance_dual_lll_frame_reconstructs_exact_sphere() -> None:
     """Exact sphere pruning uses the reduced dual-LLL Gram and reconstructs the original frame."""
     from itertools import product
-    from sage.all import QQ, RDF, ZZ, identity_matrix, matrix, vector
+    from sage.all import QQ, RDF, ZZ, diagonal_matrix, identity_matrix, matrix, vector
 
     gram = diagonal_matrix(QQ, [1, 2, 3])
     # The shear changes this center by an integral vector in the first
