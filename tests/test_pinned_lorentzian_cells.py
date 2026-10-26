@@ -260,6 +260,13 @@ def test_ambient_vectors_reconstructs_exact_shell_and_filters_squares() -> None:
         raise AssertionError("a CVP result without its paired squared distance was accepted")
 
     try:
+        _PositiveVectorEnumerator._ambient_vectors(enumerator, 2, ((QQ(1) / 2, 0),), (QQ.zero(),))
+    except ArithmeticError as error:
+        assert "nonintegral lattice coordinates" in str(error)
+    else:
+        raise AssertionError("nonintegral CVP lattice coordinates were silently truncated")
+
+    try:
         _PositiveVectorEnumerator._ambient_vectors(enumerator, 2, ((3, 0),), (20,))
     except ArithmeticError as error:
         assert "disagrees with its exact CVP squared distance" in str(error)

@@ -83,6 +83,8 @@ their coordinates before allowed-square filtering. The mismatch case uses a zero
 its actual ambient norm differs from the deliberately supplied positive distance.
 A separate shell regression now checks that an omitted squared-distance entry is
 rejected instead of silently reconstructing a candidate without its CVP certificate.
+Ambient reconstruction also rejects nonintegral coordinate rows before integer
+conversion, preventing an invalid backend result from being silently truncated.
 The current branch tip has not yet been accepted by the frozen full-family run;
 see the current case-level Acceptance results before asserting completion.
 Ordinary pytest collection currently fails in the local Sage environment at
