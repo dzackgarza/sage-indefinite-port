@@ -1605,7 +1605,7 @@ def test_fixed_distance_dual_lll_frame_reconstructs_exact_sphere() -> None:
     from itertools import product
     from sage.all import QQ, ZZ, identity_matrix, matrix, vector
 
-    gram = identity_matrix(QQ, 3)
+    gram = diagonal_matrix(QQ, [1, 2, 3])
     target = (QQ(1) / 2, QQ(0), QQ(0))
     bound = QQ(1) / 4
     order = matrix(ZZ, [[1, 2, 0], [0, 1, 1], [0, 0, 1]])
