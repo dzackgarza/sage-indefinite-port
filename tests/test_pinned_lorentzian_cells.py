@@ -27,6 +27,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _pinned_diagonalize_symmetric_matrix,
     _integral_positive_vector_allmeth,
     _source_integral_vector_allmeth_v2,
+    _source_reconstruct_positive_vector,
     _pinned_positive_eigen_directions,
     _pinned_positive_diagonal_directions,
     _pinned_approximation_iterator,
@@ -232,6 +233,29 @@ def test_pinned_approximation_iterator_advances_tied_steps_in_source_order() -> 
         raise AssertionError("zero direction unexpectedly created an ApproxIterator")
 
 
+def test_source_positive_candidate_lift_uses_transposed_unimodular_basis() -> None:
+    """A V2 candidate is mapped by B^T and keeps its exact quadratic value."""
+    from sage.all import ZZ, matrix, vector
+
+    gram = matrix(ZZ, [[2, 1], [1, -1]])
+    basis = matrix(ZZ, [[1, 2], [0, 1]])
+    reduced = basis * gram * basis.transpose()
+    candidate = vector(ZZ, [1, 0])
+    expected = basis.transpose() * candidate.column()
+    result = _source_reconstruct_positive_vector(gram, basis, reduced, candidate)
+    assert result == tuple(expected[i, 0] for i in range(expected.nrows()))
+    assert (vector(ZZ, result) * gram * vector(ZZ, result).column())[0] == (candidate * reduced * candidate.column())[0] > 0
+    assert _source_reconstruct_positive_vector(gram, basis, reduced, vector(ZZ, [0, 1])) is None
+
+    invalid_reduced = reduced + matrix(ZZ, [[1, 0], [0, 0]])
+    try:
+        _source_reconstruct_positive_vector(gram, basis, invalid_reduced, candidate)
+    except ArithmeticError:
+        pass
+    else:
+        raise AssertionError("a false reduction norm certificate was accepted")
+
+
 def test_source_integral_vector_allmeth_v2_returns_exact_positive_witness() -> None:
     """Exercise the complete V2 iterator consumer with an identity reduction."""
     from sage.all import ZZ, diagonal_matrix, identity_matrix, matrix, vector
@@ -246,6 +270,12 @@ def test_source_integral_vector_allmeth_v2_returns_exact_positive_witness() -> N
         basis = identity_matrix(ZZ, gram.nrows())
         candidate = vector(ZZ, _source_integral_vector_allmeth_v2(gram, basis, gram))
         assert (candidate * gram * candidate.column())[0] > 0
+
+    original = matrix(ZZ, [[2, 1], [1, -1]])
+    basis = matrix(ZZ, [[1, 2], [0, 1]])
+    reduced = basis * original * basis.transpose()
+    candidate = vector(ZZ, _source_integral_vector_allmeth_v2(original, basis, reduced))
+    assert (candidate * original * candidate.column())[0] > 0
 
     negative = diagonal_matrix(ZZ, [-1, -2])
     try:

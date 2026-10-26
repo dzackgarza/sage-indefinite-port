@@ -2425,6 +2425,32 @@ def _pinned_positive_eigen_directions(
     )
 
 
+def _source_reconstruct_positive_vector(
+    gram: Matrix_integer_dense,
+    basis: Matrix_integer_dense,
+    reduced: Matrix_integer_dense,
+    candidate: FreeModuleElement[Integer],
+) -> tuple[Integer, ...] | None:
+    r"""Lift one V2 candidate through the source reduction and certify its norm.
+
+    Return ``None`` for a nonpositive reduced candidate; otherwise map row
+    coordinates by ``basis.transpose()`` and verify the exact original-form
+    witness before the caller returns it.
+    """
+    if candidate not in SageZZ**reduced.nrows():
+        raise ValueError("candidate coordinates must match the reduced Gram matrix")
+    reduced_norm = SageZZ((candidate * reduced * candidate.column())[0])
+    if reduced_norm <= 0:
+        return None
+    original_column = basis.transpose() * candidate.column()
+    result = tuple(SageZZ(original_column[row, 0]) for row in range(int(original_column.nrows())))
+    original_vector = vector(SageZZ, result)
+    original_norm = SageZZ((original_vector * gram * original_vector.column())[0])
+    if original_norm != reduced_norm:
+        raise ArithmeticError("positive-vector reduction lost its integral norm witness")
+    return result
+
+
 def _source_integral_vector_allmeth_v2(
     gram: Matrix_integer_dense,
     basis: Matrix_integer_dense,
@@ -2491,26 +2517,14 @@ def _source_integral_vector_allmeth_v2(
         for ordered, nexts, approximation in iterators:
             _advance_pinned_approximation_iterator(ordered, nexts, approximation)
             candidate = vector(SageZZ, approximation)
-            if (candidate * reduced * candidate.column())[0] > 0:
-                original = basis.transpose() * candidate.column()
-                result = tuple(SageZZ(original[row, 0]) for row in range(int(original.nrows())))
-                original_vector = vector(SageZZ, result)
-                original_norm = (original_vector * gram * original_vector.column())[0]
-                reduced_norm = (candidate * reduced * candidate.column())[0]
-                if original_norm != reduced_norm or original_norm <= 0:
-                    raise ArithmeticError("positive-vector reduction lost its integral norm witness")
+            result = _source_reconstruct_positive_vector(gram, basis, reduced, candidate)
+            if result is not None:
                 return result
         for ordered, nexts, approximation in eigen_iterators:
             _advance_pinned_approximation_iterator(ordered, nexts, approximation)
             candidate = vector(SageZZ, approximation)
-            if (candidate * reduced * candidate.column())[0] > 0:
-                original = basis.transpose() * candidate.column()
-                result = tuple(SageZZ(original[row, 0]) for row in range(int(original.nrows())))
-                original_vector = vector(SageZZ, result)
-                original_norm = (original_vector * gram * original_vector.column())[0]
-                reduced_norm = (candidate * reduced * candidate.column())[0]
-                if original_norm != reduced_norm or original_norm <= 0:
-                    raise ArithmeticError("positive-vector reduction lost its integral norm witness")
+            result = _source_reconstruct_positive_vector(gram, basis, reduced, candidate)
+            if result is not None:
                 return result
 
 
