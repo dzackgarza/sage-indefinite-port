@@ -733,7 +733,11 @@ class LorentzianPerfectLocalBackend:
         # for facet_covectors() reconstructs each face cone only to recover
         # these same supporting normals, which dominates high-facet cells.
         covectors = iter(cone.halfspace_covectors())
-        covector_block = tuple(islice(covectors, 16))
+        # Bound the exact pairing temporary by entry count, not a fixed row
+        # count: configurations larger than A7 must not allocate an
+        # unbounded number of columns per block.
+        covector_block_size = _configuration_pairing_block_size(len(vectors))
+        covector_block = tuple(islice(covectors, covector_block_size))
         if not covector_block:
             return (), ()
         labels = tuple(cell.lattice.module_generating_set())
@@ -764,7 +768,7 @@ class LorentzianPerfectLocalBackend:
                 # matrix-entry lookups per facet in the A7 configuration.
                 incidence = all_ray_positions.difference(pairing_block.row(offset).nonzero_positions())
                 facets.setdefault(incidence, True)
-            covector_block = tuple(islice(covectors, 16))
+            covector_block = tuple(islice(covectors, covector_block_size))
         generators = self.cell_stabilizer(cell)
         # Use precisely these generators to form the ray action.  Calling
         # point_permutations here repeats the stabilizer lookup and the
