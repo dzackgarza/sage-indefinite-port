@@ -327,8 +327,20 @@ def test_source_v2_honors_critical_norm_and_strictness() -> None:
 
     gram = matrix(ZZ, [[1, 0], [0, -1]])
     basis = identity_matrix(ZZ, 2)
-    inclusive = vector(ZZ, _source_integral_vector_allmeth_v2(gram, basis, gram, QQ.one(), False))
-    strict = vector(ZZ, _source_integral_vector_allmeth_v2(gram, basis, gram, QQ.one(), True))
+    def diagonalize(_gram):
+        return identity_matrix(QQ, 2), matrix(QQ, [[1, 0], [0, -1]])
+
+    def no_eigen_directions(_gram):
+        return ()
+
+    inclusive = vector(ZZ, _source_integral_vector_allmeth_v2(
+        gram, basis, gram, QQ.one(), False,
+        diagonalize=diagonalize, eigen_directions=no_eigen_directions,
+    ))
+    strict = vector(ZZ, _source_integral_vector_allmeth_v2(
+        gram, basis, gram, QQ.one(), True,
+        diagonalize=diagonalize, eigen_directions=no_eigen_directions,
+    ))
     assert inclusive == vector(ZZ, [1, 0])
     assert strict == vector(ZZ, [2, 0])
     assert (inclusive * gram * inclusive.column())[0] == 1

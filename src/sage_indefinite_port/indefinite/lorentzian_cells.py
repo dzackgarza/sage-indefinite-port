@@ -2465,6 +2465,9 @@ def _source_integral_vector_allmeth_v2(
     reduced: Matrix_integer_dense,
     critical_norm: Rational = SageQQ.zero(),
     strict_inequality: bool = True,
+    *,
+    diagonalize: Callable[[Matrix_rational_dense], tuple[Matrix_rational_dense, Matrix_rational_dense]] = _pinned_diagonalize_symmetric_matrix,
+    eigen_directions: Callable[[Matrix_real_double_dense], tuple[tuple[float, ...], ...]] = _pinned_positive_eigen_directions,
 ) -> tuple[Integer, ...]:
     r"""Port ``GetIntegralVector_allmeth_V2`` on a supplied reduced form.
 
@@ -2480,7 +2483,7 @@ def _source_integral_vector_allmeth_v2(
         raise ArithmeticError("the supplied reduced Gram matrix is not the basis congruence")
     rank = int(reduced.nrows())
     qgram = cast(Matrix_rational_dense, reduced.change_ring(SageQQ))
-    transform, diagonal_matrix = _pinned_diagonalize_symmetric_matrix(qgram)
+    transform, diagonal_matrix = diagonalize(qgram)
 
 
     iterators: list[
@@ -2509,7 +2512,7 @@ def _source_integral_vector_allmeth_v2(
             Matrix_real_double_dense,
             matrix(cast(Parent, RDF), reduced),
         )
-        for direction in _pinned_positive_eigen_directions(double_gram):
+        for direction in eigen_directions(double_gram):
             eigen_norm = sum(abs(eigen_entry) for eigen_entry in direction)
             # The optional floating branch must not admit NaN or infinite
             # steps into ApproxIterator.
