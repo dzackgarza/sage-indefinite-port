@@ -1859,32 +1859,44 @@ def test_bounded_distance_dual_lll_solutions_match_exact_brute_force() -> None:
     """The PARI-free bounded CVP recursion preserves exact distances and frame order."""
     from itertools import product
 
-    from sage.all import QQ, ZZ, matrix, vector
+    from sage.all import QQ, ZZ, identity_matrix, matrix, vector
     from sage_indefinite_port.indefinite.lorentzian_cells import (
         _bounded_distance_dual_lll_solutions,
         _positive_ldl_factorization,
     )
 
-    gram = matrix(QQ, [[2, 1], [1, 3]])
-    target = (QQ(1) / 2, QQ(1) / 3)
-    bound = QQ(4)
-    dual = matrix(ZZ, [[1, 0], [-1, 1]])
-    order = dual.inverse().transpose()
-    reduced_gram = dual * gram * dual.transpose()
-    factorization = _positive_ldl_factorization(reduced_gram)
-    actual = _bounded_distance_dual_lll_solutions(
-        gram, target, bound, dual, order, ldl_factorization=factorization
+    cases = (
+        (matrix(QQ, [[2]]), (QQ(1) / 2,), QQ(2), identity_matrix(ZZ, 1)),
+        (
+            matrix(QQ, [[2, 1], [1, 3]]),
+            (QQ(1) / 2, QQ(1) / 3),
+            QQ(4),
+            matrix(ZZ, [[1, 0], [-1, 1]]),
+        ),
+        (
+            matrix(QQ, [[3, 1, 0], [1, 2, 1], [0, 1, 4]]),
+            (QQ(1) / 2, -QQ(1) / 3, QQ(1) / 4),
+            QQ(4),
+            matrix(ZZ, [[1, 1, 0], [0, 1, 1], [0, 0, 1]]),
+        ),
     )
-    actual_by_point = dict(actual)
-    expected = {}
-    for coordinates in product(range(-4, 5), repeat=2):
-        difference = vector(QQ, coordinates) - vector(QQ, target)
-        distance = (difference * gram * difference.column())[0]
-        if distance <= bound:
-            expected[tuple(ZZ(entry) for entry in coordinates)] = distance
-    assert actual_by_point == expected
-    assert len(actual) == len(actual_by_point)
-    assert all(distance == expected[coordinates] for coordinates, distance in actual)
+    for gram, target, bound, dual in cases:
+        order = dual.inverse().transpose()
+        reduced_gram = dual * gram * dual.transpose()
+        factorization = _positive_ldl_factorization(reduced_gram)
+        actual = _bounded_distance_dual_lll_solutions(
+            gram, target, bound, dual, order, ldl_factorization=factorization
+        )
+        actual_by_point = dict(actual)
+        expected = {}
+        for coordinates in product(range(-5, 6), repeat=gram.nrows()):
+            difference = vector(QQ, coordinates) - vector(QQ, target)
+            distance = (difference * gram * difference.column())[0]
+            if distance <= bound:
+                expected[tuple(ZZ(entry) for entry in coordinates)] = distance
+        assert actual_by_point == expected
+        assert len(actual) == len(actual_by_point)
+        assert all(distance == expected[coordinates] for coordinates, distance in actual)
 
 
 def test_positive_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() -> None:
@@ -2039,6 +2051,16 @@ def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
         cells._owned_engine_element = lambda field, value: value
         cells._owned_rational = lambda lattice, value, field: value
         assert enumerator.vectors_at_multiplier(4) == ((4, 1, 0), (4, 2, 1))
+        engine.close_vector_coordinates = lambda target, bound: (_ for _ in ()).throw(
+            FakePariError("a different PARI failure")
+        )
+        try:
+            enumerator.vectors_at_multiplier(5)
+        except FakePariError as error:
+            assert "different PARI failure" in str(error)
+        else:
+            raise AssertionError("a non-stack PARI error was swallowed by the fallback")
+        assert len(calls) == 1
     finally:
         cells._bounded_distance_dual_lll_solutions = original_bounded
         cells._owned_engine_element = original_element
