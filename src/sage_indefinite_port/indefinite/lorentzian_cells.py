@@ -2875,19 +2875,33 @@ class _PositiveVectorEnumerator:
         # coordinate-level primitive avoids allocating an owned lattice vector
         # and indexed-family object for every intermediate shell candidate.
         distances = self.cvp_engine.close_vector_coordinates(target, bound)
-        close_coordinates = tuple(coordinates for coordinates, _square in distances)
         # CVPSolver's dual-LLL map gives recursive coordinates y=P*x;
         # the shared key follows computeIt_Gen_Kernel's outer-to-inner order.
         transform = self.enumeration_order_transform
-        close_coordinates = tuple(sorted(close_coordinates, key=lambda c: _dual_lll_enumeration_key(c, transform)))
-        return self._ambient_vectors(multiplier, close_coordinates)
+        distances = tuple(sorted(distances, key=lambda item: _dual_lll_enumeration_key(item[0], transform)))
+        close_coordinates = tuple(coordinates for coordinates, _square in distances)
+        close_squares = tuple(square for _coordinates, square in distances)
+        return self._ambient_vectors(multiplier, close_coordinates, close_squares)
 
-    def _ambient_vectors(self, multiplier: int, close_coordinates: tuple[tuple[Integer, ...], ...]) -> tuple[tuple[int, ...], ...]:
+    def _ambient_vectors(
+        self,
+        multiplier: int,
+        close_coordinates: tuple[tuple[Integer, ...], ...],
+        close_squares: tuple[Rational, ...] | None = None,
+    ) -> tuple[tuple[int, ...], ...]:
         shift = multiplier * self.partner_row
         result: list[tuple[int, ...]] = []
-        for close in close_coordinates:
+        if close_squares is not None and len(close_squares) != len(close_coordinates):
+            raise ValueError("each closest-vector coordinate must have exactly one squared distance")
+        for index, close in enumerate(close_coordinates):
             row = shift + vector(SageZZ, [int(coordinate) for coordinate in close]) * self.inclusion_rows
             candidate_square = int(row * self.gram * row)
+            if close_squares is not None:
+                expected_square = multiplier**2 * self.base_bound - close_squares[index]
+                if candidate_square != expected_square:
+                    raise ArithmeticError(
+                        "the reconstructed Lorentzian norm disagrees with its exact CVP squared distance"
+                    )
             # Lorentzian.g:377-385 verifies both the scalar-product shell
             # and norm after reconstructing each closest-vector solution.
             pairing = (row * self.timelike_covector)[0]

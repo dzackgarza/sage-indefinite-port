@@ -333,25 +333,38 @@ def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
 
         def close_vector_coordinates(self, target, bound):
             self.call = (target, bound)
-            return ()
+            return (((-3, 0), QQ.zero()),)
 
     enumerator = object.__new__(cells._PositiveVectorEnumerator)
     engine = CVPEngine()
     enumerator.rational_field = object()
     enumerator.lattice = object()
-    enumerator.base_target_engine_coordinates = (QQ(1) / 2, -QQ(2) / 3)
-    enumerator.base_bound = QQ(5) / 7
+    enumerator.base_target_engine_coordinates = (-QQ.one(), QQ.zero())
+    enumerator.base_bound = QQ(5)
     enumerator.cvp_engine = engine
     enumerator.enumeration_order_transform = identity_matrix(ZZ, 2)
-    enumerator.partner_row = vector(ZZ, (0, 0, 0))
+    enumerator.partner_row = vector(ZZ, (1, 1, 0))
+    enumerator.inclusion_rows = matrix(ZZ, [[0, 1, 0], [0, 0, 1]])
+    enumerator.gram = matrix(ZZ, [[5, 0, 0], [0, -1, 0], [0, 0, -1]])
+    enumerator.timelike_covector = vector(ZZ, (5, 0, 0)).column()
+    enumerator.d = ZZ(5)
+    enumerator.scaled_max = ZZ(15)
+    enumerator.allowed_squares = {ZZ(45)}
     original_element = cells._owned_engine_element
     original_rational = cells._owned_rational
     try:
         cells._owned_engine_element = lambda field, value: value
         cells._owned_rational = lambda lattice, value, field: value
-        assert enumerator.vectors_at_multiplier(3) == ()
+        assert enumerator.vectors_at_multiplier(3) == ((3, 0, 0),)
     finally:
         cells._owned_engine_element = original_element
         cells._owned_rational = original_rational
 
-    assert engine.call == ((QQ(3) / 2, -QQ(2)), QQ(45) / 7)
+    assert engine.call == ((-QQ(3), QQ.zero()), QQ(45))
+    engine.close_vector_coordinates = lambda target, bound: (((-2, 0), QQ.one()),)
+    try:
+        enumerator.vectors_at_multiplier(2)
+    except ArithmeticError as error:
+        assert "disagrees with its exact CVP squared distance" in str(error)
+    else:
+        raise AssertionError("an inconsistent CVP distance was accepted")
