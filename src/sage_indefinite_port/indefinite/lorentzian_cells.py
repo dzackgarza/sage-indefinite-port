@@ -684,8 +684,25 @@ class LorentzianPerfectLocalBackend:
         ray_rows = matrix(SageQQ, cell.rows)
         integral_ray_rows = matrix(SageZZ, cell.rows)
         covector_rows = matrix(SageQQ, [[_rational(covector.to_vector()(label)) for label in labels] for covector in covectors])
-        pairings = covector_rows * ray_rows.transpose()
-        facets = [frozenset(position for position in range(len(vectors)) if pairings[facet, position] == 0) for facet in range(len(covectors))]
+        transposed_ray_rows = ray_rows.transpose()
+        # Do not materialize the full |facets|-by-|rays| pairing matrix.
+        # A7's initial perfect configuration has 49,861 rays, so retaining
+        # every rational pairing alongside the exact incidence sets multiplies
+        # the already substantial cone-conversion peak. Compute small exact
+        # blocks instead, discarding each block after its original ray indices
+        # have been recorded.
+        facets = []
+        for start in range(0, len(covectors), 16):
+            stop = min(start + 16, len(covectors))
+            pairing_block = covector_rows.matrix_from_rows(range(start, stop)) * transposed_ray_rows
+            for offset in range(stop - start):
+                facets.append(
+                    frozenset(
+                        position
+                        for position in range(len(vectors))
+                        if pairing_block[offset, position] == 0
+                    )
+                )
         generators = self.cell_stabilizer(cell)
         # Use precisely these generators to form the ray action.  Calling
         # point_permutations here repeats the stabilizer lookup and the
