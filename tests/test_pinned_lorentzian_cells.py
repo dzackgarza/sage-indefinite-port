@@ -12,6 +12,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _pinned_positive_gcd_dot,
     _pinned_sublattice_basis_reduction,
     _primitive_integral_direction,
+    _quadratic_descent_prefix,
     _upper_bound,
 )
 
@@ -98,6 +99,27 @@ def test_pinned_positive_gcd_dot_matches_exact_coefficients() -> None:
         divisor, coefficients = _pinned_positive_gcd_dot(values)
         assert (divisor, coefficients) == expected
         assert sum(a * b for a, b in zip(values, coefficients, strict=True)) == divisor
+
+
+def test_quadratic_descent_prefix_matches_pinned_get_alpha() -> None:
+    """Compare the accelerated prefix with the literal source loop."""
+    for base_norm in range(1, 13):
+        for mixed in range(-10, 11):
+            for direction_norm in range(-5, 6):
+                source_norm = base_norm
+                expected = 0
+                while True:
+                    step = expected + 1
+                    candidate_norm = (
+                        base_norm + 2 * mixed * step + direction_norm * step * step
+                    )
+                    if candidate_norm >= source_norm or candidate_norm <= 0:
+                        break
+                    source_norm = candidate_norm
+                    expected += 1
+                assert _quadratic_descent_prefix(
+                    base_norm, mixed, direction_norm
+                ) == expected, (base_norm, mixed, direction_norm, expected)
 
 
 def test_flip_upper_bound_uses_rational_isotropic_exit_and_rejects_coincident_exit() -> None:
