@@ -35,12 +35,13 @@ These are progress-log locators, not complete case results. An isolated
 8716 run with a 3 GiB address-space limit reaches `MemoryError` in
 `Tensor.pullback`, materializing the family Gram tensor for the pairing graph.
 
-Provider `daf20e327f0c9e61b72d4e98587d0ff143b6f4aa` is now pinned. It retains the owned lattice Gram tensor and family map at
+Provider `53d0db2e7d0c2ddb96617cfb361a43c18235d1d2` is now pinned. It retains the owned lattice Gram tensor and family map at
 the graph adapter, shares exact edge labels, and releases temporary graphs
 and family realizations. Small positive/negative transporter assertions and
 unchanged ListReflect_841/964 pass. The complete 8716 assertion is still open
-in `.tmp/repair-isotropic-8716-certificates.log`, under a 6 GiB address-space
-limit. The prior graph-lifetime probe failed and was stopped during expensive
+in `.tmp/repair-isotropic-8716-certificates.log`. Its artificial address-space
+limit was removed: virtual reservations exceeded 6 GiB while resident memory
+and swap remained below 1 GiB before graph construction. The prior graph-lifetime probe failed and was stopped during expensive
 pytest argument rendering. The current provider releases each input graph
 and canonical edge list before the next graph, then certifies the composed
 index permutation against the exact colours and pairing/relation tables.
@@ -52,6 +53,12 @@ plane and split four-dimensional F2 form pass their exact action, section
 and Schreier assertions. These repairs are carried to sage-extensions.
 Verify the complete isotropic and Enriques consumers before declaring their
 failure paths repaired.
+
+The coproduct diagnostic repair at `53d0db2e7d` puts a split assertion message
+back inside the assertion. Enriques discriminant lifts had evaluated its
+standalone f-string and lattice signatures on successful construction. The
+existing biproduct universal-map identity assertion passes. This repair is
+also published in sage-extensions at `74d34ba`.
 
 Next work, in order:
 
