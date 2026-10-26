@@ -3455,9 +3455,11 @@ class _PositiveVectorEnumerator:
         bound = _owned_rational(
             self.lattice, (SageQQ(multiplier) ** 2) * self.base_bound, field=self.rational_field
         )
-        # Use the same exact PARI-backed CVP engine as close_vectors, but its
-        # coordinate-level primitive avoids allocating an owned lattice vector
-        # and indexed-family object for every intermediate shell candidate.
+        # Keep the same exact coordinate Gram, target, and squared-distance
+        # bound as close_vectors. Isotropic mode uses the dedicated exact-sphere
+        # recursion; total mode uses the PARI-backed bounded-CVP engine. Both
+        # stay at the coordinate level without allocating owned lattice vectors
+        # or indexed-family objects for intermediate shell candidates.
         if self.allowed_squares == ZERO_SQUARES:
             # The pinned solver.fixed_dist_vectors branch enumerates the
             # exact sphere, not the full ellipsoid followed by a norm filter.
