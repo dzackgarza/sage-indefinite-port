@@ -280,6 +280,22 @@ def test_indefinite_reduction_integrates_source_radical_and_completion() -> None
         assert not reduced.matrix_from_rows(range(gram.nrows() - radical_rank, gram.nrows()))
 
 
+def test_indefinite_lll_nearest_integer_uses_source_half_tie_rule() -> None:
+    """The signed LLL size-reduction operation uses GAP's exact nearest integer."""
+    from sage.all import QQ
+    from sage_indefinite_port.indefinite.indefinite_reduction import _source_nearest_integer
+
+    cases = {
+        QQ(1) / 2: 1,
+        -QQ(1) / 2: 0,
+        QQ(3) / 2: 2,
+        -QQ(3) / 2: -1,
+        QQ(7) / 5: 1,
+        -QQ(7) / 5: -1,
+    }
+    assert {value: _source_nearest_integer(value) for value in cases} == cases
+
+
 def test_source_integer_nullspace_reduces_and_completes_radical() -> None:
     """The production nullspace seam returns the pinned reduced primitive row basis."""
     from sage.all import ZZ, matrix

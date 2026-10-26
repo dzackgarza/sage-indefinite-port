@@ -26,6 +26,11 @@ def _gram_l1(gram):
     return sum(abs(entry) for row in gram.rows() for entry in row)
 
 
+def _source_nearest_integer(value):
+    r"""Port GAP ``NearestInteger`` with exact half-ties toward +infinity."""
+    return SageZZ((SageQQ(value) + SageQQ(1) / 2).floor())
+
+
 def _indefinite_gram_schmidt(gram, basis):
     """GramSchmidtOrthonormalization (lines 43-84), on the Gram matrix of the basis.
 
@@ -75,7 +80,7 @@ def _indefinite_lll(gram):
             return basis, basis * gram * basis.transpose(), isotropic
         for i in range(rank - 1, -1, -1):
             for j in range(i):
-                nearest = SageZZ(mu[i, j].round())
+                nearest = _source_nearest_integer(mu[i, j])
                 if nearest:
                     basis.add_multiple_of_row(i, j, -nearest)
         sum1 = abs(norms[k] + mu[k, k - 1] ** 2 * norms[k - 1])
