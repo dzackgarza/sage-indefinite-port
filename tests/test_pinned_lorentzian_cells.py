@@ -21,6 +21,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _source_graver_k_basis,
     _source_direct_graver_improvement,
     _source_should_reset_positive_perturbation,
+    _source_positive_search_best,
     _pinned_nullspace_matrix,
     _pinned_diagonalize_symmetric_matrix,
     _integral_positive_vector_allmeth,
@@ -381,6 +382,27 @@ def test_source_random_perturbations_are_the_pinned_unimodular_matrices() -> Non
             pass
         else:
             raise AssertionError(f"invalid perturbation accepted: {invalid}")
+
+
+def test_source_positive_search_best_matches_pinned_termination_state() -> None:
+    """Best norm, no-improvement count, and both source stop conditions agree."""
+    from sage.all import ZZ, matrix, vector
+
+    gram = matrix(ZZ, [[1, 0], [0, -1]])
+    first = vector(ZZ, [4, 1])
+    best, norm, failures, stop = _source_positive_search_best(gram, first, None, None, 0)
+    assert best == first and norm == 15 and failures == 0 and not stop
+
+    worse = vector(ZZ, [5, 1])
+    best, norm, failures, stop = _source_positive_search_best(gram, worse, best, norm, failures)
+    assert best == first and norm == 15 and failures == 1 and not stop
+
+    short = vector(ZZ, [2, 1])
+    best, norm, failures, stop = _source_positive_search_best(gram, short, best, norm, failures)
+    assert best == short and norm == 3 and failures == 0 and stop
+
+    best, norm, failures, stop = _source_positive_search_best(gram, worse, best, norm, 499)
+    assert best == short and norm == 3 and failures == 500 and stop
 
 
 def test_source_positive_perturbation_reset_uses_strict_factor_1000() -> None:

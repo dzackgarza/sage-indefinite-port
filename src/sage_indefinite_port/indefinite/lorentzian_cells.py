@@ -2589,6 +2589,31 @@ def _source_should_reset_positive_perturbation(perturbed_l1: int, original_l1: i
     return perturbed_l1 > 1000 * original_l1
 
 
+def _source_positive_search_best(
+    gram: Matrix_integer_dense,
+    candidate: FreeModuleElement[Integer],
+    best_vector: FreeModuleElement[Integer] | None,
+    best_norm: Integer | None,
+    without_improvement: int,
+) -> tuple[FreeModuleElement[Integer] | None, Integer | None, int, bool]:
+    r"""Apply the best-vector and termination transition from Positivity.h:641-657."""
+    if gram.nrows() != gram.ncols() or candidate not in SageZZ**gram.nrows():
+        raise ValueError("positive-search candidate and Gram dimensions must agree")
+    if without_improvement < 0:
+        raise ValueError("the no-improvement counter must be nonnegative")
+    norm = SageZZ((candidate * gram * candidate.column())[0])
+    if norm <= 0:
+        raise ValueError("the specialized positive search requires a positive-norm candidate")
+    if best_norm is None or norm < best_norm:
+        best_vector = vector(SageZZ, candidate)
+        best_norm = norm
+        without_improvement = 0
+    else:
+        without_improvement += 1
+    stop = without_improvement == 500 or best_norm < 10
+    return best_vector, best_norm, without_improvement, stop
+
+
 def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]:
     r"""Pinned polyhedral_common@a55fcb7b src_isotropy/Positivity.h:565-673,
     ``INDEFINITE_GetShortPositiveVector``.
@@ -2618,14 +2643,10 @@ def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]
         found = vector(SageZZ, _integral_positive_vector_allmeth(perturbed_gram))
         current = perturbation.transpose() * found.column()
         improved = _source_direct_graver_improvement(gram, current.column(0), directions)
-        norm = (improved * gram * improved.column())[0]
-        if best_norm is None or norm < best_norm:
-            best_vector = improved
-            best_norm = SageZZ(norm)
-            without_improvement = 0
-        else:
-            without_improvement += 1
-        if without_improvement == 500 or (best_norm is not None and best_norm < 10):
+        best_vector, best_norm, without_improvement, stop = _source_positive_search_best(
+            gram, improved, best_vector, best_norm, without_improvement
+        )
+        if stop:
             if best_vector is None:
                 raise ArithmeticError("the positive-vector search has no best vector")
             return tuple(SageQQ(entry) for entry in best_vector)
