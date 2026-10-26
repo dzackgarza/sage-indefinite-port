@@ -682,9 +682,8 @@ class LorentzianPerfectLocalBackend:
         if not covector_block:
             return ()
         labels = tuple(cell.lattice.module_generating_set())
-        ray_rows = matrix(SageQQ, cell.rows)
         integral_ray_rows = matrix(SageZZ, cell.rows)
-        transposed_ray_rows = ray_rows.transpose()
+        transposed_ray_rows = integral_ray_rows.transpose()
         # Do not materialize the full |facets|-by-|rays| pairing matrix.
         # A7's initial perfect configuration has 49,861 rays, so retaining
         # every rational pairing alongside the exact incidence sets multiplies
@@ -694,8 +693,8 @@ class LorentzianPerfectLocalBackend:
         facets = []
         while covector_block:
             covector_rows = matrix(
-                SageQQ,
-                [[_rational(covector.to_vector()(label)) for label in labels] for covector in covector_block],
+                SageZZ,
+                [[int(covector.to_vector()(label)) for label in labels] for covector in covector_block],
             )
             pairing_block = covector_rows * transposed_ray_rows
             for offset in range(len(covector_block)):
