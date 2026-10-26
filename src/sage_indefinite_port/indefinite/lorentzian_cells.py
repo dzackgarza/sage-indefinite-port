@@ -624,15 +624,7 @@ class LorentzianPerfectLocalBackend:
             base_ring=SageQQ,
             backend="normaliz",
         )
-        cone = _cone_from_engine_polyhedron(cell.lattice, polyhedron)
-        # The owned constructor rebuilds its private engine from the H-rows
-        # using Sage's default PPL backend. Retain the already-computed exact
-        # Normaliz polyhedron instead: it has the same homogeneous H-data and
-        # avoids immediately running a second H-to-V conversion on this
-        # high-facet configuration. Sage's polyhedron interface is backend
-        # independent for the exact operations used by the owned cone.
-        cone._engine = polyhedron
-        return cone
+        return _cone_from_engine_polyhedron(cell.lattice, polyhedron)
 
     def initial_cell(self, lattice: Lattices.ParentMethods, allowed_squares: RealSet) -> LorentzianPerfectCell:
         normalized = _lorentzian_view(lattice)
