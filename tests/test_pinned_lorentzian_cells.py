@@ -1548,7 +1548,7 @@ def test_initial_vector_search_advances_integral_bound_without_rescanning() -> N
 def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
     """The isotropic shell enumerator returns the exact rational-center sphere."""
     from itertools import product
-    from sage.all import QQ, matrix
+    from sage.all import QQ, ZZ, matrix
 
     cases = (
         (matrix(QQ, [[1]]), (QQ(1) / 2,), QQ(1) / 4),
@@ -1568,6 +1568,17 @@ def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
             if square == bound:
                 expected.add(tuple(coordinates))
         assert actual_coordinates == expected
+
+    # The innermost coordinate is solved directly, so this huge radius must
+    # still produce only its two exact endpoints rather than scanning 2e10
+    # integers in a one-dimensional enclosing interval.
+    huge_radius = QQ(10) ** 10
+    huge_sphere = _fixed_distance_coordinate_solutions(
+        matrix(QQ, [[1]]), (QQ(0),), huge_radius ** 2
+    )
+    assert {coordinates for coordinates, _distance in huge_sphere} == {
+        (ZZ(-huge_radius),), (ZZ(huge_radius),)
+    }
 
     for gram, target, bound in (
         (matrix(QQ, [[1, 2], [0, 1]]), (QQ(0), QQ(0)), QQ(1)),
