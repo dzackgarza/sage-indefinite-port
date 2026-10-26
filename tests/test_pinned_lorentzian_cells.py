@@ -18,6 +18,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _source_permutation_sign_matrix,
     _source_elementary_perturbation,
     _source_random_matrix_perturbation,
+    _source_graver_k_basis,
     _pinned_nullspace_matrix,
     _pinned_diagonalize_symmetric_matrix,
     _integral_positive_vector_allmeth,
@@ -378,6 +379,34 @@ def test_source_random_perturbations_are_the_pinned_unimodular_matrices() -> Non
             pass
         else:
             raise AssertionError(f"invalid perturbation accepted: {invalid}")
+
+
+def test_source_graver_k_basis_matches_support_and_sign_enumeration() -> None:
+    """GetGraverKbasis enumerates every signed support through its requested degree."""
+    from itertools import combinations, product
+
+    for dimension in range(1, 6):
+        for degree in range(1, dimension + 1):
+            basis = _source_graver_k_basis(dimension, degree)
+            expected = []
+            for size in range(1, degree + 1):
+                for support in combinations(range(dimension), size):
+                    for signs in product((-1, 1), repeat=size):
+                        row = [0] * dimension
+                        for coordinate, sign in zip(support, signs, strict=True):
+                            row[coordinate] = sign
+                        expected.append(tuple(row))
+            assert basis == tuple(expected)
+            assert len(basis) == sum(2**size * __import__('math').comb(dimension, size) for size in range(1, degree + 1))
+            assert len(set(basis)) == len(basis)
+
+    for dimension, degree in ((0, 1), (2, 0), (2, 3)):
+        try:
+            _source_graver_k_basis(dimension, degree)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"invalid Graver K-basis parameters accepted: {(dimension, degree)}")
 
 
 def test_source_random_matrix_perturbation_dispatches_both_pinned_branches() -> None:

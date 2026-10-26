@@ -7,7 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import cache, cached_property
-from itertools import product
+from itertools import combinations, product
 from math import gcd, isfinite, isqrt
 from sys import float_info
 from random import choice, randrange, shuffle
@@ -2511,6 +2511,26 @@ def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integ
                 return result
 
 
+def _source_graver_k_basis(dimension: int, degree: int) -> tuple[tuple[int, ...], ...]:
+    r"""Port ``GetGraverKbasis`` from GraverBasis.h for the signed support basis.
+
+    Enumerate supports in increasing size, lexicographic coordinate order, and
+    then the source's binary sign-pattern order (−1 before +1). Each vector has
+    entries in ``{-1,0,1}`` and support size at most ``degree``.
+    """
+    if dimension < 1 or not 1 <= degree <= dimension:
+        raise ValueError("Graver K-basis needs 1 <= degree <= dimension")
+    result: list[tuple[int, ...]] = []
+    for support_size in range(1, degree + 1):
+        for support in combinations(range(dimension), support_size):
+            for signs in product((-1, 1), repeat=support_size):
+                row = [0] * dimension
+                for coordinate, sign in zip(support, signs, strict=True):
+                    row[coordinate] = sign
+                result.append(tuple(row))
+    return tuple(result)
+
+
 def _source_random_matrix_perturbation(
     dimension: int,
     *,
@@ -2543,20 +2563,8 @@ def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]
     """
     gram = _gram_matrix(lattice)
     rank = gram.nrows()
-    directions: list[FreeModuleElement[Integer]] = []
-    for first in range(rank):
-        for sign in (-1, 1):
-            row = [SageZZ.zero()] * rank
-            row[first] = SageZZ(sign)
-            directions.append(vector(SageZZ, row))
-    for first in range(rank):
-        for second in range(first + 1, rank):
-            for first_sign in (-1, 1):
-                for second_sign in (-1, 1):
-                    row = [SageZZ.zero()] * rank
-                    row[first] = SageZZ(first_sign)
-                    row[second] = SageZZ(second_sign)
-                    directions.append(vector(SageZZ, row))
+    # GraverBasis.h:42-83, GetGraverKbasis(rank, 2), in source order.
+    directions = tuple(vector(SageZZ, row) for row in _source_graver_k_basis(rank, 2))
 
     perturbation = identity_matrix(SageZZ, rank)
     best_vector: FreeModuleElement[Integer] | None = None
