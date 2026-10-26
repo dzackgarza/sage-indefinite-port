@@ -14,6 +14,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _primitive_integral_direction,
     _source_mid_value,
     _source_some_negative_vector,
+    _pinned_nullspace_matrix,
     _outside_ray_directions,
     _quadratic_descent_prefix,
     _upper_bound,
@@ -113,6 +114,15 @@ def test_outside_ray_span_normalizes_each_source_direction_independently() -> No
     directions = _outside_ray_directions(affine_nullspace, gram)
     assert directions == matrix(QQ, [[1, 0], [0, 1]])
     assert all(any(entry for entry in row) for row in directions.rows())
+
+
+def test_pinned_nullspace_preserves_gap_row_basis_order() -> None:
+    """The source nullspace rows differ from Sage's canonical kernel basis."""
+    from sage.all import QQ, matrix
+
+    gram = matrix(QQ, [[1, 2, 3], [2, 4, 6], [3, 6, 9]])
+    assert _pinned_nullspace_matrix(gram) == matrix(QQ, [[-2, 1, 0], [-3, 0, 1]])
+    assert _pinned_nullspace_matrix(matrix(QQ, [[1, 0], [0, 1]])).nrows() == 0
 
 
 def test_source_negative_vector_respects_radical_and_diagonal_order() -> None:

@@ -3118,6 +3118,21 @@ def _upper_bound(gram: Matrix_rational_dense, base_normal: FreeModuleElement[Rat
     return upper
 
 
+def _pinned_nullspace_matrix(gram: Matrix_rational_dense) -> Matrix_rational_dense:
+    r"""Return the row basis from the pinned GAP ``NullspaceMat`` algorithm.
+
+    The order and normalization of nullspace rows feed the subsequent source
+    Gram--Schmidt basis and its first-negative-vector search; Sage's canonical
+    kernel basis can span the same space while changing those rows.
+    """
+    if gram.nrows() == 0:
+        return identity_matrix(SageQQ, gram.ncols())
+    gap_rows = [[libgap(SageQQ(entry)) for entry in row] for row in gram.rows()]
+    gap_basis = libgap.NullspaceMat(gap_rows)
+    rows = [[SageQQ(entry) for entry in row] for row in gap_basis]
+    return matrix(SageQQ, len(rows), gram.ncols(), [entry for row in rows for entry in row])
+
+
 def _source_some_negative_vector(gram: Matrix_rational_dense) -> tuple[Integer, ...]:
     r"""Port ``GetSomeNegativeVector`` from PositivitySymmetricMatrices.g:173-190.
 
@@ -3131,12 +3146,9 @@ def _source_some_negative_vector(gram: Matrix_rational_dense) -> tuple[Integer, 
     rank = int(gram.nrows())
     if not rank:
         raise ValueError("the zero-dimensional form has no negative vector")
-    # Use Sage's exact left-kernel basis backend, as in the already ported
-    # symmetric diagonalization below.  The generic ``right_kernel_matrix``
-    # convenience path stalls on the rank-five rational Gram in
-    # Result_Enumeration_29; symmetry identifies the left radical with the
-    # row radical required here.
-    radical = cast(Matrix_rational_dense, gram.left_kernel().basis_matrix())
+    # Preserve the pinned GAP NullspaceMat basis order: its row normalization
+    # controls the source diagonalizer and the subsequent negative-vector scan.
+    radical = _pinned_nullspace_matrix(gram)
     radical_rank = int(radical.nrows())
     pivot_columns = set(radical.echelon_form().pivots())
     transform = cast(Matrix_rational_dense, matrix(cast(Parent, SageQQ), rank, rank, 0))
@@ -3162,10 +3174,7 @@ def _source_some_negative_vector(gram: Matrix_rational_dense) -> tuple[Integer, 
             complement = identity_matrix(cast(Parent, SageQQ), dimension)
         else:
             previous = matrix(cast(Parent, SageQQ), orthogonal_basis)
-            complement = cast(
-                Matrix_rational_dense,
-                (nondegenerate * previous.transpose()).left_kernel().basis_matrix(),
-            )
+            complement = _pinned_nullspace_matrix(nondegenerate * previous.transpose())
         restricted = cast(Matrix_rational_dense, complement * nondegenerate * complement.transpose())
         selected: list[Rational] | None = None
         for i in range(int(restricted.nrows())):
