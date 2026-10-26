@@ -26,8 +26,9 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _pinned_nullspace_matrix,
     _pinned_diagonalize_symmetric_matrix,
     _integral_positive_vector_allmeth,
+    _source_integral_vector_allmeth,
     _source_integral_vector_allmeth_v2,
-    _source_reconstruct_positive_vector,
+    _source_reconstruct_integral_vector,
     _pinned_positive_eigen_directions,
     _pinned_positive_diagonal_directions,
     _pinned_approximation_iterator,
@@ -242,14 +243,14 @@ def test_source_positive_candidate_lift_uses_transposed_unimodular_basis() -> No
     reduced = basis * gram * basis.transpose()
     candidate = vector(ZZ, [1, 0])
     expected = basis.transpose() * candidate.column()
-    result = _source_reconstruct_positive_vector(gram, basis, reduced, candidate)
+    result = _source_reconstruct_integral_vector(gram, basis, reduced, candidate)
     assert result == tuple(expected[i, 0] for i in range(expected.nrows()))
     assert (vector(ZZ, result) * gram * vector(ZZ, result).column())[0] == (candidate * reduced * candidate.column())[0] > 0
-    assert _source_reconstruct_positive_vector(gram, basis, reduced, vector(ZZ, [0, 1])) is None
+    assert _source_reconstruct_integral_vector(gram, basis, reduced, vector(ZZ, [0, 1])) is None
 
     invalid_reduced = reduced + matrix(ZZ, [[1, 0], [0, 0]])
     try:
-        _source_reconstruct_positive_vector(gram, basis, invalid_reduced, candidate)
+        _source_reconstruct_integral_vector(gram, basis, invalid_reduced, candidate)
     except ArithmeticError:
         pass
     else:
@@ -348,6 +349,47 @@ def test_source_integral_vector_allmeth_v2_returns_exact_positive_witness() -> N
         assert "no positive direction" in str(error)
     else:
         raise AssertionError("V2 iterator accepted a form with no positive direction")
+
+
+def test_source_integral_vector_allmeth_selects_isotropic_shortcut_exactly() -> None:
+    """The generic source wrapper chooses the isotropic branch from inequality semantics."""
+    from sage.all import QQ, ZZ, identity_matrix, matrix
+
+    gram = matrix(ZZ, [[0, 0], [0, 1]])
+    calls = []
+    def isotropic_reduction(_gram, *, look_for_isotropic):
+        assert look_for_isotropic
+        calls.append("isotropic")
+        return identity_matrix(ZZ, 2), gram, (QQ(1) / 2, QQ.zero())
+    def reduction(_gram):
+        calls.append("reduction")
+        return identity_matrix(ZZ, 2), gram
+    def find_vector(_gram, _basis, _reduced, critical_norm, strict_inequality):
+        calls.append(("v2", critical_norm, strict_inequality))
+        return (ZZ(0), ZZ(1))
+
+    isotropic = _source_integral_vector_allmeth(
+        gram, QQ.zero(), False, reduction=reduction,
+        isotropic_reduction=isotropic_reduction, find_vector=find_vector,
+    )
+    assert isotropic == (ZZ(1), ZZ(0))
+    assert calls == ["isotropic"]
+
+    calls.clear()
+    positive = _source_integral_vector_allmeth(
+        gram, QQ.zero(), True, reduction=reduction,
+        isotropic_reduction=isotropic_reduction, find_vector=find_vector,
+    )
+    assert positive == (ZZ(0), ZZ(1))
+    assert calls == ["reduction", ("v2", QQ.zero(), True)]
+
+    calls.clear()
+    negative_critical = _source_integral_vector_allmeth(
+        gram, -QQ.one(), True, reduction=reduction,
+        isotropic_reduction=isotropic_reduction, find_vector=find_vector,
+    )
+    assert negative_critical == (ZZ(1), ZZ(0))
+    assert calls == ["isotropic"]
 
 
 def test_integral_positive_vector_consumer_uses_pinned_diagonalization() -> None:

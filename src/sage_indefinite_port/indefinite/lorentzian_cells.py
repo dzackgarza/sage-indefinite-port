@@ -51,7 +51,10 @@ from sage.sets.real_set import RealSet
 from sage.structure.element import RingElement
 from sage.structure.parent import Parent
 
-from sage_indefinite_port.indefinite.indefinite_reduction import _indefinite_reduction
+from sage_indefinite_port.indefinite.indefinite_reduction import (
+    _compute_indefinite_reduction,
+    _indefinite_reduction,
+)
 from sage_indefinite_port.invariants import AttackProfile
 
 type PerfectMode = Literal["total", "isotropic"]
@@ -2425,29 +2428,34 @@ def _pinned_positive_eigen_directions(
     )
 
 
-def _source_reconstruct_positive_vector(
+def _source_reconstruct_integral_vector(
     gram: Matrix_integer_dense,
     basis: Matrix_integer_dense,
     reduced: Matrix_integer_dense,
     candidate: FreeModuleElement[Integer],
+    critical_norm: Rational = SageQQ.zero(),
+    strict_inequality: bool = True,
 ) -> tuple[Integer, ...] | None:
-    r"""Lift one V2 candidate through the source reduction and certify its norm.
+    r"""Lift one V2 candidate and certify the requested quadratic inequality.
 
-    Return ``None`` for a nonpositive reduced candidate; otherwise map row
+    Return ``None`` when the reduced norm fails the requested bound; otherwise
+    map row
     coordinates by ``basis.transpose()`` and verify the exact original-form
     witness before the caller returns it.
     """
     if candidate not in SageZZ**reduced.nrows():
         raise ValueError("candidate coordinates must match the reduced Gram matrix")
-    reduced_norm = SageZZ((candidate * reduced * candidate.column())[0])
-    if reduced_norm <= 0:
+    reduced_norm = SageQQ((candidate * reduced * candidate.column())[0])
+    critical_norm = SageQQ(critical_norm)
+    accepted = reduced_norm > critical_norm if strict_inequality else reduced_norm >= critical_norm
+    if not accepted:
         return None
     original_column = basis.transpose() * candidate.column()
     result = tuple(SageZZ(original_column[row, 0]) for row in range(int(original_column.nrows())))
     original_vector = vector(SageZZ, result)
-    original_norm = SageZZ((original_vector * gram * original_vector.column())[0])
+    original_norm = SageQQ((original_vector * gram * original_vector.column())[0])
     if original_norm != reduced_norm:
-        raise ArithmeticError("positive-vector reduction lost its integral norm witness")
+        raise ArithmeticError("integral-vector reduction lost its exact norm witness")
     return result
 
 
@@ -2455,6 +2463,8 @@ def _source_integral_vector_allmeth_v2(
     gram: Matrix_integer_dense,
     basis: Matrix_integer_dense,
     reduced: Matrix_integer_dense,
+    critical_norm: Rational = SageQQ.zero(),
+    strict_inequality: bool = True,
 ) -> tuple[Integer, ...]:
     r"""Port ``GetIntegralVector_allmeth_V2`` on a supplied reduced form.
 
@@ -2517,23 +2527,60 @@ def _source_integral_vector_allmeth_v2(
         for ordered, nexts, approximation in iterators:
             _advance_pinned_approximation_iterator(ordered, nexts, approximation)
             candidate = vector(SageZZ, approximation)
-            result = _source_reconstruct_positive_vector(gram, basis, reduced, candidate)
+            result = _source_reconstruct_integral_vector(
+                gram, basis, reduced, candidate, critical_norm, strict_inequality
+            )
             if result is not None:
                 return result
         for ordered, nexts, approximation in eigen_iterators:
             _advance_pinned_approximation_iterator(ordered, nexts, approximation)
             candidate = vector(SageZZ, approximation)
-            result = _source_reconstruct_positive_vector(gram, basis, reduced, candidate)
+            result = _source_reconstruct_integral_vector(
+                gram, basis, reduced, candidate, critical_norm, strict_inequality
+            )
             if result is not None:
                 return result
+
+
+def _source_integral_vector_allmeth(
+    gram: Matrix_integer_dense,
+    critical_norm: Rational,
+    strict_inequality: bool,
+    *,
+    reduction: Callable[[Matrix_integer_dense], tuple[Matrix_integer_dense, Matrix_integer_dense]] = _indefinite_reduction,
+    isotropic_reduction: Callable[..., tuple[Matrix_integer_dense, Matrix_integer_dense, object]] = _compute_indefinite_reduction,
+    find_vector: Callable[[Matrix_integer_dense, Matrix_integer_dense, Matrix_integer_dense, Rational, bool], tuple[Integer, ...]] = _source_integral_vector_allmeth_v2,
+) -> tuple[Integer, ...]:
+    r"""Port ``GetIntegralVector_allmeth`` from Positivity.h:410-482.
+
+    The isotropic shortcut is enabled exactly when the requested inequality
+    admits norm zero. Otherwise run IndefiniteReduction, search its reduced
+    form with V2, and reconstruct the certified original-coordinate vector.
+    """
+    if gram.nrows() != gram.ncols():
+        raise ValueError("the Gram matrix must be square")
+    critical_norm = SageQQ(critical_norm)
+    isotropic_fine = critical_norm < 0 if strict_inequality else critical_norm <= 0
+    if isotropic_fine:
+        _basis, _reduced, isotropic = isotropic_reduction(gram, look_for_isotropic=True)
+        if isotropic is not None:
+            rational = vector(SageQQ, isotropic)
+            denominator = SageZZ.one()
+            for entry in rational:
+                denominator = denominator.lcm(entry.denominator())
+            integral = vector(SageZZ, [SageZZ(entry * denominator) for entry in rational])
+            if not any(integral) or (integral * gram * integral.column())[0] != 0:
+                raise ArithmeticError("isotropic reduction did not return a nonzero integral isotropic vector")
+            return tuple(integral)
+    basis, reduced = reduction(gram)
+    return find_vector(gram, basis, reduced, critical_norm, strict_inequality)
 
 
 def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integer, ...]:
     r"""Port ``GetIntegralPositiveVector_allmeth`` from Positivity.h:499-518."""
     if gram.nrows() == 0:
         raise ValueError("the Gram matrix has no positive direction")
-    basis, reduced = _indefinite_reduction(gram)
-    return _source_integral_vector_allmeth_v2(gram, basis, reduced)
+    return _source_integral_vector_allmeth(gram, SageQQ.zero(), True)
 
 
 def _source_graver_k_basis(dimension: int, degree: int) -> tuple[tuple[int, ...], ...]:
