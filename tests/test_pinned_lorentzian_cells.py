@@ -1572,6 +1572,7 @@ def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
         (matrix(QQ, [[1, 2], [0, 1]]), (QQ(0), QQ(0)), QQ(1)),
         (matrix(QQ, [[1, 0], [0, 1]]), (QQ(0),), QQ(1)),
         (matrix(QQ, [[1]]), (0.5,), QQ(1)),
+        (matrix(QQ, [[1]]).change_ring(RDF), (RDF(0),), QQ(1)),
         (matrix(QQ, [[1]]), (QQ(0),), 1.0),
         (matrix(QQ, [[1]]), (QQ(0),), QQ(-1)),
     ):

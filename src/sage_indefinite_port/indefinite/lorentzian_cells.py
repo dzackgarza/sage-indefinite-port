@@ -2116,6 +2116,8 @@ def _fixed_distance_coordinate_solutions(
     """
     if gram.nrows() != gram.ncols() or gram != gram.transpose():
         raise ValueError("fixed-distance coordinate enumeration requires a symmetric square Gram matrix")
+    if gram.base_ring() is not SageQQ:
+        raise ValueError("fixed-distance coordinate enumeration requires an exact QQ Gram matrix")
     rank = int(gram.nrows())
     if len(target) != rank:
         raise ValueError("fixed-distance target must have the Gram matrix dimension")
