@@ -2307,10 +2307,19 @@ def _pinned_diagonalize_symmetric_matrix(
                     nondegenerate_transform[row_index, j] * nullspace_transform[radical_rank + j, column_index] for j in range(nondegenerate_rank)
                 )
     diagonal_matrix = cast(Matrix_rational_dense, transform * qgram * transform.transpose())
+    expected_diagonal = cast(Matrix_rational_dense, radical_reduced)
+    if nondegenerate_rank:
+        expected_nonzero_block = cast(
+            Matrix_rational_dense,
+            nondegenerate_transform * nondegenerate * nondegenerate_transform.transpose(),
+        )
+        for i in range(nondegenerate_rank):
+            for j in range(nondegenerate_rank):
+                expected_diagonal[radical_rank + i, radical_rank + j] = expected_nonzero_block[i, j]
+    if diagonal_matrix != expected_diagonal:
+        raise ArithmeticError("pinned diagonalization lost its independently assembled congruence witness")
     if any(diagonal_matrix[i, j] for i in range(rank) for j in range(rank) if i != j):
         raise ArithmeticError("pinned symmetric diagonalization left off-diagonal entries")
-    if transform * qgram * transform.transpose() != diagonal_matrix:
-        raise ArithmeticError("positive-direction diagonalization lost its congruence witness")
     if not transform.det():
         raise ArithmeticError("positive-direction diagonalization is singular")
 
