@@ -12,6 +12,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _pinned_positive_gcd_dot,
     _pinned_sublattice_basis_reduction,
     _primitive_integral_direction,
+    _upper_bound,
 )
 
 
@@ -97,6 +98,24 @@ def test_pinned_positive_gcd_dot_matches_exact_coefficients() -> None:
         divisor, coefficients = _pinned_positive_gcd_dot(values)
         assert (divisor, coefficients) == expected
         assert sum(a * b for a, b in zip(values, coefficients, strict=True)) == divisor
+
+
+def test_flip_upper_bound_uses_rational_isotropic_exit_and_rejects_coincident_exit() -> None:
+    """Match GetUpperBound's isotropic root and constant-bound collision."""
+    from sage.all import QQ, matrix, vector
+
+    gram = matrix(QQ, [[1, 0], [0, -1]])
+    base = vector(QQ, [0, 1, 0])
+    direction = vector(QQ, [0, 0, 1])
+    # q((1,0) + t(0,1)) = 1 - t^2, so the first positive isotropic
+    # parameter is exactly one; the doubling search's bound is two.
+    assert _upper_bound(gram, base, direction) == QQ.one()
+
+    # The affine constant also vanishes at t=1. The pinned source returns
+    # fail in this coincident-bound case rather than accepting that boundary.
+    base_with_constant = vector(QQ, [-1, 1, 0])
+    direction_with_constant = vector(QQ, [1, 0, 1])
+    assert _upper_bound(gram, base_with_constant, direction_with_constant) is None
 
 
 def test_pinned_sublattice_basis_reduction_preserves_row_lattice() -> None:
