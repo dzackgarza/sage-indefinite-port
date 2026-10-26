@@ -1610,6 +1610,7 @@ def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
 
     cases = (
         (matrix(QQ, [[1]]), (QQ(1) / 2,), QQ(1) / 4),
+        (matrix(QQ, [[1]]), (QQ(1) / 3,), QQ(4) / 9),
         (matrix(QQ, [[2, 1], [1, 3]]), (QQ(1) / 2, QQ(1) / 3), QQ(1) / 2),
         (matrix(QQ, [[2, 1], [1, 2]]), (QQ(1) / 2, QQ(1) / 2), QQ(1) / 2),
         (matrix(QQ, [[1, 0], [0, 2]]), (QQ(0), QQ(0)), QQ(1)),
