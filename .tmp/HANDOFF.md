@@ -26,23 +26,24 @@ The repair scope remains open for every listed failing family.
 
 ## Now
 
-Repair research `LatticeIsometryMor._witness_matrix` for definite integral
-pairs. At port `5024411` with provider `c55fa8a7`, the unchanged degree-18
-vector-orbit test reaches comparison with the published representatives and
-fails in PARI qfisom. The preceding original U_2U_A3 isometry and Dawes
-boundary case pass. The owner reproducer is an integral shear of E8 + <18>
-in `tests/lattices/test_lattice_isometry_semantic_api.sage` on the isolated
-research branch. Verify both signs and the independent non-isometric binary
-pair after changing the backend. OSCAR 1.8.2 supplies exact definite
-isometries through invariant-sublattice decomposition; its row-action
-witness must be transposed for research's column-image convention.
+Finish the unchanged frozen vector consumers with research
+`53c48e0ab7c8f74f9c15f2e0970b11f29376dc23` and port source `5024411`.
+The repaired definite witness backend passes exact change-of-basis, inverse
+and pairing checks for both signs of E8 + <18>, and rejects the independent
+non-isometric binary pair. `.tmp/repair-definite-witness-fixed.log` is the
+current selected run, with reflected-vector `r_0` followed by degree-18
+vector representatives. Both previously exhausted PARI qfisom at 1 GiB;
+the new backend uses OSCAR invariant-sublattice decomposition through the
+existing adapter. Read actual outcomes before further changes.
 
-The frozen selected run `.tmp/repair-flip-frozen-consumers.log` uses
-immutable port sources `.tmp/port-5024411/src` and provider c55fa8a7.
-Its remaining r_0 vector-stabilizer result is open. The separate
-`.tmp/repair-isotropic-fixed.log` passes IsotropicCases_813 and is still
-computing the I_1_2 stabilizer image. Read the actual outcomes before
-selecting further repairs.
+The I_1_2 isotropic-stabilizer assertion remains open. Its instrumented
+single-case run is `.tmp/repair-isotropic-stabilizer-stack.log`, using the
+same source implementation. Repeated samples locate its work in
+`LorentzianPerfectLocalBackend.cell_transporter`, matching perfect cells
+while constructing the ambient orthogonal group. No new assertion failure
+has been observed. The earlier uninstrumented run was interrupted and is
+not passing evidence. `.tmp/repair-isotropic-stabilizer-diagnosis.md`
+records the diagnostic boundary.
 
 The corrected Lorentzian flip preserves GAP's IsSubset(A,B) convention.
 Both source exits return the exact supporting face x=1 of x^2-y^2 in the
@@ -50,15 +51,15 @@ independent owner example. Research's OSCAR orthogonal-group adapter has
 verified order 1393459200 and exact generator actions on E8 + <18>.
 
 The isolated provider worktree is `.tmp/research-acceptance-repair`, branch
-`fix/acceptance-quotient-cardinality`. Its repairs through c55fa8a7 are also
-on research main at `f98317ee80577ce0ca20a529db2e40818396924a`.
+`fix/acceptance-quotient-cardinality`. Its repairs through 2e204df5 are also
+on research main at `fdfed1d61c4b2530abb9822c93e457c1d26bc825`.
 Preserve unrelated work in both checkouts. Polarized extension groups must
 restrict by O(L^f,h), not the full invariant orthogonal group.
 
 Acceptance still required, in order:
 
 1. Finish the selected vector consumers above and the unchanged isotropic
-   stabilizer case `I_1_2` in `.tmp/repair-isotropic-fixed.log`. The original
+   stabilizer case `I_1_2` in `.tmp/repair-isotropic-stabilizer-stack.log`. The original
    U_2U_A3 isometry now passes its unchanged witness assertion.
 2. Complete the isotropic consumers after exact integer configuration
    pairings. `IsotropicCases_813` has not returned a verified result.
