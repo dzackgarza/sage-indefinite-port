@@ -2241,7 +2241,10 @@ def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integ
     # DiagonalizeNonDegenerateSymmetricMatrix. Store basis vectors as rows.
     rank = int(reduced.nrows())
     qgram = cast(Matrix_rational_dense, reduced.change_ring(SageQQ))
-    radical = cast(Matrix_rational_dense, qgram.left_kernel().basis_matrix())
+    # PositivitySymmetricMatrices.g:27-35 uses GAP NullspaceMat via
+    # NullspaceReduction; preserve that row order for the positive-vector
+    # diagonalization just as in GetSomeNegativeVector.
+    radical = _pinned_nullspace_matrix(qgram)
     radical_rank = int(radical.nrows())
     zero_radical = cast(
         Matrix_rational_dense,

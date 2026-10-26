@@ -154,7 +154,9 @@ def test_pinned_nullspace_preserves_gap_row_basis_order() -> None:
     from sage.all import QQ, matrix
 
     gram = matrix(QQ, [[1, 2, 3], [2, 4, 6], [3, 6, 9]])
-    assert _pinned_nullspace_matrix(gram) == matrix(QQ, [[-2, 1, 0], [-3, 0, 1]])
+    pinned_basis = _pinned_nullspace_matrix(gram)
+    assert pinned_basis == matrix(QQ, [[-2, 1, 0], [-3, 0, 1]])
+    assert pinned_basis != gram.left_kernel().basis_matrix()
     assert _pinned_nullspace_matrix(matrix(QQ, [[1, 0], [0, 1]])).nrows() == 0
     assert _pinned_nullspace_matrix(matrix(QQ, 0, 3)).dimensions() == (0, 0)
     rectangular_full_row_rank = matrix(QQ, [[1, 0, 0], [0, 1, 0]])
