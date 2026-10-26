@@ -495,35 +495,30 @@ class _ConfigurationPairings:
     """
 
     def __init__(self, rows: tuple[tuple[int, ...], ...], gram: Matrix_integer_dense) -> None:
-        # Bound with Python integers *before* conversion: np.abs(-2**63)
-        # overflows, and converting an out-of-range lattice coefficient to
-        # int64 must not silently change the integral Gram pairing.
-        maximum_row = max(abs(int(entry)) for row in rows for entry in row)
-        maximum_gram = max(abs(int(entry)) for row in gram.rows() for entry in row)
-        bound = gram.nrows() ** 2 * maximum_row ** 2 * maximum_gram
-        if bound >= 2**40:
-            raise ArithmeticError("perfect-cell pairings exceed exact 64-bit integer arithmetic")
-        self.rows = np.array(rows, dtype=np.int64)
-        form = np.array([[int(entry) for entry in row] for row in gram.rows()], dtype=np.int64)
-        self.covectors = self.rows @ form
+        # lorentzian_perfect.h:1212-1256 uses exact scalar products without
+        # a coefficient bound. Sage's integer matrices retain that contract
+        # for both configuration equivalence and perfect-form invariants.
+        self.rows = matrix(SageZZ, rows)
+        self.covectors = self.rows * gram.change_ring(SageZZ)
 
     def __len__(self) -> int:
-        return self.rows.shape[0]
+        return self.rows.nrows()
 
     def __getitem__(self, index: tuple[int, int]) -> int:
         left, right = index
-        return int(self.covectors[left] @ self.rows[right])
+        return int(self.covectors.row(left).dot_product(self.rows.row(right)))
 
     def diagonal(self):
-        return np.einsum("ij,ij->i", self.covectors, self.rows)
+        return tuple(self.covectors.row(i).dot_product(self.rows.row(i)) for i in range(len(self)))
 
     def column(self, index: int):
         # The form is symmetric, so column j holds b(v_l, v_j) for every l.
-        return self.rows @ self.covectors[index]
+        return self.rows * self.covectors.row(index)
 
     def blocks(self):
         for start in range(0, len(self), _PAIRING_BLOCK_ROWS):
-            yield start, self.covectors[start : start + _PAIRING_BLOCK_ROWS] @ self.rows.T
+            block = self.covectors[start : start + _PAIRING_BLOCK_ROWS, :] * self.rows.transpose()
+            yield start, np.array([list(row) for row in block.rows()], dtype=object)
 
 
 def _row_multiset(row, own_value: int) -> tuple[tuple[int, int], ...]:
@@ -542,9 +537,7 @@ def _refined_signatures(pairings: _ConfigurationPairings, colours: tuple[int, ..
     r"""Each vertex's colour with the multiset of (pairing, neighbour colour), coded as pairing * modulus + colour."""
     if modulus <= 0 or len(colours) != len(pairings):
         raise ValueError("refinement requires one colour per configuration vector and a positive modulus")
-    # Pairings are exact int64, but the refinement encoding multiplies
-    # them by the number of colour classes.  That product need not fit
-    # int64 even when every pairing does.  Promote before multiplication.
+    # Keep both pairings and colour encodings in arbitrary-precision arithmetic.
     colour_array = np.array(colours, dtype=object)
     signatures = []
     for start, block in pairings.blocks():
@@ -1286,19 +1279,10 @@ def _perfect_form_hash_key(cell: LorentzianPerfectCell) -> PerfectFormKey:
     isometry, read off the n x rank row matrix.  The exact isometry test
     remains mandatory.
     """
-    exact_gram = _gram_matrix(cell.lattice)
-    maximum_row = max(abs(int(entry)) for row in cell.rows for entry in row)
-    maximum_gram = max(abs(int(entry)) for row in exact_gram.rows() for entry in row)
-    bound = exact_gram.nrows() ** 2 * maximum_row ** 2 * maximum_gram
-    if bound >= 2**62:
-        raise ArithmeticError("perfect-cell pairings exceed exact 64-bit integer arithmetic")
-    rows = np.array(cell.rows, dtype=np.int64)
-    gram = np.array([[int(entry) for entry in row] for row in exact_gram.rows()], dtype=np.int64)
-    covectors = rows @ gram
-    diagonal = Counter(int(value) for value in np.einsum("ij,ij->i", covectors, rows))
+    pairings = _ConfigurationPairings(cell.rows, _gram_matrix(cell.lattice))
+    diagonal = Counter(int(value) for value in pairings.diagonal())
     all_pairs: Counter[int] = Counter()
-    for start in range(0, rows.shape[0], _PAIRING_BLOCK_ROWS):
-        block = rows[start : start + _PAIRING_BLOCK_ROWS] @ covectors.T
+    for _start, block in pairings.blocks():
         values, counts = np.unique(block, return_counts=True)
         all_pairs.update(dict(zip((int(value) for value in values), (int(count) for count in counts), strict=True)))
     # The full square counts each unordered pair twice and the diagonal once.

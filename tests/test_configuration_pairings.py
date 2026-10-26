@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from sage.all import ZZ, matrix
 
-from sage_indefinite_port.indefinite.lorentzian_cells import _ConfigurationPairings
+from sage_indefinite_port.indefinite.lorentzian_cells import (
+    LorentzianPerfectCell,
+    ZERO_SQUARES,
+    _ConfigurationPairings,
+    _perfect_form_hash_key,
+)
+from tests.acceptance.consumer import lattice
 
 
 def test_hyperbolic_plane_pairings_preserve_integral_change_of_basis() -> None:
@@ -27,3 +33,17 @@ def test_hyperbolic_plane_pairings_preserve_integral_change_of_basis() -> None:
                 assert pairings[i, j] == expected[i, j]
         for start, block in pairings.blocks():
             assert matrix(ZZ, block.tolist()) == expected[start : start + len(block), :]
+
+
+def test_isotropic_cell_invariants_preserve_integral_change_of_basis() -> None:
+    """The primitive null basis of U has norms zero and mutual pairing one."""
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    shear = matrix(ZZ, [[1, 2**80 + 1], [0, 1]])
+    changed_gram = shear.inverse() * gram * shear.inverse().transpose()
+    cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
+    changed_cell = LorentzianPerfectCell(
+        lattice(changed_gram.rows()), tuple(tuple(row) for row in shear), ZERO_SQUARES
+    )
+    expected = (((0, 2),), ((1, 1),), (1, 1), (1, 1))
+    assert _perfect_form_hash_key(cell) == expected
+    assert _perfect_form_hash_key(changed_cell) == expected
