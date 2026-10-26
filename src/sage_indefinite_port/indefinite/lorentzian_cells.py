@@ -2845,7 +2845,7 @@ def _source_indefinite_short_positive_vector(
         if stop:
             if best_vector is None:
                 raise ArithmeticError("the positive-vector search has no best vector")
-            return tuple(SageQQ(entry) for entry in best_vector)
+            return tuple(SageZZ(entry) for entry in best_vector)
         # Positivity.h:660 resets at a strict factor of 1000.
         perturbed_l1 = sum(abs(entry) for entry in perturbed_gram.list())
         if _source_should_reset_positive_perturbation(perturbed_l1, gram_l1):

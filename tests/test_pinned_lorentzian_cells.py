@@ -868,7 +868,9 @@ def test_source_indefinite_short_positive_vector_certifies_search_witnesses() ->
     from sage.all import ZZ, identity_matrix, matrix
 
     gram = matrix(ZZ, [[1]])
-    assert _source_indefinite_short_positive_vector(gram, lambda _gram: (ZZ(1),)) == (ZZ(1),)
+    result = _source_indefinite_short_positive_vector(gram, lambda _gram: (ZZ(1),))
+    assert result == (ZZ(1),)
+    assert all(type(entry) is type(ZZ(0)) for entry in result)
     for bad_gram, witness in (
         (matrix(ZZ, 0, 0), ()),
         (matrix(ZZ, [[1, 2], [0, 1]]), (ZZ(1), ZZ(1))),
