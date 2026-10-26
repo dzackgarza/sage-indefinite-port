@@ -5,6 +5,8 @@ of perfect-domain orbits in the "total" and "isotropic" modes. The total mode is
 through the preamble's reduction complex, whose generators must generate O(L).
 """
 
+from dataclasses import replace
+
 import pytest
 
 from sage_indefinite_port.indefinite.lorentzian_cells import (
@@ -74,3 +76,27 @@ def test_facet_orbit_permutation_view_materializes_exact_isometries() -> None:
             assert facet == isometry_facet
             for position, image_position in enumerate(permutation):
                 assert isometry(cell.vector_configuration[position]) == cell.vector_configuration[image_position]
+
+
+def test_large_cell_cone_uses_exact_normaliz_h_presentation() -> None:
+    """The large-configuration backend preserves the owned exact cone interface."""
+    require(PERFECT_DOMAINS)
+
+    case = next(case for case in load_lorentzian_perfect_domains() if case["id"] == "Result_Enumeration_1")
+    backend = LorentzianPerfectLocalBackend()
+    cell = backend.initial_cell(lattice(case["gram"]), NONNEGATIVE_SQUARES)
+    # Repeating the same rays keeps the cone unchanged while forcing the
+    # large-configuration Normaliz path without a costly high-rank fixture.
+    large_cell = replace(cell, rows=cell.rows * 4_000)
+    assert len(large_cell.rows) >= 10_000
+    large_cone = backend.cell_cone(large_cell)
+    small_cone = backend.cell_cone(cell)
+    labels = tuple(cell.lattice.module_generating_set())
+
+    def covector_rows(cone):
+        return {
+            tuple(int(covector.to_vector()(label)) for label in labels)
+            for covector in cone.halfspace_covectors()
+        }
+
+    assert covector_rows(large_cone) == covector_rows(small_cone)
