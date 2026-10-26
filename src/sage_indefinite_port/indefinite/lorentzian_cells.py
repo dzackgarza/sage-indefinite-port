@@ -2484,7 +2484,18 @@ def _source_integral_vector_allmeth_v2(
     rank = int(reduced.nrows())
     qgram = cast(Matrix_rational_dense, reduced.change_ring(SageQQ))
     transform, diagonal_matrix = diagonalize(qgram)
-
+    if (
+        transform.nrows() != rank
+        or transform.ncols() != rank
+        or diagonal_matrix.nrows() != rank
+        or diagonal_matrix.ncols() != rank
+        or not transform.det()
+    ):
+        raise ArithmeticError("exact diagonalization returned a singular or dimensionally invalid transform")
+    if diagonal_matrix != transform * qgram * transform.transpose():
+        raise ArithmeticError("exact diagonalization failed its Gram congruence certificate")
+    if any(diagonal_matrix[i, j] for i in range(rank) for j in range(rank) if i != j):
+        raise ArithmeticError("exact diagonalization returned a nondiagonal Gram matrix")
 
     iterators: list[
         tuple[

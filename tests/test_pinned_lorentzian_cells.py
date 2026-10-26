@@ -365,6 +365,18 @@ def test_source_v2_honors_critical_norm_and_strictness() -> None:
     assert (inclusive * gram * inclusive.column())[0] == 1
     assert (strict * gram * strict.column())[0] == 4
 
+    def false_diagonalization(_gram):
+        return identity_matrix(QQ, 2), matrix(QQ, [[2, 0], [0, -1]])
+    try:
+        _source_integral_vector_allmeth_v2(
+            gram, basis, gram, QQ.one(), False,
+            diagonalize=false_diagonalization, eigen_directions=no_eigen_directions,
+        )
+    except ArithmeticError:
+        pass
+    else:
+        raise AssertionError("V2 accepted an uncertified exact diagonalization")
+
 
 def test_source_integral_vector_allmeth_v2_returns_exact_positive_witness() -> None:
     """Exercise the complete V2 iterator consumer with an identity reduction."""
