@@ -2736,7 +2736,16 @@ def _source_direct_graver_improvement(
             direction_norm = int((direction * gram * direction.column())[0])
             alpha = _quadratic_descent_prefix(base_norm, mixed, direction_norm)
             if alpha:
+                previous_norm = base_norm
+                for step in range(1, alpha + 1):
+                    step_norm = base_norm + 2 * mixed * step + direction_norm * step * step
+                    if step_norm <= 0 or step_norm >= previous_norm:
+                        raise ArithmeticError("Graver descent prefix contains a nonpositive or nondecreasing step")
+                    previous_norm = step_norm
                 improved += alpha * direction
+                actual_norm = int((improved * gram * improved.column())[0])
+                if actual_norm != previous_norm:
+                    raise ArithmeticError("Graver descent prefix disagrees with the exact updated vector norm")
                 changes += alpha
         if changes == 0:
             return improved
@@ -2788,23 +2797,18 @@ def _source_indefinite_short_positive_vector(
     if gram.nrows() == 0 or gram.nrows() != gram.ncols() or gram != gram.transpose():
         raise ValueError("short-positive-vector search requires a nonempty symmetric Gram matrix")
     rank = int(gram.nrows())
-    if rank == 0 or gram.ncols() != rank:
-        raise ValueError("short positive-vector search requires a nonempty square Gram matrix")
-    if gram != gram.transpose():
-        raise ValueError("short positive-vector search requires a symmetric Gram matrix")
     directions = tuple(vector(SageZZ, row) for row in _source_graver_k_basis(rank, 2))
     gram_l1 = sum(abs(entry) for entry in gram.list())
     perturbation = identity_matrix(SageZZ, rank)
     best_vector: FreeModuleElement[Integer] | None = None
     best_norm: Integer | None = None
     without_improvement = 0
-    gram_l1 = sum(abs(entry) for entry in gram.list())
     while True:
         if perturbation.nrows() != rank or perturbation.ncols() != rank or abs(perturbation.det()) != 1:
             raise ArithmeticError("positive-vector perturbation is not an integral lattice automorphism")
         perturbed_gram = perturbation * gram * perturbation.transpose()
-        if perturbed_gram != perturbed_gram.transpose() or perturbed_gram != perturbation * gram * perturbation.transpose():
-            raise ArithmeticError("positive-vector perturbation lost its exact Gram congruence")
+        if perturbed_gram != perturbed_gram.transpose():
+            raise ArithmeticError("positive-vector perturbation lost Gram symmetry")
         # Positivity.h:614-624 takes the *integral* positive witness of the
         # perturbed Gram matrix from GetIntegralPositiveVector_allmeth.  Its
         # V2 approximation iterators are implemented above.  Calling the

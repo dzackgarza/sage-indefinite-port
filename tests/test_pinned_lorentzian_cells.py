@@ -952,6 +952,21 @@ def test_source_direct_graver_improvement_matches_literal_ordered_passes() -> No
         assert (actual * gram * actual.column())[0] > 0
 
 
+def test_source_direct_graver_improvement_rejects_false_descent_prefix(monkeypatch) -> None:
+    """The update boundary verifies every claimed GetAlpha step."""
+    from sage.all import ZZ, vector
+    import sage_indefinite_port.indefinite.lorentzian_cells as cells
+
+    gram = matrix(ZZ, [[1]])
+    monkeypatch.setattr(cells, "_quadratic_descent_prefix", lambda *_args: 1)
+    try:
+        _source_direct_graver_improvement(gram, vector(ZZ, [1]), (vector(ZZ, [1]),))
+    except ArithmeticError as error:
+        assert "nonpositive or nondecreasing" in str(error)
+    else:
+        raise AssertionError("a false Graver descent prefix was accepted")
+
+
 def test_source_graver_k_basis_matches_support_and_sign_enumeration() -> None:
     """GetGraverKbasis enumerates every signed support through its requested degree."""
     from itertools import combinations, product
