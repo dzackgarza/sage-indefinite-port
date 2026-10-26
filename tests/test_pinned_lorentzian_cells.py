@@ -14,7 +14,6 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _primitive_integral_direction,
     _source_mid_value,
     _source_some_negative_vector,
-    _source_remove_fraction,
     _outside_ray_directions,
     _quadratic_descent_prefix,
     _upper_bound,
