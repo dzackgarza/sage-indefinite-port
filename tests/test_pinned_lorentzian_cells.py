@@ -131,6 +131,9 @@ def test_pinned_nullspace_preserves_gap_row_basis_order() -> None:
     gram = matrix(QQ, [[1, 2, 3], [2, 4, 6], [3, 6, 9]])
     assert _pinned_nullspace_matrix(gram) == matrix(QQ, [[-2, 1, 0], [-3, 0, 1]])
     assert _pinned_nullspace_matrix(matrix(QQ, [[1, 0], [0, 1]])).nrows() == 0
+    rectangular_full_row_rank = matrix(QQ, [[1, 0, 0], [0, 1, 0]])
+    empty_left_kernel = _pinned_nullspace_matrix(rectangular_full_row_rank)
+    assert empty_left_kernel.dimensions() == (0, 2)
 
     rational_gram = matrix(QQ, [[QQ(1) / 2, 1, QQ(3) / 2], [1, 2, 3]])
     rational_kernel = _pinned_nullspace_matrix(rational_gram)

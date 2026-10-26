@@ -3122,18 +3122,18 @@ def _upper_bound(gram: Matrix_rational_dense, base_normal: FreeModuleElement[Rat
 
 
 def _pinned_nullspace_matrix(gram: Matrix_rational_dense) -> Matrix_rational_dense:
-    r"""Return the row basis from the pinned GAP ``NullspaceMat`` algorithm.
+    r"""Return the pinned GAP ``NullspaceMat`` row basis (left nullspace).
 
-    The order and normalization of nullspace rows feed the subsequent source
-    Gram--Schmidt basis and its first-negative-vector search; Sage's canonical
-    kernel basis can span the same space while changing those rows.
+    GAP's returned vectors have length ``gram.nrows()``, including when the
+    input is rectangular. The order and normalization feed source Gram--Schmidt
+    and first-negative-vector search; Sage's canonical basis can change them.
     """
     if gram.nrows() == 0:
         return identity_matrix(SageQQ, gram.ncols())
     gap_rows = [[libgap(SageQQ(entry)) for entry in row] for row in gram.rows()]
     gap_basis = libgap.NullspaceMat(gap_rows)
     rows = [[SageQQ(entry) for entry in row] for row in gap_basis]
-    return matrix(SageQQ, rows) if rows else matrix(SageQQ, 0, gram.ncols())
+    return matrix(SageQQ, rows) if rows else matrix(SageQQ, 0, gram.nrows())
 
 
 def _source_some_negative_vector(gram: Matrix_rational_dense) -> tuple[Integer, ...]:
