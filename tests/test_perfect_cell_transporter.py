@@ -11,6 +11,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     LorentzianPerfectLocalBackend,
     NONNEGATIVE_SQUARES,
     ZERO_SQUARES,
+    _extend_configuration_signatures,
 )
 from tests.acceptance.consumer import lattice, rows_of
 
@@ -90,3 +91,13 @@ def test_all_integral_transporters_extend_exact_anchor_signatures() -> None:
         assert abs(transform.det()) == 1
         assert transform * gram * transform.transpose() == gram
         assert set(map(tuple, matrix(ZZ, cell.rows) * transform)) == set(cell.rows)
+
+
+def test_anchor_signature_extension_inserts_at_sorted_source_position() -> None:
+    signatures = ((0, (10, 30)), (1, (11, 31)), (0, (12, 32)))
+    column = (20, 21, 22)
+    assert _extend_configuration_signatures(signatures, column, 1) == (
+        (0, (10, 20, 30)),
+        (1, (11, 21, 31)),
+        (0, (12, 22, 32)),
+    )

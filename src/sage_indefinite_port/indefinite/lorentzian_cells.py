@@ -547,6 +547,18 @@ class _ConfigurationPairings:
             yield start, np.array([list(row)], dtype=object)
 
 
+def _extend_configuration_signatures(
+    signatures: tuple[tuple[int, tuple[int, ...]], ...],
+    column: tuple[int, ...],
+    position: int,
+) -> tuple[tuple[int, tuple[int, ...]], ...]:
+    r"""Insert one exact pairing column at its sorted anchor position."""
+    return tuple(
+        (colour, signature[:position] + (int(column[row]),) + signature[position:])
+        for row, (colour, signature) in enumerate(signatures)
+    )
+
+
 def _row_multiset(row, own_value: int) -> tuple[tuple[int, int], ...]:
     r"""The multiset of a pairing row's entries other than the vertex's own, as sorted (value, count)."""
     # NumPy's unique/sort on object arrays is not an integral-arithmetic
@@ -1097,13 +1109,11 @@ class LorentzianPerfectLocalBackend:
                         anchor_position = sum(k < choice for k in images if k != choice)
                         source_column = source_pairings.column(choice)
                         target_column = target_pairings.column(j)
-                        next_source_signatures = tuple(
-                            (colour, signature[:anchor_position] + (int(source_column[row]),) + signature[anchor_position:])
-                            for row, (colour, signature) in enumerate(source_signatures)
+                        next_source_signatures = _extend_configuration_signatures(
+                            source_signatures, source_column, anchor_position
                         )
-                        next_target_signatures = tuple(
-                            (colour, signature[:anchor_position] + (int(target_column[row]),) + signature[anchor_position:])
-                            for row, (colour, signature) in enumerate(target_signatures)
+                        next_target_signatures = _extend_configuration_signatures(
+                            target_signatures, target_column, anchor_position
                         )
                         if Counter(next_source_signatures) == Counter(next_target_signatures):
                             backtrack(images, next_source_signatures, next_target_signatures, target_basis_integral)
@@ -1128,13 +1138,11 @@ class LorentzianPerfectLocalBackend:
                     anchor_position = sum(k < choice for k in images if k != choice)
                     source_column = source_pairings.column(choice)
                     target_column = target_pairings.column(j)
-                    next_source_signatures = tuple(
-                        (colour, signature[:anchor_position] + (int(source_column[row]),) + signature[anchor_position:])
-                        for row, (colour, signature) in enumerate(source_signatures)
+                    next_source_signatures = _extend_configuration_signatures(
+                        source_signatures, source_column, anchor_position
                     )
-                    next_target_signatures = tuple(
-                        (colour, signature[:anchor_position] + (int(target_column[row]),) + signature[anchor_position:])
-                        for row, (colour, signature) in enumerate(target_signatures)
+                    next_target_signatures = _extend_configuration_signatures(
+                        target_signatures, target_column, anchor_position
                     )
                     if Counter(next_source_signatures) == Counter(next_target_signatures):
                         backtrack(images, next_source_signatures, next_target_signatures)
