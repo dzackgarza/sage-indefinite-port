@@ -13,6 +13,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _pinned_sublattice_basis_reduction,
     _primitive_integral_direction,
     _source_mid_value,
+    _source_some_negative_vector,
     _quadratic_descent_prefix,
     _upper_bound,
 )
@@ -100,6 +101,18 @@ def test_pinned_positive_gcd_dot_matches_exact_coefficients() -> None:
         divisor, coefficients = _pinned_positive_gcd_dot(values)
         assert (divisor, coefficients) == expected
         assert sum(a * b for a, b in zip(values, coefficients, strict=True)) == divisor
+
+
+def test_source_negative_vector_respects_radical_and_diagonal_order() -> None:
+    """The pinned search selects the first negative-or-zero diagonal row."""
+    from sage.all import QQ, matrix
+
+    assert _source_some_negative_vector(matrix(QQ, [[-1, 0], [0, 1]])) == (-1, 0)
+    # The first diagonalized row is radical and rounds to zero; the next
+    # nonpositive row is negative and is returned at multiplier one.
+    assert _source_some_negative_vector(
+        matrix(QQ, [[0, 0, 0], [0, -1, 0], [0, 0, 1]])
+    ) == (0, 1, 0)
 
 
 def test_source_mid_value_matches_pinned_continued_fraction_sequence() -> None:
