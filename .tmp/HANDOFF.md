@@ -24,28 +24,26 @@ The full repair condition remains open.
 
 ## Now
 
-Finish the real consumers with research
-`260c6a92c192d879d8a7cf9c988eeef97d4de84b`. The pinned provider now uses
-OSCAR normal forms for finite-form orthogonal groups and Bliss certificates
-for finite-configuration transport. The split quadratic forms in dimensions
-2, 4 and 10 and the exponent-four hyperbolic form pass their independent
-order and generator assertions. Finish the selected bilinear U(2) check in
-`.tmp/repair-two-discriminant-fixed.log`; a passing quadratic check does not
-establish the bilinear value-modulus branch.
+Complete the Sage image build
+[40326106441](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40326106441),
+then dispatch Acceptance on the current published port revision. The image
+must pass `Bliss().require()` before a shard runs. The previous image lacks
+`sage.graphs.bliss`; run 40323744944 therefore cannot validate the current
+finite-configuration implementation. The image dependency is declared in
+`ci/sage.Dockerfile` and checked by `ci-provision-sage`.
 
 Next work, in order:
 
-1. Finish the unchanged `ci_indef_U_U_E7` isometry assertion in
-   `.tmp/repair-isometry-UUE7-bliss.log`. It fails with MemoryError in the
-   old Sage graph-isomorphism route in Acceptance
-   [40320087648](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40320087648)
-   (port `7e56222`, provider `53c48e0`). Bliss passes the reindexed A2 family
-   and the independent U + E8(-2) full-configuration witness checks.
-2. Re-run unchanged I_1_2 isotropic-stabilizer and Enriques case_1 boundary
-   consumers. Both reach Sage's exhaustive finite-form orthogonal-group
-   search with the old provider. Their prior runs were stopped after that
-   call was identified. The repaired dimension-ten operation now passes its
-   mathematical assertions; the full consumers are still unverified.
+1. Obtain complete frozen reports with research
+   `260c6a92c192d879d8a7cf9c988eeef97d4de84b` and the rebuilt image.
+   Its independent split quadratic forms in dimensions 2, 4 and 10,
+   exponent-four hyperbolic form, and bilinear U(2) group assertions pass.
+   The unchanged `ci_indef_U_U_E7` isometry assertion also passes locally
+   with Bliss. These checks leave the remaining consumers open.
+2. Finish the unchanged I_1_2 isotropic-stabilizer and Enriques case_1
+   boundary consumers in `.tmp/repair-finite-form-consumers.log`. I_1_2
+   has reached subgroup-generator construction after the finite-form
+   operation. Enriques case_1 follows it in the same selected test run.
 3. Finish the A7 + diag(1,1,-1) discriminant-image assertion. Its initial
    perfect configuration has 49,861 vectors; the old pairing block retained
    51,057,664 exact scalars, and the hosted shard exited 137. Pairings now
@@ -72,11 +70,14 @@ degree-18 orbit consumers also pass in that run.
 The isolated provider checkout is `.tmp/research-acceptance-repair`, branch
 `fix/acceptance-quotient-cardinality`. Repairs through 2e204df5 were merged
 into research main at `fdfed1d61c4b2530abb9822c93e457c1d26bc825`.
-The newer finite-form and Bliss repairs are published on the provider branch.
-Research main is moving library source to
-[sage-extensions](https://github.com/dzackgarza/sage-extensions); its checkout
-has unrelated merge conflicts. Preserve that work. Verify the replacement
-library source before integrating provider changes there.
+The newer finite-form and Bliss repairs are published on the provider branch
+and carried to sage-extensions main at `8ac9197`. The replacement library
+cannot yet replace the pinned provider: its metric dual fails while selecting
+the rational value module, tracked in
+[sage-extensions #1](https://github.com/dzackgarza/sage-extensions/issues/1).
+The independent checks are committed at that owner in
+`tests/test_finite_form_groups.py`. Research main has unrelated merge
+conflicts from the library move. Preserve that work.
 
 Polarized extension groups must restrict by O(L^f,h). Generic arithmetic,
 finite configurations and finite-form groups belong to the library; the
