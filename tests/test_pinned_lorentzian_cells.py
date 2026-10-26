@@ -15,6 +15,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _source_mid_value,
     _source_some_negative_vector,
     _source_remove_fraction,
+    _outside_ray_directions,
     _quadratic_descent_prefix,
     _upper_bound,
 )
@@ -108,14 +109,11 @@ def test_outside_ray_span_normalizes_each_source_direction_independently() -> No
     """GetOneOutsideRay receives individually primitive direction rows."""
     from sage.all import QQ, matrix, vector
 
-    gram_inverse = matrix(QQ, [[1, 0], [0, QQ(1) / 2]])
-    nullspace_rows = (vector(QQ, [0, 2, 0]), vector(QQ, [0, 0, 3]))
-    directions = tuple(
-        _source_remove_fraction(vector(QQ, row[1:]) * gram_inverse)
-        for row in nullspace_rows
-    )
-    assert directions == (vector(QQ, [1, 0]), vector(QQ, [0, 1]))
-    assert all(any(entry for entry in row) for row in directions)
+    gram = matrix(QQ, [[1, 0], [0, 2]])
+    affine_nullspace = matrix(QQ, [[0, 2, 0], [0, 0, 3]])
+    directions = _outside_ray_directions(affine_nullspace, gram)
+    assert directions == matrix(QQ, [[1, 0], [0, 1]])
+    assert all(any(entry for entry in row) for row in directions.rows())
 
 
 def test_source_negative_vector_respects_radical_and_diagonal_order() -> None:

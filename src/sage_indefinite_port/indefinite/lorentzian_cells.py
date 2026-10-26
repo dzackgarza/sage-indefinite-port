@@ -580,13 +580,7 @@ class LorentzianPerfectLocalBackend:
             # covector-derived direction separately before GetOneOutsideRay.
             # Normalizing only the span basis globally changes the source's
             # candidate rows and therefore its negative-vector search order.
-            directions = matrix(
-                SageQQ,
-                [
-                    _source_remove_fraction(vector(SageQQ, row[1:]) * gram.inverse())
-                    for row in nullspace.rows()
-                ],
-            )
+            directions = _outside_ray_directions(nullspace, gram)
             outside_direction = _negative_direction_in_span(normalized, directions, critical, base_normal)
             direction_covector = gram * outside_direction.column()
             critical_row = vector(SageQQ, critical[0])
@@ -2178,6 +2172,25 @@ def _source_remove_fraction(row: FreeModuleElement[Rational]) -> FreeModuleEleme
     for integral_entry in integral:
         content = content.gcd(integral_entry)
     return vector(cast("Parent[Rational]", SageQQ), (integral_entry // content for integral_entry in integral))
+
+
+def _outside_ray_directions(
+    affine_nullspace: Matrix_rational_dense, gram: Matrix_rational_dense
+) -> Matrix_rational_dense:
+    r"""Individually primitive covector directions used by GetOneOutsideRay.
+
+    ``Lorentzian.g:1187`` applies ``RemoveFraction`` to each affine-nullspace
+    row's covector part after multiplication by the inverse Gram matrix.
+    Normalization is rowwise, not a single normalization of the resulting span.
+    """
+    inverse = gram.inverse()
+    return matrix(
+        SageQQ,
+        [
+            _source_remove_fraction(vector(SageQQ, row[1:]) * inverse)
+            for row in affine_nullspace.rows()
+        ],
+    )
 
 
 def _lorentzian_view(lattice: Lattices.ParentMethods) -> Lattices.ParentMethods:
