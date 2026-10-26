@@ -4047,23 +4047,21 @@ def _kernel_flipping(
         if square <= 0 or max_scal <= 0:
             upper = middle
             continue
-        # Lorentzian.g:918 evaluates the shortest shell, which may be empty
-        # at an intermediate rational wall parameter.  An empty shell is
-        # handled by EXIT 1 as a subset of CritSet, not as an exception.
+        # Lorentzian.g:918 evaluates the shortest shell at the trial normal.
         total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
         total_rows = set(total)
-        # Lorentzian.g:922-924 rejects the impossible cardinality combination
-        # CritSet subset ListTotal and |CritSet| > |ListTotal|.
-        if critical_rows.issubset(total_rows) and len(critical_rows) > len(total_rows):
-            raise ArithmeticError("the critical configuration cannot exceed a shell containing it")
+        # GAP IsSubset(A, B) means B is contained in A (GAP Reference 30.5-1).
+        # Lorentzian.g:922-924 rejects a proper subset of the critical shell.
+        if total_rows.issubset(critical_rows) and len(critical_rows) > len(total_rows):
+            raise ArithmeticError("the shortest shell cannot be a proper subset of the critical configuration")
         if total_rows == critical_rows:
             lower = middle
             continue
-        # Lorentzian.g:924-930, EXIT 1: the shell lies inside CritSet.
-        if total_rows.issubset(critical_rows):
+        # Lorentzian.g:924-930, EXIT 1: the shell contains CritSet.
+        if critical_rows.issubset(total_rows):
             return total, normal, test_direction_row, max_scal
-        # Lorentzian.g:922-930 enters the second scheme for every shell not
-        # contained in CritSet. Do not add a transversality prefilter here:
+        # Lorentzian.g:922-930 enters the second scheme when the shell does
+        # not contain CritSet. Do not add a transversality prefilter here:
         # the pinned algorithm selects ListTotal[1] verbatim in scheme two.
         break
     while True:
@@ -4084,7 +4082,7 @@ def _kernel_flipping(
         test_direction_row = _source_remove_fraction(test_direction.column(0))
         max_scal = (critical_first * gram * test_direction_row.column())[0]
         total = _first_positive_shell(lattice, tuple(test_direction_row), max_scal, allowed_squares)
-        # Lorentzian.g:959-966, EXIT 2: ListTotal is contained in CritSet
+        # Lorentzian.g:959-966, EXIT 2: ListTotal contains CritSet
         # together with the single vector selected above.
-        if set(total).issubset(critical_rows | {tuple(int(entry) for entry in expanded[1:])}):
+        if (critical_rows | {tuple(int(entry) for entry in expanded[1:])}).issubset(set(total)):
             return total, normal, test_direction_row, max_scal
