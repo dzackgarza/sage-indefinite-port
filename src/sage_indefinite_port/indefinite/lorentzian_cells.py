@@ -709,7 +709,10 @@ class LorentzianPerfectLocalBackend:
         # the already substantial cone-conversion peak. Compute small exact
         # blocks instead, discarding each block after its original ray indices
         # have been recorded.
-        facets = []
+        # Incidences are already set-valued and the traversal is unordered;
+        # deduplicate directly into the membership set rather than retaining
+        # a list and then allocating a second full set of its references.
+        facets = set()
         while covector_block:
             covector_coordinates = tuple(covector.to_vector() for covector in covector_block)
             covector_rows = matrix(
@@ -721,7 +724,7 @@ class LorentzianPerfectLocalBackend:
                 # Sage's exact dense row support is computed by the matrix
                 # backend. Taking its complement avoids 49,861 Python-level
                 # matrix-entry lookups per facet in the A7 configuration.
-                facets.append(all_ray_positions.difference(pairing_block.row(offset).nonzero_positions()))
+                facets.add(all_ray_positions.difference(pairing_block.row(offset).nonzero_positions()))
             covector_block = tuple(islice(covectors, 16))
         generators = self.cell_stabilizer(cell)
         # Use precisely these generators to form the ray action.  Calling
@@ -737,7 +740,7 @@ class LorentzianPerfectLocalBackend:
                 permutations.append(tuple(positions[tuple(row)] for row in (integral_ray_rows * action).rows()))
             except KeyError as exc:
                 raise ArithmeticError("a cell-stabilizer generator does not preserve its rays") from exc
-        facet_set = set(facets)
+        facet_set = facets
         # The orbit traversal below checks each generator image against the
         # complete facet set as it is encountered. Since every discovered
         # facet is expanded, this certifies preservation without a separate
