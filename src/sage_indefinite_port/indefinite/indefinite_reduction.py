@@ -15,6 +15,7 @@ from dzack_research.preamble.categories.definite_lattices import (
 )
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.matrix.constructor import identity_matrix, matrix
+from sage.libs.gap.libgap import libgap
 from sage.modules.free_module_element import vector
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
@@ -360,6 +361,52 @@ def _nondegenerate_reduction(gram):
             return basis, working
 
 
+def _source_sublattice_basis_reduction(basis):
+    r"""Port ``SublatticeBasisReductionKernel`` from ClassicLLL.h:410-448."""
+    reduced_basis = matrix(SageZZ, basis)
+    norm = _gram_l1(reduced_basis)
+    while reduced_basis.nrows() > 1:
+        changed = False
+        for dual in (False, True):
+            row_gram = reduced_basis * reduced_basis.transpose()
+            gram = row_gram.adjugate() if dual else row_gram
+            reduction = libgap.LLLReducedGramMat(
+                [[int(gram[i, j]) for j in range(gram.ncols())] for i in range(gram.nrows())],
+                libgap(99) / libgap(100),
+            )
+            transform = matrix(SageZZ, [[SageZZ(int(entry)) for entry in row] for row in reduction["transformation"]])
+            reduced_gram = matrix(SageZZ, [[SageZZ(int(entry)) for entry in row] for row in reduction["remainder"]])
+            if abs(transform.det()) != 1:
+                raise ArithmeticError("sublattice LLL returned a nonunimodular transform")
+            if dual:
+                # ClassicLLL's dual transform is P^{-T} for P reducing adj(G).
+                transform = transform.inverse().transpose()
+                expected = row_gram.det() * reduced_gram.inverse()
+            else:
+                expected = reduced_gram
+            candidate = transform * reduced_basis
+            if candidate * candidate.transpose() != expected:
+                raise ArithmeticError("sublattice LLL transform and Gram remainder disagree")
+            candidate_norm = _gram_l1(candidate)
+            if candidate_norm < norm:
+                reduced_basis, norm, changed = candidate, candidate_norm, True
+        if not changed:
+            break
+    return reduced_basis
+
+
+def _source_integer_nullspace(gram):
+    r"""Port ``NullspaceIntMat`` followed by ``SublatticeBasisReduction``."""
+    rows = [[int(entry) for entry in row] for row in gram.rows()]
+    raw = libgap.NullspaceIntMat(rows)
+    kernel = matrix(SageZZ, [[SageZZ(int(entry)) for entry in row] for row in raw]) if len(raw) else matrix(SageZZ, 0, gram.ncols())
+    if kernel * gram:
+        raise ArithmeticError("GAP integer nullspace does not annihilate the Gram matrix")
+    if kernel.nrows() != gram.ncols() - gram.rank():
+        raise ArithmeticError("GAP integer nullspace has the wrong rank")
+    return _source_sublattice_basis_reduction(kernel)
+
+
 def _source_subspace_completion_int(kernel_basis, dimension):
     r"""Port ``SubspaceCompletionInt`` from IndefiniteForms.g:471-497.
 
@@ -405,13 +452,10 @@ def _indefinite_reduction(gram):
     rank = gram.nrows()
     if not rank:
         return identity_matrix(SageZZ, 0), gram
-    hnf, unimodular = gram.hermite_form(transformation=True, include_zero_rows=True)
     nondegenerate_rank = int(gram.rank())
-    if unimodular * gram != hnf or abs(unimodular.det()) != 1:
-        raise ArithmeticError("integral nullspace splitting is not unimodular")
-    # Indefinite_LLL.h:841-857: extract the primitive integer nullspace,
-    # complete it to a Z-basis, then place the nondegenerate complement first.
-    radical = unimodular.matrix_from_rows(range(nondegenerate_rank, rank))
+    # Indefinite_LLL.h:841-857: NullspaceIntMat, LLL reduction of its row
+    # lattice, and Smith-certified SubspaceCompletionInt in source order.
+    radical = _source_integer_nullspace(gram)
     complement = _source_subspace_completion_int(radical, rank)
     full_basis = complement.stack(radical)
     separated = full_basis * gram * full_basis.transpose()

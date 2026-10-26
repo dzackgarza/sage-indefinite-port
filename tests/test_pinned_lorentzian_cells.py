@@ -256,6 +256,25 @@ def test_source_positive_candidate_lift_uses_transposed_unimodular_basis() -> No
         raise AssertionError("a false reduction norm certificate was accepted")
 
 
+def test_source_integer_nullspace_reduces_and_completes_radical() -> None:
+    """The production nullspace seam returns the pinned reduced primitive row basis."""
+    from sage.all import ZZ, matrix
+    from sage_indefinite_port.indefinite.indefinite_reduction import _source_integer_nullspace
+
+    forms = (
+        matrix(ZZ, [[1, 0, 1], [0, 1, 1], [1, 1, 2]]),
+        matrix(ZZ, [[1, 0, 0], [0, 0, 0], [0, 0, 0]]),
+        matrix(ZZ, 3, 3, 0),
+    )
+    for gram in forms:
+        kernel = _source_integer_nullspace(gram)
+        assert kernel.nrows() == gram.nrows() - gram.rank()
+        assert kernel.ncols() == gram.ncols()
+        assert not kernel * gram
+        if kernel.nrows():
+            assert kernel.rank() == kernel.nrows()
+
+
 def test_source_subspace_completion_int_returns_unimodular_complements() -> None:
     """The pinned Smith-transform completion extends primitive row lattices."""
     from sage.all import ZZ, identity_matrix, matrix
