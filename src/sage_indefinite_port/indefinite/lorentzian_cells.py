@@ -2770,8 +2770,10 @@ def _source_positive_search_best(
         raise ValueError("positive-search state requires a nonempty symmetric Gram matrix")
     if candidate not in SageZZ**gram.nrows():
         raise ValueError("positive-search candidate and Gram dimensions must agree")
-    if not 0 <= without_improvement <= 500:
-        raise ValueError("the no-improvement counter must lie in the pinned range 0..500")
+    # The source increments this counter and returns immediately at 500, so
+    # 500 is a terminal state, never an input to another transition.
+    if not 0 <= without_improvement < 500:
+        raise ValueError("the no-improvement counter must lie in the nonterminal range 0..499")
     if (best_vector is None) != (best_norm is None):
         raise ValueError("the best positive vector and its norm must be present together")
     if best_vector is not None:
