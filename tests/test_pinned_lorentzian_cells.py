@@ -1687,6 +1687,16 @@ def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
         actual = _fixed_distance_coordinate_solutions(gram, target, bound)
         cached_ldl = _positive_ldl_factorization(gram)
         assert _fixed_distance_coordinate_solutions(gram, target, bound, cached_ldl) == actual
+        bad_diagonal = list(cached_ldl[1])
+        bad_diagonal[0] = -bad_diagonal[0]
+        try:
+            _fixed_distance_coordinate_solutions(
+                gram, target, bound, (cached_ldl[0], bad_diagonal)
+            )
+        except ArithmeticError:
+            pass
+        else:
+            raise AssertionError("fixed-distance enumeration accepted a corrupt cached LDL certificate")
         actual_coordinates = {coordinates for coordinates, distance in actual if distance == bound}
         assert len(actual_coordinates) == len(actual)
         assert all(distance == bound for _coordinates, distance in actual)
