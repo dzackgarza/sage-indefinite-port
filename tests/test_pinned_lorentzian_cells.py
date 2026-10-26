@@ -1670,8 +1670,16 @@ def test_fixed_distance_coordinate_solutions_match_exact_brute_force() -> None:
     from itertools import product
     from sage.all import QQ, RDF, ZZ, matrix
 
-    assert _fixed_distance_coordinate_solutions(matrix(QQ, 0, 0), (), QQ(0)) == (((), QQ(0)),)
-    assert _fixed_distance_coordinate_solutions(matrix(QQ, 0, 0), (), QQ(1)) == ()
+    zero_gram = matrix(QQ, 0, 0)
+    assert _fixed_distance_coordinate_solutions(zero_gram, (), QQ(0)) == (((), QQ(0)),)
+    assert _fixed_distance_coordinate_solutions(zero_gram, (), QQ(1)) == ()
+    assert _fixed_distance_coordinate_solutions(zero_gram, (), QQ(0), ([], [])) == (((), QQ(0)),)
+    try:
+        _fixed_distance_coordinate_solutions(zero_gram, (), QQ(0), ([[1]], [QQ(1)]))
+    except (ValueError, ArithmeticError):
+        pass
+    else:
+        raise AssertionError("rank-zero sphere accepted a malformed cached LDL certificate")
     # A nonsquare rational squared radius has no rational square root, hence
     # no integer endpoint in rank one.
     assert _fixed_distance_coordinate_solutions(matrix(QQ, [[1]]), (QQ(0),), QQ(2)) == ()

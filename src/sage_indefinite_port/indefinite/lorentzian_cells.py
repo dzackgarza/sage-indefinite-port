@@ -2133,6 +2133,8 @@ def _fixed_distance_coordinate_solutions(
     if bound < 0:
         raise ValueError("fixed squared distance must be nonnegative")
     if rank == 0:
+        if ldl_factorization is not None:
+            _validate_fixed_distance_ldl_factorization(gram, ldl_factorization)
         return (((), bound),) if bound == 0 else ()
     factorization = ldl_factorization if ldl_factorization is not None else _positive_ldl_factorization(gram)
     lower, diagonal = factorization
