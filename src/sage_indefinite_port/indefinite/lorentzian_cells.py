@@ -2121,6 +2121,8 @@ def _fixed_distance_coordinate_solutions(
         raise ValueError("fixed-distance target must have the Gram matrix dimension")
     if any(not isinstance(entry, (int, Integer, Rational)) for entry in target):
         raise ValueError("fixed-distance target must have exact rational coordinates")
+    if not isinstance(squared_distance, (int, Integer, Rational)):
+        raise ValueError("fixed squared distance must be exact rational data")
     target = tuple(SageQQ(entry) for entry in target)
     bound = SageQQ(squared_distance)
     if bound < 0:
