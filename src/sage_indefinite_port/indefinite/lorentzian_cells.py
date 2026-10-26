@@ -2089,6 +2089,9 @@ def _validate_fixed_distance_ldl_factorization(
     lower, diagonal = factorization
     if len(lower) != rank or len(diagonal) != rank or any(len(row) != rank for row in lower):
         raise ValueError("the fixed-distance LDL factorization has incorrect dimensions")
+    entries = [entry for row in lower for entry in row] + list(diagonal)
+    if any(not isinstance(entry, (int, Integer, Rational)) for entry in entries):
+        raise ValueError("the fixed-distance LDL factorization must use exact rational entries")
     for row in range(rank):
         if lower[row][row] != 1 or any(lower[row][column] != 0 for column in range(row + 1, rank)):
             raise ArithmeticError("the fixed-distance LDL factorization is not unit lower triangular")

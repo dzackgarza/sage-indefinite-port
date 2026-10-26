@@ -1591,6 +1591,7 @@ def test_negative_ldl_factorization_is_exact_and_rejects_nonpositive_pivots() ->
         (valid_lower, [valid_diagonal[0], -valid_diagonal[1]]),
         (valid_lower, [valid_diagonal[0], valid_diagonal[1] + 1]),
         ([[1]], [QQ(1)]),
+        ([[1.0, 0.0], [0.0, 1.0]], [1.0, 1.0]),
     ):
         try:
             _validate_fixed_distance_ldl_factorization(gram, bad_factorization)
