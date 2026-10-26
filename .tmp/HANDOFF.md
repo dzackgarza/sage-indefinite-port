@@ -26,39 +26,44 @@ The repair scope remains open for every listed failing family.
 
 ## Now
 
-Repair the definite orthogonal-group computation in research
-`LatticeIsometryMor._engine_group`. The frozen consumer
-`test_published_representatives_are_one_per_orbit[18]` reaches
-`IntegralLattice(gram).orthogonal_group()` on a rank-nine positive definite
-form with an orthogonal norm-18 direction and an E8 component. PARI `qfauto`
-exhausts its stack while enumerating short vectors. Preserve the complete
-orthogonal group and exact live isometries; increasing a resource limit is
-not evidence that the required vector computations work.
+Complete the frozen vector consumers using research revision
+`c55fa8a7d5818ff075a7146e394c70a50368d580`. Its definite orthogonal groups
+use the existing OSCAR adapter. The independent lattice E8 + <18> has
+verified group order 1393459200 and exact generator actions. The unchanged
+`test_published_representatives_are_one_per_orbit[18]` and
+`test_equivalence_witness_carries_a_representative_to_its_reflection[r_0]`
+still need results. The definite isometry witness operation still uses PARI
+qfisom; inspect an actual failure before changing that operation.
 
-Use research branch `fix/acceptance-quotient-cardinality`, published revision
-`ee96afcf95ccc3e26f7b45cf92d513dc8ae7a061`, for isolated repairs. Its worktree
-is `.tmp/research-acceptance-repair`; a cloud checkout can fetch the branch.
-It extends the pinned provider with integer quotient cardinality, polarized
-full-glue restriction by O(L^f,h), and subgroup stabilizers. Integrate its
-new changes into research main after reconciling the active main work;
-preserve all unrelated dirty files there. The cardinality change already
-exists on main as `1d5d0bb24d09d12c4967a31e97b52db104734902`.
-Do not replace the polarized restriction by the unpolarized extension group.
+The isolated provider worktree is `.tmp/research-acceptance-repair`, branch
+`fix/acceptance-quotient-cardinality`. Its repairs through c55fa8a7 are also
+on research main at `f98317ee80577ce0ca20a529db2e40818396924a`.
+Preserve unrelated work in both checkouts. Polarized extension groups must
+restrict by O(L^f,h), not the full invariant orthogonal group.
 
 Acceptance still required, in order:
 
-1. Verify the newly pinned provider in hosted Acceptance, including the
-   original isometry case, all centralizers and the boundary consumers.
-   The isometry case now reaches the finite integral-representation orbit;
-   its local run was interrupted, so its result is unresolved.
+1. Resolve the original isometry case
+   `test_change_of_basis_gives_an_isometric_lattice[ci_indef_U_2U_A3]`.
+   The quotient cardinality assertion is repaired, but a completed result
+   remains missing. A run with provider ee96afcf produced an incomplete
+   timeout traceback in `_ExactCVPEngine._filtered_candidates`.
+   `.tmp/repair-isometry-diagnosis.md` records competing explanations;
+   `.tmp/repair-isometry-boundaries.log` records a run without that timeout.
+   A partial timeout trace does not identify the currently executing operation.
 2. Complete the isotropic consumers after exact integer configuration
    pairings. `IsotropicCases_813` has not returned a verified result.
 3. Repair all remaining reflective, group, boundary and vector cases using
    exact shard tracebacks, including cases with missing JUnit reports.
+4. Obtain full frozen Acceptance evidence at one published port/provider
+   pair. Run 40299696962 was cancelled and supplies no further evidence.
 
-At port `36bf6d5c5ce3731179b12b0f86d732fb5dc0f739` with the provider above,
-the unchanged reflective case `ListReflect_590` passes. Research's independent
-integer residue-cube, polarized U+U, and stable-group axis-stabilizer examples
-pass. These examples leave the full repair condition open.
-Fetch branch tips and completed Acceptance evidence before selecting a new
-failure. Post-v1 requirements remain in TODO.md and issues #40/#41.
+With port 36bf6d5/d0a9b3d and provider ee96afcf, unchanged cases
+`ListReflect_590` and `oscar_lattices_with_isometry_118` pass. Independent
+research examples for integer residue cubes, polarized U+U, and stable-group
+axis stabilizers pass. The full repair condition remains open.
+
+Other work is advancing the same port branch, including positive-vector
+validation and bounded CVP. Inspect current branch tips before changing
+those paths; retain their changes. Post-v1 requirements remain in TODO.md
+and issues #40/#41.
