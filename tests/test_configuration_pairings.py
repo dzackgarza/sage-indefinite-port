@@ -9,6 +9,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     NONNEGATIVE_SQUARES,
     ZERO_SQUARES,
     _ConfigurationPairings,
+    _configuration_pairing_block_size,
     _perfect_form_hash_key,
 )
 from tests.acceptance.consumer import lattice
@@ -58,6 +59,13 @@ def test_hyperbolic_plane_pairings_preserve_integral_change_of_basis() -> None:
     # An evicted column is recomputed exactly and re-enters the bounded cache.
     assert tuple(pairings.column(0)) == tuple(range(len(rows)))
     assert len(pairings._column_cache) == 64
+
+
+def test_configuration_pairing_blocks_have_a_bounded_exact_working_set() -> None:
+    assert _configuration_pairing_block_size(0) == 16
+    assert _configuration_pairing_block_size(49_861) == 16
+    assert _configuration_pairing_block_size(100_000) == 10
+    assert _configuration_pairing_block_size(2_000_000) == 1
 
 
 def test_isotropic_cell_invariants_preserve_integral_change_of_basis() -> None:

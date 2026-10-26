@@ -544,12 +544,22 @@ class _ConfigurationPairings:
         # issuing one matrix-vector multiplication per row. A 16-by-n block
         # remains small for the 49,861-ray A7 configuration, while reducing
         # Python/FLINT dispatches by a factor of sixteen.
-        block_size = 16
+        # Bound the temporary exact matrix by entry count as well as row
+        # count: configurations larger than the A7 case must not turn a fixed
+        # row block into an unbounded memory allocation.
+        block_size = _configuration_pairing_block_size(len(self))
         transposed_rows = self.rows.transpose()
         for start in range(0, len(self), block_size):
             stop = min(start + block_size, len(self))
             pairing_block = self.covectors.matrix_from_rows(range(start, stop)) * transposed_rows
             yield start, np.array(pairing_block.rows(), dtype=object)
+
+
+def _configuration_pairing_block_size(configuration_size: int) -> int:
+    r"""Bound exact pairing blocks to at most one million entries and 16 rows."""
+    if configuration_size < 0:
+        raise ValueError("a configuration size cannot be negative")
+    return max(1, min(16, 1_000_000 // max(1, configuration_size)))
 
 
 def _extend_configuration_signatures(
