@@ -2545,6 +2545,21 @@ def _source_integral_vector_allmeth_v2(
                 return result
 
 
+def _source_remove_fraction_vector(vector_over_q) -> tuple[Integer, ...]:
+    r"""Port ``RemoveFractionVector``: clear denominators, then divide content."""
+    rational = tuple(SageQQ(entry) for entry in vector_over_q)
+    denominator = SageZZ.one()
+    for entry in rational:
+        denominator = denominator.lcm(entry.denominator())
+    integral = tuple(SageZZ(entry * denominator) for entry in rational)
+    content = SageZZ.zero()
+    for entry in integral:
+        content = content.gcd(abs(entry))
+    if not content:
+        raise ValueError("RemoveFractionVector is undefined for the zero vector")
+    return tuple(entry // content for entry in integral)
+
+
 def _source_integral_vector_allmeth(
     gram: Matrix_integer_dense,
     critical_norm: Rational,
@@ -2567,11 +2582,7 @@ def _source_integral_vector_allmeth(
     if isotropic_fine:
         _basis, _reduced, isotropic = isotropic_reduction(gram, look_for_isotropic=True)
         if isotropic is not None:
-            rational = vector(SageQQ, isotropic)
-            denominator = SageZZ.one()
-            for entry in rational:
-                denominator = denominator.lcm(entry.denominator())
-            integral = vector(SageZZ, [SageZZ(entry * denominator) for entry in rational])
+            integral = vector(SageZZ, _source_remove_fraction_vector(isotropic))
             if not any(integral) or (integral * gram * integral.column())[0] != 0:
                 raise ArithmeticError("isotropic reduction did not return a nonzero integral isotropic vector")
             return tuple(integral)

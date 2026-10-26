@@ -27,6 +27,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _pinned_diagonalize_symmetric_matrix,
     _integral_positive_vector_allmeth,
     _source_integral_vector_allmeth,
+    _source_remove_fraction_vector,
     _source_integral_vector_allmeth_v2,
     _source_reconstruct_integral_vector,
     _pinned_positive_eigen_directions,
@@ -375,6 +376,19 @@ def test_source_integral_vector_allmeth_v2_returns_exact_positive_witness() -> N
         assert "no positive direction" in str(error)
     else:
         raise AssertionError("V2 iterator accepted a form with no positive direction")
+
+
+def test_source_remove_fraction_vector_returns_primitive_integral_coordinates() -> None:
+    """Clearing rational denominators also removes the integral content."""
+    from sage.all import QQ
+
+    assert _source_remove_fraction_vector((QQ(1) / 2, -QQ(1) / 2)) == (1, -1)
+    try:
+        _source_remove_fraction_vector((QQ.zero(), QQ.zero()))
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("zero rational vector was accepted")
 
 
 def test_source_integral_vector_allmeth_selects_isotropic_shortcut_exactly() -> None:
