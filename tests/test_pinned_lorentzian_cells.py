@@ -344,7 +344,7 @@ def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
             # Deliberately return reverse source order. A nontrivial unimodular
             # transform orders (-2,1) before (-3,0), and each exact squared
             # distance must stay attached to its own coordinate row.
-            return (((-2, 1), QQ(2)), ((-3, 0), QQ.zero()))
+            return (((-3, 0), QQ.zero()), ((-2, 1), QQ(2)))
 
     enumerator = object.__new__(cells._PositiveVectorEnumerator)
     engine = CVPEngine()
@@ -360,13 +360,13 @@ def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
     enumerator.timelike_covector = vector(ZZ, (5, 0, 0)).column()
     enumerator.d = ZZ(5)
     enumerator.scaled_max = ZZ(15)
-    enumerator.allowed_squares = {ZZ(45)}
+    enumerator.allowed_squares = {ZZ(43), ZZ(45)}
     original_element = cells._owned_engine_element
     original_rational = cells._owned_rational
     try:
         cells._owned_engine_element = lambda field, value: value
         cells._owned_rational = lambda lattice, value, field: value
-        assert enumerator.vectors_at_multiplier(3) == ((3, 0, 0),)
+        assert enumerator.vectors_at_multiplier(3) == ((3, 1, 1), (3, 0, 0))
     finally:
         cells._owned_engine_element = original_element
         cells._owned_rational = original_rational
