@@ -1,0 +1,79 @@
+"""Integral transport of perfect cells in U + E8(-2).
+
+The explicit unimodular matrix certifies that the two complete configurations
+are isometric, independently of the transporter search.
+"""
+
+from sage.all import ZZ, matrix
+
+from sage_indefinite_port.indefinite.lorentzian_cells import (
+    LorentzianPerfectCell,
+    LorentzianPerfectLocalBackend,
+    NONNEGATIVE_SQUARES,
+)
+from tests.acceptance.consumer import lattice, rows_of
+
+GRAM = ((-4, 0, 0, 0, 0, 2, 0, 0, 0, 0),
+ (0, -4, 2, 0, 0, 0, 0, 0, 0, 0),
+ (0, 2, -4, 2, 0, 0, 0, 0, 0, 0),
+ (0, 0, 2, -4, 2, 0, 0, 0, 0, 0),
+ (0, 0, 0, 2, -4, 2, 0, 0, 0, 0),
+ (2, 0, 0, 0, 2, -4, 2, 0, 0, 0),
+ (0, 0, 0, 0, 0, 2, -4, 2, 0, 0),
+ (0, 0, 0, 0, 0, 0, 2, -4, 0, 0),
+ (0, 0, 0, 0, 0, 0, 0, 0, 0, 1),
+ (0, 0, 0, 0, 0, 0, 0, 0, 1, 0))
+
+SOURCE_ROWS = ((-8, -3, -6, -9, -12, -15, -10, -5, 2, 4),
+ (0, 0, 0, 0, 0, 0, 0, 0, 0, 1),
+ (-5, -1, -3, -5, -7, -9, -6, -3, 2, 2),
+ (-5, -2, -3, -5, -7, -9, -6, -3, 2, 2),
+ (-5, -2, -4, -5, -7, -9, -6, -3, 2, 2),
+ (-5, -2, -4, -6, -7, -9, -6, -3, 2, 2),
+ (-5, -2, -4, -6, -8, -10, -6, -3, 2, 2),
+ (-5, -2, -4, -6, -8, -9, -6, -3, 2, 2),
+ (-5, -2, -4, -6, -8, -10, -7, -3, 2, 2),
+ (-5, -2, -4, -6, -8, -10, -7, -4, 2, 2))
+
+TARGET_ROWS = ((-5, -2, -4, -6, -8, -10, -7, -3, 2, 2),
+ (-11, -4, -8, -12, -16, -20, -14, -7, 4, 4),
+ (-11, -5, -9, -13, -17, -21, -14, -7, 4, 4),
+ (-5, -2, -4, -6, -8, -9, -6, -3, 2, 2),
+ (-5, -2, -3, -5, -7, -9, -6, -3, 2, 2),
+ (-5, -2, -4, -5, -7, -9, -6, -3, 2, 2),
+ (-5, -2, -4, -6, -7, -9, -6, -3, 2, 2),
+ (-11, -4, -8, -12, -16, -20, -13, -6, 4, 4),
+ (-8, -3, -6, -9, -12, -15, -10, -5, 4, 2),
+ (-9, -4, -7, -10, -13, -16, -11, -5, 4, 3))
+
+CERTIFICATE = ((-8, -3, -6, -8, -11, -14, -9, -4, 4, 2),
+ (0, 1, 1, 1, 1, 1, 0, 0, 0, 0),
+ (-6, -3, -5, -7, -9, -12, -8, -4, 2, 2),
+ (0, 0, -1, -1, -1, 0, 0, 0, 0, 0),
+ (0, 0, 1, 1, 0, 0, 0, 0, 0, 0),
+ (0, 0, 0, -1, 0, 0, 0, 0, 0, 0),
+ (6, 2, 4, 7, 9, 11, 7, 3, -2, -2),
+ (-3, -1, -2, -3, -4, -5, -3, -1, 0, 2),
+ (-12, -5, -9, -13, -17, -21, -14, -7, 5, 4),
+ (-9, -4, -7, -10, -13, -16, -11, -5, 4, 3))
+
+
+def test_integral_transporter_of_spanning_perfect_cells() -> None:
+    gram = matrix(ZZ, GRAM)
+    certificate = matrix(ZZ, CERTIFICATE)
+    source_rows = matrix(ZZ, SOURCE_ROWS)
+    target_rows = matrix(ZZ, TARGET_ROWS)
+    assert abs(certificate.det()) == 1
+    assert certificate * gram * certificate.transpose() == gram
+    assert set(map(tuple, source_rows * certificate)) == set(TARGET_ROWS)
+
+    ambient = lattice(GRAM)
+    source = LorentzianPerfectCell(ambient, SOURCE_ROWS, NONNEGATIVE_SQUARES)
+    target = LorentzianPerfectCell(ambient, TARGET_ROWS, NONNEGATIVE_SQUARES)
+    witness = LorentzianPerfectLocalBackend().cell_transporter(source, target)
+
+    assert witness is not None
+    transform = matrix(ZZ, rows_of(witness))
+    assert abs(transform.det()) == 1
+    assert transform * gram * transform.transpose() == gram
+    assert set(map(tuple, source_rows * transform)) == set(map(tuple, target_rows))
