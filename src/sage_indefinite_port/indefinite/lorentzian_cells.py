@@ -2123,9 +2123,14 @@ class _CellFaces:
         coefficients: list[Rational] = []
         while point != 0:
             tight = [index for index, pairing in enumerate(pairings) if pairing == 0]
-            face = self.full_face
+            # Begin with the smallest tight facet incidence. Intersecting
+            # large facet sets first needlessly copies many more ray indices
+            # at every step of the mark-chain descent.
+            face = min((self.facet_incidences[index] for index in tight), key=len) if tight else self.full_face
             for index in tight:
-                face = face & self.facet_incidences[index]
+                incidence = self.facet_incidences[index]
+                if incidence is not face:
+                    face = face & incidence
             barycenter = vector(SageQQ, self.barycenter(face))
             if face not in self._barycenter_pairings:
                 self._barycenter_pairings[face] = self._covector_matrix * barycenter
