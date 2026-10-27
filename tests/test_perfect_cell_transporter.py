@@ -171,7 +171,7 @@ def test_normaliz_pairing_rows_match_owned_covectors() -> None:
     cell.lattice = lattice(gram.rows())
     # Trigger the large-cell Normaliz path without an expensive V-to-H case:
     # Normaliz removes these repeated input rays exactly.
-    cell.rows = ((1, 0), (0, 1)) * 500
+    cell.rows = ((1, 0), (0, 1)) * 5_000
     backend = LorentzianPerfectLocalBackend()
     labels = tuple(cell.lattice.module_generating_set())
     pairing_rows = tuple(backend._iter_cell_halfspace_pairing_rows(cell, labels))

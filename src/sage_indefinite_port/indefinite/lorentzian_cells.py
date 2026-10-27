@@ -819,24 +819,12 @@ class LorentzianPerfectLocalBackend:
         cells, use Normaliz's integral covector coordinates directly and avoid
         both a per-facet gcd/division pass and constructing owned dual elements.
         """
-        if len(cell.rows) < 1_000:
-            for covector in self.cell_cone(cell).halfspace_covectors():
-                yield tuple(int(covector(label)) for label in labels)
-            return
-        # Pairing needs only the exact integer coordinate rows and their zero
-        # pattern. Do not construct the owned cone (which also requires an
-        # owned vector configuration) just to recover these same coordinates.
-        # Normaliz's raw H-result is consumed in place to avoid retaining a
-        # second tuple of converted dual-lattice elements.
-        hyperplanes, _ = self._normaliz_cell_h_presentation(cell, include_equations=False)
-        for index, row in enumerate(hyperplanes):
-            if isinstance(hyperplanes, list):
-                hyperplanes[index] = None
-            if all(entry == 0 for entry in row):
-                del row
-                continue
-            yield tuple(int(entry) for entry in row)
-            del row
+        # The owned cone is also consumed by facet-incidence and adjacency
+        # construction. Reuse its minimized H-family rather than asking
+        # Normaliz for SupportHyperplanes a second time just to obtain the
+        # same zero pattern in the ray-pairing matrix.
+        for covector in self.cell_cone(cell).halfspace_covectors():
+            yield tuple(int(covector(label)) for label in labels)
 
     def _iter_cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
         """Yield exact primitive facet covectors without retaining owned copies."""
