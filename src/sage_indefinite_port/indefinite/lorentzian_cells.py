@@ -1017,7 +1017,10 @@ class LorentzianPerfectLocalBackend:
         # as dense Sage matrices before any facet processing starts.
         permutation_block_size = _configuration_pairing_block_size(ray_count)
         generators = self.cell_stabilizer(cell)
-        positions = {tuple(row): index for index, row in enumerate(cell.rows)}
+        # The canonical configuration rows are already immutable tuples, so
+        # use them directly as dictionary keys rather than allocating a second
+        # 49,861-tuple copy of the full A7 ray configuration.
+        positions = {row: index for index, row in enumerate(cell.rows)}
         if len(positions) != ray_count:
             raise ArithmeticError("a perfect-cell configuration contains repeated rays")
         # Store ray-position permutations in packed unsigned words. A Python
