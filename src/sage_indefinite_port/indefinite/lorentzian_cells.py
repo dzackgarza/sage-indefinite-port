@@ -1852,12 +1852,15 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         # family. `facet_covectors()` constructs every facet cone merely to
         # recover these same normals, which is prohibitively expensive on
         # high-facet cells.
-        covector_coordinates = tuple(covector.to_vector() for covector in covectors)
+        # Evaluate the owned covectors directly while filling the coordinate
+        # matrix. Retaining a second tuple of coordinate morphisms keeps one
+        # extra object per facet alive for the entire traversal; it is not
+        # needed after the matrix is built.
         halfspace_matrix = matrix(
             SageQQ,
             len(covectors),
             len(labels),
-            lambda row, column: _rational(covector_coordinates[row](labels[column])),
+            lambda row, column: _rational(covectors[row](labels[column])),
         )
         # Evaluate bounded blocks of exact covectors against the entire ray
         # matrix.  A scalar row-dot-product loop costs one Python-level exact
