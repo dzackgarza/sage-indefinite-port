@@ -2092,13 +2092,15 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     # Lorentzian exception for totally isotropic exterior-boundary faces.
     for cell in cells:
         by_incidence = facet_covectors_by_incidence[id(cell)]
-        rows = matrix(SageQQ, cell.rows)
         ray_count = len(cell.rows)
         for facet_key in by_incidence:
             if facet_key in paired_facets[id(cell)]:
                 continue
             incidence = _facet_incidence(facet_key, ray_count)
-            facet_rows = rows.matrix_from_rows(sorted(incidence))
+            # Only unmatched boundary candidates require a Gram certificate.
+            # Constructing the entire ray matrix duplicates the full A7
+            # configuration when a much smaller selected-row matrix suffices.
+            facet_rows = matrix(SageQQ, (cell.rows[position] for position in sorted(incidence)))
             pairings = facet_rows * ambient_gram * facet_rows.transpose()
             if not any(pairings.list()):
                 continue
