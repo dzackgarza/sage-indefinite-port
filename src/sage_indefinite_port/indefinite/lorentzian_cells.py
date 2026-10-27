@@ -861,10 +861,9 @@ class LorentzianPerfectLocalBackend:
         # A dict is both the ordered sequence of first occurrences and the
         # exact membership oracle, avoiding a separate full list of facet
         # references before building the unvisited set.
-        # Each value retains the canonical key object so orbit queues can
-        # reference the existing bitset rather than allocate another 6 KB
-        # integer for every 49,861-bit facet mask.
-        facets: dict[int, list[int]] = {}
+        # Map each key to itself so orbit queues can recover the canonical
+        # key object without a per-facet state list or a second large integer.
+        facets: dict[int, int] = {}
         while covector_block:
             covector_coordinates = tuple(covector.to_vector() for covector in covector_block)
             covector_rows = matrix(
@@ -892,8 +891,7 @@ class LorentzianPerfectLocalBackend:
                     raise ArithmeticError("a minimized H-presentation covector contains every extreme ray")
                 if nonincident_mask == all_ray_mask:
                     raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
-                if nonincident_mask not in facets:
-                    facets[nonincident_mask] = [1, nonincident_mask]
+                facets.setdefault(nonincident_mask, nonincident_mask)
             covector_block = tuple(islice(covectors, covector_block_size))
         generators = self.cell_stabilizer(cell)
         # Use precisely these generators to form the ray action.  Calling
@@ -909,28 +907,25 @@ class LorentzianPerfectLocalBackend:
                 permutations.append(tuple(positions[tuple(row)] for row in (integral_ray_rows * action).rows()))
             except KeyError as exc:
                 raise ArithmeticError("a cell-stabilizer generator does not preserve its rays") from exc
-        facet_set = facets
-        # The orbit traversal checks each generator image against the complete
-        # facet membership oracle as it is encountered. Store the unvisited
-        # state in each ordered dictionary value, rather than allocating a
-        # second hash table containing every large incidence key.
+        # A separate set holds only pointers to the existing key integers;
+        # popping an image marks it visited without allocating per-facet state
+        # lists. The full dictionary remains the exact facet-membership oracle.
+        unvisited = set(facets)
         orbits = []
         identity_word = None
         for start in facets:
-            start_state = facet_set[start]
-            if start_state[0] == 0:
+            if start not in unvisited:
                 continue
-            start_state[0] = 0
-            orbit = [(int(start_state[1]), identity_word)]
+            unvisited.remove(start)
+            orbit = [(facets[start], identity_word)]
             for facet_mask, element_word in orbit:
                 for generator_index, permutation in enumerate(permutations):
                     image_mask = _permuted_bitset(facet_mask, permutation)
-                    if image_mask not in facet_set:
+                    if image_mask not in facets:
                         raise ArithmeticError("a cell-stabilizer generator fails to permute the facets")
-                    image_state = facet_set[image_mask]
-                    if image_state[0] != 0:
-                        image_state[0] = 0
-                        orbit.append((int(image_state[1]), (element_word, generator_index)))
+                    if image_mask in unvisited:
+                        unvisited.remove(image_mask)
+                        orbit.append((facets[image_mask], (element_word, generator_index)))
             orbits.append(
                 tuple(
                     (frozenset(_bit_positions(all_ray_mask ^ facet_mask)), word)
