@@ -1867,7 +1867,11 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                     lambda i, j: cell.rows[j][i],
                 )
             # Bind only the current covector block.
-            covector_block = covectors[start:stop]
+            # ``halfspace_covectors`` is an IndexedSymbolicFunctionSet: its
+            # integer indexing is the owned unrank operation, not Python
+            # sequence slicing. Materialize only this bounded block through
+            # that public indexing contract.
+            covector_block = tuple(covectors[position] for position in range(start, stop))
             halfspace_block = matrix(
                 SageQQ,
                 len(covector_block),
