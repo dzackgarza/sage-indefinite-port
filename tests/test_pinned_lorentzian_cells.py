@@ -2519,3 +2519,26 @@ def test_positive_vector_constructor_uses_cpp_semantic_cvp_center() -> None:
     assert enumerator.base_target_engine_coordinates == enumerator.base_target_coordinates
     assert any(enumerator.base_target_engine_coordinates)
     assert enumerator.base_target_engine_coordinates != tuple(-entry for entry in expected.column(0))
+
+
+def test_positive_vector_shell_matches_exact_nonzero_center_enumeration() -> None:
+    """The nonzero affine CVP center yields exactly the integral shell vectors."""
+    from dzack_research.preamble.all import Lattices, ZZ
+    from sage.all import QQ, ZZ as SageZZ, vector
+    from sage_indefinite_port.indefinite.lorentzian_cells import (
+        NONNEGATIVE_SQUARES,
+        _PositiveVectorEnumerator,
+    )
+
+    lattice = Lattices(ZZ)([[5, 0, 0], [0, -1, 0], [0, 0, -1]])
+    enumerator = _PositiveVectorEnumerator(
+        lattice, (QQ(1), QQ(1), QQ(0)), QQ(3), NONNEGATIVE_SQUARES
+    )
+    assert enumerator.base_target_engine_coordinates != (QQ(0), QQ(0))
+    rows = enumerator.vectors_at_multiplier(3)
+    assert set(rows) == {(1, 2, -1), (1, 2, 0), (1, 2, 1)}
+    assert all(
+        (vector(SageZZ, row) * enumerator.gram * vector(SageZZ, row).column())[0] >= 0
+        and (vector(SageZZ, row) * enumerator.timelike_covector)[0] == 3
+        for row in rows
+    )
