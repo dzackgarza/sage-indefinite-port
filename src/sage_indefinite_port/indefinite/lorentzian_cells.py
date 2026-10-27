@@ -792,11 +792,16 @@ class LorentzianPerfectLocalBackend:
         if not isinstance(hyperplanes, list):
             hyperplanes = list(hyperplanes)
         for index, hyperplane in enumerate(hyperplanes):
-            coordinates = tuple(hyperplane[:-1])
+            coordinates = hyperplane[:-1]
             hyperplanes[index] = None
             if all(entry == 0 for entry in coordinates):
+                del coordinates, hyperplane
                 continue
-            yield _integral_covector(cell.lattice, coordinates)
+            covector = _integral_covector(cell.lattice, coordinates)
+            # Do not suspend this generator with both the raw Normaliz row
+            # slice and its owned dual-lattice covector alive.
+            del coordinates, hyperplane
+            yield covector
 
     @cached_method
     def cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
