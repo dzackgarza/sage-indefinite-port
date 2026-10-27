@@ -9,7 +9,10 @@ from sage.all import ZZ, matrix, vector
 from sage_indefinite_port.indefinite.lorentzian_cells import (
     _CellFaces,
     _bit_positions,
+    _facet_complement_key,
+    _facet_incidence,
     _permuted_bitset,
+    _permuted_facet_key,
     LorentzianPerfectCell,
     LorentzianPerfectLocalBackend,
     NONNEGATIVE_SQUARES,
@@ -132,10 +135,17 @@ def test_permuted_facet_bitsets_preserve_exact_positions() -> None:
     ray_count = 49_861
     reverse = tuple(reversed(range(ray_count)))
     sparse_complement = sum(1 << position for position in (0, 1, ray_count // 2, ray_count - 1))
-    assert _permuted_bitset(sparse_complement, reverse) == sum(
-        1 << (ray_count - 1 - position)
-        for position in (0, 1, ray_count // 2, ray_count - 1)
-    )
+    sparse_key = _facet_complement_key(sparse_complement)
+    assert sparse_key == (0, 1, ray_count // 2, ray_count - 1)
+    sparse_image = _permuted_facet_key(sparse_key, reverse)
+    assert sparse_image == tuple(sorted(ray_count - 1 - position for position in sparse_key))
+    assert _facet_incidence(sparse_key, ray_count) == frozenset(range(ray_count)).difference(sparse_key)
+
+    dense_complement = sum(1 << position for position in range(200))
+    dense_key = _facet_complement_key(dense_complement)
+    assert isinstance(dense_key, int)
+    dense_image = _permuted_facet_key(dense_key, reverse)
+    assert dense_image == sum(1 << (ray_count - 1 - position) for position in range(200))
 
 
 def test_facet_incidence_streaming_preserves_exact_orbits() -> None:
@@ -150,7 +160,7 @@ def test_facet_incidence_streaming_preserves_exact_orbits() -> None:
     all_ray_mask = (1 << len(cell.rows)) - 1
     assert mask_generators == generator_permutations
     assert tuple(
-        tuple((frozenset(_bit_positions(all_ray_mask ^ mask)), word) for mask, word in orbit)
+        tuple((_facet_incidence(mask, len(cell.rows)), word) for mask, word in orbit)
         for orbit in mask_orbits
     ) == word_orbits
 

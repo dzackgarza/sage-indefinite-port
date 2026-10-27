@@ -65,6 +65,35 @@ from sage_indefinite_port.invariants import AttackProfile
 type PerfectMode = Literal["total", "isotropic"]
 type FacetIncidence = frozenset[int]
 type SchreierWord = tuple[SchreierWord, int] | None
+type FacetMaskKey = int | tuple[int, ...]
+
+# A Python integer for a 49,861-bit mask occupies about 6 KiB regardless of
+# how few bits are set. Sparse complement tuples are smaller up to this size.
+_SPARSE_FACET_COMPLEMENT_LIMIT = 160
+
+
+def _facet_complement_key(mask: int) -> FacetMaskKey:
+    """Choose a compact exact key for a sparse complement or dense bitset."""
+    if mask.bit_count() <= _SPARSE_FACET_COMPLEMENT_LIMIT:
+        return tuple(_bit_positions(mask))
+    return mask
+
+
+def _facet_incidence(key: FacetMaskKey, ray_count: int) -> FacetIncidence:
+    """Recover the exact incident-ray set from its nonincident-ray key."""
+    if isinstance(key, int):
+        return frozenset(_bit_positions(((1 << ray_count) - 1) ^ key))
+    mask = (1 << ray_count) - 1
+    for position in key:
+        mask ^= 1 << position
+    return frozenset(_bit_positions(mask))
+
+
+def _permuted_facet_key(key: FacetMaskKey, permutation: tuple[int, ...]) -> FacetMaskKey:
+    """Apply a ray permutation while preserving the sparse/dense key form."""
+    if isinstance(key, int):
+        return _facet_complement_key(_permuted_bitset(key, permutation))
+    return tuple(sorted(permutation[position] for position in key))
 
 
 def _bit_positions(mask: int) -> Iterator[int]:
@@ -907,7 +936,7 @@ class LorentzianPerfectLocalBackend:
         # Store visitation state as shared small integers in the dictionary
         # values. This avoids both per-facet state lists and a second hash table
         # for the unvisited keys; the exact large bitsets remain the keys.
-        facets: dict[int, int] = {}
+        facets: dict[FacetMaskKey, int] = {}
         while covector_block:
             covector_coordinates = tuple(covector.to_vector() for covector in covector_block)
             covector_rows = matrix(
@@ -935,7 +964,7 @@ class LorentzianPerfectLocalBackend:
                     raise ArithmeticError("a minimized H-presentation covector contains every extreme ray")
                 if nonincident_mask == all_ray_mask:
                     raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
-                facets.setdefault(nonincident_mask, 1)
+                facets.setdefault(_facet_complement_key(nonincident_mask), 1)
             covector_block = tuple(islice(covectors, covector_block_size))
         generators = self.cell_stabilizer(cell)
         # Use precisely these generators to form the ray action.  Calling
@@ -958,8 +987,8 @@ class LorentzianPerfectLocalBackend:
 
     @staticmethod
     def _iter_facet_mask_orbits(
-        facets: dict[int, int], permutations: tuple[tuple[int, ...], ...]
-    ) -> Iterator[tuple[tuple[int, SchreierWord], ...]]:
+        facets: dict[FacetMaskKey, int], permutations: tuple[tuple[int, ...], ...]
+    ) -> Iterator[tuple[tuple[FacetMaskKey, SchreierWord], ...]]:
         """Yield one exact facet orbit at a time, marking its masks in-place."""
         identity_word = None
         for start in facets:
@@ -969,7 +998,7 @@ class LorentzianPerfectLocalBackend:
             orbit = [(start, identity_word)]
             for facet_mask, element_word in orbit:
                 for generator_index, permutation in enumerate(permutations):
-                    image_mask = _permuted_bitset(facet_mask, permutation)
+                    image_mask = _permuted_facet_key(facet_mask, permutation)
                     if image_mask not in facets:
                         raise ArithmeticError("a cell-stabilizer generator fails to permute the facets")
                     if facets[image_mask] != 0:
@@ -996,10 +1025,9 @@ class LorentzianPerfectLocalBackend:
     ]:
         """Materialize public-style facet incidences from cached compact masks."""
         mask_orbits, permutations = self._facet_orbit_transversal_masks(cell)
-        all_ray_mask = (1 << len(cell.rows)) - 1
         return (
             tuple(
-                tuple((frozenset(_bit_positions(all_ray_mask ^ mask)), word) for mask, word in orbit)
+                tuple((_facet_incidence(mask, len(cell.rows)), word) for mask, word in orbit)
                 for orbit in mask_orbits
             ),
             permutations,
@@ -1015,7 +1043,6 @@ class LorentzianPerfectLocalBackend:
             raise ArithmeticError("a perfect-cell configuration does not span its ambient lattice")
         inverse_basis = ray_rows.matrix_from_rows(basis_positions).inverse()
         mask_orbits, generator_permutations = self._facet_orbit_transversal_masks(cell)
-        all_ray_mask = (1 << len(cell.rows)) - 1
         result = []
         for orbit in mask_orbits:
             elements = []
@@ -1033,7 +1060,7 @@ class LorentzianPerfectLocalBackend:
                 if any(entry.denominator() != 1 for entry in action.list()):
                     raise ArithmeticError("a Schreier facet permutation does not induce an integral lattice action")
                 isometry = cell.lattice.O()(tuple(cell.lattice([int(entry) for entry in row]) for row in action.rows()))
-                facet = frozenset(_bit_positions(all_ray_mask ^ nonincident_mask))
+                facet = _facet_incidence(nonincident_mask, len(cell.rows))
                 elements.append((facet, isometry))
             result.append(tuple(elements))
         return tuple(result)
@@ -1504,7 +1531,7 @@ class LorentzianPerfectComplex:
         self._traversal_facet_orbits[source_id] = {}
         self._traversal_facet_generators[source_id] = generator_permutations
         for orbit in backend._iter_facet_mask_orbits(facet_masks, generator_permutations):
-            facet = frozenset(_bit_positions(all_ray_mask ^ orbit[0][0]))
+            facet = _facet_incidence(orbit[0][0], len(source.rows))
             neighbor = backend.flip_across(source, facet)
             if neighbor is None:
                 # A boundary face has no adjacent perfect cell or side pairing.
@@ -1739,7 +1766,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         basis_positions, inverse_source_basis = source_basis_data[source_key]
         source_all_ray_mask = (1 << len(adjacency.source.rows)) - 1
         for incident_mask, symmetry_word in orbit:
-            incident = frozenset(_bit_positions(source_all_ray_mask ^ incident_mask))
+            incident = _facet_incidence(incident_mask, len(adjacency.source.rows))
             # In row coordinates g(v)=vM. A covector column a cutting out
             # a>=0 on the target becomes M^{-1}a on its image. Since g is
             # integral unimodular, the transformed H-data remain integral.
