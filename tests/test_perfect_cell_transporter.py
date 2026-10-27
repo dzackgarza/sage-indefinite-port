@@ -140,6 +140,11 @@ def test_coarse_colours_preserve_changed_configuration_transporters(monkeypatch)
         "blocks",
         lambda _self: pytest.fail("coarse invariant path must not construct the quadratic pairing graph"),
     )
+    monkeypatch.setattr(
+        lorentzian_cells,
+        "Sets",
+        lambda: pytest.fail("large single-transporter search must not use the preamble pairing-graph transporter"),
+    )
     assert _perfect_form_hash_key(source) == _perfect_form_hash_key(target)
 
     backend = LorentzianPerfectLocalBackend()
