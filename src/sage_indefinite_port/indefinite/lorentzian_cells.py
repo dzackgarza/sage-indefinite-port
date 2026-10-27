@@ -1828,7 +1828,13 @@ class LorentzianPerfectComplex:
         return self.component_preserving_generators() + (negation,)
 
 
-type PerfectFormKey = tuple[tuple[tuple[int, int], ...], tuple[tuple[int, int], ...], tuple[int, ...], tuple[int, ...]]
+type PerfectFormKey = tuple[
+    tuple[tuple[int, int], ...],
+    tuple[tuple[int, int], ...],
+    tuple[int, ...],
+    tuple[tuple[int, int], ...],
+    tuple[tuple[int, int], ...],
+]
 
 
 def _perfect_form_hash_key(cell: LorentzianPerfectCell) -> PerfectFormKey:
@@ -1845,21 +1851,26 @@ def _perfect_form_hash_key(cell: LorentzianPerfectCell) -> PerfectFormKey:
     pairings = _ConfigurationPairings(cell.rows, _gram_matrix(cell.lattice))
     diagonal = Counter(int(value) for value in pairings.diagonal())
     off_diagonal: Counter[int] = Counter()
-    for start, block in pairings.blocks():
-        for offset, row in enumerate(block):
-            i = start + offset
-            # The pinned loop counts each unordered pair once, without sorting
-            # or retaining an array of Python scalar objects. Bounded row
-            # blocks reduce the FLINT dispatch count while keeping the exact
-            # n-by-n Gram matrix unmaterialized.
-            off_diagonal.update(int(row[j]) for j in range(i + 1, len(pairings)))
-    smith_invariants = tuple(int(entry) for entry in matrix(SageZZ, cell.rows).elementary_divisors())
-    vector_contents = tuple(sorted(gcd(*row) for row in cell.rows))
+    if len(cell.rows) <= _PAIRING_GRAPH_REFINEMENT_LIMIT:
+        for start, block in pairings.blocks():
+            for offset, row in enumerate(block):
+                i = start + offset
+                # The pinned loop counts each unordered pair once, without sorting
+                # or retaining an array of Python scalar objects. Bounded row
+                # blocks reduce the FLINT dispatch count while keeping the exact
+                # n-by-n Gram matrix unmaterialized.
+                off_diagonal.update(int(row[j]) for j in range(i + 1, len(pairings)))
+    smith_invariants = tuple(int(entry) for entry in matrix(SageZZ, cell.rows).transpose().elementary_divisors())
+    vector_contents = tuple(sorted(Counter(gcd(*row) for row in cell.rows).items()))
+    divisibilities = tuple(
+        sorted(Counter(gcd(*pairings.covectors.row(index)) for index in range(len(pairings))).items())
+    )
     return (
         tuple(sorted(diagonal.items())),
         tuple(sorted((value, count) for value, count in off_diagonal.items() if count)),
         smith_invariants,
         vector_contents,
+        divisibilities,
     )
 
 

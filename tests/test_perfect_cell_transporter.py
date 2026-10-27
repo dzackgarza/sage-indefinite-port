@@ -16,6 +16,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _facet_incidence,
     _permuted_bitset,
     _permuted_facet_key,
+    _perfect_form_hash_key,
     LorentzianPerfectCell,
     LorentzianPerfectLocalBackend,
     NONNEGATIVE_SQUARES,
@@ -238,6 +239,31 @@ def test_normaliz_pairing_rows_match_owned_covectors(monkeypatch) -> None:
     assert tuple(tuple(value == 0 for value in row) for row in pairing_rows) == tuple(
         tuple(value == 0 for value in row) for row in owned_rows
     )
+
+
+def test_large_perfect_form_hash_skips_quadratic_pairing_graph(monkeypatch) -> None:
+    """Large-cell bucketing uses exact coarse invariants, not all pairings."""
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+
+    class LargeInput:
+        pass
+
+    cell = LargeInput()
+    cell.lattice = lattice(gram.rows())
+    cell.rows = ((1, 0), (0, 1)) * 5_000
+    monkeypatch.setattr(
+        lorentzian_cells._ConfigurationPairings,
+        "blocks",
+        lambda _self: pytest.fail("large perfect-form hashing must not build the quadratic pairing graph"),
+    )
+
+    key = _perfect_form_hash_key(cell)
+
+    assert key[1] == ()
+    assert sum(count for _value, count in key[0]) == len(cell.rows)
+    assert len(key[2]) == 2
+    assert sum(count for _content, count in key[3]) == len(cell.rows)
+    assert sum(count for _divisibility, count in key[4]) == len(cell.rows)
 
 
 def test_owned_large_cell_cone_releases_normaliz_engine_cache() -> None:
