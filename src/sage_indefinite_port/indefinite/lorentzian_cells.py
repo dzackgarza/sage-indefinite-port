@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from array import array
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from fractions import Fraction
@@ -105,7 +106,7 @@ def _facet_incidence(key: FacetMaskKey, ray_count: int) -> FacetIncidence:
     return frozenset(positions)
 
 
-def _permuted_facet_key(key: FacetMaskKey, permutation: tuple[int, ...]) -> FacetMaskKey:
+def _permuted_facet_key(key: FacetMaskKey, permutation: Sequence[int]) -> FacetMaskKey:
     """Apply a ray permutation while preserving the sparse/dense key form."""
     if isinstance(key, int):
         return _facet_complement_key(_permuted_bitset(key, permutation), len(permutation))
@@ -1000,7 +1001,7 @@ class LorentzianPerfectLocalBackend:
 
     def _facet_mask_data(
         self, cell: LorentzianPerfectCell
-    ) -> tuple[Iterator[FacetMaskKey], tuple[tuple[int, ...], ...]]:
+    ) -> tuple[Iterator[FacetMaskKey], tuple[array, ...]]:
         r"""Yield exact facet keys and the ray permutations of stabilizer generators.
 
         Facet keys are generated in H-presentation order. Keeping this as an
@@ -1019,7 +1020,14 @@ class LorentzianPerfectLocalBackend:
         positions = {tuple(row): index for index, row in enumerate(cell.rows)}
         if len(positions) != ray_count:
             raise ArithmeticError("a perfect-cell configuration contains repeated rays")
-        permutations = []
+        # Store ray-position permutations in packed unsigned words. A Python
+        # tuple uses an eight-byte pointer per ray, and these full permutations
+        # remain live throughout facet-orbit traversal. Choose a word wide
+        # enough for the largest possible position (ray_count - 1).
+        permutation_typecode = (
+            "H" if ray_count <= 2**16 else "I" if ray_count <= 2**32 else "Q"
+        )
+        permutations: list[array] = []
         for generator in generators:
             action = matrix(
                 SageZZ,
@@ -1032,14 +1040,12 @@ class LorentzianPerfectLocalBackend:
                     for label in labels
                 ],
             )
-            permutation = []
+            permutation = array(permutation_typecode)
             try:
                 for start in range(0, ray_count, permutation_block_size):
                     stop = min(start + permutation_block_size, ray_count)
                     image_rows = (matrix(SageZZ, cell.rows[start:stop]) * action).rows()
-                    permutation.extend(
-                        positions[tuple(row)] for row in image_rows
-                    )
+                    permutation.extend(positions[tuple(row)] for row in image_rows)
                     del image_rows
                 permutations.append(tuple(permutation))
             except KeyError as exc:
@@ -1100,7 +1106,7 @@ class LorentzianPerfectLocalBackend:
 
     @staticmethod
     def _iter_facet_mask_orbits(
-        facet_keys: Iterator[FacetMaskKey], permutations: tuple[tuple[int, ...], ...]
+        facet_keys: Iterator[FacetMaskKey], permutations: tuple[Sequence[int], ...]
     ) -> Iterator[list[tuple[FacetMaskKey, SchreierWord]]]:
         """Yield exact facet orbits with one visited set and one current orbit.
 
@@ -1137,7 +1143,7 @@ class LorentzianPerfectLocalBackend:
         self, cell: LorentzianPerfectCell
     ) -> tuple[
         tuple[tuple[tuple[int, SchreierWord], ...], ...],
-        tuple[tuple[int, ...], ...],
+        tuple[Sequence[int], ...],
     ]:
         """Materialize compact facet orbits for callers that need the full view."""
         facet_keys, permutations = self._facet_mask_data(cell)
@@ -1147,7 +1153,7 @@ class LorentzianPerfectLocalBackend:
         self, cell: LorentzianPerfectCell
     ) -> tuple[
         tuple[tuple[tuple[FacetIncidence, SchreierWord], ...], ...],
-        tuple[tuple[int, ...], ...],
+        tuple[Sequence[int], ...],
     ]:
         """Materialize public-style facet incidences from cached compact masks."""
         mask_orbits, permutations = self._facet_orbit_transversal_masks(cell)
