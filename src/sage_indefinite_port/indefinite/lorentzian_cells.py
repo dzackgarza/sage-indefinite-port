@@ -2071,10 +2071,13 @@ class _CellFaces:
                 incidences.append(frozenset(incidence))
         if len(set(incidences)) != len(incidences):
             raise ArithmeticError("distinct perfect-cell facets have the same extreme-ray incidence")
-        self.incidences = frozenset(incidences)
+        self.facet_incidences = tuple(incidences)
+        self.incidences = frozenset(self.facet_incidences)
         self.full_face = frozenset(range(len(self.rows)))
         self.group = libgap.Group([libgap.PermList([image + 1 for image in permutation]) for permutation in backend.point_permutations(cell, rays)], libgap.eval("()"))
         self._ranks: dict[frozenset[int], int] = {}
+        self._barycenter_pairings: dict[frozenset[int], FreeModuleElement[Rational]] = {}
+        self._covector_matrix = covector_matrix
 
     def rank(self, face: frozenset[int]) -> int:
         if face not in self._ranks:
@@ -2115,16 +2118,27 @@ class _CellFaces:
         proper face of F.
         """
         point = vector(SageQQ, row)
+        pairings = self._covector_matrix * point
         chain: list[frozenset[int]] = []
         coefficients: list[Rational] = []
         while point != 0:
-            tight = [covector for covector in self.covectors if covector.dot_product(point) == 0]
-            face = frozenset(index for index, ray in enumerate(self.rows) if all(covector.dot_product(ray) == 0 for covector in tight))
+            tight = [index for index, pairing in enumerate(pairings) if pairing == 0]
+            face = self.full_face
+            for index in tight:
+                face = face & self.facet_incidences[index]
             barycenter = vector(SageQQ, self.barycenter(face))
-            coefficient = min(covector.dot_product(point) / covector.dot_product(barycenter) for covector in self.covectors if covector.dot_product(barycenter) > 0)
+            if face not in self._barycenter_pairings:
+                self._barycenter_pairings[face] = self._covector_matrix * barycenter
+            barycenter_pairings = self._barycenter_pairings[face]
+            coefficient = min(
+                pairing / barycenter_pairing
+                for pairing, barycenter_pairing in zip(pairings, barycenter_pairings, strict=True)
+                if barycenter_pairing > 0
+            )
             chain.append(face)
             coefficients.append(coefficient)
             point -= coefficient * barycenter
+            pairings -= coefficient * barycenter_pairings
         return _Mark(row, tuple(chain), tuple(coefficients))
 
     def classify(self, row: FreeModuleElement[Integer], representatives: list[_Mark]) -> int | None:

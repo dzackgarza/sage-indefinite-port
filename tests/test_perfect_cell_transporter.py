@@ -4,7 +4,7 @@ The explicit unimodular matrix certifies that the two complete configurations
 are isometric, independently of the transporter search.
 """
 
-from sage.all import ZZ, matrix
+from sage.all import ZZ, matrix, vector
 
 from sage_indefinite_port.indefinite.lorentzian_cells import (
     _CellFaces,
@@ -171,3 +171,12 @@ def test_cell_faces_reuse_owned_halfspace_covectors_exactly() -> None:
         frozenset(index for index, row in enumerate(structure.rows) if covector.dot_product(row) == 0)
         for covector in structure.covectors
     )
+    interior_mark = structure.mark(vector(ZZ, (1, 1)))
+    assert interior_mark.chain == (structure.full_face,)
+    assert interior_mark.coefficients == (1,)
+    boundary_mark = structure.mark(vector(ZZ, (1, 0)))
+    assert boundary_mark.chain == (frozenset({0}),)
+    assert boundary_mark.coefficients == (1,)
+    mixed_mark = structure.mark(vector(ZZ, (2, 1)))
+    assert mixed_mark.chain == (structure.full_face, frozenset({0}))
+    assert mixed_mark.coefficients == (1, 1)
