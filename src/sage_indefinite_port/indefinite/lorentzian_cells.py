@@ -20,7 +20,11 @@ from dzack_research.preamble.categories.definite_lattices import LatticeReductio
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.categories.rings.ring_foundation import _owned_engine_element
 from dzack_research.preamble.categories.modules.pure.modules import _engine_matrix
-from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones, _cone_from_engine_polyhedron
+from dzack_research.preamble.categories.polyhedral_cones import (
+    RationalPolyhedralCones,
+    _cone_from_engine_polyhedron,
+    _integral_covector,
+)
 from dzack_research.preamble.categories.reduction_complexes import (
     LorentzianPerfectDomainTraversal,
     PerfectDomainOrbitAdjacency,
@@ -625,6 +629,28 @@ class LorentzianPerfectLocalBackend:
             backend="normaliz",
         )
         return _cone_from_engine_polyhedron(cell.lattice, polyhedron)
+
+    @cached_method
+    def cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
+        """Return the exact primitive homogeneous facet covectors of ``cell``.
+
+        The marked-face traversal only needs the H-presentation. For large
+        configurations, compute it with Normaliz and return the covectors
+        directly rather than wrapping the presentation in an owned cone,
+        whose current constructor rebuilds a PPL polyhedron from it.
+        """
+        if len(cell.rows) < 10_000:
+            return tuple(self.cell_cone(cell).halfspace_covectors())
+        polyhedron = Polyhedron(
+            vertices=[(0,) * int(cell.lattice.module_rank())],
+            rays=cell.rows,
+            base_ring=SageQQ,
+            backend="normaliz",
+        )
+        return tuple(
+            _integral_covector(cell.lattice, inequality.A())
+            for inequality in polyhedron.inequalities()
+        )
 
     def initial_cell(self, lattice: Lattices.ParentMethods, allowed_squares: RealSet) -> LorentzianPerfectCell:
         normalized = _lorentzian_view(lattice)
@@ -1962,24 +1988,21 @@ class _CellFaces:
         self.lattice = lattice
         self.labels = tuple(lattice.module_generating_set())
         self.gram = _gram_matrix(lattice)
-        cone = backend.cell_cone(cell)
         # The owned cone was generated from this exact primitive-ray
         # configuration.  Re-enumerating its rays asks the H-presentation
         # backend to perform another H-to-V conversion; retain the original
         # ray order and coordinates instead.
         rays = cell.vector_configuration
         self.rows = tuple(_coordinate_row(lattice, ray, SageZZ) for ray in rays)
-        # The owned cone already retains its minimized homogeneous
-        # H-presentation.  Reading `facet_covectors()` instead asks the PPL
-        # engine to materialize its H-representation lazily.  Reuse the exact
-        # covectors retained at owned-cone construction, avoiding that extra
-        # extraction on the 49,861-ray A7 cell.
+        # For large cells, obtain the exact H-presentation directly from
+        # Normaliz instead of constructing an owned cone and rebuilding its
+        # PPL engine from the same inequalities.
         self.covectors = tuple(
             vector(
                 SageQQ,
                 [_rational(covector.to_vector()(label)) for label in self.labels],
             )
-            for covector in cone.halfspace_covectors()
+            for covector in backend.cell_halfspace_covectors(cell)
         )
         interior = sum(self.rows[1:], self.rows[0])
         if any(covector.dot_product(interior) <= 0 for covector in self.covectors):
