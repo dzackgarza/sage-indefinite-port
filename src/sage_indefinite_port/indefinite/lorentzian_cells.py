@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 from array import array
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import cache, cached_property
