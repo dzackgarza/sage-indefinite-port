@@ -156,6 +156,7 @@ def test_cell_faces_reuse_owned_halfspace_covectors_exactly() -> None:
         tuple(int(entry) for entry in row)
         for row in (tuple(int(ray.to_vector()(label)) for label in labels) for ray in cone.primitive_rays())
     }
+    assert set(backend.cell_primitive_rays(cell)) == set(cone.primitive_rays())
     assert {tuple(int(entry) for entry in row) for row in structure.covectors} == {
         coordinates(covector) for covector in cone.facet_covectors()
     }
