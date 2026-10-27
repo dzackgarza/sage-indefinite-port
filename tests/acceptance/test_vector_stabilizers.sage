@@ -103,6 +103,31 @@ def test_general_isotropic_pointed_isometry_carries_negative_marking() -> None:
     assert all(lattice_.b(witness(left), witness(right)) == lattice_.b(left, right) for left in basis for right in basis)
 
 
+def test_isotropic_pointed_isometry_transports_between_changed_basis_parents() -> None:
+    """The recursive route returns an owned witness for distinct, isometric lattice parents."""
+    gram = matrix(ZZ, [[0, 2, 0, 0], [2, 0, 0, 0], [0, 0, 0, 2], [0, 0, 2, 0]])
+    change = matrix(ZZ, [[1, 1, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+    source_lattice = lattice(gram)
+    target_lattice = lattice(change.transpose() * gram * change)
+    source = element(source_lattice, [1, 0, 0, 0])
+    target = element(target_lattice, [1, 0, 0, 0])
+
+    assert int(source.q()) == int(target.q()) == 0
+    assert int(source.div()) == int(target.div()) == 2
+    witness = EichlerRecursion().pointed_isometry(source, target)
+    assert witness is not None
+    assert witness.domain() is source_lattice
+    assert witness.codomain() is target_lattice
+    assert witness(source) == target
+    source_basis = tuple(source_lattice.module_generators())
+    target_basis = tuple(target_lattice.module_generators())
+    assert all(
+        target_lattice.b(witness(left), witness(right)) == source_lattice.b(left, right)
+        for left in source_basis
+        for right in source_basis
+    )
+
+
 def test_split_divisibility_one_pointed_isometry_carries_actual_negative_marking() -> None:
     lattice_ = lattice([[0, 1], [1, 0]])
     source = element(lattice_, [1, 0])
