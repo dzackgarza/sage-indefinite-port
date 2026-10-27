@@ -1295,6 +1295,30 @@ wheels = [
 ]
 
 [[package]]
+name = "pynormaliz"
+version = "2.24"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/da/24/80bdb104c69b8078378162b3122dc70b386ee31d9f496052d11a3a36d4bc/pynormaliz-2.24.tar.gz", hash = "sha256:1e91cdf24c57c4472cb8f0170fe9041e8366fc7d598ec214b6179f6239f8899c", size = 322180, upload-time = "2026-02-02T11:58:56.802Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d0/7a/1e7e9b9e6a1f92b83c70c097c4e258138ae48346ee2f3146e9311b4a268a/pynormaliz-2.24-cp314-cp314-macosx_10_15_x86_64.whl", hash = "sha256:e5764fe8b0c5bc38ddc3b832996e2e472bbb682e6cd1f3a2d2e7a2314ff8f48d", size = 10381725, upload-time = "2026-02-02T13:06:19.159Z" },
+    { url = "https://files.pythonhosted.org/packages/e5/e6/ddbaafb72cc4cd771eb62981a37a68c54dbde54cb30bb933a0774bbbba17/pynormaliz-2.24-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:cad1cdf4c48d3fc0611e72c91028118a4d9f88393f7ec1a91e65b8b95a9ab220", size = 9433202, upload-time = "2026-02-02T13:06:21.389Z" },
+    { url = "https://files.pythonhosted.org/packages/ab/12/f361ff0264c6467b6e233cc5ea42ba9d58f510d2a20f448d6fcacc1a9bc6/pynormaliz-2.24-cp314-cp314-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:ad998580f6c5e54ea31444d6e651127432612041b83cafffe7b5f87e6142967a", size = 75701242, upload-time = "2026-02-02T13:06:24.417Z" },
+    { url = "https://files.pythonhosted.org/packages/aa/96/5cbe357e418306b98d16c2a15eec84c2a8f62dc0279a5ad4d44a63978fca/pynormaliz-2.24-cp314-cp314-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:722e16b4b36440c281b609edeaefc62c604853a9b964fbdd69accdd86dae99a2", size = 76382360, upload-time = "2026-02-02T13:06:28.794Z" },
+    { url = "https://files.pythonhosted.org/packages/b2/fd/9dbf921f3a9acbf001a2f58af4872869bbcef0658d0244ff226bef7ce6f9/pynormaliz-2.24-cp314-cp314-manylinux_2_26_i686.manylinux_2_28_i686.whl", hash = "sha256:b78773d8e4eed39e81d8aa8818978d9673ad75360b7e04db8e1161f5506f9479", size = 71727669, upload-time = "2026-02-02T13:06:32.41Z" },
+    { url = "https://files.pythonhosted.org/packages/05/3f/fa104342d7221a72779b48798dd58e7bc2d7963ab82326664f9b302ad166/pynormaliz-2.24-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:137534adb3146af7334b4aaf5d88082149d5b545319ae023e3098e6c88c3037e", size = 74878740, upload-time = "2026-02-02T13:06:35.954Z" },
+    { url = "https://files.pythonhosted.org/packages/3f/f8/cda1afd92474604cf3b9b3a448f5d2f7ae83758226fbf65557a013f83b0c/pynormaliz-2.24-cp314-cp314-musllinux_1_2_i686.whl", hash = "sha256:51a00e23b33735b7f804addd7c1bdb00311f5df64e5bd634b63bb3af5356ca9f", size = 72431440, upload-time = "2026-02-02T13:06:41.441Z" },
+    { url = "https://files.pythonhosted.org/packages/b6/2e/7732f4b304a24f2466814f9046c3b3bdc3b6dfa609dc9f8d858cbea8ceff/pynormaliz-2.24-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:2dc6dd4184d94390597f6b00077258003daef7b0fe1644c4f628a838374575e4", size = 75867611, upload-time = "2026-02-02T13:06:45.225Z" },
+    { url = "https://files.pythonhosted.org/packages/75/54/5fa6bc976966c94357f28b0d96ba831bcc6789e5778ae16014ae8c0262b6/pynormaliz-2.24-cp314-cp314t-macosx_10_15_x86_64.whl", hash = "sha256:4f4c7a09ad7f6905830398c15e34dfbd151841f87cfaee4f02754567f4843a9f", size = 10381841, upload-time = "2026-02-02T13:06:47.929Z" },
+    { url = "https://files.pythonhosted.org/packages/63/dc/028af714cd148a0ff6c6cacb816696838c4de52927ad382060c9df37f7de/pynormaliz-2.24-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:d1579d326a1b4b91ce731db6d8b58082fb3236d85ea4bca542ccfc4f1f6ac8f5", size = 9433255, upload-time = "2026-02-02T13:06:49.669Z" },
+    { url = "https://files.pythonhosted.org/packages/13/a8/03f109861dd6c959e0a01a242a671ccbe9f883c6c0ff9aae34c1170f9eb3/pynormaliz-2.24-cp314-cp314t-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:5fae510755c8c6d3fc1341c8526958c937ab9168d607ecdef044ce03f7f7bbea", size = 75704922, upload-time = "2026-02-02T13:06:52.396Z" },
+    { url = "https://files.pythonhosted.org/packages/ec/4c/4c6b729f90b4d0d12b642089536a29c021c3f437004c9cb8e9384e112f00/pynormaliz-2.24-cp314-cp314t-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:514636ef654b9f30becc0b20fc44dc449d0c55d7d09b55c8347b9c856dedbf8a", size = 76387457, upload-time = "2026-02-02T13:06:58.149Z" },
+    { url = "https://files.pythonhosted.org/packages/e0/ad/a95d29b2de09a63fe97d263e1918ee4d656bb8bd40b5fff1790f8b8c9443/pynormaliz-2.24-cp314-cp314t-manylinux_2_26_i686.manylinux_2_28_i686.whl", hash = "sha256:0e7295e3a24a1a396e6fa3be810b77fc69492310b3f7591e584c6190802ecee4", size = 71731539, upload-time = "2026-02-02T13:07:02.261Z" },
+    { url = "https://files.pythonhosted.org/packages/73/66/979b724bd18258644cf7656b8d5d788dc6238c691efef2fa07007508848d/pynormaliz-2.24-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:f2fb30ada6b09db6064840429fb0a965ac3c2ccd634f6ac18ed0ad83fc7cff48", size = 74882484, upload-time = "2026-02-02T13:07:05.792Z" },
+    { url = "https://files.pythonhosted.org/packages/99/90/3a7992e9c0ab3036d1665a29883b1c2db63e05e267281dcbd2327b5f0069/pynormaliz-2.24-cp314-cp314t-musllinux_1_2_i686.whl", hash = "sha256:d344cf97a34e69a24e66718d92e541beb6840ab2967cc719dd2c409865951582", size = 72434124, upload-time = "2026-02-02T13:07:09.409Z" },
+    { url = "https://files.pythonhosted.org/packages/2f/83/46f2b61f2de567dfde15a163ff21b66ccd9ec42e568f7b4fa8bf615c1d3c/pynormaliz-2.24-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:99544319e4d58c013b4b4fd1ca3046ca9fd73c35f722aa572585071d183ad136", size = 75871467, upload-time = "2026-02-02T13:07:13.01Z" },
+]
+
+[[package]]
 name = "pytest"
 version = "9.1.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1569,6 +1593,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "dzack-research" },
+    { name = "pynormaliz" },
 ]
 
 [package.dev-dependencies]
@@ -1582,7 +1607,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "dzack-research", git = "https://github.com/dzackgarza/research?rev=53c48e0ab7c8f74f9c15f2e0970b11f29376dc23" }]
+requires-dist = [
+    { name = "dzack-research", git = "https://github.com/dzackgarza/research?rev=53c48e0ab7c8f74f9c15f2e0970b11f29376dc23" },
+    { name = "pynormaliz" },
+]
 
 [package.metadata.requires-dev]
 dev = [
