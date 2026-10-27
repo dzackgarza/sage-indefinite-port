@@ -1866,10 +1866,8 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         all_nonincident_mask = (1 << ray_count) - 1
         for start in range(0, len(covectors), block_size):
             stop = min(start + block_size, len(covectors))
-            # Release the previous block before constructing the next one;
-            # otherwise Python retains both dense products at the peak.
-            pairing_block = None
-            covector_block = None
+            # Both previous-block references were deleted at the end of the
+            # preceding iteration; bind only the current block here.
             covector_block = covectors[start:stop]
             halfspace_block = matrix(
                 SageQQ,
