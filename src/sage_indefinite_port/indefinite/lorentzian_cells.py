@@ -1833,6 +1833,10 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     # A supporting facet is the zero section of its defining covector.
     # Reuse the source cell's H-presentation for every member of its
     # stabilizer orbit instead of recomputing a V-to-H representation.
+    # Only quotient-adjacency representatives need stored normals. The
+    # traversal already carries exact Schreier words for every facet in each
+    # adjacency orbit, so retaining a covector for every orbit member is
+    # redundant O(number-of-facets * rank) owned data.
     facet_covectors_by_incidence = {}
     # Every quotient cell is represented in this same ambient lattice; reuse
     # its canonical coordinate labels instead of rebuilding the identical
@@ -1842,6 +1846,16 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         cell_cone = backend.cell_cone(cell)
         cell_cones[id(cell)] = cell_cone
         ray_count = len(cell.rows)
+        # The upstream Lorentzian perfect algorithm computes one facet per
+        # stabilizer orbit (lorentzian_perfect.h::f_adj); the Python traversal
+        # has already retained those exact orbit representatives and words.
+        # Keep compact incidence keys for duplicate validation, but retain
+        # covectors solely for representatives used by quotient adjacencies.
+        representative_keys = {
+            orbit[0][0]
+            for orbit in complex_._traversal_facet_orbits.get(id(cell), {}).values()
+        }
+        seen_incidence_keys = set()
         by_incidence = {}
         covectors = cell_cone.halfspace_covectors()
         # IndexedSymbolicFunctionSet.__getitem__ rebuilds this inverse on
@@ -1895,9 +1909,11 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 if nonincident_mask == all_nonincident_mask:
                     raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
                 key = _facet_complement_key(nonincident_mask, ray_count)
-                if key in by_incidence:
+                if key in seen_incidence_keys:
                     raise ArithmeticError("distinct perfect-cell facets have the same extreme-ray incidence")
-                by_incidence[key] = covector_block[offset]
+                seen_incidence_keys.add(key)
+                if key in representative_keys:
+                    by_incidence[key] = covector_block[offset]
             # Release the completed dense pairing block before the next one.
             del pairing_block
         # Release the transposed configuration and covector slice after the
@@ -1905,6 +1921,8 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         # ``pairing_block`` was deleted after every nonempty block above.
         # Do not delete it again here: the final iteration leaves it unbound.
         del covector_block, ray_transpose, covectors, covector_at
+        if set(by_incidence) != representative_keys:
+            raise ArithmeticError("a quotient-adjacency facet has no defining covector in its source cone")
         facet_covectors_by_incidence[id(cell)] = by_incidence
     ambient_labels = tuple(lattice.module_generating_set())
     ambient_dual = lattice.dual_module()
@@ -2045,9 +2063,30 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 ((1 << source_ray_count) - 1) ^ incident_mask, source_ray_count
             )
             try:
-                facet_normal = facet_covectors_by_incidence[id(adjacency.source)][facet_key]
+                representative_normal = facet_covectors_by_incidence[id(adjacency.source)][orbit[0][0]]
             except KeyError as exc:
-                raise ArithmeticError("a Schreier facet has no defining covector in its source cone") from exc
+                raise ArithmeticError("a quotient-adjacency facet has no defining covector in its source cone") from exc
+            # The stored normal belongs to the orbit representative. Transport
+            # it to this Schreier facet using the same exact row action that
+            # transports its ray basis: for x -> xM, covectors transform by
+            # M^{-1}. This is why only representative normals need be retained.
+            if symmetry_word is None:
+                facet_normal = representative_normal
+            else:
+                representative_column = vector(
+                    SageQQ,
+                    (_rational(representative_normal.to_vector()(label)) for label in dual_labels),
+                ).column()
+                transformed_column = symmetry_action.inverse().change_ring(SageQQ) * representative_column
+                if any(entry.denominator() != 1 for entry in transformed_column.column(0)):
+                    raise ArithmeticError("a Schreier facet action produced a nonintegral covector")
+                facet_normal = ambient_dual.linear_combination(
+                    {
+                        label: ambient_dual.base_ring()(int(entry))
+                        for label, entry in zip(dual_labels, transformed_column.column(0), strict=True)
+                        if entry
+                    }
+                )
             facet_normal_row = vector(
                 SageQQ, (_rational(facet_normal.to_vector()(label)) for label in ambient_labels)
             )
