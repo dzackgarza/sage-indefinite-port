@@ -766,9 +766,11 @@ class LorentzianPerfectLocalBackend:
         from sage.geometry.polyhedron.backend_normaliz import NmzResult
 
         normaliz_cone = self._normaliz_cell_cone(cell)
-        hyperplanes = NmzResult(normaliz_cone, "SupportHyperplanes")
-        equations = NmzResult(normaliz_cone, "Equations") if include_equations else ()
-        self._release_normaliz_cell_cone(cell, normaliz_cone)
+        try:
+            hyperplanes = NmzResult(normaliz_cone, "SupportHyperplanes")
+            equations = NmzResult(normaliz_cone, "Equations") if include_equations else ()
+        finally:
+            self._release_normaliz_cell_cone(cell, normaliz_cone)
         del normaliz_cone
         return hyperplanes, equations
 
@@ -779,8 +781,12 @@ class LorentzianPerfectLocalBackend:
                 rows[index] = None
             coordinates = row[:-1]
             if all(entry == 0 for entry in coordinates):
+                # Normaliz includes the affine-origin tautology [0,...,0,1]
+                # in this presentation; it is not a cone facet or equation.
                 del coordinates, row
                 continue
+            if row[-1] != 0:
+                raise ArithmeticError("Normaliz returned a nonhomogeneous row for a cone")
             covector = _integral_covector(cell.lattice, coordinates)
             del coordinates, row
             yield covector
@@ -815,6 +821,8 @@ class LorentzianPerfectLocalBackend:
             if all(entry == 0 for entry in coordinates):
                 del coordinates, hyperplane
                 continue
+            if hyperplane[-1] != 0:
+                raise ArithmeticError("Normaliz returned a nonhomogeneous facet for a cone")
             # The last homogeneous coefficient is zero for this cone. Incidence
             # depends only on zero/nonzero pairings, invariant under any nonzero
             # rescaling, so retain Normaliz's exact integral scale unchanged.
