@@ -1848,7 +1848,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     for cell in cells:
         ray_count = len(cell.rows)
         by_incidence = {}
-        covectors = tuple(cell_cones[id(cell)].halfspace_covectors())
+        covectors = cell_cones[id(cell)].halfspace_covectors()
         # The cone's stored H-presentation already is the minimized facet
         # family. `facet_covectors()` constructs every facet cone merely to
         # recover these same normals, which is prohibitively expensive on
