@@ -1883,10 +1883,9 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             del halfspace_block
             for offset in range(stop - start):
                 nonincident_mask = 0
-                # Enumerate the row directly. `nonzero_positions()` first
-                # allocates a Python list of every nonincident ray, which can
-                # itself be large for a dense facet complement. The temporary
-                # row view is consumed immediately and is not retained.
+                # Enumerate the row directly rather than allocating a list of
+                # all nonincident positions; dense facet complements can make
+                # that list large. The temporary row view is consumed inline.
                 for position, pairing in enumerate(pairing_block.row(offset)):
                     if pairing:
                         nonincident_mask |= 1 << position
