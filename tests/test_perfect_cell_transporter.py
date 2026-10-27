@@ -6,7 +6,7 @@ are isometric, independently of the transporter search.
 
 from array import array
 
-from sage.all import ZZ, matrix, vector
+from sage.all import ZZ, identity_matrix, matrix, vector
 
 from sage_indefinite_port.indefinite.lorentzian_cells import (
     _CellFaces,
@@ -21,6 +21,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     ZERO_SQUARES,
     _extend_configuration_signatures,
 )
+import sage_indefinite_port.indefinite.lorentzian_cells as lorentzian_cells
 from tests.acceptance.consumer import lattice, rows_of
 
 GRAM = ((-4, 0, 0, 0, 0, 2, 0, 0, 0, 0),
@@ -96,6 +97,25 @@ def test_all_integral_transporters_extend_exact_anchor_signatures() -> None:
     assert len(transporters) == 2
     for witness in transporters:
         transform = matrix(ZZ, rows_of(witness))
+        assert abs(transform.det()) == 1
+        assert transform * gram * transform.transpose() == gram
+        assert set(map(tuple, matrix(ZZ, cell.rows) * transform)) == set(cell.rows)
+
+
+def test_coarse_large_configuration_colours_preserve_exact_stabilizer(monkeypatch) -> None:
+    """Skipping quadratic graph refinement must not weaken witness checks."""
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
+    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
+
+    transporters = LorentzianPerfectLocalBackend().cell_transporter(
+        cell, cell, all_images=True, generators_only=True
+    )
+
+    assert len(transporters) == 1
+    for witness in transporters:
+        transform = matrix(ZZ, rows_of(witness))
+        assert transform != identity_matrix(ZZ, 2)
         assert abs(transform.det()) == 1
         assert transform * gram * transform.transpose() == gram
         assert set(map(tuple, matrix(ZZ, cell.rows) * transform)) == set(cell.rows)

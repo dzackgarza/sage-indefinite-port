@@ -652,6 +652,13 @@ def _configuration_pairing_block_size(configuration_size: int) -> int:
     return max(1, min(16, 1_000_000 // max(1, configuration_size)))
 
 
+# The full weighted pairing graph has quadratic size even though an integral
+# isometry is determined by the images of a rank-sized basis. Large frozen
+# configurations use only intrinsic vertex colours here and retain exact
+# pairwise constraints in the basis-image search below.
+_PAIRING_GRAPH_REFINEMENT_LIMIT = 4096
+
+
 def _extend_configuration_signatures(
     signatures: tuple[tuple[int, tuple[int, ...]], ...],
     column: tuple[int, ...],
@@ -1256,12 +1263,30 @@ class LorentzianPerfectLocalBackend:
         rows = matrix(SageZZ, cell.rows)
         pairings = _ConfigurationPairings(cell.rows, _gram_matrix(cell.lattice), cache_columns=True)
         norms = pairings.diagonal()
-        spectra = []
-        for start, block in pairings.blocks():
-            for offset, row in enumerate(block):
-                index = start + offset
-                spectra.append((int(norms[index]), gcd(*cell.rows[index]), _row_multiset(row, int(row[index]))))
-        return rows, pairings, tuple(spectra), Counter(cell.rows), rows.elementary_divisors()
+        if len(cell.rows) > _PAIRING_GRAPH_REFINEMENT_LIMIT:
+            # The source's complete pairing-spectrum colour is an invariant,
+            # but computing it requires n(n-1)/2 pairings. For large cells use
+            # the norm, coordinate content, and divisibility instead. Each is
+            # preserved by every integral unimodular isometry; omitting the
+            # stronger colour only enlarges search fibres and cannot discard
+            # a valid transporter. Exact anchor pairings and the complete row
+            # multiset are still checked before any witness is accepted.
+            spectra = tuple(
+                (
+                    int(norms[index]),
+                    gcd(*cell.rows[index]),
+                    gcd(*pairings.covectors.row(index)),
+                )
+                for index in range(len(cell.rows))
+            )
+        else:
+            spectra = []
+            for start, block in pairings.blocks():
+                for offset, row in enumerate(block):
+                    index = start + offset
+                    spectra.append((int(norms[index]), gcd(*cell.rows[index]), _row_multiset(row, int(row[index]))))
+            spectra = tuple(spectra)
+        return rows, pairings, spectra, Counter(cell.rows), rows.elementary_divisors()
 
     @overload
     def cell_transporter(
@@ -1344,34 +1369,33 @@ class LorentzianPerfectLocalBackend:
         source_colours = tuple(colour_numbers[signature] for signature in source_spectra)
         target_colours = tuple(colour_numbers[signature] for signature in target_spectra)
 
-        # Refine the two coloured, integral-weighted configuration graphs
-        # (the vertex-coloured Gram graph of LinPolytopeIntegral_Isomorphism_GramMat)
-        # simultaneously by their complete neighbour-colour distributions.
-        # Each refinement signature consists entirely of integral-isometry
-        # invariants: the preceding colour and the multiset of (pairing,
-        # neighbour-colour) pairs. The partition only splits, hence reaches a
-        # fixed point after finitely many steps. Every integral transporter
-        # preserves all refinement stages; a discrepancy in the colour
-        # multiplicities is an exact obstruction.
-        while True:
-            modulus = len(set(source_colours) | set(target_colours))
-            source_refined = _refined_signatures(source_pairings, source_colours, modulus)
-            target_refined = _refined_signatures(target_pairings, target_colours, modulus)
-            refined_numbers = {signature: index for index, signature in enumerate(sorted(set(source_refined) | set(target_refined)))}
-            refined_source_colours = tuple(refined_numbers[signature] for signature in source_refined)
-            refined_target_colours = tuple(refined_numbers[signature] for signature in target_refined)
-            if Counter(refined_source_colours) != Counter(refined_target_colours):
-                return ()
-            # Refinement signatures contain the old colour, so no two old
-            # classes can merge. Once the number of classes stops growing,
-            # the partition is equitable and further refinement cannot
-            # split it. Comparing numerical colour IDs instead is wrong:
-            # canonical renumbering can permute IDs even when the partition
-            # has stabilized, potentially causing a renumbering cycle.
-            stable = len(refined_numbers) == len(set(source_colours) | set(target_colours))
-            source_colours, target_colours = refined_source_colours, refined_target_colours
-            if stable:
-                break
+        # For moderate configurations, refine the two coloured,
+        # integral-weighted configuration graphs (the vertex-coloured Gram
+        # graph of LinPolytopeIntegral_Isomorphism_GramMat) by complete
+        # neighbour-colour distributions. Each refinement signature is an
+        # integral-isometry invariant; the partition only splits and reaches
+        # a fixed point. For larger configurations, the intrinsic colours
+        # above are retained without constructing the quadratic pairing graph.
+        if n <= _PAIRING_GRAPH_REFINEMENT_LIMIT:
+            while True:
+                modulus = len(set(source_colours) | set(target_colours))
+                source_refined = _refined_signatures(source_pairings, source_colours, modulus)
+                target_refined = _refined_signatures(target_pairings, target_colours, modulus)
+                refined_numbers = {signature: index for index, signature in enumerate(sorted(set(source_refined) | set(target_refined)))}
+                refined_source_colours = tuple(refined_numbers[signature] for signature in source_refined)
+                refined_target_colours = tuple(refined_numbers[signature] for signature in target_refined)
+                if Counter(refined_source_colours) != Counter(refined_target_colours):
+                    return ()
+                # Refinement signatures contain the old colour, so no two old
+                # classes can merge. Once the number of classes stops growing,
+                # the partition is equitable and further refinement cannot
+                # split it. Comparing numerical colour IDs instead is wrong:
+                # canonical renumbering can permute IDs even when the partition
+                # has stabilized, potentially causing a renumbering cycle.
+                stable = len(refined_numbers) == len(set(source_colours) | set(target_colours))
+                source_colours, target_colours = refined_source_colours, refined_target_colours
+                if stable:
+                    break
 
         buckets = {}
         for j, colour in enumerate(target_colours):
