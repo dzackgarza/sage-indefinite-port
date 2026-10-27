@@ -142,7 +142,15 @@ def test_coarse_colours_preserve_changed_configuration_transporters(monkeypatch)
     )
     assert _perfect_form_hash_key(source) == _perfect_form_hash_key(target)
 
-    transporters = LorentzianPerfectLocalBackend().cell_transporter(source, target, all_images=True)
+    backend = LorentzianPerfectLocalBackend()
+    witness = backend.cell_transporter(source, target)
+    assert witness is not None
+    witness_matrix = matrix(ZZ, rows_of(witness))
+    assert abs(witness_matrix.det()) == 1
+    assert witness_matrix * gram * witness_matrix.transpose() == gram
+    assert set(map(tuple, matrix(ZZ, source.rows) * witness_matrix)) == set(target.rows)
+
+    transporters = backend.cell_transporter(source, target, all_images=True)
 
     assert len(transporters) == 2
     for witness in transporters:

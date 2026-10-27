@@ -1373,13 +1373,18 @@ class LorentzianPerfectLocalBackend:
         if not all_images:
             if source.lattice is target.lattice and Counter(source.rows) == Counter(target.rows):
                 return source.lattice.Aut().identity()
-            source_family = Sets().Mor(Sets.Δ[n - 1], source.lattice)(
-                lambda index: source.vector_configuration[int(index)]
-            )
-            target_family = Sets().Mor(Sets.Δ[n - 1], target.lattice)(
-                lambda index: target.vector_configuration[int(index)]
-            )
-            return source.lattice.Isom(target.lattice).transporter(source_family, target_family)
+            if n <= _PAIRING_GRAPH_REFINEMENT_LIMIT:
+                source_family = Sets().Mor(Sets.Δ[n - 1], source.lattice)(
+                    lambda index: source.vector_configuration[int(index)]
+                )
+                target_family = Sets().Mor(Sets.Δ[n - 1], target.lattice)(
+                    lambda index: target.vector_configuration[int(index)]
+                )
+                return source.lattice.Isom(target.lattice).transporter(source_family, target_family)
+            # The preamble's labelled finite-family transporter constructs a
+            # complete pairing graph. For large cells, use the same exact
+            # basis-image search as stabilizer enumeration but stop at the
+            # first fully certified witness instead of building that graph.
         source_data = self._integral_configuration_invariants(source)
         # Stabilizer generation is the hot path for perfect-cell automorphisms:
         # source and target are literally the same configuration. Rebuilding
@@ -1473,6 +1478,8 @@ class LorentzianPerfectLocalBackend:
         # Cache proper partial spans; full-rank leaves instead receive
         # the complete integral transporter certificate.
         stabilizer_elements: list[LatticeIsometryMethods] = []
+        first_witness: LatticeIsometryMethods | None = None
+        first_only = not all_images
         if generators_only:
             # The immutable coordinate tuples are already the configuration's
             # canonical rows; reuse them as keys instead of allocating a
@@ -1488,7 +1495,9 @@ class LorentzianPerfectLocalBackend:
         empty_target_signatures = tuple((colour, ()) for colour in target_colours)
 
         def backtrack(images, source_signatures, target_signatures, certified_target_basis=None):
-            nonlocal subgroup
+            nonlocal subgroup, first_witness
+            if first_witness is not None:
+                return first_witness
             if len(images) == rank:
                 target_basis_integral = certified_target_basis if certified_target_basis is not None else target_rows.matrix_from_rows([images[i] for i in basis])
                 if certified_target_basis is None and abs(target_basis_integral.det()) != source_basis_index:
@@ -1522,6 +1531,9 @@ class LorentzianPerfectLocalBackend:
                         stabilizer_elements.append(witness)
                         group_permutations.append(permutation)
                         subgroup = symmetric.subgroup(group_permutations)
+                elif first_only:
+                    first_witness = witness
+                    return witness
                 else:
                     stabilizer_elements.append(witness)
                 return None
@@ -1633,6 +1645,8 @@ class LorentzianPerfectLocalBackend:
                         )
                         if Counter(next_source_signatures) == Counter(next_target_signatures):
                             backtrack(images, next_source_signatures, next_target_signatures, target_basis_integral)
+                            if first_witness is not None:
+                                return first_witness
                     del images[choice]
                     continue
                 # The chosen source rows are linearly independent. Every
@@ -1662,11 +1676,13 @@ class LorentzianPerfectLocalBackend:
                     )
                     if Counter(next_source_signatures) == Counter(next_target_signatures):
                         backtrack(images, next_source_signatures, next_target_signatures)
+                        if first_witness is not None:
+                            return first_witness
                 del images[choice]
             return None
 
         backtrack({}, empty_source_signatures, empty_target_signatures)
-        return tuple(stabilizer_elements)
+        return first_witness if first_only else tuple(stabilizer_elements)
 
 
 class LorentzianPerfectComplex:
