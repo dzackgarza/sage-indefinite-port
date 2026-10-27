@@ -207,6 +207,7 @@ def test_large_cell_owned_cone_bypasses_normaliz_polyhedron_wrapper(monkeypatch)
     cell = LargeInput()
     cell.lattice = lattice(gram.rows())
     cell.rows = ((1, 0), (0, 1)) * 5_000
+    assert len(cell.rows) >= 10_000
     backend = LorentzianPerfectLocalBackend()
     monkeypatch.setattr(
         backend,
@@ -217,6 +218,36 @@ def test_large_cell_owned_cone_bypasses_normaliz_polyhedron_wrapper(monkeypatch)
     assert {tuple(ray) for ray in cone.primitive_rays()} == {(1, 0), (0, 1)}
     assert len(cone.halfspace_covectors()) == 2
     assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})
+
+
+def test_large_cell_owned_cone_preserves_normaliz_equations(monkeypatch) -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+
+    class LargeInput:
+        pass
+
+    cell = LargeInput()
+    cell.lattice = lattice(gram.rows())
+    # A one-dimensional cone embedded in rank two has a nontrivial equation;
+    # support hyperplanes alone describe a larger half-plane.
+    cell.rows = ((1, 0),) * 10_000
+    backend = LorentzianPerfectLocalBackend()
+    monkeypatch.setattr(
+        backend,
+        "_normaliz_cell_polyhedron",
+        lambda _cell: pytest.fail("large owned-cone conversion materialized a Sage polyhedron"),
+    )
+    cone = backend.cell_cone(cell)
+    rays = tuple(cone.primitive_rays())
+    equations = cone.equation_covectors()
+    assert {tuple(ray) for ray in rays} == {(1, 0)}
+    assert equations
+    labels = tuple(cell.lattice.module_generating_set())
+    assert all(
+        sum(equation(label) * ray(label) for label in labels) == 0
+        for equation in equations
+        for ray in rays
+    )
 
 
 def test_large_cell_ray_extraction_releases_engine_cache() -> None:

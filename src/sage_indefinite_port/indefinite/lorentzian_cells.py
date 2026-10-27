@@ -754,10 +754,36 @@ class LorentzianPerfectLocalBackend:
         # raw support covectors rather than first materializing Sage's full
         # Polyhedron_normaliz inequality/equation objects and then converting
         # those objects back into owned covectors.
+        hyperplanes, equations = self._normaliz_cell_h_presentation(cell, include_equations=True)
         return _rational_polyhedral_cone(
             cell.lattice,
-            self._iter_cell_halfspace_covectors(cell),
+            self._iter_normaliz_owned_covectors(cell, hyperplanes),
+            equation_covectors=self._iter_normaliz_owned_covectors(cell, equations),
         )
+
+    def _normaliz_cell_h_presentation(self, cell: LorentzianPerfectCell, *, include_equations: bool):
+        """Extract Normaliz's exact H-data, then release its native cone reference."""
+        from sage.geometry.polyhedron.backend_normaliz import NmzResult
+
+        normaliz_cone = self._normaliz_cell_cone(cell)
+        hyperplanes = NmzResult(normaliz_cone, "SupportHyperplanes")
+        equations = NmzResult(normaliz_cone, "Equations") if include_equations else ()
+        self._release_normaliz_cell_cone(cell, normaliz_cone)
+        del normaliz_cone
+        return hyperplanes, equations
+
+    def _iter_normaliz_owned_covectors(self, cell: LorentzianPerfectCell, rows):
+        """Convert Normaliz homogeneous rows to owned covectors in place."""
+        for index, row in enumerate(rows):
+            if isinstance(rows, list):
+                rows[index] = None
+            coordinates = row[:-1]
+            if all(entry == 0 for entry in coordinates):
+                del coordinates, row
+                continue
+            covector = _integral_covector(cell.lattice, coordinates)
+            del coordinates, row
+            yield covector
 
     def _iter_cell_halfspace_pairing_rows(
         self, cell: LorentzianPerfectCell, labels: tuple[int, ...]
@@ -773,16 +799,11 @@ class LorentzianPerfectLocalBackend:
             for covector in self.cell_cone(cell).halfspace_covectors():
                 yield tuple(int(covector(label)) for label in labels)
             return
-        from sage.geometry.polyhedron.backend_normaliz import NmzResult
-
         # NmzResult returns the entire support-hyperplane list. Release each
         # converted row immediately instead of keeping all nested Python lists
         # alive until the iterator is exhausted; this preserves Normaliz order
         # while reducing the post-conversion peak during blockwise pairing.
-        normaliz_cone = self._normaliz_cell_cone(cell)
-        hyperplanes = NmzResult(normaliz_cone, "SupportHyperplanes")
-        self._release_normaliz_cell_cone(cell, normaliz_cone)
-        del normaliz_cone
+        hyperplanes, _ = self._normaliz_cell_h_presentation(cell, include_equations=False)
         for index, hyperplane in enumerate(hyperplanes):
             # Drop the result list's reference before allocating a coordinate
             # slice. The local reference keeps this one row alive while it is
@@ -806,30 +827,11 @@ class LorentzianPerfectLocalBackend:
         if len(cell.rows) < 1_000:
             yield from self.cell_cone(cell).halfspace_covectors()
             return
-        from sage.geometry.polyhedron.backend_normaliz import NmzResult
-
-        # Read the raw support-hyperplane rows from the cached Normaliz cone.
-        # Constructing Sage's Polyhedron_normaliz first creates and retains an
-        # Inequality object for every facet, which is unnecessary for incidence
-        # pairing and can dominate memory when the H-presentation is large.
-        # Normaliz encodes each support hyperplane as [A_1, ..., A_n, b]; for
-        # this homogeneous cone b=0, and Sage's Inequality.A() is exactly A.
-        normaliz_cone = self._normaliz_cell_cone(cell)
-        hyperplanes = NmzResult(normaliz_cone, "SupportHyperplanes")
-        self._release_normaliz_cell_cone(cell, normaliz_cone)
-        del normaliz_cone
-        for index, hyperplane in enumerate(hyperplanes):
-            if isinstance(hyperplanes, list):
-                hyperplanes[index] = None
-            coordinates = hyperplane[:-1]
-            if all(entry == 0 for entry in coordinates):
-                del coordinates, hyperplane
-                continue
-            covector = _integral_covector(cell.lattice, coordinates)
-            # Do not suspend this generator with both the raw Normaliz row
-            # slice and its owned dual-lattice covector alive.
-            del coordinates, hyperplane
-            yield covector
+        # Read raw support-hyperplane rows without constructing Sage's full
+        # Inequality objects. The shared converter releases each raw row as
+        # its owned dual-lattice covector is constructed.
+        hyperplanes, _ = self._normaliz_cell_h_presentation(cell, include_equations=False)
+        yield from self._iter_normaliz_owned_covectors(cell, hyperplanes)
 
     @cached_method
     def cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
