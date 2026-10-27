@@ -4,6 +4,8 @@ The explicit unimodular matrix certifies that the two complete configurations
 are isometric, independently of the transporter search.
 """
 
+from array import array
+
 from sage.all import ZZ, matrix, vector
 
 from sage_indefinite_port.indefinite.lorentzian_cells import (
@@ -287,6 +289,7 @@ def test_facet_incidence_streaming_preserves_exact_orbits() -> None:
     mask_orbits, mask_generators = backend._facet_orbit_transversal_masks(cell)
     all_ray_mask = (1 << len(cell.rows)) - 1
     assert mask_generators == generator_permutations
+    assert all(isinstance(permutation, array) for permutation in mask_generators)
     assert tuple(
         tuple((_facet_incidence(mask, len(cell.rows)), word) for mask, word in orbit)
         for orbit in mask_orbits

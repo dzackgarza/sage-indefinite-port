@@ -145,7 +145,7 @@ def _schreier_generator_indices(word: SchreierWord) -> tuple[int, ...]:
     return tuple(indices)
 
 
-def _permuted_bitset(mask: int, permutation: tuple[int, ...]) -> int:
+def _permuted_bitset(mask: int, permutation: array | tuple[int, ...]) -> int:
     """Apply a position permutation to an exact bitset using byte storage."""
     size = len(permutation)
     source = mask.to_bytes((size + 7) // 8, "little")
@@ -1063,7 +1063,10 @@ class LorentzianPerfectLocalBackend:
                     image_rows = (matrix(SageZZ, cell.rows[start:stop]) * action).rows()
                     permutation.extend(positions[tuple(row)] for row in image_rows)
                     del image_rows
-                permutations.append(tuple(permutation))
+                # Keep the packed buffer: converting it back to a tuple here
+                # defeats the memory reduction while retaining both buffers
+                # briefly during conversion.
+                permutations.append(permutation)
             except KeyError as exc:
                 raise ArithmeticError("a cell-stabilizer generator does not preserve its rays") from exc
 
