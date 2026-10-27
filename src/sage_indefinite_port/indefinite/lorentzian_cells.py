@@ -984,15 +984,25 @@ class LorentzianPerfectLocalBackend:
         # ray permutation, but the intermediate word-orbit view is not needed.
         mask_orbits, generator_permutations = self._facet_orbit_transversal_masks(cell)
         ray_count = len(cell.rows)
+        permutation_typecode = (
+            "H" if ray_count <= 2**16 else "I" if ray_count <= 2**32 else "Q"
+        )
         materialized = []
         for orbit in mask_orbits:
             elements = []
             for key, word in orbit:
-                permutation = tuple(range(ray_count))
+                # Compose the Schreier word in packed storage. The public
+                # return type requires a full tuple per facet, but keeping all
+                # intermediate compositions as Python tuples multiplies the
+                # peak allocation by the word length.
+                permutation = array(permutation_typecode, range(ray_count))
                 for generator_index in _schreier_generator_indices(word):
                     generator = generator_permutations[generator_index]
-                    permutation = tuple(generator[position] for position in permutation)
-                elements.append((_facet_incidence(key, ray_count), permutation))
+                    permutation = array(
+                        permutation_typecode,
+                        (generator[position] for position in permutation),
+                    )
+                elements.append((_facet_incidence(key, ray_count), tuple(permutation)))
             materialized.append(tuple(elements))
         return tuple(materialized)
 
