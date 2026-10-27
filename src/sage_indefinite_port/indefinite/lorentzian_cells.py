@@ -644,13 +644,31 @@ class LorentzianPerfectLocalBackend:
         directly rather than wrapping the presentation in an owned cone,
         whose current constructor rebuilds a PPL polyhedron from it.
         """
-        if len(cell.rows) < 10_000:
+        if len(cell.rows) < 1_000:
             return tuple(self.cell_cone(cell).halfspace_covectors())
         polyhedron = self._normaliz_cell_polyhedron(cell)
         return tuple(
             _integral_covector(cell.lattice, inequality.A())
             for inequality in polyhedron.inequalities()
         )
+
+    @cached_method
+    def cell_primitive_rays(self, cell: LorentzianPerfectCell):
+        """Return exact primitive extreme rays without rebuilding PPL.
+
+        Normaliz already owns the V-representation while computing the
+        minimized H-presentation. Use its exact extreme rays for large cells
+        rather than constructing an owned cone from the H-presentation and
+        converting that presentation back to V merely to find isotropic marks.
+        """
+        if len(cell.rows) < 1_000:
+            return tuple(self.cell_cone(cell).primitive_rays())
+        polyhedron = self._normaliz_cell_polyhedron(cell)
+        rows = (
+            tuple(int(entry) for entry in _source_remove_fraction(vector(SageQQ, row)))
+            for row in polyhedron.rays_list()
+        )
+        return tuple(_ambient_element(cell.lattice, row) for row in rows)
 
     def initial_cell(self, lattice: Lattices.ParentMethods, allowed_squares: RealSet) -> LorentzianPerfectCell:
         normalized = _lorentzian_view(lattice)
@@ -1786,7 +1804,7 @@ class MarkedCellOrbitAlgorithm:
         # consist of primitive generators; enumerate the primitive rays
         # of the actual cone rather than filtering those generators.
         zero = cell.lattice.base_ring().zero()
-        marks = tuple(ray for ray in self.complex().local_backend().cell_cone(cell).primitive_rays() if ray.q() == zero)
+        marks = tuple(ray for ray in self.complex().local_backend().cell_primitive_rays(cell) if ray.q() == zero)
         self._local_mark_cache[key] = marks
         return marks
 
