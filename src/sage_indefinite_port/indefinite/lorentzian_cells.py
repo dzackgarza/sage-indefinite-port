@@ -75,6 +75,16 @@ def _bit_positions(mask: int) -> Iterator[int]:
         mask ^= least_bit
 
 
+def _schreier_generator_indices(word: SchreierWord) -> tuple[int, ...]:
+    """Return a nested Schreier word's generator indices in action order."""
+    indices = []
+    while word is not None:
+        word, generator_index = word
+        indices.append(generator_index)
+    indices.reverse()
+    return tuple(indices)
+
+
 def _permuted_bitset(mask: int, permutation: tuple[int, ...]) -> int:
     """Apply a position permutation to an exact bitset using byte storage."""
     size = len(permutation)
@@ -966,15 +976,26 @@ class LorentzianPerfectLocalBackend:
         if len(basis_positions) != len(labels):
             raise ArithmeticError("a perfect-cell configuration does not span its ambient lattice")
         inverse_basis = ray_rows.matrix_from_rows(basis_positions).inverse()
+        mask_orbits, generator_permutations = self._facet_orbit_transversal_masks(cell)
+        all_ray_mask = (1 << len(cell.rows)) - 1
         result = []
-        for orbit in self.facet_orbit_permutations(cell):
+        for orbit in mask_orbits:
             elements = []
-            for facet, permutation in orbit:
-                image_basis = matrix(SageQQ, [ray_rows[permutation[position]] for position in basis_positions])
+            for nonincident_mask, word in orbit:
+                # Apply the Schreier word only to the rank-sized basis rows.
+                # Materializing a full ray permutation for every facet costs
+                # O(number_of_facets * number_of_rays) integers; this public
+                # view needs only the basis images to recover each isometry.
+                image_positions = list(basis_positions)
+                for generator_index in _schreier_generator_indices(word):
+                    permutation = generator_permutations[generator_index]
+                    image_positions = [permutation[position] for position in image_positions]
+                image_basis = matrix(SageQQ, [ray_rows[position] for position in image_positions])
                 action = inverse_basis * image_basis
                 if any(entry.denominator() != 1 for entry in action.list()):
                     raise ArithmeticError("a Schreier facet permutation does not induce an integral lattice action")
                 isometry = cell.lattice.O()(tuple(cell.lattice([int(entry) for entry in row]) for row in action.rows()))
+                facet = frozenset(_bit_positions(all_ray_mask ^ nonincident_mask))
                 elements.append((facet, isometry))
             result.append(tuple(elements))
         return tuple(result)
