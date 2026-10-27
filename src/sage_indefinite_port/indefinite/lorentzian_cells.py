@@ -730,12 +730,21 @@ class LorentzianPerfectLocalBackend:
     def point_permutations(self, cell: LorentzianPerfectCell, points: tuple[Lattices.ElementMethods, ...]) -> tuple[tuple[int, ...], ...]:
         r"""Each cell-stabilizer generator's permutation of a finite stable family of points, as position images."""
         lattice = cell.lattice
-        labels = tuple(lattice.module_generating_set())
         coordinate_rows = tuple(tuple(int(entry) for entry in _coordinate_row(lattice, point, SageZZ)) for point in points)
+        return self.point_permutations_from_rows(cell, coordinate_rows)
+
+    def point_permutations_from_rows(
+        self,
+        cell: LorentzianPerfectCell,
+        coordinate_rows: tuple[tuple[int, ...], ...],
+    ) -> tuple[tuple[int, ...], ...]:
+        r"""The same permutation certificate for points already in lattice coordinates."""
+        lattice = cell.lattice
+        labels = tuple(lattice.module_generating_set())
         positions = {row: position for position, row in enumerate(coordinate_rows)}
-        if len(positions) != len(points):
+        if len(positions) != len(coordinate_rows):
             raise ArithmeticError("a stable point configuration contains repeated points")
-        point_matrix = matrix(SageZZ, len(points), len(labels), lambda row, col: coordinate_rows[row][col])
+        point_matrix = matrix(SageZZ, coordinate_rows)
         permutations = []
         for generator in self.cell_stabilizer(cell):
             # The rows of this matrix are g(e_i). Linearity therefore gives
@@ -2014,12 +2023,10 @@ class _CellFaces:
         self.lattice = lattice
         self.labels = tuple(lattice.module_generating_set())
         self.gram = _gram_matrix(lattice)
-        # The owned cone was generated from this exact primitive-ray
-        # configuration.  Re-enumerating its rays asks the H-presentation
-        # backend to perform another H-to-V conversion; retain the original
-        # ray order and coordinates instead.
-        rays = cell.vector_configuration
-        self.rows = tuple(_coordinate_row(lattice, ray, SageZZ) for ray in rays)
+        # The cell already owns the exact primitive integer ray rows. Keep
+        # their order directly instead of materializing 49,861 lattice
+        # elements and immediately extracting the same coordinates again.
+        self.rows = tuple(vector(SageZZ, row) for row in cell.rows)
         # For large cells, obtain the exact H-presentation directly from
         # Normaliz instead of constructing an owned cone and rebuilding its
         # PPL engine from the same inequalities.
@@ -2074,7 +2081,13 @@ class _CellFaces:
         self.facet_incidences = tuple(incidences)
         self.incidences = frozenset(self.facet_incidences)
         self.full_face = frozenset(range(len(self.rows)))
-        self.group = libgap.Group([libgap.PermList([image + 1 for image in permutation]) for permutation in backend.point_permutations(cell, rays)], libgap.eval("()"))
+        self.group = libgap.Group(
+            [
+                libgap.PermList([image + 1 for image in permutation])
+                for permutation in backend.point_permutations_from_rows(cell, cell.rows)
+            ],
+            libgap.eval("()"),
+        )
         self._ranks: dict[frozenset[int], int] = {}
         self._barycenter_pairings: dict[frozenset[int], FreeModuleElement[Rational]] = {}
         self._covector_matrix = covector_matrix
