@@ -104,6 +104,7 @@ def test_large_cell_cone_uses_exact_normaliz_h_presentation(monkeypatch) -> None
         large_primitive_rays = backend.cell_primitive_rays(large_cell)
         large_null_rays = backend.cell_primitive_rays(large_cell, square=0)
     large_cone = backend.cell_cone(large_cell)
+    assert backend._normaliz_cell_polyhedron(large_cell)._normaliz_cone is backend._normaliz_cell_cone(large_cell)
     labels = tuple(cell.lattice.module_generating_set())
 
     def covector_rows(cone):

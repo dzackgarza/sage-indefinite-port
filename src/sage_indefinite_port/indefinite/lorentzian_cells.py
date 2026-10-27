@@ -645,13 +645,30 @@ def _refined_signatures(pairings: _ConfigurationPairings, colours: tuple[int, ..
 
 class LorentzianPerfectLocalBackend:
     @cached_method
+    def _normaliz_cell_cone(self, cell: LorentzianPerfectCell):
+        """Cache Normaliz's exact cone without materializing Sage H-representation objects."""
+        from sage.geometry.polyhedron.backend_normaliz import NmzCone
+
+        dimension = int(cell.lattice.module_rank())
+        return NmzCone(
+            vertices=[[0] * dimension + [1]],
+            cone=[list(row) for row in cell.rows],
+            subspace=[],
+        )
+
+    @cached_method
     def _normaliz_cell_polyhedron(self, cell: LorentzianPerfectCell):
-        """Cache the exact Normaliz V-to-H conversion for a large cell."""
-        return Polyhedron(
-            vertices=[(0,) * int(cell.lattice.module_rank())],
-            rays=cell.rows,
-            base_ring=SageQQ,
-            backend="normaliz",
+        """Wrap the cached exact Normaliz cone in Sage's owned polyhedron interface."""
+        from sage.geometry.polyhedron.backend_normaliz import Polyhedron_normaliz
+        from sage.geometry.polyhedron.parent import Polyhedra_normaliz
+
+        parent = Polyhedra_normaliz(SageQQ, int(cell.lattice.module_rank()), "normaliz")
+        return Polyhedron_normaliz(
+            parent,
+            None,
+            None,
+            normaliz_cone=self._normaliz_cell_cone(cell),
+            internal_base_ring=SageQQ,
         )
 
     @cached_method
@@ -674,13 +691,19 @@ class LorentzianPerfectLocalBackend:
         if len(cell.rows) < 1_000:
             yield from self.cell_cone(cell).halfspace_covectors()
             return
-        polyhedron = self._normaliz_cell_polyhedron(cell)
-        # inequalities() builds and caches a second tuple containing every
-        # inequality object. The H-representation is already owned by the
-        # Normaliz polyhedron; iterate it through Sage's generator API so this
-        # accessor does not retain that redundant tuple for a large cell.
-        for inequality in polyhedron.inequality_generator():
-            yield _integral_covector(cell.lattice, inequality.A())
+        from sage.geometry.polyhedron.backend_normaliz import NmzResult
+
+        # Read the raw support-hyperplane rows from the cached Normaliz cone.
+        # Constructing Sage's Polyhedron_normaliz first creates and retains an
+        # Inequality object for every facet, which is unnecessary for incidence
+        # pairing and can dominate memory when the H-presentation is large.
+        # Normaliz encodes each support hyperplane as [A_1, ..., A_n, b]; for
+        # this homogeneous cone b=0, and Sage's Inequality.A() is exactly A.
+        for hyperplane in NmzResult(self._normaliz_cell_cone(cell), "SupportHyperplanes"):
+            coordinates = hyperplane[:-1]
+            if all(entry == 0 for entry in coordinates):
+                continue
+            yield _integral_covector(cell.lattice, coordinates)
 
     @cached_method
     def cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
