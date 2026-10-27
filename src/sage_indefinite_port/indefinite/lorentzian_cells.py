@@ -1148,12 +1148,16 @@ class LorentzianPerfectLocalBackend:
     def _facet_orbit_transversal_masks(
         self, cell: LorentzianPerfectCell
     ) -> tuple[
-        tuple[tuple[tuple[FacetMaskKey, SchreierWord], ...], ...],
+        tuple[list[tuple[FacetMaskKey, SchreierWord]], ...],
         tuple[array, ...],
     ]:
-        """Materialize compact facet orbits for callers that need the full view."""
+        """Retain compact facet-orbit buffers without duplicating their entries."""
         facet_keys, permutations = self._facet_mask_data(cell)
-        return tuple(tuple(orbit) for orbit in self._iter_facet_mask_orbits(facet_keys, permutations)), permutations
+        # The iterator transfers ownership of each completed BFS list. Turning
+        # each list into a tuple here duplicates its pointer array at the peak
+        # where the full facet collection is retained, with no consumer needing
+        # tuple-specific operations on these private orbit buffers.
+        return tuple(self._iter_facet_mask_orbits(facet_keys, permutations)), permutations
 
     def _facet_orbit_transversal_words(
         self, cell: LorentzianPerfectCell
