@@ -1148,7 +1148,7 @@ class LorentzianPerfectLocalBackend:
     def _facet_orbit_transversal_masks(
         self, cell: LorentzianPerfectCell
     ) -> tuple[
-        tuple[tuple[tuple[int, SchreierWord], ...], ...],
+        tuple[tuple[tuple[FacetMaskKey, SchreierWord], ...], ...],
         tuple[array, ...],
     ]:
         """Materialize compact facet orbits for callers that need the full view."""
