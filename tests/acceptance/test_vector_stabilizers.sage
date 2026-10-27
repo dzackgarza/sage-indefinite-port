@@ -182,6 +182,39 @@ def test_isotropic_plane_isometry_carries_changed_basis_plane() -> None:
     assert all(lattice_.b(witness(left), witness(right)) == lattice_.b(left, right) for left in basis for right in basis)
 
 
+def test_isotropic_plane_isometry_transports_between_changed_basis_parents() -> None:
+    """The plane-isometry witness retains distinct source and target lattice parents."""
+    gram = matrix(ZZ, [[0, 4, 0, 0], [4, 0, 0, 0], [0, 0, 0, 4], [0, 0, 4, 0]])
+    change = matrix(ZZ, [[1, 0, 0, 0], [0, 1, 0, 0], [1, 0, 1, 0], [0, 0, 0, 1]])
+    source_lattice = lattice(gram)
+    target_lattice = lattice(change.transpose() * gram * change)
+    source_first = element(source_lattice, [1, 0, 0, 0])
+    source_second = element(source_lattice, [0, 0, 1, 0])
+    target_first = element(target_lattice, [1, 0, 0, 0])
+    target_second = element(target_lattice, [0, 0, 1, 0])
+    source_plane = source_lattice.primitive_isotropic_subobject(source_first, source_second)
+    target_plane = target_lattice.primitive_isotropic_subobject(target_first, target_second)
+
+    witness = IsotropicInduction(EichlerRecursion()).plane_isometry(source_plane, target_plane)
+    assert witness is not None
+    assert witness.domain() is source_lattice
+    assert witness.codomain() is target_lattice
+    target_basis_matrix = matrix(ZZ, [coordinates(target_first), coordinates(target_second)]).transpose()
+    first_coordinates = target_basis_matrix.solve_right(vector(ZZ, coordinates(witness(source_first))))
+    second_coordinates = target_basis_matrix.solve_right(vector(ZZ, coordinates(witness(source_second))))
+    induced_basis_change = matrix(ZZ, [
+        [first_coordinates[0], second_coordinates[0]],
+        [first_coordinates[1], second_coordinates[1]],
+    ])
+    assert abs(induced_basis_change.det()) == 1
+    source_basis = tuple(source_lattice.module_generators())
+    assert all(
+        target_lattice.b(witness(left), witness(right)) == source_lattice.b(left, right)
+        for left in source_basis
+        for right in source_basis
+    )
+
+
 def test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound() -> None:
     """The pairing L -> (Zv)^* has finite cokernel of order four in this example."""
     lattice_ = lattice([[0, 4, 0], [4, 0, 0], [0, 0, -8]])
