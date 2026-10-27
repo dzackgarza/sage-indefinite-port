@@ -1878,8 +1878,12 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             del halfspace_block
             for offset in range(stop - start):
                 nonincident_mask = 0
-                for position in pairing_block.row(offset).nonzero_positions():
-                    nonincident_mask |= 1 << position
+                # Enumerate the row directly. `nonzero_positions()` first
+                # allocates a Python list of every nonincident ray, which can
+                # itself be large for a dense facet complement.
+                for position, pairing in enumerate(pairing_block.row(offset)):
+                    if pairing:
+                        nonincident_mask |= 1 << position
                 if nonincident_mask == all_nonincident_mask:
                     raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
                 key = _facet_complement_key(nonincident_mask, ray_count)
