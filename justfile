@@ -133,6 +133,8 @@ ci-acceptance family shard shards selection="":
             tests/acceptance/test_vector_stabilizers.sage::test_general_isotropic_pointed_isometry_carries_negative_marking
             tests/acceptance/test_vector_stabilizers.sage::test_split_divisibility_one_pointed_isometry_carries_actual_negative_marking
             tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_isometry_rejects_different_divisibility
+            tests/acceptance/test_vector_stabilizers.sage::test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound
+            tests/acceptance/test_vector_stabilizers.sage::test_divisibility_four_isotropic_plane_stabilizer_constructs_exact_containing_bound
             tests/acceptance/test_vector_stabilizers.sage::test_vector_stabilizer_has_oscars_order
             'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[0]'
             'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[2]'
@@ -190,6 +192,7 @@ ci-acceptance family shard shards selection="":
       isotropic_orbits)
         tests=(
             'tests/acceptance/test_isotropic_orbits.sage::test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors[IsotropicCases_0]'
+            'tests/acceptance/test_isotropic_orbits.sage::test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors[IsotropicCases_15]'
             tests/acceptance/test_isotropic_orbits.sage::test_o_plus_n_has_two_line_and_two_plane_orbits
             tests/acceptance/test_isotropic_orbits.sage::test_stable_o_plus_n_orbits_match_dutour_sikiric_hulek
             tests/acceptance/test_isotropic_orbits.sage::test_o_n_maps_onto_o_of_the_discriminant_form
