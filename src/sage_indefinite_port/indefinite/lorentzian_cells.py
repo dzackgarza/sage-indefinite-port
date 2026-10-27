@@ -761,8 +761,15 @@ class LorentzianPerfectLocalBackend:
         # owned cone, even though both consumers need the identical minimized
         # H-family.
         hyperplanes = self.cell_halfspace_covectors(cell)
-        _, equations = self._normaliz_cell_h_presentation(
-            cell, include_equations=True, include_hyperplanes=False
+        # The equation covectors are the exact right kernel of the ray matrix.
+        # Computing Normaliz's Equations property would instantiate a second
+        # native cone with every ray duplicated, although the equation space is
+        # already determined by these coordinate rows. Primitive integral
+        # representatives span the same rational annihilator.
+        ray_matrix = matrix(SageQQ, cell.rows)
+        equations = tuple(
+            _integral_covector(cell.lattice, row)
+            for row in ray_matrix.right_kernel().basis()
         )
         return _rational_polyhedral_cone(
             cell.lattice,
@@ -770,20 +777,14 @@ class LorentzianPerfectLocalBackend:
             equation_covectors=self._iter_normaliz_owned_covectors(cell, equations),
         )
 
-    def _normaliz_cell_h_presentation(
-        self,
-        cell: LorentzianPerfectCell,
-        *,
-        include_equations: bool,
-        include_hyperplanes: bool = True,
-    ):
+    def _normaliz_cell_h_presentation(self, cell: LorentzianPerfectCell, *, include_equations: bool):
         """Extract exact H-data directly in the cone's linear coordinates."""
         from sage.geometry.polyhedron.backend_normaliz import NmzCone, NmzResult
 
         # Cone generators avoid the affine origin vertex and homogenizing
         # coordinate required by Polyhedron_normaliz, including its tautology.
         normaliz_cone = NmzCone(cone=cell.rows, subspace=())
-        hyperplanes = NmzResult(normaliz_cone, "SupportHyperplanes") if include_hyperplanes else ()
+        hyperplanes = NmzResult(normaliz_cone, "SupportHyperplanes")
         equations = NmzResult(normaliz_cone, "Equations") if include_equations else ()
         del normaliz_cone
         return hyperplanes, equations
