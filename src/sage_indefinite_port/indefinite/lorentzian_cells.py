@@ -770,11 +770,9 @@ class LorentzianPerfectLocalBackend:
         Schreier step and retains the generator permutations only once.
         """
         vectors = cell.vector_configuration
-        cone = self.cell_cone(cell)
-        # The stored homogeneous H-presentation is already minimized. Asking
-        # for facet_covectors() reconstructs each face cone only to recover
-        # these same supporting normals, which dominates high-facet cells.
-        covectors = iter(cone.halfspace_covectors())
+        # The exact H-presentation can be read directly from Normaliz on large
+        # cells; do not wrap it in an owned cone merely to recover its normals.
+        covectors = iter(self.cell_halfspace_covectors(cell))
         # Bound the exact pairing temporary by entry count, not a fixed row
         # count: configurations larger than A7 must not allocate an
         # unbounded number of columns per block.
