@@ -598,6 +598,7 @@ class _ConfigurationPairings:
         # visit each column once and must not retain full-length Python tuples.
         self._cache_columns = cache_columns
         self._column_cache: dict[int, tuple[int, ...]] = {}
+        self._column_cache_limit = max(1, min(64, 250_000 // max(1, self.rows.nrows())))
 
     def __len__(self) -> int:
         return self.rows.nrows()
@@ -621,7 +622,7 @@ class _ConfigurationPairings:
         result = tuple(int(entry) for entry in (self.rows * covector).column(0))
         if not use_cache:
             return result
-        if len(self._column_cache) >= 64:
+        if len(self._column_cache) >= self._column_cache_limit:
             self._column_cache.pop(next(iter(self._column_cache)))
         self._column_cache[index] = result
         return result
@@ -1425,6 +1426,10 @@ class LorentzianPerfectLocalBackend:
         # Each target anchor has the same exact pairing signature
         # partition regardless of the source vertex assigned to it.
         # Build its immutable fibres once; backtracking only intersects them.
+        # Each cached fibre/partition can contain O(n) indices. Bound both
+        # caches by total entry budget rather than a fixed number of anchors,
+        # otherwise the 49,861-vector A7 search can retain quadratic data.
+        anchor_cache_limit = max(1, min(64, 250_000 // max(1, n)))
 
         if source_rows.rank() != rank or target_rows.rank() != rank:
             raise ArithmeticError("a perfect-cell vector configuration does not span its lattice")
@@ -1523,8 +1528,12 @@ class LorentzianPerfectLocalBackend:
                             for l, pairing in enumerate(target_pairings.column(v)):
                                 neighbours.setdefault((target_colours[l], int(pairing)), set()).add(l)
                             target_neighbour_signatures[v] = {signature: frozenset(indices) for signature, indices in neighbours.items()}
+                            if len(target_neighbour_signatures) > anchor_cache_limit:
+                                target_neighbour_signatures.pop(next(iter(target_neighbour_signatures)))
                         signature = (source_colours[i], source_pairings[i, k])
                         compatible_images[key] = target_neighbour_signatures[v].get(signature, frozenset())
+                        if len(compatible_images) > anchor_cache_limit:
+                            compatible_images.pop(next(iter(compatible_images)))
                     admissible_images.intersection_update(compatible_images[key])
                     if not admissible_images:
                         break
