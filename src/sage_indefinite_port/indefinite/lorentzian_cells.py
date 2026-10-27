@@ -1840,7 +1840,11 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     backend = complex_.local_backend()
     cones = RationalPolyhedralCones(lattice)
     cells = complex_.quotient_cells()
-    cell_cones = {id(cell): backend.cell_cone(cell) for cell in cells}
+    # Construct each owned cone only when its facet incidences are processed.
+    # Eager construction runs Normaliz's complete support-hyperplane algorithm
+    # for every quotient cell before releasing any per-cell native temporaries.
+    # Keep the resulting owned cones for the later adjacency consumers.
+    cell_cones = {}
     # A supporting facet is the zero section of its defining covector.
     # Reuse the source cell's H-presentation for every member of its
     # stabilizer orbit instead of recomputing a V-to-H representation.
@@ -1850,9 +1854,11 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     # generator tuple once per cell.
     labels = tuple(lattice.module_generating_set())
     for cell in cells:
+        cell_cone = backend.cell_cone(cell)
+        cell_cones[id(cell)] = cell_cone
         ray_count = len(cell.rows)
         by_incidence = {}
-        covectors = cell_cones[id(cell)].halfspace_covectors()
+        covectors = cell_cone.halfspace_covectors()
         # The cone's stored H-presentation already is the minimized facet
         # family. `facet_covectors()` constructs every facet cone merely to
         # recover these same normals, which is prohibitively expensive on
