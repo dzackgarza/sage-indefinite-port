@@ -2038,13 +2038,23 @@ class _CellFaces:
         # facet; A7 has 49,861 rays, so batching Sage's exact matrix product
         # avoids millions of Python-level pairing calls without retaining the
         # full facet-by-ray pairing matrix.
-        ray_matrix = matrix(SageQQ, self.rows)
+        # Both the primitive rays and primitive integral dual covectors have
+        # integer coordinates. Keep this incidence product over ZZ so Sage's
+        # exact integer matrix backend can use its optimized integer kernels
+        # instead of doing rational arithmetic for a zero/nonzero test.
+        ray_matrix = matrix(SageZZ, self.rows)
         ray_transpose = ray_matrix.transpose()
+        covector_rows = tuple(
+            tuple(_rational(self.covectors[row][column]) for column in range(len(self.labels)))
+            for row in range(len(self.covectors))
+        )
+        if any(entry.denominator() != 1 for row in covector_rows for entry in row):
+            raise ArithmeticError("primitive integral facet covectors must have integral lattice coordinates")
         covector_matrix = matrix(
-            SageQQ,
+            SageZZ,
             len(self.covectors),
             len(self.labels),
-            lambda row, column: self.covectors[row][column],
+            lambda row, column: int(covector_rows[row][column]),
         )
         all_ray_positions = frozenset(range(len(self.rows)))
         block_size = _configuration_pairing_block_size(len(self.rows))
