@@ -1,6 +1,5 @@
-# The required acceptance sample runs on every push. The exhaustive reflective
-# corpus is long-tail coverage (TODO.md A_REFLECTIVE), so it is reserved for
-# workflow_dispatch instead of making routine pushes execute 17,526 cases.
+# The required acceptance sample runs on every push. Amended long-tail corpora
+# are reserved for workflow_dispatch; explicit full-file contracts stay full.
 # The summary job collates every executed shard into one failure list.
 name: Acceptance
 on:
@@ -39,15 +38,18 @@ jobs:
               "centralizers": 1,
           }
           if os.environ["GITHUB_EVENT_NAME"] == "push":
-              # The required reflective acceptance is the frozen branch sample
-              # plus the two source-backed root-system comparisons. The full
-              # reflective file remains available on explicit dispatch.
+              # #33's amended acceptance nodes run explicit branch samples on
+              # push; full files remain available on workflow_dispatch.
+              sampled = {"reflective", "orthogonal_group", "vector_stabilizers", "vector_orbits", "isotropic_orbits", "boundaries"}
               include = [
                   {"family": f, "shard": i, "shards": n, "selection": ""}
-                  for f, n in shards.items() if f != "reflective"
+                  for f, n in shards.items() if f not in sampled
                   for i in range(n)
               ]
-              include.append({"family": "reflective", "shard": 0, "shards": 1, "selection": "branch"})
+              include.extend(
+                  {"family": f, "shard": 0, "shards": 1, "selection": f}
+                  for f in sorted(sampled)
+              )
           else:
               include = [
                   {"family": f, "shard": i, "shards": n, "selection": ""}
