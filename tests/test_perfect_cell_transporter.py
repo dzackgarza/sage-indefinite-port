@@ -235,6 +235,16 @@ def test_large_cell_owned_cone_preserves_normaliz_equations(monkeypatch) -> None
     # support hyperplanes alone describe a larger half-plane.
     cell.rows = ((1, 0),) * 10_000
     backend = LorentzianPerfectLocalBackend()
+    original_h_presentation = backend._normaliz_cell_h_presentation
+    h_presentation_calls = []
+
+    def record_h_presentation(requested_cell, *, include_equations):
+        h_presentation_calls.append((requested_cell, include_equations))
+        return original_h_presentation(
+            requested_cell, include_equations=include_equations
+        )
+
+    monkeypatch.setattr(backend, "_normaliz_cell_h_presentation", record_h_presentation)
     monkeypatch.setattr(
         backend,
         "_normaliz_cell_polyhedron",
@@ -251,6 +261,7 @@ def test_large_cell_owned_cone_preserves_normaliz_equations(monkeypatch) -> None
         for equation in equations
         for ray in rays
     )
+    assert h_presentation_calls == [(cell, True)]
 
 
 def test_large_cell_ray_extraction_bypasses_normaliz_polyhedron_wrapper(monkeypatch) -> None:
