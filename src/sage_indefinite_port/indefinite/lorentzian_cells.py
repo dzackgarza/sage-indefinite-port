@@ -868,6 +868,11 @@ class LorentzianPerfectLocalBackend:
             ray_rows = polyhedron.rays_list()
         finally:
             self._release_normaliz_cell_cone(cell, normaliz_cone)
+        # rays_list() returns ordinary Python coordinate rows. Drop both
+        # engine-owning locals before converting those rows into owned lattice
+        # elements; otherwise the native Normaliz facet vector remains live
+        # throughout that second full representation's construction.
+        del polyhedron, normaliz_cone
         rows = (
             tuple(int(entry) for entry in _source_remove_fraction(vector(SageQQ, row)))
             for row in ray_rows

@@ -198,6 +198,21 @@ def test_owned_large_cell_cone_releases_normaliz_engine_cache() -> None:
     assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})
 
 
+def test_large_cell_ray_extraction_releases_engine_cache() -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+
+    class LargeInput:
+        pass
+
+    cell = LargeInput()
+    cell.lattice = lattice(gram.rows())
+    cell.rows = ((1, 0), (0, 1)) * 5_000
+    backend = LorentzianPerfectLocalBackend()
+    rays = backend.cell_primitive_rays(cell)
+    assert {tuple(ray) for ray in rays} == {(1, 0), (0, 1)}
+    assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})
+
+
 def test_facet_incidence_streaming_preserves_exact_orbits() -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
