@@ -209,7 +209,7 @@ def test_permuted_facet_bitsets_preserve_exact_positions() -> None:
     assert dense_image == sum(1 << (ray_count - 1 - position) for position in range(200))
 
 
-def test_normaliz_pairing_rows_match_owned_covectors() -> None:
+def test_normaliz_pairing_rows_match_owned_covectors(monkeypatch) -> None:
     """The large-cell raw Normaliz path preserves owned covector evaluations."""
     gram = matrix(ZZ, [[0, 1], [1, 0]])
 
@@ -222,6 +222,11 @@ def test_normaliz_pairing_rows_match_owned_covectors() -> None:
     # Normaliz removes these repeated input rays exactly.
     cell.rows = ((1, 0), (0, 1)) * 5_000
     backend = LorentzianPerfectLocalBackend()
+    monkeypatch.setattr(
+        backend,
+        "cell_cone",
+        lambda _cell: pytest.fail("large facet incidence must not materialize an owned cone"),
+    )
     labels = tuple(cell.lattice.module_generating_set())
     pairing_rows = tuple(backend._iter_cell_halfspace_pairing_rows(cell, labels))
     assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})

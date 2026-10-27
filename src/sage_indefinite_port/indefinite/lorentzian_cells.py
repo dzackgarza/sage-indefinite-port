@@ -813,10 +813,23 @@ class LorentzianPerfectLocalBackend:
         cells, use Normaliz's integral covector coordinates directly and avoid
         both a per-facet gcd/division pass and constructing owned dual elements.
         """
-        # The owned cone is also consumed by facet-incidence and adjacency
-        # construction. Reuse its minimized H-family rather than asking
-        # Normaliz for SupportHyperplanes a second time just to obtain the
-        # same zero pattern in the ray-pairing matrix.
+        if len(cell.rows) >= 1_000:
+            # Facet-orbit traversal needs only the exact zero pattern of each
+            # supporting covector, not owned dual elements or an owned cone.
+            # Read Normaliz's primitive-or-not integral H rows directly; their
+            # scaling is immaterial to incidence, and avoiding conversion to
+            # the categorical cone prevents duplicating the full A7 H-list.
+            hyperplanes, _ = self._normaliz_cell_h_presentation(
+                cell, include_equations=False
+            )
+            for index, row in enumerate(hyperplanes):
+                if isinstance(hyperplanes, list):
+                    hyperplanes[index] = None
+                yield tuple(int(entry) for entry in row)
+                del row
+            return
+        # Small owned cones are reused directly rather than querying Normaliz
+        # for a second H-presentation.
         for covector in self.cell_cone(cell).halfspace_covectors():
             yield tuple(int(covector(label)) for label in labels)
 
