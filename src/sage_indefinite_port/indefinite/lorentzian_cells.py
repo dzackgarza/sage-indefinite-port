@@ -992,14 +992,11 @@ class LorentzianPerfectLocalBackend:
         while covector_block:
             pairing_block = matrix(SageZZ, covector_block) * transposed_ray_rows
             for offset in range(len(covector_block)):
-                # Sage's exact dense row support is computed by the matrix
-                # backend. Taking its complement avoids 49,861 Python-level
-                # matrix-entry lookups per facet in the A7 configuration.
-                # Store incidence sets as Python integer bitsets internally.
-                # With 49,861 rays, a frozenset of boxed indices and its hash
-                # table costs orders of magnitude more memory than this exact
-                # bit representation. Convert back only at the API boundary.
-                nonincident_positions = pairing_block.row(offset).nonzero_positions()
+                # Materialize each exact pairing row once: nonzero_positions()
+                # and the sparse incident-side fallback both consume this
+                # same row, which has one entry per ray (49,861 for A7).
+                pairing_row = pairing_block.row(offset)
+                nonincident_positions = pairing_row.nonzero_positions()
                 if not nonincident_positions:
                     raise ArithmeticError("a minimized H-presentation covector contains every extreme ray")
                 if len(nonincident_positions) == ray_count:
@@ -1012,7 +1009,7 @@ class LorentzianPerfectLocalBackend:
                     key: FacetMaskKey = (True, tuple(nonincident_positions))
                 elif ray_count - len(nonincident_positions) <= _sparse_facet_complement_limit(ray_count):
                     incident_positions = tuple(
-                        position for position, value in enumerate(pairing_block.row(offset)) if not value
+                        position for position, value in enumerate(pairing_row) if not value
                     )
                     key = (False, incident_positions)
                 else:
