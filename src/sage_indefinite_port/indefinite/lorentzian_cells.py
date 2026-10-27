@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import cache, cached_property
@@ -65,6 +65,15 @@ from sage_indefinite_port.invariants import AttackProfile
 type PerfectMode = Literal["total", "isotropic"]
 type FacetIncidence = frozenset[int]
 type SchreierWord = tuple[SchreierWord, int] | None
+
+
+def _bit_positions(mask: int) -> Iterator[int]:
+    """Yield set-bit positions of a nonnegative integer, in increasing order."""
+    while mask:
+        least_bit = mask & -mask
+        yield least_bit.bit_length() - 1
+        mask ^= least_bit
+
 
 # The admissible squares in the normalized signature-(1,n) form are actual
 # subsets of R, not a source-level string selector.
@@ -826,7 +835,7 @@ class LorentzianPerfectLocalBackend:
         labels = tuple(cell.lattice.module_generating_set())
         integral_ray_rows = matrix(SageZZ, cell.rows)
         transposed_ray_rows = integral_ray_rows.transpose()
-        all_ray_positions = frozenset(range(len(vectors)))
+        all_ray_mask = (1 << len(vectors)) - 1
         # Do not materialize the full |facets|-by-|rays| pairing matrix.
         # A7's initial perfect configuration has 49,861 rays, so retaining
         # every rational pairing alongside the exact incidence sets multiplies
@@ -837,7 +846,10 @@ class LorentzianPerfectLocalBackend:
         # A dict is both the ordered sequence of first occurrences and the
         # exact membership oracle, avoiding a separate full list of facet
         # references before building the unvisited set.
-        facets = {}
+        # Each value retains the canonical key object so orbit queues can
+        # reference the existing bitset rather than allocate another 6 KB
+        # integer for every 49,861-bit facet mask.
+        facets: dict[int, list[int | bool]] = {}
         while covector_block:
             covector_coordinates = tuple(covector.to_vector() for covector in covector_block)
             covector_rows = matrix(
@@ -849,8 +861,17 @@ class LorentzianPerfectLocalBackend:
                 # Sage's exact dense row support is computed by the matrix
                 # backend. Taking its complement avoids 49,861 Python-level
                 # matrix-entry lookups per facet in the A7 configuration.
-                incidence = all_ray_positions.difference(pairing_block.row(offset).nonzero_positions())
-                facets.setdefault(incidence, True)
+                # Store incidence sets as Python integer bitsets internally.
+                # With 49,861 rays, a frozenset of boxed indices and its hash
+                # table costs orders of magnitude more memory than this exact
+                # bit representation. Convert back only at the API boundary.
+                support_mask = 0
+                for position in pairing_block.row(offset).nonzero_positions():
+                    support_mask |= 1 << position
+                incidence_mask = all_ray_mask ^ support_mask
+                if incidence_mask == 0:
+                    raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
+                facets.setdefault(incidence_mask, [True, incidence_mask])
             covector_block = tuple(islice(covectors, covector_block_size))
         generators = self.cell_stabilizer(cell)
         # Use precisely these generators to form the ray action.  Calling
@@ -874,19 +895,32 @@ class LorentzianPerfectLocalBackend:
         orbits = []
         identity_word = None
         for start in facets:
-            if not facet_set[start]:
+            start_state = facet_set[start]
+            if not start_state[0]:
                 continue
-            facet_set[start] = False
-            orbit = [(start, identity_word)]
-            for facet, element_word in orbit:
+            start_state[0] = False
+            orbit = [(int(start_state[1]), identity_word)]
+            for facet_mask, element_word in orbit:
                 for generator_index, permutation in enumerate(permutations):
-                    image = frozenset(permutation[position] for position in facet)
-                    if image not in facet_set:
+                    image_mask = 0
+                    remaining = facet_mask
+                    while remaining:
+                        least_bit = remaining & -remaining
+                        position = least_bit.bit_length() - 1
+                        image_mask |= 1 << permutation[position]
+                        remaining ^= least_bit
+                    if image_mask not in facet_set:
                         raise ArithmeticError("a cell-stabilizer generator fails to permute the facets")
-                    if facet_set[image]:
-                        facet_set[image] = False
-                        orbit.append((image, (element_word, generator_index)))
-            orbits.append(tuple(orbit))
+                    image_state = facet_set[image_mask]
+                    if image_state[0]:
+                        image_state[0] = False
+                        orbit.append((int(image_state[1]), (element_word, generator_index)))
+            orbits.append(
+                tuple(
+                    (frozenset(_bit_positions(facet_mask)), word)
+                    for facet_mask, word in orbit
+                )
+            )
         return tuple(orbits), tuple(permutations)
 
     @cached_method
