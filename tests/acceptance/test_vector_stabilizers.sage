@@ -276,6 +276,40 @@ def test_isotropic_flag_isometry_transports_between_changed_basis_parents() -> N
     )
 
 
+def test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks() -> None:
+    """The plane stabilizer preserves J setwise; the flag stabilizer also preserves Zu."""
+    lattice_ = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    first = element(lattice_, [1, 0, 0, 0])
+    second = element(lattice_, [0, 0, 1, 0])
+    plane = lattice_.primitive_isotropic_subobject(first, second)
+    flag_line = first + second
+    induction = IsotropicInduction(EichlerRecursion())
+    plane_inclusion = plane.inclusion()
+    plane_basis = tuple(plane_inclusion(generator) for generator in plane_inclusion.domain().module_generators())
+    ambient_basis = tuple(lattice_.module_generators())
+
+    for generators, preserve_line in (
+        (induction.plane_automorphism_generators(plane), False),
+        (induction.flag_automorphism_generators((flag_line, plane)), True),
+    ):
+        assert generators
+        for generator in generators:
+            if preserve_line:
+                assert generator(flag_line) in (flag_line, -flag_line)
+            images = tuple(generator(point) for point in plane_basis)
+            image_coordinates = tuple(plane_inclusion.lift(point).to_vector() for point in images)
+            coordinate_matrix = matrix(ZZ, [
+                [coordinate_vector(label) for label in plane_inclusion.domain().module_generating_set()]
+                for coordinate_vector in image_coordinates
+            ])
+            assert abs(coordinate_matrix.det()) == 1
+            assert all(
+                lattice_.b(generator(left), generator(right)) == lattice_.b(left, right)
+                for left in ambient_basis
+                for right in ambient_basis
+            )
+
+
 def test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound() -> None:
     """The pairing L -> (Zv)^* has finite cokernel of order four in this example."""
     lattice_ = lattice([[0, 4, 0], [4, 0, 0], [0, 0, -8]])
