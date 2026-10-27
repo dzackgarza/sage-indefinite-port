@@ -2096,9 +2096,15 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         for facet_key in by_incidence:
             if facet_key in paired_facets[id(cell)]:
                 continue
-            # Avoid expanding an integer facet key into a full frozenset of
-            # ray indices until a certificate or error message requires it.
-            incidence = _facet_incidence(facet_key, ray_count)
+            # Iterate incident positions directly from the compact key.
+            # The full incidence set is only needed on the error path.
+            if isinstance(facet_key, int):
+                incident_positions = _bit_positions(((1 << ray_count) - 1) ^ facet_key)
+            elif facet_key[0]:
+                excluded = set(facet_key[1])
+                incident_positions = (position for position in range(ray_count) if position not in excluded)
+            else:
+                incident_positions = iter(facet_key[1])
             # Only unmatched boundary candidates require a Gram certificate.
             # Constructing the entire ray matrix duplicates the full A7
             # configuration when a much smaller selected-row matrix suffices.
@@ -2107,7 +2113,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # facet. Exact minor checks find at most two independent rays,
             # avoiding a quadratic number of Gram products for large facets.
             facet_basis = []
-            for position in incidence:
+            for position in incident_positions:
                 row = cell.rows[position]
                 if not any(row):
                     continue
@@ -2137,6 +2143,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             basis_gram = basis_matrix * ambient_gram * basis_matrix.transpose()
             if not any(basis_gram.list()):
                 continue
+            incidence = _facet_incidence(facet_key, ray_count)
             raise ArithmeticError(
                 f"the perfect-domain decomposition of {lattice} is incomplete: "
                 f"the interior facet with extreme-ray incidence {sorted(incidence)} "
