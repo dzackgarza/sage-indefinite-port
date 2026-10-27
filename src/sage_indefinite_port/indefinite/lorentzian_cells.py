@@ -1860,7 +1860,7 @@ def _perfect_form_hash_key(cell: LorentzianPerfectCell) -> PerfectFormKey:
                 # blocks reduce the FLINT dispatch count while keeping the exact
                 # n-by-n Gram matrix unmaterialized.
                 off_diagonal.update(int(row[j]) for j in range(i + 1, len(pairings)))
-    smith_invariants = tuple(int(entry) for entry in matrix(SageZZ, cell.rows).transpose().elementary_divisors())
+    smith_invariants = tuple(int(entry) for entry in pairings.rows.transpose().elementary_divisors())
     vector_contents = tuple(sorted(Counter(gcd(*row) for row in cell.rows).items()))
     divisibilities = tuple(
         sorted(Counter(gcd(*pairings.covectors.row(index)) for index in range(len(pairings))).items())
