@@ -650,10 +650,13 @@ class LorentzianPerfectLocalBackend:
         from sage.geometry.polyhedron.backend_normaliz import NmzCone
 
         dimension = int(cell.lattice.module_rank())
+        # PyNormaliz accepts immutable tuple rows directly. Passing the
+        # canonical configuration avoids duplicating all 49,861 ray rows as
+        # Python lists while Normaliz constructs its own exact cone input.
         return NmzCone(
-            vertices=[[0] * dimension + [1]],
-            cone=[list(row) for row in cell.rows],
-            subspace=[],
+            vertices=[(0,) * dimension + (1,)],
+            cone=cell.rows,
+            subspace=(),
         )
 
     @cached_method
