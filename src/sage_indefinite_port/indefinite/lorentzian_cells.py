@@ -994,6 +994,7 @@ class LorentzianPerfectLocalBackend:
             covector_block = tuple(islice(covector_rows, block_size))
             while covector_block:
                 pairing_block = matrix(SageZZ, covector_block) * transposed_ray_rows
+                block_keys = []
                 for offset in range(len(covector_block)):
                     pairing_row = pairing_block.row(offset)
                     nonincident_positions = pairing_row.nonzero_positions()
@@ -1014,13 +1015,14 @@ class LorentzianPerfectLocalBackend:
                         for position in nonincident_positions:
                             support_bytes[position >> 3] |= 1 << (position & 7)
                         key = int.from_bytes(support_bytes, "little")
-                    yield key
-                # Release the previous exact pairing matrix before pulling
-                # the next covector block. Otherwise the right-hand side of
-                # the next matrix multiplication is allocated while this
-                # 16-by-49,861 block is still referenced by pairing_block and
-                # its final row view.
+                    block_keys.append(key)
+                # Detach the block's compact keys before yielding any of them.
+                # Orbit traversal may do substantial work before asking for
+                # the next key; retaining the dense pairing matrix across that
+                # work overlaps its memory with the current Schreier orbit.
                 del pairing_block, pairing_row, nonincident_positions
+                yield from block_keys
+                del block_keys
                 covector_block = tuple(islice(covector_rows, block_size))
 
         return facet_keys(), tuple(permutations)
