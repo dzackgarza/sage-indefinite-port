@@ -705,9 +705,16 @@ class LorentzianPerfectLocalBackend:
             subspace=(),
         )
 
-    @cached_method
     def _normaliz_cell_polyhedron(self, cell: LorentzianPerfectCell):
-        """Wrap the cached exact Normaliz cone in Sage's owned polyhedron interface."""
+        """Temporarily wrap the cached Normaliz cone in Sage's polyhedron interface.
+
+        Do not cache this wrapper: Sage's Normaliz polyhedron retains Python
+        V/H-representation objects in addition to the engine cone. The exact
+        engine is already cached separately, and callers either convert the
+        result into the owned cone (itself cached) or consume its ray rows
+        immediately. Retaining the wrapper duplicates the large A7 H-list
+        alongside the owned cone and the raw incidence iterator's result.
+        """
         from sage.geometry.polyhedron.backend_normaliz import Polyhedron_normaliz
         from sage.geometry.polyhedron.parent import Polyhedra_normaliz
 
