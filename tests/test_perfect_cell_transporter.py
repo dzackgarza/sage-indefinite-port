@@ -6,6 +6,7 @@ are isometric, independently of the transporter search.
 
 from array import array
 
+import pytest
 from sage.all import ZZ, identity_matrix, matrix, vector
 
 from sage_indefinite_port.indefinite.lorentzian_cells import (
@@ -107,6 +108,11 @@ def test_coarse_large_configuration_colours_preserve_exact_stabilizer(monkeypatc
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
     monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
+    monkeypatch.setattr(
+        lorentzian_cells._ConfigurationPairings,
+        "blocks",
+        lambda _self: pytest.fail("coarse invariant path must not construct the quadratic pairing graph"),
+    )
 
     transporters = LorentzianPerfectLocalBackend().cell_transporter(
         cell, cell, all_images=True, generators_only=True
