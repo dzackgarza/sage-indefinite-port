@@ -675,7 +675,11 @@ class LorentzianPerfectLocalBackend:
             yield from self.cell_cone(cell).halfspace_covectors()
             return
         polyhedron = self._normaliz_cell_polyhedron(cell)
-        for inequality in polyhedron.inequalities():
+        # inequalities() builds and caches a second tuple containing every
+        # inequality object. The H-representation is already owned by the
+        # Normaliz polyhedron; iterate it through Sage's generator API so this
+        # accessor does not retain that redundant tuple for a large cell.
+        for inequality in polyhedron.inequality_generator():
             yield _integral_covector(cell.lattice, inequality.A())
 
     @cached_method
