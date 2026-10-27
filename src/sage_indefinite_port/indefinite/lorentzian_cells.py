@@ -659,22 +659,25 @@ class LorentzianPerfectLocalBackend:
         polyhedron = self._normaliz_cell_polyhedron(cell)
         return _cone_from_engine_polyhedron(cell.lattice, polyhedron)
 
+    def _iter_cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
+        """Yield exact primitive facet covectors without retaining owned copies."""
+        if len(cell.rows) < 1_000:
+            yield from self.cell_cone(cell).halfspace_covectors()
+            return
+        polyhedron = self._normaliz_cell_polyhedron(cell)
+        for inequality in polyhedron.inequalities():
+            yield _integral_covector(cell.lattice, inequality.A())
+
     @cached_method
     def cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
         """Return the exact primitive homogeneous facet covectors of ``cell``.
 
-        The marked-face traversal only needs the H-presentation. For large
-        configurations, compute it with Normaliz and return the covectors
-        directly rather than wrapping the presentation in an owned cone,
-        whose current constructor rebuilds a PPL polyhedron from it.
+        The public tuple API is retained for callers needing repeated random
+        access. The facet-orbit traversal consumes the iterator directly, so
+        it does not cache a second full tuple of owned covectors on top of
+        Normaliz's already-materialized exact H-presentation.
         """
-        if len(cell.rows) < 1_000:
-            return tuple(self.cell_cone(cell).halfspace_covectors())
-        polyhedron = self._normaliz_cell_polyhedron(cell)
-        return tuple(
-            _integral_covector(cell.lattice, inequality.A())
-            for inequality in polyhedron.inequalities()
-        )
+        return tuple(self._iter_cell_halfspace_covectors(cell))
 
     @cached_method
     def cell_primitive_rays(self, cell: LorentzianPerfectCell, square: int | None = None):
@@ -839,7 +842,7 @@ class LorentzianPerfectLocalBackend:
         vectors = cell.vector_configuration
         # The exact H-presentation can be read directly from Normaliz on large
         # cells; do not wrap it in an owned cone merely to recover its normals.
-        covectors = iter(self.cell_halfspace_covectors(cell))
+        covectors = iter(self._iter_cell_halfspace_covectors(cell))
         # Bound the exact pairing temporary by entry count, not a fixed row
         # count: configurations larger than A7 must not allocate an
         # unbounded number of columns per block.

@@ -100,6 +100,7 @@ def test_large_cell_cone_uses_exact_normaliz_h_presentation(monkeypatch) -> None
             lambda _cell: pytest.fail("a direct large-cell Normaliz accessor rebuilt the owned cone"),
         )
         large_covectors = backend.cell_halfspace_covectors(large_cell)
+        assert tuple(backend._iter_cell_halfspace_covectors(large_cell)) == large_covectors
         large_primitive_rays = backend.cell_primitive_rays(large_cell)
         large_null_rays = backend.cell_primitive_rays(large_cell, square=0)
     large_cone = backend.cell_cone(large_cell)
