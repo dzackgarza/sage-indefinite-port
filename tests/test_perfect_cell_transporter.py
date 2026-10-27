@@ -116,9 +116,15 @@ def test_empty_stable_configuration_has_empty_permutation_for_each_generator() -
 
 def test_permuted_facet_bitsets_preserve_exact_positions() -> None:
     permutation = (2, 0, 3, 1, 5, 4, 6, 7, 9, 8)
-    for mask in (0, 1, 1 << 9, (1 << 0) | (1 << 3) | (1 << 8) | (1 << 9), (1 << 10) - 1):
+    all_positions = (1 << len(permutation)) - 1
+    masks = (0, 1, 1 << 9, (1 << 0) | (1 << 3) | (1 << 8) | (1 << 9), (1 << 10) - 1)
+    for mask in masks:
         expected = sum(1 << permutation[position] for position in range(len(permutation)) if mask & (1 << position))
-        assert _permuted_bitset(mask, permutation) == expected
+        image = _permuted_bitset(mask, permutation)
+        assert image == expected
+        # The production facet traversal stores nonincident-ray complements;
+        # a permutation must commute with complement in the fixed ray universe.
+        assert _permuted_bitset(all_positions ^ mask, permutation) == all_positions ^ image
 
 
 def test_facet_incidence_streaming_preserves_exact_orbits() -> None:
