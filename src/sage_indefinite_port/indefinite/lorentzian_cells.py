@@ -755,21 +755,35 @@ class LorentzianPerfectLocalBackend:
         # raw support covectors rather than first materializing Sage's full
         # Polyhedron_normaliz inequality/equation objects and then converting
         # those objects back into owned covectors.
-        hyperplanes, equations = self._normaliz_cell_h_presentation(cell, include_equations=True)
+        # The facet iterator and cone constructor share the cached owned
+        # covectors. Without this, traversal computes Normaliz's complete
+        # support-hyperplane list once for incidence and a second time for the
+        # owned cone, even though both consumers need the identical minimized
+        # H-family.
+        hyperplanes = self.cell_halfspace_covectors(cell)
+        _, equations = self._normaliz_cell_h_presentation(
+            cell, include_equations=True, include_hyperplanes=False
+        )
         return _rational_polyhedral_cone(
             cell.lattice,
-            self._iter_normaliz_owned_covectors(cell, hyperplanes),
+            hyperplanes,
             equation_covectors=self._iter_normaliz_owned_covectors(cell, equations),
         )
 
-    def _normaliz_cell_h_presentation(self, cell: LorentzianPerfectCell, *, include_equations: bool):
+    def _normaliz_cell_h_presentation(
+        self,
+        cell: LorentzianPerfectCell,
+        *,
+        include_equations: bool,
+        include_hyperplanes: bool = True,
+    ):
         """Extract exact H-data directly in the cone's linear coordinates."""
         from sage.geometry.polyhedron.backend_normaliz import NmzCone, NmzResult
 
         # Cone generators avoid the affine origin vertex and homogenizing
         # coordinate required by Polyhedron_normaliz, including its tautology.
         normaliz_cone = NmzCone(cone=cell.rows, subspace=())
-        hyperplanes = NmzResult(normaliz_cone, "SupportHyperplanes")
+        hyperplanes = NmzResult(normaliz_cone, "SupportHyperplanes") if include_hyperplanes else ()
         equations = NmzResult(normaliz_cone, "Equations") if include_equations else ()
         del normaliz_cone
         return hyperplanes, equations
@@ -800,26 +814,11 @@ class LorentzianPerfectLocalBackend:
             for covector in self.cell_cone(cell).halfspace_covectors():
                 yield tuple(int(covector(label)) for label in labels)
             return
-        # NmzResult returns the entire support-hyperplane list. Release each
-        # converted row immediately instead of keeping all nested Python lists
-        # alive until the iterator is exhausted; this preserves Normaliz order
-        # while reducing the post-conversion peak during blockwise pairing.
-        hyperplanes, _ = self._normaliz_cell_h_presentation(cell, include_equations=False)
-        for index, hyperplane in enumerate(hyperplanes):
-            # Drop the result list's reference before allocating a coordinate
-            # slice. The local reference keeps this one row alive while it is
-            # normalized, but all not-yet-consumed rows remain the only rows
-            # retained by the full-result container.
-            if isinstance(hyperplanes, list):
-                hyperplanes[index] = None
-            if all(entry == 0 for entry in hyperplane):
-                del hyperplane
-                continue
-            # Incidence depends only on zero/nonzero pairings, invariant under
-            # any nonzero rescaling, so retain Normaliz's exact integral scale.
-            pairing_row = tuple(int(entry) for entry in hyperplane)
-            del hyperplane
-            yield pairing_row
+        # Share the same owned H-family with cell_cone(). The former raw-row
+        # path recomputed and materialized the full Normaliz support list a
+        # second time after the cone had already been built.
+        for covector in self.cell_halfspace_covectors(cell):
+            yield tuple(int(covector(label)) for label in labels)
 
     def _iter_cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
         """Yield exact primitive facet covectors without retaining owned copies."""
