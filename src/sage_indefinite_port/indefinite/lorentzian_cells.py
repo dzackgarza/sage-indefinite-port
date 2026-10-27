@@ -1088,29 +1088,33 @@ class LorentzianPerfectLocalBackend:
                 block_keys = []
                 for offset in range(len(covector_block)):
                     pairing_row = pairing_block.row(offset)
-                    nonincident_positions = pairing_row.nonzero_positions()
-                    if not nonincident_positions:
+                    nonincident_count = sum(bool(value) for value in pairing_row)
+                    if nonincident_count == 0:
                         raise ArithmeticError("a minimized H-presentation covector contains every extreme ray")
-                    if len(nonincident_positions) == ray_count:
+                    if nonincident_count == ray_count:
                         raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
-                    if len(nonincident_positions) <= sparse_limit:
-                        key: FacetMaskKey = (True, tuple(nonincident_positions))
-                    elif ray_count - len(nonincident_positions) <= sparse_limit:
+                    if nonincident_count <= sparse_limit:
+                        key: FacetMaskKey = (
+                            True,
+                            tuple(position for position, value in enumerate(pairing_row) if value),
+                        )
+                    elif ray_count - nonincident_count <= sparse_limit:
                         incident_positions = tuple(
                             position for position, value in enumerate(pairing_row) if not value
                         )
                         key = (False, incident_positions)
                     else:
                         support_bytes = bytearray((ray_count + 7) // 8)
-                        for position in nonincident_positions:
-                            support_bytes[position >> 3] |= 1 << (position & 7)
+                        for position, value in enumerate(pairing_row):
+                            if value:
+                                support_bytes[position >> 3] |= 1 << (position & 7)
                         key = int.from_bytes(support_bytes, "little")
                     block_keys.append(key)
                 # Detach the block's compact keys before yielding any of them.
                 # Orbit traversal may do substantial work before asking for
                 # the next key; retaining the dense pairing matrix across that
                 # work overlaps its memory with the current Schreier orbit.
-                del pairing_block, pairing_row, nonincident_positions
+                del pairing_block, pairing_row
                 # The primitive coordinate tuples have served their purpose
                 # once the keys are built; do not retain them while the
                 # consumer traverses an orbit for each yielded key.
