@@ -87,6 +87,22 @@ def test_divisibility_two_isotropic_pointed_isometry_has_exact_witness() -> None
     assert all(lattice_.b(witness(left), witness(right)) == lattice_.b(left, right) for left in basis for right in basis)
 
 
+def test_general_isotropic_pointed_isometry_carries_negative_marking() -> None:
+    """The general (divisibility-two) route must normalize against the actual marked vector."""
+    lattice_ = lattice([[0, 2, 0, 0], [2, 0, 0, 0], [0, 0, 0, 2], [0, 0, 2, 0]])
+    source = element(lattice_, [1, 0, 0, 0])
+    target = -source
+
+    assert int(source.q()) == int(target.q()) == 0
+    assert int(source.content()) == int(target.content()) == 1
+    assert int(source.div()) == int(target.div()) == 2
+    witness = EichlerRecursion().pointed_isometry(source, target)
+    assert witness is not None
+    assert witness(source) == target
+    basis = tuple(lattice_.module_generators())
+    assert all(lattice_.b(witness(left), witness(right)) == lattice_.b(left, right) for left in basis for right in basis)
+
+
 def test_split_divisibility_one_pointed_isometry_carries_actual_negative_marking() -> None:
     lattice_ = lattice([[0, 1], [1, 0]])
     source = element(lattice_, [1, 0])
