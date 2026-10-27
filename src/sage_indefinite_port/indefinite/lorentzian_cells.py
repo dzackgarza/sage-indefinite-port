@@ -995,9 +995,13 @@ class LorentzianPerfectLocalBackend:
             )
             try:
                 image_columns = action.transpose() * transposed_ray_rows
+                # Matrix.columns() materializes all 49,861 column vectors at
+                # once. Resolve one exact column at a time so the permutation
+                # tuple is the only full-size Python result retained here.
                 permutations.append(
-                    tuple(positions[tuple(column)] for column in image_columns.columns())
+                    tuple(positions[tuple(image_columns.column(j))] for j in range(ray_count))
                 )
+                del image_columns
             except KeyError as exc:
                 raise ArithmeticError("a cell-stabilizer generator does not preserve its rays") from exc
 
