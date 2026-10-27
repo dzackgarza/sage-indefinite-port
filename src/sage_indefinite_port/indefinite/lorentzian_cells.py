@@ -75,6 +75,21 @@ def _bit_positions(mask: int) -> Iterator[int]:
         mask ^= least_bit
 
 
+def _permuted_bitset(mask: int, permutation: tuple[int, ...]) -> int:
+    """Apply a position permutation to an exact bitset using byte storage."""
+    size = len(permutation)
+    source = mask.to_bytes((size + 7) // 8, "little")
+    image = bytearray(len(source))
+    for byte_index, value in enumerate(source):
+        while value:
+            least_bit = value & -value
+            position = 8 * byte_index + least_bit.bit_length() - 1
+            target = permutation[position]
+            image[target >> 3] |= 1 << (target & 7)
+            value ^= least_bit
+    return int.from_bytes(image, "little")
+
+
 # The admissible squares in the normalized signature-(1,n) form are actual
 # subsets of R, not a source-level string selector.
 NONNEGATIVE_SQUARES = RealSet.unbounded_above_closed(0)
@@ -865,10 +880,10 @@ class LorentzianPerfectLocalBackend:
                 # With 49,861 rays, a frozenset of boxed indices and its hash
                 # table costs orders of magnitude more memory than this exact
                 # bit representation. Convert back only at the API boundary.
-                support_mask = 0
+                support_bytes = bytearray((len(vectors) + 7) // 8)
                 for position in pairing_block.row(offset).nonzero_positions():
-                    support_mask |= 1 << position
-                incidence_mask = all_ray_mask ^ support_mask
+                    support_bytes[position >> 3] |= 1 << (position & 7)
+                incidence_mask = all_ray_mask ^ int.from_bytes(support_bytes, "little")
                 if incidence_mask == 0:
                     raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
                 facets.setdefault(incidence_mask, [1, incidence_mask])
@@ -902,13 +917,7 @@ class LorentzianPerfectLocalBackend:
             orbit = [(int(start_state[1]), identity_word)]
             for facet_mask, element_word in orbit:
                 for generator_index, permutation in enumerate(permutations):
-                    image_mask = 0
-                    remaining = facet_mask
-                    while remaining:
-                        least_bit = remaining & -remaining
-                        position = least_bit.bit_length() - 1
-                        image_mask |= 1 << permutation[position]
-                        remaining ^= least_bit
+                    image_mask = _permuted_bitset(facet_mask, permutation)
                     if image_mask not in facet_set:
                         raise ArithmeticError("a cell-stabilizer generator fails to permute the facets")
                     image_state = facet_set[image_mask]
