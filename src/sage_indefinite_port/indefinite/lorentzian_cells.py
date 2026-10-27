@@ -764,21 +764,13 @@ class LorentzianPerfectLocalBackend:
         # large cells: that decorator retains a second complete tuple of
         # owned covectors alongside the cone's own H-presentation. The cone
         # below becomes their sole owner, and traversal reads it directly.
-        hyperplanes = tuple(self._iter_cell_halfspace_covectors(cell))
-        # The equation covectors are the exact right kernel of the ray matrix.
-        # Computing Normaliz's Equations property would instantiate a second
-        # native cone with every ray duplicated, although the equation space is
-        # already determined by these coordinate rows. Primitive integral
-        # representatives span the same rational annihilator.
-        ray_matrix = matrix(SageQQ, cell.rows)
-        # Keep equation rows in rational coordinate form here: the owned-cone
-        # constructor consumes raw coordinates through the same converter as
-        # the support covectors. Pre-converting these rows to owned covectors
-        # and then passing them through that converter attempts to interpret
-        # covector objects as coordinate scalars.
-        equations = tuple(
-            tuple(row) for row in ray_matrix.right_kernel().basis()
+        # Request H- and equation-data from the same native cone. This avoids
+        # both a second support-hyperplane query and a dense QQ copy of all ray
+        # rows solely to recover the linear span's annihilator.
+        hyperplanes, equations = self._normaliz_cell_h_presentation(
+            cell, include_equations=True
         )
+        hyperplanes = tuple(self._iter_normaliz_owned_covectors(cell, hyperplanes))
         return _rational_polyhedral_cone(
             cell.lattice,
             hyperplanes,
