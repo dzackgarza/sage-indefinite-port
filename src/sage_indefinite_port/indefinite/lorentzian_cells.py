@@ -766,8 +766,14 @@ class LorentzianPerfectLocalBackend:
             # not coexist for every support hyperplane.
             hyperplanes[index] = None
             if content == 0:
+                del coordinates, hyperplane
                 continue
-            yield tuple(int(entry) // content for entry in coordinates)
+            normalized = tuple(int(entry) // content for entry in coordinates)
+            # The generator suspends at yield, so explicitly drop the source
+            # row slice and row reference before handing the normalized tuple
+            # to blockwise pairing. Otherwise each suspension retains both.
+            del coordinates, hyperplane
+            yield normalized
 
     def _iter_cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
         """Yield exact primitive facet covectors without retaining owned copies."""
