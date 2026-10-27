@@ -883,10 +883,14 @@ class LorentzianPerfectLocalBackend:
                 support_bytes = bytearray((len(vectors) + 7) // 8)
                 for position in pairing_block.row(offset).nonzero_positions():
                     support_bytes[position >> 3] |= 1 << (position & 7)
-                incidence_mask = all_ray_mask ^ int.from_bytes(support_bytes, "little")
-                if incidence_mask == 0:
+                # The support of a facet covector is the complement of its
+                # incident rays. Store that sparse complement as the orbit
+                # key: a facet usually contains most rays, so permuting the
+                # incidence mask would visit almost all 49,861 set bits.
+                nonincident_mask = int.from_bytes(support_bytes, "little")
+                if nonincident_mask == all_ray_mask:
                     raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
-                facets.setdefault(incidence_mask, [1, incidence_mask])
+                facets.setdefault(nonincident_mask, [1, nonincident_mask])
             covector_block = tuple(islice(covectors, covector_block_size))
         generators = self.cell_stabilizer(cell)
         # Use precisely these generators to form the ray action.  Calling
@@ -926,7 +930,7 @@ class LorentzianPerfectLocalBackend:
                         orbit.append((int(image_state[1]), (element_word, generator_index)))
             orbits.append(
                 tuple(
-                    (frozenset(_bit_positions(facet_mask)), word)
+                    (frozenset(_bit_positions(all_ray_mask ^ facet_mask)), word)
                     for facet_mask, word in orbit
                 )
             )
