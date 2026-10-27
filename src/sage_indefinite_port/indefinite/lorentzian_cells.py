@@ -1036,12 +1036,18 @@ class LorentzianPerfectLocalBackend:
             try:
                 image_columns = action.transpose() * transposed_ray_rows
                 # Matrix.columns() materializes all 49,861 column vectors at
-                # once. Resolve one exact column at a time so the permutation
-                # tuple is the only full-size Python result retained here.
+                # once, while column(j) creates one Sage vector per ray. Keep
+                # only the rank row vectors and assemble each lookup key from
+                # their scalar entries; the permutation tuple is the only
+                # full-size Python result retained here.
+                image_rows = image_columns.rows()
                 permutations.append(
-                    tuple(positions[tuple(image_columns.column(j))] for j in range(ray_count))
+                    tuple(
+                        positions[tuple(image_rows[i][j] for i in range(rank))]
+                        for j in range(ray_count)
+                    )
                 )
-                del image_columns
+                del image_rows, image_columns
             except KeyError as exc:
                 raise ArithmeticError("a cell-stabilizer generator does not preserve its rays") from exc
 
