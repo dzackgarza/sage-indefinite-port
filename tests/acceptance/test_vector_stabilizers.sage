@@ -316,11 +316,12 @@ def test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks()
             for right in ambient_basis
         )
 
-    for generators, preserve_line in (
-        (induction.plane_automorphism_generators(plane), False),
-        (induction.flag_automorphism_generators((flag_line, plane)), True),
+    for generators, preserve_line, expected_mod_three_order in (
+        (induction.plane_automorphism_generators(plane), False, 48),
+        (induction.flag_automorphism_generators((flag_line, plane)), True, 12),
     ):
         assert generators
+        induced_actions = []
         for generator in generators:
             if preserve_line:
                 assert generator(flag_line) in (flag_line, -flag_line)
@@ -331,11 +332,15 @@ def test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks()
                 for coordinate_vector in image_coordinates
             ])
             assert abs(coordinate_matrix.det()) == 1
+            induced_actions.append(matrix(GF(3), coordinate_matrix))
             assert all(
                 lattice_.b(generator(left), generator(right)) == lattice_.b(left, right)
                 for left in ambient_basis
                 for right in ambient_basis
             )
+        # The plane action is all of GL(2,Z); the flag action is its line
+        # stabilizer. Their exact finite images have orders 48 and 12 over F_3.
+        assert MatrixGroup(induced_actions).order() == expected_mod_three_order
 
 
 def test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound() -> None:
