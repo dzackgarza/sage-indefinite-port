@@ -1870,14 +1870,13 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         block_size = _configuration_pairing_block_size(rows.nrows())
         pairing_block = None
         all_nonincident_mask = (1 << ray_count) - 1
-        ray_bit_values = tuple(1 << position for position in range(ray_count))
         for start in range(0, halfspace_matrix.nrows(), block_size):
             stop = min(start + block_size, halfspace_matrix.nrows())
             pairing_block = halfspace_matrix.matrix_from_rows(range(start, stop)) * ray_transpose
             for offset in range(stop - start):
                 nonincident_mask = 0
                 for position in pairing_block.row(offset).nonzero_positions():
-                    nonincident_mask |= ray_bit_values[position]
+                    nonincident_mask |= 1 << position
                 if nonincident_mask == all_nonincident_mask:
                     raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
                 key = _facet_complement_key(nonincident_mask, ray_count)
@@ -1887,7 +1886,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         # The final block remains bound in the function scope
         # after the loop. Release those dense temporaries before traversal
         # begins; for the A7 ray configuration, even one block is substantial.
-        del pairing_block, rows, ray_transpose, covectors, ray_bit_values
+        del pairing_block, rows, ray_transpose, covectors
         facet_covectors_by_incidence[id(cell)] = by_incidence
         del halfspace_matrix
     ambient_labels = tuple(lattice.module_generating_set())
