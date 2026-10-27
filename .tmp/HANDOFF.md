@@ -90,7 +90,9 @@ after the change. The unit is filed as
 carries the same profile and the same specimen. It is not the port's to
 repair: `_presented_module_from_morphism`, `Mor.Of`,
 `_normalized_form_automorphism` and `_coinvariant_discriminant_from_invariant`
-are provider owners. The same overhead multiplies the 2395-vector
+are provider owners. The port now pins provider
+`d20472d309dd64d168a6aacd71f074570b81538`; the timings above were taken at
+`53d0db2e7d`. The same overhead multiplies the 2395-vector
 `IsotropicCases_8716` and the 49,861-vector A7 configuration, so measure the
 change on that conversion before rerunning either family. The case also still
 needs `_counts(group)`; no case has completed the unchanged assertion.
