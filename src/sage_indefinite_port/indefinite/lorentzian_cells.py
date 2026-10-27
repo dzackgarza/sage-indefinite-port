@@ -755,8 +755,15 @@ class LorentzianPerfectLocalBackend:
         # the resulting homogeneous H-representation is normalized into the
         # same RationalPolyhedralCones object, and facet incidences below are
         # still recomputed against the original ray rows and indices.
-        polyhedron = self._normaliz_cell_polyhedron(cell)
-        return _cone_from_engine_polyhedron(cell.lattice, polyhedron)
+        normaliz_cone = self._normaliz_cell_cone(cell)
+        try:
+            polyhedron = self._normaliz_cell_polyhedron(cell)
+            return _cone_from_engine_polyhedron(cell.lattice, polyhedron)
+        finally:
+            # The owned cone is the cached consumer result. Do not also keep
+            # the Normaliz engine (and its native facet vector) in the backend
+            # cache after converting the temporary Sage wrapper.
+            self._release_normaliz_cell_cone(cell, normaliz_cone)
 
     def _iter_cell_halfspace_pairing_rows(
         self, cell: LorentzianPerfectCell, labels: tuple[int, ...]
@@ -856,10 +863,15 @@ class LorentzianPerfectLocalBackend:
         if len(cell.rows) < 1_000:
             rays = tuple(self.cell_cone(cell).primitive_rays())
             return rays if square is None else tuple(ray for ray in rays if int(ray.q()) == square)
-        polyhedron = self._normaliz_cell_polyhedron(cell)
+        normaliz_cone = self._normaliz_cell_cone(cell)
+        try:
+            polyhedron = self._normaliz_cell_polyhedron(cell)
+            ray_rows = polyhedron.rays_list()
+        finally:
+            self._release_normaliz_cell_cone(cell, normaliz_cone)
         rows = (
             tuple(int(entry) for entry in _source_remove_fraction(vector(SageQQ, row)))
-            for row in polyhedron.rays_list()
+            for row in ray_rows
         )
         if square is None:
             return tuple(_ambient_element(cell.lattice, row) for row in rows)

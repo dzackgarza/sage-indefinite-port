@@ -181,6 +181,21 @@ def test_normaliz_pairing_rows_match_owned_covectors() -> None:
     assert pairing_rows == owned_rows
 
 
+def test_owned_large_cell_cone_releases_normaliz_engine_cache() -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+
+    class LargeInput:
+        pass
+
+    cell = LargeInput()
+    cell.lattice = lattice(gram.rows())
+    cell.rows = ((1, 0), (0, 1)) * 5_000
+    backend = LorentzianPerfectLocalBackend()
+    cone = backend.cell_cone(cell)
+    assert cone.primitive_rays()
+    assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})
+
+
 def test_facet_incidence_streaming_preserves_exact_orbits() -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
