@@ -1022,7 +1022,7 @@ class LorentzianPerfectLocalBackend:
     @staticmethod
     def _iter_facet_mask_orbits(
         facet_keys: Iterator[FacetMaskKey], permutations: tuple[tuple[int, ...], ...]
-    ) -> Iterator[tuple[tuple[FacetMaskKey, SchreierWord], ...]]:
+    ) -> Iterator[list[tuple[FacetMaskKey, SchreierWord]]]:
         """Yield exact facet orbits with one visited set and one current orbit.
 
         Every generator permutation comes from an exact lattice isometry
@@ -1045,7 +1045,9 @@ class LorentzianPerfectLocalBackend:
                     if image_mask not in visited:
                         visited.add(image_mask)
                         orbit.append((image_mask, (element_word, generator_index)))
-            yield tuple(orbit)
+            # Transfer the mutable BFS buffer to the caller rather than
+            # copying every orbit into a tuple while the list is still live.
+            yield orbit
         if len(visited) != facet_count:
             raise ArithmeticError(
                 "cell-stabilizer permutations generate incidences outside the H-presentation"
@@ -1060,7 +1062,7 @@ class LorentzianPerfectLocalBackend:
     ]:
         """Materialize compact facet orbits for callers that need the full view."""
         facet_keys, permutations = self._facet_mask_data(cell)
-        return tuple(self._iter_facet_mask_orbits(facet_keys, permutations)), permutations
+        return tuple(tuple(orbit) for orbit in self._iter_facet_mask_orbits(facet_keys, permutations)), permutations
 
     def _facet_orbit_transversal_words(
         self, cell: LorentzianPerfectCell
