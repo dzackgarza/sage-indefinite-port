@@ -2106,12 +2106,12 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # lattice-rank rows and avoid a quadratic number of exact Gram
             # products for a large isotropic boundary facet.
             facet_basis = []
-            basis_rank = 0
             for position in sorted(incidence):
                 row = cell.rows[position]
+                if not any(row):
+                    continue
                 if not facet_basis:
                     facet_basis.append(row)
-                    basis_rank = 1
                     continue
                 # With a nonzero first row, rank two is equivalent to some
                 # 2-by-2 minor being nonzero. Avoid a Sage rank computation
@@ -2120,7 +2120,6 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 if any(first[i] * row[j] != first[j] * row[i]
                        for i in range(len(row)) for j in range(i + 1, len(row))):
                     facet_basis.append(row)
-                    basis_rank = 2
                     break
             basis_gram = matrix(SageQQ, facet_basis) * ambient_gram * matrix(SageQQ, facet_basis).transpose()
             if not any(basis_gram.list()):
