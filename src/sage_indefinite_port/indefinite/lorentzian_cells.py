@@ -2100,9 +2100,19 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # Only unmatched boundary candidates require a Gram certificate.
             # Constructing the entire ray matrix duplicates the full A7
             # configuration when a much smaller selected-row matrix suffices.
-            facet_rows = matrix(SageQQ, (cell.rows[position] for position in sorted(incidence)))
-            pairings = facet_rows * ambient_gram * facet_rows.transpose()
-            if not any(pairings.list()):
+            # A totally isotropic boundary facet has every pairwise Gram
+            # product zero. Check these exact products without constructing
+            # the quadratic-size Gram matrix of its incident ray family.
+            facet_rows = tuple(cell.rows[position] for position in sorted(incidence))
+            if all(
+                not sum(
+                    facet_rows[i][k] * ambient_gram[k, l] * facet_rows[j][l]
+                    for k in range(ambient_gram.nrows())
+                    for l in range(ambient_gram.ncols())
+                )
+                for i in range(len(facet_rows))
+                for j in range(i, len(facet_rows))
+            ):
                 continue
             raise ArithmeticError(
                 f"the perfect-domain decomposition of {lattice} is incomplete: "
