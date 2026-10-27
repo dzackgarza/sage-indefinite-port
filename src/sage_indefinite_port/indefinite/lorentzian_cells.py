@@ -762,33 +762,27 @@ class LorentzianPerfectLocalBackend:
         )
 
     def _normaliz_cell_h_presentation(self, cell: LorentzianPerfectCell, *, include_equations: bool):
-        """Extract Normaliz's exact H-data, then release its native cone reference."""
-        from sage.geometry.polyhedron.backend_normaliz import NmzResult
+        """Extract exact H-data directly in the cone's linear coordinates."""
+        from sage.geometry.polyhedron.backend_normaliz import NmzCone, NmzResult
 
-        normaliz_cone = self._normaliz_cell_cone(cell)
-        try:
-            hyperplanes = NmzResult(normaliz_cone, "SupportHyperplanes")
-            equations = NmzResult(normaliz_cone, "Equations") if include_equations else ()
-        finally:
-            self._release_normaliz_cell_cone(cell, normaliz_cone)
+        # Cone generators avoid the affine origin vertex and homogenizing
+        # coordinate required by Polyhedron_normaliz, including its tautology.
+        normaliz_cone = NmzCone(cone=cell.rows, subspace=())
+        hyperplanes = NmzResult(normaliz_cone, "SupportHyperplanes")
+        equations = NmzResult(normaliz_cone, "Equations") if include_equations else ()
         del normaliz_cone
         return hyperplanes, equations
 
     def _iter_normaliz_owned_covectors(self, cell: LorentzianPerfectCell, rows):
-        """Convert Normaliz homogeneous rows to owned covectors in place."""
+        """Convert rank-dimensional Normaliz rows to owned covectors in place."""
         for index, row in enumerate(rows):
             if isinstance(rows, list):
                 rows[index] = None
-            coordinates = row[:-1]
-            if all(entry == 0 for entry in coordinates):
-                # Normaliz includes the affine-origin tautology [0,...,0,1]
-                # in this presentation; it is not a cone facet or equation.
-                del coordinates, row
+            if all(entry == 0 for entry in row):
+                del row
                 continue
-            if row[-1] != 0:
-                raise ArithmeticError("Normaliz returned a nonhomogeneous row for a cone")
-            covector = _integral_covector(cell.lattice, coordinates)
-            del coordinates, row
+            covector = _integral_covector(cell.lattice, row)
+            del row
             yield covector
 
     def _iter_cell_halfspace_pairing_rows(
@@ -817,17 +811,13 @@ class LorentzianPerfectLocalBackend:
             # retained by the full-result container.
             if isinstance(hyperplanes, list):
                 hyperplanes[index] = None
-            coordinates = hyperplane[:-1]
-            if all(entry == 0 for entry in coordinates):
-                del coordinates, hyperplane
+            if all(entry == 0 for entry in hyperplane):
+                del hyperplane
                 continue
-            if hyperplane[-1] != 0:
-                raise ArithmeticError("Normaliz returned a nonhomogeneous facet for a cone")
-            # The last homogeneous coefficient is zero for this cone. Incidence
-            # depends only on zero/nonzero pairings, invariant under any nonzero
-            # rescaling, so retain Normaliz's exact integral scale unchanged.
-            pairing_row = tuple(int(entry) for entry in coordinates)
-            del coordinates, hyperplane
+            # Incidence depends only on zero/nonzero pairings, invariant under
+            # any nonzero rescaling, so retain Normaliz's exact integral scale.
+            pairing_row = tuple(int(entry) for entry in hyperplane)
+            del hyperplane
             yield pairing_row
 
     def _iter_cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
