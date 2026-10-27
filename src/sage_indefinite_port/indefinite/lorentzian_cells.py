@@ -1868,22 +1868,23 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         # that dispatch while bounding the temporary pairing matrix.
         ray_transpose = rows.transpose()
         block_size = _configuration_pairing_block_size(rows.nrows())
-        pairing_block = pairing_row = None
+        pairing_block = None
+        all_nonincident_mask = (1 << ray_count) - 1
         for start in range(0, halfspace_matrix.nrows(), block_size):
             stop = min(start + block_size, halfspace_matrix.nrows())
             pairing_block = halfspace_matrix.matrix_from_rows(range(start, stop)) * ray_transpose
             for offset in range(stop - start):
                 nonincident_mask = sum(1 << position for position in pairing_block.row(offset).nonzero_positions())
-                if nonincident_mask == (1 << ray_count) - 1:
+                if nonincident_mask == all_nonincident_mask:
                     raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
                 key = _facet_complement_key(nonincident_mask, ray_count)
                 if key in by_incidence:
                     raise ArithmeticError("distinct perfect-cell facets have the same extreme-ray incidence")
                 by_incidence[key] = covectors[start + offset]
-        # The final block and its last row remain bound in the function scope
+        # The final block remains bound in the function scope
         # after the loop. Release those dense temporaries before traversal
         # begins; for the A7 ray configuration, even one block is substantial.
-        del pairing_block, pairing_row, rows, ray_transpose, covectors
+        del pairing_block, rows, ray_transpose, covectors
         facet_covectors_by_incidence[id(cell)] = by_incidence
         del halfspace_matrix
     ambient_labels = tuple(lattice.module_generating_set())
