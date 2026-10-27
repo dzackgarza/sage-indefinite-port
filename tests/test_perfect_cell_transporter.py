@@ -143,6 +143,9 @@ def test_permuted_facet_bitsets_preserve_exact_positions() -> None:
     sparse_incident = _facet_complement_key(((1 << ray_count) - 1) ^ sparse_complement, ray_count)
     assert sparse_incident == (False, sparse_key[1])
     assert _facet_incidence(sparse_incident, ray_count) == frozenset(sparse_key[1])
+    assert _permuted_facet_key(sparse_incident, reverse) == (
+        False, tuple(sorted(ray_count - 1 - position for position in sparse_incident[1]))
+    )
     # For small ray universes, a bitset remains smaller even for sparse masks.
     small_key = _facet_complement_key((1 << 1) | (1 << 3), 10)
     assert isinstance(small_key, int)
