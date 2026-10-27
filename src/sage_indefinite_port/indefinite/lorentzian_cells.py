@@ -819,10 +819,10 @@ class LorentzianPerfectLocalBackend:
             for covector in self.cell_cone(cell).halfspace_covectors():
                 yield tuple(int(covector(label)) for label in labels)
             return
-        # Share the same owned H-family with cell_cone(). The former raw-row
-        # path recomputed and materialized the full Normaliz support list a
-        # second time after the cone had already been built.
-        for covector in self.cell_halfspace_covectors(cell):
+        # Reuse the owned cone's H-family. Calling the cached public tuple
+        # accessor here would run Normaliz's complete SupportHyperplanes query
+        # again and retain a second full collection of owned covectors.
+        for covector in self.cell_cone(cell).halfspace_covectors():
             yield tuple(int(covector(label)) for label in labels)
 
     def _iter_cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
