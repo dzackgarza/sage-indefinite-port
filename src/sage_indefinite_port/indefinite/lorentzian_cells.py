@@ -972,8 +972,9 @@ class LorentzianPerfectLocalBackend:
         if not covector_block:
             return {}, ()
         labels = tuple(cell.lattice.module_generating_set())
-        integral_ray_rows = matrix(SageZZ, cell.rows)
-        transposed_ray_rows = integral_ray_rows.transpose()
+        # Only the transposed exact ray matrix is consumed below. Do not keep
+        # the original 49,861-by-rank matrix alive alongside its transpose.
+        transposed_ray_rows = matrix(SageZZ, cell.rows).transpose()
         all_ray_mask = (1 << ray_count) - 1
         # Do not materialize the full |facets|-by-|rays| pairing matrix.
         # A7's initial perfect configuration has 49,861 rays, so retaining
@@ -1033,7 +1034,10 @@ class LorentzianPerfectLocalBackend:
         for generator in generators:
             action = matrix(SageZZ, [_coordinate_row(cell.lattice, generator(cell.lattice.module_generator(label)), SageZZ) for label in labels])
             try:
-                permutations.append(tuple(positions[tuple(row)] for row in (integral_ray_rows * action).rows()))
+                # Compute (R * action)^T as action^T * R^T, reusing the
+                # retained transpose instead of materializing R a second time.
+                image_columns = action.transpose() * transposed_ray_rows
+                permutations.append(tuple(positions[tuple(column)] for column in image_columns.columns()))
             except KeyError as exc:
                 raise ArithmeticError("a cell-stabilizer generator does not preserve its rays") from exc
         return facets, tuple(permutations)
