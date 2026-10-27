@@ -667,15 +667,17 @@ class LorentzianPerfectLocalBackend:
             rays = tuple(self.cell_cone(cell).primitive_rays())
             return rays if square is None else tuple(ray for ray in rays if int(ray.q()) == square)
         polyhedron = self._normaliz_cell_polyhedron(cell)
-        gram = _gram_matrix(cell.lattice)
         rows = (
             tuple(int(entry) for entry in _source_remove_fraction(vector(SageQQ, row)))
             for row in polyhedron.rays_list()
         )
+        if square is None:
+            return tuple(_ambient_element(cell.lattice, row) for row in rows)
+        gram = _gram_matrix(cell.lattice)
         return tuple(
             _ambient_element(cell.lattice, row)
             for row in rows
-            if square is None or int(vector(SageZZ, row) * gram * vector(SageZZ, row)) == square
+            if int(vector(SageZZ, row) * gram * vector(SageZZ, row)) == square
         )
 
     def initial_cell(self, lattice: Lattices.ParentMethods, allowed_squares: RealSet) -> LorentzianPerfectCell:
