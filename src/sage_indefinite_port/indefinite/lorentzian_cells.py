@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 from array import array
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import cache, cached_property
@@ -106,7 +106,7 @@ def _facet_incidence(key: FacetMaskKey, ray_count: int) -> FacetIncidence:
     return frozenset(positions)
 
 
-def _permuted_facet_key(key: FacetMaskKey, permutation: Sequence[int]) -> FacetMaskKey:
+def _permuted_facet_key(key: FacetMaskKey, permutation: array | tuple[int, ...]) -> FacetMaskKey:
     """Apply a ray permutation while preserving the sparse/dense key form."""
     if isinstance(key, int):
         return _facet_complement_key(_permuted_bitset(key, permutation), len(permutation))
@@ -1106,7 +1106,7 @@ class LorentzianPerfectLocalBackend:
 
     @staticmethod
     def _iter_facet_mask_orbits(
-        facet_keys: Iterator[FacetMaskKey], permutations: tuple[Sequence[int], ...]
+        facet_keys: Iterator[FacetMaskKey], permutations: tuple[array, ...]
     ) -> Iterator[list[tuple[FacetMaskKey, SchreierWord]]]:
         """Yield exact facet orbits with one visited set and one current orbit.
 
@@ -1143,7 +1143,7 @@ class LorentzianPerfectLocalBackend:
         self, cell: LorentzianPerfectCell
     ) -> tuple[
         tuple[tuple[tuple[int, SchreierWord], ...], ...],
-        tuple[Sequence[int], ...],
+        tuple[array, ...],
     ]:
         """Materialize compact facet orbits for callers that need the full view."""
         facet_keys, permutations = self._facet_mask_data(cell)
@@ -1153,7 +1153,7 @@ class LorentzianPerfectLocalBackend:
         self, cell: LorentzianPerfectCell
     ) -> tuple[
         tuple[tuple[tuple[FacetIncidence, SchreierWord], ...], ...],
-        tuple[Sequence[int], ...],
+        tuple[array, ...],
     ]:
         """Materialize public-style facet incidences from cached compact masks."""
         mask_orbits, permutations = self._facet_orbit_transversal_masks(cell)
