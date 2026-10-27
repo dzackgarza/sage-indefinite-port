@@ -2114,6 +2114,11 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                     continue
                 if not facet_basis:
                     facet_basis.append(row)
+                    # A non-null ray already disproves total isotropy of the
+                    # facet span; no further incidence scan is required.
+                    if sum(row[i] * ambient_gram[i, j] * row[j]
+                           for i in range(len(row)) for j in range(len(row))):
+                        break
                     continue
                 # With a nonzero first row, rank two is equivalent to some
                 # 2-by-2 minor being nonzero. Avoid a Sage rank computation
