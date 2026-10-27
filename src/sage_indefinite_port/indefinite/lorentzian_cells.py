@@ -1844,6 +1844,10 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         ray_count = len(cell.rows)
         by_incidence = {}
         covectors = cell_cone.halfspace_covectors()
+        # IndexedSymbolicFunctionSet.__getitem__ rebuilds this inverse on
+        # every call. Retain its owned unranking map once for the whole cell;
+        # Python slicing is not part of that indexed-family interface.
+        covector_at = covectors.ranking_map().inverse()
         # The cone's stored H-presentation already is the minimized facet
         # family. `facet_covectors()` constructs every facet cone merely to
         # recover these same normals, which is prohibitively expensive on
@@ -1867,11 +1871,9 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                     lambda i, j: cell.rows[j][i],
                 )
             # Bind only the current covector block.
-            # ``halfspace_covectors`` is an IndexedSymbolicFunctionSet: its
-            # integer indexing is the owned unrank operation, not Python
-            # sequence slicing. Materialize only this bounded block through
-            # that public indexing contract.
-            covector_block = tuple(covectors[position] for position in range(start, stop))
+            # Materialize only this bounded block through the owned unranking
+            # map, reusing its inverse instead of rebuilding it per covector.
+            covector_block = tuple(covector_at(position) for position in range(start, stop))
             halfspace_block = matrix(
                 SageQQ,
                 len(covector_block),
@@ -1893,14 +1895,14 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 key = _facet_complement_key(nonincident_mask, ray_count)
                 if key in by_incidence:
                     raise ArithmeticError("distinct perfect-cell facets have the same extreme-ray incidence")
-                by_incidence[key] = covectors[start + offset]
+                by_incidence[key] = covector_block[offset]
             # Release the completed dense pairing block before the next one.
             del pairing_block
         # Release the transposed configuration and covector slice after the
         # final incidence block, before adjacency construction begins.
         # ``pairing_block`` was deleted after every nonempty block above.
         # Do not delete it again here: the final iteration leaves it unbound.
-        del covector_block, ray_transpose, covectors
+        del covector_block, ray_transpose, covectors, covector_at
         facet_covectors_by_incidence[id(cell)] = by_incidence
     ambient_labels = tuple(lattice.module_generating_set())
     ambient_dual = lattice.dual_module()
