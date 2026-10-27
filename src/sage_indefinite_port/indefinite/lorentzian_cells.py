@@ -839,21 +839,25 @@ class LorentzianPerfectLocalBackend:
         integers; this internal representation stores generator indices per
         Schreier step and retains the generator permutations only once.
         """
-        vectors = cell.vector_configuration
+        # Work from the original coordinate rows throughout. Materializing
+        # ``cell.vector_configuration`` would allocate one owned lattice
+        # element per ray (49,861 on A7) only to ask for its length; the row
+        # tuples already preserve the exact ray-index convention we need.
+        ray_count = len(cell.rows)
         # The exact H-presentation can be read directly from Normaliz on large
         # cells; do not wrap it in an owned cone merely to recover its normals.
         covectors = iter(self._iter_cell_halfspace_covectors(cell))
         # Bound the exact pairing temporary by entry count, not a fixed row
         # count: configurations larger than A7 must not allocate an
         # unbounded number of columns per block.
-        covector_block_size = _configuration_pairing_block_size(len(vectors))
+        covector_block_size = _configuration_pairing_block_size(ray_count)
         covector_block = tuple(islice(covectors, covector_block_size))
         if not covector_block:
             return (), ()
         labels = tuple(cell.lattice.module_generating_set())
         integral_ray_rows = matrix(SageZZ, cell.rows)
         transposed_ray_rows = integral_ray_rows.transpose()
-        all_ray_mask = (1 << len(vectors)) - 1
+        all_ray_mask = (1 << ray_count) - 1
         # Do not materialize the full |facets|-by-|rays| pairing matrix.
         # A7's initial perfect configuration has 49,861 rays, so retaining
         # every rational pairing alongside the exact incidence sets multiplies
@@ -883,7 +887,7 @@ class LorentzianPerfectLocalBackend:
                 # With 49,861 rays, a frozenset of boxed indices and its hash
                 # table costs orders of magnitude more memory than this exact
                 # bit representation. Convert back only at the API boundary.
-                support_bytes = bytearray((len(vectors) + 7) // 8)
+                support_bytes = bytearray((ray_count + 7) // 8)
                 for position in pairing_block.row(offset).nonzero_positions():
                     support_bytes[position >> 3] |= 1 << (position & 7)
                 # The support of a facet covector is the complement of its
@@ -902,7 +906,7 @@ class LorentzianPerfectLocalBackend:
         # point_permutations here repeats the stabilizer lookup and the
         # categorical basis-action conversion for every generator.
         positions = {tuple(int(entry) for entry in row): index for index, row in enumerate(integral_ray_rows.rows())}
-        if len(positions) != len(vectors):
+        if len(positions) != ray_count:
             raise ArithmeticError("a perfect-cell configuration contains repeated rays")
         permutations = []
         for generator in generators:
