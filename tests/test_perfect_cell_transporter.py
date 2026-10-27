@@ -8,6 +8,7 @@ from sage.all import ZZ, matrix, vector
 
 from sage_indefinite_port.indefinite.lorentzian_cells import (
     _CellFaces,
+    _bit_positions,
     _permuted_bitset,
     LorentzianPerfectCell,
     LorentzianPerfectLocalBackend,
@@ -135,6 +136,13 @@ def test_facet_incidence_streaming_preserves_exact_orbits() -> None:
     assert all(facet != frozenset(range(len(cell.rows))) for orbit in permutation_orbits for facet, _ in orbit)
     isometry_orbits = backend.facet_orbits(cell)
     word_orbits, generator_permutations = backend._facet_orbit_transversal_words(cell)
+    mask_orbits, mask_generators = backend._facet_orbit_transversal_masks(cell)
+    all_ray_mask = (1 << len(cell.rows)) - 1
+    assert mask_generators == generator_permutations
+    assert tuple(
+        tuple((frozenset(_bit_positions(all_ray_mask ^ mask)), word) for mask, word in orbit)
+        for orbit in mask_orbits
+    ) == word_orbits
 
     assert tuple(tuple(facet for facet, _ in orbit) for orbit in permutation_orbits) == tuple(
         tuple(facet for facet, _ in orbit) for orbit in isometry_orbits
