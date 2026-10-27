@@ -2079,6 +2079,7 @@ class _CellFaces:
             raise ArithmeticError("distinct perfect-cell facets have the same extreme-ray incidence")
         self.facet_incidences = tuple(incidences)
         self.incidences = frozenset(self.facet_incidences)
+        self.all_facet_positions = frozenset(range(len(self.facet_incidences)))
         self.full_face = frozenset(range(len(self.rows)))
         self.group = libgap.Group(
             [
@@ -2134,7 +2135,7 @@ class _CellFaces:
         chain: list[frozenset[int]] = []
         coefficients: list[Rational] = []
         while point != 0:
-            tight = [index for index, pairing in enumerate(pairings) if pairing == 0]
+            tight = self.all_facet_positions.difference(pairings.nonzero_positions())
             # Begin with the smallest tight facet incidence. Intersecting
             # large facet sets first needlessly copies many more ray indices
             # at every step of the mark-chain descent.
