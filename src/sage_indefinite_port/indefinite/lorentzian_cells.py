@@ -2090,16 +2090,18 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     # identifies every facet exactly by its extreme-ray incidence. Perform
     # the same completeness test on those incidences, retaining the precise
     # Lorentzian exception for totally isotropic exterior-boundary faces.
+    # Reuse the same exact all-position mask for every candidate in a cell.
     for cell in cells:
         by_incidence = facet_covectors_by_incidence[id(cell)]
         ray_count = len(cell.rows)
+        all_positions_mask = (1 << ray_count) - 1
         for facet_key in by_incidence:
             if facet_key in paired_facets[id(cell)]:
                 continue
             # Iterate incident positions directly from the compact key.
             # The full incidence set is only needed on the error path.
             if isinstance(facet_key, int):
-                incident_positions = _bit_positions(((1 << ray_count) - 1) ^ facet_key)
+                incident_positions = _bit_positions(all_positions_mask ^ facet_key)
             elif facet_key[0]:
                 excluded = set(facet_key[1])
                 incident_positions = (position for position in range(ray_count) if position not in excluded)
