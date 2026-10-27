@@ -1474,7 +1474,10 @@ class LorentzianPerfectLocalBackend:
         # the complete integral transporter certificate.
         stabilizer_elements: list[LatticeIsometryMethods] = []
         if generators_only:
-            positions = {tuple(int(entry) for entry in row): index for index, row in enumerate(source_rows.rows())}
+            # The immutable coordinate tuples are already the configuration's
+            # canonical rows; reuse them as keys instead of allocating a
+            # second full set of row tuples for the large-cell permutation map.
+            positions = {row: index for index, row in enumerate(source.rows)}
             if len(positions) != n:
                 raise ArithmeticError("a perfect-cell stabilizer requires distinct configuration vectors")
             symmetric = SymmetricGroup(n)
