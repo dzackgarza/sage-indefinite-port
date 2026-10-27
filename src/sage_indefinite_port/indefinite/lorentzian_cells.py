@@ -2108,17 +2108,20 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             facet_basis = []
             basis_rank = 0
             for position in sorted(incidence):
-                candidate = matrix(SageQQ, [*facet_basis, cell.rows[position]])
-                candidate_rank = candidate.rank()
-                if candidate_rank > basis_rank:
-                    facet_basis.append(cell.rows[position])
-                    basis_rank = candidate_rank
-                    # A Lorentzian form has Witt index one: two independent
-                    # mutually orthogonal null vectors cannot exist. Once a
-                    # second independent ray enters this candidate span, its
-                    # Gram certificate must disprove total isotropy.
-                    if basis_rank >= 2:
-                        break
+                row = cell.rows[position]
+                if not facet_basis:
+                    facet_basis.append(row)
+                    basis_rank = 1
+                    continue
+                # With a nonzero first row, rank two is equivalent to some
+                # 2-by-2 minor being nonzero. Avoid a Sage rank computation
+                # for every incident ray of a potentially enormous facet.
+                first = facet_basis[0]
+                if any(first[i] * row[j] != first[j] * row[i]
+                       for i in range(len(row)) for j in range(i + 1, len(row))):
+                    facet_basis.append(row)
+                    basis_rank = 2
+                    break
             basis_gram = matrix(SageQQ, facet_basis) * ambient_gram * matrix(SageQQ, facet_basis).transpose()
             if not any(basis_gram.list()):
                 continue
