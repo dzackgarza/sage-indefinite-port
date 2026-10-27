@@ -78,7 +78,7 @@ def test_facet_orbit_permutation_view_materializes_exact_isometries() -> None:
                 assert isometry(cell.vector_configuration[position]) == cell.vector_configuration[image_position]
 
 
-def test_large_cell_cone_uses_exact_normaliz_h_presentation() -> None:
+def test_large_cell_cone_uses_exact_normaliz_h_presentation(monkeypatch) -> None:
     """The large-configuration backend preserves the owned exact cone interface."""
     require(PERFECT_DOMAINS)
 
@@ -93,9 +93,15 @@ def test_large_cell_cone_uses_exact_normaliz_h_presentation() -> None:
     # Exercise the direct Normaliz accessors before constructing the owned
     # large cone: these are the hot paths whose purpose is to avoid the PPL
     # reconstruction, not merely to reuse an engine cached by cell_cone().
-    large_covectors = backend.cell_halfspace_covectors(large_cell)
-    large_primitive_rays = backend.cell_primitive_rays(large_cell)
-    large_null_rays = backend.cell_primitive_rays(large_cell, square=0)
+    with monkeypatch.context() as patch:
+        patch.setattr(
+            backend,
+            "cell_cone",
+            lambda _cell: pytest.fail("a direct large-cell Normaliz accessor rebuilt the owned cone"),
+        )
+        large_covectors = backend.cell_halfspace_covectors(large_cell)
+        large_primitive_rays = backend.cell_primitive_rays(large_cell)
+        large_null_rays = backend.cell_primitive_rays(large_cell, square=0)
     large_cone = backend.cell_cone(large_cell)
     labels = tuple(cell.lattice.module_generating_set())
 
