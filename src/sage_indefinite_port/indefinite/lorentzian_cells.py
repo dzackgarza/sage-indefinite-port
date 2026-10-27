@@ -849,7 +849,7 @@ class LorentzianPerfectLocalBackend:
         # Each value retains the canonical key object so orbit queues can
         # reference the existing bitset rather than allocate another 6 KB
         # integer for every 49,861-bit facet mask.
-        facets: dict[int, list[int | bool]] = {}
+        facets: dict[int, list[int]] = {}
         while covector_block:
             covector_coordinates = tuple(covector.to_vector() for covector in covector_block)
             covector_rows = matrix(
@@ -871,7 +871,7 @@ class LorentzianPerfectLocalBackend:
                 incidence_mask = all_ray_mask ^ support_mask
                 if incidence_mask == 0:
                     raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
-                facets.setdefault(incidence_mask, [True, incidence_mask])
+                facets.setdefault(incidence_mask, [1, incidence_mask])
             covector_block = tuple(islice(covectors, covector_block_size))
         generators = self.cell_stabilizer(cell)
         # Use precisely these generators to form the ray action.  Calling
@@ -896,7 +896,7 @@ class LorentzianPerfectLocalBackend:
         identity_word = None
         for start in facets:
             start_state = facet_set[start]
-            if not start_state[0]:
+            if start_state[0] == 0:
                 continue
             start_state[0] = False
             orbit = [(int(start_state[1]), identity_word)]
@@ -912,7 +912,7 @@ class LorentzianPerfectLocalBackend:
                     if image_mask not in facet_set:
                         raise ArithmeticError("a cell-stabilizer generator fails to permute the facets")
                     image_state = facet_set[image_mask]
-                    if image_state[0]:
+                    if image_state[0] != 0:
                         image_state[0] = False
                         orbit.append((int(image_state[1]), (element_word, generator_index)))
             orbits.append(
