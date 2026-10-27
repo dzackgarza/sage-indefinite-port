@@ -2005,7 +2005,35 @@ class _CellFaces:
         interior = sum(self.rows[1:], self.rows[0])
         if any(covector.dot_product(interior) <= 0 for covector in self.covectors):
             raise ArithmeticError("the facet covectors of a cell must be positive on its interior")
-        self.incidences = frozenset(frozenset(index for index, row in enumerate(self.rows) if covector.dot_product(row) == 0) for covector in self.covectors)
+        # Compute exact facet-to-ray incidences in bounded matrix blocks.
+        # The scalar Python loop performs one exact dot product per ray and
+        # facet; A7 has 49,861 rays, so batching Sage's exact matrix product
+        # avoids millions of Python-level pairing calls without retaining the
+        # full facet-by-ray pairing matrix.
+        ray_matrix = matrix(SageQQ, self.rows)
+        ray_transpose = ray_matrix.transpose()
+        covector_matrix = matrix(
+            SageQQ,
+            len(self.covectors),
+            len(self.labels),
+            lambda row, column: self.covectors[row][column],
+        )
+        all_ray_positions = frozenset(range(len(self.rows)))
+        block_size = _configuration_pairing_block_size(len(self.rows))
+        incidences = []
+        for start in range(0, covector_matrix.nrows(), block_size):
+            stop = min(start + block_size, covector_matrix.nrows())
+            pairing_block = covector_matrix.matrix_from_rows(range(start, stop)) * ray_transpose
+            for offset in range(stop - start):
+                incidence = all_ray_positions.difference(
+                    pairing_block.row(offset).nonzero_positions()
+                )
+                if not incidence:
+                    raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
+                incidences.append(frozenset(incidence))
+        if len(set(incidences)) != len(incidences):
+            raise ArithmeticError("distinct perfect-cell facets have the same extreme-ray incidence")
+        self.incidences = frozenset(incidences)
         self.full_face = frozenset(range(len(self.rows)))
         self.group = libgap.Group([libgap.PermList([image + 1 for image in permutation]) for permutation in backend.point_permutations(cell, rays)], libgap.eval("()"))
         self._ranks: dict[frozenset[int], int] = {}
