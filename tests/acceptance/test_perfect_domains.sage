@@ -89,11 +89,14 @@ def test_large_cell_cone_uses_exact_normaliz_h_presentation() -> None:
     # large-configuration Normaliz path without a costly high-rank fixture.
     large_cell = replace(cell, rows=cell.rows * 4_000)
     assert len(large_cell.rows) >= 10_000
-    large_cone = backend.cell_cone(large_cell)
     small_cone = backend.cell_cone(cell)
+    # Exercise the direct Normaliz accessors before constructing the owned
+    # large cone: these are the hot paths whose purpose is to avoid the PPL
+    # reconstruction, not merely to reuse an engine cached by cell_cone().
     large_covectors = backend.cell_halfspace_covectors(large_cell)
     large_primitive_rays = backend.cell_primitive_rays(large_cell)
     large_null_rays = backend.cell_primitive_rays(large_cell, square=0)
+    large_cone = backend.cell_cone(large_cell)
     labels = tuple(cell.lattice.module_generating_set())
 
     def covector_rows(cone):
