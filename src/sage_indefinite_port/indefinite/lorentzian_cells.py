@@ -1034,6 +1034,10 @@ class LorentzianPerfectLocalBackend:
                 # the next key; retaining the dense pairing matrix across that
                 # work overlaps its memory with the current Schreier orbit.
                 del pairing_block, pairing_row, nonincident_positions
+                # The primitive coordinate tuples have served their purpose
+                # once the keys are built; do not retain them while the
+                # consumer traverses an orbit for each yielded key.
+                del covector_block
                 yield from block_keys
                 del block_keys
                 covector_block = tuple(islice(covector_rows, block_size))
