@@ -38,6 +38,7 @@ from tests.fixtures.oracle_fixtures import (
     load_oscar_lattice_oracles,
 )
 from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
 
 _E10 = load_e10_fundamental_domain()
 _ORDER_O_PLUS_10_2 = 2**21 * 3**5 * 5**2 * 7 * 17 * 31
@@ -154,6 +155,31 @@ def test_isotropic_pointed_isometry_rejects_different_divisibility() -> None:
     assert int(source.div()) == 1
     assert int(target.div()) == 2
     assert EichlerRecursion().pointed_isometry(source, target) is None
+
+
+def test_isotropic_plane_isometry_carries_changed_basis_plane() -> None:
+    """Plane equivalence is setwise: a unimodular basis change does not change the plane."""
+    lattice_ = lattice([[0, 4, 0, 0], [4, 0, 0, 0], [0, 0, 0, 4], [0, 0, 4, 0]])
+    first = element(lattice_, [1, 0, 0, 0])
+    second = element(lattice_, [0, 0, 1, 0])
+    changed_first = first + second
+    source_plane = lattice_.primitive_isotropic_subobject(first, second)
+    target_plane = lattice_.primitive_isotropic_subobject(changed_first, second)
+
+    assert lattice_.b(first, second) == 0
+    assert lattice_.b(changed_first, second) == 0
+    witness = IsotropicInduction(EichlerRecursion()).plane_isometry(source_plane, target_plane)
+    assert witness is not None
+    target_basis_matrix = matrix(ZZ, [coordinates(changed_first), coordinates(second)]).transpose()
+    first_coordinates = target_basis_matrix.solve_right(vector(ZZ, coordinates(witness(first))))
+    second_coordinates = target_basis_matrix.solve_right(vector(ZZ, coordinates(witness(second))))
+    induced_basis_change = matrix(ZZ, [
+        [first_coordinates[0], second_coordinates[0]],
+        [first_coordinates[1], second_coordinates[1]],
+    ])
+    assert abs(induced_basis_change.det()) == 1
+    basis = tuple(lattice_.module_generators())
+    assert all(lattice_.b(witness(left), witness(right)) == lattice_.b(left, right) for left in basis for right in basis)
 
 
 def test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound() -> None:
