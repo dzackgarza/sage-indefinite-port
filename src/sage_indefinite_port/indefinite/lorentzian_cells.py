@@ -1359,8 +1359,14 @@ class LorentzianPerfectLocalBackend:
                 lambda index: target.vector_configuration[int(index)]
             )
             return source.lattice.Isom(target.lattice).transporter(source_family, target_family)
-        source_rows, source_pairings, source_spectra, _source_multiset, source_smith = self._integral_configuration_invariants(source)
-        target_rows, target_pairings, target_spectra, target_multiset, target_smith = self._integral_configuration_invariants(target)
+        source_data = self._integral_configuration_invariants(source)
+        # Stabilizer generation is the hot path for perfect-cell automorphisms:
+        # source and target are literally the same configuration. Rebuilding
+        # its row matrix, Gram-covector matrix, invariant colours and Smith data
+        # twice only duplicates O(n * rank) exact storage and work.
+        target_data = source_data if source is target else self._integral_configuration_invariants(target)
+        source_rows, source_pairings, source_spectra, _source_multiset, source_smith = source_data
+        target_rows, target_pairings, target_spectra, target_multiset, target_smith = target_data
         if source_smith != target_smith:
             return ()
         if Counter(source_spectra) != Counter(target_spectra):
