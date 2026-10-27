@@ -978,25 +978,22 @@ class LorentzianPerfectLocalBackend:
         retained as ray permutations; ``facet_orbits`` materializes the owned
         lattice isometries only for callers requiring categorical morphisms.
         """
-        word_orbits, generator_permutations = self._facet_orbit_transversal_words(cell)
+        # Work from the compact incidence keys rather than first expanding and
+        # caching a second complete collection of large frozenset incidences.
+        # This public result necessarily materializes each incidence and full
+        # ray permutation, but the intermediate word-orbit view is not needed.
+        mask_orbits, generator_permutations = self._facet_orbit_transversal_masks(cell)
         ray_count = len(cell.rows)
         materialized = []
-        for orbit in word_orbits:
-            facet_set = {facet for facet, _word in orbit}
-            permutations_by_facet = {orbit[0][0]: tuple(range(ray_count))}
-            queue = [orbit[0][0]]
-            for facet in queue:
-                current = permutations_by_facet[facet]
-                for generator in generator_permutations:
-                    image = frozenset(generator[position] for position in facet)
-                    if image not in facet_set:
-                        raise ArithmeticError("a cell-stabilizer generator fails to permute the facets")
-                    if image not in permutations_by_facet:
-                        permutations_by_facet[image] = tuple(generator[position] for position in current)
-                        queue.append(image)
-            if len(permutations_by_facet) != len(orbit):
-                raise ArithmeticError("the compact facet orbit is not connected by its stabilizer generators")
-            materialized.append(tuple((facet, permutations_by_facet[facet]) for facet, _word in orbit))
+        for orbit in mask_orbits:
+            elements = []
+            for key, word in orbit:
+                permutation = tuple(range(ray_count))
+                for generator_index in _schreier_generator_indices(word):
+                    generator = generator_permutations[generator_index]
+                    permutation = tuple(generator[position] for position in permutation)
+                elements.append((_facet_incidence(key, ray_count), permutation))
+            materialized.append(tuple(elements))
         return tuple(materialized)
 
     def _facet_mask_data(
