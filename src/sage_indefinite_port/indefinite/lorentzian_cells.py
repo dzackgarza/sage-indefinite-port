@@ -67,14 +67,19 @@ type FacetIncidence = frozenset[int]
 type SchreierWord = tuple[SchreierWord, int] | None
 type FacetMaskKey = int | tuple[int, ...]
 
-# A Python integer for a 49,861-bit mask occupies about 6 KiB regardless of
-# how few bits are set. Sparse complement tuples are smaller up to this size.
-_SPARSE_FACET_COMPLEMENT_LIMIT = 160
+def _sparse_facet_complement_limit(ray_count: int) -> int:
+    """Estimate the tuple/bitset memory crossover for this ray universe."""
+    # On 64-bit CPython, a tuple slot plus a non-cached Python int costs about
+    # 36 bytes, while the bitset costs one bit per ray. The conservative
+    # 28-byte offset accounts for the tuple and integer object headers.
+    return max(0, (ray_count - 224) // 288)
 
 
-def _facet_complement_key(mask: int) -> FacetMaskKey:
+def _facet_complement_key(mask: int, ray_count: int | None = None) -> FacetMaskKey:
     """Choose a compact exact key for a sparse complement or dense bitset."""
-    if mask.bit_count() <= _SPARSE_FACET_COMPLEMENT_LIMIT:
+    if ray_count is None:
+        ray_count = max(1, mask.bit_length())
+    if mask.bit_count() <= _sparse_facet_complement_limit(ray_count):
         return tuple(_bit_positions(mask))
     return mask
 
@@ -92,7 +97,7 @@ def _facet_incidence(key: FacetMaskKey, ray_count: int) -> FacetIncidence:
 def _permuted_facet_key(key: FacetMaskKey, permutation: tuple[int, ...]) -> FacetMaskKey:
     """Apply a ray permutation while preserving the sparse/dense key form."""
     if isinstance(key, int):
-        return _facet_complement_key(_permuted_bitset(key, permutation))
+        return _facet_complement_key(_permuted_bitset(key, permutation), len(permutation))
     return tuple(sorted(permutation[position] for position in key))
 
 
@@ -935,7 +940,7 @@ class LorentzianPerfectLocalBackend:
         # references before building the unvisited set.
         # Store visitation state as shared small integers in the dictionary
         # values. This avoids both per-facet state lists and a second hash table
-        # for the unvisited keys; the exact large bitsets remain the keys.
+        # for the unvisited keys; hybrid sparse tuples/dense bitsets are keys.
         facets: dict[FacetMaskKey, int] = {}
         while covector_block:
             covector_coordinates = tuple(covector.to_vector() for covector in covector_block)
@@ -961,7 +966,7 @@ class LorentzianPerfectLocalBackend:
                 # enumerated nonincident positions directly, avoiding both a
                 # full 6-KiB mask and a bytearray conversion per facet. Dense
                 # complements keep the more compact arbitrary-precision key.
-                if len(nonincident_positions) <= _SPARSE_FACET_COMPLEMENT_LIMIT:
+                if len(nonincident_positions) <= _sparse_facet_complement_limit(ray_count):
                     key: FacetMaskKey = tuple(nonincident_positions)
                 else:
                     support_bytes = bytearray((ray_count + 7) // 8)
