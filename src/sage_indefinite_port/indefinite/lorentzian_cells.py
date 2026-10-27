@@ -756,15 +756,15 @@ class LorentzianPerfectLocalBackend:
         # alive until the iterator is exhausted; this preserves Normaliz order
         # while reducing the post-conversion peak during blockwise pairing.
         hyperplanes = NmzResult(self._normaliz_cell_cone(cell), "SupportHyperplanes")
-        if not isinstance(hyperplanes, list):
-            hyperplanes = list(hyperplanes)
         for index, hyperplane in enumerate(hyperplanes):
             coordinates = hyperplane[:-1]
             content = gcd(*(abs(entry) for entry in coordinates))
             # Drop the raw row before allocating its normalized tuple. The
             # tuple of Normaliz integers and the normalized Python tuple need
-            # not coexist for every support hyperplane.
-            hyperplanes[index] = None
+            # not coexist for every support hyperplane. PyNormaliz currently
+            # returns a list; do not copy the full result if its API changes.
+            if isinstance(hyperplanes, list):
+                hyperplanes[index] = None
             if content == 0:
                 del coordinates, hyperplane
                 continue
@@ -789,11 +789,10 @@ class LorentzianPerfectLocalBackend:
         # Normaliz encodes each support hyperplane as [A_1, ..., A_n, b]; for
         # this homogeneous cone b=0, and Sage's Inequality.A() is exactly A.
         hyperplanes = NmzResult(self._normaliz_cell_cone(cell), "SupportHyperplanes")
-        if not isinstance(hyperplanes, list):
-            hyperplanes = list(hyperplanes)
         for index, hyperplane in enumerate(hyperplanes):
             coordinates = hyperplane[:-1]
-            hyperplanes[index] = None
+            if isinstance(hyperplanes, list):
+                hyperplanes[index] = None
             if all(entry == 0 for entry in coordinates):
                 del coordinates, hyperplane
                 continue
