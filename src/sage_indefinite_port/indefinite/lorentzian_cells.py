@@ -1841,8 +1841,11 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     # Reuse the source cell's H-presentation for every member of its
     # stabilizer orbit instead of recomputing a V-to-H representation.
     facet_covectors_by_incidence = {}
+    # Every quotient cell is represented in this same ambient lattice; reuse
+    # its canonical coordinate labels instead of rebuilding the identical
+    # generator tuple once per cell.
+    labels = tuple(lattice.module_generating_set())
     for cell in cells:
-        labels = tuple(cell.lattice.module_generating_set())
         ray_count = len(cell.rows)
         by_incidence = {}
         covectors = tuple(cell_cones[id(cell)].halfspace_covectors())
