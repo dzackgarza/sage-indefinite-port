@@ -759,12 +759,15 @@ class LorentzianPerfectLocalBackend:
         if not isinstance(hyperplanes, list):
             hyperplanes = list(hyperplanes)
         for index, hyperplane in enumerate(hyperplanes):
-            coordinates = tuple(int(entry) for entry in hyperplane[:-1])
-            hyperplanes[index] = None
+            coordinates = hyperplane[:-1]
             content = gcd(*(abs(entry) for entry in coordinates))
+            # Drop the raw row before allocating its normalized tuple. The
+            # tuple of Normaliz integers and the normalized Python tuple need
+            # not coexist for every support hyperplane.
+            hyperplanes[index] = None
             if content == 0:
                 continue
-            yield tuple(entry // content for entry in coordinates)
+            yield tuple(int(entry) // content for entry in coordinates)
 
     def _iter_cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
         """Yield exact primitive facet covectors without retaining owned copies."""
