@@ -952,19 +952,23 @@ class LorentzianPerfectLocalBackend:
                 # With 49,861 rays, a frozenset of boxed indices and its hash
                 # table costs orders of magnitude more memory than this exact
                 # bit representation. Convert back only at the API boundary.
-                support_bytes = bytearray((ray_count + 7) // 8)
-                for position in pairing_block.row(offset).nonzero_positions():
-                    support_bytes[position >> 3] |= 1 << (position & 7)
-                # The support of a facet covector is the complement of its
-                # incident rays. Store that sparse complement as the orbit
-                # key: a facet usually contains most rays, so permuting the
-                # incidence mask would visit almost all 49,861 set bits.
-                nonincident_mask = int.from_bytes(support_bytes, "little")
-                if nonincident_mask == 0:
+                nonincident_positions = pairing_block.row(offset).nonzero_positions()
+                if not nonincident_positions:
                     raise ArithmeticError("a minimized H-presentation covector contains every extreme ray")
-                if nonincident_mask == all_ray_mask:
+                if len(nonincident_positions) == ray_count:
                     raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
-                facets.setdefault(_facet_complement_key(nonincident_mask), 1)
+                # Most facets have sparse complements. Retain their already
+                # enumerated nonincident positions directly, avoiding both a
+                # full 6-KiB mask and a bytearray conversion per facet. Dense
+                # complements keep the more compact arbitrary-precision key.
+                if len(nonincident_positions) <= _SPARSE_FACET_COMPLEMENT_LIMIT:
+                    key: FacetMaskKey = tuple(nonincident_positions)
+                else:
+                    support_bytes = bytearray((ray_count + 7) // 8)
+                    for position in nonincident_positions:
+                        support_bytes[position >> 3] |= 1 << (position & 7)
+                    key = int.from_bytes(support_bytes, "little")
+                facets.setdefault(key, 1)
             covector_block = tuple(islice(covectors, covector_block_size))
         generators = self.cell_stabilizer(cell)
         # Use precisely these generators to form the ray action.  Calling
