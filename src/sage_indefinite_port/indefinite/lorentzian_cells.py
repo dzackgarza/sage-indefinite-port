@@ -1874,6 +1874,9 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         all_nonincident_mask = (1 << ray_count) - 1
         for start in range(0, halfspace_matrix.nrows(), block_size):
             stop = min(start + block_size, halfspace_matrix.nrows())
+            # Release the previous block before constructing the next one;
+            # otherwise Python retains both dense products at the peak.
+            pairing_block = None
             pairing_block = halfspace_matrix.matrix_from_rows(range(start, stop)) * ray_transpose
             for offset in range(stop - start):
                 nonincident_mask = 0
