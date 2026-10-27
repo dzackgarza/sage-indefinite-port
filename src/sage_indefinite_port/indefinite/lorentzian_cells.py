@@ -611,6 +611,16 @@ def _refined_signatures(pairings: _ConfigurationPairings, colours: tuple[int, ..
 
 class LorentzianPerfectLocalBackend:
     @cached_method
+    def _normaliz_cell_polyhedron(self, cell: LorentzianPerfectCell):
+        """Cache the exact Normaliz V-to-H conversion for a large cell."""
+        return Polyhedron(
+            vertices=[(0,) * int(cell.lattice.module_rank())],
+            rays=cell.rows,
+            base_ring=SageQQ,
+            backend="normaliz",
+        )
+
+    @cached_method
     def cell_cone(self, cell: LorentzianPerfectCell):
         if len(cell.rows) < 10_000:
             return RationalPolyhedralCones(cell.lattice).from_rays(cell.vector_configuration)
@@ -622,12 +632,7 @@ class LorentzianPerfectLocalBackend:
         # the resulting homogeneous H-representation is normalized into the
         # same RationalPolyhedralCones object, and facet incidences below are
         # still recomputed against the original ray rows and indices.
-        polyhedron = Polyhedron(
-            vertices=[(0,) * int(cell.lattice.module_rank())],
-            rays=cell.rows,
-            base_ring=SageQQ,
-            backend="normaliz",
-        )
+        polyhedron = self._normaliz_cell_polyhedron(cell)
         return _cone_from_engine_polyhedron(cell.lattice, polyhedron)
 
     @cached_method
@@ -641,12 +646,7 @@ class LorentzianPerfectLocalBackend:
         """
         if len(cell.rows) < 10_000:
             return tuple(self.cell_cone(cell).halfspace_covectors())
-        polyhedron = Polyhedron(
-            vertices=[(0,) * int(cell.lattice.module_rank())],
-            rays=cell.rows,
-            base_ring=SageQQ,
-            backend="normaliz",
-        )
+        polyhedron = self._normaliz_cell_polyhedron(cell)
         return tuple(
             _integral_covector(cell.lattice, inequality.A())
             for inequality in polyhedron.inequalities()
