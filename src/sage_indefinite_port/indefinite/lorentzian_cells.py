@@ -1856,7 +1856,13 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             orbit[0][0]
             for orbit in complex_._traversal_facet_orbits.get(id(cell), {}).values()
         }
+        adjacency_facet_keys = {
+            orbit_key
+            for orbit in complex_._traversal_facet_orbits.get(id(cell), {}).values()
+            for orbit_key, _word in orbit
+        }
         seen_incidence_keys = set()
+        boundary_facet_keys = set()
         by_incidence = {}
         covectors = cell_cone.halfspace_covectors()
         # IndexedSymbolicFunctionSet.__getitem__ rebuilds this inverse on
@@ -1915,6 +1921,11 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 seen_incidence_keys.add(key)
                 if key in representative_keys:
                     by_incidence[key] = covector_block[offset]
+                elif key not in adjacency_facet_keys:
+                    # Boundary facets have no side-pairing orbit retained by
+                    # the quotient traversal. Keep only their compact keys;
+                    # all nonboundary keys are already owned by Schreier orbits.
+                    boundary_facet_keys.add(key)
             # Release the completed dense pairing block before the next one.
             del pairing_block
         # Release the transposed configuration and covector slice after the
@@ -1925,7 +1936,11 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         if set(by_incidence) != representative_keys:
             raise ArithmeticError("a quotient-adjacency facet has no defining covector in its source cone")
         facet_covectors_by_incidence[id(cell)] = by_incidence
-        facet_keys_by_cell[id(cell)] = seen_incidence_keys
+        # Do not retain a second full set of every facet key: the quotient
+        # traversal already owns every nonboundary orbit key. Only boundary
+        # facets need a separate retained set for the later completeness test.
+        facet_keys_by_cell[id(cell)] = boundary_facet_keys
+        del seen_incidence_keys, adjacency_facet_keys
     ambient_labels = tuple(lattice.module_generating_set())
     ambient_dual = lattice.dual_module()
     dual_labels = tuple(ambient_dual.module_generating_set())
@@ -2152,6 +2167,13 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     # Lorentzian exception for totally isotropic exterior-boundary faces.
     # Reuse the same exact all-position mask for every candidate in a cell.
     for cell in cells:
+        expected_paired_facets = {
+            facet_key
+            for orbit in complex_._traversal_facet_orbits.get(id(cell), {}).values()
+            for facet_key, _word in orbit
+        }
+        if paired_facets[id(cell)] != expected_paired_facets:
+            raise ArithmeticError("quotient side-pairings do not cover every retained facet orbit")
         # Boundary facets have no quotient adjacency and therefore no retained
         # normal, but their exact incidence keys must still participate in the
         # completeness check. Keep this independent of the reduced normal map.
