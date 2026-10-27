@@ -84,11 +84,13 @@ cProfile, 10.08M `category.__classcall__`, 20.7M set-element constructions,
 That is roughly a hundred thousand preamble operations per converted
 generator for a 12-generator, order-1024 discriminant group.
 
-Next specimen: one conversion of one invariant generator for case_1, timed
-before and after the change. Name the operation that repeats and remove the
-repetition at its owner (the transport's `morphism.inverse()` plus
-`from_morphism` route through `_normalized_form_automorphism` and the finite
-form's engine group). The same overhead multiplies the 2395-vector
+Next specimen: one conversion of one invariant generator, timed before and
+after the change. The unit is filed as
+[research #621](https://github.com/dzackgarza/research/issues/621), whose body
+carries the same profile and the same specimen. It is not the port's to
+repair: `_presented_module_from_morphism`, `Mor.Of`,
+`_normalized_form_automorphism` and `_coinvariant_discriminant_from_invariant`
+are provider owners. The same overhead multiplies the 2395-vector
 `IsotropicCases_8716` and the 49,861-vector A7 configuration, so measure the
 change on that conversion before rerunning either family. The case also still
 needs `_counts(group)`; no case has completed the unchanged assertion.
