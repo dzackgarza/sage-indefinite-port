@@ -1838,6 +1838,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     # adjacency orbit, so retaining a covector for every orbit member is
     # redundant O(number-of-facets * rank) owned data.
     facet_covectors_by_incidence = {}
+    facet_keys_by_cell = {}
     # Every quotient cell is represented in this same ambient lattice; reuse
     # its canonical coordinate labels instead of rebuilding the identical
     # generator tuple once per cell.
@@ -1924,6 +1925,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         if set(by_incidence) != representative_keys:
             raise ArithmeticError("a quotient-adjacency facet has no defining covector in its source cone")
         facet_covectors_by_incidence[id(cell)] = by_incidence
+        facet_keys_by_cell[id(cell)] = seen_incidence_keys
     ambient_labels = tuple(lattice.module_generating_set())
     ambient_dual = lattice.dual_module()
     dual_labels = tuple(ambient_dual.module_generating_set())
@@ -2150,7 +2152,10 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     # Lorentzian exception for totally isotropic exterior-boundary faces.
     # Reuse the same exact all-position mask for every candidate in a cell.
     for cell in cells:
-        by_incidence = facet_covectors_by_incidence[id(cell)]
+        # Boundary facets have no quotient adjacency and therefore no retained
+        # normal, but their exact incidence keys must still participate in the
+        # completeness check. Keep this independent of the reduced normal map.
+        by_incidence = facet_keys_by_cell[id(cell)]
         ray_count = len(cell.rows)
         all_positions_mask = (1 << ray_count) - 1
         for facet_key in by_incidence:
