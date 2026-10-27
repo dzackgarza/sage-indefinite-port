@@ -856,29 +856,30 @@ class LorentzianPerfectLocalBackend:
         if len(cell.rows) < 1_000:
             rays = tuple(self.cell_cone(cell).primitive_rays())
             return rays if square is None else tuple(ray for ray in rays if int(ray.q()) == square)
-        normaliz_cone = self._normaliz_cell_cone(cell)
-        try:
-            polyhedron = self._normaliz_cell_polyhedron(cell)
-            ray_rows = polyhedron.rays_list()
-        finally:
-            self._release_normaliz_cell_cone(cell, normaliz_cone)
-        # rays_list() returns ordinary Python coordinate rows. Drop both
-        # engine-owning locals before converting those rows into owned lattice
-        # elements; otherwise the native Normaliz facet vector remains live
-        # throughout that second full representation's construction.
-        del polyhedron, normaliz_cone
-        rows = (
-            tuple(int(entry) for entry in _source_remove_fraction(vector(SageQQ, row)))
-            for row in ray_rows
-        )
-        if square is None:
-            return tuple(_ambient_element(cell.lattice, row) for row in rows)
-        gram = _gram_matrix(cell.lattice)
-        return tuple(
-            _ambient_element(cell.lattice, row)
-            for row in rows
-            if int(vector(SageZZ, row) * gram * vector(SageZZ, row)) == square
-        )
+        from sage.geometry.polyhedron.backend_normaliz import NmzCone, NmzResult
+
+        # Query the exact cone generators directly. Polyhedron_normaliz would
+        # first allocate V/H-representation objects for every ray and facet,
+        # although this caller only needs the integer extreme-ray rows.
+        normaliz_cone = NmzCone(cone=cell.rows, subspace=())
+        ray_rows = NmzResult(normaliz_cone, "ExtremeRays")
+        del normaliz_cone
+        gram = _gram_matrix(cell.lattice) if square is not None else None
+        owned_rays = []
+        for index, row in enumerate(ray_rows):
+            if isinstance(ray_rows, list):
+                ray_rows[index] = None
+            coordinates = tuple(int(entry) for entry in row)
+            del row
+            if gram is not None:
+                ray_vector = vector(SageZZ, coordinates)
+                if int(ray_vector * gram * ray_vector) != square:
+                    continue
+            owned_rays.append(_ambient_element(cell.lattice, coordinates))
+        if ray_rows:
+            del coordinates
+        del ray_rows
+        return tuple(owned_rays)
 
     def initial_cell(self, lattice: Lattices.ParentMethods, allowed_squares: RealSet) -> LorentzianPerfectCell:
         normalized = _lorentzian_view(lattice)

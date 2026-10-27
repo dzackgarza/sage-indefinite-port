@@ -250,7 +250,7 @@ def test_large_cell_owned_cone_preserves_normaliz_equations(monkeypatch) -> None
     )
 
 
-def test_large_cell_ray_extraction_releases_engine_cache() -> None:
+def test_large_cell_ray_extraction_bypasses_normaliz_polyhedron_wrapper(monkeypatch) -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
 
     class LargeInput:
@@ -260,6 +260,11 @@ def test_large_cell_ray_extraction_releases_engine_cache() -> None:
     cell.lattice = lattice(gram.rows())
     cell.rows = ((1, 0), (0, 1)) * 5_000
     backend = LorentzianPerfectLocalBackend()
+    monkeypatch.setattr(
+        backend,
+        "_normaliz_cell_polyhedron",
+        lambda _cell: pytest.fail("large ray extraction materialized a Sage polyhedron"),
+    )
     rays = backend.cell_primitive_rays(cell)
     assert {tuple(ray) for ray in rays} == {(1, 0), (0, 1)}
     assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})
