@@ -1869,6 +1869,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         # that dispatch while bounding the temporary pairing matrix.
         ray_transpose = rows.transpose()
         block_size = _configuration_pairing_block_size(rows.nrows())
+        pairing_block = pairing_row = None
         for start in range(0, halfspace_matrix.nrows(), block_size):
             stop = min(start + block_size, halfspace_matrix.nrows())
             pairing_block = halfspace_matrix.matrix_from_rows(range(start, stop)) * ray_transpose
@@ -1881,6 +1882,10 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 if incidence in by_incidence:
                     raise ArithmeticError("distinct perfect-cell facets have the same extreme-ray incidence")
                 by_incidence[incidence] = covectors[start + offset]
+        # The final block and its last row remain bound in the function scope
+        # after the loop. Release those dense temporaries before traversal
+        # begins; for the A7 ray configuration, even one block is substantial.
+        del pairing_block, pairing_row, rows, ray_transpose, covectors
         facet_covectors_by_incidence[id(cell)] = by_incidence
         halfspace_rows_by_cell[id(cell)] = halfspace_matrix
     ambient_labels = tuple(lattice.module_generating_set())
