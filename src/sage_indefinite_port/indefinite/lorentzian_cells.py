@@ -1883,7 +1883,8 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 nonincident_mask = 0
                 # Enumerate the row directly. `nonzero_positions()` first
                 # allocates a Python list of every nonincident ray, which can
-                # itself be large for a dense facet complement.
+                # itself be large for a dense facet complement. The temporary
+                # row view is consumed immediately and is not retained.
                 for position, pairing in enumerate(pairing_block.row(offset)):
                     if pairing:
                         nonincident_mask |= 1 << position
@@ -1894,7 +1895,6 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                     raise ArithmeticError("distinct perfect-cell facets have the same extreme-ray incidence")
                 by_incidence[key] = covectors[start + offset]
             # Release the completed dense pairing block before the next one.
-            # No row view is retained: nonzero_positions() returns indices.
             del pairing_block
         # Release the transposed configuration and covector slice after the
         # final incidence block, before adjacency construction begins.
