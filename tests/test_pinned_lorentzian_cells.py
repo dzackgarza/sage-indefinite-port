@@ -2499,3 +2499,23 @@ def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
     assert calls[0][1:3] == ((-QQ(4), QQ.zero()), QQ(80))
     assert calls[0][3] == enumerator.enumeration_transform
     assert calls[0][4] == enumerator.enumeration_order_transform
+
+
+def test_positive_vector_constructor_uses_cpp_semantic_cvp_center() -> None:
+    """The shell consumer's CVP center is alpha*t-h, not its negative."""
+    from sage.all import QQ, vector
+    from dzack_research.preamble.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.lorentzian_cells import NONNEGATIVE_SQUARES
+
+    lattice = Lattices(ZZ)([[5, 1, 0], [1, -1, 0], [0, 0, -1]])
+    enumerator = _PositiveVectorEnumerator(lattice, (QQ(1), QQ(0), QQ(0)), QQ(3), NONNEGATIVE_SQUARES)
+    alpha = enumerator.d / (enumerator.timelike_row * enumerator.gram * enumerator.timelike_row.column())[0]
+    translation = vector(QQ, enumerator.timelike_row) * alpha - vector(QQ, enumerator.partner_row)
+    kernel_transpose = enumerator.inclusion_rows.transpose().change_ring(QQ)
+    expected = kernel_transpose.solve_right(translation.column())
+
+    assert kernel_transpose * expected == translation.column()
+    assert tuple(expected.column(0)) == enumerator.base_target_coordinates
+    assert enumerator.base_target_engine_coordinates == enumerator.base_target_coordinates
+    assert any(enumerator.base_target_engine_coordinates)
+    assert enumerator.base_target_engine_coordinates != tuple(-entry for entry in expected.column(0))
