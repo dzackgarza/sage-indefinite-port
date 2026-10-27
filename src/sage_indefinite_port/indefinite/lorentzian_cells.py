@@ -2104,9 +2104,8 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # configuration when a much smaller selected-row matrix suffices.
             # Total isotropy is a property of the span, so it suffices to
             # check a basis of the incident rays, not every pair of the full
-            # facet. Incremental rank checks keep the candidate basis at most
-            # lattice-rank rows and avoid a quadratic number of exact Gram
-            # products for a large isotropic boundary facet.
+            # facet. Exact minor checks find at most two independent rays,
+            # avoiding a quadratic number of Gram products for large facets.
             facet_basis = []
             for position in incidence:
                 row = cell.rows[position]
@@ -2116,16 +2115,22 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                     facet_basis.append(row)
                     # A non-null ray already disproves total isotropy of the
                     # facet span; no further incidence scan is required.
-                    if sum(row[i] * ambient_gram[i, j] * row[j]
-                           for i in range(len(row)) for j in range(len(row))):
+                    if sum(
+                        row[i] * ambient_gram[i, j] * row[j]
+                        for i in range(len(row))
+                        for j in range(len(row))
+                    ):
                         break
                     continue
                 # With a nonzero first row, rank two is equivalent to some
                 # 2-by-2 minor being nonzero. Avoid a Sage rank computation
                 # for every incident ray of a potentially enormous facet.
                 first = facet_basis[0]
-                if any(first[i] * row[j] != first[j] * row[i]
-                       for i in range(len(row)) for j in range(i + 1, len(row))):
+                if any(
+                    first[i] * row[j] != first[j] * row[i]
+                    for i in range(len(row))
+                    for j in range(i + 1, len(row))
+                ):
                     facet_basis.append(row)
                     break
             basis_matrix = matrix(SageQQ, facet_basis)
