@@ -1874,11 +1874,13 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # Materialize only this bounded block through the owned unranking
             # map, reusing its inverse instead of rebuilding it per covector.
             covector_block = tuple(covector_at(position) for position in range(start, stop))
+            # Every owned halfspace covector is primitive integral data in
+            # the lattice dual, so exact incidence needs no QQ coercion.
             halfspace_block = matrix(
-                SageQQ,
+                SageZZ,
                 len(covector_block),
                 len(labels),
-                lambda row, column: _rational(covector_block[row](labels[column])),
+                lambda row, column: covector_block[row](labels[column]),
             )
             pairing_block = halfspace_block * ray_transpose
             del halfspace_block
