@@ -1974,6 +1974,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                     len(ambient_labels),
                     lambda row, column: _rational(target_covectors[row](ambient_labels[column])),
                 )
+                del target_covectors
                 target_halfspace_cache_key = target_key
             target_halfspace_rows = target_halfspace_cache
             action_key = (id(adjacency.target), tuple(int(entry) for entry in action.list()))
