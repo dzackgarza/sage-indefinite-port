@@ -804,7 +804,7 @@ class LorentzianPerfectLocalBackend:
         lattice isometries only for callers requiring categorical morphisms.
         """
         word_orbits, generator_permutations = self._facet_orbit_transversal_words(cell)
-        ray_count = len(cell.vector_configuration)
+        ray_count = len(cell.rows)
         materialized = []
         for orbit in word_orbits:
             facet_set = {facet for facet, _word in orbit}
