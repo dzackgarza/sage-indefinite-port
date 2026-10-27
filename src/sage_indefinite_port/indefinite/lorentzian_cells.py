@@ -1863,9 +1863,8 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         all_nonincident_mask = (1 << ray_count) - 1
         for start in range(0, len(covectors), block_size):
             stop = min(start + block_size, len(covectors))
-            # Normaliz computes its complete support-hyperplane result before
-            # yielding the first covector. Delay the rank-by-ray transpose
-            # until that native peak has passed, then reuse it for each block.
+            # Delay the rank-by-ray transpose until a nonempty facet block is
+            # available; an empty H-presentation needs no ray matrix.
             if ray_transpose is None:
                 ray_transpose = matrix(
                     SageZZ, len(labels), ray_count,
