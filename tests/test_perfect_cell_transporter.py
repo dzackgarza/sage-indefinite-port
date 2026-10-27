@@ -127,6 +127,16 @@ def test_permuted_facet_bitsets_preserve_exact_positions() -> None:
         # a permutation must commute with complement in the fixed ray universe.
         assert _permuted_bitset(all_positions ^ mask, permutation) == all_positions ^ image
 
+    # Match the A7 configuration scale and the production sparse-complement
+    # representation: only four of 49,861 ray positions are nonincident.
+    ray_count = 49_861
+    reverse = tuple(reversed(range(ray_count)))
+    sparse_complement = sum(1 << position for position in (0, 1, ray_count // 2, ray_count - 1))
+    assert _permuted_bitset(sparse_complement, reverse) == sum(
+        1 << (ray_count - 1 - position)
+        for position in (0, 1, ray_count // 2, ray_count - 1)
+    )
+
 
 def test_facet_incidence_streaming_preserves_exact_orbits() -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
