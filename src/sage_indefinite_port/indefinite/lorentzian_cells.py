@@ -1843,8 +1843,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     facet_covectors_by_incidence = {}
     for cell in cells:
         labels = tuple(cell.lattice.module_generating_set())
-        rows = matrix(SageQQ, cell.rows)
-        ray_count = rows.nrows()
+        ray_count = len(cell.rows)
         by_incidence = {}
         covectors = tuple(cell_cones[id(cell)].halfspace_covectors())
         # The cone's stored H-presentation already is the minimized facet
@@ -1866,8 +1865,11 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         # pairing per ray per facet; one matrix-vector product per facet still
         # repeats backend dispatch.  Blocking the H-presentation amortizes
         # that dispatch while bounding the temporary pairing matrix.
-        ray_transpose = rows.transpose()
-        block_size = _configuration_pairing_block_size(rows.nrows())
+        ray_transpose = matrix(
+            SageQQ, len(labels), ray_count,
+            lambda i, j: cell.rows[j][i],
+        )
+        block_size = _configuration_pairing_block_size(ray_count)
         pairing_block = None
         all_nonincident_mask = (1 << ray_count) - 1
         for start in range(0, halfspace_matrix.nrows(), block_size):
@@ -1886,7 +1888,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         # The final block remains bound in the function scope
         # after the loop. Release those dense temporaries before traversal
         # begins; for the A7 ray configuration, even one block is substantial.
-        del pairing_block, rows, ray_transpose, covectors
+        del pairing_block, ray_transpose, covectors
         facet_covectors_by_incidence[id(cell)] = by_incidence
         del halfspace_matrix
     ambient_labels = tuple(lattice.module_generating_set())
