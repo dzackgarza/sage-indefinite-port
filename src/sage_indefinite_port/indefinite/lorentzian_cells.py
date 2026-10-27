@@ -1011,11 +1011,10 @@ class LorentzianPerfectLocalBackend:
         ray_count = len(cell.rows)
         labels = tuple(cell.lattice.module_generating_set())
         rank = len(cell.rows[0])
-        # Build the transposed ray matrix directly from canonical coordinate
-        # tuples, avoiding simultaneous dense R and R^T matrices.
-        transposed_ray_rows = matrix(
-            SageZZ, rank, ray_count, lambda i, j: cell.rows[j][i]
-        )
+        # Keep stabilizer permutation construction blockwise. Materializing
+        # both R^T and A^T R^T duplicates the entire 49,861-ray configuration
+        # as dense Sage matrices before any facet processing starts.
+        permutation_block_size = _configuration_pairing_block_size(ray_count)
         generators = self.cell_stabilizer(cell)
         positions = {tuple(row): index for index, row in enumerate(cell.rows)}
         if len(positions) != ray_count:
@@ -1033,25 +1032,25 @@ class LorentzianPerfectLocalBackend:
                     for label in labels
                 ],
             )
+            permutation = []
             try:
-                image_columns = action.transpose() * transposed_ray_rows
-                # Matrix.columns() materializes all 49,861 column vectors at
-                # once, while column(j) creates one Sage vector per ray. Keep
-                # only the rank row vectors and assemble each lookup key from
-                # their scalar entries; the permutation tuple is the only
-                # full-size Python result retained here.
-                image_rows = image_columns.rows()
-                permutations.append(
-                    tuple(
-                        positions[tuple(image_rows[i][j] for i in range(rank))]
-                        for j in range(ray_count)
+                for start in range(0, ray_count, permutation_block_size):
+                    stop = min(start + permutation_block_size, ray_count)
+                    image_rows = (matrix(SageZZ, cell.rows[start:stop]) * action).rows()
+                    permutation.extend(
+                        positions[tuple(row)] for row in image_rows
                     )
-                )
-                del image_rows, image_columns
+                    del image_rows
+                permutations.append(tuple(permutation))
             except KeyError as exc:
                 raise ArithmeticError("a cell-stabilizer generator does not preserve its rays") from exc
 
         def facet_keys() -> Iterator[FacetMaskKey]:
+            # Construct the transposed ray matrix only when incidence traversal
+            # starts, after all stabilizer permutations have been computed.
+            transposed_ray_rows = matrix(
+                SageZZ, rank, ray_count, lambda i, j: cell.rows[j][i]
+            )
             covector_rows = iter(self._iter_cell_halfspace_pairing_rows(cell, labels))
             block_size = _configuration_pairing_block_size(ray_count)
             sparse_limit = _sparse_facet_complement_limit(ray_count)
