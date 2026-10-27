@@ -12,6 +12,7 @@ from dzack_research.preamble.all import ZZ as PreambleZZ
 from dzack_research.preamble.all import HyperbolicLattices
 
 from tests.acceptance.consumer import EDGEWALK, coordinates, lattice, require
+import sage_indefinite_port.indefinite.edgewalk as edgewalk_module
 from sage_indefinite_port.indefinite.edgewalk import _Edgewalk
 from sage_indefinite_port.indefinite.edgewalk_rank2 import _OrientedBinaryCycle
 from tests.fixtures.oracle_fixtures import (
@@ -108,6 +109,14 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
         instrument(_Edgewalk, name)
     for name in ("cycle", "promised_step", "canonical_companion", "shorter_pair", "reduced_start_pair"):
         instrument(_OrientedBinaryCycle, name)
+    original_anisotropic_cycle = edgewalk_module.anisotropic_cycle
+
+    def wrapped_anisotropic_cycle(*args, **kwargs):
+        result = original_anisotropic_cycle(*args, **kwargs)
+        observed["anisotropic_cycle"] = True
+        return result
+
+    monkeypatch.setattr(edgewalk_module, "anisotropic_cycle", wrapped_anisotropic_cycle)
 
     cases = load_allcock_rank3_reflective()
     # The historical table reuses IDs; the exact Gram disambiguates the two
@@ -172,6 +181,7 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
         "_Edgewalk.extension_roots", "_Edgewalk.vertex_from_root",
         "_Edgewalk.isotropic_next_vertex", "_Edgewalk.finite_extensions",
         "_Edgewalk.edge_step", "_Edgewalk.edge_directions", "_Edgewalk.binary_walk",
+        "anisotropic_cycle",
         "_OrientedBinaryCycle.cycle", "_OrientedBinaryCycle.promised_step",
         "_OrientedBinaryCycle.canonical_companion", "_OrientedBinaryCycle.shorter_pair",
         "_OrientedBinaryCycle.reduced_start_pair",
