@@ -215,6 +215,31 @@ def test_isotropic_plane_isometry_transports_between_changed_basis_parents() -> 
     )
 
 
+def test_isotropic_flag_isometry_preserves_line_inside_plane() -> None:
+    """A flag transporter preserves the marked line, not merely the ambient plane."""
+    lattice_ = lattice([[0, 4, 0, 0], [4, 0, 0, 0], [0, 0, 0, 4], [0, 0, 4, 0]])
+    first = element(lattice_, [1, 0, 0, 0])
+    second = element(lattice_, [0, 0, 1, 0])
+    changed_line = first + second
+    plane = lattice_.primitive_isotropic_subobject(first, second)
+    induction = IsotropicInduction(EichlerRecursion())
+
+    witness = induction.flag_isometry((first, plane), (changed_line, plane))
+    assert witness is not None
+    assert witness(first) in (changed_line, -changed_line)
+    target_basis = induction.flag_basis((changed_line, plane))
+    target_basis_matrix = matrix(ZZ, [coordinates(target_basis[0]), coordinates(target_basis[1])]).transpose()
+    first_coordinates = target_basis_matrix.solve_right(vector(ZZ, coordinates(witness(first))))
+    second_coordinates = target_basis_matrix.solve_right(vector(ZZ, coordinates(witness(second))))
+    induced_basis_change = matrix(ZZ, [
+        [first_coordinates[0], second_coordinates[0]],
+        [first_coordinates[1], second_coordinates[1]],
+    ])
+    assert abs(induced_basis_change.det()) == 1
+    basis = tuple(lattice_.module_generators())
+    assert all(lattice_.b(witness(left), witness(right)) == lattice_.b(left, right) for left in basis for right in basis)
+
+
 def test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound() -> None:
     """The pairing L -> (Zv)^* has finite cokernel of order four in this example."""
     lattice_ = lattice([[0, 4, 0], [4, 0, 0], [0, 0, -8]])
