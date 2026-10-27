@@ -2108,7 +2108,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # lattice-rank rows and avoid a quadratic number of exact Gram
             # products for a large isotropic boundary facet.
             facet_basis = []
-            for position in sorted(incidence):
+            for position in incidence:
                 row = cell.rows[position]
                 if not any(row):
                     continue
