@@ -1874,7 +1874,9 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             stop = min(start + block_size, halfspace_matrix.nrows())
             pairing_block = halfspace_matrix.matrix_from_rows(range(start, stop)) * ray_transpose
             for offset in range(stop - start):
-                nonincident_mask = sum(1 << position for position in pairing_block.row(offset).nonzero_positions())
+                nonincident_mask = 0
+                for position in pairing_block.row(offset).nonzero_positions():
+                    nonincident_mask |= 1 << position
                 if nonincident_mask == all_nonincident_mask:
                     raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
                 key = _facet_complement_key(nonincident_mask, ray_count)
