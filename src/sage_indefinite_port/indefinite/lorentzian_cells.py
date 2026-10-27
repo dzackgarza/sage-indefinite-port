@@ -1008,6 +1008,7 @@ class LorentzianPerfectLocalBackend:
         def facet_keys() -> Iterator[FacetMaskKey]:
             covector_rows = iter(self._iter_cell_halfspace_pairing_rows(cell, labels))
             block_size = _configuration_pairing_block_size(ray_count)
+            sparse_limit = _sparse_facet_complement_limit(ray_count)
             covector_block = tuple(islice(covector_rows, block_size))
             while covector_block:
                 pairing_block = matrix(SageZZ, covector_block) * transposed_ray_rows
@@ -1019,10 +1020,9 @@ class LorentzianPerfectLocalBackend:
                         raise ArithmeticError("a minimized H-presentation covector contains every extreme ray")
                     if len(nonincident_positions) == ray_count:
                         raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
-                    limit = _sparse_facet_complement_limit(ray_count)
-                    if len(nonincident_positions) <= limit:
+                    if len(nonincident_positions) <= sparse_limit:
                         key: FacetMaskKey = (True, tuple(nonincident_positions))
-                    elif ray_count - len(nonincident_positions) <= limit:
+                    elif ray_count - len(nonincident_positions) <= sparse_limit:
                         incident_positions = tuple(
                             position for position, value in enumerate(pairing_row) if not value
                         )
