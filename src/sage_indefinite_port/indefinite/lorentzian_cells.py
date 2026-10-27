@@ -972,9 +972,15 @@ class LorentzianPerfectLocalBackend:
         if not covector_block:
             return {}, ()
         labels = tuple(cell.lattice.module_generating_set())
-        # Only the transposed exact ray matrix is consumed below. Do not keep
-        # the original 49,861-by-rank matrix alive alongside its transpose.
-        transposed_ray_rows = matrix(SageZZ, cell.rows).transpose()
+        # Only the transposed exact ray matrix is consumed below. Build it
+        # directly from the canonical coordinate tuples instead of first
+        # materializing a 49,861-by-rank matrix and then transposing it; the
+        # latter temporarily retains both dense Sage matrices for A7.
+        ray_count = len(cell.rows)
+        rank = len(cell.rows[0])
+        transposed_ray_rows = matrix(
+            SageZZ, rank, ray_count, lambda i, j: cell.rows[j][i]
+        )
         all_ray_mask = (1 << ray_count) - 1
         # Do not materialize the full |facets|-by-|rays| pairing matrix.
         # A7's initial perfect configuration has 49,861 rays, so retaining
