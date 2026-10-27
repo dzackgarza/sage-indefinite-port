@@ -172,10 +172,12 @@ def test_normaliz_pairing_rows_match_owned_covectors() -> None:
     backend = LorentzianPerfectLocalBackend()
     labels = tuple(cell.lattice.module_generating_set())
     pairing_rows = tuple(backend._iter_cell_halfspace_pairing_rows(cell, labels))
+    assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})
     owned_rows = tuple(
         tuple(int(covector(label)) for label in labels)
         for covector in backend._iter_cell_halfspace_covectors(cell)
     )
+    assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})
     assert pairing_rows == owned_rows
 
 

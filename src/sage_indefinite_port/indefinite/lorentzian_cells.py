@@ -690,20 +690,36 @@ def _refined_signatures(pairings: _ConfigurationPairings, colours: tuple[int, ..
 
 
 class LorentzianPerfectLocalBackend:
-    @cached_method
     def _normaliz_cell_cone(self, cell: LorentzianPerfectCell):
-        """Cache Normaliz's exact cone without materializing Sage H-representation objects."""
+        """Cache Normaliz's exact cone until its native facet vector is consumed.
+
+        Unlike ``cached_method``, this small explicit cache can release a cone
+        after ``NmzResult`` has copied its support hyperplanes into Python. The
+        cone is still shared with an extant polyhedron wrapper, and repeated
+        ordinary calls reuse it until a raw H-result is requested.
+        """
         from sage.geometry.polyhedron.backend_normaliz import NmzCone
 
+        cache = self.__dict__.setdefault("_normaliz_cell_cones", {})
+        if cell in cache:
+            return cache[cell]
         dimension = int(cell.lattice.module_rank())
         # PyNormaliz accepts immutable tuple rows directly. Passing the
         # canonical configuration avoids duplicating all 49,861 ray rows as
         # Python lists while Normaliz constructs its own exact cone input.
-        return NmzCone(
+        cone = NmzCone(
             vertices=[(0,) * dimension + (1,)],
             cone=cell.rows,
             subspace=(),
         )
+        cache[cell] = cone
+        return cone
+
+    def _release_normaliz_cell_cone(self, cell: LorentzianPerfectCell, cone) -> None:
+        """Drop the backend's cached reference after raw H-result extraction."""
+        cache = self.__dict__.get("_normaliz_cell_cones", {})
+        if cache.get(cell) is cone:
+            del cache[cell]
 
     def _normaliz_cell_polyhedron(self, cell: LorentzianPerfectCell):
         """Temporarily wrap the cached Normaliz cone in Sage's polyhedron interface.
@@ -762,7 +778,10 @@ class LorentzianPerfectLocalBackend:
         # converted row immediately instead of keeping all nested Python lists
         # alive until the iterator is exhausted; this preserves Normaliz order
         # while reducing the post-conversion peak during blockwise pairing.
-        hyperplanes = NmzResult(self._normaliz_cell_cone(cell), "SupportHyperplanes")
+        normaliz_cone = self._normaliz_cell_cone(cell)
+        hyperplanes = NmzResult(normaliz_cone, "SupportHyperplanes")
+        self._release_normaliz_cell_cone(cell, normaliz_cone)
+        del normaliz_cone
         for index, hyperplane in enumerate(hyperplanes):
             # Drop the result list's reference before allocating a coordinate
             # slice. The local reference keeps this one row alive while it is
@@ -795,7 +814,10 @@ class LorentzianPerfectLocalBackend:
         # pairing and can dominate memory when the H-presentation is large.
         # Normaliz encodes each support hyperplane as [A_1, ..., A_n, b]; for
         # this homogeneous cone b=0, and Sage's Inequality.A() is exactly A.
-        hyperplanes = NmzResult(self._normaliz_cell_cone(cell), "SupportHyperplanes")
+        normaliz_cone = self._normaliz_cell_cone(cell)
+        hyperplanes = NmzResult(normaliz_cone, "SupportHyperplanes")
+        self._release_normaliz_cell_cone(cell, normaliz_cone)
+        del normaliz_cone
         for index, hyperplane in enumerate(hyperplanes):
             if isinstance(hyperplanes, list):
                 hyperplanes[index] = None
