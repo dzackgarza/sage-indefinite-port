@@ -132,6 +132,7 @@ def test_facet_incidence_streaming_preserves_exact_orbits() -> None:
     cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
     backend = LorentzianPerfectLocalBackend()
     permutation_orbits = backend.facet_orbit_permutations(cell)
+    assert all(facet != frozenset(range(len(cell.rows))) for orbit in permutation_orbits for facet, _ in orbit)
     isometry_orbits = backend.facet_orbits(cell)
     word_orbits, generator_permutations = backend._facet_orbit_transversal_words(cell)
 

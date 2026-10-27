@@ -888,9 +888,12 @@ class LorentzianPerfectLocalBackend:
                 # key: a facet usually contains most rays, so permuting the
                 # incidence mask would visit almost all 49,861 set bits.
                 nonincident_mask = int.from_bytes(support_bytes, "little")
+                if nonincident_mask == 0:
+                    raise ArithmeticError("a minimized H-presentation covector contains every extreme ray")
                 if nonincident_mask == all_ray_mask:
                     raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
-                facets.setdefault(nonincident_mask, [1, nonincident_mask])
+                if nonincident_mask not in facets:
+                    facets[nonincident_mask] = [1, nonincident_mask]
             covector_block = tuple(islice(covectors, covector_block_size))
         generators = self.cell_stabilizer(cell)
         # Use precisely these generators to form the ray action.  Calling
