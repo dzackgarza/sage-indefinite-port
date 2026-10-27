@@ -99,7 +99,29 @@ def test_large_cell_cone_uses_exact_normaliz_h_presentation() -> None:
             for covector in cone.halfspace_covectors()
         }
 
+    def incidence_rows(cone, ray_rows):
+        normals = tuple(cone.halfspace_covectors())
+        return {
+            frozenset(
+                position
+                for position, ray in enumerate(ray_rows)
+                if all(
+                    sum(
+                        covector.to_vector()(label) * entry
+                        for label, entry in zip(labels, ray, strict=True)
+                    ) == 0
+                    for covector in (normal,)
+                )
+            )
+            for normal in normals
+        }
+
     assert covector_rows(large_cone) == covector_rows(small_cone)
     assert large_cone.dimension() == small_cone.dimension()
     assert set(large_cone.primitive_rays()) == set(small_cone.primitive_rays())
     assert len(large_cone.faces(int(large_cone.dimension()) - 1)) == len(small_cone.faces(int(small_cone.dimension()) - 1))
+    large_incidence = incidence_rows(large_cone, large_cell.rows)
+    assert {
+        frozenset(position % len(cell.rows) for position in incidence)
+        for incidence in large_incidence
+    } == incidence_rows(small_cone, cell.rows)
