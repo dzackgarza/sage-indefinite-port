@@ -580,7 +580,7 @@ class _ConfigurationPairings:
 
     def __init__(
         self,
-        rows: tuple[tuple[int, ...], ...],
+        rows: tuple[tuple[int, ...], ...] | Matrix_integer_dense,
         gram: Matrix_integer_dense,
         *,
         cache_columns: bool = False,
@@ -588,7 +588,9 @@ class _ConfigurationPairings:
         # lorentzian_perfect.h:1212-1256 uses exact scalar products without
         # a coefficient bound. Sage's integer matrices retain that contract
         # for both configuration equivalence and perfect-form invariants.
-        self.rows = matrix(SageZZ, rows)
+        # Configuration-invariant consumers already own a dense coordinate
+        # matrix; share it instead of copying the full n-by-r array again.
+        self.rows = rows if isinstance(rows, Matrix_integer_dense) else matrix(SageZZ, rows)
         self.covectors = self.rows * gram.change_ring(SageZZ)
         # Backtracking repeatedly asks for the same anchor columns while
         # comparing partial configurations. Enable a small bounded cache only
@@ -1261,7 +1263,7 @@ class LorentzianPerfectLocalBackend:
         hash.
         """
         rows = matrix(SageZZ, cell.rows)
-        pairings = _ConfigurationPairings(cell.rows, _gram_matrix(cell.lattice), cache_columns=True)
+        pairings = _ConfigurationPairings(rows, _gram_matrix(cell.lattice), cache_columns=True)
         norms = pairings.diagonal()
         if len(cell.rows) > _PAIRING_GRAPH_REFINEMENT_LIMIT:
             # The source's complete pairing-spectrum colour is an invariant,
