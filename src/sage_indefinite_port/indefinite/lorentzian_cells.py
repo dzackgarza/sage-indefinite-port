@@ -97,7 +97,11 @@ def _facet_incidence(key: FacetMaskKey, ray_count: int) -> FacetIncidence:
         return frozenset(_bit_positions(((1 << ray_count) - 1) ^ key))
     complement, positions = key
     if complement:
-        return frozenset(range(ray_count)).difference(positions)
+        # Avoid constructing a full frozenset(range(ray_count)) and then a
+        # second full frozenset for the difference. The sparse exclusion set
+        # and final incidence set are the only retained containers.
+        excluded = set(positions)
+        return frozenset(position for position in range(ray_count) if position not in excluded)
     return frozenset(positions)
 
 
