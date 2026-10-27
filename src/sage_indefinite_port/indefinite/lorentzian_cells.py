@@ -2070,6 +2070,10 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 )
             )
             paired_facets[id(adjacency.source)].add(facet_key)
+    # The target H-coordinate matrix is needed only while constructing and
+    # certifying adjacencies. Do not keep the final dense cache alive during
+    # stabilizer assembly and traversal-object construction.
+    del target_halfspace_cache, target_halfspace_cache_key
     cones_by_position = tuple(cell_cones[id(cell)] for cell in cells)
     # The index set is the actual cone objects, but their source cells are
     # already known by identity. Searching the cone family with ``index``
