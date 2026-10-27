@@ -1965,7 +1965,17 @@ class _CellFaces:
         cone = backend.cell_cone(cell)
         rays = tuple(cone.primitive_rays())
         self.rows = tuple(_coordinate_row(lattice, ray, SageZZ) for ray in rays)
-        self.covectors = tuple(vector(SageQQ, [_rational(covector.to_vector()(label)) for label in self.labels]) for covector in cone.facet_covectors())
+        # The owned cone already retains its minimized homogeneous
+        # H-presentation.  `facet_covectors()` constructs a categorical face
+        # cone for every facet merely to recover those same normals, which
+        # repeats the expensive PPL conversion on the 49,861-ray A7 cell.
+        self.covectors = tuple(
+            vector(
+                SageQQ,
+                [_rational(covector.to_vector()(label)) for label in self.labels],
+            )
+            for covector in cone.halfspace_covectors()
+        )
         interior = sum(self.rows[1:], self.rows[0])
         if any(covector.dot_product(interior) <= 0 for covector in self.covectors):
             raise ArithmeticError("the facet covectors of a cell must be positive on its interior")
