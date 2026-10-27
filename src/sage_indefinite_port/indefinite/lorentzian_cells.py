@@ -1841,7 +1841,6 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     # Reuse the source cell's H-presentation for every member of its
     # stabilizer orbit instead of recomputing a V-to-H representation.
     facet_covectors_by_incidence = {}
-    halfspace_rows_by_cell = {}
     for cell in cells:
         labels = tuple(cell.lattice.module_generating_set())
         rows = matrix(SageQQ, cell.rows)
@@ -1887,12 +1886,18 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         # begins; for the A7 ray configuration, even one block is substantial.
         del pairing_block, pairing_row, rows, ray_transpose, covectors
         facet_covectors_by_incidence[id(cell)] = by_incidence
-        halfspace_rows_by_cell[id(cell)] = halfspace_matrix
+        del halfspace_matrix
     ambient_labels = tuple(lattice.module_generating_set())
     ambient_dual = lattice.dual_module()
     dual_labels = tuple(ambient_dual.module_generating_set())
     ambient_gram = _gram_matrix(lattice)
     neighbor_cache = {}
+    # Containment checks need a target's H-coordinate matrix only while one
+    # adjacency is certified. Keeping one dense matrix per quotient cell
+    # duplicates every owned cone's H-presentation across the whole traversal.
+    # Retain only the most recently requested target matrix.
+    target_halfspace_cache_key = None
+    target_halfspace_cache = None
     common_face_cache = {}
     identity_action = identity_matrix(SageZZ, len(ambient_labels))
     ambient_basis = tuple(lattice.module_generator(label) for label in ambient_labels)
@@ -1961,7 +1966,16 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             )
             target_cone = cell_cones[id(adjacency.target)]
             target_key = id(adjacency.target)
-            target_halfspace_rows = halfspace_rows_by_cell[target_key]
+            if target_halfspace_cache_key != target_key:
+                target_covectors = tuple(target_cone.halfspace_covectors())
+                target_halfspace_cache = matrix(
+                    SageQQ,
+                    len(target_covectors),
+                    len(ambient_labels),
+                    lambda row, column: _rational(target_covectors[row](ambient_labels[column])),
+                )
+                target_halfspace_cache_key = target_key
+            target_halfspace_rows = target_halfspace_cache
             action_key = (id(adjacency.target), tuple(int(entry) for entry in action.list()))
 
             def neighbor_factory(action_key=action_key, target_cone=target_cone, action=action):
