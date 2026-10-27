@@ -1850,21 +1850,10 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         # family. `facet_covectors()` constructs every facet cone merely to
         # recover these same normals, which is prohibitively expensive on
         # high-facet cells.
-        # Evaluate the owned covectors directly while filling the coordinate
-        # matrix. Retaining a second tuple of coordinate morphisms keeps one
-        # extra object per facet alive for the entire traversal; it is not
-        # needed after the matrix is built.
-        halfspace_matrix = matrix(
-            SageQQ,
-            len(covectors),
-            len(labels),
-            lambda row, column: _rational(covectors[row](labels[column])),
-        )
         # Evaluate bounded blocks of exact covectors against the entire ray
-        # matrix.  A scalar row-dot-product loop costs one Python-level exact
-        # pairing per ray per facet; one matrix-vector product per facet still
-        # repeats backend dispatch.  Blocking the H-presentation amortizes
-        # that dispatch while bounding the temporary pairing matrix.
+        # matrix. Constructing the full facet-by-rank H matrix before pairing
+        # retains another dense allocation proportional to the facet count.
+        # Build each coordinate block directly from its owned covectors.
         ray_transpose = matrix(
             SageQQ, len(labels), ray_count,
             lambda i, j: cell.rows[j][i],
@@ -1872,12 +1861,20 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         block_size = _configuration_pairing_block_size(ray_count)
         pairing_block = None
         all_nonincident_mask = (1 << ray_count) - 1
-        for start in range(0, halfspace_matrix.nrows(), block_size):
-            stop = min(start + block_size, halfspace_matrix.nrows())
+        for start in range(0, len(covectors), block_size):
+            stop = min(start + block_size, len(covectors))
             # Release the previous block before constructing the next one;
             # otherwise Python retains both dense products at the peak.
             pairing_block = None
-            pairing_block = halfspace_matrix.matrix_from_rows(range(start, stop)) * ray_transpose
+            covector_block = covectors[start:stop]
+            halfspace_block = matrix(
+                SageQQ,
+                len(covector_block),
+                len(labels),
+                lambda row, column: _rational(covector_block[row](labels[column])),
+            )
+            pairing_block = halfspace_block * ray_transpose
+            del halfspace_block
             for offset in range(stop - start):
                 nonincident_mask = 0
                 for position in pairing_block.row(offset).nonzero_positions():
@@ -1891,9 +1888,8 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         # The final block remains bound in the function scope
         # after the loop. Release those dense temporaries before traversal
         # begins; for the A7 ray configuration, even one block is substantial.
-        del pairing_block, ray_transpose, covectors
+        del pairing_block, covector_block, ray_transpose, covectors
         facet_covectors_by_incidence[id(cell)] = by_incidence
-        del halfspace_matrix
     ambient_labels = tuple(lattice.module_generating_set())
     ambient_dual = lattice.dual_module()
     dual_labels = tuple(ambient_dual.module_generating_set())
