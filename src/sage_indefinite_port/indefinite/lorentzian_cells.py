@@ -22,8 +22,8 @@ from dzack_research.preamble.categories.rings.ring_foundation import _owned_engi
 from dzack_research.preamble.categories.modules.pure.modules import _engine_matrix
 from dzack_research.preamble.categories.polyhedral_cones import (
     RationalPolyhedralCones,
-    _cone_from_engine_polyhedron,
     _integral_covector,
+    _rational_polyhedral_cone,
 )
 from dzack_research.preamble.categories.reduction_complexes import (
     LorentzianPerfectDomainTraversal,
@@ -749,21 +749,15 @@ class LorentzianPerfectLocalBackend:
             return RationalPolyhedralCones(cell.lattice).from_rays(cell.vector_configuration)
 
         # PPL's generic V-to-H conversion is the current A7 bottleneck: its
-        # initial perfect configuration has 49,861 rays.  Normaliz computes
-        # the same exact rational dual description without changing the owned
-        # cone interface.  Keep the backend switch local to this consumer;
-        # the resulting homogeneous H-representation is normalized into the
-        # same RationalPolyhedralCones object, and facet incidences below are
-        # still recomputed against the original ray rows and indices.
-        normaliz_cone = self._normaliz_cell_cone(cell)
-        try:
-            polyhedron = self._normaliz_cell_polyhedron(cell)
-            return _cone_from_engine_polyhedron(cell.lattice, polyhedron)
-        finally:
-            # The owned cone is the cached consumer result. Do not also keep
-            # the Normaliz engine (and its native facet vector) in the backend
-            # cache after converting the temporary Sage wrapper.
-            self._release_normaliz_cell_cone(cell, normaliz_cone)
+        # initial perfect configuration has 49,861 rays. Normaliz computes
+        # the exact dual description. Build the owned cone directly from its
+        # raw support covectors rather than first materializing Sage's full
+        # Polyhedron_normaliz inequality/equation objects and then converting
+        # those objects back into owned covectors.
+        return _rational_polyhedral_cone(
+            cell.lattice,
+            self._iter_cell_halfspace_covectors(cell),
+        )
 
     def _iter_cell_halfspace_pairing_rows(
         self, cell: LorentzianPerfectCell, labels: tuple[int, ...]
