@@ -905,7 +905,10 @@ class LorentzianPerfectLocalBackend:
         # Use precisely these generators to form the ray action.  Calling
         # point_permutations here repeats the stabilizer lookup and the
         # categorical basis-action conversion for every generator.
-        positions = {tuple(int(entry) for entry in row): index for index, row in enumerate(integral_ray_rows.rows())}
+        # The immutable coordinate tuples are already the canonical ray keys;
+        # iterating matrix.rows() would allocate a second Sage vector object
+        # for each of the 49,861 A7 rays before building the same lookup.
+        positions = {tuple(row): index for index, row in enumerate(cell.rows)}
         if len(positions) != ray_count:
             raise ArithmeticError("a perfect-cell configuration contains repeated rays")
         permutations = []
