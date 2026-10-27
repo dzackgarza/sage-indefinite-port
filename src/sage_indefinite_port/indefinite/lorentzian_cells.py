@@ -1286,7 +1286,12 @@ class LorentzianPerfectLocalBackend:
                     index = start + offset
                     spectra.append((int(norms[index]), gcd(*cell.rows[index]), _row_multiset(row, int(row[index]))))
             spectra = tuple(spectra)
-        return rows, pairings, spectra, Counter(cell.rows), rows.elementary_divisors()
+        # The nonzero Smith factors are invariant under right multiplication
+        # by an integral unimodular action. Taking the transpose keeps the
+        # invariant list bounded by the ambient rank rather than the number
+        # of configuration rows (which is 49,861 in the A7 consumer).
+        smith_invariants = rows.transpose().elementary_divisors()
+        return rows, pairings, spectra, Counter(cell.rows), smith_invariants
 
     @overload
     def cell_transporter(
