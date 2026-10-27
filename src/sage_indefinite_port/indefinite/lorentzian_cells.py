@@ -1857,17 +1857,21 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         # matrix. Constructing the full facet-by-rank H matrix before pairing
         # retains another dense allocation proportional to the facet count.
         # Build each coordinate block directly from its owned covectors.
-        ray_transpose = matrix(
-            SageZZ, len(labels), ray_count,
-            lambda i, j: cell.rows[j][i],
-        )
         block_size = _configuration_pairing_block_size(ray_count)
+        ray_transpose = None
         pairing_block = None
         all_nonincident_mask = (1 << ray_count) - 1
         for start in range(0, len(covectors), block_size):
             stop = min(start + block_size, len(covectors))
-            # Both previous-block references were deleted at the end of the
-            # preceding iteration; bind only the current block here.
+            # Normaliz computes its complete support-hyperplane result before
+            # yielding the first covector. Delay the rank-by-ray transpose
+            # until that native peak has passed, then reuse it for each block.
+            if ray_transpose is None:
+                ray_transpose = matrix(
+                    SageZZ, len(labels), ray_count,
+                    lambda i, j: cell.rows[j][i],
+                )
+            # Bind only the current covector block.
             covector_block = covectors[start:stop]
             halfspace_block = matrix(
                 SageQQ,
@@ -1896,7 +1900,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             del pairing_block
         # Release the transposed configuration and covector slice after the
         # final incidence block, before adjacency construction begins.
-        del covector_block, ray_transpose, covectors
+        del pairing_block, covector_block, ray_transpose, covectors
         facet_covectors_by_incidence[id(cell)] = by_incidence
     ambient_labels = tuple(lattice.module_generating_set())
     ambient_dual = lattice.dual_module()
