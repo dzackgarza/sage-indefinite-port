@@ -947,127 +947,109 @@ class LorentzianPerfectLocalBackend:
 
     def _facet_mask_data(
         self, cell: LorentzianPerfectCell
-    ) -> tuple[dict[FacetMaskKey, int], tuple[tuple[int, ...], ...]]:
-        r"""Facet orbits keyed by exact nonincident-ray masks and Schreier words.
+    ) -> tuple[Iterator[FacetMaskKey], tuple[tuple[int, ...], ...]]:
+        r"""Yield exact facet keys and the ray permutations of stabilizer generators.
 
-        The perfect-domain traversal needs each facet's stabilizer witness
-        only to transform a rank-sized lattice basis. Storing a full ray
-        permutation for every facet costs O(number_of_facets * number_of_rays)
-        integers; this internal representation stores generator indices per
-        Schreier step and retains the generator permutations only once.
+        Facet keys are generated in H-presentation order. Keeping this as an
+        iterator avoids a second dictionary containing every facet before the
+        orbit traversal starts; the orbit traversal retains only its visited
+        set and the current Schreier orbit.
         """
-        # Work from the original coordinate rows throughout. Materializing
-        # ``cell.vector_configuration`` would allocate one owned lattice
-        # element per ray (49,861 on A7) only to ask for its length; the row
-        # tuples already preserve the exact ray-index convention we need.
         ray_count = len(cell.rows)
-        # The exact H-presentation can be read directly from Normaliz on large
-        # cells; do not wrap it in an owned cone merely to recover its normals.
-        covector_rows = iter(self._iter_cell_halfspace_pairing_rows(cell, tuple(cell.lattice.module_generating_set())))
-        # Bound the exact pairing temporary by entry count, not a fixed row
-        # count: configurations larger than A7 must not allocate an
-        # unbounded number of columns per block.
-        covector_block_size = _configuration_pairing_block_size(ray_count)
-        covector_block = tuple(islice(covector_rows, covector_block_size))
-        if not covector_block:
-            return {}, ()
         labels = tuple(cell.lattice.module_generating_set())
-        # Only the transposed exact ray matrix is consumed below. Build it
-        # directly from the canonical coordinate tuples instead of first
-        # materializing a 49,861-by-rank matrix and then transposing it; the
-        # latter temporarily retains both dense Sage matrices for A7.
-        ray_count = len(cell.rows)
         rank = len(cell.rows[0])
+        # Build the transposed ray matrix directly from canonical coordinate
+        # tuples, avoiding simultaneous dense R and R^T matrices.
         transposed_ray_rows = matrix(
             SageZZ, rank, ray_count, lambda i, j: cell.rows[j][i]
         )
-        all_ray_mask = (1 << ray_count) - 1
-        # Do not materialize the full |facets|-by-|rays| pairing matrix.
-        # A7's initial perfect configuration has 49,861 rays, so retaining
-        # every rational pairing alongside the exact incidence sets multiplies
-        # the already substantial cone-conversion peak. Compute small exact
-        # blocks instead, discarding each block after its original ray indices
-        # have been recorded.
-        # Keep H-presentation order while deduplicating incidences directly.
-        # A dict is both the ordered sequence of first occurrences and the
-        # exact membership oracle, avoiding a separate full list of facet
-        # references before building the unvisited set.
-        # Store visitation state as shared small integers in the dictionary
-        # values. This avoids both per-facet state lists and a second hash table
-        # for the unvisited keys; hybrid sparse tuples/dense bitsets are keys.
-        facets: dict[FacetMaskKey, int] = {}
-        while covector_block:
-            pairing_block = matrix(SageZZ, covector_block) * transposed_ray_rows
-            for offset in range(len(covector_block)):
-                # Materialize each exact pairing row once: nonzero_positions()
-                # and the sparse incident-side fallback both consume this
-                # same row, which has one entry per ray (49,861 for A7).
-                pairing_row = pairing_block.row(offset)
-                nonincident_positions = pairing_row.nonzero_positions()
-                if not nonincident_positions:
-                    raise ArithmeticError("a minimized H-presentation covector contains every extreme ray")
-                if len(nonincident_positions) == ray_count:
-                    raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
-                # Most facets have sparse complements. Retain their already
-                # enumerated nonincident positions directly, avoiding both a
-                # full 6-KiB mask and a bytearray conversion per facet. Dense
-                # complements keep the more compact arbitrary-precision key.
-                if len(nonincident_positions) <= _sparse_facet_complement_limit(ray_count):
-                    key: FacetMaskKey = (True, tuple(nonincident_positions))
-                elif ray_count - len(nonincident_positions) <= _sparse_facet_complement_limit(ray_count):
-                    incident_positions = tuple(
-                        position for position, value in enumerate(pairing_row) if not value
-                    )
-                    key = (False, incident_positions)
-                else:
-                    support_bytes = bytearray((ray_count + 7) // 8)
-                    for position in nonincident_positions:
-                        support_bytes[position >> 3] |= 1 << (position & 7)
-                    key = int.from_bytes(support_bytes, "little")
-                facets.setdefault(key, 1)
-            covector_block = tuple(islice(covector_rows, covector_block_size))
         generators = self.cell_stabilizer(cell)
-        # Use precisely these generators to form the ray action.  Calling
-        # point_permutations here repeats the stabilizer lookup and the
-        # categorical basis-action conversion for every generator.
-        # The immutable coordinate tuples are already the canonical ray keys;
-        # iterating matrix.rows() would allocate a second Sage vector object
-        # for each of the 49,861 A7 rays before building the same lookup.
         positions = {tuple(row): index for index, row in enumerate(cell.rows)}
         if len(positions) != ray_count:
             raise ArithmeticError("a perfect-cell configuration contains repeated rays")
         permutations = []
         for generator in generators:
-            action = matrix(SageZZ, [_coordinate_row(cell.lattice, generator(cell.lattice.module_generator(label)), SageZZ) for label in labels])
+            action = matrix(
+                SageZZ,
+                [
+                    _coordinate_row(
+                        cell.lattice,
+                        generator(cell.lattice.module_generator(label)),
+                        SageZZ,
+                    )
+                    for label in labels
+                ],
+            )
             try:
-                # Compute (R * action)^T as action^T * R^T, reusing the
-                # retained transpose instead of materializing R a second time.
                 image_columns = action.transpose() * transposed_ray_rows
-                permutations.append(tuple(positions[tuple(column)] for column in image_columns.columns()))
+                permutations.append(
+                    tuple(positions[tuple(column)] for column in image_columns.columns())
+                )
             except KeyError as exc:
                 raise ArithmeticError("a cell-stabilizer generator does not preserve its rays") from exc
-        return facets, tuple(permutations)
+
+        def facet_keys() -> Iterator[FacetMaskKey]:
+            covector_rows = iter(self._iter_cell_halfspace_pairing_rows(cell, labels))
+            block_size = _configuration_pairing_block_size(ray_count)
+            covector_block = tuple(islice(covector_rows, block_size))
+            while covector_block:
+                pairing_block = matrix(SageZZ, covector_block) * transposed_ray_rows
+                for offset in range(len(covector_block)):
+                    pairing_row = pairing_block.row(offset)
+                    nonincident_positions = pairing_row.nonzero_positions()
+                    if not nonincident_positions:
+                        raise ArithmeticError("a minimized H-presentation covector contains every extreme ray")
+                    if len(nonincident_positions) == ray_count:
+                        raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
+                    limit = _sparse_facet_complement_limit(ray_count)
+                    if len(nonincident_positions) <= limit:
+                        key: FacetMaskKey = (True, tuple(nonincident_positions))
+                    elif ray_count - len(nonincident_positions) <= limit:
+                        incident_positions = tuple(
+                            position for position, value in enumerate(pairing_row) if not value
+                        )
+                        key = (False, incident_positions)
+                    else:
+                        support_bytes = bytearray((ray_count + 7) // 8)
+                        for position in nonincident_positions:
+                            support_bytes[position >> 3] |= 1 << (position & 7)
+                        key = int.from_bytes(support_bytes, "little")
+                    yield key
+                covector_block = tuple(islice(covector_rows, block_size))
+
+        return facet_keys(), tuple(permutations)
 
     @staticmethod
     def _iter_facet_mask_orbits(
-        facets: dict[FacetMaskKey, int], permutations: tuple[tuple[int, ...], ...]
+        facet_keys: Iterator[FacetMaskKey], permutations: tuple[tuple[int, ...], ...]
     ) -> Iterator[tuple[tuple[FacetMaskKey, SchreierWord], ...]]:
-        """Yield one exact facet orbit at a time, marking its masks in-place."""
+        """Yield exact facet orbits with one visited set and one current orbit.
+
+        Every generator permutation comes from an exact lattice isometry
+        preserving this ray configuration, hence its image of a facet is a
+        facet. This lets the traversal use a single visited set instead of a
+        full facet-membership dictionary plus a second visitation table.
+        """
         identity_word = None
-        for start in facets:
-            if facets[start] == 0:
+        visited: set[FacetMaskKey] = set()
+        facet_count = 0
+        for start in facet_keys:
+            facet_count += 1
+            if start in visited:
                 continue
-            facets[start] = 0
+            visited.add(start)
             orbit = [(start, identity_word)]
             for facet_mask, element_word in orbit:
                 for generator_index, permutation in enumerate(permutations):
                     image_mask = _permuted_facet_key(facet_mask, permutation)
-                    if image_mask not in facets:
-                        raise ArithmeticError("a cell-stabilizer generator fails to permute the facets")
-                    if facets[image_mask] != 0:
-                        facets[image_mask] = 0
+                    if image_mask not in visited:
+                        visited.add(image_mask)
                         orbit.append((image_mask, (element_word, generator_index)))
             yield tuple(orbit)
+        if len(visited) != facet_count:
+            raise ArithmeticError(
+                "cell-stabilizer permutations generate incidences outside the H-presentation"
+            )
 
     @cached_method
     def _facet_orbit_transversal_masks(
@@ -1077,8 +1059,8 @@ class LorentzianPerfectLocalBackend:
         tuple[tuple[int, ...], ...],
     ]:
         """Materialize compact facet orbits for callers that need the full view."""
-        facets, permutations = self._facet_mask_data(cell)
-        return tuple(self._iter_facet_mask_orbits(facets, permutations)), permutations
+        facet_keys, permutations = self._facet_mask_data(cell)
+        return tuple(self._iter_facet_mask_orbits(facet_keys, permutations)), permutations
 
     def _facet_orbit_transversal_words(
         self, cell: LorentzianPerfectCell
