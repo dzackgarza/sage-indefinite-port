@@ -768,12 +768,12 @@ class LorentzianPerfectLocalBackend:
     def _iter_cell_halfspace_pairing_rows(
         self, cell: LorentzianPerfectCell, labels: tuple[int, ...]
     ) -> Iterator[tuple[int, ...]]:
-        """Yield primitive facet covectors as their exact values on lattice generators.
+        """Yield exact facet pairing rows in the scale returned by Normaliz.
 
-        The incidence computation needs the covector's pairing row, not an
-        owned dual-lattice element. For large cells, Normaliz already returns
-        those row coordinates directly; avoid constructing an owned covector
-        and then evaluating it on every lattice generator again.
+        The incidence computation only tests whether each pairing is zero;
+        primitive normalization is therefore unnecessary here. For large
+        cells, use Normaliz's integral covector coordinates directly and avoid
+        both a per-facet gcd/division pass and constructing owned dual elements.
         """
         if len(cell.rows) < 1_000:
             for covector in self.cell_cone(cell).halfspace_covectors():
@@ -797,16 +797,15 @@ class LorentzianPerfectLocalBackend:
             if isinstance(hyperplanes, list):
                 hyperplanes[index] = None
             coordinates = hyperplane[:-1]
-            content = gcd(*(abs(entry) for entry in coordinates))
-            if content == 0:
+            if all(entry == 0 for entry in coordinates):
                 del coordinates, hyperplane
                 continue
-            normalized = tuple(int(entry) // content for entry in coordinates)
-            # The generator suspends at yield, so explicitly drop the source
-            # row slice and row reference before handing the normalized tuple
-            # to blockwise pairing. Otherwise each suspension retains both.
+            # The last homogeneous coefficient is zero for this cone. Incidence
+            # depends only on zero/nonzero pairings, invariant under any nonzero
+            # rescaling, so retain Normaliz's exact integral scale unchanged.
+            pairing_row = tuple(int(entry) for entry in coordinates)
             del coordinates, hyperplane
-            yield normalized
+            yield pairing_row
 
     def _iter_cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
         """Yield exact primitive facet covectors without retaining owned copies."""

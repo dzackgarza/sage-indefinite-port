@@ -178,7 +178,9 @@ def test_normaliz_pairing_rows_match_owned_covectors() -> None:
         for covector in backend._iter_cell_halfspace_covectors(cell)
     )
     assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})
-    assert pairing_rows == owned_rows
+    assert tuple(tuple(value == 0 for value in row) for row in pairing_rows) == tuple(
+        tuple(value == 0 for value in row) for row in owned_rows
+    )
 
 
 def test_owned_large_cell_cone_releases_normaliz_engine_cache() -> None:
