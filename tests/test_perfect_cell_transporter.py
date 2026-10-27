@@ -156,6 +156,7 @@ def test_cell_faces_reuse_owned_halfspace_covectors_exactly() -> None:
     backend = LorentzianPerfectLocalBackend()
     cone = backend.cell_cone(cell)
     structure = _CellFaces(backend, cell)
+    assert structure.gram == gram
     labels = tuple(lattice_.module_generating_set())
     assert backend.point_permutations(cell, cell.vector_configuration) == backend.point_permutations_from_rows(cell, cell.rows)
 

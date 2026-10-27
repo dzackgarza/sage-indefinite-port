@@ -2028,6 +2028,7 @@ class _CellFaces:
         lattice = cell.lattice
         self.lattice = lattice
         self.labels = tuple(lattice.module_generating_set())
+        self.gram = _gram_matrix(lattice)
         # The cell already owns the exact primitive integer ray rows. Keep
         # their order directly instead of materializing 49,861 lattice
         # elements and immediately extracting the same coordinates again.
