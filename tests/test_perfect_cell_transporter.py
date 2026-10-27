@@ -146,17 +146,15 @@ def test_permuted_facet_bitsets_preserve_exact_positions() -> None:
     assert _permuted_facet_key(sparse_incident, reverse) == (
         False, tuple(sorted(ray_count - 1 - position for position in sparse_incident[1]))
     )
-    # Dense facet complements use packed bytes rather than Python big integers.
+    # For small ray universes, a bitset remains smaller even for sparse masks.
     small_key = _facet_complement_key((1 << 1) | (1 << 3), 10)
-    assert small_key == b"\x0a\x00"
+    assert isinstance(small_key, int)
 
     dense_complement = sum(1 << position for position in range(200))
     dense_key = _facet_complement_key(dense_complement, ray_count)
-    assert isinstance(dense_key, bytes)
+    assert isinstance(dense_key, int)
     dense_image = _permuted_facet_key(dense_key, reverse)
-    assert dense_image == sum(1 << (ray_count - 1 - position) for position in range(200)).to_bytes(
-        (ray_count + 7) // 8, "little"
-    )
+    assert dense_image == sum(1 << (ray_count - 1 - position) for position in range(200))
 
 
 def test_normaliz_pairing_rows_match_owned_covectors() -> None:
