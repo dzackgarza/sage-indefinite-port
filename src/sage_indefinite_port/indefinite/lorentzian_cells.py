@@ -65,7 +65,8 @@ from sage_indefinite_port.invariants import AttackProfile
 type PerfectMode = Literal["total", "isotropic"]
 type FacetIncidence = frozenset[int]
 type SchreierWord = tuple[SchreierWord, int] | None
-type FacetMaskKey = int | tuple[int, ...]
+type FacetMaskKey = int | tuple[bool, tuple[int, ...]]
+
 
 def _sparse_facet_complement_limit(ray_count: int) -> int:
     """Estimate the tuple/bitset memory crossover for this ray universe."""
@@ -76,29 +77,36 @@ def _sparse_facet_complement_limit(ray_count: int) -> int:
 
 
 def _facet_complement_key(mask: int, ray_count: int | None = None) -> FacetMaskKey:
-    """Choose a compact exact key for a sparse complement or dense bitset."""
+    """Encode a facet by whichever side of its incidence is sparse."""
     if ray_count is None:
         ray_count = max(1, mask.bit_length())
-    if mask.bit_count() <= _sparse_facet_complement_limit(ray_count):
-        return tuple(_bit_positions(mask))
+    complement_count = mask.bit_count()
+    incident_count = ray_count - complement_count
+    limit = _sparse_facet_complement_limit(ray_count)
+    if complement_count <= limit:
+        return (True, tuple(_bit_positions(mask)))
+    if incident_count <= limit:
+        incident_mask = ((1 << ray_count) - 1) ^ mask
+        return (False, tuple(_bit_positions(incident_mask)))
     return mask
 
 
 def _facet_incidence(key: FacetMaskKey, ray_count: int) -> FacetIncidence:
-    """Recover the exact incident-ray set from its nonincident-ray key."""
+    """Recover the exact incident-ray set from its compact facet key."""
     if isinstance(key, int):
         return frozenset(_bit_positions(((1 << ray_count) - 1) ^ key))
-    mask = (1 << ray_count) - 1
-    for position in key:
-        mask ^= 1 << position
-    return frozenset(_bit_positions(mask))
+    complement, positions = key
+    if complement:
+        return frozenset(range(ray_count)).difference(positions)
+    return frozenset(positions)
 
 
 def _permuted_facet_key(key: FacetMaskKey, permutation: tuple[int, ...]) -> FacetMaskKey:
     """Apply a ray permutation while preserving the sparse/dense key form."""
     if isinstance(key, int):
         return _facet_complement_key(_permuted_bitset(key, permutation), len(permutation))
-    return tuple(sorted(permutation[position] for position in key))
+    complement, positions = key
+    return complement, tuple(sorted(permutation[position] for position in positions))
 
 
 def _bit_positions(mask: int) -> Iterator[int]:
@@ -967,7 +975,12 @@ class LorentzianPerfectLocalBackend:
                 # full 6-KiB mask and a bytearray conversion per facet. Dense
                 # complements keep the more compact arbitrary-precision key.
                 if len(nonincident_positions) <= _sparse_facet_complement_limit(ray_count):
-                    key: FacetMaskKey = tuple(nonincident_positions)
+                    key: FacetMaskKey = (True, tuple(nonincident_positions))
+                elif ray_count - len(nonincident_positions) <= _sparse_facet_complement_limit(ray_count):
+                    incident_positions = tuple(
+                        position for position, value in enumerate(pairing_block.row(offset)) if not value
+                    )
+                    key = (False, incident_positions)
                 else:
                     support_bytes = bytearray((ray_count + 7) // 8)
                     for position in nonincident_positions:
