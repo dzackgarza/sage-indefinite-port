@@ -2096,6 +2096,8 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         for facet_key in by_incidence:
             if facet_key in paired_facets[id(cell)]:
                 continue
+            # Avoid expanding an integer facet key into a full frozenset of
+            # ray indices until a certificate or error message requires it.
             incidence = _facet_incidence(facet_key, ray_count)
             # Only unmatched boundary candidates require a Gram certificate.
             # Constructing the entire ray matrix duplicates the full A7
@@ -2121,7 +2123,8 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                        for i in range(len(row)) for j in range(i + 1, len(row))):
                     facet_basis.append(row)
                     break
-            basis_gram = matrix(SageQQ, facet_basis) * ambient_gram * matrix(SageQQ, facet_basis).transpose()
+            basis_matrix = matrix(SageQQ, facet_basis)
+            basis_gram = basis_matrix * ambient_gram * basis_matrix.transpose()
             if not any(basis_gram.list()):
                 continue
             raise ArithmeticError(
