@@ -1843,13 +1843,13 @@ type PerfectFormKey = tuple[
 def _perfect_form_hash_key(cell: LorentzianPerfectCell) -> PerfectFormKey:
     r"""ComputeInvariantPerfectForm (lorentzian_perfect.h:1212-1256), with two integral invariants.
 
-    The source streams the configuration's Gram pairings and keeps the
-    multiplicity of each diagonal value and of each off-diagonal value
-    b(v_i, v_j), i < j.  The pairings are streamed here in blocks of rows, so
-    no n x n matrix is formed.  The configuration's Smith invariants and the
-    contents of its vectors are further necessary conditions for an integral
-    isometry, read off the n x rank row matrix.  The exact isometry test
-    remains mandatory.
+    For moderate configurations, this uses the source's full histogram of
+    diagonal and off-diagonal Gram pairings, streamed in row blocks rather
+    than materializing an n-by-n matrix. For large configurations, the
+    off-diagonal histogram is deliberately omitted: diagonal norms, Smith
+    factors, vector contents, and divisibilities remain necessary integral-
+    isometry invariants and avoid quadratic work. This is only a traversal
+    bucket key; an exact transporter check remains mandatory on every match.
     """
     pairings = _ConfigurationPairings(cell.rows, _gram_matrix(cell.lattice))
     diagonal = Counter(int(value) for value in pairings.diagonal())
