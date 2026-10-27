@@ -1,6 +1,7 @@
-# The frozen acceptance suite, on every push. Each family file is split into
-# shards (pytest-shard) so no job nears the 6-hour hosted-runner limit; the
-# summary job collates every shard into one failure list.
+# The required acceptance sample runs on every push. The exhaustive reflective
+# corpus is long-tail coverage (TODO.md A_REFLECTIVE), so it is reserved for
+# workflow_dispatch instead of making routine pushes execute 17,526 cases.
+# The summary job collates every executed shard into one failure list.
 name: Acceptance
 on:
   push: {}
@@ -20,9 +21,12 @@ jobs:
     steps:
       - id: plan
         # family=shards; the family is tests/acceptance/test_<family>.sage.
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: |
           python3 - >> "$GITHUB_OUTPUT" <<'PY'
           import json
+          import os
           shards = {
               "perfect_domains": 8,
               "reflective": 20,
@@ -34,7 +38,21 @@ jobs:
               "boundaries": 6,
               "centralizers": 1,
           }
-          include = [{"family": f, "shard": i, "shards": n} for f, n in shards.items() for i in range(n)]
+          if os.environ["GITHUB_EVENT_NAME"] == "push":
+              # The required reflective acceptance is the frozen branch sample
+              # plus the two source-backed root-system comparisons. The full
+              # reflective file remains available on explicit dispatch.
+              include = [
+                  {"family": f, "shard": i, "shards": n, "selection": ""}
+                  for f, n in shards.items() if f != "reflective"
+                  for i in range(n)
+              ]
+              include.append({"family": "reflective", "shard": 0, "shards": 1, "selection": "branch"})
+          else:
+              include = [
+                  {"family": f, "shard": i, "shards": n, "selection": ""}
+                  for f, n in shards.items() for i in range(n)
+              ]
           print("matrix=" + json.dumps({"include": include}))
           PY
   julia:
@@ -108,7 +126,7 @@ jobs:
             /home/sage/sage/local/var/lib/sage/venv-python3.14/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
           key: ${{ needs.julia.outputs.key }}
           fail-on-cache-miss: true
-      - run: just ci-acceptance ${{ matrix.family }} ${{ matrix.shard }} ${{ matrix.shards }}
+      - run: just ci-acceptance ${{ matrix.family }} ${{ matrix.shard }} ${{ matrix.shards }} '${{ matrix.selection }}'
       - if: always()
         uses: actions/upload-artifact@v4
         with:

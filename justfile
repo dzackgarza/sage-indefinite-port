@@ -94,8 +94,9 @@ ci-julia-key:
     sage_python="$("$SAGE_BIN" -python -c 'import sys; print(sys.executable)')"
     "$sage_python" -c 'import hashlib, pathlib, sage_julia_bridge; print("julia-depot-" + hashlib.sha256((pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env" / "Project.toml").read_bytes()).hexdigest()[:16])'
 
-# CI only: run one shard of one frozen acceptance family; results land in .tmp/ci/results/<family>-<shard>.
-ci-acceptance family shard shards:
+# CI only: run one acceptance shard, or the required reflective branch sample;
+# results land in .tmp/ci/results/<family>-<shard>.
+ci-acceptance family shard shards selection="":
     #!/usr/bin/env bash
     set -euo pipefail
     out={{ci_dir}}/results/{{family}}-{{shard}}
@@ -106,6 +107,17 @@ ci-acceptance family shard shards:
     export SAGE_JULIA_COMMAND="$PWD/{{ci_dir}}/julia/bin/julia"
     # SIGINT before the job's hard limit, so pytest still writes the JUnit
     # report for every case that finished.
+    if [[ "{{selection}}" == "branch" ]]; then
+        tests=(
+            tests/acceptance/test_reflective.sage::test_edgewalk_branch_representative_sample
+            tests/acceptance/test_reflective.sage::test_vinberg_roots_match_oscars_chamber_up_to_isometry
+            tests/acceptance/test_reflective.sage::test_e10_simple_roots_match_dutour_sikiric_hulek
+        )
+        shard_args=()
+    else
+        tests=(tests/acceptance/test_{{family}}.sage)
+        shard_args=(--shard-id={{shard}} --num-shards={{shards}})
+    fi
     timeout --signal=INT 345m "$SAGE_BIN" -python -c 'import sage.all, sys, pytest; sys.exit(pytest.main(sys.argv[1:]))' \
-        -p qc_sage_session tests/acceptance/test_{{family}}.sage --runxfail -rA --tb=long --instafail \
-        --shard-id={{shard}} --num-shards={{shards}} --junitxml="$out/junit.xml" 2>&1 | tee "$out/log"
+        -p qc_sage_session "${tests[@]}" --runxfail -rA --tb=long --instafail \
+        "${shard_args[@]}" --junitxml="$out/junit.xml" 2>&1 | tee "$out/log"
