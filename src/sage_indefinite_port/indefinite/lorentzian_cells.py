@@ -1339,9 +1339,12 @@ class LorentzianPerfectLocalBackend:
     ) -> LatticeIsometryMethods | None | tuple[LatticeIsometryMethods, ...]:
         r"""An exact integral isometry transporting one entire perfect-cell configuration.
 
-        Equivalence uses the owned finite-family transporter: a labelled
-        pairing-graph isomorphism followed by integral-structure transport,
-        as in Lorentzian.g:660-696 and AutomorphismPolytope.g:288-339.
+        Moderate configurations use the owned finite-family transporter: a
+        labelled pairing-graph isomorphism followed by integral-structure
+        transport, as in Lorentzian.g:660-696 and
+        AutomorphismPolytope.g:288-339. Large configurations avoid that
+        quadratic graph and use the exact basis-image search, stopping at the
+        first fully certified witness when only one transporter is requested.
 
         For enumeration, a spanning subfamily of rank r determines an isometry uniquely from
         its r images. Enumerate all norm- and pairing-compatible target images
