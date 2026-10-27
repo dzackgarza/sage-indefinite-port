@@ -1046,15 +1046,20 @@ class LorentzianPerfectLocalBackend:
                 raise ArithmeticError("a cell-stabilizer generator does not preserve its rays") from exc
 
         def facet_keys() -> Iterator[FacetMaskKey]:
-            # Construct the transposed ray matrix only when incidence traversal
-            # starts, after all stabilizer permutations have been computed.
-            transposed_ray_rows = matrix(
-                SageZZ, rank, ray_count, lambda i, j: cell.rows[j][i]
-            )
             covector_rows = iter(self._iter_cell_halfspace_pairing_rows(cell, labels))
             block_size = _configuration_pairing_block_size(ray_count)
             sparse_limit = _sparse_facet_complement_limit(ray_count)
+            # NmzResult("SupportHyperplanes") materializes Normaliz's complete
+            # exact H-result before its first row can be consumed. Delay the
+            # dense transposed ray matrix until that result exists, so it does
+            # not add another rank-by-ray allocation to Normaliz's peak while
+            # computing the full support-hyperplane list.
             covector_block = tuple(islice(covector_rows, block_size))
+            if not covector_block:
+                return
+            transposed_ray_rows = matrix(
+                SageZZ, rank, ray_count, lambda i, j: cell.rows[j][i]
+            )
             while covector_block:
                 pairing_block = matrix(SageZZ, covector_block) * transposed_ray_rows
                 block_keys = []
