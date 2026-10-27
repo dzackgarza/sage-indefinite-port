@@ -1963,7 +1963,11 @@ class _CellFaces:
         self.labels = tuple(lattice.module_generating_set())
         self.gram = _gram_matrix(lattice)
         cone = backend.cell_cone(cell)
-        rays = tuple(cone.primitive_rays())
+        # The owned cone was generated from this exact primitive-ray
+        # configuration.  Re-enumerating its rays asks the H-presentation
+        # backend to perform another H-to-V conversion; retain the original
+        # ray order and coordinates instead.
+        rays = cell.vector_configuration
         self.rows = tuple(_coordinate_row(lattice, ray, SageZZ) for ray in rays)
         # The owned cone already retains its minimized homogeneous
         # H-presentation.  Reading `facet_covectors()` instead asks the PPL

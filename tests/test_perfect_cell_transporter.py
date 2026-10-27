@@ -147,10 +147,15 @@ def test_cell_faces_reuse_owned_halfspace_covectors_exactly() -> None:
     backend = LorentzianPerfectLocalBackend()
     cone = backend.cell_cone(cell)
     structure = _CellFaces(backend, cell)
+    labels = tuple(lattice_.module_generating_set())
 
     def coordinates(covector):
         return tuple(int(covector.to_vector()(label)) for label in lattice_.module_generating_set())
 
+    assert {tuple(int(entry) for entry in row) for row in structure.rows} == {
+        tuple(int(entry) for entry in row)
+        for row in (tuple(int(ray.to_vector()(label)) for label in labels) for ray in cone.primitive_rays())
+    }
     assert {tuple(int(entry) for entry in row) for row in structure.covectors} == {
         coordinates(covector) for covector in cone.facet_covectors()
     }
