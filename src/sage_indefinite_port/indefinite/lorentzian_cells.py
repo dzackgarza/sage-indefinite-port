@@ -1855,7 +1855,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         # retains another dense allocation proportional to the facet count.
         # Build each coordinate block directly from its owned covectors.
         ray_transpose = matrix(
-            SageQQ, len(labels), ray_count,
+            SageZZ, len(labels), ray_count,
             lambda i, j: cell.rows[j][i],
         )
         block_size = _configuration_pairing_block_size(ray_count)
