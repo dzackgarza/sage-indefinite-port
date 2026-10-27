@@ -755,18 +755,10 @@ class LorentzianPerfectLocalBackend:
         # raw support covectors rather than first materializing Sage's full
         # Polyhedron_normaliz inequality/equation objects and then converting
         # those objects back into owned covectors.
-        # The facet iterator and cone constructor share the cached owned
-        # covectors. Without this, traversal computes Normaliz's complete
-        # support-hyperplane list once for incidence and a second time for the
-        # owned cone, even though both consumers need the identical minimized
-        # H-family.
-        # Do not route this through cached ``cell_halfspace_covectors`` for
-        # large cells: that decorator retains a second complete tuple of
-        # owned covectors alongside the cone's own H-presentation. The cone
-        # below becomes their sole owner, and traversal reads it directly.
         # Request H- and equation-data from the same native cone. This avoids
-        # both a second support-hyperplane query and a dense QQ copy of all ray
-        # rows solely to recover the linear span's annihilator.
+        # a second complete support-hyperplane query and a dense QQ copy of all
+        # ray rows solely to recover the linear span's annihilator. The raw
+        # coordinate rows are converted directly to the owned covectors below.
         hyperplanes, equations = self._normaliz_cell_h_presentation(
             cell, include_equations=True
         )
