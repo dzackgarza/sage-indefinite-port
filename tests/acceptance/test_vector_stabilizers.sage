@@ -306,6 +306,16 @@ def test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks()
     plane_basis = tuple(plane_inclusion(generator) for generator in plane_inclusion.domain().module_generators())
     ambient_basis = tuple(lattice_.module_generators())
 
+    line_generators = induction.line_automorphism_generators(lattice_, first)
+    assert line_generators
+    for generator in line_generators:
+        assert generator(first) in (first, -first)
+        assert all(
+            lattice_.b(generator(left), generator(right)) == lattice_.b(left, right)
+            for left in ambient_basis
+            for right in ambient_basis
+        )
+
     for generators, preserve_line in (
         (induction.plane_automorphism_generators(plane), False),
         (induction.flag_automorphism_generators((flag_line, plane)), True),
