@@ -1886,10 +1886,13 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 if key in by_incidence:
                     raise ArithmeticError("distinct perfect-cell facets have the same extreme-ray incidence")
                 by_incidence[key] = covectors[start + offset]
+            # The last row view can keep the completed pairing block alive
+            # after its loop. Drop both before advancing to the next block.
+            del pairing_block, pairing_row, nonincident_positions
         # The final block remains bound in the function scope
         # after the loop. Release those dense temporaries before traversal
         # begins; for the A7 ray configuration, even one block is substantial.
-        del pairing_block, covector_block, ray_transpose, covectors
+        del covector_block, ray_transpose, covectors
         facet_covectors_by_incidence[id(cell)] = by_incidence
     ambient_labels = tuple(lattice.module_generating_set())
     ambient_dual = lattice.dual_module()
