@@ -287,6 +287,7 @@ def test_facet_incidence_streaming_preserves_exact_orbits() -> None:
     word_orbits, generator_permutations = backend._facet_orbit_transversal_words(cell)
     mask_orbits, mask_generators = backend._facet_orbit_transversal_masks(cell)
     all_ray_mask = (1 << len(cell.rows)) - 1
+    assert all(isinstance(orbit, list) for orbit in mask_orbits)
     assert mask_generators == generator_permutations
     assert all(isinstance(permutation, array) for permutation in mask_generators)
     assert tuple(
