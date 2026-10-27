@@ -1909,7 +1909,9 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             del pairing_block
         # Release the transposed configuration and covector slice after the
         # final incidence block, before adjacency construction begins.
-        del pairing_block, covector_block, ray_transpose, covectors
+        # ``pairing_block`` was deleted after every nonempty block above.
+        # Do not delete it again here: the final iteration leaves it unbound.
+        del covector_block, ray_transpose, covectors
         facet_covectors_by_incidence[id(cell)] = by_incidence
     ambient_labels = tuple(lattice.module_generating_set())
     ambient_dual = lattice.dual_module()
