@@ -128,6 +128,7 @@ def test_permuted_facet_bitsets_preserve_exact_positions() -> None:
         expected = sum(1 << permutation[position] for position in range(len(permutation)) if mask & (1 << position))
         image = _permuted_bitset(mask, permutation)
         assert image == expected
+        assert _permuted_bitset(mask, array("H", permutation)) == expected
         # The production facet traversal stores nonincident-ray complements;
         # a permutation must commute with complement in the fixed ray universe.
         assert _permuted_bitset(all_positions ^ mask, permutation) == all_positions ^ image
