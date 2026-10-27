@@ -760,7 +760,11 @@ class LorentzianPerfectLocalBackend:
         # support-hyperplane list once for incidence and a second time for the
         # owned cone, even though both consumers need the identical minimized
         # H-family.
-        hyperplanes = self.cell_halfspace_covectors(cell)
+        # Do not route this through cached ``cell_halfspace_covectors`` for
+        # large cells: that decorator retains a second complete tuple of
+        # owned covectors alongside the cone's own H-presentation. The cone
+        # below becomes their sole owner, and traversal reads it directly.
+        hyperplanes = tuple(self._iter_cell_halfspace_covectors(cell))
         # The equation covectors are the exact right kernel of the ray matrix.
         # Computing Normaliz's Equations property would instantiate a second
         # native cone with every ray duplicated, although the equation space is
