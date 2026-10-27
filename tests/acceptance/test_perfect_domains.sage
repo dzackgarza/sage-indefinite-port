@@ -93,6 +93,7 @@ def test_large_cell_cone_uses_exact_normaliz_h_presentation() -> None:
     small_cone = backend.cell_cone(cell)
     large_covectors = backend.cell_halfspace_covectors(large_cell)
     large_primitive_rays = backend.cell_primitive_rays(large_cell)
+    large_null_rays = backend.cell_primitive_rays(large_cell, square=0)
     labels = tuple(cell.lattice.module_generating_set())
 
     def covector_rows(cone):
@@ -126,6 +127,7 @@ def test_large_cell_cone_uses_exact_normaliz_h_presentation() -> None:
     assert large_cone.dimension() == small_cone.dimension()
     assert set(large_cone.primitive_rays()) == set(small_cone.primitive_rays())
     assert set(large_primitive_rays) == set(small_cone.primitive_rays())
+    assert set(large_null_rays) == {ray for ray in small_cone.primitive_rays() if ray.q() == 0}
     assert len(large_cone.faces(int(large_cone.dimension()) - 1)) == len(small_cone.faces(int(small_cone.dimension()) - 1))
     large_incidence = incidence_rows(large_cone, large_cell.rows)
     assert {

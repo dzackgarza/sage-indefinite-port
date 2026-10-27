@@ -653,22 +653,30 @@ class LorentzianPerfectLocalBackend:
         )
 
     @cached_method
-    def cell_primitive_rays(self, cell: LorentzianPerfectCell):
+    def cell_primitive_rays(self, cell: LorentzianPerfectCell, square: int | None = None):
         """Return exact primitive extreme rays without rebuilding PPL.
 
         Normaliz already owns the V-representation while computing the
         minimized H-presentation. Use its exact extreme rays for large cells
         rather than constructing an owned cone from the H-presentation and
         converting that presentation back to V merely to find isotropic marks.
+        If ``square`` is specified, filter in integer coordinates before
+        constructing owned lattice elements.
         """
         if len(cell.rows) < 1_000:
-            return tuple(self.cell_cone(cell).primitive_rays())
+            rays = tuple(self.cell_cone(cell).primitive_rays())
+            return rays if square is None else tuple(ray for ray in rays if int(ray.q()) == square)
         polyhedron = self._normaliz_cell_polyhedron(cell)
+        gram = _gram_matrix(cell.lattice)
         rows = (
             tuple(int(entry) for entry in _source_remove_fraction(vector(SageQQ, row)))
             for row in polyhedron.rays_list()
         )
-        return tuple(_ambient_element(cell.lattice, row) for row in rows)
+        return tuple(
+            _ambient_element(cell.lattice, row)
+            for row in rows
+            if square is None or int(vector(SageZZ, row) * gram * vector(SageZZ, row)) == square
+        )
 
     def initial_cell(self, lattice: Lattices.ParentMethods, allowed_squares: RealSet) -> LorentzianPerfectCell:
         normalized = _lorentzian_view(lattice)
@@ -1800,11 +1808,11 @@ class MarkedCellOrbitAlgorithm:
         if self._norm != 0:
             raise ValueError("timelike marks are enumerated up to the cell stabilizer, not listed per cell")
         # Null vectors of a pointed cone in one closed Lorentzian sheet
-        # lie on its null extreme rays.  The configuration need not
-        # consist of primitive generators; enumerate the primitive rays
-        # of the actual cone rather than filtering those generators.
+        # lie on its null extreme rays. The configuration need not consist
+        # of primitive generators; filter the actual cone's primitive rays
+        # by exact Gram square before constructing owned elements.
         zero = cell.lattice.base_ring().zero()
-        marks = tuple(ray for ray in self.complex().local_backend().cell_primitive_rays(cell) if ray.q() == zero)
+        marks = self.complex().local_backend().cell_primitive_rays(cell, square=int(zero))
         self._local_mark_cache[key] = marks
         return marks
 
