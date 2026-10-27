@@ -127,6 +127,29 @@ def test_coarse_large_configuration_colours_preserve_exact_stabilizer(monkeypatc
         assert set(map(tuple, matrix(ZZ, cell.rows) * transform)) == set(cell.rows)
 
 
+def test_coarse_colours_preserve_changed_configuration_transporters(monkeypatch) -> None:
+    """Coarse invariant colours cannot reject a valid nonidentity transporter."""
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    ambient = lattice(gram.rows())
+    source = LorentzianPerfectCell(ambient, ((1, 0), (0, 1)), ZERO_SQUARES)
+    target = LorentzianPerfectCell(ambient, ((-1, 0), (0, -1)), ZERO_SQUARES)
+    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
+    monkeypatch.setattr(
+        lorentzian_cells._ConfigurationPairings,
+        "blocks",
+        lambda _self: pytest.fail("coarse invariant path must not construct the quadratic pairing graph"),
+    )
+
+    transporters = LorentzianPerfectLocalBackend().cell_transporter(source, target, all_images=True)
+
+    assert len(transporters) == 2
+    for witness in transporters:
+        transform = matrix(ZZ, rows_of(witness))
+        assert abs(transform.det()) == 1
+        assert transform * gram * transform.transpose() == gram
+        assert set(map(tuple, matrix(ZZ, source.rows) * transform)) == set(target.rows)
+
+
 def test_anchor_signature_extension_appends_in_common_assignment_order() -> None:
     signatures = ((0, (10, 30)), (1, (11, 31)), (0, (12, 32)))
     column = (20, 21, 22)
