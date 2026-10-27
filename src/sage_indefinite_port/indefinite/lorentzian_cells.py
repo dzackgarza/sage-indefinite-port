@@ -735,6 +735,29 @@ class LorentzianPerfectLocalBackend:
         polyhedron = self._normaliz_cell_polyhedron(cell)
         return _cone_from_engine_polyhedron(cell.lattice, polyhedron)
 
+    def _iter_cell_halfspace_pairing_rows(
+        self, cell: LorentzianPerfectCell, labels: tuple[int, ...]
+    ) -> Iterator[tuple[int, ...]]:
+        """Yield primitive facet covectors as their exact values on lattice generators.
+
+        The incidence computation needs the covector's pairing row, not an
+        owned dual-lattice element. For large cells, Normaliz already returns
+        those row coordinates directly; avoid constructing an owned covector
+        and then evaluating it on every lattice generator again.
+        """
+        if len(cell.rows) < 1_000:
+            for covector in self.cell_cone(cell).halfspace_covectors():
+                yield tuple(int(covector(label)) for label in labels)
+            return
+        from sage.geometry.polyhedron.backend_normaliz import NmzResult
+
+        for hyperplane in NmzResult(self._normaliz_cell_cone(cell), "SupportHyperplanes"):
+            coordinates = tuple(int(entry) for entry in hyperplane[:-1])
+            content = gcd(*(abs(entry) for entry in coordinates))
+            if content == 0:
+                continue
+            yield tuple(entry // content for entry in coordinates)
+
     def _iter_cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
         """Yield exact primitive facet covectors without retaining owned copies."""
         if len(cell.rows) < 1_000:
@@ -912,7 +935,7 @@ class LorentzianPerfectLocalBackend:
 
     def _facet_mask_data(
         self, cell: LorentzianPerfectCell
-    ) -> tuple[dict[int, int], tuple[tuple[int, ...], ...]]:
+    ) -> tuple[dict[FacetMaskKey, int], tuple[tuple[int, ...], ...]]:
         r"""Facet orbits keyed by exact nonincident-ray masks and Schreier words.
 
         The perfect-domain traversal needs each facet's stabilizer witness
@@ -928,12 +951,12 @@ class LorentzianPerfectLocalBackend:
         ray_count = len(cell.rows)
         # The exact H-presentation can be read directly from Normaliz on large
         # cells; do not wrap it in an owned cone merely to recover its normals.
-        covectors = iter(self._iter_cell_halfspace_covectors(cell))
+        covector_rows = iter(self._iter_cell_halfspace_pairing_rows(cell, tuple(cell.lattice.module_generating_set())))
         # Bound the exact pairing temporary by entry count, not a fixed row
         # count: configurations larger than A7 must not allocate an
         # unbounded number of columns per block.
         covector_block_size = _configuration_pairing_block_size(ray_count)
-        covector_block = tuple(islice(covectors, covector_block_size))
+        covector_block = tuple(islice(covector_rows, covector_block_size))
         if not covector_block:
             return {}, ()
         labels = tuple(cell.lattice.module_generating_set())
@@ -955,12 +978,7 @@ class LorentzianPerfectLocalBackend:
         # for the unvisited keys; hybrid sparse tuples/dense bitsets are keys.
         facets: dict[FacetMaskKey, int] = {}
         while covector_block:
-            covector_coordinates = tuple(covector.to_vector() for covector in covector_block)
-            covector_rows = matrix(
-                SageZZ,
-                [[int(coordinates(label)) for label in labels] for coordinates in covector_coordinates],
-            )
-            pairing_block = covector_rows * transposed_ray_rows
+            pairing_block = matrix(SageZZ, covector_block) * transposed_ray_rows
             for offset in range(len(covector_block)):
                 # Sage's exact dense row support is computed by the matrix
                 # backend. Taking its complement avoids 49,861 Python-level
@@ -991,7 +1009,7 @@ class LorentzianPerfectLocalBackend:
                         support_bytes[position >> 3] |= 1 << (position & 7)
                     key = int.from_bytes(support_bytes, "little")
                 facets.setdefault(key, 1)
-            covector_block = tuple(islice(covectors, covector_block_size))
+            covector_block = tuple(islice(covector_rows, covector_block_size))
         generators = self.cell_stabilizer(cell)
         # Use precisely these generators to form the ray action.  Calling
         # point_permutations here repeats the stabilizer lookup and the

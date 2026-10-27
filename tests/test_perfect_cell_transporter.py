@@ -157,10 +157,36 @@ def test_permuted_facet_bitsets_preserve_exact_positions() -> None:
     assert dense_image == sum(1 << (ray_count - 1 - position) for position in range(200))
 
 
+def test_normaliz_pairing_rows_match_owned_covectors() -> None:
+    """The large-cell raw Normaliz path preserves owned covector evaluations."""
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+
+    class LargeInput:
+        pass
+
+    cell = LargeInput()
+    cell.lattice = lattice(gram.rows())
+    # Trigger the large-cell Normaliz path without an expensive V-to-H case:
+    # Normaliz removes these repeated input rays exactly.
+    cell.rows = ((1, 0), (0, 1)) * 500
+    backend = LorentzianPerfectLocalBackend()
+    labels = tuple(cell.lattice.module_generating_set())
+    pairing_rows = tuple(backend._iter_cell_halfspace_pairing_rows(cell, labels))
+    owned_rows = tuple(
+        tuple(int(covector(label)) for label in labels)
+        for covector in backend._iter_cell_halfspace_covectors(cell)
+    )
+    assert pairing_rows == owned_rows
+
+
 def test_facet_incidence_streaming_preserves_exact_orbits() -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
     backend = LorentzianPerfectLocalBackend()
+    labels = tuple(cell.lattice.module_generating_set())
+    covectors = tuple(backend._iter_cell_halfspace_covectors(cell))
+    pairing_rows = tuple(backend._iter_cell_halfspace_pairing_rows(cell, labels))
+    assert pairing_rows == tuple(tuple(int(covector(label)) for label in labels) for covector in covectors)
     permutation_orbits = backend.facet_orbit_permutations(cell)
     assert all(facet != frozenset(range(len(cell.rows))) for orbit in permutation_orbits for facet, _ in orbit)
     isometry_orbits = backend.facet_orbits(cell)
