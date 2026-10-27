@@ -771,9 +771,13 @@ class LorentzianPerfectLocalBackend:
         # already determined by these coordinate rows. Primitive integral
         # representatives span the same rational annihilator.
         ray_matrix = matrix(SageQQ, cell.rows)
+        # Keep equation rows in rational coordinate form here: the owned-cone
+        # constructor consumes raw coordinates through the same converter as
+        # the support covectors. Pre-converting these rows to owned covectors
+        # and then passing them through that converter attempts to interpret
+        # covector objects as coordinate scalars.
         equations = tuple(
-            _integral_covector(cell.lattice, row)
-            for row in ray_matrix.right_kernel().basis()
+            tuple(row) for row in ray_matrix.right_kernel().basis()
         )
         return _rational_polyhedral_cone(
             cell.lattice,
