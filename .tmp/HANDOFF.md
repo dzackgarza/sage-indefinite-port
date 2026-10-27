@@ -93,26 +93,20 @@ form's engine group). The same overhead multiplies the 2395-vector
 change on that conversion before rerunning either family. The case also still
 needs `_counts(group)`; no case has completed the unchanged assertion.
 
-The finite-group GAP transversal repair remains unproven for the finite-character
-route. In the pinned provider:
-
-- `categories/group/groups.py::_engine_left_coset_g_set` supplies exact GAP
-  cosets for finite engine groups and delegates complete predicate subgroups.
-- `categories/group/predicate_subgroups.py::ParentMethods.coset_space`
-  still constructs `_LeftCosetPointSet` and an owned pointed orbit through
-  `element * coset.representative()`.
-- `categories/orthogonal_quotients.py::OrthogonalCharacterQuotient` owns the
-  supplied determinant, spinor and discriminant character data.
-- `categories/group/g_sets.py::_orbit_words` and
-  `_orbit_schreier_morphism` own the orbit section and Schreier augmentation.
-
-Trace which path the Enriques intersection selects. The generic predicate
-coset path previously spent its time comparing owned cosets. Finite-group
-transversal checks alone do not prove that path repaired. If it remains the
-selected route, realize the supplied complete finite-character quotient with
-its exact finite action, while retaining ambient lifts, the word section and
-the Schreier generating morphism. Preserve the actual preimage subgroup;
-cardinality alone is insufficient.
+The same route runs on a rank-4 specimen in seconds
+(`tests/lattices/test_polarized_equivariant_lattice.sage`: `U + U`, the
+involution exchanging the summands, `h = e + u + f + v`). There
+`.tmp/research-acceptance-repair/.tmp/probe_transport_profile.py` profiles two
+conversions there: 3.75 s in `_coinvariant_discriminant_from_invariant`, 2.50 s
+of it inside `TorsionFormOrthogonalGroup.from_morphism`, and 1.07 s in the
+caller's `morphism.inverse()`. `normalization_isometry` dominates the first
+conversion only (one cached call); the marginal cost is the presentation work
+each conversion repeats: `_normalized_form_automorphism` rebuilds the engine
+matrix by lifting every generator image through the framing,
+`_presented_module_from_morphism` and `Mor.Of` build a presentation per
+morphism, and `_from_engine` transports the automorphism and its inverse into
+two more presented morphisms. Measure on this specimen; do not rerun the
+43-minute Enriques probe.
 
 The owner checks already passing on the stable provider are nonnormal S3
 cosets, the C4 preimage, the anisotropic F3 plane and the split four-dimensional
@@ -195,6 +189,12 @@ Read every completed artifact from the refreshed full run. Route each actual
 failure to the operation owner, repair it and execute its unchanged consumer.
 Keep missing/interrupted shards open. The full repair condition above remains
 a requirement even when selected mathematical examples pass.
+
+As of 2026-10-27 10:20 UTC every Acceptance run after 40339136782 is
+`cancelled`: successive pushes to `implement/lorentzian-completion` supersede
+each other, so no full suite has completed for over fourteen hours. A complete
+evidence run requires a quiet branch; read the run of the revision you cite,
+not the newest one.
 
 ## Checkout and ownership constraints
 
