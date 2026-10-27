@@ -8,6 +8,7 @@ from sage.all import ZZ, matrix, vector
 
 from sage_indefinite_port.indefinite.lorentzian_cells import (
     _CellFaces,
+    _permuted_bitset,
     LorentzianPerfectCell,
     LorentzianPerfectLocalBackend,
     NONNEGATIVE_SQUARES,
@@ -111,6 +112,13 @@ def test_empty_stable_configuration_has_empty_permutation_for_each_generator() -
     generators = backend.cell_stabilizer(cell)
 
     assert backend.point_permutations_from_rows(cell, ()) == tuple(() for _ in generators)
+
+
+def test_permuted_facet_bitsets_preserve_exact_positions() -> None:
+    permutation = (2, 0, 3, 1, 5, 4, 6, 7, 9, 8)
+    for mask in (0, 1, 1 << 9, (1 << 0) | (1 << 3) | (1 << 8) | (1 << 9), (1 << 10) - 1):
+        expected = sum(1 << permutation[position] for position in range(len(permutation)) if mask & (1 << position))
+        assert _permuted_bitset(mask, permutation) == expected
 
 
 def test_facet_incidence_streaming_preserves_exact_orbits() -> None:

@@ -913,7 +913,7 @@ class LorentzianPerfectLocalBackend:
             start_state = facet_set[start]
             if start_state[0] == 0:
                 continue
-            start_state[0] = False
+            start_state[0] = 0
             orbit = [(int(start_state[1]), identity_word)]
             for facet_mask, element_word in orbit:
                 for generator_index, permutation in enumerate(permutations):
@@ -922,7 +922,7 @@ class LorentzianPerfectLocalBackend:
                         raise ArithmeticError("a cell-stabilizer generator fails to permute the facets")
                     image_state = facet_set[image_mask]
                     if image_state[0] != 0:
-                        image_state[0] = False
+                        image_state[0] = 0
                         orbit.append((int(image_state[1]), (element_word, generator_index)))
             orbits.append(
                 tuple(
