@@ -1015,6 +1015,12 @@ class LorentzianPerfectLocalBackend:
                             support_bytes[position >> 3] |= 1 << (position & 7)
                         key = int.from_bytes(support_bytes, "little")
                     yield key
+                # Release the previous exact pairing matrix before pulling
+                # the next covector block. Otherwise the right-hand side of
+                # the next matrix multiplication is allocated while this
+                # 16-by-49,861 block is still referenced by pairing_block and
+                # its final row view.
+                del pairing_block, pairing_row, nonincident_positions
                 covector_block = tuple(islice(covector_rows, block_size))
 
         return facet_keys(), tuple(permutations)
