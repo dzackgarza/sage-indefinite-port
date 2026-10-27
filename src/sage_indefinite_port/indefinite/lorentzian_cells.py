@@ -113,10 +113,16 @@ def _facet_incidence(key: FacetMaskKey, ray_count: int) -> FacetIncidence:
 def _permuted_facet_key(key: FacetMaskKey, permutation: array | tuple[int, ...]) -> FacetMaskKey:
     """Apply a ray permutation while preserving the sparse/dense key form."""
     if isinstance(key, bytes):
-        size = len(permutation)
-        return _permuted_bitset(int.from_bytes(key, "little"), permutation).to_bytes(
-            (size + 7) // 8, "little"
-        )
+        image = bytearray(len(key))
+        for byte_index, value in enumerate(key):
+            while value:
+                least_bit = value & -value
+                position = 8 * byte_index + least_bit.bit_length() - 1
+                if position < len(permutation):
+                    target = permutation[position]
+                    image[target >> 3] |= 1 << (target & 7)
+                value ^= least_bit
+        return bytes(image)
     complement, positions = key
     return complement, tuple(sorted(permutation[position] for position in positions))
 
