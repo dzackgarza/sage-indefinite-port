@@ -864,13 +864,9 @@ class LorentzianPerfectLocalBackend:
             materialized.append(tuple((facet, permutations_by_facet[facet]) for facet, _word in orbit))
         return tuple(materialized)
 
-    @cached_method
-    def _facet_orbit_transversal_masks(
+    def _facet_mask_data(
         self, cell: LorentzianPerfectCell
-    ) -> tuple[
-        tuple[tuple[tuple[int, SchreierWord], ...], ...],
-        tuple[tuple[int, ...], ...],
-    ]:
+    ) -> tuple[dict[int, int], tuple[tuple[int, ...], ...]]:
         r"""Facet orbits keyed by exact nonincident-ray masks and Schreier words.
 
         The perfect-domain traversal needs each facet's stabilizer witness
@@ -893,7 +889,7 @@ class LorentzianPerfectLocalBackend:
         covector_block_size = _configuration_pairing_block_size(ray_count)
         covector_block = tuple(islice(covectors, covector_block_size))
         if not covector_block:
-            return (), ()
+            return {}, ()
         labels = tuple(cell.lattice.module_generating_set())
         integral_ray_rows = matrix(SageZZ, cell.rows)
         transposed_ray_rows = integral_ray_rows.transpose()
@@ -958,11 +954,13 @@ class LorentzianPerfectLocalBackend:
                 permutations.append(tuple(positions[tuple(row)] for row in (integral_ray_rows * action).rows()))
             except KeyError as exc:
                 raise ArithmeticError("a cell-stabilizer generator does not preserve its rays") from exc
-        # The dictionary is also the visitation table: values are the shared
-        # small integers 1 (unvisited) and 0 (visited), so no second hash table
-        # or per-facet mutable container is needed. Orbit queues may use an
-        # equal noncanonical integer key; dictionary membership/equality is exact.
-        orbits = []
+        return facets, tuple(permutations)
+
+    @staticmethod
+    def _iter_facet_mask_orbits(
+        facets: dict[int, int], permutations: tuple[tuple[int, ...], ...]
+    ) -> Iterator[tuple[tuple[int, SchreierWord], ...]]:
+        """Yield one exact facet orbit at a time, marking its masks in-place."""
         identity_word = None
         for start in facets:
             if facets[start] == 0:
@@ -977,8 +975,18 @@ class LorentzianPerfectLocalBackend:
                     if facets[image_mask] != 0:
                         facets[image_mask] = 0
                         orbit.append((image_mask, (element_word, generator_index)))
-            orbits.append(tuple(orbit))
-        return tuple(orbits), tuple(permutations)
+            yield tuple(orbit)
+
+    @cached_method
+    def _facet_orbit_transversal_masks(
+        self, cell: LorentzianPerfectCell
+    ) -> tuple[
+        tuple[tuple[tuple[int, SchreierWord], ...], ...],
+        tuple[tuple[int, ...], ...],
+    ]:
+        """Materialize compact facet orbits for callers that need the full view."""
+        facets, permutations = self._facet_mask_data(cell)
+        return tuple(self._iter_facet_mask_orbits(facets, permutations)), permutations
 
     def _facet_orbit_transversal_words(
         self, cell: LorentzianPerfectCell
@@ -1486,16 +1494,16 @@ class LorentzianPerfectComplex:
         )
         source = representatives[source_position]
         new_representatives: list[LorentzianPerfectCell] = []
-        source_orbits, generator_permutations = backend._facet_orbit_transversal_masks(source)
+        facet_masks, generator_permutations = backend._facet_mask_data(source)
         source_id = id(source)
-        if sum(len(orbit) for orbit in source_orbits) != len({mask for orbit in source_orbits for mask, _ in orbit}):
-            raise ArithmeticError("the cell facet-orbit decomposition contains repeated incidences")
         all_ray_mask = (1 << len(source.rows)) - 1
-        self._traversal_facet_orbits[source_id] = {
-            frozenset(_bit_positions(all_ray_mask ^ orbit[0][0])): orbit for orbit in source_orbits
-        }
+        # Side-pairing witnesses are only queried for actual adjacencies, so
+        # retain the Schreier words for those facet orbits alone. Yielding one
+        # orbit at a time avoids keeping a second full decomposition alive
+        # while neighbors are constructed; boundary-face orbits are discarded.
+        self._traversal_facet_orbits[source_id] = {}
         self._traversal_facet_generators[source_id] = generator_permutations
-        for orbit in source_orbits:
+        for orbit in backend._iter_facet_mask_orbits(facet_masks, generator_permutations):
             facet = frozenset(_bit_positions(all_ray_mask ^ orbit[0][0]))
             neighbor = backend.flip_across(source, facet)
             if neighbor is None:
@@ -1525,6 +1533,7 @@ class LorentzianPerfectComplex:
             # Recording every orbit member would replicate the same quotient
             # edge and its side pairing, with an expensive polyhedral witness
             # check for each copy.
+            self._traversal_facet_orbits[source_id][facet] = orbit
             self._traversal_adjacencies.append(LorentzianCellAdjacency(source, facet, target, transporter))
         self._traversal_processed.add(source_position)
         return tuple(new_representatives)

@@ -58,6 +58,19 @@ def test_lazy_neighbor_cones_retain_exact_transformed_rays() -> None:
         assert adjacency.target_representative().transport(adjacency.target_to_neighbor()).is_equal_to(neighbor)
 
 
+def test_traversal_retains_only_adjacency_facet_orbits() -> None:
+    """The traversal retains Schreier words only for facets with side pairings."""
+    require(PERFECT_DOMAINS)
+
+    case = next(case for case in load_lorentzian_perfect_domains() if case["id"] == "Result_Enumeration_1")
+    complex_ = perfect_complex(lattice(case["gram"]), NONNEGATIVE_SQUARES)
+    adjacencies = tuple(complex_.adjacencies())
+    assert adjacencies
+    for source_id, stored_orbits in complex_._traversal_facet_orbits.items():
+        expected_facets = {adjacency.facet for adjacency in adjacencies if id(adjacency.source) == source_id}
+        assert set(stored_orbits) == expected_facets
+
+
 def test_facet_orbit_permutation_view_materializes_exact_isometries() -> None:
     """The public owned-isometry view agrees with the internal Schreier permutations."""
     require(PERFECT_DOMAINS)
