@@ -744,9 +744,15 @@ class LorentzianPerfectLocalBackend:
         positions = {row: position for position, row in enumerate(coordinate_rows)}
         if len(positions) != len(coordinate_rows):
             raise ArithmeticError("a stable point configuration contains repeated points")
+        generators = self.cell_stabilizer(cell)
+        if not coordinate_rows:
+            # The unique action on the empty set is the empty permutation.
+            # Sage represents matrix(ZZ, ()) as 0-by-0, which cannot be
+            # multiplied by the nonempty ambient action matrix.
+            return tuple(() for _generator in generators)
         point_matrix = matrix(SageZZ, coordinate_rows)
         permutations = []
-        for generator in self.cell_stabilizer(cell):
+        for generator in generators:
             # The rows of this matrix are g(e_i). Linearity therefore gives
             # g(x) = x * action for every row of point_matrix. Evaluate the
             # categorical isometry only on the ambient basis, rather than

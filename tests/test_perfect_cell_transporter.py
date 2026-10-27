@@ -104,6 +104,15 @@ def test_anchor_signature_extension_appends_in_common_assignment_order() -> None
     )
 
 
+def test_empty_stable_configuration_has_empty_permutation_for_each_generator() -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+    generators = backend.cell_stabilizer(cell)
+
+    assert backend.point_permutations_from_rows(cell, ()) == tuple(() for _ in generators)
+
+
 def test_facet_incidence_streaming_preserves_exact_orbits() -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
