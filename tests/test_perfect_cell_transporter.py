@@ -198,6 +198,27 @@ def test_owned_large_cell_cone_releases_normaliz_engine_cache() -> None:
     assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})
 
 
+def test_large_cell_owned_cone_bypasses_normaliz_polyhedron_wrapper(monkeypatch) -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+
+    class LargeInput:
+        pass
+
+    cell = LargeInput()
+    cell.lattice = lattice(gram.rows())
+    cell.rows = ((1, 0), (0, 1)) * 5_000
+    backend = LorentzianPerfectLocalBackend()
+    monkeypatch.setattr(
+        backend,
+        "_normaliz_cell_polyhedron",
+        lambda _cell: pytest.fail("large owned-cone conversion materialized a Sage polyhedron"),
+    )
+    cone = backend.cell_cone(cell)
+    assert {tuple(ray) for ray in cone.primitive_rays()} == {(1, 0), (0, 1)}
+    assert len(cone.halfspace_covectors()) == 2
+    assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})
+
+
 def test_large_cell_ray_extraction_releases_engine_cache() -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
 
