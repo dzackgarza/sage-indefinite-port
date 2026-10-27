@@ -1966,9 +1966,10 @@ class _CellFaces:
         rays = tuple(cone.primitive_rays())
         self.rows = tuple(_coordinate_row(lattice, ray, SageZZ) for ray in rays)
         # The owned cone already retains its minimized homogeneous
-        # H-presentation.  `facet_covectors()` constructs a categorical face
-        # cone for every facet merely to recover those same normals, which
-        # repeats the expensive PPL conversion on the 49,861-ray A7 cell.
+        # H-presentation.  Reading `facet_covectors()` instead asks the PPL
+        # engine to materialize its H-representation lazily.  Reuse the exact
+        # covectors retained at owned-cone construction, avoiding that extra
+        # extraction on the 49,861-ray A7 cell.
         self.covectors = tuple(
             vector(
                 SageQQ,

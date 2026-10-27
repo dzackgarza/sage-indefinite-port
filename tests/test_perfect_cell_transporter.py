@@ -7,6 +7,7 @@ are isometric, independently of the transporter search.
 from sage.all import ZZ, matrix
 
 from sage_indefinite_port.indefinite.lorentzian_cells import (
+    _CellFaces,
     LorentzianPerfectCell,
     LorentzianPerfectLocalBackend,
     NONNEGATIVE_SQUARES,
@@ -137,3 +138,23 @@ def test_facet_incidence_streaming_preserves_exact_orbits() -> None:
             assert facet == isometry_facet
             for position, image_position in enumerate(permutation):
                 assert isometry(cell.vector_configuration[position]) == cell.vector_configuration[image_position]
+
+
+def test_cell_faces_reuse_owned_halfspace_covectors_exactly() -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    lattice_ = lattice(gram.rows())
+    cell = LorentzianPerfectCell(lattice_, ((1, 0), (0, 1)), ZERO_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+    cone = backend.cell_cone(cell)
+    structure = _CellFaces(backend, cell)
+
+    def coordinates(covector):
+        return tuple(int(covector.to_vector()(label)) for label in lattice_.module_generating_set())
+
+    assert {tuple(int(entry) for entry in row) for row in structure.covectors} == {
+        coordinates(covector) for covector in cone.facet_covectors()
+    }
+    assert structure.incidences == frozenset(
+        frozenset(index for index, row in enumerate(structure.rows) if covector.dot_product(row) == 0)
+        for covector in structure.covectors
+    )
