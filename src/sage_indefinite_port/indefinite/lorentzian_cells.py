@@ -1844,7 +1844,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     for cell in cells:
         labels = tuple(cell.lattice.module_generating_set())
         rows = matrix(SageQQ, cell.rows)
-        all_ray_positions = frozenset(range(rows.nrows()))
+        ray_count = rows.nrows()
         by_incidence = {}
         covectors = tuple(cell_cones[id(cell)].halfspace_covectors())
         # The cone's stored H-presentation already is the minimized facet
@@ -1873,14 +1873,13 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             stop = min(start + block_size, halfspace_matrix.nrows())
             pairing_block = halfspace_matrix.matrix_from_rows(range(start, stop)) * ray_transpose
             for offset in range(stop - start):
-                incidence = all_ray_positions.difference(
-                    pairing_block.row(offset).nonzero_positions()
-                )
-                if not incidence:
+                nonincident_mask = sum(1 << position for position in pairing_block.row(offset).nonzero_positions())
+                if nonincident_mask == (1 << ray_count) - 1:
                     raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
-                if incidence in by_incidence:
+                key = _facet_complement_key(nonincident_mask, ray_count)
+                if key in by_incidence:
                     raise ArithmeticError("distinct perfect-cell facets have the same extreme-ray incidence")
-                by_incidence[incidence] = covectors[start + offset]
+                by_incidence[key] = covectors[start + offset]
         # The final block and its last row remain bound in the function scope
         # after the loop. Release those dense temporaries before traversal
         # begins; for the A7 ray configuration, even one block is substantial.
@@ -2020,8 +2019,13 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 return neighbor
             # The Schreier orbit records the exact source facet incidence;
             # its cached supporting covector cuts out that face.
+            source_ray_count = len(adjacency.source.rows)
+            incident_mask = sum(1 << position for position in incident)
+            facet_key = _facet_complement_key(
+                ((1 << source_ray_count) - 1) ^ incident_mask, source_ray_count
+            )
             try:
-                facet_normal = facet_covectors_by_incidence[id(adjacency.source)][incident]
+                facet_normal = facet_covectors_by_incidence[id(adjacency.source)][facet_key]
             except KeyError as exc:
                 raise ArithmeticError("a Schreier facet has no defining covector in its source cone") from exc
             facet_normal_row = vector(
@@ -2064,7 +2068,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                     common_face_factory=common_face_factory,
                 )
             )
-            paired_facets[id(adjacency.source)].add(incident)
+            paired_facets[id(adjacency.source)].add(facet_key)
     cones_by_position = tuple(cell_cones[id(cell)] for cell in cells)
     # The index set is the actual cone objects, but their source cells are
     # already known by identity. Searching the cone family with ``index``
@@ -2084,9 +2088,11 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
     for cell in cells:
         by_incidence = facet_covectors_by_incidence[id(cell)]
         rows = matrix(SageQQ, cell.rows)
-        for incidence in by_incidence:
-            if incidence in paired_facets[id(cell)]:
+        ray_count = len(cell.rows)
+        for facet_key in by_incidence:
+            if facet_key in paired_facets[id(cell)]:
                 continue
+            incidence = _facet_incidence(facet_key, ray_count)
             facet_rows = rows.matrix_from_rows(sorted(incidence))
             pairings = facet_rows * ambient_gram * facet_rows.transpose()
             if not any(pairings.list()):
