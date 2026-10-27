@@ -1860,6 +1860,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         block_size = _configuration_pairing_block_size(ray_count)
         ray_transpose = None
         pairing_block = None
+        covector_block = None
         all_nonincident_mask = (1 << ray_count) - 1
         for start in range(0, len(covectors), block_size):
             stop = min(start + block_size, len(covectors))
