@@ -2044,18 +2044,18 @@ class _CellFaces:
         # instead of doing rational arithmetic for a zero/nonzero test.
         ray_matrix = matrix(SageZZ, self.rows)
         ray_transpose = ray_matrix.transpose()
-        covector_rows = tuple(
-            tuple(_rational(self.covectors[row][column]) for column in range(len(self.labels)))
-            for row in range(len(self.covectors))
-        )
-        if any(entry.denominator() != 1 for row in covector_rows for entry in row):
-            raise ArithmeticError("primitive integral facet covectors must have integral lattice coordinates")
-        covector_matrix = matrix(
-            SageZZ,
-            len(self.covectors),
-            len(self.labels),
-            lambda row, column: int(covector_rows[row][column]),
-        )
+        covector_rows = []
+        for covector in self.covectors:
+            row = []
+            for coordinate in covector:
+                entry = _rational(coordinate)
+                if entry.denominator() != 1:
+                    raise ArithmeticError(
+                        "primitive integral facet covectors must have integral lattice coordinates"
+                    )
+                row.append(int(entry))
+            covector_rows.append(row)
+        covector_matrix = matrix(SageZZ, covector_rows)
         all_ray_positions = frozenset(range(len(self.rows)))
         block_size = _configuration_pairing_block_size(len(self.rows))
         incidences = []
