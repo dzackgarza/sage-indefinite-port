@@ -1866,6 +1866,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # Release the previous block before constructing the next one;
             # otherwise Python retains both dense products at the peak.
             pairing_block = None
+            covector_block = None
             covector_block = covectors[start:stop]
             halfspace_block = matrix(
                 SageQQ,
