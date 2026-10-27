@@ -751,8 +751,16 @@ class LorentzianPerfectLocalBackend:
             return
         from sage.geometry.polyhedron.backend_normaliz import NmzResult
 
-        for hyperplane in NmzResult(self._normaliz_cell_cone(cell), "SupportHyperplanes"):
+        # NmzResult returns the entire support-hyperplane list. Release each
+        # converted row immediately instead of keeping all nested Python lists
+        # alive until the iterator is exhausted; this preserves Normaliz order
+        # while reducing the post-conversion peak during blockwise pairing.
+        hyperplanes = NmzResult(self._normaliz_cell_cone(cell), "SupportHyperplanes")
+        if not isinstance(hyperplanes, list):
+            hyperplanes = list(hyperplanes)
+        for index, hyperplane in enumerate(hyperplanes):
             coordinates = tuple(int(entry) for entry in hyperplane[:-1])
+            hyperplanes[index] = None
             content = gcd(*(abs(entry) for entry in coordinates))
             if content == 0:
                 continue
@@ -771,8 +779,12 @@ class LorentzianPerfectLocalBackend:
         # pairing and can dominate memory when the H-presentation is large.
         # Normaliz encodes each support hyperplane as [A_1, ..., A_n, b]; for
         # this homogeneous cone b=0, and Sage's Inequality.A() is exactly A.
-        for hyperplane in NmzResult(self._normaliz_cell_cone(cell), "SupportHyperplanes"):
-            coordinates = hyperplane[:-1]
+        hyperplanes = NmzResult(self._normaliz_cell_cone(cell), "SupportHyperplanes")
+        if not isinstance(hyperplanes, list):
+            hyperplanes = list(hyperplanes)
+        for index, hyperplane in enumerate(hyperplanes):
+            coordinates = tuple(hyperplane[:-1])
+            hyperplanes[index] = None
             if all(entry == 0 for entry in coordinates):
                 continue
             yield _integral_covector(cell.lattice, coordinates)
