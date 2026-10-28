@@ -892,24 +892,26 @@ class LorentzianPerfectLocalBackend:
         # Its homogeneous-polyhedron interface appends a constant coordinate
         # to each H-row and includes the tautological inequality 1 >= 0.
         normaliz_cone = self._normaliz_cell_cone(cell)
-        hyperplanes = NmzResult(normaliz_cone, "SupportHyperplanes")
-        equations = NmzResult(normaliz_cone, "Equations") if include_equations else ()
-        for rows in (hyperplanes, equations):
-            if isinstance(rows, list):
-                write = 0
-                for row in rows:
-                    coordinates = tuple(int(entry) for entry in row[:-1])
-                    if any(coordinates):
-                        rows[write] = coordinates
-                        write += 1
-                del rows[write:]
-            else:
-                for row in rows:
-                    coordinates = tuple(int(entry) for entry in row[:-1])
-                    if any(coordinates):
-                        raise ArithmeticError("Normaliz H-data must be mutable lists for in-place coordinate reduction")
-        self._release_normaliz_cell_cone(cell, normaliz_cone)
-        del normaliz_cone
+        try:
+            hyperplanes = NmzResult(normaliz_cone, "SupportHyperplanes")
+            equations = NmzResult(normaliz_cone, "Equations") if include_equations else ()
+            for rows in (hyperplanes, equations):
+                if isinstance(rows, list):
+                    write = 0
+                    for row in rows:
+                        coordinates = tuple(int(entry) for entry in row[:-1])
+                        if any(coordinates):
+                            rows[write] = coordinates
+                            write += 1
+                    del rows[write:]
+                else:
+                    for row in rows:
+                        coordinates = tuple(int(entry) for entry in row[:-1])
+                        if any(coordinates):
+                            raise ArithmeticError("Normaliz H-data must be mutable lists for in-place coordinate reduction")
+        finally:
+            self._release_normaliz_cell_cone(cell, normaliz_cone)
+            del normaliz_cone
         return hyperplanes, equations
 
     def _iter_normaliz_owned_covectors(self, cell: LorentzianPerfectCell, rows):
