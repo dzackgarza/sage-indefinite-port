@@ -2881,6 +2881,13 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # The full incidence set is only needed on the error path.
             if isinstance(facet_key, int):
                 incident_positions = _bit_positions(all_positions_mask ^ facet_key)
+            elif isinstance(facet_key[1], int):
+                incident_mask = (
+                    all_positions_mask ^ facet_key[1]
+                    if facet_key[0]
+                    else facet_key[1]
+                )
+                incident_positions = _bit_positions(incident_mask)
             elif facet_key[0]:
                 excluded = set(facet_key[1])
                 incident_positions = (position for position in range(ray_count) if position not in excluded)
