@@ -784,10 +784,9 @@ class LorentzianPerfectLocalBackend:
         hyperplanes, equations = self._normaliz_cell_h_presentation(
             cell, include_equations=True
         )
-        hyperplanes = tuple(self._iter_normaliz_owned_covectors(cell, hyperplanes))
         return _rational_polyhedral_cone(
             cell.lattice,
-            hyperplanes,
+            self._iter_normaliz_owned_covectors(cell, hyperplanes),
             equation_covectors=self._iter_normaliz_owned_covectors(cell, equations),
         )
 
