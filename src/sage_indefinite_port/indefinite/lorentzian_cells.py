@@ -1379,6 +1379,7 @@ class LorentzianPerfectLocalBackend:
         doubles as visitation state rather than allocating a second table.
         """
         identity_word = None
+        missing_key = object()
         # The raw-H path already owns a canonical-key dictionary. Use its
         # values as visitation marks instead of allocating a second full set
         # of references to every (potentially multi-kilobyte) facet key.
@@ -1411,11 +1412,11 @@ class LorentzianPerfectLocalBackend:
                     for permutation in permutations:
                         image_mask = _permuted_facet_key(facet_mask, permutation)
                         if canonical_keys is not None:
-                            if image_mask not in canonical_keys:
+                            canonical_image = canonical_keys.get(image_mask, missing_key)
+                            if canonical_image is missing_key:
                                 raise ArithmeticError(
                                     "a cell-stabilizer generator sends a facet outside the exact H-presentation"
                                 )
-                            canonical_image = canonical_keys.get(image_mask)
                             if canonical_image is None:
                                 continue
                             image_mask = canonical_image
@@ -1436,11 +1437,11 @@ class LorentzianPerfectLocalBackend:
                 for generator_index, permutation in enumerate(permutations):
                     image_mask = _permuted_facet_key(facet_mask, permutation)
                     if canonical_keys is not None:
-                        if image_mask not in canonical_keys:
+                        canonical_image = canonical_keys.get(image_mask, missing_key)
+                        if canonical_image is missing_key:
                             raise ArithmeticError(
                                 "a cell-stabilizer generator sends a facet outside the exact H-presentation"
                             )
-                        canonical_image = canonical_keys.get(image_mask)
                         if canonical_image is None:
                             continue
                         image_mask = canonical_image
