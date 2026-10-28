@@ -175,6 +175,14 @@ def test_coarse_large_configuration_colours_preserve_exact_stabilizer(monkeypatc
         "blocks",
         lambda _self: pytest.fail("coarse invariant path must not construct the quadratic pairing graph"),
     )
+    original_counter = lorentzian_cells.Counter
+
+    def reject_row_multiset_counter(iterable=(), *args, **kwargs):
+        if iterable is cell.rows or hasattr(iterable, "gi_code"):
+            pytest.fail("large stabilizer certification must use its exact row-position map")
+        return original_counter(iterable, *args, **kwargs)
+
+    monkeypatch.setattr(lorentzian_cells, "Counter", reject_row_multiset_counter)
 
     transporters = LorentzianPerfectLocalBackend().cell_transporter(
         cell, cell, all_images=True, generators_only=True
