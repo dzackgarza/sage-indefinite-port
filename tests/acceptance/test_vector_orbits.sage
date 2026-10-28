@@ -85,11 +85,16 @@ def test_anisotropic_binary_vector_classes_use_primitive_embeddings() -> None:
     for square in (2, -3):
         classes = vector_classes(binary, square)
         assert classes
+        category = pointed_category(square)
+        witnesses = []
         for marked in classes:
             generators = tuple(marked.arrow()(g) for g in marked.arrow().domain().module_generators())
             assert len(generators) == 1
-            assert generators[0].q() == square
-            assert generators[0].content() == 1
+            witness, = generators
+            assert witness.q() == square
+            assert witness.content() == 1
+            assert all(not are_isomorphic(category, marked, previous) for previous in witnesses)
+            witnesses.append(marked)
 
 
 def _k3_gram() -> list[list[int]]:
