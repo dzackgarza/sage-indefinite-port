@@ -845,16 +845,14 @@ class LorentzianPerfectLocalBackend:
         """Yield the owned cone's exact primitive facet covectors."""
         yield from self.cell_cone(cell).halfspace_covectors()
 
-    @cached_method
     def cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
         """Return the exact primitive homogeneous facet covectors of ``cell``.
 
-        The public tuple API is retained for callers needing repeated random
-        access. The facet-orbit traversal consumes the iterator directly, so
-        it does not cache a second full tuple of owned covectors on top of
-        Normaliz's already-materialized exact H-presentation.
+        The owned cone already stores this exact tuple. Return it directly
+        rather than constructing and caching a second tuple with a duplicate
+        pointer array for large facet families.
         """
-        return tuple(self._iter_cell_halfspace_covectors(cell))
+        return self.cell_cone(cell).halfspace_covectors()
 
     @cached_method
     def cell_primitive_rays(self, cell: LorentzianPerfectCell, square: int | None = None):

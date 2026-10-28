@@ -531,6 +531,7 @@ def test_cell_faces_reuse_owned_halfspace_covectors_exactly() -> None:
     cell = LorentzianPerfectCell(lattice_, ((1, 0), (0, 1)), ZERO_SQUARES)
     backend = LorentzianPerfectLocalBackend()
     cone = backend.cell_cone(cell)
+    assert backend.cell_halfspace_covectors(cell) is cone.halfspace_covectors()
     structure = _CellFaces(backend, cell)
     assert structure.gram == gram
     labels = tuple(lattice_.module_generating_set())
