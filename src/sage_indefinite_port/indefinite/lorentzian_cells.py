@@ -822,8 +822,8 @@ class LorentzianPerfectLocalBackend:
 
         The incidence computation only tests whether each pairing is zero;
         primitive normalization is therefore unnecessary here. For large
-        cells, use Normaliz's integral covector coordinates directly and avoid
-        both a per-facet gcd/division pass and constructing owned dual elements.
+        cells, reuse the owned cone's exact minimized H-family rather than
+        materializing a second complete Normaliz support-hyperplane list.
         """
         if len(cell.rows) >= 1_000:
             # The traversal's first nonboundary facet requires cell_cone for
