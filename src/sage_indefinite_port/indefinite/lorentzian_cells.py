@@ -1249,15 +1249,11 @@ class LorentzianPerfectLocalBackend:
             # the consumer clear those key slots as it visits
             # them. This keeps the full H-result out of the long traversal
             # phase without materializing the dense pairing graph.
-            keys: list[FacetMaskKey | None] = list(facet_keys())
+            keys = deque(facet_keys())
 
             def consume_keys() -> Iterator[FacetMaskKey]:
-                for index in range(len(keys)):
-                    key = keys[index]
-                    keys[index] = None
-                    if key is None:
-                        raise ArithmeticError("a compact facet key was consumed more than once")
-                    yield key
+                while keys:
+                    yield keys.popleft()
 
             return consume_keys(), tuple(permutations)
         return facet_keys(), tuple(permutations)
