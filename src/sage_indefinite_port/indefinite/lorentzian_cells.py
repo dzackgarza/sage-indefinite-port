@@ -1705,7 +1705,10 @@ class LorentzianPerfectLocalBackend:
         if vector(SageQQ, base_normal[1:]).dot_product(outside) <= 0:
             base_normal = -base_normal
         base_normal = _source_remove_fraction(base_normal)
-        critical = tuple(vectors[position] for position in facet_positions)
+        # Lorentzian.g:1227 applies GAP Set to the incident configuration.
+        # The kernel receives a duplicate-free, lexicographically ordered set,
+        # not the original facet incidence ordering.
+        critical = tuple(sorted({vectors[position] for position in facet_positions}))
         flipped, _normal, _direction, _max_scal = _kernel_flipping(
             normalized, critical, base_normal, normal_direction, cell.allowed_squares
         )

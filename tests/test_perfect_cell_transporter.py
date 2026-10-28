@@ -1142,6 +1142,6 @@ def test_facet_flip_uses_pinned_gap_normals(monkeypatch) -> None:
         pinned_direction = -pinned_direction
     if vector(QQ, pinned_base[1:]).dot_product(outside) <= 0:
         pinned_base = -pinned_base
-    assert critical == rows[:2]
+    assert critical == tuple(sorted(rows[:2]))
     assert direction == lorentzian_cells._source_remove_fraction(vector(QQ, [0, *pinned_direction]))
     assert base == lorentzian_cells._source_remove_fraction(pinned_base)
