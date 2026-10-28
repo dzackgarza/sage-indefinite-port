@@ -3468,10 +3468,9 @@ class _CellFaces:
         # their order directly instead of materializing 49,861 lattice
         # elements and immediately extracting the same coordinates again.
         self.rows = tuple(vector(SageZZ, row) for row in cell.rows)
-        # The traversal/complex collector already owns this cell's cone.
-        # Consume its exact H-family directly into the dense coordinate matrix
-        # below; retaining a tuple of owned covector elements alongside that
-        # matrix duplicates one Python object and coordinate vector per facet.
+        # Consume the exact H-family without forcing construction of an owned
+        # cone for large configurations. The iterator uses Normaliz's native
+        # support covectors in that case; smaller cells reuse the owned cone.
         interior = sum(self.rows, vector(SageZZ, [0] * len(self.labels)))
         # Compute exact facet-to-ray incidences in bounded matrix blocks.
         # The scalar Python loop performs one exact dot product per ray and
@@ -3486,7 +3485,7 @@ class _CellFaces:
         ray_transpose = ray_matrix.transpose()
         del ray_matrix
         covector_rows = []
-        for owned_covector in backend.cell_cone(cell).halfspace_covectors():
+        for owned_covector in backend._iter_cell_halfspace_covectors(cell):
             row = []
             for label in self.labels:
                 entry = _rational(owned_covector.to_vector()(label))
