@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, deque
 from array import array
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
@@ -1224,12 +1224,10 @@ class LorentzianPerfectLocalBackend:
                 # finish the exact orbit using a queue of keys alone: retaining
                 # a Schreier word per facet is needed by the full-domain API,
                 # but redundant for O(L) generators.
-                pending = [start]
+                pending = deque([start])
                 yield [(start, identity_word)]
-                cursor = 0
-                while cursor < len(pending):
-                    facet_mask = pending[cursor]
-                    cursor += 1
+                while pending:
+                    facet_mask = pending.popleft()
                     for permutation in permutations:
                         image_mask = _permuted_facet_key(facet_mask, permutation)
                         if image_mask not in visited:
