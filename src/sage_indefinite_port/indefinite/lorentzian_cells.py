@@ -885,13 +885,30 @@ class LorentzianPerfectLocalBackend:
 
     def _normaliz_cell_h_presentation(self, cell: LorentzianPerfectCell, *, include_equations: bool):
         """Extract exact H-data directly in the cone's linear coordinates."""
-        from sage.geometry.polyhedron.backend_normaliz import NmzCone, NmzResult
+        from sage.geometry.polyhedron.backend_normaliz import NmzResult
 
-        # Cone generators avoid the affine origin vertex and homogenizing
-        # coordinate required by Polyhedron_normaliz, including its tautology.
-        normaliz_cone = NmzCone(cone=cell.rows, subspace=())
+        # Reuse the native cone already constructed for this cell instead of
+        # constructing a second Normaliz cone from the same ray configuration.
+        # Its homogeneous-polyhedron interface appends a constant coordinate
+        # to each H-row and includes the tautological inequality 1 >= 0.
+        normaliz_cone = self._normaliz_cell_cone(cell)
         hyperplanes = NmzResult(normaliz_cone, "SupportHyperplanes")
         equations = NmzResult(normaliz_cone, "Equations") if include_equations else ()
+        for rows in (hyperplanes, equations):
+            if isinstance(rows, list):
+                write = 0
+                for row in rows:
+                    coordinates = tuple(int(entry) for entry in row[:-1])
+                    if any(coordinates):
+                        rows[write] = coordinates
+                        write += 1
+                del rows[write:]
+            else:
+                for row in rows:
+                    coordinates = tuple(int(entry) for entry in row[:-1])
+                    if any(coordinates):
+                        raise ArithmeticError("Normaliz H-data must be mutable lists for in-place coordinate reduction")
+        self._release_normaliz_cell_cone(cell, normaliz_cone)
         del normaliz_cone
         return hyperplanes, equations
 
