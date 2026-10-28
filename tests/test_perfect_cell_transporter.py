@@ -457,9 +457,19 @@ def test_group_only_facet_keys_do_not_construct_owned_cone(monkeypatch) -> None:
         "cell_cone",
         lambda _cell: pytest.fail("group-only facet enumeration must consume raw Normaliz H-rows"),
     )
+    original_h_presentation = backend._normaliz_cell_h_presentation
+    raw_h_rows = []
+
+    def record_h_rows(_cell, *, include_equations):
+        hyperplanes, equations = original_h_presentation(_cell, include_equations=include_equations)
+        raw_h_rows.append(hyperplanes)
+        return hyperplanes, equations
+
+    monkeypatch.setattr(backend, "_normaliz_cell_h_presentation", record_h_rows)
 
     facet_keys, _permutations = backend._facet_mask_data(cell, use_owned_cone=False)
 
+    assert raw_h_rows and all(row is None for row in raw_h_rows[0])
     assert set(facet_keys) == {1, 2}
 
 

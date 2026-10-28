@@ -1228,6 +1228,26 @@ class LorentzianPerfectLocalBackend:
                 del block_keys
                 covector_block = tuple(islice(covector_rows, block_size))
 
+        if not use_owned_cone:
+            # Normaliz's Python API returns its complete support-hyperplane
+            # family as a list. If that list remains inside the facet-key
+            # generator while the quotient traversal runs, all not-yet-read
+            # H-rows overlap with the growing visited-facet set and Schreier
+            # orbit queue. Drain it now into the much smaller exact incidence
+            # keys, then let the consumer clear those key slots as it visits
+            # them. This keeps the full H-result out of the long traversal
+            # phase without materializing the dense pairing graph.
+            keys: list[FacetMaskKey | None] = list(facet_keys())
+
+            def consume_keys() -> Iterator[FacetMaskKey]:
+                for index in range(len(keys)):
+                    key = keys[index]
+                    keys[index] = None
+                    if key is None:
+                        raise ArithmeticError("a compact facet key was consumed more than once")
+                    yield key
+
+            return consume_keys(), tuple(permutations)
         return facet_keys(), tuple(permutations)
 
     @staticmethod
