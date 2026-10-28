@@ -1774,6 +1774,12 @@ class LorentzianPerfectLocalBackend:
         # assignment before the O(n * rank) row-membership pass.
         source_submodule_invariants = {}
         target_submodule_invariants = {}
+        # Source subsets come from a fixed rank-sized basis, but target
+        # subsets range over the entire 49,861-row configuration. Bound both
+        # caches: the target search can visit arbitrarily many distinct
+        # subsets before finding a witness, and an unbounded dictionary would
+        # retain every failed branch's tuple keys and Smith factors.
+        submodule_cache_limit = max(64, min(8_192, 250_000 // max(1, rank)))
         # Smith data depend on the selected row subset, not its order.
         # Cache proper partial spans; full-rank leaves instead receive
         # the complete integral transporter certificate.
@@ -1990,8 +1996,12 @@ class LorentzianPerfectLocalBackend:
                     continue
                 if selected not in source_submodule_invariants:
                     source_submodule_invariants[selected] = tuple(source_rows.matrix_from_rows(selected).elementary_divisors())
+                    if len(source_submodule_invariants) > submodule_cache_limit:
+                        source_submodule_invariants.pop(next(iter(source_submodule_invariants)))
                 if target_selected not in target_submodule_invariants:
                     target_submodule_invariants[target_selected] = tuple(target_partial.elementary_divisors())
+                    if len(target_submodule_invariants) > submodule_cache_limit:
+                        target_submodule_invariants.pop(next(iter(target_submodule_invariants)))
                 if source_submodule_invariants[selected] == target_submodule_invariants[target_selected]:
                     # Extend exact per-row signatures only after the cheaper
                     # rank and Smith obstructions have passed. The shared
