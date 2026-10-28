@@ -1109,22 +1109,36 @@ class LorentzianPerfectLocalBackend:
                 block_keys = []
                 for offset in range(len(covector_block)):
                     pairing_row = pairing_block.row(offset)
-                    nonincident_positions = pairing_row.nonzero_positions()
-                    if not nonincident_positions:
+                    nonincident_positions: list[int] = []
+                    incident_positions: list[int] = []
+                    nonincident_count = 0
+                    incident_count = 0
+                    for position, value in enumerate(pairing_row):
+                        if value:
+                            nonincident_count += 1
+                            if nonincident_count <= sparse_limit:
+                                nonincident_positions.append(position)
+                            elif nonincident_count == sparse_limit + 1:
+                                nonincident_positions.clear()
+                        else:
+                            incident_count += 1
+                            if incident_count <= sparse_limit:
+                                incident_positions.append(position)
+                            elif incident_count == sparse_limit + 1:
+                                incident_positions.clear()
+                    if nonincident_count == 0:
                         raise ArithmeticError("a minimized H-presentation covector contains every extreme ray")
-                    if len(nonincident_positions) == ray_count:
+                    if incident_count == 0:
                         raise ArithmeticError("a minimized H-presentation covector has no incident extreme rays")
-                    if len(nonincident_positions) <= sparse_limit:
+                    if nonincident_count <= sparse_limit:
                         key: FacetMaskKey = (True, tuple(nonincident_positions))
-                    elif ray_count - len(nonincident_positions) <= sparse_limit:
-                        incident_positions = tuple(
-                            position for position, value in enumerate(pairing_row) if not value
-                        )
-                        key = (False, incident_positions)
+                    elif incident_count <= sparse_limit:
+                        key = (False, tuple(incident_positions))
                     else:
                         support_bytes = bytearray((ray_count + 7) // 8)
-                        for position in nonincident_positions:
-                            support_bytes[position >> 3] |= 1 << (position & 7)
+                        for position, value in enumerate(pairing_row):
+                            if value:
+                                support_bytes[position >> 3] |= 1 << (position & 7)
                         key = int.from_bytes(support_bytes, "little")
                     block_keys.append(key)
                 # Detach the block's compact keys before yielding any of them.
