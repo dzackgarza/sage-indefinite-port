@@ -1252,9 +1252,12 @@ class LorentzianPerfectLocalBackend:
             # orbit queue. Drain it now into exact incidence keys, then let
             # the consumer clear those key slots as it visits
             # them. This keeps the full H-result out of the long traversal
-            # phase without materializing the dense pairing graph.
+            # phase without materializing the dense pairing graph. Canonical
+            # key objects are shared with the orbit's visited set: dense
+            # integer bitsets can be several kilobytes each, so retaining a
+            # second equal object for every permuted facet is prohibitive.
             canonical_keys: dict[FacetMaskKey, FacetMaskKey] = {}
-            keys = deque()
+            keys: deque[FacetMaskKey] = deque()
             for key in facet_keys():
                 canonical = canonical_keys.setdefault(key, key)
                 keys.append(canonical)
