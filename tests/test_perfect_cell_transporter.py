@@ -460,8 +460,14 @@ def test_facet_incidence_streaming_preserves_exact_orbits() -> None:
     pairing_rows = tuple(backend._iter_cell_halfspace_pairing_rows(cell, labels))
     assert pairing_rows == tuple(tuple(int(covector(label)) for label in labels) for covector in covectors)
     permutation_orbits = backend.facet_orbit_permutations(cell)
+    permutation_orbits_again = backend.facet_orbit_permutations(cell)
+    assert permutation_orbits_again == permutation_orbits
+    assert permutation_orbits_again is not permutation_orbits
     assert all(facet != frozenset(range(len(cell.rows))) for orbit in permutation_orbits for facet, _ in orbit)
     isometry_orbits = backend.facet_orbits(cell)
+    isometry_orbits_again = backend.facet_orbits(cell)
+    assert isometry_orbits_again == isometry_orbits
+    assert isometry_orbits_again is not isometry_orbits
     word_orbits, generator_permutations = backend._facet_orbit_transversal_words(cell)
     mask_orbit_iterator, mask_generators = backend._facet_orbit_transversal_masks(cell)
     mask_orbits = tuple(mask_orbit_iterator)
