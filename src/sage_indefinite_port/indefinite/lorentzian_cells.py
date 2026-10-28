@@ -1352,7 +1352,6 @@ class LorentzianPerfectLocalBackend:
             return cached[1]
         rows = matrix(SageZZ, cell.rows)
         pairings = _ConfigurationPairings(rows, _gram_matrix(cell.lattice), cache_columns=True)
-        norms = pairings.diagonal()
         if len(cell.rows) > _PAIRING_GRAPH_REFINEMENT_LIMIT:
             # The complete pairing-spectrum colour requires n(n-1)/2
             # pairings, while coordinate-content and divisibility colours add
@@ -1360,8 +1359,13 @@ class LorentzianPerfectLocalBackend:
             # alone as the vertex colour. This only enlarges search fibres:
             # exact anchor pairings and the complete row multiset remain
             # mandatory before any transporter is accepted.
-            spectra = tuple((int(norms[index]),) for index in range(len(cell.rows)))
+            spectra = tuple(
+                (int(norm),)
+                for block in pairings.diagonal_blocks()
+                for norm in block
+            )
         else:
+            norms = pairings.diagonal()
             spectra = []
             for start, block in pairings.blocks():
                 for offset, row in enumerate(block):
