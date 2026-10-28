@@ -557,7 +557,11 @@ def test_cell_faces_reuse_owned_halfspace_covectors_exactly() -> None:
         for covector in backend.cell_halfspace_covectors(cell)
     } == {coordinates(covector) for covector in cone.halfspace_covectors()}
     assert structure.incidences == frozenset(
-        frozenset(index for index, row in enumerate(structure.rows) if covector.dot_product(row) == 0)
+        frozenset(
+            index
+            for index, row in enumerate(structure.rows)
+            if sum(a * b for a, b in zip(covector, row, strict=True)) == 0
+        )
         for covector in structure._covector_matrix.rows()
     )
     interior_mark = structure.mark(vector(ZZ, (1, 1)))
