@@ -1755,12 +1755,12 @@ class LorentzianPerfectLocalBackend:
             row_sum_covector = gram * row_sum.column()
             row_sum_pairings = rows * row_sum_covector
             # The complete pairing-spectrum colour requires n(n-1)/2
-            # pairings. Coordinate content and Gram-covector divisibility are
-            # inexpensive exact integral-isometry invariants: on the frozen
-            # 49,861-row A7 configuration, their two 10-coordinate gcd passes
-            # take under half a second and the covector divisibility separates
-            # the nonprimitive pairings. Retain these colours rather than
-            # collapsing the entire search to norms alone.
+            # pairings. Coordinate content, Gram-covector divisibility,
+            # row-sum pairings, and moment-covector content/norm are exact
+            # linear-cost isometry invariants. Refine them by pairings with
+            # sums of their invariant colour classes when that adds at most
+            # sixteen extra coordinates; this preserves exactness while
+            # avoiding the quadratic pairing graph.
             spectra_list = []
             index = 0
             for norm_block in pairings.diagonal_blocks():
@@ -2670,8 +2670,10 @@ def _perfect_form_hash_key(
     For moderate configurations, this uses the source's full histogram of
     diagonal and off-diagonal Gram pairings, streamed in row blocks rather
     than materializing an n-by-n matrix. For large configurations, diagonal
-    norms, row contents, Gram-covector divisibilities and Smith factors remain
-    in the key while only the quadratic off-diagonal histogram is omitted.
+    norms, row contents, Gram-covector divisibilities, row-sum and
+    moment-covector signatures, bounded class-sum refinements, and Smith
+    factors remain in the key while only the quadratic off-diagonal histogram
+    is omitted.
     This is only a traversal bucket key; an exact transporter check remains
     mandatory on every match.
     """
