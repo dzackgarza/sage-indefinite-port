@@ -161,6 +161,7 @@ def test_facet_orbit_enumerator_streams_representatives_without_words() -> None:
         ((False, (2,)),),
     )
     assert canonical_retained[0][1][0] is facets[1]
+    assert all(value is None for value in canonical.values())
     assert tuple(orbit[0][0] for orbit in streamed) == ((False, (0,)), (False, (2,)))
     assert all(len(orbit) == 1 for orbit in streamed)
     assert _permuted_facet_key(facets[0], swap_first_two) == facets[1]
