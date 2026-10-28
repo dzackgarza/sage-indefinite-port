@@ -637,8 +637,10 @@ def test_repeated_row_transporter_retains_multiset_certificate(monkeypatch) -> N
     source = LorentzianPerfectCell(ambient, ((1, 0), (0, 1), (1, 0)), ZERO_SQUARES)
     target = LorentzianPerfectCell(ambient, ((0, 1), (1, 0), (0, 1)), ZERO_SQUARES)
     monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
+    backend = LorentzianPerfectLocalBackend()
+    assert not backend._integral_configuration_invariants(source)[-1]
 
-    witness = LorentzianPerfectLocalBackend().cell_transporter(source, target)
+    witness = backend.cell_transporter(source, target)
 
     assert witness is not None
     action = matrix(ZZ, rows_of(witness))
