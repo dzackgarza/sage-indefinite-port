@@ -1978,8 +1978,7 @@ class LorentzianPerfectLocalBackend:
                     choice = i
                     candidates_for_choice = [forced_target]
                     break
-                admissible_images = bucket_sets[source_colours[i]].copy()
-                admissible_images.difference_update(used)
+                admissible_images = None
                 for k, v in images.items():
                     key = (k, v, i)
                     if key not in compatible_images:
@@ -2004,9 +2003,23 @@ class LorentzianPerfectLocalBackend:
                         compatible_images[key] = target_neighbour_signatures[v].get(signature, frozenset())
                         if len(compatible_images) > anchor_cache_limit:
                             compatible_images.pop(next(iter(compatible_images)))
-                    admissible_images.intersection_update(compatible_images[key])
+                    fibre = compatible_images[key]
+                    if admissible_images is None:
+                        # A pairing fibre is often far smaller than the raw
+                        # colour class. Start from that packed fibre rather
+                        # than allocating a set for all 22k A7 isotropic rays.
+                        if len(fibre) < len(bucket_sets[source_colours[i]]):
+                            admissible_images = set(fibre)
+                        else:
+                            admissible_images = bucket_sets[source_colours[i]].copy()
+                            admissible_images.intersection_update(fibre)
+                    else:
+                        admissible_images.intersection_update(fibre)
                     if not admissible_images:
                         break
+                if admissible_images is None:
+                    admissible_images = bucket_sets[source_colours[i]].copy()
+                admissible_images.difference_update(used)
                 candidates = sorted(admissible_images)
                 if not candidates:
                     return None
