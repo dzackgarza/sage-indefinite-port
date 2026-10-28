@@ -1923,7 +1923,6 @@ class LorentzianPerfectComplex:
             source, use_owned_cone=self._retain_facet_orbits
         )
         source_id = id(source)
-        all_ray_mask = (1 << len(source.rows)) - 1
         # Side-pairing witnesses are only queried for actual adjacencies, so
         # retain the Schreier words for those facet orbits alone. Yielding one
         # orbit at a time avoids keeping a second full decomposition alive
