@@ -125,6 +125,20 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
 
 def _pointed_classes(category: Category, lattice: Lattices.ParentMethods, square: int) -> tuple[Parent, ...]:
     profile = AttackProfile.from_lattice(lattice)
+    if profile.positive_index == 1 and int(lattice.rank()) == 2 and tuple(map(int, lattice.signature_pair())) == (1, 1) and not lattice.is_isotropic():
+        # An anisotropic binary plane has no isotropic cusp and therefore no
+        # perfect-cell fundamental domain. Classify every nonzero primitive
+        # rank-one marking by the generic exact genus/gluing embedding owner.
+        # The zero-square case is empty by anisotropy, without invoking Emb.
+        if square == 0:
+            return ()
+        base = category.base_object()
+        return tuple(
+            category.object(embedding)
+            for embedding in base.Emb(lattice).primitive_embedding_class_representatives(
+                classification="emb"
+            )
+        )
     if profile.positive_index == 1 and int(lattice.rank()) == 2 and tuple(map(int, lattice.signature_pair())) == (1, 1) and lattice.is_isotropic():
         # The pinned binary split dispatcher covers both timelike and
         # spacelike squares; perfect cells cover only the closed positive cone.

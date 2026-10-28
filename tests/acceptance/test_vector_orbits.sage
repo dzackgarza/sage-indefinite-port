@@ -75,6 +75,22 @@ def test_i_2_10_is_transitive_on_norm_minus_one_vectors() -> None:
     assert len(vector_classes(lattice(case["gram"]), -1)) == case["norm_minus_one_vector_orbits"]
 
 
+def test_anisotropic_binary_vector_classes_use_primitive_embeddings() -> None:
+    """An anisotropic (1,1) plane has no perfect-cell cusp to enumerate."""
+    require(MARKED_CLASSES)
+
+    binary = lattice([[2, 0], [0, -3]])
+    assert not binary.is_isotropic()
+    assert vector_classes(binary, 0) == ()
+    classes = vector_classes(binary, 2)
+    assert classes
+    for marked in classes:
+        generators = tuple(marked.arrow()(g) for g in marked.arrow().domain().module_generators())
+        assert len(generators) == 1
+        assert generators[0].q() == 2
+        assert generators[0].content() == 1
+
+
 def _k3_gram() -> list[list[int]]:
     hyperbolic = matrix(ZZ, [[0, 1], [1, 0]])
     e8 = -matrix(ZZ, CartanMatrix(["E", 8]))
