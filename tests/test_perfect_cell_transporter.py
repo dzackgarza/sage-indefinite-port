@@ -389,9 +389,10 @@ def test_large_configuration_invariants_skip_per_ray_gcd_colours(monkeypatch) ->
             "gcd",
             lambda *_args: pytest.fail("large configuration colours must not compute per-ray gcds"),
         )
-        _rows, _pairings, spectra, _row_multiset, _smith = backend._integral_configuration_invariants(cell)
+        _rows, _pairings, spectra, _smith = backend._integral_configuration_invariants(cell)
 
     assert spectra == ((0,), (0,))
+    assert len(backend._integral_configuration_invariants(cell)) == 4
 
 
 def test_configuration_invariant_cache_is_bounded_and_identity_keyed() -> None:
