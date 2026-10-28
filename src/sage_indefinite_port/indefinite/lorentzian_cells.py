@@ -1679,6 +1679,15 @@ class LorentzianPerfectLocalBackend:
 
         source_labels = tuple(source.lattice.module_generating_set())
         target_labels = tuple(target.lattice.module_generating_set())
+        # Exact aggregate invariants of the complete row multiset. Every
+        # configuration transporter permutes rows, so it must carry their
+        # vector sum and second-moment matrix to the corresponding target
+        # aggregates. These rank-sized certificates cheaply reject a basis
+        # assignment before the O(n * rank) row-membership pass.
+        source_sum = vector(SageZZ, (sum(row[j] for row in source.rows) for j in range(rank)))
+        target_sum = vector(SageZZ, (sum(row[j] for row in target.rows) for j in range(rank)))
+        source_moment = source_rows.transpose() * source_rows
+        target_moment = target_rows.transpose() * target_rows
         source_submodule_invariants = {}
         target_submodule_invariants = {}
         # Smith data depend on the selected row subset, not its order.
@@ -1721,6 +1730,10 @@ class LorentzianPerfectLocalBackend:
                 # unimodularity once the rational action is integral.
                 action = action.change_ring(SageZZ)
                 if action * target_gram * action.transpose() != source_gram:
+                    return None
+                if source_sum * action != target_sum:
+                    return None
+                if action.transpose() * source_moment * action != target_moment:
                     return None
                 if use_position_certificate:
                     # The exact row-position map certifies equality of the
