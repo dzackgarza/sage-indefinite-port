@@ -2085,10 +2085,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                     raise ArithmeticError("distinct perfect-cell facets have the same extreme-ray incidence")
                 seen_incidence_keys.add(key)
                 if key in representative_keys:
-                    by_incidence[key] = (
-                        _integral_covector(cell.lattice, covector_block[offset])
-                        if use_raw_facets else covector_block[offset]
-                    )
+                    by_incidence[key] = covector_block[offset]
                 elif key not in adjacency_facet_keys:
                     # Boundary facets have no side-pairing orbit retained by
                     # the quotient traversal. Keep only their compact keys;
