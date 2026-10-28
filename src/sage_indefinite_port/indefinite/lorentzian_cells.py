@@ -1418,11 +1418,11 @@ class LorentzianPerfectLocalBackend:
             # Transfer the mutable BFS buffer to the caller rather than
             # copying every orbit into a tuple while the list is still live.
             yield orbit
-        visited_count = (
-            sum(value is None for value in canonical_keys.values())
-            if canonical_keys is not None
-            else len(visited)
-        )
+        if canonical_keys is None:
+            assert visited is not None
+            visited_count = len(visited)
+        else:
+            visited_count = sum(value is None for value in canonical_keys.values())
         if visited_count != facet_count:
             raise ArithmeticError(
                 "cell-stabilizer permutations generate incidences outside the H-presentation"
