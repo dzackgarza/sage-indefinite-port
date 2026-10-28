@@ -2154,7 +2154,12 @@ def _perfect_form_hash_key(
         # quadratically with the number of configuration vectors.
         vector_contents = tuple(sorted(Counter(gcd(*map(int, row)) for row in cell.rows).items()))
         divisibilities = tuple(
-            sorted(Counter(gcd(*map(int, row)) for row in pairings.covectors.rows()).items())
+            sorted(
+                Counter(
+                    gcd(*map(int, pairings.covectors.row(index)))
+                    for index in range(len(pairings))
+                ).items()
+            )
         )
     return (
         tuple(sorted(diagonal.items())),
