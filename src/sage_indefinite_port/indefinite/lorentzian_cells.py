@@ -2673,15 +2673,15 @@ class _CellFaces:
         # their order directly instead of materializing 49,861 lattice
         # elements and immediately extracting the same coordinates again.
         self.rows = tuple(vector(SageZZ, row) for row in cell.rows)
-        # For large cells, obtain the exact H-presentation directly from
-        # Normaliz instead of constructing an owned cone and rebuilding its
-        # PPL engine from the same inequalities.
+        # The traversal/complex collector already owns this cell's cone.
+        # Reuse its exact H-family rather than re-querying Normaliz and
+        # retaining a second complete owned covector tuple for the face lattice.
         self.covectors = tuple(
             vector(
                 SageQQ,
                 [_rational(covector.to_vector()(label)) for label in self.labels],
             )
-            for covector in backend.cell_halfspace_covectors(cell)
+            for covector in backend.cell_cone(cell).halfspace_covectors()
         )
         interior = sum(self.rows[1:], self.rows[0])
         if any(covector.dot_product(interior) <= 0 for covector in self.covectors):
