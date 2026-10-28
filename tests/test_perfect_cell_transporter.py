@@ -811,6 +811,7 @@ def test_large_transporter_matches_joint_gcd_colours_after_basis_change(monkeypa
     source_spectra = backend._integral_configuration_invariants(source)[2]
     target_spectra = backend._integral_configuration_invariants(target)[2]
     assert lorentzian_cells.Counter(source_spectra) == lorentzian_cells.Counter(target_spectra)
+    assert _perfect_form_hash_key(source, backend) == _perfect_form_hash_key(target, backend)
     witness = backend.cell_transporter(source, target)
 
     assert witness is not None
