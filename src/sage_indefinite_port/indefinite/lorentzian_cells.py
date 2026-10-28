@@ -3471,7 +3471,10 @@ class _CellFaces:
         # Consume the exact H-family without forcing construction of an owned
         # cone for large configurations. The iterator uses Normaliz's native
         # support covectors in that case; smaller cells reuse the owned cone.
-        interior = sum(self.rows, vector(SageZZ, [0] * len(self.labels)))
+        # The interior is needed only to certify the orientation of each
+        # support covector. Sum the original integer tuples by coordinate,
+        # avoiding a second pass through 49,861 Sage vector additions.
+        interior = tuple(sum(row[column] for row in cell.rows) for column in range(len(self.labels)))
         # Compute exact facet-to-ray incidences in bounded matrix blocks.
         # The scalar Python loop performs one exact dot product per ray and
         # facet; A7 has 49,861 rays, so batching Sage's exact matrix product
