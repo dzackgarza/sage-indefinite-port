@@ -746,6 +746,8 @@ def _configuration_signature_multisets_match(
     for index, colour in enumerate(target_colours):
         signature = (colour, tuple(column[index] for column in target_columns))
         counts[signature] -= 1
+        if counts[signature] < 0:
+            return False
         if counts[signature] == 0:
             del counts[signature]
     return not counts
