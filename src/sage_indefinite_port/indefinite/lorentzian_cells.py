@@ -755,9 +755,13 @@ def _configuration_signature_multisets_match(
         if counts[signature] < 0:
             for previous in touched:
                 counts[previous] += 1
+                if counts[previous] == 0:
+                    del counts[previous]
             return False
     for signature in touched:
         counts[signature] += 1
+        if counts[signature] == 0:
+            del counts[signature]
     return True
 
 

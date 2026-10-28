@@ -376,9 +376,20 @@ def test_anchor_signature_extension_appends_in_common_assignment_order() -> None
     )
     colours = tuple(colour for colour, _signature in signatures)
     columns = ((10, 11, 12), (30, 31, 32), column)
-    assert _configuration_signature_multisets_match(colours, columns, colours, columns)
+    source_counts = lorentzian_cells.Counter(
+        (colour, tuple(values[index] for values in columns))
+        for index, colour in enumerate(colours)
+    )
+    original_counts = source_counts.copy()
+    assert _configuration_signature_multisets_match(
+        colours, columns, colours, columns, source_signature_counts=source_counts
+    )
+    assert source_counts == original_counts
     changed_columns = (*columns[:-1], (20, 21, 99))
-    assert not _configuration_signature_multisets_match(colours, columns, colours, changed_columns)
+    assert not _configuration_signature_multisets_match(
+        colours, columns, colours, changed_columns, source_signature_counts=source_counts
+    )
+    assert source_counts == original_counts
 
 
 def test_empty_stable_configuration_has_empty_permutation_for_each_generator() -> None:
