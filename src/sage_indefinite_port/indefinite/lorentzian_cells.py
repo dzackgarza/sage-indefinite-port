@@ -2005,6 +2005,14 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # Materialize only this bounded block through the owned unranking
             # map, reusing its inverse instead of rebuilding it per covector.
             covector_block = tuple(covector_at(position) for position in range(start, stop))
+            if use_raw_facets and isinstance(covectors, list):
+                # Normaliz returns a Python list of all H rows. Transfer each
+                # block into its short-lived tuple and release the source row
+                # references immediately; otherwise the raw H-list and the
+                # current pairing block coexist, defeating bounded-memory
+                # incidence processing on the A7 configuration.
+                for position in range(start, stop):
+                    covectors[position] = None
             # Every owned halfspace covector is primitive integral data in
             # the lattice dual, so exact incidence needs no QQ coercion.
             halfspace_block = matrix(
