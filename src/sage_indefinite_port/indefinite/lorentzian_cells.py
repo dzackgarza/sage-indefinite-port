@@ -1299,14 +1299,14 @@ class LorentzianPerfectLocalBackend:
             # integer bitsets can be several kilobytes each, so retaining a
             # second equal object for every permuted facet is prohibitive.
             canonical_keys: dict[FacetMaskKey, FacetMaskKey] = {}
-            keys: deque[FacetMaskKey] = deque()
             for key in facet_keys():
-                canonical = canonical_keys.setdefault(key, key)
-                keys.append(canonical)
+                canonical_keys.setdefault(key, key)
 
             def consume_keys() -> Iterator[FacetMaskKey]:
-                while keys:
-                    yield keys.popleft()
+                # Dict insertion order is Normaliz H-presentation order, so
+                # the canonical key table itself is the ordered key stream.
+                # Do not retain a parallel deque of one pointer per facet.
+                yield from canonical_keys
 
             return consume_keys(), tuple(permutations), canonical_keys
         return facet_keys(), tuple(permutations), None
