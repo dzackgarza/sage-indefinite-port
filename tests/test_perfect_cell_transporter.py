@@ -472,14 +472,22 @@ def test_normaliz_pairing_rows_match_owned_covectors(monkeypatch) -> None:
     cell.rows = ((1, 0), (0, 1)) * 5_000
     backend = LorentzianPerfectLocalBackend()
     original_h_presentation = backend._normaliz_cell_h_presentation
+    original_normaliz_cone = backend._normaliz_cell_cone
     h_presentation_calls = 0
+    normaliz_cone_calls = 0
 
     def count_h_presentation(*args, **kwargs):
         nonlocal h_presentation_calls
         h_presentation_calls += 1
         return original_h_presentation(*args, **kwargs)
 
+    def count_normaliz_cone(*args, **kwargs):
+        nonlocal normaliz_cone_calls
+        normaliz_cone_calls += 1
+        return original_normaliz_cone(*args, **kwargs)
+
     monkeypatch.setattr(backend, "_normaliz_cell_h_presentation", count_h_presentation)
+    monkeypatch.setattr(backend, "_normaliz_cell_cone", count_normaliz_cone)
     labels = tuple(cell.lattice.module_generating_set())
     pairing_rows = tuple(backend._iter_cell_halfspace_pairing_rows(cell, labels))
     raw_pairing_rows = tuple(
@@ -491,6 +499,7 @@ def test_normaliz_pairing_rows_match_owned_covectors(monkeypatch) -> None:
         for covector in backend._iter_cell_halfspace_covectors(cell)
     )
     assert h_presentation_calls == 2
+    assert normaliz_cone_calls == 2
     assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})
     def zero_pattern(rows):
         return tuple(tuple(value == 0 for value in row) for row in rows)
