@@ -1960,17 +1960,26 @@ class LorentzianPerfectLocalBackend:
             used = set(images.values())
             choice = None
             candidates_for_choice = None
-            for i in basis:
+            basis_order = basis
+            forced_source = forced_target = -1
+            if forced_pair is not None:
+                forced_source, forced_target = forced_pair
+                if target_colours[forced_target] != source_colours[forced_source]:
+                    return None
+                # The row-sum equation has already proved this is the only
+                # possible image for forced_source. Choose it immediately;
+                # constructing the other large colour fibres first would
+                # discard the exact information just computed.
+                basis_order = (forced_source, *(i for i in basis if i != forced_source))
+            for i in basis_order:
                 if i in images:
                     continue
+                if forced_pair is not None and i == forced_source:
+                    choice = i
+                    candidates_for_choice = [forced_target]
+                    break
                 admissible_images = bucket_sets[source_colours[i]].copy()
                 admissible_images.difference_update(used)
-                if forced_pair is not None:
-                    forced_source, forced_target = forced_pair
-                    if i == forced_source:
-                        admissible_images.intersection_update((forced_target,))
-                    else:
-                        admissible_images.discard(forced_target)
                 for k, v in images.items():
                     key = (k, v, i)
                     if key not in compatible_images:
