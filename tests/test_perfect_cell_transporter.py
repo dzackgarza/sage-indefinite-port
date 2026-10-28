@@ -524,6 +524,26 @@ def test_complex_isometry_uses_cached_coarse_key_for_large_route(monkeypatch) ->
     assert abs(matrix(ZZ, rows_of(witness)).det()) == 1
 
 
+def test_large_distinct_row_transporter_uses_exact_target_membership(monkeypatch) -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    source = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
+    target_gram = -gram
+    target = LorentzianPerfectCell(lattice(target_gram.rows()), ((1, 0), (0, -1)), ZERO_SQUARES)
+    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
+    original_counter = lorentzian_cells.Counter
+
+    def reject_configuration_counter(iterable=(), *args, **kwargs):
+        if iterable is source.rows or iterable is target.rows:
+            pytest.fail("large distinct-row transporters must not build row-multiset Counters")
+        return original_counter(iterable, *args, **kwargs)
+
+    monkeypatch.setattr(lorentzian_cells, "Counter", reject_configuration_counter)
+    witness = LorentzianPerfectLocalBackend().cell_transporter(source, target)
+
+    assert witness is not None
+    assert abs(matrix(ZZ, rows_of(witness)).det()) == 1
+
+
 def test_large_configuration_invariants_skip_per_ray_gcd_colours(monkeypatch) -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)

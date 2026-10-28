@@ -1543,11 +1543,18 @@ class LorentzianPerfectLocalBackend:
         target_data = source_data if source is target else self._integral_configuration_invariants(target)
         source_rows, source_pairings, source_spectra, source_smith = source_data
         target_rows, target_pairings, target_spectra, target_smith = target_data
-        # Large-cell stabilizer generation certifies row-set equality through
-        # the exact position map below. Do not retain a second 49,861-entry
-        # Counter in the cached invariant bundle when that consumer cannot use
-        # it. Other transporter modes still require the full multiset check.
-        target_multiset = None if generators_only else Counter(target.rows)
+        # For large configurations, certify equality of the row multisets by
+        # exact target-set membership when both inputs have distinct rows. An
+        # integral unimodular action is injective, so n distinct source rows
+        # landing in the n-element target set prove equality. This avoids
+        # building a second large Counter for every neighbor transporter.
+        # Preserve the multiset fallback for repeated-row configurations.
+        use_position_certificate = generators_only or (
+            n > _PAIRING_GRAPH_REFINEMENT_LIMIT
+            and len(set(source.rows)) == n
+            and len(set(target.rows)) == n
+        )
+        target_multiset = None if use_position_certificate else Counter(target.rows)
         if source_smith != target_smith:
             return ()
         if source is not target and Counter(source_spectra) != Counter(target_spectra):
@@ -1642,13 +1649,16 @@ class LorentzianPerfectLocalBackend:
         stabilizer_elements: list[LatticeIsometryMethods] = []
         first_witness: LatticeIsometryMethods | None = None
         first_only = not all_images
-        if generators_only:
+        if use_position_certificate:
             # The immutable coordinate tuples are already the configuration's
-            # canonical rows; reuse them as keys instead of allocating a
-            # second full set of row tuples for the large-cell permutation map.
-            positions = {row: index for index, row in enumerate(source.rows)}
+            # canonical rows; reuse them as keys instead of allocating another
+            # set of row tuples. The stabilizer uses source positions; ordinary
+            # large-cell transporters use target positions.
+            position_rows = source.rows if generators_only else target.rows
+            positions = {row: index for index, row in enumerate(position_rows)}
             if len(positions) != n:
-                raise ArithmeticError("a perfect-cell stabilizer requires distinct configuration vectors")
+                raise ArithmeticError("the exact row-position certificate requires distinct configuration vectors")
+        if generators_only:
             symmetric = SymmetricGroup(n)
             subgroup = symmetric.subgroup([])
             group_permutations = []
@@ -1674,16 +1684,12 @@ class LorentzianPerfectLocalBackend:
                 action = action.change_ring(SageZZ)
                 if action * target_gram * action.transpose() != source_gram:
                     return None
-                if generators_only:
-                    # The stabilizer path has already certified that the
-                    # source configuration has distinct rows and built its
-                    # exact row-to-position map. An integral unimodular
-                    # action is injective, so membership of every transformed
-                    # row in that n-element set proves equality of the full
-                    # row multiset without allocating another n-entry Counter
-                    # or a second full n-by-r matrix at every completed basis
-                    # assignment. Keep the temporary transformed rows bounded.
-                    permutation_images = []
+                if use_position_certificate:
+                    # The exact row-position map certifies equality of the
+                    # full row multiset without allocating another Counter or
+                    # a second full n-by-r matrix at every completed basis
+                    # assignment. Keep transformed rows bounded.
+                    permutation_images = [] if generators_only else None
                     block_size = _configuration_pairing_block_size(n)
                     for start in range(0, n, block_size):
                         stop = min(start + block_size, n)
@@ -1692,8 +1698,10 @@ class LorentzianPerfectLocalBackend:
                             position = positions.get(tuple(int(entry) for entry in row))
                             if position is None:
                                 return None
-                            permutation_images.append(position + 1)
-                    permutation = symmetric(permutation_images)
+                            if permutation_images is not None:
+                                permutation_images.append(position + 1)
+                    if permutation_images is not None:
+                        permutation = symmetric(permutation_images)
                 else:
                     transformed_rows = source_rows * action
                     if target_multiset is None or Counter(tuple(row) for row in transformed_rows.rows()) != target_multiset:
