@@ -452,6 +452,7 @@ def test_group_only_facet_keys_do_not_construct_owned_cone(monkeypatch) -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
     backend = LorentzianPerfectLocalBackend()
+    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
     monkeypatch.setattr(
         backend,
         "cell_cone",
@@ -470,6 +471,7 @@ def test_group_only_facet_keys_do_not_construct_owned_cone(monkeypatch) -> None:
     facet_keys, _permutations = backend._facet_mask_data(cell, use_owned_cone=False)
 
     assert raw_h_rows and all(row is None for row in raw_h_rows[0])
+    assert id(cell) not in backend.__dict__.get("_configuration_invariant_cache", {})
     assert set(facet_keys) == {1, 2}
 
 

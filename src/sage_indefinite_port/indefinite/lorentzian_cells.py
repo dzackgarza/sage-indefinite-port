@@ -1160,6 +1160,18 @@ class LorentzianPerfectLocalBackend:
         del positions
 
         def facet_keys() -> Iterator[FacetMaskKey]:
+            if not use_owned_cone and len(cell.rows) > _PAIRING_GRAPH_REFINEMENT_LIMIT:
+                # The stabilizer computation has finished using its dense
+                # row/covector matrices. They are useful again when comparing
+                # the flipped neighbor, but retaining both while Normaliz
+                # materializes the complete A7 H-result needlessly raises the
+                # peak. Drop this one identity-LRU entry; the first subsequent
+                # transporter rebuilds it and then reuses it normally.
+                invariant_cache = self.__dict__.get("_configuration_invariant_cache", {})
+                cached = invariant_cache.get(id(cell))
+                if cached is not None and cached[0] is cell:
+                    del invariant_cache[id(cell)]
+                    del cached
             covector_rows = iter(
                 self._iter_cell_halfspace_pairing_rows(
                     cell, labels, use_owned_cone=use_owned_cone
