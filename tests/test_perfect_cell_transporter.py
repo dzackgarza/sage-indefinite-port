@@ -25,7 +25,6 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     LorentzianPerfectLocalBackend,
     NONNEGATIVE_SQUARES,
     ZERO_SQUARES,
-    _extend_configuration_signatures,
     lorentzian_orthogonal_group_generators,
     perfect_complex,
 )
@@ -366,16 +365,9 @@ def test_coarse_colours_preserve_changed_configuration_transporters(monkeypatch)
         assert set(map(tuple, matrix(ZZ, source.rows) * transform)) == set(target.rows)
 
 
-def test_anchor_signature_extension_appends_in_common_assignment_order() -> None:
-    signatures = ((0, (10, 30)), (1, (11, 31)), (0, (12, 32)))
-    column = (20, 21, 22)
-    assert _extend_configuration_signatures(signatures, column) == (
-        (0, (10, 30, 20)),
-        (1, (11, 31, 21)),
-        (0, (12, 32, 22)),
-    )
-    colours = tuple(colour for colour, _signature in signatures)
-    columns = ((10, 11, 12), (30, 31, 32), column)
+def test_configuration_signature_multisets_match_exact_columns() -> None:
+    colours = (0, 1, 0)
+    columns = ((10, 11, 12), (30, 31, 32), (20, 21, 22))
     source_counts = lorentzian_cells.Counter(
         (colour, tuple(values[index] for values in columns))
         for index, colour in enumerate(colours)

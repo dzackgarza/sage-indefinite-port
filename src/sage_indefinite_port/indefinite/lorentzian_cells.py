@@ -712,17 +712,6 @@ def _iter_owned_row_blocks(rows, block_size: int) -> Iterator[tuple[tuple[int, .
 _PAIRING_GRAPH_REFINEMENT_LIMIT = 4096
 
 
-def _extend_configuration_signatures(
-    signatures: tuple[tuple[int, tuple[int, ...]], ...],
-    column: tuple[int, ...],
-) -> tuple[tuple[int, tuple[int, ...]], ...]:
-    r"""Append one exact pairing column in the common search-assignment order."""
-    return tuple(
-        (colour, signature + (int(column[row]),))
-        for row, (colour, signature) in enumerate(signatures)
-    )
-
-
 def _configuration_signature_multisets_match(
     source_colours: tuple[int, ...],
     source_columns: tuple[tuple[int, ...], ...],
