@@ -586,7 +586,10 @@ def test_normaliz_pairing_rows_match_owned_covectors(monkeypatch) -> None:
         tuple(int(covector(label)) for label in labels)
         for covector in backend._iter_cell_halfspace_covectors(cell)
     )
-    assert h_presentation_calls == 2
+    # The primitive-covector view now independently consumes the raw H-data
+    # rather than forcing the owned cone; the owned, raw-pairing and primitive
+    # views therefore make three exact H requests in this explicit comparison.
+    assert h_presentation_calls == 3
     assert cached_normaliz_cone_calls == 1
     assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})
     def zero_pattern(rows):
