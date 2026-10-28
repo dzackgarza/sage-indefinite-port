@@ -86,7 +86,7 @@ def test_anisotropic_binary_vector_classes_use_primitive_embeddings() -> None:
         classes = vector_classes(binary, square)
         assert classes
         category = pointed_category(square)
-        canonical = pointed(binary, binary((1, 0) if square == 2 else (0, 1)))
+        canonical = pointed(binary, element(binary, (1, 0) if square == 2 else (0, 1)))
         assert sum(are_isomorphic(category, marked, canonical) for marked in classes) == 1
         witnesses = []
         for marked in classes:
