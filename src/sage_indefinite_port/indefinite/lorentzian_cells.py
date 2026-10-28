@@ -2126,6 +2126,10 @@ class LorentzianPerfectLocalBackend:
             # repeats the same expensive Schreier setup on the 49,861-ray A7
             # configuration without changing its generated subgroup.
             subgroup = symmetric.subgroup(group_permutations)
+        # Pointwise stabilizers depend only on the generated subgroup version
+        # and the set of already assigned target positions. Reusing them across
+        # sibling search nodes avoids rebuilding the same GAP stabilizer chain.
+        fixer_cache = {}
 
         def forced_sum_image(images):
             """Use the exact configuration sum to force a last basis image.
@@ -2325,9 +2329,15 @@ class LorentzianPerfectLocalBackend:
                     # The current sibling list was fixed before that
                     # discovery, so recompute the H_a-orbit partition.
                     if version != len(group_permutations):
-                        fixer = subgroup
-                        for assigned_target in images.values():
-                            fixer = fixer.stabilizer(assigned_target + 1)
+                        fixer_key = (len(group_permutations), tuple(sorted(images.values())))
+                        fixer = fixer_cache.get(fixer_key)
+                        if fixer is None:
+                            fixer = subgroup
+                            for assigned_target in fixer_key[1]:
+                                fixer = fixer.stabilizer(assigned_target + 1)
+                            fixer_cache[fixer_key] = fixer
+                            if len(fixer_cache) > 256:
+                                fixer_cache.pop(next(iter(fixer_cache)))
                         orbit_minima = {}
                         remaining_orbits = set(admissible)
                         while remaining_orbits:
