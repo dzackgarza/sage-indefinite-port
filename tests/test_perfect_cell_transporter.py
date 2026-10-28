@@ -25,6 +25,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     NONNEGATIVE_SQUARES,
     ZERO_SQUARES,
     _extend_configuration_signatures,
+    lorentzian_orthogonal_group_generators,
     perfect_complex,
 )
 import sage_indefinite_port.indefinite.lorentzian_cells as lorentzian_cells
@@ -77,6 +78,27 @@ def test_group_only_expansion_discards_facet_orbit_records(monkeypatch) -> None:
         else:
             assert complex_._traversal_facet_orbits == {}
             assert complex_._traversal_facet_generators == {}
+
+
+def test_orthogonal_group_generators_use_raw_h_rows(monkeypatch) -> None:
+    gram = matrix(ZZ, [[0, 1, 0], [1, 0, 0], [0, 0, -2]])
+    ambient = lattice(gram.rows())
+    monkeypatch.setattr(
+        LorentzianPerfectLocalBackend,
+        "cell_cone",
+        lambda _self, _cell: pytest.fail("group-only orthogonal traversal must not construct an owned cone"),
+    )
+
+    generators = lorentzian_orthogonal_group_generators(ambient)
+
+    assert generators
+    for generator in generators:
+        action = matrix(ZZ, rows_of(generator))
+        assert abs(action.det()) == 1
+        assert action * gram * action.transpose() == gram
+    complex_ = perfect_complex(ambient, NONNEGATIVE_SQUARES, retain_facet_orbits=False)
+    assert complex_._traversal_facet_orbits == {}
+    assert complex_._traversal_facet_generators == {}
 
 
 def test_owned_row_blocks_release_only_consumed_list_entries() -> None:

@@ -856,9 +856,10 @@ class LorentzianPerfectLocalBackend:
         """Yield exact facet pairing rows in the scale returned by Normaliz.
 
         The incidence computation only tests whether each pairing is zero;
-        primitive normalization is therefore unnecessary here. For large
-        cells, reuse the owned cone's exact minimized H-family rather than
-        materializing a second complete Normaliz support-hyperplane list.
+        primitive normalization is therefore unnecessary here. Full-domain
+        consumers reuse the owned cone's minimized H-family; group-only
+        traversal requests raw Normaliz rows to avoid constructing a PPL cone
+        that it will never consume.
         """
         if not use_owned_cone:
             # Orthogonal-group generation consumes exact facet incidences and
