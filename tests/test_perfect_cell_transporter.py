@@ -372,6 +372,23 @@ def test_large_perfect_form_hash_skips_quadratic_pairing_graph(monkeypatch) -> N
     assert key[4] == ()
 
 
+def test_large_configuration_invariants_skip_per_ray_gcd_colours(monkeypatch) -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
+    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
+    backend = LorentzianPerfectLocalBackend()
+
+    with monkeypatch.context() as scoped:
+        scoped.setattr(
+            lorentzian_cells,
+            "gcd",
+            lambda *_args: pytest.fail("large configuration colours must not compute per-ray gcds"),
+        )
+        _rows, _pairings, spectra, _row_multiset, _smith = backend._integral_configuration_invariants(cell)
+
+    assert spectra == ((0,), (0,))
+
+
 def test_configuration_invariant_cache_is_bounded_and_identity_keyed() -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     ambient = lattice(gram.rows())
