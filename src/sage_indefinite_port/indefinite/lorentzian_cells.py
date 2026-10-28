@@ -467,6 +467,38 @@ def _gram_matrix(lattice: Lattices.ParentMethods) -> Matrix_integer_dense:
     return _engine_component_matrix(lattice.gram_tensor()).change_ring(SageZZ)
 
 
+def _class_sum_pairing_signatures(
+    rows: Matrix_integer_dense,
+    gram: Matrix_integer_dense,
+    signatures: tuple[tuple[int, ...], ...],
+    *,
+    max_classes: int = 16,
+) -> tuple[tuple[int, ...], ...]:
+    r"""Refine row colours by pairings with sums of their existing colour classes.
+
+    An isometry carries each invariant colour class to the corresponding
+    target class, hence carries its vector sum to the target class sum. Pairing
+    each row against those class sums is therefore an exact isometry invariant.
+    The class cap bounds the extra O(number_of_rows * rank * classes) storage.
+    """
+    if rows.nrows() != len(signatures) or rows.ncols() != gram.nrows() or gram.nrows() != gram.ncols():
+        raise ValueError("class-sum signatures require one colour per row and a matching square Gram matrix")
+    classes = tuple(sorted(set(signatures)))
+    if len(classes) <= 1 or len(classes) > max_classes:
+        return signatures
+    class_positions = {signature: position for position, signature in enumerate(classes)}
+    class_sums = matrix(SageZZ, rows.ncols(), len(classes), 0)
+    for row_index, signature in enumerate(signatures):
+        class_index = class_positions[signature]
+        for coordinate in range(rows.ncols()):
+            class_sums[coordinate, class_index] += rows[row_index, coordinate]
+    class_pairings = rows * gram * class_sums
+    return tuple(
+        signature + tuple(int(entry) for entry in class_pairings.row(row_index))
+        for row_index, signature in enumerate(signatures)
+    )
+
+
 def _gram_component_sign_flips(gram: Matrix_integer_dense) -> tuple[Matrix_integer_dense, ...]:
     r"""Return the diagonal sign changes on connected Gram-support components.
 
@@ -1660,7 +1692,16 @@ class LorentzianPerfectLocalBackend:
             cache[key] = cached
             return cached[1]
         rows = matrix(SageZZ, cell.rows)
-        pairings = _ConfigurationPairings(rows, _gram_matrix(cell.lattice), cache_columns=True)
+        gram = _gram_matrix(cell.lattice)
+        pairings = _ConfigurationPairings(rows, gram, cache_columns=True)
+        row_sum = vector(SageZZ, (sum(row[j] for row in cell.rows) for j in range(rows.ncols())))
+        # Every configuration isometry carries the total row sum to the
+        # target total row sum. Thus each row's exact pairing with that sum is
+        # an additional linear-cost invariant; on the large path it refines
+        # the coarse norm/content colours without constructing the quadratic
+        # pairing graph.
+        row_sum_covector = gram * row_sum.column()
+        row_sum_pairings = rows * row_sum_covector
         if len(cell.rows) > _PAIRING_GRAPH_REFINEMENT_LIMIT:
             # The complete pairing-spectrum colour requires n(n-1)/2
             # pairings. Coordinate content and Gram-covector divisibility are
@@ -1676,13 +1717,19 @@ class LorentzianPerfectLocalBackend:
                     row = cell.rows[index]
                     covector = pairings.covectors.row(index)
                     spectra_list.append(
-                        (int(norm), gcd(*map(int, row)), gcd(*map(int, covector)))
+                        (
+                            int(norm),
+                            gcd(*map(int, row)),
+                            gcd(*map(int, covector)),
+                            int(row_sum_pairings[index, 0]),
+                        )
                     )
                     index += 1
             if index != len(cell.rows):
                 raise ArithmeticError("the diagonal pairing stream has the wrong row count")
             spectra = tuple(spectra_list)
             del spectra_list
+            spectra = _class_sum_pairing_signatures(rows, gram, spectra)
         else:
             norms = pairings.diagonal()
             spectra = []
@@ -1696,7 +1743,6 @@ class LorentzianPerfectLocalBackend:
         # invariant list bounded by the ambient rank rather than the number
         # of configuration rows (which is 49,861 in the A7 consumer).
         smith_invariants = rows.transpose().elementary_divisors()
-        row_sum = vector(SageZZ, (sum(row[j] for row in cell.rows) for j in range(rows.ncols())))
         row_moment = rows.transpose() * rows
         distinct_rows = len(set(cell.rows)) == len(cell.rows)
         data = (rows, pairings, spectra, smith_invariants, row_sum, row_moment, distinct_rows)

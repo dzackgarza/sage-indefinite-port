@@ -12,6 +12,7 @@ from sage.all import ZZ, identity_matrix, matrix, vector
 from sage_indefinite_port.indefinite.lorentzian_cells import (
     _CellFaces,
     _bit_positions,
+    _class_sum_pairing_signatures,
     _configuration_signature_multisets_match,
     _facet_complement_key,
     _facet_incidence,
@@ -341,6 +342,20 @@ def test_coarse_large_configuration_colours_preserve_exact_stabilizer(monkeypatc
         assert abs(transform.det()) == 1
         assert transform * gram * transform.transpose() == gram
         assert set(map(tuple, matrix(ZZ, cell.rows) * transform)) == set(cell.rows)
+
+
+def test_class_sum_pairing_colours_are_isometry_invariants() -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    rows = matrix(ZZ, [[1, 0], [0, 1], [1, 1], [-1, -1]])
+    signatures = ((0,), (0,), (1,), (1,))
+    action = matrix(ZZ, [[0, 1], [1, 0]])
+
+    source = _class_sum_pairing_signatures(rows, gram, signatures)
+    target = _class_sum_pairing_signatures(rows * action, gram, signatures)
+
+    assert len(source[0]) == len(signatures[0]) + 2
+    assert lorentzian_cells.Counter(source) == lorentzian_cells.Counter(target)
+    assert _class_sum_pairing_signatures(rows, gram, signatures, max_classes=1) == signatures
 
 
 def test_gram_component_sign_flips_are_exact_isometries() -> None:
@@ -770,7 +785,7 @@ def test_large_configuration_invariants_include_exact_gcd_colours(monkeypatch) -
 
     _rows, _pairings, spectra, _smith, row_sum, row_moment, distinct_rows = backend._integral_configuration_invariants(cell)
 
-    assert spectra == ((0, 1, 1), (0, 1, 1))
+    assert spectra == ((0, 1, 1, 1), (0, 1, 1, 1))
     assert tuple(row_sum) == (1, 1)
     assert row_moment == matrix(ZZ, [[1, 0], [0, 1]])
     assert distinct_rows
