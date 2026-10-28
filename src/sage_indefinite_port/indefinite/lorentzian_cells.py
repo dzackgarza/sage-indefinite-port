@@ -1687,7 +1687,8 @@ class LorentzianPerfectLocalBackend:
             return None
         facet_positions = tuple(sorted(facet))
         selected = matrix(SageQQ, [vectors[position] for position in facet_positions])
-        facet_nullspace = selected.right_kernel_matrix()
+        # LORENTZ_DoFlipping uses GAP NullspaceMat(TransposedMat(ListIso{eInc})).
+        facet_nullspace = _pinned_nullspace_matrix(selected.transpose())
         if facet_nullspace.nrows() != 1:
             raise ArithmeticError("a perfect-cell facet must have one normal direction")
         direction = facet_nullspace.row(0)
@@ -1696,7 +1697,8 @@ class LorentzianPerfectLocalBackend:
             direction = -direction
         normal_direction = _source_remove_fraction(vector(SageQQ, [0, *direction]))
         expanded = matrix(SageQQ, [[1, *row] for row in vectors])
-        base_nullspace = expanded.right_kernel_matrix()
+        # Preserve the source affine-nullspace row and its normalization.
+        base_nullspace = _pinned_nullspace_matrix(expanded.transpose())
         if base_nullspace.nrows() != 1:
             raise ArithmeticError("a perfect cell must have a unique affine supporting functional")
         base_normal = base_nullspace.row(0)
