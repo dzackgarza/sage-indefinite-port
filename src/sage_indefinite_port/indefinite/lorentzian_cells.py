@@ -842,15 +842,8 @@ class LorentzianPerfectLocalBackend:
             yield tuple(int(covector(label)) for label in labels)
 
     def _iter_cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
-        """Yield exact primitive facet covectors without retaining owned copies."""
-        if len(cell.rows) < 1_000:
-            yield from self.cell_cone(cell).halfspace_covectors()
-            return
-        # Read raw support-hyperplane rows without constructing Sage's full
-        # Inequality objects. The shared converter releases each raw row as
-        # its owned dual-lattice covector is constructed.
-        hyperplanes, _ = self._normaliz_cell_h_presentation(cell, include_equations=False)
-        yield from self._iter_normaliz_owned_covectors(cell, hyperplanes)
+        """Yield the owned cone's exact primitive facet covectors."""
+        yield from self.cell_cone(cell).halfspace_covectors()
 
     @cached_method
     def cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
