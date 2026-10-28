@@ -122,14 +122,13 @@ def _bit_positions(mask: int) -> Iterator[int]:
         mask ^= least_bit
 
 
-def _schreier_generator_indices(word: SchreierWord) -> tuple[int, ...]:
-    """Return a nested Schreier word's generator indices in action order."""
+def _schreier_generator_indices(word: SchreierWord) -> Iterator[int]:
+    """Yield a nested Schreier word's generator indices in action order."""
     indices = []
     while word is not None:
         word, generator_index = word
         indices.append(generator_index)
-    indices.reverse()
-    return tuple(indices)
+    yield from reversed(indices)
 
 
 def _permuted_bitset(mask: int, permutation: array | tuple[int, ...]) -> int:
