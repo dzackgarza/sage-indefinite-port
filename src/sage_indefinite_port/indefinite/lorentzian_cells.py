@@ -1862,8 +1862,8 @@ class LorentzianPerfectLocalBackend:
             """
             if not use_position_certificate:
                 return None
-            assigned_sum = vector(SageQQ, rank)
             unassigned = []
+            assigned = []
             for position, coefficient in enumerate(source_sum_in_basis):
                 if not coefficient:
                     continue
@@ -1872,11 +1872,14 @@ class LorentzianPerfectLocalBackend:
                 if target_index is None:
                     unassigned.append((source_index, coefficient))
                 else:
-                    assigned_sum += coefficient * vector(SageQQ, target_rows.row(target_index))
+                    assigned.append((coefficient, target_index))
+            if len(unassigned) > 1:
+                return None
+            assigned_sum = vector(SageQQ, rank)
+            for coefficient, target_index in assigned:
+                assigned_sum += coefficient * vector(SageQQ, target_rows.row(target_index))
             if not unassigned:
                 return True if assigned_sum == target_sum_rational else False
-            if len(unassigned) != 1:
-                return None
             source_index, coefficient = unassigned[0]
             required = (target_sum_rational - assigned_sum) / coefficient
             if any(entry.denominator() != 1 for entry in required):
