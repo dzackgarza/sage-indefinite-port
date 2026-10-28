@@ -86,6 +86,27 @@ def test_isotropic_cell_invariants_preserve_integral_change_of_basis() -> None:
     assert _perfect_form_hash_key(changed_cell) == expected
 
 
+def test_large_coarse_hash_preserves_gcd_colours_under_integral_isometry(monkeypatch) -> None:
+    """Linear-cost content colours are invariant under an integral basis change."""
+    from sage_indefinite_port.indefinite import lorentzian_cells
+
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    shear = matrix(ZZ, [[1, 2**80 + 1], [0, 1]])
+    changed_gram = shear.inverse() * gram * shear.inverse().transpose()
+    cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
+    changed_cell = LorentzianPerfectCell(
+        lattice(changed_gram.rows()), tuple(tuple(row) for row in shear), ZERO_SQUARES
+    )
+    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
+
+    key = _perfect_form_hash_key(cell)
+
+    assert key == _perfect_form_hash_key(changed_cell)
+    assert key[1] == ()
+    assert sum(count for _value, count in key[3]) == len(cell.rows)
+    assert sum(count for _value, count in key[4]) == len(cell.rows)
+
+
 def test_nonnegative_square_face_has_the_exact_pairing_multisets() -> None:
     """The face x=1 of x^2-y^2 has norms (0,1,0) and pairings (1,2,1)."""
     cell = LorentzianPerfectCell(
