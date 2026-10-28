@@ -121,8 +121,18 @@ def _permuted_facet_key(key: FacetMaskKey, permutation: array | tuple[int, ...])
         image = _permuted_bitset(positions, permutation)
         if complement:
             return _facet_complement_key(image, len(permutation))
-        nonincident = ((1 << len(permutation)) - 1) ^ image
-        return _facet_complement_key(nonincident, len(permutation))
+        ray_count = len(permutation)
+        incident_count = image.bit_count()
+        nonincident_count = ray_count - incident_count
+        limit = _sparse_facet_complement_limit(ray_count)
+        if incident_count <= limit:
+            return False, tuple(_bit_positions(image))
+        if nonincident_count <= limit:
+            nonincident = ((1 << ray_count) - 1) ^ image
+            return True, tuple(_bit_positions(nonincident))
+        if incident_count < nonincident_count:
+            return False, image
+        return ((1 << ray_count) - 1) ^ image
     return complement, tuple(sorted(permutation[position] for position in positions))
 
 
