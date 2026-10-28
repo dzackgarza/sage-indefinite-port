@@ -536,6 +536,7 @@ def test_cell_faces_reuse_owned_halfspace_covectors_exactly() -> None:
     assert structure.gram == gram
     labels = tuple(lattice_.module_generating_set())
     assert backend.point_permutations(cell, cell.vector_configuration) == backend.point_permutations_from_rows(cell, cell.rows)
+    assert not hasattr(structure, "covectors")
 
     def coordinates(covector):
         return tuple(int(covector.to_vector()(label)) for label in lattice_.module_generating_set())
