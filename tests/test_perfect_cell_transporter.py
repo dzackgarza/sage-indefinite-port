@@ -547,6 +547,35 @@ def test_group_only_facet_keys_do_not_construct_owned_cone(monkeypatch) -> None:
     assert set(facet_keys) == {1, 2}
 
 
+def test_large_facet_keys_use_the_smaller_dense_incidence_side(monkeypatch) -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    rows = tuple((index + 1, 0) for index in range(1_000)) + tuple(
+        (0, index + 1) for index in range(9_000)
+    )
+
+    class LargeInput:
+        pass
+
+    cell = LargeInput()
+    cell.lattice = lattice(gram.rows())
+    cell.rows = rows
+    backend = LorentzianPerfectLocalBackend()
+    monkeypatch.setattr(backend, "cell_stabilizer", lambda _cell: ())
+
+    facet_keys, _permutations, canonical_keys = backend._facet_mask_data(
+        cell, use_owned_cone=False
+    )
+    keys = tuple(facet_keys)
+
+    assert canonical_keys is not None
+    assert len(keys) == 2
+    dense_incident_keys = [
+        key for key in keys if isinstance(key, tuple) and isinstance(key[1], int)
+    ]
+    assert len(dense_incident_keys) == 1
+    assert len(_facet_incidence(dense_incident_keys[0], len(cell.rows))) == 1_000
+
+
 def test_large_perfect_form_hash_skips_quadratic_pairing_graph(monkeypatch) -> None:
     """Large-cell bucketing uses exact linear-cost integral invariants."""
     gram = matrix(ZZ, [[0, 1], [1, 0]])
