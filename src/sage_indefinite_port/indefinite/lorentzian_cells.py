@@ -1176,10 +1176,7 @@ class LorentzianPerfectLocalBackend:
 
     def _facet_orbit_transversal_masks(
         self, cell: LorentzianPerfectCell
-    ) -> tuple[
-        tuple[list[tuple[FacetMaskKey, SchreierWord]], ...],
-        tuple[array, ...],
-    ]:
+    ) -> tuple[Iterator[list[tuple[FacetMaskKey, SchreierWord]]], tuple[array, ...]]:
         """Build compact facet-orbit buffers for one consuming operation.
 
         Deliberately do not cache this result: public consumers materialize
@@ -1193,7 +1190,7 @@ class LorentzianPerfectLocalBackend:
         # each list into a tuple here duplicates its pointer array at the peak
         # where the full facet collection is retained, with no consumer needing
         # tuple-specific operations on these private orbit buffers.
-        return tuple(self._iter_facet_mask_orbits(facet_keys, permutations)), permutations
+        return self._iter_facet_mask_orbits(facet_keys, permutations), permutations
 
     def _facet_orbit_transversal_words(
         self, cell: LorentzianPerfectCell
