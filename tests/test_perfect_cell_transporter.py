@@ -5,7 +5,6 @@ are isometric, independently of the transporter search.
 """
 
 from array import array
-from collections import Counter
 
 import pytest
 from sage.all import ZZ, identity_matrix, matrix, vector
@@ -13,7 +12,7 @@ from sage.all import ZZ, identity_matrix, matrix, vector
 from sage_indefinite_port.indefinite.lorentzian_cells import (
     _CellFaces,
     _bit_positions,
-    _configuration_signature_multiset,
+    _configuration_signature_multisets_match,
     _facet_complement_key,
     _facet_incidence,
     _iter_owned_row_blocks,
@@ -286,7 +285,7 @@ def test_coarse_large_configuration_colours_preserve_exact_stabilizer(monkeypatc
 
     def reject_row_multiset_counter(iterable=(), *args, **kwargs):
         code = getattr(iterable, "gi_code", None)
-        if iterable is cell.rows or (code is not None and "_configuration_signature_multiset" not in code.co_qualname):
+        if iterable is cell.rows or (code is not None and "_configuration_signature_multisets_match" not in code.co_qualname):
             pytest.fail("large stabilizer certification must use its exact row-position map")
         return original_counter(iterable, *args, **kwargs)
 
@@ -373,11 +372,9 @@ def test_anchor_signature_extension_appends_in_common_assignment_order() -> None
     )
     colours = tuple(colour for colour, _signature in signatures)
     columns = ((10, 11, 12), (30, 31, 32), column)
-    expected_multiset = Counter(
-        (colour, tuple(values[index] for values in columns))
-        for index, colour in enumerate(colours)
-    )
-    assert _configuration_signature_multiset(colours, columns) == expected_multiset
+    assert _configuration_signature_multisets_match(colours, columns, colours, columns)
+    changed_columns = (*columns[:-1], (20, 21, 99))
+    assert not _configuration_signature_multisets_match(colours, columns, colours, changed_columns)
 
 
 def test_empty_stable_configuration_has_empty_permutation_for_each_generator() -> None:

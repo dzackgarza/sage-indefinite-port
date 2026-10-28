@@ -723,20 +723,32 @@ def _extend_configuration_signatures(
     )
 
 
-def _configuration_signature_multiset(
-    colours: tuple[int, ...], columns: tuple[tuple[int, ...], ...]
-) -> Counter[tuple[int, tuple[int, ...]]]:
-    """Materialize row signatures only for the duration of one exact comparison.
+def _configuration_signature_multisets_match(
+    source_colours: tuple[int, ...],
+    source_columns: tuple[tuple[int, ...], ...],
+    target_colours: tuple[int, ...],
+    target_columns: tuple[tuple[int, ...], ...],
+) -> bool:
+    """Compare row-signature multisets with one incrementally cancelled counter.
 
     Retaining a nested signature tuple for every configuration row at every
     recursion depth multiplies memory by the ambient rank. Keep only the
-    assigned pairing columns in the search stack and build the multiset on
-    demand, releasing it before descending further.
+    assigned pairing columns in the search stack. During each comparison,
+    cancel matching target signatures immediately so equal configurations do
+    not require two simultaneous counters of all row signatures.
     """
-    return Counter(
-        (colour, tuple(column[index] for column in columns))
-        for index, colour in enumerate(colours)
+    if len(source_colours) != len(target_colours) or len(source_columns) != len(target_columns):
+        return False
+    counts = Counter(
+        (colour, tuple(column[index] for column in source_columns))
+        for index, colour in enumerate(source_colours)
     )
+    for index, colour in enumerate(target_colours):
+        signature = (colour, tuple(column[index] for column in target_columns))
+        counts[signature] -= 1
+        if counts[signature] == 0:
+            del counts[signature]
+    return not counts
 
 
 def _row_multiset(row, own_value: int) -> tuple[tuple[int, int], ...]:
@@ -1923,9 +1935,12 @@ class LorentzianPerfectLocalBackend:
                         target_column = target_pairings.column(j)
                         next_source_columns = source_columns + (source_column,)
                         next_target_columns = target_columns + (target_column,)
-                        if _configuration_signature_multiset(
-                            source_colours, next_source_columns
-                        ) == _configuration_signature_multiset(target_colours, next_target_columns):
+                        if _configuration_signature_multisets_match(
+                            source_colours,
+                            next_source_columns,
+                            target_colours,
+                            next_target_columns,
+                        ):
                             backtrack(images, next_source_columns, next_target_columns, target_basis_integral)
                             if first_witness is not None:
                                 return first_witness
@@ -1952,9 +1967,12 @@ class LorentzianPerfectLocalBackend:
                     target_column = target_pairings.column(j)
                     next_source_columns = source_columns + (source_column,)
                     next_target_columns = target_columns + (target_column,)
-                    if _configuration_signature_multiset(
-                        source_colours, next_source_columns
-                    ) == _configuration_signature_multiset(target_colours, next_target_columns):
+                    if _configuration_signature_multisets_match(
+                        source_colours,
+                        next_source_columns,
+                        target_colours,
+                        next_target_columns,
+                    ):
                         backtrack(images, next_source_columns, next_target_columns)
                         if first_witness is not None:
                             return first_witness
