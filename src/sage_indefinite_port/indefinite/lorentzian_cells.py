@@ -1954,6 +1954,7 @@ class LorentzianPerfectLocalBackend:
                                 (colour, tuple(column[index] for column in next_source_columns))
                                 for index, colour in enumerate(source_colours)
                             )
+                        assert next_source_columns is not None and source_signature_counts is not None
                         target_column = target_pairings.column(j)
                         next_target_columns = target_columns + (target_column,)
                         if _configuration_signature_multisets_match(
@@ -1992,6 +1993,7 @@ class LorentzianPerfectLocalBackend:
                             (colour, tuple(column[index] for column in next_source_columns))
                             for index, colour in enumerate(source_colours)
                         )
+                    assert next_source_columns is not None and source_signature_counts is not None
                     target_column = target_pairings.column(j)
                     next_target_columns = target_columns + (target_column,)
                     if _configuration_signature_multisets_match(
