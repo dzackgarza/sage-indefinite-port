@@ -626,6 +626,49 @@ def test_group_only_facet_keys_do_not_construct_owned_cone(monkeypatch) -> None:
     assert set(facet_keys) == {1, 2}
 
 
+def test_perfect_traversal_keeps_owned_cone_lazy(monkeypatch) -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    complex_ = perfect_complex(lattice(gram.rows()), ZERO_SQUARES)
+    backend = complex_.local_backend()
+    monkeypatch.setattr(
+        backend,
+        "cell_cone",
+        lambda _cell: pytest.fail("facet traversal needs incidence rows, not the owned cone"),
+    )
+
+    complex_._ensure_traversal_started()
+    assert complex_._expand_traversal_once() == ()
+    assert backend.__dict__.get("_normaliz_cell_cones", {}) == {}
+
+
+def test_raw_normaliz_facet_route_matches_owned_cone_orbits() -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+
+    owned_keys, owned_generators, _ = backend._facet_mask_data(cell, use_owned_cone=True)
+    raw_keys, raw_generators, raw_canonical = backend._facet_mask_data(cell, use_owned_cone=False)
+    owned_keys = tuple(owned_keys)
+    raw_keys = tuple(raw_keys)
+    assert raw_canonical is not None
+    assert tuple(tuple(generator) for generator in owned_generators) == tuple(tuple(generator) for generator in raw_generators)
+    owned_facets = {_facet_incidence(key, len(cell.rows)) for key in owned_keys}
+    raw_facets = {_facet_incidence(key, len(cell.rows)) for key in raw_keys}
+    assert raw_facets == owned_facets
+
+    owned_orbits = tuple(
+        tuple(sorted(_facet_incidence(key, len(cell.rows)) for key, _word in orbit))
+        for orbit in backend._iter_facet_mask_orbits(iter(owned_keys), owned_generators)
+    )
+    raw_orbits = tuple(
+        tuple(sorted(_facet_incidence(key, len(cell.rows)) for key, _word in orbit))
+        for orbit in backend._iter_facet_mask_orbits(
+            iter(raw_keys), raw_generators, canonical_keys=raw_canonical
+        )
+    )
+    assert {frozenset(orbit) for orbit in raw_orbits} == {frozenset(orbit) for orbit in owned_orbits}
+
+
 def test_large_facet_keys_use_the_smaller_dense_incidence_side(monkeypatch) -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     rows = tuple((index + 1, 0) for index in range(1_000)) + tuple(

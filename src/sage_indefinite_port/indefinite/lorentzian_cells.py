@@ -2519,8 +2519,13 @@ class LorentzianPerfectComplex:
         )
         source = representatives[source_position]
         new_representatives: list[LorentzianPerfectCell] = []
+        # Traversal needs exact facet incidences, not owned covectors. Use
+        # Normaliz's raw H rows even when retaining Schreier words for public
+        # side-pairing consumers; the owned cone remains lazy for consumers
+        # that actually need its covector interface. This avoids materializing
+        # a second full owned H-family solely to encode incidence keys.
         facet_masks, generator_permutations, canonical_facet_keys = backend._facet_mask_data(
-            source, use_owned_cone=self._retain_facet_orbits
+            source, use_owned_cone=False
         )
         source_id = id(source)
         # Side-pairing witnesses are only queried for actual adjacencies, so
