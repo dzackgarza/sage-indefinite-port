@@ -1769,6 +1769,11 @@ class LorentzianPerfectLocalBackend:
         buckets = {}
         for j, colour in enumerate(target_colours):
             buckets.setdefault(colour, []).append(j)
+        # Build each large colour fibre's hash table once. Re-hashing the
+        # 22k-member A7 isotropic fibre for every unassigned basis row and
+        # every recursion node is avoidable; copy the prebuilt set and remove
+        # already-used images instead.
+        bucket_sets = {colour: set(indices) for colour, indices in buckets.items()}
         # A partial isometry i -> j constrains every further basis image
         # k -> l by the exact Gram pairing.
         # Only images of the selected basis occur as anchors. Index their
@@ -1953,7 +1958,8 @@ class LorentzianPerfectLocalBackend:
             for i in basis:
                 if i in images:
                     continue
-                admissible_images = set(buckets[source_colours[i]]) - used
+                admissible_images = bucket_sets[source_colours[i]].copy()
+                admissible_images.difference_update(used)
                 if forced_pair is not None:
                     forced_source, forced_target = forced_pair
                     if i == forced_source:
