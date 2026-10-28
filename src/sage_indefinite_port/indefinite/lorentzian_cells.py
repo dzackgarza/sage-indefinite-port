@@ -2711,6 +2711,7 @@ class _CellFaces:
         if len(set(incidences)) != len(incidences):
             raise ArithmeticError("distinct perfect-cell facets have the same extreme-ray incidence")
         self.facet_incidences = tuple(incidences)
+        del incidences
         self.incidences = frozenset(self.facet_incidences)
         self.all_facet_positions = frozenset(range(len(self.facet_incidences)))
         self.full_face = frozenset(range(len(self.rows)))
