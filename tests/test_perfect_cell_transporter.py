@@ -508,7 +508,7 @@ def test_normaliz_pairing_rows_match_owned_covectors(monkeypatch) -> None:
         for covector in backend._iter_cell_halfspace_covectors(cell)
     )
     assert h_presentation_calls == 2
-    assert cached_normaliz_cone_calls == 1
+    assert cached_normaliz_cone_calls == 0
     assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})
     def zero_pattern(rows):
         return tuple(tuple(value == 0 for value in row) for row in rows)

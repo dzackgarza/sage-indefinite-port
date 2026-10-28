@@ -899,38 +899,16 @@ class LorentzianPerfectLocalBackend:
         """Extract exact H-data directly in the cone's linear coordinates."""
         from sage.geometry.polyhedron.backend_normaliz import NmzCone, NmzResult
 
-        # Owned-cone construction also needs equations, so reuse its existing
-        # native cone instead of building a second cone from all input rays.
-        # The homogeneous-polyhedron interface appends a constant coordinate
-        # to H-rows and adds the tautological inequality 1 >= 0. Group-only
-        # incidence traversal needs no equations; retain its lean direct-cone
-        # input and avoid the homogenized origin vertex.
-        normaliz_cone = (
-            self._normaliz_cell_cone(cell)
-            if include_equations
-            else NmzCone(cone=cell.rows, subspace=())
-        )
+        # Use the ray-cone input directly. The cached Normaliz cone used by
+        # Polyhedron_normaliz includes a homogenized origin vertex, which adds
+        # an irrelevant constant coordinate and tautological H-inequality.
+        # This path needs only the native cone result, not the polyhedron
+        # wrapper, and must preserve the lean rank-dimensional H rows.
+        normaliz_cone = NmzCone(cone=cell.rows, subspace=())
         try:
             hyperplanes = NmzResult(normaliz_cone, "SupportHyperplanes")
             equations = NmzResult(normaliz_cone, "Equations") if include_equations else ()
-            if include_equations:
-                for rows in (hyperplanes, equations):
-                    if isinstance(rows, list):
-                        write = 0
-                        for row in rows:
-                            coordinates = tuple(int(entry) for entry in row[:-1])
-                            if any(coordinates):
-                                rows[write] = coordinates
-                                write += 1
-                        del rows[write:]
-                    else:
-                        for row in rows:
-                            coordinates = tuple(int(entry) for entry in row[:-1])
-                            if any(coordinates):
-                                raise ArithmeticError("Normaliz H-data must be mutable lists for in-place coordinate reduction")
         finally:
-            if include_equations:
-                self._release_normaliz_cell_cone(cell, normaliz_cone)
             del normaliz_cone
         return hyperplanes, equations
 
