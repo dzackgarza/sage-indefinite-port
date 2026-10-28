@@ -1110,6 +1110,18 @@ class LorentzianPerfectLocalBackend:
         # as dense Sage matrices before any facet processing starts.
         permutation_block_size = _configuration_pairing_block_size(ray_count)
         generators = self.cell_stabilizer(cell)
+        if not use_owned_cone and ray_count > _PAIRING_GRAPH_REFINEMENT_LIMIT:
+            # The stabilizer computation has finished using its dense
+            # row/covector matrices. They are useful again when comparing the
+            # flipped neighbor, but retaining both while building the packed
+            # ray permutations and Normaliz H-result needlessly raises the
+            # peak. Drop this one identity-LRU entry; the first subsequent
+            # transporter rebuilds it and then reuses it normally.
+            invariant_cache = self.__dict__.get("_configuration_invariant_cache", {})
+            cached = invariant_cache.get(id(cell))
+            if cached is not None and cached[0] is cell:
+                del invariant_cache[id(cell)]
+                del cached
         # The canonical configuration rows are already immutable tuples, so
         # use them directly as dictionary keys rather than allocating a second
         # 49,861-tuple copy of the full A7 ray configuration.
@@ -1160,18 +1172,6 @@ class LorentzianPerfectLocalBackend:
         del positions
 
         def facet_keys() -> Iterator[FacetMaskKey]:
-            if not use_owned_cone and len(cell.rows) > _PAIRING_GRAPH_REFINEMENT_LIMIT:
-                # The stabilizer computation has finished using its dense
-                # row/covector matrices. They are useful again when comparing
-                # the flipped neighbor, but retaining both while Normaliz
-                # materializes the complete A7 H-result needlessly raises the
-                # peak. Drop this one identity-LRU entry; the first subsequent
-                # transporter rebuilds it and then reuses it normally.
-                invariant_cache = self.__dict__.get("_configuration_invariant_cache", {})
-                cached = invariant_cache.get(id(cell))
-                if cached is not None and cached[0] is cell:
-                    del invariant_cache[id(cell)]
-                    del cached
             covector_rows = iter(
                 self._iter_cell_halfspace_pairing_rows(
                     cell, labels, use_owned_cone=use_owned_cone
