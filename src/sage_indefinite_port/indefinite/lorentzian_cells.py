@@ -1608,7 +1608,7 @@ class LorentzianPerfectLocalBackend:
                 )
                 if generators_only:
                     try:
-                        permutation = symmetric([positions[tuple(int(entry) for entry in row)] + 1 for row in (source_rows * action).rows()])
+                        permutation = symmetric([positions[tuple(int(entry) for entry in row)] + 1 for row in transformed_rows.rows()])
                     except KeyError as exc:
                         raise ArithmeticError("a certified perfect-cell stabilizer fails to permute its configuration") from exc
                     if permutation not in subgroup:
