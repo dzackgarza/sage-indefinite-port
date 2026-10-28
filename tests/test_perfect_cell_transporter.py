@@ -491,6 +491,11 @@ def test_large_perfect_form_hash_skips_quadratic_pairing_graph(monkeypatch) -> N
         "blocks",
         lambda _self: pytest.fail("large perfect-form hashing must not build the quadratic pairing graph"),
     )
+    monkeypatch.setattr(
+        lorentzian_cells._ConfigurationPairings,
+        "diagonal",
+        lambda _self: pytest.fail("large perfect-form hashing must stream diagonal blocks"),
+    )
     key = _perfect_form_hash_key(cell)
     backend = LorentzianPerfectLocalBackend()
     assert _perfect_form_hash_key(cell, backend) == key

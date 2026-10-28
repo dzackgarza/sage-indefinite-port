@@ -2128,7 +2128,9 @@ def _perfect_form_hash_key(
             divisibilities,
         )
     pairings = _ConfigurationPairings(cell.rows, _gram_matrix(cell.lattice))
-    diagonal = Counter(int(value) for value in pairings.diagonal())
+    diagonal: Counter[int] = Counter()
+    for block in pairings.diagonal_blocks():
+        diagonal.update(int(value) for value in block)
     off_diagonal: Counter[int] = Counter()
     if len(cell.rows) <= _PAIRING_GRAPH_REFINEMENT_LIMIT:
         for start, block in pairings.blocks():
