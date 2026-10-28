@@ -607,7 +607,12 @@ class _ConfigurationPairings:
         return int(self.covectors.row(left).dot_product(self.rows.row(right)))
 
     def diagonal(self):
-        return tuple(self.covectors.row(i).dot_product(self.rows.row(i)) for i in range(len(self)))
+        # Compute the diagonal of the Gram matrix with one FLINT-backed
+        # elementwise product, rather than one matrix-row extraction and dot
+        # product per configuration vector. The latter dispatch pattern is
+        # particularly expensive for the 49,861-ray A7 cell.
+        products = self.covectors.elementwise_product(self.rows)
+        return tuple(sum(row) for row in products.rows())
 
     def column(self, index: int, *, cache: bool | None = None):
         # The form is symmetric, so column j holds b(v_l, v_j) for every l.
