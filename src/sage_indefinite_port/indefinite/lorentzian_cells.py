@@ -1453,18 +1453,25 @@ class LorentzianPerfectLocalBackend:
         pairings = _ConfigurationPairings(rows, _gram_matrix(cell.lattice), cache_columns=True)
         if len(cell.rows) > _PAIRING_GRAPH_REFINEMENT_LIMIT:
             # The complete pairing-spectrum colour requires n(n-1)/2
-            # pairings, while coordinate-content and divisibility colours add
-            # two Python gcd reductions per ray. For large cells use the norm
-            # alone as the vertex colour. This only enlarges search fibres:
-            # exact anchor pairings and the complete row multiset remain
-            # mandatory before any transporter is accepted. Store the scalar
-            # norm directly instead of wrapping each value in a singleton
-            # tuple, which otherwise adds one Python object per ray.
-            spectra = tuple(
-                int(norm)
-                for block in pairings.diagonal_blocks()
-                for norm in block
-            )
+            # pairings. Coordinate content and Gram-covector divisibility are
+            # inexpensive exact integral-isometry invariants: on the frozen
+            # 49,861-row A7 configuration, their two 10-coordinate gcd passes
+            # take under half a second and the covector divisibility separates
+            # the nonprimitive pairings. Retain these colours rather than
+            # collapsing the entire search to norms alone.
+            spectra_list = []
+            index = 0
+            for norm_block in pairings.diagonal_blocks():
+                for norm in norm_block:
+                    row = cell.rows[index]
+                    covector = pairings.covectors.row(index)
+                    spectra_list.append(
+                        (int(norm), gcd(*map(int, row)), gcd(*map(int, covector)))
+                    )
+                    index += 1
+            if index != len(cell.rows):
+                raise ArithmeticError("the diagonal pairing stream has the wrong row count")
+            spectra = tuple(spectra_list)
         else:
             norms = pairings.diagonal()
             spectra = []
@@ -2098,9 +2105,10 @@ def _perfect_form_hash_key(
     For moderate configurations, this uses the source's full histogram of
     diagonal and off-diagonal Gram pairings, streamed in row blocks rather
     than materializing an n-by-n matrix. For large configurations, diagonal
-    norms and Smith factors remain in the key while the off-diagonal and
-    per-row gcd histograms are omitted. This is only a traversal bucket key;
-    an exact transporter check remains mandatory on every match.
+    norms, row contents, Gram-covector divisibilities and Smith factors remain
+    in the key while only the quadratic off-diagonal histogram is omitted.
+    This is only a traversal bucket key; an exact transporter check remains
+    mandatory on every match.
     """
     if backend is not None and len(cell.rows) > _PAIRING_GRAPH_REFINEMENT_LIMIT:
         # The large-cell transporter needs exactly the same norm-only colour
@@ -2109,18 +2117,18 @@ def _perfect_form_hash_key(
         # matrices and computing both invariants a second time. The cache then
         # also serves the subsequent stabilizer/transporter operation.
         _rows, _pairings, spectra, smith_invariants = backend._integral_configuration_invariants(cell)
-        diagonal = Counter(spectra)
+        diagonal = Counter(norm for norm, _content, _divisibility in spectra)
+        vector_contents = tuple(sorted(Counter(content for _norm, content, _divisibility in spectra).items()))
+        divisibilities = tuple(sorted(Counter(divisibility for _norm, _content, divisibility in spectra).items()))
         return (
             tuple(sorted(diagonal.items())),
             (),
             tuple(int(entry) for entry in smith_invariants),
-            (),
-            (),
+            vector_contents,
+            divisibilities,
         )
     pairings = _ConfigurationPairings(cell.rows, _gram_matrix(cell.lattice))
-    diagonal: Counter[int] = Counter()
-    for block in pairings.diagonal_blocks():
-        diagonal.update(block)
+    diagonal = Counter(int(value) for value in pairings.diagonal())
     off_diagonal: Counter[int] = Counter()
     if len(cell.rows) <= _PAIRING_GRAPH_REFINEMENT_LIMIT:
         for start, block in pairings.blocks():
@@ -2138,13 +2146,14 @@ def _perfect_form_hash_key(
             sorted(Counter(gcd(*pairings.covectors.row(index)) for index in range(len(pairings))).items())
         )
     else:
-        # These two row-wise histograms are additional integral-isometry
-        # invariants, but computing them performs two Python-level gcd
-        # reductions per ray. As with the omitted quadratic pairing histogram,
-        # omit them for very large configurations: the key is only a traversal
-        # bucket, and exact transporter verification remains authoritative.
-        vector_contents = ()
-        divisibilities = ()
+        # Row content and Gram-covector divisibility are linear-cost exact
+        # invariants. Their gcd reductions are cheap for fixed ambient rank;
+        # unlike the omitted off-diagonal histogram, they do not scale
+        # quadratically with the number of configuration vectors.
+        vector_contents = tuple(sorted(Counter(gcd(*map(int, row)) for row in cell.rows).items()))
+        divisibilities = tuple(
+            sorted(Counter(gcd(*map(int, row)) for row in pairings.covectors.rows()).items())
+        )
     return (
         tuple(sorted(diagonal.items())),
         tuple(sorted((value, count) for value, count in off_diagonal.items() if count)),

@@ -477,7 +477,7 @@ def test_group_only_facet_keys_do_not_construct_owned_cone(monkeypatch) -> None:
 
 
 def test_large_perfect_form_hash_skips_quadratic_pairing_graph(monkeypatch) -> None:
-    """Large-cell bucketing uses exact coarse invariants, not all pairings."""
+    """Large-cell bucketing uses exact linear-cost integral invariants."""
     gram = matrix(ZZ, [[0, 1], [1, 0]])
 
     class LargeInput:
@@ -491,17 +491,6 @@ def test_large_perfect_form_hash_skips_quadratic_pairing_graph(monkeypatch) -> N
         "blocks",
         lambda _self: pytest.fail("large perfect-form hashing must not build the quadratic pairing graph"),
     )
-    monkeypatch.setattr(
-        lorentzian_cells._ConfigurationPairings,
-        "diagonal",
-        lambda _self: pytest.fail("large perfect-form hashing must consume diagonal blocks directly"),
-    )
-    monkeypatch.setattr(
-        lorentzian_cells,
-        "gcd",
-        lambda *_args: pytest.fail("large perfect-form hashing must not reduce every ray with Python gcd"),
-    )
-
     key = _perfect_form_hash_key(cell)
     backend = LorentzianPerfectLocalBackend()
     assert _perfect_form_hash_key(cell, backend) == key
@@ -510,8 +499,8 @@ def test_large_perfect_form_hash_skips_quadratic_pairing_graph(monkeypatch) -> N
     assert key[1] == ()
     assert sum(count for _value, count in key[0]) == len(cell.rows)
     assert len(key[2]) == 2
-    assert key[3] == ()
-    assert key[4] == ()
+    assert sum(count for _value, count in key[3]) == len(cell.rows)
+    assert sum(count for _value, count in key[4]) == len(cell.rows)
 
 
 def test_complex_isometry_uses_cached_coarse_key_for_large_route(monkeypatch) -> None:
@@ -594,21 +583,15 @@ def test_repeated_row_transporter_retains_multiset_certificate(monkeypatch) -> N
     assert action * gram * action.transpose() == gram
 
 
-def test_large_configuration_invariants_skip_per_ray_gcd_colours(monkeypatch) -> None:
+def test_large_configuration_invariants_include_exact_gcd_colours(monkeypatch) -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
     monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
     backend = LorentzianPerfectLocalBackend()
 
-    with monkeypatch.context() as scoped:
-        scoped.setattr(
-            lorentzian_cells,
-            "gcd",
-            lambda *_args: pytest.fail("large configuration colours must not compute per-ray gcds"),
-        )
-        _rows, _pairings, spectra, _smith = backend._integral_configuration_invariants(cell)
+    _rows, _pairings, spectra, _smith = backend._integral_configuration_invariants(cell)
 
-    assert spectra == (0, 0)
+    assert spectra == ((0, 1, 1), (0, 1, 1))
     assert len(backend._integral_configuration_invariants(cell)) == 4
 
 
