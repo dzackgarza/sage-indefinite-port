@@ -1993,15 +1993,15 @@ class LorentzianPerfectComplex:
         if representatives is None or target_representatives is None:
             raise ArithmeticError("a started Lorentzian traversal has no initial cell")
         target_cell = target_representatives[0]
-        target_key = _perfect_form_hash_key(target_cell)
         backend = self.local_backend()
+        target_key = _perfect_form_hash_key(target_cell, backend)
         for source_cell in self._traversal_representative_buckets.get(target_key, ()):
             witness = backend.cell_transporter(source_cell, target_cell)
             if witness is not None:
                 return witness
         while len(self._traversal_processed) < len(representatives):
             for source_cell in self._expand_traversal_once():
-                if _perfect_form_hash_key(source_cell) == target_key:
+                if _perfect_form_hash_key(source_cell, backend) == target_key:
                     witness = backend.cell_transporter(source_cell, target_cell)
                     if witness is not None:
                         return witness
