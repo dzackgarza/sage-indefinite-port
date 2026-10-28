@@ -18,6 +18,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _permuted_bitset,
     _permuted_facet_key,
     _perfect_form_hash_key,
+    _schreier_generator_indices,
     LorentzianPerfectCell,
     LorentzianPerfectLocalBackend,
     NONNEGATIVE_SQUARES,
@@ -42,6 +43,14 @@ def test_owned_row_blocks_release_only_consumed_list_entries() -> None:
     assert rows == [None] * 5
     with pytest.raises(StopIteration):
         next(blocks)
+
+
+def test_schreier_generator_indices_streams_nested_word_in_action_order() -> None:
+    word = (((None, 3), 1), 4)
+    indices = _schreier_generator_indices(word)
+
+    assert iter(indices) is indices
+    assert tuple(indices) == (3, 1, 4)
 
 GRAM = ((-4, 0, 0, 0, 0, 2, 0, 0, 0, 0),
  (0, -4, 2, 0, 0, 0, 0, 0, 0, 0),
