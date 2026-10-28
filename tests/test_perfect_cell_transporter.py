@@ -1111,7 +1111,7 @@ def test_cell_faces_reuse_owned_halfspace_covectors_exactly() -> None:
 
 def test_facet_flip_uses_pinned_gap_normals(monkeypatch) -> None:
     """DoFlipping's two normals use the source GAP nullspace and orientation."""
-    from sage.all import QQ
+    from sage.all import QQ, libgap
 
     gram = matrix(ZZ, [[1, 0, 0], [0, -1, 0], [0, 0, -1]])
     ambient = lattice(gram.rows())
@@ -1129,8 +1129,14 @@ def test_facet_flip_uses_pinned_gap_normals(monkeypatch) -> None:
     critical, base, direction = observed.pop()
     selected = matrix(QQ, [rows[0], rows[1]])
     expanded = matrix(QQ, [[1, *row] for row in rows])
-    pinned_direction = lorentzian_cells._pinned_nullspace_matrix(selected.transpose()).row(0)
-    pinned_base = lorentzian_cells._pinned_nullspace_matrix(expanded.transpose()).row(0)
+    # Independent oracle: invoke the pinned GAP operation directly rather than
+    # the Python adapter under test.
+    pinned_direction = vector(QQ, [QQ(x) for x in libgap.NullspaceMat(
+        [[libgap(QQ(x)) for x in row] for row in selected.transpose().rows()]
+    )[0]])
+    pinned_base = vector(QQ, [QQ(x) for x in libgap.NullspaceMat(
+        [[libgap(QQ(x)) for x in row] for row in expanded.transpose().rows()]
+    )[0]])
     outside = vector(QQ, rows[2])
     if pinned_direction.dot_product(outside) < 0:
         pinned_direction = -pinned_direction
