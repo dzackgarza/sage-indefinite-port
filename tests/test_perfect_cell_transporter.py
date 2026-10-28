@@ -189,6 +189,16 @@ def test_coarse_large_configuration_colours_preserve_exact_stabilizer(monkeypatc
         assert set(map(tuple, matrix(ZZ, cell.rows) * transform)) == set(cell.rows)
 
 
+def test_configuration_pairing_diagonal_matches_exact_row_products() -> None:
+    rows = matrix(ZZ, [[1, 2], [3, 4], [5, 6], [-2, 7]])
+    gram = matrix(ZZ, [[2, 1], [1, -3]])
+    pairings = lorentzian_cells._ConfigurationPairings(rows, gram)
+
+    expected = tuple((rows.row(i) * gram).dot_product(rows.row(i)) for i in range(rows.nrows()))
+
+    assert pairings.diagonal() == expected
+
+
 def test_coarse_colours_preserve_changed_configuration_transporters(monkeypatch) -> None:
     """Coarse invariant colours cannot reject a valid nonidentity transporter."""
     gram = matrix(ZZ, [[0, 1], [1, 0]])
