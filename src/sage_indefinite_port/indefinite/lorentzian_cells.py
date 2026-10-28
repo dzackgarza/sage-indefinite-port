@@ -1096,16 +1096,23 @@ class LorentzianPerfectLocalBackend:
             yield tuple(int(covector(label)) for label in labels)
 
     def _iter_cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
-        """Yield the owned cone's exact primitive facet covectors."""
+        """Yield exact primitive facet covectors without forcing a large owned cone."""
+        if len(cell.rows) >= 10_000:
+            hyperplanes, _equations = self._normaliz_cell_h_presentation(
+                cell, include_equations=False
+            )
+            yield from self._iter_normaliz_owned_covectors(cell, hyperplanes)
+            return
         yield from self.cell_cone(cell).halfspace_covectors()
 
     def cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
-        """Return the exact primitive homogeneous facet covectors of ``cell``.
+        """Return exact primitive homogeneous facet covectors of ``cell``.
 
-        The owned cone already stores this exact tuple. Return it directly
-        rather than constructing and caching a second tuple with a duplicate
-        pointer array for large facet families.
+        For large configurations, consume Normaliz's exact H-presentation
+        directly. Smaller cells reuse the owned cone's canonical tuple.
         """
+        if len(cell.rows) >= 10_000:
+            return tuple(self._iter_cell_halfspace_covectors(cell))
         return self.cell_cone(cell).halfspace_covectors()
 
     @cached_method
