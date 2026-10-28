@@ -14,6 +14,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _bit_positions,
     _facet_complement_key,
     _facet_incidence,
+    _iter_owned_row_blocks,
     _permuted_bitset,
     _permuted_facet_key,
     _perfect_form_hash_key,
@@ -25,6 +26,22 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
 )
 import sage_indefinite_port.indefinite.lorentzian_cells as lorentzian_cells
 from tests.acceptance.consumer import lattice, rows_of
+
+
+def test_owned_row_blocks_release_only_consumed_list_entries() -> None:
+    rows = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]
+    blocks = _iter_owned_row_blocks(rows, 2)
+
+    first = next(blocks)
+    assert first == ((1, 2), (3, 4))
+    assert rows == [None, None, [5, 6], [7, 8], [9, 10]]
+    second = next(blocks)
+    assert second == ((5, 6), (7, 8))
+    assert rows == [None, None, None, None, [9, 10]]
+    assert next(blocks) == ((9, 10),)
+    assert rows == [None] * 5
+    with pytest.raises(StopIteration):
+        next(blocks)
 
 GRAM = ((-4, 0, 0, 0, 0, 2, 0, 0, 0, 0),
  (0, -4, 2, 0, 0, 0, 0, 0, 0, 0),

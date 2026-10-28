@@ -655,6 +655,19 @@ def _configuration_pairing_block_size(configuration_size: int) -> int:
     return max(1, min(16, 1_000_000 // max(1, configuration_size)))
 
 
+def _iter_owned_row_blocks(rows, block_size: int) -> Iterator[tuple[tuple[int, ...], ...]]:
+    """Yield immutable row blocks and release consumed Normaliz list entries."""
+    if block_size < 1:
+        raise ValueError("row block size must be positive")
+    for start in range(0, len(rows), block_size):
+        stop = min(len(rows), start + block_size)
+        block = tuple(tuple(int(entry) for entry in rows[position]) for position in range(start, stop))
+        if isinstance(rows, list):
+            for position in range(start, stop):
+                rows[position] = None
+        yield block
+
+
 # The full weighted pairing graph has quadratic size even though an integral
 # isometry is determined by the images of a rank-sized basis. Large frozen
 # configurations use only intrinsic vertex colours here and retain exact
@@ -1992,7 +2005,15 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         pairing_block = None
         covector_block = None
         all_nonincident_mask = (1 << ray_count) - 1
-        for start in range(0, len(covectors), block_size):
+        if use_raw_facets:
+            covector_blocks = enumerate(_iter_owned_row_blocks(covectors, block_size))
+        else:
+            covector_blocks = (
+                (start // block_size, tuple(covector_at(position) for position in range(start, min(start + block_size, len(covectors)))))
+                for start in range(0, len(covectors), block_size)
+            )
+        for block_index, covector_block in covector_blocks:
+            start = block_index * block_size
             stop = min(start + block_size, len(covectors))
             # Delay the rank-by-ray transpose until a nonempty facet block is
             # available; an empty H-presentation needs no ray matrix.
@@ -2004,15 +2025,6 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # Bind only the current covector block.
             # Materialize only this bounded block through the owned unranking
             # map, reusing its inverse instead of rebuilding it per covector.
-            covector_block = tuple(covector_at(position) for position in range(start, stop))
-            if use_raw_facets and isinstance(covectors, list):
-                # Normaliz returns a Python list of all H rows. Transfer each
-                # block into its short-lived tuple and release the source row
-                # references immediately; otherwise the raw H-list and the
-                # current pairing block coexist, defeating bounded-memory
-                # incidence processing on the A7 configuration.
-                for position in range(start, stop):
-                    covectors[position] = None
             # Every owned halfspace covector is primitive integral data in
             # the lattice dual, so exact incidence needs no QQ coercion.
             halfspace_block = matrix(
