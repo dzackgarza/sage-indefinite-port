@@ -127,18 +127,17 @@ def _pointed_classes(category: Category, lattice: Lattices.ParentMethods, square
     profile = AttackProfile.from_lattice(lattice)
     if profile.positive_index == 1 and int(lattice.rank()) == 2 and tuple(map(int, lattice.signature_pair())) == (1, 1) and not lattice.is_isotropic():
         # An anisotropic binary plane has no isotropic cusp and therefore no
-        # perfect-cell fundamental domain. Classify every nonzero primitive
-        # rank-one marking by the generic exact genus/gluing embedding owner.
-        # The zero-square case is empty by anisotropy, without invoking Emb.
+        # perfect-cell fundamental domain. Use the research owner's exact
+        # nonsplit binary fixed-norm orbit set, whose finite transversal
+        # includes imprimitive vectors; retain only primitive markings here.
+        # An anisotropic plane has no nonzero vector of square zero.
         if square == 0:
             return ()
+        orbit_set = lattice.binary_fixed_norm_representatives(square)
+        section = orbit_set.section()
+        vectors = tuple(section(orbit) for orbit in orbit_set if section(orbit).content() == 1)
         base = category.base_object()
-        return tuple(
-            category.object(embedding)
-            for embedding in base.Emb(lattice).primitive_embedding_class_representatives(
-                classification="emb"
-            )
-        )
+        return tuple(category.object(base.hom([vector_], codomain=lattice)) for vector_ in vectors)
     if profile.positive_index == 1 and int(lattice.rank()) == 2 and tuple(map(int, lattice.signature_pair())) == (1, 1) and lattice.is_isotropic():
         # The pinned binary split dispatcher covers both timelike and
         # spacelike squares; perfect cells cover only the closed positive cone.
