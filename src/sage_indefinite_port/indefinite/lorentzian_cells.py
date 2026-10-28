@@ -607,6 +607,10 @@ class _ConfigurationPairings:
         return int(self.covectors.row(left).dot_product(self.rows.row(right)))
 
     def diagonal(self):
+        return tuple(value for block in self.diagonal_blocks() for value in block)
+
+    def diagonal_blocks(self):
+        """Yield exact diagonal Gram entries in bounded row blocks."""
         # Compute the diagonal of the Gram matrix with FLINT-backed
         # elementwise products, rather than one matrix-row extraction and dot
         # product per configuration vector. Bound the temporary product by
@@ -614,14 +618,12 @@ class _ConfigurationPairings:
         # copy of their coordinate matrix merely to obtain the diagonal.
         row_count, rank = self.rows.dimensions()
         block_size = max(1, min(1024, 100_000 // max(1, rank)))
-        diagonal = []
         for start in range(0, row_count, block_size):
             stop = min(start + block_size, row_count)
             products = self.covectors.matrix_from_rows(range(start, stop)).elementwise_product(
                 self.rows.matrix_from_rows(range(start, stop))
             )
-            diagonal.extend(sum(row) for row in products.rows())
-        return tuple(diagonal)
+            yield tuple(sum(row) for row in products.rows())
 
     def column(self, index: int, *, cache: bool | None = None):
         # The form is symmetric, so column j holds b(v_l, v_j) for every l.
@@ -1932,14 +1934,15 @@ def _perfect_form_hash_key(cell: LorentzianPerfectCell) -> PerfectFormKey:
 
     For moderate configurations, this uses the source's full histogram of
     diagonal and off-diagonal Gram pairings, streamed in row blocks rather
-    than materializing an n-by-n matrix. For large configurations, the
-    off-diagonal histogram is deliberately omitted: diagonal norms, Smith
-    factors, vector contents, and divisibilities remain necessary integral-
-    isometry invariants and avoid quadratic work. This is only a traversal
-    bucket key; an exact transporter check remains mandatory on every match.
+    than materializing an n-by-n matrix. For large configurations, diagonal
+    norms and Smith factors remain in the key while the off-diagonal and
+    per-row gcd histograms are omitted. This is only a traversal bucket key;
+    an exact transporter check remains mandatory on every match.
     """
     pairings = _ConfigurationPairings(cell.rows, _gram_matrix(cell.lattice))
-    diagonal = Counter(int(value) for value in pairings.diagonal())
+    diagonal: Counter[int] = Counter()
+    for block in pairings.diagonal_blocks():
+        diagonal.update(block)
     off_diagonal: Counter[int] = Counter()
     if len(cell.rows) <= _PAIRING_GRAPH_REFINEMENT_LIMIT:
         for start, block in pairings.blocks():

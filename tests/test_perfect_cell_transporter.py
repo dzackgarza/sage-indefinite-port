@@ -358,6 +358,11 @@ def test_large_perfect_form_hash_skips_quadratic_pairing_graph(monkeypatch) -> N
         lambda _self: pytest.fail("large perfect-form hashing must not build the quadratic pairing graph"),
     )
     monkeypatch.setattr(
+        lorentzian_cells._ConfigurationPairings,
+        "diagonal",
+        lambda _self: pytest.fail("large perfect-form hashing must consume diagonal blocks directly"),
+    )
+    monkeypatch.setattr(
         lorentzian_cells,
         "gcd",
         lambda *_args: pytest.fail("large perfect-form hashing must not reduce every ray with Python gcd"),
