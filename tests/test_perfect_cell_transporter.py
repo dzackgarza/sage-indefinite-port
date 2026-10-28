@@ -566,6 +566,21 @@ def test_large_same_lattice_transporter_skips_counter_identity_probe(monkeypatch
     assert action * gram * action.transpose() == gram
 
 
+def test_repeated_row_transporter_retains_multiset_certificate(monkeypatch) -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    ambient = lattice(gram.rows())
+    source = LorentzianPerfectCell(ambient, ((1, 0), (0, 1), (1, 0)), ZERO_SQUARES)
+    target = LorentzianPerfectCell(ambient, ((0, 1), (1, 0), (0, 1)), ZERO_SQUARES)
+    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
+
+    witness = LorentzianPerfectLocalBackend().cell_transporter(source, target)
+
+    assert witness is not None
+    action = matrix(ZZ, rows_of(witness))
+    assert abs(action.det()) == 1
+    assert action * gram * action.transpose() == gram
+
+
 def test_large_configuration_invariants_skip_per_ray_gcd_colours(monkeypatch) -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
