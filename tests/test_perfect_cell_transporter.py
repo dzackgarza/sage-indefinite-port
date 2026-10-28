@@ -292,13 +292,16 @@ def test_configuration_invariant_cache_is_bounded_and_identity_keyed() -> None:
     first = backend._integral_configuration_invariants(cells[0])
 
     assert backend._integral_configuration_invariants(cells[0]) is first
-    for cell in cells[1:]:
-        backend._integral_configuration_invariants(cell)
+    backend._integral_configuration_invariants(cells[1])
+    assert backend._integral_configuration_invariants(cells[0]) is first
+    backend._integral_configuration_invariants(cells[2])
 
     cache = backend.__dict__["_configuration_invariant_cache"]
     assert len(cache) == 2
-    assert id(cells[0]) not in cache
-    assert all(cache[id(cell)][0] is cell for cell in cells[1:])
+    assert id(cells[0]) in cache
+    assert id(cells[1]) not in cache
+    assert cache[id(cells[0])][0] is cells[0]
+    assert cache[id(cells[2])][0] is cells[2]
 
 
 def test_owned_large_cell_cone_releases_normaliz_engine_cache() -> None:
