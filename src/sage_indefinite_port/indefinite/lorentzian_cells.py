@@ -467,6 +467,32 @@ def _gram_matrix(lattice: Lattices.ParentMethods) -> Matrix_integer_dense:
     return _engine_component_matrix(lattice.gram_tensor()).change_ring(SageZZ)
 
 
+def _integral_basis_reflection(gram: Matrix_integer_dense, index: int) -> Matrix_integer_dense | None:
+    r"""Return the exact row-action reflection in a basis vector when integral.
+
+    For the row-vector convention ``x -> x*A``, reflection in ``e_i`` is
+    ``A = I - 2*(G*e_i^T)*e_i/q``, where ``q = G[i,i]``. It preserves the Gram
+    form over Q; it is an integral lattice automorphism exactly when every
+    entry of ``2*G[:,i]`` is divisible by ``q``. The returned matrix is
+    independently checked for integrality, unimodularity and Gram preservation.
+    """
+    if gram.nrows() != gram.ncols() or not 0 <= index < gram.nrows():
+        raise ValueError("a basis reflection needs a square Gram matrix and a valid basis index")
+    square = int(gram[index, index])
+    if square == 0:
+        return None
+    column = tuple(int(entry) for entry in gram.column(index))
+    if any((2 * entry) % square for entry in column):
+        return None
+    rank = gram.nrows()
+    action = identity_matrix(SageZZ, rank)
+    for row, entry in enumerate(column):
+        action[row, index] -= (2 * entry) // square
+    if abs(action.det()) != 1 or action * gram * action.transpose() != gram:
+        raise ArithmeticError("an integral basis reflection failed its exact isometry certificate")
+    return action
+
+
 @dataclass(frozen=True)
 class LorentzianPerfectCell:
     r"""A perfect cell, held as the coordinate rows of its vector configuration.
@@ -1903,6 +1929,53 @@ class LorentzianPerfectLocalBackend:
             symmetric = SymmetricGroup(n)
             subgroup = symmetric.subgroup([])
             group_permutations = []
+            # Seed the exact stabilizer subgroup with integral reflections in
+            # the ambient basis vectors whenever they preserve this complete
+            # configuration. Each candidate is certified against the Gram
+            # form and every ray; since the action is injective and the row
+            # universe is finite of the same size, successful membership for
+            # every row proves exact set preservation. These seeds are valid
+            # subgroup elements, so the later pointwise-stabilizer quotient
+            # search remains complete while often starting with a substantial
+            # part of the visible root-system symmetry already generated.
+            permutation_typecode = "I" if n <= 2**32 else "Q"
+            for basis_index in range(rank):
+                action = _integral_basis_reflection(source_gram, basis_index)
+                if action is None:
+                    continue
+                permutation_images = array(permutation_typecode)
+                preserves_configuration = True
+                for start in range(0, n, _configuration_pairing_block_size(n)):
+                    stop = min(start + _configuration_pairing_block_size(n), n)
+                    transformed_block = source_rows.matrix_from_rows(range(start, stop)) * action
+                    for row in transformed_block.rows():
+                        position = positions.get(tuple(int(entry) for entry in row))
+                        if position is None:
+                            preserves_configuration = False
+                            break
+                        permutation_images.append(position + 1)
+                    if not preserves_configuration:
+                        break
+                if not preserves_configuration:
+                    continue
+                permutation = symmetric(list(permutation_images))
+                if permutation in subgroup:
+                    continue
+                witness = source.lattice.Isom(source.lattice)(
+                    {
+                        label: source.lattice.linear_combination(
+                            {
+                                target_label: source.lattice.base_ring()(int(entry))
+                                for target_label, entry in zip(source_labels, row, strict=True)
+                                if entry
+                            }
+                        )
+                        for label, row in zip(source_labels, action.rows(), strict=True)
+                    }
+                )
+                stabilizer_elements.append(witness)
+                group_permutations.append(permutation)
+                subgroup = symmetric.subgroup(group_permutations)
 
         def forced_sum_image(images):
             """Use the exact configuration sum to force a last basis image.
