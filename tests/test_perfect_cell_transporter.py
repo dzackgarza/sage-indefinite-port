@@ -729,7 +729,11 @@ def test_large_transporter_matches_joint_gcd_colours_after_basis_change(monkeypa
     )
     monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
 
-    witness = LorentzianPerfectLocalBackend().cell_transporter(source, target)
+    backend = LorentzianPerfectLocalBackend()
+    source_spectra = backend._integral_configuration_invariants(source)[2]
+    target_spectra = backend._integral_configuration_invariants(target)[2]
+    assert lorentzian_cells.Counter(source_spectra) == lorentzian_cells.Counter(target_spectra)
+    witness = backend.cell_transporter(source, target)
 
     assert witness is not None
     action = matrix(ZZ, rows_of(witness))
@@ -785,7 +789,7 @@ def test_large_configuration_invariants_include_exact_gcd_colours(monkeypatch) -
 
     _rows, _pairings, spectra, _smith, row_sum, row_moment, distinct_rows = backend._integral_configuration_invariants(cell)
 
-    assert spectra == ((0, 1, 1, 1), (0, 1, 1, 1))
+    assert spectra == ((0, 1, 1, 1, 1), (0, 1, 1, 1, 1))
     assert tuple(row_sum) == (1, 1)
     assert row_moment == matrix(ZZ, [[1, 0], [0, 1]])
     assert distinct_rows

@@ -1695,6 +1695,21 @@ class LorentzianPerfectLocalBackend:
         gram = _gram_matrix(cell.lattice)
         pairings = _ConfigurationPairings(rows, gram, cache_columns=True)
         row_sum = vector(SageZZ, (sum(row[j] for row in cell.rows) for j in range(rows.ncols())))
+        row_moment = rows.transpose() * rows
+        # The moment matrix transforms by M_target = A^T M_source A. Hence
+        # each row vector r*G*M transforms by the same unimodular row action,
+        # and its coordinate content is another exact row colour. Compute it
+        # in bounded blocks to avoid retaining a second full n-by-r matrix.
+        moment_covectors = gram * row_moment
+        moment_contents_list = []
+        moment_block_size = _configuration_pairing_block_size(len(cell.rows))
+        for start in range(0, len(cell.rows), moment_block_size):
+            stop = min(start + moment_block_size, len(cell.rows))
+            moment_block = rows.matrix_from_rows(range(start, stop)) * moment_covectors
+            moment_contents_list.extend(gcd(*map(int, row)) for row in moment_block.rows())
+            del moment_block
+        moment_contents = tuple(moment_contents_list)
+        del moment_contents_list, moment_covectors
         # Every configuration isometry carries the total row sum to the
         # target total row sum. Thus each row's exact pairing with that sum is
         # an additional linear-cost invariant; on the large path it refines
@@ -1722,6 +1737,7 @@ class LorentzianPerfectLocalBackend:
                             gcd(*map(int, row)),
                             gcd(*map(int, covector)),
                             int(row_sum_pairings[index, 0]),
+                            moment_contents[index],
                         )
                     )
                     index += 1
@@ -1743,7 +1759,6 @@ class LorentzianPerfectLocalBackend:
         # invariant list bounded by the ambient rank rather than the number
         # of configuration rows (which is 49,861 in the A7 consumer).
         smith_invariants = rows.transpose().elementary_divisors()
-        row_moment = rows.transpose() * rows
         distinct_rows = len(set(cell.rows)) == len(cell.rows)
         data = (rows, pairings, spectra, smith_invariants, row_sum, row_moment, distinct_rows)
         cache[key] = (cell, data)
