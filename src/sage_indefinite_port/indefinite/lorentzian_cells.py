@@ -78,7 +78,7 @@ def _sparse_facet_complement_limit(ray_count: int) -> int:
 
 
 def _facet_complement_key(mask: int, ray_count: int | None = None) -> FacetMaskKey:
-    """Encode a facet by whichever side of its incidence is sparse."""
+    """Encode a facet sparsely, or bit-pack the smaller side when both are dense."""
     if ray_count is None:
         ray_count = max(1, mask.bit_length())
     complement_count = mask.bit_count()
