@@ -1959,10 +1959,19 @@ def _perfect_form_hash_key(cell: LorentzianPerfectCell) -> PerfectFormKey:
                 # n-by-n Gram matrix unmaterialized.
                 off_diagonal.update(int(row[j]) for j in range(i + 1, len(pairings)))
     smith_invariants = tuple(int(entry) for entry in pairings.rows.transpose().elementary_divisors())
-    vector_contents = tuple(sorted(Counter(gcd(*row) for row in cell.rows).items()))
-    divisibilities = tuple(
-        sorted(Counter(gcd(*pairings.covectors.row(index)) for index in range(len(pairings))).items())
-    )
+    if len(cell.rows) <= _PAIRING_GRAPH_REFINEMENT_LIMIT:
+        vector_contents = tuple(sorted(Counter(gcd(*row) for row in cell.rows).items()))
+        divisibilities = tuple(
+            sorted(Counter(gcd(*pairings.covectors.row(index)) for index in range(len(pairings))).items())
+        )
+    else:
+        # These two row-wise histograms are additional integral-isometry
+        # invariants, but computing them performs two Python-level gcd
+        # reductions per ray. As with the omitted quadratic pairing histogram,
+        # omit them for very large configurations: the key is only a traversal
+        # bucket, and exact transporter verification remains authoritative.
+        vector_contents = ()
+        divisibilities = ()
     return (
         tuple(sorted(diagonal.items())),
         tuple(sorted((value, count) for value, count in off_diagonal.items() if count)),

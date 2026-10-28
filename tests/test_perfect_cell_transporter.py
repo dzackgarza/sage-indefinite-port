@@ -357,14 +357,19 @@ def test_large_perfect_form_hash_skips_quadratic_pairing_graph(monkeypatch) -> N
         "blocks",
         lambda _self: pytest.fail("large perfect-form hashing must not build the quadratic pairing graph"),
     )
+    monkeypatch.setattr(
+        lorentzian_cells,
+        "gcd",
+        lambda *_args: pytest.fail("large perfect-form hashing must not reduce every ray with Python gcd"),
+    )
 
     key = _perfect_form_hash_key(cell)
 
     assert key[1] == ()
     assert sum(count for _value, count in key[0]) == len(cell.rows)
     assert len(key[2]) == 2
-    assert sum(count for _content, count in key[3]) == len(cell.rows)
-    assert sum(count for _divisibility, count in key[4]) == len(cell.rows)
+    assert key[3] == ()
+    assert key[4] == ()
 
 
 def test_configuration_invariant_cache_is_bounded_and_identity_keyed() -> None:
