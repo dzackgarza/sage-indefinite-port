@@ -2068,6 +2068,25 @@ class LorentzianPerfectLocalBackend:
                 if (action := _integral_basis_reflection(source_gram, basis_index)) is not None
             ]
             candidate_actions.extend(_gram_component_sign_flips(source_gram))
+            # Basis transpositions are another cheap family of exact integral
+            # isometries. The row/column equality test avoids constructing a
+            # matrix unless the transposition preserves every Gram entry.
+            for first in range(rank):
+                for second in range(first + 1, rank):
+                    if source_gram[first, first] != source_gram[second, second]:
+                        continue
+                    if any(
+                        source_gram[first, other] != source_gram[second, other]
+                        for other in range(rank)
+                        if other not in (first, second)
+                    ):
+                        continue
+                    action = identity_matrix(SageZZ, rank)
+                    action[first, first] = action[second, second] = 0
+                    action[first, second] = action[second, first] = 1
+                    if action * source_gram * action.transpose() != source_gram:
+                        raise ArithmeticError("a Gram-row transposition failed its exact isometry certificate")
+                    candidate_actions.append(action)
             for action in candidate_actions:
                 permutation_images = array(permutation_typecode)
                 preserves_configuration = True

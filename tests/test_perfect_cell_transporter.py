@@ -358,6 +358,20 @@ def test_class_sum_pairing_colours_are_isometry_invariants() -> None:
     assert _class_sum_pairing_signatures(rows, gram, signatures, max_classes=1) == signatures
 
 
+def test_cell_stabilizer_seeds_basis_transpositions() -> None:
+    gram = matrix(ZZ, [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+    rows = ((2, 0, 0, 2), (-2, 0, 0, 2), (0, 2, 0, 2), (0, -2, 0, 2), (0, 0, 2, 2), (0, 0, -2, 2))
+    cell = LorentzianPerfectCell(lattice(gram.rows()), rows, ZERO_SQUARES)
+
+    generators = LorentzianPerfectLocalBackend().cell_stabilizer(cell)
+    expected = matrix(ZZ, [[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+    actions = {tuple(tuple(int(entry) for entry in row) for row in rows_of(generator)) for generator in generators}
+
+    assert tuple(tuple(int(entry) for entry in row) for row in expected.rows()) in actions
+    assert expected * gram * expected.transpose() == gram
+    assert set(map(tuple, matrix(ZZ, rows) * expected)) == set(rows)
+
+
 def test_gram_component_sign_flips_are_exact_isometries() -> None:
     gram = matrix(ZZ, [[2, -1, 0, 0], [-1, 2, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
     actions = _gram_component_sign_flips(gram)
