@@ -990,7 +990,6 @@ class LorentzianPerfectLocalBackend:
             permutations.append(permutation)
         return tuple(permutations)
 
-    @cached_method
     def facet_orbit_permutations(self, cell: LorentzianPerfectCell) -> tuple[tuple[tuple[FacetIncidence, tuple[int, ...]], ...], ...]:
         r"""Orbits of Aut((L, S)) on facets, paired with their exact ray-permutation transversals.
 
@@ -1004,6 +1003,9 @@ class LorentzianPerfectLocalBackend:
         # caching a second complete collection of large frozenset incidences.
         # This public result necessarily materializes each incidence and full
         # ray permutation, but the intermediate word-orbit view is not needed.
+        # Do not cache the materialized result: it can contain one full ray
+        # permutation per facet, and retaining it after the caller has consumed
+        # it would defeat the bounded-memory traversal used to construct it.
         mask_orbits, generator_permutations = self._facet_orbit_transversal_masks(cell)
         ray_count = len(cell.rows)
         permutation_typecode = (
@@ -1207,7 +1209,6 @@ class LorentzianPerfectLocalBackend:
             permutations,
         )
 
-    @cached_method
     def facet_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[tuple[FacetIncidence, LatticeIsometryMethods], ...], ...]:
         """Facet orbits with owned isometries, materialized for this public view."""
         labels = tuple(cell.lattice.module_generating_set())
