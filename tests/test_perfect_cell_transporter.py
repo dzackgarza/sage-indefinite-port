@@ -548,7 +548,7 @@ def test_cell_faces_reuse_owned_halfspace_covectors_exactly() -> None:
     assert set(backend.cell_primitive_rays(cell, square=0)) == {
         ray for ray in cone.primitive_rays() if ray.q() == 0
     }
-    assert {tuple(int(entry) for entry in row) for row in structure.covectors} == {
+    assert {tuple(int(entry) for entry in row) for row in structure._covector_matrix.rows()} == {
         coordinates(covector) for covector in cone.facet_covectors()
     }
     assert {
@@ -557,7 +557,7 @@ def test_cell_faces_reuse_owned_halfspace_covectors_exactly() -> None:
     } == {coordinates(covector) for covector in cone.halfspace_covectors()}
     assert structure.incidences == frozenset(
         frozenset(index for index, row in enumerate(structure.rows) if covector.dot_product(row) == 0)
-        for covector in structure.covectors
+        for covector in structure._covector_matrix.rows()
     )
     interior_mark = structure.mark(vector(ZZ, (1, 1)))
     assert interior_mark.chain == (structure.full_face,)

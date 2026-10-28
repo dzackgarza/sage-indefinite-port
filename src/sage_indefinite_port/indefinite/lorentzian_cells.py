@@ -2665,18 +2665,10 @@ class _CellFaces:
         # elements and immediately extracting the same coordinates again.
         self.rows = tuple(vector(SageZZ, row) for row in cell.rows)
         # The traversal/complex collector already owns this cell's cone.
-        # Reuse its exact H-family rather than re-querying Normaliz and
-        # retaining a second complete owned covector tuple for the face lattice.
-        self.covectors = tuple(
-            vector(
-                SageQQ,
-                [_rational(covector.to_vector()(label)) for label in self.labels],
-            )
-            for covector in backend.cell_cone(cell).halfspace_covectors()
-        )
+        # Consume its exact H-family directly into the dense coordinate matrix
+        # below; retaining a tuple of owned covector elements alongside that
+        # matrix duplicates one Python object and coordinate vector per facet.
         interior = sum(self.rows[1:], self.rows[0])
-        if any(covector.dot_product(interior) <= 0 for covector in self.covectors):
-            raise ArithmeticError("the facet covectors of a cell must be positive on its interior")
         # Compute exact facet-to-ray incidences in bounded matrix blocks.
         # The scalar Python loop performs one exact dot product per ray and
         # facet; A7 has 49,861 rays, so batching Sage's exact matrix product
@@ -2689,7 +2681,13 @@ class _CellFaces:
         ray_matrix = matrix(SageZZ, self.rows)
         ray_transpose = ray_matrix.transpose()
         covector_rows = []
-        for covector in self.covectors:
+        for owned_covector in backend.cell_cone(cell).halfspace_covectors():
+            covector = vector(
+                SageQQ,
+                [_rational(owned_covector.to_vector()(label)) for label in self.labels],
+            )
+            if covector.dot_product(interior) <= 0:
+                raise ArithmeticError("the facet covectors of a cell must be positive on its interior")
             row = []
             for coordinate in covector:
                 entry = _rational(coordinate)
