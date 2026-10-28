@@ -1011,8 +1011,7 @@ class LorentzianPerfectLocalBackend:
         permutation_typecode = (
             "H" if ray_count <= 2**16 else "I" if ray_count <= 2**32 else "Q"
         )
-        materialized = []
-        for orbit in mask_orbits:
+        def materialize_orbit(orbit):
             def materialize_element(item):
                 key, word = item
                 # Compose the Schreier word in packed storage. The public
@@ -1028,7 +1027,7 @@ class LorentzianPerfectLocalBackend:
                     )
                 return (_facet_incidence(key, ray_count), tuple(permutation))
 
-            def materialize_orbit():
+            def consume_orbit():
                 for index, item in enumerate(orbit):
                     yield materialize_element(item)
                     # The BFS orbit is private and has no further consumer.
@@ -1036,8 +1035,9 @@ class LorentzianPerfectLocalBackend:
                     # result is committed to the output tuple.
                     orbit[index] = None
 
-            materialized.append(tuple(materialize_orbit()))
-        return tuple(materialized)
+            return tuple(consume_orbit())
+
+        return tuple(materialize_orbit(orbit) for orbit in mask_orbits)
 
     def _facet_mask_data(
         self, cell: LorentzianPerfectCell
