@@ -1546,7 +1546,8 @@ class LorentzianPerfectLocalBackend:
         gram = _gram_matrix(normalized)
         if int(cell.lattice.module_rank()) == 2 and all(vector(SageZZ, vectors[position]) * gram * vector(SageZZ, vectors[position]) == 0 for position in facet):
             return None
-        selected = matrix(SageQQ, [vectors[position] for position in sorted(facet)])
+        facet_positions = tuple(sorted(facet))
+        selected = matrix(SageQQ, [vectors[position] for position in facet_positions])
         facet_nullspace = selected.right_kernel_matrix()
         if facet_nullspace.nrows() != 1:
             raise ArithmeticError("a perfect-cell facet must have one normal direction")
@@ -1563,7 +1564,7 @@ class LorentzianPerfectLocalBackend:
         if vector(SageQQ, base_normal[1:]).dot_product(outside) <= 0:
             base_normal = -base_normal
         base_normal = _source_remove_fraction(base_normal)
-        critical = tuple(vectors[position] for position in sorted(facet))
+        critical = tuple(vectors[position] for position in facet_positions)
         flipped, _normal, _direction, _max_scal = _kernel_flipping(
             normalized, critical, base_normal, normal_direction, cell.allowed_squares
         )
