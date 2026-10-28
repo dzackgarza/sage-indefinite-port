@@ -1153,7 +1153,7 @@ class LorentzianPerfectLocalBackend:
                 # Orbit traversal may do substantial work before asking for
                 # the next key; retaining the dense pairing matrix across that
                 # work overlaps its memory with the current Schreier orbit.
-                del pairing_block, pairing_row, nonincident_positions
+                del pairing_block, pairing_row, nonincident_positions, incident_positions
                 # The primitive coordinate tuples have served their purpose
                 # once the keys are built; do not retain them while the
                 # consumer traverses an orbit for each yielded key.
