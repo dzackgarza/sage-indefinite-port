@@ -1966,11 +1966,19 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         seen_incidence_keys = set()
         boundary_facet_keys = set()
         by_incidence = {}
-        covectors = cell_cone.halfspace_covectors()
+        # Large-cell incidence needs only integral H rows. Avoid materializing
+        # the indexed categorical covector family for every facet; construct
+        # owned normals only for quotient-adjacency representatives.
+        use_raw_facets = len(cell.rows) >= 10_000
+        if use_raw_facets:
+            covectors, _ = backend._normaliz_cell_h_presentation(cell, include_equations=False)
+            covector_at = lambda position: covectors[position]
+        else:
+            covectors = cell_cone.halfspace_covectors()
+            covector_at = covectors.ranking_map().inverse()
         # IndexedSymbolicFunctionSet.__getitem__ rebuilds this inverse on
         # every call. Retain its owned unranking map once for the whole cell;
         # Python slicing is not part of that indexed-family interface.
-        covector_at = covectors.ranking_map().inverse()
         # The cone's stored H-presentation already is the minimized facet
         # family. `facet_covectors()` constructs every facet cone merely to
         # recover these same normals, which is prohibitively expensive on
@@ -2003,7 +2011,10 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 SageZZ,
                 len(covector_block),
                 len(labels),
-                lambda row, column: covector_block[row](labels[column]),
+                lambda row, column: (
+                    covector_block[row][column] if use_raw_facets
+                    else covector_block[row](labels[column])
+                ),
             )
             pairing_block = halfspace_block * ray_transpose
             del halfspace_block
@@ -2022,7 +2033,10 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                     raise ArithmeticError("distinct perfect-cell facets have the same extreme-ray incidence")
                 seen_incidence_keys.add(key)
                 if key in representative_keys:
-                    by_incidence[key] = covector_block[offset]
+                    by_incidence[key] = (
+                        _integral_covector(cell.lattice, covector_block[offset])
+                        if use_raw_facets else covector_block[offset]
+                    )
                 elif key not in adjacency_facet_keys:
                     # Boundary facets have no side-pairing orbit retained by
                     # the quotient traversal. Keep only their compact keys;
