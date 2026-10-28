@@ -77,7 +77,7 @@ def test_i_2_10_is_transitive_on_norm_minus_one_vectors() -> None:
 
 def test_anisotropic_binary_vector_classes_use_primitive_embeddings() -> None:
     """An anisotropic (1,1) plane has no perfect-cell cusp to enumerate."""
-    require(MARKED_CLASSES)
+    require(MARKED_CLASSES, MARKED_ISOMETRY)
 
     binary = lattice([[2, 0], [0, -3]])
     assert not binary.is_isotropic()
