@@ -1028,7 +1028,15 @@ class LorentzianPerfectLocalBackend:
                     )
                 return (_facet_incidence(key, ray_count), tuple(permutation))
 
-            materialized.append(tuple(materialize_element(item) for item in orbit))
+            def materialize_orbit():
+                for index, item in enumerate(orbit):
+                    yield materialize_element(item)
+                    # The BFS orbit is private and has no further consumer.
+                    # Drop its key/Schreier-word references as each public
+                    # result is committed to the output tuple.
+                    orbit[index] = None
+
+            materialized.append(tuple(materialize_orbit()))
         return tuple(materialized)
 
     def _facet_mask_data(
@@ -1253,7 +1261,12 @@ class LorentzianPerfectLocalBackend:
                 facet = _facet_incidence(nonincident_mask, len(cell.rows))
                 return (facet, isometry)
 
-            result.append(tuple(materialize_element(item) for item in orbit))
+            def materialize_orbit():
+                for index, item in enumerate(orbit):
+                    yield materialize_element(item)
+                    orbit[index] = None
+
+            result.append(tuple(materialize_orbit()))
         return tuple(result)
 
     def flip_across(self, cell: LorentzianPerfectCell, facet: FacetIncidence) -> LorentzianPerfectCell | None:
