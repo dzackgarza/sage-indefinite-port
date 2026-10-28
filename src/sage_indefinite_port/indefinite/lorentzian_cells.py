@@ -1472,6 +1472,7 @@ class LorentzianPerfectLocalBackend:
             if index != len(cell.rows):
                 raise ArithmeticError("the diagonal pairing stream has the wrong row count")
             spectra = tuple(spectra_list)
+            del spectra_list
         else:
             norms = pairings.diagonal()
             spectra = []
