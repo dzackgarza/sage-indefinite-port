@@ -2876,11 +2876,12 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # otherwise build its replacement while this previous block is
             # still referenced, briefly doubling peak slice memory.
             del pairing_block, covector_block
-        # Release the transposed configuration and covector slice after the
-        # final incidence block, before adjacency construction begins.
-        # ``pairing_block`` was deleted after every nonempty block above.
-        # Do not delete it again here: the final iteration leaves it unbound.
-        del covector_block, ray_transpose, covectors, covector_at
+        # Release the transposed configuration and covector iterator after
+        # the final incidence block, before adjacency construction begins.
+        # The loop deletes ``covector_block`` on every nonempty iteration;
+        # deleting it again here raises UnboundLocalError on every nonempty
+        # H-presentation. ``pairing_block`` is likewise already unbound.
+        del ray_transpose, covectors, covector_at
         if set(by_incidence) != representative_keys:
             raise ArithmeticError("a quotient-adjacency facet has no defining covector in its source cone")
         facet_covectors_by_incidence[id(cell)] = by_incidence
