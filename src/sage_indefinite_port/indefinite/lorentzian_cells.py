@@ -1757,6 +1757,8 @@ class LorentzianPerfectLocalBackend:
             raise ArithmeticError("failed to select a basis of a spanning perfect-cell configuration")
         source_basis = source_rows.matrix_from_rows(basis)
         inverse_source_basis = source_basis.change_ring(SageQQ).inverse()
+        source_sum_in_basis = vector(SageQQ, source_sum) * inverse_source_basis
+        target_sum_rational = vector(SageQQ, target_sum)
 
         # Any transporter carries the ordered source basis to an ordered
         # target basis with the same lattice index. This determinant
@@ -1799,6 +1801,41 @@ class LorentzianPerfectLocalBackend:
             symmetric = SymmetricGroup(n)
             subgroup = symmetric.subgroup([])
             group_permutations = []
+
+        def forced_sum_image(images):
+            """Use the exact configuration sum to force a last basis image.
+
+            In source-basis coordinates, ``source_sum = alpha * B``. If all
+            but one nonzero coefficient of alpha have assigned target images,
+            the target sum determines the remaining image row uniquely. This
+            is an exact necessary condition, not a heuristic; it often avoids
+            trying thousands of candidates for the final basis vector.
+            """
+            if not use_position_certificate:
+                return None
+            assigned_sum = vector(SageQQ, rank)
+            unassigned = []
+            for position, coefficient in enumerate(source_sum_in_basis):
+                if not coefficient:
+                    continue
+                source_index = basis[position]
+                target_index = images.get(source_index)
+                if target_index is None:
+                    unassigned.append((source_index, coefficient))
+                else:
+                    assigned_sum += coefficient * vector(SageQQ, target_rows.row(target_index))
+            if not unassigned:
+                return True if assigned_sum == target_sum_rational else False
+            if len(unassigned) != 1:
+                return None
+            source_index, coefficient = unassigned[0]
+            required = (target_sum_rational - assigned_sum) / coefficient
+            if any(entry.denominator() != 1 for entry in required):
+                return False
+            target_index = positions.get(tuple(int(entry) for entry in required))
+            if target_index is None or target_index in images.values():
+                return False
+            return source_index, target_index
 
         def backtrack(images, source_columns, target_columns, certified_target_basis=None):
             nonlocal subgroup, first_witness
@@ -1864,6 +1901,10 @@ class LorentzianPerfectLocalBackend:
                     stabilizer_elements.append(witness)
                 return None
 
+            forced = forced_sum_image(images)
+            if forced is False:
+                return None
+            forced_pair = forced if isinstance(forced, tuple) else None
             used = set(images.values())
             choice = None
             candidates_for_choice = None
@@ -1871,6 +1912,12 @@ class LorentzianPerfectLocalBackend:
                 if i in images:
                     continue
                 admissible_images = set(buckets[source_colours[i]]) - used
+                if forced_pair is not None:
+                    forced_source, forced_target = forced_pair
+                    if i == forced_source:
+                        admissible_images.intersection_update((forced_target,))
+                    else:
+                        admissible_images.discard(forced_target)
                 for k, v in images.items():
                     key = (k, v, i)
                     if key not in compatible_images:
