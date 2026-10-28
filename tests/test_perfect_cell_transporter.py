@@ -1107,3 +1107,35 @@ def test_cell_faces_reuse_owned_halfspace_covectors_exactly() -> None:
     mixed_mark = structure.mark(vector(ZZ, (2, 1)))
     assert mixed_mark.chain == (structure.full_face, frozenset({0}))
     assert mixed_mark.coefficients == (1, 1)
+
+
+def test_facet_flip_uses_pinned_gap_normals(monkeypatch) -> None:
+    """DoFlipping's two normals use the source GAP nullspace and orientation."""
+    from sage.all import QQ
+
+    gram = matrix(ZZ, [[1, 0, 0], [0, -1, 0], [0, 0, -1]])
+    ambient = lattice(gram.rows())
+    rows = ((1, 1, 0), (1, 0, 1), (1, -1, 0))
+    cell = LorentzianPerfectCell(ambient, rows, ZERO_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+    observed = []
+
+    def capture(_lattice, critical, base, direction, _squares):
+        observed.append((critical, base, direction))
+        return rows, base, direction, QQ.one()
+
+    monkeypatch.setattr(lorentzian_cells, "_kernel_flipping", capture)
+    assert backend.flip_across(cell, frozenset((0, 1))) is not None
+    critical, base, direction = observed.pop()
+    selected = matrix(QQ, [rows[0], rows[1]])
+    expanded = matrix(QQ, [[1, *row] for row in rows])
+    pinned_direction = lorentzian_cells._pinned_nullspace_matrix(selected.transpose()).row(0)
+    pinned_base = lorentzian_cells._pinned_nullspace_matrix(expanded.transpose()).row(0)
+    outside = vector(QQ, rows[2])
+    if pinned_direction.dot_product(outside) < 0:
+        pinned_direction = -pinned_direction
+    if vector(QQ, pinned_base[1:]).dot_product(outside) <= 0:
+        pinned_base = -pinned_base
+    assert critical == rows[:2]
+    assert direction == lorentzian_cells._source_remove_fraction(vector(QQ, [0, *pinned_direction]))
+    assert base == lorentzian_cells._source_remove_fraction(pinned_base)
