@@ -2019,16 +2019,12 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         seen_incidence_keys = set()
         boundary_facet_keys = set()
         by_incidence = {}
-        # Large-cell incidence needs only integral H rows. Avoid materializing
-        # the indexed categorical covector family for every facet; construct
-        # owned normals only for quotient-adjacency representatives.
-        use_raw_facets = len(cell.rows) >= 10_000
-        if use_raw_facets:
-            covectors, _ = backend._normaliz_cell_h_presentation(cell, include_equations=False)
-            covector_at = lambda position: covectors[position]
-        else:
-            covectors = cell_cone.halfspace_covectors()
-            covector_at = covectors.ranking_map().inverse()
+        # The owned cone is already required and retained above. Re-querying
+        # Normaliz for raw facets would materialize a second complete H-list;
+        # reuse its exact minimized covectors while keeping incidence pairing
+        # blockwise, so no full facet-by-ray matrix is constructed.
+        covectors = cell_cone.halfspace_covectors()
+        covector_at = covectors.ranking_map().inverse()
         # IndexedSymbolicFunctionSet.__getitem__ rebuilds this inverse on
         # every call. Retain its owned unranking map once for the whole cell;
         # Python slicing is not part of that indexed-family interface.
@@ -2045,13 +2041,10 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
         pairing_block = None
         covector_block = None
         all_nonincident_mask = (1 << ray_count) - 1
-        if use_raw_facets:
-            covector_blocks = enumerate(_iter_owned_row_blocks(covectors, block_size))
-        else:
-            covector_blocks = (
-                (start // block_size, tuple(covector_at(position) for position in range(start, min(start + block_size, len(covectors)))))
-                for start in range(0, len(covectors), block_size)
-            )
+        covector_blocks = (
+            (start // block_size, tuple(covector_at(position) for position in range(start, min(start + block_size, len(covectors)))))
+            for start in range(0, len(covectors), block_size)
+        )
         for block_index, covector_block in covector_blocks:
             start = block_index * block_size
             stop = min(start + block_size, len(covectors))
@@ -2072,8 +2065,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 len(covector_block),
                 len(labels),
                 lambda row, column: (
-                    covector_block[row][column] if use_raw_facets
-                    else covector_block[row](labels[column])
+                    covector_block[row](labels[column])
                 ),
             )
             pairing_block = halfspace_block * ray_transpose
