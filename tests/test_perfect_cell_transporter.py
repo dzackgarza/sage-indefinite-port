@@ -626,6 +626,23 @@ def test_group_only_facet_keys_do_not_construct_owned_cone(monkeypatch) -> None:
     assert set(facet_keys) == {1, 2}
 
 
+def test_public_facet_orbit_permutations_keep_owned_cone_lazy(monkeypatch) -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+    monkeypatch.setattr(
+        backend,
+        "cell_cone",
+        lambda _cell: pytest.fail("facet orbit permutations need only raw H incidence keys"),
+    )
+
+    orbits = backend.facet_orbit_permutations(cell)
+
+    assert len(orbits) == 1
+    assert {facet for facet, _permutation in orbits[0]} == {frozenset({0}), frozenset({1})}
+    assert {permutation for _facet, permutation in orbits[0]} == {(0, 1), (1, 0)}
+
+
 def test_perfect_traversal_keeps_owned_cone_lazy(monkeypatch) -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     complex_ = perfect_complex(lattice(gram.rows()), ZERO_SQUARES)

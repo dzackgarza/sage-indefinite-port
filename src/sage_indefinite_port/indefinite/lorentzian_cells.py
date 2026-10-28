@@ -1586,12 +1586,21 @@ class LorentzianPerfectLocalBackend:
         complete facet-orbit representation alive after that conversion, which
         is prohibitive for the 49,861-ray A7 configuration.
         """
-        facet_keys, permutations, _canonical_keys = self._facet_mask_data(cell)
+        facet_keys, permutations, canonical_keys = self._facet_mask_data(
+            cell, use_owned_cone=False
+        )
         # The iterator transfers ownership of each completed BFS list. Turning
         # each list into a tuple here duplicates its pointer array at the peak
         # where the full facet collection is retained, with no consumer needing
-        # tuple-specific operations on these private orbit buffers.
-        return self._iter_facet_mask_orbits(facet_keys, permutations), permutations
+        # tuple-specific operations on these private orbit buffers. The raw-H
+        # path's canonical map doubles as visited state, avoiding another full
+        # set of dense facet keys and keeping the owned cone lazy.
+        return (
+            self._iter_facet_mask_orbits(
+                facet_keys, permutations, canonical_keys=canonical_keys
+            ),
+            permutations,
+        )
 
     def _facet_orbit_transversal_words(
         self, cell: LorentzianPerfectCell
