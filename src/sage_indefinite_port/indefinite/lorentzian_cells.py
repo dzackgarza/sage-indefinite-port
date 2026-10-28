@@ -1158,8 +1158,9 @@ class LorentzianPerfectLocalBackend:
 
         Facet keys are generated in H-presentation order. Keeping this as an
         iterator avoids a second dictionary containing every facet before the
-        orbit traversal starts; the orbit traversal retains only its visited
-        set and the current Schreier orbit.
+        orbit traversal starts. The raw-H path necessarily retains a canonical
+        lookup map, which the group-only orbit traversal also uses for its
+        visited marks; the full-domain path uses a separate visited set.
         """
         ray_count = len(cell.rows)
         labels = tuple(cell.lattice.module_generating_set())
@@ -1336,8 +1337,9 @@ class LorentzianPerfectLocalBackend:
 
         Every generator permutation comes from an exact lattice isometry
         preserving this ray configuration, hence its image of a facet is a
-        facet. This lets the traversal use a single visited set instead of a
-        full facet-membership dictionary plus a second visitation table.
+        facet. Full-domain traversal therefore needs only a visited set. When
+        the raw-H path supplies a canonical-key dictionary, that same mapping
+        doubles as visitation state rather than allocating a second table.
         """
         identity_word = None
         # The raw-H path already owns a canonical-key dictionary. Use its
