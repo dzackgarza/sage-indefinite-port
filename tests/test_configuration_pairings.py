@@ -77,7 +77,7 @@ def test_isotropic_cell_invariants_preserve_integral_change_of_basis() -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     shear = matrix(ZZ, [[1, 2**80 + 1], [0, 1]])
     changed_gram = shear.inverse() * gram * shear.inverse().transpose()
-    rows = matrix(ZZ, [[2, 0], [0, 3]])
+    rows = matrix(ZZ, [[1, 0], [0, 1]])
     cell = LorentzianPerfectCell(lattice(gram.rows()), tuple(tuple(row) for row in rows), ZERO_SQUARES)
     changed_cell = LorentzianPerfectCell(
         lattice(changed_gram.rows()), tuple(tuple(row) for row in rows * shear), ZERO_SQUARES
@@ -94,9 +94,10 @@ def test_large_coarse_hash_preserves_gcd_colours_under_integral_isometry(monkeyp
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     shear = matrix(ZZ, [[1, 2**80 + 1], [0, 1]])
     changed_gram = shear.inverse() * gram * shear.inverse().transpose()
-    cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
+    rows = matrix(ZZ, [[2, 0], [0, 3]])
+    cell = LorentzianPerfectCell(lattice(gram.rows()), tuple(tuple(row) for row in rows), ZERO_SQUARES)
     changed_cell = LorentzianPerfectCell(
-        lattice(changed_gram.rows()), tuple(tuple(row) for row in shear), ZERO_SQUARES
+        lattice(changed_gram.rows()), tuple(tuple(row) for row in rows * shear), ZERO_SQUARES
     )
     monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
 
