@@ -826,17 +826,15 @@ class LorentzianPerfectLocalBackend:
         both a per-facet gcd/division pass and constructing owned dual elements.
         """
         if len(cell.rows) >= 1_000:
-            # Facet-orbit traversal needs only the exact zero pattern of each
-            # supporting covector, not owned dual elements or an owned cone.
-            # Read Normaliz's primitive-or-not integral H rows directly; their
-            # scaling is immaterial to incidence, and avoiding conversion to
-            # the categorical cone prevents duplicating the full A7 H-list.
-            hyperplanes, _ = self._normaliz_cell_h_presentation(
-                cell, include_equations=False
-            )
-            block_size = _configuration_pairing_block_size(len(cell.rows))
-            for block in _iter_owned_row_blocks(hyperplanes, block_size):
-                yield from block
+            # The traversal's first nonboundary facet requires cell_cone for
+            # flipping. Re-querying Normaliz here creates a second complete
+            # support-hyperplane result while that owned cone is then built.
+            # Reuse its exact minimized H-family instead: it is already cached
+            # and is the same facet family, with covectors normalized only by
+            # a nonzero integral scale that does not change incidence zeros.
+            covectors = self.cell_cone(cell).halfspace_covectors()
+            for covector in covectors:
+                yield tuple(int(covector(label)) for label in labels)
             return
         # Small owned cones are reused directly rather than querying Normaliz
         # for a second H-presentation.
