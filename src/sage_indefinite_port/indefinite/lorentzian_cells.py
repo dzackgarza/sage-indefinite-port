@@ -736,18 +736,26 @@ def _configuration_signature_multisets_match(
             (colour, tuple(column[index] for column in source_columns))
             for index, colour in enumerate(source_colours)
         )
-    touched: list[tuple[int, tuple[int, ...]]] = []
     for index, colour in enumerate(target_colours):
         signature = (colour, tuple(column[index] for column in target_columns))
         counts[signature] -= 1
-        touched.append(signature)
         if counts[signature] < 0:
-            for previous in touched:
+            # Do not retain a second list of every row signature just to
+            # restore the reusable source counter. Recompute the already
+            # visited target prefix; mismatches typically terminate early.
+            for previous_index in range(index + 1):
+                previous = (
+                    target_colours[previous_index],
+                    tuple(column[previous_index] for column in target_columns),
+                )
                 counts[previous] += 1
                 if counts[previous] == 0:
                     del counts[previous]
             return False
-    for signature in touched:
+    # Successful comparisons scan the target rows a second time to restore
+    # counts, trading O(n * rank) tuple construction for no O(n) side list.
+    for index, colour in enumerate(target_colours):
+        signature = (colour, tuple(column[index] for column in target_columns))
         counts[signature] += 1
         if counts[signature] == 0:
             del counts[signature]
