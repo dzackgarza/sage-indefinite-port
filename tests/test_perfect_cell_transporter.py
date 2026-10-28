@@ -285,7 +285,7 @@ def test_permuted_facet_bitsets_preserve_exact_positions() -> None:
     assert dense_image == sum(1 << (ray_count - 1 - position) for position in range(200))
 
 
-def test_normaliz_pairing_rows_match_owned_covectors() -> None:
+def test_normaliz_pairing_rows_match_owned_covectors(monkeypatch) -> None:
     """Large-cell incidence reuses the owned H-family without changing zeros."""
     gram = matrix(ZZ, [[0, 1], [1, 0]])
 
@@ -298,13 +298,23 @@ def test_normaliz_pairing_rows_match_owned_covectors() -> None:
     # Normaliz removes these repeated input rays exactly.
     cell.rows = ((1, 0), (0, 1)) * 5_000
     backend = LorentzianPerfectLocalBackend()
+    original_h_presentation = backend._normaliz_cell_h_presentation
+    h_presentation_calls = 0
+
+    def count_h_presentation(*args, **kwargs):
+        nonlocal h_presentation_calls
+        h_presentation_calls += 1
+        return original_h_presentation(*args, **kwargs)
+
+    monkeypatch.setattr(backend, "_normaliz_cell_h_presentation", count_h_presentation)
     labels = tuple(cell.lattice.module_generating_set())
     pairing_rows = tuple(backend._iter_cell_halfspace_pairing_rows(cell, labels))
     assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})
     owned_rows = tuple(
         tuple(int(covector(label)) for label in labels)
-        for covector in backend._iter_cell_halfspace_covectors(cell)
+        for covector in backend.cell_cone(cell).halfspace_covectors()
     )
+    assert h_presentation_calls == 1
     assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})
     assert tuple(tuple(value == 0 for value in row) for row in pairing_rows) == tuple(
         tuple(value == 0 for value in row) for row in owned_rows
