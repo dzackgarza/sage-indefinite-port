@@ -81,7 +81,7 @@ def test_isotropic_cell_invariants_preserve_integral_change_of_basis() -> None:
     changed_cell = LorentzianPerfectCell(
         lattice(changed_gram.rows()), tuple(tuple(row) for row in shear), ZERO_SQUARES
     )
-    expected = (((0, 2),), ((1, 1),), (1, 1), (1, 1))
+    expected = (((0, 2),), ((1, 1),), (1, 1), ((1, 2),), ((1, 2),))
     assert _perfect_form_hash_key(cell) == expected
     assert _perfect_form_hash_key(changed_cell) == expected
 
@@ -92,5 +92,5 @@ def test_nonnegative_square_face_has_the_exact_pairing_multisets() -> None:
         lattice([[1, 0], [0, -1]]), ((1, -1), (1, 0), (1, 1)), NONNEGATIVE_SQUARES
     )
     assert _perfect_form_hash_key(cell) == (
-        ((0, 2), (1, 1)), ((1, 2), (2, 1)), (1, 1, 0), (1, 1, 1)
+        ((0, 2), (1, 1)), ((1, 2), (2, 1)), (1, 1), ((1, 3),), ((1, 3),)
     )
