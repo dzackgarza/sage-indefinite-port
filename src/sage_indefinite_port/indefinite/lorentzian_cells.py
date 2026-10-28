@@ -2271,7 +2271,7 @@ def _perfect_form_hash_key(
     cell: LorentzianPerfectCell,
     backend: LorentzianPerfectLocalBackend | None = None,
 ) -> PerfectFormKey:
-    r"""ComputeInvariantPerfectForm (lorentzian_perfect.h:1212-1256), with two integral invariants.
+    r"""ComputeInvariantPerfectForm (lorentzian_perfect.h:1212-1256), with exact integral invariants.
 
     For moderate configurations, this uses the source's full histogram of
     diagonal and off-diagonal Gram pairings, streamed in row blocks rather
