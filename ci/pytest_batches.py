@@ -30,6 +30,7 @@ def main():
         return 1
     print(f'Executing {len(nodes)} collected nodes in fresh batches of {a.batch_size}', flush=True)
     suite = ET.Element('testsuites')
+    completed = 0
     exitcode = 0
     for offset in range(0, len(nodes), a.batch_size):
         batch = nodes[offset:offset+a.batch_size]
@@ -39,14 +40,19 @@ def main():
         if report.exists():
             root = ET.parse(report).getroot()
             if root.tag == 'testsuite':
-                suite.append(root)
+                batches = [root]
             else:
-                suite.extend(root.findall('testsuite'))
+                batches = root.findall('testsuite')
+            suite.extend(batches)
+            completed += sum(1 for item in batches for _ in item.iter('testcase'))
         if result.returncode:
             exitcode = result.returncode
             if not report.exists():
                 print(f'Batch {offset//a.batch_size} terminated without JUnit report', file=sys.stderr)
                 break
+    if completed != len(nodes):
+        print(f'Incomplete shard: {completed}/{len(nodes)} test results', file=sys.stderr)
+        exitcode = exitcode or 1
     ET.ElementTree(suite).write(a.out / 'junit.xml', encoding='unicode', xml_declaration=True)
     return exitcode
 
