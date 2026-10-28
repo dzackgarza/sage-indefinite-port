@@ -1088,12 +1088,13 @@ class LorentzianPerfectLocalBackend:
                 raise ArithmeticError("a cell-stabilizer generator does not preserve its rays") from exc
 
         # Facet-key generation can dominate the live memory for a large
-        # configuration. The packed permutations are its only retained use
-        # of the stabilizer maps and row-position index, so release those
-        # construction-only objects before asking Normaliz for its H-result.
+        # configuration. Release the row-position index and the final loop
+        # temporaries before asking Normaliz for its H-result. The stabilizer
+        # tuple itself is cached by cell_stabilizer and deliberately remains
+        # available for the traversal's later categorical stabilizer query.
         if generators:
             del generator, action
-        del generators, positions
+        del positions
 
         def facet_keys() -> Iterator[FacetMaskKey]:
             covector_rows = iter(self._iter_cell_halfspace_pairing_rows(cell, labels))
