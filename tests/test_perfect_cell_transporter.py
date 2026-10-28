@@ -18,6 +18,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _iter_owned_row_blocks,
     _permuted_bitset,
     _permuted_facet_key,
+    _packed_pairing_fibres,
     _perfect_form_hash_key,
     _schreier_generator_indices,
     LorentzianPerfectComplex,
@@ -382,6 +383,19 @@ def test_configuration_signature_multisets_match_exact_columns() -> None:
         colours, columns, colours, changed_columns, source_signature_counts=source_counts
     )
     assert source_counts == original_counts
+
+
+def test_packed_pairing_fibres_preserve_exact_position_partition() -> None:
+    fibres = _packed_pairing_fibres((0, 1, 0, 0, 1), (7, -2, 7, 9, -2), "I")
+
+    assert {key: tuple(indices) for key, indices in fibres.items()} == {
+        (0, 7): (0, 2),
+        (1, -2): (1, 4),
+        (0, 9): (3,),
+    }
+    assert all(isinstance(indices, array) and indices.typecode == "I" for indices in fibres.values())
+    with pytest.raises(ValueError, match="one colour per target row"):
+        _packed_pairing_fibres((0,), (7, 8), "I")
 
 
 def test_empty_stable_configuration_has_empty_permutation_for_each_generator() -> None:

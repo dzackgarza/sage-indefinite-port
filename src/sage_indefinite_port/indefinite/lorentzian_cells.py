@@ -754,6 +754,22 @@ def _configuration_signature_multisets_match(
     return True
 
 
+def _packed_pairing_fibres(
+    colours: tuple[int, ...],
+    pairings: tuple[int, ...],
+    index_typecode: str,
+) -> dict[tuple[int, int], array]:
+    """Partition target positions by exact colour and pairing using packed indices."""
+    if len(colours) != len(pairings):
+        raise ValueError("pairing fibres require one colour per target row")
+    if index_typecode not in ("I", "Q"):
+        raise ValueError("pairing-fibre indices require an unsigned packed integer type")
+    fibres: dict[tuple[int, int], array] = {}
+    for index, (colour, pairing) in enumerate(zip(colours, pairings, strict=True)):
+        fibres.setdefault((colour, int(pairing)), array(index_typecode)).append(index)
+    return fibres
+
+
 def _row_multiset(row, own_value: int) -> tuple[tuple[int, int], ...]:
     r"""The multiset of a pairing row's entries other than the vertex's own, as sorted (value, count)."""
     # NumPy's unique/sort on object arrays is not an integral-arithmetic
@@ -1949,12 +1965,11 @@ class LorentzianPerfectLocalBackend:
                         # actual exact pairing values by a large factor.
                         if v not in target_neighbour_signatures:
                             index_typecode = "I" if n <= 2**32 else "Q"
-                            neighbours: dict[tuple[int, int], array] = {}
-                            for l, pairing in enumerate(target_pairings.column(v)):
-                                neighbours.setdefault(
-                                    (target_colours[l], int(pairing)), array(index_typecode)
-                                ).append(l)
-                            target_neighbour_signatures[v] = neighbours
+                            target_neighbour_signatures[v] = _packed_pairing_fibres(
+                                target_colours,
+                                target_pairings.column(v),
+                                index_typecode,
+                            )
                             if len(target_neighbour_signatures) > anchor_cache_limit:
                                 target_neighbour_signatures.pop(next(iter(target_neighbour_signatures)))
                         signature = (source_colours[i], source_pairings[i, k])
