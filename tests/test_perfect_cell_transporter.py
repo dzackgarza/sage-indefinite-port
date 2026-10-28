@@ -19,6 +19,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _permuted_facet_key,
     _perfect_form_hash_key,
     _schreier_generator_indices,
+    LorentzianPerfectComplex,
     LorentzianPerfectCell,
     LorentzianPerfectLocalBackend,
     NONNEGATIVE_SQUARES,
@@ -42,6 +43,36 @@ def test_group_generator_complex_does_not_alias_full_domain_cache() -> None:
     assert full_domain is not group_only
     assert full_domain._retain_facet_orbits
     assert not group_only._retain_facet_orbits
+
+
+def test_group_only_expansion_discards_facet_orbit_records(monkeypatch) -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    for retain in (True, False):
+        ambient = lattice(gram.rows())
+        cell = LorentzianPerfectCell(ambient, ((1, 0), (0, 1)), ZERO_SQUARES)
+        complex_ = LorentzianPerfectComplex(ambient, ZERO_SQUARES, retain_facet_orbits=retain)
+        backend = complex_.local_backend()
+        key = _perfect_form_hash_key(cell)
+        complex_._traversal_representatives = [cell]
+        complex_._traversal_representative_buckets = {key: [cell]}
+        monkeypatch.setattr(backend, "_facet_mask_data", lambda _cell: (iter(()), ()))
+        monkeypatch.setattr(
+            backend,
+            "_iter_facet_mask_orbits",
+            lambda _facets, _permutations: iter([[((True, (0,)), None)]]),
+        )
+        monkeypatch.setattr(backend, "flip_across", lambda _cell, _facet: cell)
+        monkeypatch.setattr(backend, "cell_transporter", lambda _source, _target: ambient.Aut().identity())
+
+        complex_._expand_traversal_once()
+
+        assert len(complex_._traversal_adjacencies) == 1
+        if retain:
+            assert complex_._traversal_facet_orbits[id(cell)]
+            assert id(cell) in complex_._traversal_facet_generators
+        else:
+            assert complex_._traversal_facet_orbits == {}
+            assert complex_._traversal_facet_generators == {}
 
 
 def test_owned_row_blocks_release_only_consumed_list_entries() -> None:
