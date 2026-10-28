@@ -5714,9 +5714,9 @@ def _negative_direction_in_span(
         if projective_key(direction) not in excluded_keys and _upper_bound(gram, base_normal, normal) is not None:
             return direction
         # IndefiniteFormsFundamental.g:11-30, GetRandomMatrixPerturbation.
-        # Match GetRandomMatrixPerturbation verbatim: a diagonal 1 is replaced
-        # by +/-1, while an off-diagonal entry adds an elementary shear. The
-        # diagonal -1 overwrite is singular in the pinned source; preserve it.
+        # Match GetRandomMatrixPerturbation verbatim: the selected entry is
+        # overwritten by +/-1, including when it is diagonal. Both the signed
+        # permutation and identity-with-one-entry branches are unimodular.
         if choice((1, 2)) == 1:
             permutation = list(range(dimension))
             shuffle(permutation)
