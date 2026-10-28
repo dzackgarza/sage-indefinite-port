@@ -1222,15 +1222,17 @@ class LorentzianPerfectLocalBackend:
         tuple[tuple[tuple[FacetIncidence, SchreierWord], ...], ...],
         tuple[array, ...],
     ]:
-        """Materialize public-style facet incidences from cached compact masks."""
+        """Materialize public-style incidences while releasing consumed mask entries."""
         mask_orbits, permutations = self._facet_orbit_transversal_masks(cell)
-        return (
-            tuple(
-                tuple((_facet_incidence(mask, len(cell.rows)), word) for mask, word in orbit)
-                for orbit in mask_orbits
-            ),
-            permutations,
-        )
+        materialized = []
+        for orbit in mask_orbits:
+            def materialize_orbit():
+                for index, (mask, word) in enumerate(orbit):
+                    yield (_facet_incidence(mask, len(cell.rows)), word)
+                    orbit[index] = None
+
+            materialized.append(tuple(materialize_orbit()))
+        return tuple(materialized), permutations
 
     def facet_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[tuple[FacetIncidence, LatticeIsometryMethods], ...], ...]:
         """Facet orbits with owned isometries, materialized for this public view."""
