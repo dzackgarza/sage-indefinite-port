@@ -77,9 +77,10 @@ def test_isotropic_cell_invariants_preserve_integral_change_of_basis() -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     shear = matrix(ZZ, [[1, 2**80 + 1], [0, 1]])
     changed_gram = shear.inverse() * gram * shear.inverse().transpose()
-    cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
+    rows = matrix(ZZ, [[2, 0], [0, 3]])
+    cell = LorentzianPerfectCell(lattice(gram.rows()), tuple(tuple(row) for row in rows), ZERO_SQUARES)
     changed_cell = LorentzianPerfectCell(
-        lattice(changed_gram.rows()), tuple(tuple(row) for row in shear), ZERO_SQUARES
+        lattice(changed_gram.rows()), tuple(tuple(row) for row in rows * shear), ZERO_SQUARES
     )
     expected = (((0, 2),), ((1, 1),), (1, 1), ((1, 2),), ((1, 2),))
     assert _perfect_form_hash_key(cell) == expected
