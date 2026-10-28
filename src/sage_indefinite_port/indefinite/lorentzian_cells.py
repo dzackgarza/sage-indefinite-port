@@ -2683,20 +2683,16 @@ class _CellFaces:
         del ray_matrix
         covector_rows = []
         for owned_covector in backend.cell_cone(cell).halfspace_covectors():
-            covector = vector(
-                SageQQ,
-                [_rational(owned_covector.to_vector()(label)) for label in self.labels],
-            )
-            if covector.dot_product(interior) <= 0:
-                raise ArithmeticError("the facet covectors of a cell must be positive on its interior")
             row = []
-            for coordinate in covector:
-                entry = _rational(coordinate)
+            for label in self.labels:
+                entry = _rational(owned_covector.to_vector()(label))
                 if entry.denominator() != 1:
                     raise ArithmeticError(
                         "primitive integral facet covectors must have integral lattice coordinates"
                     )
                 row.append(int(entry))
+            if sum(entry * coordinate for entry, coordinate in zip(row, interior)) <= 0:
+                raise ArithmeticError("the facet covectors of a cell must be positive on its interior")
             covector_rows.append(row)
         covector_matrix = matrix(SageZZ, covector_rows)
         all_ray_positions = frozenset(range(len(self.rows)))
