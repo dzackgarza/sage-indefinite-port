@@ -280,6 +280,27 @@ def test_large_perfect_form_hash_skips_quadratic_pairing_graph(monkeypatch) -> N
     assert sum(count for _divisibility, count in key[4]) == len(cell.rows)
 
 
+def test_configuration_invariant_cache_is_bounded_and_identity_keyed() -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    ambient = lattice(gram.rows())
+    cells = (
+        LorentzianPerfectCell(ambient, ((1, 0), (0, 1)), ZERO_SQUARES),
+        LorentzianPerfectCell(ambient, ((0, 1), (1, 0)), ZERO_SQUARES),
+        LorentzianPerfectCell(ambient, ((-1, 0), (0, -1)), ZERO_SQUARES),
+    )
+    backend = LorentzianPerfectLocalBackend()
+    first = backend._integral_configuration_invariants(cells[0])
+
+    assert backend._integral_configuration_invariants(cells[0]) is first
+    for cell in cells[1:]:
+        backend._integral_configuration_invariants(cell)
+
+    cache = backend.__dict__["_configuration_invariant_cache"]
+    assert len(cache) == 2
+    assert id(cells[0]) not in cache
+    assert all(cache[id(cell)][0] is cell for cell in cells[1:])
+
+
 def test_owned_large_cell_cone_releases_normaliz_engine_cache() -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
 

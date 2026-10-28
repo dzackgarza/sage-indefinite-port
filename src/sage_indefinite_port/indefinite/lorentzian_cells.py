@@ -1265,7 +1265,6 @@ class LorentzianPerfectLocalBackend:
         )
         return LorentzianPerfectCell(cell.lattice, flipped, cell.allowed_squares)
 
-    @cached_method
     def _integral_configuration_invariants(self, cell: LorentzianPerfectCell):
         r"""Exact pairing data of a configuration, computed once per cell.
 
@@ -1274,8 +1273,15 @@ class LorentzianPerfectLocalBackend:
         depend only on the configuration; the pairings are read from the
         n x rank rows on request, never stored as an n x n matrix. Cache these
         exact witnesses without replacing the integral-isometry decision by a
-        hash.
+        hash. The two-entry identity LRU retains the source and current target
+        while avoiding an unbounded cache of dense matrices for every neighbor.
         """
+        cache = self.__dict__.setdefault("_configuration_invariant_cache", {})
+        key = id(cell)
+        cached = cache.pop(key, None)
+        if cached is not None and cached[0] is cell:
+            cache[key] = cached
+            return cached[1]
         rows = matrix(SageZZ, cell.rows)
         pairings = _ConfigurationPairings(rows, _gram_matrix(cell.lattice), cache_columns=True)
         norms = pairings.diagonal()
@@ -1307,7 +1313,11 @@ class LorentzianPerfectLocalBackend:
         # invariant list bounded by the ambient rank rather than the number
         # of configuration rows (which is 49,861 in the A7 consumer).
         smith_invariants = rows.transpose().elementary_divisors()
-        return rows, pairings, spectra, Counter(cell.rows), smith_invariants
+        data = (rows, pairings, spectra, Counter(cell.rows), smith_invariants)
+        cache[key] = (cell, data)
+        while len(cache) > 2:
+            cache.pop(next(iter(cache)))
+        return data
 
     @overload
     def cell_transporter(
