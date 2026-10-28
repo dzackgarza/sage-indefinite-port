@@ -1174,14 +1174,20 @@ class LorentzianPerfectLocalBackend:
                 "cell-stabilizer permutations generate incidences outside the H-presentation"
             )
 
-    @cached_method
     def _facet_orbit_transversal_masks(
         self, cell: LorentzianPerfectCell
     ) -> tuple[
         tuple[list[tuple[FacetMaskKey, SchreierWord]], ...],
         tuple[array, ...],
     ]:
-        """Retain compact facet-orbit buffers without duplicating their entries."""
+        """Build compact facet-orbit buffers for one consuming operation.
+
+        Deliberately do not cache this result: public consumers materialize
+        full incidences, ray permutations, or owned isometries from these masks.
+        Retaining the masks in a cached-method table would keep a second
+        complete facet-orbit representation alive after that conversion, which
+        is prohibitive for the 49,861-ray A7 configuration.
+        """
         facet_keys, permutations = self._facet_mask_data(cell)
         # The iterator transfers ownership of each completed BFS list. Turning
         # each list into a tuple here duplicates its pointer array at the peak
