@@ -2695,6 +2695,7 @@ class _CellFaces:
                 raise ArithmeticError("the facet covectors of a cell must be positive on its interior")
             covector_rows.append(row)
         covector_matrix = matrix(SageZZ, covector_rows)
+        del covector_rows
         all_ray_positions = frozenset(range(len(self.rows)))
         block_size = _configuration_pairing_block_size(len(self.rows))
         incidences = []
