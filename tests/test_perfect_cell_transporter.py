@@ -199,6 +199,17 @@ def test_configuration_pairing_diagonal_matches_exact_row_products() -> None:
     assert pairings.diagonal() == expected
 
 
+def test_configuration_pairing_diagonal_crosses_temporary_block_boundary() -> None:
+    rows = matrix(ZZ, [[index, index * index - 3] for index in range(1025)])
+    gram = matrix(ZZ, [[2, 1], [1, -3]])
+    pairings = lorentzian_cells._ConfigurationPairings(rows, gram)
+
+    expected = tuple((rows.row(i) * gram).dot_product(rows.row(i)) for i in range(rows.nrows()))
+
+    assert len(pairings.diagonal()) == rows.nrows()
+    assert pairings.diagonal() == expected
+
+
 def test_coarse_colours_preserve_changed_configuration_transporters(monkeypatch) -> None:
     """Coarse invariant colours cannot reject a valid nonidentity transporter."""
     gram = matrix(ZZ, [[0, 1], [1, 0]])
