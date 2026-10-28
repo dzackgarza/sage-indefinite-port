@@ -144,6 +144,12 @@ def test_facet_orbit_enumerator_streams_representatives_without_words() -> None:
     backend = LorentzianPerfectLocalBackend()
 
     retained = tuple(backend._iter_facet_mask_orbits(iter(facets), (swap_first_two,)))
+    canonical = {key: key for key in facets}
+    canonical_retained = tuple(
+        backend._iter_facet_mask_orbits(
+            iter(facets), (swap_first_two,), canonical_keys=canonical
+        )
+    )
     streamed = tuple(
         backend._iter_facet_mask_orbits(iter(facets), (swap_first_two,), retain_words=False)
     )
@@ -153,6 +159,7 @@ def test_facet_orbit_enumerator_streams_representatives_without_words() -> None:
         ((False, (0,)), (False, (1,))),
         ((False, (2,)),),
     )
+    assert canonical_retained[0][1][0] is facets[1]
     assert tuple(orbit[0][0] for orbit in streamed) == ((False, (0,)), (False, (2,)))
     assert all(len(orbit) == 1 for orbit in streamed)
     assert _permuted_facet_key(facets[0], swap_first_two) == facets[1]
@@ -165,8 +172,13 @@ def test_facet_orbit_materializers_release_consumed_bfs_entries(monkeypatch) -> 
     original = backend._iter_facet_mask_orbits
     emitted = []
 
-    def recording_orbits(facet_keys, permutations):
-        for orbit in original(facet_keys, permutations):
+    def recording_orbits(facet_keys, permutations, *, retain_words=True, canonical_keys=None):
+        for orbit in original(
+            facet_keys,
+            permutations,
+            retain_words=retain_words,
+            canonical_keys=canonical_keys,
+        ):
             emitted.append(orbit)
             yield orbit
 
@@ -469,10 +481,12 @@ def test_group_only_facet_keys_do_not_construct_owned_cone(monkeypatch) -> None:
 
     monkeypatch.setattr(backend, "_normaliz_cell_h_presentation", record_h_rows)
 
-    facet_keys, _permutations = backend._facet_mask_data(cell, use_owned_cone=False)
+    facet_keys, _permutations, canonical_keys = backend._facet_mask_data(cell, use_owned_cone=False)
 
     assert raw_h_rows and all(row is None for row in raw_h_rows[0])
     assert id(cell) not in backend.__dict__.get("_configuration_invariant_cache", {})
+    assert canonical_keys is not None
+    assert all(canonical_keys[key] is key for key in canonical_keys)
     assert set(facet_keys) == {1, 2}
 
 

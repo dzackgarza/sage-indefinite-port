@@ -1094,7 +1094,11 @@ class LorentzianPerfectLocalBackend:
         cell: LorentzianPerfectCell,
         *,
         use_owned_cone: bool = True,
-    ) -> tuple[Iterator[FacetMaskKey], tuple[array, ...]]:
+    ) -> tuple[
+        Iterator[FacetMaskKey],
+        tuple[array, ...],
+        dict[FacetMaskKey, FacetMaskKey] | None,
+    ]:
         r"""Yield exact facet keys and the ray permutations of stabilizer generators.
 
         Facet keys are generated in H-presentation order. Keeping this as an
@@ -1249,14 +1253,18 @@ class LorentzianPerfectLocalBackend:
             # the consumer clear those key slots as it visits
             # them. This keeps the full H-result out of the long traversal
             # phase without materializing the dense pairing graph.
-            keys = deque(facet_keys())
+            canonical_keys: dict[FacetMaskKey, FacetMaskKey] = {}
+            keys = deque()
+            for key in facet_keys():
+                canonical = canonical_keys.setdefault(key, key)
+                keys.append(canonical)
 
             def consume_keys() -> Iterator[FacetMaskKey]:
                 while keys:
                     yield keys.popleft()
 
-            return consume_keys(), tuple(permutations)
-        return facet_keys(), tuple(permutations)
+            return consume_keys(), tuple(permutations), canonical_keys
+        return facet_keys(), tuple(permutations), None
 
     @staticmethod
     def _iter_facet_mask_orbits(
@@ -1264,6 +1272,7 @@ class LorentzianPerfectLocalBackend:
         permutations: tuple[array, ...],
         *,
         retain_words: bool = True,
+        canonical_keys: dict[FacetMaskKey, FacetMaskKey] | None = None,
     ) -> Iterator[list[tuple[FacetMaskKey, SchreierWord] | None]]:
         """Yield exact facet orbits with one visited set and one current orbit.
 
@@ -1293,6 +1302,8 @@ class LorentzianPerfectLocalBackend:
                     facet_mask = pending.popleft()
                     for permutation in permutations:
                         image_mask = _permuted_facet_key(facet_mask, permutation)
+                        if canonical_keys is not None:
+                            image_mask = canonical_keys.get(image_mask, image_mask)
                         if image_mask not in visited:
                             visited.add(image_mask)
                             pending.append(image_mask)
@@ -1304,6 +1315,8 @@ class LorentzianPerfectLocalBackend:
                 facet_mask, element_word = entry
                 for generator_index, permutation in enumerate(permutations):
                     image_mask = _permuted_facet_key(facet_mask, permutation)
+                    if canonical_keys is not None:
+                        image_mask = canonical_keys.get(image_mask, image_mask)
                     if image_mask not in visited:
                         visited.add(image_mask)
                         orbit.append((image_mask, (element_word, generator_index)))
@@ -1326,7 +1339,7 @@ class LorentzianPerfectLocalBackend:
         complete facet-orbit representation alive after that conversion, which
         is prohibitive for the 49,861-ray A7 configuration.
         """
-        facet_keys, permutations = self._facet_mask_data(cell)
+        facet_keys, permutations, _canonical_keys = self._facet_mask_data(cell)
         # The iterator transfers ownership of each completed BFS list. Turning
         # each list into a tuple here duplicates its pointer array at the peak
         # where the full facet collection is retained, with no consumer needing
@@ -2000,7 +2013,7 @@ class LorentzianPerfectComplex:
         )
         source = representatives[source_position]
         new_representatives: list[LorentzianPerfectCell] = []
-        facet_masks, generator_permutations = backend._facet_mask_data(
+        facet_masks, generator_permutations, canonical_facet_keys = backend._facet_mask_data(
             source, use_owned_cone=self._retain_facet_orbits
         )
         source_id = id(source)
@@ -2015,6 +2028,7 @@ class LorentzianPerfectComplex:
             facet_masks,
             generator_permutations,
             retain_words=self._retain_facet_orbits,
+            canonical_keys=canonical_facet_keys,
         ):
             facet = _facet_incidence(orbit[0][0], len(source.rows))
             neighbor = backend.flip_across(source, facet)
