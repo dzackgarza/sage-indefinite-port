@@ -1013,8 +1013,8 @@ class LorentzianPerfectLocalBackend:
         )
         materialized = []
         for orbit in mask_orbits:
-            elements = []
-            for key, word in orbit:
+            def materialize_element(item):
+                key, word = item
                 # Compose the Schreier word in packed storage. The public
                 # return type requires a full tuple per facet, but keeping all
                 # intermediate compositions as Python tuples multiplies the
@@ -1026,8 +1026,9 @@ class LorentzianPerfectLocalBackend:
                         permutation_typecode,
                         (generator[position] for position in permutation),
                     )
-                elements.append((_facet_incidence(key, ray_count), tuple(permutation)))
-            materialized.append(tuple(elements))
+                return (_facet_incidence(key, ray_count), tuple(permutation))
+
+            materialized.append(tuple(materialize_element(item) for item in orbit))
         return tuple(materialized)
 
     def _facet_mask_data(
@@ -1220,8 +1221,8 @@ class LorentzianPerfectLocalBackend:
         mask_orbits, generator_permutations = self._facet_orbit_transversal_masks(cell)
         result = []
         for orbit in mask_orbits:
-            elements = []
-            for nonincident_mask, word in orbit:
+            def materialize_element(item):
+                nonincident_mask, word = item
                 # Apply the Schreier word only to the rank-sized basis rows.
                 # Materializing a full ray permutation for every facet costs
                 # O(number_of_facets * number_of_rays) integers; this public
@@ -1236,8 +1237,9 @@ class LorentzianPerfectLocalBackend:
                     raise ArithmeticError("a Schreier facet permutation does not induce an integral lattice action")
                 isometry = cell.lattice.O()(tuple(cell.lattice([int(entry) for entry in row]) for row in action.rows()))
                 facet = _facet_incidence(nonincident_mask, len(cell.rows))
-                elements.append((facet, isometry))
-            result.append(tuple(elements))
+                return (facet, isometry)
+
+            result.append(tuple(materialize_element(item) for item in orbit))
         return tuple(result)
 
     def flip_across(self, cell: LorentzianPerfectCell, facet: FacetIncidence) -> LorentzianPerfectCell | None:
