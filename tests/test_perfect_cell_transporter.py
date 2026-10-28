@@ -52,6 +52,29 @@ def test_schreier_generator_indices_streams_nested_word_in_action_order() -> Non
     assert iter(indices) is indices
     assert tuple(indices) == (3, 1, 4)
 
+
+def test_facet_orbit_materializers_release_consumed_bfs_entries(monkeypatch) -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+    original = backend._iter_facet_mask_orbits
+    emitted = []
+
+    def recording_orbits(facet_keys, permutations):
+        for orbit in original(facet_keys, permutations):
+            emitted.append(orbit)
+            yield orbit
+
+    monkeypatch.setattr(backend, "_iter_facet_mask_orbits", recording_orbits)
+    permutation_orbits = backend.facet_orbit_permutations(cell)
+    assert permutation_orbits
+    assert emitted and all(not any(orbit) for orbit in emitted)
+
+    emitted.clear()
+    isometry_orbits = backend.facet_orbits(cell)
+    assert isometry_orbits
+    assert emitted and all(not any(orbit) for orbit in emitted)
+
 GRAM = ((-4, 0, 0, 0, 0, 2, 0, 0, 0, 0),
  (0, -4, 2, 0, 0, 0, 0, 0, 0, 0),
  (0, 2, -4, 2, 0, 0, 0, 0, 0, 0),
