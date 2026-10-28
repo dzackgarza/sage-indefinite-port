@@ -749,6 +749,7 @@ def test_large_perfect_form_hash_skips_quadratic_pairing_graph(monkeypatch) -> N
     assert len(key[2]) == 2
     assert sum(count for _value, count in key[3]) == len(cell.rows)
     assert sum(count for _value, count in key[4]) == len(cell.rows)
+    assert sum(count for _value, count in refined_key[5]) == len(cell.rows)
 
 
 def test_complex_isometry_uses_cached_coarse_key_for_large_route(monkeypatch) -> None:
