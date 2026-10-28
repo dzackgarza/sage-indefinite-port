@@ -1942,11 +1942,19 @@ class LorentzianPerfectLocalBackend:
                         # The target neighbour partition depends on the
                         # image v alone, not on which source anchor k maps
                         # to v. Reuse it across distinct partial assignments.
+                        # Packed unsigned arrays replace one Python set of
+                        # boxed row indices per pairing fibre; on the frozen
+                        # A7 configuration there are 49,861 indices per
+                        # anchor, so frozenset-of-int storage dominates the
+                        # actual exact pairing values by a large factor.
                         if v not in target_neighbour_signatures:
-                            neighbours = {}
+                            index_typecode = "I" if n <= 2**32 else "Q"
+                            neighbours: dict[tuple[int, int], array] = {}
                             for l, pairing in enumerate(target_pairings.column(v)):
-                                neighbours.setdefault((target_colours[l], int(pairing)), set()).add(l)
-                            target_neighbour_signatures[v] = {signature: frozenset(indices) for signature, indices in neighbours.items()}
+                                neighbours.setdefault(
+                                    (target_colours[l], int(pairing)), array(index_typecode)
+                                ).append(l)
+                            target_neighbour_signatures[v] = neighbours
                             if len(target_neighbour_signatures) > anchor_cache_limit:
                                 target_neighbour_signatures.pop(next(iter(target_neighbour_signatures)))
                         signature = (source_colours[i], source_pairings[i, k])
