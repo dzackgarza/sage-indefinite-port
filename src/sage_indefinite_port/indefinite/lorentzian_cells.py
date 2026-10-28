@@ -1589,7 +1589,6 @@ class LorentzianPerfectLocalBackend:
                 action = action.change_ring(SageZZ)
                 if action * target_gram * action.transpose() != source_gram:
                     return None
-                transformed_rows = source_rows * action
                 if generators_only:
                     # The stabilizer path has already certified that the
                     # source configuration has distinct rows and built its
@@ -1597,11 +1596,23 @@ class LorentzianPerfectLocalBackend:
                     # action is injective, so membership of every transformed
                     # row in that n-element set proves equality of the full
                     # row multiset without allocating another n-entry Counter
-                    # at every completed basis assignment.
-                    if any(tuple(int(entry) for entry in row) not in positions for row in transformed_rows.rows()):
+                    # or a second full n-by-r matrix at every completed basis
+                    # assignment. Keep the temporary transformed rows bounded.
+                    permutation_images = []
+                    block_size = _configuration_pairing_block_size(n)
+                    for start in range(0, n, block_size):
+                        stop = min(start + block_size, n)
+                        transformed_block = source_rows.matrix_from_rows(range(start, stop)) * action
+                        for row in transformed_block.rows():
+                            position = positions.get(tuple(int(entry) for entry in row))
+                            if position is None:
+                                return None
+                            permutation_images.append(position + 1)
+                    permutation = symmetric(permutation_images)
+                else:
+                    transformed_rows = source_rows * action
+                    if Counter(tuple(row) for row in transformed_rows.rows()) != target_multiset:
                         return None
-                elif Counter(tuple(row) for row in transformed_rows.rows()) != target_multiset:
-                    return None
                 witness = source.lattice.Isom(target.lattice)(
                     {
                         label: target.lattice.linear_combination(
@@ -1611,10 +1622,6 @@ class LorentzianPerfectLocalBackend:
                     }
                 )
                 if generators_only:
-                    try:
-                        permutation = symmetric([positions[tuple(int(entry) for entry in row)] + 1 for row in transformed_rows.rows()])
-                    except KeyError as exc:
-                        raise ArithmeticError("a certified perfect-cell stabilizer fails to permute its configuration") from exc
                     if permutation not in subgroup:
                         stabilizer_elements.append(witness)
                         group_permutations.append(permutation)
