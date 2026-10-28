@@ -1477,11 +1477,18 @@ class LorentzianPerfectLocalBackend:
         target_multiset = None if generators_only else Counter(target.rows)
         if source_smith != target_smith:
             return ()
-        if Counter(source_spectra) != Counter(target_spectra):
+        if source is not target and Counter(source_spectra) != Counter(target_spectra):
             return ()
-        colour_numbers = {signature: index for index, signature in enumerate(sorted(set(source_spectra)))}
+        signatures = set(source_spectra)
+        if source is not target:
+            signatures.update(target_spectra)
+        colour_numbers = {signature: index for index, signature in enumerate(sorted(signatures))}
         source_colours = tuple(colour_numbers[signature] for signature in source_spectra)
-        target_colours = tuple(colour_numbers[signature] for signature in target_spectra)
+        target_colours = (
+            source_colours
+            if source is target
+            else tuple(colour_numbers[signature] for signature in target_spectra)
+        )
 
         # For moderate configurations, refine the two coloured,
         # integral-weighted configuration graphs (the vertex-coloured Gram
