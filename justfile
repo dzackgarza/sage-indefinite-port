@@ -235,6 +235,10 @@ ci-acceptance family shard shards selection="":
         shard_args=(--shard-id={{shard}} --num-shards={{shards}})
         ;;
     esac
+    if [[ "{{family}}" == reflective && "{{selection}}" == "" ]]; then
+        timeout --signal=INT 345m python3 ci/pytest_batches.py --sage "$SAGE_BIN" --out "$out" --batch-size 80 -- "${tests[@]}" "${shard_args[@]}" 2>&1 | tee "$out/log"
+        exit "${PIPESTATUS[0]}"
+    fi
     timeout --signal=INT 345m "$SAGE_BIN" -python -c 'import sage.all, sys, pytest; sys.exit(pytest.main(sys.argv[1:]))' \
         -p qc_sage_session "${tests[@]}" --runxfail -rA --tb=long --instafail \
         "${shard_args[@]}" --junitxml="$out/junit.xml" 2>&1 | tee "$out/log"
