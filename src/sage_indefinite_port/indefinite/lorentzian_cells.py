@@ -1521,9 +1521,11 @@ class LorentzianPerfectLocalBackend:
         if source_gram.det() != target_gram.det() or source.lattice.signature_pair() != target.lattice.signature_pair():
             return () if all_images else None
         if not all_images:
-            if source.lattice is target.lattice and Counter(source.rows) == Counter(target.rows):
+            if source.lattice is target.lattice and source.rows == target.rows:
                 return source.lattice.Aut().identity()
             if n <= _PAIRING_GRAPH_REFINEMENT_LIMIT:
+                if source.lattice is target.lattice and Counter(source.rows) == Counter(target.rows):
+                    return source.lattice.Aut().identity()
                 source_family = Sets().Mor(Sets.Δ[n - 1], source.lattice)(
                     lambda index: source.vector_configuration[int(index)]
                 )

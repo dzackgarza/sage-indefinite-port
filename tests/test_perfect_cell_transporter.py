@@ -544,6 +544,28 @@ def test_large_distinct_row_transporter_uses_exact_target_membership(monkeypatch
     assert abs(matrix(ZZ, rows_of(witness)).det()) == 1
 
 
+def test_large_same_lattice_transporter_skips_counter_identity_probe(monkeypatch) -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    ambient = lattice(gram.rows())
+    source = LorentzianPerfectCell(ambient, ((1, 0), (0, 1)), ZERO_SQUARES)
+    target = LorentzianPerfectCell(ambient, ((0, 1), (1, 0)), ZERO_SQUARES)
+    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
+    original_counter = lorentzian_cells.Counter
+
+    def reject_row_counter(iterable=(), *args, **kwargs):
+        if iterable is source.rows or iterable is target.rows:
+            pytest.fail("large same-lattice transporters must not build row-multiset Counters")
+        return original_counter(iterable, *args, **kwargs)
+
+    monkeypatch.setattr(lorentzian_cells, "Counter", reject_row_counter)
+    witness = LorentzianPerfectLocalBackend().cell_transporter(source, target)
+
+    assert witness is not None
+    action = matrix(ZZ, rows_of(witness))
+    assert abs(action.det()) == 1
+    assert action * gram * action.transpose() == gram
+
+
 def test_large_configuration_invariants_skip_per_ray_gcd_colours(monkeypatch) -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
