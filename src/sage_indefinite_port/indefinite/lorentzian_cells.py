@@ -1733,6 +1733,15 @@ class LorentzianPerfectLocalBackend:
         # some incompatible configurations before the large image search.
         if source_moment.det() != target_moment.det():
             return ()
+        # The row sum itself transforms by the same unimodular action. Its
+        # coordinate content and its norm in the ambient Gram form are exact
+        # invariants too, and cost only O(rank) arithmetic before backtracking.
+        if gcd(*map(int, source_sum)) != gcd(*map(int, target_sum)):
+            return ()
+        if source_sum.dot_product(source_gram * source_sum) != target_sum.dot_product(
+            target_gram * target_sum
+        ):
+            return ()
         if source is not target and Counter(source_spectra) != Counter(target_spectra):
             return ()
         signatures = set(source_spectra)
