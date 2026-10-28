@@ -500,6 +500,29 @@ def test_large_perfect_form_hash_skips_quadratic_pairing_graph(monkeypatch) -> N
     assert key[4] == ()
 
 
+def test_complex_isometry_uses_cached_coarse_key_for_large_route(monkeypatch) -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    ambient = lattice(gram.rows())
+    source = LorentzianPerfectComplex(ambient, ZERO_SQUARES)
+    target = LorentzianPerfectComplex(ambient, ZERO_SQUARES)
+    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
+    monkeypatch.setattr(
+        lorentzian_cells._ConfigurationPairings,
+        "blocks",
+        lambda _self: pytest.fail("large-route complex isometry must not build the quadratic pairing graph"),
+    )
+    monkeypatch.setattr(
+        lorentzian_cells._ConfigurationPairings,
+        "diagonal",
+        lambda _self: pytest.fail("large-route complex isometry must consume diagonal blocks"),
+    )
+
+    witness = source.isometry_to(target)
+
+    assert witness is not None
+    assert abs(matrix(ZZ, rows_of(witness)).det()) == 1
+
+
 def test_large_configuration_invariants_skip_per_ray_gcd_colours(monkeypatch) -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
