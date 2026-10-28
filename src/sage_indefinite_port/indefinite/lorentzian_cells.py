@@ -2668,7 +2668,7 @@ class _CellFaces:
         # Consume its exact H-family directly into the dense coordinate matrix
         # below; retaining a tuple of owned covector elements alongside that
         # matrix duplicates one Python object and coordinate vector per facet.
-        interior = sum(self.rows[1:], self.rows[0])
+        interior = sum(self.rows, vector(SageZZ, [0] * len(self.labels)))
         # Compute exact facet-to-ray incidences in bounded matrix blocks.
         # The scalar Python loop performs one exact dot product per ray and
         # facet; A7 has 49,861 rays, so batching Sage's exact matrix product
