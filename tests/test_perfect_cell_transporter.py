@@ -546,6 +546,28 @@ def test_large_distinct_row_transporter_uses_exact_target_membership(monkeypatch
     assert abs(matrix(ZZ, rows_of(witness)).det()) == 1
 
 
+def test_large_transporter_matches_joint_gcd_colours_after_basis_change(monkeypatch) -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    shear = matrix(ZZ, [[1, 2**80 + 1], [0, 1]])
+    target_gram = shear.inverse() * gram * shear.inverse().transpose()
+    source_rows = matrix(ZZ, [[2, 0], [0, 3]])
+    source = LorentzianPerfectCell(
+        lattice(gram.rows()), tuple(tuple(row) for row in source_rows), ZERO_SQUARES
+    )
+    target = LorentzianPerfectCell(
+        lattice(target_gram.rows()), tuple(tuple(row) for row in source_rows * shear), ZERO_SQUARES
+    )
+    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
+
+    witness = LorentzianPerfectLocalBackend().cell_transporter(source, target)
+
+    assert witness is not None
+    action = matrix(ZZ, rows_of(witness))
+    assert action == shear
+    assert abs(action.det()) == 1
+    assert action * target_gram * action.transpose() == gram
+
+
 def test_large_same_lattice_transporter_skips_counter_identity_probe(monkeypatch) -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     ambient = lattice(gram.rows())
