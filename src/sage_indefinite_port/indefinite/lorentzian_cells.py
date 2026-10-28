@@ -723,6 +723,22 @@ def _extend_configuration_signatures(
     )
 
 
+def _configuration_signature_multiset(
+    colours: tuple[int, ...], columns: tuple[tuple[int, ...], ...]
+) -> Counter[tuple[int, tuple[int, ...]]]:
+    """Materialize row signatures only for the duration of one exact comparison.
+
+    Retaining a nested signature tuple for every configuration row at every
+    recursion depth multiplies memory by the ambient rank. Keep only the
+    assigned pairing columns in the search stack and build the multiset on
+    demand, releasing it before descending further.
+    """
+    return Counter(
+        (colour, tuple(column[index] for column in columns))
+        for index, colour in enumerate(colours)
+    )
+
+
 def _row_multiset(row, own_value: int) -> tuple[tuple[int, int], ...]:
     r"""The multiset of a pairing row's entries other than the vertex's own, as sorted (value, count)."""
     # NumPy's unique/sort on object arrays is not an integral-arithmetic
@@ -1742,14 +1758,7 @@ class LorentzianPerfectLocalBackend:
             subgroup = symmetric.subgroup([])
             group_permutations = []
 
-        empty_source_signatures = tuple((colour, ()) for colour in source_colours)
-        empty_target_signatures = (
-            empty_source_signatures
-            if source is target
-            else tuple((colour, ()) for colour in target_colours)
-        )
-
-        def backtrack(images, source_signatures, target_signatures, certified_target_basis=None):
+        def backtrack(images, source_columns, target_columns, certified_target_basis=None):
             nonlocal subgroup, first_witness
             if first_witness is not None:
                 return first_witness
@@ -1912,14 +1921,12 @@ class LorentzianPerfectLocalBackend:
                         # exact multiset comparison.
                         source_column = source_pairings.column(choice)
                         target_column = target_pairings.column(j)
-                        next_source_signatures = _extend_configuration_signatures(
-                            source_signatures, source_column
-                        )
-                        next_target_signatures = _extend_configuration_signatures(
-                            target_signatures, target_column
-                        )
-                        if Counter(next_source_signatures) == Counter(next_target_signatures):
-                            backtrack(images, next_source_signatures, next_target_signatures, target_basis_integral)
+                        next_source_columns = source_columns + (source_column,)
+                        next_target_columns = target_columns + (target_column,)
+                        if _configuration_signature_multiset(
+                            source_colours, next_source_columns
+                        ) == _configuration_signature_multiset(target_colours, next_target_columns):
+                            backtrack(images, next_source_columns, next_target_columns, target_basis_integral)
                             if first_witness is not None:
                                 return first_witness
                     del images[choice]
@@ -1943,20 +1950,18 @@ class LorentzianPerfectLocalBackend:
                     # assignment order keeps source/target coordinates aligned.
                     source_column = source_pairings.column(choice)
                     target_column = target_pairings.column(j)
-                    next_source_signatures = _extend_configuration_signatures(
-                        source_signatures, source_column
-                    )
-                    next_target_signatures = _extend_configuration_signatures(
-                        target_signatures, target_column
-                    )
-                    if Counter(next_source_signatures) == Counter(next_target_signatures):
-                        backtrack(images, next_source_signatures, next_target_signatures)
+                    next_source_columns = source_columns + (source_column,)
+                    next_target_columns = target_columns + (target_column,)
+                    if _configuration_signature_multiset(
+                        source_colours, next_source_columns
+                    ) == _configuration_signature_multiset(target_colours, next_target_columns):
+                        backtrack(images, next_source_columns, next_target_columns)
                         if first_witness is not None:
                             return first_witness
                 del images[choice]
             return None
 
-        backtrack({}, empty_source_signatures, empty_target_signatures)
+        backtrack({}, (), ())
         return first_witness if first_only else tuple(stabilizer_elements)
 
 
