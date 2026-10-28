@@ -156,8 +156,11 @@ def _schreier_generator_indices(word: SchreierWord) -> Iterator[int]:
 def _permuted_bitset(mask: int, permutation: array | tuple[int, ...]) -> int:
     """Apply a position permutation to an exact bitset using byte storage."""
     size = len(permutation)
-    source = mask.to_bytes((size + 7) // 8, "little")
-    image = bytearray(len(source))
+    # The image may use any target position, but the source only needs bytes
+    # through its highest set bit. This matters when the compact incident-side
+    # bitset is concentrated near the start of a large ray universe.
+    source = mask.to_bytes((mask.bit_length() + 7) // 8, "little")
+    image = bytearray((size + 7) // 8)
     for byte_index, value in enumerate(source):
         while value:
             least_bit = value & -value
