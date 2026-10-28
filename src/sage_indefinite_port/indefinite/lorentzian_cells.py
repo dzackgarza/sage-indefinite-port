@@ -1377,7 +1377,7 @@ class LorentzianPerfectLocalBackend:
         # invariant list bounded by the ambient rank rather than the number
         # of configuration rows (which is 49,861 in the A7 consumer).
         smith_invariants = rows.transpose().elementary_divisors()
-        data = (rows, pairings, spectra, Counter(cell.rows), smith_invariants)
+        data = (rows, pairings, spectra, smith_invariants)
         cache[key] = (cell, data)
         while len(cache) > 2:
             cache.pop(next(iter(cache)))
@@ -1468,8 +1468,13 @@ class LorentzianPerfectLocalBackend:
         # its row matrix, Gram-covector matrix, invariant colours and Smith data
         # twice only duplicates O(n * rank) exact storage and work.
         target_data = source_data if source is target else self._integral_configuration_invariants(target)
-        source_rows, source_pairings, source_spectra, _source_multiset, source_smith = source_data
-        target_rows, target_pairings, target_spectra, target_multiset, target_smith = target_data
+        source_rows, source_pairings, source_spectra, source_smith = source_data
+        target_rows, target_pairings, target_spectra, target_smith = target_data
+        # Large-cell stabilizer generation certifies row-set equality through
+        # the exact position map below. Do not retain a second 49,861-entry
+        # Counter in the cached invariant bundle when that consumer cannot use
+        # it. Other transporter modes still require the full multiset check.
+        target_multiset = None if generators_only else Counter(target.rows)
         if source_smith != target_smith:
             return ()
         if Counter(source_spectra) != Counter(target_spectra):
@@ -1611,7 +1616,7 @@ class LorentzianPerfectLocalBackend:
                     permutation = symmetric(permutation_images)
                 else:
                     transformed_rows = source_rows * action
-                    if Counter(tuple(row) for row in transformed_rows.rows()) != target_multiset:
+                    if target_multiset is None or Counter(tuple(row) for row in transformed_rows.rows()) != target_multiset:
                         return None
                 witness = source.lattice.Isom(target.lattice)(
                     {
