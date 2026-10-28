@@ -2019,7 +2019,14 @@ class LorentzianPerfectLocalBackend:
                             next_target_columns,
                             source_signature_counts=source_signature_counts,
                         ):
-                            backtrack(images, next_source_columns, next_target_columns, target_basis_integral)
+                            # The parent frame otherwise retains its
+                            # 49,861-entry source signature counter throughout
+                            # the recursive search. Rebuild it only if another
+                            # sibling survives the exact filters.
+                            child_source_columns = next_source_columns
+                            source_signature_counts = None
+                            next_source_columns = None
+                            backtrack(images, child_source_columns, next_target_columns, target_basis_integral)
                             if first_witness is not None:
                                 return first_witness
                     del images[choice]
@@ -2062,7 +2069,10 @@ class LorentzianPerfectLocalBackend:
                         next_target_columns,
                         source_signature_counts=source_signature_counts,
                     ):
-                        backtrack(images, next_source_columns, next_target_columns)
+                        child_source_columns = next_source_columns
+                        source_signature_counts = None
+                        next_source_columns = None
+                        backtrack(images, child_source_columns, next_target_columns)
                         if first_witness is not None:
                             return first_witness
                 del images[choice]
