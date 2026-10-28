@@ -1128,7 +1128,7 @@ class LorentzianPerfectLocalBackend:
     ) -> tuple[
         Iterator[FacetMaskKey],
         tuple[array, ...],
-        dict[FacetMaskKey, FacetMaskKey] | None,
+        dict[FacetMaskKey, FacetMaskKey | None] | None,
     ]:
         r"""Yield exact facet keys and the ray permutations of stabilizer generators.
 
@@ -1287,7 +1287,7 @@ class LorentzianPerfectLocalBackend:
             # key objects are shared with the orbit's visited set: dense
             # integer bitsets can be several kilobytes each, so retaining a
             # second equal object for every permuted facet is prohibitive.
-            canonical_keys: dict[FacetMaskKey, FacetMaskKey] = {}
+            canonical_keys: dict[FacetMaskKey, FacetMaskKey | None] = {}
             for key in facet_keys():
                 canonical_keys.setdefault(key, key)
 
@@ -1306,7 +1306,7 @@ class LorentzianPerfectLocalBackend:
         permutations: tuple[array, ...],
         *,
         retain_words: bool = True,
-        canonical_keys: dict[FacetMaskKey, FacetMaskKey] | None = None,
+        canonical_keys: dict[FacetMaskKey, FacetMaskKey | None] | None = None,
     ) -> Iterator[list[tuple[FacetMaskKey, SchreierWord] | None]]:
         """Yield exact facet orbits with one visited set and one current orbit.
 
@@ -1316,13 +1316,24 @@ class LorentzianPerfectLocalBackend:
         full facet-membership dictionary plus a second visitation table.
         """
         identity_word = None
-        visited: set[FacetMaskKey] = set()
+        # The raw-H path already owns a canonical-key dictionary. Use its
+        # values as visitation marks instead of allocating a second full set
+        # of references to every (potentially multi-kilobyte) facet key.
+        visited: set[FacetMaskKey] | None = set() if canonical_keys is None else None
         facet_count = 0
         for start in facet_keys:
             facet_count += 1
-            if start in visited:
-                continue
-            visited.add(start)
+            if canonical_keys is None:
+                assert visited is not None
+                if start in visited:
+                    continue
+                visited.add(start)
+            else:
+                canonical_start = canonical_keys[start]
+                if canonical_start is None:
+                    continue
+                canonical_keys[start] = None
+                start = canonical_start
             if not retain_words:
                 # Group-generator assembly only needs one facet from each
                 # orbit. Yield it before exploring the rest of the orbit, so
@@ -1336,16 +1347,21 @@ class LorentzianPerfectLocalBackend:
                     facet_mask = pending.popleft()
                     for permutation in permutations:
                         image_mask = _permuted_facet_key(facet_mask, permutation)
-                        if image_mask in visited:
-                            continue
                         if canonical_keys is not None:
-                            canonical_image = canonical_keys.get(image_mask)
-                            if canonical_image is None:
+                            if image_mask not in canonical_keys:
                                 raise ArithmeticError(
                                     "a cell-stabilizer generator sends a facet outside the exact H-presentation"
                                 )
+                            canonical_image = canonical_keys.get(image_mask)
+                            if canonical_image is None:
+                                continue
                             image_mask = canonical_image
-                        if image_mask not in visited:
+                            canonical_keys[image_mask] = None
+                            pending.append(image_mask)
+                        else:
+                            assert visited is not None
+                            if image_mask in visited:
+                                continue
                             visited.add(image_mask)
                             pending.append(image_mask)
                 continue
@@ -1356,22 +1372,32 @@ class LorentzianPerfectLocalBackend:
                 facet_mask, element_word = entry
                 for generator_index, permutation in enumerate(permutations):
                     image_mask = _permuted_facet_key(facet_mask, permutation)
-                    if image_mask in visited:
-                        continue
                     if canonical_keys is not None:
-                        canonical_image = canonical_keys.get(image_mask)
-                        if canonical_image is None:
+                        if image_mask not in canonical_keys:
                             raise ArithmeticError(
                                 "a cell-stabilizer generator sends a facet outside the exact H-presentation"
                             )
+                        canonical_image = canonical_keys.get(image_mask)
+                        if canonical_image is None:
+                            continue
                         image_mask = canonical_image
-                    if image_mask not in visited:
+                        canonical_keys[image_mask] = None
+                        orbit.append((image_mask, (element_word, generator_index)))
+                    else:
+                        assert visited is not None
+                        if image_mask in visited:
+                            continue
                         visited.add(image_mask)
                         orbit.append((image_mask, (element_word, generator_index)))
             # Transfer the mutable BFS buffer to the caller rather than
             # copying every orbit into a tuple while the list is still live.
             yield orbit
-        if len(visited) != facet_count:
+        visited_count = (
+            sum(value is None for value in canonical_keys.values())
+            if canonical_keys is not None
+            else len(visited)
+        )
+        if visited_count != facet_count:
             raise ArithmeticError(
                 "cell-stabilizer permutations generate incidences outside the H-presentation"
             )
