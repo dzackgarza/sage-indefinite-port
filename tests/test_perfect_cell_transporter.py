@@ -164,6 +164,14 @@ def test_facet_orbit_enumerator_streams_representatives_without_words() -> None:
     )
     assert canonical_retained[0][1][0] is facets[1]
     assert all(value is None for value in canonical.values())
+    with pytest.raises(ArithmeticError, match="outside the exact H-presentation"):
+        tuple(
+            backend._iter_facet_mask_orbits(
+                iter((facets[0],)),
+                (swap_first_two,),
+                canonical_keys={facets[0]: facets[0]},
+            )
+        )
     assert tuple(orbit[0][0] for orbit in streamed) == ((False, (0,)), (False, (2,)))
     assert all(len(orbit) == 1 for orbit in streamed)
     assert _permuted_facet_key(facets[0], swap_first_two) == facets[1]
