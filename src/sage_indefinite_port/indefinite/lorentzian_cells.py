@@ -1585,7 +1585,18 @@ class LorentzianPerfectLocalBackend:
                 action = action.change_ring(SageZZ)
                 if action * target_gram * action.transpose() != source_gram:
                     return None
-                if Counter(tuple(row) for row in (source_rows * action).rows()) != target_multiset:
+                transformed_rows = source_rows * action
+                if generators_only:
+                    # The stabilizer path has already certified that the
+                    # source configuration has distinct rows and built its
+                    # exact row-to-position map. An integral unimodular
+                    # action is injective, so membership of every transformed
+                    # row in that n-element set proves equality of the full
+                    # row multiset without allocating another n-entry Counter
+                    # at every completed basis assignment.
+                    if any(tuple(int(entry) for entry in row) not in positions for row in transformed_rows.rows()):
+                        return None
+                elif Counter(tuple(row) for row in transformed_rows.rows()) != target_multiset:
                     return None
                 witness = source.lattice.Isom(target.lattice)(
                     {
