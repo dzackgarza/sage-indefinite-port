@@ -24,9 +24,24 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     NONNEGATIVE_SQUARES,
     ZERO_SQUARES,
     _extend_configuration_signatures,
+    perfect_complex,
 )
 import sage_indefinite_port.indefinite.lorentzian_cells as lorentzian_cells
 from tests.acceptance.consumer import lattice, rows_of
+
+
+def test_group_generator_complex_does_not_alias_full_domain_cache() -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    ambient = lattice(gram.rows())
+
+    full_domain = perfect_complex(ambient, ZERO_SQUARES)
+    group_only = perfect_complex(ambient, ZERO_SQUARES, retain_facet_orbits=False)
+
+    assert full_domain is perfect_complex(ambient, ZERO_SQUARES)
+    assert group_only is perfect_complex(ambient, ZERO_SQUARES, retain_facet_orbits=False)
+    assert full_domain is not group_only
+    assert full_domain._retain_facet_orbits
+    assert not group_only._retain_facet_orbits
 
 
 def test_owned_row_blocks_release_only_consumed_list_entries() -> None:

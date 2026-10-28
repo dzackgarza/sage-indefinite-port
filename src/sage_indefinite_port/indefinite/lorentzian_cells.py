@@ -363,13 +363,22 @@ def binary_split_primitive_vector_classes(lattice: Lattices.ParentMethods, squar
 
 
 @cache
-def perfect_complex(lattice: Lattices.ParentMethods, allowed_squares: RealSet) -> LorentzianPerfectComplex:
+def perfect_complex(
+    lattice: Lattices.ParentMethods,
+    allowed_squares: RealSet,
+    *,
+    retain_facet_orbits: bool = True,
+) -> LorentzianPerfectComplex:
     r"""The perfect-domain complex of a lattice, memoized as IndefiniteForms.g:1173-1299 memoizes its groups.
 
-    The traversal of a complex is deterministic data of the lattice; every consumer of
-    the same lattice shares its cells, stabilizers and side pairings.
+    The traversal of a complex is deterministic data of the lattice. Consumers
+    with the same facet-retention contract share their cells, stabilizers and
+    side pairings; the orthogonal-group route uses a separate cache entry that
+    discards per-facet Schreier records once each orbit has been processed.
     """
-    return LorentzianPerfectComplex(lattice, allowed_squares)
+    return LorentzianPerfectComplex(
+        lattice, allowed_squares, retain_facet_orbits=retain_facet_orbits
+    )
 
 
 def lorentzian_orthogonal_group_generators(lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
@@ -380,7 +389,14 @@ def lorentzian_orthogonal_group_generators(lattice: Lattices.ParentMethods) -> t
         return (lattice.Isom(lattice)({label: negative}),)
     if int(lattice.rank()) == 2 and lattice.is_isotropic():
         return _binary_split_automorphisms(lattice)
-    return perfect_complex(lattice, NONNEGATIVE_SQUARES).full_orthogonal_group_generators()
+    # The orthogonal-group consumer needs quotient cells, cell stabilizers
+    # and one side pairing per facet orbit. It does not need the per-facet
+    # Schreier records retained by the richer public perfect-domain adapter.
+    # Use a separate cached traversal mode so the public complex keeps its
+    # complete domain data if another consumer requests it later.
+    return perfect_complex(
+        lattice, NONNEGATIVE_SQUARES, retain_facet_orbits=False
+    ).full_orthogonal_group_generators()
 
 
 def lorentzian_isometry(source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
@@ -1800,11 +1816,18 @@ class LorentzianPerfectComplex:
     retained source facet.
     """
 
-    def __init__(self, lattice: Lattices.ParentMethods, allowed_squares: RealSet) -> None:
+    def __init__(
+        self,
+        lattice: Lattices.ParentMethods,
+        allowed_squares: RealSet,
+        *,
+        retain_facet_orbits: bool = True,
+    ) -> None:
         if allowed_squares not in (NONNEGATIVE_SQUARES, ZERO_SQUARES):
             raise ValueError(f"unsupported normalized-norm locus {allowed_squares!r}")
         self._lattice = lattice
         self._allowed_squares = allowed_squares
+        self._retain_facet_orbits = retain_facet_orbits
         self._local_backend = LorentzianPerfectLocalBackend()
         self._traversal_representatives: list[LorentzianPerfectCell] | None = None
         self._traversal_representative_buckets: dict[PerfectFormKey, list[LorentzianPerfectCell]] = {}
@@ -1852,8 +1875,9 @@ class LorentzianPerfectComplex:
         # retain the Schreier words for those facet orbits alone. Yielding one
         # orbit at a time avoids keeping a second full decomposition alive
         # while neighbors are constructed; boundary-face orbits are discarded.
-        self._traversal_facet_orbits[source_id] = {}
-        self._traversal_facet_generators[source_id] = generator_permutations
+        if self._retain_facet_orbits:
+            self._traversal_facet_orbits[source_id] = {}
+            self._traversal_facet_generators[source_id] = generator_permutations
         for orbit in backend._iter_facet_mask_orbits(facet_masks, generator_permutations):
             facet = _facet_incidence(orbit[0][0], len(source.rows))
             neighbor = backend.flip_across(source, facet)
@@ -1884,7 +1908,8 @@ class LorentzianPerfectComplex:
             # Recording every orbit member would replicate the same quotient
             # edge and its side pairing, with an expensive polyhedral witness
             # check for each copy.
-            self._traversal_facet_orbits[source_id][facet] = orbit
+            if self._retain_facet_orbits:
+                self._traversal_facet_orbits[source_id][facet] = orbit
             self._traversal_adjacencies.append(LorentzianCellAdjacency(source, facet, target, transporter))
         self._traversal_processed.add(source_position)
         return tuple(new_representatives)
