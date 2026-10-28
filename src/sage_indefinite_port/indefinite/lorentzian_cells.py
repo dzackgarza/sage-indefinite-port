@@ -835,11 +835,8 @@ class LorentzianPerfectLocalBackend:
             hyperplanes, _ = self._normaliz_cell_h_presentation(
                 cell, include_equations=False
             )
-            for index, row in enumerate(hyperplanes):
-                if isinstance(hyperplanes, list):
-                    hyperplanes[index] = None
-                yield tuple(int(entry) for entry in row)
-                del row
+            for block in _iter_owned_row_blocks(hyperplanes, 1):
+                yield block[0]
             return
         # Small owned cones are reused directly rather than querying Normaliz
         # for a second H-presentation.
