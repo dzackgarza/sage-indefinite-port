@@ -45,6 +45,18 @@ def test_owned_row_blocks_release_only_consumed_list_entries() -> None:
         next(blocks)
 
 
+def test_owned_row_blocks_leave_immutable_sequences_unchanged() -> None:
+    rows = ((1, 2), (3, 4), (5, 6))
+    assert tuple(_iter_owned_row_blocks(rows, 2)) == (
+        ((1, 2), (3, 4)),
+        ((5, 6),),
+    )
+    assert rows == ((1, 2), (3, 4), (5, 6))
+
+    with pytest.raises(ValueError, match="block size must be positive"):
+        tuple(_iter_owned_row_blocks(rows, 0))
+
+
 def test_schreier_generator_indices_streams_nested_word_in_action_order() -> None:
     word = (((None, 3), 1), 4)
     indices = _schreier_generator_indices(word)
