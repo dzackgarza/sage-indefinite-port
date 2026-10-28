@@ -1818,9 +1818,10 @@ class LorentzianPerfectComplex:
     def _ensure_traversal_started(self) -> None:
         if self._traversal_representatives is not None:
             return
-        initial = self.local_backend().initial_cell(self.lattice(), self.allowed_squares())
+        backend = self.local_backend()
+        initial = backend.initial_cell(self.lattice(), self.allowed_squares())
         self._traversal_representatives = [initial]
-        self._traversal_representative_buckets = {_perfect_form_hash_key(initial): [initial]}
+        self._traversal_representative_buckets = {_perfect_form_hash_key(initial, backend): [initial]}
 
     def _expand_traversal_once(self) -> tuple[LorentzianPerfectCell, ...]:
         self._ensure_traversal_started()
@@ -1854,7 +1855,7 @@ class LorentzianPerfectComplex:
                 continue
             target = None
             transporter = None
-            neighbor_key = _perfect_form_hash_key(neighbor)
+            neighbor_key = _perfect_form_hash_key(neighbor, backend)
             for representative in self._traversal_representative_buckets.get(neighbor_key, ()):
                 candidate = backend.cell_transporter(representative, neighbor)
                 if candidate is not None:
@@ -1956,7 +1957,10 @@ type PerfectFormKey = tuple[
 ]
 
 
-def _perfect_form_hash_key(cell: LorentzianPerfectCell) -> PerfectFormKey:
+def _perfect_form_hash_key(
+    cell: LorentzianPerfectCell,
+    backend: LorentzianPerfectLocalBackend | None = None,
+) -> PerfectFormKey:
     r"""ComputeInvariantPerfectForm (lorentzian_perfect.h:1212-1256), with two integral invariants.
 
     For moderate configurations, this uses the source's full histogram of
@@ -1966,6 +1970,21 @@ def _perfect_form_hash_key(cell: LorentzianPerfectCell) -> PerfectFormKey:
     per-row gcd histograms are omitted. This is only a traversal bucket key;
     an exact transporter check remains mandatory on every match.
     """
+    if backend is not None and len(cell.rows) > _PAIRING_GRAPH_REFINEMENT_LIMIT:
+        # The large-cell transporter needs exactly the same norm-only colour
+        # and Smith invariants as this traversal bucket. Reuse that backend's
+        # identity cache instead of constructing the dense row/covector
+        # matrices and computing both invariants a second time. The cache then
+        # also serves the subsequent stabilizer/transporter operation.
+        _rows, _pairings, spectra, smith_invariants = backend._integral_configuration_invariants(cell)
+        diagonal = Counter(norm for (norm,) in spectra)
+        return (
+            tuple(sorted(diagonal.items())),
+            (),
+            tuple(int(entry) for entry in smith_invariants),
+            (),
+            (),
+        )
     pairings = _ConfigurationPairings(cell.rows, _gram_matrix(cell.lattice))
     diagonal: Counter[int] = Counter()
     for block in pairings.diagonal_blocks():

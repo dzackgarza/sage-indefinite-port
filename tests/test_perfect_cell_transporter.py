@@ -369,6 +369,9 @@ def test_large_perfect_form_hash_skips_quadratic_pairing_graph(monkeypatch) -> N
     )
 
     key = _perfect_form_hash_key(cell)
+    backend = LorentzianPerfectLocalBackend()
+    assert _perfect_form_hash_key(cell, backend) == key
+    assert id(cell) in backend.__dict__["_configuration_invariant_cache"]
 
     assert key[1] == ()
     assert sum(count for _value, count in key[0]) == len(cell.rows)
