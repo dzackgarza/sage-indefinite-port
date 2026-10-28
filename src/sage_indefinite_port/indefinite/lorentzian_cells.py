@@ -835,8 +835,9 @@ class LorentzianPerfectLocalBackend:
             hyperplanes, _ = self._normaliz_cell_h_presentation(
                 cell, include_equations=False
             )
-            for block in _iter_owned_row_blocks(hyperplanes, 1):
-                yield block[0]
+            block_size = _configuration_pairing_block_size(len(cell.rows))
+            for block in _iter_owned_row_blocks(hyperplanes, block_size):
+                yield from block
             return
         # Small owned cones are reused directly rather than querying Normaliz
         # for a second H-presentation.
