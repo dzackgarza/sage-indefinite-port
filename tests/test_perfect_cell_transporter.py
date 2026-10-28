@@ -59,7 +59,7 @@ def test_group_only_expansion_discards_facet_orbit_records(monkeypatch) -> None:
         monkeypatch.setattr(
             backend,
             "_iter_facet_mask_orbits",
-            lambda _facets, _permutations: iter([[((True, (0,)), None)]]),
+            lambda _facets, _permutations, *, retain_words=True: iter([[((True, (0,)), None)]]),
         )
         monkeypatch.setattr(backend, "flip_across", lambda _cell, _facet: cell)
         monkeypatch.setattr(backend, "cell_transporter", lambda _source, _target: ambient.Aut().identity())
@@ -109,6 +109,26 @@ def test_schreier_generator_indices_streams_nested_word_in_action_order() -> Non
 
     assert iter(indices) is indices
     assert tuple(indices) == (3, 1, 4)
+
+
+def test_facet_orbit_enumerator_streams_representatives_without_words() -> None:
+    swap_first_two = array("H", [1, 0, 2])
+    facets = ((False, (0,)), (False, (1,)), (False, (2,)))
+    backend = LorentzianPerfectLocalBackend()
+
+    retained = tuple(backend._iter_facet_mask_orbits(iter(facets), (swap_first_two,)))
+    streamed = tuple(
+        backend._iter_facet_mask_orbits(iter(facets), (swap_first_two,), retain_words=False)
+    )
+
+    assert tuple(len(orbit) for orbit in retained) == (2, 1)
+    assert tuple(tuple(entry[0] for entry in orbit) for orbit in retained) == (
+        ((False, (0,)), (False, (1,))),
+        ((False, (2,)),),
+    )
+    assert tuple(orbit[0][0] for orbit in streamed) == ((False, (0,)), (False, (2,)))
+    assert all(len(orbit) == 1 for orbit in streamed)
+    assert _permuted_facet_key(facets[0], swap_first_two) == facets[1]
 
 
 def test_facet_orbit_materializers_release_consumed_bfs_entries(monkeypatch) -> None:

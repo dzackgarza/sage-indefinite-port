@@ -1197,7 +1197,10 @@ class LorentzianPerfectLocalBackend:
 
     @staticmethod
     def _iter_facet_mask_orbits(
-        facet_keys: Iterator[FacetMaskKey], permutations: tuple[array, ...]
+        facet_keys: Iterator[FacetMaskKey],
+        permutations: tuple[array, ...],
+        *,
+        retain_words: bool = True,
     ) -> Iterator[list[tuple[FacetMaskKey, SchreierWord] | None]]:
         """Yield exact facet orbits with one visited set and one current orbit.
 
@@ -1214,6 +1217,25 @@ class LorentzianPerfectLocalBackend:
             if start in visited:
                 continue
             visited.add(start)
+            if not retain_words:
+                # Group-generator assembly only needs one facet from each
+                # orbit. Yield it before exploring the rest of the orbit, so
+                # the caller can flip the representative immediately. Then
+                # finish the exact orbit using a queue of keys alone: retaining
+                # a Schreier word per facet is needed by the full-domain API,
+                # but redundant for O(L) generators.
+                pending = [start]
+                yield [(start, identity_word)]
+                cursor = 0
+                while cursor < len(pending):
+                    facet_mask = pending[cursor]
+                    cursor += 1
+                    for permutation in permutations:
+                        image_mask = _permuted_facet_key(facet_mask, permutation)
+                        if image_mask not in visited:
+                            visited.add(image_mask)
+                            pending.append(image_mask)
+                continue
             orbit: list[tuple[FacetMaskKey, SchreierWord] | None] = [(start, identity_word)]
             for entry in orbit:
                 if entry is None:
@@ -1878,7 +1900,11 @@ class LorentzianPerfectComplex:
         if self._retain_facet_orbits:
             self._traversal_facet_orbits[source_id] = {}
             self._traversal_facet_generators[source_id] = generator_permutations
-        for orbit in backend._iter_facet_mask_orbits(facet_masks, generator_permutations):
+        for orbit in backend._iter_facet_mask_orbits(
+            facet_masks,
+            generator_permutations,
+            retain_words=self._retain_facet_orbits,
+        ):
             facet = _facet_incidence(orbit[0][0], len(source.rows))
             neighbor = backend.flip_across(source, facet)
             if neighbor is None:
