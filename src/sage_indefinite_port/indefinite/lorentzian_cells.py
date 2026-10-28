@@ -1224,15 +1224,15 @@ class LorentzianPerfectLocalBackend:
     ]:
         """Materialize public-style incidences while releasing consumed mask entries."""
         mask_orbits, permutations = self._facet_orbit_transversal_masks(cell)
-        materialized = []
-        for orbit in mask_orbits:
-            def materialize_orbit():
+        def materialize_orbit(orbit):
+            def consume_orbit():
                 for index, (mask, word) in enumerate(orbit):
                     yield (_facet_incidence(mask, len(cell.rows)), word)
                     orbit[index] = None
 
-            materialized.append(tuple(materialize_orbit()))
-        return tuple(materialized), permutations
+            return tuple(consume_orbit())
+
+        return tuple(materialize_orbit(orbit) for orbit in mask_orbits), permutations
 
     def facet_orbits(self, cell: LorentzianPerfectCell) -> tuple[tuple[tuple[FacetIncidence, LatticeIsometryMethods], ...], ...]:
         """Facet orbits with owned isometries, materialized for this public view."""
@@ -1243,8 +1243,7 @@ class LorentzianPerfectLocalBackend:
             raise ArithmeticError("a perfect-cell configuration does not span its ambient lattice")
         inverse_basis = ray_rows.matrix_from_rows(basis_positions).inverse()
         mask_orbits, generator_permutations = self._facet_orbit_transversal_masks(cell)
-        result = []
-        for orbit in mask_orbits:
+        def materialize_orbit(orbit):
             def materialize_element(item):
                 nonincident_mask, word = item
                 # Apply the Schreier word only to the rank-sized basis rows.
@@ -1263,13 +1262,14 @@ class LorentzianPerfectLocalBackend:
                 facet = _facet_incidence(nonincident_mask, len(cell.rows))
                 return (facet, isometry)
 
-            def materialize_orbit():
+            def consume_orbit():
                 for index, item in enumerate(orbit):
                     yield materialize_element(item)
                     orbit[index] = None
 
-            result.append(tuple(materialize_orbit()))
-        return tuple(result)
+            return tuple(consume_orbit())
+
+        return tuple(materialize_orbit(orbit) for orbit in mask_orbits)
 
     def flip_across(self, cell: LorentzianPerfectCell, facet: FacetIncidence) -> LorentzianPerfectCell | None:
         normalized = _lorentzian_view(cell.lattice)
