@@ -1352,21 +1352,13 @@ class LorentzianPerfectLocalBackend:
         pairings = _ConfigurationPairings(rows, _gram_matrix(cell.lattice), cache_columns=True)
         norms = pairings.diagonal()
         if len(cell.rows) > _PAIRING_GRAPH_REFINEMENT_LIMIT:
-            # The source's complete pairing-spectrum colour is an invariant,
-            # but computing it requires n(n-1)/2 pairings. For large cells use
-            # the norm, coordinate content, and divisibility instead. Each is
-            # preserved by every integral unimodular isometry; omitting the
-            # stronger colour only enlarges search fibres and cannot discard
-            # a valid transporter. Exact anchor pairings and the complete row
-            # multiset are still checked before any witness is accepted.
-            spectra = tuple(
-                (
-                    int(norms[index]),
-                    gcd(*cell.rows[index]),
-                    gcd(*pairings.covectors.row(index)),
-                )
-                for index in range(len(cell.rows))
-            )
+            # The complete pairing-spectrum colour requires n(n-1)/2
+            # pairings, while coordinate-content and divisibility colours add
+            # two Python gcd reductions per ray. For large cells use the norm
+            # alone as the vertex colour. This only enlarges search fibres:
+            # exact anchor pairings and the complete row multiset remain
+            # mandatory before any transporter is accepted.
+            spectra = tuple((int(norms[index]),) for index in range(len(cell.rows)))
         else:
             spectra = []
             for start, block in pairings.blocks():
