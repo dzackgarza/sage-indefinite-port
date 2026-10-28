@@ -492,7 +492,7 @@ def test_large_configuration_invariants_skip_per_ray_gcd_colours(monkeypatch) ->
         )
         _rows, _pairings, spectra, _smith = backend._integral_configuration_invariants(cell)
 
-    assert spectra == ((0,), (0,))
+    assert spectra == (0, 0)
     assert len(backend._integral_configuration_invariants(cell)) == 4
 
 

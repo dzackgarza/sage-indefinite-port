@@ -1422,9 +1422,11 @@ class LorentzianPerfectLocalBackend:
             # two Python gcd reductions per ray. For large cells use the norm
             # alone as the vertex colour. This only enlarges search fibres:
             # exact anchor pairings and the complete row multiset remain
-            # mandatory before any transporter is accepted.
+            # mandatory before any transporter is accepted. Store the scalar
+            # norm directly instead of wrapping each value in a singleton
+            # tuple, which otherwise adds one Python object per ray.
             spectra = tuple(
-                (int(norm),)
+                int(norm)
                 for block in pairings.diagonal_blocks()
                 for norm in block
             )
@@ -2063,7 +2065,7 @@ def _perfect_form_hash_key(
         # matrices and computing both invariants a second time. The cache then
         # also serves the subsequent stabilizer/transporter operation.
         _rows, _pairings, spectra, smith_invariants = backend._integral_configuration_invariants(cell)
-        diagonal = Counter(norm for (norm,) in spectra)
+        diagonal = Counter(spectra)
         return (
             tuple(sorted(diagonal.items())),
             (),
