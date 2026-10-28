@@ -135,7 +135,11 @@ def _pointed_classes(category: Category, lattice: Lattices.ParentMethods, square
             return ()
         orbit_set = lattice.binary_fixed_norm_representatives(square)
         section = orbit_set.section()
-        vectors = tuple(section(orbit) for orbit in orbit_set if section(orbit).content() == 1)
+        vectors = tuple(
+            vector_
+            for orbit in orbit_set
+            if (vector_ := section(orbit)).content() == 1
+        )
         base = category.base_object()
         return tuple(category.object(base.hom([vector_], codomain=lattice)) for vector_ in vectors)
     if profile.positive_index == 1 and int(lattice.rank()) == 2 and tuple(map(int, lattice.signature_pair())) == (1, 1) and lattice.is_isotropic():

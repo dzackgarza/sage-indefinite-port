@@ -82,6 +82,8 @@ def test_anisotropic_binary_vector_classes_use_primitive_embeddings() -> None:
     binary = lattice([[2, 0], [0, -3]])
     assert not binary.is_isotropic()
     assert vector_classes(binary, 0) == ()
+    # 2*x^2 - 3*y^2 = 1 has no integer solution modulo 3.
+    assert vector_classes(binary, 1) == ()
     for square in (2, -3):
         classes = vector_classes(binary, square)
         assert classes
