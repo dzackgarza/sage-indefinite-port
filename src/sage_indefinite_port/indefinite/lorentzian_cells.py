@@ -1350,7 +1350,12 @@ class LorentzianPerfectLocalBackend:
                         if image_mask in visited:
                             continue
                         if canonical_keys is not None:
-                            image_mask = canonical_keys.get(image_mask, image_mask)
+                            canonical_image = canonical_keys.get(image_mask)
+                            if canonical_image is None:
+                                raise ArithmeticError(
+                                    "a cell-stabilizer generator sends a facet outside the exact H-presentation"
+                                )
+                            image_mask = canonical_image
                         if image_mask not in visited:
                             visited.add(image_mask)
                             pending.append(image_mask)
@@ -1365,7 +1370,12 @@ class LorentzianPerfectLocalBackend:
                     if image_mask in visited:
                         continue
                     if canonical_keys is not None:
-                        image_mask = canonical_keys.get(image_mask, image_mask)
+                        canonical_image = canonical_keys.get(image_mask)
+                        if canonical_image is None:
+                            raise ArithmeticError(
+                                "a cell-stabilizer generator sends a facet outside the exact H-presentation"
+                            )
+                        image_mask = canonical_image
                     if image_mask not in visited:
                         visited.add(image_mask)
                         orbit.append((image_mask, (element_word, generator_index)))
