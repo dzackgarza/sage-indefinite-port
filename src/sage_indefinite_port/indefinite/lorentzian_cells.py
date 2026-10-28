@@ -1702,14 +1702,21 @@ class LorentzianPerfectLocalBackend:
         # in bounded blocks to avoid retaining a second full n-by-r matrix.
         moment_covectors = gram * row_moment
         moment_contents_list = []
+        moment_norms_list = []
         moment_block_size = _configuration_pairing_block_size(len(cell.rows))
         for start in range(0, len(cell.rows), moment_block_size):
             stop = min(start + moment_block_size, len(cell.rows))
             moment_block = rows.matrix_from_rows(range(start, stop)) * moment_covectors
             moment_contents_list.extend(gcd(*map(int, row)) for row in moment_block.rows())
-            del moment_block
+            moment_pairing_block = moment_block * gram
+            moment_norms_list.extend(
+                sum(int(left) * int(right) for left, right in zip(row, pairing_row, strict=True))
+                for row, pairing_row in zip(moment_block.rows(), moment_pairing_block.rows(), strict=True)
+            )
+            del moment_block, moment_pairing_block
         moment_contents = tuple(moment_contents_list)
-        del moment_contents_list, moment_covectors
+        moment_norms = tuple(moment_norms_list)
+        del moment_contents_list, moment_norms_list, moment_covectors
         # Every configuration isometry carries the total row sum to the
         # target total row sum. Thus each row's exact pairing with that sum is
         # an additional linear-cost invariant; on the large path it refines
@@ -1738,6 +1745,7 @@ class LorentzianPerfectLocalBackend:
                             gcd(*map(int, covector)),
                             int(row_sum_pairings[index, 0]),
                             moment_contents[index],
+                            moment_norms[index],
                         )
                     )
                     index += 1
