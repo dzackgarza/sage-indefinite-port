@@ -847,7 +847,11 @@ class LorentzianPerfectLocalBackend:
             yield covector
 
     def _iter_cell_halfspace_pairing_rows(
-        self, cell: LorentzianPerfectCell, labels: tuple[int, ...]
+        self,
+        cell: LorentzianPerfectCell,
+        labels: tuple[int, ...],
+        *,
+        use_owned_cone: bool = True,
     ) -> Iterator[tuple[int, ...]]:
         """Yield exact facet pairing rows in the scale returned by Normaliz.
 
@@ -856,6 +860,23 @@ class LorentzianPerfectLocalBackend:
         cells, reuse the owned cone's exact minimized H-family rather than
         materializing a second complete Normaliz support-hyperplane list.
         """
+        if not use_owned_cone:
+            # Orthogonal-group generation consumes exact facet incidences and
+            # flips them from the original ray configuration. It does not
+            # need the owned cone object, so read the raw Normaliz H-result
+            # directly and avoid constructing a PPL-side representation of
+            # the complete support-hyperplane family.
+            hyperplanes, _equations = self._normaliz_cell_h_presentation(
+                cell, include_equations=False
+            )
+            for index, row in enumerate(hyperplanes):
+                if isinstance(hyperplanes, list):
+                    hyperplanes[index] = None
+                coordinates = tuple(int(entry) for entry in row)
+                del row
+                if any(coordinates):
+                    yield coordinates
+            return
         if len(cell.rows) >= 1_000:
             # The traversal's first nonboundary facet requires cell_cone for
             # flipping. Re-querying Normaliz here creates a second complete
@@ -1062,7 +1083,10 @@ class LorentzianPerfectLocalBackend:
         return tuple(materialize_orbit(orbit) for orbit in mask_orbits)
 
     def _facet_mask_data(
-        self, cell: LorentzianPerfectCell
+        self,
+        cell: LorentzianPerfectCell,
+        *,
+        use_owned_cone: bool = True,
     ) -> tuple[Iterator[FacetMaskKey], tuple[array, ...]]:
         r"""Yield exact facet keys and the ray permutations of stabilizer generators.
 
@@ -1129,7 +1153,11 @@ class LorentzianPerfectLocalBackend:
         del positions
 
         def facet_keys() -> Iterator[FacetMaskKey]:
-            covector_rows = iter(self._iter_cell_halfspace_pairing_rows(cell, labels))
+            covector_rows = iter(
+                self._iter_cell_halfspace_pairing_rows(
+                    cell, labels, use_owned_cone=use_owned_cone
+                )
+            )
             block_size = _configuration_pairing_block_size(ray_count)
             sparse_limit = _sparse_facet_complement_limit(ray_count)
             # NmzResult("SupportHyperplanes") materializes Normaliz's complete
@@ -1888,7 +1916,9 @@ class LorentzianPerfectComplex:
         )
         source = representatives[source_position]
         new_representatives: list[LorentzianPerfectCell] = []
-        facet_masks, generator_permutations = backend._facet_mask_data(source)
+        facet_masks, generator_permutations = backend._facet_mask_data(
+            source, use_owned_cone=self._retain_facet_orbits
+        )
         source_id = id(source)
         all_ray_mask = (1 << len(source.rows)) - 1
         # Side-pairing witnesses are only queried for actual adjacencies, so

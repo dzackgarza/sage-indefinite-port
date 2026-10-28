@@ -55,7 +55,11 @@ def test_group_only_expansion_discards_facet_orbit_records(monkeypatch) -> None:
         key = _perfect_form_hash_key(cell)
         complex_._traversal_representatives = [cell]
         complex_._traversal_representative_buckets = {key: [cell]}
-        monkeypatch.setattr(backend, "_facet_mask_data", lambda _cell: (iter(()), ()))
+        monkeypatch.setattr(
+            backend,
+            "_facet_mask_data",
+            lambda _cell, *, use_owned_cone=True: (iter(()), ()),
+        )
         monkeypatch.setattr(
             backend,
             "_iter_facet_mask_orbits",
@@ -404,16 +408,36 @@ def test_normaliz_pairing_rows_match_owned_covectors(monkeypatch) -> None:
     monkeypatch.setattr(backend, "_normaliz_cell_h_presentation", count_h_presentation)
     labels = tuple(cell.lattice.module_generating_set())
     pairing_rows = tuple(backend._iter_cell_halfspace_pairing_rows(cell, labels))
+    raw_pairing_rows = tuple(
+        backend._iter_cell_halfspace_pairing_rows(cell, labels, use_owned_cone=False)
+    )
     assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})
     owned_rows = tuple(
         tuple(int(covector(label)) for label in labels)
         for covector in backend._iter_cell_halfspace_covectors(cell)
     )
-    assert h_presentation_calls == 1
+    assert h_presentation_calls == 2
     assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})
-    assert tuple(tuple(value == 0 for value in row) for row in pairing_rows) == tuple(
-        tuple(value == 0 for value in row) for row in owned_rows
+    def zero_pattern(rows):
+        return tuple(tuple(value == 0 for value in row) for row in rows)
+
+    assert zero_pattern(pairing_rows) == zero_pattern(owned_rows)
+    assert zero_pattern(raw_pairing_rows) == zero_pattern(owned_rows)
+
+
+def test_group_only_facet_keys_do_not_construct_owned_cone(monkeypatch) -> None:
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+    monkeypatch.setattr(
+        backend,
+        "cell_cone",
+        lambda _cell: pytest.fail("group-only facet enumeration must consume raw Normaliz H-rows"),
     )
+
+    facet_keys, _permutations = backend._facet_mask_data(cell, use_owned_cone=False)
+
+    assert set(facet_keys) == {1, 2}
 
 
 def test_large_perfect_form_hash_skips_quadratic_pairing_graph(monkeypatch) -> None:
