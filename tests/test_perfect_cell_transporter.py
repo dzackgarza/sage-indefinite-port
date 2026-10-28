@@ -40,6 +40,7 @@ def test_group_generator_complex_does_not_alias_full_domain_cache() -> None:
     group_only = perfect_complex(ambient, ZERO_SQUARES, retain_facet_orbits=False)
 
     assert full_domain is perfect_complex(ambient, ZERO_SQUARES)
+    assert full_domain is perfect_complex(ambient, ZERO_SQUARES, retain_facet_orbits=True)
     assert group_only is perfect_complex(ambient, ZERO_SQUARES, retain_facet_orbits=False)
     assert full_domain is not group_only
     assert full_domain._retain_facet_orbits

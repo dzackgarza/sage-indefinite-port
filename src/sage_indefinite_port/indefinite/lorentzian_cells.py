@@ -362,7 +362,6 @@ def binary_split_primitive_vector_classes(lattice: Lattices.ParentMethods, squar
     return tuple(representatives)
 
 
-@cache
 def perfect_complex(
     lattice: Lattices.ParentMethods,
     allowed_squares: RealSet,
@@ -376,9 +375,16 @@ def perfect_complex(
     side pairings; the orthogonal-group route uses a separate cache entry that
     discards per-facet Schreier records once each orbit has been processed.
     """
-    return LorentzianPerfectComplex(
-        lattice, allowed_squares, retain_facet_orbits=retain_facet_orbits
-    )
+    return _cached_perfect_complex(lattice, allowed_squares, retain_facet_orbits)
+
+
+@cache
+def _cached_perfect_complex(
+    lattice: Lattices.ParentMethods,
+    allowed_squares: RealSet,
+    retain_facet_orbits: bool,
+) -> LorentzianPerfectComplex:
+    return LorentzianPerfectComplex(lattice, allowed_squares, retain_facet_orbits=retain_facet_orbits)
 
 
 def lorentzian_orthogonal_group_generators(lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
