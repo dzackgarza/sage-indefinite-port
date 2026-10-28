@@ -1486,7 +1486,9 @@ class LorentzianPerfectLocalBackend:
         # invariant list bounded by the ambient rank rather than the number
         # of configuration rows (which is 49,861 in the A7 consumer).
         smith_invariants = rows.transpose().elementary_divisors()
-        data = (rows, pairings, spectra, smith_invariants)
+        row_sum = vector(SageZZ, (sum(row[j] for row in cell.rows) for j in range(rows.ncols())))
+        row_moment = rows.transpose() * rows
+        data = (rows, pairings, spectra, smith_invariants, row_sum, row_moment)
         cache[key] = (cell, data)
         while len(cache) > 2:
             cache.pop(next(iter(cache)))
@@ -1579,8 +1581,22 @@ class LorentzianPerfectLocalBackend:
         # its row matrix, Gram-covector matrix, invariant colours and Smith data
         # twice only duplicates O(n * rank) exact storage and work.
         target_data = source_data if source is target else self._integral_configuration_invariants(target)
-        source_rows, source_pairings, source_spectra, source_smith = source_data
-        target_rows, target_pairings, target_spectra, target_smith = target_data
+        (
+            source_rows,
+            source_pairings,
+            source_spectra,
+            source_smith,
+            source_sum,
+            source_moment,
+        ) = source_data
+        (
+            target_rows,
+            target_pairings,
+            target_spectra,
+            target_smith,
+            target_sum,
+            target_moment,
+        ) = target_data
         # For large configurations, certify equality of the row multisets by
         # exact target-set membership when both inputs have distinct rows. An
         # integral unimodular action is injective, so n distinct source rows
@@ -1684,10 +1700,6 @@ class LorentzianPerfectLocalBackend:
         # vector sum and second-moment matrix to the corresponding target
         # aggregates. These rank-sized certificates cheaply reject a basis
         # assignment before the O(n * rank) row-membership pass.
-        source_sum = vector(SageZZ, (sum(row[j] for row in source.rows) for j in range(rank)))
-        target_sum = vector(SageZZ, (sum(row[j] for row in target.rows) for j in range(rank)))
-        source_moment = source_rows.transpose() * source_rows
-        target_moment = target_rows.transpose() * target_rows
         source_submodule_invariants = {}
         target_submodule_invariants = {}
         # Smith data depend on the selected row subset, not its order.
@@ -2130,7 +2142,7 @@ def _perfect_form_hash_key(
         # identity cache instead of constructing the dense row/covector
         # matrices and computing both invariants a second time. The cache then
         # also serves the subsequent stabilizer/transporter operation.
-        _rows, _pairings, spectra, smith_invariants = backend._integral_configuration_invariants(cell)
+        _rows, _pairings, spectra, smith_invariants, _row_sum, _row_moment = backend._integral_configuration_invariants(cell)
         diagonal = Counter(norm for norm, _content, _divisibility in spectra)
         vector_contents = tuple(sorted(Counter(content for _norm, content, _divisibility in spectra).items()))
         divisibilities = tuple(sorted(Counter(divisibility for _norm, _content, divisibility in spectra).items()))
