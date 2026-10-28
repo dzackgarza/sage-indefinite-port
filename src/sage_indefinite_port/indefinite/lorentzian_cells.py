@@ -1302,6 +1302,8 @@ class LorentzianPerfectLocalBackend:
                     facet_mask = pending.popleft()
                     for permutation in permutations:
                         image_mask = _permuted_facet_key(facet_mask, permutation)
+                        if image_mask in visited:
+                            continue
                         if canonical_keys is not None:
                             image_mask = canonical_keys.get(image_mask, image_mask)
                         if image_mask not in visited:
@@ -1315,6 +1317,8 @@ class LorentzianPerfectLocalBackend:
                 facet_mask, element_word = entry
                 for generator_index, permutation in enumerate(permutations):
                     image_mask = _permuted_facet_key(facet_mask, permutation)
+                    if image_mask in visited:
+                        continue
                     if canonical_keys is not None:
                         image_mask = canonical_keys.get(image_mask, image_mask)
                     if image_mask not in visited:
