@@ -1786,8 +1786,9 @@ class LorentzianPerfectLocalBackend:
         # invariant list bounded by the ambient rank rather than the number
         # of configuration rows (which is 49,861 in the A7 consumer).
         smith_invariants = rows.transpose().elementary_divisors()
-        distinct_rows = len(set(cell.rows)) == len(cell.rows)
-        data = (rows, pairings, spectra, smith_invariants, row_sum, row_moment, distinct_rows)
+        row_positions = {row: index for index, row in enumerate(cell.rows)}
+        distinct_rows = len(row_positions) == len(cell.rows)
+        data = (rows, pairings, spectra, smith_invariants, row_sum, row_moment, distinct_rows, row_positions)
         cache[key] = (cell, data)
         while len(cache) > 2:
             cache.pop(next(iter(cache)))
@@ -1888,6 +1889,7 @@ class LorentzianPerfectLocalBackend:
             source_sum,
             source_moment,
             source_distinct_rows,
+            source_positions,
         ) = source_data
         (
             target_rows,
@@ -1897,6 +1899,7 @@ class LorentzianPerfectLocalBackend:
             target_sum,
             target_moment,
             target_distinct_rows,
+            target_positions,
         ) = target_data
         # For large configurations, certify equality of the row multisets by
         # exact target-set membership when both inputs have distinct rows. An
@@ -2038,12 +2041,11 @@ class LorentzianPerfectLocalBackend:
         first_witness: LatticeIsometryMethods | None = None
         first_only = not all_images
         if use_position_certificate:
-            # The immutable coordinate tuples are already the configuration's
-            # canonical rows; reuse them as keys instead of allocating another
-            # set of row tuples. The stabilizer uses source positions; ordinary
-            # large-cell transporters use target positions.
-            position_rows = source.rows if generators_only else target.rows
-            positions = {row: index for index, row in enumerate(position_rows)}
+            # Reuse the row-position maps built with the invariant data. This
+            # avoids a separate set for distinctness followed by another full
+            # row-key dictionary here. Stabilizers use source positions;
+            # ordinary large-cell transporters use target positions.
+            positions = source_positions if generators_only else target_positions
             if len(positions) != n:
                 raise ArithmeticError("the exact row-position certificate requires distinct configuration vectors")
         if generators_only:
@@ -2634,7 +2636,7 @@ def _perfect_form_hash_key(
         # identity cache instead of constructing the dense row/covector
         # matrices and computing both invariants a second time. The cache then
         # also serves the subsequent stabilizer/transporter operation.
-        _rows, _pairings, spectra, smith_invariants, _row_sum, _row_moment, _distinct_rows = backend._integral_configuration_invariants(cell)
+        _rows, _pairings, spectra, smith_invariants, _row_sum, _row_moment, _distinct_rows, _positions = backend._integral_configuration_invariants(cell)
         diagonal = Counter(signature[0] for signature in spectra)
         vector_contents = tuple(sorted(Counter(signature[1] for signature in spectra).items()))
         divisibilities = tuple(sorted(Counter(signature[2] for signature in spectra).items()))
