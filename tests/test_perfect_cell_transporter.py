@@ -15,6 +15,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _configuration_signature_multisets_match,
     _facet_complement_key,
     _facet_incidence,
+    _gram_component_sign_flips,
     _integral_basis_reflection,
     _iter_owned_row_blocks,
     _permuted_bitset,
@@ -283,7 +284,7 @@ def test_all_integral_transporters_extend_exact_anchor_signatures() -> None:
         assert set(map(tuple, matrix(ZZ, cell.rows) * transform)) == set(cell.rows)
 
 
-def test_cell_stabilizer_seeds_certified_basis_reflections() -> None:
+def test_cell_stabilizer_seeds_certified_gram_automorphisms() -> None:
     gram = matrix(ZZ, [[2, -1, 0], [-1, 2, 0], [0, 0, -2]])
     roots = ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1))
     rows = tuple((x, y, 1) for x, y in roots)
@@ -295,6 +296,7 @@ def test_cell_stabilizer_seeds_certified_basis_reflections() -> None:
         tuple(tuple(int(entry) for entry in row) for row in _integral_basis_reflection(gram, index).rows())
         for index in range(2)
     }
+    expected.add(tuple(tuple(int(entry) for entry in row) for row in matrix(ZZ, [[-1, 0, 0], [0, -1, 0], [0, 0, 1]]).rows()))
 
     assert expected <= actions
     for action_rows in actions:
@@ -339,6 +341,19 @@ def test_coarse_large_configuration_colours_preserve_exact_stabilizer(monkeypatc
         assert abs(transform.det()) == 1
         assert transform * gram * transform.transpose() == gram
         assert set(map(tuple, matrix(ZZ, cell.rows) * transform)) == set(cell.rows)
+
+
+def test_gram_component_sign_flips_are_exact_isometries() -> None:
+    gram = matrix(ZZ, [[2, -1, 0, 0], [-1, 2, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+    actions = _gram_component_sign_flips(gram)
+
+    assert len(actions) == 3
+    assert all(abs(action.det()) == 1 and action * gram * action.transpose() == gram for action in actions)
+    assert {tuple(action.diagonal()) for action in actions} == {
+        (-1, -1, 1, 1),
+        (1, 1, -1, 1),
+        (1, 1, 1, -1),
+    }
 
 
 def test_integral_basis_reflection_is_exact_or_rejected() -> None:

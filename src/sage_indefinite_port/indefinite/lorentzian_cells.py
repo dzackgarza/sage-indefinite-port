@@ -467,6 +467,39 @@ def _gram_matrix(lattice: Lattices.ParentMethods) -> Matrix_integer_dense:
     return _engine_component_matrix(lattice.gram_tensor()).change_ring(SageZZ)
 
 
+def _gram_component_sign_flips(gram: Matrix_integer_dense) -> tuple[Matrix_integer_dense, ...]:
+    r"""Return the diagonal sign changes on connected Gram-support components.
+
+    If two basis coordinates lie in different connected components of the
+    graph whose edges are nonzero off-diagonal Gram entries, their Gram
+    pairing is zero. Negating every coordinate in one component therefore
+    preserves all Gram entries and gives an integral involutive isometry.
+    """
+    if gram.nrows() != gram.ncols() or gram != gram.transpose():
+        raise ValueError("Gram-component sign flips require a square symmetric matrix")
+    rank = gram.nrows()
+    unseen = set(range(rank))
+    actions = []
+    while unseen:
+        start = min(unseen)
+        unseen.remove(start)
+        component = [start]
+        for index in component:
+            neighbours = {
+                other for other in unseen
+                if gram[index, other] != 0
+            }
+            unseen.difference_update(neighbours)
+            component.extend(sorted(neighbours))
+        action = identity_matrix(SageZZ, rank)
+        for index in component:
+            action[index, index] = -1
+        if action * gram * action.transpose() != gram:
+            raise ArithmeticError("a Gram-component sign flip failed its exact isometry certificate")
+        actions.append(action)
+    return tuple(actions)
+
+
 def _integral_basis_reflection(gram: Matrix_integer_dense, index: int) -> Matrix_integer_dense | None:
     r"""Return the exact row-action reflection in a basis vector when integral.
 
@@ -1939,10 +1972,13 @@ class LorentzianPerfectLocalBackend:
             # search remains complete while often starting with a substantial
             # part of the visible root-system symmetry already generated.
             permutation_typecode = "I" if n <= 2**32 else "Q"
-            for basis_index in range(rank):
-                action = _integral_basis_reflection(source_gram, basis_index)
-                if action is None:
-                    continue
+            candidate_actions = [
+                action
+                for basis_index in range(rank)
+                if (action := _integral_basis_reflection(source_gram, basis_index)) is not None
+            ]
+            candidate_actions.extend(_gram_component_sign_flips(source_gram))
+            for action in candidate_actions:
                 permutation_images = array(permutation_typecode)
                 preserves_configuration = True
                 for start in range(0, n, _configuration_pairing_block_size(n)):
