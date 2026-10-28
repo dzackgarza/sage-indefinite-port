@@ -285,7 +285,11 @@ def test_coarse_large_configuration_colours_preserve_exact_stabilizer(monkeypatc
 
     def reject_row_multiset_counter(iterable=(), *args, **kwargs):
         code = getattr(iterable, "gi_code", None)
-        if iterable is cell.rows or (code is not None and "_configuration_signature_multisets_match" not in code.co_qualname):
+        if iterable is cell.rows or (
+            code is not None
+            and "_configuration_signature_multisets_match" not in code.co_qualname
+            and "backtrack" not in code.co_qualname
+        ):
             pytest.fail("large stabilizer certification must use its exact row-position map")
         return original_counter(iterable, *args, **kwargs)
 

@@ -728,6 +728,8 @@ def _configuration_signature_multisets_match(
     source_columns: tuple[tuple[int, ...], ...],
     target_colours: tuple[int, ...],
     target_columns: tuple[tuple[int, ...], ...],
+    *,
+    source_signature_counts: Counter[tuple[int, tuple[int, ...]]] | None = None,
 ) -> bool:
     """Compare row-signature multisets with one incrementally cancelled counter.
 
@@ -739,18 +741,24 @@ def _configuration_signature_multisets_match(
     """
     if len(source_colours) != len(target_colours) or len(source_columns) != len(target_columns):
         return False
-    counts = Counter(
-        (colour, tuple(column[index] for column in source_columns))
-        for index, colour in enumerate(source_colours)
-    )
+    counts = source_signature_counts
+    if counts is None:
+        counts = Counter(
+            (colour, tuple(column[index] for column in source_columns))
+            for index, colour in enumerate(source_colours)
+        )
+    touched: list[tuple[int, tuple[int, ...]]] = []
     for index, colour in enumerate(target_colours):
         signature = (colour, tuple(column[index] for column in target_columns))
         counts[signature] -= 1
+        touched.append(signature)
         if counts[signature] < 0:
+            for previous in touched:
+                counts[previous] += 1
             return False
-        if counts[signature] == 0:
-            del counts[signature]
-    return not counts
+    for signature in touched:
+        counts[signature] += 1
+    return True
 
 
 def _row_multiset(row, own_value: int) -> tuple[tuple[int, int], ...]:
@@ -1884,6 +1892,8 @@ class LorentzianPerfectLocalBackend:
             # search can reduce previously pending sibling branches too.
             version = -1
             admissible = set(candidates_for_choice)
+            next_source_columns = None
+            source_signature_counts = None
             for j in candidates_for_choice:
                 if generators_only:
                     # A witness found in an earlier sibling can enlarge H.
@@ -1933,15 +1943,21 @@ class LorentzianPerfectLocalBackend:
                         # and target use the same sequence of assigned pairs,
                         # so no sorting by source index is needed for this
                         # exact multiset comparison.
-                        source_column = source_pairings.column(choice)
+                        if next_source_columns is None:
+                            source_column = source_pairings.column(choice)
+                            next_source_columns = source_columns + (source_column,)
+                            source_signature_counts = Counter(
+                                (colour, tuple(column[index] for column in next_source_columns))
+                                for index, colour in enumerate(source_colours)
+                            )
                         target_column = target_pairings.column(j)
-                        next_source_columns = source_columns + (source_column,)
                         next_target_columns = target_columns + (target_column,)
                         if _configuration_signature_multisets_match(
                             source_colours,
                             next_source_columns,
                             target_colours,
                             next_target_columns,
+                            source_signature_counts=source_signature_counts,
                         ):
                             backtrack(images, next_source_columns, next_target_columns, target_basis_integral)
                             if first_witness is not None:
@@ -1965,15 +1981,21 @@ class LorentzianPerfectLocalBackend:
                     # Extend exact per-row signatures only after the cheaper
                     # rank and Smith obstructions have passed. The shared
                     # assignment order keeps source/target coordinates aligned.
-                    source_column = source_pairings.column(choice)
+                    if next_source_columns is None:
+                        source_column = source_pairings.column(choice)
+                        next_source_columns = source_columns + (source_column,)
+                        source_signature_counts = Counter(
+                            (colour, tuple(column[index] for column in next_source_columns))
+                            for index, colour in enumerate(source_colours)
+                        )
                     target_column = target_pairings.column(j)
-                    next_source_columns = source_columns + (source_column,)
                     next_target_columns = target_columns + (target_column,)
                     if _configuration_signature_multisets_match(
                         source_colours,
                         next_source_columns,
                         target_colours,
                         next_target_columns,
+                        source_signature_counts=source_signature_counts,
                     ):
                         backtrack(images, next_source_columns, next_target_columns)
                         if first_witness is not None:
