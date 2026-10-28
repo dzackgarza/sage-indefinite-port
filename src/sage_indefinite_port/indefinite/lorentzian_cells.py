@@ -2051,7 +2051,10 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                     # all nonboundary keys are already owned by Schreier orbits.
                     boundary_facet_keys.add(key)
             # Release the completed dense pairing block before the next one.
-            del pairing_block
+            # Drop the tuple as well: assignment to the next block would
+            # otherwise build its replacement while this previous block is
+            # still referenced, briefly doubling peak slice memory.
+            del pairing_block, covector_block
         # Release the transposed configuration and covector slice after the
         # final incidence block, before adjacency construction begins.
         # ``pairing_block`` was deleted after every nonempty block above.
