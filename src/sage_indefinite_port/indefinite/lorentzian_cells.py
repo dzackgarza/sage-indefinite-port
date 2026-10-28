@@ -1959,7 +1959,7 @@ class LorentzianPerfectLocalBackend:
                 if not preserves_configuration:
                     continue
                 permutation = symmetric(list(permutation_images))
-                if permutation in subgroup:
+                if permutation in group_permutations:
                     continue
                 witness = source.lattice.Isom(source.lattice)(
                     {
@@ -1975,7 +1975,12 @@ class LorentzianPerfectLocalBackend:
                 )
                 stabilizer_elements.append(witness)
                 group_permutations.append(permutation)
-                subgroup = symmetric.subgroup(group_permutations)
+            # Construct the initial generated subgroup once, after all exact
+            # seed candidates have been certified. Rebuilding a degree-n
+            # permutation subgroup for each of the rank basis reflections
+            # repeats the same expensive Schreier setup on the 49,861-ray A7
+            # configuration without changing its generated subgroup.
+            subgroup = symmetric.subgroup(group_permutations)
 
         def forced_sum_image(images):
             """Use the exact configuration sum to force a last basis image.
