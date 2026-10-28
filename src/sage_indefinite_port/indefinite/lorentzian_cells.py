@@ -1723,7 +1723,11 @@ class LorentzianPerfectLocalBackend:
             group_permutations = []
 
         empty_source_signatures = tuple((colour, ()) for colour in source_colours)
-        empty_target_signatures = tuple((colour, ()) for colour in target_colours)
+        empty_target_signatures = (
+            empty_source_signatures
+            if source is target
+            else tuple((colour, ()) for colour in target_colours)
+        )
 
         def backtrack(images, source_signatures, target_signatures, certified_target_basis=None):
             nonlocal subgroup, first_witness
