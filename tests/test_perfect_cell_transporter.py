@@ -462,6 +462,7 @@ def test_group_only_facet_keys_do_not_construct_owned_cone(monkeypatch) -> None:
     raw_h_rows = []
 
     def record_h_rows(_cell, *, include_equations):
+        assert id(_cell) not in backend.__dict__.get("_configuration_invariant_cache", {})
         hyperplanes, equations = original_h_presentation(_cell, include_equations=include_equations)
         raw_h_rows.append(hyperplanes)
         return hyperplanes, equations
