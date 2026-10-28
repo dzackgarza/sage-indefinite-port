@@ -1029,6 +1029,8 @@ class LorentzianPerfectLocalBackend:
 
             def consume_orbit():
                 for index, item in enumerate(orbit):
+                    if item is None:
+                        raise ArithmeticError("a facet orbit entry was consumed more than once")
                     yield materialize_element(item)
                     # The BFS orbit is private and has no further consumer.
                     # Drop its key/Schreier-word references as each public
@@ -1167,7 +1169,7 @@ class LorentzianPerfectLocalBackend:
     @staticmethod
     def _iter_facet_mask_orbits(
         facet_keys: Iterator[FacetMaskKey], permutations: tuple[array, ...]
-    ) -> Iterator[list[tuple[FacetMaskKey, SchreierWord]]]:
+    ) -> Iterator[list[tuple[FacetMaskKey, SchreierWord] | None]]:
         """Yield exact facet orbits with one visited set and one current orbit.
 
         Every generator permutation comes from an exact lattice isometry
@@ -1183,8 +1185,11 @@ class LorentzianPerfectLocalBackend:
             if start in visited:
                 continue
             visited.add(start)
-            orbit = [(start, identity_word)]
-            for facet_mask, element_word in orbit:
+            orbit: list[tuple[FacetMaskKey, SchreierWord] | None] = [(start, identity_word)]
+            for entry in orbit:
+                if entry is None:
+                    raise ArithmeticError("a facet orbit buffer was cleared before traversal completed")
+                facet_mask, element_word = entry
                 for generator_index, permutation in enumerate(permutations):
                     image_mask = _permuted_facet_key(facet_mask, permutation)
                     if image_mask not in visited:
@@ -1200,7 +1205,7 @@ class LorentzianPerfectLocalBackend:
 
     def _facet_orbit_transversal_masks(
         self, cell: LorentzianPerfectCell
-    ) -> tuple[Iterator[list[tuple[FacetMaskKey, SchreierWord]]], tuple[array, ...]]:
+    ) -> tuple[Iterator[list[tuple[FacetMaskKey, SchreierWord] | None]], tuple[array, ...]]:
         """Build compact facet-orbit buffers for one consuming operation.
 
         Deliberately do not cache this result: public consumers materialize
@@ -1226,7 +1231,10 @@ class LorentzianPerfectLocalBackend:
         mask_orbits, permutations = self._facet_orbit_transversal_masks(cell)
         def materialize_orbit(orbit):
             def consume_orbit():
-                for index, (mask, word) in enumerate(orbit):
+                for index, entry in enumerate(orbit):
+                    if entry is None:
+                        raise ArithmeticError("a facet orbit entry was consumed more than once")
+                    mask, word = entry
                     yield (_facet_incidence(mask, len(cell.rows)), word)
                     orbit[index] = None
 
@@ -1264,6 +1272,8 @@ class LorentzianPerfectLocalBackend:
 
             def consume_orbit():
                 for index, item in enumerate(orbit):
+                    if item is None:
+                        raise ArithmeticError("a facet orbit entry was consumed more than once")
                     yield materialize_element(item)
                     orbit[index] = None
 
