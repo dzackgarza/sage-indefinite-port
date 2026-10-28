@@ -2657,6 +2657,7 @@ type PerfectFormKey = tuple[
     tuple[int, ...],
     tuple[tuple[int, int], ...],
     tuple[tuple[int, int], ...],
+    tuple[tuple[tuple[int, ...], int], ...],
 ]
 
 
@@ -2684,12 +2685,14 @@ def _perfect_form_hash_key(
         diagonal = Counter(signature[0] for signature in spectra)
         vector_contents = tuple(sorted(Counter(signature[1] for signature in spectra).items()))
         divisibilities = tuple(sorted(Counter(signature[2] for signature in spectra).items()))
+        refined_colours = tuple(sorted(Counter(signature[3:] for signature in spectra).items()))
         return (
             tuple(sorted(diagonal.items())),
             (),
             tuple(int(entry) for entry in smith_invariants),
             vector_contents,
             divisibilities,
+            refined_colours,
         )
     pairings = _ConfigurationPairings(cell.rows, _gram_matrix(cell.lattice))
     diagonal: Counter[int] = Counter()

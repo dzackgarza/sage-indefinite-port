@@ -737,7 +737,11 @@ def test_large_perfect_form_hash_skips_quadratic_pairing_graph(monkeypatch) -> N
     )
     key = _perfect_form_hash_key(cell)
     backend = LorentzianPerfectLocalBackend()
-    assert _perfect_form_hash_key(cell, backend) == key
+    refined_key = _perfect_form_hash_key(cell, backend)
+    # The backend has the cached linear-cost invariant data and may safely
+    # append stronger exact colours; the uncached route remains a coarser key.
+    assert refined_key[:5] == key
+    assert len(refined_key) == 6
     assert id(cell) in backend.__dict__["_configuration_invariant_cache"]
 
     assert key[1] == ()
