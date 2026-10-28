@@ -2635,9 +2635,9 @@ def _perfect_form_hash_key(
         # matrices and computing both invariants a second time. The cache then
         # also serves the subsequent stabilizer/transporter operation.
         _rows, _pairings, spectra, smith_invariants, _row_sum, _row_moment, _distinct_rows = backend._integral_configuration_invariants(cell)
-        diagonal = Counter(norm for norm, _content, _divisibility in spectra)
-        vector_contents = tuple(sorted(Counter(content for _norm, content, _divisibility in spectra).items()))
-        divisibilities = tuple(sorted(Counter(divisibility for _norm, _content, divisibility in spectra).items()))
+        diagonal = Counter(signature[0] for signature in spectra)
+        vector_contents = tuple(sorted(Counter(signature[1] for signature in spectra).items()))
+        divisibilities = tuple(sorted(Counter(signature[2] for signature in spectra).items()))
         return (
             tuple(sorted(diagonal.items())),
             (),
