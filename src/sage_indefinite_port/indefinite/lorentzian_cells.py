@@ -1560,7 +1560,8 @@ class LorentzianPerfectLocalBackend:
         smith_invariants = rows.transpose().elementary_divisors()
         row_sum = vector(SageZZ, (sum(row[j] for row in cell.rows) for j in range(rows.ncols())))
         row_moment = rows.transpose() * rows
-        data = (rows, pairings, spectra, smith_invariants, row_sum, row_moment)
+        distinct_rows = len(set(cell.rows)) == len(cell.rows)
+        data = (rows, pairings, spectra, smith_invariants, row_sum, row_moment, distinct_rows)
         cache[key] = (cell, data)
         while len(cache) > 2:
             cache.pop(next(iter(cache)))
@@ -1660,6 +1661,7 @@ class LorentzianPerfectLocalBackend:
             source_smith,
             source_sum,
             source_moment,
+            source_distinct_rows,
         ) = source_data
         (
             target_rows,
@@ -1668,6 +1670,7 @@ class LorentzianPerfectLocalBackend:
             target_smith,
             target_sum,
             target_moment,
+            target_distinct_rows,
         ) = target_data
         # For large configurations, certify equality of the row multisets by
         # exact target-set membership when both inputs have distinct rows. An
@@ -1677,8 +1680,8 @@ class LorentzianPerfectLocalBackend:
         # Preserve the multiset fallback for repeated-row configurations.
         use_position_certificate = generators_only or (
             n > _PAIRING_GRAPH_REFINEMENT_LIMIT
-            and len(set(source.rows)) == n
-            and len(set(target.rows)) == n
+            and source_distinct_rows
+            and target_distinct_rows
         )
         target_multiset = None if use_position_certificate else Counter(target.rows)
         if source_smith != target_smith:
@@ -2287,7 +2290,7 @@ def _perfect_form_hash_key(
         # identity cache instead of constructing the dense row/covector
         # matrices and computing both invariants a second time. The cache then
         # also serves the subsequent stabilizer/transporter operation.
-        _rows, _pairings, spectra, smith_invariants, _row_sum, _row_moment = backend._integral_configuration_invariants(cell)
+        _rows, _pairings, spectra, smith_invariants, _row_sum, _row_moment, _distinct_rows = backend._integral_configuration_invariants(cell)
         diagonal = Counter(norm for norm, _content, _divisibility in spectra)
         vector_contents = tuple(sorted(Counter(content for _norm, content, _divisibility in spectra).items()))
         divisibilities = tuple(sorted(Counter(divisibility for _norm, _content, divisibility in spectra).items()))

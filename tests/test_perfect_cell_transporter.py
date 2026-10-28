@@ -652,12 +652,13 @@ def test_large_configuration_invariants_include_exact_gcd_colours(monkeypatch) -
     monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
     backend = LorentzianPerfectLocalBackend()
 
-    _rows, _pairings, spectra, _smith, row_sum, row_moment = backend._integral_configuration_invariants(cell)
+    _rows, _pairings, spectra, _smith, row_sum, row_moment, distinct_rows = backend._integral_configuration_invariants(cell)
 
     assert spectra == ((0, 1, 1), (0, 1, 1))
     assert tuple(row_sum) == (1, 1)
     assert row_moment == matrix(ZZ, [[1, 0], [0, 1]])
-    assert len(backend._integral_configuration_invariants(cell)) == 6
+    assert distinct_rows
+    assert len(backend._integral_configuration_invariants(cell)) == 7
 
 
 def test_configuration_invariant_cache_is_bounded_and_identity_keyed() -> None:
