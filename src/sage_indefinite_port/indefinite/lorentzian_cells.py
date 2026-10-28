@@ -2680,6 +2680,7 @@ class _CellFaces:
         # instead of doing rational arithmetic for a zero/nonzero test.
         ray_matrix = matrix(SageZZ, self.rows)
         ray_transpose = ray_matrix.transpose()
+        del ray_matrix
         covector_rows = []
         for owned_covector in backend.cell_cone(cell).halfspace_covectors():
             covector = vector(
