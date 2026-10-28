@@ -82,13 +82,14 @@ def test_anisotropic_binary_vector_classes_use_primitive_embeddings() -> None:
     binary = lattice([[2, 0], [0, -3]])
     assert not binary.is_isotropic()
     assert vector_classes(binary, 0) == ()
-    classes = vector_classes(binary, 2)
-    assert classes
-    for marked in classes:
-        generators = tuple(marked.arrow()(g) for g in marked.arrow().domain().module_generators())
-        assert len(generators) == 1
-        assert generators[0].q() == 2
-        assert generators[0].content() == 1
+    for square in (2, -3):
+        classes = vector_classes(binary, square)
+        assert classes
+        for marked in classes:
+            generators = tuple(marked.arrow()(g) for g in marked.arrow().domain().module_generators())
+            assert len(generators) == 1
+            assert generators[0].q() == square
+            assert generators[0].content() == 1
 
 
 def _k3_gram() -> list[list[int]]:
