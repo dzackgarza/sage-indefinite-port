@@ -1727,6 +1727,12 @@ class LorentzianPerfectLocalBackend:
         target_multiset = None if use_position_certificate else Counter(target.rows)
         if source_smith != target_smith:
             return ()
+        # The second moment transforms by M_target = A^T M_source A for an
+        # integral unimodular transporter A, so its determinant is an exact
+        # basis-independent invariant. It is only rank-by-rank and rejects
+        # some incompatible configurations before the large image search.
+        if source_moment.det() != target_moment.det():
+            return ()
         if source is not target and Counter(source_spectra) != Counter(target_spectra):
             return ()
         signatures = set(source_spectra)
