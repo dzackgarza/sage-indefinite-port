@@ -61,12 +61,14 @@ def test_group_only_expansion_discards_facet_orbit_records(monkeypatch) -> None:
         monkeypatch.setattr(
             backend,
             "_facet_mask_data",
-            lambda _cell, *, use_owned_cone=True: (iter(()), ()),
+            lambda _cell, *, use_owned_cone=True: (iter(()), (), None),
         )
         monkeypatch.setattr(
             backend,
             "_iter_facet_mask_orbits",
-            lambda _facets, _permutations, *, retain_words=True: iter([[((True, (0,)), None)]]),
+            lambda _facets, _permutations, *, retain_words=True, canonical_keys=None: iter(
+                [[((True, (0,)), None)]]
+            ),
         )
         monkeypatch.setattr(backend, "flip_across", lambda _cell, _facet: cell)
         monkeypatch.setattr(backend, "cell_transporter", lambda _source, _target: ambient.Aut().identity())
