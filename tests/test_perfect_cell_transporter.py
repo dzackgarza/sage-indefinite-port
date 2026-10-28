@@ -457,6 +457,15 @@ def test_permuted_facet_bitsets_preserve_exact_positions() -> None:
     dense_image = _permuted_facet_key(dense_key, reverse)
     assert dense_image == sum(1 << (ray_count - 1 - position) for position in range(200))
 
+    # When the incident side is the smaller dense side, retain its bitset so
+    # Schreier traversal permutes 2,000 bits rather than 47,861.
+    incident_mask = sum(1 << position for position in range(2_000))
+    incident_key = _facet_complement_key(((1 << ray_count) - 1) ^ incident_mask, ray_count)
+    assert incident_key == (False, incident_mask)
+    assert _facet_incidence(incident_key, ray_count) == frozenset(range(2_000))
+    incident_image = _permuted_facet_key(incident_key, reverse)
+    assert incident_image == (False, sum(1 << (ray_count - 1 - position) for position in range(2_000)))
+
 
 def test_normaliz_pairing_rows_match_owned_covectors(monkeypatch) -> None:
     """Large-cell incidence reuses the owned H-family without changing zeros."""

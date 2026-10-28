@@ -66,7 +66,7 @@ from sage_indefinite_port.invariants import AttackProfile
 type PerfectMode = Literal["total", "isotropic"]
 type FacetIncidence = frozenset[int]
 type SchreierWord = tuple[SchreierWord, int] | None
-type FacetMaskKey = int | tuple[bool, tuple[int, ...]]
+type FacetMaskKey = int | tuple[bool, tuple[int, ...] | int]
 
 
 def _sparse_facet_complement_limit(ray_count: int) -> int:
@@ -89,6 +89,9 @@ def _facet_complement_key(mask: int, ray_count: int | None = None) -> FacetMaskK
     if incident_count <= limit:
         incident_mask = ((1 << ray_count) - 1) ^ mask
         return (False, tuple(_bit_positions(incident_mask)))
+    if incident_count < complement_count:
+        incident_mask = ((1 << ray_count) - 1) ^ mask
+        return False, incident_mask
     return mask
 
 
@@ -97,6 +100,9 @@ def _facet_incidence(key: FacetMaskKey, ray_count: int) -> FacetIncidence:
     if isinstance(key, int):
         return frozenset(_bit_positions(((1 << ray_count) - 1) ^ key))
     complement, positions = key
+    if isinstance(positions, int):
+        mask = ((1 << ray_count) - 1) ^ positions if complement else positions
+        return frozenset(_bit_positions(mask))
     if complement:
         # Avoid constructing a full frozenset(range(ray_count)) and then a
         # second full frozenset for the difference. The sparse exclusion set
@@ -111,6 +117,12 @@ def _permuted_facet_key(key: FacetMaskKey, permutation: array | tuple[int, ...])
     if isinstance(key, int):
         return _facet_complement_key(_permuted_bitset(key, permutation), len(permutation))
     complement, positions = key
+    if isinstance(positions, int):
+        image = _permuted_bitset(positions, permutation)
+        if complement:
+            return _facet_complement_key(image, len(permutation))
+        nonincident = ((1 << len(permutation)) - 1) ^ image
+        return _facet_complement_key(nonincident, len(permutation))
     return complement, tuple(sorted(permutation[position] for position in positions))
 
 
@@ -1300,11 +1312,17 @@ class LorentzianPerfectLocalBackend:
                     elif incident_count <= sparse_limit:
                         key = (False, tuple(incident_positions))
                     else:
+                        # Store the smaller side as the bitset. Applying a
+                        # ray permutation visits each set bit, so this choice
+                        # reduces the orbit cost for facets incident to only a
+                        # small fraction of the 49,861 input rays.
+                        store_nonincident = nonincident_count <= incident_count
                         support_bytes = bytearray((ray_count + 7) // 8)
                         for position, value in enumerate(pairing_row):
-                            if value:
+                            if bool(value) == store_nonincident:
                                 support_bytes[position >> 3] |= 1 << (position & 7)
-                        key = int.from_bytes(support_bytes, "little")
+                        support_mask = int.from_bytes(support_bytes, "little")
+                        key = support_mask if store_nonincident else (False, support_mask)
                     block_keys.append(key)
                 # Detach the block's compact keys before yielding any of them.
                 # Orbit traversal may do substantial work before asking for
