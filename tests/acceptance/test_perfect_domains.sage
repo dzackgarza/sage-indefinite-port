@@ -23,13 +23,18 @@ from tests.fixtures.oracle_fixtures import load_lorentzian_perfect_domains
 
 def test_non_diagonal_positive_shell_uses_the_pinned_cvp_center() -> None:
     """The first shell in a non-diagonal Lorentzian form matches exact enumeration."""
-    from sage.all import ZZ as SageZZ, matrix, vector
+    from sage.all import QQ, ZZ as SageZZ, matrix, vector
+    from sage_indefinite_port.indefinite.lorentzian_cells import _PositiveVectorEnumerator
 
     require(PERFECT_DOMAINS)
     lattice_ = lattice([[5, 1, 0], [1, -1, 0], [0, 0, -1]])
-    rows = _search_initial_vectors(lattice_, (1, 0, 0), NONNEGATIVE_SQUARES)
+    enumerator = _PositiveVectorEnumerator(lattice_, (QQ(1), QQ(0), QQ(0)), QQ(5), NONNEGATIVE_SQUARES)
+    first = enumerator.first_shell()
+    assert first is not None and first[0] == 4
+    rows = first[1]
 
     assert set(rows) == {(1, -1, -1), (1, -1, 0), (1, -1, 1)}
+    assert _search_initial_vectors(lattice_, (1, 0, 0), NONNEGATIVE_SQUARES) == rows
     gram = matrix(SageZZ, [[5, 1, 0], [1, -1, 0], [0, 0, -1]])
     for row in rows:
         point = vector(SageZZ, row)
