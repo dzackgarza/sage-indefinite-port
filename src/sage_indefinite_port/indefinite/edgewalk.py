@@ -1432,7 +1432,7 @@ class _Edgewalk:
         configurations = [self.vertex_configuration(initial)]
         seen: set[tuple[_Key, ...]] = {self.identity_key}
         isometries: list[LatticeIsometryMethods] = []
-        invariant = self.lattice.subobject_on(list(self.lattice.module_generators()))
+        invariant = self.lattice.subobject_on(list(_coordinate_basis(self.lattice)))
 
         def admit(isometry: LatticeIsometryMethods) -> bool:
             r"""Record a new symmetry of the polyhedron; False once the group they generate is infinite."""
