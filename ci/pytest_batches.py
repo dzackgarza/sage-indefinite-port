@@ -63,13 +63,22 @@ def main():
         command = prefix + pytest_args + batch + ['--runxfail', '-rA', '--tb=long', '--instafail', f'--junitxml={report}']
         result = subprocess.run(command, check=False)
         if report.exists():
-            root = ET.parse(report).getroot()
-            if root.tag == 'testsuite':
+            try:
+                root = ET.parse(report).getroot()
+            except ET.ParseError as error:
+                print(f'Batch {batch_index + 1} produced malformed JUnit XML: {error}', file=sys.stderr)
+                exitcode = exitcode or 1
+                root = None
+            if root is None:
+                cases = []
+                batches = []
+            elif root.tag == 'testsuite':
                 batches = [root]
+                cases = list(root.iter('testcase'))
             else:
                 batches = root.findall('testsuite')
+                cases = [case for item in batches for case in item.iter('testcase')]
             suite.extend(batches)
-            cases = [case for item in batches for case in item.iter('testcase')]
             count = len(cases)
             completed += count
             print(f'Batch {batch_index + 1}: {count} test results, exit={result.returncode}', flush=True)

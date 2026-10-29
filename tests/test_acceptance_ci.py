@@ -4,6 +4,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -43,6 +44,42 @@ def test_junit_node_identity_is_not_replaced_by_an_equal_result_count() -> None:
     assert batches.junit_nodes_match([node], [{"classname": expected[0], "name": expected[1]}])
     assert not batches.junit_nodes_match([node], [{"classname": expected[0], "name": "different-test"}])
     assert not batches.junit_nodes_match([node], [{"classname": expected[0], "name": expected[1]}] * 2)
+
+
+def test_batch_runner_continues_after_malformed_batch_junit(tmp_path, monkeypatch, capsys) -> None:
+    batches = _load_ci_module("pytest_batches")
+    first = "tests/acceptance/test_reflective.sage::test_first"
+    second = "tests/acceptance/test_reflective.sage::test_second"
+    calls = 0
+
+    def fake_run(command, **kwargs):
+        nonlocal calls
+        calls += 1
+        if "--collect-only" in command:
+            return subprocess.CompletedProcess(command, 0, stdout=f"{first}\n{second}\n", stderr="")
+        report = Path(next(arg.split("=", 1)[1] for arg in command if arg.startswith("--junitxml=")))
+        if first in command:
+            report.write_text("<testsuites><testcase>")
+        else:
+            suite = ET.Element("testsuites")
+            child = ET.SubElement(suite, "testsuite")
+            ET.SubElement(child, "testcase", classname="tests.acceptance.test_reflective.sage", name="test_second")
+            ET.ElementTree(suite).write(report)
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(batches.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["pytest_batches.py", "--sage", "sage", "--out", str(tmp_path), "--batch-size", "1", "--", "tests/acceptance/test_reflective.sage"],
+    )
+
+    result = batches.main()
+
+    assert result == 1
+    assert calls == 3
+    assert "produced malformed JUnit XML" in capsys.readouterr().err
+    aggregate = ET.parse(tmp_path / "junit.xml").getroot()
+    assert [case.get("name") for case in aggregate.iter("testcase")] == ["test_second"]
 
 
 def test_acceptance_summary_accepts_a_present_shard_with_a_junit_report(tmp_path) -> None:
