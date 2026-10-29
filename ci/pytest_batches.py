@@ -18,8 +18,9 @@ def main():
     args = a.pytest_args
     if args and args[0] == '--':
         args = args[1:]
-    prefix = [a.sage, '-python', '-c', 'import sage.all,sys,pytest;sys.exit(pytest.main(sys.argv[1:]))', '-p', 'qc_sage_session']
-    collected = subprocess.run(prefix + args + ['--collect-only', '-q'], capture_output=True, text=True)
+    prefix = [a.sage, '-python', '-c', 'import sage.all,sys,pytest;sys.exit(pytest.main(sys.argv[1:]))', 'sage-pytest']
+    pytest_args = ['-p', 'qc_sage_session']
+    collected = subprocess.run(prefix + pytest_args + args + ['--collect-only', '-q'], capture_output=True, text=True)
     if collected.returncode not in (0, 5):
         sys.stdout.write(collected.stdout + collected.stderr)
         return collected.returncode
@@ -37,7 +38,7 @@ def main():
         batch_index = offset // a.batch_size
         report = a.out / f'batch-{batch_index}.xml'
         print(f'Batch {batch_index + 1}/{(len(nodes) + a.batch_size - 1) // a.batch_size}: {len(batch)} nodes', flush=True)
-        command = prefix + batch + ['--runxfail', '-rA', '--tb=long', '--instafail', f'--junitxml={report}']
+        command = prefix + pytest_args + batch + ['--runxfail', '-rA', '--tb=long', '--instafail', f'--junitxml={report}']
         result = subprocess.run(command)
         if report.exists():
             root = ET.parse(report).getroot()
