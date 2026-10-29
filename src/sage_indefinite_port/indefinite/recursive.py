@@ -191,8 +191,16 @@ class EichlerRecursion:
         if nonsingular_rank:
             complement_gram = gram.matrix_from_rows_and_columns(range(nonsingular_rank), range(nonsingular_rank))
             complement = lattice.lattice_category()([[int(entry) for entry in row] for row in complement_gram.rows()])
+            complement_labels = tuple(complement.module_generating_set())
+            complement_basis = tuple(complement.module_generator(label) for label in complement_labels)
             for generator in self.orthogonal_group_generators(complement):
-                top = tuple(tuple(int(value) for value in generator(point).to_vector()) for point in complement.module_generators())
+                # `gram` is expressed in module_generating_set() order. Build
+                # the extended block in that same order rather than assuming
+                # module_generators() enumerates the identical basis.
+                top = tuple(
+                    tuple(int(generator(point).to_vector()(label)) for label in complement_labels)
+                    for point in complement_basis
+                )
                 block = identity_matrix(SageZZ, size)
                 for row in range(nonsingular_rank):
                     for column in range(nonsingular_rank):

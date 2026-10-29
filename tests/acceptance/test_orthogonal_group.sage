@@ -108,6 +108,20 @@ def test_degenerate_orthogonal_group_generates_rank_two_radical_action() -> None
     assert any(generator_rows[1][1:] != ((1, 0), (0, 1)) for generator_rows in rows)
 
 
+def test_degenerate_orthogonal_group_embeds_non_diagonal_complement() -> None:
+    """A non-diagonal nonsingular summand embeds in the radical extension's coordinate frame."""
+    require(MARKED_AUTOMORPHISMS)
+
+    gram = [[2, 1, 0], [1, 2, 0], [0, 0, 0]]
+    computed = lattice(gram).O().group_generators()
+    rows = tuple(rows_of(generator) for generator in computed)
+
+    assert all(is_isometry(generator_rows, gram) for generator_rows in rows)
+    assert any(generator_rows[0][2] != 0 for generator_rows in rows)
+    assert any(generator_rows[1][2] != 0 for generator_rows in rows)
+    assert any(generator_rows[2][2] == -1 for generator_rows in rows)
+
+
 def test_zero_form_orthogonal_group_is_the_full_general_linear_group() -> None:
     """When the whole lattice is radical, assembly is exactly GL_2(Z)."""
     from sage.all import ZZ as SageZZ
