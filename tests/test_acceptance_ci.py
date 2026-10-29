@@ -155,6 +155,23 @@ def test_acceptance_summary_rejects_an_empty_junit_report(tmp_path) -> None:
     assert "perfect_domains-0 (JUnit report has no testcases)" in output.getvalue()
 
 
+def test_acceptance_summary_reports_malformed_junit_without_crashing(tmp_path) -> None:
+    summary = _load_ci_module("acceptance_summary")
+    matrix = json.dumps({"include": [{"family": "perfect_domains", "shard": 0, "shards": 1}]})
+    shard = tmp_path / "perfect_domains-0"
+    shard.mkdir()
+    (shard / "junit.xml").write_text("<testsuites><testcase>")
+    (shard / "commit").write_text("port-revision")
+    (shard / "research_commit").write_text("provider-revision")
+    output = io.StringIO()
+
+    with contextlib.redirect_stdout(output):
+        result = summary.main(tmp_path, matrix)
+
+    assert result == 1
+    assert "perfect_domains-0 (malformed JUnit report:" in output.getvalue()
+
+
 def test_acceptance_summary_reports_a_failed_plan_without_valid_matrix_json(tmp_path) -> None:
     summary = _load_ci_module("acceptance_summary")
     output = io.StringIO()

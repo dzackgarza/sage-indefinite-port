@@ -95,7 +95,11 @@ def main(
         if not report.exists():
             missing.append(shard.name)
             continue
-        cases = tuple(ET.parse(report).getroot().iter("testcase"))
+        try:
+            cases = tuple(ET.parse(report).getroot().iter("testcase"))
+        except ET.ParseError as error:
+            missing.append(f"{shard.name} (malformed JUnit report: {error})")
+            continue
         if not cases:
             missing.append(f"{shard.name} (JUnit report has no testcases)")
         for case in cases:
