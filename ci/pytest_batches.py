@@ -37,7 +37,12 @@ def main():
         args = args[1:]
     prefix = [a.sage, '-python', '-c', 'import sage.all,sys,pytest;sys.exit(pytest.main(sys.argv[1:]))']
     pytest_args = ['-p', 'qc_sage_session']
-    collected = subprocess.run(prefix + pytest_args + args + ['--collect-only', '-q'], capture_output=True, text=True)
+    collected = subprocess.run(
+        prefix + pytest_args + args + ['--collect-only', '-q'],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
     if collected.returncode not in (0, 5):
         sys.stdout.write(collected.stdout + collected.stderr)
         return collected.returncode
@@ -56,7 +61,7 @@ def main():
         report = a.out / f'batch-{batch_index}.xml'
         print(f'Batch {batch_index + 1}/{(len(nodes) + a.batch_size - 1) // a.batch_size}: {len(batch)} nodes', flush=True)
         command = prefix + pytest_args + batch + ['--runxfail', '-rA', '--tb=long', '--instafail', f'--junitxml={report}']
-        result = subprocess.run(command)
+        result = subprocess.run(command, check=False)
         if report.exists():
             root = ET.parse(report).getroot()
             if root.tag == 'testsuite':
