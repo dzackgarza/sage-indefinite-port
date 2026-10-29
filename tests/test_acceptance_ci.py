@@ -174,6 +174,8 @@ def test_acceptance_summary_rejects_empty_or_malformed_matrix_includes(tmp_path)
         ({"include": []}, "acceptance matrix include list is empty"),
         ({"include": [{"family": "perfect_domains", "shard": True}]}, "acceptance matrix include entries are malformed"),
         ({"include": ["perfect_domains-0"]}, "acceptance matrix include entries are malformed"),
+        ({"include": [{"family": "perfect_domains", "shard": 0, "shards": 2}]}, "acceptance matrix shard indices are incomplete or duplicated for perfect_domains"),
+        ({"include": [{"family": "perfect_domains", "shard": 0, "shards": 1}, {"family": "perfect_domains", "shard": 0, "shards": 1}]}, "acceptance matrix shard indices are incomplete or duplicated for perfect_domains"),
     ):
         output = io.StringIO()
         with contextlib.redirect_stdout(output):

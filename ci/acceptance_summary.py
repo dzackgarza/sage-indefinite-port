@@ -24,9 +24,8 @@ def main(
     plan_result: str = "success",
 ) -> int:
     shard_dirs = sorted(path for path in results_dir.iterdir() if path.is_dir()) if results_dir.exists() else []
-    if not shard_dirs:
-        if matrix_json is None:
-            raise SystemExit(f"no shard results in {results_dir}")
+    if not shard_dirs and matrix_json is None:
+        raise SystemExit(f"no shard results in {results_dir}")
     counts: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
     failures: dict[str, list[str]] = defaultdict(list)
     missing: list[str] = []
@@ -53,10 +52,28 @@ def main(
                 or not isinstance(item.get("shard"), int)
                 or isinstance(item["shard"], bool)
                 or item["shard"] < 0
+                or not isinstance(item.get("shards"), int)
+                or isinstance(item["shards"], bool)
+                or item["shards"] < 1
+                or item["shard"] >= item["shards"]
                 for item in include
             ):
                 matrix = None
                 missing.append("acceptance matrix include entries are malformed")
+            else:
+                families: dict[str, tuple[int, list[int]]] = {}
+                for item in include:
+                    family, shard_id, shard_count = item["family"], item["shard"], item["shards"]
+                    if family in families:
+                        expected_count, shard_ids = families[family]
+                        if expected_count != shard_count:
+                            missing.append(f"acceptance matrix has inconsistent shard counts for {family}")
+                        shard_ids.append(shard_id)
+                    else:
+                        families[family] = (shard_count, [shard_id])
+                for family, (shard_count, shard_ids) in families.items():
+                    if len(shard_ids) != shard_count or set(shard_ids) != set(range(shard_count)):
+                        missing.append(f"acceptance matrix shard indices are incomplete or duplicated for {family}")
         if family_result != "success":
             missing.append(f"family matrix job result is {family_result}, not success")
         if matrix is not None:
