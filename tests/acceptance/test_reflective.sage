@@ -79,11 +79,13 @@ def test_promised_go_left_preserves_left_supplement() -> None:
 def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
     """Exercise cusp, finite-corner, next-wall and oriented binary-cycle routes.
 
-    In signature (2,1), frozen IDs ``allcock_rk3_4`` and ``allcock_rk3_2``
-    cover the isotropic-cusp and rationally anisotropic starts; ``U+<2>`` is
-    the recorded three-wall example with finite and ideal corners, ``U+<46>``
+    In signature (2,1), ``allcock_rk3_4`` with Gram
+    ``[[0,-1,0],[-1,0,0],[0,0,1]]`` and ``allcock_rk3_2`` with Gram
+    ``[[-3,0,0],[0,1,0],[0,0,1]]`` cover the isotropic-cusp and rationally
+    anisotropic starts. ``U+<2>`` covers finite and ideal corners, ``U+<46>``
     the nonreflective stop after three vertex orbits, and Gram
-    ``[[-1,0,0],[0,3,1],[0,1,7]]`` the rootless-perpendicular start. In
+    ``[[-1,0,0],[0,3,1],[0,1,7]]`` the rootless-perpendicular start. The
+    polyhedral_common root-system oracle is ``ListSimpleRootSystem_0``. In
     signature (1,1), ``diag(1,-2)`` and ``U`` exercise the nonsplit and split
     branches of ``binary_walk``. This sample does not exhaust all 8,821
     reflective forms, 103 root systems or the full rank-three corpus; all
