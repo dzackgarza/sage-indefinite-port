@@ -166,6 +166,7 @@ def test_eichler_generator_families_preserve_nonlexical_complement() -> None:
     """GRPeasy and full generator matrices preserve a model with non-lexical complement labels."""
     from dzack_research.preamble.all import ZZ as PreambleZZ
     from dzack_research.preamble.all import Lattices
+    from sage.all import ZZ as SageZZ
 
     require(MARKED_ISOMETRY)
     category = Lattices(PreambleZZ)
@@ -204,16 +205,20 @@ def test_eichler_generator_families_preserve_nonlexical_complement() -> None:
             all(generator(point) == image for point, image in zip(model_basis, expected_images, strict=True))
             for generator in easy_generators
         )
-    full_generators = tuple(
-        _isometry_from_row_matrix(model.lattice(), rows)
-        for rows in OrbitCoverModel.source_generator_matrices(model)
+    from sage.all import matrix as sage_matrix
+
+    model_gram = sage_matrix(
+        SageZZ,
+        [
+            [model.lattice().b(left, right) for right in model_basis]
+            for left in model_basis
+        ],
     )
-    assert full_generators
+    full_matrices = OrbitCoverModel.source_generator_matrices(model)
+    assert full_matrices
     assert all(
-        model.lattice().b(generator(left), generator(right)) == model.lattice().b(left, right)
-        for generator in full_generators
-        for left in lattice_basis
-        for right in lattice_basis
+        generator_matrix * model_gram * generator_matrix.transpose() == model_gram
+        for generator_matrix in full_matrices
     )
 
 
