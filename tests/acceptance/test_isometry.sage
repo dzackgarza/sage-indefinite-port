@@ -96,10 +96,17 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
     assert tuple(target.module_generating_set()) == target_labels
 
     def generator_coordinate_order(lattice_, labels):
-        return tuple(
-            next(index for index, label in enumerate(labels) if generator.to_vector()(label))
-            for generator in lattice_.module_generators()
-        )
+        order = []
+        for generator in lattice_.module_generators():
+            coordinates = generator.to_vector()
+            nonzero = tuple(index for index, label in enumerate(labels) if coordinates(label))
+            assert len(nonzero) == 1
+            index = nonzero[0]
+            assert int(coordinates(labels[index])) == 1
+            assert all(not coordinates(label) for label in labels if label != labels[index])
+            order.append(index)
+        assert sorted(order) == list(range(len(labels)))
+        return tuple(order)
 
     assert generator_coordinate_order(source, source_labels) != generator_coordinate_order(target, target_labels)
 
@@ -189,10 +196,17 @@ def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
     assert tuple(target.module_generating_set()) == target_labels
 
     def generator_coordinate_order(lattice_, labels):
-        return tuple(
-            next(index for index, label in enumerate(labels) if generator.to_vector()(label))
-            for generator in lattice_.module_generators()
-        )
+        order = []
+        for generator in lattice_.module_generators():
+            coordinates = generator.to_vector()
+            nonzero = tuple(index for index, label in enumerate(labels) if coordinates(label))
+            assert len(nonzero) == 1
+            index = nonzero[0]
+            assert int(coordinates(labels[index])) == 1
+            assert all(not coordinates(label) for label in labels if label != labels[index])
+            order.append(index)
+        assert sorted(order) == list(range(len(labels)))
+        return tuple(order)
 
     assert generator_coordinate_order(source, source_labels) != generator_coordinate_order(target, target_labels)
     assert source.is_isometric(target)
