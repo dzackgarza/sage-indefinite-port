@@ -76,6 +76,29 @@ def test_promised_go_left_preserves_left_supplement() -> None:
     assert cycle.promised_step(1, (1, 0), (0, 1)) == ((3, 2), (-2, -1))
 
 
+def test_binary_cycle_coordinate_order_and_period_certificate() -> None:
+    """The rank-two period is an isometry in the owned lattice's generator order."""
+    require(EDGEWALK)
+    lattice_ = lattice([[1, 1], [1, -1]])
+    cycle = _OrientedBinaryCycle(lattice_)
+    first, second = tuple(lattice_.module_generator(label) for label in cycle.labels)
+    assert cycle.form == (int(first.q()), int(lattice_.b(first, second)), int(second.q()))
+
+    for coordinates_ in ((1, 0), (0, 1), (2, -3), (-5, 2)):
+        point = cycle.point(coordinates_)
+        assert cycle.coordinates(point) == coordinates_
+        assert cycle.pairing(coordinates_, coordinates_) == int(point.q())
+
+    result = cycle.cycle(1, cycle.point((1, 0)))
+    assert result is not None
+    period, representatives = result
+    assert representatives
+    assert all(0 < int(point.q()) <= 1 and int(point.content()) == 1 for point in representatives)
+    basis = tuple(lattice_.module_generators())
+    assert period.determinant() == 1
+    assert all(lattice_.b(period(left), period(right)) == lattice_.b(left, right) for left in basis for right in basis)
+
+
 def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
     """Exercise cusp, finite-corner, next-wall and oriented binary-cycle routes.
 
