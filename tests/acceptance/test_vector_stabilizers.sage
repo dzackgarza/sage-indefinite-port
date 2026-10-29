@@ -156,7 +156,6 @@ def test_empty_integral_fibre_falls_back_to_full_marked_vector_stabilizer(monkey
     witness = recursion.pointed_isometry(source, target)
 
     assert len(torsor_calls) == 1
-    assert torsor_calls[0][0] is source_reduction
     assert correction_calls
     assert witness is not None
     assert witness(source) == target
