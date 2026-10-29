@@ -134,6 +134,29 @@ def test_degenerate_orthogonal_group_generates_rank_two_radical_action() -> None
     )
 
 
+def test_degenerate_orthogonal_group_generates_permuted_rank_two_radical_action() -> None:
+    """Rank-two radical GL and shears survive when the nonsingular coordinate is last."""
+    from dzack_research.preamble.all import ZZ as PreambleZZ
+    from dzack_research.preamble.all import Lattices
+
+    require(MARKED_AUTOMORPHISMS)
+    labels = ("radical_b", "radical_a", "nonsingular")
+    gram = [[0, 0, 0], [0, 0, 0], [0, 0, 2]]
+    lattice_ = Lattices(PreambleZZ)(gram, module_generators=labels)
+    assert tuple(lattice_.module_generating_set()) == labels
+
+    computed = lattice_.O().group_generators()
+    rows = tuple(tuple(tuple(row) for row in rows_of(generator)) for generator in computed)
+
+    assert all(is_isometry(rows_of(generator), gram) for generator in computed)
+    assert any(generator_rows[2][0] != 0 or generator_rows[2][1] != 0 for generator_rows in rows)
+    assert any(
+        tuple(tuple(generator_rows[i][j] for j in (0, 1)) for i in (0, 1)) != ((1, 0), (0, 1))
+        for generator_rows in rows
+    )
+    assert any(generator_rows[2][2] == -1 for generator_rows in rows)
+
+
 def test_degenerate_orthogonal_group_embeds_non_diagonal_complement() -> None:
     """A non-diagonal nonsingular summand embeds in the radical extension's coordinate frame."""
     require(MARKED_AUTOMORPHISMS)
