@@ -36,6 +36,9 @@ def main(results_dir: Path, matrix_json: str | None = None) -> int:
     research = {(shard / "research_commit").read_text().strip() for shard in shard_dirs if (shard / "research_commit").exists()}
     for shard in shard_dirs:
         family = shard.name.rsplit("-", 1)[0]
+        for revision_file in ("commit", "research_commit"):
+            if not (shard / revision_file).exists():
+                missing.append(f"{shard.name} ({revision_file} missing)")
         report = shard / "junit.xml"
         if not report.exists():
             missing.append(shard.name)
@@ -47,6 +50,10 @@ def main(results_dir: Path, matrix_json: str | None = None) -> int:
             if outcome != "passed":
                 detail = next(child for child in case if child.tag == outcome).get("message", "")
                 failures[family].append(f"- `{node}` ({outcome}): {detail.splitlines()[0] if detail else ''}")
+    if shard_dirs and len(commits) != 1:
+        missing.append(f"port revisions are not uniquely identified: {sorted(commits)!r}")
+    if shard_dirs and len(research) != 1:
+        missing.append(f"research revisions are not uniquely identified: {sorted(research)!r}")
     print(f"# Acceptance at port {', '.join(sorted(commits))}, research {', '.join(sorted(research))}\n")
     print("| Family | passed | failure | error | skipped |\n| --- | --- | --- | --- | --- |")
     for family in sorted(counts):
