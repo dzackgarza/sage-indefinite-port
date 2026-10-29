@@ -41,6 +41,22 @@ def main(
         if matrix is not None and (not isinstance(matrix, dict) or not isinstance(matrix.get("include"), list)):
             matrix = None
             missing.append("acceptance matrix JSON has no include list")
+        if matrix is not None:
+            include = matrix["include"]
+            if not include:
+                matrix = None
+                missing.append("acceptance matrix include list is empty")
+            elif any(
+                not isinstance(item, dict)
+                or not isinstance(item.get("family"), str)
+                or not item["family"]
+                or not isinstance(item.get("shard"), int)
+                or isinstance(item["shard"], bool)
+                or item["shard"] < 0
+                for item in include
+            ):
+                matrix = None
+                missing.append("acceptance matrix include entries are malformed")
         if family_result != "success":
             missing.append(f"family matrix job result is {family_result}, not success")
         if matrix is not None:

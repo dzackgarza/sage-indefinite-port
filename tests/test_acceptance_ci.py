@@ -166,3 +166,17 @@ def test_acceptance_summary_reports_a_failed_plan_without_valid_matrix_json(tmp_
     assert "acceptance matrix planning job result is failure, not success" in output.getvalue()
     assert "acceptance matrix JSON is missing or invalid" in output.getvalue()
     assert "family matrix job result is skipped, not success" in output.getvalue()
+
+
+def test_acceptance_summary_rejects_empty_or_malformed_matrix_includes(tmp_path) -> None:
+    summary = _load_ci_module("acceptance_summary")
+    for matrix, message in (
+        ({"include": []}, "acceptance matrix include list is empty"),
+        ({"include": [{"family": "perfect_domains", "shard": True}]}, "acceptance matrix include entries are malformed"),
+        ({"include": ["perfect_domains-0"]}, "acceptance matrix include entries are malformed"),
+    ):
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            result = summary.main(tmp_path / "no-results", json.dumps(matrix))
+        assert result == 1
+        assert message in output.getvalue()
