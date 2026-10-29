@@ -151,7 +151,10 @@ def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> Non
     from dzack_research.preamble.all import Lattices
     from sage.all import ZZ as SageZZ
 
-    from sage_indefinite_port.indefinite.groupoid_cache import coordinate_identification
+    from sage_indefinite_port.indefinite.groupoid_cache import (
+        IsometryGroupoidCache,
+        coordinate_identification,
+    )
 
     source_labels = ("zeta", "alpha")
     target_labels = ("beta", "omega")
@@ -208,6 +211,13 @@ def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> Non
         assert "common base ring" in str(error)
     else:
         raise AssertionError("coordinate identification accepted different base rings")
+
+    try:
+        IsometryGroupoidCache()._key(different_ring)
+    except TypeError as error:
+        assert "integral ZZ-lattices" in str(error)
+    else:
+        raise AssertionError("the integer-keyed groupoid cache accepted a rational lattice")
 
 
 def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:

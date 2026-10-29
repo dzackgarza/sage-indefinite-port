@@ -13,6 +13,7 @@ from collections import deque
 from dzack_research.preamble.all import Lattices
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
+from sage.rings.integer_ring import ZZ as SageZZ
 
 type GramKey = tuple[tuple[int, ...], ...]
 type Lattice = Lattices.ParentMethods
@@ -54,6 +55,8 @@ class IsometryGroupoidCache:
         self._groups: dict[GramKey, tuple[Isometry, ...]] = {}
 
     def _key(self, lattice: Lattice) -> GramKey:
+        if lattice.base_ring() != SageZZ:
+            raise TypeError("the isometry groupoid cache requires integral ZZ-lattices")
         gram = _engine_component_matrix(lattice.gram_tensor())
         key = tuple(tuple(int(gram[row, column]) for column in range(gram.ncols())) for row in range(gram.nrows()))
         self._representatives.setdefault(key, lattice)
