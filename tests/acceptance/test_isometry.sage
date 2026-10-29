@@ -74,6 +74,7 @@ def test_row_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
 
 def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
     """Matrix columns use coordinate labels; the public morphism takes generator-order images."""
+    from dzack_research.preamble.all import Lattices
     from sage.all import ZZ as SageZZ
     from sage.all import matrix
 
@@ -86,7 +87,7 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
         _isometry_from_row_matrix,
     )
 
-    lattice_ = lattice([[2, 1], [1, 2]])
+    lattice_ = Lattices(SageZZ)([[2, 1], [1, 2]], module_generators=("right", "left"))
     labels = tuple(lattice_.module_generating_set())
     columns = matrix(SageZZ, [[-1, 0], [1, 1]])
     morphism = _isometry_from_column_matrix(lattice_, lattice_, columns)
@@ -117,11 +118,15 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
 
 
 def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> None:
-    """Memoized equal-Gram transport is coordinate identity, not iterator-position identity."""
+    """Equal Gram presentations with different labels are identified by coordinates."""
+    from dzack_research.preamble.all import Lattices
+    from sage.all import ZZ as SageZZ
+
     from sage_indefinite_port.indefinite.groupoid_cache import coordinate_identification
 
-    source = lattice([[2, 1], [1, 2]])
-    target = lattice([[2, 1], [1, 2]])
+    source = Lattices(SageZZ)([[2, 1], [1, 2]], module_generators=("a", "b"))
+    target = Lattices(SageZZ)([[2, 1], [1, 2]], module_generators=("x", "y"))
+    assert source is not target
     witness = coordinate_identification(source, target)
     source_labels = tuple(source.module_generating_set())
     target_labels = tuple(target.module_generating_set())
