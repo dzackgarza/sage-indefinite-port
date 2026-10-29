@@ -183,6 +183,13 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
     else:
         raise AssertionError("column-matrix constructor accepted a wrong-shaped matrix")
 
+    try:
+        _isometry_from_column_matrix(source, target, matrix(SageZZ, [[1, 0], [0, 2]]))
+    except ValueError as error:
+        assert "does not define an isometry" in str(error)
+    else:
+        raise AssertionError("column-matrix constructor accepted a non-isometry")
+
 
 def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> None:
     """Equal Gram presentations with different labels are identified by coordinates."""
