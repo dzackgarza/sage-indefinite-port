@@ -89,6 +89,7 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
     """
     require(EDGEWALK)
     observed = {}
+    compact_hexagon_gram = [[-1, 0, 0], [0, 3, 1], [0, 1, 7]]
 
     def instrument(cls, name):
         original = getattr(cls, name)
@@ -96,6 +97,9 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
         def wrapped(self, *args, **kwargs):
             result = original(self, *args, **kwargs)
             observed[f"{cls.__name__}.{name}"] = True
+            if name == "ordinary_vertex_roots" and self.gram == matrix(QQ, compact_hexagon_gram):
+                if self.span_rank(result) < self.rank - 1:
+                    observed["rootless_perpendicular_start"] = True
             return result
 
         monkeypatch.setattr(cls, name, wrapped)
@@ -164,7 +168,7 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
     # The compact hexagon has a rootless initial perpendicular and exercises
     # the increasing-prefix starting-corner search rather than the direct
     # full-rank finite-root corner route.
-    compact_hexagon = _hyperbolic([[-1, 0, 0], [0, 3, 1], [0, 1, 7]]).allcock_edgewalk()
+    compact_hexagon = _hyperbolic(compact_hexagon_gram).allcock_edgewalk()
     assert compact_hexagon.is_reflective()
     assert len(compact_hexagon.simple_roots()) == 6
     binary = _hyperbolic([[1, 0], [0, -2]]).allcock_edgewalk()
@@ -181,6 +185,7 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
         "_Edgewalk.extension_roots", "_Edgewalk.vertex_from_root",
         "_Edgewalk.isotropic_next_vertex", "_Edgewalk.finite_extensions",
         "_Edgewalk.edge_step", "_Edgewalk.edge_directions", "_Edgewalk.binary_walk",
+        "rootless_perpendicular_start",
         "anisotropic_cycle",
         "_OrientedBinaryCycle.cycle", "_OrientedBinaryCycle.promised_step",
         "_OrientedBinaryCycle.canonical_companion", "_OrientedBinaryCycle.shorter_pair",
