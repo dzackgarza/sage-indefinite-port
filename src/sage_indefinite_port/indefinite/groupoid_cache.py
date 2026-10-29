@@ -26,7 +26,11 @@ def coordinate_identification(source: Lattice, target: Lattice) -> Isometry:
     source_labels = tuple(source.module_generating_set())
     target_labels = tuple(target.module_generating_set())
     if len(source_labels) != len(target_labels):
-        raise ArithmeticError("equal Gram presentations must have equal coordinate ranks")
+        raise ValueError("coordinate identification requires equal coordinate ranks")
+    source_gram = _engine_component_matrix(source.gram_tensor())
+    target_gram = _engine_component_matrix(target.gram_tensor())
+    if source_gram != target_gram:
+        raise ValueError("coordinate identification requires identical Gram matrices in declared label order")
     images = []
     for generator in source.module_generators():
         coordinates = generator.to_vector()

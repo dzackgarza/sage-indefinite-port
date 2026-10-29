@@ -176,6 +176,14 @@ def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> Non
         image = witness(source.module_generator(source_label)).to_vector()
         assert tuple(int(image(label)) for label in target_labels) == tuple(int(index == j) for j in range(len(target_labels)))
 
+    different_gram = Lattices(SageZZ)([[2, 0], [0, 4]], module_generators=target_labels)
+    try:
+        coordinate_identification(source, different_gram)
+    except ValueError as error:
+        assert "identical Gram matrices" in str(error)
+    else:
+        raise AssertionError("coordinate identification accepted unequal Gram presentations")
+
 
 def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
     """A non-diagonal nonsingular summand plus radical survives a basis change."""
