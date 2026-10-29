@@ -12,6 +12,7 @@ import pytest
 from sage_indefinite_port.indefinite.lorentzian_cells import (
     LorentzianPerfectLocalBackend,
     NONNEGATIVE_SQUARES,
+    ZERO_SQUARES,
     _search_initial_vectors,
     perfect_complex,
     perfect_domain_traversal,
@@ -33,6 +34,21 @@ def test_non_diagonal_positive_shell_uses_the_pinned_cvp_center() -> None:
         point = vector(SageZZ, row)
         assert (point * gram * point.column())[0] in {1, 2}
         assert (point * gram * vector(SageZZ, (1, 0, 0)).column())[0] == 4
+
+
+def test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center() -> None:
+    """The exact-sphere branch finds every isotropic vector in the first shell."""
+    from sage.all import ZZ as SageZZ, matrix, vector
+
+    gram = matrix(SageZZ, [[1, 1, 0], [1, 0, 0], [0, 0, -1]])
+    lattice_ = lattice([[1, 1, 0], [1, 0, 0], [0, 0, -1]])
+    rows = _search_initial_vectors(lattice_, (1, 0, 0), ZERO_SQUARES)
+
+    assert set(rows) == {(0, 1, 0), (1, 0, -1), (1, 0, 1), (2, -1, 0)}
+    for row in rows:
+        point = vector(SageZZ, row)
+        assert (point * gram * point.column())[0] == 0
+        assert (point * gram * vector(SageZZ, (1, 0, 0)).column())[0] == 1
 
 
 @pytest.mark.parametrize("case", load_lorentzian_perfect_domains(), ids=lambda case: case["id"])
