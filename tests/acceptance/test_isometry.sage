@@ -160,6 +160,13 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
         raise AssertionError("row-matrix constructor accepted a non-isometry")
 
     try:
+        _isometry_from_row_matrix(source, target, matrix(SageZZ, [[1, 0, 0]]))
+    except ValueError as error:
+        assert "shape" in str(error)
+    else:
+        raise AssertionError("row-matrix constructor accepted a wrong-shaped matrix")
+
+    try:
         _isometry_from_column_matrix(source, target, matrix(SageZZ, [[1], [0]]))
     except ValueError as error:
         assert "shape" in str(error)
