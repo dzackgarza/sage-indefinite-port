@@ -226,8 +226,13 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
     )
     labelled_hexagon = HyperbolicLattices(PreambleZZ)(labelled_hexagon_lattice).allcock_edgewalk()
     assert labelled_hexagon.is_reflective()
-    assert _canonical_root_graph(_root_gram([[-1, 0, 0], [0, 3, 1], [0, 1, 7]], [coordinates(root) for root in labelled_hexagon.simple_roots()])) == _canonical_root_graph(
-        _root_gram([[-1, 0, 0], [0, 3, 1], [0, 1, 7]], [coordinates(root) for root in compact_hexagon.simple_roots()])
+    labelled_labels = tuple(labelled_hexagon_lattice.module_generating_set())
+    labelled_roots = [
+        tuple(int(root.to_vector()(label)) for label in labelled_labels) for root in labelled_hexagon.simple_roots()
+    ]
+    gram = [[-1, 0, 0], [0, 3, 1], [0, 1, 7]]
+    assert _canonical_root_graph(_root_gram(gram, labelled_roots)) == _canonical_root_graph(
+        _root_gram(gram, [coordinates(root) for root in compact_hexagon.simple_roots()])
     )
     binary = _hyperbolic([[1, 0], [0, -2]]).allcock_edgewalk()
     assert binary.is_reflective()
