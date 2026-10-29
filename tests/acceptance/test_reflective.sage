@@ -9,7 +9,7 @@ ten simple roots of U + E8(-1).
 
 import pytest
 from dzack_research.preamble.all import ZZ as PreambleZZ
-from dzack_research.preamble.all import HyperbolicLattices
+from dzack_research.preamble.all import HyperbolicLattices, Lattices
 
 import sage_indefinite_port.indefinite.edgewalk as edgewalk_module
 from sage_indefinite_port.indefinite.edgewalk import _Edgewalk
@@ -221,6 +221,14 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
     compact_hexagon = _hyperbolic([[-1, 0, 0], [0, 3, 1], [0, 1, 7]]).allcock_edgewalk()
     assert compact_hexagon.is_reflective()
     assert len(compact_hexagon.simple_roots()) == 6
+    labelled_hexagon_lattice = Lattices(PreambleZZ)(
+        [[-1, 0, 0], [0, 3, 1], [0, 1, 7]], module_generators=("negative", "left", "right")
+    )
+    labelled_hexagon = HyperbolicLattices(PreambleZZ)(labelled_hexagon_lattice).allcock_edgewalk()
+    assert labelled_hexagon.is_reflective()
+    assert _canonical_root_graph(_root_gram([[-1, 0, 0], [0, 3, 1], [0, 1, 7]], [coordinates(root) for root in labelled_hexagon.simple_roots()])) == _canonical_root_graph(
+        _root_gram([[-1, 0, 0], [0, 3, 1], [0, 1, 7]], [coordinates(root) for root in compact_hexagon.simple_roots()])
+    )
     binary = _hyperbolic([[1, 0], [0, -2]]).allcock_edgewalk()
     assert binary.is_reflective()
     assert len(binary.simple_roots()) == 2
