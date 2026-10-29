@@ -90,13 +90,21 @@ def test_positive_shell_survives_a_permuted_gram_basis() -> None:
     from sage.all import ZZ as SageZZ
     from sage.all import matrix, vector
 
+    from sage_indefinite_port.indefinite.lorentzian_cells import (
+        _PositiveVectorEnumerator,
+    )
+
     require(PERFECT_DOMAINS)
     gram = [[-1, 0, 0], [0, 5, 1], [0, 1, -1]]
     labels = ("auxiliary", "time", "space")
     lattice_ = Lattices(PreambleZZ)(gram, module_generators=labels)
     assert tuple(lattice_.module_generating_set()) == labels
 
+    enumerator = _PositiveVectorEnumerator(lattice_, (0, 1, 0), 5, NONNEGATIVE_SQUARES)
+    first = enumerator.first_shell()
+    assert first is not None and first[0] == 4
     rows = _search_initial_vectors(lattice_, (0, 1, 0), NONNEGATIVE_SQUARES)
+    assert tuple(rows) == first[1]
     assert set(rows) == {(-1, 1, -1), (0, 1, -1), (1, 1, -1)}
     form = matrix(SageZZ, gram)
     direction = vector(SageZZ, (0, 1, 0))
@@ -204,13 +212,21 @@ def test_isotropic_shell_survives_a_permuted_gram_basis() -> None:
     from sage.all import ZZ as SageZZ
     from sage.all import matrix, vector
 
+    from sage_indefinite_port.indefinite.lorentzian_cells import (
+        _PositiveVectorEnumerator,
+    )
+
     require(PERFECT_DOMAINS)
     gram = [[-1, 0, 0], [0, 1, 1], [0, 1, 0]]
     labels = ("radical", "time", "space")
     lattice_ = Lattices(PreambleZZ)(gram, module_generators=labels)
     assert tuple(lattice_.module_generating_set()) == labels
 
+    enumerator = _PositiveVectorEnumerator(lattice_, (0, 1, 0), 1, ZERO_SQUARES)
+    first = enumerator.first_shell()
+    assert first is not None and first[0] == 1
     rows = _search_initial_vectors(lattice_, (0, 1, 0), ZERO_SQUARES)
+    assert tuple(rows) == first[1]
     assert set(rows) == {(-1, 1, 0), (0, 0, 1), (0, 2, -1), (1, 1, 0)}
     form = matrix(SageZZ, gram)
     direction = vector(SageZZ, (0, 1, 0))
