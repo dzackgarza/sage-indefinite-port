@@ -244,10 +244,13 @@ class EichlerRecursion:
             if complement_witness is None:
                 self._groupoid.record_isometry(left, right, None)
                 return None
-            for row, point in enumerate(left_complement.module_generators()):
-                coordinates = tuple(int(value) for value in complement_witness(point).to_vector())
-                for column, coefficient in enumerate(coordinates):
-                    extension[row, column] = coefficient
+            left_labels = tuple(left_complement.module_generating_set())
+            right_labels = tuple(right_complement.module_generating_set())
+            left_basis = tuple(left_complement.module_generator(label) for label in left_labels)
+            for row, point in enumerate(left_basis):
+                image_coordinates = complement_witness(point).to_vector()
+                for column, label in enumerate(right_labels):
+                    extension[row, column] = int(image_coordinates(label))
         reduced_witness = left.Isom(right)(tuple(_from_column(right, row) for row in extension.rows()))
         self._groupoid.record_isometry(left, right, reduced_witness)
         return _transported(target_reduction.isometry, reduced_witness, source_reduction.isometry)

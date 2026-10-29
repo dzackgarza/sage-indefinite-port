@@ -52,6 +52,19 @@ def test_lorentzian_pairs_are_isometric(case) -> None:
     _assert_isometric(case["mat1"], case["mat2"])
 
 
+def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
+    """A non-diagonal nonsingular summand plus radical survives a basis change."""
+    from sage.all import ZZ as SageZZ
+    from sage.all import matrix
+
+    require(MARKED_ISOMETRY)
+
+    gram = matrix(SageZZ, [[2, 1, 0], [1, 2, 0], [0, 0, 0]])
+    change = matrix(SageZZ, [[1, 1, 0], [0, 1, 1], [0, 0, 1]])
+    conjugate = change * gram * change.transpose()
+    _assert_isometric([list(row) for row in gram.rows()], [list(row) for row in conjugate.rows()])
+
+
 def test_conway_sloane_same_genus_pair_is_not_isometric() -> None:
     require(MARKED_ISOMETRY)
 
