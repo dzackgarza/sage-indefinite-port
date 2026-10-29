@@ -325,7 +325,7 @@ class EichlerRecursion:
             # covers the definite kernel (:1435) too: a group computed
             # for an isometric lattice is transported along the recorded
             # isometry instead of being recomputed.
-            cacheable = lattice.base_ring() == SageZZ
+            cacheable = lattice.base_ring() == ZZ
             if cacheable:
                 cached = self._groupoid.cached_group(lattice)
                 if cached is not None:
@@ -338,7 +338,7 @@ class EichlerRecursion:
         # computation, then conjugate its generators back to the input form.
         # The reduction's isometry is directed from the reduced lattice to L.
         reduction = indefinite_reduced_presentation(lattice)
-        cacheable = reduction.reduced.base_ring() == SageZZ
+        cacheable = reduction.reduced.base_ring() == ZZ
         if cacheable:
             cached = self._groupoid.cached_group(reduction.reduced)
             if cached is not None:
@@ -396,7 +396,7 @@ class EichlerRecursion:
         # IndefiniteForms.g:1239-1273 INDEF_FORM_TestEquivalence_Memoize
         # records every exact verdict, the definite kernel's (:1326)
         # included, so later O(K) requests are transported along it.
-        cacheable = source.base_ring() == SageZZ and target.base_ring() == SageZZ
+        cacheable = source.base_ring() == ZZ and target.base_ring() == ZZ
         if cacheable:
             known, cached = self._groupoid.cached_isometry(source, target)
             if known:
@@ -408,7 +408,7 @@ class EichlerRecursion:
         return witness
 
     def _indefinite_isometry(self, source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
-        cacheable = source.base_ring() == SageZZ and target.base_ring() == SageZZ
+        cacheable = source.base_ring() == ZZ and target.base_ring() == ZZ
         if cacheable:
             known, cached = self._groupoid.cached_isometry(source, target)
             if known:
