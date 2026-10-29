@@ -158,17 +158,15 @@ class _OrientedBinaryCycle:
                 # consumes images in `module_generators()` order. Translate each
                 # actual generator through its coordinates rather than assuming
                 # these two iteration orders coincide.
-                images = tuple(
-                    self.point(
-                        tuple(
-                            sum(coordinates[row] * int(period[row, column]) for row in range(2))
-                            for column in range(2)
-                        )
+                images = []
+                for generator in self.lattice.module_generators():
+                    coordinates = self.coordinates(generator)
+                    image_coordinates = tuple(
+                        sum(coordinates[row] * int(period[row, column]) for row in range(2))
+                        for column in range(2)
                     )
-                    for generator in self.lattice.module_generators()
-                    for coordinates in (self.coordinates(generator),)
-                )
-                return self.lattice.Isom(self.lattice)(images), tuple(self.point(point) for point in representatives)
+                    images.append(self.point(image_coordinates))
+                return self.lattice.Isom(self.lattice)(tuple(images)), tuple(self.point(point) for point in representatives)
 
 
 def anisotropic_cycle(lattice: Lattices.ParentMethods, bound: Rational, start: _Vector) -> tuple[LatticeIsometryMethods, tuple[_Vector, ...]] | None:
