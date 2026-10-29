@@ -13,8 +13,10 @@ from tests.acceptance.consumer import (
     MARKED_AUTOMORPHISMS,
     assert_same_finite_images,
     discriminant_image_order,
+    is_isometry,
     lattice,
     require,
+    rows_of,
     transpose,
 )
 from tests.fixtures.oracle_fixtures import (
@@ -73,6 +75,23 @@ def test_lorentzian_generators_match_polyhedral_common(case) -> None:
     computed = lattice(case["gram"]).O().group_generators()
 
     assert_same_finite_images(case["gram"], computed, case["generators"])
+
+
+def test_degenerate_orthogonal_group_contains_radical_shear_and_gl_action() -> None:
+    """For <2> plus a rank-one radical, O(L) includes both signs and every shear."""
+    require(MARKED_AUTOMORPHISMS)
+
+    gram = [[2, 0], [0, 0]]
+    computed = lattice(gram).O().group_generators()
+    rows = tuple(tuple(tuple(row) for row in rows_of(generator)) for generator in computed)
+    expected = {
+        ((-1, 0), (0, 1)),
+        ((1, 0), (0, -1)),
+        ((1, 1), (0, 1)),
+    }
+
+    assert all(is_isometry(rows_of(generator), gram) for generator in computed)
+    assert expected <= set(rows)
 
 
 def test_orthogonal_group_of_the_hyperbolic_plane_has_order_four() -> None:
