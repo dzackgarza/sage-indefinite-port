@@ -15,3 +15,12 @@ def test_binary_cycle_form_uses_the_coordinate_label_order() -> None:
         point = cycle.point(coordinates)
         assert cycle.coordinates(point) == coordinates
         assert cycle.pairing(coordinates, coordinates) == int(point.q())
+
+    result = cycle.cycle(1, cycle.point((1, 0)))
+    assert result is not None
+    period, representatives = result
+    assert representatives
+    assert all(0 < int(point.q()) <= 1 and int(point.content()) == 1 for point in representatives)
+    basis = tuple(lattice_.module_generator(label) for label in cycle.labels)
+    assert period.determinant() == 1
+    assert all(lattice_.b(period(left), period(right)) == lattice_.b(left, right) for left in basis for right in basis)
