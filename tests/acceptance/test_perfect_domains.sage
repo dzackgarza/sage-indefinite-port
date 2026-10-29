@@ -83,6 +83,29 @@ def test_non_diagonal_positive_shell_respects_explicit_coordinate_labels() -> No
         assert (point * gram * vector(SageZZ, (1, 0, 0)).column())[0] == 4
 
 
+def test_positive_shell_survives_a_permuted_gram_basis() -> None:
+    """The nonzero CVP center and exact first shell are covariant under a basis permutation."""
+    from dzack_research.preamble.all import ZZ as PreambleZZ
+    from dzack_research.preamble.all import Lattices
+    from sage.all import ZZ as SageZZ
+    from sage.all import matrix, vector
+
+    require(PERFECT_DOMAINS)
+    gram = [[-1, 0, 0], [0, 5, 1], [0, 1, -1]]
+    labels = ("auxiliary", "time", "space")
+    lattice_ = Lattices(PreambleZZ)(gram, module_generators=labels)
+    assert tuple(lattice_.module_generating_set()) == labels
+
+    rows = _search_initial_vectors(lattice_, (0, 1, 0), NONNEGATIVE_SQUARES)
+    assert set(rows) == {(-1, 1, -1), (0, 1, -1), (1, 1, -1)}
+    form = matrix(SageZZ, gram)
+    direction = vector(SageZZ, (0, 1, 0))
+    for row in rows:
+        point = vector(SageZZ, row)
+        assert (point * form * point.column())[0] in {1, 2}
+        assert (point * form * direction.column())[0] == 4
+
+
 def test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center() -> None:
     """The exact-sphere branch finds every isotropic vector in the first shell."""
     from dzack_research.preamble.all import ZZ as PreambleZZ
@@ -175,6 +198,29 @@ def test_non_diagonal_isotropic_shell_respects_explicit_coordinate_labels() -> N
 
 
 @pytest.mark.parametrize("case", load_lorentzian_perfect_domains(), ids=lambda case: case["id"])
+def test_isotropic_shell_survives_a_permuted_gram_basis() -> None:
+    """The exact-sphere CVP center returns every isotropic first-shell row after permutation."""
+    from dzack_research.preamble.all import ZZ as PreambleZZ
+    from dzack_research.preamble.all import Lattices
+    from sage.all import ZZ as SageZZ
+    from sage.all import matrix, vector
+
+    require(PERFECT_DOMAINS)
+    gram = [[-1, 0, 0], [0, 1, 1], [0, 1, 0]]
+    labels = ("radical", "time", "space")
+    lattice_ = Lattices(PreambleZZ)(gram, module_generators=labels)
+    assert tuple(lattice_.module_generating_set()) == labels
+
+    rows = _search_initial_vectors(lattice_, (0, 1, 0), ZERO_SQUARES)
+    assert set(rows) == {(-1, 1, 0), (0, 0, 1), (0, 2, -1), (1, 1, 0)}
+    form = matrix(SageZZ, gram)
+    direction = vector(SageZZ, (0, 1, 0))
+    for row in rows:
+        point = vector(SageZZ, row)
+        assert (point * form * point.column())[0] == 0
+        assert (point * form * direction.column())[0] == 1
+
+
 def test_perfect_domain_orbit_counts_match_polyhedral_common(case) -> None:
     require(PERFECT_DOMAINS)
 
