@@ -75,7 +75,7 @@ def test_acceptance_summary_rejects_mixed_port_or_provider_revisions(tmp_path) -
             ]
         }
     )
-    for shard_id, port, provider in ((0, "port-a", "research"), (1, "port-b", "research")):
+    for shard_id, port, provider in ((0, "port-a", "research-a"), (1, "port-b", "research-b")):
         shard = tmp_path / f"perfect_domains-{shard_id}"
         shard.mkdir()
         suite = ET.Element("testsuites")
@@ -90,3 +90,22 @@ def test_acceptance_summary_rejects_mixed_port_or_provider_revisions(tmp_path) -
 
     assert result == 1
     assert "port revisions are not uniquely identified" in output.getvalue()
+    assert "research revisions are not uniquely identified" in output.getvalue()
+
+
+def test_acceptance_summary_rejects_missing_revision_metadata(tmp_path) -> None:
+    summary = _load_ci_module("acceptance_summary")
+    matrix = json.dumps({"include": [{"family": "perfect_domains", "shard": 0, "shards": 1}]})
+    shard = tmp_path / "perfect_domains-0"
+    shard.mkdir()
+    suite = ET.Element("testsuites")
+    ET.SubElement(suite, "testsuite")
+    ET.ElementTree(suite).write(shard / "junit.xml")
+    (shard / "commit").write_text("port-revision")
+    output = io.StringIO()
+
+    with contextlib.redirect_stdout(output):
+        result = summary.main(tmp_path, matrix)
+
+    assert result == 1
+    assert "perfect_domains-0 (research_commit missing)" in output.getvalue()
