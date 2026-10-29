@@ -233,7 +233,8 @@ def test_odd_eichler_envelope_uses_declared_coordinate_order() -> None:
         assert not lattice_.is_even()
         assert tuple(lattice_.module_generating_set()) == coordinate_labels
         envelope = EichlerEnvelope(lattice_)
-        assert envelope.scale > 0
+        assert envelope.scale == 2
+        assert envelope.envelope.is_even()
         images = tuple(envelope.similarity(lattice_.module_generator(label)) for label in coordinate_labels)
         for i, left in enumerate(images):
             for j, right in enumerate(images):
