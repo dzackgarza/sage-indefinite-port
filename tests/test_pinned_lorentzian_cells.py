@@ -2524,7 +2524,7 @@ def test_positive_vector_constructor_uses_cpp_semantic_cvp_center() -> None:
 def test_positive_vector_shell_respects_explicit_coordinate_labels() -> None:
     """The shell's Gram, timelike row, and returned rows share the labelled basis frame."""
     from dzack_research.preamble.all import Lattices, ZZ
-    from sage.all import QQ
+    from sage.all import QQ, vector
     from sage_indefinite_port.indefinite.lorentzian_cells import NONNEGATIVE_SQUARES, _PositiveVectorEnumerator
 
     gram = [[5, 1, 0], [1, -1, 0], [0, 0, -1]]
@@ -2538,6 +2538,15 @@ def test_positive_vector_shell_respects_explicit_coordinate_labels() -> None:
     assert labelled.inclusion_rows == default.inclusion_rows
     assert labelled.base_target_coordinates == default.base_target_coordinates
     assert labelled.first_shell() == default.first_shell()
+
+    first = labelled.first_shell()
+    assert first is not None and first[0] == 4
+    rows = first[1]
+    assert set(rows) == {(1, -1, -1), (1, -1, 0), (1, -1, 1)}
+    for row in rows:
+        coordinates = vector(ZZ, row)
+        assert (coordinates * labelled.gram * coordinates.column())[0] >= 0
+        assert (coordinates * labelled.timelike_covector)[0] == 4
 
 
 def test_positive_vector_shell_matches_exact_nonzero_center_enumeration() -> None:
