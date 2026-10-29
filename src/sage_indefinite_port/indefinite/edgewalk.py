@@ -665,13 +665,13 @@ class _Edgewalk:
         # ComputeTranslationClasses nor GetVinbergAux sorts by height.
         perpendicular = timelike.orthogonal_complement()
         perpendicular_inclusion = perpendicular.inclusion()
-        perpendicular_generators = tuple(perpendicular_inclusion(generator) for generator in perpendicular_inclusion.domain().module_generators())
+        perpendicular_generators = tuple(perpendicular_inclusion(generator) for generator in _coordinate_basis(perpendicular_inclusion.domain()))
         split = self.lattice.subobject_on((*perpendicular_generators, timelike))
         projection = split.inclusion().cokernel_projection()
         quotient = projection.codomain()
         representatives = [self.lattice.zero()]
         residues = [quotient.zero()]
-        generators = tuple(self.lattice.module_generators())
+        generators = _coordinate_basis(self.lattice)
         next_representative = 0
         while next_representative < len(representatives):
             representative = representatives[next_representative]
