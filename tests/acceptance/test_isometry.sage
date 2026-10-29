@@ -124,12 +124,14 @@ def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> Non
 
     from sage_indefinite_port.indefinite.groupoid_cache import coordinate_identification
 
-    source = Lattices(SageZZ)([[2, 1], [1, 2]], module_generators=("a", "b"))
-    target = Lattices(SageZZ)([[2, 1], [1, 2]], module_generators=("x", "y"))
+    source_labels = ("zeta", "alpha")
+    target_labels = ("omega", "beta")
+    source = Lattices(SageZZ)([[2, 1], [1, 2]], module_generators=source_labels)
+    target = Lattices(SageZZ)([[2, 1], [1, 2]], module_generators=target_labels)
     assert source is not target
+    assert tuple(source.module_generating_set()) == source_labels
+    assert tuple(target.module_generating_set()) == target_labels
     witness = coordinate_identification(source, target)
-    source_labels = tuple(source.module_generating_set())
-    target_labels = tuple(target.module_generating_set())
 
     for index, source_label in enumerate(source_labels):
         image = witness(source.module_generator(source_label)).to_vector()
