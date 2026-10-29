@@ -23,10 +23,12 @@ from tests.fixtures.oracle_fixtures import load_lorentzian_perfect_domains
 
 def test_non_diagonal_positive_shell_uses_the_pinned_cvp_center() -> None:
     """The first shell in a non-diagonal Lorentzian form matches exact enumeration."""
-    from sage.all import QQ, ZZ as SageZZ, matrix, vector
+    from sage.all import QQ, matrix, vector
+    from sage.all import ZZ as SageZZ
+
     from sage_indefinite_port.indefinite.lorentzian_cells import (
-        _PositiveVectorEnumerator,
         _dual_lll_enumeration_key,
+        _PositiveVectorEnumerator,
     )
 
     require(PERFECT_DOMAINS)
@@ -83,13 +85,14 @@ def test_non_diagonal_positive_shell_respects_explicit_coordinate_labels() -> No
 
 def test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center() -> None:
     """The exact-sphere branch finds every isotropic vector in the first shell."""
-    from dzack_research.preamble.all import Lattices, ZZ as PreambleZZ
+    from dzack_research.preamble.all import ZZ as PreambleZZ
+    from dzack_research.preamble.all import Lattices
     from sage.all import QQ, matrix, vector
     from sage.all import ZZ as SageZZ
 
     from sage_indefinite_port.indefinite.lorentzian_cells import (
-        _PositiveVectorEnumerator,
         _dual_lll_enumeration_key,
+        _PositiveVectorEnumerator,
     )
 
     require(PERFECT_DOMAINS)
@@ -126,9 +129,13 @@ def test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center() -> None:
 
 def test_positive_shell_scales_rational_direction_pairing_bound() -> None:
     """The first shell is unchanged when a rational direction bound is scaled consistently."""
-    from dzack_research.preamble.all import Lattices, ZZ as PreambleZZ
+    from dzack_research.preamble.all import ZZ as PreambleZZ
+    from dzack_research.preamble.all import Lattices
     from sage.all import QQ
-    from sage_indefinite_port.indefinite.lorentzian_cells import _PositiveVectorEnumerator
+
+    from sage_indefinite_port.indefinite.lorentzian_cells import (
+        _PositiveVectorEnumerator,
+    )
 
     require(PERFECT_DOMAINS)
     lattice_ = Lattices(PreambleZZ)([[5, 1, 0], [1, -1, 0], [0, 0, -1]])
@@ -223,7 +230,8 @@ def test_facet_orbit_permutation_view_materializes_exact_isometries() -> None:
     """The public owned-isometry view agrees with the internal Schreier permutations."""
     require(PERFECT_DOMAINS)
 
-    from dzack_research.preamble.all import Lattices, ZZ as PreambleZZ
+    from dzack_research.preamble.all import ZZ as PreambleZZ
+    from dzack_research.preamble.all import Lattices
 
     case = next(case for case in load_lorentzian_perfect_domains() if case["id"] == "Result_Enumeration_1")
     labels = tuple(f"basis_{index:02d}" for index in reversed(range(len(case["gram"]))))
