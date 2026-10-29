@@ -67,11 +67,12 @@ def test_edgewalk_coordinate_basis_follows_explicit_labels() -> None:
 
 def test_edgewalk_identity_key_uses_coordinate_label_order() -> None:
     """Identity and arbitrary isometry keys use the same ordered coordinate frame."""
-    from dzack_research.preamble.all import ZZ, HyperbolicLattices
+    from dzack_research.preamble.all import ZZ, HyperbolicLattices, Lattices
 
     from sage_indefinite_port.indefinite.edgewalk import _Edgewalk, _key
 
-    lattice_ = HyperbolicLattices(ZZ)([[0, 1], [1, 0]], module_generators=("f", "e"))
+    labelled_lattice = Lattices(ZZ)([[0, 1], [1, 0]], module_generators=("f", "e"))
+    lattice_ = HyperbolicLattices(ZZ)(labelled_lattice)
     edgewalk = _Edgewalk(lattice_)
     expected = tuple(_key(lattice_.module_generator(label)) for label in lattice_.module_generating_set())
 
