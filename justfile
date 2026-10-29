@@ -41,9 +41,9 @@ ci-provision-sage:
     # Sage is a meson-python editable install that rebuilds on import; print
     # that rebuild, and fail here if Sage does not import.
     export MESONPY_EDITABLE_VERBOSE=1
-    "$SAGE_BIN" -python -c 'import sage.all; from sage.features.bliss import Bliss; Bliss().require()'
-    sage_python="$("$SAGE_BIN" -python -c 'import sys; print(sys.executable)')"
-    uv pip install --quiet --python "$sage_python" "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard pytest-instafail PyNormaliz
+    "$SAGE_BIN" -c 'import sage.all; from sage.features.bliss import Bliss; Bliss().require()'
+    sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
+    uv pip install --quiet --python "$sage_python" "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard pytest-instafail
     # The acceptance contract is against this exact research API revision.
     # Tracking main is not reproducible and currently imports a Sage category
     # absent from the pinned CI Sage image (sage.categories.ordered_fields).
@@ -55,7 +55,7 @@ ci-provision-sage:
     git -C {{ci_dir}}/research -c advice.detachedHead=false checkout --quiet "$research_rev"
     # uv, not pip: research declares tree-sitter-sage and sage-stubs only in
     # [tool.uv.sources], which pip ignores.
-    sage_python="$("$SAGE_BIN" -python -c 'import sys; print(sys.executable)')"
+    sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     uv pip install --quiet --python "$sage_python" -e {{ci_dir}}/research
     uv pip install --quiet --python "$sage_python" --no-deps -e .
     # VinAl's Sage module is src/sage/vinal.py in its checkout (see .envrc), at
@@ -70,7 +70,7 @@ ci-provision-sage:
 ci-provision-julia:
     #!/usr/bin/env bash
     set -euo pipefail
-    sage_python="$("$SAGE_BIN" -python -c 'import sys; print(sys.executable)')"
+    sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     env_dir="$("$sage_python" -c 'import pathlib, sage_julia_bridge; print(pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env")')"
     julia --project="$env_dir" -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
 
@@ -80,7 +80,7 @@ ci-provision-julia:
 ci-julia-key:
     #!/usr/bin/env bash
     set -euo pipefail
-    sage_python="$("$SAGE_BIN" -python -c 'import sys; print(sys.executable)')"
+    sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     "$sage_python" -c 'import hashlib, pathlib, sage_julia_bridge; print("julia-depot-" + hashlib.sha256((pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env" / "Project.toml").read_bytes()).hexdigest()[:16])'
 
 # CI only: run one acceptance shard, or a required amended branch sample;
@@ -92,6 +92,7 @@ ci-acceptance family shard shards selection="":
     mkdir -p "$out"
     git rev-parse HEAD > "$out/commit"
     git -C {{ci_dir}}/research rev-parse HEAD > "$out/research_commit"
+    sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     export PYTHONPATH="$PWD/{{ci_dir}}/ai-review-ci/tool-artifacts/pytest_plugins:$PWD/src:$PWD:$PWD/{{ci_dir}}/vinal/src/sage"
     # SIGINT before the job's hard limit, so pytest still writes the JUnit
     # report for every case that finished.
@@ -232,9 +233,9 @@ ci-acceptance family shard shards selection="":
         ;;
     esac
     if [[ "{{family}}" == reflective && "{{selection}}" == "" ]]; then
-        timeout --signal=INT 345m python3 ci/pytest_batches.py --sage "$SAGE_BIN" --out "$out" --batch-size 10 -- "${tests[@]}" "${shard_args[@]}" 2>&1 | tee "$out/log"
+        timeout --signal=INT 345m python3 ci/pytest_batches.py --python "$sage_python" --out "$out" --batch-size 10 -- "${tests[@]}" "${shard_args[@]}" 2>&1 | tee "$out/log"
         exit "${PIPESTATUS[0]}"
     fi
-    timeout --signal=INT 345m "$SAGE_BIN" -python -c 'import sage.all, sys, pytest; sys.exit(pytest.main(sys.argv[1:]))' \
+    timeout --signal=INT 345m "$sage_python" -c 'import sage.all, sys, pytest; sys.exit(pytest.main(sys.argv[1:]))' \
         -p qc_sage_session "${tests[@]}" --runxfail -rA --tb=long --instafail \
         "${shard_args[@]}" --junitxml="$out/junit.xml" 2>&1 | tee "$out/log"

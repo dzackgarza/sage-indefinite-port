@@ -25,7 +25,7 @@ def junit_nodes_match(nodeids, cases):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument('--sage', required=True)
+    p.add_argument('--python', required=True)
     p.add_argument('--out', type=Path, required=True)
     p.add_argument('--batch-size', type=int, default=10)
     p.add_argument('pytest_args', nargs=argparse.REMAINDER)
@@ -35,7 +35,7 @@ def main():
     args = a.pytest_args
     if args and args[0] == '--':
         args = args[1:]
-    prefix = [a.sage, '-python', '-c', 'import sage.all,sys,pytest;sys.exit(pytest.main(sys.argv[1:]))']
+    prefix = [a.python, '-c', 'import sage.all,sys,pytest;sys.exit(pytest.main(sys.argv[1:]))']
     pytest_args = ['-p', 'qc_sage_session']
     collected = subprocess.run(
         prefix + pytest_args + args + ['--collect-only', '-q'],
