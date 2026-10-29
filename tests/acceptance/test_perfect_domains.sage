@@ -83,6 +83,22 @@ def test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center() -> None:
         assert (point * gram * vector(SageZZ, (1, 0, 0)).column())[0] == 1
 
 
+def test_positive_shell_scales_rational_direction_pairing_bound() -> None:
+    """The first shell is unchanged when a rational direction bound is scaled consistently."""
+    from dzack_research.preamble.all import Lattices, ZZ as PreambleZZ
+    from sage.all import QQ
+    from sage_indefinite_port.indefinite.lorentzian_cells import _PositiveVectorEnumerator
+
+    require(PERFECT_DOMAINS)
+    lattice_ = Lattices(PreambleZZ)([[5, 1, 0], [1, -1, 0], [0, 0, -1]])
+    integral = _PositiveVectorEnumerator(lattice_, (QQ(1), QQ(0), QQ(0)), QQ(5), NONNEGATIVE_SQUARES)
+    rational = _PositiveVectorEnumerator(lattice_, (QQ(1) / 2, QQ(0), QQ(0)), QQ(5) / 2, NONNEGATIVE_SQUARES)
+
+    assert rational.scale == 2
+    assert rational.scaled_max == integral.scaled_max == 5
+    assert rational.first_shell() == integral.first_shell() == (4, ((1, -1, -1), (1, -1, 0), (1, -1, 1)))
+
+
 def test_non_diagonal_isotropic_shell_respects_explicit_coordinate_labels() -> None:
     """The exact-sphere CVP branch preserves all isotropic rows in a labelled basis."""
     from dzack_research.preamble.all import ZZ as PreambleZZ
