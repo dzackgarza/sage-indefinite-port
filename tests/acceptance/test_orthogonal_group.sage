@@ -90,7 +90,7 @@ def test_degenerate_orthogonal_group_contains_radical_shear_and_gl_action() -> N
         ((1, 1), (0, 1)),
     }
 
-    assert all(is_isometry(rows_of(generator), gram) for generator in computed)
+    assert all(is_isometry(generator_rows, gram) for generator_rows in rows)
     assert expected <= set(rows)
 
 
