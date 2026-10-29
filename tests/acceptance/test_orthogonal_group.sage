@@ -186,6 +186,19 @@ def test_zero_form_orthogonal_group_is_the_full_general_linear_group() -> None:
     assert all(is_isometry(generator_rows, gram) for generator_rows in rows)
     assert all(abs(int(matrix(SageZZ, generator_rows).determinant())) == 1 for generator_rows in rows)
     assert any(generator_rows[0][1] != 0 or generator_rows[1][0] != 0 for generator_rows in rows)
+    assert any(
+        generator_rows in {((1, 1), (0, 1)), ((1, 0), (1, 1))}
+        for generator_rows in rows
+    )
+    assert any(
+        generator_rows in {
+            ((0, 1), (1, 0)),
+            ((0, -1), (1, 0)),
+            ((0, 1), (-1, 0)),
+            ((0, -1), (-1, 0)),
+        }
+        for generator_rows in rows
+    )
     assert any(int(generator.determinant()) == -1 for generator in computed)
 
 
