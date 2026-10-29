@@ -33,7 +33,9 @@ def test_non_diagonal_positive_shell_uses_the_pinned_cvp_center() -> None:
     assert first is not None and first[0] == 4
     rows = first[1]
 
-    assert set(rows) == {(1, -1, -1), (1, -1, 0), (1, -1, 1)}
+    # The first source-ordered vector is consumed by kernel flipping, so the
+    # pinned CVP order is part of the acceptance contract, not just the set.
+    assert rows == ((1, -1, -1), (1, -1, 0), (1, -1, 1))
     assert _search_initial_vectors(lattice_, (1, 0, 0), NONNEGATIVE_SQUARES) == rows
     gram = matrix(SageZZ, [[5, 1, 0], [1, -1, 0], [0, 0, -1]])
     for row in rows:
