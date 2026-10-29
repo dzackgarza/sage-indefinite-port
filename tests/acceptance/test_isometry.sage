@@ -199,6 +199,16 @@ def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> Non
     else:
         raise AssertionError("coordinate identification accepted unequal coordinate ranks")
 
+    from sage.all import QQ as SageQQ
+
+    different_ring = Lattices(SageQQ)([[2, 1], [1, 2]], module_generators=target_labels)
+    try:
+        coordinate_identification(source, different_ring)
+    except ValueError as error:
+        assert "common base ring" in str(error)
+    else:
+        raise AssertionError("coordinate identification accepted different base rings")
+
 
 def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
     """A non-diagonal nonsingular summand plus radical survives a basis change."""
