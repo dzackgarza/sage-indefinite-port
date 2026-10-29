@@ -151,6 +151,45 @@ def test_binary_cycle_coordinate_order_and_period_certificate() -> None:
         assert all(lattice_.b(period(left), period(right)) == lattice_.b(left, right) for left in basis for right in basis)
 
 
+def test_binary_cycle_period_respects_permuted_coordinate_basis() -> None:
+    """The oriented binary cycle returns its period in the declared basis order."""
+    from dzack_research.preamble.all import ZZ as PreambleZZ
+    from dzack_research.preamble.all import Lattices
+
+    from sage_indefinite_port.indefinite.edgewalk_rank2 import _OrientedBinaryCycle
+
+    require(EDGEWALK)
+    labels = ("negative", "positive")
+    gram = [[-1, 0], [0, 2]]
+    lattice_ = Lattices(PreambleZZ)(gram, module_generators=labels)
+    assert tuple(lattice_.module_generating_set()) == labels
+    cycle = _OrientedBinaryCycle(lattice_)
+    result = cycle.cycle(2, cycle.point((0, 1)))
+
+    default_lattice = Lattices(PreambleZZ)([[2, 0], [0, -1]])
+    default_cycle = _OrientedBinaryCycle(default_lattice)
+    default_result = default_cycle.cycle(2, default_cycle.point((1, 0)))
+    assert result is not None and default_result is not None
+    period, representatives = result
+    _default_period, default_representatives = default_result
+
+    # The custom basis swaps the two default coordinates. Compare the complete
+    # representative sets in the same frame, while allowing the oriented
+    # cycle's canonical companion to choose the inverse traversal direction.
+    assert {
+        (coordinates[1], coordinates[0])
+        for coordinates in (cycle.coordinates(point) for point in representatives)
+    } == {default_cycle.coordinates(point) for point in default_representatives}
+    assert period.determinant() == 1
+    assert all(
+        lattice_.b(period(left), period(right)) == lattice_.b(left, right)
+        for left in tuple(lattice_.module_generators())
+        for right in tuple(lattice_.module_generators())
+    )
+    for coordinates in ((1, 0), (0, 1), (2, -3), (-5, 2)):
+        assert cycle.coordinates(cycle.point(coordinates)) == coordinates
+
+
 def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
     """Exercise cusp, finite-corner, next-wall and oriented binary-cycle routes.
 
