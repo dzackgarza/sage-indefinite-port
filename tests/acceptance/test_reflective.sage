@@ -101,6 +101,26 @@ def test_edgewalk_period_action_matrix_uses_coordinate_label_order() -> None:
 
     assert _isometry_row_matrix_in_coordinate_order(lattice_, isometry) == row_matrix.change_ring(SageQQ)
 
+    permuted_labels = ("negative", "positive")
+    permuted_gram = [[-1, 0], [0, 2]]
+    permuted = Lattices(SageZZ)(permuted_gram, module_generators=permuted_labels)
+    assert tuple(permuted.module_generating_set()) == permuted_labels
+    permuted_row_matrix = matrix(SageZZ, [[1, 0], [0, -1]])
+    permuted_images = {
+        label: permuted.linear_combination(
+            {
+                target_label: permuted_row_matrix[row, column]
+                for column, target_label in enumerate(permuted_labels)
+                if permuted_row_matrix[row, column]
+            }
+        )
+        for row, label in enumerate(permuted_labels)
+    }
+    permuted_isometry = permuted.O()(permuted_images)
+    assert _isometry_row_matrix_in_coordinate_order(permuted, permuted_isometry) == permuted_row_matrix.change_ring(
+        SageQQ
+    )
+
 
 def test_binary_cycle_coordinate_order_and_period_certificate() -> None:
     """The rank-two period is an isometry in the owned lattice's generator order."""
