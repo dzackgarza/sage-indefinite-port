@@ -12,11 +12,27 @@ import pytest
 from sage_indefinite_port.indefinite.lorentzian_cells import (
     LorentzianPerfectLocalBackend,
     NONNEGATIVE_SQUARES,
+    _search_initial_vectors,
     perfect_complex,
     perfect_domain_traversal,
 )
 from tests.acceptance.consumer import PERFECT_DOMAINS, lattice, require
 from tests.fixtures.oracle_fixtures import load_lorentzian_perfect_domains
+
+
+def test_non_diagonal_positive_shell_uses_the_pinned_cvp_center() -> None:
+    """The first shell in a non-diagonal Lorentzian form matches exact enumeration."""
+    from sage.all import ZZ as SageZZ, matrix, vector
+
+    lattice_ = lattice([[5, 1, 0], [1, -1, 0], [0, 0, -1]])
+    rows = _search_initial_vectors(lattice_, (1, 0, 0), NONNEGATIVE_SQUARES)
+
+    assert set(rows) == {(1, -1, -1), (1, -1, 0), (1, -1, 1)}
+    gram = matrix(SageZZ, [[5, 1, 0], [1, -1, 0], [0, 0, -1]])
+    for row in rows:
+        point = vector(SageZZ, row)
+        assert point * gram * point.column() in {1, 2}
+        assert (point * gram * vector(SageZZ, (1, 0, 0)).column())[0] == 4
 
 
 @pytest.mark.parametrize("case", load_lorentzian_perfect_domains(), ids=lambda case: case["id"])
