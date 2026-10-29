@@ -665,7 +665,8 @@ class OrbitCoverModel:
         inclusion = model.complement_inclusion()
         isotropic = model.hyperbolic_basis()
         e, f, e_prime, f_prime = isotropic
-        embedded = tuple(inclusion(point) for point in complement.module_generators())
+        complement_labels = tuple(complement.module_generating_set())
+        embedded = tuple(inclusion(complement.module_generator(label)) for label in complement_labels)
         # A basis of the isotropic point's perpendicular, less the point
         # itself: E_{f,f} is the identity (q(f) = 0 and (y,f)f - (y,f)f = 0),
         # and E_{f,x} is additive in x (ApproximateModels.h:62-76), so the

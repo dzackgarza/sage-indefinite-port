@@ -176,14 +176,28 @@ def test_eichler_easy_generators_use_complement_coordinate_labels() -> None:
     labels = tuple(selected_complement.module_generating_set())
     assert labels == ("zeta", "alpha")
 
-    from sage_indefinite_port.indefinite.eichler import OrbitCoverModel
+    from sage_indefinite_port.indefinite.eichler import (
+        OrbitCoverModel,
+        _isometry_from_row_matrix,
+    )
 
     basis = tuple(model.lattice().module_generators())
-    generators = OrbitCoverModel.source_easy_generators(model)
-    assert generators
+    easy_generators = OrbitCoverModel.source_easy_generators(model)
+    assert easy_generators
     assert all(
         model.lattice().b(generator(left), generator(right)) == model.lattice().b(left, right)
-        for generator in generators
+        for generator in easy_generators
+        for left in basis
+        for right in basis
+    )
+    full_generators = tuple(
+        _isometry_from_row_matrix(model.lattice(), rows)
+        for rows in OrbitCoverModel.source_generator_matrices(model)
+    )
+    assert full_generators
+    assert all(
+        model.lattice().b(generator(left), generator(right)) == model.lattice().b(left, right)
+        for generator in full_generators
         for left in basis
         for right in basis
     )
