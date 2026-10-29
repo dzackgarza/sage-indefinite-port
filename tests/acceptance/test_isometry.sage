@@ -191,6 +191,14 @@ def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> Non
     else:
         raise AssertionError("coordinate identification accepted unequal Gram presentations")
 
+    different_rank = Lattices(SageZZ)([[2]], module_generators=("only",))
+    try:
+        coordinate_identification(source, different_rank)
+    except ValueError as error:
+        assert "equal coordinate ranks" in str(error)
+    else:
+        raise AssertionError("coordinate identification accepted unequal coordinate ranks")
+
 
 def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
     """A non-diagonal nonsingular summand plus radical survives a basis change."""
