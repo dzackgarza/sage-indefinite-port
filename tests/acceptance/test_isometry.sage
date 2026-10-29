@@ -181,15 +181,29 @@ def test_eichler_generator_families_preserve_nonlexical_complement() -> None:
         _isometry_from_row_matrix,
     )
 
-    basis = tuple(model.lattice().module_generators())
+    lattice_basis = tuple(model.lattice().module_generators())
+    model_basis = model.hyperbolic_basis() + tuple(
+        model.complement_inclusion()(selected_complement.module_generator(label))
+        for label in labels
+    )
     easy_generators = OrbitCoverModel.source_easy_generators(model)
     assert easy_generators
     assert all(
         model.lattice().b(generator(left), generator(right)) == model.lattice().b(left, right)
         for generator in easy_generators
-        for left in basis
-        for right in basis
+        for left in lattice_basis
+        for right in lattice_basis
     )
+    for selected_label in labels:
+        selected_vector = model.complement_inclusion()(selected_complement.module_generator(selected_label))
+        expected_images = tuple(
+            -point if point == selected_vector else point
+            for point in model_basis
+        )
+        assert any(
+            all(generator(point) == image for point, image in zip(model_basis, expected_images, strict=True))
+            for generator in easy_generators
+        )
     full_generators = tuple(
         _isometry_from_row_matrix(model.lattice(), rows)
         for rows in OrbitCoverModel.source_generator_matrices(model)
@@ -198,8 +212,8 @@ def test_eichler_generator_families_preserve_nonlexical_complement() -> None:
     assert all(
         model.lattice().b(generator(left), generator(right)) == model.lattice().b(left, right)
         for generator in full_generators
-        for left in basis
-        for right in basis
+        for left in lattice_basis
+        for right in lattice_basis
     )
 
 
