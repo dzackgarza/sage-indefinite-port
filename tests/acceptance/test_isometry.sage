@@ -84,7 +84,7 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
 
     lattice_ = lattice([[2, 1], [1, 2]])
     labels = tuple(lattice_.module_generating_set())
-    columns = matrix(SageZZ, [[1, 1], [0, 1]])
+    columns = matrix(SageZZ, [[-1, 0], [1, 1]])
     morphism = _isometry_from_column_matrix(lattice_, lattice_, columns)
 
     assert _column_matrix(morphism) == columns
@@ -95,7 +95,7 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
         assert tuple(int(actual(label)) for label in labels) == expected
 
 
-    row_matrix = matrix(SageZZ, [[1, 0], [1, 1]])
+    row_matrix = matrix(SageZZ, [[-1, 1], [0, 1]])
     row_morphism = _isometry_from_row_matrix(lattice_, lattice_, row_matrix)
     for generator in lattice_.module_generators():
         coordinates = generator.to_vector()
