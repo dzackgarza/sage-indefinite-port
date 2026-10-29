@@ -38,11 +38,16 @@ def test_non_diagonal_positive_shell_uses_the_pinned_cvp_center() -> None:
 
 def test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center() -> None:
     """The exact-sphere branch finds every isotropic vector in the first shell."""
-    from sage.all import ZZ as SageZZ, matrix, vector
+    from sage.all import QQ, ZZ as SageZZ, matrix, vector
+    from sage_indefinite_port.indefinite.lorentzian_cells import _PositiveVectorEnumerator
 
     gram = matrix(SageZZ, [[1, 1, 0], [1, 0, 0], [0, 0, -1]])
     lattice_ = lattice([[1, 1, 0], [1, 0, 0], [0, 0, -1]])
-    rows = _search_initial_vectors(lattice_, (1, 0, 0), ZERO_SQUARES)
+    enumerator = _PositiveVectorEnumerator(lattice_, (QQ(1), QQ(0), QQ(0)), QQ(1), ZERO_SQUARES)
+    assert enumerator.base_target_engine_coordinates != (QQ(0), QQ(0))
+    first = enumerator.first_shell()
+    assert first is not None and first[0] == 1
+    rows = first[1]
 
     assert set(rows) == {(0, 1, 0), (1, 0, -1), (1, 0, 1), (2, -1, 0)}
     for row in rows:
