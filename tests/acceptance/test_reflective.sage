@@ -79,13 +79,16 @@ def test_promised_go_left_preserves_left_supplement() -> None:
 def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
     """Exercise cusp, finite-corner, next-wall and oriented binary-cycle routes.
 
-    Frozen IDs ``allcock_rk3_4`` and ``allcock_rk3_2`` cover the isotropic
-    cusp and rationally anisotropic branches; ``U+<2>`` is the independently
-    recorded three-wall example with both finite and ideal corners, and
-    ``U+<46>`` covers the nonreflective stop after three vertex orbits. The
-    nonsplit binary form ``diag(1,-2)`` and the isotropic binary plane ``U``
-    exercise both branches of ``binary_walk``; the full suite and all assertions
-    remain unchanged, while exhaustive long-tail execution is not the milestone gate.
+    In signature (2,1), frozen IDs ``allcock_rk3_4`` and ``allcock_rk3_2``
+    cover the isotropic-cusp and rationally anisotropic starts; ``U+<2>`` is
+    the recorded three-wall example with finite and ideal corners, ``U+<46>``
+    the nonreflective stop after three vertex orbits, and Gram
+    ``[[-1,0,0],[0,3,1],[0,1,7]]`` the rootless-perpendicular start. In
+    signature (1,1), ``diag(1,-2)`` and ``U`` exercise the nonsplit and split
+    branches of ``binary_walk``. This sample does not exhaust all 8,821
+    reflective forms, 103 root systems or the full rank-three corpus; all
+    frozen cases and assertions remain in the suite, but long-tail execution
+    is not the milestone gate.
     """
     require(EDGEWALK)
     observed = {}
