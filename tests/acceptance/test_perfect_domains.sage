@@ -83,6 +83,33 @@ def test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center() -> None:
         assert (point * gram * vector(SageZZ, (1, 0, 0)).column())[0] == 1
 
 
+def test_non_diagonal_isotropic_shell_respects_explicit_coordinate_labels() -> None:
+    """The exact-sphere CVP branch preserves all isotropic rows in a labelled basis."""
+    from dzack_research.preamble.all import ZZ as PreambleZZ
+    from dzack_research.preamble.all import Lattices
+    from sage.all import QQ, matrix, vector
+    from sage.all import ZZ as SageZZ
+
+    from sage_indefinite_port.indefinite.lorentzian_cells import (
+        _PositiveVectorEnumerator,
+    )
+
+    require(PERFECT_DOMAINS)
+    gram_data = [[1, 1, 0], [1, 0, 0], [0, 0, -1]]
+    lattice_ = Lattices(PreambleZZ)(gram_data, module_generators=("e", "f", "radical"))
+    enumerator = _PositiveVectorEnumerator(lattice_, (QQ(1), QQ(0), QQ(0)), QQ(1), ZERO_SQUARES)
+    first = enumerator.first_shell()
+
+    assert first is not None and first[0] == 1
+    rows = first[1]
+    assert set(rows) == {(0, 1, 0), (1, 0, -1), (1, 0, 1), (2, -1, 0)}
+    gram = matrix(SageZZ, gram_data)
+    for row in rows:
+        point = vector(SageZZ, row)
+        assert (point * gram * point.column())[0] == 0
+        assert (point * gram * vector(SageZZ, (1, 0, 0)).column())[0] == 1
+
+
 @pytest.mark.parametrize("case", load_lorentzian_perfect_domains(), ids=lambda case: case["id"])
 def test_perfect_domain_orbit_counts_match_polyhedral_common(case) -> None:
     require(PERFECT_DOMAINS)
