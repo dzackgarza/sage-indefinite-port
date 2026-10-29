@@ -94,6 +94,29 @@ def test_degenerate_orthogonal_group_contains_radical_shear_and_gl_action() -> N
     assert expected <= set(rows)
 
 
+def test_degenerate_orthogonal_group_respects_permuted_radical_coordinates() -> None:
+    """The radical extension generators are expressed in the declared coordinate frame."""
+    from dzack_research.preamble.all import ZZ as PreambleZZ
+    from dzack_research.preamble.all import Lattices
+
+    require(MARKED_AUTOMORPHISMS)
+    labels = ("radical", "nonsingular")
+    gram = [[0, 0], [0, 2]]
+    lattice_ = Lattices(PreambleZZ)(gram, module_generators=labels)
+    assert tuple(lattice_.module_generating_set()) == labels
+
+    computed = lattice_.O().group_generators()
+    rows = tuple(tuple(tuple(row) for row in rows_of(generator)) for generator in computed)
+    expected = {
+        ((-1, 0), (0, 1)),
+        ((1, 0), (0, -1)),
+        ((1, 0), (1, 1)),
+    }
+
+    assert all(is_isometry(rows_of(generator), gram) for generator in computed)
+    assert expected <= set(rows)
+
+
 def test_degenerate_orthogonal_group_generates_rank_two_radical_action() -> None:
     """The radical GL_2(Z) action and the nonsingular-to-radical shear survive assembly."""
     require(MARKED_AUTOMORPHISMS)
