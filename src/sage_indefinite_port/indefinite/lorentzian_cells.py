@@ -2869,7 +2869,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             if ray_transpose is None:
                 ray_transpose = matrix(
                     SageZZ, len(labels), ray_count,
-                    lambda i, j: cell.rows[j][i],
+                    lambda i, j, cell=cell: cell.rows[j][i],
                 )
             # Bind only the current covector block.
             # Materialize only this bounded block through the owned unranking
@@ -2880,9 +2880,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 SageZZ,
                 len(covector_block),
                 len(labels),
-                lambda row, column: (
-                    covector_block[row](labels[column])
-                ),
+                lambda row, column, covector_block=covector_block: covector_block[row](labels[column]),
             )
             pairing_block = halfspace_block * ray_transpose
             del halfspace_block

@@ -11,10 +11,10 @@ import pytest
 from dzack_research.preamble.all import ZZ as PreambleZZ
 from dzack_research.preamble.all import HyperbolicLattices
 
-from tests.acceptance.consumer import EDGEWALK, coordinates, lattice, require
 import sage_indefinite_port.indefinite.edgewalk as edgewalk_module
 from sage_indefinite_port.indefinite.edgewalk import _Edgewalk
 from sage_indefinite_port.indefinite.edgewalk_rank2 import _OrientedBinaryCycle
+from tests.acceptance.consumer import EDGEWALK, coordinates, lattice, require
 from tests.fixtures.oracle_fixtures import (
     load_allcock_rank3_reflective,
     load_e10_fundamental_domain,
