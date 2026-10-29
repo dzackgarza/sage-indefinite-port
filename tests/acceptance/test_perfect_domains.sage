@@ -56,7 +56,9 @@ def test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center() -> None:
     assert first is not None and first[0] == 1
     rows = first[1]
 
-    assert set(rows) == {(0, 1, 0), (1, 0, -1), (1, 0, 1), (2, -1, 0)}
+    # The first row is consumed by the source's kernel-flipping second scheme;
+    # preserve the exact dual-LLL recursive order, not only the set of rays.
+    assert rows == ((1, 0, -1), (2, -1, 0), (0, 1, 0), (1, 0, 1))
     for row in rows:
         point = vector(SageZZ, row)
         assert (point * gram * point.column())[0] == 0
