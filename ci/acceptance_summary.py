@@ -1,11 +1,12 @@
 """Collate the acceptance shards' JUnit reports into one failure list.
 
-Usage: acceptance_summary.py RESULTS_DIR
+Usage: acceptance_summary.py RESULTS_DIR [MATRIX_JSON]
 
 RESULTS_DIR holds one directory per shard (<family>-<shard>, from `just
-ci-acceptance`), each with junit.xml, commit and research_commit. Writes a
-Markdown report to stdout and exits 1 when any shard lacks a report or any case
-did not pass.
+ci-acceptance`), each with junit.xml, commit and research_commit. If MATRIX_JSON
+is supplied, it is the workflow plan's `include` object and every planned shard
+must have an artifact. Writes a Markdown report to stdout and exits 1 when any
+shard lacks an artifact/report or any case did not pass.
 """
 
 import json
