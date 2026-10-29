@@ -16,7 +16,7 @@ from pathlib import Path
 
 
 def main(results_dir: Path, matrix_json: str | None = None) -> int:
-    shard_dirs = sorted(path for path in results_dir.iterdir() if path.is_dir())
+    shard_dirs = sorted(path for path in results_dir.iterdir() if path.is_dir()) if results_dir.exists() else []
     if not shard_dirs:
         if matrix_json is None:
             raise SystemExit(f"no shard results in {results_dir}")
