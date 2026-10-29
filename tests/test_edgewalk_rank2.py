@@ -1,7 +1,7 @@
 """Coordinate invariants for Allcock's anisotropic binary cycle."""
 
-from tests.acceptance.consumer import element, lattice
 from sage_indefinite_port.indefinite.edgewalk_rank2 import _OrientedBinaryCycle
+from tests.acceptance.consumer import element, lattice
 
 
 def test_binary_cycle_form_uses_the_coordinate_label_order() -> None:
