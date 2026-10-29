@@ -188,6 +188,13 @@ def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
     assert tuple(source.module_generating_set()) == source_labels
     assert tuple(target.module_generating_set()) == target_labels
 
+    def generator_coordinate_order(lattice_, labels):
+        return tuple(
+            next(index for index, label in enumerate(labels) if generator.to_vector()(label))
+            for generator in lattice_.module_generators()
+        )
+
+    assert generator_coordinate_order(source, source_labels) != generator_coordinate_order(target, target_labels)
     assert source.is_isometric(target)
     from sage_indefinite_port.indefinite.recursive import _column_matrix
 
