@@ -257,12 +257,14 @@ def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> Non
     else:
         raise AssertionError("coordinate identification accepted different base rings")
 
+    cache = IsometryGroupoidCache()
     try:
-        IsometryGroupoidCache()._key(different_ring)
+        cache._key(different_ring)
     except TypeError as error:
         assert "integral ZZ-lattices" in str(error)
     else:
         raise AssertionError("the integer-keyed groupoid cache accepted a rational lattice")
+    assert cache._representatives == {}, "rejected rational lattices must not mutate the integer-keyed cache"
 
 
 def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
