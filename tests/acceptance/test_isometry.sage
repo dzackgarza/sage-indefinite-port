@@ -145,6 +145,20 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
     for generator in source.module_generators():
         assert eichler_morphism(generator) == same_lattice_morphism(generator)
 
+    try:
+        _isometry_from_row_matrix(source, target, matrix(SageZZ, [[1, 0], [0, 2]]))
+    except ValueError as error:
+        assert "does not define an isometry" in str(error)
+    else:
+        raise AssertionError("row-matrix constructor accepted a non-isometry")
+
+    try:
+        _isometry_from_column_matrix(source, target, matrix(SageZZ, [[1], [0]]))
+    except ValueError as error:
+        assert "shape" in str(error)
+    else:
+        raise AssertionError("column-matrix constructor accepted a wrong-shaped matrix")
+
 
 def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> None:
     """Equal Gram presentations with different labels are identified by coordinates."""

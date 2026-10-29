@@ -141,6 +141,12 @@ def _isometry_from_row_matrix(source: Lattices.ParentMethods, target: Lattices.P
     """
     source_labels = tuple(source.module_generating_set())
     target_labels = tuple(target.module_generating_set())
+    if rows.nrows() != len(source_labels) or rows.ncols() != len(target_labels):
+        raise ValueError("row isometry matrix must have shape (source rank, target rank)")
+    source_gram = _engine_component_matrix(source.gram_tensor())
+    target_gram = _engine_component_matrix(target.gram_tensor())
+    if rows * target_gram * rows.transpose() != source_gram:
+        raise ValueError("row matrix does not define an isometry between the supplied Gram forms")
     images = []
     for generator in source.module_generators():
         coordinates = generator.to_vector()
@@ -162,13 +168,20 @@ def _isometry_from_column_matrix(source: Lattices.ParentMethods, target: Lattice
     order. Translate explicitly between those conventions.
     """
     source_labels = tuple(source.module_generating_set())
+    target_labels = tuple(target.module_generating_set())
+    if columns.nrows() != len(target_labels) or columns.ncols() != len(source_labels):
+        raise ValueError("column isometry matrix must have shape (target rank, source rank)")
+    source_gram = _engine_component_matrix(source.gram_tensor())
+    target_gram = _engine_component_matrix(target.gram_tensor())
+    if columns.transpose() * target_gram * columns != source_gram:
+        raise ValueError("column matrix does not define an isometry between the supplied Gram forms")
     images = []
     for generator in source.module_generators():
         coordinates = generator.to_vector()
         source_coordinates = tuple(int(coordinates(label)) for label in source_labels)
         target_coordinates = tuple(
             sum(int(columns[row, column]) * source_coordinates[column] for column in range(len(source_labels)))
-            for row in range(len(target.module_generating_set()))
+            for row in range(len(target_labels))
         )
         images.append(_from_column(target, target_coordinates))
     morphism_parent = source.O() if source is target else source.Isom(target)
