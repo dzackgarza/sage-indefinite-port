@@ -139,19 +139,21 @@ def test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center() -> None:
     rows = first[1]
     kernel_transpose = enumerator.inclusion_rows.transpose().change_ring(QQ)
     shift = first[0] * enumerator.partner_row
-    close_coordinates = []
-    for row in rows:
+    expected_rows = ((0, 1, 0), (1, 0, -1), (1, 0, 1), (2, -1, 0))
+    expected_close_coordinates = []
+    for row in expected_rows:
         close = kernel_transpose.solve_right((vector(SageZZ, row) - shift).column())
-        close_coordinates.append(tuple(SageZZ(close[index, 0]) for index in range(close.nrows())))
-    source_order = tuple(
+        expected_close_coordinates.append(
+            tuple(SageZZ(close[index, 0]) for index in range(close.nrows()))
+        )
+    expected_source_order = tuple(
         row
         for _coordinates, row in sorted(
-            zip(close_coordinates, rows, strict=True),
+            zip(expected_close_coordinates, expected_rows, strict=True),
             key=lambda item: _dual_lll_enumeration_key(item[0], enumerator.enumeration_order_transform),
         )
     )
-    assert tuple(rows) == source_order
-    assert set(rows) == {(0, 1, 0), (1, 0, -1), (1, 0, 1), (2, -1, 0)}
+    assert tuple(rows) == expected_source_order
     for row in rows:
         point = vector(SageZZ, row)
         assert (point * gram * point.column())[0] == 0
