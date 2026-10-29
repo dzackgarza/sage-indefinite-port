@@ -87,8 +87,8 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
         _isometry_from_row_matrix,
     )
 
-    source_labels = ("right", "left")
-    target_labels = ("left", "right")
+    source_labels = ("a", "z")
+    target_labels = ("z", "a")
     gram = [[2, 1], [1, 2]]
     source = Lattices(SageZZ)(gram, module_generators=source_labels)
     target = Lattices(SageZZ)(gram, module_generators=target_labels)
@@ -287,8 +287,8 @@ def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
     conjugate = change * gram * change.transpose()
     source_labels = ("zeta", "alpha", "mu")
     target_labels = ("omega", "beta", "null")
-    source = Lattices(SageZZ)(gram, module_generators=source_labels)
-    target = Lattices(SageZZ)(conjugate, module_generators=target_labels)
+    source = Lattices(SageZZ)(gram.rows(), module_generators=source_labels)
+    target = Lattices(SageZZ)(conjugate.rows(), module_generators=target_labels)
     assert tuple(source.module_generating_set()) == source_labels
     assert tuple(target.module_generating_set()) == target_labels
 
