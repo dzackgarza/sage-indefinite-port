@@ -16,6 +16,13 @@ def junit_key(nodeid):
     return classname, parts[-1]
 
 
+def junit_nodes_match(nodeids, cases):
+    """Whether a JUnit batch reports each selected node exactly once."""
+    expected = Counter(junit_key(nodeid) for nodeid in nodeids)
+    actual = Counter((case.get('classname', ''), case.get('name', '')) for case in cases)
+    return actual == expected
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('--sage', required=True)
@@ -61,9 +68,9 @@ def main():
             count = len(cases)
             completed += count
             print(f'Batch {batch_index + 1}: {count} test results, exit={result.returncode}', flush=True)
-            expected = Counter(junit_key(node) for node in batch)
             actual = Counter((case.get('classname', ''), case.get('name', '')) for case in cases)
-            if actual != expected:
+            if not junit_nodes_match(batch, cases):
+                expected = Counter(junit_key(node) for node in batch)
                 missing = list((expected - actual).elements())
                 unexpected = list((actual - expected).elements())
                 print(
