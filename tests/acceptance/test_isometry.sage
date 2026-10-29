@@ -169,7 +169,7 @@ def test_eichler_easy_generators_use_complement_coordinate_labels() -> None:
 
     require(MARKED_ISOMETRY)
     category = Lattices(PreambleZZ)
-    complement = category([[2, 0], [0, 2]], module_generators=("zeta", "alpha"))
+    complement = category([[2, 0], [0, 4]], module_generators=("zeta", "alpha"))
     lattice_ = category.orthogonal_sum((category("U"), category("U"), complement))
     model = lattice_.two_u_eichler_model_from_represented_biproduct()
     selected_complement = model.orthogonal_complement()
