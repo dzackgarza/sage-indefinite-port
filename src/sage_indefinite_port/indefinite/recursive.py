@@ -132,6 +132,27 @@ def _from_column(lattice: Lattices.ParentMethods, column) -> Lattices.ElementMet
     return lattice.linear_combination({label: int(entry) for label, entry in zip(lattice.module_generating_set(), column, strict=True) if entry})
 
 
+def _isometry_from_column_matrix(source: Lattices.ParentMethods, target: Lattices.ParentMethods, columns: Matrix_integer_dense) -> LatticeIsometryMethods:
+    r"""Build a morphism from a label-coordinate matrix at the owned API boundary.
+
+    Matrix columns are indexed by ``source.module_generating_set()`` labels;
+    the public Isom constructor consumes images in ``source.module_generators()``
+    order. Translate explicitly between those conventions.
+    """
+    source_labels = tuple(source.module_generating_set())
+    images = []
+    for generator in source.module_generators():
+        coordinates = generator.to_vector()
+        source_coordinates = tuple(int(coordinates(label)) for label in source_labels)
+        target_coordinates = tuple(
+            sum(int(columns[row, column]) * source_coordinates[column] for column in range(len(source_labels)))
+            for row in range(len(target.module_generating_set()))
+        )
+        images.append(_from_column(target, target_coordinates))
+    morphism_parent = source.O() if source is target else source.Isom(target)
+    return morphism_parent(tuple(images))
+
+
 def _conjugated(transport: LatticeIsometryMethods, generators: tuple[LatticeIsometryMethods, ...]) -> tuple[LatticeIsometryMethods, ...]:
     r"""The generators ``h`` of O(R) carried to L by ``transport: R -> L``, each built once from ``P H P^-1``.
 
@@ -142,8 +163,7 @@ def _conjugated(transport: LatticeIsometryMethods, generators: tuple[LatticeIsom
     lattice = transport.codomain()
     change = _column_matrix(transport)
     inverse = change.inverse().change_ring(SageZZ)
-    group = lattice.O()
-    return tuple(group(tuple(_from_column(lattice, column) for column in (change * _column_matrix(generator) * inverse).columns())) for generator in generators)
+    return tuple(_isometry_from_column_matrix(lattice, lattice, change * _column_matrix(generator) * inverse) for generator in generators)
 
 
 def _transported(target_transport: LatticeIsometryMethods, witness: LatticeIsometryMethods, source_transport: LatticeIsometryMethods) -> LatticeIsometryMethods:
@@ -154,7 +174,7 @@ def _transported(target_transport: LatticeIsometryMethods, witness: LatticeIsome
     """
     source, target = source_transport.codomain(), target_transport.codomain()
     columns = _column_matrix(target_transport) * _column_matrix(witness) * _column_matrix(source_transport).inverse().change_ring(SageZZ)
-    return source.Isom(target)(tuple(_from_column(target, column) for column in columns.columns()))
+    return _isometry_from_column_matrix(source, target, columns)
 
 
 @dataclass(frozen=True)
