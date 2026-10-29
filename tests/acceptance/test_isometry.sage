@@ -162,8 +162,8 @@ def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
     assert is_witness(rows_of(witness), [list(row) for row in gram.rows()], [list(row) for row in conjugate.rows()])
 
 
-def test_eichler_easy_generators_use_complement_coordinate_labels() -> None:
-    """The GRPeasy block decomposition follows the model's coordinate-label order."""
+def test_eichler_generator_families_preserve_nonlexical_complement() -> None:
+    """GRPeasy and full generator matrices preserve a model with non-lexical complement labels."""
     from dzack_research.preamble.all import ZZ as PreambleZZ
     from dzack_research.preamble.all import Lattices
 
