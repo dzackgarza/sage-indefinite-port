@@ -8,19 +8,29 @@ Markdown report to stdout and exits 1 when any shard lacks a report or any case
 did not pass.
 """
 
+import json
 import sys
 import xml.etree.ElementTree as ET
 from collections import defaultdict
 from pathlib import Path
 
 
-def main(results_dir: Path) -> int:
+def main(results_dir: Path, matrix_json: str | None = None) -> int:
     shard_dirs = sorted(path for path in results_dir.iterdir() if path.is_dir())
     if not shard_dirs:
-        raise SystemExit(f"no shard results in {results_dir}")
+        if matrix_json is None:
+            raise SystemExit(f"no shard results in {results_dir}")
     counts: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
     failures: dict[str, list[str]] = defaultdict(list)
     missing: list[str] = []
+    if matrix_json is not None:
+        matrix = json.loads(matrix_json)
+        expected = {f"{item['family']}-{item['shard']}" for item in matrix["include"]}
+        present = {shard.name for shard in shard_dirs}
+        missing.extend(f"{name} (shard artifact missing)" for name in sorted(expected - present))
+        unexpected = sorted(present - expected)
+        if unexpected:
+            missing.extend(f"{name} (unexpected shard artifact)" for name in unexpected)
     commits = {(shard / "commit").read_text().strip() for shard in shard_dirs if (shard / "commit").exists()}
     research = {(shard / "research_commit").read_text().strip() for shard in shard_dirs if (shard / "research_commit").exists()}
     for shard in shard_dirs:
@@ -51,4 +61,6 @@ def main(results_dir: Path) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(Path(sys.argv[1])))
+    if len(sys.argv) not in (2, 3):
+        raise SystemExit("usage: acceptance_summary.py RESULTS_DIR [MATRIX_JSON]")
+    sys.exit(main(Path(sys.argv[1]), sys.argv[2] if len(sys.argv) == 3 else None))

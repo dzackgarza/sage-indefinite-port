@@ -137,7 +137,7 @@ jobs:
           name: acceptance-${{ matrix.family }}-${{ matrix.shard }}
           path: .tmp/ci/results/
   summary:
-    needs: family
+    needs: [plan, family]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -147,7 +147,9 @@ jobs:
           pattern: acceptance-*
           path: results
           merge-multiple: true
-      - run: python3 ci/acceptance_summary.py results | tee -a "$GITHUB_STEP_SUMMARY" acceptance-failures.md
+      - env:
+          ACCEPTANCE_MATRIX: ${{ needs.plan.outputs.matrix }}
+        run: python3 ci/acceptance_summary.py results "$ACCEPTANCE_MATRIX" | tee -a "$GITHUB_STEP_SUMMARY" acceptance-failures.md
       - if: always()
         uses: actions/upload-artifact@v4
         with:
