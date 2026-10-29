@@ -353,7 +353,8 @@ class EichlerEnvelope:
         construction_lattice = lattice
         even_inclusion = None
         if not lattice.is_even():
-            generators = tuple(lattice.module_generators())
+            labels = tuple(lattice.module_generating_set())
+            generators = tuple(lattice.module_generator(label) for label in labels)
             parities = tuple(int(generator.q()) % 2 for generator in generators)
             odd_position = next(index for index, parity in enumerate(parities) if parity)
             odd_generator = generators[odd_position]

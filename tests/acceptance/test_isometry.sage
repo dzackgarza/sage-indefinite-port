@@ -162,6 +162,41 @@ def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
     assert is_witness(rows_of(witness), [list(row) for row in gram.rows()], [list(row) for row in conjugate.rows()])
 
 
+def test_odd_eichler_envelope_uses_declared_coordinate_order() -> None:
+    """The even-sublattice envelope construction follows the declared basis labels."""
+    from dzack_research.preamble.all import ZZ as PreambleZZ
+    from dzack_research.preamble.all import Lattices
+    from sage.all import ZZ as SageZZ
+
+    require(MARKED_ISOMETRY)
+    labels = ("z_odd", "a_first", "m_second", "b_radical", "c_extra")
+    gram = [
+        [1, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0],
+        [0, 1, 0, 0, 0],
+        [0, 0, 0, 0, 1],
+        [0, 0, 0, 1, 0],
+    ]
+    lattice_ = Lattices(PreambleZZ)(gram, module_generators=labels)
+    assert tuple(lattice_.module_generating_set()) == labels
+
+    from sage_indefinite_port.indefinite.eichler import EichlerEnvelope
+
+    envelope = EichlerEnvelope(lattice_)
+    assert envelope.scale > 0
+    images = tuple(envelope.similarity(lattice_.module_generator(label)) for label in labels)
+    for i, left in enumerate(images):
+        for j, right in enumerate(images):
+            assert envelope.envelope.b(left, right) == envelope.scale * lattice_.b(
+                lattice_.module_generator(labels[i]), lattice_.module_generator(labels[j])
+            )
+    envelope_labels = tuple(envelope.envelope.module_generating_set())
+    assert all(
+        all(image.to_vector()(label) in SageZZ for label in envelope_labels)
+        for image in images
+    )
+
+
 def test_conway_sloane_same_genus_pair_is_not_isometric() -> None:
     require(MARKED_ISOMETRY)
 
