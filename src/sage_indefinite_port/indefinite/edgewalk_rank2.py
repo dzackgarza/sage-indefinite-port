@@ -153,7 +153,21 @@ class _OrientedBinaryCycle:
                 gram = matrix(SageZZ, ((self.form[0], self.form[1]), (self.form[1], self.form[2])))
                 if period * gram * period.transpose() != gram or period.det() != 1:
                     raise ArithmeticError("the binary period is not an orientation-preserving isometry")
-                images = tuple(self.point((int(row[0]), int(row[1]))) for row in period.rows())
+                # The period rows are the images of the two coordinate basis
+                # vectors in `self.labels` order. The Isom constructor, however,
+                # consumes images in `module_generators()` order. Translate each
+                # actual generator through its coordinates rather than assuming
+                # these two iteration orders coincide.
+                images = tuple(
+                    self.point(
+                        tuple(
+                            sum(coordinates[row] * int(period[row, column]) for row in range(2))
+                            for column in range(2)
+                        )
+                    )
+                    for generator in self.lattice.module_generators()
+                    for coordinates in (self.coordinates(generator),)
+                )
                 return self.lattice.Isom(self.lattice)(images), tuple(self.point(point) for point in representatives)
 
 
