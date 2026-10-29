@@ -188,6 +188,28 @@ def test_zero_form_orthogonal_group_is_the_full_general_linear_group() -> None:
     assert any(int(generator.determinant()) == -1 for generator in computed)
 
 
+def test_zero_form_orthogonal_group_uses_permuted_coordinate_labels() -> None:
+    """The full GL_2(Z) action is returned in the declared radical coordinate order."""
+    from dzack_research.preamble.all import ZZ as PreambleZZ
+    from dzack_research.preamble.all import Lattices
+    from sage.all import ZZ as SageZZ
+    from sage.all import matrix
+
+    require(MARKED_AUTOMORPHISMS)
+    labels = ("z_second", "a_first")
+    gram = [[0, 0], [0, 0]]
+    lattice_ = Lattices(PreambleZZ)(gram, module_generators=labels)
+    assert tuple(lattice_.module_generating_set()) == labels
+
+    computed = lattice_.O().group_generators()
+    rows = tuple(rows_of(generator) for generator in computed)
+
+    assert all(is_isometry(generator_rows, gram) for generator_rows in rows)
+    assert all(abs(int(matrix(SageZZ, generator_rows).determinant())) == 1 for generator_rows in rows)
+    assert any(generator_rows[0][1] != 0 or generator_rows[1][0] != 0 for generator_rows in rows)
+    assert any(int(generator.determinant()) == -1 for generator in computed)
+
+
 def test_orthogonal_group_of_the_hyperbolic_plane_has_order_four() -> None:
     require(MARKED_AUTOMORPHISMS)
 
