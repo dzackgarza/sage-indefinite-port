@@ -109,3 +109,23 @@ def test_acceptance_summary_rejects_missing_revision_metadata(tmp_path) -> None:
 
     assert result == 1
     assert "perfect_domains-0 (research_commit missing)" in output.getvalue()
+
+
+def test_acceptance_summary_rejects_a_failed_family_matrix(tmp_path) -> None:
+    summary = _load_ci_module("acceptance_summary")
+    matrix = json.dumps({"include": [{"family": "perfect_domains", "shard": 0, "shards": 1}]})
+    shard = tmp_path / "perfect_domains-0"
+    shard.mkdir()
+    suites = ET.Element("testsuites")
+    suite = ET.SubElement(suites, "testsuite")
+    ET.SubElement(suite, "testcase", classname="sample", name="passed")
+    ET.ElementTree(suites).write(shard / "junit.xml")
+    (shard / "commit").write_text("port-revision")
+    (shard / "research_commit").write_text("provider-revision")
+    output = io.StringIO()
+
+    with contextlib.redirect_stdout(output):
+        result = summary.main(tmp_path, matrix, family_result="failure")
+
+    assert result == 1
+    assert "family matrix job result is failure, not success" in output.getvalue()

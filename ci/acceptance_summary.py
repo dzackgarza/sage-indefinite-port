@@ -16,7 +16,7 @@ from collections import defaultdict
 from pathlib import Path
 
 
-def main(results_dir: Path, matrix_json: str | None = None) -> int:
+def main(results_dir: Path, matrix_json: str | None = None, family_result: str = "success") -> int:
     shard_dirs = sorted(path for path in results_dir.iterdir() if path.is_dir()) if results_dir.exists() else []
     if not shard_dirs:
         if matrix_json is None:
@@ -26,6 +26,8 @@ def main(results_dir: Path, matrix_json: str | None = None) -> int:
     missing: list[str] = []
     if matrix_json is not None:
         matrix = json.loads(matrix_json)
+        if family_result != "success":
+            missing.append(f"family matrix job result is {family_result}, not success")
         expected = {f"{item['family']}-{item['shard']}" for item in matrix["include"]}
         present = {shard.name for shard in shard_dirs}
         missing.extend(f"{name} (shard artifact missing)" for name in sorted(expected - present))
@@ -69,6 +71,12 @@ def main(results_dir: Path, matrix_json: str | None = None) -> int:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) not in (2, 3):
-        raise SystemExit("usage: acceptance_summary.py RESULTS_DIR [MATRIX_JSON]")
-    sys.exit(main(Path(sys.argv[1]), sys.argv[2] if len(sys.argv) == 3 else None))
+    if len(sys.argv) not in (2, 3, 4):
+        raise SystemExit("usage: acceptance_summary.py RESULTS_DIR [MATRIX_JSON [FAMILY_RESULT]]")
+    sys.exit(
+        main(
+            Path(sys.argv[1]),
+            sys.argv[2] if len(sys.argv) >= 3 else None,
+            sys.argv[3] if len(sys.argv) >= 4 else "success",
+        )
+    )
