@@ -58,17 +58,20 @@ jobs:
           print("matrix=" + json.dumps({"include": include}))
           PY
   julia:
-    # Instantiates OSCAR once into the Julia depot cache that every shard restores.
+    # Instantiates the bridge environment once into the Julia depot cache that every shard restores.
     runs-on: ubuntu-latest
     timeout-minutes: 120
     container:
-      image: ghcr.io/dzackgarza/sage-indefinite-port-sage:py314
+      image: ghcr.io/dzackgarza/sage:develop
       credentials:
         username: ${{ github.actor }}
         password: ${{ github.token }}
       options: --user root
     env:
-      SAGE_BIN: /home/sage/sage/sage
+      SAGE_BIN: /sage/.venv/bin/sage
+      # The image's read-only depot holds Oscar; the cached writable depot
+      # in front of it holds the bridge environment's resolved packages.
+      JULIA_DEPOT_PATH: /github/home/.julia:/opt/julia-depot:
     outputs:
       key: ${{ steps.key.outputs.key }}
     steps:
@@ -85,7 +88,7 @@ jobs:
         with:
           path: |
             /github/home/.julia
-            /home/sage/sage/local/var/lib/sage/venv-python3.14/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
+            /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
           key: ${{ steps.key.outputs.key }}
       - if: steps.restore.outputs.cache-hit != 'true'
         run: just ci-provision-julia
@@ -94,7 +97,7 @@ jobs:
         with:
           path: |
             /github/home/.julia
-            /home/sage/sage/local/var/lib/sage/venv-python3.14/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
+            /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
           key: ${{ steps.key.outputs.key }}
   family:
     needs: [plan, julia]
@@ -102,15 +105,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     container:
-      # ci/sage.Dockerfile, built by sage-image.yml: the local sage-dev-develop
-      # Sage (11.0.beta1) on Python 3.14.
-      image: ghcr.io/dzackgarza/sage-indefinite-port-sage:py314
+      image: ghcr.io/dzackgarza/sage:develop
       credentials:
         username: ${{ github.actor }}
         password: ${{ github.token }}
       options: --user root
     env:
-      SAGE_BIN: /home/sage/sage/sage
+      SAGE_BIN: /sage/.venv/bin/sage
+      # The image's read-only depot holds Oscar; the cached writable depot
+      # in front of it holds the bridge environment's resolved packages.
+      JULIA_DEPOT_PATH: /github/home/.julia:/opt/julia-depot:
     strategy:
       fail-fast: false
       # Keep independent Sage processes below the runner memory-pressure threshold.
@@ -127,7 +131,7 @@ jobs:
         with:
           path: |
             /github/home/.julia
-            /home/sage/sage/local/var/lib/sage/venv-python3.14/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
+            /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
           key: ${{ needs.julia.outputs.key }}
           fail-on-cache-miss: true
       - run: just ci-acceptance ${{ matrix.family }} ${{ matrix.shard }} ${{ matrix.shards }} '${{ matrix.selection }}'

@@ -65,23 +65,14 @@ ci-provision-sage:
     git clone --quiet https://github.com/dzackgarza/vinal {{ci_dir}}/vinal
     git -C {{ci_dir}}/vinal -c advice.detachedHead=false checkout --quiet "$vinal_rev"
     git clone --quiet --depth 1 https://github.com/dzackgarza/ai-review-ci {{ci_dir}}/ai-review-ci
-    # The preamble's Julia bridge (OSCAR comparisons) runs this Julia, the
-    # version the local juliaup provides.
-    mkdir -p {{ci_dir}}/julia
-    # The image has no curl; Sage's Python fetches the tarball.
-    "$sage_python" -c 'import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])' \
-        https://julialang-s3.julialang.org/bin/linux/x64/1.12/julia-1.12.5-linux-x86_64.tar.gz {{ci_dir}}/julia.tar.gz
-    tar -xzf {{ci_dir}}/julia.tar.gz -C {{ci_dir}}/julia --strip-components=1
 
 # CI only: the bridge's Julia environment, instantiated and precompiled into the default depot.
 ci-provision-julia:
     #!/usr/bin/env bash
     set -euo pipefail
-    # sage_julia_bridge resolves its Julia at import.
-    export SAGE_JULIA_COMMAND="$PWD/{{ci_dir}}/julia/bin/julia"
     sage_python="$("$SAGE_BIN" -python -c 'import sys; print(sys.executable)')"
     env_dir="$("$sage_python" -c 'import pathlib, sage_julia_bridge; print(pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env")')"
-    {{ci_dir}}/julia/bin/julia --project="$env_dir" -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+    julia --project="$env_dir" -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
 
 # CI only: the cache key of the bridge's Julia environment (its Project; the
 # installed package ships no Manifest, so the julia job resolves one and the
@@ -89,8 +80,6 @@ ci-provision-julia:
 ci-julia-key:
     #!/usr/bin/env bash
     set -euo pipefail
-    # sage_julia_bridge resolves its Julia at import.
-    export SAGE_JULIA_COMMAND="$PWD/{{ci_dir}}/julia/bin/julia"
     sage_python="$("$SAGE_BIN" -python -c 'import sys; print(sys.executable)')"
     "$sage_python" -c 'import hashlib, pathlib, sage_julia_bridge; print("julia-depot-" + hashlib.sha256((pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env" / "Project.toml").read_bytes()).hexdigest()[:16])'
 
@@ -104,7 +93,6 @@ ci-acceptance family shard shards selection="":
     git rev-parse HEAD > "$out/commit"
     git -C {{ci_dir}}/research rev-parse HEAD > "$out/research_commit"
     export PYTHONPATH="$PWD/{{ci_dir}}/ai-review-ci/tool-artifacts/pytest_plugins:$PWD/src:$PWD:$PWD/{{ci_dir}}/vinal/src/sage"
-    export SAGE_JULIA_COMMAND="$PWD/{{ci_dir}}/julia/bin/julia"
     # SIGINT before the job's hard limit, so pytest still writes the JUnit
     # report for every case that finished.
     case "{{selection}}" in
