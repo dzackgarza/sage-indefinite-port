@@ -149,6 +149,7 @@ def test_degenerate_orthogonal_group_generates_permuted_rank_two_radical_action(
     rows = tuple(tuple(tuple(row) for row in rows_of(generator)) for generator in computed)
 
     assert all(is_isometry(rows_of(generator), gram) for generator in computed)
+    assert ((1, 0, 0), (0, 1, 0), (1, 0, 1)) in set(rows)
     assert any(generator_rows[2][0] != 0 or generator_rows[2][1] != 0 for generator_rows in rows)
     assert any(
         tuple(tuple(generator_rows[i][j] for j in (0, 1)) for i in (0, 1)) != ((1, 0), (0, 1))
