@@ -92,6 +92,11 @@ def _key(vector_: _Vector) -> _Key:
     return tuple(_integer(coordinates(label)) for label in vector_.parent().module_generating_set())
 
 
+def _coordinate_basis(lattice: Lattices.ParentMethods) -> tuple[_Vector, ...]:
+    """Basis elements in the exact order used by coordinate-label matrices."""
+    return tuple(lattice.module_generator(label) for label in lattice.module_generating_set())
+
+
 def _isometry_row_matrix_in_coordinate_order(lattice: Lattices.ParentMethods, isometry: LatticeIsometryMethods) -> Matrix_rational_dense:
     """Rows of image coordinates in the lattice's ordered coordinate labels.
 
@@ -100,9 +105,10 @@ def _isometry_row_matrix_in_coordinate_order(lattice: Lattices.ParentMethods, is
     to choose the rows: its enumeration is a separate API from the labels.
     """
     labels = tuple(lattice.module_generating_set())
+    basis = _coordinate_basis(lattice)
     return matrix(
         SageQQ,
-        [tuple(_rational(isometry(lattice.module_generator(label)).to_vector()(coordinate)) for coordinate in labels) for label in labels],
+        [tuple(_rational(isometry(generator).to_vector()(coordinate)) for coordinate in labels) for generator in basis],
     )
 
 
@@ -296,8 +302,7 @@ class _Edgewalk:
         # k^perp in L, and the rows of their images in the framing of the
         # quotient k^perp/k (the projection pi of edgewalk.h:1955-1968,
         # LatticeProjectionFramework onto the complement of k in k^perp).
-        perpendicular_labels = tuple(perpendicular.module_generating_set())
-        perpendicular_basis = tuple(perpendicular.module_generator(label) for label in perpendicular_labels)
+        perpendicular_basis = _coordinate_basis(perpendicular)
         perpendicular_rows = matrix(SageQQ, [self.row(perpendicular_inclusion(generator)) for generator in perpendicular_basis])
         quotient_rows = matrix(SageQQ, [_key(quotient_projection(generator)) for generator in perpendicular_basis])
         k_column = self.gram * self.row(k).column()
@@ -307,7 +312,7 @@ class _Edgewalk:
             # the integral left kernel of B G k on the rows B of a basis of C_N.
             constraint = self.constraint(_rational(norm))
             constraint_domain = constraint.inclusion().domain()
-            constraint_basis = tuple(constraint_domain.module_generator(label) for label in constraint_domain.module_generating_set())
+            constraint_basis = _coordinate_basis(constraint_domain)
             constraint_rows = matrix(SageQQ, [self.row(constraint.inclusion()(generator)) for generator in constraint_basis])
             if constraint_rows.nrows() != self.rank or constraint_rows.rank() != self.rank:
                 raise ArithmeticError("the module generators of C_N must be a basis of a full-rank sublattice")
@@ -561,7 +566,7 @@ class _Edgewalk:
         if prepared is None:
             inclusion = perpendicular.inclusion()
             perpendicular = inclusion.domain()
-            perpendicular_basis = tuple(perpendicular.module_generator(label) for label in perpendicular.module_generating_set())
+            perpendicular_basis = _coordinate_basis(perpendicular)
             orthogonal = matrix(SageZZ, [self.key(inclusion(generator)) for generator in perpendicular_basis]).transpose()
             if orthogonal.nrows() != n or orthogonal.ncols() != n - 1:
                 raise ArithmeticError("Vinberg's perpendicular lattice has incorrect rank")
@@ -913,7 +918,7 @@ class _Edgewalk:
 
         constraint = self.constraint_for_divisor(divisor)
         constraint_domain = constraint.inclusion().domain()
-        constraint_basis = tuple(constraint_domain.module_generator(label) for label in constraint_domain.module_generating_set())
+        constraint_basis = _coordinate_basis(constraint_domain)
         constraint_rows = matrix(SageQQ, [self.row(constraint.inclusion()(generator)) for generator in constraint_basis])
         wall_matrix = matrix(
             SageQQ,

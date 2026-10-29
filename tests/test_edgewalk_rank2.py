@@ -47,3 +47,19 @@ def test_edgewalk_period_action_matrix_uses_coordinate_label_order() -> None:
     isometry = lattice_.O()(images)
 
     assert _isometry_row_matrix_in_coordinate_order(lattice_, isometry) == row_matrix.change_ring(QQ)
+
+
+def test_edgewalk_coordinate_basis_follows_explicit_labels() -> None:
+    """Row-matrix bases are indexed by labels, not the generator iterator."""
+    from dzack_research.preamble.all import ZZ, Lattices
+
+    from sage_indefinite_port.indefinite.edgewalk import _coordinate_basis
+
+    lattice_ = Lattices(ZZ)([[2, 1], [1, 2]], module_generators=("right", "left"))
+    labels = tuple(lattice_.module_generating_set())
+    basis = _coordinate_basis(lattice_)
+
+    assert len(basis) == len(labels) == 2
+    for column, element in enumerate(basis):
+        coordinates = element.to_vector()
+        assert tuple(int(coordinates(label)) for label in labels) == tuple(int(row == column) for row in range(len(labels)))
