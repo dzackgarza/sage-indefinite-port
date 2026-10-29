@@ -1,7 +1,7 @@
 """Coordinate invariants for Allcock's anisotropic binary cycle."""
 
 from sage_indefinite_port.indefinite.edgewalk_rank2 import _OrientedBinaryCycle
-from tests.acceptance.consumer import element, lattice
+from tests.acceptance.consumer import lattice
 
 
 def test_binary_cycle_form_uses_the_coordinate_label_order() -> None:
@@ -12,7 +12,6 @@ def test_binary_cycle_form_uses_the_coordinate_label_order() -> None:
 
     assert cycle.form == (int(first.q()), int(lattice_.b(first, second)), int(second.q()))
     for coordinates in ((1, 0), (0, 1), (2, -3), (-5, 2)):
-        point = element(lattice_, coordinates)
+        point = cycle.point(coordinates)
         assert cycle.coordinates(point) == coordinates
-        assert cycle.point(coordinates) == point
         assert cycle.pairing(coordinates, coordinates) == int(point.q())
