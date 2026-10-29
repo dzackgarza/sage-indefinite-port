@@ -23,7 +23,19 @@ def coordinate_identification(source: Lattice, target: Lattice) -> Isometry:
     """The explicit basis-to-basis isometry of identical Gram presentations."""
     if source is target:
         return source.O().identity()
-    return source.Isom(target)(tuple(target.module_generators()))
+    source_labels = tuple(source.module_generating_set())
+    target_labels = tuple(target.module_generating_set())
+    if len(source_labels) != len(target_labels):
+        raise ArithmeticError("equal Gram presentations must have equal coordinate ranks")
+    images = []
+    for generator in source.module_generators():
+        coordinates = generator.to_vector()
+        images.append(
+            target.linear_combination(
+                {target_label: coordinates(source_label) for source_label, target_label in zip(source_labels, target_labels, strict=True)}
+            )
+        )
+    return source.Isom(target)(tuple(images))
 
 
 class IsometryGroupoidCache:

@@ -52,6 +52,21 @@ def test_lorentzian_pairs_are_isometric(case) -> None:
     _assert_isometric(case["mat1"], case["mat2"])
 
 
+def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> None:
+    """Memoized equal-Gram transport is coordinate identity, not iterator-position identity."""
+    from sage_indefinite_port.indefinite.groupoid_cache import coordinate_identification
+
+    source = lattice([[2, 1], [1, 2]])
+    target = lattice([[2, 1], [1, 2]])
+    witness = coordinate_identification(source, target)
+    source_labels = tuple(source.module_generating_set())
+    target_labels = tuple(target.module_generating_set())
+
+    for index, source_label in enumerate(source_labels):
+        image = witness(source.module_generator(source_label)).to_vector()
+        assert tuple(int(image(label)) for label in target_labels) == tuple(int(index == j) for j in range(len(target_labels)))
+
+
 def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
     """A non-diagonal nonsingular summand plus radical survives a basis change."""
     from sage.all import ZZ as SageZZ
