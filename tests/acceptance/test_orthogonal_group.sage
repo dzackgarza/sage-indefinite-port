@@ -94,6 +94,20 @@ def test_degenerate_orthogonal_group_contains_radical_shear_and_gl_action() -> N
     assert expected <= set(rows)
 
 
+def test_degenerate_orthogonal_group_generates_rank_two_radical_action() -> None:
+    """The radical GL_2(Z) action and the nonsingular-to-radical shear survive assembly."""
+    require(MARKED_AUTOMORPHISMS)
+
+    gram = [[2, 0, 0], [0, 0, 0], [0, 0, 0]]
+    computed = lattice(gram).O().group_generators()
+    rows = tuple(tuple(tuple(row) for row in rows_of(generator)) for generator in computed)
+
+    assert all(is_isometry(rows_of(generator), gram) for generator in computed)
+    assert any(generator_rows[0][1] != 0 for generator_rows in rows)
+    assert any(generator_rows[1][2] != 0 or generator_rows[2][1] != 0 for generator_rows in rows)
+    assert any(generator_rows[1][1:] != ((1, 0), (0, 1)) for generator_rows in rows)
+
+
 def test_orthogonal_group_of_the_hyperbolic_plane_has_order_four() -> None:
     require(MARKED_AUTOMORPHISMS)
 

@@ -121,6 +121,7 @@ ci-acceptance family shard shards selection="":
         tests=(
             tests/acceptance/test_orthogonal_group.sage::test_mertens_omega_and_minus_one_generate_o_l
             tests/acceptance/test_orthogonal_group.sage::test_degenerate_orthogonal_group_contains_radical_shear_and_gl_action
+            tests/acceptance/test_orthogonal_group.sage::test_degenerate_orthogonal_group_generates_rank_two_radical_action
             'tests/acceptance/test_orthogonal_group.sage::test_lorentzian_generators_match_polyhedral_common[LORENTZ_OrthogonalGroup0]'
             tests/acceptance/test_orthogonal_group.sage::test_orthogonal_group_of_the_hyperbolic_plane_has_order_four
             tests/acceptance/test_orthogonal_group.sage::test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q
