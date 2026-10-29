@@ -122,6 +122,44 @@ def test_general_isotropic_pointed_isometry_carries_negative_marking() -> None:
     assert all(lattice_.b(witness(left), witness(right)) == lattice_.b(left, right) for left in basis for right in basis)
 
 
+def test_empty_integral_fibre_falls_back_to_full_marked_vector_stabilizer(monkeypatch) -> None:
+    """An empty lift fibre for one reduction map must not imply pointed Isom is empty."""
+    require(MARKED_ISOMETRY)
+    lattice_ = lattice([[0, 2, 0, 0], [2, 0, 0, 0], [0, 0, 0, 2], [0, 0, 2, 0]])
+    source = element(lattice_, [1, 0, 0, 0])
+    target = element(lattice_, [0, 0, 1, 0])
+    recursion = EichlerRecursion()
+    source_reduction = lattice_.primitive_isotropic_subobject(source).isotropic_reduction()
+    reduction_type = type(source_reduction)
+    correction_calls = []
+    original_correction = recursion._isotropic_correction
+
+    class EmptyIntegralFibre:
+        def is_empty(self):
+            return True
+
+    class EmptyTorsor:
+        def integral_members(self):
+            return EmptyIntegralFibre()
+
+    def no_integral_lifts(self, target_reduction, reduced_isometry):
+        return EmptyTorsor()
+
+    def record_correction(*args, **kwargs):
+        correction_calls.append(True)
+        return original_correction(*args, **kwargs)
+
+    monkeypatch.setattr(reduction_type, "rational_lifts", no_integral_lifts)
+    monkeypatch.setattr(recursion, "_isotropic_correction", record_correction)
+    witness = recursion.pointed_isometry(source, target)
+
+    assert correction_calls
+    assert witness is not None
+    assert witness(source) == target
+    basis = tuple(lattice_.module_generators())
+    assert all(lattice_.b(witness(left), witness(right)) == lattice_.b(left, right) for left in basis for right in basis)
+
+
 def test_isotropic_pointed_isometry_transports_between_changed_basis_parents() -> None:
     """The recursive route returns an owned witness for distinct, isometric lattice parents."""
     gram = matrix(ZZ, [[0, 2, 0, 0], [2, 0, 0, 0], [0, 0, 0, 2], [0, 0, 2, 0]])
