@@ -231,6 +231,7 @@ def test_isotropic_shell_survives_a_permuted_gram_basis() -> None:
         assert (point * form * direction.column())[0] == 1
 
 
+@pytest.mark.parametrize("case", load_lorentzian_perfect_domains(), ids=lambda case: case["id"])
 def test_perfect_domain_orbit_counts_match_polyhedral_common(case) -> None:
     require(PERFECT_DOMAINS)
 
