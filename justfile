@@ -43,7 +43,7 @@ ci-provision-sage:
     export MESONPY_EDITABLE_VERBOSE=1
     "$SAGE_BIN" -c 'import sage.all; from sage.features.bliss import Bliss; Bliss().require()'
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
-    uv pip install --quiet --python "$sage_python" "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard pytest-instafail
+    uv pip install --quiet --python "$sage_python" "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard pytest-instafail PyNormaliz
     # The acceptance contract is against this exact research API revision.
     # Tracking main is not reproducible and currently imports a Sage category
     # absent from the pinned CI Sage image (sage.categories.ordered_fields).

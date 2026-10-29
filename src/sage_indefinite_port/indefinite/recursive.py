@@ -292,9 +292,11 @@ class EichlerRecursion:
         size, rank = left_gram.nrows(), left_gram.rank()
         if rank != right_gram.rank():
             return None
-        known, cached = self._groupoid.cached_isometry(left, right)
-        if known:
-            return None if cached is None else _transported(target_reduction.isometry, cached, source_reduction.isometry)
+        cacheable = left.base_ring() == SageZZ and right.base_ring() == SageZZ
+        if cacheable:
+            known, cached = self._groupoid.cached_isometry(left, right)
+            if known:
+                return None if cached is None else _transported(target_reduction.isometry, cached, source_reduction.isometry)
         extension = identity_matrix(SageZZ, size)
         if rank:
             left_complement_gram = left_gram.matrix_from_rows_and_columns(range(rank), range(rank))
@@ -303,7 +305,8 @@ class EichlerRecursion:
             right_complement = right.lattice_category()([[int(entry) for entry in row] for row in right_complement_gram.rows()])
             complement_witness = self.isometry(left_complement, right_complement)
             if complement_witness is None:
-                self._groupoid.record_isometry(left, right, None)
+                if cacheable:
+                    self._groupoid.record_isometry(left, right, None)
                 return None
             left_labels = tuple(left_complement.module_generating_set())
             right_labels = tuple(right_complement.module_generating_set())
@@ -313,7 +316,8 @@ class EichlerRecursion:
                 for column, label in enumerate(right_labels):
                     extension[row, column] = int(image_coordinates(label))
         reduced_witness = _isometry_from_row_matrix(left, right, extension)
-        self._groupoid.record_isometry(left, right, reduced_witness)
+        if cacheable:
+            self._groupoid.record_isometry(left, right, reduced_witness)
         return _transported(target_reduction.isometry, reduced_witness, source_reduction.isometry)
 
     def orthogonal_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
@@ -322,19 +326,24 @@ class EichlerRecursion:
             # covers the definite kernel (:1435) too: a group computed
             # for an isometric lattice is transported along the recorded
             # isometry instead of being recomputed.
-            cached = self._groupoid.cached_group(lattice)
-            if cached is not None:
-                return cached
+            cacheable = lattice.base_ring() == SageZZ
+            if cacheable:
+                cached = self._groupoid.cached_group(lattice)
+                if cached is not None:
+                    return cached
             definite_generators = tuple(lattice.O().group_generators())
-            self._groupoid.record_group(lattice, definite_generators)
+            if cacheable:
+                self._groupoid.record_group(lattice, definite_generators)
             return definite_generators
         # IndefiniteForms.g:1474-1494: reduce before the memoized group
         # computation, then conjugate its generators back to the input form.
         # The reduction's isometry is directed from the reduced lattice to L.
         reduction = indefinite_reduced_presentation(lattice)
-        cached = self._groupoid.cached_group(reduction.reduced)
-        if cached is not None:
-            return _conjugated(reduction.isometry, cached)
+        cacheable = reduction.reduced.base_ring() == SageZZ
+        if cacheable:
+            cached = self._groupoid.cached_group(reduction.reduced)
+            if cached is not None:
+                return _conjugated(reduction.isometry, cached)
         if not reduction.reduced.is_nondegenerate():
             # IndefiniteForms.g:1496–1511 applies ExtendIsometryGroup to
             # the nondegenerate quotient before transporting the generators.
@@ -347,7 +356,8 @@ class EichlerRecursion:
                 case _:
                     generators = self._generation_step(profile.signed_view)
             reduced_generators = tuple(_untwisted(generator, profile) for generator in generators)
-        self._groupoid.record_group(reduction.reduced, reduced_generators)
+        if cacheable:
+            self._groupoid.record_group(reduction.reduced, reduced_generators)
         return _conjugated(reduction.isometry, reduced_generators)
 
     def _model(self, lattice: Lattices.ParentMethods) -> OrbitCoverModel:
@@ -387,18 +397,23 @@ class EichlerRecursion:
         # IndefiniteForms.g:1239-1273 INDEF_FORM_TestEquivalence_Memoize
         # records every exact verdict, the definite kernel's (:1326)
         # included, so later O(K) requests are transported along it.
-        known, cached = self._groupoid.cached_isometry(source, target)
-        if known:
-            return cached
+        cacheable = source.base_ring() == SageZZ and target.base_ring() == SageZZ
+        if cacheable:
+            known, cached = self._groupoid.cached_isometry(source, target)
+            if known:
+                return cached
         homset = source.Isom(target)
         witness = None if homset.is_empty() else homset.an_element()
-        self._groupoid.record_isometry(source, target, witness)
+        if cacheable:
+            self._groupoid.record_isometry(source, target, witness)
         return witness
 
     def _indefinite_isometry(self, source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
-        known, cached = self._groupoid.cached_isometry(source, target)
-        if known:
-            return cached
+        cacheable = source.base_ring() == SageZZ and target.base_ring() == SageZZ
+        if cacheable:
+            known, cached = self._groupoid.cached_isometry(source, target)
+            if known:
+                return cached
         source_profile = AttackProfile.from_lattice(source)
         target_profile = AttackProfile.from_lattice(target)
         signed_source, signed_target = source_profile.signed_view, target_profile.signed_view
@@ -423,7 +438,8 @@ class EichlerRecursion:
                     None,
                 )
         result = None if witness is None else _untwisted(witness, source_profile)
-        self._groupoid.record_isometry(source, target, result)
+        if cacheable:
+            self._groupoid.record_isometry(source, target, result)
         return result
 
     def _lattice_action(self, vector: Lattices.ElementMethods) -> IntegralStructureAction:

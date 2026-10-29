@@ -412,7 +412,7 @@ class EichlerEnvelope:
             even_to_original = rational_construction.Isom(rational_original)(lambda label: rational_even_inclusion(rational_construction.module_generator(label)))
             self.rational_isometry = construction_to_envelope * even_to_original.inverse()
         self.similarity = self.rational_isometry.integral_similarity(lattice, self.envelope)
-        self.scale = self.similarity.scale()
+        self.scale = SageZZ(self.similarity.scale())
         self.fraction_map = fraction_map
 
     @cached_method
