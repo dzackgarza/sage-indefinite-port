@@ -125,12 +125,22 @@ def test_general_isotropic_pointed_isometry_carries_negative_marking() -> None:
 def test_empty_integral_fibre_falls_back_to_full_marked_vector_stabilizer(monkeypatch) -> None:
     """An empty lift fibre for one reduction map must not imply pointed Isom is empty."""
     require(MARKED_ISOMETRY)
-    lattice_ = lattice([[0, 2], [2, 1]])
-    source = element(lattice_, [1, 0])
-    target = element(lattice_, [1, -4])
+    lattice_ = lattice([[0, 2, 0, 0], [2, 0, 0, 0], [0, 0, 0, 2], [0, 0, 2, 0]])
+    source = element(lattice_, [1, 0, 0, 0])
+    target = element(lattice_, [0, 0, 1, 0])
     recursion = EichlerRecursion()
     source_reduction = lattice_.primitive_isotropic_subobject(source).isotropic_reduction()
     reduction_type = type(source_reduction)
+    fraction_map = lattice_.base_ring().fraction_field_map()
+    rational_lattice = lattice_.base_change(fraction_map)
+    e1, f1, e2, f2 = tuple(rational_lattice.module_generators())
+    # Compose an integral plane swap with a rational Eichler transvection
+    # fixing e2. The resulting rational isometry still maps e1 to e2, but has
+    # half-integral entries, so the integral-transport fast path cannot return.
+    rational_transport = rational_lattice.Isom(rational_lattice)(
+        (e2, f2 + rational_lattice.base_ring()(1) / 2 * e1, e1, f1 - rational_lattice.base_ring()(1) / 2 * e2)
+    )
+    assert not rational_transport.is_integral_on(lattice_, lattice_)
     torsor_calls = []
     correction_calls = []
     original_correction = recursion._isotropic_correction
@@ -152,6 +162,7 @@ def test_empty_integral_fibre_falls_back_to_full_marked_vector_stabilizer(monkey
         return original_correction(*args, **kwargs)
 
     monkeypatch.setattr(reduction_type, "rational_lifts", no_integral_lifts)
+    monkeypatch.setattr(recursion, "_reduced_isotropic_extension", lambda *args, **kwargs: rational_transport)
     monkeypatch.setattr(recursion, "_isotropic_correction", record_correction)
     witness = recursion.pointed_isometry(source, target)
 
