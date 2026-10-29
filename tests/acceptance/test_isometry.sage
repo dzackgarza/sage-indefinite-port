@@ -162,10 +162,17 @@ def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> Non
     assert tuple(target.module_generating_set()) == target_labels
 
     def generator_coordinate_order(lattice, labels):
-        return tuple(
-            next(index for index, label in enumerate(labels) if generator.to_vector()(label))
-            for generator in lattice.module_generators()
-        )
+        order = []
+        for generator in lattice.module_generators():
+            coordinates = generator.to_vector()
+            nonzero = tuple(index for index, label in enumerate(labels) if coordinates(label))
+            assert len(nonzero) == 1
+            index = nonzero[0]
+            assert int(coordinates(labels[index])) == 1
+            assert all(not coordinates(label) for label in labels if label != labels[index])
+            order.append(index)
+        assert sorted(order) == list(range(len(labels)))
+        return tuple(order)
 
     source_order = generator_coordinate_order(source, source_labels)
     target_order = generator_coordinate_order(target, target_labels)
