@@ -73,7 +73,7 @@ def test_row_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
 
 
 def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
-    """Matrix columns use coordinate labels; the public morphism takes generator-order images."""
+    """Matrix conventions survive different source/target generator iteration orders."""
     from dzack_research.preamble.all import Lattices
     from sage.all import ZZ as SageZZ
     from sage.all import matrix
@@ -87,35 +87,56 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
         _isometry_from_row_matrix,
     )
 
-    labels = ("right", "left")
-    lattice_ = Lattices(SageZZ)([[2, 1], [1, 2]], module_generators=labels)
-    assert tuple(lattice_.module_generating_set()) == labels
+    source_labels = ("right", "left")
+    target_labels = ("left", "right")
+    gram = [[2, 1], [1, 2]]
+    source = Lattices(SageZZ)(gram, module_generators=source_labels)
+    target = Lattices(SageZZ)(gram, module_generators=target_labels)
+    assert tuple(source.module_generating_set()) == source_labels
+    assert tuple(target.module_generating_set()) == target_labels
+
+    def generator_coordinate_order(lattice_, labels):
+        return tuple(
+            next(index for index, label in enumerate(labels) if generator.to_vector()(label))
+            for generator in lattice_.module_generators()
+        )
+
+    assert generator_coordinate_order(source, source_labels) != generator_coordinate_order(target, target_labels)
+
     columns = matrix(SageZZ, [[-1, 0], [1, 1]])
-    morphism = _isometry_from_column_matrix(lattice_, lattice_, columns)
-
-    assert is_witness(rows_of(morphism), [[2, 1], [1, 2]], [[2, 1], [1, 2]])
-    assert _column_matrix(morphism) == columns
-    for generator in lattice_.module_generators():
+    column_morphism = _isometry_from_column_matrix(source, target, columns)
+    assert is_witness(rows_of(column_morphism), gram, gram)
+    assert _column_matrix(column_morphism) == columns
+    for generator in source.module_generators():
         coordinates = generator.to_vector()
-        expected = tuple(sum(columns[row, column] * int(coordinates(labels[column])) for column in range(len(labels))) for row in range(len(labels)))
-        actual = morphism(generator).to_vector()
-        assert tuple(int(actual(label)) for label in labels) == expected
-
+        expected = tuple(
+            sum(
+                columns[row, column] * int(coordinates(source_labels[column]))
+                for column in range(len(source_labels))
+            )
+            for row in range(len(source_labels))
+        )
+        actual = column_morphism(generator).to_vector()
+        assert tuple(int(actual(label)) for label in target_labels) == expected
 
     row_matrix = matrix(SageZZ, [[-1, 1], [0, 1]])
-    row_morphism = _isometry_from_row_matrix(lattice_, lattice_, row_matrix)
-    assert is_witness(rows_of(row_morphism), [[2, 1], [1, 2]], [[2, 1], [1, 2]])
-    for generator in lattice_.module_generators():
+    row_morphism = _isometry_from_row_matrix(source, target, row_matrix)
+    assert is_witness(rows_of(row_morphism), gram, gram)
+    for generator in source.module_generators():
         coordinates = generator.to_vector()
-        source_coordinates = tuple(int(coordinates(label)) for label in labels)
-        expected = tuple(sum(source_coordinates[row] * row_matrix[row, column] for row in range(len(labels))) for column in range(len(labels)))
+        source_coordinates = tuple(int(coordinates(label)) for label in source_labels)
+        expected = tuple(
+            sum(source_coordinates[row] * row_matrix[row, column] for row in range(len(source_labels)))
+            for column in range(len(source_labels))
+        )
         actual = row_morphism(generator).to_vector()
-        assert tuple(int(actual(label)) for label in labels) == expected
+        assert tuple(int(actual(label)) for label in target_labels) == expected
 
-    eichler_morphism = eichler_row_isometry(lattice_, row_matrix)
-    assert is_witness(rows_of(eichler_morphism), [[2, 1], [1, 2]], [[2, 1], [1, 2]])
-    for generator in lattice_.module_generators():
-        assert eichler_morphism(generator) == row_morphism(generator)
+    eichler_morphism = eichler_row_isometry(source, row_matrix)
+    same_lattice_morphism = _isometry_from_row_matrix(source, source, row_matrix)
+    assert is_witness(rows_of(eichler_morphism), gram, gram)
+    for generator in source.module_generators():
+        assert eichler_morphism(generator) == same_lattice_morphism(generator)
 
 
 def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> None:
