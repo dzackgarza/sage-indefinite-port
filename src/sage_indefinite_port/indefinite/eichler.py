@@ -47,6 +47,8 @@ from sage.rings.rational_field import QQ as SageQQ
 from sage.structure.element import RingElement
 from sage.structure.sage_object import SageObject
 
+from sage_indefinite_port.indefinite.exact_isotropic import find_isotropic_exact
+
 
 def _isometry_from_row_matrix(lattice: Lattices.ParentMethods, rows) -> LatticeIsometryMethods:
     """Build the isometry represented by image rows in coordinate-label order.
@@ -68,7 +70,6 @@ def _isometry_from_row_matrix(lattice: Lattices.ParentMethods, rows) -> LatticeI
     return lattice.O()(tuple(images))
 
 
-from sage_indefinite_port.indefinite.exact_isotropic import find_isotropic_exact
 from sage_indefinite_port.indefinite.indefinite_reduction import (
     _compute_indefinite_reduction,
     _gram_l1,
