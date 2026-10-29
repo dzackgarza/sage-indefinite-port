@@ -166,6 +166,16 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
     else:
         raise AssertionError("row-matrix constructor accepted a wrong-shaped matrix")
 
+    from sage.all import QQ as SageQQ
+
+    rational_target = Lattices(SageQQ)(gram, module_generators=target_labels)
+    try:
+        _isometry_from_row_matrix(source, rational_target, row_matrix)
+    except ValueError as error:
+        assert "common base ring" in str(error)
+    else:
+        raise AssertionError("row-matrix constructor accepted different base rings")
+
     try:
         _isometry_from_column_matrix(source, target, matrix(SageZZ, [[1], [0]]))
     except ValueError as error:

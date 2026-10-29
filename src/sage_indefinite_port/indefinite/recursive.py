@@ -141,6 +141,8 @@ def _isometry_from_row_matrix(source: Lattices.ParentMethods, target: Lattices.P
     """
     source_labels = tuple(source.module_generating_set())
     target_labels = tuple(target.module_generating_set())
+    if source.base_ring() != target.base_ring():
+        raise ValueError("row isometry matrix requires a common base ring")
     if rows.nrows() != len(source_labels) or rows.ncols() != len(target_labels):
         raise ValueError("row isometry matrix must have shape (source rank, target rank)")
     source_gram = _engine_component_matrix(source.gram_tensor())
@@ -169,6 +171,8 @@ def _isometry_from_column_matrix(source: Lattices.ParentMethods, target: Lattice
     """
     source_labels = tuple(source.module_generating_set())
     target_labels = tuple(target.module_generating_set())
+    if source.base_ring() != target.base_ring():
+        raise ValueError("column isometry matrix requires a common base ring")
     if columns.nrows() != len(target_labels) or columns.ncols() != len(source_labels):
         raise ValueError("column isometry matrix must have shape (target rank, source rank)")
     source_gram = _engine_component_matrix(source.gram_tensor())
