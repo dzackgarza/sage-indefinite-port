@@ -197,7 +197,6 @@ def test_non_diagonal_isotropic_shell_respects_explicit_coordinate_labels() -> N
         assert (point * gram * vector(SageZZ, (1, 0, 0)).column())[0] == 1
 
 
-@pytest.mark.parametrize("case", load_lorentzian_perfect_domains(), ids=lambda case: case["id"])
 def test_isotropic_shell_survives_a_permuted_gram_basis() -> None:
     """The exact-sphere CVP center returns every isotropic first-shell row after permutation."""
     from dzack_research.preamble.all import ZZ as PreambleZZ
