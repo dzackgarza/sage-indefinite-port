@@ -74,9 +74,9 @@ def test_isotropic_pointed_automorphism_generators_preserve_marking_and_form() -
 
 def test_divisibility_two_isotropic_pointed_isometry_has_exact_witness() -> None:
     """Exercise the general isotropic pointed-isometry route beyond the div-one split case."""
-    lattice_ = lattice([[0, 2], [2, 1]])
-    source = element(lattice_, [1, 0])
-    target = element(lattice_, [1, -4])
+    lattice_ = lattice([[0, 2, 0, 0], [2, 0, 0, 0], [0, 0, 0, 2], [0, 0, 2, 0]])
+    source = element(lattice_, [1, 0, 0, 0])
+    target = element(lattice_, [0, 0, 1, 0])
     assert int(source.q()) == int(target.q()) == 0
     assert int(source.content()) == int(target.content()) == 1
     assert int(source.div()) == int(target.div()) == 2
@@ -125,9 +125,9 @@ def test_general_isotropic_pointed_isometry_carries_negative_marking() -> None:
 def test_empty_integral_fibre_falls_back_to_full_marked_vector_stabilizer(monkeypatch) -> None:
     """An empty lift fibre for one reduction map must not imply pointed Isom is empty."""
     require(MARKED_ISOMETRY)
-    lattice_ = lattice([[0, 2, 0, 0], [2, 0, 0, 0], [0, 0, 0, 2], [0, 0, 2, 0]])
-    source = element(lattice_, [1, 0, 0, 0])
-    target = element(lattice_, [0, 0, 1, 0])
+    lattice_ = lattice([[0, 2], [2, 1]])
+    source = element(lattice_, [1, 0])
+    target = element(lattice_, [1, -4])
     recursion = EichlerRecursion()
     source_reduction = lattice_.primitive_isotropic_subobject(source).isotropic_reduction()
     reduction_type = type(source_reduction)
