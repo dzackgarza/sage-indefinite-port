@@ -91,6 +91,7 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
     columns = matrix(SageZZ, [[-1, 0], [1, 1]])
     morphism = _isometry_from_column_matrix(lattice_, lattice_, columns)
 
+    assert is_witness(rows_of(morphism), [[2, 1], [1, 2]], [[2, 1], [1, 2]])
     assert _column_matrix(morphism) == columns
     for generator in lattice_.module_generators():
         coordinates = generator.to_vector()
@@ -101,6 +102,7 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
 
     row_matrix = matrix(SageZZ, [[-1, 1], [0, 1]])
     row_morphism = _isometry_from_row_matrix(lattice_, lattice_, row_matrix)
+    assert is_witness(rows_of(row_morphism), [[2, 1], [1, 2]], [[2, 1], [1, 2]])
     for generator in lattice_.module_generators():
         coordinates = generator.to_vector()
         source_coordinates = tuple(int(coordinates(label)) for label in labels)
@@ -109,6 +111,7 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
         assert tuple(int(actual(label)) for label in labels) == expected
 
     eichler_morphism = eichler_row_isometry(lattice_, row_matrix)
+    assert is_witness(rows_of(eichler_morphism), [[2, 1], [1, 2]], [[2, 1], [1, 2]])
     for generator in lattice_.module_generators():
         assert eichler_morphism(generator) == row_morphism(generator)
 
