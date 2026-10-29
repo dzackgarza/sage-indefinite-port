@@ -111,6 +111,7 @@ ci-acceptance family shard shards selection="":
       reflective)
         tests=(
             tests/acceptance/test_reflective.sage::test_edgewalk_branch_representative_sample
+            tests/acceptance/test_reflective.sage::test_edgewalk_period_action_matrix_uses_coordinate_label_order
             tests/acceptance/test_reflective.sage::test_binary_cycle_coordinate_order_and_period_certificate
             tests/acceptance/test_reflective.sage::test_vinberg_roots_match_oscars_chamber_up_to_isometry
             tests/acceptance/test_reflective.sage::test_e10_simple_roots_match_dutour_sikiric_hulek

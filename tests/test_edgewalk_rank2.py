@@ -24,3 +24,26 @@ def test_binary_cycle_form_uses_the_coordinate_label_order() -> None:
     basis = tuple(lattice_.module_generators())
     assert period.determinant() == 1
     assert all(lattice_.b(period(left), period(right)) == lattice_.b(left, right) for left in basis for right in basis)
+
+
+def test_edgewalk_period_action_matrix_uses_coordinate_label_order() -> None:
+    """The period action rows align with the coordinate frame of the sublattice."""
+    from dzack_research.preamble.all import ZZ, Lattices
+    from sage.all import QQ, matrix
+
+    from sage_indefinite_port.indefinite.edgewalk import (
+        _isometry_row_matrix_in_coordinate_order,
+    )
+
+    lattice_ = Lattices(ZZ)([[2, 1], [1, 2]], module_generators=("right", "left"))
+    labels = tuple(lattice_.module_generating_set())
+    row_matrix = matrix(ZZ, [[-1, 1], [0, 1]])
+    images = {
+        label: lattice_.linear_combination(
+            {target_label: row_matrix[row, column] for column, target_label in enumerate(labels) if row_matrix[row, column]}
+        )
+        for row, label in enumerate(labels)
+    }
+    isometry = lattice_.O()(images)
+
+    assert _isometry_row_matrix_in_coordinate_order(lattice_, isometry) == row_matrix.change_ring(QQ)

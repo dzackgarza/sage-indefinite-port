@@ -76,6 +76,31 @@ def test_promised_go_left_preserves_left_supplement() -> None:
     assert cycle.promised_step(1, (1, 0), (0, 1)) == ((3, 2), (-2, -1))
 
 
+def test_edgewalk_period_action_matrix_uses_coordinate_label_order() -> None:
+    """The induced binary-period action is expressed in coordinate-label order."""
+    from dzack_research.preamble.all import Lattices
+    from sage.all import QQ as SageQQ
+    from sage.all import ZZ as SageZZ
+    from sage.all import matrix
+
+    from sage_indefinite_port.indefinite.edgewalk import (
+        _isometry_row_matrix_in_coordinate_order,
+    )
+
+    lattice_ = Lattices(SageZZ)([[2, 1], [1, 2]], module_generators=("right", "left"))
+    labels = tuple(lattice_.module_generating_set())
+    row_matrix = matrix(SageZZ, [[-1, 1], [0, 1]])
+    images = {
+        label: lattice_.linear_combination(
+            {target_label: row_matrix[row, column] for column, target_label in enumerate(labels) if row_matrix[row, column]}
+        )
+        for row, label in enumerate(labels)
+    }
+    isometry = lattice_.O()(images)
+
+    assert _isometry_row_matrix_in_coordinate_order(lattice_, isometry) == row_matrix.change_ring(SageQQ)
+
+
 def test_binary_cycle_coordinate_order_and_period_certificate() -> None:
     """The rank-two period is an isometry in the owned lattice's generator order."""
     require(EDGEWALK)

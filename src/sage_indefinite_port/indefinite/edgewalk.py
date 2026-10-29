@@ -92,6 +92,20 @@ def _key(vector_: _Vector) -> _Key:
     return tuple(_integer(coordinates(label)) for label in vector_.parent().module_generating_set())
 
 
+def _isometry_row_matrix_in_coordinate_order(lattice: Lattices.ParentMethods, isometry: LatticeIsometryMethods) -> Matrix_rational_dense:
+    """Rows of image coordinates in the lattice's ordered coordinate labels.
+
+    The binary edge-period code compares this matrix with sublattice
+    matrices in coordinate-label order. Do not use ``module_generators()``
+    to choose the rows: its enumeration is a separate API from the labels.
+    """
+    labels = tuple(lattice.module_generating_set())
+    return matrix(
+        SageQQ,
+        [tuple(_rational(isometry(lattice.module_generator(label)).to_vector()(coordinate)) for coordinate in labels) for label in labels],
+    )
+
+
 def _oriented_determinant(left: _Key, right: _Key) -> int:
     return left[0] * right[1] - left[1] * right[0]
 
@@ -1024,7 +1038,7 @@ class _Edgewalk:
         # With M the rows of a basis of S = C cap Pi, h preserves S exactly
         # when M h M^{-1} is integral, and acts trivially on Pi/S exactly
         # when (h - 1) M^{-1} is integral.
-        action = matrix(SageQQ, [_key(automorph(point)) for point in plane.module_generators()])
+        action = _isometry_row_matrix_in_coordinate_order(plane, automorph)
         sublattice = edge.intersection
         sublattice_inverse = sublattice.inverse()
         identity = identity_matrix(SageQQ, 2)
