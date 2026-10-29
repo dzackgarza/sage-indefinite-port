@@ -105,8 +105,13 @@ def test_degenerate_orthogonal_group_respects_permuted_radical_coordinates() -> 
     lattice_ = Lattices(PreambleZZ)(gram, module_generators=labels)
     assert tuple(lattice_.module_generating_set()) == labels
 
+    from sage_indefinite_port.indefinite.recursive import _column_matrix
+
     computed = lattice_.O().group_generators()
-    rows = tuple(tuple(tuple(row) for row in rows_of(generator)) for generator in computed)
+    rows = tuple(
+        tuple(tuple(int(entry) for entry in row) for row in _column_matrix(generator).transpose().rows())
+        for generator in computed
+    )
     expected = {
         ((-1, 0), (0, 1)),
         ((1, 0), (0, -1)),
@@ -145,10 +150,15 @@ def test_degenerate_orthogonal_group_generates_permuted_rank_two_radical_action(
     lattice_ = Lattices(PreambleZZ)(gram, module_generators=labels)
     assert tuple(lattice_.module_generating_set()) == labels
 
-    computed = lattice_.O().group_generators()
-    rows = tuple(tuple(tuple(row) for row in rows_of(generator)) for generator in computed)
+    from sage_indefinite_port.indefinite.recursive import _column_matrix
 
-    assert all(is_isometry(rows_of(generator), gram) for generator in computed)
+    computed = lattice_.O().group_generators()
+    rows = tuple(
+        tuple(tuple(int(entry) for entry in row) for row in _column_matrix(generator).transpose().rows())
+        for generator in computed
+    )
+
+    assert all(is_isometry(generator_rows, gram) for generator_rows in rows)
     assert ((1, 0, 0), (0, 1, 0), (1, 0, 1)) in set(rows)
     assert any(generator_rows[2][0] != 0 or generator_rows[2][1] != 0 for generator_rows in rows)
     assert any(
@@ -215,8 +225,13 @@ def test_zero_form_orthogonal_group_uses_permuted_coordinate_labels() -> None:
     lattice_ = Lattices(PreambleZZ)(gram, module_generators=labels)
     assert tuple(lattice_.module_generating_set()) == labels
 
+    from sage_indefinite_port.indefinite.recursive import _column_matrix
+
     computed = lattice_.O().group_generators()
-    rows = tuple(tuple(tuple(row) for row in rows_of(generator)) for generator in computed)
+    rows = tuple(
+        tuple(tuple(int(entry) for entry in row) for row in _column_matrix(generator).transpose().rows())
+        for generator in computed
+    )
 
     assert all(is_isometry(generator_rows, gram) for generator_rows in rows)
     assert all(abs(int(matrix(SageZZ, generator_rows).determinant())) == 1 for generator_rows in rows)
