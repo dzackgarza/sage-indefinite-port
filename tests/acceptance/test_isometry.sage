@@ -177,24 +177,33 @@ def test_odd_eichler_envelope_uses_declared_coordinate_order() -> None:
         [0, 0, 0, 0, 1],
         [0, 0, 0, 1, 0],
     ]
-    lattice_ = Lattices(PreambleZZ)(gram, module_generators=labels)
-    assert tuple(lattice_.module_generating_set()) == labels
+    permutation = (3, 0, 4, 1, 2)
+    permuted_gram = [[gram[i][j] for j in permutation] for i in permutation]
+    permuted_labels = tuple(labels[index] for index in permutation)
+    presentations = (
+        (gram, labels),
+        (permuted_gram, permuted_labels),
+    )
 
     from sage_indefinite_port.indefinite.eichler import EichlerEnvelope
 
-    envelope = EichlerEnvelope(lattice_)
-    assert envelope.scale > 0
-    images = tuple(envelope.similarity(lattice_.module_generator(label)) for label in labels)
-    for i, left in enumerate(images):
-        for j, right in enumerate(images):
-            assert envelope.envelope.b(left, right) == envelope.scale * lattice_.b(
-                lattice_.module_generator(labels[i]), lattice_.module_generator(labels[j])
-            )
-    envelope_labels = tuple(envelope.envelope.module_generating_set())
-    assert all(
-        all(image.to_vector()(label) in SageZZ for label in envelope_labels)
-        for image in images
-    )
+    for gram_matrix, coordinate_labels in presentations:
+        lattice_ = Lattices(PreambleZZ)(gram_matrix, module_generators=coordinate_labels)
+        assert not lattice_.is_even()
+        assert tuple(lattice_.module_generating_set()) == coordinate_labels
+        envelope = EichlerEnvelope(lattice_)
+        assert envelope.scale > 0
+        images = tuple(envelope.similarity(lattice_.module_generator(label)) for label in coordinate_labels)
+        for i, left in enumerate(images):
+            for j, right in enumerate(images):
+                assert envelope.envelope.b(left, right) == envelope.scale * lattice_.b(
+                    lattice_.module_generator(coordinate_labels[i]), lattice_.module_generator(coordinate_labels[j])
+                )
+        envelope_labels = tuple(envelope.envelope.module_generating_set())
+        assert all(
+            all(image.to_vector()(label) in SageZZ for label in envelope_labels)
+            for image in images
+        )
 
 
 def test_conway_sloane_same_genus_pair_is_not_isometric() -> None:
