@@ -23,13 +23,36 @@ from tests.fixtures.oracle_fixtures import load_lorentzian_perfect_domains
 
 def test_non_diagonal_positive_shell_uses_the_pinned_cvp_center() -> None:
     """The first shell in a non-diagonal Lorentzian form matches exact enumeration."""
-    from sage.all import ZZ as SageZZ
-    from sage.all import matrix, vector
+    from sage.all import QQ, ZZ as SageZZ, matrix, vector
+    from sage_indefinite_port.indefinite.lorentzian_cells import (
+        _PositiveVectorEnumerator,
+        _dual_lll_enumeration_key,
+    )
 
     require(PERFECT_DOMAINS)
     lattice_ = lattice([[5, 1, 0], [1, -1, 0], [0, 0, -1]])
+    enumerator = _PositiveVectorEnumerator(
+        lattice_, (1, 0, 0), 5, NONNEGATIVE_SQUARES
+    )
+    first = enumerator.first_shell()
+    assert first is not None and first[0] == 4
     rows = _search_initial_vectors(lattice_, (1, 0, 0), NONNEGATIVE_SQUARES)
+    assert tuple(rows) == first[1]
 
+    kernel_transpose = enumerator.inclusion_rows.transpose().change_ring(QQ)
+    shift = first[0] * enumerator.partner_row
+    close_coordinates = []
+    for row in rows:
+        close = kernel_transpose.solve_right((vector(SageZZ, row) - shift).column())
+        close_coordinates.append(tuple(SageZZ(close[index, 0]) for index in range(close.nrows())))
+    source_order = tuple(
+        row
+        for _coordinates, row in sorted(
+            zip(close_coordinates, rows, strict=True),
+            key=lambda item: _dual_lll_enumeration_key(item[0], enumerator.enumeration_order_transform),
+        )
+    )
+    assert tuple(rows) == source_order
     assert set(rows) == {(1, -1, -1), (1, -1, 0), (1, -1, 1)}
     gram = matrix(SageZZ, [[5, 1, 0], [1, -1, 0], [0, 0, -1]])
     for row in rows:
