@@ -10,7 +10,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument('--sage', required=True)
     p.add_argument('--out', type=Path, required=True)
-    p.add_argument('--batch-size', type=int, default=80)
+    p.add_argument('--batch-size', type=int, default=10)
     p.add_argument('pytest_args', nargs=argparse.REMAINDER)
     a = p.parse_args()
     if a.batch_size < 1:
@@ -34,7 +34,9 @@ def main():
     exitcode = 0
     for offset in range(0, len(nodes), a.batch_size):
         batch = nodes[offset:offset+a.batch_size]
-        report = a.out / f'batch-{offset//a.batch_size}.xml'
+        batch_index = offset // a.batch_size
+        report = a.out / f'batch-{batch_index}.xml'
+        print(f'Batch {batch_index + 1}/{(len(nodes) + a.batch_size - 1) // a.batch_size}: {len(batch)} nodes', flush=True)
         command = prefix + batch + ['--runxfail', '-rA', '--tb=long', '--instafail', f'--junitxml={report}']
         result = subprocess.run(command)
         if report.exists():
@@ -44,7 +46,9 @@ def main():
             else:
                 batches = root.findall('testsuite')
             suite.extend(batches)
-            completed += sum(1 for item in batches for _ in item.iter('testcase'))
+            count = sum(1 for item in batches for _ in item.iter('testcase'))
+            completed += count
+            print(f'Batch {batch_index + 1}: {count} test results, exit={result.returncode}', flush=True)
         if result.returncode:
             exitcode = result.returncode
             if not report.exists():
