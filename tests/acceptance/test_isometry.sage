@@ -162,6 +162,33 @@ def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
     assert is_witness(rows_of(witness), [list(row) for row in gram.rows()], [list(row) for row in conjugate.rows()])
 
 
+def test_eichler_easy_generators_use_complement_coordinate_labels() -> None:
+    """The GRPeasy block decomposition follows the model's coordinate-label order."""
+    from dzack_research.preamble.all import ZZ as PreambleZZ
+    from dzack_research.preamble.all import Lattices
+
+    require(MARKED_ISOMETRY)
+    category = Lattices(PreambleZZ)
+    complement = category([[2, 0], [0, 2]], module_generators=("zeta", "alpha"))
+    lattice_ = category.orthogonal_sum((category("U"), category("U"), complement))
+    model = lattice_.two_u_eichler_model_from_represented_biproduct()
+    selected_complement = model.orthogonal_complement()
+    labels = tuple(selected_complement.module_generating_set())
+    assert labels == ("zeta", "alpha")
+
+    from sage_indefinite_port.indefinite.eichler import OrbitCoverModel
+
+    basis = tuple(model.lattice().module_generators())
+    generators = OrbitCoverModel.source_easy_generators(model)
+    assert generators
+    assert all(
+        model.lattice().b(generator(left), generator(right)) == model.lattice().b(left, right)
+        for generator in generators
+        for left in basis
+        for right in basis
+    )
+
+
 def test_odd_eichler_envelope_uses_declared_coordinate_order() -> None:
     """The even-sublattice envelope construction follows the declared basis labels."""
     from dzack_research.preamble.all import ZZ as PreambleZZ

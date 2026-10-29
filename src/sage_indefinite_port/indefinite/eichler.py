@@ -491,7 +491,9 @@ class OrbitCoverModel:
         ring = lattice.base_ring()
         complement = model.orthogonal_complement()
         inclusion = model.complement_inclusion()
-        basis = model.hyperbolic_basis() + tuple(inclusion(point) for point in complement.module_generators())
+        complement_labels = tuple(complement.module_generating_set())
+        complement_basis = tuple(complement.module_generator(label) for label in complement_labels)
+        basis = model.hyperbolic_basis() + tuple(inclusion(point) for point in complement_basis)
         gram = matrix(SageZZ, [[int(lattice.b(left, right)) for right in basis] for left in basis])
 
         graph = Graph(len(basis))
