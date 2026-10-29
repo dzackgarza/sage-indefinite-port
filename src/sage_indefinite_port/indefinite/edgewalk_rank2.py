@@ -25,19 +25,27 @@ class _OrientedBinaryCycle:
         if int(lattice.rank()) != 2 or tuple(int(index) for index in lattice.signature_pair()) != (1, 1) or lattice.is_isotropic():
             raise ValueError("an oriented binary cycle needs an anisotropic lattice of signature (1,1)")
         self.lattice = lattice
-        first, second = tuple(lattice.module_generators())
+        # The form coefficients and every coordinate conversion must use the
+        # same ordered basis. `module_generators()` returns elements, whereas
+        # the coordinate routines below are indexed by `module_generating_set()`;
+        # derive the basis elements from those labels rather than assuming the
+        # two independently exposed iteration orders coincide.
+        self.labels = tuple(lattice.module_generating_set())
+        if len(self.labels) != 2:
+            raise ArithmeticError("a rank-two binary cycle needs exactly two basis labels")
+        first, second = tuple(lattice.module_generator(label) for label in self.labels)
         self.form = int(first.q()), int(lattice.b(first, second)), int(second.q())
 
     def coordinates(self, point: _Vector) -> tuple[int, ...]:
         coordinates = point.to_vector()
-        values = tuple(_rational(coordinates(label)) for label in self.lattice.module_generating_set())
+        values = tuple(_rational(coordinates(label)) for label in self.labels)
         if any(value.denominator() != 1 for value in values):
             raise ArithmeticError("an integral binary lattice vector has nonintegral coordinates")
         return tuple(int(value) for value in values)
 
     def point(self, coordinates: _Point) -> _Vector:
         ring = self.lattice.base_ring()
-        return self.lattice.linear_combination({label: ring(int(entry)) for label, entry in zip(self.lattice.module_generating_set(), coordinates, strict=True)})
+        return self.lattice.linear_combination({label: ring(int(entry)) for label, entry in zip(self.labels, coordinates, strict=True)})
 
     def pairing(self, left: _Point, right: _Point) -> int:
         a, b, c = self.form
