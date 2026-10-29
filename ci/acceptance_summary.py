@@ -1,12 +1,13 @@
 """Collate the acceptance shards' JUnit reports into one failure list.
 
-Usage: acceptance_summary.py RESULTS_DIR [MATRIX_JSON]
+Usage: acceptance_summary.py RESULTS_DIR [MATRIX_JSON [FAMILY_RESULT [PLAN_RESULT]]]
 
 RESULTS_DIR holds one directory per shard (<family>-<shard>, from `just
 ci-acceptance`), each with junit.xml, commit and research_commit. If MATRIX_JSON
 is supplied, it is the workflow plan's `include` object and every planned shard
-must have an artifact. Writes a Markdown report to stdout and exits 1 when any
-shard lacks an artifact/report or any case did not pass.
+must have an artifact. The family and plan results must both be ``success``.
+Writes a Markdown report to stdout and exits 1 when planning/execution failed,
+any shard lacks an artifact/report, revisions are inconsistent, or a case failed.
 """
 
 import json
@@ -16,7 +17,12 @@ from collections import defaultdict
 from pathlib import Path
 
 
-def main(results_dir: Path, matrix_json: str | None = None, family_result: str = "success") -> int:
+def main(
+    results_dir: Path,
+    matrix_json: str | None = None,
+    family_result: str = "success",
+    plan_result: str = "success",
+) -> int:
     shard_dirs = sorted(path for path in results_dir.iterdir() if path.is_dir()) if results_dir.exists() else []
     if not shard_dirs:
         if matrix_json is None:
@@ -24,16 +30,26 @@ def main(results_dir: Path, matrix_json: str | None = None, family_result: str =
     counts: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
     failures: dict[str, list[str]] = defaultdict(list)
     missing: list[str] = []
+    if plan_result != "success":
+        missing.append(f"acceptance matrix planning job result is {plan_result}, not success")
     if matrix_json is not None:
-        matrix = json.loads(matrix_json)
+        try:
+            matrix = json.loads(matrix_json)
+        except json.JSONDecodeError:
+            matrix = None
+            missing.append("acceptance matrix JSON is missing or invalid")
+        if matrix is not None and (not isinstance(matrix, dict) or not isinstance(matrix.get("include"), list)):
+            matrix = None
+            missing.append("acceptance matrix JSON has no include list")
         if family_result != "success":
             missing.append(f"family matrix job result is {family_result}, not success")
-        expected = {f"{item['family']}-{item['shard']}" for item in matrix["include"]}
-        present = {shard.name for shard in shard_dirs}
-        missing.extend(f"{name} (shard artifact missing)" for name in sorted(expected - present))
-        unexpected = sorted(present - expected)
-        if unexpected:
-            missing.extend(f"{name} (unexpected shard artifact)" for name in unexpected)
+        if matrix is not None:
+            expected = {f"{item['family']}-{item['shard']}" for item in matrix["include"]}
+            present = {shard.name for shard in shard_dirs}
+            missing.extend(f"{name} (shard artifact missing)" for name in sorted(expected - present))
+            unexpected = sorted(present - expected)
+            if unexpected:
+                missing.extend(f"{name} (unexpected shard artifact)" for name in unexpected)
     commits = {(shard / "commit").read_text().strip() for shard in shard_dirs if (shard / "commit").exists()}
     research = {(shard / "research_commit").read_text().strip() for shard in shard_dirs if (shard / "research_commit").exists()}
     for shard in shard_dirs:
@@ -75,12 +91,13 @@ def main(results_dir: Path, matrix_json: str | None = None, family_result: str =
 
 
 if __name__ == "__main__":
-    if len(sys.argv) not in (2, 3, 4):
-        raise SystemExit("usage: acceptance_summary.py RESULTS_DIR [MATRIX_JSON [FAMILY_RESULT]]")
+    if len(sys.argv) not in (2, 3, 4, 5):
+        raise SystemExit("usage: acceptance_summary.py RESULTS_DIR [MATRIX_JSON [FAMILY_RESULT [PLAN_RESULT]]]")
     sys.exit(
         main(
             Path(sys.argv[1]),
             sys.argv[2] if len(sys.argv) >= 3 else None,
             sys.argv[3] if len(sys.argv) >= 4 else "success",
+            sys.argv[4] if len(sys.argv) >= 5 else "success",
         )
     )

@@ -153,3 +153,16 @@ def test_acceptance_summary_rejects_an_empty_junit_report(tmp_path) -> None:
 
     assert result == 1
     assert "perfect_domains-0 (JUnit report has no testcases)" in output.getvalue()
+
+
+def test_acceptance_summary_reports_a_failed_plan_without_valid_matrix_json(tmp_path) -> None:
+    summary = _load_ci_module("acceptance_summary")
+    output = io.StringIO()
+
+    with contextlib.redirect_stdout(output):
+        result = summary.main(tmp_path / "no-results", matrix_json="", family_result="skipped", plan_result="failure")
+
+    assert result == 1
+    assert "acceptance matrix planning job result is failure, not success" in output.getvalue()
+    assert "acceptance matrix JSON is missing or invalid" in output.getvalue()
+    assert "family matrix job result is skipped, not success" in output.getvalue()
