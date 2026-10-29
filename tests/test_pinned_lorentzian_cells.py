@@ -2112,13 +2112,9 @@ def test_fixed_distance_dual_lll_frame_reconstructs_exact_sphere() -> None:
             (ZZ(0), ZZ(1), ZZ(0)),
         }
     )
-    assert tuple(actual) == tuple(
-        sorted(
-            actual,
-            key=lambda item: tuple(
-                (order * vector(ZZ, item[0]).column())[i, 0] for i in reversed(range(3))
-            ),
-        )
+    assert tuple(coordinates for coordinates, _distance in actual) == (
+        (ZZ(0), ZZ(0), ZZ(0)),
+        (ZZ(0), ZZ(1), ZZ(0)),
     )
 
     # Deterministic nontrivial Gram/target/frame combinations check the
@@ -2274,6 +2270,7 @@ def test_bounded_distance_dual_lll_solutions_match_exact_brute_force() -> None:
     from sage.all import QQ, ZZ, identity_matrix, matrix, vector
     from sage_indefinite_port.indefinite.lorentzian_cells import (
         _bounded_distance_dual_lll_solutions,
+        _dual_lll_enumeration_key,
         _positive_ldl_factorization,
     )
 
@@ -2310,6 +2307,9 @@ def test_bounded_distance_dual_lll_solutions_match_exact_brute_force() -> None:
         assert len(actual) == len(actual_by_point)
         assert all(
             distance == expected[coordinates] for coordinates, distance in actual
+        )
+        assert tuple(coordinates for coordinates, _distance in actual) == tuple(
+            sorted(expected, key=lambda coordinates: _dual_lll_enumeration_key(coordinates, order))
         )
 
 
