@@ -57,10 +57,11 @@ ci-provision-sage:
     # [tool.uv.sources], which pip ignores.
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     # The image owns sage-extensions, sage-julia-bridge and the other Sage
-    # projects research depends on; constrain to its installed versions so only
-    # what the image lacks is added.
-    uv pip freeze --python "$sage_python" > {{ci_dir}}/image-constraints.txt
-    uv pip install --quiet --python "$sage_python" --constraint {{ci_dir}}/image-constraints.txt -e {{ci_dir}}/research
+    # projects research depends on. Installing research with dependency
+    # resolution re-resolves those already-installed editable projects and
+    # rejects their different tree-sitter-sage source URLs. Install the exact
+    # provider checkout without replacing the image's dependency graph.
+    uv pip install --quiet --python "$sage_python" --no-deps -e {{ci_dir}}/research
     uv pip install --quiet --python "$sage_python" --no-deps -e .
     git clone --quiet --depth 1 https://github.com/dzackgarza/ai-review-ci {{ci_dir}}/ai-review-ci
 
