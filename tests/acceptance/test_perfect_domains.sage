@@ -185,7 +185,7 @@ def test_facet_orbit_permutation_view_materializes_exact_isometries() -> None:
     from dzack_research.preamble.all import Lattices, ZZ as PreambleZZ
 
     case = next(case for case in load_lorentzian_perfect_domains() if case["id"] == "Result_Enumeration_1")
-    labels = tuple(f"basis_{index}" for index in range(len(case["gram"])))
+    labels = tuple(f"basis_{index:02d}" for index in reversed(range(len(case["gram"]))))
     labelled_lattice = Lattices(PreambleZZ)(case["gram"], module_generators=labels)
     backend = LorentzianPerfectLocalBackend()
     cell = backend.initial_cell(labelled_lattice, NONNEGATIVE_SQUARES)
