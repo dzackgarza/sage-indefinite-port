@@ -86,7 +86,7 @@ def _owned_isometry_from_row_matrix(lattice: Lattices.ParentMethods, rows) -> La
         coordinates = generator.to_vector()
         source_coordinates = tuple(coordinates(label) for label in labels)
         image_coordinates = tuple(
-            sum(source_coordinates[row] * rows[row, column] for row in range(len(labels)))
+            sum(source_coordinates[row] * SageZZ(rows[row, column]) for row in range(len(labels)))
             for column in range(len(labels))
         )
         images.append(lattice.linear_combination({label: value for label, value in zip(labels, image_coordinates, strict=True) if value}))
