@@ -216,7 +216,7 @@ def test_zero_form_orthogonal_group_uses_permuted_coordinate_labels() -> None:
     assert tuple(lattice_.module_generating_set()) == labels
 
     computed = lattice_.O().group_generators()
-    rows = tuple(rows_of(generator) for generator in computed)
+    rows = tuple(tuple(tuple(row) for row in rows_of(generator)) for generator in computed)
 
     assert all(is_isometry(generator_rows, gram) for generator_rows in rows)
     assert all(abs(int(matrix(SageZZ, generator_rows).determinant())) == 1 for generator_rows in rows)
