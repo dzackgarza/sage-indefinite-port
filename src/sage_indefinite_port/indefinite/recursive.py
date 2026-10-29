@@ -132,6 +132,28 @@ def _from_column(lattice: Lattices.ParentMethods, column) -> Lattices.ElementMet
     return lattice.linear_combination({label: int(entry) for label, entry in zip(lattice.module_generating_set(), column, strict=True) if entry})
 
 
+def _isometry_from_row_matrix(source: Lattices.ParentMethods, target: Lattices.ParentMethods, rows: Matrix_integer_dense) -> LatticeIsometryMethods:
+    r"""Build a morphism from image rows in coordinate-label order.
+
+    The pinned source's degenerate extensions and block actions use row
+    matrices, while the public constructor consumes images in module-generator
+    order. Convert explicitly at this boundary.
+    """
+    source_labels = tuple(source.module_generating_set())
+    target_labels = tuple(target.module_generating_set())
+    images = []
+    for generator in source.module_generators():
+        coordinates = generator.to_vector()
+        source_coordinates = tuple(int(coordinates(label)) for label in source_labels)
+        target_coordinates = tuple(
+            sum(source_coordinates[row] * int(rows[row, column]) for row in range(len(source_labels)))
+            for column in range(len(target_labels))
+        )
+        images.append(_from_column(target, target_coordinates))
+    morphism_parent = source.O() if source is target else source.Isom(target)
+    return morphism_parent(tuple(images))
+
+
 def _isometry_from_column_matrix(source: Lattices.ParentMethods, target: Lattices.ParentMethods, columns: Matrix_integer_dense) -> LatticeIsometryMethods:
     r"""Build a morphism from a label-coordinate matrix at the owned API boundary.
 
@@ -241,7 +263,7 @@ class EichlerRecursion:
             block = identity_matrix(SageZZ, size)
             block[row, nonsingular_rank] = 1
             matrices.append(block)
-        return tuple(lattice.O()(tuple(_from_column(lattice, row) for row in block.rows())) for block in matrices)
+        return tuple(_isometry_from_row_matrix(lattice, lattice, block) for block in matrices)
 
     def _degenerate_isometry(self, source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
         r"""IndefiniteForms.g:1387–1423: split radicals, identify them, and extend the nondegenerate witness."""
@@ -273,7 +295,7 @@ class EichlerRecursion:
                 image_coordinates = complement_witness(point).to_vector()
                 for column, label in enumerate(right_labels):
                     extension[row, column] = int(image_coordinates(label))
-        reduced_witness = left.Isom(right)(tuple(_from_column(right, row) for row in extension.rows()))
+        reduced_witness = _isometry_from_row_matrix(left, right, extension)
         self._groupoid.record_isometry(left, right, reduced_witness)
         return _transported(target_reduction.isometry, reduced_witness, source_reduction.isometry)
 

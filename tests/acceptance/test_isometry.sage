@@ -95,6 +95,16 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
         assert tuple(int(actual(label)) for label in labels) == expected
 
 
+    row_matrix = matrix(SageZZ, [[1, 0], [1, 1]])
+    row_morphism = _isometry_from_row_matrix(lattice_, lattice_, row_matrix)
+    for generator in lattice_.module_generators():
+        coordinates = generator.to_vector()
+        source_coordinates = tuple(int(coordinates(label)) for label in labels)
+        expected = tuple(sum(source_coordinates[row] * row_matrix[row, column] for row in range(len(labels))) for column in range(len(labels)))
+        actual = row_morphism(generator).to_vector()
+        assert tuple(int(actual(label)) for label in labels) == expected
+
+
 def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> None:
     """Memoized equal-Gram transport is coordinate identity, not iterator-position identity."""
     from sage_indefinite_port.indefinite.groupoid_cache import coordinate_identification
