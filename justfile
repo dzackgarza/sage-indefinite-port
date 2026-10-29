@@ -130,6 +130,7 @@ ci-acceptance family shard shards selection="":
         tests=(
             tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_automorphism_generators_preserve_marking_and_form
             tests/acceptance/test_vector_stabilizers.sage::test_divisibility_two_isotropic_pointed_isometry_has_exact_witness
+            tests/acceptance/test_vector_stabilizers.sage::test_odd_lattice_isotropic_pointed_isometry_uses_general_divisibility_two_route
             tests/acceptance/test_vector_stabilizers.sage::test_general_isotropic_pointed_isometry_carries_negative_marking
             tests/acceptance/test_vector_stabilizers.sage::test_empty_integral_fibre_falls_back_to_full_marked_vector_stabilizer
             tests/acceptance/test_vector_stabilizers.sage::test_split_divisibility_one_pointed_isometry_carries_actual_negative_marking
