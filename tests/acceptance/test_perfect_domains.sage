@@ -60,6 +60,7 @@ def test_non_diagonal_positive_shell_respects_explicit_coordinate_labels() -> No
 
 def test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center() -> None:
     """The exact-sphere branch finds every isotropic vector in the first shell."""
+    from dzack_research.preamble.all import Lattices, ZZ as PreambleZZ
     from sage.all import QQ, matrix, vector
     from sage.all import ZZ as SageZZ
 
@@ -68,8 +69,11 @@ def test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center() -> None:
     )
 
     require(PERFECT_DOMAINS)
-    gram = matrix(SageZZ, [[1, 1, 0], [1, 0, 0], [0, 0, -1]])
-    lattice_ = lattice([[1, 1, 0], [1, 0, 0], [0, 0, -1]])
+    gram_data = [[1, 1, 0], [1, 0, 0], [0, 0, -1]]
+    labels = ("z_time", "a_second", "m_radical")
+    lattice_ = Lattices(PreambleZZ)(gram_data, module_generators=labels)
+    assert tuple(lattice_.module_generating_set()) == labels
+    gram = matrix(SageZZ, gram_data)
     enumerator = _PositiveVectorEnumerator(lattice_, (QQ(1), QQ(0), QQ(0)), QQ(1), ZERO_SQUARES)
     assert enumerator.base_target_engine_coordinates != (QQ(0), QQ(0))
     first = enumerator.first_shell()
