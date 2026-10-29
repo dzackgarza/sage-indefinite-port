@@ -147,8 +147,12 @@ def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
     gram = matrix(SageZZ, [[2, 1, 0], [1, 2, 0], [0, 0, 0]])
     change = matrix(SageZZ, [[1, 1, 0], [0, 1, 1], [0, 0, 1]])
     conjugate = change * gram * change.transpose()
-    source = Lattices(SageZZ)(gram, module_generators=("a", "b", "radical"))
-    target = Lattices(SageZZ)(conjugate, module_generators=("x", "y", "null"))
+    source_labels = ("zeta", "alpha", "mu")
+    target_labels = ("omega", "beta", "null")
+    source = Lattices(SageZZ)(gram, module_generators=source_labels)
+    target = Lattices(SageZZ)(conjugate, module_generators=target_labels)
+    assert tuple(source.module_generating_set()) == source_labels
+    assert tuple(target.module_generating_set()) == target_labels
 
     assert source.is_isometric(target)
     witness = source.Isom(target).an_element()
@@ -173,6 +177,8 @@ def _unimodular_change_of_basis(rank: int) -> list[list[int]]:
 
 @pytest.mark.parametrize("case", load_ci_indefinite_comp(), ids=lambda case: case["id"])
 def test_change_of_basis_gives_an_isometric_lattice(case) -> None:
+    from sage.all import ZZ, matrix
+
     require(MARKED_ISOMETRY)
 
     gram = matrix(ZZ, case["gram"])
