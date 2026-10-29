@@ -56,7 +56,11 @@ ci-provision-sage:
     # uv, not pip: research declares tree-sitter-sage and sage-stubs only in
     # [tool.uv.sources], which pip ignores.
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
-    uv pip install --quiet --python "$sage_python" -e {{ci_dir}}/research
+    # The image owns sage-extensions, sage-julia-bridge and the other Sage
+    # projects research depends on; constrain to its installed versions so only
+    # what the image lacks is added.
+    uv pip freeze --python "$sage_python" > {{ci_dir}}/image-constraints.txt
+    uv pip install --quiet --python "$sage_python" --constraint {{ci_dir}}/image-constraints.txt -e {{ci_dir}}/research
     uv pip install --quiet --python "$sage_python" --no-deps -e .
     # VinAl's Sage module is src/sage/vinal.py in its checkout (see .envrc), at
     # the commit uv.lock pins.
