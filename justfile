@@ -157,6 +157,7 @@ ci-acceptance family shard shards selection="":
         ;;
       vector_orbits)
         tests=(
+            tests/acceptance/test_vector_orbits.sage::test_anisotropic_binary_vector_classes_use_primitive_embeddings
             'tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_2]'
             'tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_30]'
             'tests/acceptance/test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[0]'
