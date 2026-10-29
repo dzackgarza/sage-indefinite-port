@@ -39,8 +39,9 @@ def main(results_dir: Path, matrix_json: str | None = None, family_result: str =
     for shard in shard_dirs:
         family = shard.name.rsplit("-", 1)[0]
         for revision_file in ("commit", "research_commit"):
-            if not (shard / revision_file).exists():
-                missing.append(f"{shard.name} ({revision_file} missing)")
+            revision_path = shard / revision_file
+            if not revision_path.exists() or not revision_path.read_text().strip():
+                missing.append(f"{shard.name} ({revision_file} missing or empty)")
         report = shard / "junit.xml"
         if not report.exists():
             missing.append(shard.name)

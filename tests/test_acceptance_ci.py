@@ -108,7 +108,14 @@ def test_acceptance_summary_rejects_missing_revision_metadata(tmp_path) -> None:
         result = summary.main(tmp_path, matrix)
 
     assert result == 1
-    assert "perfect_domains-0 (research_commit missing)" in output.getvalue()
+    assert "perfect_domains-0 (research_commit missing or empty)" in output.getvalue()
+
+    (shard / "research_commit").write_text("   \n")
+    output = io.StringIO()
+    with contextlib.redirect_stdout(output):
+        result = summary.main(tmp_path, matrix)
+    assert result == 1
+    assert "perfect_domains-0 (research_commit missing or empty)" in output.getvalue()
 
 
 def test_acceptance_summary_rejects_a_failed_family_matrix(tmp_path) -> None:
