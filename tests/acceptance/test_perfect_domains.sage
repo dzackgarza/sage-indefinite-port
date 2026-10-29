@@ -182,9 +182,13 @@ def test_facet_orbit_permutation_view_materializes_exact_isometries() -> None:
     """The public owned-isometry view agrees with the internal Schreier permutations."""
     require(PERFECT_DOMAINS)
 
+    from dzack_research.preamble.all import Lattices, ZZ as PreambleZZ
+
     case = next(case for case in load_lorentzian_perfect_domains() if case["id"] == "Result_Enumeration_1")
+    labels = tuple(f"basis_{index}" for index in range(len(case["gram"])))
+    labelled_lattice = Lattices(PreambleZZ)(case["gram"], module_generators=labels)
     backend = LorentzianPerfectLocalBackend()
-    cell = backend.initial_cell(lattice(case["gram"]), NONNEGATIVE_SQUARES)
+    cell = backend.initial_cell(labelled_lattice, NONNEGATIVE_SQUARES)
     permutation_orbits = backend.facet_orbit_permutations(cell)
     isometry_orbits = backend.facet_orbits(cell)
 
