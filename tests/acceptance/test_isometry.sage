@@ -146,6 +146,13 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
         assert eichler_morphism(generator) == same_lattice_morphism(generator)
 
     try:
+        eichler_row_isometry(source, matrix(SageZZ, [[1, 0], [0, 2]]))
+    except ValueError as error:
+        assert "does not define an isometry" in str(error)
+    else:
+        raise AssertionError("Eichler row-matrix constructor accepted a non-isometry")
+
+    try:
         _isometry_from_row_matrix(source, target, matrix(SageZZ, [[1, 0], [0, 2]]))
     except ValueError as error:
         assert "does not define an isometry" in str(error)

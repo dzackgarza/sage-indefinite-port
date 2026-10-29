@@ -57,23 +57,18 @@ from sage_indefinite_port.indefinite.indefinite_reduction import (
 
 
 def _isometry_from_row_matrix(lattice: Lattices.ParentMethods, rows) -> LatticeIsometryMethods:
-    """Build the isometry represented by image rows in coordinate-label order.
+    """Build an exact owned isometry from source-defined row coordinates.
 
-    The pinned approximate-model matrices use rows for images of the ordered
-    coordinate basis, while the public ``O()`` constructor consumes images in
-    ``module_generators()`` order. Translate explicitly at that boundary.
+    Share the recursive module's checked row-matrix boundary so the pinned
+    approximate-model matrices receive the same shape, Gram-identity, and
+    declared-label-order guarantees as every other row-matrix consumer.
+    The import is local because recursive owns OrbitCoverModel.
     """
-    labels = tuple(lattice.module_generating_set())
-    images = []
-    for generator in lattice.module_generators():
-        coordinates = generator.to_vector()
-        source_coordinates = tuple(coordinates(label) for label in labels)
-        image_coordinates = tuple(
-            sum(source_coordinates[row] * rows[row, column] for row in range(len(labels)))
-            for column in range(len(labels))
-        )
-        images.append(lattice.linear_combination({label: value for label, value in zip(labels, image_coordinates, strict=True) if value}))
-    return lattice.O()(tuple(images))
+    from sage_indefinite_port.indefinite.recursive import (
+        _isometry_from_row_matrix as checked_row_isometry,
+    )
+
+    return checked_row_isometry(lattice, lattice, rows)
 
 
 
