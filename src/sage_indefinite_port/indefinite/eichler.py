@@ -48,6 +48,12 @@ from sage.structure.element import RingElement
 from sage.structure.sage_object import SageObject
 
 from sage_indefinite_port.indefinite.exact_isotropic import find_isotropic_exact
+from sage_indefinite_port.indefinite.indefinite_reduction import (
+    _compute_indefinite_reduction,
+    _gram_l1,
+    _indefinite_lll,
+    _random_signed_permutation,
+)
 
 
 def _isometry_from_row_matrix(lattice: Lattices.ParentMethods, rows) -> LatticeIsometryMethods:
@@ -69,13 +75,6 @@ def _isometry_from_row_matrix(lattice: Lattices.ParentMethods, rows) -> LatticeI
         images.append(lattice.linear_combination({label: value for label, value in zip(labels, image_coordinates, strict=True) if value}))
     return lattice.O()(tuple(images))
 
-
-from sage_indefinite_port.indefinite.indefinite_reduction import (
-    _compute_indefinite_reduction,
-    _gram_l1,
-    _indefinite_lll,
-    _random_signed_permutation,
-)
 
 
 def square_divisors(integer: int) -> tuple[int, ...]:
