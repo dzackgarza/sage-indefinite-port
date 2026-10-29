@@ -125,8 +125,11 @@ agreed milestones.
 
 GitHub [Acceptance](.github/workflows/acceptance.yml) runs the full frozen
 suite in sharded Sage jobs on every push using the
-`ghcr.io/dzackgarza/sage:develop` research image (built by the Sage fork); the run
+`ghcr.io/dzackgarza/sage:develop` research image; the run
 installs the published `research` branch and records its commit.
+Only the fork's `Research environment image` workflow builds that image,
+from commits pushed to `dzackgarza/sage` `develop`. Sage source is never
+checked out or built on the host.
 Use the exact run/artifact for the revision under discussion. Job status
 alone cannot prove a case passed. A full workflow can be red while the
 explicitly cited branch-representative samples pass; conversely, an
