@@ -491,9 +491,7 @@ class OrbitCoverModel:
         ring = lattice.base_ring()
         complement = model.orthogonal_complement()
         inclusion = model.complement_inclusion()
-        complement_labels = tuple(complement.module_generating_set())
-        complement_basis = tuple(complement.module_generator(label) for label in complement_labels)
-        basis = model.hyperbolic_basis() + tuple(inclusion(point) for point in complement_basis)
+        basis = model.hyperbolic_basis() + tuple(inclusion(point) for point in complement.module_generators())
         gram = matrix(SageZZ, [[int(lattice.b(left, right)) for right in basis] for left in basis])
 
         graph = Graph(len(basis))
@@ -665,8 +663,7 @@ class OrbitCoverModel:
         inclusion = model.complement_inclusion()
         isotropic = model.hyperbolic_basis()
         e, f, e_prime, f_prime = isotropic
-        complement_labels = tuple(complement.module_generating_set())
-        embedded = tuple(inclusion(complement.module_generator(label)) for label in complement_labels)
+        embedded = tuple(inclusion(point) for point in complement.module_generators())
         # A basis of the isotropic point's perpendicular, less the point
         # itself: E_{f,f} is the identity (q(f) = 0 and (y,f)f - (y,f)f = 0),
         # and E_{f,x} is additive in x (ApproximateModels.h:62-76), so the
