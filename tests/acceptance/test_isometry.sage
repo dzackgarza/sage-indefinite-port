@@ -77,9 +77,13 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
     from sage.all import ZZ as SageZZ
     from sage.all import matrix
 
+    from sage_indefinite_port.indefinite.eichler import (
+        _isometry_from_row_matrix as eichler_row_isometry,
+    )
     from sage_indefinite_port.indefinite.recursive import (
         _column_matrix,
         _isometry_from_column_matrix,
+        _isometry_from_row_matrix,
     )
 
     lattice_ = lattice([[2, 1], [1, 2]])
@@ -103,6 +107,10 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
         expected = tuple(sum(source_coordinates[row] * row_matrix[row, column] for row in range(len(labels))) for column in range(len(labels)))
         actual = row_morphism(generator).to_vector()
         assert tuple(int(actual(label)) for label in labels) == expected
+
+    eichler_morphism = eichler_row_isometry(lattice_, row_matrix)
+    for generator in lattice_.module_generators():
+        assert eichler_morphism(generator) == row_morphism(generator)
 
 
 def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> None:
