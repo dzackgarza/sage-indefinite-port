@@ -247,11 +247,12 @@ def test_odd_eichler_envelope_uses_declared_coordinate_order() -> None:
         assert tuple(lattice_.module_generating_set()) == coordinate_labels
         envelope = EichlerEnvelope(lattice_)
         assert envelope.scale == 2
+        assert envelope.similarity.multiplier() == 4
         assert envelope.envelope.is_even()
         images = tuple(envelope.similarity(lattice_.module_generator(label)) for label in coordinate_labels)
         for i, left in enumerate(images):
             for j, right in enumerate(images):
-                assert envelope.envelope.b(left, right) == envelope.scale * lattice_.b(
+                assert envelope.envelope.b(left, right) == envelope.scale**2 * lattice_.b(
                     lattice_.module_generator(coordinate_labels[i]), lattice_.module_generator(coordinate_labels[j])
                 )
         envelope_labels = tuple(envelope.envelope.module_generating_set())
