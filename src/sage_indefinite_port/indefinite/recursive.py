@@ -120,9 +120,11 @@ def _extend_perpendicular_isometry(
 def _column_matrix(isometry: LatticeIsometryMethods) -> Matrix_integer_dense:
     r"""The integer matrix whose column ``j`` holds the coordinates of the image of generator ``j``."""
     domain, codomain = isometry.domain(), isometry.codomain()
-    labels = tuple(codomain.module_generating_set())
-    images = tuple(isometry(generator).to_vector() for generator in domain.module_generators())
-    return matrix(SageZZ, [[int(image(label)) for image in images] for label in labels])
+    codomain_labels = tuple(codomain.module_generating_set())
+    domain_labels = tuple(domain.module_generating_set())
+    domain_basis = tuple(domain.module_generator(label) for label in domain_labels)
+    images = tuple(isometry(generator).to_vector() for generator in domain_basis)
+    return matrix(SageZZ, [[int(image(label)) for image in images] for label in codomain_labels])
 
 
 def _from_column(lattice: Lattices.ParentMethods, column) -> Lattices.ElementMethods:
