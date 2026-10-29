@@ -149,7 +149,9 @@ jobs:
           merge-multiple: true
       - env:
           ACCEPTANCE_MATRIX: ${{ needs.plan.outputs.matrix }}
-        run: python3 ci/acceptance_summary.py results "$ACCEPTANCE_MATRIX" | tee -a "$GITHUB_STEP_SUMMARY" acceptance-failures.md
+        run: |
+          set -o pipefail
+          python3 ci/acceptance_summary.py results "$ACCEPTANCE_MATRIX" | tee -a "$GITHUB_STEP_SUMMARY" acceptance-failures.md
       - if: always()
         uses: actions/upload-artifact@v4
         with:
