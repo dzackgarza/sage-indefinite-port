@@ -52,7 +52,7 @@ def main(results_dir: Path, matrix_json: str | None = None) -> int:
         row = counts[family]
         print(f"| {family} | {row['passed']} | {row['failure']} | {row['error']} | {row['skipped']} |")
     if missing:
-        print("\n## Shards without a JUnit report (setup failure or hard timeout)\n")
+        print("\n## Missing, unexpected, or report-less shards\n")
         print("\n".join(f"- {name}" for name in missing))
     for family in sorted(failures):
         print(f"\n## {family}\n")
