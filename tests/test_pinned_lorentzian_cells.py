@@ -2582,7 +2582,7 @@ def test_positive_vector_shell_matches_exact_nonzero_center_enumeration() -> Non
     first = enumerator.first_shell()
     assert first is not None and first[0] == 4
     rows = first[1]
-    assert set(rows) == {(1, -1, -1), (1, -1, 0), (1, -1, 1)}
+    assert rows == ((1, -1, -1), (1, -1, 0), (1, -1, 1))
     assert all(
         (vector(SageZZ, row) * enumerator.gram * vector(SageZZ, row).column())[0] >= 0
         and (vector(SageZZ, row) * enumerator.timelike_covector)[0] == 4

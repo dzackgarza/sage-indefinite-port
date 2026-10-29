@@ -105,7 +105,7 @@ def test_positive_shell_survives_a_permuted_gram_basis() -> None:
     assert first is not None and first[0] == 4
     rows = _search_initial_vectors(lattice_, (0, 1, 0), NONNEGATIVE_SQUARES)
     assert tuple(rows) == first[1]
-    assert set(rows) == {(-1, 1, -1), (0, 1, -1), (1, 1, -1)}
+    assert tuple(rows) == ((-1, 1, -1), (0, 1, -1), (1, 1, -1))
     form = matrix(SageZZ, gram)
     direction = vector(SageZZ, (0, 1, 0))
     for row in rows:
