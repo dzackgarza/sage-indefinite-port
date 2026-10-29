@@ -296,9 +296,16 @@ def test_isotropic_flag_isometry_transports_between_changed_basis_parents() -> N
 
 def test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks() -> None:
     """The plane stabilizer preserves J setwise; the flag stabilizer also preserves Zu."""
-    lattice_ = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
-    first = element(lattice_, [1, 0, 0, 0])
-    second = element(lattice_, [0, 0, 1, 0])
+    from dzack_research.preamble.all import ZZ as PreambleZZ
+    from dzack_research.preamble.all import Lattices
+
+    labels = ("e", "f", "u", "v")
+    lattice_ = Lattices(PreambleZZ)(
+        [[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]],
+        module_generators=labels,
+    )
+    first = lattice_.linear_combination({"e": 1})
+    second = lattice_.linear_combination({"u": 1})
     plane = lattice_.primitive_isotropic_subobject(first, second)
     flag_line = first + second
     induction = IsotropicInduction(EichlerRecursion())
