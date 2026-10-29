@@ -201,12 +201,12 @@ class _Edgewalk:
         self.lattice = lattice
         self.rank = int(lattice.rank())
         self.labels = tuple(lattice.module_generating_set())
-        generators = tuple(lattice.module_generators())
+        coordinate_basis = _coordinate_basis(lattice)
         self.gram = _engine_component_matrix(lattice.gram_tensor()).change_ring(SageQQ)
         self.rational = lattice.vector_space()
         self.field = lattice.base_ring().fraction_field()
         self.norms = tuple(int(norm) for norm in lattice.possible_root_lengths())
-        self.identity_key = tuple(_key(generator) for generator in generators)
+        self.identity_key = tuple(_key(generator) for generator in coordinate_basis)
         # The congruence matrix and its homogeneous integral kernel in
         # Get_DataMapping depend on the root norm, not the affine coset.
         # They are reused for every height of one Vinberg search.
@@ -1319,7 +1319,7 @@ class _Edgewalk:
         return self.coloured_family(tuple(zip(vectors, colours, strict=True)))
 
     def isometry_key(self, isometry: LatticeIsometryMethods) -> tuple[_Key, ...]:
-        return tuple(self.key(isometry(generator)) for generator in self.lattice.module_generators())
+        return tuple(self.key(isometry(generator)) for generator in _coordinate_basis(self.lattice))
 
     @staticmethod
     def common_fixed_space(invariant: Parent, isometry: LatticeIsometryMethods) -> Parent | None:
