@@ -2521,6 +2521,25 @@ def test_positive_vector_constructor_uses_cpp_semantic_cvp_center() -> None:
     assert enumerator.base_target_engine_coordinates != tuple(-entry for entry in expected.column(0))
 
 
+def test_positive_vector_shell_respects_explicit_coordinate_labels() -> None:
+    """The shell's Gram, timelike row, and returned rows share the labelled basis frame."""
+    from dzack_research.preamble.all import Lattices, ZZ
+    from sage.all import QQ
+    from sage_indefinite_port.indefinite.lorentzian_cells import NONNEGATIVE_SQUARES, _PositiveVectorEnumerator
+
+    gram = [[5, 1, 0], [1, -1, 0], [0, 0, -1]]
+    default_lattice = Lattices(ZZ)(gram)
+    labelled_lattice = Lattices(ZZ)(gram, module_generators=("time", "space", "auxiliary"))
+    default = _PositiveVectorEnumerator(default_lattice, (QQ(1), QQ(0), QQ(0)), QQ(5), NONNEGATIVE_SQUARES)
+    labelled = _PositiveVectorEnumerator(labelled_lattice, (QQ(1), QQ(0), QQ(0)), QQ(5), NONNEGATIVE_SQUARES)
+
+    assert labelled.gram == default.gram
+    assert labelled.timelike_row == default.timelike_row
+    assert labelled.inclusion_rows == default.inclusion_rows
+    assert labelled.base_target_coordinates == default.base_target_coordinates
+    assert labelled.first_shell() == default.first_shell()
+
+
 def test_positive_vector_shell_matches_exact_nonzero_center_enumeration() -> None:
     """The nonzero affine CVP center yields exactly the integral shell vectors in a non-diagonal form."""
     from dzack_research.preamble.all import Lattices, ZZ
