@@ -25,6 +25,7 @@ def test_non_diagonal_positive_shell_uses_the_pinned_cvp_center() -> None:
     """The first shell in a non-diagonal Lorentzian form matches exact enumeration."""
     from sage.all import ZZ as SageZZ, matrix, vector
 
+    require(PERFECT_DOMAINS)
     lattice_ = lattice([[5, 1, 0], [1, -1, 0], [0, 0, -1]])
     rows = _search_initial_vectors(lattice_, (1, 0, 0), NONNEGATIVE_SQUARES)
 
@@ -41,6 +42,7 @@ def test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center() -> None:
     from sage.all import QQ, ZZ as SageZZ, matrix, vector
     from sage_indefinite_port.indefinite.lorentzian_cells import _PositiveVectorEnumerator
 
+    require(PERFECT_DOMAINS)
     gram = matrix(SageZZ, [[1, 1, 0], [1, 0, 0], [0, 0, -1]])
     lattice_ = lattice([[1, 1, 0], [1, 0, 0], [0, 0, -1]])
     enumerator = _PositiveVectorEnumerator(lattice_, (QQ(1), QQ(0), QQ(0)), QQ(1), ZERO_SQUARES)
