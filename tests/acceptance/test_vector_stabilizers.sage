@@ -299,13 +299,14 @@ def test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks()
     from dzack_research.preamble.all import ZZ as PreambleZZ
     from dzack_research.preamble.all import Lattices
 
-    labels = ("e", "f", "u", "v")
+    labels = ("z_first", "a_second", "m_third", "b_fourth")
     lattice_ = Lattices(PreambleZZ)(
         [[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]],
         module_generators=labels,
     )
-    first = lattice_.linear_combination({"e": 1})
-    second = lattice_.linear_combination({"u": 1})
+    assert tuple(lattice_.module_generating_set()) == labels
+    first = lattice_.linear_combination({labels[0]: 1})
+    second = lattice_.linear_combination({labels[2]: 1})
     plane = lattice_.primitive_isotropic_subobject(first, second)
     flag_line = first + second
     induction = IsotropicInduction(EichlerRecursion())
