@@ -14,8 +14,8 @@ from dzack_research.preamble.categories.definite_lattices import (
     _reduction_from_backend_rows,
 )
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
-from sage.matrix.constructor import identity_matrix, matrix
 from sage.libs.gap.libgap import libgap
+from sage.matrix.constructor import identity_matrix, matrix
 from sage.modules.free_module_element import vector
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
