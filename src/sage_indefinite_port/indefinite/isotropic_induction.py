@@ -114,8 +114,10 @@ class IsotropicInduction:
 
     @staticmethod
     def plane_vectors(plane: Parent) -> tuple[Vector, ...]:
+        r"""A basis of the plane in the coordinate-label order used by its frame."""
         inclusion = plane.inclusion()
-        return tuple(inclusion(generator) for generator in inclusion.domain().module_generators())
+        domain = inclusion.domain()
+        return tuple(inclusion(domain.module_generator(label)) for label in domain.module_generating_set())
 
     def line_isometry(self, source: Vector, target: Vector) -> LatticeIsometryMethods | None:
         r"""An isometry carrying Zu onto Zw: one carrying u to w or to -w."""

@@ -13,6 +13,8 @@ from collections import Counter
 
 import pytest
 
+from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+from sage_indefinite_port.indefinite.recursive import EichlerRecursion
 from tests.acceptance.consumer import (
     MARKED_AUTOMORPHISMS,
     MARKED_CLASSES,
@@ -37,8 +39,6 @@ from tests.fixtures.oracle_fixtures import (
     load_e10_vector_orbits,
     load_oscar_lattice_oracles,
 )
-from sage_indefinite_port.indefinite.recursive import EichlerRecursion
-from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
 
 _E10 = load_e10_fundamental_domain()
 _ORDER_O_PLUS_10_2 = 2**21 * 3**5 * 5**2 * 7 * 17 * 31
@@ -303,7 +303,7 @@ def test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks()
     flag_line = first + second
     induction = IsotropicInduction(EichlerRecursion())
     plane_inclusion = plane.inclusion()
-    plane_basis = tuple(plane_inclusion(generator) for generator in plane_inclusion.domain().module_generators())
+    plane_basis = induction.plane_vectors(plane)
     ambient_basis = tuple(lattice_.module_generators())
 
     line_generators = induction.line_automorphism_generators(lattice_, first)
