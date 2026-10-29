@@ -129,3 +129,20 @@ def test_acceptance_summary_rejects_a_failed_family_matrix(tmp_path) -> None:
 
     assert result == 1
     assert "family matrix job result is failure, not success" in output.getvalue()
+
+
+def test_acceptance_summary_rejects_an_empty_junit_report(tmp_path) -> None:
+    summary = _load_ci_module("acceptance_summary")
+    matrix = json.dumps({"include": [{"family": "perfect_domains", "shard": 0, "shards": 1}]})
+    shard = tmp_path / "perfect_domains-0"
+    shard.mkdir()
+    ET.ElementTree(ET.Element("testsuites")).write(shard / "junit.xml")
+    (shard / "commit").write_text("port-revision")
+    (shard / "research_commit").write_text("provider-revision")
+    output = io.StringIO()
+
+    with contextlib.redirect_stdout(output):
+        result = summary.main(tmp_path, matrix)
+
+    assert result == 1
+    assert "perfect_domains-0 (JUnit report has no testcases)" in output.getvalue()

@@ -45,7 +45,10 @@ def main(results_dir: Path, matrix_json: str | None = None, family_result: str =
         if not report.exists():
             missing.append(shard.name)
             continue
-        for case in ET.parse(report).getroot().iter("testcase"):
+        cases = tuple(ET.parse(report).getroot().iter("testcase"))
+        if not cases:
+            missing.append(f"{shard.name} (JUnit report has no testcases)")
+        for case in cases:
             node = f"{case.get('classname')}::{case.get('name')}"
             outcome = next((child.tag for child in case if child.tag in ("failure", "error", "skipped")), "passed")
             counts[family][outcome] += 1
