@@ -189,8 +189,11 @@ def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
     assert tuple(target.module_generating_set()) == target_labels
 
     assert source.is_isometric(target)
+    from sage_indefinite_port.indefinite.recursive import _column_matrix
+
     witness = source.Isom(target).an_element()
-    assert is_witness(rows_of(witness), [list(row) for row in gram.rows()], [list(row) for row in conjugate.rows()])
+    witness_rows = _column_matrix(witness).transpose().rows()
+    assert is_witness(witness_rows, [list(row) for row in gram.rows()], [list(row) for row in conjugate.rows()])
 
 
 def test_eichler_generator_families_preserve_nonlexical_complement() -> None:
