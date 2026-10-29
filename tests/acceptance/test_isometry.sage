@@ -234,9 +234,26 @@ def test_odd_eichler_envelope_uses_declared_coordinate_order() -> None:
     permutation = (3, 0, 4, 1, 2)
     permuted_gram = [[gram[i][j] for j in permutation] for i in permutation]
     permuted_labels = tuple(labels[index] for index in permutation)
+    multiple_odd_labels = ("z_odd", "a_odd", "m_first", "b_first", "c_second", "d_second")
+    multiple_odd_gram = [
+        [1, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0],
+        [0, 0, 1, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1],
+        [0, 0, 0, 0, 1, 0],
+    ]
+    multiple_odd_permutation = (5, 1, 3, 0, 4, 2)
+    multiple_odd_permuted_gram = [
+        [multiple_odd_gram[i][j] for j in multiple_odd_permutation]
+        for i in multiple_odd_permutation
+    ]
+    multiple_odd_permuted_labels = tuple(multiple_odd_labels[index] for index in multiple_odd_permutation)
     presentations = (
         (gram, labels),
         (permuted_gram, permuted_labels),
+        (multiple_odd_gram, multiple_odd_labels),
+        (multiple_odd_permuted_gram, multiple_odd_permuted_labels),
     )
 
     from sage_indefinite_port.indefinite.eichler import EichlerEnvelope
