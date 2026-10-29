@@ -18,7 +18,7 @@ def main():
     args = a.pytest_args
     if args and args[0] == '--':
         args = args[1:]
-    prefix = [a.sage, '-python', '-c', 'import sage.all,sys,pytest;sys.exit(pytest.main(sys.argv[1:]))', 'sage-pytest']
+    prefix = [a.sage, '-python', '-c', 'import sage.all,sys,pytest;sys.exit(pytest.main(sys.argv[1:]))']
     pytest_args = ['-p', 'qc_sage_session']
     collected = subprocess.run(prefix + pytest_args + args + ['--collect-only', '-q'], capture_output=True, text=True)
     if collected.returncode not in (0, 5):
