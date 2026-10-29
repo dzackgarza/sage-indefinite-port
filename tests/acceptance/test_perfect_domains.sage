@@ -31,7 +31,7 @@ def test_non_diagonal_positive_shell_uses_the_pinned_cvp_center() -> None:
     gram = matrix(SageZZ, [[5, 1, 0], [1, -1, 0], [0, 0, -1]])
     for row in rows:
         point = vector(SageZZ, row)
-        assert point * gram * point.column() in {1, 2}
+        assert (point * gram * point.column())[0] in {1, 2}
         assert (point * gram * vector(SageZZ, (1, 0, 0)).column())[0] == 4
 
 
