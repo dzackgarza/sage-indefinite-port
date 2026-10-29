@@ -71,7 +71,7 @@ jobs:
       SAGE_BIN: /sage/.venv/bin/sage
       # The image's read-only depot holds Oscar; the cached writable depot
       # in front of it holds the bridge environment's resolved packages.
-      JULIA_DEPOT_PATH: /github/home/.julia:/opt/julia-depot:
+      JULIA_DEPOT_PATH: "/github/home/.julia:/opt/julia-depot:"
     outputs:
       key: ${{ steps.key.outputs.key }}
     steps:
@@ -114,7 +114,7 @@ jobs:
       SAGE_BIN: /sage/.venv/bin/sage
       # The image's read-only depot holds Oscar; the cached writable depot
       # in front of it holds the bridge environment's resolved packages.
-      JULIA_DEPOT_PATH: /github/home/.julia:/opt/julia-depot:
+      JULIA_DEPOT_PATH: "/github/home/.julia:/opt/julia-depot:"
     strategy:
       fail-fast: false
       # Keep independent Sage processes below the runner memory-pressure threshold.
