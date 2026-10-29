@@ -79,7 +79,10 @@ def test_promised_go_left_preserves_left_supplement() -> None:
 def test_binary_cycle_coordinate_order_and_period_certificate() -> None:
     """The rank-two period is an isometry in the owned lattice's generator order."""
     require(EDGEWALK)
-    for gram, bound in (([[1, 1], [1, -1]], 1), ([[2, 0], [0, -1]], 2)):
+    for gram, bound, expected_representatives in (
+        ([[1, 1], [1, -1]], 1, ((1, 2),)),
+        ([[2, 0], [0, -1]], 2, ((1, 1), (3, 4))),
+    ):
         lattice_ = lattice(gram)
         cycle = _OrientedBinaryCycle(lattice_)
         first, second = tuple(lattice_.module_generator(label) for label in cycle.labels)
@@ -93,7 +96,7 @@ def test_binary_cycle_coordinate_order_and_period_certificate() -> None:
         result = cycle.cycle(bound, cycle.point((1, 0)))
         assert result is not None
         period, representatives = result
-        assert representatives
+        assert tuple(cycle.coordinates(point) for point in representatives) == expected_representatives
         assert all(0 < int(point.q()) <= bound and int(point.content()) == 1 for point in representatives)
         basis = tuple(lattice_.module_generators())
         assert period.determinant() == 1
