@@ -177,10 +177,7 @@ def test_eichler_generator_families_preserve_nonlexical_complement() -> None:
     labels = tuple(selected_complement.module_generating_set())
     assert labels == ("zeta", "alpha")
 
-    from sage_indefinite_port.indefinite.eichler import (
-        OrbitCoverModel,
-        _isometry_from_row_matrix,
-    )
+    from sage_indefinite_port.indefinite.eichler import OrbitCoverModel
 
     lattice_basis = tuple(model.lattice().module_generators())
     model_basis = model.hyperbolic_basis() + tuple(
