@@ -62,12 +62,6 @@ ci-provision-sage:
     uv pip freeze --python "$sage_python" > {{ci_dir}}/image-constraints.txt
     uv pip install --quiet --python "$sage_python" --constraint {{ci_dir}}/image-constraints.txt -e {{ci_dir}}/research
     uv pip install --quiet --python "$sage_python" --no-deps -e .
-    # VinAl's Sage module is src/sage/vinal.py in its checkout (see .envrc), at
-    # the commit uv.lock pins.
-    vinal_rev="$(sed -n 's|^source = { git = "https://github.com/dzackgarza/vinal#\([0-9a-f]*\)" }$|\1|p' uv.lock)"
-    test -n "$vinal_rev"
-    git clone --quiet https://github.com/dzackgarza/vinal {{ci_dir}}/vinal
-    git -C {{ci_dir}}/vinal -c advice.detachedHead=false checkout --quiet "$vinal_rev"
     git clone --quiet --depth 1 https://github.com/dzackgarza/ai-review-ci {{ci_dir}}/ai-review-ci
 
 # CI only: the bridge's Julia environment, instantiated and precompiled into the default depot.
@@ -97,7 +91,7 @@ ci-acceptance family shard shards selection="":
     git rev-parse HEAD > "$out/commit"
     git -C {{ci_dir}}/research rev-parse HEAD > "$out/research_commit"
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
-    export PYTHONPATH="$PWD/{{ci_dir}}/ai-review-ci/tool-artifacts/pytest_plugins:$PWD/src:$PWD:$PWD/{{ci_dir}}/vinal/src/sage"
+    export PYTHONPATH="$PWD/{{ci_dir}}/ai-review-ci/tool-artifacts/pytest_plugins:$PWD/src:$PWD"
     # SIGINT before the job's hard limit, so pytest still writes the JUnit
     # report for every case that finished.
     case "{{selection}}" in
