@@ -52,6 +52,29 @@ def test_lorentzian_pairs_are_isometric(case) -> None:
     _assert_isometric(case["mat1"], case["mat2"])
 
 
+def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
+    """Matrix columns use coordinate labels; the public morphism takes generator-order images."""
+    from sage.all import ZZ as SageZZ
+    from sage.all import matrix
+
+    from sage_indefinite_port.indefinite.recursive import (
+        _column_matrix,
+        _isometry_from_column_matrix,
+    )
+
+    lattice_ = lattice([[2, 1], [1, 2]])
+    labels = tuple(lattice_.module_generating_set())
+    columns = matrix(SageZZ, [[1, 1], [0, 1]])
+    morphism = _isometry_from_column_matrix(lattice_, lattice_, columns)
+
+    assert _column_matrix(morphism) == columns
+    for generator in lattice_.module_generators():
+        coordinates = generator.to_vector()
+        expected = tuple(sum(columns[row, column] * int(coordinates(labels[column])) for column in range(len(labels))) for row in range(len(labels)))
+        actual = morphism(generator).to_vector()
+        assert tuple(int(actual(label)) for label in labels) == expected
+
+
 def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> None:
     """Memoized equal-Gram transport is coordinate identity, not iterator-position identity."""
     from sage_indefinite_port.indefinite.groupoid_cache import coordinate_identification
