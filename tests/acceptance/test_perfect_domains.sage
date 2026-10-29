@@ -41,21 +41,7 @@ def test_non_diagonal_positive_shell_uses_the_pinned_cvp_center() -> None:
     rows = _search_initial_vectors(lattice_, (1, 0, 0), NONNEGATIVE_SQUARES)
     assert tuple(rows) == first[1]
 
-    kernel_transpose = enumerator.inclusion_rows.transpose().change_ring(QQ)
-    shift = first[0] * enumerator.partner_row
-    close_coordinates = []
-    for row in rows:
-        close = kernel_transpose.solve_right((vector(SageZZ, row) - shift).column())
-        close_coordinates.append(tuple(SageZZ(close[index, 0]) for index in range(close.nrows())))
-    source_order = tuple(
-        row
-        for _coordinates, row in sorted(
-            zip(close_coordinates, rows, strict=True),
-            key=lambda item: _dual_lll_enumeration_key(item[0], enumerator.enumeration_order_transform),
-        )
-    )
-    assert tuple(rows) == source_order
-    assert set(rows) == {(1, -1, -1), (1, -1, 0), (1, -1, 1)}
+    assert tuple(rows) == ((1, -1, -1), (1, -1, 0), (1, -1, 1))
     gram = matrix(SageZZ, [[5, 1, 0], [1, -1, 0], [0, 0, -1]])
     for row in rows:
         point = vector(SageZZ, row)
@@ -133,6 +119,11 @@ def test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center() -> None:
     assert tuple(lattice_.module_generating_set()) == labels
     gram = matrix(SageZZ, gram_data)
     enumerator = _PositiveVectorEnumerator(lattice_, (QQ(1), QQ(0), QQ(0)), QQ(1), ZERO_SQUARES)
+    # For this pinned kernel basis the source's direct/dual LLL passes leave
+    # the identity transform unchanged. Fix it independently here instead of
+    # letting the production transform define its own expected shell order.
+    source_order_transform = matrix(SageZZ, [[1, 0], [0, 1]])
+    assert enumerator.enumeration_order_transform == source_order_transform
     assert enumerator.base_target_engine_coordinates != (QQ(0), QQ(0))
     first = enumerator.first_shell()
     assert first is not None and first[0] == 1
@@ -150,7 +141,7 @@ def test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center() -> None:
         row
         for _coordinates, row in sorted(
             zip(expected_close_coordinates, expected_rows, strict=True),
-            key=lambda item: _dual_lll_enumeration_key(item[0], enumerator.enumeration_order_transform),
+            key=lambda item: _dual_lll_enumeration_key(item[0], source_order_transform),
         )
     )
     assert tuple(rows) == expected_source_order
