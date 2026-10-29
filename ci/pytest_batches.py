@@ -3,7 +3,17 @@ import argparse
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
+from collections import Counter
 from pathlib import Path
+
+
+def junit_key(nodeid):
+    """Translate a collected pytest node ID to its JUnit classname/name pair."""
+    parts = nodeid.split('::')
+    classname = parts[0].replace('/', '.')
+    if len(parts) > 2:
+        classname += '.' + '.'.join(parts[1:-1])
+    return classname, parts[-1]
 
 
 def main():
@@ -47,9 +57,21 @@ def main():
             else:
                 batches = root.findall('testsuite')
             suite.extend(batches)
-            count = sum(1 for item in batches for _ in item.iter('testcase'))
+            cases = [case for item in batches for case in item.iter('testcase')]
+            count = len(cases)
             completed += count
             print(f'Batch {batch_index + 1}: {count} test results, exit={result.returncode}', flush=True)
+            expected = Counter(junit_key(node) for node in batch)
+            actual = Counter((case.get('classname', ''), case.get('name', '')) for case in cases)
+            if actual != expected:
+                missing = list((expected - actual).elements())
+                unexpected = list((actual - expected).elements())
+                print(
+                    f'Batch {batch_index + 1} JUnit node mismatch: '
+                    f'missing={missing[:5]!r}, unexpected={unexpected[:5]!r}',
+                    file=sys.stderr,
+                )
+                exitcode = exitcode or 1
         if result.returncode:
             exitcode = result.returncode
             if not report.exists():
