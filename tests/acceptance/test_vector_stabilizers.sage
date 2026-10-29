@@ -131,6 +131,7 @@ def test_empty_integral_fibre_falls_back_to_full_marked_vector_stabilizer(monkey
     recursion = EichlerRecursion()
     source_reduction = lattice_.primitive_isotropic_subobject(source).isotropic_reduction()
     reduction_type = type(source_reduction)
+    torsor_calls = []
     correction_calls = []
     original_correction = recursion._isotropic_correction
 
@@ -143,6 +144,7 @@ def test_empty_integral_fibre_falls_back_to_full_marked_vector_stabilizer(monkey
             return EmptyIntegralFibre()
 
     def no_integral_lifts(self, target_reduction, reduced_isometry):
+        torsor_calls.append((self, target_reduction, reduced_isometry))
         return EmptyTorsor()
 
     def record_correction(*args, **kwargs):
@@ -153,6 +155,7 @@ def test_empty_integral_fibre_falls_back_to_full_marked_vector_stabilizer(monkey
     monkeypatch.setattr(recursion, "_isotropic_correction", record_correction)
     witness = recursion.pointed_isometry(source, target)
 
+    assert torsor_calls
     assert correction_calls
     assert witness is not None
     assert witness(source) == target
