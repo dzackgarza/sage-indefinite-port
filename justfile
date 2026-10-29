@@ -141,6 +141,7 @@ ci-acceptance family shard shards selection="":
             tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_isometry_rejects_different_divisibility
             tests/acceptance/test_vector_stabilizers.sage::test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound
             tests/acceptance/test_vector_stabilizers.sage::test_divisibility_four_isotropic_plane_stabilizer_constructs_exact_containing_bound
+            tests/acceptance/test_vector_stabilizers.sage::test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks
             tests/acceptance/test_vector_stabilizers.sage::test_vector_stabilizer_has_oscars_order
             'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[0]'
             'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[2]'
