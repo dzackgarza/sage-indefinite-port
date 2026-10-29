@@ -102,6 +102,8 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
                     observed["rootless_perpendicular_start"] = True
             if name == "binary_walk" and self.rank == 2:
                 observed[f"binary_walk_isotropic={self.lattice.is_isotropic()}"] = True
+            if cls is _OrientedBinaryCycle and not self.lattice.is_isotropic():
+                observed[f"anisotropic_cycle.{name}"] = True
             return result
 
         monkeypatch.setattr(cls, name, wrapped)
@@ -120,6 +122,8 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
     def wrapped_anisotropic_cycle(*args, **kwargs):
         result = original_anisotropic_cycle(*args, **kwargs)
         observed["anisotropic_cycle"] = True
+        if int(args[0].rank()) == 2 and not args[0].is_isotropic():
+            observed["anisotropic_cycle.rank2_nonsplit"] = True
         return result
 
     monkeypatch.setattr(edgewalk_module, "anisotropic_cycle", wrapped_anisotropic_cycle)
@@ -189,10 +193,13 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
         "_Edgewalk.edge_step", "_Edgewalk.edge_directions", "_Edgewalk.binary_walk",
         "binary_walk_isotropic=True", "binary_walk_isotropic=False",
         "rootless_perpendicular_start",
-        "anisotropic_cycle",
+        "anisotropic_cycle", "anisotropic_cycle.rank2_nonsplit",
         "_OrientedBinaryCycle.cycle", "_OrientedBinaryCycle.promised_step",
         "_OrientedBinaryCycle.canonical_companion", "_OrientedBinaryCycle.shorter_pair",
         "_OrientedBinaryCycle.reduced_start_pair",
+        "anisotropic_cycle.cycle", "anisotropic_cycle.promised_step",
+        "anisotropic_cycle.canonical_companion", "anisotropic_cycle.shorter_pair",
+        "anisotropic_cycle.reduced_start_pair",
     }
     missing = sorted(name for name in required if name not in observed)
     assert not missing, f"unexercised pinned edgewalk routes: {missing}"
