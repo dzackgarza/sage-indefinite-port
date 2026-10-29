@@ -82,10 +82,10 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
     Frozen IDs ``allcock_rk3_4`` and ``allcock_rk3_2`` cover the isotropic
     cusp and rationally anisotropic branches; ``U+<2>`` is the independently
     recorded three-wall example with both finite and ideal corners, and
-    ``U+<46>`` covers the nonreflective stop after three vertex orbits. This
-    sample does not claim direct coverage of the rank-two public ``binary_walk``
-    entry point; the frozen full suite remains unchanged and still runs every
-    recorded case.
+    ``U+<46>`` covers the nonreflective stop after three vertex orbits. The
+    binary split and nonsplit cases explicitly exercise both branches of
+    ``binary_walk``; the frozen full suite remains unchanged and still runs
+    every recorded case.
     """
     require(EDGEWALK)
     observed = {}
