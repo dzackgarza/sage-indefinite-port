@@ -2549,6 +2549,22 @@ def test_positive_vector_shell_respects_explicit_coordinate_labels() -> None:
         assert (coordinates * labelled.timelike_covector)[0] == 4
 
 
+def test_positive_vector_shell_scales_pairing_bound_with_rational_direction() -> None:
+    """Clearing a rational direction denominator scales the pairing bound linearly."""
+    from dzack_research.preamble.all import Lattices, ZZ
+    from sage.all import QQ
+    from sage_indefinite_port.indefinite.lorentzian_cells import NONNEGATIVE_SQUARES, _PositiveVectorEnumerator
+
+    lattice_ = Lattices(ZZ)([[5, 1, 0], [1, -1, 0], [0, 0, -1]])
+    integral = _PositiveVectorEnumerator(lattice_, (QQ(1), QQ(0), QQ(0)), QQ(5), NONNEGATIVE_SQUARES)
+    rational = _PositiveVectorEnumerator(lattice_, (QQ(1) / 2, QQ(0), QQ(0)), QQ(5) / 2, NONNEGATIVE_SQUARES)
+
+    assert rational.scale == 2
+    assert rational.timelike_row == integral.timelike_row
+    assert rational.scaled_max == integral.scaled_max == 5
+    assert rational.first_shell() == integral.first_shell() == (4, ((1, -1, -1), (1, -1, 0), (1, -1, 1)))
+
+
 def test_positive_vector_shell_matches_exact_nonzero_center_enumeration() -> None:
     """The nonzero affine CVP center yields exactly the integral shell vectors in a non-diagonal form."""
     from dzack_research.preamble.all import Lattices, ZZ
