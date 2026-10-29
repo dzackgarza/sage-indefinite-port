@@ -1,6 +1,6 @@
-name: PR QC and Slop Review
-# Pre-v1: PR policy review is opt-in; substantive implementation and
-# mathematical acceptance are not subject to automatic PR QC.
+name: PR QC
+# Pre-v1: PR policy review is opt-in. Ordinary implementation publication and
+# mathematical acceptance proceed on development branches without PR gates.
 on:
   workflow_dispatch: {}
 jobs:
@@ -56,8 +56,6 @@ jobs:
       gate: pr-description-checklist
       profile: 'sage'
   thread-resolution:
-    needs:
-      - slop-review
     uses: dzackgarza/ai-review-ci/.github/workflows/_gates.yml@main
     permissions:
       contents: read
@@ -67,13 +65,3 @@ jobs:
     with:
       gate: thread-resolution
       profile: 'sage'
-  slop-review:
-    uses: dzackgarza/automated-reviews/.github/workflows/_slop-review.yml@main
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
-      pull-requests: write
-      issues: write
-    with:
-      scope: diff
