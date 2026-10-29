@@ -180,10 +180,7 @@ def test_eichler_generator_families_preserve_nonlexical_complement() -> None:
     from sage_indefinite_port.indefinite.eichler import OrbitCoverModel
 
     lattice_basis = tuple(model.lattice().module_generators())
-    model_basis = model.hyperbolic_basis() + tuple(
-        model.complement_inclusion()(selected_complement.module_generator(label))
-        for label in labels
-    )
+    model_basis = model.hyperbolic_basis() + model._embedded_complement_basis()
     easy_generators = OrbitCoverModel.source_easy_generators(model)
     assert easy_generators
     assert all(
