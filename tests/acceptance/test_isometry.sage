@@ -52,6 +52,26 @@ def test_lorentzian_pairs_are_isometric(case) -> None:
     _assert_isometric(case["mat1"], case["mat2"])
 
 
+def test_row_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
+    """The approximate-model row convention is translated at the owned O() boundary."""
+    from sage.all import ZZ as SageZZ
+    from sage.all import matrix
+
+    from sage_indefinite_port.indefinite.eichler import _isometry_from_row_matrix
+
+    lattice_ = lattice([[2, 1], [1, 2]])
+    labels = tuple(lattice_.module_generating_set())
+    rows = matrix(SageZZ, [[1, 0], [1, 1]])
+    morphism = _isometry_from_row_matrix(lattice_, rows)
+
+    for generator in lattice_.module_generators():
+        coordinates = generator.to_vector()
+        source_coordinates = tuple(int(coordinates(label)) for label in labels)
+        expected = tuple(sum(source_coordinates[row] * rows[row, column] for row in range(len(labels))) for column in range(len(labels)))
+        actual = morphism(generator).to_vector()
+        assert tuple(int(actual(label)) for label in labels) == expected
+
+
 def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
     """Matrix columns use coordinate labels; the public morphism takes generator-order images."""
     from sage.all import ZZ as SageZZ

@@ -47,6 +47,27 @@ from sage.rings.rational_field import QQ as SageQQ
 from sage.structure.element import RingElement
 from sage.structure.sage_object import SageObject
 
+
+def _isometry_from_row_matrix(lattice: Lattices.ParentMethods, rows) -> LatticeIsometryMethods:
+    """Build the isometry represented by image rows in coordinate-label order.
+
+    The pinned approximate-model matrices use rows for images of the ordered
+    coordinate basis, while the public ``O()`` constructor consumes images in
+    ``module_generators()`` order. Translate explicitly at that boundary.
+    """
+    labels = tuple(lattice.module_generating_set())
+    images = []
+    for generator in lattice.module_generators():
+        coordinates = generator.to_vector()
+        source_coordinates = tuple(coordinates(label) for label in labels)
+        image_coordinates = tuple(
+            sum(source_coordinates[row] * rows[row, column] for row in range(len(labels)))
+            for column in range(len(labels))
+        )
+        images.append(lattice.linear_combination({label: value for label, value in zip(labels, image_coordinates, strict=True) if value}))
+    return lattice.O()(tuple(images))
+
+
 from sage_indefinite_port.indefinite.exact_isotropic import find_isotropic_exact
 from sage_indefinite_port.indefinite.indefinite_reduction import (
     _compute_indefinite_reduction,
@@ -405,15 +426,7 @@ class EichlerEnvelope:
         # The rational extensions of the approximate generators, from their
         # integer matrices on E (source_generator_matrices) rather than by
         # base change of each integral isometry.
-        envelope_labels = tuple(rational_envelope.module_generating_set())
-        field = rational_envelope.base_ring()
-
-        def rational_vector(row):
-            return rational_envelope.linear_combination({label: field(int(entry)) for label, entry in zip(envelope_labels, row, strict=True) if entry})
-
-        generators = tuple(
-            rational_envelope.O()(tuple(rational_vector(row) for row in generator.rows())) for generator in OrbitCoverModel.source_generator_matrices(self.model)
-        )
+        generators = tuple(_isometry_from_row_matrix(rational_envelope, generator) for generator in OrbitCoverModel.source_generator_matrices(self.model))
         rational_lattice = self.rational_isometry.domain()
         image = rational_envelope.integral_structure(tuple(self.rational_isometry(rational_lattice.module_generator(label)) for label in self.lattice.module_generating_set()))
         # sigma = N phi is integral, so phi(L) lies in (1/N)E, which the integral
@@ -602,7 +615,7 @@ class OrbitCoverModel:
         matrices = OrbitCoverModel.source_generator_matrices(model)
         return finite_indexed_family(
             finite_ordered_set(tuple(range(len(matrices)))),
-            lambda index: lattice.O()(tuple(lattice([int(entry) for entry in row]) for row in matrices[index].rows())),
+            lambda index: _isometry_from_row_matrix(lattice, matrices[index]),
             name=f"Source-defined Eichler approximate generators in O({lattice})",
         )
 
@@ -839,7 +852,7 @@ class OrbitCoverModel:
                 continue
             key = tuple(int(entry) for entry in conjugate.list())
             if key not in conjugates:
-                conjugates[key] = self.lattice.O()(tuple(self.lattice([int(entry) for entry in row]) for row in conjugate.rows()))
+                conjugates[key] = _isometry_from_row_matrix(self.lattice, conjugate)
         return tuple(conjugates.values())
 
     def _pullback_envelope_vector(self, point: Lattices.ElementMethods, coset: LatticeIsometryMethods) -> Lattices.ElementMethods | None:
