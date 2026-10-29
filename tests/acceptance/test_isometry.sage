@@ -138,6 +138,7 @@ def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> Non
 
 def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
     """A non-diagonal nonsingular summand plus radical survives a basis change."""
+    from dzack_research.preamble.all import Lattices
     from sage.all import ZZ as SageZZ
     from sage.all import matrix
 
@@ -146,7 +147,12 @@ def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
     gram = matrix(SageZZ, [[2, 1, 0], [1, 2, 0], [0, 0, 0]])
     change = matrix(SageZZ, [[1, 1, 0], [0, 1, 1], [0, 0, 1]])
     conjugate = change * gram * change.transpose()
-    _assert_isometric([list(row) for row in gram.rows()], [list(row) for row in conjugate.rows()])
+    source = Lattices(SageZZ)(gram, module_generators=("a", "b", "radical"))
+    target = Lattices(SageZZ)(conjugate, module_generators=("x", "y", "null"))
+
+    assert source.is_isometric(target)
+    witness = source.Isom(target).an_element()
+    assert is_witness(rows_of(witness), [list(row) for row in gram.rows()], [list(row) for row in conjugate.rows()])
 
 
 def test_conway_sloane_same_genus_pair_is_not_isometric() -> None:
