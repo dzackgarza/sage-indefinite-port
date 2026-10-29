@@ -180,6 +180,7 @@ def test_non_diagonal_isotropic_shell_respects_explicit_coordinate_labels() -> N
 
     from sage_indefinite_port.indefinite.lorentzian_cells import (
         _PositiveVectorEnumerator,
+        _search_initial_vectors,
     )
 
     require(PERFECT_DOMAINS)
@@ -191,6 +192,7 @@ def test_non_diagonal_isotropic_shell_respects_explicit_coordinate_labels() -> N
     assert first is not None and first[0] == 1
     rows = first[1]
     assert set(rows) == {(0, 1, 0), (1, 0, -1), (1, 0, 1), (2, -1, 0)}
+    assert tuple(_search_initial_vectors(lattice_, (QQ(1), QQ(0), QQ(0)), ZERO_SQUARES)) == rows
     gram = matrix(SageZZ, gram_data)
     for row in rows:
         point = vector(SageZZ, row)
