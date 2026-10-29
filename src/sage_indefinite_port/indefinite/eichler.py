@@ -429,12 +429,11 @@ class EichlerEnvelope:
         # base change of each integral isometry.
         generators = tuple(_isometry_from_row_matrix(rational_envelope, generator) for generator in OrbitCoverModel.source_generator_matrices(self.model))
         rational_lattice = self.rational_isometry.domain()
-        image = rational_envelope.integral_structure(tuple(self.rational_isometry(rational_lattice.module_generator(label)) for label in self.lattice.module_generating_set()))
+        image = rational_envelope.integral_structure(tuple(self.rational_isometry(generator) for generator in rational_lattice.module_generators()))
         # sigma = N phi is integral, so phi(L) lies in (1/N)E, which the integral
         # generators of A_E preserve: the stable containing module.
         inverse_scale = rational_envelope.base_ring().one() / rational_envelope.base_ring()(self.scale)
-        labels = rational_envelope.module_generating_set()
-        scaled_generators = tuple(rational_envelope.scalar_multiple(inverse_scale, rational_envelope.module_generator(label)) for label in labels)
+        scaled_generators = tuple(rational_envelope.scalar_multiple(inverse_scale, generator) for generator in rational_envelope.module_generators())
         bound = rational_envelope.integral_structure(scaled_generators)
         return IntegralStructureAction(rational_envelope.O().subgroup(generators), image).with_stable_containing_bound(bound)
 
