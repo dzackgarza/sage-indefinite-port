@@ -83,7 +83,7 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
     cusp and rationally anisotropic branches; ``U+<2>`` is the independently
     recorded three-wall example with both finite and ideal corners, and
     ``U+<46>`` covers the nonreflective stop after three vertex orbits. The
-    split binary form ``diag(1,-2)`` and the isotropic binary plane ``U``
+    nonsplit binary form ``diag(1,-2)`` and the isotropic binary plane ``U``
     exercise both branches of ``binary_walk``; the full suite and all assertions
     remain unchanged, while exhaustive long-tail execution is not the milestone gate.
     """
