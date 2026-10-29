@@ -100,6 +100,8 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
             if name == "ordinary_vertex_roots" and self.gram == matrix(QQ, compact_hexagon_gram):
                 if self.span_rank(result) < self.rank - 1:
                     observed["rootless_perpendicular_start"] = True
+            if name == "binary_walk" and self.rank == 2:
+                observed[f"binary_walk_isotropic={self.lattice.is_isotropic()}"] = True
             return result
 
         monkeypatch.setattr(cls, name, wrapped)
@@ -185,6 +187,7 @@ def test_edgewalk_branch_representative_sample(monkeypatch) -> None:
         "_Edgewalk.extension_roots", "_Edgewalk.vertex_from_root",
         "_Edgewalk.isotropic_next_vertex", "_Edgewalk.finite_extensions",
         "_Edgewalk.edge_step", "_Edgewalk.edge_directions", "_Edgewalk.binary_walk",
+        "binary_walk_isotropic=True", "binary_walk_isotropic=False",
         "rootless_perpendicular_start",
         "anisotropic_cycle",
         "_OrientedBinaryCycle.cycle", "_OrientedBinaryCycle.promised_step",
