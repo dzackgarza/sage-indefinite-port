@@ -33,14 +33,13 @@ from dzack_research.preamble.categories.modules.pure.modules import (
 from dzack_research.preamble.categories.rational_integral_stabilizers import (
     IntegralStructureAction,
 )
-from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.matrix.constructor import identity_matrix, matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.structure.parent import Parent
 
 from sage_indefinite_port.indefinite.eichler import OrbitCoverModel
-from sage_indefinite_port.indefinite.groupoid_cache import IsometryGroupoidCache
+from sage_indefinite_port.indefinite.groupoid_cache import IsometryGroupoidCache, _gram_in_label_order
 from sage_indefinite_port.indefinite.indefinite_reduction import (
     indefinite_reduced_presentation,
 )
@@ -145,8 +144,8 @@ def _isometry_from_row_matrix(source: Lattices.ParentMethods, target: Lattices.P
         raise ValueError("row isometry matrix requires a common base ring")
     if rows.nrows() != len(source_labels) or rows.ncols() != len(target_labels):
         raise ValueError("row isometry matrix must have shape (source rank, target rank)")
-    source_gram = _engine_component_matrix(source.gram_tensor())
-    target_gram = _engine_component_matrix(target.gram_tensor())
+    source_gram = _gram_in_label_order(source)
+    target_gram = _gram_in_label_order(target)
     if rows * target_gram * rows.transpose() != source_gram:
         raise ValueError("row matrix does not define an isometry between the supplied Gram forms")
     images = []
@@ -175,8 +174,8 @@ def _isometry_from_column_matrix(source: Lattices.ParentMethods, target: Lattice
         raise ValueError("column isometry matrix requires a common base ring")
     if columns.nrows() != len(target_labels) or columns.ncols() != len(source_labels):
         raise ValueError("column isometry matrix must have shape (target rank, source rank)")
-    source_gram = _engine_component_matrix(source.gram_tensor())
-    target_gram = _engine_component_matrix(target.gram_tensor())
+    source_gram = _gram_in_label_order(source)
+    target_gram = _gram_in_label_order(target)
     if columns.transpose() * target_gram * columns != source_gram:
         raise ValueError("column matrix does not define an isometry between the supplied Gram forms")
     images = []
@@ -243,7 +242,7 @@ class EichlerRecursion:
         the first-radical-coordinate shears e_i -> e_i + z_1: the GL(R)
         action supplies the other coordinates of B.
         """
-        gram = _engine_component_matrix(lattice.gram_tensor()).change_ring(SageZZ)
+        gram = _gram_in_label_order(lattice)
         size, nonsingular_rank = gram.nrows(), gram.rank()
         assert nonsingular_rank < size
         if any(gram[i, j] for i in range(nonsingular_rank, size) for j in range(size)):
@@ -287,8 +286,8 @@ class EichlerRecursion:
         source_reduction = indefinite_reduced_presentation(source)
         target_reduction = indefinite_reduced_presentation(target)
         left, right = source_reduction.reduced, target_reduction.reduced
-        left_gram = _engine_component_matrix(left.gram_tensor()).change_ring(SageZZ)
-        right_gram = _engine_component_matrix(right.gram_tensor()).change_ring(SageZZ)
+        left_gram = _gram_in_label_order(left)
+        right_gram = _gram_in_label_order(right)
         size, rank = left_gram.nrows(), left_gram.rank()
         if rank != right_gram.rank():
             return None

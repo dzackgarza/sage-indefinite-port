@@ -12,12 +12,19 @@ from collections import deque
 
 from dzack_research.preamble.all import Lattices
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
-from dzack_research.preamble.tensors.tensor import _engine_component_matrix
+from sage.matrix.constructor import matrix
 from sage.rings.integer_ring import ZZ as SageZZ
 
 type GramKey = tuple[tuple[int, ...], ...]
 type Lattice = Lattices.ParentMethods
 type Isometry = LatticeIsometryMethods
+
+
+def _gram_in_label_order(lattice: Lattice):
+    """Gram matrix of the declared coordinate generators, in their given order."""
+    labels = tuple(lattice.module_generating_set())
+    basis = tuple(lattice.module_generator(label) for label in labels)
+    return matrix(lattice.base_ring(), [[lattice.b(left, right) for right in basis] for left in basis])
 
 
 def coordinate_identification(source: Lattice, target: Lattice) -> Isometry:
@@ -30,8 +37,8 @@ def coordinate_identification(source: Lattice, target: Lattice) -> Isometry:
     target_labels = tuple(target.module_generating_set())
     if len(source_labels) != len(target_labels):
         raise ValueError("coordinate identification requires equal coordinate ranks")
-    source_gram = _engine_component_matrix(source.gram_tensor())
-    target_gram = _engine_component_matrix(target.gram_tensor())
+    source_gram = _gram_in_label_order(source)
+    target_gram = _gram_in_label_order(target)
     if source_gram != target_gram:
         raise ValueError("coordinate identification requires identical Gram matrices in declared label order")
     images = []
@@ -57,7 +64,7 @@ class IsometryGroupoidCache:
     def _key(self, lattice: Lattice) -> GramKey:
         if lattice.base_ring() != SageZZ:
             raise TypeError("the isometry groupoid cache requires integral ZZ-lattices")
-        gram = _engine_component_matrix(lattice.gram_tensor())
+        gram = _gram_in_label_order(lattice)
         key = tuple(tuple(int(gram[row, column]) for column in range(gram.ncols())) for row in range(gram.nrows()))
         self._representatives.setdefault(key, lattice)
         return key
