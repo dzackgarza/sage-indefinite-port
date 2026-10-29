@@ -10,9 +10,9 @@ from dataclasses import replace
 import pytest
 
 from sage_indefinite_port.indefinite.lorentzian_cells import (
-    LorentzianPerfectLocalBackend,
     NONNEGATIVE_SQUARES,
     ZERO_SQUARES,
+    LorentzianPerfectLocalBackend,
     _search_initial_vectors,
     perfect_complex,
     perfect_domain_traversal,
@@ -23,7 +23,8 @@ from tests.fixtures.oracle_fixtures import load_lorentzian_perfect_domains
 
 def test_non_diagonal_positive_shell_uses_the_pinned_cvp_center() -> None:
     """The first shell in a non-diagonal Lorentzian form matches exact enumeration."""
-    from sage.all import ZZ as SageZZ, matrix, vector
+    from sage.all import ZZ as SageZZ
+    from sage.all import matrix, vector
 
     require(PERFECT_DOMAINS)
     lattice_ = lattice([[5, 1, 0], [1, -1, 0], [0, 0, -1]])
@@ -37,10 +38,34 @@ def test_non_diagonal_positive_shell_uses_the_pinned_cvp_center() -> None:
         assert (point * gram * vector(SageZZ, (1, 0, 0)).column())[0] == 4
 
 
+def test_non_diagonal_positive_shell_respects_explicit_coordinate_labels() -> None:
+    """The pinned positive shell is exact when the lattice uses string coordinate labels."""
+    from dzack_research.preamble.all import ZZ as PreambleZZ
+    from dzack_research.preamble.all import Lattices
+    from sage.all import ZZ as SageZZ
+    from sage.all import matrix, vector
+
+    require(PERFECT_DOMAINS)
+    gram_data = [[5, 1, 0], [1, -1, 0], [0, 0, -1]]
+    labelled = Lattices(PreambleZZ)(gram_data, module_generators=("time", "space", "auxiliary"))
+    rows = _search_initial_vectors(labelled, (1, 0, 0), NONNEGATIVE_SQUARES)
+
+    assert set(rows) == {(1, -1, -1), (1, -1, 0), (1, -1, 1)}
+    gram = matrix(SageZZ, gram_data)
+    for row in rows:
+        point = vector(SageZZ, row)
+        assert (point * gram * point.column())[0] in {1, 2}
+        assert (point * gram * vector(SageZZ, (1, 0, 0)).column())[0] == 4
+
+
 def test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center() -> None:
     """The exact-sphere branch finds every isotropic vector in the first shell."""
-    from sage.all import QQ, ZZ as SageZZ, matrix, vector
-    from sage_indefinite_port.indefinite.lorentzian_cells import _PositiveVectorEnumerator
+    from sage.all import QQ, matrix, vector
+    from sage.all import ZZ as SageZZ
+
+    from sage_indefinite_port.indefinite.lorentzian_cells import (
+        _PositiveVectorEnumerator,
+    )
 
     require(PERFECT_DOMAINS)
     gram = matrix(SageZZ, [[1, 1, 0], [1, 0, 0], [0, 0, -1]])
