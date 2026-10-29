@@ -2,24 +2,26 @@
 
 from __future__ import annotations
 
-from collections import Counter, deque
 from array import array
+from collections import Counter, deque
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import cache, cached_property
 from itertools import combinations, islice, product
 from math import gcd, isfinite, isqrt
-from sys import float_info
 from random import choice, randrange, shuffle
+from sys import float_info
 from typing import Literal, cast, overload
 
 import numpy as np
 from cypari2.handle_error import PariError
 from dzack_research.preamble.all import FramedFreeModules, Lattices, Sets
-from dzack_research.preamble.categories.definite_lattices import LatticeReduction, _ExactCVPEngine
+from dzack_research.preamble.categories.definite_lattices import (
+    LatticeReduction,
+    _ExactCVPEngine,
+)
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
-from dzack_research.preamble.categories.rings.ring_foundation import _owned_engine_element
 from dzack_research.preamble.categories.modules.pure.modules import _engine_matrix
 from dzack_research.preamble.categories.polyhedral_cones import (
     RationalPolyhedralCones,
@@ -30,6 +32,9 @@ from dzack_research.preamble.categories.reduction_complexes import (
     LorentzianPerfectDomainTraversal,
     PerfectDomainOrbitAdjacency,
 )
+from dzack_research.preamble.categories.rings.ring_foundation import (
+    _owned_engine_element,
+)
 from dzack_research.preamble.categories.sets.finite_ordered_sets import (
     finite_ordered_set,
 )
@@ -39,7 +44,6 @@ from dzack_research.preamble.categories.sets.indexed_families import (
 from dzack_research.preamble.tensors.tensor import _engine_component_matrix
 from sage.groups.perm_gps.permgroup_named import SymmetricGroup
 from sage.libs.gap.libgap import libgap
-from sage.geometry.polyhedron.constructor import Polyhedron
 from sage.matrix.constructor import diagonal_matrix, matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
@@ -67,6 +71,26 @@ type PerfectMode = Literal["total", "isotropic"]
 type FacetIncidence = frozenset[int]
 type SchreierWord = tuple[SchreierWord, int] | None
 type FacetMaskKey = int | tuple[bool, tuple[int, ...] | int]
+
+
+def _owned_isometry_from_row_matrix(lattice: Lattices.ParentMethods, rows) -> LatticeIsometryMethods:
+    """Convert a pinned row-coordinate action to the owned O() constructor.
+
+    The source matrices store each coordinate basis vector's image as a row;
+    the public group constructor instead accepts images in module-generator
+    iteration order. The conversion is explicit in coordinate-label order.
+    """
+    labels = tuple(lattice.module_generating_set())
+    images = []
+    for generator in lattice.module_generators():
+        coordinates = generator.to_vector()
+        source_coordinates = tuple(coordinates(label) for label in labels)
+        image_coordinates = tuple(
+            sum(source_coordinates[row] * rows[row, column] for row in range(len(labels)))
+            for column in range(len(labels))
+        )
+        images.append(lattice.linear_combination({label: value for label, value in zip(labels, image_coordinates, strict=True) if value}))
+    return lattice.O()(tuple(images))
 
 
 def _sparse_facet_complement_limit(ray_count: int) -> int:
@@ -1654,7 +1678,7 @@ class LorentzianPerfectLocalBackend:
                 action = inverse_basis * image_basis
                 if any(entry.denominator() != 1 for entry in action.list()):
                     raise ArithmeticError("a Schreier facet permutation does not induce an integral lattice action")
-                isometry = cell.lattice.O()(tuple(cell.lattice([int(entry) for entry in row]) for row in action.rows()))
+                isometry = _owned_isometry_from_row_matrix(cell.lattice, action)
                 facet = _facet_incidence(nonincident_mask, len(cell.rows))
                 return (facet, isometry)
 
@@ -2977,7 +3001,7 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
             # side pairing, rather than constructing one for every orbit facet.
             target_to_neighbour_factory = (
                 lambda symmetry_action=symmetry_action, transporter=adjacency.transporter, lattice=lattice:
-                lattice.O()(tuple(lattice([int(entry) for entry in row]) for row in symmetry_action.rows())) * transporter
+                _owned_isometry_from_row_matrix(lattice, symmetry_action) * transporter
             )
             target_cone = cell_cones[id(adjacency.target)]
             target_key = id(adjacency.target)
