@@ -488,6 +488,27 @@ def test_odd_eichler_envelope_uses_declared_coordinate_order() -> None:
         )
 
 
+def test_large_cell_transporter_invariant_rejection_returns_none() -> None:
+    """Large scalar transporters return None, not the empty all-images tuple."""
+    from dzack_research.preamble.all import Lattices, ZZ as PreambleZZ
+    from sage_indefinite_port.indefinite.lorentzian_cells import (
+        LorentzianPerfectCell,
+        LorentzianPerfectLocalBackend,
+        NONNEGATIVE_SQUARES,
+    )
+
+    gram = [[int(entry) for entry in row] for row in ((0, 1), (1, 0))]
+    ambient = Lattices(PreambleZZ)(gram)
+    source_rows = tuple((int(index), int(1)) for index in range(513))
+    target_rows = tuple((2 * int(index), int(2)) for index in range(513))
+    source = LorentzianPerfectCell(ambient, source_rows, NONNEGATIVE_SQUARES)
+    target = LorentzianPerfectCell(ambient, target_rows, NONNEGATIVE_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+
+    assert backend.cell_transporter(source, target) is None
+    assert backend.cell_transporter(source, target, all_images=True) == ()
+
+
 def test_conway_sloane_same_genus_pair_is_not_isometric() -> None:
     require(MARKED_ISOMETRY)
 
