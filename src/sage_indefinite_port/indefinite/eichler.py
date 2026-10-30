@@ -834,7 +834,19 @@ class OrbitCoverModel:
 
     def __init__(self, lattice: Lattices.ParentMethods) -> None:
         self.lattice = lattice
-        if lattice.is_even() and lattice.splits_two_hyperbolic_planes():
+        # ``splits_two_hyperbolic_planes`` is a represented-decomposition
+        # query, but its current provider implementation first asks the
+        # potentially undecidable abstract proposition ``is_decomposable``.
+        # A Gram-matrix presentation after a unimodular basis change need not
+        # carry an exhibited orthogonal-sum decomposition.  Test the actual
+        # represented datum first; when absent, construct the Eichler envelope
+        # from the lattice itself instead of coercing an unknown proposition
+        # to bool.
+        if (
+            lattice.is_even()
+            and lattice.decomposition() is not None
+            and lattice.splits_two_hyperbolic_planes()
+        ):
             self.envelope = None
             self.model = lattice.two_u_eichler_model_from_represented_biproduct()
         else:
