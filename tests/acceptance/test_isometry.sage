@@ -61,7 +61,9 @@ def test_row_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
 
     lattice_ = lattice([[2, 1], [1, 2]])
     labels = tuple(lattice_.module_generating_set())
-    rows = matrix(SageZZ, [[1, 0], [1, 1]])
+    # This is an actual A2 isometry: R G R^T = G.  The former shear
+    # [[1, 0], [1, 1]] did not preserve this Gram form.
+    rows = matrix(SageZZ, [[-1, 1], [0, 1]])
     morphism = _isometry_from_row_matrix(lattice_, rows)
 
     for generator in lattice_.module_generators():
