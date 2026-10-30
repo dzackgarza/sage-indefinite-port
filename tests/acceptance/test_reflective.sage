@@ -37,7 +37,7 @@ def _canonical_root_graph(root_gram):
     graph = Graph([list(range(size)), [(i, j, root_gram[i][j]) for i in range(size) for j in range(i + 1, size) if root_gram[i][j]]], format="vertices_and_edges")
     norms = sorted({root_gram[i][i] for i in range(size)})
     partition = [[i for i in range(size) if root_gram[i][i] == norm] for norm in norms]
-    return norms, [len(cell) for cell in partition], graph.canonical_label(partition=partition, edge_labels=True).copy(immutable=True)
+    return norms, [len(cell) for cell in partition], graph.canonical_label(partition=partition, edge_labels=True, algorithm="sage").copy(immutable=True)
 
 
 def _hyperbolic(gram):
