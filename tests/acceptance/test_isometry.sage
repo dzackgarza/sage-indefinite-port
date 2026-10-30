@@ -394,8 +394,9 @@ def test_two_u_full_generating_data_accepts_raw_sage_integer_norm() -> None:
 
     datum = model.full_generating_data(SageZZ(2))
 
-    assert datum.square() == PreambleZZ(2)
-    assert datum.base_vector().q() == PreambleZZ(2)
+    two = PreambleZZ.one() + PreambleZZ.one()
+    assert datum.square() == two
+    assert datum.base_vector().q() == two
     assert tuple(datum.generating_family())
 
 
@@ -462,7 +463,8 @@ def test_odd_eichler_envelope_uses_declared_coordinate_order() -> None:
             even_labels = tuple(rational_even.module_generating_set())
             for coordinate_label in coordinate_labels:
                 preimage = rational_inverse(rational_original.module_generator(coordinate_label))
-                doubled = rational_even.scalar_multiple(rational_even.base_ring()(2), preimage)
+                two = rational_even.base_ring().one() + rational_even.base_ring().one()
+                doubled = rational_even.scalar_multiple(two, preimage)
                 assert all(doubled.to_vector()(label).denominator() == 1 for label in even_labels)
         images = tuple(envelope.similarity(lattice_.module_generator(label)) for label in coordinate_labels)
         for i, left in enumerate(images):
