@@ -851,10 +851,12 @@ def _iter_owned_row_blocks(rows, block_size: int) -> Iterator[tuple[tuple[int, .
 # pairwise constraints in the basis-image search below.
 _PAIRING_GRAPH_REFINEMENT_LIMIT = 4096
 # Sage's exact canonical-label search on the labelled pairing graph exhausts
-# the hosted runner at 551 vertices (the frozen rank-eight A2+A2 covariance
-# case). Above this limit, cell_transporter uses its complete exact basis-image
-# search and avoids constructing the graph.
-_PAIRING_GRAPH_CANONICAL_LABEL_LIMIT = 512
+# the hosted runner already for the frozen 503-vector rank-seven A2+A2
+# covariance case.  The graph's edge-label encoding adds substantial
+# refinement state beyond its row count, so the former 512-row cutoff was too
+# high. Above this conservative bound, cell_transporter uses its complete
+# exact basis-image search and avoids constructing the graph.
+_PAIRING_GRAPH_CANONICAL_LABEL_LIMIT = 256
 
 
 def _configuration_signature_multisets_match(
