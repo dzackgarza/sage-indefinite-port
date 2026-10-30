@@ -894,7 +894,7 @@ class OrbitCoverModel:
             # reach the covering fallback.
             return None
         e, f, _e_prime, _f_prime = self.model.hyperbolic_basis()
-        candidate = e + self.model.lattice().scalar_multiple(self.model.lattice().base_ring()(envelope_square // 2), f)
+        candidate = e + self.model.lattice().scalar_multiple(self.model.lattice().base_ring()(int(envelope_square // 2)), f)
         # :1456-1461 tests this representative against every coset of the
         # integral-structure stabilizer and keeps the first lift.  The
         # identity coset is necessarily in that transversal.  Test the exact
