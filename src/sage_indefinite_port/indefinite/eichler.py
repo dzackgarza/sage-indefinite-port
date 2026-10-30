@@ -710,7 +710,11 @@ class OrbitCoverModel:
         """
         lattice = model.lattice()
         ring = lattice.base_ring()
-        square = ring(square)
+        # This public consumer can be reached with a raw Sage ZZ scalar from
+        # the approximate-covering search.  Cross the scalar boundary through
+        # Python's exact integer representation before constructing the owned
+        # ring element; owned-ring coercion deliberately rejects raw Sage ZZ.
+        square = ring(int(square))
         complement = model.orthogonal_complement()
         discriminant = complement.discriminant_group()
         inclusion = model.complement_inclusion()
