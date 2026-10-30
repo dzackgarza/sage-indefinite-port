@@ -93,7 +93,7 @@ def _owned_integer_square(ring, value) -> RingElement:
     """
     if isinstance(value, int):
         integer = int(value)
-    elif isinstance(value, RingElement) and value.parent() in (ring, SageZZ):
+    elif isinstance(value, RingElement) and value.parent().is_exact() is True:
         integer = int(value)
         if value != integer:
             raise ValueError(f"the prescribed square must be integral, got {value}")
