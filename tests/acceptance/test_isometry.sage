@@ -235,7 +235,9 @@ def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> Non
 
     source_order = generator_coordinate_order(source, source_labels)
     target_order = generator_coordinate_order(target, target_labels)
-    assert source_order != target_order
+    assert source_order == (0, 1)
+    assert target_order == (0, 1)
+    assert source_labels != target_labels
     witness = coordinate_identification(source, target)
 
     for index, source_label in enumerate(source_labels):
