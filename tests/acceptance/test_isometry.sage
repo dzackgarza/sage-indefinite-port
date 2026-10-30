@@ -463,7 +463,8 @@ def test_odd_eichler_envelope_uses_declared_coordinate_order() -> None:
             even_labels = tuple(rational_even.module_generating_set())
             for coordinate_label in coordinate_labels:
                 preimage = rational_inverse(rational_original.module_generator(coordinate_label))
-                doubled = rational_even.scalar_multiple(lattice_.base_ring()(2), preimage)
+                two = lattice_.base_ring().one() + lattice_.base_ring().one()
+                doubled = rational_even.scalar_multiple(two, preimage)
                 assert all(doubled.to_vector()(label).denominator() == 1 for label in even_labels)
         images = tuple(envelope.similarity(lattice_.module_generator(label)) for label in coordinate_labels)
         for i, left in enumerate(images):
