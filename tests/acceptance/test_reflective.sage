@@ -146,8 +146,10 @@ def test_binary_cycle_coordinate_order_and_period_certificate() -> None:
         assert all(0 < int(point.q()) <= bound and int(point.content()) == 1 for point in representatives)
         assert tuple(cycle.coordinates(period(cycle.point((1, 0))))) == expected_period[0]
         assert tuple(cycle.coordinates(period(cycle.point((0, 1))))) == expected_period[1]
+        from sage_indefinite_port.indefinite.edgewalk import _isometry_row_matrix_in_coordinate_order
+
+        assert _isometry_row_matrix_in_coordinate_order(lattice_, period).det() == 1
         basis = tuple(lattice_.module_generators())
-        assert period.determinant() == 1
         assert all(lattice_.b(period(left), period(right)) == lattice_.b(left, right) for left in basis for right in basis)
 
 
