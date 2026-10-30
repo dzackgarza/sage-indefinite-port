@@ -93,7 +93,7 @@ def test_edgewalk_period_action_matrix_uses_coordinate_label_order() -> None:
     row_matrix = matrix(SageZZ, [[-1, 1], [0, 1]])
     images = {
         label: lattice_.linear_combination(
-            {target_label: row_matrix[row, column] for column, target_label in enumerate(labels) if row_matrix[row, column]}
+            {target_label: int(row_matrix[row, column]) for column, target_label in enumerate(labels) if row_matrix[row, column]}
         )
         for row, label in enumerate(labels)
     }
@@ -109,7 +109,7 @@ def test_edgewalk_period_action_matrix_uses_coordinate_label_order() -> None:
     permuted_images = {
         label: permuted.linear_combination(
             {
-                target_label: permuted_row_matrix[row, column]
+                target_label: int(permuted_row_matrix[row, column])
                 for column, target_label in enumerate(permuted_labels)
                 if permuted_row_matrix[row, column]
             }
