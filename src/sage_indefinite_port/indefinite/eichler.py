@@ -83,6 +83,25 @@ def square_divisors(integer: int) -> tuple[int, ...]:
     return tuple(int(divisor) for divisor in SageZZ(value).divisors() if value % (int(divisor) ** 2) == 0)
 
 
+def _owned_integer_square(ring, value) -> RingElement:
+    """Construct an owned integral norm without accepting lossy truncation.
+
+    Public 2U consumers receive raw Sage ``ZZ`` values from some search
+    callers. Convert those through Python's exact integer representation,
+    while rejecting rational or inexact scalars rather than silently applying
+    ``int`` to (for example) ``3/2`` or ``2.5``.
+    """
+    if isinstance(value, int):
+        integer = int(value)
+    elif isinstance(value, RingElement) and value.parent() in (ring, SageZZ):
+        integer = int(value)
+        if value != integer:
+            raise ValueError(f"the prescribed square must be integral, got {value}")
+    else:
+        raise TypeError(f"the prescribed square must be an integer scalar over {ring}, got {value}")
+    return ring(integer)
+
+
 def _source_random_matrix_perturbation(rank: int):
     """GetRandomMatrixPerturbation (IndefiniteFormsFundamental.g:11-30).
 
@@ -714,7 +733,7 @@ class OrbitCoverModel:
         # the approximate-covering search.  Cross the scalar boundary through
         # Python's exact integer representation before constructing the owned
         # ring element; owned-ring coercion deliberately rejects raw Sage ZZ.
-        square = ring(int(square))
+        square = _owned_integer_square(ring, square)
         complement = model.orthogonal_complement()
         discriminant = complement.discriminant_group()
         inclusion = model.complement_inclusion()
@@ -814,7 +833,7 @@ class OrbitCoverModel:
         # integer, which the owned coefficient ring intentionally rejects.
         # The prescribed norm is integral, so Python's exact integer is the
         # boundary representation before constructing the owned scalar.
-        owned_square = model.lattice().base_ring()(int(square))
+        owned_square = _owned_integer_square(model.lattice().base_ring(), square)
         return TwoUFullGeneratingDatum(model, owned_square, base_vector, approximate, stabilizer, orbit_representatives, orbit_witnesses, family)
 
     def __init__(self, lattice: Lattices.ParentMethods) -> None:

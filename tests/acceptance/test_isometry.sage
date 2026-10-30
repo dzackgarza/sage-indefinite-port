@@ -378,11 +378,19 @@ def test_eichler_generator_families_preserve_nonlexical_complement() -> None:
 def test_two_u_full_generating_data_accepts_raw_sage_integer_norm() -> None:
     """The public full-generation consumer returns its norm in the owned ring."""
     from dzack_research.preamble.all import Lattices, ZZ as PreambleZZ
+    from sage.all import QQ as SageQQ
     from sage.all import ZZ as SageZZ
 
     category = Lattices(PreambleZZ)
     lattice_ = category.orthogonal_sum((category("U"), category("U"), category([[2]])))
     model = lattice_.two_u_eichler_model_from_represented_biproduct()
+
+    try:
+        model.covering_vector_representatives(SageQQ(3) / 2)
+    except TypeError as error:
+        assert "integer scalar" in str(error)
+    else:
+        raise AssertionError("the covering-vector consumer truncated a nonintegral rational square")
 
     datum = model.full_generating_data(SageZZ(2))
 
