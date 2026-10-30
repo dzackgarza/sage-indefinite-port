@@ -426,6 +426,7 @@ def test_coarse_colours_preserve_changed_configuration_transporters(monkeypatch)
     source = LorentzianPerfectCell(ambient, ((1, 0), (0, 1)), ZERO_SQUARES)
     target = LorentzianPerfectCell(ambient, ((-1, 0), (0, -1)), ZERO_SQUARES)
     monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
+    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_CANONICAL_LABEL_LIMIT", 0)
     monkeypatch.setattr(
         lorentzian_cells._ConfigurationPairings,
         "blocks",
@@ -761,6 +762,7 @@ def test_complex_isometry_uses_cached_coarse_key_for_large_route(monkeypatch) ->
     source = LorentzianPerfectComplex(ambient, ZERO_SQUARES)
     target = LorentzianPerfectComplex(ambient, ZERO_SQUARES)
     monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
+    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_CANONICAL_LABEL_LIMIT", 0)
     monkeypatch.setattr(
         lorentzian_cells._ConfigurationPairings,
         "blocks",
@@ -784,6 +786,7 @@ def test_large_distinct_row_transporter_uses_exact_target_membership(monkeypatch
     target_gram = -gram
     target = LorentzianPerfectCell(lattice(target_gram.rows()), ((1, 0), (0, -1)), ZERO_SQUARES)
     monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
+    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_CANONICAL_LABEL_LIMIT", 0)
     original_counter = lorentzian_cells.Counter
 
     def reject_configuration_counter(iterable=(), *args, **kwargs):
@@ -798,6 +801,20 @@ def test_large_distinct_row_transporter_uses_exact_target_membership(monkeypatch
     assert abs(matrix(ZZ, rows_of(witness)).det()) == 1
 
 
+def test_large_transporter_invariant_rejection_returns_none_not_empty_tuple() -> None:
+    """Single-witness rejection keeps the scalar None contract above the graph threshold."""
+    gram = matrix(ZZ, [[0, 1], [1, 0]])
+    ambient = lattice(gram.rows())
+    source_rows = tuple((index, 1) for index in range(513))
+    target_rows = tuple((2 * index, 2) for index in range(513))
+    source = LorentzianPerfectCell(ambient, source_rows, NONNEGATIVE_SQUARES)
+    target = LorentzianPerfectCell(ambient, target_rows, NONNEGATIVE_SQUARES)
+
+    backend = LorentzianPerfectLocalBackend()
+    assert backend.cell_transporter(source, target) is None
+    assert backend.cell_transporter(source, target, all_images=True) == ()
+
+
 def test_large_transporter_matches_joint_gcd_colours_after_basis_change(monkeypatch) -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     shear = matrix(ZZ, [[1, 2**80 + 1], [0, 1]])
@@ -810,6 +827,7 @@ def test_large_transporter_matches_joint_gcd_colours_after_basis_change(monkeypa
         lattice(target_gram.rows()), tuple(tuple(row) for row in source_rows * shear), ZERO_SQUARES
     )
     monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
+    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_CANONICAL_LABEL_LIMIT", 0)
 
     backend = LorentzianPerfectLocalBackend()
     source_spectra = backend._integral_configuration_invariants(source)[2]
@@ -831,6 +849,7 @@ def test_large_same_lattice_transporter_skips_counter_identity_probe(monkeypatch
     source = LorentzianPerfectCell(ambient, ((1, 0), (0, 1)), ZERO_SQUARES)
     target = LorentzianPerfectCell(ambient, ((0, 1), (1, 0)), ZERO_SQUARES)
     monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
+    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_CANONICAL_LABEL_LIMIT", 0)
     original_counter = lorentzian_cells.Counter
 
     def reject_row_counter(iterable=(), *args, **kwargs):
@@ -853,6 +872,7 @@ def test_repeated_row_transporter_retains_multiset_certificate(monkeypatch) -> N
     source = LorentzianPerfectCell(ambient, ((1, 0), (0, 1), (1, 0)), ZERO_SQUARES)
     target = LorentzianPerfectCell(ambient, ((0, 1), (1, 0), (0, 1)), ZERO_SQUARES)
     monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
+    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_CANONICAL_LABEL_LIMIT", 0)
     backend = LorentzianPerfectLocalBackend()
     assert not backend._integral_configuration_invariants(source)[6]
 

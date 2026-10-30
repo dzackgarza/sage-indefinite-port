@@ -1965,24 +1965,24 @@ class LorentzianPerfectLocalBackend:
         )
         target_multiset = None if use_position_certificate else Counter(target.rows)
         if source_smith != target_smith:
-            return ()
+            return () if all_images else None
         # The second moment transforms by M_target = A^T M_source A for an
         # integral unimodular transporter A, so its determinant is an exact
         # basis-independent invariant. It is only rank-by-rank and rejects
         # some incompatible configurations before the large image search.
         if source_moment.det() != target_moment.det():
-            return ()
+            return () if all_images else None
         # The row sum itself transforms by the same unimodular action. Its
         # coordinate content and its norm in the ambient Gram form are exact
         # invariants too, and cost only O(rank) arithmetic before backtracking.
         if gcd(*map(int, source_sum)) != gcd(*map(int, target_sum)):
-            return ()
+            return () if all_images else None
         if source_sum.dot_product(source_gram * source_sum) != target_sum.dot_product(
             target_gram * target_sum
         ):
-            return ()
+            return () if all_images else None
         if source is not target and Counter(source_spectra) != Counter(target_spectra):
-            return ()
+            return () if all_images else None
         signatures = set(source_spectra)
         if source is not target:
             signatures.update(target_spectra)
@@ -2010,7 +2010,7 @@ class LorentzianPerfectLocalBackend:
                 refined_source_colours = tuple(refined_numbers[signature] for signature in source_refined)
                 refined_target_colours = tuple(refined_numbers[signature] for signature in target_refined)
                 if Counter(refined_source_colours) != Counter(refined_target_colours):
-                    return ()
+                    return () if all_images else None
                 # Refinement signatures contain the old colour, so no two old
                 # classes can merge. Once the number of classes stops growing,
                 # the partition is equitable and further refinement cannot

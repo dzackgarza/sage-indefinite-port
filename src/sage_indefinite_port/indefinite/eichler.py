@@ -730,10 +730,8 @@ class OrbitCoverModel:
         """
         lattice = model.lattice()
         ring = lattice.base_ring()
-        # This public consumer can be reached with a raw Sage ZZ scalar from
-        # the approximate-covering search.  Cross the scalar boundary through
-        # Python's exact integer representation before constructing the owned
-        # ring element; owned-ring coercion deliberately rejects raw Sage ZZ.
+        # The approximate-covering search can supply a raw Sage ZZ scalar;
+        # normalize it without truncating nonintegral rational inputs.
         square = _owned_integer_square(ring, square)
         complement = model.orthogonal_complement()
         discriminant = complement.discriminant_group()
@@ -830,10 +828,7 @@ class OrbitCoverModel:
         stabilizer = finite_ordered_set(recursion.pointed_automorphism_generators(base_vector))
         generators = tuple(approximate) + tuple(stabilizer) + tuple(orbit_witnesses)
         family = finite_indexed_family(finite_ordered_set(tuple(range(len(generators)))), generators.__getitem__)
-        # Match split_covering_vectors: public callers may supply a raw Sage
-        # integer, which the owned coefficient ring intentionally rejects.
-        # The prescribed norm is integral, so Python's exact integer is the
-        # boundary representation before constructing the owned scalar.
+        # Match split_covering_vectors' checked scalar boundary.
         owned_square = _owned_integer_square(model.lattice().base_ring(), square)
         return TwoUFullGeneratingDatum(model, owned_square, base_vector, approximate, stabilizer, orbit_representatives, orbit_witnesses, family)
 
