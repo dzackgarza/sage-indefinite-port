@@ -387,8 +387,8 @@ def test_two_u_full_generating_data_accepts_raw_sage_integer_norm() -> None:
 
     try:
         model.covering_vector_representatives(SageQQ(3) / 2)
-    except TypeError as error:
-        assert "integer scalar" in str(error)
+    except ValueError as error:
+        assert "must be integral" in str(error)
     else:
         raise AssertionError("the covering-vector consumer truncated a nonintegral rational square")
 
