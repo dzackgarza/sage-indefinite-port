@@ -500,7 +500,7 @@ def test_large_cell_transporter_invariant_rejection_returns_none() -> None:
     gram = [[int(entry) for entry in row] for row in ((0, 1), (1, 0))]
     ambient = Lattices(PreambleZZ)(gram)
     source_rows = tuple((int(index), int(1)) for index in range(513))
-    target_rows = tuple((2 * int(index), int(2)) for index in range(513))
+    target_rows = tuple((int(2 * int(index)), int(2)) for index in range(513))
     source = LorentzianPerfectCell(ambient, source_rows, NONNEGATIVE_SQUARES)
     target = LorentzianPerfectCell(ambient, target_rows, NONNEGATIVE_SQUARES)
     backend = LorentzianPerfectLocalBackend()
