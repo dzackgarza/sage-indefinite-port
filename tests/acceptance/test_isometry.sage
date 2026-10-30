@@ -375,6 +375,22 @@ def test_eichler_generator_families_preserve_nonlexical_complement() -> None:
     )
 
 
+def test_two_u_full_generating_data_accepts_raw_sage_integer_norm() -> None:
+    """The public full-generation consumer returns its norm in the owned ring."""
+    from dzack_research.preamble.all import Lattices, ZZ as PreambleZZ
+    from sage.all import ZZ as SageZZ
+
+    category = Lattices(PreambleZZ)
+    lattice_ = category.orthogonal_sum((category("U"), category("U"), category([[2]])))
+    model = lattice_.two_u_eichler_model_from_represented_biproduct()
+
+    datum = model.full_generating_data(SageZZ(2))
+
+    assert datum.square() == PreambleZZ(2)
+    assert datum.base_vector().q() == PreambleZZ(2)
+    assert tuple(datum.generating_family())
+
+
 def test_odd_eichler_envelope_uses_declared_coordinate_order() -> None:
     """The even-sublattice envelope construction follows the declared basis labels."""
     from dzack_research.preamble.all import ZZ as PreambleZZ

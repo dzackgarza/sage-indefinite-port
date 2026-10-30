@@ -810,7 +810,12 @@ class OrbitCoverModel:
         stabilizer = finite_ordered_set(recursion.pointed_automorphism_generators(base_vector))
         generators = tuple(approximate) + tuple(stabilizer) + tuple(orbit_witnesses)
         family = finite_indexed_family(finite_ordered_set(tuple(range(len(generators)))), generators.__getitem__)
-        return TwoUFullGeneratingDatum(model, model.lattice().base_ring()(square), base_vector, approximate, stabilizer, orbit_representatives, orbit_witnesses, family)
+        # Match split_covering_vectors: public callers may supply a raw Sage
+        # integer, which the owned coefficient ring intentionally rejects.
+        # The prescribed norm is integral, so Python's exact integer is the
+        # boundary representation before constructing the owned scalar.
+        owned_square = model.lattice().base_ring()(int(square))
+        return TwoUFullGeneratingDatum(model, owned_square, base_vector, approximate, stabilizer, orbit_representatives, orbit_witnesses, family)
 
     def __init__(self, lattice: Lattices.ParentMethods) -> None:
         self.lattice = lattice
