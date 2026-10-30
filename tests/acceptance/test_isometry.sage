@@ -447,9 +447,18 @@ def test_odd_eichler_envelope_uses_declared_coordinate_order() -> None:
                     lattice_.module_generator(coordinate_labels[i]), lattice_.module_generator(coordinate_labels[j])
                 )
         envelope_labels = tuple(envelope.envelope.module_generating_set())
-        assert all(
-            all(image.to_vector()(label).denominator() == 1 for label in envelope_labels)
+        coordinate_denominators = tuple(
+            tuple(int(image.to_vector()(label).denominator()) for label in envelope_labels)
             for image in images
+        )
+        coordinate_values = tuple(
+            tuple(str(image.to_vector()(label)) for label in envelope_labels)
+            for image in images
+        )
+        assert all(all(denominator == 1 for denominator in row) for row in coordinate_denominators), (
+            coordinate_labels,
+            coordinate_denominators,
+            coordinate_values,
         )
 
 
