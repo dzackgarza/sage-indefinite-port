@@ -7,6 +7,7 @@ representatives of norm <= 30), Brandhorst--Gonzalez-Alonso (E10, norms 0..10), 
 (I_{2,10}, norm -1) and Gritsenko--Hulek--Sankaran's Eichler criterion (the K3 lattice).
 """
 
+import builtins
 from collections import Counter
 
 import pytest
@@ -55,14 +56,14 @@ def test_published_representatives_are_one_per_orbit(degree) -> None:
 
     assert len(computed) == len(published)
     for representative in computed:
-        assert sum(are_isomorphic(category, representative, listed) for listed in published) == 1
+        assert builtins.sum(are_isomorphic(category, representative, listed) for listed in published) == 1
 
 
 @pytest.mark.parametrize("square", sorted(Counter(orbit["h_squared"] for orbit in load_e10_vector_orbits()["orbits"])))
 def test_e10_orbit_counts_match_brandhorst_gonzalez_alonso(square) -> None:
     require(MARKED_CLASSES)
 
-    recorded = sum(orbit["h_squared"] == square for orbit in load_e10_vector_orbits()["orbits"])
+    recorded = builtins.sum(orbit["h_squared"] == square for orbit in load_e10_vector_orbits()["orbits"])
 
     assert len(vector_classes(_e10(), square)) == recorded
 
@@ -89,14 +90,14 @@ def test_anisotropic_binary_vector_classes_use_primitive_embeddings() -> None:
         assert classes
         category = pointed_category(square)
         canonical = pointed(binary, element(binary, (1, 0) if square == 2 else (0, 1)))
-        assert sum(are_isomorphic(category, marked, canonical) for marked in classes) == 1
+        assert builtins.sum(are_isomorphic(category, marked, canonical) for marked in classes) == 1
         witnesses = []
         for marked in classes:
             generators = tuple(marked.arrow()(g) for g in marked.arrow().domain().module_generators())
             assert len(generators) == 1
             witness, = generators
-            assert witness.q() == square
-            assert witness.content() == 1
+            assert int(witness.q()) == square
+            assert int(witness.content()) == 1
             assert all(not are_isomorphic(category, marked, previous) for previous in witnesses)
             witnesses.append(marked)
 
