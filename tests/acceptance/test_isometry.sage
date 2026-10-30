@@ -404,6 +404,8 @@ def test_odd_eichler_envelope_uses_declared_coordinate_order() -> None:
     """The even-sublattice envelope construction follows the declared basis labels."""
     from dzack_research.preamble.all import ZZ as PreambleZZ
     from dzack_research.preamble.all import Lattices
+    from sage.all import QQ as SageQQ
+    from sage.all import matrix, vector
 
     require(MARKED_ISOMETRY)
     labels = ("z_odd", "a_first", "m_second", "b_radical", "c_extra")
@@ -455,20 +457,27 @@ def test_odd_eichler_envelope_uses_declared_coordinate_order() -> None:
             even_inclusion = envelope._even_inclusion
             assert even_inclusion.domain().is_even()
             assert int(even_inclusion.index()) == 2
-            fraction_map = lattice_.base_ring().fraction_field_map()
-            rational_inclusion = even_inclusion.base_change(fraction_map)
-            rational_even = rational_inclusion.domain()
-            rational_original = rational_inclusion.codomain()
-            rational_inverse = rational_inclusion.inverse()
-            even_labels = tuple(rational_even.module_generating_set())
-            for coordinate_label in coordinate_labels:
-                    preimage = rational_inverse(rational_original.module_generator(coordinate_label))
-                    two = lattice_.base_ring().one() + lattice_.base_ring().one()
-                    doubled = rational_even.scalar_multiple(two, preimage)
-                    doubled_coordinates = tuple(str(doubled.to_vector()(label)) for label in even_labels)
-                    assert all(
-                        doubled.to_vector()(label).denominator() == 1 for label in even_labels
-                    ), (coordinate_labels, coordinate_label, doubled_coordinates)
+            even_labels = tuple(even_inclusion.domain().module_generating_set())
+            inclusion_rows = matrix(
+                SageQQ,
+                [
+                    [
+                        SageQQ(int(even_inclusion(even_inclusion.domain().module_generator(even_label)).to_vector()(original_label)))
+                        for original_label in coordinate_labels
+                    ]
+                    for even_label in even_labels
+                ],
+            )
+            inverse_inclusion = inclusion_rows.inverse()
+            for position, coordinate_label in enumerate(coordinate_labels):
+                doubled_coordinates = 2 * vector(
+                    SageQQ, [int(index == position) for index in range(len(coordinate_labels))]
+                ) * inverse_inclusion
+                assert all(value.denominator() == 1 for value in doubled_coordinates), (
+                    coordinate_labels,
+                    coordinate_label,
+                    tuple(str(value) for value in doubled_coordinates),
+                )
         images = tuple(envelope.similarity(lattice_.module_generator(label)) for label in coordinate_labels)
         for i, left in enumerate(images):
             for j, right in enumerate(images):

@@ -431,8 +431,24 @@ class EichlerEnvelope:
             self.rational_isometry = construction_to_envelope
         else:
             rational_original = lattice.base_change(fraction_map)
-            rational_even_inclusion = even_inclusion.base_change(fraction_map)
-            even_to_original = rational_construction.Isom(rational_original)(lambda label: rational_even_inclusion(rational_construction.module_generator(label)))
+            original_labels = tuple(lattice.module_generating_set())
+
+            def even_image(label):
+                # Extend the selected integral inclusion on its basis.  A
+                # generic base_change of the subobject arrow discards the
+                # construction's exact lift, so evaluate the integral arrow
+                # first and extend its coordinates over the fraction field.
+                image = even_inclusion(construction_lattice.module_generator(label))
+                coordinates = image.to_vector()
+                return rational_original.linear_combination(
+                    {
+                        original_label: field(coordinates(original_label))
+                        for original_label in original_labels
+                        if coordinates(original_label)
+                    }
+                )
+
+            even_to_original = rational_construction.Isom(rational_original)(even_image)
             self.rational_isometry = construction_to_envelope * even_to_original.inverse()
         self.similarity = self.rational_isometry.integral_similarity(lattice, self.envelope)
         self.scale = SageZZ(self.similarity.scale())
