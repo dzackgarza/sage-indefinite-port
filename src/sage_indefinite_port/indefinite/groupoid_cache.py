@@ -25,7 +25,17 @@ def _gram_in_label_order(lattice: Lattice):
     """Gram matrix of the declared coordinate generators, in their given order."""
     labels = tuple(lattice.module_generating_set())
     basis = tuple(lattice.module_generator(label) for label in labels)
-    return matrix(SageZZ if lattice.base_ring() == ZZ else SageQQ, [[lattice.b(left, right) for right in basis] for left in basis])
+    if lattice.base_ring() == ZZ:
+        entries = [[int(lattice.b(left, right)) for right in basis] for left in basis]
+        return matrix(SageZZ, entries)
+    entries = [
+        [
+            SageQQ(int(value.numerator())) / int(value.denominator())
+            for value in (lattice.b(left, right) for right in basis)
+        ]
+        for left in basis
+    ]
+    return matrix(SageQQ, entries)
 
 
 def coordinate_identification(source: Lattice, target: Lattice) -> Isometry:
