@@ -38,10 +38,20 @@ ci_dir := ".tmp/ci"
 ci-provision-sage:
     #!/usr/bin/env bash
     set -euo pipefail
+    # The image's MAXIMA_PREFIX names the version root, but its installed
+    # Maxima packages live one level below that root in share/.  maxima_lib
+    # appends package names directly to MAXIMA_PREFIX, so correct the path
+    # before Sage initializes ECL and preserve it for later workflow steps.
+    if [[ -n "${MAXIMA_PREFIX:-}" && -d "${MAXIMA_PREFIX}/share/to_poly_solve" && ! -d "${MAXIMA_PREFIX}/to_poly_solve" ]]; then
+        export MAXIMA_PREFIX="${MAXIMA_PREFIX}/share"
+    fi
+    if [[ -n "${MAXIMA_PREFIX:-}" && -n "${GITHUB_ENV:-}" ]]; then
+        printf 'MAXIMA_PREFIX=%s\n' "$MAXIMA_PREFIX" >> "$GITHUB_ENV"
+    fi
     # Sage is a meson-python editable install that rebuilds on import; print
     # that rebuild, and fail here if Sage does not import.
     export MESONPY_EDITABLE_VERBOSE=1
-    "$SAGE_BIN" -c 'import sage.all; from sage.features.bliss import Bliss; Bliss().require()'
+    "$SAGE_BIN" -c 'import sage.all; from sage.features.bliss import Bliss; Bliss().require(); from sage.interfaces.maxima_lib import maxima_lib; assert str(maxima_lib.eval("1+1")) == "2"'
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     uv pip install --quiet --python "$sage_python" "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard pytest-instafail PyNormaliz
     # The acceptance contract is against this exact research API revision.
