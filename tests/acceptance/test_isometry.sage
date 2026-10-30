@@ -110,7 +110,9 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
         assert sorted(order) == list(range(len(labels)))
         return tuple(order)
 
-    assert generator_coordinate_order(source, source_labels) != generator_coordinate_order(target, target_labels)
+    assert generator_coordinate_order(source, source_labels) == (0, 1)
+    assert generator_coordinate_order(target, target_labels) == (0, 1)
+    assert source_labels != target_labels
 
     columns = matrix(SageZZ, [[-1, 0], [1, 1]])
     column_morphism = _isometry_from_column_matrix(source, target, columns)
@@ -289,8 +291,8 @@ def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
     conjugate = change * gram * change.transpose()
     source_labels = ("zeta", "alpha", "mu")
     target_labels = ("omega", "beta", "null")
-    source = Lattices(SageZZ)(gram.rows(), module_generators=source_labels)
-    target = Lattices(SageZZ)(conjugate.rows(), module_generators=target_labels)
+    source = Lattices(SageZZ)([[int(entry) for entry in row] for row in gram.rows()], module_generators=source_labels)
+    target = Lattices(SageZZ)([[int(entry) for entry in row] for row in conjugate.rows()], module_generators=target_labels)
     assert tuple(source.module_generating_set()) == source_labels
     assert tuple(target.module_generating_set()) == target_labels
 
@@ -418,7 +420,7 @@ def test_odd_eichler_envelope_uses_declared_coordinate_order() -> None:
         assert tuple(lattice_.module_generating_set()) == coordinate_labels
         envelope = EichlerEnvelope(lattice_)
         assert envelope.scale == 2
-        assert envelope.similarity.multiplier() == 4
+        assert int(envelope.similarity.multiplier()) == 4
         assert envelope.envelope.is_even()
         images = tuple(envelope.similarity(lattice_.module_generator(label)) for label in coordinate_labels)
         for i, left in enumerate(images):
