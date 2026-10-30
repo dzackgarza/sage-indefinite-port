@@ -398,6 +398,7 @@ class EichlerEnvelope:
         kernel_lattice = kernel.inclusion().domain()
         hyperbolic_plane = Lattices(lattice.base_ring())("U")
         self.lattice = lattice
+        self._even_inclusion = even_inclusion
         self.envelope = hyperbolic_plane + hyperbolic_plane + kernel_lattice
         self.model = self.envelope.two_u_eichler_model_from_represented_biproduct()
         e_1, f_1, e_2, f_2 = self.model.hyperbolic_basis()

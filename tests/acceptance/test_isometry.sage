@@ -448,6 +448,22 @@ def test_odd_eichler_envelope_uses_declared_coordinate_order() -> None:
         assert envelope.scale == 2
         assert int(envelope.similarity.multiplier()) == 4
         assert envelope.envelope.is_even()
+        if envelope._even_inclusion is not None:
+            # The norm-parity kernel has index two, so doubling every
+            # original basis vector must land in the even sublattice.
+            even_inclusion = envelope._even_inclusion
+            assert even_inclusion.domain().is_even()
+            assert int(even_inclusion.index()) == 2
+            fraction_map = lattice_.base_ring().fraction_field_map()
+            rational_even = even_inclusion.domain().base_change(fraction_map)
+            rational_original = lattice_.base_change(fraction_map)
+            rational_inclusion = even_inclusion.base_change(fraction_map)
+            rational_inverse = rational_inclusion.inverse()
+            even_labels = tuple(rational_even.module_generating_set())
+            for coordinate_label in coordinate_labels:
+                preimage = rational_inverse(rational_original.module_generator(coordinate_label))
+                doubled = rational_even.scalar_multiple(rational_even.base_ring()(2), preimage)
+                assert all(doubled.to_vector()(label).denominator() == 1 for label in even_labels)
         images = tuple(envelope.similarity(lattice_.module_generator(label)) for label in coordinate_labels)
         for i, left in enumerate(images):
             for j, right in enumerate(images):

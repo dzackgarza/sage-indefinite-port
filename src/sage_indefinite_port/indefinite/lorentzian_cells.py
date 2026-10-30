@@ -850,6 +850,11 @@ def _iter_owned_row_blocks(rows, block_size: int) -> Iterator[tuple[tuple[int, .
 # configurations use only intrinsic vertex colours here and retain exact
 # pairwise constraints in the basis-image search below.
 _PAIRING_GRAPH_REFINEMENT_LIMIT = 4096
+# Sage's exact canonical-label search on the labelled pairing graph exhausts
+# the hosted runner at 551 vertices (the frozen rank-eight A2+A2 covariance
+# case). Above this limit, cell_transporter uses its complete exact basis-image
+# search and avoids constructing the graph.
+_PAIRING_GRAPH_CANONICAL_LABEL_LIMIT = 512
 
 
 def _configuration_signature_multisets_match(
@@ -1907,7 +1912,7 @@ class LorentzianPerfectLocalBackend:
         if not all_images:
             if source.lattice is target.lattice and source.rows == target.rows:
                 return source.lattice.Aut().identity()
-            if n <= _PAIRING_GRAPH_REFINEMENT_LIMIT:
+            if n <= _PAIRING_GRAPH_CANONICAL_LABEL_LIMIT:
                 if source.lattice is target.lattice and Counter(source.rows) == Counter(target.rows):
                     return source.lattice.Aut().identity()
                 source_family = Sets().Mor(Sets.Δ[n - 1], source.lattice)(
