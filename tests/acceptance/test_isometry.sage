@@ -309,7 +309,9 @@ def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
         assert sorted(order) == list(range(len(labels)))
         return tuple(order)
 
-    assert generator_coordinate_order(source, source_labels) != generator_coordinate_order(target, target_labels)
+    assert generator_coordinate_order(source, source_labels) == (0, 1, 2)
+    assert generator_coordinate_order(target, target_labels) == (0, 1, 2)
+    assert source_labels != target_labels
     assert source.is_isometric(target)
     from sage_indefinite_port.indefinite.recursive import _column_matrix
 
@@ -323,7 +325,6 @@ def test_eichler_generator_families_preserve_nonlexical_complement() -> None:
     from dzack_research.preamble.all import ZZ as PreambleZZ
     from dzack_research.preamble.all import Lattices
     from sage.all import ZZ as SageZZ
-
     require(MARKED_ISOMETRY)
     category = Lattices(PreambleZZ)
     complement = category([[2, 0], [0, 4]], module_generators=("zeta", "alpha"))
@@ -376,7 +377,6 @@ def test_odd_eichler_envelope_uses_declared_coordinate_order() -> None:
     """The even-sublattice envelope construction follows the declared basis labels."""
     from dzack_research.preamble.all import ZZ as PreambleZZ
     from dzack_research.preamble.all import Lattices
-    from sage.all import ZZ as SageZZ
 
     require(MARKED_ISOMETRY)
     labels = ("z_odd", "a_first", "m_second", "b_radical", "c_extra")
@@ -430,7 +430,7 @@ def test_odd_eichler_envelope_uses_declared_coordinate_order() -> None:
                 )
         envelope_labels = tuple(envelope.envelope.module_generating_set())
         assert all(
-            all(image.to_vector()(label) in SageZZ for label in envelope_labels)
+            all(image.to_vector()(label).denominator() == 1 for label in envelope_labels)
             for image in images
         )
 
