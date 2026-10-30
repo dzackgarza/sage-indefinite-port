@@ -13,6 +13,8 @@ from collections import deque
 from dzack_research.preamble.all import ZZ, Lattices
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
 from sage.matrix.constructor import matrix
+from sage.rings.integer_ring import ZZ as SageZZ
+from sage.rings.rational_field import QQ as SageQQ
 
 type GramKey = tuple[tuple[int, ...], ...]
 type Lattice = Lattices.ParentMethods
@@ -23,7 +25,7 @@ def _gram_in_label_order(lattice: Lattice):
     """Gram matrix of the declared coordinate generators, in their given order."""
     labels = tuple(lattice.module_generating_set())
     basis = tuple(lattice.module_generator(label) for label in labels)
-    return matrix(lattice.base_ring(), [[lattice.b(left, right) for right in basis] for left in basis])
+    return matrix(SageZZ if lattice.base_ring() == ZZ else SageQQ, [[lattice.b(left, right) for right in basis] for left in basis])
 
 
 def coordinate_identification(source: Lattice, target: Lattice) -> Isometry:
