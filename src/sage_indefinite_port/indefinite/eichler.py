@@ -29,6 +29,9 @@ from dzack_research.preamble.categories.modules.framed.formed.discriminant_modul
 from dzack_research.preamble.categories.rational_integral_stabilizers import (
     IntegralStructureAction,
 )
+from dzack_research.preamble.categories.rings.ring_foundation import (
+    _owned_engine_element,
+)
 from dzack_research.preamble.categories.sets.finite_ordered_sets import (
     finite_ordered_set,
 )
@@ -427,7 +430,9 @@ class EichlerEnvelope:
         image = rational_envelope.integral_structure(tuple(self.rational_isometry(rational_lattice.module_generator(label)) for label in self.lattice.module_generating_set()))
         # sigma = N phi is integral, so phi(L) lies in (1/N)E, which the integral
         # generators of A_E preserve: the stable containing module.
-        inverse_scale = rational_envelope.base_ring().one() / rational_envelope.base_ring()(self.scale)
+        inverse_scale = _owned_engine_element(
+            rational_envelope.base_ring(), SageQQ(1) / SageQQ(self.scale)
+        )
         labels = rational_envelope.module_generating_set()
         scaled_generators = tuple(rational_envelope.scalar_multiple(inverse_scale, rational_envelope.module_generator(label)) for label in labels)
         bound = rational_envelope.integral_structure(scaled_generators)
