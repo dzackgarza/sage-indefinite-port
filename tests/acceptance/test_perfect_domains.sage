@@ -12,13 +12,38 @@ import pytest
 from sage_indefinite_port.indefinite.lorentzian_cells import (
     NONNEGATIVE_SQUARES,
     ZERO_SQUARES,
+    LorentzianPerfectCell,
     LorentzianPerfectLocalBackend,
     _search_initial_vectors,
     perfect_complex,
     perfect_domain_traversal,
 )
-from tests.acceptance.consumer import PERFECT_DOMAINS, lattice, require
+from tests.acceptance.consumer import PERFECT_DOMAINS, lattice, require, rows_of
 from tests.fixtures.oracle_fixtures import load_lorentzian_perfect_domains
+
+
+def test_large_pairing_graph_fallback_returns_exact_transporter() -> None:
+    """The >256-row fallback finds and certifies a transporter without graph canonization."""
+    from sage.all import matrix
+
+    require(PERFECT_DOMAINS)
+    gram = matrix([[0, 1], [1, 0]])
+    ambient = lattice(gram.rows())
+    # The first two rows are a basis.  The remaining repeated rows make the
+    # ordered configurations larger than the canonical-label cutoff, and
+    # swapping the two coordinates exchanges their multiplicities.
+    source_rows = ((1, 0), (0, 1)) + ((1, 0),) * 255
+    target_rows = tuple((row[1], row[0]) for row in source_rows)
+    source = LorentzianPerfectCell(ambient, source_rows, ZERO_SQUARES)
+    target = LorentzianPerfectCell(ambient, target_rows, ZERO_SQUARES)
+
+    witness = LorentzianPerfectLocalBackend().cell_transporter(source, target)
+
+    assert witness is not None
+    action = matrix(rows_of(witness))
+    assert action == matrix([[0, 1], [1, 0]])
+    assert action * gram * action.transpose() == gram
+    assert tuple(tuple(int(entry) for entry in row) for row in matrix(source_rows) * action) == target_rows
 
 
 def test_non_diagonal_positive_shell_uses_the_pinned_cvp_center() -> None:
