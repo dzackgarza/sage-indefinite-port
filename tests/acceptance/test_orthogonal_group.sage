@@ -9,13 +9,14 @@ OSCAR's spinor-norm tests.
 
 import pytest
 
-from sage_indefinite_port.readiness import UnfinishedCapability
 from tests.acceptance.consumer import (
     MARKED_AUTOMORPHISMS,
     assert_same_finite_images,
     discriminant_image_order,
+    is_isometry,
     lattice,
     require,
+    rows_of,
     transpose,
 )
 from tests.fixtures.oracle_fixtures import (
@@ -26,7 +27,6 @@ from tests.fixtures.oracle_fixtures import (
 )
 
 
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_mertens_omega_and_minus_one_generate_o_l() -> None:
     require(MARKED_AUTOMORPHISMS)
 
@@ -45,7 +45,6 @@ def test_mertens_omega_and_minus_one_generate_o_l() -> None:
     load_binary_form_automorphisms()["explicit_generators"],
     ids=lambda case: case["id"],
 )
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_binary_form_generators_match_hecke(case) -> None:
     require(MARKED_AUTOMORPHISMS)
 
@@ -61,17 +60,15 @@ def test_binary_form_generators_match_hecke(case) -> None:
     load_binary_form_automorphisms()["improper_automorphisms"],
     ids=lambda case: case["id"],
 )
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_ambiguous_binary_form_has_an_improper_automorphism(case) -> None:
     require(MARKED_AUTOMORPHISMS)
 
     computed = lattice(case["gram"]).O().group_generators()
 
-    assert any(generator.determinant() == -1 for generator in computed)
+    assert any(int(generator.determinant()) == -1 for generator in computed)
 
 
 @pytest.mark.parametrize("case", load_lorentzian_stabilizer_cases(), ids=lambda case: case["id"])
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_lorentzian_generators_match_polyhedral_common(case) -> None:
     require(MARKED_AUTOMORPHISMS)
 
@@ -80,7 +77,168 @@ def test_lorentzian_generators_match_polyhedral_common(case) -> None:
     assert_same_finite_images(case["gram"], computed, case["generators"])
 
 
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
+def test_degenerate_orthogonal_group_contains_radical_shear_and_gl_action() -> None:
+    """For <2> plus a rank-one radical, O(L) includes both signs and every shear."""
+    require(MARKED_AUTOMORPHISMS)
+
+    gram = [[2, 0], [0, 0]]
+    computed = lattice(gram).O().group_generators()
+    rows = tuple(tuple(tuple(row) for row in rows_of(generator)) for generator in computed)
+    expected = {
+        ((-1, 0), (0, 1)),
+        ((1, 0), (0, -1)),
+        ((1, 1), (0, 1)),
+    }
+
+    assert all(is_isometry(generator_rows, gram) for generator_rows in rows)
+    assert expected <= set(rows)
+
+
+def test_degenerate_orthogonal_group_respects_permuted_radical_coordinates() -> None:
+    """The radical extension generators are expressed in the declared coordinate frame."""
+    from dzack_research.preamble.all import ZZ as PreambleZZ
+    from dzack_research.preamble.all import Lattices
+
+    require(MARKED_AUTOMORPHISMS)
+    labels = ("radical", "nonsingular")
+    gram = [[0, 0], [0, 2]]
+    lattice_ = Lattices(PreambleZZ)(gram, module_generators=labels)
+    assert tuple(lattice_.module_generating_set()) == labels
+
+    from sage_indefinite_port.indefinite.recursive import _column_matrix
+
+    computed = lattice_.O().group_generators()
+    rows = tuple(
+        tuple(tuple(int(entry) for entry in row) for row in _column_matrix(generator).transpose().rows())
+        for generator in computed
+    )
+    expected = {
+        ((-1, 0), (0, 1)),
+        ((1, 0), (0, -1)),
+        ((1, 0), (1, 1)),
+    }
+
+    assert all(is_isometry(rows_of(generator), gram) for generator in computed)
+    assert expected <= set(rows)
+
+
+def test_degenerate_orthogonal_group_generates_rank_two_radical_action() -> None:
+    """The radical GL_2(Z) action and the nonsingular-to-radical shear survive assembly."""
+    require(MARKED_AUTOMORPHISMS)
+
+    gram = [[2, 0, 0], [0, 0, 0], [0, 0, 0]]
+    computed = lattice(gram).O().group_generators()
+    rows = tuple(tuple(tuple(row) for row in rows_of(generator)) for generator in computed)
+
+    assert all(is_isometry(rows_of(generator), gram) for generator in computed)
+    assert any(generator_rows[0][1] != 0 for generator_rows in rows)
+    assert any(generator_rows[1][2] != 0 or generator_rows[2][1] != 0 for generator_rows in rows)
+    assert any(
+        tuple(tuple(generator_rows[i][j] for j in (1, 2)) for i in (1, 2)) != ((1, 0), (0, 1))
+        for generator_rows in rows
+    )
+
+
+def test_degenerate_orthogonal_group_generates_permuted_rank_two_radical_action() -> None:
+    """Rank-two radical GL and shears survive when the nonsingular coordinate is last."""
+    from dzack_research.preamble.all import ZZ as PreambleZZ
+    from dzack_research.preamble.all import Lattices
+
+    require(MARKED_AUTOMORPHISMS)
+    labels = ("radical_b", "radical_a", "nonsingular")
+    gram = [[0, 0, 0], [0, 0, 0], [0, 0, 2]]
+    lattice_ = Lattices(PreambleZZ)(gram, module_generators=labels)
+    assert tuple(lattice_.module_generating_set()) == labels
+
+    from sage_indefinite_port.indefinite.recursive import _column_matrix
+
+    computed = lattice_.O().group_generators()
+    rows = tuple(
+        tuple(tuple(int(entry) for entry in row) for row in _column_matrix(generator).transpose().rows())
+        for generator in computed
+    )
+
+    assert all(is_isometry(generator_rows, gram) for generator_rows in rows)
+    assert ((1, 0, 0), (0, 1, 0), (1, 0, 1)) in set(rows)
+    assert any(generator_rows[2][0] != 0 or generator_rows[2][1] != 0 for generator_rows in rows)
+    assert any(
+        tuple(tuple(generator_rows[i][j] for j in (0, 1)) for i in (0, 1)) != ((1, 0), (0, 1))
+        for generator_rows in rows
+    )
+    assert any(generator_rows[2][2] == -1 for generator_rows in rows)
+
+
+def test_degenerate_orthogonal_group_embeds_non_diagonal_complement() -> None:
+    """A non-diagonal nonsingular summand embeds in the radical extension's coordinate frame."""
+    require(MARKED_AUTOMORPHISMS)
+
+    gram = [[2, 1, 0], [1, 2, 0], [0, 0, 0]]
+    computed = lattice(gram).O().group_generators()
+    rows = tuple(rows_of(generator) for generator in computed)
+
+    assert all(is_isometry(generator_rows, gram) for generator_rows in rows)
+    assert any(generator_rows[0][2] != 0 for generator_rows in rows)
+    assert any(generator_rows[1][2] != 0 for generator_rows in rows)
+    assert any(generator_rows[2][2] == -1 for generator_rows in rows)
+
+
+def test_zero_form_orthogonal_group_is_the_full_general_linear_group() -> None:
+    """When the whole lattice is radical, assembly is exactly GL_2(Z)."""
+    from sage.all import ZZ as SageZZ
+    from sage.all import matrix
+
+    require(MARKED_AUTOMORPHISMS)
+
+    gram = [[0, 0], [0, 0]]
+    computed = lattice(gram).O().group_generators()
+    rows = tuple(rows_of(generator) for generator in computed)
+
+    assert all(is_isometry(generator_rows, gram) for generator_rows in rows)
+    assert all(abs(int(matrix(SageZZ, generator_rows).determinant())) == 1 for generator_rows in rows)
+    assert any(generator_rows[0][1] != 0 or generator_rows[1][0] != 0 for generator_rows in rows)
+    assert any(
+        generator_rows in {((1, 1), (0, 1)), ((1, 0), (1, 1))}
+        for generator_rows in rows
+    )
+    assert any(
+        generator_rows in {
+            ((0, 1), (1, 0)),
+            ((0, -1), (1, 0)),
+            ((0, 1), (-1, 0)),
+            ((0, -1), (-1, 0)),
+        }
+        for generator_rows in rows
+    )
+    assert any(int(generator.determinant()) == -1 for generator in computed)
+
+
+def test_zero_form_orthogonal_group_uses_permuted_coordinate_labels() -> None:
+    """The full GL_2(Z) action is returned in the declared radical coordinate order."""
+    from dzack_research.preamble.all import ZZ as PreambleZZ
+    from dzack_research.preamble.all import Lattices
+    from sage.all import ZZ as SageZZ
+    from sage.all import matrix
+
+    require(MARKED_AUTOMORPHISMS)
+    labels = ("z_second", "a_first")
+    gram = [[0, 0], [0, 0]]
+    lattice_ = Lattices(PreambleZZ)(gram, module_generators=labels)
+    assert tuple(lattice_.module_generating_set()) == labels
+
+    from sage_indefinite_port.indefinite.recursive import _column_matrix
+
+    computed = lattice_.O().group_generators()
+    rows = tuple(
+        tuple(tuple(int(entry) for entry in row) for row in _column_matrix(generator).transpose().rows())
+        for generator in computed
+    )
+
+    assert all(is_isometry(generator_rows, gram) for generator_rows in rows)
+    assert all(abs(int(matrix(SageZZ, generator_rows).determinant())) == 1 for generator_rows in rows)
+    assert any(generator_rows[0][1] != 0 or generator_rows[1][0] != 0 for generator_rows in rows)
+    assert any(int(generator.determinant()) == -1 for generator in computed)
+
+
 def test_orthogonal_group_of_the_hyperbolic_plane_has_order_four() -> None:
     require(MARKED_AUTOMORPHISMS)
 
@@ -93,7 +251,6 @@ _IMAGE_CASES = [case for case in load_oscar_lattice_oracles()["discriminant_imag
 
 
 @pytest.mark.parametrize("case", _IMAGE_CASES, ids=lambda case: case["id"])
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_discriminant_images_match_oscar(case) -> None:
     """|O(q_L)|, the image of O(L), and the image of O^+(L) = ker sn_R (OSCAR's image_in_Oq_signed)."""
     require(MARKED_AUTOMORPHISMS)
@@ -105,7 +262,6 @@ def test_discriminant_images_match_oscar(case) -> None:
     assert discriminant_image_order(lattice_, lattice_.O_plus().group_generators()) == case["image_in_Oq_signed_order"]
 
 
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q() -> None:
     require(MARKED_AUTOMORPHISMS)
 
@@ -115,7 +271,6 @@ def test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q() -> None:
     assert lattice_.O().discriminant_image().cardinality() == lattice_.discriminant_group().orthogonal_group().cardinality()
 
 
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_signed_discriminant_image_of_u_plus_minus_three_is_all_of_o_q() -> None:
     require(MARKED_AUTOMORPHISMS)
 

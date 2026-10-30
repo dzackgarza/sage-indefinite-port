@@ -1,6 +1,6 @@
 # Data Sources and Provenance
 
-This document records the exact provenance, source files, authors, publications, and extraction methods for every dataset in [`tests/fixtures/`](file:///home/dzack/gitclones/sage-indefinite-port/tests/fixtures).
+This document records the exact provenance, source files, authors, publications, and extraction methods for every dataset in [`tests/fixtures/`](./).
 
 * * *
 
@@ -171,7 +171,7 @@ This document records the exact provenance, source files, authors, publications,
 
   - The group: Scattone Proposition 5.4.7 and Corollary 5.4.8(2). For squarefree $k$, $E \mapsto E^\perp/E$ is a bijection from the $O(\Lambda_{2k})$-orbits of primitive isotropic planes onto $G(k)$, so there are $h(k)$ of them (`type_ii_correspondence`). The Type III point is stated for $O_-(L_k)$, not $O(\Lambda_{2k})$.
 
-  - Scattone's values are transcribed from the memoir and cited by its numbering; the script hard-codes them and asserts only the arXiv citations against the vendored TeX.
+  - The Scattone classifications are independently reproduced in two committed scholarly sources: Alexeev–Engel–Thompson arXiv:1205.3144 (`ksba.tex`:256,263) gives the unique degree-2 cusp and four Type II labels; arXiv:2502.04301 (`main.tex`:274–296) states the isotropic-plane correspondence and gives the nine degree-4 generalized types. The extractor parses their actual TeX classifications and checks the class counts. It does not require the copyrighted local Scattone memoir. The memoir remains the cited original publication, not a distributed source file.
 
 - **Extraction**: `uv run references/extract/k3_strata.py`.
 
@@ -183,7 +183,7 @@ This document records the exact provenance, source files, authors, publications,
 
 - **Primary Source**: J. H. Conway and N. J. A. Sloane, *Sphere Packings, Lattices and Groups*, 3rd ed., Springer, 1999, Chapter 15, §11, equations (51a) and (51b): two inequivalent indefinite ternary forms of determinant $-128$ in the genus $\mathrm{I}_{2,1}(2 \times 64)$ of $\mathrm{diag}\{-1, 64, 2\}$, which has two spinor genera and hence two classes.
 
-- **Transcription**: both Gram matrices are transcribed from the book; the record has no extraction script.
+- **Extraction**: `uv run references/extract/conway_sloane_ternary.py` parses both displayed ternary matrices from the committed short mathematical-data transcription `references/source-data/conway_sloane_ch15_sec11_51ab.tex`. The transcription was checked against the local primary reading copy at Chapter 15, §11, equations (51a)/(51b) (local lines 12933–12942). It contains only the displayed matrices and factual genus/class annotations, not the copyrighted reading copy. The script asserts symmetry, determinant `-128`, signature `(2,1)` via the binary indefinite block, and the cited two-class statement; regeneration no longer depends on local unpublished files.
 
 ### Baily–Borel Boundaries of the D-Tower (Laza–O'Grady)
 

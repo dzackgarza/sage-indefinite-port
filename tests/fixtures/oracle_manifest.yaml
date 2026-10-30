@@ -1,5 +1,5 @@
 version: "2"
-description: 'Index of the oracle corpus: each fixture file, the committed script that extracts it, and the vendored sources it cites. Expected values live only in the fixtures.'
+description: 'Index of the oracle corpus: each fixture file and committed extraction script. Book reading copies under references/vendor/zotero are local-only and not included in Git; expected values live only in the fixtures.'
 oracles:
   - fixture_file: enriques_87_polarizations.json
     extraction: references/extract/dh23_polarizations.py
@@ -77,7 +77,8 @@ oracles:
     kind: published_text
     sources:
       - references/vendor/arxiv/1012.4155/main.tex
-      - F. Scattone, On the compactification of moduli spaces for algebraic K3 surfaces, Mem. Amer. Math. Soc. 70 (1987), no. 374, Prop. 5.4.7, Cor. 5.4.8, Section 6
+      - references/vendor/arxiv/1205.3144/ksba.tex
+      - references/vendor/arxiv/2502.04301/main.tex
   - fixture_file: indefinite_isometry_pairs.json
     extraction: references/extract/isometry_pairs.py
     runtime: sage
@@ -160,8 +161,8 @@ oracles:
     sources:
       - references/vendor/polyhedral_common@1592b246/CI_tests/DoubleCosets/DBL
   - fixture_file: conway_sloane_cases.json
-    extraction: null
-    runtime: null
+    extraction: references/extract/conway_sloane_ternary.py
+    runtime: uv
     kind: published_text
     sources:
-      - J. H. Conway and N. J. A. Sloane, Sphere Packings, Lattices and Groups, 3rd ed., Springer, 1999, Ch. 15, Sec. 11, eqs. (51a), (51b)
+      - references/source-data/conway_sloane_ch15_sec11_51ab.tex
