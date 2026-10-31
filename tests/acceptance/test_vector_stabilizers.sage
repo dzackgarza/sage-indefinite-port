@@ -305,8 +305,9 @@ def test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks()
         module_generators=labels,
     )
     assert tuple(lattice_.module_generating_set()) == labels
-    first = lattice_.linear_combination({labels[0]: 1})
-    second = lattice_.linear_combination({labels[2]: 1})
+    ring = lattice_.base_ring()
+    first = lattice_.linear_combination({labels[0]: ring.one()})
+    second = lattice_.linear_combination({labels[2]: ring.one()})
     plane = lattice_.primitive_isotropic_subobject(first, second)
     flag_line = first + second
     induction = IsotropicInduction(EichlerRecursion())
