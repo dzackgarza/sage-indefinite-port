@@ -1,5 +1,10 @@
 # Sage indefinite lattice port — agent instructions
 
+Use the [shared math container](https://github.com/dzackgarza/ai-review-ci/blob/main/SAGE-CONTAINER.md#use-the-image)
+(`ghcr.io/dzackgarza/sage:develop`) for Lean/elan, Sage with mypy, GAP,
+Julia/Oscar, Macaulay2, and Singular. The guide covers image pull/run commands,
+CI use, and the host launchers.
+
 This project translates the specialized indefinite-form algorithms of the
 [committed pinned sources](references/vendor/README.md) into Sage/Python,
 consuming the mathematical operations of [research](https://github.com/dzackgarza/research).
@@ -37,9 +42,9 @@ not cancel the requirement. These deferred cases do not gate v1 delivery.
 
 ## Entry and continuity
 
-For a **new cloud checkout**, work from
-`implement/lorentzian-completion` (not default `main`).
-Read this document once, then `.tmp/HANDOFF.md` **Now** and the relevant
+For a **new cloud checkout**, work from `main`, where
+implementation and acceptance now land. Read this document once, then
+`.tmp/HANDOFF.md` **Now** and the relevant
 TODO/issue/source sections. Fetch the branch and identify its current commit and
 newest *completed* Acceptance run before changing it. If the handoff commit or
 selected failure predates newer code/results, replace Now with the actual next

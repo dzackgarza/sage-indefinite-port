@@ -4,12 +4,12 @@ Native Sage/Python implementations of the indefinite-lattice isometry, orthogona
 
 ## Cloud-agent entry point
 
-The active integration branch is [`implement/lorentzian-completion`](https://github.com/dzackgarza/sage-indefinite-port/tree/implement/lorentzian-completion), **not** default `main`.
+The active integration branch is `main`; the former `implement/lorentzian-completion` line is merged into it.
 
 ```bash
 git clone https://github.com/dzackgarza/sage-indefinite-port.git
 cd sage-indefinite-port
-git switch --track origin/implement/lorentzian-completion
+git switch --track origin/main
 ```
 
 Read [AGENTS.md](AGENTS.md) for ownership and source-fidelity constraints; then read the single action in [the tracked handoff](.tmp/HANDOFF.md). Follow its relevant [TODO.md](TODO.md) node and the [issue tree rooted at #4](https://github.com/dzackgarza/sage-indefinite-port/issues/4). The handoff is a starting locator, not evidence that its recorded commit is still the remote tip: fetch and compare GitHub before editing. Do not infer another agent owns a file from an old handoff or a branch name.
