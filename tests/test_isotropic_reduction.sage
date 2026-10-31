@@ -9,7 +9,7 @@ from ``levi_lift`` / ``pointwise_levi_lift``.
 """
 
 import pytest
-from dzack_research.preamble.categories.lattices import Lattices
+from sage_extensions.categories.lattices import Lattices
 from sage.rings.integer_ring import ZZ
 
 INTEGRAL_LATTICES = Lattices(ZZ)

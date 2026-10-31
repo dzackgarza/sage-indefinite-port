@@ -7,8 +7,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 from itertools import combinations
 
-from dzack_research.preamble.all import Lattices
-from dzack_research.preamble.tensors.tensor import _engine_component_matrix
+from sage_extensions.all import Lattices
+from sage_extensions.tensors.tensor import _engine_component_matrix
 from sage.matrix.constructor import matrix
 from sage.modules.free_module_element import vector
 from sage.rings.infinity import Infinity, PlusInfinity

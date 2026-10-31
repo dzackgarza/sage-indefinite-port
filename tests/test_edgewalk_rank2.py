@@ -28,7 +28,7 @@ def test_binary_cycle_form_uses_the_coordinate_label_order() -> None:
 
 def test_edgewalk_period_action_matrix_uses_coordinate_label_order() -> None:
     """The period action rows align with the coordinate frame of the sublattice."""
-    from dzack_research.preamble.all import ZZ, Lattices
+    from sage_extensions.all import ZZ, Lattices
     from sage.all import QQ, matrix
 
     from sage_indefinite_port.indefinite.edgewalk import (
@@ -51,7 +51,7 @@ def test_edgewalk_period_action_matrix_uses_coordinate_label_order() -> None:
 
 def test_edgewalk_coordinate_basis_follows_explicit_labels() -> None:
     """Row-matrix bases are indexed by labels, not the generator iterator."""
-    from dzack_research.preamble.all import ZZ, Lattices
+    from sage_extensions.all import ZZ, Lattices
 
     from sage_indefinite_port.indefinite.edgewalk import _coordinate_basis
 
@@ -67,7 +67,7 @@ def test_edgewalk_coordinate_basis_follows_explicit_labels() -> None:
 
 def test_edgewalk_identity_key_uses_coordinate_label_order() -> None:
     """Identity and arbitrary isometry keys use the same ordered coordinate frame."""
-    from dzack_research.preamble.all import ZZ, HyperbolicLattices, Lattices
+    from sage_extensions.all import ZZ, HyperbolicLattices, Lattices
 
     from sage_indefinite_port.indefinite.edgewalk import _Edgewalk, _key
 

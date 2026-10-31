@@ -296,8 +296,8 @@ def test_isotropic_flag_isometry_transports_between_changed_basis_parents() -> N
 
 def test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks() -> None:
     """The plane stabilizer preserves J setwise; the flag stabilizer also preserves Zu."""
-    from dzack_research.preamble.all import ZZ as PreambleZZ
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import ZZ as PreambleZZ
+    from sage_extensions.all import Lattices
 
     labels = ("z_first", "a_second", "m_third", "b_fourth")
     lattice_ = Lattices(PreambleZZ)(

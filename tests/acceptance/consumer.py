@@ -20,10 +20,10 @@ import importlib
 from functools import reduce
 from math import gcd
 
-from dzack_research.preamble.all import ZZ as PreambleZZ
-from dzack_research.preamble.all import Cat, Lattices
-from dzack_research.preamble.categories.abstract_categories.arrow_categories import CosliceCategory
-from dzack_research.preamble.categories.abstract_categories.products import FiniteOrdinalCategory
+from sage_extensions.all import ZZ as PreambleZZ
+from sage_extensions.all import Cat, Lattices
+from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
 from sage.all import GF, ZZ, MatrixGroup, matrix, prime_divisors
 
 from sage_indefinite_port.readiness import UNFINISHED, UnfinishedCapability

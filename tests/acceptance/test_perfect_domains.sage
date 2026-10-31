@@ -76,8 +76,8 @@ def test_non_diagonal_positive_shell_uses_the_pinned_cvp_center() -> None:
 
 def test_non_diagonal_positive_shell_respects_explicit_coordinate_labels() -> None:
     """The pinned positive shell is exact when the lattice uses string coordinate labels."""
-    from dzack_research.preamble.all import ZZ as PreambleZZ
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import ZZ as PreambleZZ
+    from sage_extensions.all import Lattices
     from sage.all import ZZ as SageZZ
     from sage.all import matrix, vector
 
@@ -96,8 +96,8 @@ def test_non_diagonal_positive_shell_respects_explicit_coordinate_labels() -> No
 
 def test_positive_shell_survives_a_permuted_gram_basis() -> None:
     """The nonzero CVP center and exact first shell are covariant under a basis permutation."""
-    from dzack_research.preamble.all import ZZ as PreambleZZ
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import ZZ as PreambleZZ
+    from sage_extensions.all import Lattices
     from sage.all import ZZ as SageZZ
     from sage.all import matrix, vector
 
@@ -127,8 +127,8 @@ def test_positive_shell_survives_a_permuted_gram_basis() -> None:
 
 def test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center() -> None:
     """The exact-sphere branch finds every isotropic vector in the first shell."""
-    from dzack_research.preamble.all import ZZ as PreambleZZ
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import ZZ as PreambleZZ
+    from sage_extensions.all import Lattices
     from sage.all import QQ, matrix, vector
     from sage.all import ZZ as SageZZ
 
@@ -178,8 +178,8 @@ def test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center() -> None:
 
 def test_positive_shell_scales_rational_direction_pairing_bound() -> None:
     """The first shell is unchanged when a rational direction bound is scaled consistently."""
-    from dzack_research.preamble.all import ZZ as PreambleZZ
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import ZZ as PreambleZZ
+    from sage_extensions.all import Lattices
     from sage.all import QQ
 
     from sage_indefinite_port.indefinite.lorentzian_cells import (
@@ -198,8 +198,8 @@ def test_positive_shell_scales_rational_direction_pairing_bound() -> None:
 
 def test_non_diagonal_isotropic_shell_respects_explicit_coordinate_labels() -> None:
     """The exact-sphere CVP branch preserves all isotropic rows in a labelled basis."""
-    from dzack_research.preamble.all import ZZ as PreambleZZ
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import ZZ as PreambleZZ
+    from sage_extensions.all import Lattices
     from sage.all import QQ, matrix, vector
     from sage.all import ZZ as SageZZ
 
@@ -227,8 +227,8 @@ def test_non_diagonal_isotropic_shell_respects_explicit_coordinate_labels() -> N
 
 def test_isotropic_shell_survives_a_permuted_gram_basis() -> None:
     """The exact-sphere CVP center returns every isotropic first-shell row after permutation."""
-    from dzack_research.preamble.all import ZZ as PreambleZZ
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import ZZ as PreambleZZ
+    from sage_extensions.all import Lattices
     from sage.all import ZZ as SageZZ
     from sage.all import matrix, vector
 
@@ -312,8 +312,8 @@ def test_facet_orbit_permutation_view_materializes_exact_isometries() -> None:
     """The public owned-isometry view agrees with the internal Schreier permutations."""
     require(PERFECT_DOMAINS)
 
-    from dzack_research.preamble.all import ZZ as PreambleZZ
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import ZZ as PreambleZZ
+    from sage_extensions.all import Lattices
 
     case = next(case for case in load_lorentzian_perfect_domains() if case["id"] == "Result_Enumeration_1")
     labels = tuple(f"basis_{index:02d}" for index in reversed(range(len(case["gram"]))))

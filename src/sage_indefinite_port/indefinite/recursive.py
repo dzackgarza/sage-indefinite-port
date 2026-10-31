@@ -20,17 +20,17 @@ Definite lattices are the preamble's; signature (1, n) is the Lorentzian leaf (#
 
 from dataclasses import dataclass
 
-from dzack_research.preamble.all import ZZ, Lattices
-from dzack_research.preamble.categories.group.groups import OwnedGroups
-from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
-from dzack_research.preamble.categories.modules.orbit_spans import (
+from sage_extensions.all import ZZ, Lattices
+from sage_extensions.categories.group.groups import OwnedGroups
+from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
+from sage_extensions.categories.modules.orbit_spans import (
     OrbitSpanConstructions,
 )
-from dzack_research.preamble.categories.modules.pure.modules import (
+from sage_extensions.categories.modules.pure.modules import (
     Modules,
     ModulesOverIntegralDomains,
 )
-from dzack_research.preamble.categories.rational_integral_stabilizers import (
+from sage_extensions.categories.rational_integral_stabilizers import (
     IntegralStructureAction,
 )
 from sage.matrix.constructor import identity_matrix, matrix

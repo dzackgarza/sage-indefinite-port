@@ -20,12 +20,12 @@ isotropic classes of K and every stabilizer generating set.
 
 from collections.abc import Iterator
 
-from dzack_research.preamble.all import ZZ, Cat, Lattices
-from dzack_research.preamble.categories.abstract_categories.products import (
+from sage_extensions.all import ZZ, Cat, Lattices
+from sage_extensions.categories.abstract_categories.products import (
     FiniteOrdinalCategory,
 )
-from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
-from dzack_research.preamble.categories.rational_integral_stabilizers import (
+from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
+from sage_extensions.categories.rational_integral_stabilizers import (
     IntegralStructureAction,
 )
 from sage.arith.misc import xgcd

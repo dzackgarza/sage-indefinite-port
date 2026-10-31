@@ -2504,7 +2504,7 @@ def test_multiplier_scales_cvp_center_and_squared_distance_bound() -> None:
 def test_positive_vector_constructor_uses_cpp_semantic_cvp_center() -> None:
     """The shell consumer's CVP center is alpha*t-h, not its negative."""
     from sage.all import QQ, vector
-    from dzack_research.preamble.all import Lattices, ZZ
+    from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.lorentzian_cells import NONNEGATIVE_SQUARES
 
     lattice = Lattices(ZZ)([[5, 1, 0], [1, -1, 0], [0, 0, -1]])
@@ -2523,7 +2523,7 @@ def test_positive_vector_constructor_uses_cpp_semantic_cvp_center() -> None:
 
 def test_positive_vector_shell_respects_explicit_coordinate_labels() -> None:
     """The shell's Gram, timelike row, and returned rows share the labelled basis frame."""
-    from dzack_research.preamble.all import Lattices, ZZ
+    from sage_extensions.all import Lattices, ZZ
     from sage.all import QQ, vector
     from sage_indefinite_port.indefinite.lorentzian_cells import NONNEGATIVE_SQUARES, _PositiveVectorEnumerator
 
@@ -2551,7 +2551,7 @@ def test_positive_vector_shell_respects_explicit_coordinate_labels() -> None:
 
 def test_positive_vector_shell_scales_pairing_bound_with_rational_direction() -> None:
     """Clearing a rational direction denominator scales the pairing bound linearly."""
-    from dzack_research.preamble.all import Lattices, ZZ
+    from sage_extensions.all import Lattices, ZZ
     from sage.all import QQ
     from sage_indefinite_port.indefinite.lorentzian_cells import NONNEGATIVE_SQUARES, _PositiveVectorEnumerator
 
@@ -2567,7 +2567,7 @@ def test_positive_vector_shell_scales_pairing_bound_with_rational_direction() ->
 
 def test_positive_vector_shell_matches_exact_nonzero_center_enumeration() -> None:
     """The nonzero affine CVP center yields exactly the integral shell vectors in a non-diagonal form."""
-    from dzack_research.preamble.all import Lattices, ZZ
+    from sage_extensions.all import Lattices, ZZ
     from sage.all import QQ, ZZ as SageZZ, vector
     from sage_indefinite_port.indefinite.lorentzian_cells import (
         NONNEGATIVE_SQUARES,

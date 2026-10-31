@@ -8,8 +8,8 @@ ten simple roots of U + E8(-1).
 """
 
 import pytest
-from dzack_research.preamble.all import ZZ as PreambleZZ
-from dzack_research.preamble.all import HyperbolicLattices, Lattices
+from sage_extensions.all import ZZ as PreambleZZ
+from sage_extensions.all import HyperbolicLattices, Lattices
 from sage.all import QQ, ZZ, Graph, matrix, vector
 
 import sage_indefinite_port.indefinite.edgewalk as edgewalk_module
@@ -79,7 +79,7 @@ def test_promised_go_left_preserves_left_supplement() -> None:
 
 def test_edgewalk_period_action_matrix_uses_coordinate_label_order() -> None:
     """The induced binary-period action is expressed in coordinate-label order."""
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import Lattices
     from sage.all import QQ as SageQQ
     from sage.all import ZZ as SageZZ
     from sage.all import matrix
@@ -155,8 +155,8 @@ def test_binary_cycle_coordinate_order_and_period_certificate() -> None:
 
 def test_binary_cycle_period_respects_permuted_coordinate_basis() -> None:
     """The oriented binary cycle returns its period in the declared basis order."""
-    from dzack_research.preamble.all import ZZ as PreambleZZ
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import ZZ as PreambleZZ
+    from sage_extensions.all import Lattices
 
     from sage_indefinite_port.indefinite.edgewalk_rank2 import _OrientedBinaryCycle
 

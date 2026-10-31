@@ -204,7 +204,7 @@ def _gamma_h(face_polarization):
     N as anti-invariant lattice. h is transported from Dutour Sikirić--Hulek's coordinates
     on U + E8(-1) into M along an isometry (U + E8(-1))(2) -> M.
     """
-    from dzack_research.preamble.catalogue import Involutions
+    from sage_extensions.catalogue import Involutions
 
     involution = Involutions.I_En
     invariant = involution.primitive_extension().invariant

@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from dzack_research.preamble.categories.lattices import Lattices
-from dzack_research.preamble.tensors.tensor import _engine_component_matrix
+from sage_extensions.categories.lattices import Lattices
+from sage_extensions.tensors.tensor import _engine_component_matrix
 from sage.matrix.constructor import matrix as SageMatrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.modules.free_module_element import vector as SageVector

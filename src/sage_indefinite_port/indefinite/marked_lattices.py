@@ -14,15 +14,15 @@ isometry of the underlying lattices: the markings are monomorphisms, so the isom
 the other components.
 """
 
-from dzack_research.preamble.all import ZZ, Cat, Lattices
-from dzack_research.preamble.categories.abstract_categories.arrow_categories import (
+from sage_extensions.all import ZZ, Cat, Lattices
+from sage_extensions.categories.abstract_categories.arrow_categories import (
     CosliceCategory,
 )
-from dzack_research.preamble.categories.abstract_categories.products import (
+from sage_extensions.categories.abstract_categories.products import (
     FiniteOrdinalCategory,
 )
-from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
-from dzack_research.preamble.categories.sets.finite_ordered_sets import (
+from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
+from sage_extensions.categories.sets.finite_ordered_sets import (
     finite_ordered_set,
 )
 from sage.categories.category import Category

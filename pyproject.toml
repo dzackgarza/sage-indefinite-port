@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Port of indefinite lattices and orthogonal groups to SageMath."
 requires-python = ">=3.14"
 dependencies = [
-    "dzack-research @ git+https://github.com/dzackgarza/research@064cd6e8e90cc9cbad17ce7d9574b497c864b8c0",
+    "sage-extensions @ git+https://github.com/dzackgarza/sage-extensions@441519c574cec12ada06ad586f6c3862fbca96d0",
     "PyNormaliz",
 ]
 
@@ -16,7 +16,7 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.sage-mypy-category-plugin]
-packages = ["dzack_research.preamble"]
+packages = ["sage_extensions"]
 
 [tool.ruff]
 target-version = "py312"

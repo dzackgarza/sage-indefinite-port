@@ -54,35 +54,33 @@ ci-provision-sage:
     "$SAGE_BIN" -c 'import sage.all; from sage.features.bliss import Bliss; Bliss().require(); from sage.interfaces.maxima_lib import maxima_lib; assert str(maxima_lib.eval("1+1")) == "2"'
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     uv pip install --quiet --python "$sage_python" "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard pytest-instafail PyNormaliz
-    # The acceptance contract is against the research API revision declared in
+    # The acceptance contract is against the shared-library revision declared in
     # pyproject.toml; read it from there so the packaging pin and the CI pin
-    # cannot drift apart. Tracking main is not reproducible and currently
-    # imports a Sage category absent from the pinned CI Sage image
-    # (sage.categories.ordered_fields).
+    # cannot drift apart. The library is sage-extensions: the pre-move
+    # dzack_research.preamble.categories modules no longer exist.
     # Keep the clone shallow and fetch the exact provider commit explicitly.
     mkdir -p {{ci_dir}}
-    git clone --quiet --depth 1 https://github.com/dzackgarza/research {{ci_dir}}/research
-    research_rev="$(sed -n 's|.*dzack-research @ git+https://github.com/dzackgarza/research@\([0-9a-f]\{40\}\).*|\1|p' pyproject.toml | head -1)"
-    if [ -z "$research_rev" ]; then
-        echo "ERROR: pyproject.toml declares no dzack-research revision to provision" >&2
+    git clone --quiet --depth 1 https://github.com/dzackgarza/sage-extensions {{ci_dir}}/sage-extensions
+    provider_rev="$(sed -n 's|.*sage-extensions @ git+https://github.com/dzackgarza/sage-extensions@\([0-9a-f]\{40\}\).*|\1|p' pyproject.toml | head -1)"
+    if [ -z "$provider_rev" ]; then
+        echo "ERROR: pyproject.toml declares no sage-extensions revision to provision" >&2
         exit 1
     fi
-    git -C {{ci_dir}}/research fetch --quiet --depth 1 origin "$research_rev"
-    git -C {{ci_dir}}/research -c advice.detachedHead=false checkout --quiet "$research_rev"
-    # uv, not pip: research declares tree-sitter-sage and sage-stubs only in
-    # [tool.uv.sources], which pip ignores.
+    git -C {{ci_dir}}/sage-extensions fetch --quiet --depth 1 origin "$provider_rev"
+    git -C {{ci_dir}}/sage-extensions -c advice.detachedHead=false checkout --quiet "$provider_rev"
+    # uv, not pip: sage-extensions declares tree-sitter-sage and sage-stubs only
+    # in [tool.uv.sources], which pip ignores.
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
-    # The image owns sage-extensions, sage-julia-bridge and the other Sage
-    # projects research depends on, except that the bridge itself is not
-    # installed in this image. Install it separately: its only dependency is
-    # pydantic, and it does not re-resolve the image's conflicting
-    # tree-sitter-sage sources.
+    # The image owns sage-julia-bridge and the other Sage projects, except that
+    # the bridge itself is not installed in this image. Install it separately:
+    # its only dependency is pydantic, and it does not re-resolve the image's
+    # conflicting tree-sitter-sage sources.
     uv pip install --quiet --python "$sage_python" "sage-julia-bridge @ git+https://github.com/dzackgarza/sage-julia-bridge"
-    # Installing research with dependency resolution re-resolves the image's
+    # Installing the library with dependency resolution re-resolves the image's
     # already-installed editable projects and rejects their different
     # tree-sitter-sage source URLs. Install the exact provider checkout without
     # replacing the image's dependency graph.
-    uv pip install --quiet --python "$sage_python" --no-deps -e {{ci_dir}}/research
+    uv pip install --quiet --python "$sage_python" --no-deps -e {{ci_dir}}/sage-extensions
     uv pip install --quiet --python "$sage_python" --no-deps -e .
     git clone --quiet --depth 1 https://github.com/dzackgarza/ai-review-ci {{ci_dir}}/ai-review-ci
 

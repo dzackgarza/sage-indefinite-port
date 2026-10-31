@@ -20,26 +20,26 @@ import weakref
 from math import gcd
 from random import choice, randrange, sample
 
-from dzack_research.preamble.all import Lattices
-from dzack_research.preamble.categories.eichler_criterion import TwoUEichlerModel
-from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
-from dzack_research.preamble.categories.modules.framed.formed.discriminant_modules import (
+from sage_extensions.all import Lattices
+from sage_extensions.categories.eichler_criterion import TwoUEichlerModel
+from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
+from sage_extensions.categories.modules.framed.formed.discriminant_modules import (
     DiscriminantQuadraticModules,
 )
-from dzack_research.preamble.categories.rational_integral_stabilizers import (
+from sage_extensions.categories.rational_integral_stabilizers import (
     IntegralStructureAction,
 )
-from dzack_research.preamble.categories.rings.ring_foundation import (
+from sage_extensions.categories.rings.ring_foundation import (
     _owned_engine_element,
 )
-from dzack_research.preamble.categories.sets.finite_ordered_sets import (
+from sage_extensions.categories.sets.finite_ordered_sets import (
     finite_ordered_set,
 )
-from dzack_research.preamble.categories.sets.indexed_families import (
+from sage_extensions.categories.sets.indexed_families import (
     IndexedFamily,
     finite_indexed_family,
 )
-from dzack_research.preamble.tensors.tensor import _engine_component_matrix
+from sage_extensions.tensors.tensor import _engine_component_matrix
 from sage.graphs.graph import Graph
 from sage.groups.perm_gps.permgroup import PermutationGroup
 from sage.matrix.constructor import identity_matrix, matrix

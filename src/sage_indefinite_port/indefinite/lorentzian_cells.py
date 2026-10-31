@@ -16,32 +16,33 @@ from typing import Literal, cast, overload
 
 import numpy as np
 from cypari2.handle_error import PariError
-from dzack_research.preamble.all import FramedFreeModules, Lattices, Sets
-from dzack_research.preamble.categories.definite_lattices import (
+from sage_extensions.all import Lattices, Sets
+from sage_extensions.categories.modules.framed.framed_free_modules import FramedFreeModules
+from sage_extensions.categories.definite_lattices import (
     LatticeReduction,
     _ExactCVPEngine,
 )
-from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
-from dzack_research.preamble.categories.modules.pure.modules import _engine_matrix
-from dzack_research.preamble.categories.polyhedral_cones import (
+from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
+from sage_extensions.categories.modules.pure.modules import _engine_matrix
+from sage_extensions.categories.polyhedral_cones import (
     RationalPolyhedralCones,
     _integral_covector,
     _rational_polyhedral_cone,
 )
-from dzack_research.preamble.categories.reduction_complexes import (
+from sage_extensions.categories.reduction_complexes import (
     LorentzianPerfectDomainTraversal,
     PerfectDomainOrbitAdjacency,
 )
-from dzack_research.preamble.categories.rings.ring_foundation import (
+from sage_extensions.categories.rings.ring_foundation import (
     _owned_engine_element,
 )
-from dzack_research.preamble.categories.sets.finite_ordered_sets import (
+from sage_extensions.categories.sets.finite_ordered_sets import (
     finite_ordered_set,
 )
-from dzack_research.preamble.categories.sets.indexed_families import (
+from sage_extensions.categories.sets.indexed_families import (
     finite_indexed_family,
 )
-from dzack_research.preamble.tensors.tensor import _engine_component_matrix
+from sage_extensions.tensors.tensor import _engine_component_matrix
 from sage.groups.perm_gps.permgroup_named import SymmetricGroup
 from sage.libs.gap.libgap import libgap
 from sage.matrix.constructor import diagonal_matrix, matrix

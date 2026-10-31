@@ -9,11 +9,11 @@ from __future__ import annotations
 from functools import cache
 from random import choice, randrange
 
-from dzack_research.preamble.categories.definite_lattices import (
+from sage_extensions.categories.definite_lattices import (
     LatticeReduction,
     _reduction_from_backend_rows,
 )
-from dzack_research.preamble.tensors.tensor import _engine_component_matrix
+from sage_extensions.tensors.tensor import _engine_component_matrix
 from sage.libs.gap.libgap import libgap
 from sage.matrix.constructor import identity_matrix, matrix
 from sage.modules.free_module_element import vector

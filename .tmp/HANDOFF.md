@@ -359,3 +359,36 @@ is untouched by this record. Port work continues independently of the image fix:
 the defect is tracked upstream (ai-review-ci#490) and no port module is changed to
 accommodate it.
 
+
+## Library migration to sage_extensions (port-owned)
+
+The port now imports the shared library at its current home. `dzack_research.preamble.*`
+became `sage_extensions.*` in 22 files (12 under `src/`, 10 under `tests/`), with
+`FramedFreeModules` and `ModulesOverIntegralDomains` taken from their defining modules
+because `sage_extensions.all` does not re-export them. `pyproject.toml` declares
+`sage-extensions @ ...@441519c574cec12ada06ad586f6c3862fbca96d0` and `ci-provision-sage`
+clones that repository, reads the revision from `pyproject.toml`, and installs it
+`--no-deps -e`. The pre-move research library is no longer installed or used.
+
+Verified at port `main` + sage-extensions `441519c` in the shared image
+(`b0cd7d86...`, Sage 11.0.beta5, CPython 3.14.10):
+
+| check | result |
+| --- | --- |
+| every port module imports | 18/18 |
+| `U.Isom(U).an_element()`, `(U + <2>).Isom(...).an_element()` | isometry returned, determinant 1, form preserved |
+| `test_vector_orbits::test_anisotropic_binary_vector_classes_use_primitive_embeddings` | pass |
+| `test_isometry -k "coordinate or permuted or split"` | 4 pass, 1 library-blocked |
+| `test_vector_stabilizers::...plane_and_flag...` | library-blocked |
+| `test_centralizers` | 3 pass, 2 library-blocked |
+
+Pre-migration acceptance stays on record as taken at the pre-move pair (port `04eb0934`,
+provider `064cd6e8e90c`): 230 passing cases on the active hosted run.
+
+Library blockers, all filed at
+[sage-extensions#5](https://github.com/dzackgarza/sage-extensions/issues/5) and not
+worked around here: `module_morphism()` raises `_form_module_morphism` on every isometry
+including the identity; isometries lack `_element_function`; a degenerate Gram matrix
+constructs a `_PresentedModule` without `Isom`. The port references none of those
+internals and constructs only through `Lattices`, `Isom`, `Aut` and the homset
+constructors.
