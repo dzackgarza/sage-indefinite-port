@@ -345,9 +345,17 @@ backend. Measured there, in that image only:
 | partn_ref + labels | `Graph([[0,1]]).canonical_label(edge_labels=True)` | SIGSEGV |
 | partn_ref | `Graph([[0,1],[1,2],[2,3],[3,4],[4,0]]).canonical_label(algorithm="sage")` | ok, 5 edges |
 
+Reproduction scope: the matched dev-image investigation reproduced the bliss
+abort **natively**, directly on the image's interpreter, as well as under PRoot,
+and isolated build ABI and copied-binary defects in that build. This is therefore
+an image-build defect, not an artefact of the downstream runner, and the earlier
+"runner blocker" framing is withdrawn.
+
 Consequence: frozen cases that canonicalize root graphs with `edge_labels=True`
 abort their shard (`test_mertens_omega_and_minus_one_generate_o_l` surfaced as
 `MemoryError` in the edge-labelled path; `IsotropicCases_186` likewise). Those
 families cannot be evaluated until the image is fixed; the arithmetic behind them
-is untouched by this record.
+is untouched by this record. Port work continues independently of the image fix:
+the defect is tracked upstream (ai-review-ci#490) and no port module is changed to
+accommodate it.
 
