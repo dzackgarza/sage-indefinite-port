@@ -15,19 +15,38 @@ the other components.
 """
 
 from dzack_research.preamble.all import ZZ, Cat, Lattices
-from dzack_research.preamble.categories.abstract_categories.arrow_categories import CosliceCategory
-from dzack_research.preamble.categories.abstract_categories.products import FiniteOrdinalCategory
+from dzack_research.preamble.categories.abstract_categories.arrow_categories import (
+    CosliceCategory,
+)
+from dzack_research.preamble.categories.abstract_categories.products import (
+    FiniteOrdinalCategory,
+)
 from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
-from dzack_research.preamble.categories.sets.finite_ordered_sets import finite_ordered_set
+from dzack_research.preamble.categories.sets.finite_ordered_sets import (
+    finite_ordered_set,
+)
 from sage.categories.category import Category
 from sage.categories.morphism import Morphism
 from sage.structure.parent import Parent
 
-from sage_indefinite_port.indefinite.isotropic_induction import ARROWS, Flag, IsotropicInduction, UnsupportedRankError
-from sage_indefinite_port.indefinite.lorentzian_cells import LorentzianPerfectComplex, MarkedCellOrbitAlgorithm
+from sage_indefinite_port.indefinite.indefinite_reduction import (
+    indefinite_reduced_presentation,
+)
+from sage_indefinite_port.indefinite.isotropic_induction import (
+    ARROWS,
+    Flag,
+    IsotropicInduction,
+    UnsupportedRankError,
+)
+from sage_indefinite_port.indefinite.lorentzian_cells import (
+    NONNEGATIVE_SQUARES,
+    MarkedCellOrbitAlgorithm,
+    _transfer,
+    binary_split_primitive_vector_classes,
+    perfect_complex,
+)
 from sage_indefinite_port.indefinite.recursive import EichlerRecursion
 from sage_indefinite_port.invariants import AttackProfile
-from sage_indefinite_port.readiness import unfinished
 
 LATTICES = Lattices(ZZ)
 FLAGS = Cat().Mor(FiniteOrdinalCategory(3), LATTICES)
@@ -61,7 +80,6 @@ def _flag(marked: Parent) -> Flag:
     return second(first(next(iter(first.domain().module_generators())))), plane
 
 
-@unfinished(18)
 def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsometryMethods | None:
     r"""The isometry of an isomorphism of marked lattices ``source -> target`` in ``category``, or ``None`` when there is none."""
     match category:
@@ -84,7 +102,6 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
     raise ValueError(f"{category} is not a category of marked lattices this port decides: Lattices, a coslice <n>/Lattices, Ar(Lattices) or Fun([2], Lattices)")
 
 
-@unfinished(18)
 def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
     r"""Generators of the automorphism group of a marked lattice in ``category``, as a finite ordered set of isometries of L."""
     match category:
@@ -108,20 +125,59 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
 
 def _pointed_classes(category: Category, lattice: Lattices.ParentMethods, square: int) -> tuple[Parent, ...]:
     profile = AttackProfile.from_lattice(lattice)
-    match profile.positive_index, square:
-        case 0, _:
-            raise ValueError(f"{lattice} is definite: its vector classes are the preamble's")
-        case 1, 0:
-            vectors = INDUCTION.isotropic_vector_classes(lattice)
-        case 1, _:
-            vectors = tuple(orbit[0] for orbit in MarkedCellOrbitAlgorithm(LorentzianPerfectComplex(lattice, "total"), square).global_orbits())
-        case _:
-            vectors = tuple(vector_class.representative for vector_class in RECURSION.primitive_vector_classes(lattice, square))
+    if profile.positive_index == 1 and int(lattice.rank()) == 2 and tuple(map(int, lattice.signature_pair())) == (1, 1) and not lattice.is_isotropic():
+        # An anisotropic binary plane has no isotropic cusp and therefore no
+        # perfect-cell fundamental domain. Use the research owner's exact
+        # nonsplit binary fixed-norm orbit set, whose finite transversal
+        # includes imprimitive vectors; retain only primitive markings here.
+        # An anisotropic plane has no nonzero vector of square zero.
+        if square == 0:
+            return ()
+        orbit_set = lattice.binary_fixed_norm_representatives(square)
+        section = orbit_set.section()
+        vectors = tuple(
+            vector_
+            for orbit in orbit_set
+            if (vector_ := section(orbit)).content() == 1
+        )
+        base = category.base_object()
+        return tuple(category.object(base.hom([vector_], codomain=lattice)) for vector_ in vectors)
+    if profile.positive_index == 1 and int(lattice.rank()) == 2 and tuple(map(int, lattice.signature_pair())) == (1, 1) and lattice.is_isotropic():
+        # The pinned binary split dispatcher covers both timelike and
+        # spacelike squares; perfect cells cover only the closed positive cone.
+        vectors = binary_split_primitive_vector_classes(lattice, square)
+    else:
+        match profile.positive_index, square:
+            case 0, _:
+                raise ValueError(f"{lattice} is definite: its vector classes are the preamble's")
+            case 1, 0:
+                vectors = INDUCTION.isotropic_vector_classes(lattice)
+            case 1, _ if profile.sign * square < 0:
+                # These vectors lie outside the positive cone covered by
+                # perfect cells.  Classify their rank-one primitive
+                # embeddings by the generic Nikulin genus/gluing algorithm
+                # at its research owner (pinned OSCAR embeddings.jl,
+                # d135b70b, primitive_embeddings(::ZZGenus, ::ZZLat)).
+                base = category.base_object()
+                return tuple(
+                    category.object(embedding)
+                    for embedding in base.Emb(lattice).primitive_embedding_class_representatives(
+                        classification="emb"
+                    )
+                )
+            case 1, _:
+                signed_square = profile.sign * square
+                reduction = indefinite_reduced_presentation(profile.signed_view)
+                vectors = tuple(
+                    _transfer(lattice, reduction.isometry(orbit[0]))
+                    for orbit in MarkedCellOrbitAlgorithm(perfect_complex(reduction.reduced, NONNEGATIVE_SQUARES), signed_square).global_orbits()
+                )
+            case _:
+                vectors = tuple(vector_class.representative for vector_class in RECURSION.primitive_vector_classes(lattice, square))
     base = category.base_object()
     return tuple(category.object(base.hom([vector_], codomain=lattice)) for vector_ in vectors)
 
 
-@unfinished(18)
 def primitive_marking_classes(category: Category, source: Parent | Morphism, lattice: Parent) -> Parent:
     r"""One marked lattice for each isomorphism class of primitive markings of ``lattice`` of shape ``source``.
 
@@ -142,7 +198,8 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 case rank:
                     raise UnsupportedRankError(f"isotropic sublattices of rank {rank}: the isotropic induction covers ranks 1 and 2")
         case _ if category is FLAGS:
-            classes = tuple(FLAGS.object(_flag_marking(line, plane)) for line, plane in INDUCTION.flag_classes(lattice))
+            # A diagram on the finite ordinal [2] is read from its two consecutive arrows.
+            classes = tuple(FLAGS(_flag_marking(line, plane)) for line, plane in INDUCTION.flag_classes(lattice))
         case _:
             raise ValueError(f"{category} is not a category of marked lattices this port classifies: a coslice <n>/Lattices, Ar(Lattices) or Fun([2], Lattices)")
     return finite_ordered_set(classes)

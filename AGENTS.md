@@ -1,422 +1,179 @@
-# Review Guidelines
-
-Use the [shared math container](https://github.com/dzackgarza/ai-review-ci/blob/main/SAGE-CONTAINER.md#use-the-image)
-(`ghcr.io/dzackgarza/sage:develop`) for Lean/elan, Sage with mypy, GAP,
-Julia/Oscar, Macaulay2, and Singular. The guide covers image pull/run commands,
-CI use, and the host launchers.
-
-These are additional requirements for reviewing agent work.
-They do not replace the reviewer’s normal role, repo-specific standards, or technical judgment.
-They provide the failure model that should shape the review.
-
-The task is not merely to review a PR. The task is to decide whether a completion claim is true under the original objective.
-The standard is full, correct, provable completion against the original requirements and repo guidelines.
-Anything less is incomplete work that must not be treated as a win.
-
-## Failure Model
-
-Agents systematically produce impressive non-completion.
-Common patterns are: polished summaries that imply finished work, caveats that quietly narrow the goal, reclassification without proof, delegated discovery presented as resolution, process language that substitutes for evidence, merged PRs treated as completion, passing checks treated as semantic proof, and artifacts that look substantial while leaving required work unowned.
-
-Treat the agent’s summary, PR description, closing comment, issue closure, “goal completed” statement, and self-reported validations as untrusted.
-They may be diagnostic pointers, but they are not evidence that the work is complete.
-The evidence is the original issue or task, the code diff, tests, source/runtime facts, review comments, and produced artifacts.
-
-## Decisive Invariants
-
-Preserve the original success condition.
-Read the original issue or task before accepting any restatement of it.
-Keep its quantifiers intact: “all,” “complete,” "full subset," “zero remaining,” and similar terms cannot be quietly narrowed to examples, partial coverage, known blockers, or whatever the PR happened to touch.
-
-Nothing required may disappear silently.
-A required work family must be implemented, explicitly falsified, or validly reclassified with evidence that satisfies the issue’s own standard.
-Partial implementation is not completion.
-Future work is not completion.
-Count reduction is not completion.
-Resolved review threads are not completion.
-Passing checks are not completion.
-Substantial-looking work is not completion.
-“Better than before” is not completion.
-
-Goal substitution is the main thing to detect.
-Ask whether the submitted work solves the original problem or merely produces a narrower artifact: cleaner metadata, a partial subset, a better explanation, a new issue, a renamed scope, a local workaround, or proof that someone should investigate later.
-
-Technically correct administrative artifacts can be goal substitution.
-A well-written issue, comment, audit note, scope statement, or enumeration of remaining work may be required, but it does not complete implementation, testing, proof, or downstream cleanup.
-If the original task requires execution, the artifact is only useful insofar as it drives that execution; it must not become the stopping point.
-
-Treat self-scoped remaining-work lists as a severe completion-laundering pattern.
-When an agent is asked to enumerate remaining work, the domain is the original full completion requirement, not the agent’s intended subset, the PR’s current shape, a closeability criterion, or the work left after deferral and reclassification.
-A valid enumeration subtracts only artifact-proven completed work from the original contract.
-Deferrals, routed follow-ups, owner changes, and truthful incompletion notes remain unresolved work unless the original task explicitly made that administrative routing the whole deliverable.
-
-If an agent repeats a narrowed enumeration after being corrected, treat that as a hard misalignment signal, not as an innocent wording issue.
-The reviewer should identify the original full requirement, the scope the agent substituted, and the required work hidden by that substitution.
-
-Silent reclassification is not resolution.
-If the PR says remaining work is out-of-scope, research-owned, stub-owned, plugin-owned, downstream-owned, or future-owned, require evidence from the relevant source/runtime behavior, repo boundary, or original acceptance criteria.
-A sentence in the PR description is not enough.
-
-Ownership boundaries matter.
-The submitting repo must prove its own claimed behavior and do the blocker forensics required by its own issue.
-Do not require a receiving or downstream repo to classify another project’s internal uncertainty unless the original issue explicitly made that part of acceptance.
-When an external issue is created, it should be written for that receiving repo, not for a reader who already knows the submitting repo’s context.
-
-## Evidence Expectations
-
-Review tests as evidence, not as decoration.
-Valid tests exercise the real production path or semantic requirement.
-Be skeptical of helper-only tests, tautologies, assertions of the implementation’s own output, bypasses around the runtime/plugin/stub path, example-only coverage where the issue required full coverage, weakened assertions, and missing invalid-nearby cases where the fix could overgeneralize.
-
-For plugin work, the evidence should usually distinguish valid generic behavior from invalid nearby ordinary Python and should not hard-code a downstream consumer.
-For stubs work, the evidence should be source-backed: the upstream surface exists, the stub matches public behavior, no fake API is added, no Any/object opacity escape is introduced, and inherited-method inflation is not used unless source exposes that surface.
-
-Watch for code-level laundering: hard-coded consumer names, support for local research abstractions as if they were external API, fake stubs, broad Any/object escapes, line suppressions, diagnostic filtering, deletion of required data, broad type widening, and any move that makes checks pass by weakening the problem instead of solving it.
-
-## When Acting on Review Feedback
-
-A positive disposition requires a commit.
-
-Do not resolve an accepted review comment until the code/proof remediation is committed and the reply cites the commit.
-
-Never reply “accepted,” “aligned,” “fixed,” “addressed,” or “will address” to a review thread unless the remediation is already committed.
-A thread cannot be resolved on intent or future work.
-
-Every substantive review item must receive its visible thread- or surface-local disposition and evidence before resolution.
-The canonical field contract and state machine live in [[pr-feedback-triage/SKILL|pr-feedback-triage]]. Do not create top-level disposition ledgers or tracked review-log files.
-Migrate legacy ledger-only resolutions by posting the canonical disposition and evidence on each affected thread before treating it as closed.
-
-Review comments are not implementation specs.
-The worker must translate accepted feedback into first-principles remediation requirements before assigning implementation.
-
-For each comment:
-- Identify the concern.
-- Identify the proposed fix.
-- Decide whether the concern is true under global + repo policy.
-- Decide whether the proposed fix preserves those policies.
-- If the concern is true but the fix is wrong, apply a policy-compatible remediation.
-
-## Writing the Review
-
-Write nuanced feedback for an intelligent reader.
-Do not force a machine-readable template, a mandatory table, or a simplistic pass/fail label when prose communicates the situation better.
-Do make the completion judgment clear: whether the original task can be considered complete, what evidence supports that judgment, and which unresolved requirements block completion if any remain.
-
-Do not foreground effort, progress, good intentions, volume of work, or “substantial” partial implementation when required work remains.
-Mention completed pieces only when they are necessary to identify the exact remaining blockers or to prevent redoing already-correct work.
-Do not compare incomplete work to “no work done” or “completely fake work”; compare it to the expected standard: the task done correctly, completely, and provably.
-
-When required work remains, lead with the incompleteness and the concrete blockers.
-Do not make the reader excavate the missing work from beneath praise, context-setting, or a narrative of what did get done.
-
-Nuance belongs in the evidence and blocker analysis, not in softening the completion standard.
-The review should make it easy to finish the work, not easy to feel satisfied with less than the original contract required.
-
-<!-- agent-memory:start -->
-# Agent memory
-
-This repository uses the central agent memory vault at `/home/dzack/.agent-memory-vault`.
-
-Project memory key: `projects/github.com__dzackgarza__sage-indefinite-port/index`.
-
-Repository `.agents` and `.hermes` paths are symlinks to the same vault-owned project directory.
-
-Before changing architecture, search both project and global memory:
-
-```bash
-agent-memory search --scope both "<task or subsystem>"
-```
-
-Record durable repo-specific lessons with:
-
-```bash
-agent-memory add --scope project --type decision --title <title> --content <content>
-agent-memory add --scope project --type trap --title <title> --content <content>
-agent-memory add --scope project --type advice --title <title> --content <content>
-agent-memory add --scope project --type context --title <title> --content <content>
-agent-memory add --scope project --type reference --title <title> --content <content>
-```
-
-Plan work is card-backed. Create and update plan cards with `agent-memory plan add` and `agent-memory plan update`, not `agent-memory add --type plan`.
-
-Use `agent-memory retrieve <key>`, `agent-memory update <key>`, and `agent-memory delete <key>` for memory CRUD.
-
-The vault should be committed at all times. Treat staged or unstaged vault changes as an ephemeral error state. Before normal memory work resumes, load the bundled vault-maintenance skill with `agent-memory maintain skill vault-maintenance` and follow its referenced check, repair, and commit workflows.
-
-Move reusable lessons during maintenance with:
-
-```bash
-agent-memory maintain move <key> --to global/advice
-```
-<!-- agent-memory:end -->
-
-# Taking Work
-
-The GitHub issue tree rooted at #4 is the only plan: its work units are the leaf issues, their blocked-by links are the dependency edges, and each unit's body holds its obligation and acceptance. Issue bodies cite "map §N" in [references/source-to-sage-translation-map.md](references/source-to-sage-translation-map.md).
-Take the next unit with `uvx --from git+https://github.com/dzackgarza/itree itree next dzackgarza/sage-indefinite-port`, work it to the acceptance in its issue body, commit, close it with `itree close`, and take the next unit in the same turn.
-A turn that ends with a ready unit untouched stops the repository until someone notices.
-
-# Working Against the Frozen API
-
-- **The API is frozen, and work is written against it.** The boundary is frozen in #33 and [references/port-design.md](references/port-design.md). The design separates public mathematical owners from computational owners. A preamble method may dispatch to this port. Planned primitive names may be called before implementation, but a missing specialized algorithm remains port work.
-- **Preamble deficiencies are never blockers.** A missing, wrong or restricted preamble operation is filed (or found) as a research issue that names the planned API, and port work continues against that name. A call into an unimplemented operation fails at run time. That decides only whether acceptance cases pass, never whether port work proceeds. No port issue is blocked by a research issue; blocked-by edges connect port units only.
-- **Separate operation ownership from implementation routes.** Research accepts a computation only when its implementation needs no knowledge of the specialized upstream algorithms being ported here and it is a reasonably primitive mathematical construction usable independently in other problems. State its given data, hypotheses, output and independent route. Public ownership of a kernel, fibre, section or centralizer does not assign every algorithm answering that operation to research. Generic image/word-section computations consume supplied generators; they do not discover arithmetic parabolic generators or their liftable image. Research owns independent equation solvers, partial-isometry extension and pointwise-perpendicular kernels. The port owns specialized searches, compatibility-action construction, image discovery and recursive assembly. Neither source residency nor indefiniteness alone assigns ownership. See [port design](references/port-design.md#assigning-a-computation).
-- **Use the concrete assignments.** [Implementation assignments](references/port-design.md#implementation-assignments) names the actual functions and repair owners on both sides. In particular, implement `IsotropicInduction.line_automorphism_generators`, `plane_automorphism_generators`, `flag_automorphism_generators` and the isotropic branch of `EichlerRecursion.pointed_automorphism_generators` here. Calling research's unresolved parabolic `.group_generators()` does not implement them. Consume research's independent `R.rational_lifts(...).integral_members()` and `R.pointwise_perpendicular_kernel()` computations. Move the copied binary cycle and scaled-shell multiplier search here, and implement Eichler approximate/cover/full-group assembly here; frozen preamble names may dispatch to those implementations. Research's matching instructions are in `/home/dzack/research/AGENTS.md`, “Concrete boundary with sage-indefinite-port”.
-- **No new tests.** The acceptance suite (tests/acceptance, built in #33) is the only suite and is frozen. No unit adds, edits or weakens a case. A capability lands by removing the xfail markers that cite its unit. Changing a case, or changing the frozen API, means reopening #33 with the reason.
-- **State questions as mathematics.** Orbit, stabilizer and equivalence questions are Isom and Aut of marked lattices: diagrams of lattice morphisms ending at L, with natural isomorphisms as morphisms (references/port-design.md, "Marked lattices"). A pointed lattice ⟨n⟩ → L lives in the coslice ⟨n⟩/Lattices (the marking is fixed pointwise); sublattices and configurations live in the arrow category Ar(Lattices) (the marking may move by an automorphism of its domain); flags live in Fun([2], Lattices). Do not introduce ad-hoc vocabulary ("transporter", "stabilizer data", "full generating data") for constructions that have standard names.
-
-# Commit Gates and Work Claims
-
-- **Red gate protocol**: The first time a commit gate, hook, or QC stage goes red, diagnosing that failure becomes the current task. Stop authoring; root-cause and fix the gate, or report it as a blocker with a reproducer. Never keep writing code behind a red gate, and never accumulate uncommitted work around one. A gate that is red on two consecutive commit attempts is a defect to diagnose, not an environment condition to wait out.
-
-- **Claim freshness — no off-ledger work**: At every claim and every release, reconcile the shared queue/claim state against actual repository state across all branches before selecting work. Never select work from a queue older than your last branch sync. All authoring requires a live claim; batch-committing a body of work authored off-ledger is prohibited.
-
-- **The `[unverified]` commit tag**: `[unverified]` may appear in a commit message only while the repository's verification phase is formally deferred by a named contract, and every `[unverified]` commit must name the contract or terminal phase that discharges it.
-
-- **Deferred type checking (temporary, discharged by #36)**: while #36 is open, the push gate's mypy errors are acknowledged debt and are not paid down. A push may then use `git push --no-verify`, and only under all of these conditions:
-  - `just test-push` was run on the commit being pushed and failed in its mypy stage (`_sage-mypy`) and nowhere earlier.
-  - The tip commit of the push carries this trailer, verbatim apart from the count: `Type-Debt-Ack: MYPY-DEFER-7Q4K #36 errors=<N>`, where `<N>` is the "Found N errors" count of that run.
-  - `<N>` is no greater than the count in the previous `Type-Debt-Ack` trailer in `git log`. A push that would raise the count does not use this exception: fix the new errors first.
-
-  The trailer covers every commit in that push. Commits need no exception, because the commit gate does not run mypy. The exception covers only mypy debt: any other gate failure is fixed, never bypassed. #36's last commit deletes this rule.
-
-# Architecture and Dependencies
-
-- **The `research` preamble is the lattice substrate and a co-developed dependency**:
-  This repository consumes `dzack_research.preamble` (categories, formed modules, lattices, isometries, discriminant modules) from the checkout at `/home/dzack/research/src`. `.envrc` puts it on `PYTHONPATH` and `MYPYPATH`; `pyproject.toml` declares `dzack-research`.
-  - **Use the preamble's own classes and types**: annotate with `Lattice` (and `Lattice.Element`), `LatticeIsometry`, `LatticeIsometryHomset`, and the tensor and presented-module classes. Never add Protocol, stub, or facade types over the preamble, and never edit `sys.path`.
-  - **Fix preamble defects upstream**: a missing annotation, a class reachable only from a private module, or a wrong result in the preamble is fixed in `research` under its own QC. Port code is written against the corrected or planned API meanwhile and does not wait (see "Working Against the Frozen API"). No local workaround, no fallback to raw SageMath lattices (their indefinite support is insufficient), no reinvention of lattice, discriminant, or formed-category infrastructure here.
-  - **Ownership**: `research` owns mathematical interfaces and independently reusable primitive computations. This repository owns approximate models, coverings, indefinite recursion and traversal, binary edgewalk cycles, scaled first-success searches and arithmetic parabolic assembly. Research may dispatch public methods to these port algorithms. Invariant decomposition and gluing from supplied component groups are research primitives; non-scalar centralizers need an identified computational route and cannot be assigned to research merely by their name. The complete centralizer consumer obligation remains in #18. The operation-by-operation split is in `references/port-design.md`.
-
-- **NEVER BUILD THE C++ CODE**:
-  **Do NOT attempt to compile, build, configure, or invoke C++ compilation toolchains** for `polyhedral_common` or any other C++ source in `references/`.
-  The upstream C++ codebase in `references/polyhedral_common` is strictly a reference implementation for algorithm extraction, logic translation, and structural understanding.
-  All production algorithms in this repository MUST be implemented as native SageMath / Python code delegating low-level operations to standard system backends (FLINT for exact integer linear algebra, Normaliz / cddlib / PPL for polyhedral cones). Research supplies independent primitive computations, including exact module algebra, specified equation fibres, partial-isometry extension, finite configurations and finite actions from supplied effective data. This port supplies specialized indefinite Isom, Aut, orbit, search and assembly algorithms. Reuse generic GAP/Bliss/backend operations through their owners. A claimed primitive gap must state its independent contract and input data; the output of this port cannot be assumed as its own prerequisite.
-
-## Imported Contribution Policies (from `/home/dzack/research/CONTRIBUTING.md`)
-
-### ARC: Mathematical Architecture & Ownership
-- `ARC-01`: Own universal properties, categories, morphisms, functors, and adjunctions natively in this repository’s category framework.
-- `ARC-02`: Represent subobjects as pairs `(S, iota: S -> M)`. Place predicates, isometries, embeddings, and containment checks on morphism data and hom-sets.
-- `ARC-03`: Build structural objects/functors first, then derive numerical invariants.
-
-### ENG: Computational Backend Delegation
-- `ENG-01`: Delegate heavy computations to reliable exact backends (SageMath, Singular, OSCAR, Macaulay2, PARI/GP) when available.
-- `ENG-02`: Do not hand-roll standard mathematics that mature upstream dependencies already provide.
-- `ENG-03`: Keep owned logic minimal; offload heavy numerical work to engine backends through standard bridges.
-- `ENG-04`: Prefer native engine implementations (e.g., Julia/OSCAR, Singular) for multi-step heavy computation when bridge overhead is worse.
-
-### BRG: Interoperability and Bridge Boundaries
-- `BRG-01`: Use structured, persistent bridge interfaces for external systems; avoid ad-hoc subprocess scripts with temp files for core algorithms.
-- `BRG-02`: Validate and wrap data at bridge boundaries to keep backend representations out of public API types.
-
-### ENV: Environment, Execution, and Tooling
-- `ENV-01`: Use exact physical paths in shell/tool invocations (e.g., `/home/dzack/...`).
-- `ENV-02`: Define project orchestration, gates, and doc generators in the root `justfile`.
-
-### DEV: Development Discipline
-- `DEV-01`: Use explicit typing on public APIs; avoid `Any`/`object` in public contracts.
-- `DEV-02`: Add concrete falsifiable specimens for every new category, functor, or operation.
-- `DEV-03`: Before adding code, run `just preamble-megadoc`, reuse existing constructions, and implement new work in the most general mathematical form before specialization.
-
-## Imported Contribution Policies (from `/home/dzack/gitclones/sage-categories/CONTRIBUTING.md`)
-
-### POL-SCOPE: Implementation Order and Scope
-- `POL-SCOPE-001`: Build dependency chains in order and complete required milestones before starting later phases.
-- `POL-SCOPE-002`: Execute only active-phase work with accepted prerequisites. Do not start unsupported descendants early.
-- `POL-SCOPE-007`: Measure success by categorical ownership, auditable declarations, and explicit mathematical structure.
-- `POL-SCOPE-008`: Keep the mathematical declaration as the source of truth. Keep runtime representation private except for authorized SymPy propositions.
-
-### POL-SHADOW: Package-owned Mathematical Surface
-- `POL-SHADOW-001`: Build a package-owned categorical replacement for the supported Sage surface.
-- `POL-SHADOW-003`: Keep public API closed over package-owned categories, objects, morphisms, and propositions.
-- `POL-SHADOW-005`: Do not guarantee compatibility with unsupported arbitrary Sage API behavior.
-- `POL-SHADOW-006`: Absorb required Sage constructions into the package-owned architecture.
-
-### POL-ONT: Foundational Ontology
-- `POL-ONT-001`: Treat raw Python values as private carriers, not as category members.
-- `POL-ONT-002`: Use separate constructor and refinement layers; avoid runtime-type-sniffing constructor overloads.
-- `POL-ONT-008`: Do not use catch-all fallback constructors. Route each input mode through explicit constructors and fail hard.
-- `POL-ONT-010`: Survey existing generic categorical machinery before adding greenfield implementations.
-- `POL-ONT-011`: Do not add standalone procedural helper functions for core predicates.
-
-### POL-MATH: Mathematical Architecture
-- `POL-MATH-001`: Identify object, element, morphism, category, functor, and universal-property owners before implementation.
-- `POL-MATH-002`: Model named categories as categories, not as utility-like classes.
-- `POL-MATH-003`: Model functors with explicit object and morphism maps.
-- `POL-MATH-008`: Do not duplicate data that a defining morphism already determines.
-- `POL-MATH-014`: Use inspected mathematics to justify construction sites; do not use tests as proof of mathematics.
-- `POL-MATH-034`: Every truth question gets one category-owned predicate and a SymPy proposition; `ask()` resolves it.
-- `POL-MATH-037`: Construct values in the stated mathematical category; constructors do not certify proofs.
-
-### POL-CAT: Category Ownership and Inheritance
-- `POL-CAT-001`: A category owns constructors, local operations, and role types.
-- `POL-CAT-002`: Use category-owned `ObjectType`, `ElementType`, and `MorphismType`.
-- `POL-CAT-004`: A category level only declares its own structure and operations.
-- `POL-CAT-006`: Do not re-export methods owned by another category.
-- `POL-CAT-018`: Distinguish property subcategories from “data-carrying” categories.
-- `POL-CAT-021`: Keep `Mor(n, C)` and endpoint categories as first-class objects in the categorical layer.
-
-### POL-REP: Semantic Representation
-- `POL-REP-001`: Treat Sage vectors/matrices as private representations; own semantic objects in the category layer.
-- `POL-REP-002`: Return semantic mathematical objects at public API boundaries.
-- `POL-REP-003`: Compare elements and morphisms semantically, not by raw coordinate unpacking.
-- `POL-REP-009`: Lower private semantics to computation once and reconstruct semantic outputs before returning.
-- Local repository rule: do not use raw matrices as mathematical API objects. Use morphisms for structure and tensor valences for numerics (for example, `(0,2)` Gram tensors and `(1,1)` endomorphism tensors).
-
-### POL-ENGINE: Computation Engine Boundary
-- `POL-ENGINE-001`: Public API is owned mathematics; engines provide private realizations and algorithms.
-- `POL-ENGINE-002`: Keep engine types private; only authorized SymPy proposition expressions may cross the boundary.
-- `POL-ENGINE-007`: Do not introduce selectable backends or replaceable engine abstractions in the public API.
-- `POL-ENGINE-015`: Use fixed dependency assignments for private algorithms and reconstruct exact semantic outputs.
-
-### POL-FORM: Forms and Lattices
-- `POL-FORM-001`: Model lattices as `R`-modules with a specified form, not as raw free `ZZ` modules.
-- `POL-FORM-002`: Encode bilinear forms via Gram tensors (`M ⊗ M -> W`).
-- `POL-FORM-004`: Do not assume positivity, freeness, embeddedness, or unimodularity by default.
-- `POL-FORM-006`: Define complements, norms, and reflections under correct hypotheses only.
-- `POL-FORM-008`: Use exact arithmetic and exact coefficient rings.
-
-# Existing Preamble Lattice API (Obviates Foundational Tasks)
-
-The user's `research` repository (`dzack_research.preamble.categories.lattices`, `lattice_morphisms`, `modules`, and `forms`) owns and provides the formed lattice algebra and categorical infrastructure below. This surface inventory does not certify every listed computational method as implemented or assign its specialized algorithm to research.
-**Do NOT reinvent or re-implement any of the following infrastructure; consume it directly from `dzack_research.preamble`. This completely obviates greenfield implementation for Phase 2 and early foundational tasks.**
-
-## Full lattice interface in `preamble-megadoc.md` (`#subsystem-lattices`)
-
-### Construction and category entry points
-- `Lattices` as the lattice category over a ring with constructor:
-  - `Lattices(cls, *args)`
-  - `Lattices(...)(self, data, basis=None, names=None, form=None, module_generators=None)`
-- Category constructors:
-  - `FiniteRankLattices`, `NondegenerateLattices`, `RationalLattices`, `EvenLattices`, `RootLattices`
-- `Lattices(ZZ)` named lattice constructors:
-  - `Lattices(ZZ)("U")`, `"U(m)"`, `"An"`, `"Dn"`, `"En"`, `"E8"`, `"II_{1,9}"`, `"Leech"`, and Gram-tensor constructors.
-- Direct sum and scaling:
-  - `L1 + L2` and `L.twist(scale)`.
-
-### `Lattices` parent object API (full interface)
-- Isometry and homset constructors:
-  - `Aut`, `O`, `orthogonal_group`
-  - `SO`, `special_orthogonal_group`
-  - `Emb(codomain)`, `Isom(codomain)`
-  - `hom(images, codomain=None)`, `identity_morphism`
-  - `similarity_homset(other, scale)`, `similarity(scale, images=None, codomain=None)`
-- Pairings and form evaluations:
-  - `b(left, right)`, `q(vector)`, `correlation`, `correlation_morphism`
-  - `gram_tensor`, `gram_matrix(basis=None)`, `discriminant`, `rank`, `signature_pair`, `level`, `genus`
-- Lattice reductions and basis control:
-  - `LLL()`, `BKZ(block_size=20)`, `HKZ()`
-  - `lll_reduction`, `bkz_reduction`, `hkz_reduction`, `orthogonal_group`, `stable_orthogonal_group`
-- Duality and discriminant data:
-  - `dual_module`, `dual_lattice`, `metric_dual`, `discriminant_module`, `discriminant_projection`
-  - `discriminant_group`, `discriminant_bilinear_form`, `discriminant_quadratic_form`
-  - `discriminant_class`, `divided_discriminant_class`, `discriminant_representation`
-  - `discriminant_image`, `discriminant_representation_is_surjective`
-- Orthogonality and decomposition:
-  - `radical`, `radical_quotient`, `orthogonal_complement`
-  - `module_generating_set`, `module_generator`, `biproduct_factors`, `decomposition`, `decomposition_names`, `summands`
-  - `is_decomposable`, `indecomposable_name`, `primitive_isotropic_subobject`
-  - `local_modification(prime, *discriminant_classes)`, `overlattice(*discriminant_classes)`, `even_overlattice_inclusions`
-- Arithmetical predicates:
-  - `is_finite_rank`, `is_even`, `is_nondegenerate`, `is_unimodular`
-  - `is_definite`, `is_positive_definite`, `is_negative_definite`, `is_p_elementary(prime)`
-  - `is_locally_isometric(other, prime)`, `is_isometric(other)`, `is_similar(other, scale)`
-- Discrete geometry and orbits:
-  - `minimum`, `successive_minima`, `shortest_vectors`, `roots`, `roots_of_square(square)`
-  - `vectors_of_square(square)`, `vectors_of_square_and_divisibility(square, divisibility)`
-  - `kissing_number`, `root_sublattice`, `theta_series(precision=20, variable='q')`
-- Isotropic and orbit APIs:
-  - `isotropic_flag`, `isotropic_flag_orbit_representatives(rank=2)`
-  - `isotropic_line_orbit_representatives`, `isotropic_plane_orbit_representatives`
-  - `voronoi_cell(bound=None)`, `voronoi_relevant_vectors`
-- Group and positivity APIs:
-  - `stable_orthogonal_group`, `spinor_kernel_subgroup`, `positive_cone_subgroup`
-  - `twist(scale)`, `reflection(root)`
-  - `two_elementary_invariants`, `delta`
-- Packing and metric helpers:
-  - `babai(target)`, `closest_vector(target)`, `contact_polytope`, `covering_radius`
-  - `packing_density`, `packing_radius`, `center_density`, `hadamard_ratio`, `hermite_invariant`
-
-### `Lattices` element methods
-- `b(other)`, `norm`, `q()`, `div()`, `divisibility_ideal`
-- `divided_discriminant_class()`, `is_root()`
-- `to_list`, `to_tuple`, `to_vector`, `monomial_coefficients`
-
-### Subcategory APIs
-- `FiniteRankLattices`: `is_finite_rank`
-- `RationalLattices`: `fraction_field`, `is_nondegenerate`
-- `EvenLattices`: `is_even` inherited by lattice parent
-- `RootLattices`:
-  - parent methods: `cartan_type`, `coxeter_number`, `highest_root`, `simple_reflections`, `simple_roots`, `fundamental_weights`
-  - element methods: `coroot`, `height`, `is_negative_root`, `is_positive_root`
-
-### Morphisms and homsets
-- `LatticeMorphism` (`ModuleMorphism`):
-  - constructor: `__init__(self, parent, images)`
-- `LatticeEmbedding` (`LatticeMorphism`):
-  - `discriminant_inclusion`, `is_injective`
-- `LatticeIsometry` (`LatticeEmbedding`):
-  - `centralizer_discriminant_image`, `cyclic_subgroup`, `determinant`, `discriminant_isometry`
-  - `discriminant_morphism`, `formed_coinvariants`, `invariant_lattice`, `inverse`
-  - `is_surjective`, `preserves_positive_cone`, `real_spinor_norm_sign`
-- `LatticeHomset`:
-  - `__init__(domain, codomain)`, `_element_constructor_(images)`
-- `LatticeEmbeddingHomset`:
-  - `an_element`, `even_overlattice_inclusions`, `is_empty`
-- `LatticeIsometryHomset`:
-  - `act`, `acting_group`, `compose`, `discriminant_image`, `discriminant_preimage`
-  - `group_generators`, `identity`, `is_empty`, `isotropic_equivalence_witness`
-  - `isotropic_orbit_representatives`, `isotropic_stabilizer_generators`, `number_of_group_generators`
-  - `one`, `order`, `transporter`, `vector_equivalence_witness`, `vector_orbit_representatives`
-  - `vector_stabilizer_generators`, `vectors_are_equivalent`
-
-### Lattice objects and named tables
-- `CoxeterDiagram`
-  - `cardinality`, `connected_components`, `elliptic_subdiagrams`, `graph`, `coxeter_entry`
-  - `coxeter_matrix`, `is_connected`, `is_elliptic`, `is_hyperbolic`, `is_parabolic`
-  - `is_rooted`, `index_set`, `induced_subdiagram`, `preferred_positions`, `roots`
-  - `root_gram_tensor`, `schlafli_tensor`, `signature_pair`, `vertex_names`
-- `Genus`
-  - `class_number`, `determinant`, `discriminant_form`, `excess`, `exists`
-  - `local_symbol`, `level`, `mass`, `representative`, `representatives`, `signature_pair`
-- `IsotropicFlag`
-  - `basis`, `lattice`, `rank`, `terms`, `top`
-- `OrthogonalCharacterQuotient`
-  - `image`, `image_keys`, `splitting_isometries`, `stabilizer_image_keys`
-  - `subgroup_image_keys`, `witness_meets_subgroup`
-- `VectorPrimitiveExtension`
-  - `class_of_representative`, `complement_is_definite`, `representative_of`
-- registries: `register_indecomposable`, `register_indecomposable_gram`
-
-### Helper functions from the lattice subsystem
-- lattice constructors and homset factories:
-  - `lattice(...)`, `lattice_embedding_homset`, `lattice_homset`, `lattice_isometry_homset`, `lattice_latex`
-- lattice operators:
-  - `diagonal_gram`, `orthogonal_sum`, `scale_gram_tensor`, `signature_pair_of_gram`
-  - `colimit_lattice`, `discriminant_of_gram`, `signature_pair_of_gram`
-- orbits, stabilizers, and equivalence:
-  - `definite_complement_extensions`, `isotropic_equivalence_witness`, `isotropic_orbit_representatives`, `isotropic_stabilizer_generators`
-  - `subgroup_isotropic_are_equivalent`, `subgroup_isotropic_orbit_representatives`
-  - `subgroup_vector_orbit_representatives`, `subgroup_vectors_are_equivalent`
-  - `transport_isotropic_object`, `vector_equivalence_witness`, `vectors_are_equivalent` (homset-level)
-- reduction and algorithm helpers:
-  - `babai`, `bkz_reduction`, `hkz_reduction`, `closest_vector`, `gaussian_heuristic`
-  - `generator_pairings`, `gluing_route_discriminant_classes`
-  - `packing_radius`, `packing_density`, `center_density`, `kissing_number`
-  - `roots`, `roots_of_square`, `vectors_of_square`, `vectors_of_square_and_divisibility`
-  - `voronoi_cell`, `voronoi_relevant_vectors`
-  - `oscar_centralizer_discriminant_image`, `oscar_even_unimodular_primitive_embedding`, `oscar_rational_spinor_norm_sign`
-
-### Compatibility note
-- The above interface is the preamble contract. This repo must use it and should not introduce local fallback lattice mechanics in place of these names.
-
----
-
-### What Actually Needs to be Built in `sage-indefinite-port`
-Consume the existing foundational formed algebra. Development in this repository focuses on:
-
-1. **Lorentzian perfect-domain reduction**: Traversal of the $(1,n)$ reduction complex for $O^\Omega(L)$ and $O(L)$ generators.
-2. **$2U$-Eichler approximate models & Higher-Witt-index recursion**: Generating $A(L)$ and lifting covering sets to full $O(L)$ for Witt index $\geq 2$.
-3. **Parabolic recursion & Isotropic orbit decomposition**: Compose research's group actions, sections and kernels with recursive reduced-group computations to obtain cusp and flag stabilizers and the frozen rank-at-most-two isotropic orbits.
-4. **Centralizer and arithmetic-subgroup consumers**: Supply indefinite orthogonal-group and orbit computations to research's general centralizer, gluing and subgroup operations; verify all frozen consumer cases.
+# Sage indefinite lattice port — agent instructions
+
+This project translates the specialized indefinite-form algorithms of the
+[committed pinned sources](references/vendor/README.md) into Sage/Python,
+consuming the mathematical operations of [research](https://github.com/dzackgarza/research).
+It is **a port of existing algorithms**, not an algorithm-design project.
+
+## Current functional MVP phase
+
+The user's 2026-10-22 MVP directive supersedes older completion and refinement
+gates below. Complete every algorithm family and its real public consumers;
+verify each implemented mathematical branch on small, independently justified
+examples. Publish coherent functional changes without waiting for the complete
+acceptance matrix. Preserve the full frozen CI suite as nonblocking long-tail
+evidence. Performance, typing (#36), formatting, refactoring, exhaustive
+coverage and repeated audits are deferred until functional MVP delivery.
+Repair only defects that block the required mathematical computations or their
+small correctness examples. Do not report an unimplemented branch as complete.
+
+The v1 boundary sets delivery priority, not the eventual functional scope.
+Cases unsupported by the pinned upstream, including higher-real-index forms
+of rational Witt index zero or one, remain explicit **post-v1 requirements**.
+Retain their inputs, required outputs and public consumers in the open backlog.
+An upstream limitation explains the additional implementation work; it does
+not cancel the requirement. These deferred cases do not gate v1 delivery.
+
+## Sources of authority
+
+| Source | Responsibility |
+| --- | --- |
+| [Issue #4](https://github.com/dzackgarza/sage-indefinite-port/issues/4), [#33](https://github.com/dzackgarza/sage-indefinite-port/issues/33), [#15](https://github.com/dzackgarza/sage-indefinite-port/issues/15), [#18](https://github.com/dzackgarza/sage-indefinite-port/issues/18), [#36](https://github.com/dzackgarza/sage-indefinite-port/issues/36) | Original obligation, ownership, issue dependencies and acceptance |
+| [TODO.md](TODO.md) | Remaining algorithm, dependency and acceptance obligations; a checked node needs source-backed evidence |
+| [`.tmp/HANDOFF.md`](.tmp/HANDOFF.md) | One concrete **Now** action, its source/consumer and latest known remote revision; replace obsolete Now rather than append a history |
+| [Port design](references/port-design.md), [assignments](references/port-design.md#implementation-assignments), [translation map](references/source-to-sage-translation-map.md) | Frozen API, owner split, exact upstream routine locations |
+| [Vendored source and Allcock paper](references/vendor/README.md) | **Algorithm authority**; translation notes never replace source |
+| [Acceptance workflow](.github/workflows/acceptance.yml), [oracle manifest](tests/fixtures/oracle_manifest.yaml) | Frozen executable cases and results for exact published revisions |
+
+## Entry and continuity
+
+For a **new cloud checkout**, work from
+`implement/lorentzian-completion` (not default `main`).
+Read this document once, then `.tmp/HANDOFF.md` **Now** and the relevant
+TODO/issue/source sections. Fetch the branch and identify its current commit and
+newest *completed* Acceptance run before changing it. If the handoff commit or
+selected failure predates newer code/results, replace Now with the actual next
+unresolved implementation step; do not enact its stale instructions.
+
+A normal continuation starts with the current Now action and its precise
+source/consumer, rather than repeat source-wide surveys, re-read the entire DAG,
+or reselect work. The handoff is **not** proof that named people or agents remain
+active. Separate branch tips can contain unmerged work without an active owner.
+Never overwrite or discard another checkout's dirty source. Use a dedicated
+worktree/branch for parallel work and integrate only demonstrated relevant diffs.
+
+The issue tree rooted at #4 is the work plan. Use
+`uvx --from git+https://github.com/dzackgarza/itree itree next dzackgarza/sage-indefinite-port`
+only when selecting a new unit after completion or an evidenced dependency
+change. A unit closes only when its entire accepted obligation is discharged;
+releasing a PR, a narrowed example, or a marker alone does not close it.
+
+## Source-faithful implementation
+
+1. Open the **actual pinned routine and its called helpers** before changing
+   its specialized port: `references/vendor/Indefinite.jl@374a5ebb`,
+   `references/vendor/polyhedral_common@1592b246`, and
+   `references/vendor/arxiv/2110.03784` for Allcock's edgewalk.
+   Use the translation map for navigation; record exact source symbols/lines
+   beside the corresponding implementation.
+2. Preserve the source algorithm's cases, mathematics, enumeration, stopping
+   rules, certificates and exact witnesses. Translate generic callees into
+   existing Sage/research operations. No alternative algorithms, bounded
+   heuristic shortcuts, basis-dependent stand-ins, ad-hoc facades or duplicate
+   arithmetic primitives in place of the specialized source route.
+   Account explicitly for an unavoidable representation/callee substitution
+   against its source contract. A mathematical departure needs a pinned-source
+   proof or counterexample on the owning issue.
+3. **Do not compile or invoke** upstream C++ code. Production is native
+   Sage/Python with exact standard backends and the formed-lattice preamble.
+   Do not bypass the owned lattice, morphism, homset or tensor interfaces with
+   raw matrices. Never introduce `Any` escapes, forged stubs,
+   `sys.path` changes or weakened exceptions to silence failures.
+4. The frozen public mathematical objects are the research preamble's lattice,
+   element, morphism and tensor objects. Pointed markings are fixed in the
+   coslice, moving sublattice/configuration markings use the arrow category,
+   and flags use `Fun([2], Lattices)`. Their Isom/Aut questions differ.
+   Preserve those distinctions and their complete construction data.
+
+**Division of work.** `research` owns generic kernels, fibres, equation and
+module arithmetic, partial-isometry extension, rational/integral lift loci,
+finite configurations/actions from supplied data, group sections and general
+gluing. This port owns indefinite/Lorentzian search, perfect-domain flips and
+quotients, Allcock cycles, approximate and Eichler recursion, parabolic
+compatibility-image discovery, orbit classification, and specialized group
+assembly. The concrete assignment is in
+[port design](references/port-design.md#implementation-assignments).
+Calling an unresolved generic `.group_generators()` is not an implementation
+of a specialized parabolic algorithm.
+
+A defect in a generic research operation is reported at its research issue
+with the input contract, failed consumer and exact provider revision.
+Continue independent port work against the frozen API rather than changing
+research source in the port worktree. Do not claim an upstream research
+operation is correct merely because its public name exists.
+
+## Tests and acceptance
+
+The [frozen acceptance modules](tests/acceptance/) and
+[fixtures](tests/fixtures/) are not edited, deleted or weakened to make a
+port case pass. A legitimate fixture/API correction goes through #33 with its
+reason recorded before the change. Diagnostic probes belong outside the frozen
+suite; their local `.tmp/probe` history is optional and is **not** part of
+the cloud checkout's required inputs.
+
+**Accepted criterion (2026-10-22, [#33 amendment](https://github.com/dzackgarza/sage-indefinite-port/issues/33#issuecomment-6343829665)):**
+`A_REFLECTIVE`, `A_GROUPS` and `A_ISOTROPIC` use a
+**branch-representative sample** of unchanged cases exercising *every*
+branch of the pinned algorithm. The other families use the exact criteria
+in the TODO acceptance table, which identifies where sample evidence applies.
+Record selected case IDs, covered and uncovered branches, ranks/signatures,
+passing results and the exact commit. A sample must not avoid a genuinely
+distinct case branch or alter any assertion. Full-corpus failures outside the
+sample remain defects to record, **not** reasons to declare the sample or
+the entire port correct. Long-tail exhaustive coverage does not gate the
+agreed milestones.
+
+GitHub [Acceptance](.github/workflows/acceptance.yml) runs the full frozen
+suite in sharded Sage jobs on every push using the
+`ghcr.io/dzackgarza/sage:develop` research image; the run
+installs the published `research` branch and records its commit.
+Only the fork's `Research environment image` workflow builds that image,
+from commits pushed to `dzackgarza/sage` `develop`. Sage source is never
+checked out or built on the host.
+Use the exact run/artifact for the revision under discussion. Job status
+alone cannot prove a case passed. A full workflow can be red while the
+explicitly cited branch-representative samples pass; conversely, an
+interrupted/missing shard cannot be counted as passed. The final revision
+requires its chosen case IDs to pass under the same revision/provider.
+
+In a capable local Sage environment, run selected small production consumers
+with independent expected answers. These establish the exercised MVP branches;
+they do not establish unexecuted frozen cases. Do not launch an entire family locally, repeatedly poll queued
+CI, or substitute local machine-specific `.tmp` logs for published proof.
+If the cloud runtime lacks Sage, use the committed source/fixture data and
+GitHub Actions; local Snap Docker, `sage-dev-develop`, the former
+`/home/dzack/research` tree and local Zotero files are not prerequisites.
+
+## Commit, publication and diagnostics
+
+- Commit each coherent source change, including WIP progress where required;
+  identify the pinned source step or failed consumer. Push so CI tests the exact
+  revision. Preserve all unrelated work and claim state.
+- Local `just test-commit` checks only staged Python/JSON/TOML syntax;
+  `just test-push` checks only outgoing committed syntax.
+  Both delegate to [ai-review-ci](https://github.com/dzackgarza/ai-review-ci)
+  when installed. They **do not** run mypy, the full suite, formatters or
+  mandatory PR review. An existing invalid source file can escape these
+  *changed-files-only* checks; test the precise imported source for syntax
+  when an acceptance import reports a parsing error.
+- Type debt belongs to [#36](https://github.com/dzackgarza/sage-indefinite-port/issues/36)
+  after algorithms/consumers have settled. CI may report types/style/debt,
+  but during development such findings are retained, **nonblocking**
+  diagnostics; they do not divert the current mathematical implementation.
+- At the recorded source revision there were no active `@unfinished`
+  wrappers or acceptance xfails. Do not invent marker-removal work or infer
+  readiness from their absence. Public capability is judged by actual
+  consumer behavior.
+- Treat a red **actual local syntax check** as an immediate defect in the
+  committed source. Treat other CI failures as evidence to route to their
+  algorithm/provider owner; investigate concrete failing cases instead of
+  performing broad cleanup, optimization or repetitive diagnostics.
+- The final issue #4 closure requires the TODO acceptance evidence and public
+  research-to-port consumers, with a recorded port and provider revision.
+  `just test-ci` is a nonblocking diagnostic collection, not a substitute
+  for the frozen Acceptance workflow.
+
+Do not require a local agent-memory vault, home-directory paths, or a running
+coordinator to resume cloud work. Durable mathematical decisions belong in
+the owning source/issue; the tracked handoff records only the next actionable
+step, not an activity log.
