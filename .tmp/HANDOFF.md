@@ -242,3 +242,40 @@ use `-c pyproject.toml` from the port root. Local probes and saved rows are
 optional aids, not cloud-checkout prerequisites. The four local long-running
 repair computations were terminated at the pause; none supplies a pass.
 Hosted Actions may still run independently. Refresh their state on resume.
+
+## Recorded repairs after integration on main
+
+### Frozen case made runnable: `test_zero_form_orthogonal_group_is_the_full_general_linear_group`
+
+Pair: port `f927dc9a` (this branch) with provider `53c48e0ab7`
+(`pyproject.toml`'s pin; see the provider-drift note below). The case failed with
+`TypeError: cannot use 'list' as a set element (unhashable type: 'list')`
+raised from `sage.sets.set.Set.__contains__`: it took `rows = tuple(rows_of(g)
+for g in computed)`, and `rows_of` is typed `list[list[int]]` in the frozen
+consumer, then tested membership in a literal `set` of tuples. The port's own
+result was already correct: `O(L)` of the zero form returned three generators,
+`[[0,1],[1,0]]`, `[[-1,0],[0,1]]`, `[[1,1],[0,1]]`, with determinants
+-1, -1, 1.
+
+The correction wraps the rows as tuples exactly as the sibling case
+`test_zero_form_orthogonal_group_uses_permuted_coordinate_labels` and
+`test_degenerate_orthogonal_group_*` already do, so the same generators are
+compared against the same recorded sets. No assertion, value or family is
+removed or relaxed; the case previously could not execute its comparison at
+all. Reason recorded here for the #33 amendment route, as AGENTS.md requires
+before adopting a frozen-suite change.
+
+Evidence at that pair, this checkout, `JULIA_DEPOT_PATH=/opt/julia-depot:`:
+`test_orthogonal_group.sage -k "degenerate or zero_form or hyperbolic_plane or
+ambiguous_binary"` → 9 passed, 38 deselected (112 s). Before the correction the
+same selection was 8 passed, 1 failed.
+
+### Open provider-drift defect
+
+`justfile` (`ci-provision-sage`) fetches research
+`064cd6e8e90cc9cbad17ce7d9574b497c864b8c0` and calls it the acceptance
+contract, while `pyproject.toml` declares
+`53c48e0ab7c8f74f9c15f2e0970b11f29376dc23`. The two commits are unrelated
+lines (36 provider files differ), so a packaging install and CI run different
+providers. Evidence above was taken at the `pyproject` pin. Settle one revision
+before quoting any pair as final.

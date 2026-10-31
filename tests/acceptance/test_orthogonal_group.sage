@@ -191,7 +191,7 @@ def test_zero_form_orthogonal_group_is_the_full_general_linear_group() -> None:
 
     gram = [[0, 0], [0, 0]]
     computed = lattice(gram).O().group_generators()
-    rows = tuple(rows_of(generator) for generator in computed)
+    rows = tuple(tuple(tuple(row) for row in rows_of(generator)) for generator in computed)
 
     assert all(is_isometry(generator_rows, gram) for generator_rows in rows)
     assert all(abs(int(matrix(SageZZ, generator_rows).determinant())) == 1 for generator_rows in rows)
