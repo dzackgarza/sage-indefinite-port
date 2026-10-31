@@ -320,12 +320,34 @@ primitive positive representatives inside the bound, and the reflection relation
 between frames. What is not claimed: any general statement about the cycle under
 arbitrary basis changes; only the measured reversal case is established.
 
-### Runner blocker: graph canonicalisation
+### Shared runtime defect: canonical labeling aborts in the pinned image
 
-`test_mertens_omega_and_minus_one_generate_o_l` fails in 5-11 s inside
-`sage/groups/perm_gps/partn_ref` with `MemoryError`, and `sage.graphs.bliss`
-segfaults on any graph (`Graph([[0,1]]).canonical_label(edge_labels=True)` dies
-in the image under this runner; the same call succeeds on the host Sage 10.8).
-No AVX-512 in those modules and `PROOT_NO_SECCOMP=1` changes nothing. Cases that
-canonicalise graphs cannot be evaluated on this runner; CI's Docker execution is
-unaffected.
+Owner: the shared runtime, filed as
+[ai-review-ci#490](https://github.com/dzackgarza/ai-review-ci/issues/490); the
+image build's own tracker (`dzackgarza/sage`) has issues disabled. Not a port
+defect and not worked around in the suite.
+
+| item | value |
+| --- | --- |
+| reference | `ghcr.io/dzackgarza/sage:develop` |
+| manifest digest (amd64) | `sha256:c3a9f1637d43b727ab2b24c0ccf1bc9ee513a08a02094d20265ef2d8643dd` |
+| `org.opencontainers.image.revision` | `b0cd7d86e21eb450ed90e4c83707920e1d5d429a` (`/sage`) |
+| Sage / Python | `11.0.beta5` / 3.14.10 |
+
+Invocation: `/sage/.venv/bin/python repro.py` inside the image, one subprocess per
+backend. Measured there, in that image only:
+
+| backend | call | outcome |
+| --- | --- | --- |
+| bliss | `Graph([[0,1]]).canonical_label(algorithm="bliss")` | SIGSEGV |
+| bliss | `graphs.CycleGraph(5).canonical_label(algorithm="bliss")` | SIGSEGV |
+| partn_ref | `Graph([[0,1]]).canonical_label(algorithm="sage")` | ok, 1 edge |
+| partn_ref + labels | `Graph([[0,1]]).canonical_label(edge_labels=True)` | SIGSEGV |
+| partn_ref | `Graph([[0,1],[1,2],[2,3],[3,4],[4,0]]).canonical_label(algorithm="sage")` | ok, 5 edges |
+
+Consequence: frozen cases that canonicalize root graphs with `edge_labels=True`
+abort their shard (`test_mertens_omega_and_minus_one_generate_o_l` surfaced as
+`MemoryError` in the edge-labelled path; `IsotropicCases_186` likewise). Those
+families cannot be evaluated until the image is fixed; the arithmetic behind them
+is untouched by this record.
+
