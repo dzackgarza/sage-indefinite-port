@@ -288,32 +288,37 @@ Baseline pair from here on: port `main` + provider `064cd6e8e90c`. Results taken
 against `53c48e0ab7` (the former `pyproject` value) are labelled separately and
 are not acceptance evidence.
 
-### Open, contested: `test_binary_cycle_period_respects_permuted_coordinate_basis`
+### Resolved by #33 amendment: `test_binary_cycle_period_respects_permuted_coordinate_basis`
 
-Reproduces at the baseline pair in 3.7 s. Specimen and certificate:
+Reproduced at the baseline pair (port `f05c8830`, provider `064cd6e8e90c`) in
+3.7 s. Two corrections, each recorded on #33 before it was applied:
 
-- Frame A: `Lattices(ZZ)([[2,0],[0,-1]])`, start `(1,0)`. Representatives
-  `(1,1)`, `(3,4)`; `q = 1, 2`; coordinate determinants `det(start,r) = 1, 4`;
-  period rows `[[3,4],[2,3]]`, `det = 1`, preserves the form.
-- Frame B: `Lattices(ZZ)([[-1,0],[0,2]], module_generators=("negative","positive"))`,
-  start `(0,1)` — the same lattice and the same start vector in reversed
-  coordinates. Representatives `(-1,1)`, `(-4,3)`; `q = 1, 2`;
-  `det(start,r) = 1, 4` in its own frame; period rows `[[3,-2],[-4,3]]`,
-  `det = 1`, preserves the form.
+1. [comment 6548844861](https://github.com/dzackgarza/sage-indefinite-port/issues/33#issuecomment-6548844861)
+   — orientation. Frame A `Lattices(ZZ)([[2,0],[0,-1]])`, start `(1,0)`: representatives
+   `(1,1)`, `(3,4)`, q = 1, 2, period rows `[[3,4],[2,3]]`, det 1, form preserved.
+   Frame B `Lattices(ZZ)([[-1,0],[0,2]], module_generators=("negative","positive"))`,
+   start `(0,1)` — same lattice, same start vector, reversed coordinates:
+   representatives `(-1,1)`, `(-4,3)`, period rows `[[3,-2],[-4,3]]`, det 1, form
+   preserved. The case asserted equality of the swapped Frame B set with the
+   Frame A set; it holds only under the reflection `(x, y) |-> (x, -y)`, measured
+   as `{(1,-1),(3,-4)}` on both sides. The pinned source is equivariant, not
+   invariant: `src_lorentzian/two_dim_lorentzian.h` at `a55fcb7b` defines
+   `det_two(r,l) = r(0)l(1) - r(1)l(0)` (line 50) and `Promised` requires
+   `det_two(r,l) == 1` in the supplied frame (lines 70-74).
+2. [comment 6548850475](https://github.com/dzackgarza/sage-indefinite-port/issues/33#issuecomment-6548850475)
+   — owned integer at the comparison. After (1), `period.determinant() == 1`
+   failed with `1 == 1`: the provider returns an owned `ZZ` element and the owned
+   `ZZ` registers no coercion to or from Sage's `ZZ`, while the preparsed literal
+   is `Integer(1)`. Corrected to `int(period.determinant()) == 1`, the convention
+   `497fff9a` established in this file.
 
-Both outputs are valid oriented cycles *in their own frames*; they differ by the
-reflection of the positive coordinate, which is exactly the determinant -1 of
-the coordinate reversal. The case asserts the representative set is invariant
-under that reversal (it compares `{(c[1], c[0])}` with the default set), i.e. it
-asserts orientation-*invariance*, while the port — like the pinned source, whose
-cycle is matrix arithmetic with a `det(r,l) = 1` convention — is
-orientation-*equivariant*.
+Evidence after both: `test_reflective.sage -k "binary_cycle or promised or
+edgewalk_period"` → 4 passed, 17528 deselected (2.91 s).
 
-Classification: the port's arithmetic is verified for each frame (periods are
-det-1 form isometries; representatives are primitive, positive, within bound);
-the invariance claim is unproved and, on this certificate, false. Correcting the
-case is a frozen-suite change and needs the #33 route. It is **not** applied
-here. No further frozen edit is made without that record.
+What is verified: both frames produce det-1 form isometries as periods, with
+primitive positive representatives inside the bound, and the reflection relation
+between frames. What is not claimed: any general statement about the cycle under
+arbitrary basis changes; only the measured reversal case is established.
 
 ### Runner blocker: graph canonicalisation
 

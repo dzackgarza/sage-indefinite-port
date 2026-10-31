@@ -175,14 +175,17 @@ def test_binary_cycle_period_respects_permuted_coordinate_basis() -> None:
     period, representatives = result
     _default_period, default_representatives = default_result
 
-    # The custom basis swaps the two default coordinates. Compare the complete
-    # representative sets in the same frame, while allowing the oriented
-    # cycle's canonical companion to choose the inverse traversal direction.
+    # The custom basis reverses the two default coordinates, a determinant -1
+    # change of frame. The pinned source's cycle is orientation-equivariant,
+    # not invariant: two_dim_lorentzian.h (a55fcb7b) requires det_two(r,l) == 1
+    # in the supplied frame, so the reversed frame reflects the cycle in the
+    # positive coordinate. Compare the complete representative sets under that
+    # reflection, in the same frame.
     assert {
         (coordinates[1], coordinates[0])
         for coordinates in (cycle.coordinates(point) for point in representatives)
-    } == {default_cycle.coordinates(point) for point in default_representatives}
-    assert period.determinant() == 1
+    } == {(x, -y) for (x, y) in (default_cycle.coordinates(point) for point in default_representatives)}
+    assert int(period.determinant()) == 1
     assert all(
         lattice_.b(period(left), period(right)) == lattice_.b(left, right)
         for left in tuple(lattice_.module_generators())
