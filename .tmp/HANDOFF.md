@@ -247,35 +247,80 @@ Hosted Actions may still run independently. Refresh their state on resume.
 
 ### Frozen case made runnable: `test_zero_form_orthogonal_group_is_the_full_general_linear_group`
 
-Pair: port `f927dc9a` (this branch) with provider `53c48e0ab7`
-(`pyproject.toml`'s pin; see the provider-drift note below). The case failed with
-`TypeError: cannot use 'list' as a set element (unhashable type: 'list')`
-raised from `sage.sets.set.Set.__contains__`: it took `rows = tuple(rows_of(g)
-for g in computed)`, and `rows_of` is typed `list[list[int]]` in the frozen
-consumer, then tested membership in a literal `set` of tuples. The port's own
-result was already correct: `O(L)` of the zero form returned three generators,
-`[[0,1],[1,0]]`, `[[-1,0],[0,1]]`, `[[1,1],[0,1]]`, with determinants
--1, -1, 1.
+Amendment chronology, stated exactly:
 
-The correction wraps the rows as tuples exactly as the sibling case
-`test_zero_form_orthogonal_group_uses_permuted_coordinate_labels` and
-`test_degenerate_orthogonal_group_*` already do, so the same generators are
-compared against the same recorded sets. No assertion, value or family is
-removed or relaxed; the case previously could not execute its comparison at
-all. Reason recorded here for the #33 amendment route, as AGENTS.md requires
-before adopting a frozen-suite change.
+- **2026-10-29, upstream record first.** Issue #33 comment
+  [6495821128](https://github.com/dzackgarza/sage-indefinite-port/issues/33#issuecomment-6495821128)
+  reports this same defect — `rows_of` returns mutable list-of-lists, so set
+  membership raises `TypeError` and tuple-pattern checks never match — and says
+  the test canonicalizes every generator matrix to tuple-of-tuples in commit
+  `d48b2c1`.
+- **That commit is not in this repository.** `GET /repos/.../commits/d48b2c1`
+  answers 422 "No commit found for SHA"; the SHA is in no fetched ref. The
+  published line merged into main (`73ef6713`) still carried the un-normalized
+  assertion, and the case failed at the CI pair.
+- **2026-10-31, `b8f35104` on main.** The same normalization is applied on
+  `main`: `rows = tuple(tuple(tuple(row) for row in rows_of(g)) for g in
+  computed)`, matching the sibling `test_zero_form_orthogonal_group_uses_permuted_coordinate_labels`
+  and `test_degenerate_orthogonal_group_*` cases.
 
-Evidence at that pair, this checkout, `JULIA_DEPOT_PATH=/opt/julia-depot:`:
+No assertion, recorded matrix or family changed; the case previously could not
+evaluate its comparison. The record above is the #33 route; this note is written
+after the change and does not claim otherwise.
+
+Evidence, port `b8f35104`, provider `53c48e0ab7` (the `pyproject` pin — a
+different pair from the acceptance baseline below, labelled separately):
 `test_orthogonal_group.sage -k "degenerate or zero_form or hyperbolic_plane or
-ambiguous_binary"` → 9 passed, 38 deselected (112 s). Before the correction the
-same selection was 8 passed, 1 failed.
+ambiguous_binary"` → 9 passed, 38 deselected (112 s); 8 passed + 1 failed before.
 
-### Open provider-drift defect
+### Provider contract resolved: one pin, `064cd6e8e90c`
 
-`justfile` (`ci-provision-sage`) fetches research
-`064cd6e8e90cc9cbad17ce7d9574b497c864b8c0` and calls it the acceptance
-contract, while `pyproject.toml` declares
-`53c48e0ab7c8f74f9c15f2e0970b11f29376dc23`. The two commits are unrelated
-lines (36 provider files differ), so a packaging install and CI run different
-providers. Evidence above was taken at the `pyproject` pin. Settle one revision
-before quoting any pair as final.
+`acceptance.yml` runs `just ci-provision-sage`, which fetched a hard-coded
+research revision and installed it with `--no-deps`; `pyproject.toml` declared a
+different one (`53c48e0a`), so a packaging install and CI ran different provider
+APIs (36 provider files differ, the commits are unrelated lines). The CI
+revision is the acceptance contract, so `pyproject.toml` now declares
+`064cd6e8e90cc9cbad17ce7d9574b497c864b8c0` and the recipe reads the revision
+from `pyproject.toml` (`sed -n 's|.*research@\([0-9a-f]\{40\}\).*|\1|p'`) and
+fails if it is absent, so the two cannot drift again.
+
+Baseline pair from here on: port `main` + provider `064cd6e8e90c`. Results taken
+against `53c48e0ab7` (the former `pyproject` value) are labelled separately and
+are not acceptance evidence.
+
+### Open, contested: `test_binary_cycle_period_respects_permuted_coordinate_basis`
+
+Reproduces at the baseline pair in 3.7 s. Specimen and certificate:
+
+- Frame A: `Lattices(ZZ)([[2,0],[0,-1]])`, start `(1,0)`. Representatives
+  `(1,1)`, `(3,4)`; `q = 1, 2`; coordinate determinants `det(start,r) = 1, 4`;
+  period rows `[[3,4],[2,3]]`, `det = 1`, preserves the form.
+- Frame B: `Lattices(ZZ)([[-1,0],[0,2]], module_generators=("negative","positive"))`,
+  start `(0,1)` — the same lattice and the same start vector in reversed
+  coordinates. Representatives `(-1,1)`, `(-4,3)`; `q = 1, 2`;
+  `det(start,r) = 1, 4` in its own frame; period rows `[[3,-2],[-4,3]]`,
+  `det = 1`, preserves the form.
+
+Both outputs are valid oriented cycles *in their own frames*; they differ by the
+reflection of the positive coordinate, which is exactly the determinant -1 of
+the coordinate reversal. The case asserts the representative set is invariant
+under that reversal (it compares `{(c[1], c[0])}` with the default set), i.e. it
+asserts orientation-*invariance*, while the port — like the pinned source, whose
+cycle is matrix arithmetic with a `det(r,l) = 1` convention — is
+orientation-*equivariant*.
+
+Classification: the port's arithmetic is verified for each frame (periods are
+det-1 form isometries; representatives are primitive, positive, within bound);
+the invariance claim is unproved and, on this certificate, false. Correcting the
+case is a frozen-suite change and needs the #33 route. It is **not** applied
+here. No further frozen edit is made without that record.
+
+### Runner blocker: graph canonicalisation
+
+`test_mertens_omega_and_minus_one_generate_o_l` fails in 5-11 s inside
+`sage/groups/perm_gps/partn_ref` with `MemoryError`, and `sage.graphs.bliss`
+segfaults on any graph (`Graph([[0,1]]).canonical_label(edge_labels=True)` dies
+in the image under this runner; the same call succeeds on the host Sage 10.8).
+No AVX-512 in those modules and `PROOT_NO_SECCOMP=1` changes nothing. Cases that
+canonicalise graphs cannot be evaluated on this runner; CI's Docker execution is
+unaffected.

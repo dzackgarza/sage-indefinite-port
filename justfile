@@ -54,13 +54,19 @@ ci-provision-sage:
     "$SAGE_BIN" -c 'import sage.all; from sage.features.bliss import Bliss; Bliss().require(); from sage.interfaces.maxima_lib import maxima_lib; assert str(maxima_lib.eval("1+1")) == "2"'
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     uv pip install --quiet --python "$sage_python" "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard pytest-instafail PyNormaliz
-    # The acceptance contract is against this exact research API revision.
-    # Tracking main is not reproducible and currently imports a Sage category
-    # absent from the pinned CI Sage image (sage.categories.ordered_fields).
+    # The acceptance contract is against the research API revision declared in
+    # pyproject.toml; read it from there so the packaging pin and the CI pin
+    # cannot drift apart. Tracking main is not reproducible and currently
+    # imports a Sage category absent from the pinned CI Sage image
+    # (sage.categories.ordered_fields).
     # Keep the clone shallow and fetch the exact provider commit explicitly.
     mkdir -p {{ci_dir}}
     git clone --quiet --depth 1 https://github.com/dzackgarza/research {{ci_dir}}/research
-    research_rev="064cd6e8e90cc9cbad17ce7d9574b497c864b8c0"
+    research_rev="$(sed -n 's|.*dzack-research @ git+https://github.com/dzackgarza/research@\([0-9a-f]\{40\}\).*|\1|p' pyproject.toml | head -1)"
+    if [ -z "$research_rev" ]; then
+        echo "ERROR: pyproject.toml declares no dzack-research revision to provision" >&2
+        exit 1
+    fi
     git -C {{ci_dir}}/research fetch --quiet --depth 1 origin "$research_rev"
     git -C {{ci_dir}}/research -c advice.detachedHead=false checkout --quiet "$research_rev"
     # uv, not pip: research declares tree-sitter-sage and sage-stubs only in
