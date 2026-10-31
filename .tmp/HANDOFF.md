@@ -228,14 +228,13 @@ post-v1 requirements in TODO.md and issues #40/#41.
 
 ## Reproduction constraints
 
-The local Sage wrapper uses container `sage-dev-develop`. A targeted command
+The local Sage wrapper uses container `sage-research`. A targeted command
 from the port root uses:
 
 ```sh
 direnv exec . env \
-  SAGE_JULIA_COMMAND=/home/dzack/.julia/juliaup/julia-1.12.5+0.x64.linux.gnu/bin/julia \
   PYTHONPATH="$PWD/.tmp/research-acceptance-repair/src:$PWD/src:$PWD:/home/dzack/ai-review-ci/tool-artifacts/pytest_plugins" \
-  sage -python -m pytest -p qc_sage_session 'tests/acceptance/MODULE.sage::CASE' -q --tb=short
+  sage-docker-python -m pytest -p qc_sage_session 'tests/acceptance/MODULE.sage::CASE' -q --tb=short
 ```
 
 Run only selected cases locally. For combined owner and consumer checks,
