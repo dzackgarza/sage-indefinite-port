@@ -603,3 +603,32 @@ suggested:
 So of the six 180 s caps, one (37, both modes) is a provider blocker and the other four are traversal
 cost that a larger cap may simply absorb — 33 total already does so at 558 s. That is the next
 measurement worth making, and it needs no code change.
+
+## A_PERFECT: the six 180 s caps reduced to three verdicts and one real blocker
+
+Each capped case rerun unchanged on the same port `52eeedfa` + `sage-extensions 7b222e86` + base image
+`b0cd7d86` with the owner Bliss patches, one per invocation, under a 1800 s cap.
+Raw table: `~/sage-image/perfect-33-39-longcap.log`.
+
+| case | mode | 180 s cap | 1800 s cap |
+| --- | --- | --- | --- |
+| `Result_Enumeration_33` | total | cap | **passed, 558 s** |
+| `Result_Enumeration_33` | isotropic | cap | exceeded the 1800 s cap |
+| `Result_Enumeration_37` | total | cap | blocked on the provider defect below |
+| `Result_Enumeration_37` | isotropic | cap | blocked on the provider defect below |
+| `Result_Enumeration_39` | total | cap | **passed, 237 s** |
+| `Result_Enumeration_39` | isotropic | cap | **passed, 261 s** |
+
+So of the 92 A_PERFECT cases: 86 pass inside 180 s, three more pass inside 1800 s (33 total, 39 total,
+39 isotropic), and three remain without a verdict — 33 isotropic over the 1800 s cap, and both 37
+modes blocked on the provider `finite_ordered_set` defect. Exceeding a cap is recorded as exactly
+that, never as nontermination.
+
+The 39 passes are consistent with the engine sweep: `Result_Enumeration_39` has 8 facets and 22 rays
+in total mode, 8 facets and 10 rays isotropic, so its cone construction is milliseconds and the 237 s
+/ 261 s is traversal. `Result_Enumeration_33` isotropic (11 facets, 14 rays) is likewise traversal
+cost, not cone construction — it is the one remaining cost question that a larger cap may still
+absorb, and it needs no code change.
+
+These bounded runs do not substitute for the provider repair: case 37's cost is the dual-point hash
+collapse, and it stays blocked until the repaired pin is published and consumed.
