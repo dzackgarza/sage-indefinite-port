@@ -1279,3 +1279,25 @@ the action unchanged, targeted regression passing). The running `r_-1` node stay
 provider change while it runs. At its next clean boundary: pin `059e666` (or a later owner pin if
 supplied), then rerun the original Enriques case_1 with `discprof` phase markers and in-flight
 reporting. The old description diagnosis is already established and should not be re-derived.
+
+## Pin decision at the next clean boundary: `9dc89ac`, not `059e666`
+
+Owner supplied a later pin, **`9dc89ac1d9e4ab074da8872386aaf5b9df290f63`** ("test: pin the labelled-ranking
+and admission contracts of the symmetric engine"), superseding `059e666`. Verified in the tree rather
+than taken on report:
+
+- `_symmetric_group` (`groups.py:2093`) now carries the docstring "The description names the degree and
+  never formats the point set".
+- `engine = SymmetricGroup(degree)` is unconditional — the canonical Sage `SymmetricGroup` engine for
+  labelled finite sets, replacing the `PermutationGroup(())` / transposition-and-cycle construction that
+  `e83c4d6` used on the non-standard branch.
+- The `else f"Symmetric group on {points}"` f-string that caused the Enriques cap is gone, while
+  `natural_points` and the checked ingress remain per the owner's description.
+
+Prepared as a separate tree at `~/sage-extensions-9dc89ac` so the running `r_-1` job keeps its exact
+`e83c4d6` pair. **`pyproject.toml` is deliberately untouched while `jmvxlw71n` runs** — the pin flips
+only at its result or cap, so the recorded pair stays honest.
+
+At the boundary: pin `9dc89ac`, commit and push, then rerun the original Enriques case_1 with the
+existing `discprof` phase instrumentation and in-flight reporting. The description investigation is
+settled; the rerun measures the fix, it does not re-derive the diagnosis.
