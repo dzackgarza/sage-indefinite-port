@@ -1210,3 +1210,36 @@ open.
 
 The GAP `IsFinite` candidate stays exactly that — a separate owner question. It is **not** grounds to
 skip or weaken a finiteness check, and nothing in this run bypasses one.
+
+## A_REFLECTIVE sample cannot currently be recorded "by case id"
+
+While the `r_-1` node runs, source inspection of the reflective family turned up a contract-level
+problem rather than another cost problem.
+
+`test_reflective.sage` parametrizes over `load_allcock_rank3_reflective()` with
+`ids=lambda case: case["id"]`. That fixture is not id-unique:
+
+| fixture | entries | distinct ids |
+| --- | --- | --- |
+| `allcock_rank3_reflective.json` | 8 595 | **176** |
+| `reflective_forms_8821.json` | 8 821 | distinct |
+| `root_systems_103.json` | 103 | distinct |
+
+In detail: `allcock_rk3_1` occurs 374 times, `allcock_rk3_2` 373, `allcock_rk3_3` 367, `allcock_rk3_4`
+363, and only 56 ids occur once. The duplicates are **not** byte-identical — 120 ids have differing
+duplicates, i.e. genuinely different lattices sharing a label.
+
+So pytest disambiguates those node ids by appending `0`, `1`, … and the #33 requirement that an
+accepted A_REFLECTIVE sample be "recorded by case id" cannot be satisfied for this parametrization by
+the id alone: `allcock_rk3_2` names 373 distinct lattices. A sample must be recorded by full node id
+(including pytest's index suffix) or by an intrinsic discriminator, and the fixture ids want making
+unique.
+
+That is a frozen-suite/contract change and belongs to #33, with its reason recorded before adoption —
+not something to patch locally. Recorded here so it is not discovered later as a sampling ambiguity.
+
+Note also that the required A_REFLECTIVE sample is otherwise easy to name at node level:
+`test_edgewalk_branch_representative_sample`, `test_u_plus_46_nonreflective_certificate_terminates_after_three_vertices`,
+`test_root_systems_match_polyhedral_common[ListSimpleRootSystem_0]`,
+`test_e10_simple_roots_match_dutour_sikiric_hulek`, and the four OSCAR Vinberg nodes
+(`vinberg_I_1_10`, `vinberg_diag_1_-1_-13`, `vinberg_scharlau_U_A2`, `vinberg_diag_1_-1_-3`).
