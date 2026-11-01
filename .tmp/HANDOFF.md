@@ -657,3 +657,43 @@ Do not read the whole file as cheap: one bounded invocation of
 nodes and then exceeded a 900 s cap. That is a cap on the file as a whole, not a failure of any node,
 and the family must stay per-case. The A7 discriminant-image node remains open and is not covered by
 this result.
+
+## Provider pin 69907aef unblocks case 37; targeted acceptance rerun
+
+`sage-extensions` moved from `7b222e86` to **`69907aef538a8a4fe08c7431d2228afdd9d62927`**
+(dual-point hashing, including primitive-line reflection repair `24885f3`), pinned in
+`pyproject.toml`; the justfile provisioning reader extracts the new revision from that file, so the
+two cannot drift. Nothing else in the tree carried the old sha (`uv.lock` does not record it).
+
+Out-of-band check of the repair, standard lattice `I6`, no port and no engine: 64 distinct dual points
+now give **64 distinct hashes** (previously 1), `dict.fromkeys` 0.142 s at n=64 (previously 22.9 s),
+`finite_ordered_set` 0.142 s (previously 49.8 s). Linear, as the contract requires.
+
+**`Result_Enumeration_37` now passes in both modes**, unchanged cases, one invocation each, with the
+repaired provider bound at `/repos/sage-extensions` and `inspect.getfile(sage_extensions)` confirming
+that path:
+
+| case | mode | before | after |
+| --- | --- | --- | --- |
+| `Result_Enumeration_37` | total | blocked, `cell_cone` >1800 s | **passed, 36.80 s** |
+| `Result_Enumeration_37` | isotropic | blocked, `cell_cone` >1800 s | **passed, 46.61 s** |
+
+That is a 202-ray / 570-facet and a 112-ray / 570-facet cone: the engine work was always 0.05–0.11 s,
+so the entire previous cost was the provider container, exactly as the report said. No port edit was
+needed or made; routing was never the problem.
+
+A_PERFECT is now **91 of 92 cases with a verdict**: 86 inside 180 s, and 33 total 558 s, 39 total
+237 s, 39 isotropic 261 s, 37 total 38 s, 37 isotropic 48 s. The single remaining case is
+`Result_Enumeration_33` isotropic, which exceeded a 1800 s cap; its cone has 11 facets, so the provider
+repair is not expected to change it and its cost is traversal.
+
+Targeted acceptance for the two provider changes, all passing with the repaired pin:
+
+- `tests/test_perfect_cell_transporter.py` — 46 passed, 25.34 s (owned-cone construction throughout).
+- `test_perfect_domains.sage::test_large_cell_cone_uses_exact_normaliz_h_presentation` — passed, 9.00 s.
+- `test_reflective.sage` binary-cycle / permuted-basis nodes (reflection repair `24885f3`) —
+  `test_binary_cycle_coordinate_order_and_period_certificate` and
+  `test_binary_cycle_period_respects_permuted_coordinate_basis` — 2 passed, 2.38 s.
+
+The raw-engine 80/80 agreement stands separately and is unaffected: it is an engine-only statement
+about Normaliz and PPL on identical ray sets, and it never depended on the provider container.
