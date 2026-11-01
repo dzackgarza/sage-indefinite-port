@@ -1353,3 +1353,34 @@ extrapolated from the sample.
 A_STABILIZERS coverage now stands at **two accepted cases**: the OSCAR `stabilizer_of_100` node (65 s)
 and `r_-1` (1850 s), both with recorded provenance. `r_0`…`r_8` and the six E10 square nodes remain
 **unresolved** — not failures, just not yet run.
+
+## Enriques case_1 on the new pin: display defect closed, different blocker behind it
+
+Rerun on port `0dc76952` + provider `9dc89ac` (the degree-based-description pin), original node and
+assertions, `timeout -k 30 3600`, `discprof` with 60 s tables and 120 s stacks. Job `jmvxn1hj8`.
+
+**The fix works.** 29 dumps, and **zero** of them land in any `_repr_`, against a pre-fix run whose
+stacks sat in `finite_ordered_sets.py:587 _repr_` for ~1500 s. The description investigation is closed
+for good.
+
+**The case still does not finish:** `pytest_exit=124 elapsed=3600s`, test frame still
+`test_boundaries.sage:226`. The in-flight-aware table is what makes this readable — at t=3543 s:
+
+| phase | calls | total | note |
+| --- | --- | --- | --- |
+| `group_generators` | 69 | 162.85 s | **plus one RUNNING 3374 s** |
+| `discriminant_morphism` | 210 | 37.03 s | |
+| `cardinality` | 806 691 | 5.01 s | |
+| `subgroup_on` (nested) | 1 | 0.02 s | |
+
+So a single `group_generators` realisation has run 56 minutes. **14 of the 16 complete dumps** sit in
+the orbit-word computation (`pointed_orbit` → `_orbit_words` → `act` →
+`_permutation_from_point_map`), whose per-point key goes through
+`TorsionFormAutomorphism.__hash__` (`torsion_form_modules.py:1164`) and that `__hash__` calls
+`self._engine().matrix()` — a GAP conversion per hash.
+
+Handed to the owner as a cost question, not a correctness one, at
+`.tmp/handoff-owner-torsionform-hash.md`: the hash is consistent with `__eq__`, so the question is
+whether it can be computed from data the element already holds rather than forcing GAP. I am not
+asserting it is avoidable. The case stays **unresolved and capped**, and the remaining `r_*` and square
+nodes stay unresolved with it.
