@@ -1011,3 +1011,55 @@ recorded there too rather than dropped.
 The run itself uses the unchanged node and the unchanged assertions. Per instruction, whatever it
 identifies gets handed to the owning library or Sage project as a minimal reproduction, and no
 hypothesized owner is patched.
+
+## The slow call in Enriques case_1: exact parent, presentation, caller
+
+From the phase table at t=256.7 s of the instrumented run, and then from source — not from the test's
+outer line and not from the aggregate:
+
+| phase | calls | total | worst |
+| --- | --- | --- | --- |
+| `generator_enumeration` | 21 | 177.52 s | **118.67 s** |
+| `discriminant_morphism` | 21 | 13.75 s | 11.65 s |
+| `subgroup_admission` | 1 | 0.03 s | 0.03 s |
+| `result_cardinality` | 957 | 0.01 s | 0.00 s |
+
+**Exact parent.** The stabilizer of the case-1 polarization inside `O(M)`, with `M = U(2) + E8(-2)`:
+
+```
+lattice_centralizers.py:852   stabilizer = extension.invariant.O().stabilizer(invariant_polarization)
+lattice_centralizers.py:985   invariant_image = invariant_subgroup.image_under(...)   <- requests group_generators
+```
+
+**Retained presentation.** A marked-lattice stabilizer subgroup. Its resolution realises through:
+
+```
+group_generators -> selected_group_resolution -> realise
+  -> lattice_morphisms.vector_stabilizer_generators           :3664
+  -> _marking_stabilizer_generators                          :3691
+  -> lattices._marked_automorphism_generators                :1874
+  -> port marked_lattices.automorphism_group_generators        :109
+  -> port recursive.pointed_automorphism_generators            :591
+  -> recursive._lattice_action :457 -> orthogonal_group_generators :333
+  -> lattices._core_automorphism_generators                  :1849
+  -> lattice_morphisms._computed_group_generators :3575 / _engine_group :3456
+  -> lattice_engines.definite_isometry_group                 :1146 -> Julia
+```
+
+`eichler.OrbitCoverModel` does not appear anywhere on that chain, which is exactly why the separate
+OrbitCoverModel probe measured zero calls. The two measurements agree instead of contradicting.
+
+**Initial versus repeated.** `group_generators` is not cached, but `selected_resolution`
+(`objects.py:383`) replaces the `_PendingResolution` with the realised resolution in the per-owner
+registry, so a second request on the same parent returns the stored object. The 177.52 s therefore
+cannot be 21 equal charges: it is a small number of first realisations, one of them 118.67 s, plus
+cheap repeats. This is reasoned from source and is deliberately not asserted as measured — the running
+probe cannot attribute per-call identity, because my marker index is "prior completions + 1", so
+nested calls share a number (the earlier log shows `#20 start` twice).
+
+**Actionable minimal path, published but not run:** [.tmp/probe-gamma-h-stabilizer.py](.tmp/probe-gamma-h-stabilizer.py)
+rebuilds exactly that parent the way `_gamma_h` does and times the initial realisation against a repeat
+request in one process, so the initial/repeat split becomes a measurement rather than an inference. It
+runs after the sole bounded probe finishes; nothing else is launched now.
+
+No owner is patched and the frozen assertions and generator semantics are untouched.

@@ -29,3 +29,4 @@ references/Indefinite.jl/
 .tmp/*
 !.tmp/HANDOFF.md
 !.tmp/provider-report-dual-point-hash.md
+!.tmp/probe-gamma-h-stabilizer.py
