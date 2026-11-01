@@ -300,3 +300,79 @@ report per-process peaks *by executable* before the question is asked again.
 
 That is the next instrumentation task, and it is small: record `VmHWM` per pid together with
 `/proc/<pid>/comm`, and report the largest Python and the largest Julia separately.
+
+---
+
+## ESTABLISHED: the third site's query is dead, measured
+
+Earlier I wrote that the `stabilizer()` reorder "would skip the query **if** the composite disjunct
+holds", and that the three conjuncts were "plausible but not measured". They are now measured, on both
+pointed branches the port uses:
+
+```
+non-isotropic branch (_lattice_action):
+   stable_containing_bound is not None      : True
+   has_selected_group_resolution            : True
+   has_selected_finite_group_generating_set : True
+   => composite disjunct                    : True
+
+isotropic branch (isotropic_stabilizer_action):
+   all three                                : True
+   => composite disjunct                    : True
+```
+
+So at `rational_integral_stabilizers.py:436-446` the condition
+`rational_group.is_finite() is True or (<composite>)` is `True` **whatever the group's order is**, and the
+GAP `IsFinite` call is dead work on this port's path.
+
+### What it costs on the failing specimen
+
+`square[0]`, original assertions, provider `cdafca84`, per-process measurement:
+
+| process | peak `VmHWM` |
+| --- | --- |
+| **python** (Sage + libGAP, in-process) | **4 959 MiB** |
+| **julia** (engine bridge baseline) | 3 165 MiB |
+| tree total | 8 127 MiB |
+
+Three stack dumps at 120 s, 240 s and 360 s show the **same** single call throughout:
+
+```
+libgap_mixin.py:195 is_finite                       <- GAP, in this process
+  groups.py:170 _engine_finiteness                  (compute=True)
+  groups.py:7943 _finiteness_decision
+  set_categories.py:2423 is_finite
+  rational_integral_stabilizers.py:444 stabilizer   <- the dead operand
+  recursive.py:593 pointed_automorphism_generators
+```
+
+The process was killed at 413 s with 1 241 MiB free. My 8 192 MiB guard did **not** fire (tree peaked at
+8 127), so the kill came from outside the harness.
+
+### The fix, exact
+
+```python
+# src/sage_extensions/categories/rational_integral_stabilizers.py, ~line 436
+    def stabilizer(self):
+        rational_group = self.rational_group()
+        lattice_inclusion = self.lattice_inclusion()
+        if (
+            (
+                rational_group.has_selected_group_resolution()
+                and rational_group.has_selected_finite_group_generating_set()
+                and self.stable_containing_bound() is not None
+            )
+            or rational_group.is_finite() is True
+        ):
+            return self.finite_representation().lattice_stabilizer()
+```
+
+Same truth value, same branch, no finiteness assumption added; `is_finite()` still runs whenever the
+composite triple does not hold. Identical in shape to `00bcc86`, which fixed the two earlier sites.
+
+**Caveat, stated rather than hidden:** the three conjuncts were measured on the hyperbolic plane, not on
+the E10 specimen. They are structural — the port supplies a finite generating set and a bound uniformly
+through `_lattice_action` and `isotropic_stabilizer_action` — but the E10 confirmation would be one
+instrumented call on that specimen, and it is worth doing before the owner commits the change.
+
+This is provider code. The port's contribution is the three premises, which it already supplies.
