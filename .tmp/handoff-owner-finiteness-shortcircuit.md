@@ -221,3 +221,37 @@ assertions, so there is no port-side assertion to repair.
 
 The two acceptance records are untouched by this: A_PERFECT 92/92 at `87fbf863` + `cdafca84` and
 A_ISOMETRY 166/166 at `87fbf863` + `c546077d` stand on their own pins and were not re-run.
+
+---
+
+## A rank-2 reproduction of the memory growth
+
+While checking whether the `stabilizer()` disjunct holds, the probe never reached its first assertion:
+`EichlerRecursion._lattice_action` on the **hyperbolic plane** `U = [[0,1],[1,0]]` with `v = e0 + e1`
+(`q = 2`) exceeded a 3 GiB tree-RSS guard after ~48 s:
+
+```
+timelike v q = 2
+[peakrss] STOPPED_AT_MEMORY_LIMIT: tree RSS 3233 MiB exceeded 3072 MiB
+[peakrss] peak tree RSS : 3233 MiB   low-water MemAvail : 9023 MiB
+```
+
+That is rank 2 — the smallest Lorentzian lattice there is — and the blow-up is inside the port's
+`_lattice_action` before any E10 or discriminant-form machinery is touched. So the memory behaviour that
+sinks `square[0]` is **not** a rank-10 phenomenon, and a reproduction does not need the 9.8 GB specimen or
+a 6 GiB budget.
+
+`_lattice_action` (`recursive.py:445-468`) builds, in order: `orthogonal_group_generators(v^perp)` for the
+rank-1 complement (cheap: `O(<-2>) = {±1}`), `extension_across` for each generator, the base change to
+`QQ`, `generic_fibre_map`, `lattice.subobject_on(...)`, `split.inclusion().cokernel().exponent()`, and a
+`Modules(...).Mono` bound built by a lambda over `split`'s generators. One of those is allocating hundreds
+of megabytes on a two-dimensional lattice; the suspects worth instrumenting first are the cokernel exponent
+and the `Mono` over the generic fibre, because both build module objects over the *rational* space.
+
+I have not isolated which line it is — the probe was stopped by my own guard, which is the correct
+behaviour on a shared host, and I am not going to guess at the owner's site. The value here is that the
+reproduction is now cheap: a two-line lattice, one vector, one call.
+
+Next step for whoever takes it: run `_lattice_action` on `U` with `v = e0 + e1` under a line-level memory
+profile (`VmRSS` deltas around each of the six construction steps above) — the whole thing is under a
+minute.

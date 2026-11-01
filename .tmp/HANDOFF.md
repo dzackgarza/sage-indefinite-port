@@ -2269,3 +2269,30 @@ profiles.
 
 Facet API substitution stays deferred: the fifth maintained transporter operation is not established, and I
 have not replaced it with full-tuple enumeration.
+
+## The memory growth reproduces on rank 2 — a cheap reproduction, not a 9.8 GB specimen
+
+Checking whether the `stabilizer()` disjunct actually holds, the probe never got that far.
+`EichlerRecursion._lattice_action` on the **hyperbolic plane** `U` with `v = e0 + e1` (`q = 2`) exceeded a
+3 GiB guard after ~48 s (peak tree RSS 3 233 MiB, host left with 9 023 MiB).
+
+This matters more than the disjunct question: **the blow-up is not a rank-10 phenomenon.** It happens on
+the smallest Lorentzian lattice there is, inside the port's `_lattice_action`, before any E10 or
+discriminant-form machinery is touched. So `square[0]` is one expensive victim of something that can be
+reproduced in under a minute on two dimensions.
+
+What I did **not** do: isolate which of the six construction steps inside `_lattice_action` allocates. My
+own guard stopped the probe, which is the correct behaviour on a shared host, and naming a line from a
+cost profile I have not taken would be a guess. The hand-off names the two suspects worth instrumenting
+first (the cokernel exponent and the `Mono` over the generic fibre) and the exact line-level procedure.
+
+Consequences for the queue, stated plainly:
+
+- `square[0]` and the other five squares stay **unresolved**; running them at 6 GiB a piece on this host
+  would produce guard stops, not evidence.
+- The provider hand-off now has a *cheap* reproduction attached, which is what makes it actionable rather
+  than an anecdote about one 9.8 GB specimen.
+- The three full-family records are untouched and keep their own pins: A_PERFECT 92/92 (506 MiB) at
+  `87fbf863` + `cdafca84`; A_ISOMETRY 166/166 (3 845 MiB) and A_CENTRALIZERS 5/5 (3 739 MiB) at
+  `87fbf863` + `c546077d`.
+- Facet substitution remains deferred on the fifth transporter operation.
