@@ -697,3 +697,66 @@ Targeted acceptance for the two provider changes, all passing with the repaired 
 
 The raw-engine 80/80 agreement stands separately and is unaffected: it is an engine-only statement
 about Normaliz and PPL on identical ray sets, and it never depended on the provider container.
+
+## Enriques case_1: instrumented 1800 s run, phase evidence, no hang
+
+Job `jmvxdwf53`, node
+`test_boundaries.sage::test_enriques_modular_groups_match_dutour_sikiric_hulek[case_1]`, cap 1800 s,
+provider `e83c4d6` bound at `/repos/sage-extensions`. It reached its cap: `elapsed=1801s`. Raw log with
+the stack dumps: `.nucleus/jobs/jmvxdwf53.log`. No job was left running afterwards.
+
+Node identity confirmed against `tests/fixtures/enriques_87_polarizations.json` before running: case 1,
+`face_polarization` `[-1,-1,0,0,0,0,0,0,0,0]`, `face_polarization_norm` 2, `group_order` 696729600,
+`line_orbits` 5, `plane_orbits` 9, `flag_orbits` 18.
+
+**Instrumentation matters, and the first attempt produced nothing.** `faulthandler` writes to file
+descriptor 2, and pytest captures at fd level by default, so a run without `-s` discards every dump and
+the invocation ends as an opaque cap — exactly the failure mode this run was meant to replace. The
+working form is `python -u -m pytest ... -s` plus a small `PYTHONPATH` plugin whose
+`pytest_runtest_setup` arms `faulthandler.dump_traceback_later(60, repeat=True)` and whose teardown
+disarms it. 29 dumps were captured.
+
+**The case is progressing, not stuck.** 29 dumps at 60 s intervals show 26 distinct top main-thread
+frames; nothing is entered for long, and the call stack keeps changing. The first minute is the only
+time in the Julia engine (`interface.py:358 _request_unlocked`, under
+`lattice_engines.py:1146 definite_isometry_group`); the rest is provider and Sage layer work under
+`_gamma_h` (`test_boundaries.sage:213`) → `lattice_centralizers.py:984,852
+coinvariant_extension_subgroup` → `groups.py:7849 image_under` → `groups.py:5431 group_generators`.
+
+The re-entered frames, which are where the time actually goes:
+
+- `sage/structure/free_module.py` `_element_constructor_` — at 180, 420, 1260, 1560 s.
+- `sage/groups/abelian_gps/abelian_group_gap.py` `exponents` / `:154` — at 240, 540, 600, 660, 1080 s.
+- `sage/modules/fqf_morphism`-side and `fqf_orthogonal.py:112 __call__`, `:484 _act_`,
+  `abelian_aut.py:203 matrix` — 300, 1620 s.
+- Owned category overhead inside the same loop: `set_categories.py` `position_of` / `__call__`,
+  `refine.py:362 construction_scope`, `mor_foundation.py:403 operation`, `category.py:706 __contains__`,
+  `category_with_axiom.py __classget__`, `category.py __classcall__`, `mor_categories.py Of`,
+  `indexed_families.py:424,90`, `torsion_quadratic_module.py:149 _mul_`.
+
+So the cost is a long chain of small constructions — element construction in the formed/torsion-form
+modules and GAP abelian-group exponent computations during the discriminant-form action — not a single
+long call and not a hang. `_gamma_h` is only the beginning: the test then computes
+`image.cardinality()` against the recorded 696729600 and `_counts` against 5/9/18.
+
+This is a cost finding, not an acceptance result: case_1 has **no verdict**. It exceeded a cap, which is
+recorded as exactly that.
+
+## Runtime hold and revision coverage
+
+No shared-runtime job was active at the end of this run, and no further PRoot/bwrap/udocker command was
+started from this project. The next shared-runtime run waits on the coordinated maintenance boundary.
+
+Revision coverage is mixed and must not be flattened into "91/92 on the current pin":
+
+- At `e83c4d6` (current pin): `Result_Enumeration_37` total **40.12 s**, isotropic **34.51 s**, and the
+  Mertens `O(L)` node **6.54 s**, all passing.
+- At `69907ae`: 37 both modes (36.80 s / 46.61 s), Mertens 7.11 s, and the targeted suite —
+  `test_perfect_cell_transporter.py` 46 passed, the large-cell Normaliz node, and the two reflective
+  binary-cycle nodes.
+- At `7b222e86` (previous pin): 33 total 558 s, 39 total 237 s, 39 isotropic 261 s, and the 86 cases
+  inside the 180 s cap.
+
+`Result_Enumeration_33` isotropic remains the only historically capped A_PERFECT case, and it now needs
+a bounded phase diagnosis on the current provider — the same instrumented treatment case_1 just had,
+not another opaque cap.
