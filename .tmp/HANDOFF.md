@@ -1730,3 +1730,38 @@ and I am not going to invent a code change to fill it.
 > the port's `groups/integral_structures.py` has been removed in favour of research's
 > `IntegralStructureAction`. No `@unfinished` marker is applied and no error-swallowing fallback remains.
 > Remaining obligations on this unit are acceptance evidence at recorded revisions, not algorithm bodies.
+
+## Enriques `case_1` on `c546077d`: capped at 3600 s, unchanged by the hash fix
+
+Job `jmvxrb7tr`, original node and assertions, port `42cc5af0` + provider `c546077d`, same 3600 s cap as
+the `9dc89ac` run so the comparison is like-for-like.
+
+**`pytest_exit=124 elapsed=3601s`** — a cap, not a verdict. Final table at t=3546.4 s:
+
+| phase | `9dc89ac` (t=3543.5) | `c546077d` (t=3546.4) |
+| --- | --- | --- |
+| `generator_enumeration` | 69 calls / 162.85 s, one RUNNING 3374.64 s | 77 calls / 214.29 s, one RUNNING **3309.72 s** |
+| `discriminant_morphism` | 210 / 37.03 s | 238 / 44.20 s |
+| `result_cardinality` | 806 691 / 5.01 s | 810 573 / 12.27 s |
+| `subgroup_on` (nested) | 1 / 0.02 s | 1 / 0.02 s |
+
+**The torsion-form hash memoisation did not change this case.** One `group_generators` realisation still
+dominates — 3310 s of the 3600 s available — and the phase mix is within noise of the previous pin. That
+is the expected shape if the hash was one component inside the orbit computation rather than its
+driver, and it means the Enriques blocker is the enumeration itself, not the per-hash GAP conversion.
+`case_1` stays **unresolved and capped** on this pin too.
+
+No concrete failure to diagnose: nothing raised, nothing asserted false; the node simply did not reach
+its assertions. The next diagnostic step would be inside that single enumeration, which is the same
+place the earlier stacks pointed.
+
+## `square[0]` rerun started immediately
+
+Per the standing instruction, the prepared run went next rather than waiting: job **`jmvxtgo18`**, node
+`test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[0]`, port `e9e93225` (clean worktree) +
+provider `c546077d` with the bind checked in-run, cap `timeout -k 30 7200`, and `peakrss.py` sampling
+summed tree RSS, per-process `VmHWM` and `MemAvailable` every 2 s. It is the only heavy job.
+
+Two things I will keep apart when it lands: the **observed** exit status and the measured peaks, versus
+the **hypothesis** that the earlier 137 was OOM. A low peak weakens but does not refute OOM — a 2 s
+sampler can miss a transient spike, and a kill during a fast allocation leaves no trace in the samples.
