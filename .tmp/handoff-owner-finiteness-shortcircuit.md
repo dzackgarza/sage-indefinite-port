@@ -116,3 +116,40 @@ action has `stable_containing_bound()` non-`None` by construction.
 
 I have not executed the counter reproduction — one heavy acceptance run is in flight — so this is a
 source-derived claim with a measured call stack behind it, not a measured counter.
+
+## Provenance (added: the earlier note alone did not carry this)
+
+- **Artifact**: `.tmp/handoff-owner-finiteness-shortcircuit.md`, commit
+  **`75dc17f6be36559742ffb7dbfa7beeb18646977a`** ("docs: finiteness handoff -- two consumers ask an
+  unusable question; first centralizer case passes"), an ancestor of the current `main`.
+- **Measurement**: `~/sage-image/logs/pointed-q6.prof` with the transcript
+  `~/sage-image/logs/pointed-q6.out`, produced by `~/sage-image/probe_pointed_unit_profile.py`. The unit
+  is root `r_-1`, orbit representative index 3, vector `[-1,-3,0,0,0,0,0,0,0,0]`, `q = 6`:
+  **56.12 s uninstrumented**, 143.24 s under `cProfile`, of which **27.44 s** is GAP `IsFinite`.
+
+## The minimal owned group and its construction
+
+The group the discarded query is asked about is built in the port at
+`src/sage_indefinite_port/indefinite/recursive.py:456-468`, `IndefiniteRecursion._lattice_action`:
+
+```python
+perpendicular = vector.orthogonal_complement().inclusion()
+complement    = perpendicular.domain()
+extensions    = tuple(generator.extension_across(vector, vector)
+                      for generator in self.orthogonal_group_generators(complement))
+rational      = lattice.base_change(lattice.base_ring().fraction_field_map())
+inclusion     = ModulesOverIntegralDomains(lattice.base_ring())(lattice).generic_fibre_map()
+split         = lattice.subobject_on((vector, *(perpendicular(point) for point in complement.module_generators())))
+denominator   = split.inclusion().cokernel().exponent()
+scale         = rational.base_ring().one() / rational.base_ring()(denominator)
+containing    = Modules(lattice.base_ring()).Mono(split, space)(lambda label: space.wrap(...))
+return IntegralStructureAction(rational.O().subgroup(extensions), inclusion).with_stable_containing_bound(containing)
+```
+
+So: an owned **generated subgroup** `rational.O().subgroup(extensions)` of the rational orthogonal
+group, acting on the generic fibre of `L`, with a **stable containing bound supplied** — which is exactly
+the premise that makes the two `is_finite()` calls dead.
+
+That is the smallest instance to reproduce with: `U` with `v = e0 + e1` (`q = 2`) reaches the same
+construction through `isotropic_stabilizer_action`/`_lattice_action`, and its
+`stable_containing_bound()` is non-`None` by construction.

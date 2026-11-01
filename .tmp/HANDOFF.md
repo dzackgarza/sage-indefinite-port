@@ -1989,3 +1989,49 @@ requires building an owned permutation group from `backend.point_permutations_fr
 and whether the provider exposes a construction from an explicit permutation list is not yet established.
 Until that comparison exists, claims about substituting `libgap.Orbits`/`Stabilizer` with a provider orbit
 operation remain unproven, and the port's GAP calls stay where they are.
+
+## Provider permutation-group API: looked up, and it is present
+
+The open question was whether the provider can build an owned permutation group from explicit
+permutations and let it act on *sets* of points. Read from source and then exercised, on `c546077d`:
+
+| piece | result |
+| --- | --- |
+| `OwnedGroups().S(4)` | `Symmetric group S_4`, `natural_points()` = `{1, 2, 3, 4}` |
+| `symmetric((1, 2))` | `(1 2)`, `sign` −1 |
+| `symmetric([(1, 3), (2, 4)])` | `(1 3)(2 4)`, order 2 — **multi-cycle needs a list**, a bare `*cycles` call raises |
+| `symmetric((1, 3, 2, 4))` | `(1 3 2 4)`, order 4 |
+| `symmetric.subgroup((element,))` | subgroup, `cardinality()` 4 |
+| `FiniteGSets(symmetric)(points, action)` | `{(1, 2), (3, 4)} with Symmetric group S_4-action` — an explicit finite action on an arbitrary point set |
+
+So there is **no missing constructor**, and nothing needs to be reported to the library. The maintained
+construction for the facet computation is: `S(n)` on the ray positions, elements from
+`Permutation(one_line).cycle_tuples()` passed as a list, `.subgroup(...)` for the cell group, and
+`FiniteGSets(subgroup)(facets, action)` where the action maps a facet to its image under a group element —
+which is precisely the case `action_on` refuses ("specify a separate group action for another point set").
+
+Two honest caveats from the probe: `group(c1, c2)` raises `TypeError` (pass a list instead), and a G-set
+whose point set is not closed under the action raises `ValueError` — the latter was my probe's bug, not an
+API defect.
+
+**I did not swap the production code yet, deliberately.** The only gate for that change is A_PERFECT's
+92 cases, and A_ISOMETRY now owns the runtime; changing the facet-orbit path with its gate unrun is the
+blind refactor I declined earlier for the same reason. The result-based guard
+(`tests/test_cell_faces_facet_orbits.py`) is in place for the swap, and the swap plus the A_PERFECT sweep
+is the next piece of work once the isometry sweep finishes.
+
+## Finiteness handoff: provenance made explicit
+
+`.tmp/handoff-owner-finiteness-shortcircuit.md`, commit
+**`75dc17f6be36559742ffb7dbfa7beeb18646977a`** — verified an ancestor of `main`, so it is published, not
+merely written. Appended to it: the measurement artifacts (`pointed-q6.prof`, `pointed-q6.out`,
+`probe_pointed_unit_profile.py`), the specimen, and the minimal owned group with its construction —
+`IntegralStructureAction(rational.O().subgroup(extensions), inclusion).with_stable_containing_bound(containing)`
+at `recursive.py:456-468`, with `extensions` from `extension_across` over
+`orthogonal_group_generators(complement)` and the bound supplied. That is the "delivered in sufficient
+detail" that the earlier one-line mention did not establish.
+
+## A_ISOMETRY: full file running case by case
+
+Job `jmvxurihq`: all 166 nodes of `test_isometry.sage`, **one invocation each**, per-case exit code, peak
+RSS and verdict, 1200 s cap per case, 6 144 MiB memory bound, no other heavy job.

@@ -40,3 +40,5 @@ references/Indefinite.jl/
 !.tmp/peakrss.py
 !.tmp/handoff-owner-finiteness-shortcircuit.md
 !.tmp/probe-cellfaces-baseline.py
+!.tmp/probe-owned-permgroup.py
+!.tmp/probe-multicycle.py
