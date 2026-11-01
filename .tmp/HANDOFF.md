@@ -932,3 +932,49 @@ construction, and attributing all of it to `subgroup_on` was wrong.
 The next measurement is therefore to instrument the retained `OrbitCoverModel` family construction
 itself — the real path, not a replacement library subgroup algorithm — with the original Enriques
 assertions unchanged.
+
+## Enriques case_1: OrbitCoverModel is not on this path (measured, not assumed)
+
+Job `jmvxi4o1u`, the unchanged node, `OrbitCoverModel`'s 14 callable members wrapped in place
+(behaviour-preserving: plain functions and `@staticmethod`s; caching lives in module-level dicts, so no
+cache is disabled). Sampling ran to 29 faulthandler dumps (~1740 s) before the cap.
+
+**Result: zero calls to any of the 14 members in that window.** The teardown table printed its header
+with no rows.
+
+That is a real negative, not a broken wrapper. The control run confirms the wrapper counts calls,
+including calls that raise:
+
+```
+instrumented members: 14
+call raised as expected: AttributeError
+TOTALS: {'source_generating_family': 0.0}
+CALLS: {'source_generating_family': 1}
+CONTROL OK: the wrapper observes calls
+```
+
+So for case 1 the library's readback does not reproduce: Γ_h's retained generating morphism does not
+reach this port's `OrbitCoverModel` inside the sampled window. Combined with the earlier stack
+evidence — test frame at `test_boundaries.sage:226`, top frames `fqf_orthogonal.py`,
+`abelian_aut.matrix`, `abelian_group_gap.exponents`, `torsion_quadratic_module._mul_`,
+`free_module._element_constructor_` — the time is in the discriminant-form layer on generators already
+in hand (`g.discriminant_morphism()` and the subgroup/cardinality work), not in family construction.
+Case 1 remains **unresolved, capped**, and the OrbitCoverModel hypothesis is not confirmed for it.
+
+### Instrumentation defect in my own probe, and the fix
+
+I made the table print from a `SIGTERM` handler that raised `SystemExit`. pytest catches
+`BaseException` in `wrap_session`, so the run did not exit: it continued past its 1800 s cap with
+faulthandler already cancelled and produced no further evidence until I stopped job `jmvxi4o1u`
+myself. Two rules for the next instrumented run:
+
+- Let `timeout` do the killing, with `timeout -k` so a wedged child is still killed, and never raise
+  from a signal handler inside pytest.
+- Print the partial table from the periodic dump instead of at exit, so a capped run still reports its
+  numbers and its stacks together.
+
+### Next exact analysis
+
+Instrument the layers that the stacks actually name, on the unchanged node: `discriminant_morphism` on
+each group generator, the FQF `subgroup_on`, `cardinality`, and `group_generators` itself, with the
+table emitted on every periodic dump. Original Enriques assertions stay untouched.
