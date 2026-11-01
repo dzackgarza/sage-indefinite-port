@@ -1486,3 +1486,14 @@ and bind-verified (port `ac1f1a8f`, provider `9dc89ac`, in-run `groups.py` `ffa1
 
 Root times: 1850.35 / 696.33 / 402.82 / 200.44 / 129.70 / 109.04 s for `r_-1` … `r_4`. Remaining
 `r_5`–`r_8` (4) and squares `[0/2/4/6/8/10]` (6), unresolved rather than failed.
+
+## `r_5` passes — eighth accepted A_STABILIZERS case
+
+`…[r_5]`, unchanged: **PASSED, `1 passed in 6.07 s`**, `pytest_exit=0`, provenance captured and
+bind-verified (port `1a2ead82`, provider `9dc89ac`, in-run `groups.py` `ffa1d1423b51e003`).
+
+Root times: 1850.35 / 696.33 / 402.82 / 200.44 / 129.70 / 109.04 / **6.07** s for `r_-1` … `r_5`. The
+drop from 109 s to 6 s is a cliff, not a taper — further evidence that per-node cost here is a property
+of the specimen rather than of position in the sequence, and that the monotone ordering I noted over
+`r_-1`…`r_4` was a coincidence of those five specimens rather than a law. Remaining: `r_6`–`r_8` (3),
+squares `[0/2/4/6/8/10]` (6).
