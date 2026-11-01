@@ -1243,3 +1243,39 @@ Note also that the required A_REFLECTIVE sample is otherwise easy to name at nod
 `test_root_systems_match_polyhedral_common[ListSimpleRootSystem_0]`,
 `test_e10_simple_roots_match_dutour_sikiric_hulek`, and the four OSCAR Vinberg nodes
 (`vinberg_I_1_10`, `vinberg_diag_1_-1_-13`, `vinberg_scharlau_U_A2`, `vinberg_diag_1_-1_-3`).
+
+## Correction: the finiteness caller is real, and my earlier grep was truncated
+
+The owner is right that `e83c4d6` has a `compute=True` caller at `groups.py:7936`, in
+`GeneratedSubgroups._finiteness_decision`. My earlier note claimed a grep found only the definition and
+two assert sites. **That was my error**: I piped the grep through `head -6`, which hid the other nine
+references. The tree has eleven.
+
+Reading each `stats` entry's `callers` map from the existing profile — no re-run — gives the actual
+chain for the pointed-Isom unit:
+
+```
+libgap_mixin.py:181 is_finite                         1 call   27.44 s
+  <- _engine_finiteness (groups.py:158)               1 call   27.44 s   compute=True branch
+    <- _finiteness_decision (groups.py:7924)          1 call   27.85 s   @cached_method
+      <- is_finite (set_categories.py:2415)         959 calls   27.86 s
+        <- invariant_module_construction
+           (rational_integral_stabilizers.py:368)            27.85 s
+```
+
+So the parent whose construction asks is `rational_integral_stabilizers.invariant_module_construction`
+(`:368`). Of 959 `is_finite` calls, 27.85 s is one undecided parent; the placement guards and the cache
+are working, and one parent is genuinely unplaced.
+
+**I am not declaring the GAP call avoidable.** The decision is deliberate, cached, and reached only after
+`OwnedFiniteGroups()` / `OwnedInfiniteGroups()` placement fails. A finite presentation never proves
+finiteness, so any argument for skipping it must show that site already knows the answer. That is the
+owner's call, and the corrected hand-off says so: `.tmp/handoff-owner-engine-finiteness.md`.
+
+## Next clean boundary: pin the `_symmetric_group` fix
+
+Provider main `059e666` publishes the eager-description fix (degree-based string, `natural_points` and
+the action unchanged, targeted regression passing). The running `r_-1` node stays on `e83c4d6` — no
+provider change while it runs. At its next clean boundary: pin `059e666` (or a later owner pin if
+supplied), then rerun the original Enriques case_1 with `discprof` phase markers and in-flight
+reporting. The old description diagnosis is already established and should not be re-derived.
