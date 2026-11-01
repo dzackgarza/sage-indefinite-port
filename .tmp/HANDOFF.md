@@ -1891,3 +1891,20 @@ execute it, because an acceptance run was in flight; that is stated in the note 
 The harness now propagates the child's exit code — the defect that made `square[0]` look like a pass is
 fixed and controlled — and stops a run that exceeds the memory bound (`PEAKRSS_LIMIT_MIB`), verified by a
 control that tripped it at 200 MiB. Cases 2–5 run one at a time on the same terms.
+
+## A_CENTRALIZERS progress: cases 1 and 2 accepted on the current pair
+
+Each case run individually, port `7dffb2cb` / `75dc17f6` + provider `c546077d`, cap 7200 s with `-k 30`,
+a 6 144 MiB hard bound on tree RSS, and the corrected sampler (propagates the child's exit code).
+
+| case | result | peak tree RSS | `MemAvailable` low-water |
+| --- | --- | --- | --- |
+| `oscar_lattices_with_isometry_110` | **passed, 2.98 s** | 417 MiB | 9 968 MiB |
+| `oscar_lattices_with_isometry_118` | **passed, 2.56 s** | 274 MiB | 10 243 MiB |
+| `oscar_lattices_with_isometry_133` | running — the `is_all_of_O_qL` assertion branch | — | — |
+| `oscar_enumeration_88`, `oscar_enumeration_96` | unresolved | — | — |
+
+Host was checked before each launch (10 246 and 10 410 MiB available). Nothing here resembles the
+`square[0]` profile: these cases are seconds and hundreds of MiB. That is why I am not carrying any
+memory expectation from one family or specimen to another — the only thing `square[0]` establishes is
+`square[0]`.
