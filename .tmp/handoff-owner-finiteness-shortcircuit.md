@@ -205,7 +205,8 @@ if (
 ```
 
 **What the owner still needs to check, which I have not established by measurement:** whether the second
-disjunct is actually `True` for the group this path builds. It requires a selected group resolution, a
+disjunct is actually `True` for the group this path builds. *(Superseded: measured `True` on the E10
+specimen itself — see "CONFIRMED on the E10 specimen" at the end of this note.)* It requires a selected group resolution, a
 selected finite generating set, and a non-`None` containing bound. The port supplies the bound
 (`_lattice_action`), so the first and third are plausible — but "plausible" is not measured, and the
 reorder only helps if all three hold.
@@ -376,3 +377,42 @@ through `_lattice_action` and `isotropic_stabilizer_action` — but the E10 conf
 instrumented call on that specimen, and it is worth doing before the owner commits the change.
 
 This is provider code. The port's contribution is the three premises, which it already supplies.
+
+---
+
+## CONFIRMED on the E10 specimen: the caveat above is closed
+
+The three conjuncts are now measured on the **actual `square[0]` specimen**, not on a stand-in, by building
+the same object the failing path builds and stopping one call short of the expensive query.
+
+**Construction** (`~/sage-image/probe_e10_premises.py`, log `~/sage-image/e10-premises.log`): it follows the
+acceptance case exactly — `vector_classes(lattice(_E10["gram"]), 0)`, then `next(iter(...))`, then
+`marked_vector(...)`; that vector has `q = 0`, so the action is
+`EichlerRecursion.isotropic_stabilizer_action((vector,), ())`, which is the identical call
+`pointed_automorphism_generators` makes at `recursive.py:593` (it passes `()` for the second argument too).
+Provider `cdafca84`, bind-verified in-run before the measurement. `is_finite()` is never called.
+
+```
+square-0 marked class obtained in 49.8s; v.q() = 0
+isotropic_stabilizer_action built in 93.2s  (is_finite NOT evaluated)
+   stable_containing_bound is not None      : True
+   has_selected_group_resolution            : True
+   has_selected_finite_group_generating_set : True
+=> composite disjunct                       : True
+```
+
+Run under `peakrss.py` with a 6 144 MiB guard: total 146 s, **python peak 535 MiB**, julia 3 428 MiB
+(tree 3 967 MiB — this step is cheap; the memory sits in the `is_finite` branch it avoids).
+
+`square[0]` is the **smallest** recorded family in `e10_vector_orbits.json`: `h_squared = 0` has exactly
+one orbit (the squares 2, 4, 6, 8, 10 have 1, 2, 2, 2, 3). So the whole node is a single
+`_automorphism_rows(marked)` call, which is consistent with all three 120 s-spaced stack dumps landing in
+the same call site.
+
+### One precision that matters for the owner
+
+`has_selected_finite_group_generating_set()` (`groups.py:5402-5412`) asks
+`selected_group_resolution().generating_set().cardinality().is_finite()` — the cardinality of the
+**indexing family of generators**, not the order of the group. So the reorder does not trade one
+group-order query for another: it moves the GAP `IsFinite` (order of the group) behind two retained-datum
+lookups and one finite-cardinality test. That is why the swap is cheap in the branch it now guards.

@@ -42,7 +42,13 @@ would have been lost to the 600 s cap used earlier.
 | what | port | provider | result |
 | --- | --- | --- | --- |
 | `test_change_of_basis_gives_an_isometric_lattice`, all six | `ab140b70` | `e83c4d6` | passed: 3 s / 113 s; 151 s / 122 s; 336 s / 575 s |
-| remaining 160 cases in the file | — | — | not re-run at any current pin |
+| **full file, one case per invocation: all 166** | src tree `87fbf863` (= `HEAD:src`) | **`c546077d`** | **166/166 pass**, zero non-zero exits; max peak 3 845 MiB; slowest `ci_indef_U_2U_2E8` 577 s / 3 758 MiB (the historical `MemoryError`); total wall 4 501 s |
+| remaining 160 cases in the file | — | — | **done — see the 166/166 row above; this row is superseded** |
+
+The 166-case row is read off the per-node lines of the sweep log (job `jmvxurihq`), every one of which ends
+`verdict=1 passed`; the header records `port 75dc17f6-equivalent src`, and `git rev-parse 75dc17f6:src` is
+`87fbf863c413…`, identical to `HEAD:src`, with zero commits touching `src/` between them — so that run is the
+current source tree, not an equivalent of it.
 
 The six were failing at HEAD before `ab140b70` (rational-coordinate `int()` crossing), which was fixed
 in the port, not the provider. The earlier hosted 158-case baseline does not certify current code.
