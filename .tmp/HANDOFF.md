@@ -1466,3 +1466,14 @@ provenance captured and bind-verified (port `43a49697`, provider `9dc89ac`, in-r
 Five accepted root/OSCAR cases now: 65 s, 200.44 s, 402.82 s, 696.33 s, 1850.35 s. Remaining:
 `r_3`–`r_8` (6) and squares `[0/2/4/6/8/10]` (6), unresolved rather than failed. Advancing to `r_3` on
 the same terms.
+
+## `r_3` passes — sixth accepted A_STABILIZERS case
+
+`…[r_3]`, unchanged: **PASSED, `1 passed in 129.70 s (0:02:09)`**, `pytest_exit=0`, cap not reached,
+provenance captured and bind-verified (port `64cf8c6f`, provider `9dc89ac`, in-run `groups.py`
+`ffa1d1423b51e003`). Log at `~/sage-image/logs/stab-r3-pass-9dc89ac.log`.
+
+Root-case times now run 1850.35 / 696.33 / 402.82 / 200.44 / 129.70 s for `r_-1`, `r_0`, `r_1`, `r_2`,
+`r_3` — monotonically decreasing with the label. Recorded as an observed ordering, not a budget: the
+squares use `vector_classes` rather than the root loop, so nothing here predicts them, and each node
+still gets the full 120-minute cap. Remaining: `r_4`–`r_8` (5), squares `[0/2/4/6/8/10]` (6).
