@@ -1930,3 +1930,33 @@ neighbour.
 If the fifth passes, A_CENTRALIZERS is the first family with its **full frozen file** accepted at a
 current pair: `#18`/TODO require all five cases for this family rather than a representative sample, so a
 clean sweep would be a real acceptance result rather than coverage paperwork.
+
+## A_CENTRALIZERS: the full frozen file passes at one source revision
+
+**5 of 5**, `test_centralizers.sage` has exactly five tests (verified by `--collect-only`), each run as its
+own bounded invocation:
+
+| case | result | peak tree RSS | `MemAvailable` low-water |
+| --- | --- | --- | --- |
+| `oscar_lattices_with_isometry_110` | **passed, 2.98 s** | 417 MiB | 9 968 MiB |
+| `oscar_lattices_with_isometry_118` | **passed, 2.56 s** | 274 MiB | 10 243 MiB |
+| `oscar_lattices_with_isometry_133` | **passed, 80.18 s** | 3 739 MiB | 7 302 MiB |
+| `oscar_enumeration_88` | **passed, 39.46 s** | 2 786 MiB | 8 169 MiB |
+| `oscar_enumeration_96` | **passed, 38.99 s** | 2 801 MiB | 8 027 MiB |
+
+**One source revision, one provider.** The cases ran under four port SHAs (`7dffb2cb`, `75dc17f6`,
+`335c2857`, `150546bc`) which all share the same trees — `src` `87fbf863c413`, `tests` `a5b9acd7dbcb`. Those
+differences are docs-only commits made between runs, so the executed code and frozen cases are identical
+across all five. Provider `c546077d` on a verified bind each time.
+
+Total wall time across the five is ~164 s, maximum peak 3.7 GiB, so the family is cheap on this host
+compared with what `square[0]` demanded — another reason not to generalise resource figures between
+families.
+
+Both assertion shapes are covered: three cases assert a recorded `centralizer_image_order`, and
+`…133` asserts the image is all of `O(q_L)`.
+
+**This is local evidence.** TODO.md and #18 require A_CENTRALIZERS as a full five-case family rather than
+a representative sample, so all five passing at one pair is the acceptance shape the contract asks for —
+but hosted certification still needs a run at an accepted head SHA, exactly as with A_PERFECT's 92/92.
+Recorded as local, not as a closed family.
