@@ -61,6 +61,7 @@ def mem_available_mib():
 
 
 command = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:]
+started_at = time.monotonic()
 process = subprocess.Popen(command)
 peak_tree, low_available, samples = 0, 10 ** 9, []
 while process.poll() is None:
@@ -70,14 +71,19 @@ while process.poll() is None:
     available = mem_available_mib()
     peak_tree = max(peak_tree, tree)
     low_available = min(low_available, available if available >= 0 else low_available)
-    samples.append((round(time.monotonic(), 1), len(pids), tree // 1024, hwm // 1024, available))
+    samples.append((round(time.monotonic() - started_at, 1), len(pids), tree // 1024, hwm // 1024, available))
     time.sleep(SAMPLE_EVERY)
 status = process.wait()
+START = samples[0][0] if samples else 0.0
 
-print(f"[peakrss] {LABEL}: exit={status} samples={len(samples)}")
+shell = status if status >= 0 else 128 - status
+print(f"[peakrss] {LABEL}: child waited={status} shell_code={shell} samples={len(samples)}")
 print(f"[peakrss] peak tree RSS      : {peak_tree // 1024} MiB")
 print(f"[peakrss] low-water MemAvail : {low_available} MiB")
 peak_process = max((s[3] for s in samples), default=0)
 print(f"[peakrss] peak single VmHWM  : {peak_process} MiB")
 for sample in sorted(samples, key=lambda s: -s[2])[:5]:
     print(f"[peakrss]   t={sample[0]:8.1f}s procs={sample[1]:3d} rss={sample[2]:6d} MiB hwm={sample[3]:6d} MiB avail={sample[4]:6d} MiB")
+
+# Propagate the child's status: a wrapper that swallows it turns a SIGKILL into a reported pass.
+sys.exit(status if status >= 0 else 128 - status)

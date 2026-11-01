@@ -1803,3 +1803,43 @@ agree, the substitution is mechanical and can be made with the A_PERFECT sweep a
 disagree, that is the API gap to report to #396/#399, with evidence.
 
 I am recording that plan rather than starting a blind refactor against a passing family.
+
+## `square[0]`: killed again — and the memory measurement is the story
+
+Job `jmvxtgo18`, port `e9e93225` + provider `c546077d`, cap 7200 s with `-k 30`, `peakrss` sampling every
+2 s. Result: **child exit 137 (SIGKILL) after 277 samples ≈ 554 s**. Not a pass, not a cap — killed,
+exactly like the first attempt.
+
+**Measured** (these are facts, taken from the sampler):
+
+| quantity | value |
+| --- | --- |
+| peak single-process `VmHWM` | **9 801 MiB** |
+| peak summed tree RSS (3 processes) | **9 224 MiB** |
+| low-water `MemAvailable` | **1 238 MiB** |
+
+The kill coincides with a ~9.8 GB resident peak on a **16 GB host with no swap**, shared with a sibling
+project's Sage computation, leaving ~1.2 GB available.
+
+**What this establishes and what it does not.** OOM is now *evidenced* rather than hypothetical: a
+SIGKILL at the moment of a 9.8 GB peak with 1.2 GB left is the signature, and it removes the earlier
+"maybe the node is just slow" reading — the node needs ~10 GB, not more time. It is still **not proven**:
+no kernel OOM message was captured, and this project cannot read the host's dmesg. I am recording it as
+"memory pressure consistent with OOM, cause unconfirmed", and the actionable part does not depend on
+that verdict — a single acceptance node that peaks at 9.8 GB is a memory defect on this host either way.
+
+`case_1`-style conclusions do not transfer here: this is a **resource** blocker, not an algorithmic one,
+and the last stacks put the peak inside `_automorphism_rows` → `_finiteness_decision` →
+`_engine_finiteness` → GAP `is_finite` under the orbit machinery.
+
+Consequence for the remaining squares `[2] [4] [6] [8] [10]`: each is likely to need comparable memory,
+so they cannot be certified on this host one after another without freeing the sibling workload. Running
+them serially now would produce five more exit-137s, which is not evidence of anything.
+
+### Harness defect I caught in my own wrapper
+
+`peakrss.py` reported `inner_exit=0` while its child had died with 137: it printed the child's status but
+exited 0 itself, so a SIGKILL would have read as a **pass**. That is exactly the kind of false green I
+have been careful to avoid elsewhere, so it is fixed: the wrapper now propagates the child's code, and a
+control that SIGKILLs its own child confirms the wrapper exits 137. Sample rows also now report elapsed
+time rather than `time.monotonic()` since boot.
