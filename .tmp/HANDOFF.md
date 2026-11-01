@@ -632,3 +632,28 @@ absorb, and it needs no code change.
 
 These bounded runs do not substitute for the provider repair: case 37's cost is the dual-point hash
 collapse, and it stays blocked until the repaired pin is published and consumed.
+
+## A_GROUPS: the Mertens generating-set case passes on the repaired runtime
+
+`tests/acceptance/test_orthogonal_group.sage::test_mertens_omega_and_minus_one_generate_o_l`
+— run unchanged, single node, one invocation — **passes, 7.11 s** on port `52eeedfa` +
+`sage-extensions 7b222e86` + base image `b0cd7d86` with the owner Bliss patches
+(installed `bliss.cpython-314-x86_64-linux-gnu.so` sha256 `d941337e…`, `/opt/bliss-repair.json`).
+It reports PASSED, not SKIPPED, so `require(MARKED_AUTOMORPHISMS)` was satisfied and the body ran.
+
+This case previously failed with `MemoryError` in
+`sage/groups/perm_gps/partn_ref/automorphism_group_canonical_label.pyx:513`, so it is frozen-consumer
+evidence that the owner Bliss repair addresses the `partn_ref` canonicalization defect — and that the
+#15 branch sample did not cover this branch.
+
+The case is the rank-3 form of determinant `-155`: it assembles the full `O(L)` generator family and
+checks the finite images of the recorded Mertens Omega generators together with `-I` against the
+computed group, via `consumer.py:120–134` `assert_same_finite_images` and `discriminant_image_order`.
+A_GROUPS now has one accepted case; the #33 contract for that family is a branch-representative
+sample recorded by case id, not the whole file.
+
+Do not read the whole file as cheap: one bounded invocation of
+`test_orthogonal_group.sage` with only the known-open `a7_plus_diagonal` node deselected passed six
+nodes and then exceeded a 900 s cap. That is a cap on the file as a whole, not a failure of any node,
+and the family must stay per-case. The A7 discriminant-image node remains open and is not covered by
+this result.
