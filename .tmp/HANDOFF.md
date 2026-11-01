@@ -2127,3 +2127,61 @@ otherwise.
 Worth noting what it took: six of these cases were failing at HEAD before the port's rational-coordinate
 `int()` repair (`ab140b70`), and `U_2U_2E8` was the historical `MemoryError`. Both are now green in the
 same sweep, which is the first time the whole file has passed at one pair in this session.
+
+## Repaired pin: the two avoidable queries are gone — measured
+
+Adopted `cdafca84` at the clean boundary (the A_ISOMETRY sweep had reached 166/166 first). Verified in its
+diff, not from its title: `00bcc86` moves `containing is None` ahead of `group.is_finite()` at
+`orbit_spans.py:44` and `rational_integral_stabilizers.py:371` — byte-for-byte the reorder the handoff
+proposed.
+
+Reran the same minimal pointed-unit profile (`r_-1`, representative index 3, `q = 6`):
+
+| quantity | `c546077d` | `cdafca84` |
+| --- | --- | --- |
+| profiled unit | 143.24 s | **131.71 s** |
+| `libgap_mixin.is_finite` (GAP `IsFinite`) | **1 call, 27.44 s** | **absent from the whole profile** |
+| `_engine_finiteness` (`compute=True` branch) | 1 call, 27.44 s | 13 calls, **0.00 s** |
+| `set_categories.is_finite` | 959 calls, **27.86 s** | 957 calls, **0.01 s** |
+
+Top self-time is now the Julia `readline` at 66.76 s — the actual engine work. **The two avoidable queries
+are gone, as intended.**
+
+**This says nothing about the 9.8 GB square node.** It is a single pointed-isometry unit on a different
+family; `square[0]` remains killed with no verdict. I am not claiming the repair fixes it, and the
+per-hash memoisation earlier likewise did not.
+
+## Facet substitution: five GAP sites, four substitutable, one genuine gap
+
+The draft had catalogued three sites. Reading the whole file surfaced **five**:
+
+| site | verified replacement |
+| --- | --- |
+| `:3568` `libgap.Group` | `symmetric.subgroup(tuple(_owned_permutation(...)))` ✔ |
+| `:3603` `libgap.Orbits(…, OnSets)` | iterate `FiniteGSets(group)(points, action).orbits()` ✔ |
+| `:3603` `libgap.Stabilizer(…, OnSets)` | `symmetric.subgroup(tuple(orbit.stabilizer().group_generators()))` ✔ |
+| `:3458` `libgap.Stabilizer(source.group, …)` | same, via a facet G-set ✔ |
+| `:3654` `libgap.RepresentativeAction(…, OnTuplesSets) != fail` | **partial** — see below |
+
+The fifth asks "is there an element carrying this **tuple of facets** to that one", inside `mark()`, which
+sits on the traversal path. Exercised on the tiny fixture:
+
+```
+transporter_witness(a, b) -> (2 3 4)   carries a to b: True
+transporter_witness(a, c) -> None
+orbit relation a ~ b: True
+```
+
+So a membership decision exists — but only relative to a **G-set whose point set is closed under the
+action**. For the port's use, `chain` and `image` are two arbitrary tuples of a 500-facet cell; the closed
+set is the whole orbit, and enumerating it to answer one relatedness question is exactly what GAP's
+`RepresentativeAction` avoids. Building an all-tuples G-set is 500^3 points.
+
+**So four of five sites can be substituted with maintained operations today, and the fifth cannot without
+either an orbit-relation decision on a supplied pair of points or an on-demand orbit construction.** That
+is a real contract to put to the library if the fourth substitution is to be completed; it is not a
+lookup I can finish by reading, and I will not fake it by enumerating closures.
+
+Consequence, stated plainly: I did **not** apply a partial substitution. Replacing four GAP calls while
+the fifth stays would leave the facet path half-owned, add risk to a passing family, and claim an
+integration that is not complete.
