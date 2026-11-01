@@ -255,3 +255,48 @@ reproduction is now cheap: a two-line lattice, one vector, one call.
 Next step for whoever takes it: run `_lattice_action` on `U` with `v = e0 + e1` under a line-level memory
 profile (`VmRSS` deltas around each of the six construction steps above) — the whole thing is under a
 minute.
+
+---
+
+## RETRACTION: the rank-2 "memory blow-up" was the Julia child process
+
+My previous note claimed the memory growth "reproduces on rank 2, inside `_lattice_action`". **That was
+wrong**, and the error was mine: the sampler summed RSS over the process *tree*, and the Julia bridge is a
+child whose baseline footprint is ~3 GiB.
+
+Instrumenting each of the nine construction steps of `_lattice_action` on `U` with `v = e0 + e1`, printing
+the process's own `VmRSS` after every step:
+
+```
+1 perpendicular inclusion              0.11s  273 ->   277 MiB  (+4)
+2 complement domain                    0.00s  277 ->   277 MiB  (+0)
+3 orthogonal_group_generators [ext]   62.87s  277 ->   383 MiB  (+106)   <- the Julia engine call
+4 base_change(QQ)                      0.00s  383 ->   383 MiB  (+0)
+5 generic_fibre_map                    0.02s  383 ->   384 MiB  (+1)
+6 subobject_on(v, perp generators)     0.01s  384 ->   385 MiB  (+1)
+7 split cokernel exponent              0.03s  385 ->   385 MiB  (+0)
+8 stable containing bound (Mono)       0.00s  385 ->   385 MiB  (+0)
+9 IntegralStructureAction(...)         0.06s  385 ->   387 MiB  (+2)
+FINAL own RSS 387 MiB after 63 s
+```
+
+Running the same probe under the tree sampler: **FINAL own RSS 387 MiB, peak tree RSS 3 576 MiB.** The
+difference is the Julia bridge, not the port. Step 3 is the only expensive step and it is expensive in
+*time* (62.87 s), not in memory (+106 MiB).
+
+So the port allocates ~114 MiB in total on this path at rank 2. **There is no rank-2 memory reproduction,
+and I should not have said there was.**
+
+### What this means for `square[0]`
+
+It also means my `square[0]` figures need re-reading. The sampler reports `peak single VmHWM` by summing
+each process's `VmHWM` across the tree — it is **not** a single-process maximum, despite the label. So
+"peak single VmHWM 9 801 MiB" for `square[0]` does not establish that Python reached 9.8 GB; part of it,
+possibly most, may be the Julia engine.
+
+**Unresolved and now clearly mis-specified:** whether `square[0]`'s growth is Python's or Julia's. Nobody
+should route that to the provider, or to the port, on the strength of a summed figure. The sampler must
+report per-process peaks *by executable* before the question is asked again.
+
+That is the next instrumentation task, and it is small: record `VmHWM` per pid together with
+`/proc/<pid>/comm`, and report the largest Python and the largest Julia separately.

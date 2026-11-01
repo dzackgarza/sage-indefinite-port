@@ -46,3 +46,4 @@ references/Indefinite.jl/
 !.tmp/probe-gset-api.py
 !.tmp/probe-tuple-transport.py
 !.tmp/probe-stabilizer-disjunct.py
+!.tmp/probe-lattice-action-rss.py
