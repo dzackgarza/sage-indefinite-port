@@ -1524,3 +1524,32 @@ Root times: 1850.35 / 696.33 / 402.82 / 200.44 / 129.70 / 109.04 / 6.07 / 80.75 
 accepted cases in total with the OSCAR node. `r_8` is the last root node; the six square nodes
 (`[0|2|4|6|8|10]`) remain, and they exercise `vector_classes` rather than the root loop, so nothing in
 the root series predicts them.
+
+## `r_8` passes — all ten root nodes accepted
+
+`…[r_8]`, unchanged, single clean invocation: **PASSED, `1 passed in 203.62 s (0:03:23)`**,
+`pytest_exit=0`, provenance captured and bind-verified (port `16bfcdc6`, provider `9dc89ac`).
+Log at `~/sage-image/logs/stab-r8-pass-9dc89ac.log`.
+
+The A_STABILIZERS root sample is complete. Every `r_*` node passes unchanged, each as its own
+invocation under a 120-minute cap:
+
+| node | time |
+| --- | --- |
+| `r_-1` | 1850.35 s |
+| `r_0` | 696.33 s |
+| `r_1` | 402.82 s |
+| `r_2` | 200.44 s |
+| `r_3` | 129.70 s |
+| `r_4` | 109.04 s |
+| `r_5` | 6.07 s |
+| `r_6` | 80.75 s |
+| `r_7` | 488.51 s |
+| `r_8` | 203.62 s |
+
+Plus the OSCAR `stabilizer_of_100` node at 65 s — **eleven accepted cases**, none of them a cap and
+none a failure. Four of these would have been lost to the 600 s cap used earlier in the session
+(`r_-1`, `r_0`, `r_1`, `r_7`), which is the strongest argument for the budget discipline.
+
+What remains for this family is the six square nodes `[0|2|4|6|8|10]`, which exercise `vector_classes`
+rather than the root loop. Nothing in the root series predicts them.
