@@ -1683,3 +1683,50 @@ posted it to #33 — the connector reads issues here but does not publish commen
 **Note for TODO.md:** its A_REFLECTIVE row names `allcock_rk3_4` and `allcock_rk3_2` as prose. Those now
 correspond to `allcock_rk3_4_w0_l4` and `allcock_rk3_2_w2_l2`; the row's selection is by id **and** Gram,
 so it remains correct as written.
+
+## #18's "Exact port bodies to implement" is stale — the bodies exist
+
+Read against current source rather than against the issue prose. Every body #18 names as a delegation to
+be replaced is now implemented and composes research's maintained general operations:
+
+| #18 says | current source | verdict |
+| --- | --- | --- |
+| `line_/plane_automorphism_generators` "currently return research's `parabolic_subgroup().group_generators()`" | they call `_stabilizer_generators` → `recursion.isotropic_stabilizer_action(...)` → research `IntegralStructureAction.stabilizer().group_generators()`; `grep` finds **no** `parabolic_subgroup().group_generators()` anywhere in `src/` | implemented, prose stale |
+| `flag_automorphism_generators` "must use that computed stabilizer and the general preimage operation" | does, on the flag basis `(u, other)` | implemented |
+| pointed branch "currently calls `pointwise_parabolic_subgroup().group_generators()`" | `pointed_automorphism_generators` calls `isotropic_stabilizer_action((vector,), ())`; that delegation is also absent from `src/` | implemented, prose stale |
+| keep `R.rational_lifts(...).integral_members()` in pointed isometry | `recursive.py:729-730` | present |
+| Eichler bodies own the cover/envelope strategy | `EichlerEnvelope`, `OrbitCoverModel.approximate_generators`, `primitive_covering_vectors`, `covering_vectors`, `splitting_vector` all have real bodies; the only `eichler_criterion` import is the general `TwoUEichlerModel` type | implemented |
+| consume research `IntegralStructureAction`; no port `integral_structures` | `groups/integral_structures.py` is **absent**; `IntegralStructureAction` is imported and constructed in `_lattice_action` with its stable containing bound | implemented |
+| repair error-swallowing fallbacks (`recursive.py:458-461` sets generators to `()`) | no `except (TypeError, ValueError)` and no `generators = ()` fallback anywhere under `indefinite/`; `_lattice_action` returns a real action | discharged |
+| no active `@unfinished` | `@unfinished` is defined in `readiness.py` and applied nowhere | consistent |
+
+The four `.stabilizer().group_generators()` call sites are all on research's `IntegralStructureAction`
+(`recursive.py:580`, `:593`, `isotropic_induction.py:300`, `eichler.py:901`), which is the composition
+#33 permits — the port supplies the reduction, the frame lifts, the Witt extensions and the bounded
+module, and research computes the finite-action stabilizer. No circular re-entry into the same query.
+
+### So what is actually left
+
+Not implementation bodies. Every remaining reachable #18/#15 item is waiting on **runtime evidence**, and
+the specific dependencies are:
+
+- `A_CENTRALIZERS` — five cases; the only evidence is baseline run 40807218493, no run at any current pin.
+- `A_BOUNDARIES` — Enriques `case_1` running now; the other boundary nodes have not been run on current pins.
+- `A_STABILIZERS` — six square nodes; `[0]` was SIGKILLed with no verdict, five never run.
+- `A_ISOMETRY` — 160 of 166 cases not re-run at current pins (six change-of-basis cases certified).
+- `A_VECTORS` / `A_ISOTROPIC` — 186 isotropic cases and the vector-orbit files last ran on `7b222e86`.
+
+That is a scheduling dependency (bounded sequential runs or a hosted Acceptance run), not missing code,
+and I am not going to invent a code change to fill it.
+
+### Proposed #18 replacement wording (exact)
+
+> **As-built status of the assigned bodies.** The bodies listed here as delegations to be replaced are
+> implemented: `isotropic_induction.line_automorphism_generators`,
+> `plane_automorphism_generators` and `flag_automorphism_generators`, and
+> `recursive.pointed_automorphism_generators`, compose research's `IntegralStructureAction` stabilizer
+> from supplied isotropic data, frame lifts and Witt extensions; `pointed_isometry` consumes
+> `R.rational_lifts(...).integral_members()`; the Eichler envelope and cover bodies own the strategy; and
+> the port's `groups/integral_structures.py` has been removed in favour of research's
+> `IntegralStructureAction`. No `@unfinished` marker is applied and no error-swallowing fallback remains.
+> Remaining obligations on this unit are acceptance evidence at recorded revisions, not algorithm bodies.
