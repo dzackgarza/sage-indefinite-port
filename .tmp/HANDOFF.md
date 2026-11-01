@@ -831,3 +831,35 @@ had to say anything, which is the right outcome.
 A per-case sweep of all 40 fixtures in both modes at `e83c4d6` is running (job `jmvxfxg7n`, 300 s cap
 per case, one invocation each) so that A_PERFECT can be stated at a single revision instead of the
 mixed `7b222e86` / `69907ae` / `e83c4d6` coverage recorded above.
+
+## A_PERFECT at a single revision: the whole file passes locally on `e83c4d6`
+
+`tests/acceptance/test_perfect_domains.sage` at one revision, one provider, verified bind:
+
+- **80 of 80** parametrized cases (`test_perfect_domain_orbit_counts_match_polyhedral_common` and
+  `test_isotropic_mode_counts_match_polyhedral_common` for all 40 fixtures), each run as its own
+  invocation with a 300 s cap. Raw per-case table: `.nucleus/jobs/jmvxg3dnz.log`. **No failures, no
+  errors, no caps, no `NO_VERDICT` lines.**
+  - sum of case times 642 s (against 2387 s for the 86 cases that ran inside 180 s on `7b222e86`, plus
+    four cases that needed 237–558 s and two that never returned)
+  - total mode: 40 cases, 306 s, slowest 46 s (`Result_Enumeration_37`)
+  - isotropic mode: 40 cases, 336 s, slowest 65 s (`Result_Enumeration_33`)
+- **12 of 12** standalone semantic tests in the same file (`-k "not counts_match_polyhedral_common"`),
+  12.96 s, slowest `test_large_cell_cone_uses_exact_normaliz_h_presentation` at 9.32 s.
+
+So 92 of 92 tests in the file pass at `e83c4d6`, and the slowest case in the entire family is 65 s —
+a 180 s per-case cap is comfortable for the first time, where before it was exceeded by four cases and
+never reached by two.
+
+**This is local evidence, not hosted certification.** TODO.md is explicit that A_PERFECT requires "a
+successful hosted run whose head SHA equals the implementation commit being accepted", and the
+baseline run 40807218493 does not certify subsequently changed code. No hosted Acceptance run at
+`a848fd7c` has been observed from here. The A_PERFECT row stays open until that run exists.
+
+Two further consequences worth carrying:
+
+- The 180 s cap that produced the original "86 of 92" record was measuring the provider defect, not the
+  algorithms. The record above should be read with that in mind rather than taken as evidence that the
+  port's traversal was ever slow in its own right.
+- `Result_Enumeration_33` isotropic was the last case without a verdict and it never needed the phase
+  diagnosis I queued for it; it now runs in 65 s.
