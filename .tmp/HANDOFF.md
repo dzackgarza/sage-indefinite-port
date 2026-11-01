@@ -716,12 +716,27 @@ working form is `python -u -m pytest ... -s` plus a small `PYTHONPATH` plugin wh
 `pytest_runtest_setup` arms `faulthandler.dump_traceback_later(60, repeat=True)` and whose teardown
 disarms it. 29 dumps were captured.
 
-**The case is progressing, not stuck.** 29 dumps at 60 s intervals show 26 distinct top main-thread
-frames; nothing is entered for long, and the call stack keeps changing. The first minute is the only
-time in the Julia engine (`interface.py:358 _request_unlocked`, under
-`lattice_engines.py:1146 definite_isometry_group`); the rest is provider and Sage layer work under
-`_gamma_h` (`test_boundaries.sage:213`) → `lattice_centralizers.py:984,852
-coinvariant_extension_subgroup` → `groups.py:7849 image_under` → `groups.py:5431 group_generators`.
+**The case is progressing, not stuck, and the phase split is not where it first looked.**
+`faulthandler` truncates when the stack is deep: only **14 of the 29 dumps carry a complete stack**
+(40–74 frames); the other 15 hold 0–7 frames and cannot place the call at all. Attributing only from
+the 14 complete dumps:
+
+| window | test frame | meaning |
+| --- | --- | --- |
+| 60–120 s | `test_boundaries.sage:213`, inside `_gamma_h` | the port's coinvariant / pointed route, including the only Julia-engine minute (`interface.py:358 _request_unlocked` under `lattice_engines.py:1146 definite_isometry_group`) |
+| 300–1680 s | `test_boundaries.sage:226` | `_gamma_h` has already returned; the test is computing `target.subgroup_on(tuple(g.discriminant_morphism() for g in group.group_generators()))` |
+
+So `_gamma_h` costs roughly the first two to five minutes, and the remaining ~23 minutes are the
+discriminant-form image computation on `U + E8(-1)`. The recorded `group_order` 696729600 is
+`|W(E8)|`, and the frames in that window are `fqf_orthogonal.py:112`/`:484`, `abelian_aut.py:203
+matrix`, `abelian_group_gap.py exponents`, `torsion_quadratic_module.py:149 _mul_` and
+`free_module.py _element_constructor_` — building the subgroup of the finite quadratic form's
+orthogonal group and asking for its cardinality, not the port's recursion.
+
+**An earlier reading of this log, recorded a few minutes before this correction, put the whole run
+inside `_gamma_h`. That was wrong.** It came from searching all 29 dumps instead of the complete ones;
+truncation hides the test frame in a third of them. `_gamma_h` is intermediate, as stated before the
+run, and the expensive step is at `:226`.
 
 The re-entered frames, which are where the time actually goes:
 
