@@ -36,3 +36,5 @@ references/Indefinite.jl/
 !.tmp/probe-pointed-unit-profile.py
 !.tmp/pointed-q6-pstats.txt
 !.tmp/handoff-owner-torsionform-hash.md
+!.tmp/acceptance-coverage.md
+!.tmp/peakrss.py

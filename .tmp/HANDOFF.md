@@ -1601,3 +1601,39 @@ not been taken. Recorded as: killed at 373 s, **no verdict**, cause unevidenced,
 
 This is also the first square node, so it is the first evidence that the square family behaves
 differently from the root family, which all completed in 6–1850 s.
+
+## Prepared (not started): `square[0]` rerun with peak-RSS evidence
+
+`square[0]` died with `pytest_exit=137` at 373 s against a 7200 s cap. Since a bare exit 137 is not OOM
+evidence, the rerun is instrumented to produce the missing evidence rather than another cap.
+
+`~/sage-image/peakrss.py` wraps the command and samples every 2 s: summed **VmRSS of the whole process
+tree** (progress → `timeout` → `python` → Julia), each process's `VmHWM`, and the host's
+`MemAvailable`. It reports peak tree RSS, peak single `VmHWM`, and the low-water `MemAvailable`, plus
+the five heaviest samples.
+
+The exact prepared run, to be started only when it is the single heavy job:
+
+```
+cd $HOME/sage-image && ./run.sh -w /work \
+  -b "$REPO:/work" -b "$CI:/ci" -b "$PROV:/repos/sage-extensions" \
+  -b "$HOME/sage-image/stackdump.py:/probe/stackdump.py" \
+  -b "$HOME/sage-image/peakrss.py:/probe/peakrss.py" -- /bin/sh -c '
+  cd /work
+  export PYTHONPATH=/probe:/ci/tool-artifacts/pytest_plugins:/work/src:/work
+  export STACK_EVERY=300 PEAKRSS_LABEL=square0
+  python /probe/peakrss.py -- timeout -k 30 7200 python -u -m pytest \
+    "tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[0]" \
+    -s -v --no-header -p stackdump -p qc_sage_session -p no:cacheprovider -o addopts="" -rA'
+```
+
+What each outcome would mean:
+
+- peak tree RSS near 16 GB, or `MemAvailable` reaching ~0 → OOM becomes credible, and the node needs a
+  memory budget or a streaming fix rather than a time budget;
+- peak tree RSS modest (a few GB) with a repeat kill → OOM is refuted and the cause is elsewhere
+  (a runtime or cgroup limit, or a signal from outside this project);
+- it completes → the earlier kill was transient and the node is simply slow, recorded with its time.
+
+Also consolidated the whole of #33 coverage into `.tmp/acceptance-coverage.md`, every row carrying the
+port + provider pair it actually ran on and whether that pair was captured or derived.
