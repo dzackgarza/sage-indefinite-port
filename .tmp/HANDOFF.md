@@ -1576,3 +1576,28 @@ re-investigated — the rerun exists to see what the memoisation changes.
 Tree staged at `~/sage-extensions-c546077d`. All prior coverage stays tied to the pair it actually ran
 on — ten root nodes and the OSCAR node on `e83c4d6` / `9dc89ac` as tabulated above, none of it
 retroactively attributed to this pin.
+
+## Square node `[0]` was killed — unresolved, not a verdict
+
+`test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[0]`, unchanged, one invocation, cap 7200 s
+with `-k 30`: **`pytest_exit=137` at `elapsed=373s`**. Exit 137 is SIGKILL, and the cap was 7200 s, so
+this was not the cap firing.
+
+What the log does and does not show:
+
+- **No** `MemoryError`, `Killed`, `oom`, or allocation-failure marker anywhere in the 7 KB log.
+- One 300 s dump, taken while the node was at `test_vector_stabilizers.sage:388/411` in
+  `_automorphism_rows`, innermost `libgap_mixin.is_finite` ← `_engine_finiteness` (`groups.py:170`,
+  the `compute=True` branch) ← `_finiteness_decision` (`groups.py:7943`) ← `set_categories.is_finite`
+  ← `orbit_spans._call_`. So the square node also passes through the GAP finiteness decision.
+- Host memory after the fact: 7 682 MB used, 8 305 MB available, no swap. A sibling project
+  (`p-9fcb4ed7…`, a Sage `coble_heegner_stabilizer_orbits` computation under proot) was running on the
+  shared VM throughout.
+
+**OOM is a hypothesis, not an established cause.** The recorded rule for this project applies: a bare
+exit 137 is not OOM evidence. Establishing it would need a peak-RSS measurement for this node, which has
+not been taken. Recorded as: killed at 373 s, **no verdict**, cause unevidenced, to be re-run with
+`VmHWM` sampling before it can be counted either way.
+
+This is also the first square node, so it is the first evidence that the square family behaves
+differently from the root family, which all completed in 6–1850 s.
