@@ -1410,3 +1410,28 @@ distinction rather than flattening it into one revision.
 `r_-1`'s pass is what justifies the 120-minute budget now given to `r_0`: the earlier 600 s cap on the
 same node produced "no verdict" and read like a cost problem when it was simply too small. Short caps
 are no longer used for this family.
+
+## `r_0` passes — third accepted A_STABILIZERS case
+
+`test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_0]`,
+unchanged, one invocation, `timeout -k 30 7200`:
+
+- **PASSED, 1 passed in 696.33 s (0:11:36)**, `pytest_exit=0`, cap not reached, two 300 s dumps.
+- Log preserved at `~/sage-image/logs/stab-r0-pass-9dc89ac.log`.
+- Provenance captured in the header **and** verified in-run:
+  `port fc6a022ff325ec2464b0e074398d003685dd6086` (clean worktree) + `provider 9dc89ac1…`,
+  with `groups.py` sha256 `ffa1d1423b51e003` identical on host and inside the run.
+
+Updated coverage, per-case provenance:
+
+| case | pair | result |
+| --- | --- | --- |
+| OSCAR `stabilizer_of_100` | port `7a2692f` (derived) + `e83c4d6` | passed 65 s |
+| `r_-1` | port `6e1be797` + `e83c4d6` (captured) | passed 1850.35 s |
+| `r_0` | port `fc6a022f` + `9dc89ac` (captured + bind-verified) | **passed 696.33 s** |
+| `r_1`–`r_8`, squares `[0/2/4/6/8/10]` | — | unresolved, not failed |
+
+No failure to diagnose, so advancing to `r_1` is the instructed path rather than a judgement call. The
+spread — 65 s, 696 s, 1850 s for three cases of the same shape — is a reminder that per-node cost here
+is specimen-dependent and that no budget derived from one node transfers to the next; each gets the
+120-minute cap rather than a predicted one.
