@@ -38,6 +38,7 @@ from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.structure.parent import Parent
 
+from sage_indefinite_port.indefinite.edgewalk_scalars import _integer
 from sage_indefinite_port.indefinite.eichler import OrbitCoverModel
 from sage_indefinite_port.indefinite.groupoid_cache import IsometryGroupoidCache, _gram_in_label_order
 from sage_indefinite_port.indefinite.indefinite_reduction import (
@@ -123,7 +124,7 @@ def _column_matrix(isometry: LatticeIsometryMethods) -> Matrix_integer_dense:
     domain_labels = tuple(domain.module_generating_set())
     domain_basis = tuple(domain.module_generator(label) for label in domain_labels)
     images = tuple(isometry(generator).to_vector() for generator in domain_basis)
-    return matrix(SageZZ, [[int(image(label)) for image in images] for label in codomain_labels])
+    return matrix(SageZZ, [[_integer(image(label)) for image in images] for label in codomain_labels])
 
 
 def _from_column(lattice: Lattices.ParentMethods, column) -> Lattices.ElementMethods:
@@ -151,7 +152,7 @@ def _isometry_from_row_matrix(source: Lattices.ParentMethods, target: Lattices.P
     images = []
     for generator in source.module_generators():
         coordinates = generator.to_vector()
-        source_coordinates = tuple(int(coordinates(label)) for label in source_labels)
+        source_coordinates = tuple(_integer(coordinates(label)) for label in source_labels)
         target_coordinates = tuple(
             sum(source_coordinates[row] * int(rows[row, column]) for row in range(len(source_labels)))
             for column in range(len(target_labels))
@@ -181,7 +182,7 @@ def _isometry_from_column_matrix(source: Lattices.ParentMethods, target: Lattice
     images = []
     for generator in source.module_generators():
         coordinates = generator.to_vector()
-        source_coordinates = tuple(int(coordinates(label)) for label in source_labels)
+        source_coordinates = tuple(_integer(coordinates(label)) for label in source_labels)
         target_coordinates = tuple(
             sum(int(columns[row, column]) * source_coordinates[column] for column in range(len(source_labels)))
             for row in range(len(target_labels))

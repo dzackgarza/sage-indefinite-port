@@ -863,3 +863,72 @@ Two further consequences worth carrying:
   port's traversal was ever slow in its own right.
 - `Result_Enumeration_33` isotropic was the last case without a verdict and it never needed the phase
   diagnosis I queued for it; it now runs in 65 s.
+
+## Port fix: integral coordinates over a rational lattice (the last known isometry failures)
+
+`tests/acceptance/test_isometry.sage::test_change_of_basis_gives_an_isometric_lattice` — all six
+cases failed at HEAD with
+
+```
+TypeError: int() argument must be a string, a bytes-like object or a real number,
+           not 'OwnedJoinCategory.element_class'
+```
+
+raised from `recursive.py:154`, `int(coordinates(label))`.
+
+**This was a latent port defect, not a provider regression.** The same probe run against three
+different providers gives identical behaviour — `e83c4d6`, `69907ae`, and the restored baseline
+`/repos` pin — so no pin change caused it. The isolating observation:
+
+| lattice over | `to_vector()(label)` type | `int(...)` |
+| --- | --- | --- |
+| `ZZ` | `_OwnedRingParent_with_category.element_class` | works |
+| `QQ` | `OwnedJoinCategory.element_class` | **`TypeError`** |
+
+A lattice over `QQ` states a coordinate as a rational that does not admit `int`. The failing path is
+`eichler.py:464` → `_isometry_from_row_matrix(rational_envelope, generator)`: the integer row-matrix
+boundary being handed a rational envelope. It became *reachable* only once the Bliss repair stopped
+killing these cases earlier with `MemoryError`, which is why the earlier record saw "1 failed, 165
+passed" and this round saw six failures.
+
+The repair reuses the helper the port already has rather than adding a near-duplicate:
+`edgewalk_scalars._integer`, whose contract is "a rational entry with a denominator is a defect, not a
+value to truncate", converting through `numerator()`/`denominator()` and raising `ArithmeticError` on
+a genuine fraction. Applied at the four coordinate extractions that cross into a possibly-rational
+lattice — `recursive.py:127` (`_column_matrix`), `:155` (`_isometry_from_row_matrix`), `:185`
+(`_isometry_from_column_matrix`), and `eichler.py:922,926` (`_pullback_envelope_vector`).
+
+All six cases pass, one invocation each, 900 s cap:
+
+| case | time |
+| --- | --- |
+| `ci_indef_U_2U` | 3 s |
+| `ci_indef_U_2U_A2` | 113 s |
+| `ci_indef_U_2U_A3` | 151 s |
+| `ci_indef_U_2U_A2_A2` | 122 s |
+| `ci_indef_U_U_E7` | 336 s |
+| `ci_indef_U_2U_2E8` | 575 s |
+
+`ci_indef_U_2U_2E8` is the case that historically died with `MemoryError`; `ci_indef_U_U_E7` is the
+case that failed in hosted run 41242413071. The other 160 cases in the file were not re-run in this
+round, so this closes the known failures and does not by itself certify the full file.
+
+Independent confirmation: the library separately reproduced `Γ_h.order()` failing at
+`recursive.py:154` on an owned rational element, and published `89a0523d` with regressions and no
+library code change.
+
+## Correcting the line-226 attribution for Enriques case_1
+
+The earlier entry attributed the 300–1680 s window to `target.subgroup_on(...)`. That is too narrow.
+The traced frames there were `fqf_orthogonal`, `abelian_aut.matrix`, `abelian_group_gap.exponents`,
+`torsion_quadratic_module._mul_` and `free_module._element_constructor_`, which is consistent with the
+generator request inside that expression — `group.group_generators()` — as well as with the subgroup
+construction. The library's readback pins it further: supplied finite-form generators and the subgroup
+construction are fast there and do not enumerate the finite group, while Γ_h's retained
+character/intersection generating morphism requests the **preimage group's Eichler/orbit-cover family
+through this port's `OrbitCoverModel`**. So a meaningful share of that window is port-owned family
+construction, and attributing all of it to `subgroup_on` was wrong.
+
+The next measurement is therefore to instrument the retained `OrbitCoverModel` family construction
+itself — the real path, not a replacement library subgroup algorithm — with the original Enriques
+assertions unchanged.

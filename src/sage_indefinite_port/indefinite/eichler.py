@@ -50,6 +50,7 @@ from sage.rings.rational_field import QQ as SageQQ
 from sage.structure.element import RingElement
 from sage.structure.sage_object import SageObject
 
+from sage_indefinite_port.indefinite.edgewalk_scalars import _integer
 from sage_indefinite_port.indefinite.exact_isotropic import find_isotropic_exact
 from sage_indefinite_port.indefinite.indefinite_reduction import (
     _compute_indefinite_reduction,
@@ -917,11 +918,11 @@ class OrbitCoverModel:
         rational_envelope = envelope.rational_isometry.codomain()
         labels = tuple(envelope_lattice.module_generating_set())
         coordinates = point.to_vector()
-        rational_point = rational_envelope.linear_combination({label: rational_envelope.base_ring()(int(coordinates(label))) for label in labels if coordinates(label)})
+        rational_point = rational_envelope.linear_combination({label: rational_envelope.base_ring()(_integer(coordinates(label))) for label in labels if coordinates(label)})
         moved = coset(rational_point).to_vector()
         if any(moved(label).denominator() != 1 for label in labels):
             return None
-        integral_point = envelope_lattice.linear_combination({label: envelope_lattice.base_ring()(int(moved(label))) for label in labels if moved(label)})
+        integral_point = envelope_lattice.linear_combination({label: envelope_lattice.base_ring()(_integer(moved(label))) for label in labels if moved(label)})
         if not envelope.similarity.is_in_image(integral_point):
             return None
         return envelope.similarity.lift(integral_point)
