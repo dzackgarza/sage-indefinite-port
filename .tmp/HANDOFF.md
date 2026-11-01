@@ -2381,3 +2381,31 @@ Not covered by this sample, and not claimed: the exhaustive reflective long tail
 and the 8 595 Cas in `allcock_rank3_reflective`). Those gate nothing per the #33 amendment.
 
 This is **local** evidence at one pinned pair; hosted certification remains outstanding.
+
+## A_GROUPS: six nodes accepted, `LORENTZ_OrthogonalGroup0` capped — a concrete blocker
+
+At port `src` `87fbf863c413` + provider `cdafca84`, one invocation per node, per-case exit code, peak RSS
+and verdict, bind verified in-run. The 47-node file minus the known-open `a7_plus_diagonal` node:
+
+| # | case | result | peak | time |
+| --- | --- | --- | --- | --- |
+| 1 | `test_mertens_omega_and_minus_one_generate_o_l` | **passed** | 460 MiB | 12 s |
+| 2 | `test_binary_form_generators_match_hecke[hecke_binary_0_3_0]` | **passed** | 291 MiB | 5 s |
+| 3 | `…[hecke_binary_-2_1_0]` | **passed** | 275 MiB | 5 s |
+| 4 | `…[hecke_binary_-4_3_0]` | **passed** | 2 837 MiB | 46 s |
+| 5 | `…[hecke_binary_-4_16_0]` | **passed** | 2 832 MiB | 43 s |
+| 6 | `test_ambiguous_binary_form_has_an_improper_automorphism[hecke_binary_3_1_-3]` | **passed** | 416 MiB | 4 s |
+| 7 | `test_lorentzian_generators_match_polyhedral_common[LORENTZ_OrthogonalGroup0]` | **capped at 1200 s, no verdict** | **5 765 MiB** | 1203 s |
+
+Node 8, `test_lorentzian_generators_match_polyhedral_common[LORENTZ_…]` with the next parameter, was
+still running at 5 min and on the same trajectory, so I stopped the sweep rather than leave a run that
+would hold ~5.8 GiB for hours on a shared host. Nothing was recorded from node 8.
+
+**The blocker, concretely:** the `test_lorentzian_generators_match_polyhedral_common` nodes each need
+more than 1 200 s and approach 5 765 MiB — close to the 6 144 MiB guard — so this family cannot be swept
+per-case on this host without either a much larger per-node time budget or a memory reduction. A blanket
+increase is the wrong reflex: at ~20 min and ~5.8 GiB per node, a dozen such nodes is hours of the whole
+machine.
+
+Accepted so far in this family: 6 nodes, all passing, spanning the Mertens generators, three Hecke binary
+forms plus the ambiguous-form case. Not claimed: anything from node 8 onward.
