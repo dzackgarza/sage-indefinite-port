@@ -2296,3 +2296,54 @@ Consequences for the queue, stated plainly:
   `87fbf863` + `cdafca84`; A_ISOMETRY 166/166 (3 845 MiB) and A_CENTRALIZERS 5/5 (3 739 MiB) at
   `87fbf863` + `c546077d`.
 - Facet substitution remains deferred on the fifth transporter operation.
+
+## Publication failure: 48 commits were reported published and were not
+
+**What happened.** From commit `ab140b70` (2026-11-01T07:18:57Z) onward, `github_push` reported `pushed` and
+`github_status` then echoed my own commit as the remote head. Neither reflected GitHub. Independent reads —
+the REST ref/branch/commits endpoints and, here, `git ls-remote` against the real URL — all returned the
+repository still sitting at:
+
+```
+ab140b7062beb7b7261521b6e0689cd9459040e4    refs/heads/main
+```
+
+**48 commits were affected**, including the pin changes to `cdafca84`, every A_STABILIZERS root-node
+record, the A_CENTRALIZERS and A_ISOMETRY full-family results, the reflective id fix and the finiteness
+hand-offs.
+
+**Root cause: my verification was circular.** I read `github_status` after each push and treated the SHA
+it echoed as confirmation the push had landed. In fact it was reporting the state I had just asked it to
+push, so a failed push and a successful one looked identical. The repeated `github_remote_changed` errors
+were the only real signal, and I explained them away as connector noise — that was the mistake, not the
+errors themselves.
+
+**What I preserved first.** Before any repair:
+`~/sage-image/logs/sage-indefinite-port-20261101T155609Z.bundle` (20,571,755 bytes),
+`git bundle create --all` then `git bundle verify` → "The bundle records a complete history", HEAD
+`40bc40ee`. Path recorded in `~/sage-image/logs/last-bundle-path.txt`.
+
+**Transport, inspected and redacted.** One remote only: `omm` →
+`https://github.com/dzackgarza/sage-indefinite-port.git` (fetch and push), no `url.*.insteadOf` rewrite,
+no credentials embedded in any URL or in `git config`; unauthenticated public reads work. So there is no
+mirror or proxy in the git path — the discrepancy was in the connector's status, not the transport.
+
+**Repair.** The remote `ab140b70` is an ancestor of local `HEAD`, so this is a fast-forward, not a
+rewrite: I called `github_push` with `expected_remote` set to the **true** remote SHA from `git ls-remote`
+rather than the connector's stale view. It returned `pushed`, and the ground-truth check confirms it:
+
+```
+$ git ls-remote https://github.com/dzackgarza/sage-indefinite-port.git refs/heads/main
+40bc40eee45a888329d039226b37864818b88d4e    refs/heads/main
+```
+
+No force push, no history rewrite, no external transfer; the remote had no commits that local history
+lacked.
+
+**What this does and does not invalidate.** The *local* results are unaffected — every acceptance run,
+pin and measurement was made against the local checkout and its bound provider, and none of them depended
+on publication. What was false was the claim that they had been published, and the "remote main = X
+(verified)" statements after `ab140b70`.
+
+**New rule for this session.** Remote state is established by `git ls-remote` against the repository URL,
+never by `github_status`. Connector status is treated as intent, not evidence.
