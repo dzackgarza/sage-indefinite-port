@@ -1435,3 +1435,24 @@ No failure to diagnose, so advancing to `r_1` is the instructed path rather than
 spread — 65 s, 696 s, 1850 s for three cases of the same shape — is a reminder that per-node cost here
 is specimen-dependent and that no budget derived from one node transfers to the next; each gets the
 120-minute cap rather than a predicted one.
+
+## `r_1` passes — fourth accepted A_STABILIZERS case
+
+`…[r_1]`, unchanged, one invocation, `timeout -k 30 7200`: **PASSED, `1 passed in 402.82 s (0:06:42)`**,
+`pytest_exit=0`, cap not reached. Log at `~/sage-image/logs/stab-r1-pass-9dc89ac.log`.
+Provenance captured and bind-verified: port `92991467` (clean, `src` tree `87fbf863` same as
+`fc6a022f`), provider `9dc89ac`, in-run `groups.py` `ffa1d1423b51e003`.
+
+Coverage now, per case with provenance:
+
+| case | pair | result |
+| --- | --- | --- |
+| OSCAR `stabilizer_of_100` | `7a2692f` (derived) + `e83c4d6` | passed 65 s |
+| `r_-1` | `6e1be797` + `e83c4d6` | passed 1850.35 s |
+| `r_0` | `fc6a022f` + `9dc89ac` | passed 696.33 s |
+| `r_1` | `92991467` + `9dc89ac` | **passed 402.82 s** |
+| `r_2`–`r_8` (7), squares `[0/2/4/6/8/10]` (6) | — | unresolved, not failed |
+
+Four root cases now accepted at 65 s, 402.82 s, 696.33 s and 1850.35 s. That spread is the reason each
+node keeps the full 120-minute cap: any budget predicted from one of these would have been wrong for at
+least one other. Advancing to `r_2` on the same terms; no failure has needed diagnosis so far.
