@@ -1,35 +1,42 @@
-# Unapplied draft: replace `_CellFaces`' direct GAP calls with the owned construction
+# Draft: replace `_CellFaces`' direct GAP calls with the owned construction
 
-**Status: DRAFT, NOT APPLIED, NOT RUN.** Prepared for the next clean source boundary. It must not be
-applied while an acceptance sweep is running, because `/work` is bound live into it and an edit would
-change the code under the running cases.
+**Status: READY TO APPLY at a clean source boundary. Verified by interface exercise; not applied,
+because `/work` is bound live into a running acceptance sweep.**
 
-Verified prerequisites (from the lookup on `c546077d`, exercised):
+Provider `c546077d`. Guard already in place: `tests/test_cell_faces_facet_orbits.py` (5 tests, 1.6 s).
+Real gate: A_PERFECT's 92 cases.
 
-- `OwnedGroups().S(n)` is the owned symmetric group on `n` points.
-- An element comes from a **list** of cycles: `symmetric([(1, 3), (2, 4)])` → `(1 3)(2 4)`.
-  `symmetric(c1, c2)` raises `TypeError`, so a list is mandatory.
-- `symmetric.subgroup((element,))` builds the subgroup.
-- `FiniteGSets(group)(points, action)` takes an **explicit action** on an arbitrary finite point set,
-  which is precisely what `PermutationGroups.ParentMethods.action_on` refuses to infer ("specify a
-  separate group action for another point set"). A `ValueError` results if the point set is not closed
-  under the action.
-- `PermutationGroups.ParentMethods.orbit(point)` and `stabilizer(point)` are defined through
-  `natural_g_set()`, i.e. they act on natural points, not on sets of points.
+## Verified semantics (exercised, not read-off-guesswork)
 
-Guard already in place: `tests/test_cell_faces_facet_orbits.py` pins the result — 4 facets, 4 distinct
-incidence sets, group order 8, one facet orbit of size 4, facet stabilizer order 2, one flag — on
-`Result_Enumeration_0`. The real gate is A_PERFECT's 92 cases.
+Test fixture: `S_4` acting on the six 2-element subsets of `{1,2,3,4}` — a closed finite set, one orbit,
+stabilizer of a pair of order 4, and under that stabilizer the pairs split into 3 orbits.
+
+| question | exact answer |
+| --- | --- |
+| build the ambient group | `symmetric = OwnedGroups().S(n)` |
+| element from one-line images | `symmetric([tuple(cycle) for cycle in Permutation([i+1 for i in images]).cycle_tuples()])` — a **list** of cycles; `symmetric(c1, c2)` raises `TypeError` |
+| subgroup | `symmetric.subgroup(generators)` |
+| explicit action on an arbitrary finite set | `FiniteGSets(group)(points, action)` where `action(element, point)` returns the image |
+| **one representative per orbit** | `g_set.orbits()` returns an iterable orbit set; iterating yields one orbit per class, each with `.representative()`, `.points()`, `.stabilizer()` |
+| **the stabilizer subgroup retaining the action** | `g_set.stabilizer(point)` returns an owned subgroup with `group_generators()` and `cardinality()`, but **without** `natural_points()`/`action_on()`. Re-form it inside the ambient group: `symmetric.subgroup(tuple(stab.group_generators()))` — that object *does* have `natural_points()` and `action_on(...)`, and `FiniteGSets` can be built on it |
+
+Measured on the fixture: orbit count 1, representative `frozenset({1, 2})`, `|orbit| = 6`, stabilizer order 4,
+and 3 orbits of pairs under the regrouped stabilizer — the values the mathematics requires
+(`S_2 x S_2` fixes `{1,2}` and `{3,4}` and moves the other four).
+
+One detail to carry: `stabilizer.group_generators()` can include identity elements (the fixture returns
+`1` several times). That is harmless for `subgroup`, but a caller must not assume they are non-trivial.
+
+No new carrier is introduced: `symmetric.subgroup(...)` is the same constructor the cell group already uses.
 
 ## Sites to change
 
-1. `_CellFaces.__init__`, `lorentzian_cells.py:3568` — `self.group = libgap.Group([PermList...], ())`
+1. `_CellFaces.__init__`, `lorentzian_cells.py:3568` — `self.group = libgap.Group([...], libgap.eval("()"))`
 2. `_CellFaces.flag_simplices`, `:3603` — `libgap.Orbits(stabilizer, facets, OnSets)` and
    `libgap.Stabilizer(stabilizer, representative, OnSets)`
-3. `MarkedCellOrbitAlgorithm._timelike_global_orbits`, `:3458` —
-   `libgap.Stabilizer(source.group, sorted(...), OnSets)`
+3. `MarkedCellOrbitAlgorithm._timelike_global_orbits`, `:3458` — `libgap.Stabilizer(source.group, sorted(...), OnSets)`
 
-## Draft
+## Shape of the replacement
 
 ```python
 from sage.all import Permutation
@@ -38,44 +45,41 @@ from sage_extensions.categories.group.g_sets import FiniteGSets
 
 
 def _owned_permutation(symmetric, images):
-    """The owned element of ``symmetric`` with the given one-line images (0-based)."""
     cycles = Permutation([image + 1 for image in images]).cycle_tuples()
     return symmetric([tuple(cycle) for cycle in cycles]) if cycles else symmetric([])
 
 
-def _facet_action(element, facet):
-    """The action on *sets* of ray positions, which the provider will not infer."""
-    return frozenset(element(point) for point in facet)
+def _subset_action(element, subset):
+    """The action on sets of ray positions; `action_on` will not infer it."""
+    return frozenset(element(point) for point in subset)
 
 
-# in _CellFaces.__init__, replacing libgap.Group(...)
+# __init__: the cell group
 symmetric = OwnedGroups().S(len(self.rows))
-generators = tuple(
-    _owned_permutation(symmetric, images)
-    for images in backend.point_permutations_from_rows(cell, cell.rows)
+self.group = symmetric.subgroup(
+    tuple(_owned_permutation(symmetric, images)
+          for images in backend.point_permutations_from_rows(cell, cell.rows))
 )
-self.group = symmetric.subgroup(generators)
 self._facet_g_set = FiniteGSets(self.group)(
-    finite_ordered_set(tuple(sorted(facet) for facet in self.facet_incidences)),
-    _facet_action,
+    tuple(sorted(facet) for facet in self.facet_incidences), _subset_action
 )
+
+# flag_simplices: descend one rank using representatives and a regrouped stabilizer
+g_set = FiniteGSets(group)(tuple(sorted(facet + 1 for facet in f) for f in facets), _subset_action)
+for orbit in g_set.orbits():
+    representative = orbit.representative()
+    subgroup = symmetric.subgroup(tuple(orbit.stabilizer().group_generators()))
+    descend(..., subgroup)
 ```
 
-### Two calls I have not resolved, and will not guess
+`flag_simplices`' current signature passes a bare `group` (a GAP object) down the recursion; the
+replacement must thread the *owned* subgroup plus the ambient `symmetric` so the regrouping is always
+available. That is the one structural edit beyond the call substitution, and it is why the guard and the
+A_PERFECT sweep are both required.
 
-- **Enumerating orbit representatives** from `self._facet_g_set.orbits()`. `groups.py` shows
-  `action.orbits().orbit_of(point).points()` for a single orbit, so `orbit_of` exists; the accessor that
-  yields one representative per orbit is not established from source.
-- **The stabilizer of a facet** as a *subgroup of `self.group`*: `g_set.stabilizer(point)` returns a
-  stabilizer of the G-set, but `flag_simplices` needs a group it can act on the next rank of facets with,
-  i.e. a subgroup carrying the same permutation action on points.
+## Boundary order
 
-Both are lookups of the same kind that resolved the earlier questions, and both must be read before the
-patch is applied. Guessing them here would be exactly the unverified substitution I have refused twice.
-
-## Order of work at the boundary
-
-1. Resolve the two calls above against `g_sets.py`.
-2. Apply the patch; run `tests/test_cell_faces_facet_orbits.py` (1.6 s) — it must stay 5/5 unchanged.
-3. Run the A_PERFECT per-case sweep as the real gate; a regression there means revert, not patch around.
-4. Only then report the GAP calls as removed from `lorentzian_cells.py`.
+1. Apply the substitution.
+2. `tests/test_cell_faces_facet_orbits.py` must stay **5/5** unchanged.
+3. A_PERFECT per-case sweep as the real gate; a regression means revert, not patch around.
+4. Only then report the GAP calls as removed.

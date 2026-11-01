@@ -2077,3 +2077,33 @@ per-case sweep as the real gate → only then claim the GAP calls are gone.
 
 The finiteness handoff is delivered and its correctness does not gate any of this; I am not waiting on it
 to do port work.
+
+## Action API resolved: both calls now exact, no guesses
+
+Polled `jmvxurihq` once at 13:50:54: **running**, 35:35 elapsed, **122 of 166** cases, still **no
+failure** — no non-passing verdict and no `FAILED`/`ERROR`. Latest three all passed at 13–28 s and
+427–468 MiB. Not terminal; snapshot untouched, no duplicate sweep.
+
+Then the two open calls were settled by interface exercise on a tiny closed fixture (`S_4` on the six
+2-subsets of `{1,2,3,4}`), provider `c546077d`:
+
+| question | exact working semantic |
+| --- | --- |
+| one representative per orbit | `g_set.orbits()` is **iterable**; each yielded orbit has `.representative()`, `.points()`, `.stabilizer()` |
+| the stabilizer subgroup that keeps the action | `g_set.stabilizer(point)` gives an owned subgroup with `group_generators()`/`cardinality()` but **no** `natural_points()`/`action_on()`; re-forming it as `symmetric.subgroup(tuple(stab.group_generators()))` **does** have `natural_points()` and `action_on(...)`, and drives `FiniteGSets` on facet sets |
+
+Numbers matched the mathematics: one orbit, representative `frozenset({1,2})`, orbit size 6, stabilizer
+order 4, and **3** orbits of pairs under the regrouped stabilizer — with `S_2 x S_2` fixing `{1,2}` and
+`{3,4}` and moving the other four.
+
+The subtlety is the useful part: the stabilizer is *not* directly usable as a permutation parent, and the
+fix is the same `subgroup(...)` constructor already used for the cell group, so no new carrier appears.
+One detail to carry: `group_generators()` may include identity elements.
+
+`.tmp/facet-orbit-substitution-draft.md` now carries the exact calls, the sites, the replacement shape,
+and the one structural edit it implies — `flag_simplices` currently threads a bare GAP object through its
+recursion, so the replacement must thread the owned subgroup plus the ambient `symmetric`. That is
+precisely why the 5-test guard and the A_PERFECT sweep are both required before the GAP calls can be
+called gone.
+
+Applying waits for the sweep's clean boundary, as instructed; `/work` is live in it.
