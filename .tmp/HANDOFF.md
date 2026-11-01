@@ -2227,3 +2227,45 @@ needs.
 
 Still **local**, not hosted: TODO requires a successful hosted run whose head SHA equals the accepted
 implementation commit, and none has been observed.
+
+## `square[0]` on the accepted pin: memory guard hit, repair does not apply here
+
+Full consumer check of the published bounded-finiteness repair against the previously measured 9.8 GB
+failure. Pair: port `src` `87fbf863c413` (HEAD `98439e6c`, worktree clean, SHA printed in the run header),
+provider **`cdafca84`**, original assertions, corrected child-exit propagation, RSS logging and a
+6 144 MiB guard.
+
+**Observed: `STOPPED_AT_MEMORY_LIMIT` — peak tree RSS 6 193 MiB at 191 s, wrapper exit 143.** The guard
+did its job; the host kept 7 142 MiB available.
+
+So **the repair does not change this case**, and I am not claiming it does. The 120 s stack shows why: the
+GAP query is now reached through a **different, uncovered site** —
+`rational_integral_stabilizers.py:444 IntegralStructureAction.stabilizer` — called from the port's
+`recursive.pointed_automorphism_generators` via `action.stabilizer()`.
+
+That site has the same evaluation-order shape (`is_finite() is True or (<composite conjuncts>)`), so the
+same pure reorder would skip the query **if** the composite disjunct holds — which requires a selected
+group resolution, a selected finite generating set, and a non-`None` containing bound. The port supplies
+the bound; the other two are plausible but **not measured**, and I have said so in the hand-off rather than
+asserting the fix.
+
+Routed, not patched: both the `or` and the conjuncts are provider code, and the failure is memory, not a
+wrong answer — the case never reaches its assertions, so there is no port-side assertion to repair.
+
+The other five squares were **not** started: the instruction was to continue only if this one passed, and
+it did not. Nothing is running.
+
+## Records preserved, each on its own pins
+
+| family | result | pins |
+| --- | --- | --- |
+| A_PERFECT | 92/92, max peak 506 MiB | `src` `87fbf863` + `cdafca84` |
+| A_ISOMETRY | 166/166, max peak 3 845 MiB | `src` `87fbf863` + `c546077d` |
+| A_CENTRALIZERS | 5/5, max peak 3 739 MiB | `src` `87fbf863` + `c546077d` |
+
+None of these was re-run or reinterpreted here, and their memory figures are their own — 506 MiB, 3.8 GiB,
+3.7 GiB — against `square[0]`'s ≥6 GiB and the earlier ~9.8 GB. Four families, four different resource
+profiles.
+
+Facet API substitution stays deferred: the fifth maintained transporter operation is not established, and I
+have not replaced it with full-tuple enumeration.

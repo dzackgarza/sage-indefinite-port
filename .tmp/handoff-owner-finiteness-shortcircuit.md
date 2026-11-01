@@ -153,3 +153,71 @@ the premise that makes the two `is_finite()` calls dead.
 That is the smallest instance to reproduce with: `U` with `v = e0 + e1` (`q = 2`) reaches the same
 construction through `isotropic_stabilizer_action`/`_lattice_action`, and its
 `stable_containing_bound()` is non-`None` by construction.
+
+---
+
+## Follow-up: a third site, and the repair does not cover it
+
+Observed on the repaired pin `cdafca84`, running the `square[0]` stabilizer case as a full consumer check:
+
+- It **hit a 6 144 MiB memory guard at 191 s** (peak tree RSS 6 193 MiB, wrapper exit 143). The case is
+  unchanged from the one that previously died at ~9.8 GB, so **the bounded-finiteness repair does not
+  change this case's memory profile.**
+- The 120 s stack was still inside the GAP query, but through a **different site**:
+
+```
+libgap_mixin.py:195 is_finite
+  groups.py:170 _engine_finiteness            (compute=True branch)
+  groups.py:7943 _finiteness_decision
+  set_categories.py:2423 is_finite
+  rational_integral_stabilizers.py:444 stabilizer      <-- not covered by 00bcc86
+  work/src/sage_indefinite_port/indefinite/recursive.py:593 pointed_automorphism_generators
+  marked_lattices.py:109 automorphism_group_generators
+  ...
+```
+
+`IntegralStructureAction.stabilizer()` (`:436-446`) has the same shape:
+
+```python
+if (
+    rational_group.is_finite() is True
+    or (
+        rational_group.has_selected_group_resolution()
+        and rational_group.has_selected_finite_group_generating_set()
+        and self.stable_containing_bound() is not None
+    )
+):
+    return self.finite_representation().lattice_stabilizer()
+```
+
+If the second disjunct holds, the condition is `True` whatever `is_finite()` answers — so the query is
+again dead work, and the fix is the same pure reorder, moving the composite disjunct first:
+
+```python
+if (
+    (
+        rational_group.has_selected_group_resolution()
+        and rational_group.has_selected_finite_group_generating_set()
+        and self.stable_containing_bound() is not None
+    )
+    or rational_group.is_finite() is True
+):
+```
+
+**What the owner still needs to check, which I have not established by measurement:** whether the second
+disjunct is actually `True` for the group this path builds. It requires a selected group resolution, a
+selected finite generating set, and a non-`None` containing bound. The port supplies the bound
+(`_lattice_action`), so the first and third are plausible — but "plausible" is not measured, and the
+reorder only helps if all three hold.
+
+Direct check: instrument `IntegralStructureAction.stabilizer` to print the three conjuncts for the group
+reached from `recursive.pointed_automorphism_generators` on the `square[0]` specimen.
+
+## Why this is routed, not fixed here
+
+Both the `or` and the two conjunctions are provider code; the port's contribution is the bound, which it
+already supplies. And the failure is a **memory** failure, not a wrong answer — the case never reaches its
+assertions, so there is no port-side assertion to repair.
+
+The two acceptance records are untouched by this: A_PERFECT 92/92 at `87fbf863` + `cdafca84` and
+A_ISOMETRY 166/166 at `87fbf863` + `c546077d` stand on their own pins and were not re-run.
