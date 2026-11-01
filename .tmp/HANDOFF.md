@@ -1332,3 +1332,24 @@ finished, and it differs from the launched tree only in documentation.
 
 Future runs echo the port SHA and the provider SHA in the run header, so this derivation is not needed
 again.
+
+## A_STABILIZERS: the `r_-1` node passes — 1850 s, with its SHA pair captured
+
+`test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_-1]`,
+unchanged, one invocation, `timeout -k 30 7200`:
+
+- **PASSED, 1 passed in 1850.35 s (0:30:50)**, `pytest_exit=0`, cap **not** reached.
+- Six 300 s in-flight dumps; log preserved at `~/sage-image/logs/stab-r_-1-pass-e83c4d6.log`.
+- **Provenance captured in the run header**, per the new practice — no timestamp derivation needed:
+  `port 6e1be797c8a491d62390a50ba2e4b51d750c82df + provider e83c4d69db6fba9cadc560d6fd8a518bfe6c5dae`.
+
+This corrects a budget error of mine: the earlier 600 s cap on this same node was recorded as "no
+verdict", and it looked like a cost problem. It was a cap that was too small. The node needs ~31
+minutes, which the unit profile's ~56 s per plateau representative already suggested — though the
+actual total is 30:50 rather than the ~57 min a flat multiplication gives, because the 61
+representatives include cheaper small-`q` cases. That is exactly why no fixed runtime should be
+extrapolated from the sample.
+
+A_STABILIZERS coverage now stands at **two accepted cases**: the OSCAR `stabilizer_of_100` node (65 s)
+and `r_-1` (1850 s), both with recorded provenance. `r_0`…`r_8` and the six E10 square nodes remain
+**unresolved** — not failures, just not yet run.
