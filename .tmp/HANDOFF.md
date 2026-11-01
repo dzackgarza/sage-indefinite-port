@@ -804,3 +804,30 @@ cases inside the 180 s cap, 33 total 558 s, 39 total 237 s, 39 isotropic 261 s �
 
 The Maxima environment recipe correction found during readback belongs to the image owner and is not
 duplicated here.
+
+## Every formerly capped A_PERFECT case now passes at the current pin
+
+All six capped cases, unchanged, one invocation each at `e83c4d6` with the verified bind:
+
+| case | mode | at `7b222e86` | at `e83c4d6` |
+| --- | --- | --- | --- |
+| `Result_Enumeration_33` | total | passed, 558 s | **passed, 36.17 s** |
+| `Result_Enumeration_33` | isotropic | exceeded 1800 s cap | **passed, 56.30 s** |
+| `Result_Enumeration_37` | total | blocked, `cell_cone` >1800 s | **passed, 40.12 s** |
+| `Result_Enumeration_37` | isotropic | blocked, `cell_cone` >1800 s | **passed, 34.51 s** |
+| `Result_Enumeration_39` | total | passed, 237 s | **passed, 34.41 s** |
+| `Result_Enumeration_39` | isotropic | passed, 261 s | **passed, 23.52 s** |
+
+The dual-point hash defect was therefore not a case-37 curiosity. `RationalPolyhedralCone.__init__`
+does O(facets²) comparisons at ~17 ms each, and a traversal builds an owned cone per cell, so an
+11-facet cell costs about 2 s per cone and a traversal touching hundreds of cells reaches the cap.
+That is why the whole upper tail of A_PERFECT — not just the 570-facet specimen — was sitting at
+558 s, 261 s, 237 s and beyond 1800 s. Fixing the hash took the entire tail to 24–56 s.
+
+`Result_Enumeration_33` isotropic needed no phase diagnosis after all: it finished in 56 s, inside the
+first 60 s dump interval, so `stackdump` recorded zero dumps. The instrumented run was set up and never
+had to say anything, which is the right outcome.
+
+A per-case sweep of all 40 fixtures in both modes at `e83c4d6` is running (job `jmvxfxg7n`, 300 s cap
+per case, one invocation each) so that A_PERFECT can be stated at a single revision instead of the
+mixed `7b222e86` / `69907ae` / `e83c4d6` coverage recorded above.
