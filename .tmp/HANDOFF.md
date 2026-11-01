@@ -2347,3 +2347,37 @@ on publication. What was false was the claim that they had been published, and t
 
 **New rule for this session.** Remote state is established by `git ls-remote` against the repository URL,
 never by `github_status`. Connector status is treated as intent, not evidence.
+
+## A_REFLECTIVE: the required branch-representative sample passes — 12 of 12
+
+Run at port `src` tree `87fbf863c413` + provider **`cdafca84`**, one invocation per node, per-case exit
+code, peak RSS and verdict, bind verified in-run. This is the sample #33 and TODO name for the family,
+recorded by case id:
+
+| # | case id | result | peak | time |
+| --- | --- | --- | --- | --- |
+| 1 | `test_u_plus_46_nonreflective_certificate_terminates_after_three_vertices` | passed | 474 MiB | 8 s |
+| 2 | `test_edgewalk_branch_representative_sample` | passed | 582 MiB | 19 s |
+| 3 | `test_root_systems_match_polyhedral_common[ListSimpleRootSystem_0]` | passed | 439 MiB | 9 s |
+| 4 | `test_root_systems_match_allcock[allcock_rk3_4_w0_l4]` | passed | 400 MiB | 6 s |
+| 5 | `test_root_systems_match_allcock[allcock_rk3_2_w2_l2]` | passed | 461 MiB | 7 s |
+| 6 | `test_simple_root_counts_match_oscar_vinberg[vinberg_I_1_10]` | passed | 2 479 MiB | 43 s |
+| 7 | `…[vinberg_diag_1_-1_-13]` | passed | 494 MiB | 8 s |
+| 8 | `…[vinberg_scharlau_U_A2]` | passed | 497 MiB | 6 s |
+| 9 | `…[vinberg_diag_1_-1_-3]` | passed | 494 MiB | 7 s |
+| 10 | `test_vinberg_coxeter_diagram_has_oscars_edges` | passed | 501 MiB | 7 s |
+| 11 | `test_vinberg_roots_match_oscars_chamber_up_to_isometry` | passed | 495 MiB | 6 s |
+| 12 | `test_e10_simple_roots_match_dutour_sikiric_hulek` | passed | 2 444 MiB | 33 s |
+
+**12/12, zero failures, zero caps, zero memory stops**; total ~157 s; largest peak 2 479 MiB.
+
+Branch coverage against the #33/TODO list for this family: `allcock_rk3_4` (signature (2,1), isotropic
+cusp) and `allcock_rk3_2` (rationally anisotropic start) — both now by their **unique** composed ids; the
+`U+<2>` finite/ideal corners, compact hexagon and rank-two forms via
+`test_edgewalk_branch_representative_sample`; `ListSimpleRootSystem_0`; all four OSCAR Vinberg cases plus
+its Coxeter-diagram and chamber-up-to-isometry checks; and the E10 Dutour Sikirić–Hulek roots.
+
+Not covered by this sample, and not claimed: the exhaustive reflective long tail (`reflective_forms_8821`
+and the 8 595 Cas in `allcock_rank3_reflective`). Those gate nothing per the #33 amendment.
+
+This is **local** evidence at one pinned pair; hosted certification remains outstanding.

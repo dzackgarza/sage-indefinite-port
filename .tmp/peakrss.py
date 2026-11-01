@@ -14,6 +14,8 @@ import time
 
 SAMPLE_EVERY = 2.0
 LABEL = os.environ.get("PEAKRSS_LABEL", "run")
+# Concrete hard bound, in MiB, on the summed RSS of the process tree. 0 disables it.
+LIMIT_MIB = int(os.environ.get("PEAKRSS_LIMIT_MIB", "0"))
 
 
 def read_status(pid):
@@ -64,14 +66,34 @@ command = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[
 started_at = time.monotonic()
 process = subprocess.Popen(command)
 peak_tree, low_available, samples = 0, 10 ** 9, []
+per_comm_peak: dict[str, int] = {}
 while process.poll() is None:
     pids = descendants(process.pid)
     tree = sum(filter(None, ((read_status(p) or (0, 0))[0] for p in pids)))
     hwm = sum(filter(None, ((read_status(p) or (0, 0))[1] for p in pids)))
     available = mem_available_mib()
+    for pid in pids:
+        try:
+            with open(f"/proc/{pid}/comm") as handle:
+                comm = handle.read().strip()
+        except OSError:
+            continue
+        status = read_status(pid)
+        if status is None:
+            continue
+        per_comm_peak[comm] = max(per_comm_peak.get(comm, 0), status[1] // 1024)
     peak_tree = max(peak_tree, tree)
     low_available = min(low_available, available if available >= 0 else low_available)
     samples.append((round(time.monotonic() - started_at, 1), len(pids), tree // 1024, hwm // 1024, available))
+    if LIMIT_MIB and tree // 1024 > LIMIT_MIB:
+        # Stop the run rather than threaten the shared host. Graceful first, then hard.
+        print(f"[peakrss] STOPPED_AT_MEMORY_LIMIT: tree RSS {tree // 1024} MiB exceeded {LIMIT_MIB} MiB", flush=True)
+        process.terminate()
+        try:
+            process.wait(timeout=20)
+        except subprocess.TimeoutExpired:
+            process.kill()
+        break
     time.sleep(SAMPLE_EVERY)
 status = process.wait()
 START = samples[0][0] if samples else 0.0
@@ -82,6 +104,9 @@ print(f"[peakrss] peak tree RSS      : {peak_tree // 1024} MiB")
 print(f"[peakrss] low-water MemAvail : {low_available} MiB")
 peak_process = max((s[3] for s in samples), default=0)
 print(f"[peakrss] peak single VmHWM  : {peak_process} MiB")
+print("[peakrss] peak VmHWM by executable (this is the per-process attribution):")
+for comm, mib in sorted(per_comm_peak.items(), key=lambda kv: -kv[1])[:6]:
+    print(f"[peakrss]   {comm:24s} {mib:6d} MiB peak")
 for sample in sorted(samples, key=lambda s: -s[2])[:5]:
     print(f"[peakrss]   t={sample[0]:8.1f}s procs={sample[1]:3d} rss={sample[2]:6d} MiB hwm={sample[3]:6d} MiB avail={sample[4]:6d} MiB")
 
