@@ -1553,3 +1553,26 @@ none a failure. Four of these would have been lost to the 600 s cap used earlier
 
 What remains for this family is the six square nodes `[0|2|4|6|8|10]`, which exercise `vector_classes`
 rather than the root loop. Nothing in the root series predicts them.
+
+## Next pin queued: `c546077d` (retained torsion-form hashes) — not yet applied
+
+Owner published **`c546077dce79a76eb32e92d080aa9c44e4c67552`**, carrying the library's torsion-form
+automorphism hash fix (originally local `207ba52`). Verified in the tree rather than taken on report:
+
+- **Tree SHA equals the tested library tree**: `git rev-parse c546077d^{tree}` =
+  `81151a4450f26184c7f59a691dd924cc7d41d8da`, exactly the tree the owner says was tested. That is an
+  independent confirmation, not a restatement.
+- `TorsionFormAutomorphism.__hash__` gains a `_hash_digest` attribute and memoises:
+  `digest = self._hash_digest`, compute only when absent, then store. The digest expression itself is
+  **byte-for-byte the same** `(id(parent), tuple(int(e) for e in self._engine().matrix().list()))`, so
+  hash/equality agreement is unchanged; only the repeated `engine.matrix()` → GAP conversion is
+  avoided, once per immutable element.
+
+Not applied yet: the square node `[0]` is running on the current pair and is preserved to its own
+result. At the next clean boundary: pin `c546077d`, commit and push, then rerun the original Enriques
+`case_1` with the existing `discprof` phase markers. The hash path is already measured and is not to be
+re-investigated — the rerun exists to see what the memoisation changes.
+
+Tree staged at `~/sage-extensions-c546077d`. All prior coverage stays tied to the pair it actually ran
+on — ten root nodes and the OSCAR node on `e83c4d6` / `9dc89ac` as tabulated above, none of it
+retroactively attributed to this pin.
