@@ -2035,3 +2035,45 @@ detail" that the earlier one-line mention did not establish.
 
 Job `jmvxurihq`: all 166 nodes of `test_isometry.sage`, **one invocation each**, per-case exit code, peak
 RSS and verdict, 1200 s cap per case, 6 144 MiB memory bound, no other heavy job.
+
+## A_ISOMETRY sweep: fresh poll (not the stale two-case report)
+
+At 13:28:01 UTC job `jmvxurihq` is **still running**, 12:43 elapsed, **38 of 166 cases recorded**, no
+terminal marker, and **no failure of any kind** — no non-passing verdict, no `FAILED`, no `ERROR`.
+
+Latest cases, all passing:
+
+| # | case | exit | peak | verdict | time |
+| --- | --- | --- | --- | --- | --- |
+| 33 | `LORENTZ_TestIsomorphism26` | 0 | 426 MiB | passed | 12 s |
+| 34 | `LORENTZ_TestIsomorphism27` | 0 | 427 MiB | passed | 13 s |
+| 35 | `LORENTZ_TestIsomorphism28` | 0 | 429 MiB | passed | 15 s |
+| 36 | `LORENTZ_TestIsomorphism29` | 0 | 427 MiB | passed | 12 s |
+| 37 | `LORENTZ_TestIsomorphism30` | 0 | 429 MiB | passed | 14 s |
+| 38 | `LORENTZ_TestIsomorphism31` | 0 | 399 MiB | passed | 13 s |
+
+The sweep proceeds through `test_lorentzian_pairs_are_isometric`. At ~20 s per case average the remaining
+128 are on the order of 40+ minutes, longer once the six change-of-basis cases (previously 3–575 s each)
+are reached. Pinned snapshot preserved; no duplicate sweep started.
+
+## Facet-action substitution: drafted, deliberately unapplied
+
+`.tmp/facet-orbit-substitution-draft.md`. The draft replaces `libgap.Group`/`Orbits`/`Stabilizer` in
+`_CellFaces` with `OwnedGroups().S(n)`, elements from a cycle **list**, `.subgroup(...)` and
+`FiniteGSets(group)(facets, action)`.
+
+It is not applied for two independent reasons, both stated in the draft rather than papered over:
+
+1. **`/work` is bound live into the running sweep.** Editing `src` now would change the code under
+   subsequent cases and destroy the snapshot the 166-case result is attributed to.
+2. **Two calls are still unverified**: the accessor that yields one representative per orbit from
+   `orbits()`, and a facet stabilizer that is a subgroup of `self.group` carrying the point action (which
+   `flag_simplices` needs to descend the next rank). Both are the same kind of lookup that answered the
+   earlier questions, and both must be read before applying — guessing them is exactly the unverified
+   substitution I have declined twice.
+
+Boundary order recorded: resolve those two calls → apply → the 1.6 s guard must stay 5/5 → A_PERFECT's
+per-case sweep as the real gate → only then claim the GAP calls are gone.
+
+The finiteness handoff is delivered and its correctness does not gate any of this; I am not waiting on it
+to do port work.
