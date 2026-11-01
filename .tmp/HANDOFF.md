@@ -1765,3 +1765,41 @@ summed tree RSS, per-process `VmHWM` and `MemAvailable` every 2 s. It is the onl
 Two things I will keep apart when it lands: the **observed** exit status and the measured peaks, versus
 the **hypothesis** that the earlier 137 was OOM. A low peak weakens but does not refute OOM — a 2 s
 sampler can miss a transient spike, and a kill during a fast allocation leaves no trace in the samples.
+
+## Concrete implementation gap located: libGAP still computes finite set-actions in the port
+
+#15's boundary says "Cell stabilizers, cell isomorphisms and facet orbits are computed with preamble
+operations" and that the direct libGAP calls are replaced and deleted. The `backends/` package is gone,
+but the calls were not replaced — they moved into `lorentzian_cells.py`:
+
+| site | call | what it computes |
+| --- | --- | --- |
+| `:47` | `from sage.libs.gap.libgap import libgap` | the binding itself |
+| `:3568` | `libgap.Group([PermList(...) for permutation in backend.point_permutations_from_rows(...)], libgap.eval("()"))` | the cell's finite permutation group on its rays |
+| `:3458` | `libgap.Stabilizer(source.group, sorted(...), OnSets)` | the stabilizer of one facet |
+| `:3603` | `libgap.Orbits(stabilizer, facets, OnSets)` | orbits of the facets below a face |
+| `:3603` | `libgap.Stabilizer(stabilizer, representative, OnSets)` | descent along one flag |
+
+So finite permutation-group stabilizers and orbits on **sets of points** are computed in GAP inside the
+port, while #33/#15 assign the generic finite action to research (#396) and finite coloured spanning
+configurations to research #399. That is a real ownership gap, not a documentation one.
+
+The replacement operations exist on the provider side — `OwnedGroups.orbit` (`groups.py:6962`),
+`orbits` (`:6967`), `stabilizer` (`:6972`), and the induced-action machinery in `g_sets.py`
+(`orbit_of:927`, `stabilizer:886`, `_finite_g_set_from_action`) — but whether they cover the *set-action*
+(`OnSets`) case directly, rather than only point actions, is not established by reading the signatures.
+
+### Why I am not rewriting it now
+
+These five sites sit on **A_PERFECT's passing path** (92/92 locally, and the facet-orbit code is
+exercised by `test_facet_orbit_permutation_view_materializes_exact_isometries` and the traversal). A
+rewrite here is a refactor of working mathematics whose only validation is that entire family, which
+needs its own bounded run — and `square[0]` currently owns the runtime.
+
+The safe next step is a **characterisation test** that does not touch production code: on one real
+perfect cell, compute the facet orbits and a facet stabilizer both ways — the existing libGAP path and
+the provider `orbits`/`stabilizer` on the same induced action — and assert they agree as sets. If they
+agree, the substitution is mechanical and can be made with the A_PERFECT sweep as its gate. If they
+disagree, that is the API gap to report to #396/#399, with evidence.
+
+I am recording that plan rather than starting a blind refactor against a passing family.
