@@ -978,3 +978,36 @@ myself. Two rules for the next instrumented run:
 Instrument the layers that the stacks actually name, on the unchanged node: `discriminant_morphism` on
 each group generator, the FQF `subgroup_on`, `cardinality`, and `group_generators` itself, with the
 table emitted on every periodic dump. Original Enriques assertions stay untouched.
+
+## Discriminant-layer instrumentation: design and positive control
+
+The OrbitCoverModel attribution is **refuted on this path** for Enriques case 1: 14 wrapped members,
+29 dumps (~1740 s), zero calls, with a control proving the wrapper counts calls. Recorded in
+`7af4b0b5`; it stands.
+
+The replacement probe splits the four phases that the stacks actually name, each with its own
+wrapper and its own marker:
+
+| phase | wrapped | definition |
+| --- | --- | --- |
+| generator enumeration | `generator_enumeration` | `OwnedGroups.ParentMethods.group_generators` (`groups.py:5430`) |
+| each morphism conversion | `discriminant_morphism` | `LatticeIsometryMethods.discriminant_morphism` (`lattice_morphisms.py:1795`) |
+| subgroup admission | `subgroup_admission` | `TorsionFormOrthogonalGroup.subgroup_on` (`torsion_form_modules.py:1504`) |
+| cardinality of its result | `result_cardinality` | `cardinality` on the class defining it on the returned group |
+
+Enclosing classes were resolved by AST scan of the pinned provider, not guessed. Markers are
+unbuffered; only the first 40 calls of each phase are marked, plus any single call over 35 s.
+A daemon thread prints the running table every 60 s so an externally capped run still reports its
+numbers, and `faulthandler` dumps stacks on the same cadence. There is no signal handler and no
+`SystemExit`: the external `timeout -k 10 1800` is the only stopper, which is what the previous run
+lacked.
+
+**The control earned its place.** The first version recorded `subgroup_admission` *after* the call
+returned, so a raising call went uncounted — the control caught it as `recorded 0 -> 0`. Fixed with
+`try/finally`; the corrected control records `0 -> 1` for all three wrappers, including calls that
+raise. Evidence kept at `~/sage-image/logs/discprof-control.log`, and the failed first control is
+recorded there too rather than dropped.
+
+The run itself uses the unchanged node and the unchanged assertions. Per instruction, whatever it
+identifies gets handed to the owning library or Sage project as a minimal reproduction, and no
+hypothesized owner is patched.
