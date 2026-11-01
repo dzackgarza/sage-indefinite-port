@@ -2107,3 +2107,23 @@ precisely why the 5-test guard and the A_PERFECT sweep are both required before 
 called gone.
 
 Applying waits for the sweep's clean boundary, as instructed; `/work` is live in it.
+
+## A_ISOMETRY: the full frozen file passes — 166 of 166, no failures
+
+Job `jmvxurihq`, one invocation per case, per-case exit code, peak RSS and verdict captured:
+
+- **166/166 passed**, exit 0 on every case, **zero failures, zero errors, zero caps, zero memory stops**.
+- Slowest: `test_change_of_basis_gives_an_isometric_lattice[ci_indef_U_2U_2E8]` **577 s**, peak 3 758 MiB
+  — the case that used to die with `MemoryError` in `partn_ref`.
+- Largest peak overall: 3 845 MiB (`test_two_u_full_generating_data_accepts_raw_sage_integer_norm`, 229 s).
+  No case approached the 6 144 MiB bound.
+- Pins: port `src` tree `87fbf863c413`, provider `c546077dce79a76eb32e92d080aa9c44e4c67552`.
+
+TODO retains an explicit **full-file** requirement for A_ISOMETRY rather than a representative sample, so
+this is the acceptance shape that family asks for. As with A_PERFECT and A_CENTRALIZERS it is **local**
+evidence — hosted certification at an accepted head SHA is still outstanding, and I am not claiming
+otherwise.
+
+Worth noting what it took: six of these cases were failing at HEAD before the port's rational-coordinate
+`int()` repair (`ab140b70`), and `U_2U_2E8` was the historical `MemoryError`. Both are now green in the
+same sweep, which is the first time the whole file has passed at one pair in this session.
