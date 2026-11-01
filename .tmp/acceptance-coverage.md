@@ -9,7 +9,8 @@ run on, and no cap is counted as a pass or a failure.
 
 | what | port | provider | result | provenance |
 | --- | --- | --- | --- | --- |
-| full file: 80/80 parametrized (own invocation each, 300 s cap) + 12/12 standalone | `a848fd7c` | `e83c4d6` | **92/92 pass**; sum 642 s, slowest 65 s (`33` isotropic) | derived (log had no SHA) |
+| full file, one invocation per test: all 92 | `87fbf863` (src tree) | **`cdafca84`** | **92/92 pass**, zero failures; max peak 506 MiB; slowest `33` isotropic 77 s | captured in the run header + bind-verified |
+| earlier full file: 80/80 parametrized + 12/12 standalone | `a848fd7c` | `e83c4d6` | 92/92 pass; sum 642 s, slowest 65 s | derived (log had no SHA) |
 | formerly capped six, rerun at 1800 s | `a848fd7c` | `e83c4d6` | 33 total 36.17 s, 33 iso 56.30 s, 37 total 40.12 s, 37 iso 34.51 s, 39 total 34.41 s, 39 iso 23.52 s | derived |
 
 This is **local** evidence. A_PERFECT requires a hosted run at an accepted head SHA; none has been

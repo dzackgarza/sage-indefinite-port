@@ -2204,3 +2204,26 @@ port `a848fd7c` + provider `e83c4d6` — two provider revisions and one port fix
 the first A_PERFECT result at the pins the tree now declares, which is what the record needs; if anything
 fails, the finiteness reorder is the first suspect, since it is the only change touching the
 `IntegralStructureAction` path this family builds.
+
+## A_PERFECT: 92 of 92 at the currently declared pins
+
+Job `jmvxxml2p`, every test its own invocation, per-case exit code, peak RSS and verdict captured.
+
+- **92/92 passed**, exit 0 throughout — zero failures, errors, caps, skips or memory stops.
+- **Max peak 506 MiB**, against a 6 144 MiB bound: this family is not remotely memory-hungry, and nothing
+  here resembles the 9.8 GB `square[0]` profile.
+- Slowest five, all of them the formerly capped cases: `33` isotropic **77 s**, `39` total 51 s,
+  `37` isotropic 49 s, `37` total 48 s, `33` total 42 s.
+- Total wall 16 min 24 s across 92 separate process invocations.
+- Pins: port `src` tree `87fbf863c413`, provider **`cdafca84`** — the pins `pyproject.toml` now declares.
+
+**This is the gate for the `cdafca84` pin, and it passes.** The bounded-finiteness short-circuit reorder
+was the only change in the window touching the `IntegralStructureAction` path this family builds, and it
+caused no regression. That is the evidence I said I would look for if anything failed; nothing did.
+
+It also supersedes the earlier record: A_PERFECT was last 92/92 at port `a848fd7c` + provider `e83c4d6`,
+two provider revisions and one port fix ago. The current-pair result is the one the acceptance record
+needs.
+
+Still **local**, not hosted: TODO requires a successful hosted run whose head SHA equals the accepted
+implementation commit, and none has been observed.
