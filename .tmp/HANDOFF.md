@@ -1497,3 +1497,19 @@ drop from 109 s to 6 s is a cliff, not a taper — further evidence that per-nod
 of the specimen rather than of position in the sequence, and that the monotone ordering I noted over
 `r_-1`…`r_4` was a coincidence of those five specimens rather than a law. Remaining: `r_6`–`r_8` (3),
 squares `[0/2/4/6/8/10]` (6).
+
+## `r_6` passes — ninth accepted A_STABILIZERS case
+
+`…[r_6]`, unchanged, single clean invocation: **PASSED, `1 passed in 80.75 s (0:01:20)`**,
+`pytest_exit=0`, provenance captured and bind-verified (port `685b26fd`, provider `9dc89ac`, in-run
+`groups.py` `ffa1d1423b51e003`). Log at `~/sage-image/logs/stab-r6-pass-9dc89ac.log`.
+
+Root times: 1850.35 / 696.33 / 402.82 / 200.44 / 129.70 / 109.04 / 6.07 / **80.75** s. The 6.07 s of
+`r_5` is an outlier low rather than the start of a trend, and no ordering holds across the eight —
+the useful statement is simply that the range spans 6 s to 1850 s with no predictable structure.
+
+Process note recorded against myself: an earlier attempt at this node batched `r_6`–`r_8` into one loop,
+which breaks the rule that a real failure is diagnosed before advancing. Job `jmvxqj8wi` was stopped
+~14 s in, and the node was rerun alone. The relaunch also carried a malformed `||` fallback; the fallback
+is what ran, only one test session started, so the verdict stands, but `elapsed=84s` includes that failed
+attempt's overhead. Remaining: `r_7`, `r_8` (2), squares `[0/2/4/6/8/10]` (6).
