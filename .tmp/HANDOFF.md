@@ -1843,3 +1843,51 @@ exited 0 itself, so a SIGKILL would have read as a **pass**. That is exactly the
 have been careful to avoid elsewhere, so it is fixed: the wrapper now propagates the child's code, and a
 control that SIGKILLs its own child confirms the wrapper exits 137. Sample rows also now report elapsed
 time rather than `time.monotonic()` since boot.
+
+## Corrections and the finiteness handoff
+
+**Withdrawing two predictions I made last turn.** I said the remaining square nodes "likely need
+comparable memory" and that freeing ~10 GB would probably let them pass. Neither was established: `[0]`
+is one specimen, the others were never run, and a single killed specimen says nothing about whether the
+others are cheaper, dearer, or killed for a different reason. `square[0]` stands as **killed, no verdict**
+— exit 137 at ~554 s, peak single `VmHWM` 9 801 MiB, peak tree RSS 9 224 MiB, `MemAvailable` low-water
+1 238 MiB — with **no kernel OOM proof**. That is the whole of what is known.
+
+### The GAP finiteness path, isolated to a general-owner defect
+
+`.tmp/handoff-owner-finiteness-shortcircuit.md`. The concrete finding is not that `IsFinite` is
+expensive; it is that **two consumers ask a question they cannot use**:
+
+- `rational_integral_stabilizers.py:371` — `if group.is_finite() is not True and containing is None:`
+- `orbit_spans.py:44` — `if group.is_finite() is True and containing is None:`
+
+Python evaluates left to right, so the finiteness query runs before `containing is None` is tested. This
+port **always** supplies the containing bound (`recursive._lattice_action` returns
+`.with_stable_containing_bound(containing)`), so at both sites the conjunction is decided by the right
+operand and the group's order cannot change the branch. Measured: 27.44 s of a 56 s pointed-isometry unit
+inside `libgap_mixin.is_finite`, reached `_finiteness_decision` → `_engine_finiteness(compute=True)` →
+`invariant_module_construction:368`.
+
+**Avoidable lost premise, not a required computation.** Reordering to `containing is None and
+group.is_finite() ...` preserves the truth value exactly — a pure evaluation-order change — and leaves
+`IsFinite` running wherever it genuinely decides between unbounded orbit closure and refusing the
+computation. No finiteness assumption is added and nothing is skipped. Both sites are provider code, so
+it goes to sage-extensions; the port's responsibility (supplying the justified bound) is already met and
+not offered for change.
+
+The reproduction in that note is a **call counter** — wrap `is_finite`, build the action with and without
+a bound, show the counter increments on the bounded call while the branch outcome is identical. I did not
+execute it, because an acceptance run was in flight; that is stated in the note rather than implied.
+
+## A_CENTRALIZERS: first case accepted
+
+`test_centralizer_images_match_oscar[oscar_lattices_with_isometry_110]`, port `7dffb2cb` + provider
+`c546077d`, cap 7200 s with `-k 30` and a **6 144 MiB hard bound** on tree RSS:
+
+- **PASSED, 1 passed in 2.98 s**, wrapper exit 0.
+- Peak tree RSS **417 MiB**, peak `VmHWM` 417 MiB, `MemAvailable` low-water 9 968 MiB.
+- Host checked before launch: 10 246 MiB available.
+
+The harness now propagates the child's exit code — the defect that made `square[0]` look like a pass is
+fixed and controlled — and stops a run that exceeds the memory bound (`PEAKRSS_LIMIT_MIB`), verified by a
+control that tripped it at 200 MiB. Cases 2–5 run one at a time on the same terms.
