@@ -1099,3 +1099,33 @@ Two corrections follow, both recorded rather than quietly fixed:
 `discprof.py` now tracks **in-flight** calls and prints `RUNNING depth=… oldest=…s` for any wrapped
 phase still executing, so the next run cannot repeat this misreading — a capping run reports what is
 running, not only what has finished. Not yet exercised; it waits for the current probe to end.
+
+## Resolved: the call that never returns is a `description` f-string
+
+The bounded probe reached its cap: `pytest_exit=124 elapsed=1800s`, 29 dumps, process verified gone.
+Wrapped totals at t=1757.2 s: `group_generators` 21 / 177.52 s and `discriminant_morphism` 21 /
+13.75 s (both frozen since t≈380 s), `cardinality` 1 570 390 calls / 9.95 s, nested `subgroup_on`
+1 / 0.03 s. The line-226 `subgroup_on` never returned.
+
+Last complete dump (76 frames, t≈1740 s), innermost first:
+
+```
+abelian_group_gap.py:152 exponents
+abelian_aut.py:203 matrix
+fqf_orthogonal.py:484 _act_ / :288 _preserves_form / :267 _element_constructor_
+groups.py:305 _element_from_engine / :525, :472 representative
+groups.py:486 _TransversalCoset._repr_
+finite_ordered_sets.py:587 _repr_
+groups.py:2133 _symmetric_group          <- caller
+```
+
+`_symmetric_group` builds `description=(f"Symmetric group S_{size}" if standard else
+f"Symmetric group on {points}")`. The f-string is eager, so on the non-standard branch it formats a
+finite ordered set of transversal cosets; that `_repr_` iterates every point and each coset's `_repr_`
+calls `representative()`, materialising and form-validating a real element through
+`_element_from_engine` into Sage's `FqfOrthogonalGroup`. A description string that is usually never
+read costs a full materialisation of the coset space.
+
+Handed to sage-extensions with the object path, the exact lines, the measured counters and the
+expected contract: `.tmp/handoff-owner-symmetric-group-description.md`. No library code was patched
+here.
