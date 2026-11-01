@@ -1513,3 +1513,14 @@ which breaks the rule that a real failure is diagnosed before advancing. Job `jm
 ~14 s in, and the node was rerun alone. The relaunch also carried a malformed `||` fallback; the fallback
 is what ran, only one test session started, so the verdict stands, but `elapsed=84s` includes that failed
 attempt's overhead. Remaining: `r_7`, `r_8` (2), squares `[0/2/4/6/8/10]` (6).
+
+## `r_7` passes — tenth accepted A_STABILIZERS case
+
+`…[r_7]`, unchanged, single clean invocation: **PASSED, `1 passed in 488.51 s (0:08:08)`**,
+`pytest_exit=0`, provenance captured and bind-verified (port `4feccb6f`, provider `9dc89ac`, in-run
+`groups.py` `ffa1d1423b51e003`). Log at `~/sage-image/logs/stab-r7-pass-9dc89ac.log`.
+
+Root times: 1850.35 / 696.33 / 402.82 / 200.44 / 129.70 / 109.04 / 6.07 / 80.75 / **488.51** s. Ten
+accepted cases in total with the OSCAR node. `r_8` is the last root node; the six square nodes
+(`[0|2|4|6|8|10]`) remain, and they exercise `vector_classes` rather than the root loop, so nothing in
+the root series predicts them.
