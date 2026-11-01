@@ -1456,3 +1456,13 @@ Coverage now, per case with provenance:
 Four root cases now accepted at 65 s, 402.82 s, 696.33 s and 1850.35 s. That spread is the reason each
 node keeps the full 120-minute cap: any budget predicted from one of these would have been wrong for at
 least one other. Advancing to `r_2` on the same terms; no failure has needed diagnosis so far.
+
+## `r_2` passes — fifth accepted A_STABILIZERS case
+
+`…[r_2]`, unchanged: **PASSED, `1 passed in 200.44 s (0:03:20)`**, `pytest_exit=0`, cap not reached,
+provenance captured and bind-verified (port `43a49697`, provider `9dc89ac`, in-run `groups.py`
+`ffa1d1423b51e003`). Log at `~/sage-image/logs/stab-r2-pass-9dc89ac.log`.
+
+Five accepted root/OSCAR cases now: 65 s, 200.44 s, 402.82 s, 696.33 s, 1850.35 s. Remaining:
+`r_3`–`r_8` (6) and squares `[0/2/4/6/8/10]` (6), unresolved rather than failed. Advancing to `r_3` on
+the same terms.
