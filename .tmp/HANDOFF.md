@@ -1384,3 +1384,29 @@ Handed to the owner as a cost question, not a correctness one, at
 whether it can be computed from data the element already holds rather than forcing GAP. I am not
 asserting it is avoidable. The case stays **unresolved and capped**, and the remaining `r_*` and square
 nodes stay unresolved with it.
+
+## A_STABILIZERS acceptance coverage, with provenance per case
+
+Recorded because #33 wants the sample by case id, and because two of these runs were launched before
+the header-SHA practice was in place.
+
+| case | pair | result |
+| --- | --- | --- |
+| `test_vector_stabilizer_has_oscars_order` (`stabilizer_of_100`) | port **`7a2692f`** (derived — see below) + provider **`e83c4d6`** | **passed, 65 s** |
+| `…[r_-1]` | port **`6e1be797`** + provider **`e83c4d6`** — both captured in the run header | **passed, 1850.35 s (0:30:50)** |
+| `…[r_0]` | port **`fc6a022f`** + provider **`9dc89ac`** — captured in the header, with the in-run `groups.py` hash `ffa1d1423b51e003` matching the host tree | **running now**, job `jmvxphwj4`, `timeout -k 30 7200` |
+| `…[r_1]` … `…[r_8]`, squares `[0|2|4|6|8|10]` | — | **unresolved**, not failed |
+
+**OSCAR provenance is derived, not captured.** Its log (`jmvxkfvs9`) contains no 40-hex string. The job
+started 08:26:19 UTC, and the only commit nearby is `4ba30911` at 08:27:06 — so HEAD at launch was its
+parent **`7a2692f`**. `src` and `tests` tree hashes are identical at both commits
+(`src` `87fbf863c413e955997d42b52971c2ed3f2b10d9`, `tests` `7d02ecd6ec0493dc076a95491dc760e679a14b07`)
+and the diff between them is documentation only, so the executed source equals `4ba30911`'s.
+
+Note the pairs differ across the three cases — `e83c4d6` for the first two, `9dc89ac` for the third —
+because the pin advanced at a clean boundary between them. That is deliberate, and the table keeps the
+distinction rather than flattening it into one revision.
+
+`r_-1`'s pass is what justifies the 120-minute budget now given to `r_0`: the earlier 600 s cap on the
+same node produced "no verdict" and read like a cost problem when it was simply too small. Short caps
+are no longer used for this family.
