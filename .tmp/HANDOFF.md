@@ -1301,3 +1301,34 @@ only at its result or cap, so the recorded pair stays honest.
 At the boundary: pin `9dc89ac`, commit and push, then rerun the original Enriques case_1 with the
 existing `discprof` phase instrumentation and in-flight reporting. The description investigation is
 settled; the rerun measures the fix, it does not re-derive the diagnosis.
+
+## Provenance of the 92/92 A_PERFECT run (`jmvxg3dnz`) — port SHA
+
+The #33 record needs the port checkout that executed the 92/92 A_PERFECT result. **The SHA was not
+captured by the run.** Checked directly rather than assumed:
+
+- `jmvxg3dnz.log` contains no 40-hex string and no revision marker of any kind; the job command never
+  echoed one. `grep -nE "[0-9a-f]{40}"` returns nothing, and no line matches `port|commit|rev`.
+- Nothing in `.nucleus/jobs/` records a checkout state either.
+
+What *is* established, and how far it goes:
+
+| claim | status | basis |
+| --- | --- | --- |
+| HEAD at launch was **`a848fd7c`** | **derived, not captured** | job start 06:24:37 UTC falls between commit `a848fd7c` at 06:20:11 and the next commit `40bc5ef2` at 06:35:59; no commit exists in between |
+| the executed `src/` and `tests/` equal `40bc5ef2`'s | **provable** | tree hashes are identical at `79de4190`, `a848fd7c`, `40bc5ef2`: `src` = `17144b985368f53b4af41c7d03f93dfe07f02e53`, `tests` = `7d02ecd6ec0493dc076a95491dc760e679a14b07` |
+| nothing else changed in the window | **provable** | `git diff --stat 79de4190 40bc5ef2` is `1 file changed, 166 insertions(+)`, all of it `.tmp/HANDOFF.md` |
+
+Residual uncertainty, stated rather than glossed: tree-hash equality is a statement about commits, not
+about the live worktree. If an uncommitted edit to `src/` or `tests/` had existed at launch and was
+later reverted, the hashes would not show it. The next commit's diff is docs-only, which is evidence
+against such an edit but not proof.
+
+**For the #33 record, the honest entry is:** port `a848fd7c` (derived — HEAD at launch by timestamp
+bracketing), provider `e83c4d6` (recorded), with the executed source provably identical to
+`40bc5ef2` because every commit in the window touched only `.tmp/HANDOFF.md`. Naming `40bc5ef2` alone
+is not sufficient, as noted: it is the commit that *recorded* the result, made 11 minutes after the run
+finished, and it differs from the launched tree only in documentation.
+
+Future runs echo the port SHA and the provider SHA in the run header, so this derivation is not needed
+again.
