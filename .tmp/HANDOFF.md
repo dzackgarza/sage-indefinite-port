@@ -366,11 +366,11 @@ The port now imports the shared library at its current home. `dzack_research.pre
 became `sage_extensions.*` in 22 files (12 under `src/`, 10 under `tests/`), with
 `FramedFreeModules` and `ModulesOverIntegralDomains` taken from their defining modules
 because `sage_extensions.all` does not re-export them. `pyproject.toml` declares
-`sage-extensions @ ...@441519c574cec12ada06ad586f6c3862fbca96d0` and `ci-provision-sage`
+`sage-extensions @ ...@7b222e86214524a53802350f3cfda9c513707600` and `ci-provision-sage`
 clones that repository, reads the revision from `pyproject.toml`, and installs it
 `--no-deps -e`. The pre-move research library is no longer installed or used.
 
-Verified at port `main` + sage-extensions `441519c` in the shared image
+Verified at port `main` + sage-extensions `7b222e86` in the shared image
 (`b0cd7d86...`, Sage 11.0.beta5, CPython 3.14.10):
 
 | check | result |
@@ -392,3 +392,27 @@ including the identity; isometries lack `_element_function`; a degenerate Gram m
 constructs a `_PresentedModule` without `Isom`. The port references none of those
 internals and constructs only through `Lattices`, `Isom`, `Aut` and the homset
 constructors.
+
+### Verified canonical pair after the library repair
+
+Port `main` (`7cb71cca`) + sage-extensions `7b222e86214524a53802350f3cfda9c513707600`,
+image `b0cd7d86e21eb450ed90e4c83707920e1d5d429a` (Sage 11.0.beta5, CPython 3.14.10), OCI
+environment preserved (`JULIA_DEPOT_PATH=/root/.julia:/opt/julia-depot:`). This is the pair the
+shared image recipe should provision.
+
+- Every former sage-extensions#5 reproduction passes there: `module_morphism()` on
+  `Isom(images)`, `Aut(images)`, `Isom(dict)` and `Isom(L).identity()`; `U.O().cardinality()` = 4;
+  `U.O().discriminant_image()`; `U.stable_orthogonal_group().order()` = 4; identity
+  product/inverse/determinant; a degenerate Gram constructing a lattice with `Isom`
+  (rank 3, signature (2,0)).
+- Bounded consumers, all passing: centralizers 5/5 (78 s), plane/flag + divisibility 7/7 (68 s),
+  pointed/divisibility 9/9 (68 s), isometry coordinate subset 5/5 (65 s) including the
+  degenerate witness, isometry-state regressions 3/3 (2 s), reflective binary-cycle 4/4 (3 s),
+  anisotropic binary vector classes 1/1 (1.5 s).
+- `test_orthogonal_group` bounded subset still aborts in the image's bliss canonical-label path
+  (ai-review-ci#490) — an image defect, distinct from this pair; not rerun further.
+- `test_boundaries` remains open under ARITHMETIC/#18; whole-file isometry/stabilizer runs are
+  long-tail and also pass through the image defect.
+
+Pre-migration acceptance (port `04eb0934` + research `064cd6e8`) stays recorded separately and
+does not certify this pair.
