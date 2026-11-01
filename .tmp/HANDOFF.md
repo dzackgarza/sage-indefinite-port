@@ -436,3 +436,109 @@ and it performs the exact labelled-graph comparison that the canonicalization re
 
 This is branch coverage for #15, not A_REFLECTIVE acceptance: the file's 17,532 parametrized
 cases remain long-tail and unrun, and no family is closed by this record.
+
+### A_PERFECT per-case record (bounded, 180 s per case)
+
+92 frozen cases of `test_perfect_domains.sage`, each run as its own invocation so a
+long case cannot swallow the others. Raw table: `~/sage-image/perfect-percase.log`.
+Port `52eeedfa` (main) + sage-extensions `7b222e86`, base image `b0cd7d86` with the owner
+Bliss patches.
+
+**86 cases passed** (sum of case times 1318 s):
+
+- test_facet_orbit_permutation_view_materializes_exact_isometries — 3s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_0] — 4s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_10] — 3s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_11] — 3s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_12] — 3s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_13] — 5s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_14] — 4s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_15] — 3s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_16] — 3s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_17] — 4s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_18] — 6s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_19] — 4s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_1] — 3s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_20] — 7s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_21] — 11s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_22] — 6s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_23] — 10s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_24] — 16s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_25] — 8s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_26] — 83s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_27] — 5s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_28] — 20s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_29] — 14s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_2] — 3s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_30] — 64s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_31] — 32s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_32] — 88s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_34] — 30s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_35] — 32s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_36] — 13s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_38] — 103s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_3] — 4s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_4] — 2s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_5] — 4s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_6] — 3s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_7] — 3s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_8] — 3s
+- test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_9] — 3s
+- test_isotropic_shell_survives_a_permuted_gram_basis — 2s
+- test_large_cell_cone_uses_exact_normaliz_h_presentation — 12s
+- test_large_pairing_graph_fallback_returns_exact_transporter — 3s
+- test_lazy_neighbor_cones_retain_exact_transformed_rays — 4s
+- test_non_diagonal_isotropic_shell_respects_explicit_coordinate_labels — 1s
+- test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center — 2s
+- test_non_diagonal_positive_shell_respects_explicit_coordinate_labels — 2s
+- test_non_diagonal_positive_shell_uses_the_pinned_cvp_center — 2s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_0] — 4s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_10] — 2s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_11] — 5s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_12] — 3s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_13] — 5s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_14] — 3s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_15] — 3s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_16] — 5s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_17] — 3s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_18] — 6s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_19] — 4s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_1] — 4s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_20] — 8s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_21] — 11s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_22] — 5s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_23] — 7s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_24] — 157s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_25] — 8s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_26] — 43s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_27] — 5s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_28] — 9s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_29] — 9s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_2] — 3s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_30] — 43s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_31] — 21s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_32] — 88s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_34] — 31s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_35] — 28s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_36] — 15s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_38] — 92s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_3] — 6s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_4] — 5s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_5] — 8s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_6] — 5s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_7] — 8s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_8] — 3s
+- test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_9] — 3s
+- test_positive_shell_scales_rational_direction_pairing_bound — 2s
+- test_positive_shell_survives_a_permuted_gram_basis — 1s
+- test_traversal_retains_only_adjacency_facet_orbits — 4s
+
+**6 cases exceeded the 180 s cap** — three rank-6 fixtures in both modes:
+`Result_Enumeration_33` (total, isotropic), `Result_Enumeration_37` (total, isotropic),
+`Result_Enumeration_39` (total, isotropic). Exceeding the cap establishes only that a case
+ran longer than 180 s; it is not evidence of nontermination.
+
+The pinned reference (`CI_tests/28B_LorentzianPerfStabEqui/Result_Enumeration`) records
+exactly the fixture counts for all three: 33 → total 18 / isotropic 15, 37 → 2 / 2,
+39 → 12 / 12, so the fixtures are faithful and only the cost is open. Case 37 is the
+anomaly: two perfect cells in total, yet over 180 s, so the cost is not the cell count.
