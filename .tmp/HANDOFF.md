@@ -1129,3 +1129,37 @@ read costs a full materialisation of the coset space.
 Handed to sage-extensions with the object path, the exact lines, the measured counters and the
 expected contract: `.tmp/handoff-owner-symmetric-group-description.md`. No library code was patched
 here.
+
+## A_STABILIZERS coverage: one real pass, and the rest is not "small"
+
+Run on the current declared pin `e83c4d6`, one invocation per node, 600 s cap. Kept strictly separate
+from the Enriques blocker.
+
+| node | result |
+| --- | --- |
+| `test_vector_stabilizer_has_oscars_order` | **passed, 65 s** |
+| `test_equivalence_witness_carries_a_representative_to_its_reflection[r_-1]` | capped at 600 s, **no verdict** |
+
+I stopped the remaining fifteen nodes rather than spend ~2.5 h producing more caps, and then measured
+*why* instead of guessing. The node's unit is one pointed E10 Isom, repeated over the 61 recorded orbit
+representatives. Timing them individually:
+
+| representative norm `q` | one pointed Isom |
+| --- | --- |
+| 2 | **0.22 s** |
+| 6, 8, 10, 12, 18 | 56–74 s each |
+| 14, 16 | 36–60 s each |
+| 20 | 57–58 s each |
+
+So the cost is strongly norm-dependent and plateaus near ~56 s per representative once `q >= 6`; a
+900 s probe cap was reached after ~13 of the 61. Extrapolating, one `r_*` node is roughly
+**50–60 minutes**, and the ten of them roughly 8–10 hours — plus the six E10 square nodes, whose
+`vector_classes` enumeration was not measured.
+
+Conclusion for #33: the remaining A_STABILIZERS sample is **not a small case set**. The exact ids are
+pinned (`r_-1` … `r_8`, squares `[0|2|4|6|8|10]`, and the OSCAR `stabilizer_of_100` node that now
+passes), but each root node needs its own budget rather than a bounded sequence, and a per-node ~1 h
+budget is a scheduling decision, not a probe detail.
+
+Also worth carrying: the norm dependence is a real property of the pointed route at rank 10, not a
+fixture artefact — the same 61 representatives, same reflection, differing only in `q`.
