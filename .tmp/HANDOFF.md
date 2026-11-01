@@ -775,3 +775,32 @@ Revision coverage is mixed and must not be flattened into "91/92 on the current 
 `Result_Enumeration_33` isotropic remains the only historically capped A_PERFECT case, and it now needs
 a bounded phase diagnosis on the current provider — the same instrumented treatment case_1 just had,
 not another opaque cap.
+
+## Runtime resumed: binds verified, targeted acceptance re-taken at the current pin
+
+After the shared-runtime maintenance the baseline `/repos` pins were restored to the published lock,
+which is *older* than this project's declared provider. The per-process bind was verified three ways
+rather than assumed, because the failure mode here is silent: a run that picks up the restored baseline
+provider looks exactly like a run on the declared pin until something slow or wrong happens.
+
+| check | value |
+| --- | --- |
+| host tree `~/sage-extensions-e83c4d6` `module_morphisms.py` sha256 | `892172a6b10d3acb` |
+| same file as seen inside the run at `/repos/sage-extensions` | `892172a6b10d3acb` (match) |
+| restored baseline `/repos` copy in the rootfs | `be6b82f51bcd1726` (different — not what runs) |
+| `sage_extensions.__file__` | `/repos/sage-extensions/src/sage_extensions/__init__.py` |
+| repair behaviour on `I6` | 64 distinct dual points give **64 distinct hashes** |
+
+Targeted acceptance re-taken at `e83c4d6`, so this is no longer mixed with the `69907ae` run:
+
+- `tests/test_perfect_cell_transporter.py` — 46 passed, 25.41 s.
+- `test_perfect_domains.sage::test_large_cell_cone_uses_exact_normaliz_h_presentation` — passed, 10.29 s.
+- `test_reflective.sage` binary-cycle / permuted-basis nodes — 2 passed, 2.63 s.
+
+Cumulative coverage **at `e83c4d6`** is now: `Result_Enumeration_37` total 40.12 s and isotropic
+34.51 s, the Mertens `O(L)` node 6.54 s, and the four targeted items above. Everything else — the 86
+cases inside the 180 s cap, 33 total 558 s, 39 total 237 s, 39 isotropic 261 s — still dates from
+`7b222e86` and would need re-taking for a single-revision A_PERFECT statement.
+
+The Maxima environment recipe correction found during readback belongs to the image owner and is not
+duplicated here.
