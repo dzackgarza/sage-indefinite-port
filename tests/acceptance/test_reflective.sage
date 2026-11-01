@@ -337,7 +337,20 @@ def test_root_systems_match_polyhedral_common(case) -> None:
     _assert_same_root_system(case["gram"], case["roots"])
 
 
-@pytest.mark.parametrize("case", load_allcock_rank3_reflective(), ids=lambda case: case["id"])
+def _allcock_case_id(case) -> str:
+    r"""The retained source identity of a rank-3 Allcock lattice.
+
+    ``case["id"]`` is built from the lattice id alone
+    (``references/extract/allcock_rank3.py:56`` uses only capture group 5), so it names up
+    to 374 distinct lattices: 8,595 entries share 176 ids. ``(weyl_group_id, lattice_id)``
+    is Allcock's own identity and is unique across every entry, so composing it keeps the
+    node id both readable and unambiguous. Nothing but the reported id changes -- the
+    parametrized data, its order and every assertion are untouched.
+    """
+    return f"{case['id']}_w{case['weyl_group_id']}_l{case['lattice_id']}"
+
+
+@pytest.mark.parametrize("case", load_allcock_rank3_reflective(), ids=_allcock_case_id)
 def test_root_systems_match_allcock(case) -> None:
     require(EDGEWALK)
 

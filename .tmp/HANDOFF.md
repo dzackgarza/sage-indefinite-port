@@ -1637,3 +1637,49 @@ What each outcome would mean:
 
 Also consolidated the whole of #33 coverage into `.tmp/acceptance-coverage.md`, every row carrying the
 port + provider pair it actually ran on and whether that pair was captured or derived.
+
+## Reflective case identity: reporting defect fixed, coverage unchanged
+
+**It was identity only.** Proof, before and after:
+
+- `pytest --collect-only -k test_root_systems_match_allcock` collected **8 595** nodes both before and
+  after the change — the parametrization never lost or merged a case.
+- Before: pytest made those 8 595 ids *unique* by appending its own counters
+  (`...[allcock_rk3_3_366]`, `...[allcock_rk3_4_362]`). Every case executed; the ids were simply
+  unstable, since the suffix encodes the runner's enumeration order.
+- After: **8 595 nodes, 8 595 unique ids** with no counter suffix, e.g.
+  `...[allcock_rk3_4_w0_l4]` and `...[allcock_rk3_2_w2_l2]`.
+
+**Source of the defect.** `references/extract/allcock_rank3.py:56` builds
+`"id": f"allcock_rk3_{int(match.group(5))}"` from the lattice id (`group(5)`) and drops Allcock's
+Weyl-group id (`group(4)`). 8 595 entries therefore carry 176 ids, `allcock_rk3_1` naming 374 lattices.
+The retained identity was already in the fixture as `(weyl_group_id, lattice_id)` — 374 Weyl groups ×
+lattice ids — and that pair is unique for all 8 595 entries. Full-content digests are also all distinct,
+so no occurrence counter is needed for exact duplicates.
+
+**Fix.** The acceptance parametrization now uses
+`f"{case['id']}_w{case['weyl_group_id']}_l{case['lattice_id']}"` via a documented `_allcock_case_id`.
+Fixture data, parametrization order, the 8 595 count and every assertion are untouched; the internal
+selections that name `allcock_rk3_4` / `allcock_rk3_2` match on `id` **and** Gram and so are unaffected.
+The two A_REFLECTIVE sample cases map to `allcock_rk3_4_w0_l4` and `allcock_rk3_2_w2_l2`.
+
+**Guard.** `tests/test_allcock_fixture_identity.py` (9 tests, 0.55 s, no Sage needed) asserts: all 8 595
+cases retained; `id` alone is ambiguous (176 distinct); `(weyl_group_id, lattice_id)` injective; composed
+ids injective and total; no two cases share content; every case cites its vendored source; per-case
+mathematical data intact; and the two sample cases resolve uniquely *and* their bare ids remain
+ambiguous (so the composed id stays necessary).
+
+### Proposed #33 wording (exact)
+
+> A parametrized acceptance sample records each case by a **stable identity derived from the corpus**,
+> not from the test runner's enumeration order: the retained source identity of the record where the
+> corpus supplies one, otherwise the original label together with a deterministic digest of the case
+> content, with an occurrence index only for exact duplicates. Node ids must be unique without relying
+> on the runner's duplicate disambiguation.
+
+Evidence for that wording is this fixture and `tests/test_allcock_fixture_identity.py`. I have not
+posted it to #33 — the connector reads issues here but does not publish comments.
+
+**Note for TODO.md:** its A_REFLECTIVE row names `allcock_rk3_4` and `allcock_rk3_2` as prose. Those now
+correspond to `allcock_rk3_4_w0_l4` and `allcock_rk3_2_w2_l2`; the row's selection is by id **and** Gram,
+so it remains correct as written.
