@@ -542,3 +542,64 @@ The pinned reference (`CI_tests/28B_LorentzianPerfStabEqui/Result_Enumeration`) 
 exactly the fixture counts for all three: 33 → total 18 / isotropic 15, 37 → 2 / 2,
 39 → 12 / 12, so the fixtures are faithful and only the cost is open. Case 37 is the
 anomaly: two perfect cells in total, yet over 180 s, so the cost is not the cell count.
+
+## Case 37: both polyhedral engines are fast; the provider's dual-point hash collapses
+
+Measured on port `52eeedfa` + `sage-extensions 7b222e86`, base image `b0cd7d86` with the owner
+Bliss patches — the same identities as the records above. Engine timings here are engine-only: no
+owned cone is constructed inside the timed call.
+
+`Result_Enumeration_37` total mode, initial perfect cell: 202 rays, rank 6, max |coordinate| 59.
+
+| call | time | result |
+| --- | --- | --- |
+| Normaliz `NmzResult(cone, "SupportHyperplanes")` | 0.113 s | 570 facets, 0 equations |
+| PPL `Polyhedron(vertices=[0], rays=<202 rows>).inequalities()` | 0.052 s | 570 facets, 0 equations, 112 extreme rays |
+| PPL `Polyhedron(ieqs=<570 Normaliz rows>)` | 0.09 s | 112 extreme rays |
+
+The two 570-facet families are the same rows: identical as raw signed primitive integer rows and
+identical as sign-canonical sets, 570 distinct on each side.
+
+**The earlier attribution of case 37's cost to PPL's V-to-H conversion is withdrawn.** PPL V-to-H on
+those 202 rays is 0.052 s. The 1800 s probe that did not return sat in `cell_cone`'s last step, the
+provider's owned-cone construction, which was inside the timed call.
+
+That step is `sage_extensions.categories.polyhedral_cones.RationalPolyhedralCone.__init__` calling
+`finite_ordered_set` over ~570 covectors of `lattice.dual_module()`. It is superlinear because
+`hash()` of a dual-module point does not depend on the point: 570 distinct covectors share one hash,
+so `dict.fromkeys` degenerates to pairwise `==`, each a module-morphism `_richcmp_` costing ~17 ms.
+
+- `finite_ordered_set` over 570 such covectors: not finished in 560 s.
+- `_rational_polyhedral_cone` from the 570-facet H-presentation: not finished in 779 s.
+- Isolated, on the standard lattice `I6`, no port and no engine: 64 distinct dual points give 1
+  distinct hash, and `dict.fromkeys` costs 0.585 / 1.961 / 6.525 / 22.926 s at n = 8 / 16 / 32 / 64.
+- Primal points are unaffected: 125 points give 80 distinct hashes and 0.001 s at n = 64.
+
+Bounded faulthandler stack, and the provider-only reproducer: `.tmp/provider-report-dual-point-hash.md`
+(untracked, `.tmp/*` is ignored). Reported to `sage-extensions` at the pin; the owner is repairing it.
+
+Consequence for the port: **no routing change is justified.** Both `cell_cone` branches — PPL
+`from_rays` and the Normaliz direct path — end in the same `RationalPolyhedralCone.__init__`, so
+neither avoids the wall. Case 37 is blocked on the provider, not on port routing.
+
+## All 80 frozen fixture cones agree exactly between Normaliz and PPL
+
+Sweep of every fixture in both modes, engine-only, 11 s total: for all 40 fixtures x 2 modes the
+minimal H-presentations coincide exactly — same facet count, same primitive signed rows, same set.
+Every cone is pointed (0 equations throughout). Raw table: `~/sage-image/logs/engine-agreement.json`.
+
+Facet counts are what separate the capped cases, and they do not separate them the way the caps
+suggested:
+
+- `Result_Enumeration_37` has **570** facets in both modes (202 / 112 rays) — by far the largest, and
+  the only fixture near the provider's hash-collapse wall. This is why case 37 is not a cost problem
+  but a blocker.
+- Next largest: `Result_Enumeration_24` total 104 facets (137 rays), `Result_Enumeration_38`
+  isotropic 56, `Result_Enumeration_26` 48, `Result_Enumeration_30/31` 32.
+- `Result_Enumeration_33` has **11** facets (16 rays) and `Result_Enumeration_39` **8** (22 rays).
+  Their cone construction is milliseconds, so their cost is not the engines and not this defect: it
+  is the traversal over cells. Case 33 total is measured at 558 s and passes.
+
+So of the six 180 s caps, one (37, both modes) is a provider blocker and the other four are traversal
+cost that a larger cap may simply absorb — 33 total already does so at 558 s. That is the next
+measurement worth making, and it needs no code change.
