@@ -584,7 +584,7 @@ def test_normaliz_pairing_rows_match_owned_covectors(monkeypatch) -> None:
     )
     assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})
     owned_rows = tuple(
-        tuple(int(covector(label)) for label in labels)
+        tuple(int(covector(cell.lattice.module_generator(label))) for label in labels)
         for covector in backend._iter_cell_halfspace_covectors(cell)
     )
     # The primitive-covector view now independently consumes the raw H-data
@@ -1029,7 +1029,10 @@ def test_facet_incidence_streaming_preserves_exact_orbits() -> None:
     labels = tuple(cell.lattice.module_generating_set())
     covectors = tuple(backend._iter_cell_halfspace_covectors(cell))
     pairing_rows = tuple(backend._iter_cell_halfspace_pairing_rows(cell, labels))
-    assert pairing_rows == tuple(tuple(int(covector(label)) for label in labels) for covector in covectors)
+    assert pairing_rows == tuple(
+        tuple(int(covector(cell.lattice.module_generator(label))) for label in labels)
+        for covector in covectors
+    )
     permutation_orbits = backend.facet_orbit_permutations(cell)
     permutation_orbits_again = backend.facet_orbit_permutations(cell)
     assert permutation_orbits_again == permutation_orbits
@@ -1166,3 +1169,32 @@ def test_facet_flip_uses_pinned_gap_normals(monkeypatch) -> None:
     assert critical[0] != rows[0]  # GAP Set changes the first critical vector.
     assert direction == lorentzian_cells._source_remove_fraction(vector(QQ, [0, *pinned_direction]))
     assert base == lorentzian_cells._source_remove_fraction(pinned_base)
+
+
+def test_rank_three_minimized_halfspaces_pair_against_basis_elements() -> None:
+    r"""Result_Enumeration_0: the minimized H-presentation is exact and every facet meets a ray.
+
+    The provider's halfspace covectors are functionals on the lattice. Pairing them with a
+    basis label instead of the basis element produced a zero row and a row that is nonzero on
+    every ray, which raised ``a minimized H-presentation covector has no incident extreme
+    rays`` in facet-key generation. Evaluated on the basis elements, the same covectors are
+    exactly the four facet normals Normaliz reports for those rays, and both modes complete.
+    """
+    gram = matrix(ZZ, [[4, 0, 0], [0, 0, -1], [0, -1, -2]])
+    ambient = lattice(gram.rows())
+    backend = LorentzianPerfectLocalBackend()
+    cell = backend.initial_cell(ambient, NONNEGATIVE_SQUARES)
+    labels = tuple(cell.lattice.module_generating_set())
+    rays = tuple(tuple(int(entry) for entry in row) for row in cell.rows)
+    assert rays == ((0, -1, 1), (0, 1, 0), (-1, -1, 2), (-1, 1, 1))
+    rows = tuple(
+        tuple(int(covector(cell.lattice.module_generator(label))) for label in labels)
+        for covector in backend.cell_cone(cell).halfspace_covectors()
+    )
+    assert sorted(rows) == sorted(((-1, 0, 0), (1, 0, 1), (1, 1, 1), (3, 1, 2)))
+    for row in rows:
+        pairings = tuple(sum(left * right for left, right in zip(row, ray)) for ray in rays)
+        assert any(value == 0 for value in pairings), f"{row} is incident to no extreme ray"
+        assert any(value != 0 for value in pairings), f"{row} vanishes on every extreme ray"
+    total = ambient.lorentzian_reduction_complex()
+    assert len(total.cells()) == 1

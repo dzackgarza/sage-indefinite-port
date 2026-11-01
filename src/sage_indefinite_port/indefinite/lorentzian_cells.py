@@ -1120,12 +1120,16 @@ class LorentzianPerfectLocalBackend:
             # a nonzero integral scale that does not change incidence zeros.
             covectors = self.cell_cone(cell).halfspace_covectors()
             for covector in covectors:
-                yield tuple(int(covector(label)) for label in labels)
+                yield tuple(
+                    int(covector(cell.lattice.module_generator(label))) for label in labels
+                )
             return
         # Small owned cones are reused directly rather than querying Normaliz
         # for a second H-presentation.
         for covector in self.cell_cone(cell).halfspace_covectors():
-            yield tuple(int(covector(label)) for label in labels)
+            yield tuple(
+                int(covector(cell.lattice.module_generator(label))) for label in labels
+            )
 
     def _iter_cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
         """Yield exact primitive facet covectors without forcing a large owned cone."""
@@ -2888,7 +2892,9 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 SageZZ,
                 len(covector_block),
                 len(labels),
-                lambda row, column, covector_block=covector_block: covector_block[row](labels[column]),
+                lambda row, column, covector_block=covector_block: covector_block[row](
+                    lattice.module_generator(labels[column])
+                ),
             )
             pairing_block = halfspace_block * ray_transpose
             del halfspace_block
@@ -3017,7 +3023,9 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                     SageQQ,
                     len(target_covectors),
                     len(ambient_labels),
-                    lambda row, column: _rational(target_covectors[row](ambient_labels[column])),
+                    lambda row, column: _rational(
+                        target_covectors[row](lattice.module_generator(ambient_labels[column]))
+                    ),
                 )
                 del target_covectors
                 target_halfspace_cache_key = target_key
