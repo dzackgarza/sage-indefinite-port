@@ -416,3 +416,23 @@ shared image recipe should provision.
 
 Pre-migration acceptance (port `04eb0934` + research `064cd6e8`) stays recorded separately and
 does not certify this pair.
+
+### A_REFLECTIVE branch sample at the canonical pair with the owner Bliss patch
+
+Identities for this run: port `main` `52eeedfa17573823b7687039a6d27f05726bb54c`; provider
+sage-extensions `7b222e86214524a53802350f3cfda9c513707600`; base image
+`b0cd7d86e21eb450ed90e4c83707920e1d5d429a` (Sage 11.0.beta5, CPython 3.14.10); owner patches
+`bliss-repair.patch` `baf4b826e8093c7891de3650789c7f1e13c7d9e82de362a124486956e53f32b3` and
+`bliss-repair-v2.patch` `ff86f4a9a3cf02ae47ee81dc221ee048ba7f9fe277cfc3dbeb2f1ae091dbb5e1`;
+installed `sage/graphs/bliss.cpython-314-x86_64-linux-gnu.so`
+`d941337e3a69b8256771c2fbbff5c2604e724b717dcc41352e12a3f7f9b75a75`, recorded in
+`/opt/bliss-repair.json`. This rootfs is the base image plus those owner patches; the published
+image is unchanged.
+
+`tests/acceptance/test_reflective.sage::test_edgewalk_branch_representative_sample` → **1 passed
+(14.5 s)**. It exercises the starting-corner and cusp branches, `U+<46>` termination, the compact
+hexagon under a permuted labelled Gram, the binary branches, and the required cycle/edge routines,
+and it performs the exact labelled-graph comparison that the canonicalization repair unblocked.
+
+This is branch coverage for #15, not A_REFLECTIVE acceptance: the file's 17,532 parametrized
+cases remain long-tail and unrun, and no family is closed by this record.
