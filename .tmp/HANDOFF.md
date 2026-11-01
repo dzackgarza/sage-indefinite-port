@@ -2185,3 +2185,22 @@ lookup I can finish by reading, and I will not fake it by enumerating closures.
 Consequence, stated plainly: I did **not** apply a partial substitution. Replacing four GAP calls while
 the fifth stays would leave the facet path half-owned, add risk to a passing family, and claim an
 integration that is not complete.
+
+## At the repaired pin: guard passes, A_PERFECT sweeping
+
+Boundary work after the A_ISOMETRY sweep ended, on port `src` `87fbf863c413` + provider
+**`cdafca84`** (the bounded-finiteness short-circuit pin):
+
+- **Guard**: `tests/test_cell_faces_facet_orbits.py` — **5 passed in 1.86 s**, so the facet-orbit
+  semantics are unchanged by the provider move. (No substitution was applied; the guard is running as a
+  control on the pin, not as validation of a change I did not make.)
+- **A_PERFECT full file** launched as job `jmvxxml2p`: all 92 tests, one invocation each, per-case exit
+  code, peak RSS and verdict, 1800 s cap, 6 144 MiB bound, provider `cdafca84` with the bind checked.
+
+Progress at the first poll: **28 of 92 complete, zero failures**, 432–434 MiB peak, 6–7 s per case.
+
+This sweep is the current-pair re-take of the family whose previous 92/92 was recorded at
+port `a848fd7c` + provider `e83c4d6` — two provider revisions and one port fix ago. If it passes, that is
+the first A_PERFECT result at the pins the tree now declares, which is what the record needs; if anything
+fails, the finiteness reorder is the first suspect, since it is the only change touching the
+`IntegralStructureAction` path this family builds.
