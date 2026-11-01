@@ -1908,3 +1908,25 @@ Host was checked before each launch (10 246 and 10 410 MiB available). Nothing h
 `square[0]` profile: these cases are seconds and hundreds of MiB. That is why I am not carrying any
 memory expectation from one family or specimen to another — the only thing `square[0]` establishes is
 `square[0]`.
+
+## A_CENTRALIZERS: four of five accepted
+
+One case per invocation, provider `c546077d`, port `7dffb2cb`/`75dc17f6`/`335c2857`, cap 7200 s with
+`-k 30`, 6 144 MiB hard bound, host checked before each launch, corrected exit-status and RSS capture.
+
+| case | result | peak tree RSS | `MemAvailable` low-water |
+| --- | --- | --- | --- |
+| `oscar_lattices_with_isometry_110` | **passed, 2.98 s** | 417 MiB | 9 968 MiB |
+| `oscar_lattices_with_isometry_118` | **passed, 2.56 s** | 274 MiB | 10 243 MiB |
+| `oscar_lattices_with_isometry_133` | **passed, 80.18 s** | 3 739 MiB | 7 302 MiB |
+| `oscar_enumeration_88` | **passed, 39.46 s** | 2 786 MiB | 8 169 MiB |
+| `oscar_enumeration_96` | running — last of the five | — | — |
+
+`…133` is the `is_all_of_O_qL` branch rather than an order equality, so the sample now covers both
+assertion shapes. The per-case cost is genuinely mixed — 2.6 s to 80 s, 274 MiB to 3.7 GiB — which is the
+concrete reason each case keeps its own bound and cap rather than a figure carried over from its
+neighbour.
+
+If the fifth passes, A_CENTRALIZERS is the first family with its **full frozen file** accepted at a
+current pair: `#18`/TODO require all five cases for this family rather than a representative sample, so a
+clean sweep would be a real acceptance result rather than coverage paperwork.
