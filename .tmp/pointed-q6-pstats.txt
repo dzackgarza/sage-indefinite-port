@@ -1,0 +1,231 @@
+specimen: root r_-1, representative index 3, vector [-1, -3, 0, 0, 0, 0, 0, 0, 0, 0], q=6
+uninstrumented duration for this exact specimen was 56.12 s
+Timeout (0:00:30)!
+Thread 0x00007367cd8ff6c0 [Thread-1 (_drai] (most recent call first):
+  File "/repos/sage-julia-bridge/src/sage_julia_bridge/interface.py", line 279 in _drain_stderr
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x0000736857199780 [python] (most recent call first):
+  File "/repos/sage-julia-bridge/src/sage_julia_bridge/interface.py", line 358 in _request_unlocked
+  File "/repos/sage-julia-bridge/src/sage_julia_bridge/interface.py", line 345 in _request
+  File "/repos/sage-julia-bridge/src/sage_julia_bridge/interface.py", line 589 in call
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_engines.py", line 1146 in definite_isometry_group
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3456 in _engine_group
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3575 in _computed_group_generators
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattices.py", line 1849 in _core_automorphism_generators
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2379 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 999 in selected_resolution
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py", line 116 in realize
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py", line 383 in selected_resolution
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 6410 in selected_group_resolution
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 5431 in group_generators
+  File "/work/src/sage_indefinite_port/indefinite/recursive.py", line 334 in orthogonal_group_generators
+  File "/work/src/sage_indefinite_port/indefinite/recursive.py", line 458 in _lattice_action
+  File "/work/src/sage_indefinite_port/indefinite/recursive.py", line 619 in pointed_isometry
+  File "/work/src/sage_indefinite_port/indefinite/marked_lattices.py", line 87 in isometry
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattices.py", line 1860 in _marked_isometry
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 1291 in _core_isomorphism_witness
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2421 in _isomorphism_witness
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2434 in an_element
+  File "/probe.py", line 60 in <module>
+Timeout (0:00:30)!
+Thread 0x00007367cd8ff6c0 [Thread-1 (_drai] (most recent call first):
+  File "/repos/sage-julia-bridge/src/sage_julia_bridge/interface.py", line 279 in _drain_stderr
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x0000736857199780 [python] (most recent call first):
+  File "/repos/sage-julia-bridge/src/sage_julia_bridge/interface.py", line 358 in _request_unlocked
+  File "/repos/sage-julia-bridge/src/sage_julia_bridge/interface.py", line 345 in _request
+  File "/repos/sage-julia-bridge/src/sage_julia_bridge/interface.py", line 589 in call
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_engines.py", line 1146 in definite_isometry_group
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3456 in _engine_group
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3575 in _computed_group_generators
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattices.py", line 1849 in _core_automorphism_generators
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2379 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 999 in selected_resolution
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py", line 116 in realize
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py", line 383 in selected_resolution
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 6410 in selected_group_resolution
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 5431 in group_generators
+  File "/work/src/sage_indefinite_port/indefinite/recursive.py", line 334 in orthogonal_group_generators
+  File "/work/src/sage_indefinite_port/indefinite/recursive.py", line 458 in _lattice_action
+  File "/work/src/sage_indefinite_port/indefinite/recursive.py", line 619 in pointed_isometry
+  File "/work/src/sage_indefinite_port/indefinite/marked_lattices.py", line 87 in isometry
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattices.py", line 1860 in _marked_isometry
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 1291 in _core_isomorphism_witness
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2421 in _isomorphism_witness
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2434 in an_element
+  File "/probe.py", line 60 in <module>
+Timeout (0:00:30)!
+Thread 0x00007367cd8ff6c0 [Thread-1 (_drai] (most recent call first):
+  File "/repos/sage-julia-bridge/src/sage_julia_bridge/interface.py", line 279 in _drain_stderr
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x0000736857199780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/groups/libgap_mixin.py", line 195 in is_finite
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 170 in _engine_finiteness
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 7936 in _finiteness_decision
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 2423 in is_finite
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 372 in invariant_module_construction
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 384 in invariant_module
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 403 in finite_quotient_action
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 495 in transporter
+  File "/work/src/sage_indefinite_port/indefinite/recursive.py", line 619 in pointed_isometry
+  File "/work/src/sage_indefinite_port/indefinite/marked_lattices.py", line 87 in isometry
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattices.py", line 1860 in _marked_isometry
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 1291 in _core_isomorphism_witness
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2421 in _isomorphism_witness
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2434 in an_element
+  File "/probe.py", line 60 in <module>
+Timeout (0:00:30)!
+Thread 0x00007367cd8ff6c0 [Thread-1 (_drai] (most recent call first):
+  File "/repos/sage-julia-bridge/src/sage_julia_bridge/interface.py", line 279 in _drain_stderr
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x0000736857199780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 5058 in _operator_operand
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 5182 in __eq__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1503 in _valid_denominator
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1552 in fraction
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1901 in zero
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 195 in _add_
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1080 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1097 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/functors/scalar_change.py", line 233 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1095 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/orbit_spans.py", line 61 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/orbit_spans.py", line 61 in _call_
+  File "/sage/.venv/lib/python3.14/site-packages/sage/categories/category.py", line 592 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_objects.py", line 997 in orbit_generated_submodule
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 378 in invariant_module_construction
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 384 in invariant_module
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 403 in finite_quotient_action
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 495 in transporter
+  File "/work/src/sage_indefinite_port/indefinite/recursive.py", line 619 in pointed_isometry
+  File "/work/src/sage_indefinite_port/indefinite/marked_lattices.py", line 87 in isometry
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattices.py", line 1860 in _marked_isometry
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 1291 in _core_isomorphism_witness
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2421 in _isomorphism_witness
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2434 in an_element
+  File "/probe.py", line 60 in <module>
+profiled unit elapsed: 143.24s
+
+=== top 22 by CUMULATIVE ===
+         142166598 function calls (141102910 primitive calls) in 143.213 seconds
+
+   Ordered by: cumulative time
+   List reduced from 4519 to 22 due to restriction <22>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      2/1    0.000    0.000  143.016  143.016 /repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py:2432(an_element)
+      2/1    0.000    0.000  139.025  139.025 /repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py:2418(_isomorphism_witness)
+      2/1    0.000    0.000  139.010  139.010 /repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py:1289(_core_isomorphism_witness)
+      2/1    0.000    0.000  138.650  138.650 /repos/sage-extensions/src/sage_extensions/categories/lattices.py:1851(_marked_isometry)
+      2/1    0.000    0.000  138.650  138.650 /work/src/sage_indefinite_port/indefinite/marked_lattices.py:83(isometry)
+        1    0.000    0.000  138.650  138.650 /work/src/sage_indefinite_port/indefinite/recursive.py:595(pointed_isometry)
+        1    0.000    0.000   70.606   70.606 /work/src/sage_indefinite_port/indefinite/recursive.py:445(_lattice_action)
+        1    0.000    0.000   67.825   67.825 /repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py:474(transporter)
+        1    0.000    0.000   60.237   60.237 /work/src/sage_indefinite_port/indefinite/recursive.py:323(orthogonal_group_generators)
+256413/250190    0.089    0.000   59.397    0.000 /repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py:373(selected_resolution)
+       44    0.000    0.000   59.289    1.347 /repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py:115(realize)
+        9    0.000    0.000   59.151    6.572 /repos/sage-extensions/src/sage_extensions/categories/group/groups.py:5430(group_generators)
+        2    0.000    0.000   59.141   29.570 /repos/sage-extensions/src/sage_extensions/categories/group/groups.py:6399(selected_group_resolution)
+        2    0.000    0.000   59.132   29.566 /repos/sage-extensions/src/sage_extensions/categories/group/groups.py:998(selected_resolution)
+        1    0.000    0.000   59.105   59.105 /repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py:2379(<lambda>)
+        1    0.000    0.000   58.887   58.887 /repos/sage-extensions/src/sage_extensions/categories/lattices.py:1835(_core_automorphism_generators)
+        1    0.000    0.000   58.887   58.887 /repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py:3539(_computed_group_generators)
+        1    0.000    0.000   58.626   58.626 /repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py:3417(_engine_group)
+        1    0.000    0.000   58.395   58.395 /repos/sage-extensions/src/sage_extensions/categories/lattice_engines.py:1137(definite_isometry_group)
+        3    0.000    0.000   58.390   19.463 /repos/sage-julia-bridge/src/sage_julia_bridge/interface.py:339(_request)
+        4    0.000    0.000   58.389   14.597 /repos/sage-julia-bridge/src/sage_julia_bridge/interface.py:347(_request_unlocked)
+        4   58.387   14.597   58.387   14.597 {method 'readline' of '_io.TextIOWrapper' objects}
+
+
+
+=== top 16 by TOTTIME (this function only) ===
+         142166598 function calls (141102910 primitive calls) in 143.213 seconds
+
+   Ordered by: internal time
+   List reduced from 4519 to 16 due to restriction <16>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        4   58.387   14.597   58.387   14.597 {method 'readline' of '_io.TextIOWrapper' objects}
+        1   27.444   27.444   27.444   27.444 /sage/.venv/lib/python3.14/site-packages/sage/groups/libgap_mixin.py:181(is_finite)
+  4154252    2.572    0.000    3.774    0.000 /repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py:5867(_from_engine_element)
+  3247511    2.298    0.000    4.423    0.000 /repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py:158(__contains__)
+4615498/4613978    2.187    0.000    2.968    0.000 /sage/.venv/lib/python3.14/site-packages/sage/categories/category.py:436(__classcall__)
+ 14376823    2.026    0.000    2.058    0.000 {built-in method builtins.isinstance}
+5052819/5050579    1.736    0.000    1.796    0.000 /repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py:5896(_element_constructor_)
+  2805742    1.672    0.000    3.542    0.000 /repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py:5048(_operator_operand)
+  3746870    1.583    0.000    2.526    0.000 /sage/.venv/lib/python3.14/site-packages/sage/categories/category.py:693(__contains__)
+   285180    1.325    0.000   12.303    0.000 /repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py:1906(_fraction_equality_status)
+  4154252    1.201    0.000    1.201    0.000 /repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py:5040(__init__)
+319049/79449    1.048    0.000   33.974    0.000 /repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py:739(__call__)
+5052819/5050579    1.045    0.000    2.840    0.000 /repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py:5892(__call__)
+   756588    0.978    0.000    1.361    0.000 /sage/.venv/lib/python3.14/site-packages/sage/categories/category_with_axiom.py:2021(__classget__)
+  2194391    0.965    0.000    5.057    0.000 /repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py:6909(_own_ring)
+  1188551    0.908    0.000    7.829    0.000 /repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py:5118(__mul__)
+
+
+
+=== eager-representation check: repr/str entries in the profile ===
+   <built-in method builtins.repr> ~:0 calls=139205 cum=1.38s
+   __repr__                     <frozen _collections_abc>:485 calls=1 cum=0.00s
+   _find_data_repr_             enum.py:948 calls=3 cum=0.00s
+   format                       inspect.py:3271 calls=6 cum=0.00s
+   type_repr                    annotationlib.py:1107 calls=2 cum=0.00s
+   _repr_                       ring_foundation.py:6090 calls=16373 cum=0.01s
+   _represented_kernel_of_morphism framed_free_modules.py:964 calls=3 cum=0.00s
+   _represented_kernel_of_morphism finitely_presented_modules.py:661 calls=3 cum=0.40s
+   _represented_annihilator_ideal finitely_presented_modules.py:775 calls=2 cum=0.01s
+   _repr_                       groups.py:1432 calls=7 cum=0.01s
+   _repr_                       lattices.py:8059 calls=10 cum=0.03s
+   _represented_module          form_modules.py:176 calls=2 cum=0.00s
+   __str__                      uuid.py:331 calls=1 cum=0.00s
+   finite_representation        rational_integral_stabilizers.py:429 calls=1 cum=10.47s
+   permutation_representation   rational_integral_stabilizers.py:154 calls=2 cum=0.00s
+   _selected_representation_kind submonoids.py:244 calls=257159 cum=0.04s
+   _represented_value_module    form_modules.py:170 calls=14 cum=0.00s
+   _repr_                       lattice_morphisms.py:1999 calls=1 cum=0.00s
+   _repr_                       lattice_morphisms.py:4235 calls=3 cum=0.01s
+   _bilinear_classifier_is_represented forms.py:121 calls=9 cum=0.00s
+   representative_map           g_sets.py:755 calls=1 cum=0.00s
+   _repr_                       predicate_subgroups.py:609 calls=2 cum=0.00s
+   _repr_                       g_sets.py:591 calls=1 cum=0.00s
+   permutation_representation   g_sets.py:302 calls=3 cum=0.00s
+   _representative              finitely_presented_modules.py:1830 calls=4550 cum=0.00s
+   _repr_                       _lattice.py:556 calls=15 cum=0.03s
+   _coordinate_component_repr   tensor.py:2175 calls=1616 cum=1.14s
+   _repr_                       tensor.py:1946 calls=1616 cum=1.54s
+   _repr_                       tensor.py:2331 calls=1636 cum=0.23s
+   _repr_object_names           modules.py:1383 calls=1 cum=0.00s
+   _scale_representative        finitely_presented_modules.py:1933 calls=3810 cum=0.03s
+   _represented_finite_presentation modules.py:5747 calls=57 cum=0.00s
+   _represented_framed_free     modules.py:5752 calls=14 cum=0.00s
+   _represented_morphism_category arrow_categories.py:2565 calls=4729 cum=0.02s
+   _repr_                       cardinals.py:665 calls=240 cum=0.00s
+   _repr_                       finite_ordered_sets.py:586 calls=2 cum=0.00s
+   _represented_cokernel_of_morphism framed_free_modules.py:556 calls=6 cum=0.31s
+   _repr_                       set_categories.py:6385 calls=3232 cum=0.00s
+   _repr_                       commutative_algebra.py:1316 calls=2 cum=0.00s
+   _repr_                       ring_foundation.py:5213 calls=156176 cum=0.15s
+   _repr_                       ring_foundation.py:1165 calls=133045 cum=0.95s
+   _repr_                       ring_foundation.py:1957 calls=13820 cum=0.05s
+   _repr_                       integer_mod_ring.py:1047 calls=4 cum=0.00s
+   _repr_                       category.py:608 calls=24 cum=0.00s
+   _repr_object_names           category.py:510 calls=23 cum=0.00s
+   __str__                      inspect.py:3268 calls=6 cum=0.00s
+   recursive_repr               reprlib.py:9 calls=59 cum=0.00s
+   __str__                      __init__.py:251 calls=1154 cum=0.01s
+   (48 repr/str entries)

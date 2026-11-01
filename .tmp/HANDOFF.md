@@ -1163,3 +1163,30 @@ budget is a scheduling decision, not a probe detail.
 
 Also worth carrying: the norm dependence is a real property of the pointed route at rank 10, not a
 fixture artefact — the same 61 representatives, same reflection, differing only in `q`.
+
+## One instrumented pointed-Isom unit: engine-bound, not representation-bound
+
+Single unit, exact frozen specimen — `r_-1`, orbit representative index 3,
+`[-1,-3,0,0,0,0,0,0,0,0]`, `q = 6`, asserted in the probe — uninstrumented 56.12 s, profiled 143.24 s
+(so percentages below are attribution, not a runtime claim), with 30 s in-flight dumps.
+
+| self-time | calls | site | judgement |
+| --- | --- | --- | --- |
+| 58.39 s | 4 | `{readline}` on the Julia pipe | **necessary mathematics**: `definite_isometry_group` (`:1146`) computing the definite isometry group |
+| 27.44 s | 1 | `libgap_mixin.py:181 is_finite` | **candidate**, caller `_engine_finiteness` (`groups.py:158`) |
+| ~2 s each | 3–14 M | `_from_engine_element`, `__contains__`, `__class__call__`, `isinstance`, `_element_constructor_` | broad owned-object-model churn, spread thin |
+
+**No representation defect in this unit**: total time inside `repr` is 1.38 s over 139 205 calls and
+every `_repr_` is ≤ 0.03 s. That is the opposite of the Enriques case-1 finding, and the two must not
+be conflated — this plateau is engine mathematics plus object-model overhead, not formatting.
+
+Handed to its owner as a *candidate*, not a conclusion:
+`.tmp/handoff-owner-engine-finiteness.md`. The 27.44 s GAP `IsFinite` is measured and attributed to
+`_engine_finiteness`, but grep of the pinned tree finds only the definition and the two
+`assert _engine_finiteness(engine) is True` sites in `_gap_model_of_engine` (`:191`, `:198`), neither
+passing `compute=True`, so which branch fires is the owner's to read. If it is avoidable, it is 27 s
+of a 56 s unit.
+
+**No runtime guarantee is extrapolated.** The 61-representative node and the ten `r_*` nodes stay
+unresolved; the OSCAR node's 65 s pass remains the only new accepted A_STABILIZERS coverage. The
+Enriques case_1 run is not repeated while its provider hand-off is open.
