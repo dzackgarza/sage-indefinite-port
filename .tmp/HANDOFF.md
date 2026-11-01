@@ -1190,3 +1190,23 @@ of a 56 s unit.
 **No runtime guarantee is extrapolated.** The 61-representative node and the ten `r_*` nodes stay
 unresolved; the OSCAR node's 65 s pass remains the only new accepted A_STABILIZERS coverage. The
 Enriques case_1 run is not repeated while its provider hand-off is open.
+
+## Full unchanged r_-1 node running (one heavy node, nothing else)
+
+Job **`jmvxlw71n`**. Exact pair, verified before launch: port `6e1be797c8a491d62390a50ba2e4b51d750c82df`
+(clean worktree) + provider `e83c4d69db6fba9cadc560d6fd8a518bfe6c5dae` bound at `/repos/sage-extensions`.
+
+- Node: `test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_-1]`,
+  **unchanged**, original assertions, all 61 representatives.
+- Cap: `timeout -k 30 7200` — 120 minutes with a 30 s kill-after grace; `python -u` and `-s` so output is
+  unbuffered.
+- Progress: `stackdump` arms `faulthandler` every 300 s, so a 2 h run yields ~24 in-flight stacks instead
+  of one opaque wait. The plugin only arms a dumper; it does not touch the test.
+
+This is the acceptance measurement the unit profile justified: the unit costs ~56 s per representative
+once `q >= 6`, and the node's assertion covers all 61, so it needs a real budget rather than more unit
+samples. No other heavy node is running, and Enriques case_1 is not re-run while its display blocker is
+open.
+
+The GAP `IsFinite` candidate stays exactly that — a separate owner question. It is **not** grounds to
+skip or weaken a finiteness check, and nothing in this run bypasses one.
