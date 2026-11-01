@@ -1477,3 +1477,12 @@ Root-case times now run 1850.35 / 696.33 / 402.82 / 200.44 / 129.70 s for `r_-1`
 `r_3` — monotonically decreasing with the label. Recorded as an observed ordering, not a budget: the
 squares use `vector_classes` rather than the root loop, so nothing here predicts them, and each node
 still gets the full 120-minute cap. Remaining: `r_4`–`r_8` (5), squares `[0/2/4/6/8/10]` (6).
+
+## `r_4` passes — seventh accepted A_STABILIZERS case
+
+`…[r_4]`, unchanged: **PASSED, `1 passed in 109.04 s (0:01:49)`**, `pytest_exit=0`, provenance captured
+and bind-verified (port `ac1f1a8f`, provider `9dc89ac`, in-run `groups.py` `ffa1d1423b51e003`). Log at
+`~/sage-image/logs/stab-r4-pass-9dc89ac.log`.
+
+Root times: 1850.35 / 696.33 / 402.82 / 200.44 / 129.70 / 109.04 s for `r_-1` … `r_4`. Remaining
+`r_5`–`r_8` (4) and squares `[0/2/4/6/8/10]` (6), unresolved rather than failed.
