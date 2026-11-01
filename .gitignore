@@ -39,3 +39,4 @@ references/Indefinite.jl/
 !.tmp/acceptance-coverage.md
 !.tmp/peakrss.py
 !.tmp/handoff-owner-finiteness-shortcircuit.md
+!.tmp/probe-cellfaces-baseline.py

@@ -1960,3 +1960,32 @@ Both assertion shapes are covered: three cases assert a recorded `centralizer_im
 a representative sample, so all five passing at one pair is the acceptance shape the contract asks for —
 but hosted certification still needs a run at an accepted head SHA, exactly as with A_PERFECT's 92/92.
 Recorded as local, not as a closed family.
+
+## libGAP facet-orbit gap: baseline pinned by a test
+
+The substitution work needed a statement of what must not change. `_CellFaces` — the carrier holding the
+cell's facet incidences and its permutation group — is constructed as
+`_CellFaces(backend, cell)`, and on `Result_Enumeration_0` it currently produces, via direct GAP:
+
+| quantity | value |
+| --- | --- |
+| rays / facets | 4 / 4 |
+| distinct facet incidence sets | 4 |
+| cell group order | 8 |
+| facet orbits under the group | 1, of size 4 |
+| facet stabilizer order | 2 |
+| maximal flags | 1 |
+
+`tests/test_cell_faces_facet_orbits.py` (5 tests, **1.62 s**, peak 408 MiB) pins exactly that. It asserts
+about the **result** — facet set, incidence classes, group order, orbit decomposition, stabilizer index,
+flag count — not about the implementation, so a replacement of the GAP calls is free to change *how* these
+are computed and not what they are.
+
+### What this is and is not
+
+It is the first half of the characterisation: a regression guard on the current semantics, cheap enough to
+run alongside anything. It is **not** the comparison against the provider's maintained operations — that
+requires building an owned permutation group from `backend.point_permutations_from_rows(cell, cell.rows)`,
+and whether the provider exposes a construction from an explicit permutation list is not yet established.
+Until that comparison exists, claims about substituting `libgap.Orbits`/`Stabilizer` with a provider orbit
+operation remain unproven, and the port's GAP calls stay where they are.
