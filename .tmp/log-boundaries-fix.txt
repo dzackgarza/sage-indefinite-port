@@ -1,0 +1,4 @@
+=== BND | file tests/acceptance/test_boundaries.sage | src 87fbf863c413 | provider sage-extensions-565fc6b9 | cap 1800s | guard 6144 MiB | nodes from 0
+nodes: 119
+BND 1/119 tests/acceptance/test_boundaries.sage::test_dawes_buildings_have_the_published_counts[dawes_2U_A2_stable] exit=exit1 peak=3613 MiB verdict=none exit1  172s
+    FAILED tests/acceptance/test_boundaries.sage::test_dawes_buildings_have_the_published_counts[dawes_2U_A2_stable]

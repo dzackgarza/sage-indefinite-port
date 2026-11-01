@@ -1,0 +1,38 @@
+[determinism] PYTHONHASHSEED=0 pid=758993
+[determinism] generators: 16
+[determinism] complex 0: cells=2 sizes=(10, 18) adjacencies=3 with_transporter=3 hash_seed_seen=0
+[determinism] generator-set digest: 286bc4fa49246749
+[determinism] wrote /work/.tmp/generators-seed0.json
+[peakrss] run: child waited=0 shell_code=0 samples=12
+[peakrss] peak tree RSS      : 457 MiB
+[peakrss] low-water MemAvail : 7551 MiB
+[peakrss] peak single VmHWM  : 457 MiB
+[peakrss] peak VmHWM by executable (this is the per-process attribution):
+[peakrss]   python                      445 MiB peak
+[peakrss]   timeout                       7 MiB peak
+[peakrss]   proot-x86_64                  3 MiB peak
+[peakrss]   sh                            1 MiB peak
+[peakrss]   t=    22.0s procs=  4 rss=   457 MiB hwm=   457 MiB avail=  7551 MiB
+[peakrss]   t=    18.0s procs=  4 rss=   456 MiB hwm=   456 MiB avail=  7562 MiB
+[peakrss]   t=    20.0s procs=  4 rss=   456 MiB hwm=   456 MiB avail=  7562 MiB
+[peakrss]   t=    12.0s procs=  4 rss=   455 MiB hwm=   455 MiB avail=  7563 MiB
+[peakrss]   t=    14.0s procs=  4 rss=   455 MiB hwm=   455 MiB avail=  7563 MiB
+[determinism] PYTHONHASHSEED=1 pid=759044
+[determinism] generators: 17
+[determinism] complex 0: cells=2 sizes=(18, 10) adjacencies=3 with_transporter=3 hash_seed_seen=1
+[determinism] generator-set digest: ab56302636b9c86f
+[determinism] wrote /work/.tmp/generators-seed1.json
+[peakrss] run: child waited=0 shell_code=0 samples=8
+[peakrss] peak tree RSS      : 436 MiB
+[peakrss] low-water MemAvail : 7107 MiB
+[peakrss] peak single VmHWM  : 436 MiB
+[peakrss] peak VmHWM by executable (this is the per-process attribution):
+[peakrss]   python                      423 MiB peak
+[peakrss]   timeout                       7 MiB peak
+[peakrss]   proot-x86_64                  3 MiB peak
+[peakrss]   sh                            1 MiB peak
+[peakrss]   t=    14.0s procs=  4 rss=   436 MiB hwm=   436 MiB avail=  7107 MiB
+[peakrss]   t=     4.0s procs=  4 rss=   435 MiB hwm=   435 MiB avail=  7566 MiB
+[peakrss]   t=     6.0s procs=  4 rss=   435 MiB hwm=   435 MiB avail=  7239 MiB
+[peakrss]   t=     8.0s procs=  4 rss=   435 MiB hwm=   435 MiB avail=  7108 MiB
+[peakrss]   t=    10.0s procs=  4 rss=   435 MiB hwm=   435 MiB avail=  7108 MiB

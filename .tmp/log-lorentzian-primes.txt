@@ -1,0 +1,135 @@
+=== case LORENTZ_OrthogonalGroup0 | rank 10 | recorded generators 15
+[stage] expand_traversal_once #1     0.88s rows=None cum=    0.88s
+[stage] expand_traversal_once #2     0.66s rows=None cum=    1.54s
+
+=== group_generators returned 17 generators in 12.9s
+[assert] discriminant_image_order ... starting at rss 424 MiB
+[assert] discriminant_image_order    44.89s rss 424->441 MiB -> 46998591897600
+[assert] discriminant_image_order ... starting at rss 441 MiB
+[assert] discriminant_image_order     1.81s rss 441->442 MiB -> 46998591897600
+[assert] reduction_image_order[p=2] ... starting at rss 442 MiB
+[assert] reduction_image_order[p=2]     0.06s rss 442->442 MiB -> 46998591897600
+[assert] reduction_image_order[p=2] ... starting at rss 442 MiB
+[assert] reduction_image_order[p=2]     0.03s rss 442->442 MiB -> 46998591897600
+[assert] reduction_image_order[p=3] ... starting at rss 442 MiB
+[assert] reduction_image_order[p=3]     4.94s rss 442->509 MiB -> 5158051199765220556800
+[assert] reduction_image_order[p=3] ... starting at rss 509 MiB
+[assert] reduction_image_order[p=3]     4.28s rss 509->534 MiB -> 5158051199765220556800
+[assert] reduction_image_order[p=5] ... starting at rss 534 MiB
+Timeout (0:02:00)!
+Thread 0x00007d7bdebff6c0 [Thread-1 (_drai] (most recent call first):
+  File "/repos/sage-julia-bridge/src/sage_julia_bridge/interface.py", line 279 in _drain_stderr
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x00007d7c7c9a7780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/groups/libgap_mixin.py", line 240 in cardinality
+  File "/work/tests/acceptance/consumer.py", line 111 in reduction_image_order
+  File "/probe.py", line 117 in wrapper
+  File "/work/tests/acceptance/consumer.py", line 134 in assert_same_finite_images
+  File "/probe.py", line 183 in <module>
+Timeout (0:02:00)!
+Thread 0x00007d7bdebff6c0 [Thread-1 (_drai] (most recent call first):
+  File "/repos/sage-julia-bridge/src/sage_julia_bridge/interface.py", line 279 in _drain_stderr
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x00007d7c7c9a7780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/groups/libgap_mixin.py", line 240 in cardinality
+  File "/work/tests/acceptance/consumer.py", line 111 in reduction_image_order
+  File "/probe.py", line 117 in wrapper
+  File "/work/tests/acceptance/consumer.py", line 134 in assert_same_finite_images
+  File "/probe.py", line 183 in <module>
+Timeout (0:02:00)!
+Thread 0x00007d7bdebff6c0 [Thread-1 (_drai] (most recent call first):
+  File "/repos/sage-julia-bridge/src/sage_julia_bridge/interface.py", line 279 in _drain_stderr
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x00007d7c7c9a7780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/groups/libgap_mixin.py", line 240 in cardinality
+  File "/work/tests/acceptance/consumer.py", line 111 in reduction_image_order
+  File "/probe.py", line 117 in wrapper
+  File "/work/tests/acceptance/consumer.py", line 134 in assert_same_finite_images
+  File "/probe.py", line 183 in <module>
+Timeout (0:02:00)!
+Thread 0x00007d7bdebff6c0 [Thread-1 (_drai] (most recent call first):
+  File "/repos/sage-julia-bridge/src/sage_julia_bridge/interface.py", line 279 in _drain_stderr
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x00007d7c7c9a7780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/groups/libgap_mixin.py", line 240 in cardinality
+  File "/work/tests/acceptance/consumer.py", line 111 in reduction_image_order
+  File "/probe.py", line 117 in wrapper
+  File "/work/tests/acceptance/consumer.py", line 134 in assert_same_finite_images
+  File "/probe.py", line 183 in <module>
+Timeout (0:02:00)!
+Thread 0x00007d7bdebff6c0 [Thread-1 (_drai] (most recent call first):
+  File "/repos/sage-julia-bridge/src/sage_julia_bridge/interface.py", line 279 in _drain_stderr
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x00007d7c7c9a7780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/groups/libgap_mixin.py", line 240 in cardinality
+  File "/work/tests/acceptance/consumer.py", line 111 in reduction_image_order
+  File "/probe.py", line 117 in wrapper
+  File "/work/tests/acceptance/consumer.py", line 134 in assert_same_finite_images
+  File "/probe.py", line 183 in <module>
+Timeout (0:02:00)!
+Thread 0x00007d7bdebff6c0 [Thread-1 (_drai] (most recent call first):
+  File "/repos/sage-julia-bridge/src/sage_julia_bridge/interface.py", line 279 in _drain_stderr
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x00007d7c7c9a7780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/groups/libgap_mixin.py", line 240 in cardinality
+  File "/work/tests/acceptance/consumer.py", line 111 in reduction_image_order
+  File "/probe.py", line 117 in wrapper
+  File "/work/tests/acceptance/consumer.py", line 134 in assert_same_finite_images
+  File "/probe.py", line 183 in <module>
+Timeout (0:02:00)!
+Thread 0x00007d7bdebff6c0 [Thread-1 (_drai] (most recent call first):
+  File "/repos/sage-julia-bridge/src/sage_julia_bridge/interface.py", line 279 in _drain_stderr
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x00007d7c7c9a7780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/groups/libgap_mixin.py", line 240 in cardinality
+  File "/work/tests/acceptance/consumer.py", line 111 in reduction_image_order
+  File "/probe.py", line 117 in wrapper
+  File "/work/tests/acceptance/consumer.py", line 134 in assert_same_finite_images
+  File "/probe.py", line 183 in <module>
+Timeout (0:02:00)!
+Thread 0x00007d7bdebff6c0 [Thread-1 (_drai] (most recent call first):
+  File "/repos/sage-julia-bridge/src/sage_julia_bridge/interface.py", line 279 in _drain_stderr
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x00007d7c7c9a7780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/groups/libgap_mixin.py", line 240 in cardinality
+  File "/work/tests/acceptance/consumer.py", line 111 in reduction_image_order
+  File "/probe.py", line 117 in wrapper
+  File "/work/tests/acceptance/consumer.py", line 134 in assert_same_finite_images
+  File "/probe.py", line 183 in <module>
+Timeout (0:02:00)!
+Thread 0x00007d7bdebff6c0 [Thread-1 (_drai] (most recent call first):
+  File "/repos/sage-julia-bridge/src/sage_julia_bridge/interface.py", line 279 in _drain_stderr
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x00007d7c7c9a7780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/groups/libgap_mixin.py", line 240 in cardinality
+  File "/work/tests/acceptance/consumer.py", line 111 in reduction_image_order
+  File "/probe.py", line 117 in wrapper
+  File "/work/tests/acceptance/consumer.py", line 134 in assert_same_finite_images
+  File "/probe.py", line 183 in <module>

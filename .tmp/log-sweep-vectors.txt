@@ -1,0 +1,66 @@
+=== VEC | file tests/acceptance/test_vector_orbits.sage | src 87fbf863c413 | provider cdafca84 | cap 1200s | guard 6144 MiB | nodes from 0
+nodes: 64
+VEC 1/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_2] exit=0 peak=521 MiB verdict=1 passed  40s
+VEC 2/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_4] exit=0 peak=521 MiB verdict=1 passed  38s
+VEC 3/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_6] exit=0 peak=521 MiB verdict=1 passed  40s
+VEC 4/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_8] exit=0 peak=484 MiB verdict=1 passed  42s
+VEC 5/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_10] exit=0 peak=521 MiB verdict=1 passed  48s
+VEC 6/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_12] exit=0 peak=521 MiB verdict=1 passed  36s
+VEC 7/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_14] exit=0 peak=481 MiB verdict=1 passed  20s
+VEC 8/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_16] exit=0 peak=482 MiB verdict=1 passed  20s
+VEC 9/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_18] exit=0 peak=521 MiB verdict=1 passed  36s
+VEC 10/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_20] exit=0 peak=518 MiB verdict=1 passed  34s
+VEC 11/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_22] exit=0 peak=484 MiB verdict=1 passed  20s
+VEC 12/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_24] exit=0 peak=479 MiB verdict=1 passed  18s
+VEC 13/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_26] exit=0 peak=520 MiB verdict=1 passed  36s
+VEC 14/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_28] exit=0 peak=485 MiB verdict=1 passed  20s
+VEC 15/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_30] exit=0 peak=479 MiB verdict=1 passed  20s
+VEC 16/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_32] exit=0 peak=521 MiB verdict=1 passed  36s
+VEC 17/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_34] exit=0 peak=484 MiB verdict=1 passed  20s
+VEC 18/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_36] exit=0 peak=522 MiB verdict=1 passed  34s
+VEC 19/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_38] exit=0 peak=485 MiB verdict=1 passed  20s
+VEC 20/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_40] exit=0 peak=520 MiB verdict=1 passed  36s
+VEC 21/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_42] exit=0 peak=522 MiB verdict=1 passed  36s
+VEC 22/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_44] exit=0 peak=521 MiB verdict=1 passed  36s
+VEC 23/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_46] exit=0 peak=480 MiB verdict=1 passed  22s
+VEC 24/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_48] exit=0 peak=522 MiB verdict=1 passed  40s
+VEC 25/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_50] exit=0 peak=521 MiB verdict=1 passed  36s
+VEC 26/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_52] exit=0 peak=488 MiB verdict=1 passed  22s
+VEC 27/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_54] exit=0 peak=519 MiB verdict=1 passed  36s
+VEC 28/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_56] exit=0 peak=484 MiB verdict=1 passed  20s
+VEC 29/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_58] exit=0 peak=485 MiB verdict=1 passed  22s
+VEC 30/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_60] exit=0 peak=521 MiB verdict=1 passed  36s
+VEC 31/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_62] exit=0 peak=486 MiB verdict=1 passed  22s
+VEC 32/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_64] exit=0 peak=522 MiB verdict=1 passed  38s
+VEC 33/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_66] exit=0 peak=522 MiB verdict=1 passed  38s
+VEC 34/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_68] exit=0 peak=484 MiB verdict=1 passed  20s
+VEC 35/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_70] exit=0 peak=522 MiB verdict=1 passed  36s
+VEC 36/64 tests/acceptance/test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_72] exit=0 peak=522 MiB verdict=1 passed  36s
+VEC 37/64 tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[2] exit=0 peak=3806 MiB verdict=1 passed  134s
+VEC 38/64 tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[4] exit=0 peak=3674 MiB verdict=1 passed  160s
+VEC 39/64 tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[6] exit=0 peak=3953 MiB verdict=1 passed  200s
+VEC 40/64 tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[8] exit=0 peak=3988 MiB verdict=1 passed  138s
+VEC 41/64 tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[10] exit=0 peak=4051 MiB verdict=1 passed  188s
+VEC 42/64 tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[12] exit=0 peak=4075 MiB verdict=1 passed  458s
+VEC 43/64 tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[14] exit=exit1 peak=3746 MiB verdict=none exit1  652s
+    FAILED tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[14]
+VEC 44/64 tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[16] exit=0 peak=3498 MiB verdict=1 passed  569s
+VEC 45/64 tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[18] exit=0 peak=3945 MiB verdict=1 passed  154s
+VEC 46/64 tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[20] exit=0 peak=4175 MiB verdict=1 passed  284s
+VEC 47/64 tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[22] exit=0 peak=4047 MiB verdict=1 passed  260s
+VEC 48/64 tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[24] exit=0 peak=4150 MiB verdict=1 passed  246s
+VEC 49/64 tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[26] exit=0 peak=3945 MiB verdict=1 passed  216s
+VEC 50/64 tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[28] exit=0 peak=4341 MiB verdict=1 passed  474s
+VEC 51/64 tests/acceptance/test_vector_orbits.sage::test_published_representatives_are_one_per_orbit[30] exit=0 peak=4296 MiB verdict=1 passed  406s
+VEC 52/64 tests/acceptance/test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[0] exit=0 peak=517 MiB verdict=1 passed  38s
+VEC 53/64 tests/acceptance/test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[2] exit=0 peak=520 MiB verdict=1 passed  38s
+VEC 54/64 tests/acceptance/test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[4] exit=0 peak=521 MiB verdict=1 passed  38s
+VEC 55/64 tests/acceptance/test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[6] exit=0 peak=486 MiB verdict=1 passed  22s
+VEC 56/64 tests/acceptance/test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[8] exit=0 peak=478 MiB verdict=1 passed  22s
+VEC 57/64 tests/acceptance/test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[10] exit=0 peak=485 MiB verdict=1 passed  22s
+VEC 58/64 tests/acceptance/test_vector_orbits.sage::test_i_2_10_is_transitive_on_norm_minus_one_vectors exit=0 peak=3722 MiB verdict=1 passed  438s
+VEC 59/64 tests/acceptance/test_vector_orbits.sage::test_anisotropic_binary_vector_classes_use_primitive_embeddings exit=0 peak=272 MiB verdict=1 passed  4s
+VEC 60/64 tests/acceptance/test_vector_orbits.sage::test_k3_lattice_has_one_primitive_orbit exit=CAP peak=0 MiB verdict=none CAPPED  1325s (overran its 1200 s cap; the cap killed the proot supervisor while the traced pytest survived and was killed by hand; not re-run)
+=== VEC | file tests/acceptance/test_vector_orbits.sage | src 87fbf863c413 | provider sage-extensions-cdafca84 | cap 1200s | guard 6144 MiB | nodes from 60
+nodes: 64
+VEC 61-64/64 test_k3_lattice_has_one_primitive_orbit_per_norm[-2..8] NOT RUN: rank-22 K3 family whose sibling node already exceeded the 1200 s cap; host had 3.3 GiB available against ~4 GiB nodes (sibling project running), so they were deferred rather than risk an OOM on the shared host

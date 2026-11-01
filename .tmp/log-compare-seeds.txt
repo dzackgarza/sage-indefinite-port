@@ -1,0 +1,17 @@
+[compare] seed 0: 16 generators, cells [10, 18]
+[compare] seed 1: 17 generators, cells [18, 10]
+[compare] p=2 seed 0 vs 1: left<=right True, right<=left True, equal True
+[compare] p=3 seed 0 vs 1: left<=right True, right<=left True, equal True
+[peakrss] run: child waited=0 shell_code=0 samples=4
+[peakrss] peak tree RSS      : 397 MiB
+[peakrss] low-water MemAvail : 7149 MiB
+[peakrss] peak single VmHWM  : 397 MiB
+[peakrss] peak VmHWM by executable (this is the per-process attribution):
+[peakrss]   python                      385 MiB peak
+[peakrss]   timeout                       7 MiB peak
+[peakrss]   proot-x86_64                  3 MiB peak
+[peakrss]   sh                            1 MiB peak
+[peakrss]   t=     6.0s procs=  4 rss=   397 MiB hwm=   397 MiB avail=  7205 MiB
+[peakrss]   t=     4.0s procs=  4 rss=   386 MiB hwm=   386 MiB avail=  7181 MiB
+[peakrss]   t=     2.0s procs=  4 rss=   351 MiB hwm=   351 MiB avail=  7149 MiB
+[peakrss]   t=     0.0s procs=  1 rss=     2 MiB hwm=     2 MiB avail=  7408 MiB

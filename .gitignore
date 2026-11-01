@@ -53,3 +53,6 @@ references/Indefinite.jl/
 !.tmp/probe-image-membership.py
 !.tmp/probe-traversal-determinism.py
 !.tmp/probe-compare-seeds.py
+!.tmp/log-*.txt
+!.tmp/sweep-nodes.py
+!.tmp/probe-verify-provider.py

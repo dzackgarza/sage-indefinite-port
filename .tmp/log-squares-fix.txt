@@ -1,0 +1,8 @@
+=== SQ | file tests/acceptance/test_vector_stabilizers.sage | src 87fbf863c413 | provider sage-extensions-565fc6b9 | cap 3600s | guard 6144 MiB | nodes from 0
+nodes: 5
+SQ 1/5 tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[2] exit=0 peak=3773 MiB verdict=1 passed  176s
+SQ 2/5 tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[4] exit=0 peak=3795 MiB verdict=1 passed  222s
+SQ 3/5 tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[6] exit=0 peak=3283 MiB verdict=1 passed  385s
+SQ 4/5 tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[8] exit=0 peak=3720 MiB verdict=1 passed  256s
+SQ 5/5 tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[10] exit=0 peak=3834 MiB verdict=1 passed  238s
+SQ_DONE
