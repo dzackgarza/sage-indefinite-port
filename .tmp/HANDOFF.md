@@ -1063,3 +1063,39 @@ request in one process, so the initial/repeat split becomes a measurement rather
 runs after the sole bounded probe finishes; nothing else is launched now.
 
 No owner is patched and the frozen assertions and generator semantics are untouched.
+
+## Correction: the cheap `subgroup_admission` reading was the wrong call
+
+The t=256.7 s table showed `subgroup_admission: 1 call, 0.03 s`, and I read that as "admission is free".
+**That was wrong, and the aggregate table is exactly why.** The test frame is still
+`test_boundaries.sage:226` at t=540 s, so the `subgroup_on` that line 226 is waiting on has not
+returned. The one recorded admission is a *different, nested* admission — `lattice_centralizers.py:987`
+calls `subgroup_on` as well — which completed cheaply inside `_gamma_h`'s coinvariant route.
+
+What the dumps and the table actually say together:
+
+| dump | t | test frame | top main-thread frame |
+| --- | --- | --- | --- |
+| 1–2 | 60–120 s | `:213` `_gamma_h` | `interface.py _request_unlocked`, `libgap_mixin.py is_finite` |
+| 4–5 | 240–300 s | `:226` | `abelian_group_gap.py exponents` |
+| 7 | 420 s | `:226` | `abelian_aut.py __init__` |
+| 8 | 480 s | `:226` | `groups.py representative` |
+| 9 | 540 s | `:226` | `owned_category.py _object_of` |
+
+And by t=496.8 s the wrapped totals had **frozen**: `generator_enumeration` 21 calls / 177.52 s and
+`discriminant_morphism` 21 calls / 13.75 s unchanged since t=256.7 s, while `result_cardinality` grew
+from 957 to **137 242** calls for a total of 0.91 s. So of ~497 s elapsed, only ~192 s is inside the
+four wrapped phases; roughly 300 s is unaccounted, and it is inside the still-running line-226
+`subgroup_on`, dominated by per-object construction (`_object_of`, `representative`,
+`abelian_aut.__init__`) with a huge number of individually trivial cardinality calls.
+
+Two corrections follow, both recorded rather than quietly fixed:
+
+- The slow generator call is real and identified (the polarization stabilizer in `O(M)`,
+  `M = U(2) + E8(-2)`), but it is **not the whole case**: it is 177.5 s of the first ~380 s.
+- Enriques case_1's remaining cost is inside the outer `subgroup_on` at line 226, which no wrapper of
+  mine has yet timed because it has not returned.
+
+`discprof.py` now tracks **in-flight** calls and prints `RUNNING depth=… oldest=…s` for any wrapped
+phase still executing, so the next run cannot repeat this misreading — a capping run reports what is
+running, not only what has finished. Not yet exercised; it waits for the current probe to end.
