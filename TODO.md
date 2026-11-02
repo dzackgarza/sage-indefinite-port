@@ -319,12 +319,21 @@ gap; they do not close it or narrow the eventual public contract.
   integrality correction on the target action — not from a new block algorithm, so
   no finite-rank contract was weakened and no acceptance case was altered.
 
-  **Still open under #41** (the retained examples above do not discharge them): the
-  rank-two radical case that exercises *the actual image of `GL(R)` in
-  `Aut(R/cR)`* rather than `GL(R/cR)` itself, together with the nontrivial shear
-  kernel; the lazy/infinite orbit-set consumers for `c = 0` and unbounded quotient
-  content; and the downstream subgroup consumers on those orbit sets. Those need the
-  split-radical construction in the issue body.
+  **Still open under #41.** Now pinned as well (same file, 11 tests): the rank-two
+  radical `C + R = <2> + 0 + 0` transport `(5,1,0) -> (5,2,0)`, where `s - r` is *not*
+  in `5R` and the witness therefore needs a genuine non-identity integral
+  `D = [[2,-1],[5,-2]]` of determinant 1 — the action of the *integral* generators on
+  `R/5R`, not of `GL(R/5R)`; the refusal `(5,5,0) -/-> (5,0,1)`, where `r = 0` in
+  `R/5R` and `s` is not; the pure-shear transport `(5,1,0) -> (5,6,5)` with `D = 1`;
+  and the nontrivial shear kernel, which needs `rank(C) >= 2` (for `rank(C) = 1`,
+  `B` is determined by `B(x_0)` and `c B(x_0) = 0` forces `B = 0`), exhibited on
+  `C = <2> + <2>` with radical `Z` by an infinite stabilizer containing a generator
+  that fixes the marking and pushes another `C` direction into the radical.
+
+  **What remains open** (this unit does not discharge it): the lazy/infinite orbit-set
+  consumers — `c = 0`, where the condition is exactly `D r = s`, and marked vectors
+  whose quotient image has unbounded content, where a finite orbit list would be a
+  false claim — and the downstream subgroup consumers on those orbit sets.
 
 ## Release and terminal nodes
 

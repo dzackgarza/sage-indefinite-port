@@ -119,3 +119,28 @@ The acceptance node still compares computed and recorded image orders at `{2, 3,
 affordable primes agree on both sides for all three cases and are pinned by
 `tests/test_lorentzian_reduction_image_orders.py`, which also identifies the order with
 `|O^+_10(p)|` wherever `p` does not divide `det L` — a regression, not a substitute for the p=5/p=7 comparison.
+
+---
+
+## Pin update: `42d7361c` closes the admission gap (not the engine cost)
+
+Adopted through the maintained checkout at the next safe pin boundary, verified against the actual remote:
+`42d7361c` is `origin/main` of `dzackgarza/sage-extensions`, and the staging is `git archive` of that commit.
+
+The commit is `fix: a decided finiteness is placed, and cardinality asks it`, and it closes exactly the gap
+reported here: `_group_cardinality` now asks `group.is_finite()` after the placement and free-basis cases
+decline, and a decided finiteness is placed. Verified without re-running the engine BSGS:
+
+```
+[p=2] is_finite() True in 0.10s | in OwnedFiniteGroups() now True      (was False)
+[p=2] cardinality 46998591897600 in 0.02s | harness 46998591897600 | agree True
+[p=5] is_finite() True in 0.11s | in OwnedFiniteGroups() now True      (was False)
+[p=5] cardinality NOT called
+```
+
+Two things worth recording. First, the provider route now *reproduces the harness number at p=2 exactly*
+(46 998 591 897 600) through its own semantics — an independent cross-check of `reduction_image_order` at the
+prime where both are affordable. Second, at p=5 only admission was checked on purpose: the fix places the
+group and routes `cardinality()` to `_finite_order`, which hands the finite matrix group to GAP through
+`as_permutation_group()` — the same BSGS cost as before, measured earlier at > 1 000 s. **The p=5/p=7
+obligation is unchanged and the nodes stay open.**

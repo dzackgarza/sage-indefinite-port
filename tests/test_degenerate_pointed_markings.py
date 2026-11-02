@@ -20,7 +20,7 @@ so a change to the marked path cannot quietly take it out.
 """
 import pytest
 
-from sage.all import MatrixGroup, ZZ, matrix
+from sage.all import MatrixGroup, ZZ, matrix, vector
 
 from sage_indefinite_port.indefinite.recursive import EichlerRecursion, _column_matrix
 from tests.acceptance.consumer import (
@@ -154,3 +154,107 @@ def test_unmarked_radical_automorphism_route_is_preserved() -> None:
     assert matrix(ZZ, [[1, 0], [0, -1]]) in forms
     assert matrix(ZZ, [[1, 1], [0, 1]]) in forms or matrix(ZZ, [[1, 0], [1, 1]]) in forms
     assert MatrixGroup(forms).order() > 2
+
+
+# ---------------------------------------------------------------------------------------------------
+# Rank-two radical: the actual integral GL(R) image, and the nontrivial shear kernel.
+#
+# For rank(R) >= 2 the integral group GL(R) genuinely moves residues: on the specimen below the witness
+# needs D = [[2,-1],[5,-2]] (determinant 1), not the identity, because s - r is not in 5R. The decision is
+# the action of the *integral* generators on R/5R; over Z the image of GL(R) is what must be used, and at
+# rank one it is a proper subgroup of Aut(R/cR), which is the (5,1) -/-> (5,2) refusal above.
+# ---------------------------------------------------------------------------------------------------
+
+_RANK_TWO_GRAM = [[2, 0, 0], [0, 0, 0], [0, 0, 0]]
+
+
+def _split_blocks(columns, c_rank, r_rank):
+    """A, B, D of the column matrix [[A, 0], [B, D]] of g = [[A,0],[B,D]]."""
+    A = columns.submatrix(0, 0, c_rank, c_rank)
+    B = columns.submatrix(c_rank, 0, r_rank, c_rank)
+    D = columns.submatrix(c_rank, c_rank, r_rank, r_rank)
+    return A, B, D
+
+
+def test_rank_two_radical_transport_needs_a_nonidentity_integral_D() -> None:
+    """`(5,1,0) -> (5,2,0)`: `s - r` is not in `5R`, so some `D` in GL_2(Z) must move `r` modulo 5."""
+    lattice_ = lattice(_RANK_TWO_GRAM)
+    source, target = element(lattice_, [5, 1, 0]), element(lattice_, [5, 2, 0])
+    witness = _RECURSION.pointed_isometry(source, target)
+
+    assert witness is not None
+    assert witness(source) == target
+    assert is_isometry(rows_of(witness), _RANK_TWO_GRAM)
+
+    columns = _column_matrix(witness)
+    _, shear, D = _split_blocks(columns, 1, 2)
+    residue = vector(ZZ, [1, 0])          # the radical part of the source
+    assert D * residue != residue, "this specimen is only interesting when D moves integer r"
+    # The criterion: s - D r lies in content_C(x) * R = 5R, and B x = s - D r.
+    difference = vector(ZZ, [2, 0]) - D * residue
+    assert all(int(entry) % 5 == 0 for entry in difference)
+    assert shear * vector(ZZ, [5]) == difference
+
+
+def test_rank_two_radical_refuses_when_r_vanishes_modulo_content_but_s_does_not() -> None:
+    """`(5,5,0) -/-> (5,0,1)`: here `r = (5,0) = 0` in `R/5R`, so `D r = 0` for every `D`, and `s != 0`."""
+    lattice_ = lattice(_RANK_TWO_GRAM)
+    source, target = element(lattice_, [5, 5, 0]), element(lattice_, [5, 0, 1])
+
+    assert int(source.q()) == int(target.q()) == 50
+    assert _RECURSION.pointed_isometry(source, target) is None
+
+
+def test_pure_shear_transport_when_d_minus_identity_already_lies_in_the_content_module() -> None:
+    """`(5,1,0) -> (5,6,5)` needs no `D` at all: `s - r = (5,5)` is in `5R`, so `D = 1` and `B` carries it."""
+    lattice_ = lattice(_RANK_TWO_GRAM)
+    source, target = element(lattice_, [5, 1, 0]), element(lattice_, [5, 6, 5])
+    witness = _RECURSION.pointed_isometry(source, target)
+
+    assert witness is not None and witness(source) == target
+    columns = _column_matrix(witness)
+    _, shear, D = _split_blocks(columns, 1, 2)
+    assert D == matrix(ZZ, [[1, 0], [0, 1]])
+    assert shear * vector(ZZ, [5]) == vector(ZZ, [5, 5])
+
+
+def test_pointwise_stabilizer_contains_the_nontrivial_shear_kernel() -> None:
+    """With `C` of rank two the kernel `{B : B x = 0}` is nontrivial, so the stabilizer is infinite.
+
+    For `C` of rank one the kernel is trivial: `B` is determined by `B(x_0)` and `c * B(x_0) = 0` forces
+    `B = 0` in a torsion-free `R`. Rank two is therefore the first place the kernel shows up.
+    """
+    gram = [[2, 0, 0], [0, 2, 0], [0, 0, 0]]
+    lattice_ = lattice(gram)
+    vector_ = element(lattice_, [1, 0, 0])
+    generators = tuple(_RECURSION.pointed_automorphism_generators(vector_))
+
+    assert generators
+    assert all(generator(vector_) == vector_ for generator in generators)
+    forms = [matrix(ZZ, rows_of(generator)) for generator in generators]
+    # The stabilizer is infinite here -- rank(C) = 2 gives a free abelian kernel -- so the order is not
+    # computed; what matters is that the kernel is actually generated.
+    assert len(forms) >= 2
+
+    shears = []
+    for generator in generators:
+        columns = _column_matrix(generator)
+        _, shear, D = _split_blocks(columns, 2, 1)
+        if shear != 0 and shear * vector(ZZ, [1, 0]) == 0:
+            shears.append((shear, D))
+    assert shears, "the kernel {B : Bx = 0} should be nontrivial for rank(C) = 2"
+
+    # One such shear fixes the marked vector and moves another C-basis vector by a radical component.
+    # The shear block acts C -> R (the upper-right block is zero), so the radical itself is never moved
+    # into C; what the kernel does is push the *other* C directions down into the radical.
+    shear, _ = shears[0]
+    shear_generator = next(generator for generator in generators
+                           if _split_blocks(_column_matrix(generator), 2, 1)[1] == shear)
+    assert shear_generator(vector_) == vector_
+    labels = tuple(lattice_.module_generating_set())
+    moved = [label for label in labels[:2]
+             if shear_generator(lattice_.module_generator(label)) != lattice_.module_generator(label)]
+    assert moved, "the shear must move a C-basis vector other than the marked one"
+    image = shear_generator(lattice_.module_generator(moved[0]))
+    assert image in lattice_
+    assert image != lattice_.module_generator(moved[0])

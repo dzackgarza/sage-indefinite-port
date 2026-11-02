@@ -71,3 +71,6 @@ references/Indefinite.jl/
 !.tmp/probe-degenerate-boundary.py
 !.tmp/probe-degenerate-public.py
 !.tmp/probe-degenerate-permuted.py
+!.tmp/probe-admission-42d7361.py
+!.tmp/probe-issue41-rank-two.py
+!.tmp/probe-issue41-gl2.py
