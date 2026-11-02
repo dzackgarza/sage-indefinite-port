@@ -290,7 +290,7 @@ An inventory of the remaining obligations and what actually blocks each:
 
 | obligation | blocker | evidence |
 | --- | --- | --- |
-| A_VECTORS `test_k3_lattice_has_one_primitive_orbit_per_norm[-2,2,4,-4]` | **the cover enumeration's yield rate**, measured — see below | `[-2]` and `[2]` capped at 3 579 / 3 564 MiB; `[4]`, `[-4]` not started |
+| A_VECTORS `test_k3_lattice_has_one_primitive_orbit_per_norm[-2,2,4,-4]` | **solved for `[-2]`** — a port-side recomputation defect, not a provider gap | `[-2]` passed 462 s / 3 948 MiB; `[2]`, `[4]`, `[-4]` re-running at the same limits |
 | A_VECTORS `test_k3_lattice_has_one_primitive_orbit` | **cap** — exceeded 1 200 s | recorded cap; would need either a cheaper route or a cap increase, and increasing caps is not in scope |
 | A_STABILIZERS roots (10 nodes) | **resolved** — all ten accepted at `42d7361c`, 3 293 s serial, no cap, max peak 4 708 MiB | sweep `jmvyzjrg9` |
 | A_STABILIZERS E10 squares (6) + OSCAR node 15 | **heavy slot** — accepted at `565fc6b9`, not re-run at `42d7361c` | ~1 500 s serial |
@@ -334,10 +334,25 @@ baseline (3 580 MiB tree), so this is time, not memory.
 
 **Withdrawn inference.** I had written that the other three norms "are no smaller" shells, and therefore add
 no information. That was an inference from norm magnitude, not a measurement, and it does not follow: the
-enumeration could behave differently per square. What *is* measured is that the cheapest-looking square (-2,
-the roots) yields fewer than 200 cover vectors in over 410 s, so a node that must finish the whole cover has no
-prospect inside 1 800 s. `[-2]` and `[2]` were run and both capped (3 579 and 3 564 MiB); `[4]` and `[-4]`
-were **not** started, and no cap was raised.
+enumeration could behave differently per square. `[-2]` and `[2]` were run and both capped (3 579 and
+3 564 MiB); `[4]` and `[-4]` were **not** started, and no cap was raised.
+
+**Resolved: `[-2]` passes, and the "yield rate" reading was itself incomplete.** The stage table above was
+taken *before* the Gram memo, and the missing 410 s was not the cover's yield rate. `_isometry_from_row_matrix`
+asks for the source and the target Gram on every generator, and `stabilizer_of_lattice` builds **136**
+generators, so 272 calls to a 25 s pure function of an immutable rank-22 rational lattice — about 6 800 s —
+sat in front of the first cover vector. Memoizing `_gram_in_label_order` (commit `829793bf`, hardened to
+return an immutable shared matrix in `49e3965f`) removes that, and the node now **passes**:
+
+| node | limit | result | where the time went |
+| --- | --- | --- | --- |
+| `test_k3_lattice_has_one_primitive_orbit_per_norm[-2]` | 1 800 s cap, 6 144 MiB guard | **passed 462 s, peak 3 948 MiB** | assembly done by 60 s; seven consecutive 60 s stack dumps inside `envelope.right_coset_transversal()` (`eichler.py:489`), reached from `primitive_covering_vectors` (`:1000`) |
+
+So the K3 finite-representation locus reached from the vector side *completes* for this configuration. That is a
+positive instance for the BOUND/#18 row below, which until now had only capped runs and a stale defect note:
+the same `right_coset_transversal` computation does terminate here, inside 1 800 s, and it is the bulk of the
+time. It does not by itself accept BOUND — different specimen, different statement — but it moves that row
+from "no successful instance" to "one successful instance on the K3 envelope".
 
 ### K3 and BOUND share one mathematical locus
 
