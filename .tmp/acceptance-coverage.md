@@ -260,6 +260,23 @@ is required for this operation and none was made. Old-pin record: provider `c546
   So the isotropic-line family is healthy everywhere it was sampled, and the heavy tail is the
   Enriques-adjacent group-orbit set, which is where the known blocker lives.
 
+## Pre-existing unit-test failures (not acceptance, not attributed to #41)
+
+Running the non-acceptance unit suite (`tests/*.py`, 143 nodes) on provider `42d7361c`:
+
+```
+2 failed, 141 passed in 124 s
+FAILED tests/test_edgewalk_rank2.py::test_edgewalk_period_action_matrix_uses_coordinate_label_order
+FAILED tests/test_pinned_lorentzian_cells.py::test_positive_vector_shell_respects_explicit_coordinate_labels
+  TypeError: base_ring (=Integer Ring) must be a ring or a semiring
+  TypeError: unable to coerce <class 'dict'> to an integer
+```
+
+Both reproduce **identically at `3c2425a1`**, which predates the whole #41 radical/kernel unit, verified by
+running them in a detached worktree of that commit bound in place of the live tree. So they are pre-existing
+failures of this environment (a Sage-level `base_ring` check and a dict-to-integer coercion), not
+regressions from the #41 work. Neither is an acceptance case.
+
 ## Not port acceptance
 
 The 80/80 Normaliz-vs-PPL engine agreement is an **engine-only** statement about identical ray sets. It
