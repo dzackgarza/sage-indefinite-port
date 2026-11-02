@@ -87,3 +87,4 @@ references/Indefinite.jl/
 !.tmp/probe-eval-kernel.py
 !.tmp/probe-kernel-measure.py
 !.tmp/probe-transporter-path.py
+!.tmp/probe-k3-stages.py

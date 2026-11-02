@@ -266,7 +266,7 @@ An inventory of the remaining obligations and what actually blocks each:
 
 | obligation | blocker | evidence |
 | --- | --- | --- |
-| A_VECTORS `test_k3_lattice_has_one_primitive_orbit_per_norm[-2,2,4,-4]` | **the algorithm**, not the cap alone — see below | `[-2]` capped at 1 800 s / 3 579 MiB |
+| A_VECTORS `test_k3_lattice_has_one_primitive_orbit_per_norm[-2,2,4,-4]` | **the cover enumeration's yield rate**, measured — see below | `[-2]` and `[2]` capped at 3 579 / 3 564 MiB; `[4]`, `[-4]` not started |
 | A_VECTORS `test_k3_lattice_has_one_primitive_orbit` | **cap** — exceeded 1 200 s | recorded cap; would need either a cheaper route or a cap increase, and increasing caps is not in scope |
 | A_STABILIZERS roots (10 nodes) | **heavy slot** — accepted at provider `9dc89ac`, not re-run at `42d7361c`; ~70 min serial | rows keep their pin |
 | A_BOUNDARIES (87 Enriques + ~28 non-Enriques) | **heavy slot**; Enriques `case_1` is a known block at 3 600 s | only 4 Dawes nodes ever ran |
@@ -287,20 +287,37 @@ either resolved or refuted, and the instrumentation to settle it exists
 (`.tmp/probe-transporter-path.py`): it needs a pointed pair whose rational transport is non-integral, which
 the A_STABILIZERS pointed family may supply when that family is re-run at the current pin.
 
-### K3: the bottleneck is the general recursion, so the other norms add nothing
+### K3: measured attribution, and a withdrawn inference
 
-`_pointed_classes` (`marked_lattices.py:150-170`) sends this case to
-`RECURSION.primitive_vector_classes`, because the K3 lattice `U^3 + E8 + E8` has positive index 3 and no rule
-above `case 1` applies. That routine (`recursive.py:1057-1065`) enumerates
-`OrbitCoverModel.primitive_covering_vectors(square)` and deduplicates it by pairwise `pointed_isometry` calls —
-so the cost is `|cover|` times a pointered-isometry computation per kept class. Nothing about that loop is
-specific to a norm: all four nodes run it with a different `square`.
+**Call graph** (`_pointed_classes`, `marked_lattices.py:150-170`): K3 = `U^3 + E8 + E8` has positive index 3,
+no rule above `case 1` applies, so the case goes to `RECURSION.primitive_vector_classes`
+(`recursive.py:1057-1065`), which enumerates `OrbitCoverModel.primitive_covering_vectors(square)` and
+deduplicates by pairwise `pointed_isometry`.
 
-`-2` is the **smallest** shell (the roots) and it caps at 1 800 s with only 3 579 MiB, i.e. on time, not
-memory. Since the remaining norms are independent instances of the same routine on shells that are no smaller,
-running them is repeating a resource cap rather than gaining acceptance information. One further node (`[2]`)
-was allowed to finish because it was already in flight; `[4]` and `[-4]` were not started. **None of the four
-is an accepted case, and no cap was raised.**
+That is the graph. The **measured attribution**, one stage at a time, each stage printed before it starts:
+
+| stage | measured |
+| --- | --- |
+| imports + Gram + `lattice(gram)` | 1.3 s |
+| `lattice.signature_pair()` → (3, 19) | **0.0 s** |
+| `AttackProfile.from_lattice` → positive_index 3, sign 1 | **0.0 s** |
+| `EichlerRecursion._model(signed_view)` | 9.4 s |
+| **`primitive_covering_vectors(-2)`, first 200 vectors** | **> 410 s, fewer than 200 yielded** |
+
+So the profile is *not* the cost; the cover enumeration's **yield rate** is. Memory stayed at the Julia
+baseline (3 580 MiB tree), so this is time, not memory.
+
+**Withdrawn inference.** I had written that the other three norms "are no smaller" shells, and therefore add
+no information. That was an inference from norm magnitude, not a measurement, and it does not follow: the
+enumeration could behave differently per square. What *is* measured is that the cheapest-looking square (-2,
+the roots) yields fewer than 200 cover vectors in over 410 s, so a node that must finish the whole cover has no
+prospect inside 1 800 s. `[-2]` and `[2]` were run and both capped (3 579 and 3 564 MiB); `[4]` and `[-4]`
+were **not** started, and no cap was raised.
+
+**Harness lesson, recorded because it cost 900 s.** The first cover probe reported *zero output* and I read that
+as "the pre-cover stage exceeded 900 s". It was not: the command piped through `head`, so the probe's output was
+truncated by SIGPIPE — the same pitfall already recorded once in this project. The staged probe above, without
+the pipe, shows the real attribution.
 
 ### `a7_plus_diagonal`: blocked on cone conversion, with the artifact
 
