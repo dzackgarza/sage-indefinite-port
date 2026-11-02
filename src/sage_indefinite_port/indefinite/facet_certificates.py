@@ -1,200 +1,134 @@
-"""Exact certificates for the orbit-representative facet route.
+"""Exact certificates for the orbit-representative facet route, on maintained linear algebra.
 
-The perfect-cell facet route enumerates facets modulo the cell stabilizer instead of asking an engine for the
-complete H-description of the cell cone. It needs three exact primitives, each with a certificate that can be
-checked by integer arithmetic alone:
+The perfect-cell facet route enumerates facets modulo the cell stabilizer rather than asking an engine for the
+complete H-description of the cell cone. Each step needs a decision that can be checked exactly, and every
+decision here is expressed through the linear algebra the port and Sage already maintain -- ``matrix(...).rank()``,
+``.pivots()``, ``.right_kernel()``, ``.det()`` -- not through a private elimination of its own.
 
-* :func:`rank_lower_certificate` -- certify `rank(rows) >= wanted` by an exact nonzero minor. Modular
-  elimination only *finds* the candidate rows (a nonzero reduction never proves a lower bound); the exact
-  Bareiss determinant certifies it.
-* :func:`facet_normal_from_incidence` -- recover a facet's primitive integer normal from its incidence set
-  alone. Cofactor construction over `dimension - 1` independent rows, so the cost does not depend on how many
-  rays the facet contains.
-* :func:`is_facet_certificate` -- decide "this primitive vector is the facet with this incidence".
+Rank certificates.  A nonzero ``k x k`` minor proves ``rank >= k`` over `Q`, and it does so whether the
+non-vanishing is established over `Z` or modulo a prime: ``det(M) != 0`` in `Z/pZ` implies ``det(M) != 0`` in
+`Z`, hence in `Q`. (I wrote the opposite in an earlier revision; that was wrong. What modular arithmetic cannot
+do is certify an *upper* bound -- ``det == 0`` mod `p` says nothing -- which is why the upper bounds below are
+argued structurally, not computed.) The certificate produced here is the determinant itself, evaluated by Sage.
 
-Two facts make the tests cheap rather than expensive:
+Free upper bounds, which is what makes the tests cheap:
 
-* :meth:`LorentzianPerfectCell.__post_init__` (``lorentzian_cells.py:614-619``) raises unless
-  ``rank[1 | A] = n``. So the cell's rows lie in a single affine hyperplane not through the origin, and the
-  cone is the cone over an ``(n-1)``-dimensional polytope: **pointed and full-dimensional a priori**, not by
-  inference from ``rank A = n`` (which gives full-dimensionality only).
-* Consequently the upper bound in both rank tests is free. A vector that is non-negative on every ray and
-  vanishes on the incidence set puts that set inside an ``(n-1)``-space, so only ``rank >= n-1`` needs
-  certifying; and ``I cap I'`` is annihilated by two independent facet normals, so ``rank <= n-2`` is free and
+* ``LorentzianPerfectCell.__post_init__`` (``lorentzian_cells.py:614-619``) raises unless ``rank[1 | A] = n``.
+  The rows therefore lie in a single affine hyperplane not through the origin -- its normal is computed by
+  :func:`pointedness_functional` -- so the cone is the cone over an ``(n-1)``-polytope: pointed and
+  full-dimensional *a priori*, for every cell the port builds, not by analogy from small samples.
+* A vector that is non-negative on every ray and vanishes on an incidence set `I` puts `I` inside an
+  `(n-1)`-space, so only ``rank(I) >= n-1`` needs certifying.
+* `I cap I'` is annihilated by two independent facet normals, so ``rank(I cap I') <= n-2`` is free and
   adjacency is exactly ``rank(I cap I') = n-2``.
 
 Reference: the upstream route is `polyhedral_common`'s adjacency decomposition
-(``src_lorentzian/lorentzian_perfect.h:1433-1472``, ``f_adj`` -> ``DualDescriptionRecordFullDim(EXT_T,
-GRPperm, rddo)``). This module supplies the arithmetic those steps consume; it does not walk the facet graph.
+(``src_lorentzian/lorentzian_perfect.h:1433-1472``). This module supplies the arithmetic those steps consume; it
+does not walk the facet graph.
 """
 
 from __future__ import annotations
 
 from math import gcd
 
+from sage.all import QQ, ZZ, matrix
+
 __all__ = [
     "adjacent_incidences",
     "facet_normal_from_incidence",
+    "incidence_rank_certificate",
     "is_facet_certificate",
     "orient_facet_normal",
-    "rank_lower_certificate",
+    "pointedness_functional",
 ]
 
-
-def _hadamard_bound(dimension: int, max_entry: int) -> int:
-    r"""An entry of a `dimension x dimension` integer minor is at most this in absolute value."""
-    return int(max_entry) ** int(dimension) * _factorial_root(int(dimension))
+type Normal = tuple[int, ...]
 
 
-def _factorial_root(dimension: int) -> int:
-    """A cheap integer upper bound for `sqrt(dimension!)`, used only to size a prime."""
-    value = 1
-    for factor in range(2, int(dimension) + 1):
-        value *= factor
-    root = 1
-    while root * root <= value:
-        root += 1
-    return root
+def _integer_rows(rows) -> list[tuple[int, ...]]:
+    return [tuple(int(entry) for entry in row) for row in rows]
 
 
-def _prime_above(limit: int) -> int:
-    """The least prime strictly above ``limit``."""
-    candidate = max(3, int(limit) + 1)
-    if candidate % 2 == 0:
-        candidate += 1
-    while True:
-        if all(candidate % divisor for divisor in range(3, int(candidate**0.5) + 1, 2)):
-            return candidate
-        candidate += 2
+def incidence_rank_certificate(rows, wanted: int) -> tuple[tuple[int, ...], tuple[int, ...]] | None:
+    r"""Certify ``rank(rows) >= wanted`` with a nonzero minor, or return None.
 
-
-def _determinant(matrix_rows) -> int:
-    """Exact integer determinant by fraction-free Bareiss elimination."""
-    size = len(matrix_rows)
-    if size == 0:
-        return 1
-    working = [[int(entry) for entry in row] for row in matrix_rows]
-    if any(len(row) != size for row in working):
-        raise ValueError("the determinant requires a square matrix")
-    sign, previous = 1, 1
-    for column in range(size - 1):
-        if working[column][column] == 0:
-            swap = next((row for row in range(column + 1, size) if working[row][column]), None)
-            if swap is None:
-                return 0
-            working[column], working[swap] = working[swap], working[column]
-            sign = -sign
-        pivot = working[column][column]
-        for row in range(column + 1, size):
-            for position in range(column + 1, size):
-                working[row][position] = (
-                    working[row][position] * pivot - working[row][column] * working[column][position]
-                ) // previous
-            working[row][column] = 0
-        previous = pivot
-    return sign * working[size - 1][size - 1]
-
-
-def exact_minor_is_nonzero(matrix_rows) -> bool:
-    """Whether a square integer minor is exactly nonzero."""
-    return _determinant(matrix_rows) != 0
-
-
-def rank_lower_certificate(rows, wanted: int):
-    r"""Certify ``rank(rows) >= wanted``, returning ``(indices, ok)``.
-
-    ``indices`` selects exactly ``wanted`` rows whose ``wanted x wanted`` minor is exactly nonzero, so the
-    bound holds unconditionally over ``Q``; ``ok`` is False when the rows cannot certify it. Modular
-    elimination over a prime above the Hadamard bound only finds the candidate pivot rows -- a nonzero
-    reduction never proves a lower bound -- and the exact Bareiss determinant is what certifies.
+    Returns ``(row_indices, column_indices)`` selecting the square submatrix whose determinant Sage evaluates as
+    nonzero, so the bound holds over `Q`. The rank itself is Sage's exact ``rank()``; the certificate is the
+    determinant, so no private elimination is involved.
     """
-    rows = [tuple(int(entry) for entry in row) for row in rows]
+    rows = _integer_rows(rows)
     wanted = int(wanted)
     if wanted <= 0:
-        return (), True
+        return (), ()
     if len(rows) < wanted or not rows:
-        return (), False
-    dimension = len(rows[0])
-    max_entry = max((abs(entry) for row in rows for entry in row), default=1)
-    prime = _prime_above(_hadamard_bound(max(wanted, 2), max(max_entry, 2)))
-    basis: list[tuple[int, list[int]]] = []
-    chosen: list[int] = []
-    pivot_columns: list[int] = []
-    for index, row in enumerate(rows):
-        working = [value % prime for value in row]
-        for pivot_column, pivot_row in basis:
-            factor = working[pivot_column]
-            if factor:
-                working = [(a - factor * b) % prime for a, b in zip(working, pivot_row, strict=True)]
-        pivot_column = next((column for column, value in enumerate(working) if value), None)
-        if pivot_column is None:
-            continue
-        inverse = pow(working[pivot_column], -1, prime)
-        basis.append((pivot_column, [(value * inverse) % prime for value in working]))
-        chosen.append(index)
-        pivot_columns.append(pivot_column)
-        if len(basis) == wanted:
-            break
-    if len(chosen) < wanted:
-        return (), False
-    square = [[rows[index][column] for column in pivot_columns] for index in chosen]
-    if len(square) != wanted or len(pivot_columns) != wanted:
-        return (), False
-    if not exact_minor_is_nonzero(square):
-        return (), False
-    return tuple(chosen), True
-
-
-def independent_rows(rows, wanted: int):
-    """A certified independent subfamily of size ``wanted``, or None."""
-    indices, ok = rank_lower_certificate(rows, wanted)
-    if not ok:
         return None
-    return tuple(tuple(int(entry) for entry in rows[index]) for index in indices)
+    integer_matrix = matrix(ZZ, rows)
+    if integer_matrix.rank() < wanted:
+        return None
+    pivot_columns = tuple(int(column) for column in integer_matrix.pivots())[:wanted]
+    if len(pivot_columns) < wanted:
+        return None
+    restricted = integer_matrix.matrix_from_columns(pivot_columns)
+    pivot_rows = tuple(int(row) for row in restricted.transpose().pivots())[:wanted]
+    if len(pivot_rows) < wanted:
+        return None
+    square = integer_matrix.matrix_from_rows_and_columns(pivot_rows, pivot_columns)
+    if square.det() == 0:
+        return None
+    return pivot_rows, pivot_columns
 
 
-def facet_normal_from_incidence(incidence_rows, dimension: int) -> tuple[int, ...]:
+def facet_normal_from_incidence(incidence_rows, dimension: int) -> Normal:
     r"""The primitive integer normal of the hyperplane spanned by ``incidence_rows``.
 
-    Cofactor construction ``y_i = (-1)^i det(M_i)`` over ``dimension - 1`` certified independent rows, so the
-    cost is independent of how many rows the incidence has. The result annihilates every given row (checked,
-    not assumed) and is primitive with its first nonzero entry positive; orientation is the caller's business.
+    Sage's ``right_kernel`` over `Q` supplies the one-dimensional kernel of a rank-``n-1`` row set; the result is
+    cleared to integers, made primitive, and then verified to annihilate *every* given row rather than only a
+    spanning subset. Which sign is valid for the cone is decided by :func:`orient_facet_normal`, because the sign
+    of a kernel basis is a fact about coordinates, not about the cone.
     """
     dimension = int(dimension)
-    basis = independent_rows(tuple(incidence_rows), dimension - 1)
-    if basis is None:
-        raise ArithmeticError("an incidence set must span a hyperplane of the ray space")
-    cofactors = []
-    for column in range(dimension):
-        minor = [[row[index] for index in range(dimension) if index != column] for row in basis]
-        cofactors.append(((-1) ** column) * _determinant(minor))
+    rows = _integer_rows(incidence_rows)
+    if len(rows) < dimension - 1:
+        raise ArithmeticError(
+            f"an incidence set must have at least {dimension - 1} rows to span a hyperplane, got {len(rows)}"
+        )
+    kernel = matrix(QQ, rows).right_kernel().basis_matrix()
+    if kernel.nrows() != 1:
+        raise ArithmeticError(
+            f"an incidence set must span a hyperplane, but its kernel has dimension {kernel.nrows()}"
+        )
+    rational = [QQ(entry) for entry in kernel.row(0)]
+    denominator = 1
+    for entry in rational:
+        denominator = denominator * int(entry.denominator()) // gcd(denominator, int(entry.denominator()))
+    integral = [int(entry * denominator) for entry in rational]
     divisor = 0
-    for value in cofactors:
-        divisor = gcd(divisor, value)
+    for entry in integral:
+        divisor = gcd(divisor, entry)
     if divisor == 0:
-        raise ArithmeticError("the cofactor vector vanished on a spanning incidence set")
-    normal = tuple(value // divisor for value in cofactors)
-    first = next((value for value in normal if value), 0)
-    if first < 0:
-        normal = tuple(-value for value in normal)
-    for row in incidence_rows:
+        raise ArithmeticError("the kernel vector vanished on a spanning incidence set")
+    normal = tuple(entry // divisor for entry in integral)
+    for row in rows:
         if sum(a * b for a, b in zip(normal, row, strict=True)) != 0:
-            raise ArithmeticError("the cofactor normal does not annihilate its incidence set")
+            raise ArithmeticError("the kernel normal does not annihilate its incidence set")
     return normal
 
 
-def orient_facet_normal(normal, ray_rows) -> tuple[tuple[int, ...], list[int]]:
-    r"""Orient a hyperplane normal so that it is **non-negative on every ray**.
+def orient_facet_normal(normal, ray_rows) -> tuple[Normal, list[int]]:
+    r"""Orient a hyperplane normal to be **non-negative on every ray**, returning ``(normal, pairings)``.
 
-    The cofactor construction fixes only the sign of the first nonzero entry, which is a fact about coordinates
-    and not about the cone: the valid orientation is the one with ``<normal, r> >= 0`` for every ray. Exactly one
-    of the two signs is non-negative on all rays when the hyperplane is a facet's; both are when the normal
-    annihilates every ray, which cannot happen for a full-dimensional cone and is refused here.
-
-    Returns ``(oriented_normal, pairings)`` so the caller can certify without recomputing them.
+    The valid orientation is the one with ``<normal, r> >= 0`` for every ray. A normal that annihilates every ray
+    is not a supporting hyperplane of a full-dimensional cone: both orientations look non-negative, and the
+    earlier version of this function returned that case as if it were a certificate. It raises now, and the test
+    suite pins it.
     """
     normal = tuple(int(entry) for entry in normal)
     values = [sum(a * int(b) for a, b in zip(normal, row, strict=True)) for row in ray_rows]
+    if all(value == 0 for value in values):
+        raise ArithmeticError(
+            "the normal annihilates every ray, so neither orientation is a supporting hyperplane of a "
+            "full-dimensional cone"
+        )
     if all(value >= 0 for value in values):
         return normal, values
     flipped = tuple(-entry for entry in normal)
@@ -210,38 +144,74 @@ def is_facet_certificate(normal, incidence, ray_rows) -> bool:
     r"""Whether ``normal`` is the facet whose incidence is ``incidence``, by exact arithmetic.
 
     Checks primitivity and nontriviality, that the pairings vanish exactly on ``incidence``, that they are
-    strictly positive on every other ray, and that the incidence has rank ``n - 1``. The rank's upper bound is
-    free (the normal annihilates the set), so only the certified lower bound enters.
+    non-negative on every other ray with at least one strict inequality, and that the incidence has rank
+    ``n - 1`` (the upper bound is free, so only the certified lower bound enters).
     """
     normal = tuple(int(entry) for entry in normal)
     dimension = len(normal)
+    ray_rows = _integer_rows(ray_rows)
     values = [sum(a * int(b) for a, b in zip(normal, row, strict=True)) for row in ray_rows]
     zeros = frozenset(index for index, value in enumerate(values) if value == 0)
     if zeros != frozenset(int(index) for index in incidence):
         return False
     if any(value < 0 for value in values):
         return False
+    if all(value == 0 for value in values):
+        return False
     divisor = 0
     for entry in normal:
         divisor = gcd(divisor, entry)
     if divisor != 1:
         return False
-    _, ok = rank_lower_certificate([ray_rows[index] for index in sorted(zeros)], dimension - 1)
-    return ok
+    return incidence_rank_certificate([ray_rows[index] for index in sorted(zeros)], dimension - 1) is not None
 
 
 def adjacent_incidences(first_incidence, second_incidence, ray_rows, dimension: int) -> bool:
-    r"""Whether two facets sharing no common interior meet in a ridge: ``rank(I cap I') = n - 2``.
+    r"""Whether two facets meet in a ridge: ``rank(I cap I') = n - 2``, exact.
 
-    The upper bound is free: the joint incidence is annihilated by two independent facet normals, so it lies
-    in an ``(n-2)``-space. Adjacency therefore needs only the certified lower bound, and a partial rank test
-    can exit as soon as ``n - 2`` independent joint rows are found.
+    The upper bound is free because the joint incidence is annihilated by two independent facet normals; the
+    lower bound is Sage's exact rank on the joint rows.
     """
-    joint = sorted(set(int(index) for index in first_incidence) & set(int(index) for index in second_incidence))
+    joint = sorted(
+        set(int(index) for index in first_incidence) & set(int(index) for index in second_incidence)
+    )
     wanted = int(dimension) - 2
     if wanted <= 0:
         return True
     if len(joint) < wanted:
         return False
-    _, ok = rank_lower_certificate([ray_rows[index] for index in joint], wanted)
-    return ok
+    ray_rows = _integer_rows(ray_rows)
+    return matrix(ZZ, [ray_rows[index] for index in joint]).rank() >= wanted
+
+
+def pointedness_functional(cell) -> tuple[Normal, list[int]]:
+    r"""The strictly positive functional that the cell's own constructor hypothesis supplies.
+
+    ``rank[1 | A] = n`` means the augmented rows ``(1, a_i)`` span an `n`-dimensional subspace of `Q^{n+1}`, so
+    their kernel is one-dimensional, spanned by ``w = (w_0, w')`` with ``w_0 + w'*a_i = 0`` for every row. Since
+    ``rank A = n`` forces ``w_0 != 0``, ``w'*a_i = -w_0`` is the *same nonzero value on every ray*: the rows lie
+    in one affine hyperplane through no origin, the cone is the cone over an ``(n-1)``-polytope, and ``w'``
+    (sign-corrected) is strictly positive on every ray. This is the pointedness certificate for the actual cell,
+    derived from its hypotheses and checked row by row -- not inferred from ``rank A = n``.
+
+    Returns ``(functional, pairings)``.
+    """
+    rows = _integer_rows(cell.rows)
+    augmented = matrix(ZZ, [[1, *row] for row in rows])
+    kernel = matrix(QQ, augmented).right_kernel().basis_matrix()
+    if kernel.nrows() != 1:
+        raise ArithmeticError(
+            "the cell rows do not lie on a single affine hyperplane, so the cone is not a cone over a polytope"
+        )
+    functional = tuple(int(entry) for entry in kernel.row(0)[1:])
+    pairings = [sum(a * int(b) for a, b in zip(functional, row, strict=True)) for row in rows]
+    if any(value == 0 for value in pairings):
+        raise ArithmeticError(
+            "the affine functional vanishes on a ray, which cannot happen for a cone over a polytope"
+        )
+    if all(value < 0 for value in pairings):
+        functional = tuple(-entry for entry in functional)
+        pairings = [-value for value in pairings]
+    if not all(value > 0 for value in pairings):
+        raise ArithmeticError("the affine functional is not of one sign on the rays")
+    return functional, pairings

@@ -13,14 +13,15 @@ The structural fact both rank tests lean on is checked here too: `LorentzianPerf
 an `(n-1)`-polytope and is pointed and full-dimensional a priori.
 """
 import pytest
-from sage.all import QQ, ZZ, matrix
+from sage.all import GF, QQ, ZZ, matrix
 
 from sage_indefinite_port.indefinite.facet_certificates import (
     adjacent_incidences,
     facet_normal_from_incidence,
+    incidence_rank_certificate,
     is_facet_certificate,
     orient_facet_normal,
-    rank_lower_certificate,
+    pointedness_functional,
 )
 from sage_indefinite_port.indefinite.lorentzian_cells import (
     NONNEGATIVE_SQUARES,
@@ -53,22 +54,30 @@ def _normal_coordinates(covector, lattice_):
     )
 
 
-def test_rank_certificate_matches_exact_rational_rank() -> None:
-    """The certificate must never claim more than `Q`-rank, and must fire whenever it can."""
+def test_rank_certificate_is_a_nonzero_minor_and_never_over_claims() -> None:
+    """The certificate is a determinant Sage evaluates, and it must agree with exact `Q`-rank.
+
+    This is a check of the primitive on chosen cases. It is emphatically not evidence that a facet enumeration
+    is complete: a missed rank would silently drop a genuine facet or ridge, and no sample of examples can
+    certify an enumeration. What can is the closure argument over the facet graph, which the walk owns.
+    """
     cases = [
         [[1, 2, 3], [2, 4, 6], [0, 1, 1]],          # dependent row included, rank 2
         [[1, 0], [0, 1], [1, 1]],                    # rank 2 in dimension 2
         [[2, 4], [3, 6]],                            # rank 1
+        [[0, 0], [0, 0]],                            # rank 0
     ]
     for rows in cases:
         exact = matrix(QQ, rows).rank()
-        indices, ok = rank_lower_certificate(rows, exact)
-        assert ok, f"rank {exact} must be certifiable for {rows}"
-        assert len(indices) == exact
-        assert not rank_lower_certificate(rows, exact + 1)[1], "the certificate must not over-claim"
-
-    # A zero minor must not certify: the modular step may find pivots that vanish over Z.
-    assert not rank_lower_certificate([[0, 0], [0, 0]], 1)[1]
+        certificate = incidence_rank_certificate(rows, exact) if exact else None
+        if exact:
+            assert certificate is not None, f"rank {exact} must be certifiable for {rows}"
+            pivot_rows, pivot_columns = certificate
+            minor = matrix(ZZ, rows).matrix_from_rows_and_columns(pivot_rows, pivot_columns)
+            assert minor.det() != 0, "the returned certificate must be a nonzero minor"
+            assert len(pivot_rows) == exact
+        assert incidence_rank_certificate(rows, exact + 1) is None, "the certificate must not over-claim"
+    assert incidence_rank_certificate([[0, 0], [0, 0]], 1) is None
 
 
 @pytest.mark.parametrize("name", sorted(SPECIMENS))
@@ -91,7 +100,7 @@ def test_every_engine_facet_normal_is_recovered_from_its_incidence(name) -> None
             if sum(coordinates[i] * row[i] for i in range(dimension)) == 0
         )
         raw = facet_normal_from_incidence([rays[index] for index in incidence], dimension)
-        # The cofactor sign is a coordinate fact; the cone's orientation is the one non-negative on every ray.
+        # The kernel basis sign is a coordinate fact; the cone's orientation is the one non-negative on all rays.
         recovered, _values = orient_facet_normal(raw, rays)
         assert is_facet_certificate(recovered, incidence, rays), (
             f"the recovered normal {recovered} failed its own certificate on incidence {incidence}"
@@ -157,3 +166,47 @@ def test_cube_cone_adjacency_matches_the_closed_form() -> None:
         )
         expected = (2 * (n - 1)) * (2 * (n - 1) - 1) // 2 - (n - 1)
         assert adjacent == expected, f"n={n}: {adjacent} adjacent pairs, closed form says {expected}"
+
+
+@pytest.mark.parametrize("name", sorted(SPECIMENS))
+def test_pointedness_is_certified_by_the_constructor_hypothesis(name) -> None:
+    r"""Pointedness from `rank[1|A] = n`, checked row by row on the actual cell.
+
+    The cell's rows lie in one affine hyperplane through no origin; the functional `w'` from the kernel of
+    `[1|A]` therefore takes the *same nonzero value* on every ray, so the cone is the cone over an
+    `(n-1)`-polytope and is pointed and full-dimensional. This is not an inference from `rank A = n` (which is
+    only full-dimensionality) and not an extrapolation from small samples: it is a proof for every cell the port
+    constructs, evaluated on this cell's own rows.
+    """
+    backend, cell = _cell(SPECIMENS[name])
+    dimension = len(cell.rows[0])
+    functional, pairings = pointedness_functional(cell)
+
+    assert all(value > 0 for value in pairings), "the affine functional must be strictly positive on every ray"
+    assert len(set(pairings)) == 1, (
+        "the rows lie in an affine hyperplane, so the functional takes one constant value on them, "
+        f"measured {sorted(set(pairings))[:4]}"
+    )
+    assert matrix(QQ, [[1, *row] for row in cell.rows]).rank() == dimension
+
+
+def test_orient_refuses_a_normal_that_annihilates_every_ray() -> None:
+    """The earlier version returned all-zero pairings as if they were a valid orientation; it must raise."""
+    rays = [(1, 0), (0, 1)]
+    with pytest.raises(ArithmeticError):
+        orient_facet_normal((0, 0), rays)
+    with pytest.raises(ArithmeticError):
+        orient_facet_normal((1, -1), rays)
+
+
+def test_a_nonzero_minor_modulo_a_prime_certifies_a_rational_lower_bound() -> None:
+    r"""Correcting an earlier claim of mine: non-vanishing mod `p` *does* prove `rank >= k` over `Q`.
+
+    `det != 0` in `Z/pZ` implies `det != 0` in `Z`, hence in `Q`. What modular arithmetic cannot certify is an
+    upper bound, which is why the upper bounds in this module are structural rather than computed.
+    """
+    prime = 101
+    rows = [[1, 2], [2, 4], [3, 7]]             # rank 2 over Q; the 2x2 minor rows 0,2 is 1*7-2*3 = 1
+    minor = matrix(GF(prime), [[rows[0][0], rows[0][1]], [rows[2][0], rows[2][1]]])
+    assert minor.det() != 0, "a nonzero modular determinant is a rational rank certificate"
+    assert matrix(QQ, rows).rank() >= 2

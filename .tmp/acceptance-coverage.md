@@ -185,6 +185,11 @@ port materializes the complete H-description per cell and then keeps only repres
 Measured specimen: `A7 ⊕ <1> ⊕ <1> ⊕ <-1>`, rank 10, signature (9,1), 49 861 rows, row rank 10 (full-dimensional,
 so `subspace` cannot help), entries ≤ 15, initial cell built in 4.5 s.
 
+**A7 pointedness, proved on the specimen.** `rank[1|A] = 10` for the 49 861 × 10 configuration, and the kernel
+normal `w' = (1,0,0,0,0,0,0,0,0,1)` takes the value 1 on **every** row (min = max = 1), so the rows lie in one
+affine hyperplane through no origin and the cone is the cone over a 9-polytope: pointed and full-dimensional.
+0.26 s, exact. That replaces the invalid inference "row rank = ambient dimension, so no lineality".
+
 **And it was run: the answer is the engine, not the port.** `test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q`
 re-run at the current pins (src `fad2c5bb`-tree, provider `42d7361c`, cap 1 800 s, guard 6 144 MiB, job
 `jmvzblu48`): **capped**, killed at 1 800 s, peak **5 405 MiB** (below the guard, so time-bound). All 29 stack

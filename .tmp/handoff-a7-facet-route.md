@@ -144,6 +144,38 @@ properties an orbit-reduced enumeration depends on: a facet covector annihilates
 and is non-negative on every other ray; each stabilizer generator permutes the ray set; each sends facets to
 facets; every facet lies in exactly one orbit. Any implementation of the orbit route has to keep passing these.
 
+### 5e. Corrections to the certificate layer, from review
+
+Three of these are mine, and two of them I had asserted as fact:
+
+1. **A nonzero minor modulo a prime *does* prove a rational rank lower bound.** `det != 0` in `Z/pZ` implies
+   `det != 0` in `Z`, hence in `Q`. I wrote the opposite ("a nonzero reduction never proves a lower bound"),
+   which is wrong. What modular arithmetic cannot do is certify an *upper* bound, since `det == 0 mod p` says
+   nothing about `det` over `Z`. The port's certificate layer now uses Sage's exact `rank()` for the decision
+   and a determinant for the certificate, so the question no longer arises.
+2. **`max_entry^n * sqrt(n!)` is not a Hadamard bound.** Hadamard's inequality gives
+   `|det| <= prod_i ||row_i||_2 <= (sqrt(n) * max_entry)^n`, and `sqrt(n!)` is far smaller than `n^{n/2}`. The
+   bound was only ever used to size a prime; with a too-small prime the modular rank can be artificially
+   lowered, which would *miss* a genuine facet or ridge. That whole path is gone: the module composes Sage's
+   `rank`/`pivots`/`right_kernel`/`det` and keeps no private elimination, no modular reduction and no primality
+   test.
+3. **A sample of random examples cannot certify enumeration completeness.** Agreement on 120 random matrices is
+   a check of a primitive, not evidence that a facet enumeration is complete — a missed rank silently drops a
+   genuine facet or ridge. Completeness comes only from the closure argument over the facet graph.
+4. **`orient_facet_normal` accepted all-zero pairings** while its docstring said it refused them: every row
+   giving `<normal, r> == 0` satisfies "non-negative on all rays". It now raises, and a test pins both that and
+   the impossible-normal case.
+
+### 5f. A7 pointedness, proved on the specimen instead of inferred
+
+From the constructor hypothesis, evaluated on the real configuration in 0.26 s: `rank[1|A] = 10` for the
+49 861 × 10 row set, its kernel is spanned by `w = (w_0, w')`, and here
+`w' = (1, 0, 0, 0, 0, 0, 0, 0, 0, 1)` takes the value **1 on every one of the 49 861 rows** (min = max = 1, one
+distinct value). So the rows lie in the single affine hyperplane `x_1 + x_10 = -w_0`, which does not contain the
+origin, the cone is the cone over a 9-polytope, and it is pointed and full-dimensional. That is a proof for this
+cell and, by the same argument, for every cell the port builds — not an extrapolation from the two bounded
+specimens, and not the false inference "row rank = ambient dimension, so no lineality".
+
 ## 6. Established vs unmeasured
 
 Established: the specimen and its dimensions; that the cost is one `SupportHyperplanes` call; that the cone is
