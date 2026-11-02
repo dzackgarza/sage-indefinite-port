@@ -95,3 +95,7 @@ references/Indefinite.jl/
 !.tmp/handoff-owner-enriques-oqn.md
 .scratch/
 !.tmp/handoff-a7-facet-route.md
+
+# UltraMath run scratch: keep the proof/prototype/ground-truth artifacts, drop caches and vendored libs
+.ultramath/**/__pycache__/
+.ultramath/smvzd6hvn/m7/pylibs/
