@@ -328,12 +328,31 @@ provider `07b24a2`) nor the separate Normaliz probe (`.tmp/repair_a7_normaliz.py
 `.tmp/repair-a7-normaliz.log`) produced a result. So "excluded" is not a placeholder: the blocker is the cone
 conversion of a ~50k-vector configuration in two independent engines.
 
-### The transporter needs a rational-nonintegral specimen
+### The transporter: specimen found, branch reachable, and it works at `42d7361c`
 
-Instrumenting `IntegralStructureAction.transporter` and running the divisibility-four isotropic `U(4)+U(4)`
-pointed pair found the witness on the integral branch, never entering the transporter at all. Settling the
-BOUND note therefore requires a pointed pair whose rational transport is **non-integral**; that is a specific
-search target, not something the current evidence settles.
+A backlog note recorded that the provider's finite-representation transporter "still fails when it requests
+cardinality of a represented finite torsion module", written before the provider's cardinality-admission fix.
+The first specimen I tried (divisibility-four isotropic `U(4)+U(4)`) never enters the branch — it finds its
+witness on the integral path — so it could not settle the note.
+
+A scan of small lattices for a pair whose extended rational transport is **non-integral** found one:
+
+```
+L = U + <-2>,   source (-2,-2,-1)  ->  target (2,2,-1),   q = 6 both, content 1 both
+```
+
+Instrumenting `IntegralStructureAction.transporter` shows the correction branch is entered and returns a
+witness: events `[('ok', True)]`, no exception, and the witness carries the source onto the target. So the
+transporter is **reachable and working** at `42d7361c`, and the blanket "still fails" is not true for this
+kind of action.
+
+What this does *not* settle: whether the *torsion-module* variant — an action whose finite module `M/dM` is
+genuinely torsion rather than free — still hits a cardinality problem. That needs a specimen whose
+`finite_module()` is torsion, which this one is not.
+
+Pinned as `tests/test_finite_representation_transporter.py`: it asserts the specimen is genuinely
+rational-nonintegral (the transporter must actually be called, else the test fails as an invalid specimen),
+that the witness exists and acts correctly, and that every transporter call returned rather than raised.
 
 ### A green unit suite is not a proof of no source gaps
 
