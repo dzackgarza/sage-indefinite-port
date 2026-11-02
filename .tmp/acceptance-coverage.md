@@ -26,7 +26,8 @@ Port `47b69d86` (src unchanged since `49e3965f`), provider `42d7361c`, unless a 
 | A_ISOTROPIC — stride-100 sample | accepted 89/89 | `isotropic-sample.log` |
 | A_ISOTROPIC — `test_o_n_maps_onto_o_of_the_discriminant_form` | **accepted 468 s, peak 3 868 MiB** at `42d7361c` (first of the unrun tail) | job `jmvz75d9x` |
 | A_ISOTROPIC — `test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank0,rank1]` | **accepted 2/2**: 150 s / 3 703 MiB (lines) and **1 661 s / 4 926 MiB** (planes) | job `jmvz88la4` |
-| A_ISOTROPIC — remaining tail (7 unrun + 1 capped) | **open** — the capped one is the Enriques `Γ_h`/discriminant locus | this session |
+| A_ISOTROPIC — `test_published_representatives_lie_in_distinct_o_plus_orbits[rank0]` | **capped again** at 1 800 s, peak 4 641 MiB; 29 dumps put it in `subgroup_classes` | job `jmvz88la4` |
+| A_ISOTROPIC — remaining tail (6 unrun + 1 capped) | **open** — same `subgroup_classes`/stabilizer-generation locus | this session |
 | A_BOUNDARIES — Enriques 87 cases | **open — external owner**: 219 s to build the coinvariant subgroup, then > 681 s unfinished just to *generate* `Γ_h`; the rest of the case never runs | `.tmp/handoff-owner-enriques-oqn.md` |
 | A_BOUNDARIES — Dawes tail (3 nodes) | **open** — memory-bound at the 6 144 MiB guard (6 147 MiB peak) and one 1 800 s cap | earlier record |
 | A_BOUNDARIES — classical indices (3 nodes) | **not run** | — |
@@ -144,6 +145,27 @@ planes through every line class and deduplicates by exact `plane_isometry`, and 
 lattice that costs 11× the line node. It is recorded as accepted, not as marginal-by-design — but a change that
 makes plane enumeration slower by ~8 % would turn it into a cap, which is worth knowing before anyone touches
 that path.
+
+### One primitive explains the capped family: **generating a subgroup**, not `O(q_N)`
+
+Four different capped things this session now have the same measured cause, and it is not the one any of them
+was labelled with:
+
+| capped item | measured cause |
+| --- | --- |
+| Enriques `case_1` (87-case family) | after 219 s of coinvariant construction, **> 681 s unfinished just to generate `Γ_h`** |
+| `test_published_representatives_lie_in_distinct_o_plus_orbits[rank0]` | 29 dumps, **5 in `subgroup_classes`**, the rest in the same call's element work — the split needs `apex_stabilizer(marked)` per class |
+| `test_o_plus_n_has_two_line_and_two_plane_orbits` (capped earlier) | same `subgroup_classes` path |
+| `test_stabilizer_images_…_indices` (unrun) | asserts through `n.O_plus().stabilizer(...).group_generators()` — the same primitive |
+
+What is *not* the cause in any of them: `O(q_N)` (a passing node builds it and asks its order cheaply), the
+port's isotropic enumeration (memoized, and its line node passes in 150 s where the split is what fails), or a
+recomputed pure function, which the K3 fix already removed elsewhere.
+
+So the whole family reduces to one provider capability question, already published with the Enriques specimen:
+**producing generators of a stabilizer / of an intersection of subgroups cheaply enough to then split orbits.**
+That is a sharper and more actionable statement than "the Enriques cases are slow", and it says the four rows
+above will move together, or not at all.
 
 ### A_ISOTROPIC `test_o_n_maps_onto_o_of_the_discriminant_form`: accepted, and it splits the Enriques bundle
 
