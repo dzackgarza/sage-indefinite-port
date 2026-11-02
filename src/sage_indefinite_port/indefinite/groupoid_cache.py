@@ -36,6 +36,13 @@ def _gram_in_label_order(lattice: Lattice):
     denominator), and `_isometry_from_row_matrix` asks for the source and the target Gram on *every*
     generator — for the envelope's 136 approximate generators that is 272 calls, about 6 800 s of
     recomputing identical matrices, which is why that acceptance node could not finish.
+
+    The memo makes the matrix *shared*, so it is returned immutable: a caller that wrote an entry
+    would silently corrupt every later consumer of the same lattice. The current consumers
+    (`recursive.py:150,151,180,181,265,309,310,779,853`, `groupoid_cache.py:72,73,99`) only read
+    entries, take ranks and products, or copy out through `matrix_from_rows_and_columns`; marking the
+    matrix immutable keeps any future in-place edit a `ValueError` at the point of the bug instead of
+    a wrong group. Ask for a mutable copy with `_gram_in_label_order(l).__copy__()`.
     """
     key = id(lattice)
     cached = _GRAM_IN_LABEL_ORDER.get(key)
@@ -55,6 +62,7 @@ def _gram_in_label_order(lattice: Lattice):
             for left in basis
         ]
         result = matrix(SageQQ, entries)
+    result.set_immutable()
     _GRAM_IN_LABEL_ORDER[key] = (lattice, result)
     return result
 
