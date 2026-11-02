@@ -698,35 +698,89 @@ def _stabilizer_word_shears(c_rank: int, r_rank: int, marked, depth: int = 3):
         (3, 2, (1, 0, 0, 0, 0)),
     ],
 )
-def test_generated_shear_kernel_is_measured_by_words_not_by_one_generator_list(c_rank, r_rank, marked) -> None:
-    """What the stabilizer *generates* in the kernel, measured on words and bounded honestly.
+def test_generated_shear_kernel_equals_the_maintained_kernel(c_rank, r_rank, marked) -> None:
+    """The shears reachable by words generate the *whole* kernel: asserted as equality, not a rank bound.
 
-    The span of the pure shears reachable by words of length <= 3 is a lower bound for the generated
-    kernel, and it must be compared with the full kernel the provider computes -- not with a count of
-    pure-shear generators. When the two ranks agree the kernel is generated; when they do not, this records
-    a lower bound only, which is not a deficiency claim.
+    A rank bound is not the claim. `reachable.rank() <= full_rank` holds for every sublattice, and stacking a
+    full-rank kernel basis on the generated rows makes the combined rank `max(...)` automatically -- both
+    pass for a strictly deficient generated sublattice. What has to be checked is the **index**:
+
+    the generated shears lie in the kernel `K` (a saturated lattice of rank `full_rank`), so they span a
+    sublattice `L`. Writing `L`'s generators in `K`'s basis gives an integer matrix `X` of rank
+    `full_rank`, and `[K : L]` is the product of `X`'s Smith invariants. Equality of lattices is exactly
+    `[K : L] = 1`; any prime factor means the words do *not* generate the kernel.
+
+    Pure shears reachable by words of length at most three, mixed generators included.
     """
-    lattice_ = lattice([[2 if row == column and row < c_rank else 0
-                         for column in range(c_rank + r_rank)] for row in range(c_rank + r_rank)])
-    vector_ = element(lattice_, marked)
     shears = _stabilizer_word_shears(c_rank, r_rank, marked)
     assert shears, "the stabilizer must generate some kernel elements"
 
-    rows = [[int(entry) for row in shear.rows() for entry in row] for shear in shears]
-    reachable = matrix(ZZ, rows)
-    # The words' shears are genuine kernel elements: each annihilates the marked C-coordinate.
+    # Every word-shear is a genuine kernel element: it annihilates the marked C-coordinate.
+    lattice_ = lattice([[2 if row == column and row < c_rank else 0
+                         for column in range(c_rank + r_rank)] for row in range(c_rank + r_rank)])
+    vector_ = element(lattice_, marked)
     labels = tuple(lattice_.module_generating_set())
     quotient_part = vector(ZZ, [int(vector_.to_vector()(label)) for label in labels][:c_rank])
     for shear in shears:
         assert shear * quotient_part == 0
 
+    generated = matrix(ZZ, [[int(entry) for row in shear.rows() for entry in row] for shear in shears])
+
+    complement, radical = _blocks(c_rank, r_rank)
+    x = complement.linear_combination({complement.module_generating_set()[0]: 1})
+    kernel = _RECURSION.shear_kernel(complement, radical, x)
     full_rank = r_rank * (c_rank - 1)
-    assert reachable.rank() <= full_rank
-    # Saturating the reachable lattice against the full kernel: index 1 means the words generate it.
-    kernel = _RECURSION.shear_kernel(*_blocks(c_rank, r_rank),
-                                     _blocks(c_rank, r_rank)[0].linear_combination(
-                                         {_blocks(c_rank, r_rank)[0].module_generating_set()[0]: 1}))
-    kernel_rows = [[int(entry) for row in _hom_element_matrix(*_blocks(c_rank, r_rank), morphism).rows()
-                    for entry in row] for morphism in kernel]
-    combined = matrix(ZZ, rows + kernel_rows)
-    assert combined.rank() == max(reachable.rank(), full_rank)
+    kernel_matrix = matrix(ZZ, [
+        [int(entry) for row in _hom_element_matrix(complement, radical, morphism).rows() for entry in row]
+        for morphism in kernel
+    ])
+    assert kernel_matrix.rank() == full_rank
+
+    # Coordinates of the generated shears in the kernel's basis: an exact integer matrix, since L is inside K.
+    coordinates = generated * kernel_matrix.transpose() * (kernel_matrix * kernel_matrix.transpose()).inverse()
+    assert coordinates.denominator() == 1, "the generated shears are not in the kernel's lattice"
+    coordinate_matrix = coordinates.change_ring(ZZ)
+    assert coordinate_matrix.rank() == full_rank, "the generated shears do not even span the kernel's rank"
+
+    invariants = [abs(int(coordinate_matrix.smith_form()[0][index, index])) for index in range(full_rank)]
+    index_in_kernel = 1
+    for invariant in invariants:
+        index_in_kernel *= invariant
+    assert index_in_kernel == 1, (
+        f"the generated shear sublattice has index {index_in_kernel} in the kernel (Smith invariants "
+        f"{invariants}), so the words do not generate it"
+    )
+
+
+def test_the_index_check_detects_a_deficient_sublattice() -> None:
+    """Control: the index computation used above must report > 1 for a strictly deficient sublattice.
+
+    Without this, `index == 1` could be passing for the wrong reason. Two checks: a purely arithmetic one,
+    and one built on a real kernel basis with the sublattice scaled by 2.
+    """
+    def index_in(coordinates, rank):
+        invariants = [abs(int(coordinates.smith_form()[0][i, i])) for i in range(rank)]
+        value = 1
+        for invariant in invariants:
+            value *= invariant
+        return value, invariants
+
+    # Arithmetic control: 2*Z^2 inside Z^2 has index 4.
+    coordinates = 2 * identity_matrix(ZZ, 2)
+    value, invariants = index_in(coordinates, 2)
+    assert value == 4 and invariants == [2, 2]
+
+    # Real control: the (2,2) kernel basis, with the generated lattice scaled by 2.
+    complement, radical = _blocks(2, 2)
+    x = complement.linear_combination({complement.module_generating_set()[0]: 1})
+    kernel = _RECURSION.shear_kernel(complement, radical, x)
+    kernel_matrix = matrix(ZZ, [
+        [int(entry) for row in _hom_element_matrix(complement, radical, morphism).rows() for entry in row]
+        for morphism in kernel
+    ])
+    full_rank = kernel_matrix.rank()
+    scaled = 2 * kernel_matrix
+    coordinates = scaled * kernel_matrix.transpose() * (kernel_matrix * kernel_matrix.transpose()).inverse()
+    assert coordinates.denominator() == 1
+    value, invariants = index_in(coordinates.change_ring(ZZ), full_rank)
+    assert value == 2 ** full_rank, f"a doubled sublattice must have index 2^rank, got {value} ({invariants})"

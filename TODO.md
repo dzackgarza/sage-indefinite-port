@@ -419,6 +419,15 @@ gap; they do not close it or narrow the eventual public contract.
   explicitly pure-shear generators: words in mixed generators supply the rest. **The
   retraction stands and is now positively resolved**, not merely withdrawn.
 
+  The claim is asserted as **equality**, not a rank bound: the generated shears lie in the
+  kernel `K`, so writing them in `K`'s basis gives an integer matrix `X` and
+  `[K : L]` is the product of `X`'s Smith invariants. `[K : L] = 1` in all four specimens,
+  which is lattice equality; a prime factor would mean the words do not generate the
+  kernel. A control builds a doubled sublattice and checks the same arithmetic reports
+  `2^rank`, so the `index = 1` result is not vacuous. (My first version of this test only
+  asserted `reachable.rank() <= full_rank` and a stacked rank equal to `max(...)`, which
+  passes for a strictly deficient sublattice — that was a real defect in the test.)
+
   **The quotient's lazy enumeration is written.** `marked_orbit_representatives(lattice, n,
   limit=None)` walks lattice vectors by increasing coordinate height, filters to square
   `n`, and yields one representative per class, deduplicating through the exact orbit
