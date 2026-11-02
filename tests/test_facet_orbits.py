@@ -21,6 +21,7 @@ from sage_indefinite_port.indefinite.facet_certificates import is_facet_certific
 from sage_indefinite_port.indefinite.facet_orbits import (
     cell_facet_orbits,
     cone_facets,
+    orbit_representatives,
     ray_permutations_from_stabilizer,
 )
 from sage_indefinite_port.indefinite.lorentzian_cells import (
@@ -116,3 +117,108 @@ def test_cube_cone_facets_and_orbits_match_the_closed_form() -> None:
         for incidence, normal in facets.items():
             assert is_facet_certificate(normal, incidence, rays)
         assert all(len(incidence) == 2 ** (n - 2) for incidence in facets)
+
+
+def _group_closure(permutations, limit=20000):
+    """All elements of the generated permutation group, by closure (small groups only)."""
+    identity = tuple(range(len(permutations[0])))
+    elements = {identity}
+    frontier = [identity]
+    while frontier:
+        current = frontier.pop()
+        for permutation in permutations:
+            product = tuple(permutation[current[index]] for index in range(len(current)))
+            if product not in elements:
+                elements.add(product)
+                frontier.append(product)
+                if len(elements) > limit:
+                    raise AssertionError("the group is too large for the closure check")
+    return elements
+
+
+@pytest.mark.parametrize("name", sorted(SPECIMENS))
+def test_pruned_walk_finds_every_orbit_exactly_once(name) -> None:
+    r"""The orbit-pruned walk must equal the orbit decomposition of the *complete* facet family.
+
+    The complete family is computed independently by `cone_facets` (the full walk) and by `cell_cone` (the
+    engine). The pruned walk must produce the same number of orbits, one representative in each, no duplicate,
+    no omission, and each representative must certify.
+    """
+    backend, cell = _cell(SPECIMENS[name])
+    rays = [tuple(int(entry) for entry in row) for row in cell.rows]
+    permutations = ray_permutations_from_stabilizer(cell, backend.cell_stabilizer(cell))
+
+    full = cone_facets(rays)
+    engine = _engine_facets(backend, cell)
+    assert set(full) == set(engine)
+
+    # Independent orbit decomposition of the complete family, by closure from each uncovered facet.
+    expected_orbits = []
+    covered: set[frozenset[int]] = set()
+    for incidence in sorted(full, key=lambda face: (len(face), sorted(face))):
+        if incidence in covered:
+            continue
+        members = set()
+        frontier = [incidence]
+        while frontier:
+            current = frontier.pop()
+            if current in members:
+                continue
+            members.add(current)
+            for permutation in permutations:
+                frontier.append(frozenset(permutation[position] for position in current))
+        covered.update(members)
+        expected_orbits.append(members)
+    assert covered == set(full), "the orbit decomposition must cover the complete family"
+
+    pruned = dict(orbit_representatives(rays, permutations))
+    assert len(pruned) == len(expected_orbits), (
+        f"pruned walk found {len(pruned)} orbits, the complete family has {len(expected_orbits)}"
+    )
+    found = []
+    for incidence, normal in pruned.items():
+        assert is_facet_certificate(normal, incidence, rays)
+        orbit = set()
+        frontier = [incidence]
+        while frontier:
+            current = frontier.pop()
+            if current in orbit:
+                continue
+            orbit.add(current)
+            for permutation in permutations:
+                frontier.append(frozenset(permutation[position] for position in current))
+        found.append(orbit)
+    assert all(orbit <= set(full) for orbit in found), "every pruned orbit must lie in the family"
+    assert len({frozenset(orbit) for orbit in found}) == len(found), "orbits must be distinct"
+    assert set().union(*found) == set(full), "the pruned orbits must partition the complete family"
+
+
+@pytest.mark.parametrize("name", ["A2_plus_1_plus_minus1", "A3_plus_1_plus_minus1"])
+def test_orbit_stabilizer_and_transport_witnesses_are_exact(name) -> None:
+    r"""`|G·F| = |G| / |Stab_G(F)|`, with the stabilizer from Schreier and the words verified.
+
+    ``|G|`` is computed by closure (the groups here are small), so orbit-stabilizer is checked against an
+    independent count rather than against the walk's own bookkeeping.
+    """
+    backend, cell = _cell(SPECIMENS[name])
+    permutations = ray_permutations_from_stabilizer(cell, backend.cell_stabilizer(cell))
+    group = _group_closure(permutations)
+    records = cell_facet_orbits(cell, backend.cell_stabilizer(cell))
+
+    total = 0
+    for record in records:
+        members = {}
+        for member, word in record.words:
+            moved = frozenset(record.incidence)
+            for index in word:
+                moved = frozenset(permutations[index][position] for position in moved)
+            assert moved == member, "the word must transport the representative onto the member"
+            members[member] = word
+        stabilizer = sum(1 for g in group if frozenset(g[position] for position in record.incidence)
+                         == record.incidence)
+        assert len(members) == record.orbit_size
+        assert len(members) * stabilizer == len(group), (
+            f"orbit-stabilizer failed: orbit {len(members)}, stabilizer {stabilizer}, group {len(group)}"
+        )
+        total += len(members)
+    assert total == len(cone_facets([tuple(int(e) for e in row) for row in cell.rows]))

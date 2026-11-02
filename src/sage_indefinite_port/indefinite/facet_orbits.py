@@ -11,7 +11,9 @@ across ridges.
 Every decision uses a documented exact operator:
 
 * **seed** -- a vertex of the dual slice ``{u : <u,r> >= 0, <h,u> = 1}`` where ``h = sum(rays)`` is an interior
-  point of the cone. The slice is bounded exactly because `h` is interior to the *primal* cone (a functional
+  point of the cone. This is a **linear-programming engine call** (Sage's PPL backend), not a hand computation:
+  the route removes the *complete H-description* call, not every engine call, and the seed is one LP per
+  coordinate. The slice is bounded exactly because `h` is interior to the *primal* cone (a functional
   positive on the rays is not enough -- it leaves the slice unbounded), and its vertices are exactly the facet
   normals. Computed by lexicographic minimisation with Sage's PPL backend: exact rational, no perturbation.
 * **rank / kernel** -- ``matrix(...).rank()``, ``.right_kernel()``, ``.left_kernel_matrix()``,
@@ -42,7 +44,13 @@ from sage_indefinite_port.indefinite.facet_certificates import (
     pointedness_functional,
 )
 
-__all__ = ["FacetOrbitRecord", "cell_facet_orbits", "cone_facets", "ray_permutations_from_stabilizer"]
+__all__ = [
+    "FacetOrbitRecord",
+    "cell_facet_orbits",
+    "cone_facets",
+    "orbit_representatives",
+    "ray_permutations_from_stabilizer",
+]
 
 
 @dataclass(frozen=True)
@@ -289,38 +297,146 @@ def _orbit(incidence, permutations):
     return members
 
 
+def _compose(first, second):
+    """The permutation ``first ∘ second`` (apply ``second``, then ``first``)."""
+    return tuple(first[second[index]] for index in range(len(second)))
+
+
+def _inverse(permutation):
+    inverse = [0] * len(permutation)
+    for index, image in enumerate(permutation):
+        inverse[image] = index
+    return tuple(inverse)
+
+
+def _restrict(permutation, positions):
+    """A permutation of the ambient ray positions, restricted to a stable set of positions."""
+    offset = {position: index for index, position in enumerate(positions)}
+    return tuple(offset[permutation[position]] for position in positions)
+
+
+def _schreier_stabilizer(seed, permutations, orbit_words):
+    r"""Generators of the set stabilizer of ``seed``, by Schreier's lemma.
+
+    ``orbit_words[point]`` is a word of generator indices with ``w(seed) = point``. For a point ``u`` and a
+    generator ``s_i``, the element ``w_{u·s_i}^{-1} · s_i · w_u`` fixes ``seed``; these generate the stabilizer.
+    """
+    generators = []
+    for point, word in orbit_words.items():
+        current = _apply_word(seed, permutations, word)
+        for index, permutation in enumerate(permutations):
+            moved = frozenset(permutation[position] for position in current)
+            tail = orbit_words[moved]
+            candidate = _compose(
+                _compose(_inverse(_apply_word_permutation(permutations, tail)), permutation),
+                _apply_word_permutation(permutations, word),
+            )
+            if candidate not in generators:
+                generators.append(candidate)
+    return tuple(generators)
+
+
+def _apply_word_permutation(permutations, word):
+    result = tuple(range(len(permutations[0]))) if permutations else ()
+    for index in word:
+        result = _compose(permutations[index], result)
+    return result
+
+
+def _apply_word(seed, permutations, word):
+    return frozenset(_apply_word_permutation(permutations, word)[position] for position in seed)
+
+
+def orbit_representatives(rays, permutations):
+    r"""One certified ``(incidence, normal)`` per orbit, by the orbit-pruned adjacency decomposition.
+
+    The ambient facet family is **never** enumerated: the worklist holds one representative per orbit, and a
+    representative contributes only the orbits of its own ridges, computed by the same routine one dimension down
+    on the facet's cone modulo the facet's own stabilizer (Schreier). A new facet enters only if its orbit is
+    disjoint from every orbit already found, so no orbit is duplicated, and termination with an empty worklist is
+    the closure certificate, so none is missed.
+    """
+    rays = [tuple(int(entry) for entry in ray) for ray in rays]
+    dimension = len(rays[0])
+    if dimension < 2:
+        raise ArithmeticError("a cone of dimension below two has no facets in this sense")
+    if dimension == 2:
+        representatives = []
+        covered: set[frozenset[int]] = set()
+        for candidate in _normal_cone_through_ridge(rays, frozenset(), 2):
+            normal, incidence = _orient(rays, candidate)
+            if not is_facet_certificate(normal, incidence, rays):
+                raise ArithmeticError("a two-dimensional facet failed certification")
+            if incidence in covered:
+                continue
+            covered.update(_orbit(incidence, permutations))
+            representatives.append((incidence, normal))
+        return tuple(representatives)
+
+    seed_normal = _seed_facet(rays, dimension)
+    seed = _incidence(rays, seed_normal)
+    if not is_facet_certificate(seed_normal, seed, rays):
+        raise ArithmeticError("the seed facet failed certification")
+    representatives: list[tuple[frozenset[int], tuple[int, ...]]] = [(seed, seed_normal)]
+    covered = set(_orbit(seed, permutations))
+    pending = [0]
+    while pending:
+        index = pending.pop()
+        incidence, normal = representatives[index]
+        positions = sorted(incidence)
+        orbit_words = _orbit(incidence, permutations)
+        stabilizer = _schreier_stabilizer(incidence, permutations, orbit_words)
+        local_rays, local_dimension = _local_coordinates(rays, incidence)
+        if local_dimension < 2:
+            continue
+        local_permutations = tuple(_restrict(permutation, positions) for permutation in stabilizer)
+        if not local_permutations:
+            local_permutations = (tuple(range(len(positions))),)
+        for ridge_local, _ridge_normal in orbit_representatives(local_rays, local_permutations):
+            ridge = frozenset(positions[offset] for offset in sorted(ridge_local))
+            for candidate in _normal_cone_through_ridge(rays, ridge, dimension):
+                if _same_ray(candidate, normal):
+                    continue
+                oriented, adjacent = _orient(rays, candidate)
+                if adjacent in covered:
+                    continue
+                if not is_facet_certificate(oriented, adjacent, rays):
+                    continue
+                members = _orbit(adjacent, permutations)
+                if members.keys() & covered:
+                    continue
+                covered.update(members)
+                representatives.append((adjacent, oriented))
+                pending.append(len(representatives) - 1)
+    return tuple(representatives)
+
+
 def cell_facet_orbits(cell, stabilizer) -> tuple[FacetOrbitRecord, ...]:
     r"""One certified record per orbit of ``stabilizer`` on the facets of ``cone(cell.rows)``.
 
-    ``stabilizer`` is the cell's stabilizer as isometries (``cell_stabilizer(cell)``); the record set carries a
-    representative normal and incidence plus, for every member of the orbit, a word of generators transporting the
-    representative onto it. The facet set itself is complete by ridge closure, so the orbit set is the whole orbit
-    set -- not a sample.
+    ``stabilizer`` is the cell's stabilizer as isometries (``cell_stabilizer(cell)``). The records come from
+    `orbit_representatives`, so the ambient facet family is never materialised: each record carries a
+    representative normal and incidence, its orbit size, and a word of generators transporting the representative
+    onto every member of its orbit -- the transport witness a consumer needs to reconstruct any facet of the
+    orbit exactly.
     """
     rays = [tuple(int(entry) for entry in row) for row in cell.rows]
-    height, pairings = pointedness_functional(cell)
+    _height, pairings = pointedness_functional(cell)
     if not all(value > 0 for value in pairings):
-        raise ArithmeticError("the dual slice requires a functional strictly positive on every ray")
+        raise ArithmeticError("the cell must be pointed: the sum of its rays has to be an interior point")
     permutations = ray_permutations_from_stabilizer(cell, stabilizer)
-    facets = cone_facets(rays)
 
-    seen: set[frozenset[int]] = set()
     records = []
-    for incidence in sorted(facets, key=lambda face: (len(face), sorted(face))):
-        if incidence in seen:
-            continue
+    for incidence, normal in orbit_representatives(rays, permutations):
+        if not is_facet_certificate(normal, incidence, rays):
+            raise ArithmeticError(f"the walk produced an uncertified facet with incidence of size {len(incidence)}")
         members = _orbit(incidence, permutations)
-        if not set(members) <= set(facets):
-            raise ArithmeticError("the stabilizer did not preserve the facet set, so the orbit grouping is invalid")
-        seen.update(members)
         records.append(
             FacetOrbitRecord(
-                normal=facets[incidence],
+                normal=normal,
                 incidence=incidence,
                 orbit_size=len(members),
                 words=tuple((member, word) for member, word in members.items()),
             )
         )
-    if len(seen) != len(facets):
-        raise ArithmeticError("the orbits did not cover the facet set")
     return tuple(records)
