@@ -22,7 +22,7 @@ Port `47b69d86` (src unchanged since `49e3965f`), provider `42d7361c`, unless a 
 | A_CENTRALIZERS | accepted 5/5 at `c546077d` | earlier record |
 | A_GROUPS — nodes 10–45, 47 | accepted 37/37 at `565fc6b9` | earlier record |
 | A_GROUPS — LORENTZ 0/1/2 | **open — external owner**, no GAP recognition route in the pinned image | `.tmp/handoff-owner-lorentz-image-order.md` |
-| A_GROUPS — node 46 `a7_plus_diagonal` | **open** — cone conversion of a 49 861-vector configuration; the two cone routes now have an equality test (`tests/test_large_cell_cone_route.py`), so disagreement is out as an explanation; termination is still untested | `.tmp/HANDOFF.md` |
+| A_GROUPS — node 46 `a7_plus_diagonal` | **open — engine-bound**: re-run at `42d7361c` caps at 1 800 s (5 405 MiB) and **all 29 dumps are inside `NmzResult(…, "SupportHyperplanes")`**; the cone routes are now proven equal, and PyNormaliz in this image rejects `interior`, so no port-side lever remains | job `jmvzblu48` |
 | A_ISOTROPIC — stride-100 sample | accepted 89/89 | `isotropic-sample.log` |
 | A_ISOTROPIC — `test_o_n_maps_onto_o_of_the_discriminant_form` | **accepted 468 s, peak 3 868 MiB** at `42d7361c` (first of the unrun tail) | job `jmvz75d9x` |
 | A_ISOTROPIC — `test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank0,rank1]` | **accepted 2/2**: 150 s / 3 703 MiB (lines) and **1 661 s / 4 926 MiB** (planes) | job `jmvz88la4` |
@@ -168,6 +168,22 @@ cones. The test builds one genuine perfect cell (rank 3, signature (2,1), six is
 Scope, stated narrowly: one cell, two routes, agreement. It says nothing about terminating on 49 861 rays in a
 rank-8 lattice. It does remove "the routes might disagree" as an explanation for the A7 blocker, which leaves
 termination/memory as the open question the node itself must answer.
+
+**And it was run: the answer is the engine, not the port.** `test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q`
+re-run at the current pins (src `fad2c5bb`-tree, provider `42d7361c`, cap 1 800 s, guard 6 144 MiB, job
+`jmvzblu48`): **capped**, killed at 1 800 s, peak **5 405 MiB** (below the guard, so time-bound). All 29 stack
+dumps are inside `_normaliz_cell_h_presentation`, and specifically inside the single call
+
+```python
+hyperplanes = NmzResult(normaliz_cone, "SupportHyperplanes")     # lorentzian_cells.py:1051
+```
+
+Normaliz's facet enumeration of the 49 861-ray rank-8 cone does not finish in 1 800 s. The port side is already
+minimal there: one native cone, in-place row reduction, no dense QQ copy, and no `Equations` query reached. The
+one remaining lever — handing Normaliz a strictly interior point — **does not exist in this image**: PyNormaliz
+rejects the keyword outright (`NormalizError: … Unknown type "interior"!`, measured). So A7 is engine-bound: a
+next attempt has to change the engine, the toolchain, or the algorithm (e.g. computing facets from cell adjacency
+instead of from the full configuration), not the waiting time. No further unchanged A7 run is warranted.
 
 ### One primitive explains the capped family: **generating a subgroup**, not `O(q_N)`
 
