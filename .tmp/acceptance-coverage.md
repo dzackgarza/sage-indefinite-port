@@ -24,7 +24,8 @@ Port `47b69d86` (src unchanged since `49e3965f`), provider `42d7361c`, unless a 
 | A_GROUPS — LORENTZ 0/1/2 | **open — external owner**, no GAP recognition route in the pinned image | `.tmp/handoff-owner-lorentz-image-order.md` |
 | A_GROUPS — node 46 `a7_plus_diagonal` | **open** — cone conversion of a 49 861-vector configuration, not a cap | `.tmp/HANDOFF.md` |
 | A_ISOTROPIC — stride-100 sample | accepted 89/89 | `isotropic-sample.log` |
-| A_ISOTROPIC — tail (10 unrun + 1 capped) | **open** — the capped one is the Enriques-adjacent `O(q_N)` locus | this session |
+| A_ISOTROPIC — `test_o_n_maps_onto_o_of_the_discriminant_form` | **accepted 468 s, peak 3 868 MiB** at `42d7361c` (first of the unrun tail) | job `jmvz75d9x` |
+| A_ISOTROPIC — remaining tail (9 unrun + 1 capped) | **open** — the capped one is the Enriques `Γ_h`/discriminant locus | this session |
 | A_BOUNDARIES — Enriques 87 cases | **open — external owner**: 249 s to build `Γ_h`, then > 2 127 s unfinished in the discriminant bundle | `.tmp/handoff-owner-enriques-oqn.md` |
 | A_BOUNDARIES — Dawes tail (3 nodes) | **open** — memory-bound at the 6 144 MiB guard (6 147 MiB peak) and one 1 800 s cap | earlier record |
 | A_BOUNDARIES — classical indices (3 nodes) | **not run** | — |
@@ -125,6 +126,24 @@ What the 30 dumps show:
   inside `eichler.right_coset_transversal` — the same finite-representation locus as BOUND and as the K3
   nodes.
 - Peak 4 182 MiB against a 6 144 MiB guard means the case is **time**-bound, not memory-bound.
+
+### A_ISOTROPIC `test_o_n_maps_onto_o_of_the_discriminant_form`: accepted, and it splits the Enriques bundle
+
+This node asserts `n.discriminant_group().orthogonal_group().cardinality() == 46 998 591 897 600` and
+`n.O().discriminant_image().cardinality()` equal to the same number, for the unpolarized Enriques lattice
+`U(2)+U(2)+E8(-2)`-shape of rank 12 with signature (2, 10) — the same shape as the anti-invariant lattice the
+87 Enriques cases work with. At the current pins it **passes: 468 s, peak 3 868 MiB** (job `jmvz75d9x`,
+1 800 s cap, 6 144 MiB guard).
+
+Where its time went matters, because it decides part of the Enriques question. Of 7 stack dumps, **6 are
+inside `n.O().discriminant_image()`** and the remainder are in the same call's element construction. So:
+
+- `N.discriminant_group().orthogonal_group()` **and its `.cardinality()`** are cheap for this form — the first
+  assertion is done early;
+- the ~400 s is `n.O().discriminant_image()`, the discriminant image of the infinite `O(N)`;
+- therefore the Enriques bundle's **> 2 127 s unfinished is not the `O(q_N)` group** either. The leading
+  remaining candidate is `discriminant_morphism()` per `Γ_h` generator, which goes through the same per-element
+  discriminant machinery that costs ~400 s here for one group image.
 
 ### A_BOUNDARIES, Enriques: stage attribution (a staged probe, not a second cap)
 
