@@ -314,6 +314,26 @@ the roots) yields fewer than 200 cover vectors in over 410 s, so a node that mus
 prospect inside 1 800 s. `[-2]` and `[2]` were run and both capped (3 579 and 3 564 MiB); `[4]` and `[-4]`
 were **not** started, and no cap was raised.
 
+### K3 and BOUND share one mathematical locus
+
+The K3 covering does not fall back to a naive model enumeration. Measured on the signed view:
+
+```
+model built: envelope is None? False        # the Eichler envelope exists
+similarity.cokernel().exponent() = 1        # in 0.11 s -- so c runs over divisors of 1 only
+```
+
+`primitive_covering_vectors` (`eichler.py:980-1000`) therefore takes its **envelope branch**, whose first step is
+`envelope.right_coset_transversal()`. That call goes `eichler.py:488` →
+`stabilizer_of_lattice()` → `right_cosets()` → `IntegralStructureAction.lattice_stabilizer()`
+(`rational_integral_stabilizers.py:228`) → `permutation_representation().preimage_subgroup(...)`, whose
+construction is `_FiniteIntegralRepresentation` and its `M/dM` cardinality assertion (`:112-125`).
+
+So the A_VECTORS K3 nodes and BOUND/#18's "represented finite torsion module" obligation are the **same
+mathematical locus**, not two unrelated problems: the cover cannot be produced until the lattice stabilizer's
+finite representation exists for that lattice. The successful `U + <-2>` transporter specimen exercises a
+different action and does not close this one.
+
 **Harness lesson, recorded because it cost 900 s.** The first cover probe reported *zero output* and I read that
 as "the pre-cover stage exceeded 900 s". It was not: the command piped through `head`, so the probe's output was
 truncated by SIGPIPE — the same pitfall already recorded once in this project. The staged probe above, without

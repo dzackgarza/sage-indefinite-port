@@ -89,3 +89,4 @@ references/Indefinite.jl/
 !.tmp/probe-transporter-path.py
 !.tmp/probe-k3-stages.py
 !.tmp/probe-transporter-scan.py
+!.tmp/probe-k3-envelope.py
