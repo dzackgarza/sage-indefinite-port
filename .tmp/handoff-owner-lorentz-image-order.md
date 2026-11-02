@@ -203,27 +203,37 @@ So, concretely:
 * **The gap.** `DeterministicVerification` being unimplemented means the package offers no way, today, to turn a
   Monte Carlo chain into a proven one without being handed the answer.
 
-**So the exact order needs a certificate produced by us, or a second independent exact computation.**
+**So the exact order needs a certificate, and the certificate belongs to the maintained library.**
 
-1. **Deterministic Schreier-Sims verification of the candidate chain** (the classical certificate, and what the
-   unimplemented option would do). From a candidate chain with stated generators at each level, check
-   deterministically that (i) each level's orbit is closed under all its generators, and (ii) every Schreier
-   generator `s_x = u^{-1} g_x u` sifts through the levels below to the identity. If every one does, the chain is
-   a valid base and strong generating set and `|G| = product of the orbit lengths` is **exact**. This needs only
-   exact matrix multiplication, orbit closure and sifting over `F_p` — all available in the port's own arithmetic,
-   no GAP, no probability, no assumption on the answer. It is more expensive than the Monte Carlo pass, which is
-   exactly why packages make it optional, and it is the only route that yields a proof without an input order.
-2. **An independent exact computation of the same order**, which is not an ambient substitution: the provider
-   already computes the image order in a faithful finite representation through `reduction_image_order`, and that
-   is what reproduced `46 998 591 897 600` at p = 2 in 0.02 s (agreeing with the harness number). The p = 5 / p = 7
-   failures were in `cardinality()` being routed to BSGS, **not** in `reduction_image_order`. So the second route
-   to check is whether that reduction is faithful at p = 5 and p = 7 as it is at p = 2; if it is, two independent
-   exact computations agreeing is the strongest available evidence and needs no Monte Carlo at all.
+Two candidate routes have been named. Both are **proposals that require actual source and API verification**, and
+neither is established evidence today:
 
-What stays excluded either way: reading the order from the ambient `O(L)` or from a containing group, and any
-number that carries an `ErrorBound`. The acceptance keeps its original primes — `2, 5, 7`, with
-`2^21 · 3^5 · 5^2 · 7 · 17 · 31` for the p = 2 case — and stays open until one of these two routes produces a
-value with a checkable certificate.
+1. **Deterministic Schreier-Sims verification of a candidate chain** -- the classical certificate and what
+   `DeterministicVerification` would do: check orbit closure at each level and that every Schreier generator sifts
+   to the identity, after which `|G| = product of orbit lengths` is exact, with no probability and no assumed
+   order. **This is general group-order and certificate machinery, so it is not to be implemented in this port.**
+   It is a capability request to the maintained library, routed after that owner's current Enriques priority.
+2. **An "independent exact computation" through `reduction_image_order`** -- **retracted as a route.** Checked
+   against the source: `reduction_image_order` is not a provider API at all. It is
+   `tests/acceptance/consumer.py:109`,
+
+   ```python
+   def reduction_image_order(generator_rows, prime):
+       return int(MatrixGroup([matrix(GF(prime), rows) for rows in generator_rows]).order())
+   ```
+
+   a *harness* helper that calls Sage's plain matrix-group BSGS -- the same algorithmic route as GAP's plain
+   `Size`, which is the one measured at over 1000 s on the degree-10 case. It is the reference used to record the
+   expected numbers, so it cannot also serve as independent evidence for them, and its p=2 agreement with the
+   provider `cardinality()` is an implementation cross-check between two BSGS implementations, not a
+   certificate. No number derived from it is admissible as proof, and the expected order is never an input to
+   whatever computes the order.
+
+What the capability request therefore asks for, precisely: given generators as matrices over `F_p` (degree 10 in
+the measured case), an operation that returns the **exact** order together with a checkable certificate, or an
+explicit `fail` -- never a Monte Carlo figure, never a figure that required the expected order as input. The
+acceptance keeps its original primes -- `2, 5, 7`, with `2^21 * 3^5 * 5^2 * 7 * 17 * 31` at p = 2 -- and stays
+open until such an operation exists and reproduces them.
 
 `recog`'s `RecognizeGroup` returns recognition nodes carrying `Size` fields assembled from directly recognised
 leaves, with `immediate verification` checks in the tree. That is a third, weaker candidate: it is constructive
