@@ -166,15 +166,22 @@ Three of these are mine, and two of them I had asserted as fact:
    giving `<normal, r> == 0` satisfies "non-negative on all rays". It now raises, and a test pins both that and
    the impossible-normal case.
 
-### 5f. A7 pointedness, proved on the specimen instead of inferred
+### 5f. A7 pointedness: both hypotheses measured, with the exact functional
 
-From the constructor hypothesis, evaluated on the real configuration in 0.26 s: `rank[1|A] = 10` for the
-49 861 × 10 row set, its kernel is spanned by `w = (w_0, w')`, and here
-`w' = (1, 0, 0, 0, 0, 0, 0, 0, 0, 1)` takes the value **1 on every one of the 49 861 rows** (min = max = 1, one
-distinct value). So the rows lie in the single affine hyperplane `x_1 + x_10 = -w_0`, which does not contain the
-origin, the cone is the cone over a 9-polytope, and it is pointed and full-dimensional. That is a proof for this
-cell and, by the same argument, for every cell the port builds — not an extrapolation from the two bounded
-specimens, and not the false inference "row rank = ambient dimension, so no lineality".
+`__post_init__` checks only `rank[1|A] = n`. Measured on the real 49 861 × 10 configuration, all exact, 0.4 s:
+
+| hypothesis | measured | supplied by |
+| --- | --- | --- |
+| `rank A = n` | **10 = 10** | **nobody** — the constructor does not check it; verified here |
+| `rank[1\|A] = n` | **10 = 10** | `LorentzianPerfectCell.__post_init__` |
+| `w_0 ≠ 0` | `w = (1, -1, 0, …, 0, -1)`, so `w_0 = 1` | follows from the two ranks, checked here |
+| `w'` strictly positive on the rays | `w' = (1, 0, …, 0, 1)`, value **1 on every row** (min = max = 1) | the certificate |
+
+So the rows lie in the single affine hyperplane `w'·x = -1`, which misses the origin, the cone is the cone over a
+9-polytope, and it is pointed and full-dimensional. This replaces the invalid inference "row rank = ambient
+dimension, so no lineality", and it is **not** offered as a constructor theorem: with `rank A = n-1` the same
+constructor hypothesis holds and the conclusion fails, so the module checks both ranks and a test pins the
+degenerate case (`(1,0), (2,0)`).
 
 ## 6. Established vs unmeasured
 

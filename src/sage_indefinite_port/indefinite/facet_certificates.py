@@ -13,10 +13,12 @@ argued structurally, not computed.) The certificate produced here is the determi
 
 Free upper bounds, which is what makes the tests cheap:
 
-* ``LorentzianPerfectCell.__post_init__`` (``lorentzian_cells.py:614-619``) raises unless ``rank[1 | A] = n``.
-  The rows therefore lie in a single affine hyperplane not through the origin -- its normal is computed by
-  :func:`pointedness_functional` -- so the cone is the cone over an ``(n-1)``-polytope: pointed and
-  full-dimensional *a priori*, for every cell the port builds, not by analogy from small samples.
+* ``LorentzianPerfectCell.__post_init__`` (``lorentzian_cells.py:614-619``) raises unless ``rank[1 | A] = n``,
+  which says the rows' *affine* span has dimension ``n-1``. It does **not** check ``rank A = n``, and the two
+  are different: with ``rank A = n-1`` the affine hyperplane can pass through the origin (for example the rank-2
+  rows ``(1,0), (2,0)`` have ``rank[1|A] = 2`` and ``rank A = 1``), the cone then lies in a linear hyperplane and
+  is neither full-dimensional nor pointed. So the a-priori statement needs *both* ranks, and
+  :func:`pointedness_functional` verifies both instead of assuming the constructor supplies them.
 * A vector that is non-negative on every ray and vanishes on an incidence set `I` puts `I` inside an
   `(n-1)`-space, so only ``rank(I) >= n-1`` needs certifying.
 * `I cap I'` is annihilated by two independent facet normals, so ``rank(I cap I') <= n-2`` is free and
@@ -187,21 +189,46 @@ def adjacent_incidences(first_incidence, second_incidence, ray_rows, dimension: 
 def pointedness_functional(cell) -> tuple[Normal, list[int]]:
     r"""The strictly positive functional that the cell's own constructor hypothesis supplies.
 
-    ``rank[1 | A] = n`` means the augmented rows ``(1, a_i)`` span an `n`-dimensional subspace of `Q^{n+1}`, so
-    their kernel is one-dimensional, spanned by ``w = (w_0, w')`` with ``w_0 + w'*a_i = 0`` for every row. Since
-    ``rank A = n`` forces ``w_0 != 0``, ``w'*a_i = -w_0`` is the *same nonzero value on every ray*: the rows lie
-    in one affine hyperplane through no origin, the cone is the cone over an ``(n-1)``-polytope, and ``w'``
-    (sign-corrected) is strictly positive on every ray. This is the pointedness certificate for the actual cell,
-    derived from its hypotheses and checked row by row -- not inferred from ``rank A = n``.
+    Two hypotheses are needed and both are verified here, because the cell constructor supplies only the first:
 
-    Returns ``(functional, pairings)``.
+    * ``rank[1 | A] = n`` -- the augmented rows span an `n`-dimensional subspace of `Q^{n+1}`, so their kernel is
+      one-dimensional, spanned by ``w = (w_0, w')`` with ``w_0 + w'*a_i = 0`` for every row. This is what
+      ``LorentzianPerfectCell.__post_init__`` already enforces.
+    * ``rank A = n`` -- **not** enforced by the constructor, and not implied by the first. It is what forces
+      ``w_0 != 0``: if ``w_0 = 0`` then ``w'`` annihilates ``span A = Q^n``, so ``w' = 0`` and ``w = 0``. With
+      ``rank A = n-1`` the affine hyperplane can pass through the origin, and then the cone is contained in it
+      and is neither full-dimensional nor pointed.
+
+    Given both, ``w'*a_i = -w_0`` is the *same nonzero value on every ray*: the rows lie in one affine hyperplane
+    through no origin, the cone is the cone over an ``(n-1)``-polytope, and ``w'`` (sign-corrected) is strictly
+    positive on every ray. Returns ``(functional, pairings)``; raises with the failing hypothesis named.
     """
     rows = _integer_rows(cell.rows)
+    dimension = len(rows[0])
+    row_matrix = matrix(ZZ, rows)
+    row_rank = int(row_matrix.rank())
+    if row_rank != dimension:
+        raise ArithmeticError(
+            f"the rows have rank {row_rank} but the ambient dimension is {dimension}: with rank < dimension the "
+            "affine hyperplane can pass through the origin, so the cone is not a cone over a polytope and need "
+            "not be pointed or full-dimensional (the constructor does not check this hypothesis)"
+        )
     augmented = matrix(ZZ, [[1, *row] for row in rows])
+    augmented_rank = int(augmented.rank())
+    if augmented_rank != dimension:
+        raise ArithmeticError(
+            f"rank[1|A] = {augmented_rank} but the lattice rank is {dimension}, so the rows do not lie on a "
+            "single affine hyperplane"
+        )
     kernel = matrix(QQ, augmented).right_kernel().basis_matrix()
     if kernel.nrows() != 1:
         raise ArithmeticError(
-            "the cell rows do not lie on a single affine hyperplane, so the cone is not a cone over a polytope"
+            f"the augmented kernel has dimension {kernel.nrows()}, expected 1 for rank[1|A] = n"
+        )
+    if int(kernel.row(0)[0]) == 0:
+        raise ArithmeticError(
+            "the affine hyperplane passes through the origin (w_0 = 0), so the rows span a linear hyperplane and "
+            "the cone is not full-dimensional"
         )
     functional = tuple(int(entry) for entry in kernel.row(0)[1:])
     pairings = [sum(a * int(b) for a, b in zip(functional, row, strict=True)) for row in rows]

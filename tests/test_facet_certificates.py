@@ -170,13 +170,12 @@ def test_cube_cone_adjacency_matches_the_closed_form() -> None:
 
 @pytest.mark.parametrize("name", sorted(SPECIMENS))
 def test_pointedness_is_certified_by_the_constructor_hypothesis(name) -> None:
-    r"""Pointedness from `rank[1|A] = n`, checked row by row on the actual cell.
+    r"""Pointedness from **both** rank hypotheses, checked row by row on the actual cell.
 
-    The cell's rows lie in one affine hyperplane through no origin; the functional `w'` from the kernel of
-    `[1|A]` therefore takes the *same nonzero value* on every ray, so the cone is the cone over an
-    `(n-1)`-polytope and is pointed and full-dimensional. This is not an inference from `rank A = n` (which is
-    only full-dimensionality) and not an extrapolation from small samples: it is a proof for every cell the port
-    constructs, evaluated on this cell's own rows.
+    `rank[1|A] = n` gives an `(n-1)`-dimensional affine span; `rank A = n` -- which the constructor does not
+    check -- is what puts that hyperplane off the origin, and only the two together make the cone a cone over an
+    `(n-1)`-polytope. The functional `w'` from the kernel of `[1|A]` then takes the *same nonzero value* on every
+    ray. Verified here on this cell's own rows, hypothesis by hypothesis, rather than asserted for all cells.
     """
     backend, cell = _cell(SPECIMENS[name])
     dimension = len(cell.rows[0])
@@ -210,3 +209,21 @@ def test_a_nonzero_minor_modulo_a_prime_certifies_a_rational_lower_bound() -> No
     minor = matrix(GF(prime), [[rows[0][0], rows[0][1]], [rows[2][0], rows[2][1]]])
     assert minor.det() != 0, "a nonzero modular determinant is a rational rank certificate"
     assert matrix(QQ, rows).rank() >= 2
+
+
+def test_pointedness_functional_requires_both_rank_hypotheses() -> None:
+    r"""The constructor supplies only `rank[1|A] = n`; `rank A = n` must be verified separately.
+
+    Rank-2 rows `(1,0), (2,0)`: `rank[1|A] = 2 = n` and `rank A = 1 < n`, and the affine hyperplane is the
+    x-axis, which passes through the origin. The cone is a ray, contained in a linear hyperplane: neither
+    full-dimensional nor pointed. Treating the augmented-rank hypothesis alone as a pointedness theorem would
+    accept exactly this degenerate case.
+    """
+    from types import SimpleNamespace
+
+    with pytest.raises(ArithmeticError):
+        pointedness_functional(SimpleNamespace(rows=((1, 0), (2, 0))))
+
+    # A 3-row version in dimension 2 with the same defect: augmented rank 2, row rank 1.
+    with pytest.raises(ArithmeticError):
+        pointedness_functional(SimpleNamespace(rows=((1, 0), (3, 0), (-2, 0))))

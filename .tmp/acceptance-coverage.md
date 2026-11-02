@@ -185,10 +185,14 @@ port materializes the complete H-description per cell and then keeps only repres
 Measured specimen: `A7 ⊕ <1> ⊕ <1> ⊕ <-1>`, rank 10, signature (9,1), 49 861 rows, row rank 10 (full-dimensional,
 so `subspace` cannot help), entries ≤ 15, initial cell built in 4.5 s.
 
-**A7 pointedness, proved on the specimen.** `rank[1|A] = 10` for the 49 861 × 10 configuration, and the kernel
-normal `w' = (1,0,0,0,0,0,0,0,0,1)` takes the value 1 on **every** row (min = max = 1), so the rows lie in one
-affine hyperplane through no origin and the cone is the cone over a 9-polytope: pointed and full-dimensional.
-0.26 s, exact. That replaces the invalid inference "row rank = ambient dimension, so no lineality".
+**A7 pointedness, proved on the specimen with both hypotheses.** `rank A = 10` (which the cell constructor does
+*not* check) and `rank[1|A] = 10` (which it does), for the 49 861 × 10 configuration; the augmented kernel is
+`w = (1,-1,0,…,0,-1)` so `w_0 = 1 ≠ 0`, and `w' = (1,0,…,0,1)` takes the value 1 on **every** row (min = max = 1).
+The rows lie in the affine hyperplane `w'·x = -1`, which misses the origin, so the cone is the cone over a
+9-polytope: pointed and full-dimensional. 0.4 s, exact. Both ranks are required — with `rank A = n-1` the
+augmented-rank hypothesis still holds and the conclusion fails — so this is not offered as a constructor theorem,
+and a test pins the degenerate case. It replaces the invalid inference "row rank = ambient dimension, so no
+lineality".
 
 **And it was run: the answer is the engine, not the port.** `test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q`
 re-run at the current pins (src `fad2c5bb`-tree, provider `42d7361c`, cap 1 800 s, guard 6 144 MiB, job
