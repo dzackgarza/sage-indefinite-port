@@ -68,14 +68,31 @@ dumps are inside `n.O().discriminant_image()`**, not inside `orthogonal_group()`
 So for this form: `discriminant_group()`, `orthogonal_group()` and its `.cardinality()` are **cheap**; the
 ~400 s of that node is the discriminant image of the infinite `O(N)`. Consequently the > 2 127 s unfinished in
 the Enriques bundle is **not** `O(q_N)` materialization, and the earlier "materialize the whole group" framing
-is dead twice over (first the laziness, now this). The leading remaining candidate is
-`discriminant_morphism()` **per `Γ_h` generator**, which goes through the same per-element discriminant
-machinery that costs ~400 s for a single group image here. A short bounded probe times three of those calls and
-prints the generator count; that is the last piece.
+is dead twice over (first the laziness, now this).
 
-So the per-case cost is: ~250 s to build `Γ_h`, then a bundle that ran **more than 2 127 s without finishing**
-(probe peak 4 943 MiB tree: julia 3 177, python 1 754). Sum > 2 380 s before any of the three orbit counts,
-which is why 1 800 s caps — and why raising the cap would not help: the bundle alone already exceeds it.
+### 2c. The bottleneck is **generating `Γ_h` itself** — measured, bounded, 900 s
+
+A second bounded probe (`probe_enriques_morphism_cost.py`, cap 900 s, guard 6 144 MiB, job `jmvz7ma89`) builds
+`case_3` and then reads the generators, timing every step:
+
+| step | time |
+| --- | --- |
+| involution, invariant, transported isometry | 13.6 s |
+| `involution.polarized(h).coinvariant_extension_subgroup()` | → 218.9 s |
+| `N` = rank 12, signature (2, 10); `group = … ∩ N.O_plus()` | → 218.9 s (the intersection itself is 0.1 s) |
+| **`group.group_generators()`** | **> 681 s, unfinished at the 900 s cap** — the generator count was never reached |
+| `discriminant_morphism()` per generator, `cardinality()`, orbit counts | **never reached** |
+
+So the > 2 127 s of the longer probe is accounted for at its *first* sub-step: computing a **generating set of
+the intersection `Γ_h = coinvariant_extension_subgroup(h) ∩ O^+(N)`**. That is the thing to make cheaper or
+lazy, and it is a different object from `O(q_N)`, from the count assertion, and from the orbit counts. The
+per-generator `discriminant_morphism()` cost remains **unmeasured** because the generator list never arrived.
+
+So the per-case cost, in measured order: **~219 s** to build the coinvariant subgroup, then **> 681 s and
+unfinished** to produce a generating set of `Γ_h`, then an unmeasured number of `discriminant_morphism()` calls,
+then the cardinality, then the three orbit counts. The longer probe's bundle exceeded **2 127 s** unfinished
+(peak 4 943 MiB tree: julia 3 177, python 1 754). Everything before the orbit counts already exceeds the
+1 800 s cap, which is why raising the cap would not help.
 
 ## 3. What is *established* about the bundle, and what is *not*
 
