@@ -334,6 +334,26 @@ mathematical locus**, not two unrelated problems: the cover cannot be produced u
 finite representation exists for that lattice. The successful `U + <-2>` transporter specimen exercises a
 different action and does not close this one.
 
+**Correct but costly, not missing.** Instrumenting the same call on the K3 specimen, with each step printed
+before it runs:
+
+| step | measured |
+| --- | --- |
+| model + envelope | 10.1 s |
+| `OrbitCoverModel.source_generator_matrices(envelope.model)` | **79 s → 136 matrices** |
+| assembling those 136 as owned rank-22 rational isometries | **fewer than 20 in the next ~140 s** (≥ 7 s each ⇒ ≥ 950 s for all 136) |
+| `rational_envelope.O().subgroup(...)`, then `right_cosets()` (the residue orbit) | not reached |
+
+Nothing raised: no missing operation, no incorrect semantic — the construction is correct and its cost is
+`136 approximate generators x owned-isometry assembly at rank 22`, paid *before* the residue orbit that the
+finite representation actually needs. So the K3 acceptance nodes are infeasible by construction cost at this
+rank, not blocked by a defect, and no port-side mathematical repair is indicated by this evidence.
+
+What that leaves as the real question is a different one, and it is the provider's: whether an action's
+lattice stabilizer can be reached without materializing every approximate generator as an owned rational
+isometry. That is a semantic-reuse question about the retained contracts, not a port algorithm — the port
+already follows the pinned source's generator list.
+
 **Harness lesson, recorded because it cost 900 s.** The first cover probe reported *zero output* and I read that
 as "the pre-cover stage exceeded 900 s". It was not: the command piped through `head`, so the probe's output was
 truncated by SIGPIPE — the same pitfall already recorded once in this project. The staged probe above, without
