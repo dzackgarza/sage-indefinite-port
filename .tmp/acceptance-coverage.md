@@ -5,6 +5,37 @@ header echoed both SHAs; `derived` means they were reconstructed from commit tim
 hashes, with the reasoning recorded in `.tmp/HANDOFF.md`. No row is attributed to a revision it did not
 run on, and no cap is counted as a pass or a failure.
 
+## Status at the current pins (read this first; the sections below keep the history)
+
+Port `47b69d86` (src unchanged since `49e3965f`), provider `42d7361c`, unless a row says otherwise.
+"Accepted" always means the original assertions passed under the original limits (1 800 s cap,
+6 144 MiB guard).
+
+| family | state | evidence |
+| --- | --- | --- |
+| A_STABILIZERS — pointed-isometry nodes 1–14 | **accepted 14/14** at `42d7361c`, 194 s total, max peak 3 651 MiB | `stab-pointed-42d7361c.log` |
+| A_STABILIZERS — roots `r_-1`…`r_8` | **accepted 10/10** at `42d7361c`, 3 293 s total, slowest 1 271 s, max peak 4 708 MiB | job `jmvyzjrg9` |
+| A_STABILIZERS — E10 squares `[0,2,4,6,8,10]` + OSCAR | **accepted 7/7** at `42d7361c`, 1 168 s total | job `jmvz3a0di` |
+| A_VECTORS — K3 per-norm `[-2,2,4,-4]` | **accepted 4/4** at `42d7361c`, 1 806 s total, max peak 3 960 MiB — was 2 caps + 2 never started | jobs `jmvz1n63h`, `jmvz21tji` |
+| A_VECTORS — the rest of `test_vector_orbits.sage` | 58/64 passed in the earlier sweep; `[14]` recorded as not reproducing; **not re-run at `42d7361c`** | `sweep-vectors.log` |
+| A_ISOMETRY | accepted 166/166 at `c546077d` (earlier pin) | sweep `jmvxurihq` |
+| A_CENTRALIZERS | accepted 5/5 at `c546077d` | earlier record |
+| A_GROUPS — nodes 10–45, 47 | accepted 37/37 at `565fc6b9` | earlier record |
+| A_GROUPS — LORENTZ 0/1/2 | **open — external owner**, no GAP recognition route in the pinned image | `.tmp/handoff-owner-lorentz-image-order.md` |
+| A_GROUPS — node 46 `a7_plus_diagonal` | **open** — cone conversion of a 49 861-vector configuration, not a cap | `.tmp/HANDOFF.md` |
+| A_ISOTROPIC — stride-100 sample | accepted 89/89 | `isotropic-sample.log` |
+| A_ISOTROPIC — tail (10 unrun + 1 capped) | **open** — the capped one is the Enriques-adjacent `O(q_N)` locus | this session |
+| A_BOUNDARIES — Enriques 87 cases | **open — external owner**: 249 s to build `Γ_h`, then > 2 127 s unfinished in the discriminant bundle | `.tmp/handoff-owner-enriques-oqn.md` |
+| A_BOUNDARIES — Dawes tail (3 nodes) | **open** — memory-bound at the 6 144 MiB guard (6 147 MiB peak) and one 1 800 s cap | earlier record |
+| A_BOUNDARIES — classical indices (3 nodes) | **not run** | — |
+| A_REFLECTIVE | 2 nodes accepted; **#33 blocker** — the fixture has 8 595 entries for 176 ids | earlier record |
+| A_PERFECT | 92/92 locally at `cdafca84`; **no hosted run at an accepted head** | earlier record |
+| Unit suite | **198 passed** over all of `tests/`, 140 s, peak 3 995 MiB, at these pins | `unit-after-immutable2.log` |
+
+Three things this table must not be read as: K3 acceptance is one test, not A_VECTORS; a green unit suite is
+not port acceptance; and none of the "external owner" rows is a cap that a longer limit would fix — each has a
+measured cause in the document below.
+
 ## A_PERFECT
 
 | what | port | provider | result | provenance |
