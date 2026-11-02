@@ -115,9 +115,25 @@ One invocation per node, src `87fbf863`, provider `cdafca84`, guard 6 144 MiB, c
 | what | result |
 | --- | --- |
 | 60 of 64 nodes executed | **58 passed**, max peak 4 341 MiB, sum 5 619 s, slowest 569 s |
-| `test_published_representatives_are_one_per_orbit[14]` | **FAILED** (exit 1, 652 s) — open, message not yet captured |
+| `test_published_representatives_are_one_per_orbit[14]` | **FAILED** at that pin pair (exit 1, 652 s) — does **not** reproduce at current pins (see below) |
 | `test_k3_lattice_has_one_primitive_orbit` | **exceeded its 1 200 s cap** (killed at 1 325 s) — open |
 | the four `test_k3_lattice_has_one_primitive_orbit_per_norm` nodes | **not run** — rank-22 K3 family, deferred under host memory pressure (3.3 GiB free vs ~4 GiB nodes) |
+
+### `[14]` does not reproduce at current pins
+
+Run again on provider `565fc6b9` with the port at src `965041fd` (`fd63f677`), unchanged assertions:
+
+| run | result |
+| --- | --- |
+| first | **passed 153.0 s**, peak 4 012 MiB |
+| `PYTHONHASHSEED=0` | **passed 193.5 s** |
+| `PYTHONHASHSEED=1` | **passed 162.6 s** |
+| `PYTHONHASHSEED=2` | **passed 197.1 s** |
+
+4/4 passes across four hash seeds, so it is also stable there — not a flake at the current pins. The
+old-pin failure stands as an observation at provider `cdafca84` with src `87fbf863` (exit 1 after 652 s);
+its cause is **not established**, and that pin pair is no longer current. The recorded A_VECTORS result
+above stays at its own pins and is not rewritten.
 
 ## A_CENTRALIZERS, A_VECTORS, A_ISOTROPIC, A_BOUNDARIES
 

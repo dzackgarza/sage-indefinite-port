@@ -1,0 +1,17 @@
+.
+1 passed in 152.99s (0:02:32)
+[peakrss] vec14: child waited=0 shell_code=0 samples=79
+[peakrss] peak tree RSS      : 4012 MiB
+[peakrss] low-water MemAvail : 9273 MiB
+[peakrss] peak single VmHWM  : 4088 MiB
+[peakrss] peak VmHWM by executable (this is the per-process attribution):
+[peakrss]   julia                      3434 MiB peak
+[peakrss]   python                      641 MiB peak
+[peakrss]   timeout                       7 MiB peak
+[peakrss]   proot-x86_64                  3 MiB peak
+[peakrss]   sh                            1 MiB peak
+[peakrss]   t=   152.1s procs=  5 rss=  4012 MiB hwm=  4087 MiB avail=  9285 MiB
+[peakrss]   t=   154.1s procs=  5 rss=  4012 MiB hwm=  4088 MiB avail=  9285 MiB
+[peakrss]   t=   146.1s procs=  5 rss=  4008 MiB hwm=  4083 MiB avail=  9285 MiB
+[peakrss]   t=   148.1s procs=  5 rss=  4008 MiB hwm=  4083 MiB avail=  9285 MiB
+[peakrss]   t=   150.1s procs=  5 rss=  4008 MiB hwm=  4084 MiB avail=  9285 MiB
