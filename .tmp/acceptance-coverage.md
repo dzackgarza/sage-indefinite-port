@@ -74,6 +74,34 @@ provider pin is not a systematic speedup; the two large drops are the two heavie
 both ways. What the sweep establishes is acceptance at the current pins, and that the family is bounded by
 `r_-1`'s memory, not by a cap.
 
+### A_BOUNDARIES, Enriques `case_1`: capped at the current pins, and what the 30 samples say
+
+`test_enriques_modular_groups_match_dutour_sikiric_hulek[case_1]` at src `2cdac947`, provider `42d7361c`,
+cap 1 800 s, guard 6 144 MiB: **CAPPED** (killed at 1 800 s, peak **4 182 MiB**). This is the first time the
+case has been run with its own transcript and 60 s stack dumps; the earlier record was only "blocked at
+3 600 s".
+
+What the 30 dumps show:
+
+- **26 distinct innermost frames across 30 samples** — the case is *not* stuck in one call. It is making
+  progress the whole time, through many different sites.
+- Those sites are dominated by provider **element and category construction**, not by a single heavy
+  computation: `set_categories.__call__`, `ring_foundation._own_ring` / `source_element`, `tensor.__getitem__`,
+  `mor_categories.Of`, `arrow_categories._mor_endpoint`, `category.__classcall__`, `refine.__get__`,
+  `finite_ordered_sets.__contains__`.
+- Two samples landed in genuinely heavy places: one in the Julia engine call
+  `lattice_engines.definite_isometry_group` (the definite rank-10 group behind the Enriques group), and one
+  inside `eichler.right_coset_transversal` — the same finite-representation locus as BOUND and as the K3
+  nodes.
+- Peak 4 182 MiB against a 6 144 MiB guard means the case is **time**-bound, not memory-bound.
+
+So this is not a second instance of the recomputation defect fixed for K3: there is no one pure function
+being recomputed. It is the cost of the amount of provider work the case demands, paid through a per-element
+layer. That makes it an owner-level performance matter, not a port patch, and it is why the family has to stay
+"blocked" rather than "capped and nearly there". A different case may be cheaper — `case_1` has the largest
+group order in the table (696 729 600) — so the family is **not** classified as failing here, only as not
+accepted.
+
 **The E10 squares and the OSCAR node are now re-baselined at the same pin.** All seven pass, one pytest
 invocation per node, cap 1 800 s, guard 6 144 MiB, unchanged assertions (job `jmvz3a0di`): sum **1 168 s**
 against **1 502 s** for the same seven at `565fc6b9`. Node by node, old → new: `[0]` 160 → 152, `[2]` 176 →
@@ -351,7 +379,7 @@ An inventory of the remaining obligations and what actually blocks each:
 | A_STABILIZERS roots (10 nodes) | **resolved** — all ten accepted at `42d7361c`, 3 293 s serial, no cap, max peak 4 708 MiB | sweep `jmvyzjrg9` |
 | A_STABILIZERS E10 squares (6) + OSCAR node 15 | **resolved** — all seven accepted at `42d7361c`, 1 168 s serial | job `jmvz3a0di` |
 | A_STABILIZERS pointed-isometry nodes 1–14 | **cheap re-baseline pending** — accepted at `565fc6b9` only, 146 s together | ~300 s serial with startup |
-| A_BOUNDARIES (87 Enriques + ~28 non-Enriques) | **heavy slot**; Enriques `case_1` is a known block at 3 600 s | only 4 Dawes nodes ever ran |
+| A_BOUNDARIES (87 Enriques + 3 classical indices + Dawes tail) | Enriques `case_1`: **capped again at 1 800 s**, now with attribution (below) — diffuse provider overhead, no single port hot spot | 4 Dawes nodes, then this case |
 | A_ISOTROPIC tail (10 non-parametrised + 1 capped) | **heavy slot**; the capped one is the Enriques-adjacent set | 89/89 stride sample passed |
 | A_GROUPS LORENTZ 0/1/2 | **external owner** — GAP lacks `recog`/`genss`, and no recognition route exists for the generated matrix group | `.tmp/handoff-owner-lorentz-image-order.md` |
 | A_GROUPS node 46 `a7_plus_diagonal` | **cone conversion**, not a cap — see below | `.tmp/HANDOFF.md` |
