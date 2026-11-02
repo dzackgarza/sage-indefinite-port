@@ -25,7 +25,8 @@ Port `47b69d86` (src unchanged since `49e3965f`), provider `42d7361c`, unless a 
 | A_GROUPS — node 46 `a7_plus_diagonal` | **open** — cone conversion of a 49 861-vector configuration, not a cap | `.tmp/HANDOFF.md` |
 | A_ISOTROPIC — stride-100 sample | accepted 89/89 | `isotropic-sample.log` |
 | A_ISOTROPIC — `test_o_n_maps_onto_o_of_the_discriminant_form` | **accepted 468 s, peak 3 868 MiB** at `42d7361c` (first of the unrun tail) | job `jmvz75d9x` |
-| A_ISOTROPIC — remaining tail (9 unrun + 1 capped) | **open** — the capped one is the Enriques `Γ_h`/discriminant locus | this session |
+| A_ISOTROPIC — `test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank0,rank1]` | **accepted 2/2**: 150 s / 3 703 MiB (lines) and **1 661 s / 4 926 MiB** (planes) | job `jmvz88la4` |
+| A_ISOTROPIC — remaining tail (7 unrun + 1 capped) | **open** — the capped one is the Enriques `Γ_h`/discriminant locus | this session |
 | A_BOUNDARIES — Enriques 87 cases | **open — external owner**: 219 s to build the coinvariant subgroup, then > 681 s unfinished just to *generate* `Γ_h`; the rest of the case never runs | `.tmp/handoff-owner-enriques-oqn.md` |
 | A_BOUNDARIES — Dawes tail (3 nodes) | **open** — memory-bound at the 6 144 MiB guard (6 147 MiB peak) and one 1 800 s cap | earlier record |
 | A_BOUNDARIES — classical indices (3 nodes) | **not run** | — |
@@ -126,6 +127,23 @@ What the 30 dumps show:
   inside `eichler.right_coset_transversal` — the same finite-representation locus as BOUND and as the K3
   nodes.
 - Peak 4 182 MiB against a 6 144 MiB guard means the case is **time**-bound, not memory-bound.
+
+### A_ISOTROPIC tail, three nodes accepted and how much room they had
+
+Three of the eleven non-parametrised tail nodes now pass at the current pins, one invocation each, cap 1 800 s,
+guard 6 144 MiB:
+
+| node | result | peak | room left |
+| --- | --- | --- | --- |
+| `test_o_n_maps_onto_o_of_the_discriminant_form` | **passed 468 s** | 3 868 MiB | ample |
+| `test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank0]` (lines) | **passed 150 s** | 3 703 MiB | ample |
+| `test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank1]` (planes) | **passed 1 661 s** | **4 926 MiB** | **139 s and 1 218 MiB** |
+
+The plane node is the interesting one: it passes, but with little room. `isotropic_classes(L, 2)` enumerates
+planes through every line class and deduplicates by exact `plane_isometry`, and for the Allcock `I_{2,10}`
+lattice that costs 11× the line node. It is recorded as accepted, not as marginal-by-design — but a change that
+makes plane enumeration slower by ~8 % would turn it into a cap, which is worth knowing before anyone touches
+that path.
 
 ### A_ISOTROPIC `test_o_n_maps_onto_o_of_the_discriminant_form`: accepted, and it splits the Enriques bundle
 
