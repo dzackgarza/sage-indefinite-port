@@ -190,12 +190,33 @@ Sum 1 806 s, no node within 1 200 s of its cap. Before the memo two of these cap
 accepted on a **port fix**, with no cap raised and no assertion weakened. The stack dumps put the bulk of each
 node inside `right_coset_transversal()` — the finite-representation coset space, not the vector dedup.
 
+**What this does and does not say.** It accepts one parametrised test — the four K3 per-norm nodes — and
+nothing more. It is not A_VECTORS acceptance: the other five test functions in
+`test_vector_orbits.sage` (`primitive_orbit_counts_in_u_plus_e8`, `published_representatives_are_one_per_orbit`,
+`e10_orbit_counts`, `i_2_10_is_transitive`, `anisotropic_binary_vector_classes`) are separate obligations with
+their own rows, and the `[14]` failure record there is untouched by this. It is not port acceptance either:
+A_BOUNDARIES, the A_ISOTROPIC tail, A_GROUPS LORENTZ and `a7_plus_diagonal` all remain open below.
+
+### Unit suite at the current pins, over all of `tests/`
+
+src = the `38d1c9f1` tree, provider `42d7361c`, guard 6 144 MiB:
+
+```
+198 passed, 2 warnings in 140.26 s          peak tree RSS 3 995 MiB
+```
+
+This run covers every file in `tests/`, including `test_acceptance_ci.py`, which the earlier 182-test figure
+did not: running it exposed one **stale test** (`test_batch_runner_continues_after_malformed_batch_junit`
+still passed `--sage`, removed from `ci/pytest_batches.py` in `0e544edd`), repaired in `38d1c9f1` by changing
+the invocation and no assertion. So the immutability change is validated at suite scale, and the suite is now
+green over its whole directory rather than over ten named files.
+
 | what | result |
 | --- | --- |
 | 60 of 64 nodes executed | **58 passed**, max peak 4 341 MiB, sum 5 619 s, slowest 569 s |
 | `test_published_representatives_are_one_per_orbit[14]` | **FAILED** at that pin pair (exit 1, 652 s) — does **not** reproduce at current pins (see below) |
-| `test_k3_lattice_has_one_primitive_orbit` | **exceeded its 1 200 s cap** (killed at 1 325 s) — open |
-| the four `test_k3_lattice_has_one_primitive_orbit_per_norm` nodes | **not run** — rank-22 K3 family, deferred under host memory pressure (3.3 GiB free vs ~4 GiB nodes) |
+| `test_k3_lattice_has_one_primitive_orbit` (no `_per_norm` suffix) | **unreliable earlier record, not an obligation.** No function of that name exists in the file at any commit, and the log line carrying it also carries hand-written prose, so it is a reconstruction rather than a collected node id. Nothing is claimed either way about it. |
+| the four `test_k3_lattice_has_one_primitive_orbit_per_norm` nodes | **not run in that sweep** — deferred under host memory pressure; **all four now accepted**, see the K3 section above |
 
 ### `[14]` does not reproduce at current pins
 
@@ -308,8 +329,8 @@ An inventory of the remaining obligations and what actually blocks each:
 
 | obligation | blocker | evidence |
 | --- | --- | --- |
-| A_VECTORS `test_k3_lattice_has_one_primitive_orbit_per_norm[-2,2,4,-4]` | **solved for `[-2]`** — a port-side recomputation defect, not a provider gap | `[-2]` passed 462 s / 3 948 MiB; `[2]`, `[4]`, `[-4]` re-running at the same limits |
-| A_VECTORS `test_k3_lattice_has_one_primitive_orbit` | **cap** — exceeded 1 200 s | recorded cap; would need either a cheaper route or a cap increase, and increasing caps is not in scope |
+| A_VECTORS `test_k3_lattice_has_one_primitive_orbit_per_norm[-2,2,4,-4]` | **accepted 4/4** — the cost was a port-side recomputation defect, not a provider gap | 462 / 466 / 448 / 430 s at peaks 3 948–3 960 MiB, cap 1 800 s, guard 6 144 MiB |
+| A_VECTORS `test_k3_lattice_has_one_primitive_orbit` (no `_per_norm`) | **not an obligation** — no such node exists in the file at any commit | see the note in the A_VECTORS table |
 | A_STABILIZERS roots (10 nodes) | **resolved** — all ten accepted at `42d7361c`, 3 293 s serial, no cap, max peak 4 708 MiB | sweep `jmvyzjrg9` |
 | A_STABILIZERS E10 squares (6) + OSCAR node 15 | **heavy slot** — accepted at `565fc6b9`, not re-run at `42d7361c` | ~1 500 s serial |
 | A_BOUNDARIES (87 Enriques + ~28 non-Enriques) | **heavy slot**; Enriques `case_1` is a known block at 3 600 s | only 4 Dawes nodes ever ran |
