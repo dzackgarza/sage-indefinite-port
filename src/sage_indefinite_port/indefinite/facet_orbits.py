@@ -87,8 +87,32 @@ def _pair(covector, ray) -> int:
 
 
 def _same_ray(left, right) -> bool:
-    return all(int(left[i]) * int(right[(i + 1) % len(left)]) == int(left[(i + 1) % len(left)]) * int(right[i])
-               for i in range(len(left)))
+    r"""Whether two integer vectors are **positive** rational multiples of one another.
+
+    The contract is proportionality against one nonzero pivot with a positive ratio, not a scan of adjacent
+    minors. Scanning cyclically adjacent minors is not enough in dimension 4: ``e1`` and ``e3`` pass all four of
+    those tests and are not proportional, and a vector and its negative pass every minor test while spanning
+    *opposite* rays. For a pointed cone those are different rays, and confusing them corrupts the incidence
+    bookkeeping.
+
+    Comparison is over `Q` and exact: ``left = lambda * right`` with ``lambda > 0``.
+    """
+    left = [int(entry) for entry in left]
+    right = [int(entry) for entry in right]
+    if len(left) != len(right):
+        return False
+    pivot = next((index for index, entry in enumerate(right) if entry), None)
+    if pivot is None:
+        return False
+    if all(entry == 0 for entry in left):
+        return False
+    # lambda = left[pivot] / right[pivot]; it must be positive and must reproduce every entry.
+    numerator, denominator = left[pivot], right[pivot]
+    if numerator == 0:
+        return False
+    if (numerator > 0) != (denominator > 0):
+        return False
+    return all(left[index] * denominator == numerator * right[index] for index in range(len(left)))
 
 
 def _incidence(rays, normal) -> frozenset[int]:
@@ -243,7 +267,10 @@ def cone_facets(rays) -> dict[frozenset[int], tuple[int, ...]]:
                 if incidence in facets:
                     continue
                 if not is_facet_certificate(oriented, incidence, rays):
-                    continue
+                    raise ArithmeticError(
+                        "a facet adjacent across a ridge failed certification (incidence size "
+                        f"{len(incidence)}); excluding it is not proved, so the walk refuses to continue"
+                    )
                 facets[incidence] = oriented
                 pending.append(incidence)
     return facets
@@ -259,6 +286,25 @@ def _ridges(rays, incidence):
     return tuple(frozenset(positions[index] for index in ridge) for ridge in local_facets)
 
 
+def _integral_coordinate(value) -> int:
+    r"""The exact integer value of an owned coordinate, refusing a rational one.
+
+    The generator acts by an integral matrix, so every coordinate of an image ray must be an integer. Converting
+    with ``int(QQ(numerator)/QQ(denominator))`` truncates instead: a rational coordinate such as ``3/2`` becomes
+    ``1`` and could coincide with a row it has no right to, fabricating a permutation of the rays.
+    """
+    numerator = int(value.numerator())
+    denominator = int(value.denominator())
+    if denominator == 0:
+        raise ArithmeticError("an owned coordinate has a zero denominator")
+    if numerator % denominator:
+        raise ArithmeticError(
+            f"a stabilizer generator produced the non-integral coordinate {numerator}/{denominator}; the "
+            "generators must act integrally on the rays"
+        )
+    return numerator // denominator
+
+
 def ray_permutations_from_stabilizer(cell, stabilizer) -> tuple[tuple[int, ...], ...]:
     """Position permutations of the cell's rows induced by the stabilizer generators; raises unless they permute."""
     rays = [tuple(int(entry) for entry in row) for row in cell.rows]
@@ -271,9 +317,7 @@ def ray_permutations_from_stabilizer(cell, stabilizer) -> tuple[tuple[int, ...],
         image = []
         for point in cell.vector_configuration:
             moved = generator(point).to_vector()
-            row = tuple(
-                int(QQ(int(moved(label).numerator())) / QQ(int(moved(label).denominator()))) for label in labels
-            )
+            row = tuple(_integral_coordinate(moved(label)) for label in labels)
             if row not in positions:
                 raise ArithmeticError("a stabilizer generator did not permute the cell's rays")
             image.append(positions[row])
@@ -401,7 +445,12 @@ def orbit_representatives(rays, permutations):
                 if adjacent in covered:
                     continue
                 if not is_facet_certificate(oriented, adjacent, rays):
-                    continue
+                    # Silence here would be a completeness claim built on a dropped facet: the worklist could
+                    # empty with a genuine facet left unfound and the closure certificate would be false.
+                    raise ArithmeticError(
+                        "a facet adjacent across a ridge failed certification (incidence size "
+                        f"{len(adjacent)}); excluding it is not proved, so the walk refuses to continue"
+                    )
                 members = _orbit(adjacent, permutations)
                 if members.keys() & covered:
                     continue

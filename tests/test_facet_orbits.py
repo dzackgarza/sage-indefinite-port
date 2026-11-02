@@ -244,3 +244,63 @@ def test_walk_permutations_match_the_port_action_convention(name) -> None:
         f"the walk's ray action differs from the port's: {len(mine)} vs {len(theirs)} generators, "
         f"{len(mine - theirs)} only in the walk, {len(theirs - mine)} only in the port"
     )
+
+
+def test_same_ray_contract_is_proportionality_and_positive_orientation() -> None:
+    r"""The exact ray contract, with the regressions that broke the first version.
+
+    Cyclically adjacent minors are not proportionality in dimension 4: `e1` and `e3` pass every one of those
+    tests while sharing no ray. And a vector and its negative pass every minor test while spanning *opposite*
+    rays, which a pointed cone distinguishes.
+    """
+    from sage_indefinite_port.indefinite.facet_orbits import _same_ray
+
+    # proportionality, over Q, positive orientation
+    assert _same_ray((1, 2, 3, 4), (2, 4, 6, 8))
+    assert _same_ray((2, 4), (3, 6)), "a rational ratio is still the same ray"
+    assert _same_ray((0, 3, 0), (0, 1, 0))
+
+    # the regressions
+    assert not _same_ray((1, 0, 0, 0), (0, 0, 1, 0)), "e1 and e3 are not proportional in dimension 4"
+    assert not _same_ray((1, 2, 3), (-1, -2, -3)), "a vector and its negative are opposite rays"
+    assert not _same_ray((1, 0, 0, 0), (-1, 0, 0, 0)), "opposite in dimension 4"
+    assert not _same_ray((1, 2), (1, 3)), "different directions"
+    assert not _same_ray((0, 0), (0, 0)), "the zero vector is not a ray"
+    assert not _same_ray((0, 0), (1, 2))
+
+
+def test_a_rational_coordinate_is_refused_rather_than_truncated() -> None:
+    r"""`int(QQ(3)/QQ(2)) == 1` would fabricate a ray; the conversion must refuse instead."""
+    from sage_indefinite_port.indefinite.facet_orbits import _integral_coordinate
+
+    class Coordinate:
+        """Stands in for an owned ring element: `numerator()` and `denominator()` are methods."""
+
+        def __init__(self, numerator, denominator):
+            self._numerator = numerator
+            self._denominator = denominator
+
+        def numerator(self):
+            return self._numerator
+
+        def denominator(self):
+            return self._denominator
+
+    assert _integral_coordinate(Coordinate(6, 3)) == 2
+    assert _integral_coordinate(Coordinate(-6, 3)) == -2
+    with pytest.raises(ArithmeticError):
+        _integral_coordinate(Coordinate(3, 2))
+    with pytest.raises(ArithmeticError):
+        _integral_coordinate(Coordinate(1, 0))
+
+
+def test_the_walk_refuses_a_cone_it_cannot_certify() -> None:
+    r"""A failure that is not proved to be an exclusion must surface, not empty the worklist quietly.
+
+    The half-plane cone `cone{(1,0), (-1,0), (0,1)}` is not pointed: it contains the x-axis as a lineality
+    space, its dual is not full-dimensional, and the seed slice is unbounded. The walk must raise instead of
+    returning a partial facet set that would later be read as a closure certificate.
+    """
+    rays = [(1, 0), (-1, 0), (0, 1)]
+    with pytest.raises(Exception):
+        cone_facets(rays)
