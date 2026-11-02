@@ -26,7 +26,7 @@ Port `47b69d86` (src unchanged since `49e3965f`), provider `42d7361c`, unless a 
 | A_ISOTROPIC — stride-100 sample | accepted 89/89 | `isotropic-sample.log` |
 | A_ISOTROPIC — `test_o_n_maps_onto_o_of_the_discriminant_form` | **accepted 468 s, peak 3 868 MiB** at `42d7361c` (first of the unrun tail) | job `jmvz75d9x` |
 | A_ISOTROPIC — remaining tail (9 unrun + 1 capped) | **open** — the capped one is the Enriques `Γ_h`/discriminant locus | this session |
-| A_BOUNDARIES — Enriques 87 cases | **open — external owner**: 249 s to build `Γ_h`, then > 2 127 s unfinished in the discriminant bundle | `.tmp/handoff-owner-enriques-oqn.md` |
+| A_BOUNDARIES — Enriques 87 cases | **open — external owner**: 219 s to build the coinvariant subgroup, then > 681 s unfinished just to *generate* `Γ_h`; the rest of the case never runs | `.tmp/handoff-owner-enriques-oqn.md` |
 | A_BOUNDARIES — Dawes tail (3 nodes) | **open** — memory-bound at the 6 144 MiB guard (6 147 MiB peak) and one 1 800 s cap | earlier record |
 | A_BOUNDARIES — classical indices (3 nodes) | **not run** | — |
 | A_REFLECTIVE | 2 nodes accepted; **#33 blocker** — the fixture has 8 595 entries for 176 ids | earlier record |
@@ -144,6 +144,25 @@ inside `n.O().discriminant_image()`** and the remainder are in the same call's e
 - therefore the Enriques bundle's **> 2 127 s unfinished is not the `O(q_N)` group** either. The leading
   remaining candidate is `discriminant_morphism()` per `Γ_h` generator, which goes through the same per-element
   discriminant machinery that costs ~400 s here for one group image.
+
+### A_BOUNDARIES, Enriques: the bottleneck is generating `Γ_h`, not `O(q_N)` (corrected twice, with measurements)
+
+Two bounded probes and one passing acceptance node replace the earlier guess. In measured order, for `case_3`:
+
+| step | time | source |
+| --- | --- | --- |
+| involution, invariant, transported isometry (case-independent) | 13.6 s | probe |
+| `polarized(h).coinvariant_extension_subgroup()` | → **218.9 s** | probe |
+| `group = … ∩ N.O_plus()` | 0.1 s | probe |
+| **`group.group_generators()`** | **> 681 s, unfinished at a 900 s cap** | probe `jmvz7ma89` |
+| `N.discriminant_group().orthogonal_group()` + `.cardinality()` | **cheap** for this form | node `jmvz75d9x` passes in 468 s with 6 of 7 dumps in `O(N).discriminant_image()` |
+| `discriminant_morphism()` per generator, cardinality, orbit counts | **never reached** | probe |
+
+The first guess was that `orthogonal_group()` materialized the whole `O(q_N)`; `groups.py:5531-5548` showed the
+selection is lazy, so that was retracted. The second guess was that the per-generator `discriminant_morphism()`
+loop dominated; the discriminant-order node shows `O(q_N)`'s construction and order are cheap, and the shorter
+probe shows the generator list never arrives — `group_generators()` alone exceeds 681 s. Both corrections are
+in `.tmp/handoff-owner-enriques-oqn.md` with the measurements that forced them.
 
 ### A_BOUNDARIES, Enriques: stage attribution (a staged probe, not a second cap)
 
