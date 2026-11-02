@@ -348,6 +348,25 @@ return an immutable shared matrix in `49e3965f`) removes that, and the node now 
 | --- | --- | --- | --- |
 | `test_k3_lattice_has_one_primitive_orbit_per_norm[-2]` | 1 800 s cap, 6 144 MiB guard | **passed 462 s, peak 3 948 MiB** | assembly done by 60 s; seven consecutive 60 s stack dumps inside `envelope.right_coset_transversal()` (`eichler.py:489`), reached from `primitive_covering_vectors` (`:1000`) |
 
+### The recomputation defect class: searched, one instance, now exhausted
+
+The K3 fix was one instance of a general fault shape — a **pure function of an immutable lattice recomputed
+per call**. I checked every other hot function of that shape in the port rather than fixing them one cap at a
+time:
+
+| function | memoized? | where |
+| --- | --- | --- |
+| `groupoid_cache._gram_in_label_order` | **was not** — fixed | the K3 defect |
+| `invariants._gram` | yes, `_GRAMS` by identity holding the lattice | invariants |
+| `indefinite_reduced_presentation` | yes, `@cache` | 9 call sites, all share one reduced presentation per lattice |
+| `perfect_complex` | yes, "memoized as IndefiniteForms.g:1173-1299 memoizes its groups" | `lorentzian_cells.py:415` |
+| `OrbitCoverModel.source_generator_matrices` | yes, `_GENERATOR_MATRICES` by model identity | `eichler.py:661` |
+| `Envelope.stabilizer_of_lattice`, `right_coset_transversal` | yes, `@cached_method` | `eichler.py:461,479` |
+
+So there is no second instance of the class among the paths these families take, and the remaining caps are
+not this fault. In particular the A_GROUPS node 46 cone blocker is *not* a recomputed perfect complex: the
+complex is already memoized and its cost is the configuration's, not a repeat.
+
 So the K3 finite-representation locus reached from the vector side *completes* for this configuration. That is a
 positive instance for the BOUND/#18 row below, which until now had only capped runs and a stale defect note:
 the same `right_coset_transversal` computation does terminate here, inside 1 800 s, and it is the bulk of the
