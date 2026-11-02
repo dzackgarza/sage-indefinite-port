@@ -86,3 +86,4 @@ references/Indefinite.jl/
 !.tmp/probe-hom-generators.py
 !.tmp/probe-eval-kernel.py
 !.tmp/probe-kernel-measure.py
+!.tmp/probe-transporter-path.py

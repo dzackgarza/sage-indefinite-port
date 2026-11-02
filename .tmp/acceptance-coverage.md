@@ -260,6 +260,39 @@ is required for this operation and none was made. Old-pin record: provider `c546
   So the isotropic-line family is healthy everywhere it was sampled, and the heavy tail is the
   Enriques-adjacent group-orbit set, which is where the known blocker lives.
 
+## What still depends on what (read from source, not assumed)
+
+An inventory of the remaining obligations and what actually blocks each:
+
+| obligation | blocker | evidence |
+| --- | --- | --- |
+| A_VECTORS `test_k3_lattice_has_one_primitive_orbit_per_norm[-2,2,4,-4]` | **the running K3 job** | four nodes, 1 800 s cap each, in flight |
+| A_VECTORS `test_k3_lattice_has_one_primitive_orbit` | **cap** — exceeded 1 200 s | recorded cap; would need either a cheaper route or a cap increase, and increasing caps is not in scope |
+| A_STABILIZERS roots (10 nodes) | **heavy slot** — accepted at provider `9dc89ac`, not re-run at `42d7361c`; ~70 min serial | rows keep their pin |
+| A_BOUNDARIES (87 Enriques + ~28 non-Enriques) | **heavy slot**; Enriques `case_1` is a known block at 3 600 s | only 4 Dawes nodes ever ran |
+| A_ISOTROPIC tail (10 non-parametrised + 1 capped) | **heavy slot**; the capped one is the Enriques-adjacent set | 89/89 stride sample passed |
+| A_GROUPS LORENTZ 0/1/2 | **external owner** — GAP lacks `recog`/`genss`, and no recognition route exists for the generated matrix group | `.tmp/handoff-owner-lorentz-image-order.md` |
+| A_GROUPS node 46 `a7_plus_diagonal` | open, deliberately excluded | TODO |
+| BOUND/#18 finite-representation transporter | **unverified since the provider moved**, not known-failing | see below |
+| FINITE, LIFTS | **research #401** | TODO |
+
+### BOUND/#18: the note predates `42d7361c` and is now unverified
+
+The TODO says the provider's finite-representation transporter "still fails when it requests cardinality of a
+represented finite torsion module". That was written before the provider's cardinality-admission fix. A probe
+instrumenting `IntegralStructureAction.transporter` on the divisibility-four isotropic `U(4)+U(4)` specimen
+finds a witness **without the transporter branch being entered at all** (the rational transport is already
+integral), so that specimen cannot settle it either way. The claim therefore stays *unverified* rather than
+either resolved or refuted, and the instrumentation to settle it exists
+(`.tmp/probe-transporter-path.py`): it needs a pointed pair whose rational transport is non-integral, which
+the A_STABILIZERS pointed family may supply when that family is re-run at the current pin.
+
+### Keyboard-level: nothing else is inventable
+
+Everything above is either waiting on the running job, on the heavy slot that job occupies, or on an external
+owner. The non-acceptance unit suite is green (182 passed), so there is no latent unit-level defect to work
+while the slot is busy.
+
 ## Unit-suite failures: two real test defects, repaired
 
 Running the non-acceptance unit suite on provider `42d7361c` first gave `2 failed, 141 passed`. Both
