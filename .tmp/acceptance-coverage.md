@@ -141,7 +141,7 @@ Four nodes ran before the pause:
 | --- | --- | --- |
 | `test_dawes_buildings_have_the_published_counts[dawes_2U_A2_stable]` | FAILED exit 1, 172 s | **passed 274 s, peak 3 941 MiB** |
 | `[dawes_2U_minus2_minus6]` | FAILED exit 1, 214 s | ran 1 672 s and **exceeded the 6 144 MiB guard** (peak 6 147 MiB, exit 143) — open |
-| `[dawes_L2_gamma2]` | FAILED exit 1, 262 s | see the follow-up record |
+| `[dawes_L2_gamma2]` | FAILED exit 1, 262 s | runs; **exceeded the 1 800 s cap** (2 279 s, peak 6 094 MiB) — open |
 | `[dawes_2U2_A2_stable]` | **CAPPED** at 1 800 s (1 858 s, peak 3 903 MiB) | not re-run |
 
 Not a wrong count, and not a Dawes-specific problem: `IsotropicInduction._integral_image`

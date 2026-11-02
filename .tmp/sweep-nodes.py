@@ -36,6 +36,48 @@ class Finished:
         self.returncode, self.stdout, self.stderr = returncode, stdout, stderr
 
 
+def _all_pids():
+    pids = []
+    for entry in os.listdir("/proc"):
+        if entry.isdigit():
+            pids.append(int(entry))
+    return pids
+
+
+def _parent_of(pid):
+    try:
+        with open(f"/proc/{pid}/stat") as handle:
+            return int(handle.read().rsplit(")", 1)[1].split()[1])
+    except (OSError, IndexError, ValueError):
+        return None
+
+
+def kill_everything(root):
+    """Kill root and every descendant, whatever process group they were moved into.
+
+    `proot` runs the traced program in a *new* process group, so killing the launched group alone leaves the
+    test running: it is reparented, keeps the captured pipes open, and the caller blocks past its cap.
+    """
+    parent = {pid: _parent_of(pid) for pid in _all_pids()}
+    children = {}
+    for pid, ppid in parent.items():
+        children.setdefault(ppid, []).append(pid)
+    targets, stack = [], [root]
+    while stack:
+        current = stack.pop()
+        targets.append(current)
+        stack.extend(children.get(current, ()))
+    try:
+        os.killpg(os.getpgid(root), signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
+        pass
+    for pid in reversed(targets):
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            pass
+
+
 def run_bounded(cmd, env, cap, grace=60):
     """Run cmd, and enforce the cap on its whole process GROUP.
 
@@ -49,12 +91,12 @@ def run_bounded(cmd, env, cap, grace=60):
         out, err = process.communicate(timeout=cap + grace)
         return Finished(process.returncode, out, err)
     except subprocess.TimeoutExpired:
+        kill_everything(process.pid)
         try:
-            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-        out, err = process.communicate()
-        return Finished(124, out, err + "\n[driver] cap enforced on the process group")
+            out, err = process.communicate(timeout=60)
+        except subprocess.TimeoutExpired:
+            out, err = "", "[driver] output pipes still held after the kill"
+        return Finished(124, out, err + "\n[driver] cap enforced on the process tree")
 
 
 def collect(test_file):
