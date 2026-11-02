@@ -21,7 +21,7 @@ Port `47b69d86` (src unchanged since `49e3965f`), provider `42d7361c`, unless a 
 | A_ISOMETRY | accepted 166/166 at `c546077d` (earlier pin) | sweep `jmvxurihq` |
 | A_CENTRALIZERS | accepted 5/5 at `c546077d` | earlier record |
 | A_GROUPS — nodes 10–45, 47 | accepted 37/37 at `565fc6b9` | earlier record |
-| A_GROUPS — LORENTZ 0/1/2 | **open — external owner**, no GAP recognition route in the pinned image | `.tmp/handoff-owner-lorentz-image-order.md` |
+| A_GROUPS — LORENTZ 0/1/2 | **open — dependency named, not an impossibility**: the image's system GAP (`/usr/share/gap/pkg`) lacks `recog`/`genss`; `genss` is a documented install through Sage's `gap_packages` spkg (4.16.1 ships it), `recog` is not in that bundle and belongs to the image's GAP owner | `.tmp/handoff-owner-lorentz-image-order.md`, § "The GAP capability" |
 | **A_GROUPS — node 46 `a7_plus_diagonal`** | **ACCEPTED — passed 662 s, peak 1 616 MiB**, original assertions, 1 800 s cap and 6 144 MiB guard unchanged, via the orbit-pruned facet route (was CAPPED at 5 405 MiB on the engine route) | job `jmvzh3n3l` |
 | A_ISOTROPIC — stride-100 sample | accepted 89/89 | `isotropic-sample.log` |
 | A_ISOTROPIC — `test_o_n_maps_onto_o_of_the_discriminant_form` | **accepted 468 s, peak 3 868 MiB** at `42d7361c` (first of the unrun tail) | job `jmvz75d9x` |
@@ -32,8 +32,8 @@ Port `47b69d86` (src unchanged since `49e3965f`), provider `42d7361c`, unless a 
 | A_BOUNDARIES — Dawes tail (3 nodes) | **open — same subgroup primitive**: `dawes_2U2_A2_stable` re-run at `42d7361c` still caps at 1 800 s (4 304 MiB), 8 of 29 dumps in `subgroup_classes` | job `jmvzaglti` |
 | A_BOUNDARIES — classical indices (3 nodes) | **open — same locus**: asserts through `_gamma_h` and `subgroup_on(discriminant_morphism…)` | source read |
 | A_BOUNDARIES — classical indices (3 nodes) | **not run** | — |
-| A_REFLECTIVE | 2 nodes accepted; **#33 blocker** — the fixture has 8 595 entries for 176 ids | earlier record |
-| A_PERFECT | 92/92 locally at `cdafca84`; **no hosted run at an accepted head** | earlier record |
+| A_REFLECTIVE | **representative families being run now**; the #33 identity defect is fixed and verified against the fixture: 8 595 entries, 176 plain ids (max multiplicity **374**), and the composed id `id_w{weyl_group_id}_l{lattice_id}` is unique on all 8 595 (max multiplicity 1). Families: 6 non-parametrised, 103 `ListSimpleRootSystem`, 8 821 `ListReflect` (long tail), 8 595 Allcock (long tail), 4+2 Vinberg, 1 E10 | this session |
+| A_PERFECT | 92/92 **locally** at `cdafca84`. The hosted requirement is discharged by `.github/workflows/acceptance.yml`, which runs on every push (a required sample) and on `workflow_dispatch` (full corpora), in `ghcr.io/dzackgarza/sage:develop`; every push to main this session is a trigger. The connector exposes no Actions runs, so the hosted result is read in the repository's Actions tab, not from here — no hosted evidence is claimed | `.github/workflows/acceptance.yml` |
 | Unit suite | **240 passed** over all of `tests/` at the final HEAD, 155.6 s — includes the facet-certificate, orbit-contract, walk and traversal-seam files | `unit-final.log` |
 
 Three things this table must not be read as: K3 acceptance is one test, not A_VECTORS; a green unit suite is
