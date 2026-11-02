@@ -36,14 +36,18 @@ $ grep -n "from sage_extensions.all import" src/sage_indefinite_port/indefinite/
 ```
 
 **Matching working consumer: any port revision at or after `61ac45a0`.** The concrete one every measurement below
-was taken on is **`1051bf1e`** (this repository's `main`). Binding `73ef6713` cannot work with the current
-provider under any settings — it is a different library.
+that will run the *current* code is this repository's `main`; the Enriques measurements quoted below were taken
+at src `2cdac947`, which is the revision the probe and the capped acceptance node actually ran on — not at
+`1051bf1e`. `1051bf1e` is where the port is now, and the Enriques path is unchanged since `2cdac947` for the
+files those runs touch, but the attribution stays with the revision that ran. Binding `73ef6713` cannot work with
+the current provider under any settings — it is a different library.
 
 ## 1. Pins, verified
 
 | thing | value | how it was verified |
 | --- | --- | --- |
-| port | this repository, `1051bf1e` | `git rev-parse HEAD`; every run below used it |
+| port (measurements) | src `2cdac947` | the revision the probe and the capped acceptance node ran on |
+| port (current) | this repository, `1051bf1e` | `git rev-parse HEAD`; the same Enriques path, not a rerun of the measurements |
 | provider staging | `~/sage-extensions-42d7361c` | **byte-identical** to commit `42d7361cfda3d8505f365b26d9aa687447d6df9d` of `~/sage-image/rootfs/repos/sage-extensions`: full-tree `diff -rq` excluding caches is empty, and `pyproject.toml` compares equal |
 | provider archive source | `~/sage-image/rootfs/repos/sage-extensions` | `git cat-file -t 42d7361c…` → `commit`; `git archive 42d7361c… | tar -t | wc -l` → 1096 entries |
 | pytest plugins | `~/ai-review-ci/tool-artifacts/pytest_plugins` | present (bound to `/ci/tool-artifacts/pytest_plugins`) |
@@ -73,8 +77,11 @@ acceptance node) — the same limits as the acceptance family, unchanged.
 
 ## 3. The proven commands
 
-**(a) Staged probe** — this is the run that produced the stage table (4.3 s invariant, 19.5 s transport, 249 s
-`coinvariant_extension_subgroup`, then > 2 127 s unfinished inside the discriminant bundle). It wrote
+**(a) Staged probe** — this is the run that produced the stage table, and the specimen it measures is
+**`case_3`**, not `case_1`: the probe iterates `_ENRIQUES[2]` (case_3) first and only then `_ENRIQUES[0]`
+(case_1), so the 4.3 s invariant / 19.5 s transport / 249 s `coinvariant_extension_subgroup` / > 2 127 s
+unfinished discriminant bundle are **case_3** numbers. The capped acceptance node below is the separate `case_1`
+run. It wrote
 `~/sage-image/enriques-case1.log` on the acceptance run and its own transcript for the probe; the probe itself is
 `~/sage-image/probe_enriques_stages.py` (3 999 B) and prints before every stage, so a cap still leaves the ordered
 attribution.

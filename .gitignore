@@ -100,3 +100,4 @@ references/Indefinite.jl/
 .ultramath/**/__pycache__/
 .ultramath/smvzd6hvn/m7/pylibs/
 !.tmp/handoff-owner-enriques-repro.md
+!.tmp/pending-ci-disk-fix.patch
