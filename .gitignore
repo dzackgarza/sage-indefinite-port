@@ -62,3 +62,7 @@ references/Indefinite.jl/
 !.tmp/probe-lorentz-image-api.py
 !.tmp/probe-lorentz-structural.py
 !.tmp/probe-lorentz-recognition.py
+!.tmp/probe-lorentz-provider-image.py
+!.tmp/probe-lorentz-provider-subgroup.py
+!.tmp/probe-lorentz-placement.py
+!.tmp/probe-gap-packages.py

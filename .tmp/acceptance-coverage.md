@@ -112,15 +112,18 @@ Generation is 12–21 s. The measured cost of every route to the p=5/p=7 *orders
 | `MatrixGroup(...).order()` (the harness) | > 1 000 s, flat 535 MiB | not reached |
 | mutual containment (`g in H`) | > 880 s, 3 862 MiB | — |
 | `libgap.IsSubgroup(GO, G)` | 5 660 MiB, killed at 1 200 s | — |
-| `libgap.Size(libgap.GO(+1, 10, q))` | **0.00 s** | **0.00 s** |
-| provider `orthogonal_group_base_change` → `F_p` | rejected: base_change does not accept `Z → F_p` | — |
-| GAP `IsomorphismTypeOfMatrixGroup` | **not bound in this build** | — |
+| `libgap.Size(libgap.GO(+1, 10, q))` — the *ambient* group only | **0.00 s** | **0.00 s** |
+| GAP recognition (`recog`, `genss`) | **packages not installed** in GAP 4.14.0 | — |
 
-So the orders are not in doubt — `|O^+_10(5)| = 54 461 311 079 175 000 000 000 000 000 000` and
-`|O^+_10(7)| = 209 544 577 891 300 558 570 289 055 128 616 960 000`, each returned instantly by GAP's
-classical group object — but *certifying that a given generating set spans that group* needs recognition or a
-structural certificate, neither of which is available here. Full detail and the exact owner ask:
+The provider route does **not** stop at the ring map: `PrimeFields()(p).quotient_map()` is the canonical
+retained `Z -> F_p` map, and with it `orthogonal_group_base_change` → `base_change(...).Aut()` →
+`subgroup(images)` completes in ≤ 0.2 s at p=2 *and* p=5. What is missing is one decision: the subgroup's
+`is_finite()` is already `True`, but `cardinality()` falls through to `_group_cardinality`
+(`groups.py:383-394`), which counts only groups *placed* in `OwnedFiniteGroups()`, and no
+`_selected_cardinality_decision` is installed. Exact contract and the two things the owner must supply:
 `.tmp/handoff-owner-lorentz-image-order.md`.
+
+Nothing here concludes anything about the image from the ambient order or from p=2/p=3 agreement.
 
 ## A_VECTORS (new: first run on current pins)
 
