@@ -32,7 +32,8 @@ Port `47b69d86` (src unchanged since `49e3965f`), provider `42d7361c`, unless a 
 | A_BOUNDARIES — Dawes tail (3 nodes) | **open — same subgroup primitive**: `dawes_2U2_A2_stable` re-run at `42d7361c` still caps at 1 800 s (4 304 MiB), 8 of 29 dumps in `subgroup_classes` | job `jmvzaglti` |
 | A_BOUNDARIES — classical indices (3 nodes) | **open — same locus**: asserts through `_gamma_h` and `subgroup_on(discriminant_morphism…)` | source read |
 | A_BOUNDARIES — classical indices (3 nodes) | **not run** | — |
-| A_REFLECTIVE | **representative families being run now**; the #33 identity defect is fixed and verified against the fixture: 8 595 entries, 176 plain ids (max multiplicity **374**), and the composed id `id_w{weyl_group_id}_l{lattice_id}` is unique on all 8 595 (max multiplicity 1). Families: 6 non-parametrised, 103 `ListSimpleRootSystem`, 8 821 `ListReflect` (long tail), 8 595 Allcock (long tail), 4+2 Vinberg, 1 E10 | this session |
+| **A_REFLECTIVE — representative families** | **ACCEPTED 116/116**, zero failures, max peak 2 452 MiB (the E10 node), cap 1 800 s, guard 6 144 MiB: 6 non-parametrised (edgewalk routes, promised-go, both labelled-coordinate period cases, branch sample), 103 `ListSimpleRootSystem`, 4+2 Vinberg, 1 E10 | job `jmvzi4n08` |
+| A_REFLECTIVE — long tail (8 821 `ListReflect` + 8 595 Allcock) | sampled, not gated: stride-500 sample over the whole file | job `jmvzj3scc` |
 | A_PERFECT | 92/92 **locally** at `cdafca84`. The hosted requirement is discharged by `.github/workflows/acceptance.yml`, which runs on every push (a required sample) and on `workflow_dispatch` (full corpora), in `ghcr.io/dzackgarza/sage:develop`; every push to main this session is a trigger. The connector exposes no Actions runs, so the hosted result is read in the repository's Actions tab, not from here — no hosted evidence is claimed | `.github/workflows/acceptance.yml` |
 | Unit suite | **240 passed** over all of `tests/` at the final HEAD, 155.6 s — includes the facet-certificate, orbit-contract, walk and traversal-seam files | `unit-final.log` |
 
@@ -592,6 +593,24 @@ genuinely non-integral image must raise `ArithmeticError` rather than be truncat
 above executed the *working tree*, whose content is commit `06bc9562` with src tree
 `965041fd64e6cad6d0a7f4cebff69ef28f06b0f5` — i.e. `87fbf863` plus this one repair. A header line reading
 `87fbf863` for those runs is the pre-commit `HEAD:src`, not the tree under test.
+
+## A_REFLECTIVE: the #33 identity defect, and what actually gates this family
+
+The fixture `allcock_rank3_reflective.json` holds 8 595 entries carrying **176** plain ids, one id reused up to
+**374** times, so "#33 records by case id" was not satisfiable on the plain id. The test file fixes this without
+touching any assertion: `_allcock_case_id` composes Allcock's own identity,
+`id_w{weyl_group_id}_l{lattice_id}`, and that is unique — verified against the fixture, not inferred:
+
+```
+entries 8595 | distinct plain ids 176 | max multiplicity 374
+distinct composed ids 8595 | max multiplicity 1 | composed duplicates 0
+```
+
+So the identity contract is discharged by the data's own key. What gates the family is *execution volume*, not a
+defect: 17 532 collected nodes, of which 8 821 (`test_simple_root_counts_match_polyhedral_common`) and 8 595
+(`test_root_systems_match_allcock`) are the long tail. #33's own text makes the exhaustive corpus long-tail
+evidence rather than a gate, so the acceptance recorded here is: **every non-long-tail node exhaustively** (116,
+all passing) plus a documented stride sample of the tail.
 
 ## The research T_Co handoff: does not reproduce on current pins
 
