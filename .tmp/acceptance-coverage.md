@@ -107,7 +107,7 @@ provider `42d7361c`:
 | `lattice(E10).twist(2).Isom(invariant).an_element()` | 19.5 s | **case-independent**; `2r` preparses to `2` |
 | `polarized(h).coinvariant_extension_subgroup()` | **249 s** | per case |
 | `∩ O_plus` | 0.1 s | per case |
-| `discriminant_group().orthogonal_group()` + `discriminant_morphism()` per generator | **> 700 s and still running** | per case; the dominant term |
+| `discriminant_group().orthogonal_group()` + `discriminant_morphism()` per generator | **> 2 127 s, unfinished at the probe's 2 400 s cap** | per case; the dominant term; the four timings that would split it are in the handoff |
 
 So the case is not blocked by the orbit enumeration it asserts, and not by anything in the port: the ≥ 1 090 s
 sits inside `N.discriminant_group()` / `.orthogonal_group()` / `discriminant_morphism()` per generator, which the
