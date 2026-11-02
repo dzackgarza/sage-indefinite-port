@@ -39,9 +39,22 @@ observed, so the row stays open.
 | **square `[6]`** | src `87fbf863` | **`565fc6b9`** | **passed 385 s, peak 3 283 MiB** |
 | **square `[8]`** | src `87fbf863` | **`565fc6b9`** | **passed 256 s, peak 3 720 MiB** |
 | **square `[10]`** | src `87fbf863` | **`565fc6b9`** | **passed 238 s, peak 3 834 MiB** |
+| **`r_-1`** | src `65ea68a68af0` | **`42d7361c`** | **passed 1 271 s, peak 4 708 MiB** |
+| **`r_0`** | src `65ea68a68af0` | **`42d7361c`** | **passed 498 s, peak 3 988 MiB** |
+| **`r_1`** | src `65ea68a68af0` | **`42d7361c`** | in flight (sweep `jmvyzjrg9`, nodes 21–30) |
 
 Eleven accepted cases at the older pins, none a cap, spanning 6.07 s to 1850.35 s. Four (`r_-1`, `r_0`,
 `r_1`, `r_7`) would have been lost to the 600 s cap used earlier.
+
+The roots family was re-baselined on the current provider `42d7361c` (src `65ea68a68af0`) because that
+pin changes what `_group_cardinality` asks. The two roots nodes that have finished there are faster and
+smaller than the earliest recorded runs, not merely still passing: `r_-1` 1 850.35 s (port `6e1be797`,
+provider `e83c4d6`) → **1 271 s** (peak 4 708 MiB), and `r_0` 696.33 s (port `fc6a022f`, provider
+`9dc89ac`) → **498 s** (peak 3 988 MiB). Both earlier figures differ from the current one in the port as
+well as the provider, so this is a re-baseline rather than a controlled comparison: what it establishes is
+that the assertions pass at the current pins, and the two nodes land under the old times. Same assertions,
+same 6 144 MiB guard. `r_1` is running; the sweep takes one node at a time because these nodes are the
+current memory ceiling.
 
 **The six square nodes are now all accepted** on the maintained provider `565fc6b9`, which carries the
 composite-disjunct-first reorder in `IntegralStructureAction.stabilizer()` (plus the two earlier
