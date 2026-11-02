@@ -70,7 +70,7 @@ def test_batch_runner_continues_after_malformed_batch_junit(tmp_path, monkeypatc
     monkeypatch.setattr(batches.subprocess, "run", fake_run)
     monkeypatch.setattr(
         "sys.argv",
-        ["pytest_batches.py", "--sage", "sage", "--out", str(tmp_path), "--batch-size", "1", "--", "tests/acceptance/test_reflective.sage"],
+        ["pytest_batches.py", "--python", "sage", "--out", str(tmp_path), "--batch-size", "1", "--", "tests/acceptance/test_reflective.sage"],
     )
 
     result = batches.main()
