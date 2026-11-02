@@ -11,6 +11,21 @@ stabilizers. Preserve perfect-domain correctness and every frozen assertion.
 The repair is incomplete. Work is paused at the user's request. Resume only
 when requested. This document replaces the previous handoff.
 
+### Current owner handoffs (superseding pointers)
+
+Three items are external and have their own documents; this one does not replace them:
+
+- **Enriques / `O(q_N)`** — `.tmp/handoff-owner-enriques-oqn.md`. The 87-case family caps at
+  1 800 s per case, with measured stages: 249 s to build `Γ_h`, then ≥ 1 090 s inside
+  `discriminant_group()` / `orthogonal_group()` / `discriminant_morphism()`. What is established and what is
+  not is separated there; the four timings that would decide it are named.
+- **Lorentzian image order (A_GROUPS nodes 7–9)** — `.tmp/handoff-owner-lorentz-image-order.md`. GAP 4.14.0
+  in the pinned image has neither `recog` nor `genss`, so no recognition route exists for the generated
+  matrix group; the provider's base-change route works and then `cardinality()` refuses or costs BSGS.
+- **Issue #41 degenerate markings** — `.tmp/issue41-degenerate-markings-status.md`.
+
+Acceptance state per family, with the pins every result ran on, is `.tmp/acceptance-coverage.md`.
+
 ## Completion condition and verified status
 
 Every reported failing case must compute its required result. Cases with lost
