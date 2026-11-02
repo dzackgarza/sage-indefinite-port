@@ -34,7 +34,7 @@ Port `47b69d86` (src unchanged since `49e3965f`), provider `42d7361c`, unless a 
 | A_BOUNDARIES — classical indices (3 nodes) | **not run** | — |
 | A_REFLECTIVE | 2 nodes accepted; **#33 blocker** — the fixture has 8 595 entries for 176 ids | earlier record |
 | A_PERFECT | 92/92 locally at `cdafca84`; **no hosted run at an accepted head** | earlier record |
-| Unit suite | **198 passed** over all of `tests/`, 140 s, peak 3 995 MiB, at these pins | `unit-after-immutable2.log` |
+| Unit suite | **240 passed** over all of `tests/` at the final HEAD, 155.6 s — includes the facet-certificate, orbit-contract, walk and traversal-seam files | `unit-final.log` |
 
 Three things this table must not be read as: K3 acceptance is one test, not A_VECTORS; a green unit suite is
 not port acceptance; and none of the "external owner" rows is a cap that a longer limit would fix — each has a
