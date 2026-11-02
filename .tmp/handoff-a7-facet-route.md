@@ -92,6 +92,25 @@ Normaliz route: the recognised input types in **this** build were enumerated by 
 | PPL `from_rays` | the reason the Normaliz branch exists; documented in the port as the earlier bottleneck; not re-measured at the current pins. |
 | **source route: symmetry-reduced dual description, one facet per stabilizer orbit** | **not implemented in the port.** The ingredients exist (`cell_stabilizer`, `_kernel_flipping` returning the flipped normal, `flip_across`), and the traversal already retains facet-orbit representatives and Schreier words — but `cell_cone` does not use them; it computes the full H-description and discards the non-representatives. |
 
+### 5b. How large the object is, measured on cells both engines can handle
+
+Built the same way the traversal builds them (`initial_cell`), on lattiices where both routes run:
+
+| lattice | rays | facets (`cell_cone`) | facets (`from_rays`) | facet/ray | `cell_cone` time | `from_rays` time |
+| --- | --- | --- | --- | --- | --- | --- |
+| `A2 + <1> + <-1>`, rank 4, signature (3,1) | 27 | 6 | 6 — **agree** | 0.75 | 0.11 s | 0.04 s |
+| `A3 + <1> + <-1>`, rank 5, signature (4,1) | 89 | 24 | 24 — **agree** | 1.00 | 0.27 s | 0.26 s |
+
+Two facts follow. The engines agree, which is what `tests/test_large_cell_cone_route.py` asserts more strictly.
+And the facet count tracks the ray count (ratio 0.75–1.0), so the complete H-description of the A7 cell is an
+object with an order of magnitude of 50 000 covectors — which is why one `SupportHyperplanes` call on it does
+not finish in 1 800 s, and why "one facet per stabilizer orbit" is not a micro-optimisation: what the traversal
+keeps is a handful of representatives per cell, not ~50 000 covectors.
+
+Caveat: two small ranks. The ratio is not established for rank 10, and the orbit counts are not measured (that
+needs the cell stabilizer's action on facets, which is part of the change being proposed rather than a
+prerequisite for it).
+
 ## 6. Established vs unmeasured
 
 Established: the specimen and its dimensions; that the cost is one `SupportHyperplanes` call; that the cone is
