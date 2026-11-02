@@ -31,6 +31,7 @@ from sage_extensions.categories.rational_integral_stabilizers import (
 from sage.arith.misc import xgcd
 from sage.structure.parent import Parent
 
+from sage_indefinite_port.indefinite.edgewalk_scalars import _integer
 from sage_indefinite_port.indefinite.indefinite_reduction import (
     indefinite_reduced_presentation,
 )
@@ -148,7 +149,10 @@ class IsotropicInduction:
         moved = element(rational_point).to_vector()
         if any(moved(label).denominator() != 1 for label in labels):
             raise ArithmeticError(f"{element} does not preserve u^perp integrally: it carries {vector} to a nonintegral vector")
-        return lattice.linear_combination({label: lattice.base_ring()(int(moved(label))) for label in labels if moved(label)})
+        # `moved` lives in the rational space, so its coordinates are base-ring elements, not Python
+        # integers: `int(...)` raises TypeError on them. Read them through the exact-rational helper,
+        # which also keeps the integrality invariant instead of truncating a non-integral entry.
+        return lattice.linear_combination({label: lattice.base_ring()(_integer(moved(label))) for label in labels if moved(label)})
 
     def _plane_stabilizer_generators(self, reduction: Parent, line: Vector, isotropic: Vector) -> tuple:
         r"""Rational generators of V: the plane span(u, x~) stabilizer inside the line's rational group G.

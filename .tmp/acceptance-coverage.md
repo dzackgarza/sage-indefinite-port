@@ -129,11 +129,73 @@ A_CENTRALIZERS: 5/5 accepted at src `87fbf863` + `c546077d` (2.98 s/417 MiB, 2.5
 All 14 nodes of the non-E10 pointed family passed at src `87fbf863` + **`565fc6b9`**: 14/14, sum 146 s,
 slowest 68 s, max peak 3 581 MiB (nodes 1–14 of `test_vector_stabilizers.sage`).
 
-- **A_BOUNDARIES**: in flight on `565fc6b9` at the time of this record, one node landed with a **failure** —
-  `test_dawes_buildings_have_the_published_counts[dawes_2U_A2_stable]`, exit 1 after 172 s. Open; the
-  assertion message has not yet been captured, and the remaining nodes have no verdict. Enriques `case_1`
-  remains the documented blocker (1800 s on `7b222e86`, 3600 s on `9dc89ac`, 3600 s on `c546077d`); its
-  display blocker was fixed by `9dc89ac`.
+- **A_BOUNDARIES**: partially run on `565fc6b9`, then paused by decision (not by failure) after four nodes,
+  to give the blocked research operation and the observed failures priority over extending the sweep.
+  Every Dawes building node that ran **failed**, all with one cause, now repaired (see below).
+
+### A_BOUNDARIES: the Dawes failures, their cause, and the repair
+
+Four nodes ran before the pause:
+
+| node | before repair | after repair |
+| --- | --- | --- |
+| `test_dawes_buildings_have_the_published_counts[dawes_2U_A2_stable]` | FAILED exit 1, 172 s | **passed 274 s, peak 3 941 MiB** |
+| `[dawes_2U_minus2_minus6]` | FAILED exit 1, 214 s | ran 1 672 s and **exceeded the 6 144 MiB guard** (peak 6 147 MiB, exit 143) — open |
+| `[dawes_L2_gamma2]` | FAILED exit 1, 262 s | see the follow-up record |
+| `[dawes_2U2_A2_stable]` | **CAPPED** at 1 800 s (1 858 s, peak 3 903 MiB) | not re-run |
+
+Not a wrong count, and not a Dawes-specific problem: `IsotropicInduction._integral_image`
+(`isotropic_induction.py:151`) converted a coordinate with `int()`, and that coordinate belongs to the
+*rational* space, so it is a base-ring element:
+
+```
+TypeError: int() argument must be a string, a bytes-like object or a real number,
+not 'OwnedJoinCategory.element_class'
+```
+
+This is the same defect class as the old-pin T_Co traceback, and the port already had the right helper for
+it — `edgewalk_scalars._integer`, which was introduced by `ab140b70` for `recursive.py` and never applied
+here. **Repair:** that one conversion now reads through `_integer`, which keeps the integrality invariant
+(a non-integral entry raises `ArithmeticError` instead of being truncated). No behaviour changes on the
+integral path.
+
+Direct evidence that the repair targets this defect, produced on the same object:
+
+```
+coordinate container : sage_extensions.owned_category.OwnedJoinCategory.element_class
+pre-fix  int(entry)  -> TypeError: int() argument must be ... not 'OwnedJoinCategory.element_class'
+fixed    _integer(entry) -> 1
+```
+
+**Regression:** `tests/test_isotropic_integral_image.py` — 2 tests, 1.20 s: an identity of the rational space
+must carry an integral vector to itself through `_integral_image` (this raised `TypeError` before), and a
+genuinely non-integral image must raise `ArithmeticError` rather than be truncated.
+
+**Provenance note.** The sweep driver prints `git rev-parse HEAD:src` when it starts. The Dawes and T_Co runs
+above executed the *working tree*, whose content is commit `06bc9562` with src tree
+`965041fd64e6cad6d0a7f4cebff69ef28f06b0f5` — i.e. `87fbf863` plus this one repair. A header line reading
+`87fbf863` for those runs is the pre-commit `HEAD:src`, not the tree under test.
+
+## The research T_Co handoff: does not reproduce on current pins
+
+Specimen reproduced verbatim from `dzackgarza/research@a145cea4`
+`computations/reports/coble_tco_surjectivity_specimen.py`, including its construction
+(`Lattices(ZZ)([list(row) for row in GRAM.rows()])`, not a Sage matrix) and both same-session controls.
+Provider `565fc6b9`, port `44dc4d6c` (src `87fbf863c413`), Sage 11.0.beta5, guard 6 144 MiB.
+
+```
+construction: rank 11, determinant -2048, signature (2, 9), even True   <- matches the artifact exactly
+call: L.discriminant_representation_is_surjective()
+  returned True
+controls: S_Co -> True,  M = S_En + <delta> -> True
+RESULT: returned True
+```
+
+29 min, peak tree 4 239 MiB (python 1 161, julia 3 306), host low-water 9 071 MiB.
+
+**The old-pin `TypeError` does not persist.** It was raised at the engine's `recursive.py:154`
+`int(coordinates(label))`, and that site has since been reading through `_integer` (`ab140b70`), so no repair
+is required for this operation and none was made. Old-pin record: provider `c546077d`, Sage 11.0.beta5.
 - **A_ISOTROPIC**: **not run**. The file collects **8 832** nodes (8 821 of them
   `test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors`, ranks 3–18,
   6 476 with `has_isotropic=False`). The earlier "186 cases" figure was wrong. A systematic stride sample,

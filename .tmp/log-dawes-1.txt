@@ -1,0 +1,210 @@
+F
+=================================== FAILURES ===================================
+______ test_dawes_buildings_have_the_published_counts[dawes_2U_A2_stable] ______
+
+case = {'id': 'dawes_2U_A2_stable', 'lattice': '2U + A2', 'gram': [[0, 1, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0], [0, 0, 1, 0, 0, 0], [0, 0, 0, 0, -2, 1], [0, 0, 0, 0, 1, -2]], 'signature': [2, 4], ...}
+
+    @pytest.mark.parametrize("case", _DAWES["buildings"], ids=lambda case: case["id"])
+    def test_dawes_buildings_have_the_published_counts(case) -> None:
+        require(MARKED_CLASSES)
+    
+        building = case["building"]
+    
+        for group in _dawes_groups(case):
+>           assert _counts(group) == (building["points"], building["curves"], building["edges"])
+                   ^^^^^^^^^^^^^^
+
+tests/acceptance/test_boundaries.sage:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+group = {g in Orthogonal group O(Integral lattice of rank 6 and signature (2, 4)) : g lies in every selected subgroup}
+
+    def _counts(group) -> tuple[int, int, int]:
+        lattice_ = group.supergroup().domain()
+        return (
+            len(subgroup_classes(group, isotropic_classes(lattice_, 1))),
+>           len(subgroup_classes(group, isotropic_classes(lattice_, 2))),
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/acceptance/test_boundaries.sage:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+lattice_ = Integral lattice of rank 6 and signature (2, 4), rank = 2
+
+    def isotropic_classes(lattice_, rank):
+        """One marked lattice per O(L)-orbit of primitive totally isotropic sublattices of the rank."""
+>       return marking_classes(sublattice_category(), totally_isotropic_source(rank), lattice_)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/acceptance/consumer.py:223: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+category = Arrow category of Lattices(Integer Ring)
+source = Integral lattice of rank 2 and signature (0, 0)
+lattice_ = Integral lattice of rank 6 and signature (2, 4)
+
+    def marking_classes(category, source, lattice_):
+        """One marked lattice per O(L)-orbit of primitive markings of L of the given shape."""
+>       return tuple(category.primitive_marking_classes(source, lattice_))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/acceptance/consumer.py:212: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Arrow category of Lattices(Integer Ring)
+source = Integral lattice of rank 2 and signature (0, 0)
+lattice = Integral lattice of rank 6 and signature (2, 4)
+
+    def primitive_marking_classes(self, source: Parent, lattice: Parent) -> Parent:
+        r"""One marked lattice per isomorphism class of primitive markings of ``lattice`` of shape ``source``.
+    
+        ``source`` is the shape of the marking: ``<n>`` for a pointed lattice,
+        a totally isotropic lattice for a sublattice, a chain for a flag.  The
+        classes are decided by ``sage_indefinite_port`` (#403).
+        """
+        from sage_indefinite_port.indefinite.marked_lattices import primitive_marking_classes
+    
+>       return primitive_marking_classes(self, source, lattice)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/lattices.py:1624: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+category = Arrow category of Lattices(Integer Ring)
+source = Integral lattice of rank 2 and signature (0, 0)
+lattice = Integral lattice of rank 6 and signature (2, 4)
+
+    def primitive_marking_classes(category: Category, source: Parent | Morphism, lattice: Parent) -> Parent:
+        r"""One marked lattice for each isomorphism class of primitive markings of ``lattice`` of shape ``source``.
+    
+        ``category`` is the category of the marking: the coslice under ``<n>`` for pointed
+        lattices, ``Ar(Lattices)`` for sublattices, ``Fun([2], Lattices)`` for flags. ``source``
+        is the shape: the lattice ``<n>``, a totally isotropic lattice of rank ``k`` (zero form),
+        or the chain of such lattices for a flag.
+        """
+        match category:
+            case CosliceCategory():
+                classes = _pointed_classes(category, lattice, int(source.q(next(iter(source.module_generators())))))
+            case _ if category is ARROWS:
+                match int(source.rank()):
+                    case 1:
+                        classes = tuple(ARROWS.object(lattice.primitive_isotropic_subobject(vector_).inclusion()) for vector_ in INDUCTION.isotropic_vector_classes(lattice))
+                    case 2:
+>                       classes = tuple(ARROWS.object(plane.inclusion()) for plane in INDUCTION.plane_classes(lattice))
+                                                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+src/sage_indefinite_port/indefinite/marked_lattices.py:197: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sage_indefinite_port.indefinite.isotropic_induction.IsotropicInduction object at 0x72f598d43e00>
+lattice = Integral lattice of rank 6 and signature (2, 4)
+
+    def plane_classes(self, lattice: Lattices.ParentMethods) -> tuple[Parent, ...]:
+        r"""One plane per O(L)-orbit of primitive totally isotropic planes.
+    
+        # source: CombinedAlgorithms.h:2192-2394 with sd = seq_dims_plane(2) (IndefiniteForms.g:
+        # 1774-1883): every candidate of every line class, kept unless plane-equivalent to a kept plane.
+        """
+        if int(lattice.witt_index()) < 2:
+            return ()
+        kept: list[Parent] = []
+        for line in self.isotropic_vector_classes(lattice):
+>           for _line, plane in self.flags_through(lattice, line):
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+src/sage_indefinite_port/indefinite/isotropic_induction.py:265: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sage_indefinite_port.indefinite.isotropic_induction.IsotropicInduction object at 0x72f598d43e00>
+lattice = Integral lattice of rank 6 and signature (2, 4), line = e_1
+
+    def flags_through(self, lattice: Lattices.ParentMethods, line: Vector) -> Iterator[Flag]:
+        r"""Flags (Zu, J) meeting every Aut((L, Zu))-orbit of isotropic planes J through u.
+    
+        # source: CombinedAlgorithms.h:2259-2377 SpanRepresentatives with :2076-2190
+        # f_double_cosets (METHOD_GENERATION_DOUBLE_COSETS, the default of :2396-2402).
+        For each isotropic class x of K = u^perp/u (ListOrbitF) with frame lift x~ in N = u^perp
+        (eVectB = Embed^T eVect), G, the rational line group (IndefiniteForms.g:1060-1130),
+        carries span(u, x~) onto every plane through u over the O(K)-orbit of x: such a plane is
+        the preimage in N of its line in K. With G_L = Aut((L, Zu)) and V <= Stab_G(span(u, x~))
+        (f_stab_plane_v), the double cosets V t G_L give G = union of G_L t^-1 V, so the planes
+        span(u, t^-1(x~)) meet every G_L-orbit; the callers deduplicate by exact isometry, as the
+        source's fInsert does. G preserves N integrally, so t^-1(x~) is in L.
+    
+        The source maps G and V with one Sublattice so that V lies in G
+        (MapOrthogonalSublatticeGroupUsingSublattice). Here G is presented on the generators of
+        the line action together with those of V; it is the same group (V lies in G, see
+        _plane_stabilizer_generators), so the line action's stable containing module still
+        bounds it, and V is a subgroup on selected generators of that presentation. The
+        source's ExhaustiveMatrixRightCosetSimplifications and ExhaustiveVectorSimplification
+        only shorten representatives and are not translated.
+        """
+        # The candidates through a line are data of (L, u); plane_classes and flag_classes both
+        # read them, and building the line action and its cosets dominates their cost.
+        coordinates = line.to_vector()
+        key = (id(lattice), tuple(int(coordinates(label)) for label in lattice.module_generating_set()))
+        if key not in self._candidates:
+            reduction = self.reduction(lattice, line)
+            quotient = reduction.quotient_lattice()
+            labels, lifts = self._frame_lifts(reduction)
+            line_action = self.recursion.isotropic_stabilizer_action((line,), ((-line,),))
+            line_generators = tuple(line_action.rational_group().group_generators())
+            ambient = line_action.rational_group().supergroup()
+            candidates = []
+            for isotropic in self.isotropic_vector_classes(quotient):
+                lifted = self._lift(lattice, labels, lifts, isotropic)
+                plane_generators = self._plane_stabilizer_generators(reduction, line, isotropic)
+                group = ambient.subgroup((*line_generators, *plane_generators))
+                action = IntegralStructureAction(group, line_action.lattice_inclusion()).with_stable_containing_bound(line_action.stable_containing_bound())
+                double_cosets = action.double_cosets(group.subgroup(plane_generators))
+                section = double_cosets.double_coset_section()
+>               candidates.extend((line, lattice.primitive_isotropic_subobject(line, self._integral_image(lattice, ~section(orbit), lifted))) for orbit in double_cosets)
+
+src/sage_indefinite_port/indefinite/isotropic_induction.py:226: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = <tuple_iterator object at 0x72f566f47340>
+
+>   candidates.extend((line, lattice.primitive_isotropic_subobject(line, self._integral_image(lattice, ~section(orbit), lifted))) for orbit in double_cosets)
+                                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+src/sage_indefinite_port/indefinite/isotropic_induction.py:226: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+lattice = Integral lattice of rank 6 and signature (2, 4)
+element = Morphism from Lattice of rank 6 and signature (2, 4) to Lattice of rank 6 and signature (2, 4)
+vector = e_2
+
+    @staticmethod
+    def _integral_image(lattice: Lattices.ParentMethods, element: object, vector: Vector) -> Vector:
+        r"""The image of a vector of L under a rational isometry that preserves u^perp, as a vector of L."""
+        rational = lattice.base_change(lattice.base_ring().fraction_field_map())
+        labels = tuple(lattice.module_generating_set())
+        coordinates = vector.to_vector()
+        rational_point = rational.linear_combination({label: rational.base_ring()(int(coordinates(label))) for label in labels if coordinates(label)})
+        moved = element(rational_point).to_vector()
+        if any(moved(label).denominator() != 1 for label in labels):
+            raise ArithmeticError(f"{element} does not preserve u^perp integrally: it carries {vector} to a nonintegral vector")
+>       return lattice.linear_combination({label: lattice.base_ring()(int(moved(label))) for label in labels if moved(label)})
+                                                                      ^^^^^^^^^^^^^^^^^
+E       TypeError: int() argument must be a string, a bytes-like object or a real number, not 'OwnedJoinCategory.element_class'
+
+src/sage_indefinite_port/indefinite/isotropic_induction.py:151: TypeError
+=========================== short test summary info ============================
+FAILED tests/acceptance/test_boundaries.sage::test_dawes_buildings_have_the_published_counts[dawes_2U_A2_stable]
+1 failed in 139.53s (0:02:19)
+[peakrss] dawes: child waited=1 shell_code=1 samples=73
+[peakrss] peak tree RSS      : 3791 MiB
+[peakrss] low-water MemAvail : 9516 MiB
+[peakrss] peak single VmHWM  : 3822 MiB
+[peakrss] peak VmHWM by executable (this is the per-process attribution):
+[peakrss]   julia                      3199 MiB peak
+[peakrss]   python                      611 MiB peak
+[peakrss]   timeout                       7 MiB peak
+[peakrss]   proot-x86_64                  3 MiB peak
+[peakrss]   sh                            1 MiB peak
+[peakrss]   t=   140.1s procs=  5 rss=  3791 MiB hwm=  3822 MiB avail=  9516 MiB
+[peakrss]   t=   130.1s procs=  5 rss=  3767 MiB hwm=  3791 MiB avail=  9548 MiB
+[peakrss]   t=   132.1s procs=  5 rss=  3767 MiB hwm=  3791 MiB avail=  9548 MiB
+[peakrss]   t=   134.1s procs=  5 rss=  3767 MiB hwm=  3791 MiB avail=  9548 MiB
+[peakrss]   t=   136.1s procs=  5 rss=  3767 MiB hwm=  3791 MiB avail=  9548 MiB

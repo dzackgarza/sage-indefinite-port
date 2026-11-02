@@ -2,3 +2,8 @@
 nodes: 119
 BND 1/119 tests/acceptance/test_boundaries.sage::test_dawes_buildings_have_the_published_counts[dawes_2U_A2_stable] exit=exit1 peak=3613 MiB verdict=none exit1  172s
     FAILED tests/acceptance/test_boundaries.sage::test_dawes_buildings_have_the_published_counts[dawes_2U_A2_stable]
+BND 2/119 tests/acceptance/test_boundaries.sage::test_dawes_buildings_have_the_published_counts[dawes_2U_minus2_minus6] exit=exit1 peak=3854 MiB verdict=none exit1  214s
+    FAILED tests/acceptance/test_boundaries.sage::test_dawes_buildings_have_the_published_counts[dawes_2U_minus2_minus6]
+BND 3/119 tests/acceptance/test_boundaries.sage::test_dawes_buildings_have_the_published_counts[dawes_L2_gamma2] exit=exit1 peak=3561 MiB verdict=none exit1  262s
+    FAILED tests/acceptance/test_boundaries.sage::test_dawes_buildings_have_the_published_counts[dawes_L2_gamma2]
+BND 4/119 tests/acceptance/test_boundaries.sage::test_dawes_buildings_have_the_published_counts[dawes_2U2_A2_stable] exit=CAPPED peak=3903 MiB verdict=none CAPPED  1858s

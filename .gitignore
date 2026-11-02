@@ -56,3 +56,5 @@ references/Indefinite.jl/
 !.tmp/log-*.txt
 !.tmp/sweep-nodes.py
 !.tmp/probe-verify-provider.py
+!.tmp/probe-tco-specimen.py
+!.tmp/probe-regression-evidence.py

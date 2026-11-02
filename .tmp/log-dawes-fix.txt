@@ -1,0 +1,4 @@
+=== DAWESFIX | file tests/acceptance/test_boundaries.sage | src 87fbf863c413 | provider sage-extensions-565fc6b9 | cap 1800s | guard 6144 MiB | nodes from 0
+nodes: 3
+DAWESFIX 1/3 tests/acceptance/test_boundaries.sage::test_dawes_buildings_have_the_published_counts[dawes_2U_A2_stable] exit=0 peak=3941 MiB verdict=1 passed  274s
+DAWESFIX 2/3 tests/acceptance/test_boundaries.sage::test_dawes_buildings_have_the_published_counts[dawes_2U_minus2_minus6] exit=exit143 peak=6147 MiB verdict=none exit143  1672s
