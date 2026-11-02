@@ -169,6 +169,12 @@ Scope, stated narrowly: one cell, two routes, agreement. It says nothing about t
 rank-8 lattice. It does remove "the routes might disagree" as an explanation for the A7 blocker, which leaves
 termination/memory as the open question the node itself must answer.
 
+**Retraction of a second claim.** I also wrote that the 0.75–1.0 facet/ray ratio on two small specimens implied
+"an order of magnitude of 50 000 covectors" for A7. Two points at ranks 4 and 5 establish nothing at rank 10; the
+A7 facet count is exactly what the blocked call would produce and remains unmeasured. What the bounded specimens
+do establish is the size of the symmetry reduction (89 rays → 6 orbits, 27 → 4), which is why the orbit route is
+worth implementing, and the contracts that route must satisfy are now pinned in `tests/test_facet_orbit_contracts.py`.
+
 **Retraction.** I first wrote below that A7 is "engine-bound: no port-side lever remains". That inference came
 from `interior` being unsupported, which does not establish anything about supported routes. `.tmp/handoff-a7-facet-route.md`
 replaces it: the reference implementation of this exact requirement enumerates facets **one per stabilizer orbit**
