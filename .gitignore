@@ -90,3 +90,5 @@ references/Indefinite.jl/
 !.tmp/probe-k3-stages.py
 !.tmp/probe-transporter-scan.py
 !.tmp/probe-k3-envelope.py
+!.tmp/probe-gram-cost.py
+!.tmp/probe-gram-cache.py
