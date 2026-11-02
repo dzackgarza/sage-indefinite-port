@@ -42,19 +42,30 @@ observed, so the row stays open.
 | **`r_-1`** | src `65ea68a68af0` | **`42d7361c`** | **passed 1 271 s, peak 4 708 MiB** |
 | **`r_0`** | src `65ea68a68af0` | **`42d7361c`** | **passed 498 s, peak 3 988 MiB** |
 | **`r_1`** | src `65ea68a68af0` | **`42d7361c`** | **passed 352 s, peak 4 121 MiB** |
+| **`r_2`** | src `65ea68a68af0` | **`42d7361c`** | **passed 186 s, peak 3 839 MiB** |
+| **`r_3`** | src `65ea68a68af0` | **`42d7361c`** | **passed 136 s, peak 3 714 MiB** |
+| **`r_4`** | src `65ea68a68af0` | **`42d7361c`** | **passed 126 s, peak 3 830 MiB** |
+| **`r_5`** | src `65ea68a68af0` | **`42d7361c`** | **passed 10 s, peak 318 MiB** |
+| **`r_6`** | src `65ea68a68af0` | **`42d7361c`** | **passed 106 s, peak 3 673 MiB** |
+| **`r_7`** | src `65ea68a68af0` | **`42d7361c`** | **passed 454 s, peak 4 060 MiB** |
+| **`r_8`** | src `65ea68a68af0` | **`42d7361c`** | **passed 254 s, peak 3 780 MiB** |
 
 Eleven accepted cases at the older pins, none a cap, spanning 6.07 s to 1850.35 s. Four (`r_-1`, `r_0`,
 `r_1`, `r_7`) would have been lost to the 600 s cap used earlier.
 
 The roots family was re-baselined on the current provider `42d7361c` (src `65ea68a68af0`) because that
-pin changes what `_group_cardinality` asks. The two roots nodes that have finished there are faster and
-smaller than the earliest recorded runs, not merely still passing: `r_-1` 1 850.35 s (port `6e1be797`,
-provider `e83c4d6`) → **1 271 s** (peak 4 708 MiB), and `r_0` 696.33 s (port `fc6a022f`, provider
-`9dc89ac`) → **498 s** (peak 3 988 MiB). Both earlier figures differ from the current one in the port as
-well as the provider, so this is a re-baseline rather than a controlled comparison: what it establishes is
-that the assertions pass at the current pins, and the two nodes land under the old times. Same assertions,
-same 6 144 MiB guard. `r_1` 402.82 s → **352 s**. The sweep takes one node at a time because these nodes
-are the current memory ceiling.
+pin changes what `_group_cardinality` asks. **All ten root nodes now pass at the current pins** (sweep
+`jmvyzjrg9`, src `65ea68a68af0`, provider `42d7361c`, cap 3 600 s, 6 144 MiB guard): sum 3 293 s, slowest
+`r_-1` at 1 271 s, max peak 4 708 MiB. Same assertions; no node reached either limit.
+
+The comparison to the older rows is a **re-baseline, not a controlled one** — every earlier figure also
+differs in the port src, which is not held fixed anywhere. Read strictly: two nodes dropped a lot
+(`r_-1` 1 850.35 s at port `6e1be797`/provider `e83c4d6` → 1 271 s; `r_0` 696.33 s at `fc6a022f`/`9dc89ac`
+→ 498 s), and the seven comparable-to-`9dc89ac` nodes are **mixed within noise**: `r_2` 200 → 186, `r_7`
+489 → 454, but `r_3` 130 → 136, `r_4` 109 → 126, `r_5` 6 → 10, `r_6` 81 → 106, `r_8` 204 → 254. So the
+provider pin is not a systematic speedup; the two large drops are the two heaviest nodes and the rest move
+both ways. What the sweep establishes is acceptance at the current pins, and that the family is bounded by
+`r_-1`'s memory, not by a cap.
 
 **The six square nodes are now all accepted** on the maintained provider `565fc6b9`, which carries the
 composite-disjunct-first reorder in `IntegralStructureAction.stabilizer()` (plus the two earlier
@@ -281,7 +292,8 @@ An inventory of the remaining obligations and what actually blocks each:
 | --- | --- | --- |
 | A_VECTORS `test_k3_lattice_has_one_primitive_orbit_per_norm[-2,2,4,-4]` | **the cover enumeration's yield rate**, measured — see below | `[-2]` and `[2]` capped at 3 579 / 3 564 MiB; `[4]`, `[-4]` not started |
 | A_VECTORS `test_k3_lattice_has_one_primitive_orbit` | **cap** — exceeded 1 200 s | recorded cap; would need either a cheaper route or a cap increase, and increasing caps is not in scope |
-| A_STABILIZERS roots (10 nodes) | **heavy slot** — accepted at provider `9dc89ac`, not re-run at `42d7361c`; ~70 min serial | rows keep their pin |
+| A_STABILIZERS roots (10 nodes) | **resolved** — all ten accepted at `42d7361c`, 3 293 s serial, no cap, max peak 4 708 MiB | sweep `jmvyzjrg9` |
+| A_STABILIZERS E10 squares (6) + OSCAR node 15 | **heavy slot** — accepted at `565fc6b9`, not re-run at `42d7361c` | ~1 500 s serial |
 | A_BOUNDARIES (87 Enriques + ~28 non-Enriques) | **heavy slot**; Enriques `case_1` is a known block at 3 600 s | only 4 Dawes nodes ever ran |
 | A_ISOTROPIC tail (10 non-parametrised + 1 capped) | **heavy slot**; the capped one is the Enriques-adjacent set | 89/89 stride sample passed |
 | A_GROUPS LORENTZ 0/1/2 | **external owner** — GAP lacks `recog`/`genss`, and no recognition route exists for the generated matrix group | `.tmp/handoff-owner-lorentz-image-order.md` |
