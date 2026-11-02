@@ -22,7 +22,7 @@ Port `47b69d86` (src unchanged since `49e3965f`), provider `42d7361c`, unless a 
 | A_CENTRALIZERS | accepted 5/5 at `c546077d` | earlier record |
 | A_GROUPS — nodes 10–45, 47 | accepted 37/37 at `565fc6b9` | earlier record |
 | A_GROUPS — LORENTZ 0/1/2 | **open — external owner**, no GAP recognition route in the pinned image | `.tmp/handoff-owner-lorentz-image-order.md` |
-| A_GROUPS — node 46 `a7_plus_diagonal` | **open** — the orbit-pruned route is implemented and wired, and the engine's H-description is gone from the path: the A7 run's peak fell from **5 405 MiB to 1 637 MiB**. It still caps at 1 800 s, now inside the walk's own Schreier bookkeeping (`_compose` over 49 861 positions), which the reference avoids by restricting the action to the facet | § "A7 with the walk wired in" below |
+| **A_GROUPS — node 46 `a7_plus_diagonal`** | **ACCEPTED — passed 662 s, peak 1 616 MiB**, original assertions, 1 800 s cap and 6 144 MiB guard unchanged, via the orbit-pruned facet route (was CAPPED at 5 405 MiB on the engine route) | job `jmvzh3n3l` |
 | A_ISOTROPIC — stride-100 sample | accepted 89/89 | `isotropic-sample.log` |
 | A_ISOTROPIC — `test_o_n_maps_onto_o_of_the_discriminant_form` | **accepted 468 s, peak 3 868 MiB** at `42d7361c` (first of the unrun tail) | job `jmvz75d9x` |
 | A_ISOTROPIC — `test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank0,rank1]` | **accepted 2/2**: 150 s / 3 703 MiB (lines) and **1 661 s / 4 926 MiB** (planes) | job `jmvz88la4` |
@@ -197,7 +197,32 @@ as a constructor theorem and a test pins the degenerate case. A second test pins
 rows `(2,0), (0,2)` the kernel basis is `(1,-1/2,-1/2)`, which an int-cast would flatten to `(0,0)`. It replaces the invalid inference "row rank = ambient dimension, so no
 lineality".
 
-### A7 with the walk wired in: the H-description is gone, the Schreier action is not yet restricted
+### A7 accepted: the orbit-pruned route replaced the engine's H-description
+
+**The node passes.** `test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q`, unchanged, at src `0d1fcb73`,
+provider `42d7361c`, original 1 800 s cap and 6 144 MiB guard (job `jmvzh3n3l`):
+
+| | engine route | orbit-pruned route |
+| --- | --- | --- |
+| verdict | CAPPED (twice) | **passed, 662 s** |
+| peak | 5 405 MiB | **1 616 MiB** |
+
+The three stages that got there, each measured:
+
+1. the walk implemented and validated against `cell_cone` and the closed-form cube cones, then wired into
+   `_expand_traversal_once` above 10 000 rays -- peak fell 5 405 -> 1 637 MiB, still capped;
+2. the residual cost located to `_compose` over all 49 861 positions inside the Schreier stabilizer loop;
+3. the action restricted to the facet: the orbit BFS carries the image of the facet's own positions, and the
+   Schreier element acts as `i -> (w_x^{-1})(s(image_u[i]))` with a dictionary inverse, so every step is
+   `O(|F|)` and no ambient-length permutation is formed. The node then finished with 1 138 s to spare.
+
+Validation behind the change, all on bounded specimens where the engine route also runs: the pruned orbits equal
+the orbit decomposition of the complete family; orbit-stabilizer against `|G|` computed by closure; every
+transport word applied and checked; the walk's ray action identical to `_facet_mask_data`; the seam forced with
+the threshold at 0 reproduces the traversal's exact `O(L)` generator matrices, with a vacuity guard. 20 tests in
+the two facet-route files, 240 in the suite.
+
+### Historical: the first two A7 runs and where their time went
 
 `_expand_traversal_once` now takes facet orbits from the orbit-pruned walk above 10 000 rays, so the A7 cell's
 49 861-ray cone no longer reaches `NmzResult(..., "SupportHyperplanes")`. Re-run of the unchanged acceptance node
