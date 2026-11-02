@@ -188,6 +188,16 @@ PPL consumer nor the separate Normaliz cone probe has a result.
   `.tmp/repair-a7-normaliz.log`.
 - Reusable local initial rows: `.tmp/repair-a7-initial-rows.sobj`.
 
+**Update (current pins).** Those artifacts are no longer on disk. The node was re-run on the source that
+actually exists now — the large-cell Normaliz route (`c8fec49e`, `f3ddefb1`, `93c9dfad`, `334ff23d`,
+`6ca7a83d`, `6c740c48`, all 2026-10-28) postdates the failure — as `node_run.py` with 60 s stack dumps,
+cap 1 800 s, guard 6 144 MiB, provider `42d7361c`: **CAPPED**, peak 5 405 MiB, and **all 29 dumps are inside
+`NmzResult(normaliz_cone, "SupportHyperplanes")`** (`lorentzian_cells.py:1051`). `tests/test_large_cell_cone_route.py`
+now proves the two cone descriptions agree and recover exactly the configuration rays, so "wrong cone" is out.
+PyNormaliz in this image rejects an `interior` point (`Unknown type "interior"!`), so the port has no lever left.
+A7 is engine-bound: the next attempt must change the engine/toolchain or compute facets from cell adjacency
+rather than from the full configuration.
+
 Both computations were stopped. No backend change was made. Sage's installed
 Normaliz backend accepts the same rational V-presentation; see its
 [official documentation](https://doc.sagemath.org/html/en/reference/discrete_geometry/sage/geometry/polyhedron/backend_normaliz.html).
