@@ -625,6 +625,20 @@ Validated locally on a synthetic workspace: the happy path writes the provider `
 checkout is refused with both revisions named; a missing checkout is refused naming `ci-provision-sage`; and the
 rendered recipe passes `bash -n`, with its pin `sed` byte-identical to the provisioning recipe's.
 
+## The discriminant-image obligation, and why a `discriminant_image()` migration is not neutral
+
+An outside controller edited `tests/acceptance/test_boundaries.sage` here, replacing
+`target.subgroup_on(tuple(g.discriminant_morphism() for g in group.group_generators()))` with
+`group.discriminant_image()` and then weakening the added identity check to cardinality equality. The worktree is
+restored and the file is byte-identical to `HEAD`. The contract analysis is recorded in
+`.tmp/contract-discriminant-image-identity.md`; in short, that expression carries three obligations -- generator
+realization (`g.discriminant_morphism()` must be constructible for actual generators), typed endpoint identity
+(the subgroup lives in *that* `target`), and the cardinality/index -- and an image API preserves the obligation only
+if its contract fixes all three. Returning only an order, or a subgroup whose equality with the generated one is
+not contractual, hides the generator-realization requirement the family is actually blocked on. Equal order does not
+identify a subgroup: `S_3` has three distinct subgroups of order 2, so cardinality equality is never typed endpoint
+identity, and even `image.supergroup() is target` fixes only the parent, not the subgroup.
+
 ## A_REFLECTIVE: the #33 identity defect, and what actually gates this family
 
 The fixture `allcock_rank3_reflective.json` holds 8 595 entries carrying **176** plain ids, one id reused up to
