@@ -30,7 +30,7 @@ From `load_oscar_lattice_oracles()["discriminant_images"]`, id `A7_plus_diag_1_1
 | --- | --- |
 | Gram | `A7 ⊕ <1> ⊕ <1> ⊕ <-1>` — rank 10, signature (9, 1) |
 | `initial_cell(...)` | **49 861 rows**, row length 10, built in **4.5 s** |
-| row rank | **10 = ambient dimension** — the cone is full-dimensional, so there is no lineality to declare |
+| row rank | **10 = ambient dimension** — the cone is full-dimensional. Pointedness does **not** follow from this (see the correction in §5) and is certified separately |
 | max coordinate | **15** (small entries; not an arithmetic-size problem) |
 
 Node run at src `fad2c5bb`-tree, provider `42d7361c`, cap 1 800 s, guard 6 144 MiB (job `jmvzblu48`):
@@ -105,7 +105,7 @@ Normaliz route: the recognised input types in **this** build were enumerated by 
 | alternative | outcome |
 | --- | --- |
 | `interior` / `internal_point` point | **not implemented in this build** (measured, above). This is what the earlier note wrongly generalised into "no port-side lever". |
-| `subspace=` (declare lineality) | **inapplicable**: the cell's row rank is 10 = ambient dimension, so the cone is full-dimensional and there is no lineality to declare (measured). |
+| `subspace=` (declare lineality) | **inapplicable, but not for the reason I first gave.** I wrote "full-dimensional, so no lineality"; that inference is invalid — `R = {(1,0),(-1,0),(0,1)}` in `Q^2` has rank `2 = n` and lineality `{(x,0)}`. What is needed is pointedness, and for these cells it is certified a-posteriori by `p := Σ_F a_F` over the facet orbits (the normals span `V*`, so no ray lies in every facet, so `<p,r> > 0` on every ray and on `C \ {0}`) — measured in `tests/test_facet_orbit_contracts.py`. Note that the port's `_positive_direction` is *not* such a certificate: it is the source's `INDEFINITE_GetShortPositiveVector`, the cell's central vector, an element of positive norm, and an interior point of a cone says nothing about its lineality. `subspace=()` is correct **given** that certificate, which is now asserted in `tests/test_facet_orbit_contracts.py`. |
 | `congruences` / `excluded_faces` / `open_facets` | recognised, but none of them reduces a full-dimensional double description; not pursued as a cost lever. |
 | PPL `from_rays` | the reason the Normaliz branch exists; documented in the port as the earlier bottleneck; not re-measured at the current pins. |
 | **source route: symmetry-reduced dual description, one facet per stabilizer orbit** | **not implemented in the port.** The ingredients exist (`cell_stabilizer`, `_kernel_flipping` returning the flipped normal, `flip_across`), and the traversal already retains facet-orbit representatives and Schreier words — but `cell_cone` does not use them; it computes the full H-description and discards the non-representatives. |

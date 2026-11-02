@@ -134,3 +134,40 @@ def test_stabilizer_permutes_rays_and_facets_and_every_facet_has_one_orbit(name)
                 frontier.add(moved(current, permutation))
     assert orbit_count <= len(facets)
     assert len(seen) == len(facets), "every facet must belong to some orbit"
+
+
+@pytest.mark.parametrize("name", sorted(SPECIMENS))
+def test_full_dimensionality_is_not_pointedness_and_pointedness_is_certified_explicitly(name) -> None:
+    r"""`rank rows = n` gives full-dimensionality only; pointedness needs an explicit positive functional.
+
+    Counterexample that fixes the distinction: `R = {(1,0),(-1,0),(0,1)}` in `Q^2` has `rank = 2 = n` and
+    lineality `{(x,0)}`. So the facet route may not infer pointedness from rank — it needs either a functional
+    strictly positive on every row or the a-posteriori certificate `p = sum of the facet normals` (the normals
+    span `V*`, so no ray lies in every facet, hence `<p,r> > 0` on all rays and on `C \ {0}`).
+    """
+    backend, cell = _cell(SPECIMENS[name])
+    rows = matrix(ZZ, [list(row) for row in cell.rows])
+    n = len(cell.rows[0])
+    assert rows.rank() == n, "the configuration must be full-dimensional in the ambient space"
+
+    covectors = backend.cell_cone(cell).halfspace_covectors()
+    normals = [vector(ZZ, _covector_coordinates(covector, cell.lattice)) for covector in covectors]
+    total = sum(normals[1:], normals[0])
+    values = [total.dot_product(vector(ZZ, row)) for row in cell.rows]
+    assert all(value > 0 for value in values), (
+        "the sum of the facet normals must be strictly positive on every ray, which certifies pointedness"
+    )
+
+    # What does NOT certify pointedness, recorded so it is never mistaken for a certificate: the port's
+    # `_positive_direction` is the source's `INDEFINITE_GetShortPositiveVector`, the cell's *central vector* --
+    # an element of positive norm in the lattice, not a functional positive on the rays. An interior point of a
+    # cone says nothing about its lineality; a positive functional does.
+    from sage_indefinite_port.indefinite.lorentzian_cells import _gram_matrix, _positive_direction
+
+    central = vector(QQ, [QQ(entry) for entry in _positive_direction(cell.lattice)])
+    gram = _gram_matrix(cell.lattice).change_ring(QQ)
+    norm = (central.row() * gram * central.column())[0, 0]
+    assert norm > 0, (
+        "the central vector's defining property is positive norm under the lattice form; "
+        f"measured {norm}"
+    )
