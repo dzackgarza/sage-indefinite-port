@@ -22,7 +22,7 @@ Port `47b69d86` (src unchanged since `49e3965f`), provider `42d7361c`, unless a 
 | A_CENTRALIZERS | accepted 5/5 at `c546077d` | earlier record |
 | A_GROUPS — nodes 10–45, 47 | accepted 37/37 at `565fc6b9` | earlier record |
 | A_GROUPS — LORENTZ 0/1/2 | **open — external owner**, no GAP recognition route in the pinned image | `.tmp/handoff-owner-lorentz-image-order.md` |
-| A_GROUPS — node 46 `a7_plus_diagonal` | **open — engine-bound**: re-run at `42d7361c` caps at 1 800 s (5 405 MiB) and **all 29 dumps are inside `NmzResult(…, "SupportHyperplanes")`**; the cone routes are now proven equal, and PyNormaliz in this image rejects `interior`, so no port-side lever remains | job `jmvzblu48` |
+| A_GROUPS — node 46 `a7_plus_diagonal` | **open, with a named port-side gap** — the 1 800 s run spends all 29 dumps in one `SupportHyperplanes` call on a full-dimensional rank-10 cone with 49 861 generators; the reference never builds that H-description (it enumerates **one facet per stabilizer orbit**), and the port computes the full one and then keeps representatives | `.tmp/handoff-a7-facet-route.md` |
 | A_ISOTROPIC — stride-100 sample | accepted 89/89 | `isotropic-sample.log` |
 | A_ISOTROPIC — `test_o_n_maps_onto_o_of_the_discriminant_form` | **accepted 468 s, peak 3 868 MiB** at `42d7361c` (first of the unrun tail) | job `jmvz75d9x` |
 | A_ISOTROPIC — `test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank0,rank1]` | **accepted 2/2**: 150 s / 3 703 MiB (lines) and **1 661 s / 4 926 MiB** (planes) | job `jmvz88la4` |
@@ -168,6 +168,16 @@ cones. The test builds one genuine perfect cell (rank 3, signature (2,1), six is
 Scope, stated narrowly: one cell, two routes, agreement. It says nothing about terminating on 49 861 rays in a
 rank-8 lattice. It does remove "the routes might disagree" as an explanation for the A7 blocker, which leaves
 termination/memory as the open question the node itself must answer.
+
+**Retraction.** I first wrote below that A7 is "engine-bound: no port-side lever remains". That inference came
+from `interior` being unsupported, which does not establish anything about supported routes. `.tmp/handoff-a7-facet-route.md`
+replaces it: the reference implementation of this exact requirement enumerates facets **one per stabilizer orbit**
+from the cell stabilizer (`f_adj` → `DualDescriptionRecordFullDim(EXT_T, GRPperm, rddo)`, not vendored), builds
+the initial cell by a rank-growing critical-set loop with no H-description at all, and never calls Normaliz. The
+port materializes the complete H-description per cell and then keeps only representatives — its own comment at
+`:2834-2840` says one facet per orbit is what is needed. That is a port-side gap, not an upstream impossibility.
+Measured specimen: `A7 ⊕ <1> ⊕ <1> ⊕ <-1>`, rank 10, signature (9,1), 49 861 rows, row rank 10 (full-dimensional,
+so `subspace` cannot help), entries ≤ 15, initial cell built in 4.5 s.
 
 **And it was run: the answer is the engine, not the port.** `test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q`
 re-run at the current pins (src `fad2c5bb`-tree, provider `42d7361c`, cap 1 800 s, guard 6 144 MiB, job
