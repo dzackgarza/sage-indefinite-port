@@ -77,3 +77,5 @@ references/Indefinite.jl/
 !.tmp/probe-lazy-orbit.py
 !.tmp/probe-lazy-accessor.py
 !.tmp/probe-kernel-idioms.py
+!.tmp/probe-gobjects.py
+!.tmp/probe-gset-issue41.py

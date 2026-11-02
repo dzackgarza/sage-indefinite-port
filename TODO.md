@@ -338,15 +338,42 @@ gap; they do not close it or narrow the eventual public contract.
   The native lazy API to build on is identified but **not wired**: a group's
   `orbit(point)` returns an `_Orbit` whose `points()` is `g_set().condition_set(predicate)`
   (`categories/group/g_sets.py:822-864`), i.e. a predicate-defined set that is never
-  materialized and may be infinite. The blocker is one level up: for a lattice, `L.O()`
-  is the isometry *morphism* object and exposes only `subgroup`, `stabilizer` and
-  `group_generators` — it has no `natural_g_set`, `orbit` or `orbits`, and the
-  `O_plus` route refuses a degenerate lattice ("has no spinor norm"). So the required
-  operation is a G-set for the isometry action on a degenerate lattice, which is #53's
-  subject; the contract is `degenerate_marked_orbits(L, n) -> Sets()` iterable lazily,
-  with `orbit_of`, membership and representative transport, and no cardinality claim.
-  Until that exists, any list of orbit representatives for `c = 0` or unbounded content
-  would be truncated and is not to be produced.
+  materialized and may be infinite.
+
+  **Correction:** I first reported that a degenerate lattice exposes no G-set, from the
+  absence of `orbit`/`natural_g_set` on `L.O()`. That was wrong. The supported
+  construction is `GObjects(G, Sets()).on_set(points, action, orbit_relation=...)`
+  (`categories/group/g_objects.py:922`), which is how the provider builds a set action
+  with a retained orbit relation, exactly as `isotropic_lifts.py:272` does. Through it
+  the port now has `EichlerRecursion.marked_orbit_action(lattice)` and
+  `marked_orbit(vector)`: the orbit relation is decided by `pointed_isometry`, the
+  points are the provider's predicate-cut set, membership is exact, and `is_finite()`
+  stays a proposition rather than becoming `True`. So the lazy consumer for the `c = 0`
+  case and for unbounded content exists and is tested; what remains is the *downstream
+  subgroup contract* on those sets and any canonicalization guarantee, which is #53's
+  and #62's subject, not something to be faked here.
+
+  **Owner gap routed (replacing the port helper I had written).** I had added
+  `shear_kernel_basis` to `indefinite/recursive.py`, building the kernel
+  `{B in Hom_Z(C,R) : B x = 0}` from a flattened coordinate matrix. That is a
+  coordinate shadow of a module-theoretic operation and has been **removed**. The
+  missing maintained operation, stated minimally:
+
+```
+input   C, R    free Z-modules of finite rank (here the nondegenerate complement and the radical)
+        x       an element of C
+output  Hom_Z(C,R) as a module; the evaluation morphism ev_x: Hom(C,R) -> R, B |-> B x;
+        and ker(ev_x) with a basis
+        -- ker(ev_x) is the full shear kernel of issue #41, of rank rank(R)*(rank(C)-1) for primitive x
+```
+
+  The provider has no free-module `Hom` object with evaluation and kernel: `Hom` appears
+  only on engine matrices and in documentation. The mathematical content is not lost —
+  it is recorded here and exercised by the tests through the port's own generators:
+  for `rank(C) = 2`, `x_0 = (1,0)` primitive and `rank(R) = 1`, the kernel is free of
+  rank 1 and saturated, and the port's shears must span a saturated rank-1 sublattice of
+  `Hom(C,R) = Z^2`, which the test checks by requiring every Smith invariant to be 1 (a
+  proper sublattice would leave one above 1).
 
 ## Release and terminal nodes
 

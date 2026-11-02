@@ -22,7 +22,7 @@ import pytest
 
 from sage.all import MatrixGroup, ZZ, matrix, vector
 
-from sage_indefinite_port.indefinite.recursive import EichlerRecursion, _column_matrix, shear_kernel_basis
+from sage_indefinite_port.indefinite.recursive import EichlerRecursion, _column_matrix
 from tests.acceptance.consumer import (
     automorphisms,
     element,
@@ -258,61 +258,62 @@ def test_pointwise_stabilizer_contains_the_nontrivial_shear_kernel() -> None:
         shears.append(shear)
     assert shears, "the kernel {B : Bx = 0} should be nontrivial for rank(C) = 2"
 
-    # The criterion's own basis: rank(C) - 1 = 1 generator per radical coordinate, saturated.
-    expected = shear_kernel_basis(2, 1, (1, 0))
-    assert len(expected) == 1
-    expected_rows = matrix(ZZ, [[int(entry) for row in block.rows() for entry in row] for block in expected])
-    assert expected_rows.rank() == 1
-
-    # The port's shears lie in that kernel and generate all of it: same rank, and primitive (the row
-    # lattice is saturated, so it is the kernel itself rather than a proper sublattice).
+    # The full kernel, not one example.  For rank(C) = 2 and x_0 = (1,0) primitive, the map
+    # Hom(C,R) -> R, B |-> B x_0, is onto a rank-1 radical, so its kernel is free of rank
+    # rank(C) - 1 = 1 and is saturated.  The port's shears must therefore span a rank-1 *saturated*
+    # lattice of Hom(C,R) = Z^2; a proper sublattice would leave a Smith invariant above 1.
     found = matrix(ZZ, [[int(entry) for row in shear.rows() for entry in row] for shear in shears])
     assert found.rank() == 1
     invariants = [int(entry) for entry in found.smith_form()[0].diagonal() if int(entry) != 0]
     assert invariants == [1], f"the shears must span a saturated lattice, got invariants {invariants}"
-    # Each found shear is an integral multiple of the criterion's generator.
-    generator_row = expected_rows[0]
-    for row in found.rows():
-        assert (row[0] * generator_row[1] - row[1] * generator_row[0]) == 0
+
+
 
 
 # ---------------------------------------------------------------------------------------------------
-# The full kernel, as a general construction rather than one example.
+# Lazy orbit consumers (#41 with #53): the native set, never a truncated list.
 # ---------------------------------------------------------------------------------------------------
 
-@pytest.mark.parametrize(
-    ("c_rank", "radical_rank", "x"),
-    [
-        (2, 1, (1, 0)),
-        (2, 1, (5, 0)),          # content 5: the same primitive direction, so the same kernel
-        (2, 1, (5, 15)),         # content 5, primitive direction (1, 3)
-        (2, 2, (3, 6)),          # two radical coordinates
-        (3, 2, (3, 4, 5)),       # rank(C) = 3: two kernel dimensions per radical coordinate
-    ],
-)
-def test_shear_kernel_basis_generates_the_whole_kernel(c_rank, radical_rank, x) -> None:
-    """The generators span the kernel itself: the right rank, and saturated (all Smith invariants 1)."""
-    basis = shear_kernel_basis(c_rank, radical_rank, x)
-    marked = vector(ZZ, x)
+def test_marked_orbit_is_the_native_lazy_set_not_a_list() -> None:
+    """`marked_orbit` returns the provider's predicate-cut set, and it claims no finiteness.
 
-    assert len(basis) == radical_rank * (c_rank - 1)
-    assert all(block * marked == 0 for block in basis)
+    `L[n]/O(L)` can be infinite, so a list would be a truncation. The set answers membership exactly and
+    leaves `is_finite()` as a proposition.
+    """
+    lattice_ = lattice(_GRAM)
+    source = element(lattice_, [1, 0])
+    orbit = _RECURSION.marked_orbit(source)
 
-    rows = [[int(entry) for row in block.rows() for entry in row] for block in basis]
-    stacked = matrix(ZZ, rows)
-    assert stacked.rank() == radical_rank * (c_rank - 1)
-    # Saturated: a proper sublattice of the kernel would leave a Smith invariant above 1.
-    invariants = [int(entry) for entry in stacked.smith_form()[0].diagonal() if int(entry) != 0]
-    assert invariants == [1] * (radical_rank * (c_rank - 1)), invariants
+    assert source in orbit
+    # The shear (1,0) -> (1,1) is in the group, so this member must be decided in.
+    assert element(lattice_, [1, 1]) in orbit
+    # Same square (2) but a different radical coordinate content: (3,0) has q = 18, so it is out.
+    assert element(lattice_, [3, 0]) not in orbit
+    # Not a finite ordered set, and not claimed finite.
+    assert not hasattr(orbit, "list")
+    assert orbit.is_finite() is not True
 
 
-def test_shear_kernel_of_a_vanishing_quotient_coordinate_is_all_of_hom() -> None:
-    """For `x = 0` the condition is vacuous: the kernel is the whole `Hom(C,R)` of rank `c_rank*radical_rank`."""
-    c_rank, radical_rank = 2, 2
-    basis = shear_kernel_basis(c_rank, radical_rank, (0, 0))
+def test_marked_orbit_of_a_radical_vector_handles_the_c_zero_case() -> None:
+    """A vector in the radical has `c = 0`: the condition is exactly `D r = s`, and the orbit is still lazy."""
+    lattice_ = lattice(_GRAM)
+    source = element(lattice_, [0, 1])
+    orbit = _RECURSION.marked_orbit(source)
 
-    assert len(basis) == c_rank * radical_rank
-    rows = [[int(entry) for row in block.rows() for entry in row] for block in basis]
-    stacked = matrix(ZZ, rows)
-    assert stacked.rank() == c_rank * radical_rank
-    assert abs(int(stacked.det())) == 1, "the standard basis is unimodular, so this is all of Hom(C,R)"
+    assert source in orbit
+    assert element(lattice_, [0, -1]) in orbit        # the radical sign change is integral
+    assert element(lattice_, [0, 2]) not in orbit     # (0,2) is not primitive, so no unimodular image
+    assert element(lattice_, [1, 0]) not in orbit     # different square
+    assert orbit.is_finite() is not True
+
+
+def test_marked_orbit_action_exposes_the_native_orbit_surface() -> None:
+    """The action object carries the operations #53 requires, rather than only a points list."""
+    lattice_ = lattice(_GRAM)
+    action = _RECURSION.marked_orbit_action(lattice_)
+
+    for name in ("orbits", "stabilizer", "in_same_orbit"):
+        assert hasattr(action, name), name
+    first, second = element(lattice_, [1, 0]), element(lattice_, [1, 1])
+    assert action.in_same_orbit(first, second) is True
+    assert action.in_same_orbit(first, element(lattice_, [3, 0])) is False
