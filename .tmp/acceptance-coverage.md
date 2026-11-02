@@ -22,7 +22,7 @@ Port `47b69d86` (src unchanged since `49e3965f`), provider `42d7361c`, unless a 
 | A_CENTRALIZERS | accepted 5/5 at `c546077d` | earlier record |
 | A_GROUPS — nodes 10–45, 47 | accepted 37/37 at `565fc6b9` | earlier record |
 | A_GROUPS — LORENTZ 0/1/2 | **open — external owner**, no GAP recognition route in the pinned image | `.tmp/handoff-owner-lorentz-image-order.md` |
-| A_GROUPS — node 46 `a7_plus_diagonal` | **open, with a named port-side gap** — the 1 800 s run spends all 29 dumps in one `SupportHyperplanes` call on a full-dimensional rank-10 cone with 49 861 generators; the reference never builds that H-description (it enumerates **one facet per stabilizer orbit**), and the port computes the full one and then keeps representatives | `.tmp/handoff-a7-facet-route.md` |
+| A_GROUPS — node 46 `a7_plus_diagonal` | **open** — the orbit-pruned route is implemented and wired, and the engine's H-description is gone from the path: the A7 run's peak fell from **5 405 MiB to 1 637 MiB**. It still caps at 1 800 s, now inside the walk's own Schreier bookkeeping (`_compose` over 49 861 positions), which the reference avoids by restricting the action to the facet | § "A7 with the walk wired in" below |
 | A_ISOTROPIC — stride-100 sample | accepted 89/89 | `isotropic-sample.log` |
 | A_ISOTROPIC — `test_o_n_maps_onto_o_of_the_discriminant_form` | **accepted 468 s, peak 3 868 MiB** at `42d7361c` (first of the unrun tail) | job `jmvz75d9x` |
 | A_ISOTROPIC — `test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank0,rank1]` | **accepted 2/2**: 150 s / 3 703 MiB (lines) and **1 661 s / 4 926 MiB** (planes) | job `jmvz88la4` |
@@ -196,6 +196,28 @@ full-dimensional** (pointedness is not what fails — `cone{(1,0),(2,0)}` is a p
 as a constructor theorem and a test pins the degenerate case. A second test pins the truncation hazard: for the
 rows `(2,0), (0,2)` the kernel basis is `(1,-1/2,-1/2)`, which an int-cast would flatten to `(0,0)`. It replaces the invalid inference "row rank = ambient dimension, so no
 lineality".
+
+### A7 with the walk wired in: the H-description is gone, the Schreier action is not yet restricted
+
+`_expand_traversal_once` now takes facet orbits from the orbit-pruned walk above 10 000 rays, so the A7 cell's
+49 861-ray cone no longer reaches `NmzResult(..., "SupportHyperplanes")`. Re-run of the unchanged acceptance node
+at the same pins, cap 1 800 s, guard 6 144 MiB (job `jmvzfvi79`):
+
+| | engine route (before) | walk route (now) |
+| --- | --- | --- |
+| verdict | CAPPED | **CAPPED** |
+| peak | 5 405 MiB | **1 637 MiB** |
+| where the 29 dumps sit | all in one `SupportHyperplanes` call | 10 in `orbit_representatives`, 2 in `cell_facet_orbits`, 1 in `_facet_mask_orbits_via_walk`, 2 at the seed LP, and 16 in provider element construction |
+
+So the memory story changed by 3.3x and the engine call is off the path. The remaining cost is the walk's own
+arithmetic: 5 of the dumps are the innermost frame of `_compose` (`facet_orbits.py:346`), the permutation
+composition `tuple(first[second[i]] for i in range(len(second)))` — over **all 49 861 ray positions**, once per
+(orbit point x generator) pair in the Schreier stabilizer construction.
+
+That is a pure port optimisation, and the reference does it differently: it restricts the action to the facet and
+composes only the images of the facet's own positions, so the cost is `O(|word| |F|)` rather than
+`O(|word| 49 861)`. Until that restriction is in place the route cannot fit the cap on this specimen, so the
+acceptance stays open and the cap stays where it is.
 
 **And it was run: the answer is the engine, not the port.** `test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q`
 re-run at the current pins (src `fad2c5bb`-tree, provider `42d7361c`, cap 1 800 s, guard 6 144 MiB, job
