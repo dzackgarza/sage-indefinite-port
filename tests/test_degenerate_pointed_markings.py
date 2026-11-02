@@ -562,7 +562,12 @@ def test_radical_stabilizer_of_a_purely_radical_lattice() -> None:
 
 
 def test_lazy_orbit_representative_enumeration_is_a_stream() -> None:
-    """The quotient is enumerable lazily: one representative per class, taken on demand, never materialized."""
+    """The quotient is enumerable lazily: one representative per class, taken on demand, never materialized.
+
+    `limit` caps how many representatives are yielded; it is not a termination guarantee for the search.
+    A square whose classes are exhausted keeps looking for a next class, so a finite class set is fully
+    compatible with an unbounded candidate walk.
+    """
     lattice_ = lattice(_GRAM)
     stream = _RECURSION.marked_orbit_representatives(lattice_, 2, limit=1)
 
@@ -589,3 +594,139 @@ def test_lazy_enumeration_yields_distinct_classes_only() -> None:
         second = None
     if second is not None:
         assert _RECURSION.pointed_isometry(first, second) is None
+
+
+# ---------------------------------------------------------------------------------------------------
+# The generated kernel for radical rank >= 2: maintained Hom/evaluation/kernel, and mixed words.
+# ---------------------------------------------------------------------------------------------------
+
+def _hom_element_matrix(complement, radical, morphism):
+    """The coordinate matrix of a `Hom(C,R)` element, by evaluating it on the generators of `C`."""
+    rows = []
+    for source_label in complement.module_generating_set():
+        image = morphism(complement.module_generator(source_label))
+        rows.append([int(image.to_vector()(label)) for label in radical.module_generating_set()])
+    return matrix(ZZ, rows).transpose()          # radical_rank x complement_rank
+
+
+def _blocks(c_rank: int, r_rank: int):
+    """The complement and radical factors of `diag(<2>^c, 0^r)`, as lattices on the provider's ring."""
+    from sage_extensions.all import Lattices, ZZ as OwnedZZ
+
+    complement = Lattices(OwnedZZ)([[2 if row == column else 0 for column in range(c_rank)]
+                                    for row in range(c_rank)])
+    radical = Lattices(OwnedZZ)([[0] * r_rank for _ in range(r_rank)])
+    return complement, radical
+
+
+@pytest.mark.parametrize(
+    ("c_rank", "r_rank", "marked"),
+    [
+        (2, 1, (1, 0, 0)),
+        (3, 1, (1, 0, 0, 0)),
+        (2, 2, (1, 0, 0, 0)),
+        (3, 2, (1, 0, 0, 0, 0)),
+    ],
+)
+def test_shear_kernel_through_the_maintained_hom_evaluation_kernel(c_rank, r_rank, marked) -> None:
+    """`{B : B x = 0}` has rank `rank(R)*(rank(C)-1)` for nonzero `x`, computed by the provider itself.
+
+    The kernel is obtained from the Hom module, `evaluation`, the morphism constructor and `kernel()`,
+    with the kernel's `inclusion` giving back elements of `Hom(C,R)`. Every returned element must kill the
+    marked coordinate; the rank is `rank(R)*(rank(C)-1)` and it comes from the provider, not from a
+    coordinate construction in the port.
+    """
+    complement, radical = _blocks(c_rank, r_rank)
+    lattice_ = lattice([[2 if row == column and row < c_rank else 0
+                         for column in range(c_rank + r_rank)] for row in range(c_rank + r_rank)])
+    vector_ = element(lattice_, marked)
+    x = complement.linear_combination({complement.module_generating_set()[0]: 1})
+
+    kernel = _RECURSION.shear_kernel(complement, radical, x)
+    assert len(kernel) == r_rank * (c_rank - 1)
+    for morphism in kernel:
+        image = morphism(complement.module_generator(complement.module_generating_set()[0]))
+        assert [int(image.to_vector()(label)) for label in radical.module_generating_set()] == [0] * r_rank
+
+
+def _stabilizer_word_shears(c_rank: int, r_rank: int, marked, depth: int = 3):
+    """Pure shears produced by *words* of length at most `depth` in the stabilizer generators.
+
+    Counting the pure-shear members of one generator list measures nothing about the subgroup they
+    generate -- a product of mixed elements can be a pure shear. This walks the words and keeps those whose
+    diagonal blocks are both the identity, which are exactly the elements of the kernel that the words
+    produce.
+    """
+    lattice_ = lattice([[2 if row == column and row < c_rank else 0
+                         for column in range(c_rank + r_rank)] for row in range(c_rank + r_rank)])
+    vector_ = element(lattice_, marked)
+    # Column convention throughout: `_split_blocks` reads B as the bottom-left block, which is where the
+    # shear lives in the column matrix. Row matrices would put it top-right and hide every shear.
+    forms = [_column_matrix(generator)
+             for generator in _RECURSION.pointed_automorphism_generators(vector_)]
+
+    def key_of(form):
+        return tuple(int(entry) for row in form.rows() for entry in row)
+
+    identity = identity_matrix(ZZ, c_rank + r_rank)
+    frontier = {key_of(identity): identity}
+    collected = {}
+    for _ in range(depth):
+        next_frontier = {}
+        for word in frontier.values():
+            for form in forms:
+                product = word * form
+                key = key_of(product)
+                if key in collected or key in next_frontier:
+                    continue
+                next_frontier[key] = product
+                A, shear, D = _split_blocks(product, c_rank, r_rank)
+                if A == identity_matrix(ZZ, c_rank) and D == identity_matrix(ZZ, r_rank) and shear != 0:
+                    collected[key] = shear
+        frontier = next_frontier
+        if not frontier:
+            break
+    return tuple(collected.values())
+
+
+@pytest.mark.parametrize(
+    ("c_rank", "r_rank", "marked"),
+    [
+        (2, 1, (1, 0, 0)),
+        (3, 1, (1, 0, 0, 0)),
+        (2, 2, (1, 0, 0, 0)),
+        (3, 2, (1, 0, 0, 0, 0)),
+    ],
+)
+def test_generated_shear_kernel_is_measured_by_words_not_by_one_generator_list(c_rank, r_rank, marked) -> None:
+    """What the stabilizer *generates* in the kernel, measured on words and bounded honestly.
+
+    The span of the pure shears reachable by words of length <= 3 is a lower bound for the generated
+    kernel, and it must be compared with the full kernel the provider computes -- not with a count of
+    pure-shear generators. When the two ranks agree the kernel is generated; when they do not, this records
+    a lower bound only, which is not a deficiency claim.
+    """
+    lattice_ = lattice([[2 if row == column and row < c_rank else 0
+                         for column in range(c_rank + r_rank)] for row in range(c_rank + r_rank)])
+    vector_ = element(lattice_, marked)
+    shears = _stabilizer_word_shears(c_rank, r_rank, marked)
+    assert shears, "the stabilizer must generate some kernel elements"
+
+    rows = [[int(entry) for row in shear.rows() for entry in row] for shear in shears]
+    reachable = matrix(ZZ, rows)
+    # The words' shears are genuine kernel elements: each annihilates the marked C-coordinate.
+    labels = tuple(lattice_.module_generating_set())
+    quotient_part = vector(ZZ, [int(vector_.to_vector()(label)) for label in labels][:c_rank])
+    for shear in shears:
+        assert shear * quotient_part == 0
+
+    full_rank = r_rank * (c_rank - 1)
+    assert reachable.rank() <= full_rank
+    # Saturating the reachable lattice against the full kernel: index 1 means the words generate it.
+    kernel = _RECURSION.shear_kernel(*_blocks(c_rank, r_rank),
+                                     _blocks(c_rank, r_rank)[0].linear_combination(
+                                         {_blocks(c_rank, r_rank)[0].module_generating_set()[0]: 1}))
+    kernel_rows = [[int(entry) for row in _hom_element_matrix(*_blocks(c_rank, r_rank), morphism).rows()
+                    for entry in row] for morphism in kernel]
+    combined = matrix(ZZ, rows + kernel_rows)
+    assert combined.rank() == max(reachable.rank(), full_rank)

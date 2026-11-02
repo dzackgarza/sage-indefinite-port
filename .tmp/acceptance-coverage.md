@@ -125,6 +125,25 @@ retained `Z -> F_p` map, and with it `orthogonal_group_base_change` → `base_ch
 
 Nothing here concludes anything about the image from the ambient order or from p=2/p=3 agreement.
 
+### Provider pin moved to `42d7361c` (admission only)
+
+The maintained library published `42d7361cfda3d8505f365b26d9aa687447d6df9d` — "a decided finiteness is
+placed, and cardinality asks it" — adopted through the maintained checkout and verified against the actual
+remote (it is that repository's `origin/main`; staged by `git archive` of the commit). It closes the
+admission gap recorded here. Verified without re-running the engine BSGS:
+
+```
+[p=2] is_finite True 0.10s | in OwnedFiniteGroups now True (was False)
+[p=2] cardinality 46998591897600 in 0.02s == reduction_image_order at p=2
+[p=5] is_finite True 0.11s | in OwnedFiniteGroups now True (was False)
+[p=5] cardinality NOT called
+```
+
+So the provider's own semantics now reproduce the harness number at p=2. At p=5 the fix routes
+`cardinality()` to `_finite_order` → `as_permutation_group()`, i.e. the same BSGS; **the p=5/p=7 obligation is
+unchanged and those three nodes stay open.** The six accepted square nodes were accepted at `565fc6b9` and
+have not been re-run at `42d7361c`; their rows keep the pin they ran on.
+
 ## A_VECTORS (new: first run on current pins)
 
 One invocation per node, src `87fbf863`, provider `cdafca84`, guard 6 144 MiB, cap 1 200 s.

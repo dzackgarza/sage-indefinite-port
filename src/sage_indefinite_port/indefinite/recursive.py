@@ -22,7 +22,7 @@ import itertools
 from dataclasses import dataclass
 from math import gcd
 
-from sage_extensions.all import GObjects, Lattices, Sets, ZZ
+from sage_extensions.all import GObjects, Lattices, Modules, Sets, ZZ
 from sage_extensions.categories.group.groups import OwnedGroups
 from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
 from sage_extensions.categories.modules.orbit_spans import (
@@ -401,10 +401,12 @@ class EichlerRecursion:
         by increasing coordinate height, filtered to square `n`, deduplicated against the representatives
         already yielded through the exact orbit decision `pointed_isometry`.
 
-        The stream is infinite by construction and never materialized. `limit` stops it after that many
-        representatives; without `limit` the caller takes what it needs. This is a *semidecision* of
-        coverage in the #53 sense: new classes appear as candidates are reached, and no finiteness or
-        completeness claim is made.
+        Nothing is materialized, and `limit` is a **maximum on the number of representatives yielded,
+        not a termination guarantee for the search**. The candidate walk is unbounded, but the outputs need
+        not be: a square whose classes are already exhausted keeps searching for a next representative and
+        may never find one, so this is *not* an infinite stream of distinct representatives merely because
+        the search over candidates is infinite. It is a semidecision of coverage in the #53 sense: new
+        classes appear as candidates are reached, and no finiteness or completeness claim is made.
         """
         target = int(square)
         representatives: list = []
@@ -427,6 +429,32 @@ class EichlerRecursion:
                 if limit is not None and len(representatives) >= limit:
                     return
             height += 1
+
+    def shear_kernel(self, complement: Lattices.ParentMethods, radical: Lattices.ParentMethods, marked):
+        r"""The kernel of `Hom_Z(C,R) -> R`, `B |-> B x`, through the provider's own contracts.
+
+        This is the shear kernel of issue #41: for `v = (x, r)` the pointwise stabilizer contains every
+        `B` with `B x = 0`, and because `R` is torsion-free that is the same as `B x_0 = 0` for the
+        primitive direction `x_0` of `x`. It is built from the maintained operations only -- the Hom module
+        `Modules(Z).Mor(C, R)`, its `module_generating_set`/`module_generator`, `evaluation`, the morphism
+        constructor, `kernel()` and the kernel's `inclusion` -- so no coordinate matrix is manufactured
+        here; the provider's `_kernel_spanning_family` is what decides the linear algebra.
+
+        Returns the kernel's elements as morphisms `C -> R` (the images of the kernel's generators under its
+        inclusion), which callers evaluate on the generators of `C`.
+        """
+        hom = Modules(ZZ).Mor(complement, radical)
+        labels = tuple(hom.module_generating_set())
+        if not labels:
+            raise ValueError("Hom(C,R) has no generators to evaluate")
+        images = {
+            label: hom.evaluation(hom.module_generator(label), marked)
+            for label in labels
+        }
+        evaluation = Modules(ZZ).Mor(hom, radical)(images)
+        kernel = evaluation.kernel()
+        inclusion = kernel.inclusion()
+        return tuple(inclusion(kernel.module_generator(label)) for label in kernel.module_generating_set())
 
     def orthogonal_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
         if lattice.is_definite():

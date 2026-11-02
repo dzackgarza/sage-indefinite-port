@@ -394,36 +394,47 @@ gap; they do not close it or narrow the eventual public contract.
   primitive direction's; and a **purely radical** lattice. Plus the control that an
   isotropic vector off the radical is not classified as radical.
 
-  **Retraction: the rank-2 kernel deficiency was not established.** I had reported
-  "rank(C)=3, rank(R)=2 requires 4 and measures 2". That compared only the explicitly
-  pure-shear members of one generating list. Words in mixed generators can generate
-  further pure shears, so a subgroup-level computation (or a rigorous presentation) is
-  needed before any deficiency claim; requiring every nonzero-`B` generator to have
-  identity diagonals is not the API contract either. That question is **open**, and the
-  rank-2 specimens are not asserted as passing or failing until it is settled.
+  **The generated shear kernel: resolved, and my "deficiency" reading refuted.** The kernel
+  `{B in Hom_Z(C,R) : B x = 0}` is now computed through the provider's own contracts —
+  `Modules(ZZ).Mor(C, R)`, its `module_generating_set`/`module_generator`, `evaluation`, the
+  morphism constructor, `kernel()` and the kernel's `inclusion` — by
+  `EichlerRecursion.shear_kernel(complement, radical, marked)`. No coordinate matrix is
+  manufactured in the port; the provider's `_kernel_spanning_family` decides the linear
+  algebra. (The earlier "generator family missing" reading was wrong: `module_generating_set()`
+  and `module_generator()` exist and carry the evaluation images.)
 
-  No raw flattened-matrix helper is kept in the port for any of this.
+  What the stabilizer *generates* in the kernel was then measured on **words**, not on one
+  generator list — pure shears reachable as products of at most three generators, including
+  mixed ones:
+
+  | rank(C) | rank(R) | shears from words | span | kernel rank | verdict |
+  | --- | --- | --- | --- | --- | --- |
+  | 2 | 1 | 4 | 1 | 1 | generated |
+  | 3 | 1 | 11 | 2 | 2 | generated |
+  | 2 | 2 | 5 | 2 | 2 | generated |
+  | 3 | 2 | 13 | 4 | 4 | generated |
+
+  So the port's stabilizer does generate the full kernel in every case measured, and the
+  earlier "rank(C)=3, rank(R)=2 requires 4, measures 2" was an artefact of counting only
+  explicitly pure-shear generators: words in mixed generators supply the rest. **The
+  retraction stands and is now positively resolved**, not merely withdrawn.
 
   **The quotient's lazy enumeration is written.** `marked_orbit_representatives(lattice, n,
   limit=None)` walks lattice vectors by increasing coordinate height, filters to square
   `n`, and yields one representative per class, deduplicating through the exact orbit
-  decision `pointed_isometry`. It is a generator: nothing is materialized, the stream is
-  infinite unless `limit` is given, and it is a semidecision of coverage in the #53 sense
-  (new classes appear as candidates are reached, no finiteness or completeness claim).
+  decision `pointed_isometry`. Nothing is materialized. `limit` is a **maximum on the
+  number of representatives yielded, not a termination guarantee for the search**: a
+  square whose classes are exhausted keeps looking for a next class, so a finite class
+  set is fully compatible with an unbounded candidate walk, and this is not an infinite
+  stream of distinct classes merely because the candidate search is infinite. It is a
+  semidecision of coverage in the #53 sense, with no finiteness or completeness claim.
   Tests check that it is a stream, that a yielded representative is the class of `(1,0)`
   including the shear-related `(1,7)`, and that no two yielded representatives are
   equivalent.
 
-  The contract the owner still has to supply, in the provider's own terms:
-
-```
-input   C, R    free Z-modules of finite rank (here the nondegenerate complement and the radical)
-        x       an element of C
-output  the generator family of Hom_Z(C,R) as a module, so that ev_x: Hom(C,R) -> R,
-        B |-> B x can be built as a morphism and its kernel() taken
-        -- ker(ev_x) is the full shear kernel, of rank rank(R)*(rank(C)-1) for primitive x,
-           and all of Hom(C,R) when x = 0
-```
+  **No provider operation is missing for this unit any more.** The evaluation morphism and
+  its kernel are constructible from the Hom module's own `module_generating_set()` and
+  `module_generator()` images; nothing is routed to the owner here.
 
 ## Release and terminal nodes
 

@@ -83,3 +83,6 @@ references/Indefinite.jl/
 !.tmp/probe-hom-kernel.py
 !.tmp/probe-radical-pointed.py
 !.tmp/probe-reduction-transport.py
+!.tmp/probe-hom-generators.py
+!.tmp/probe-eval-kernel.py
+!.tmp/probe-kernel-measure.py
