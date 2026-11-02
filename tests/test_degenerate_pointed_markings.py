@@ -356,6 +356,90 @@ def _definite_complement_lattice(c_rank: int, radical_rank: int):
     return lattice(gram)
 
 
+@pytest.mark.parametrize(
+    ("c_rank", "radical_rank", "marked"),
+    [
+        (1, 1, (0, 1)),
+        (2, 1, (0, 0, 1)),
+        (1, 2, (0, 1, 0)),
+        (1, 2, (0, 2, 3)),        # a non-standard primitive radical vector
+    ],
+)
+def test_pointwise_stabilizer_of_a_radical_marked_vector(c_rank, radical_rank, marked) -> None:
+    """A vector inside the radical no longer raises: the split-radical path gives its pointwise stabilizer.
+
+    `Aut((L,v))` for `v = (0,r)` is `{[[A,B],[0,D]] : A in O(C), rD = r, B in Hom(C,R)}`, so its generators
+    are the embedded `O(C)` generators, the `GL(R)`-stabilizer of `r`, and the whole standard basis of
+    `Hom(C,R)` as shears. This used to raise `ArithmeticError("the isotropic pairing L -> J* must have
+    finite cokernel")` because the isotropic route requires a nondegenerate ambient form.
+    """
+    lattice_ = _definite_complement_lattice(c_rank, radical_rank)
+    vector_ = element(lattice_, marked)
+    assert _RECURSION.vector_lies_in_radical(vector_)
+
+    generators = tuple(_RECURSION.pointed_automorphism_generators(vector_))
+    assert generators
+    assert all(generator(vector_) == vector_ for generator in generators)
+
+    # The shear part must be the *whole* Hom(C,R): rank(C)*rank(R) freedoms, each present and primitive.
+    shears = [shear for shear in (_split_blocks(_column_matrix(g), c_rank, radical_rank)[1] for g in generators)
+              if shear != 0]
+    rows = [[int(entry) for row in shear.rows() for entry in row] for shear in shears]
+    stacked = matrix(ZZ, rows)
+    assert stacked.rank() == c_rank * radical_rank
+    invariants = [int(entry) for entry in stacked.smith_form()[0].diagonal() if int(entry) != 0]
+    assert invariants == [1] * (c_rank * radical_rank), invariants
+
+
+def test_isotropic_vector_off_the_radical_is_not_classified_as_radical() -> None:
+    """`q(v) = 0` is necessary but not sufficient: an isotropic vector off the radical is not radical."""
+    hyperbolic = lattice([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
+    isotropic = element(hyperbolic, [1, 0, 0])   # q = 0, but b(v, (0,1,0)) = 1, so it is off the radical
+    radical_lattice = lattice([[2, 0], [0, 0]])
+    radical_vector = element(radical_lattice, [0, 1])
+
+    assert int(isotropic.q()) == 0
+    assert _RECURSION.vector_lies_in_radical(radical_vector)
+    assert not _RECURSION.vector_lies_in_radical(isotropic)
+
+
+# ---------------------------------------------------------------------------------------------------
+# The quotient L[n]/O(L), and the restored general coverage.
+# ---------------------------------------------------------------------------------------------------
+
+def test_marked_orbit_quotient_is_the_orbit_set_and_refuses_to_be_listed() -> None:
+    """`L[n]/O(L)` is a set of orbit classes, used through `orbit_of`, and it refuses to be listed.
+
+    The quotient is not the points of one orbit: `orbit_of` returns a class. And the provider enforces the
+    #53 discipline itself -- `__iter__` asserts that the underlying G-set *is placed finite*
+    ("the orbits of ... are listed only when it is a finite set"), so an infinite quotient cannot be
+    silently truncation-listed. That refusal is the contract, not a defect, so it is asserted here.
+    """
+    lattice_ = lattice(_GRAM)
+    quotient = _RECURSION.marked_orbit_quotient(lattice_, 2)
+
+    # The quotient exposes orbit classes, not vector points, and answers lazily.
+    assert hasattr(quotient, "orbit_of")
+    source = element(lattice_, [1, 0])
+    orbit = quotient.orbit_of(source)
+    assert hasattr(orbit, "points")
+    assert source in orbit
+    assert element(lattice_, [1, 1]) in orbit          # the shear image is in the same class
+    assert element(lattice_, [0, 1]) not in orbit      # q = 0, a different square
+
+    # No finiteness is claimed, and listing is refused rather than truncated.
+    assert quotient.is_finite() is not True
+    with pytest.raises(AssertionError):
+        next(iter(quotient))
+
+
+def _definite_complement_lattice(c_rank: int, radical_rank: int):
+    gram = [[2 if row == column and row < c_rank else 0
+             for column in range(c_rank + radical_rank)]
+            for row in range(c_rank + radical_rank)]
+    return lattice(gram)
+
+
 def _kernel_shears(c_rank: int, radical_rank: int, marked_coordinates):
     """The shear blocks of the pointwise stabilizer on a real lattice, with identity diagonal blocks."""
     lattice_ = _definite_complement_lattice(c_rank, radical_rank)
