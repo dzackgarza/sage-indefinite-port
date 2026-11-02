@@ -33,7 +33,7 @@ Port `47b69d86` (src unchanged since `49e3965f`), provider `42d7361c`, unless a 
 | A_BOUNDARIES — classical indices (3 nodes) | **open — same locus**: asserts through `_gamma_h` and `subgroup_on(discriminant_morphism…)` | source read |
 | A_BOUNDARIES — classical indices (3 nodes) | **not run** | — |
 | **A_REFLECTIVE — representative families** | **ACCEPTED 116/116**, zero failures, max peak 2 452 MiB (the E10 node), cap 1 800 s, guard 6 144 MiB: 6 non-parametrised (edgewalk routes, promised-go, both labelled-coordinate period cases, branch sample), 103 `ListSimpleRootSystem`, 4+2 Vinberg, 1 E10 | job `jmvzi4n08` |
-| A_REFLECTIVE — long tail (8 821 `ListReflect` + 8 595 Allcock) | sampled, not gated: stride-500 sample over the whole file | job `jmvzj3scc` |
+| A_REFLECTIVE — long tail (8 821 `ListReflect` + 8 595 Allcock) | **not gated, sampled and paused**: a stride-500 sample ran **14 nodes, 14 passed, 0 failures**, then the run was stopped **between nodes** (not mid-node) to free the shared heavy slot for the library's Enriques stage probe. Not a failure and not a cap | job `jmvzj3scc` |
 | A_PERFECT | 92/92 **locally** at `cdafca84`. The hosted requirement is discharged by `.github/workflows/acceptance.yml`, which runs on every push (a required sample) and on `workflow_dispatch` (full corpora), in `ghcr.io/dzackgarza/sage:develop`; every push to main this session is a trigger. The connector exposes no Actions runs, so the hosted result is read in the repository's Actions tab, not from here — no hosted evidence is claimed | `.github/workflows/acceptance.yml` |
 | Unit suite | **240 passed** over all of `tests/` at the final HEAD, 155.6 s — includes the facet-certificate, orbit-contract, walk and traversal-seam files | `unit-final.log` |
 
