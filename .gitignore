@@ -74,3 +74,6 @@ references/Indefinite.jl/
 !.tmp/probe-admission-42d7361.py
 !.tmp/probe-issue41-rank-two.py
 !.tmp/probe-issue41-gl2.py
+!.tmp/probe-lazy-orbit.py
+!.tmp/probe-lazy-accessor.py
+!.tmp/probe-kernel-idioms.py

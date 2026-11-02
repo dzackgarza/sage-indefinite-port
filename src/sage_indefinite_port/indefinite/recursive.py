@@ -19,6 +19,7 @@ Definite lattices are the preamble's; signature (1, n) is the Lorentzian leaf (#
 """
 
 from dataclasses import dataclass
+from math import gcd
 
 from sage_extensions.all import ZZ, Lattices
 from sage_extensions.categories.group.groups import OwnedGroups
@@ -33,7 +34,7 @@ from sage_extensions.categories.modules.pure.modules import (
 from sage_extensions.categories.rational_integral_stabilizers import (
     IntegralStructureAction,
 )
-from sage.matrix.constructor import identity_matrix, matrix
+from sage.matrix.constructor import identity_matrix, matrix, zero_matrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.structure.parent import Parent
@@ -190,6 +191,65 @@ def _isometry_from_column_matrix(source: Lattices.ParentMethods, target: Lattice
         images.append(_from_column(target, target_coordinates))
     morphism_parent = source.O() if source is target else source.Isom(target)
     return morphism_parent(tuple(images))
+
+
+def shear_kernel_basis(c_rank: int, radical_rank: int, x) -> tuple[Matrix_integer_dense, ...]:
+    r"""A `Z`-basis of the shear kernel `{B in Hom(C,R) : B x = 0}` (issue #41).
+
+    For a degenerate `L = C + R` in column convention every integral isometry is `[[A,0],[B,D]]` with
+    `A in O(C)`, `D in GL(R)` and `B in Hom_Z(C,R)`.  The pointwise stabilizer of `v = (x,r)` contains the
+    free abelian kernel of the map `B -> B x`, and these are its generators.
+
+    **Why this is all of them.**  `R` is torsion-free, so `B x = 0` and `B x_0 = 0` agree for `x = c x_0`
+    with `x_0` primitive.  Writing `B` as a `radical_rank x c_rank` integer matrix, `B x_0 = 0` is a system
+    of `radical_rank` homogeneous integer equations in the `radical_rank * c_rank` entries, so its solution
+    set is the kernel of an integer matrix.  A kernel is saturated, and `Z`-modules are hereditary, so that
+    kernel is free of rank `radical_rank * (c_rank - 1)` whenever `x_0` is primitive: the map
+    `Hom(C,R) -> R`, `B -> B x_0`, is surjective onto `R` (`x_0` being primitive, `C -> Z x_0` splits).
+    `right_kernel_matrix()` returns a basis of exactly that saturated kernel, so the returned generators
+    span the whole kernel and not a sublattice -- which is what the acceptance check verifies by requiring
+    the rank to be `radical_rank * (c_rank - 1)` and every Smith invariant of the basis to be `1`.
+
+    For `x = 0` the condition is vacuous and the kernel is all of `Hom(C,R)`: the standard basis is returned.
+    """
+    if c_rank < 1 or radical_rank < 1:
+        raise ValueError("a shear kernel needs a positive rank on both sides")
+    entries = tuple(int(entry) for entry in x)
+    if len(entries) != c_rank:
+        raise ValueError(f"the marked vector has {len(entries)} coordinates, expected {c_rank}")
+
+    def standard_basis() -> tuple[Matrix_integer_dense, ...]:
+        generators = []
+        for radical_index in range(radical_rank):
+            for c_index in range(c_rank):
+                block = zero_matrix(SageZZ, radical_rank, c_rank)
+                block[radical_index, c_index] = 1
+                generators.append(block)
+        return tuple(generators)
+
+    if not any(entries):
+        # x = 0: every B annihilates it, so the kernel is the whole Hom(C,R).
+        return standard_basis()
+
+    content = 0
+    for entry in entries:
+        content = gcd(content, entry)
+    primitive = tuple(entry // content for entry in entries)
+    equations = matrix(
+        SageZZ,
+        radical_rank,
+        radical_rank * c_rank,
+        lambda row, index: primitive[index % c_rank] if index // c_rank == row else 0,
+    )
+    kernel = equations.right_kernel_matrix()
+    assert kernel.nrows() == radical_rank * (c_rank - 1), (
+        f"the annihilator of a primitive vector has rank {radical_rank * (c_rank - 1)}, "
+        f"but the computed kernel has rank {kernel.nrows()}"
+    )
+    return tuple(
+        matrix(SageZZ, radical_rank, c_rank, [int(entry) for entry in row])
+        for row in kernel.rows()
+    )
 
 
 def _conjugated(transport: LatticeIsometryMethods, generators: tuple[LatticeIsometryMethods, ...]) -> tuple[LatticeIsometryMethods, ...]:

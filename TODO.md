@@ -335,6 +335,19 @@ gap; they do not close it or narrow the eventual public contract.
   whose quotient image has unbounded content, where a finite orbit list would be a
   false claim — and the downstream subgroup consumers on those orbit sets.
 
+  The native lazy API to build on is identified but **not wired**: a group's
+  `orbit(point)` returns an `_Orbit` whose `points()` is `g_set().condition_set(predicate)`
+  (`categories/group/g_sets.py:822-864`), i.e. a predicate-defined set that is never
+  materialized and may be infinite. The blocker is one level up: for a lattice, `L.O()`
+  is the isometry *morphism* object and exposes only `subgroup`, `stabilizer` and
+  `group_generators` — it has no `natural_g_set`, `orbit` or `orbits`, and the
+  `O_plus` route refuses a degenerate lattice ("has no spinor norm"). So the required
+  operation is a G-set for the isometry action on a degenerate lattice, which is #53's
+  subject; the contract is `degenerate_marked_orbits(L, n) -> Sets()` iterable lazily,
+  with `orbit_of`, membership and representative transport, and no cardinality claim.
+  Until that exists, any list of orbit representatives for `c = 0` or unbounded content
+  would be truncated and is not to be produced.
+
 ## Release and terminal nodes
 
 - [ ] **RELEASE — Reconcile public capability claims.

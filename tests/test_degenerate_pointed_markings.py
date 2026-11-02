@@ -22,7 +22,7 @@ import pytest
 
 from sage.all import MatrixGroup, ZZ, matrix, vector
 
-from sage_indefinite_port.indefinite.recursive import EichlerRecursion, _column_matrix
+from sage_indefinite_port.indefinite.recursive import EichlerRecursion, _column_matrix, shear_kernel_basis
 from tests.acceptance.consumer import (
     automorphisms,
     element,
@@ -187,9 +187,17 @@ def test_rank_two_radical_transport_needs_a_nonidentity_integral_D() -> None:
     assert is_isometry(rows_of(witness), _RANK_TWO_GRAM)
 
     columns = _column_matrix(witness)
-    _, shear, D = _split_blocks(columns, 1, 2)
+    A, shear, D = _split_blocks(columns, 1, 2)
     residue = vector(ZZ, [1, 0])          # the radical part of the source
     assert D * residue != residue, "this specimen is only interesting when D moves integer r"
+
+    # The radical block must be an integral automorphism of the radical lattice: det(D) = +-1.
+    assert D.change_ring(ZZ) == D
+    assert int(D.det()) in (1, -1)
+    # ... and the whole isometry must be unimodular, not just the D block.
+    assert int(columns.det()) in (1, -1)
+    assert A == matrix(ZZ, [[1]])
+
     # The criterion: s - D r lies in content_C(x) * R = 5R, and B x = s - D r.
     difference = vector(ZZ, [2, 0]) - D * residue
     assert all(int(entry) % 5 == 0 for entry in difference)
@@ -213,8 +221,12 @@ def test_pure_shear_transport_when_d_minus_identity_already_lies_in_the_content_
 
     assert witness is not None and witness(source) == target
     columns = _column_matrix(witness)
-    _, shear, D = _split_blocks(columns, 1, 2)
+    A, shear, D = _split_blocks(columns, 1, 2)
+    # A "pure shear" claim is only that if BOTH diagonal blocks are the identity: a nonzero B with a
+    # non-identity A or D would be transporting through the radical, not shearing.
+    assert A == matrix(ZZ, [[1]])
     assert D == matrix(ZZ, [[1, 0], [0, 1]])
+    assert shear != 0
     assert shear * vector(ZZ, [5]) == vector(ZZ, [5, 5])
 
 
@@ -222,39 +234,85 @@ def test_pointwise_stabilizer_contains_the_nontrivial_shear_kernel() -> None:
     """With `C` of rank two the kernel `{B : B x = 0}` is nontrivial, so the stabilizer is infinite.
 
     For `C` of rank one the kernel is trivial: `B` is determined by `B(x_0)` and `c * B(x_0) = 0` forces
-    `B = 0` in a torsion-free `R`. Rank two is therefore the first place the kernel shows up.
+    `B = 0` in a torsion-free `R`. Rank two is therefore the first place the kernel shows up. The claimed
+    kernel elements must have identity diagonal blocks -- that is what makes them shears rather than
+    transports through the radical -- and they must span the *whole* kernel, not one nonzero example.
     """
     gram = [[2, 0, 0], [0, 2, 0], [0, 0, 0]]
     lattice_ = lattice(gram)
-    vector_ = element(lattice_, [1, 0, 0])
-    generators = tuple(_RECURSION.pointed_automorphism_generators(vector_))
+    marked = element(lattice_, [1, 0, 0])
+    generators = tuple(_RECURSION.pointed_automorphism_generators(marked))
 
     assert generators
-    assert all(generator(vector_) == vector_ for generator in generators)
-    forms = [matrix(ZZ, rows_of(generator)) for generator in generators]
-    # The stabilizer is infinite here -- rank(C) = 2 gives a free abelian kernel -- so the order is not
-    # computed; what matters is that the kernel is actually generated.
-    assert len(forms) >= 2
+    assert all(generator(marked) == marked for generator in generators)
 
+    identity_c = matrix(ZZ, [[1, 0], [0, 1]])
     shears = []
     for generator in generators:
-        columns = _column_matrix(generator)
-        _, shear, D = _split_blocks(columns, 2, 1)
-        if shear != 0 and shear * vector(ZZ, [1, 0]) == 0:
-            shears.append((shear, D))
+        A, shear, D = _split_blocks(_column_matrix(generator), 2, 1)
+        if shear == 0:
+            continue
+        assert A == identity_c, "a shear with a non-identity A is not in the kernel"
+        assert D == matrix(ZZ, [[1]]), "a shear with a non-identity D is not in the kernel"
+        assert shear * vector(ZZ, [1, 0]) == 0, "a kernel shear must annihilate the marked C-coordinate"
+        shears.append(shear)
     assert shears, "the kernel {B : Bx = 0} should be nontrivial for rank(C) = 2"
 
-    # One such shear fixes the marked vector and moves another C-basis vector by a radical component.
-    # The shear block acts C -> R (the upper-right block is zero), so the radical itself is never moved
-    # into C; what the kernel does is push the *other* C directions down into the radical.
-    shear, _ = shears[0]
-    shear_generator = next(generator for generator in generators
-                           if _split_blocks(_column_matrix(generator), 2, 1)[1] == shear)
-    assert shear_generator(vector_) == vector_
-    labels = tuple(lattice_.module_generating_set())
-    moved = [label for label in labels[:2]
-             if shear_generator(lattice_.module_generator(label)) != lattice_.module_generator(label)]
-    assert moved, "the shear must move a C-basis vector other than the marked one"
-    image = shear_generator(lattice_.module_generator(moved[0]))
-    assert image in lattice_
-    assert image != lattice_.module_generator(moved[0])
+    # The criterion's own basis: rank(C) - 1 = 1 generator per radical coordinate, saturated.
+    expected = shear_kernel_basis(2, 1, (1, 0))
+    assert len(expected) == 1
+    expected_rows = matrix(ZZ, [[int(entry) for row in block.rows() for entry in row] for block in expected])
+    assert expected_rows.rank() == 1
+
+    # The port's shears lie in that kernel and generate all of it: same rank, and primitive (the row
+    # lattice is saturated, so it is the kernel itself rather than a proper sublattice).
+    found = matrix(ZZ, [[int(entry) for row in shear.rows() for entry in row] for shear in shears])
+    assert found.rank() == 1
+    invariants = [int(entry) for entry in found.smith_form()[0].diagonal() if int(entry) != 0]
+    assert invariants == [1], f"the shears must span a saturated lattice, got invariants {invariants}"
+    # Each found shear is an integral multiple of the criterion's generator.
+    generator_row = expected_rows[0]
+    for row in found.rows():
+        assert (row[0] * generator_row[1] - row[1] * generator_row[0]) == 0
+
+
+# ---------------------------------------------------------------------------------------------------
+# The full kernel, as a general construction rather than one example.
+# ---------------------------------------------------------------------------------------------------
+
+@pytest.mark.parametrize(
+    ("c_rank", "radical_rank", "x"),
+    [
+        (2, 1, (1, 0)),
+        (2, 1, (5, 0)),          # content 5: the same primitive direction, so the same kernel
+        (2, 1, (5, 15)),         # content 5, primitive direction (1, 3)
+        (2, 2, (3, 6)),          # two radical coordinates
+        (3, 2, (3, 4, 5)),       # rank(C) = 3: two kernel dimensions per radical coordinate
+    ],
+)
+def test_shear_kernel_basis_generates_the_whole_kernel(c_rank, radical_rank, x) -> None:
+    """The generators span the kernel itself: the right rank, and saturated (all Smith invariants 1)."""
+    basis = shear_kernel_basis(c_rank, radical_rank, x)
+    marked = vector(ZZ, x)
+
+    assert len(basis) == radical_rank * (c_rank - 1)
+    assert all(block * marked == 0 for block in basis)
+
+    rows = [[int(entry) for row in block.rows() for entry in row] for block in basis]
+    stacked = matrix(ZZ, rows)
+    assert stacked.rank() == radical_rank * (c_rank - 1)
+    # Saturated: a proper sublattice of the kernel would leave a Smith invariant above 1.
+    invariants = [int(entry) for entry in stacked.smith_form()[0].diagonal() if int(entry) != 0]
+    assert invariants == [1] * (radical_rank * (c_rank - 1)), invariants
+
+
+def test_shear_kernel_of_a_vanishing_quotient_coordinate_is_all_of_hom() -> None:
+    """For `x = 0` the condition is vacuous: the kernel is the whole `Hom(C,R)` of rank `c_rank*radical_rank`."""
+    c_rank, radical_rank = 2, 2
+    basis = shear_kernel_basis(c_rank, radical_rank, (0, 0))
+
+    assert len(basis) == c_rank * radical_rank
+    rows = [[int(entry) for row in block.rows() for entry in row] for block in basis]
+    stacked = matrix(ZZ, rows)
+    assert stacked.rank() == c_rank * radical_rank
+    assert abs(int(stacked.det())) == 1, "the standard basis is unimodular, so this is all of Hom(C,R)"
