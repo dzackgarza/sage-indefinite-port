@@ -57,6 +57,22 @@ job `jmvz5p00r`:
 | `∩ N.O_plus()` | 0.1 s | per case |
 | **bundled stage**: `N.discriminant_group()`, `.orthogonal_group()`, `discriminant_morphism()` per `Γ_h` generator | **> 2 127 s and unfinished** — the probe ended at its own 2 400 s cap, still inside this stage | per case |
 
+### 2b. The bundle is **not** the `O(q_N)` group — measured by a separate acceptance node
+
+`tests/acceptance/test_isotropic_orbits.sage::test_o_n_maps_onto_o_of_the_discriminant_form` asserts
+`n.discriminant_group().orthogonal_group().cardinality() == 46 998 591 897 600` (and the same order for
+`n.O().discriminant_image()`), for the unpolarized Enriques lattice of the same rank 12, signature (2, 10)
+shape. At the same pins it **passes in 468 s, peak 3 868 MiB** (job `jmvz75d9x`), and **6 of its 7 stack
+dumps are inside `n.O().discriminant_image()`**, not inside `orthogonal_group()`.
+
+So for this form: `discriminant_group()`, `orthogonal_group()` and its `.cardinality()` are **cheap**; the
+~400 s of that node is the discriminant image of the infinite `O(N)`. Consequently the > 2 127 s unfinished in
+the Enriques bundle is **not** `O(q_N)` materialization, and the earlier "materialize the whole group" framing
+is dead twice over (first the laziness, now this). The leading remaining candidate is
+`discriminant_morphism()` **per `Γ_h` generator**, which goes through the same per-element discriminant
+machinery that costs ~400 s for a single group image here. A short bounded probe times three of those calls and
+prints the generator count; that is the last piece.
+
 So the per-case cost is: ~250 s to build `Γ_h`, then a bundle that ran **more than 2 127 s without finishing**
 (probe peak 4 943 MiB tree: julia 3 177, python 1 754). Sum > 2 380 s before any of the three orbit counts,
 which is why 1 800 s caps — and why raising the cap would not help: the bundle alone already exceeds it.
