@@ -84,7 +84,7 @@ parametrization. That belongs to #33, not to a local fixture edit.
 | `test_mertens_omega_and_minus_one_generate_o_l` | `a848fd7c`-era | `e83c4d6` | passed 7.11 s / 6.54 s (two pins) |
 | nodes 1–6 (mertens + five Hecke/ambiguous binary forms) | src `87fbf863` | `cdafca84` | 6/6 passed, 4–46 s |
 | **nodes 10–45 and 47 (37 nodes)** | src `87fbf863` | **`565fc6b9`** | **37/37 passed**, 0 failures; sum 1 780 s; slowest 96 s; max peak 3 753 MiB |
-| node 46 `a7_plus_diagonal` | — | — | **excluded, documented open** |
+| node 46 `a7_plus_diagonal` | — | — | **open — blocked on cone conversion** of a 49 861-vector perfect configuration; see the dependency section below |
 | nodes 7–9 `LORENTZ_OrthogonalGroup{0,1,2}` | src `87fbf863` | `cdafca84` / `565fc6b9` | **open — see below** |
 
 The 37 passing nodes are the degenerate/radical family (10–17) and the OSCAR discriminant-image family
@@ -266,13 +266,13 @@ An inventory of the remaining obligations and what actually blocks each:
 
 | obligation | blocker | evidence |
 | --- | --- | --- |
-| A_VECTORS `test_k3_lattice_has_one_primitive_orbit_per_norm[-2,2,4,-4]` | **the running K3 job** | four nodes, 1 800 s cap each, in flight |
+| A_VECTORS `test_k3_lattice_has_one_primitive_orbit_per_norm[-2,2,4,-4]` | **the algorithm**, not the cap alone — see below | `[-2]` capped at 1 800 s / 3 579 MiB |
 | A_VECTORS `test_k3_lattice_has_one_primitive_orbit` | **cap** — exceeded 1 200 s | recorded cap; would need either a cheaper route or a cap increase, and increasing caps is not in scope |
 | A_STABILIZERS roots (10 nodes) | **heavy slot** — accepted at provider `9dc89ac`, not re-run at `42d7361c`; ~70 min serial | rows keep their pin |
 | A_BOUNDARIES (87 Enriques + ~28 non-Enriques) | **heavy slot**; Enriques `case_1` is a known block at 3 600 s | only 4 Dawes nodes ever ran |
 | A_ISOTROPIC tail (10 non-parametrised + 1 capped) | **heavy slot**; the capped one is the Enriques-adjacent set | 89/89 stride sample passed |
 | A_GROUPS LORENTZ 0/1/2 | **external owner** — GAP lacks `recog`/`genss`, and no recognition route exists for the generated matrix group | `.tmp/handoff-owner-lorentz-image-order.md` |
-| A_GROUPS node 46 `a7_plus_diagonal` | open, deliberately excluded | TODO |
+| A_GROUPS node 46 `a7_plus_diagonal` | **cone conversion**, not a cap — see below | `.tmp/HANDOFF.md` |
 | BOUND/#18 finite-representation transporter | **unverified since the provider moved**, not known-failing | see below |
 | FINITE, LIFTS | **research #401** | TODO |
 
@@ -286,6 +286,50 @@ integral), so that specimen cannot settle it either way. The claim therefore sta
 either resolved or refuted, and the instrumentation to settle it exists
 (`.tmp/probe-transporter-path.py`): it needs a pointed pair whose rational transport is non-integral, which
 the A_STABILIZERS pointed family may supply when that family is re-run at the current pin.
+
+### K3: the bottleneck is the general recursion, so the other norms add nothing
+
+`_pointed_classes` (`marked_lattices.py:150-170`) sends this case to
+`RECURSION.primitive_vector_classes`, because the K3 lattice `U^3 + E8 + E8` has positive index 3 and no rule
+above `case 1` applies. That routine (`recursive.py:1057-1065`) enumerates
+`OrbitCoverModel.primitive_covering_vectors(square)` and deduplicates it by pairwise `pointed_isometry` calls —
+so the cost is `|cover|` times a pointered-isometry computation per kept class. Nothing about that loop is
+specific to a norm: all four nodes run it with a different `square`.
+
+`-2` is the **smallest** shell (the roots) and it caps at 1 800 s with only 3 579 MiB, i.e. on time, not
+memory. Since the remaining norms are independent instances of the same routine on shells that are no smaller,
+running them is repeating a resource cap rather than gaining acceptance information. One further node (`[2]`)
+was allowed to finish because it was already in flight; `[4]` and `[-4]` were not started. **None of the four
+is an accepted case, and no cap was raised.**
+
+### `a7_plus_diagonal`: blocked on cone conversion, with the artifact
+
+The node needs `O(L).discriminant_image()` for `A7 + diag(1,1,-1)`. `.tmp/HANDOFF.md:163-172` records the
+concrete block: its initial perfect configuration has **49 861 distinct vectors**; the streamed pairing/hash
+passes reach exact cone conversion, but neither the full PPL consumer (`.tmp/repair-orthogonal-a7-flint.log`,
+provider `07b24a2`) nor the separate Normaliz probe (`.tmp/repair_a7_normaliz.py`,
+`.tmp/repair-a7-normaliz.log`) produced a result. So "excluded" is not a placeholder: the blocker is the cone
+conversion of a ~50k-vector configuration in two independent engines.
+
+### The transporter needs a rational-nonintegral specimen
+
+Instrumenting `IntegralStructureAction.transporter` and running the divisibility-four isotropic `U(4)+U(4)`
+pointed pair found the witness on the integral branch, never entering the transporter at all. Settling the
+BOUND note therefore requires a pointed pair whose rational transport is **non-integral**; that is a specific
+search target, not something the current evidence settles.
+
+### A green unit suite is not a proof of no source gaps
+
+182 unit tests passing says the non-acceptance code paths that have tests still behave. It says nothing about
+untested branches — for instance `primitive_vector_classes` at positive index >= 3, which is exactly the K3
+case above and has no unit coverage.
+
+### Shared GAP capability: a handoff to coordinate, not a stop
+
+The missing `recog`/`genss` packages are recorded as a concrete request in
+`.tmp/handoff-owner-lorentz-image-order.md` (exact contract, measured routes, what a recognition build would
+unblock). That is an item to coordinate with the provider owner, not a reason to consider LORENTZ closed or
+impossible.
 
 ### Keyboard-level: nothing else is inventable
 
