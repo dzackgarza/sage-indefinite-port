@@ -173,3 +173,59 @@ So there are two names to route, in this order: the Sage optional `gap_packages`
 install that also gives a checkable stabilizer chain), and the image's GAP owner for `recog` if recognition
 rather than a Schreier–Sims order is required. Neither requires a provider patch, and neither changes the
 assertion: the nodes still have to reproduce the recorded order at the original primes.
+
+## What the maintained contracts actually permit for an exact order
+
+Read from the packages' own manuals, because the distinction decides whether a run is evidence.
+
+**genss, chapter 3 (`Stabiliser Chains`), verbatim:** the `DeterministicVerification` component
+
+> "Set this component to true to switch on a deterministic verification routine after the randomised
+> Schreier-Sims procedure. **This is not yet implemented.**"
+
+and on the size it returns:
+
+> "the resulting size need not be a divisor of the actual group order. In particular, equality of the computed
+> size and the actual group order does not by itself prove correctness unless the group order was known to the
+> algorithm during the computation. If the group object G for some reason already knows the group order, then
+> this procedure keeps adding random elements until the known size is reached, and returns a correct and proven
+> stabiliser chain for G."
+
+So, concretely:
+
+* **Monte Carlo route (not evidence).** `StabilizerChain(G, rec(ErrorBound := e))` and `SizeMC` give a bound on
+  the error probability, not a proof. Feeding that number into the acceptance assertion would be probability
+  relabelled as proof, and it is excluded.
+* **Known-size route (circular, not evidence).** `rec(Size := N)` — or a group object that already stores its
+  order — yields a genuinely *proven* chain, but only because `N` was assumed. If `N` is the value the acceptance
+  is meant to establish, the argument is circular. It is usable only in the opposite direction: given an
+  independently computed `N`, the proven chain *verifies* it.
+* **The gap.** `DeterministicVerification` being unimplemented means the package offers no way, today, to turn a
+  Monte Carlo chain into a proven one without being handed the answer.
+
+**So the exact order needs a certificate produced by us, or a second independent exact computation.**
+
+1. **Deterministic Schreier-Sims verification of the candidate chain** (the classical certificate, and what the
+   unimplemented option would do). From a candidate chain with stated generators at each level, check
+   deterministically that (i) each level's orbit is closed under all its generators, and (ii) every Schreier
+   generator `s_x = u^{-1} g_x u` sifts through the levels below to the identity. If every one does, the chain is
+   a valid base and strong generating set and `|G| = product of the orbit lengths` is **exact**. This needs only
+   exact matrix multiplication, orbit closure and sifting over `F_p` — all available in the port's own arithmetic,
+   no GAP, no probability, no assumption on the answer. It is more expensive than the Monte Carlo pass, which is
+   exactly why packages make it optional, and it is the only route that yields a proof without an input order.
+2. **An independent exact computation of the same order**, which is not an ambient substitution: the provider
+   already computes the image order in a faithful finite representation through `reduction_image_order`, and that
+   is what reproduced `46 998 591 897 600` at p = 2 in 0.02 s (agreeing with the harness number). The p = 5 / p = 7
+   failures were in `cardinality()` being routed to BSGS, **not** in `reduction_image_order`. So the second route
+   to check is whether that reduction is faithful at p = 5 and p = 7 as it is at p = 2; if it is, two independent
+   exact computations agreeing is the strongest available evidence and needs no Monte Carlo at all.
+
+What stays excluded either way: reading the order from the ambient `O(L)` or from a containing group, and any
+number that carries an `ErrorBound`. The acceptance keeps its original primes — `2, 5, 7`, with
+`2^21 · 3^5 · 5^2 · 7 · 17 · 31` for the p = 2 case — and stays open until one of these two routes produces a
+value with a checkable certificate.
+
+`recog`'s `RecognizeGroup` returns recognition nodes carrying `Size` fields assembled from directly recognised
+leaves, with `immediate verification` checks in the tree. That is a third, weaker candidate: it is constructive
+recognition rather than a proof of order, and it can return `fail`. It is recorded here as a fallback to
+cross-check against, not as the certificate.
