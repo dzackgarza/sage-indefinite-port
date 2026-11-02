@@ -49,6 +49,13 @@ observed, so the row stays open.
 | **`r_6`** | src `65ea68a68af0` | **`42d7361c`** | **passed 106 s, peak 3 673 MiB** |
 | **`r_7`** | src `65ea68a68af0` | **`42d7361c`** | **passed 454 s, peak 4 060 MiB** |
 | **`r_8`** | src `65ea68a68af0` | **`42d7361c`** | **passed 254 s, peak 3 780 MiB** |
+| **square `[0]`** | src `49e3965f` tree | **`42d7361c`** | **passed 152 s, peak 3 782 MiB** |
+| **square `[2]`** | src `49e3965f` tree | **`42d7361c`** | **passed 116 s, peak 3 735 MiB** |
+| **square `[4]`** | src `49e3965f` tree | **`42d7361c`** | **passed 208 s, peak 3 807 MiB** |
+| **square `[6]`** | src `49e3965f` tree | **`42d7361c`** | **passed 182 s, peak 3 786 MiB** |
+| **square `[8]`** | src `49e3965f` tree | **`42d7361c`** | **passed 198 s, peak 3 804 MiB** |
+| **square `[10]`** | src `49e3965f` tree | **`42d7361c`** | **passed 242 s, peak 3 846 MiB** |
+| **OSCAR `stabilizer_of_100` (node 15)** | src `49e3965f` tree | **`42d7361c`** | **passed 70 s, peak 3 608 MiB** |
 
 Eleven accepted cases at the older pins, none a cap, spanning 6.07 s to 1850.35 s. Four (`r_-1`, `r_0`,
 `r_1`, `r_7`) would have been lost to the 600 s cap used earlier.
@@ -66,6 +73,16 @@ differs in the port src, which is not held fixed anywhere. Read strictly: two no
 provider pin is not a systematic speedup; the two large drops are the two heaviest nodes and the rest move
 both ways. What the sweep establishes is acceptance at the current pins, and that the family is bounded by
 `r_-1`'s memory, not by a cap.
+
+**The E10 squares and the OSCAR node are now re-baselined at the same pin.** All seven pass, one pytest
+invocation per node, cap 1 800 s, guard 6 144 MiB, unchanged assertions (job `jmvz3a0di`): sum **1 168 s**
+against **1 502 s** for the same seven at `565fc6b9`. Node by node, old → new: `[0]` 160 → 152, `[2]` 176 →
+116, `[4]` 222 → 208, `[6]` 385 → **182**, `[8]` 256 → 198, `[10]` 238 → **242**, OSCAR 65 → **70**. The large
+drop is `[6]`; two nodes ticked up slightly. So the pin is not a uniform speedup here either, but nothing
+regressed materially and nothing came near a limit.
+
+That leaves the 14 pointed-isometry nodes (1–14) as the only part of A_STABILIZERS still carrying a
+`565fc6b9` row; they cost 146 s together, so re-baselining them is a short run, not a heavy one.
 
 **The six square nodes are now all accepted** on the maintained provider `565fc6b9`, which carries the
 composite-disjunct-first reorder in `IntegralStructureAction.stabilizer()` (plus the two earlier
@@ -332,7 +349,8 @@ An inventory of the remaining obligations and what actually blocks each:
 | A_VECTORS `test_k3_lattice_has_one_primitive_orbit_per_norm[-2,2,4,-4]` | **accepted 4/4** — the cost was a port-side recomputation defect, not a provider gap | 462 / 466 / 448 / 430 s at peaks 3 948–3 960 MiB, cap 1 800 s, guard 6 144 MiB |
 | A_VECTORS `test_k3_lattice_has_one_primitive_orbit` (no `_per_norm`) | **not an obligation** — no such node exists in the file at any commit | see the note in the A_VECTORS table |
 | A_STABILIZERS roots (10 nodes) | **resolved** — all ten accepted at `42d7361c`, 3 293 s serial, no cap, max peak 4 708 MiB | sweep `jmvyzjrg9` |
-| A_STABILIZERS E10 squares (6) + OSCAR node 15 | **heavy slot** — accepted at `565fc6b9`, not re-run at `42d7361c` | ~1 500 s serial |
+| A_STABILIZERS E10 squares (6) + OSCAR node 15 | **resolved** — all seven accepted at `42d7361c`, 1 168 s serial | job `jmvz3a0di` |
+| A_STABILIZERS pointed-isometry nodes 1–14 | **cheap re-baseline pending** — accepted at `565fc6b9` only, 146 s together | ~300 s serial with startup |
 | A_BOUNDARIES (87 Enriques + ~28 non-Enriques) | **heavy slot**; Enriques `case_1` is a known block at 3 600 s | only 4 Dawes nodes ever ran |
 | A_ISOTROPIC tail (10 non-parametrised + 1 capped) | **heavy slot**; the capped one is the Enriques-adjacent set | 89/89 stride sample passed |
 | A_GROUPS LORENTZ 0/1/2 | **external owner** — GAP lacks `recog`/`genss`, and no recognition route exists for the generated matrix group | `.tmp/handoff-owner-lorentz-image-order.md` |
