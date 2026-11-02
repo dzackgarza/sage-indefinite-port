@@ -61,10 +61,28 @@ The reference never builds an H-description of the 49 861-vector configuration, 
 
   i.e. a dual description **taken modulo the stabilizer group** (`GRPperm`), giving one facet per orbit; each
   orbit representative is then flipped (`LORENTZ_DoFlipping`) to obtain the neighbouring cell.
-- **What is not available** — `DualDescriptionRecordFullDim` and `RecordDualDescOperation` are declared in the
-  vendored header but **defined outside this tree** (`rddo` is constructed at `:1542`). Their algorithm cannot
-  be compared line by line from what is vendored here. What *is* documented by the call signature is that the
-  routine consumes the stabilizer permutation group, so its contract is orbit-reduced.
+- **Where the primary definition lives** — `DualDescriptionRecordFullDim` and `RecordDualDescOperation` are
+  declared in the vendored header but **defined outside this tree** (`rddo` is constructed at `:1542`). The
+  upstream repository's own layout names the home: `src_dualdesc` ("for computing dual description on serial
+  computers"), and the routine is the **adjacency decomposition** method, documented by the author (BIRS 21w5011,
+  "permutalib/polyhedral: Advanced methods for lattice and group computations"):
+
+  > Input: the vertex-set of a polytope P and a group G acting on P. Output: O, the orbits of facets of P.
+  > Compute some initial facet F (by linear programming) and insert the corresponding orbit into O as undone.
+  > For every undone orbit O of facet: take a representative F of O; find the ridges contained in F, i.e. the
+  > facets of the facet F (this is a dual description computation); for every ridge R find the corresponding
+  > adjacent facet F0 such that R = F ∩ F0; for every adjacent facet found test if the corresponding orbit is
+  > already present in O; if no, insert it as undone. Mark the orbit O as done. Terminate when all orbits are
+  > done.
+
+  A maintained Python binding of the same routine exists upstream: `py_polyhedral.dual_description(EXT, GRP)`.
+  GAP counterparts are vendored here: `references/vendor/Indefinite.jl@374a5ebb/indef/lib/DualDescriptionSimple.g`
+  and `DualDescriptionAndADM.g`.
+
+  So the algorithm to reproduce is documented, and its two moving parts are exactly the ones the port already
+  owns: the initial facet normal (the port's `initial_cell` computes `base_normal` by the source's bisection)
+  and the per-ridge flip (the port's `_kernel_flipping` / `flip_across`). What the port lacks is the
+  orbit bookkeeping *between* them — the adjacency decomposition itself — not the geometry.
 
 ## 4. What this image's engines document, measured
 
