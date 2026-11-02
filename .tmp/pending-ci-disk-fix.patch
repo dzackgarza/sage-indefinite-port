@@ -1,36 +1,8 @@
 diff --git a/.github/workflows/acceptance.yml b/.github/workflows/acceptance.yml
-index 7ce17a02..17049b40 100644
+index 7ce17a02..401c76e3 100644
 --- a/.github/workflows/acceptance.yml
 +++ b/.github/workflows/acceptance.yml
-@@ -83,34 +83,36 @@ jobs:
-       - run: just ci-provision-sage
-       - id: key
-         run: echo "key=$(just ci-julia-key)" >> "$GITHUB_OUTPUT"
-+      # One cached path only. The shard job no longer runs inside a job container, so it
-+      # restores this entry onto the runner and mounts it at the same container path; a
-+      # second cached path inside the image (`/sage/.venv/.../Manifest.toml`) has no
-+      # runner-side home and would misplace the archive. The key carries a layout
-+      # version so an entry saved under the old two-path layout is never restored here.
-       - id: restore
-         uses: actions/cache/restore@v4
-         with:
--          path: |
--            /github/home/.julia
--            /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
-+          path: /github/home/.julia
-           key: ${{ steps.key.outputs.key }}
-       - if: steps.restore.outputs.cache-hit != 'true'
-         run: just ci-provision-julia
-       - if: steps.restore.outputs.cache-hit != 'true'
-         uses: actions/cache/save@v4
-         with:
--          path: |
--            /github/home/.julia
--            /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
-+          path: /github/home/.julia
-           key: ${{ steps.key.outputs.key }}
-   family:
-     needs: [plan, julia]
+@@ -104,13 +104,12 @@ jobs:
      name: ${{ matrix.family }} ${{ matrix.shard }}/${{ matrix.shards }}
      runs-on: ubuntu-latest
      timeout-minutes: 360
@@ -40,18 +12,16 @@ index 7ce17a02..17049b40 100644
 -        username: ${{ github.actor }}
 -        password: ${{ github.token }}
 -      options: --user root
-+    # This job deliberately does NOT use a job-level `container:`. A job container is
-+    # pulled during job initialisation, before any step, and that pull is what failed
-+    # with `write /var/lib/docker/tmp/GetImageBlob...: no space left on device`
-+    # (run 41501559444, job 125480676579): the Sage image cannot be pulled into the
-+    # runner's remaining disk. Pulling from a step instead lets disk be freed first,
-+    # which is the reproducible preparation this job needs.
++    # No job-level `container:`: it is pulled during job initialisation, before any step, and
++    # that pull is what failed with `write /var/lib/docker/tmp/GetImageBlob...: no space left
++    # on device` (run 41501559444, job 125480676579). Pulling from a step lets disk be freed
++    # first. The image still provides `/sage` for the run itself.
      env:
 +      SAGE_IMAGE: ghcr.io/dzackgarza/sage:develop
        SAGE_BIN: /sage/.venv/bin/sage
        # The image's read-only depot holds Oscar; the cached writable depot
        # in front of it holds the bridge environment's resolved packages.
-@@ -122,19 +124,60 @@ jobs:
+@@ -122,11 +121,35 @@ jobs:
        matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
      steps:
        - uses: actions/checkout@v4
@@ -59,11 +29,11 @@ index 7ce17a02..17049b40 100644
 +      - name: Free runner disk before the image pull
 +        run: |
 +          set -euxo pipefail
-+          df -h / /var/lib/docker || true
++          df -h /
 +          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
 +            /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/lib/node_modules || true
 +          sudo docker image prune -af || true
-+          df -h / /var/lib/docker || true
++          df -h /
 +      - name: Log in to GHCR and pull the pinned image
 +        run: |
 +          set -euo pipefail
@@ -74,12 +44,23 @@ index 7ce17a02..17049b40 100644
          with:
            github-token: ${{ github.token }}
 -      - run: just ci-provision-sage
++      # The cache is keyed by CONTENT *and versioned by its path list*: `getCacheVersion` hashes
++      # `paths.join('|')` plus the compression method, and the tar carries absolute entries
++      # (`-P`). So the consumer must name the producer's paths character for character; a
++      # different path would be a different version (a miss) and, on a hit, would extract to the
++      # wrong place. These two absolute paths are therefore created on the runner, restored, and
++      # then bind-mounted back into the container at the same paths, where the image expects them.
++      - name: Create the provider-independent cache mount points
++        run: |
++          set -euxo pipefail
++          sudo mkdir -p /github/home \
++            /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env
++          sudo chown -R "$(id -u):$(id -g)" /github/home /sage
        - uses: actions/cache/restore@v4
          with:
--          path: |
--            /github/home/.julia
--            /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
-+          path: ${{ runner.temp }}/julia
+           path: |
+@@ -134,7 +157,34 @@ jobs:
+             /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
            key: ${{ needs.julia.outputs.key }}
            fail-on-cache-miss: true
 -      - run: just ci-acceptance ${{ matrix.family }} ${{ matrix.shard }} ${{ matrix.shards }} '${{ matrix.selection }}'
@@ -91,13 +72,12 @@ index 7ce17a02..17049b40 100644
 +          SELECTION: ${{ matrix.selection }}
 +        run: |
 +          set -euo pipefail
-+          # `just` comes from the pinned action on the runner and is mounted, so the
-+          # container needs no network for it; the binary the action ships is static.
 +          just_dir="$(dirname "$(command -v just)")"
 +          sudo docker run --rm \
 +            --volume "$GITHUB_WORKSPACE:/work" \
 +            --workdir /work \
-+            --volume "${{ runner.temp }}/julia:/github/home/.julia" \
++            --volume "/github/home/.julia:/github/home/.julia" \
++            --volume "/sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml:/sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml" \
 +            --volume "$just_dir:/opt/just:ro" \
 +            --env PATH="/opt/just:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
 +            --env SAGE_BIN="$SAGE_BIN" \
@@ -107,9 +87,6 @@ index 7ce17a02..17049b40 100644
 +            "$SAGE_IMAGE" \
 +            bash -lc 'set -euo pipefail
 +              git config --global --add safe.directory /work
-+              # `ci-provision-sage` corrects MAXIMA_PREFIX for this image and, when
-+              # GITHUB_ENV exists, publishes it to later steps. Both commands now run in
-+              # one shell, so apply the same correction here instead of relying on that.
 +              if [[ -n "${MAXIMA_PREFIX:-}" && -d "${MAXIMA_PREFIX}/share/to_poly_solve" && ! -d "${MAXIMA_PREFIX}/to_poly_solve" ]]; then
 +                export MAXIMA_PREFIX="${MAXIMA_PREFIX}/share"
 +              fi
@@ -118,18 +95,3 @@ index 7ce17a02..17049b40 100644
        - if: always()
          uses: actions/upload-artifact@v4
          with:
-diff --git a/justfile b/justfile
-index e254a6ca..7453da30 100644
---- a/justfile
-+++ b/justfile
-@@ -99,7 +99,9 @@ ci-julia-key:
-     #!/usr/bin/env bash
-     set -euo pipefail
-     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
--    "$sage_python" -c 'import hashlib, pathlib, sage_julia_bridge; print("julia-depot-" + hashlib.sha256((pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env" / "Project.toml").read_bytes()).hexdigest()[:16])'
-+    # The `-v2-` prefix versions the cache *layout*: the entry now holds the depot only, so
-+    # an entry saved by the earlier two-path recipe must never be restored into it.
-+    "$sage_python" -c 'import hashlib, pathlib, sage_julia_bridge; print("julia-depot-v2-" + hashlib.sha256((pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env" / "Project.toml").read_bytes()).hexdigest()[:16])'
- 
- # CI only: run one acceptance shard, or a required amended branch sample;
- # results land in .tmp/ci/results/<family>-<shard>.
