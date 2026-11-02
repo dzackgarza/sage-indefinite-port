@@ -79,3 +79,5 @@ references/Indefinite.jl/
 !.tmp/probe-kernel-idioms.py
 !.tmp/probe-gobjects.py
 !.tmp/probe-gset-issue41.py
+!.tmp/probe-quotient-orbit.py
+!.tmp/probe-hom-kernel.py

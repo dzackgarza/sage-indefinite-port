@@ -353,27 +353,51 @@ gap; they do not close it or narrow the eventual public contract.
   subgroup contract* on those sets and any canonicalization guarantee, which is #53's
   and #62's subject, not something to be faked here.
 
-  **Owner gap routed (replacing the port helper I had written).** I had added
-  `shear_kernel_basis` to `indefinite/recursive.py`, building the kernel
-  `{B in Hom_Z(C,R) : B x = 0}` from a flattened coordinate matrix. That is a
-  coordinate shadow of a module-theoretic operation and has been **removed**. The
-  missing maintained operation, stated minimally:
+  **The quotient consumer is now implemented** (this replaces my earlier single-orbit
+  `points()` claim, which was not the quotient). `marked_orbit_quotient(lattice, n)`
+  builds `L[n]` via `Sets().condition_set` and returns `action.orbits()` — the
+  provider's `_OrbitSet` whose members are orbit *classes* reached through `orbit_of`.
+  The provider enforces the #53 discipline itself: `_OrbitSet.__iter__` asserts the
+  underlying G-set is placed finite ("the orbits of … are listed only when it is a
+  finite set"), so an infinite quotient cannot be silently truncated — asserted in the
+  test, because that refusal is the contract. `is_finite()` stays a proposition.
+
+  **Maintained Hom/evaluation/kernel: present, and one construction gap with a trace.**
+  A name search was not enough; executed, `Modules(ZZ).Mor(C, R)` is the Hom and it has
+  `evaluation(map_element, source_element)`, and morphisms carry `kernel()`
+  (`module_morphisms.py:1232`). The gap is narrower than "no Hom": building the
+  *evaluation morphism* `ev_x: Hom(C,R) -> R` fails because `Modules(ZZ).Mor(Hom, R)(f)`
+  wants "the images of the generators" of `Hom`, while the Hom module advertises only
+  `module_rank` and `an_element` — and the represented-kernel path underneath
+  (`framed_free_modules.py:1039` → `pure/modules.py:7005 _kernel_spanning_family` →
+  `_engine_matrix`) needs that coordinate matrix. So the missing operation is the
+  generator family of `Hom_Z(C,R)` as a module, not Hom itself.
+
+  **Measured kernel gaps, recorded rather than papered over.** With the port's own
+  stabilizer shears, three specimens span the full kernel (saturated, Smith invariants
+  all 1): `rank(C)=2, rank(R)=1` with content 1 and with content 5 (rank 1), and
+  `rank(C)=3, rank(R)=1` (rank 2). Two do not, and are **not** claimed:
+  - `rank(R) = 2`: for `rank(C)=3, rank(R)=2` the required kernel rank is 4 and the
+    port's shears span only 2; `rank(C)=2, rank(R)=2` likewise falls short. The
+    pointwise stabilizer does not yet produce the full `Hom(C,R/Zx)` kernel when the
+    radical has rank ≥ 2.
+  - a marked vector *inside* the radical (`c = 0`, `x = 0`) does not reach the shear
+    route at all: it takes the isotropic branch and raises `ArithmeticError("the
+    isotropic pairing L -> J* must have finite cokernel")`. The `c = 0` kernel is all of
+    `Hom(C,R)`, of rank `rank(C)*rank(R)`, and is unimplemented.
+
+  No raw flattened-matrix helper is kept in the port for any of this.
+
+  The contract the owner still has to supply, in the provider's own terms:
 
 ```
 input   C, R    free Z-modules of finite rank (here the nondegenerate complement and the radical)
         x       an element of C
-output  Hom_Z(C,R) as a module; the evaluation morphism ev_x: Hom(C,R) -> R, B |-> B x;
-        and ker(ev_x) with a basis
-        -- ker(ev_x) is the full shear kernel of issue #41, of rank rank(R)*(rank(C)-1) for primitive x
+output  the generator family of Hom_Z(C,R) as a module, so that ev_x: Hom(C,R) -> R,
+        B |-> B x can be built as a morphism and its kernel() taken
+        -- ker(ev_x) is the full shear kernel, of rank rank(R)*(rank(C)-1) for primitive x,
+           and all of Hom(C,R) when x = 0
 ```
-
-  The provider has no free-module `Hom` object with evaluation and kernel: `Hom` appears
-  only on engine matrices and in documentation. The mathematical content is not lost —
-  it is recorded here and exercised by the tests through the port's own generators:
-  for `rank(C) = 2`, `x_0 = (1,0)` primitive and `rank(R) = 1`, the kernel is free of
-  rank 1 and saturated, and the port's shears must span a saturated rank-1 sublattice of
-  `Hom(C,R) = Z^2`, which the test checks by requiring every Smith invariant to be 1 (a
-  proper sublattice would leave one above 1).
 
 ## Release and terminal nodes
 

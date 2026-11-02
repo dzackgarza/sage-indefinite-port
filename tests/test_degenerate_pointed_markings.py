@@ -20,7 +20,7 @@ so a change to the marked path cannot quietly take it out.
 """
 import pytest
 
-from sage.all import MatrixGroup, ZZ, matrix, vector
+from sage.all import MatrixGroup, ZZ, identity_matrix, matrix, vector
 
 from sage_indefinite_port.indefinite.recursive import EichlerRecursion, _column_matrix
 from tests.acceptance.consumer import (
@@ -317,3 +317,92 @@ def test_marked_orbit_action_exposes_the_native_orbit_surface() -> None:
     first, second = element(lattice_, [1, 0]), element(lattice_, [1, 1])
     assert action.in_same_orbit(first, second) is True
     assert action.in_same_orbit(first, element(lattice_, [3, 0])) is False
+
+
+# ---------------------------------------------------------------------------------------------------
+# The quotient L[n]/O(L), and the restored general coverage.
+# ---------------------------------------------------------------------------------------------------
+
+def test_marked_orbit_quotient_is_the_orbit_set_and_refuses_to_be_listed() -> None:
+    """`L[n]/O(L)` is a set of orbit classes, used through `orbit_of`, and it refuses to be listed.
+
+    The quotient is not the points of one orbit: `orbit_of` returns a class. And the provider enforces the
+    #53 discipline itself -- `__iter__` asserts that the underlying G-set *is placed finite*
+    ("the orbits of ... are listed only when it is a finite set"), so an infinite quotient cannot be
+    silently truncation-listed. That refusal is the contract, not a defect, so it is asserted here.
+    """
+    lattice_ = lattice(_GRAM)
+    quotient = _RECURSION.marked_orbit_quotient(lattice_, 2)
+
+    # The quotient exposes orbit classes, not vector points, and answers lazily.
+    assert hasattr(quotient, "orbit_of")
+    source = element(lattice_, [1, 0])
+    orbit = quotient.orbit_of(source)
+    assert hasattr(orbit, "points")
+    assert source in orbit
+    assert element(lattice_, [1, 1]) in orbit          # the shear image is in the same class
+    assert element(lattice_, [0, 1]) not in orbit      # q = 0, a different square
+
+    # No finiteness is claimed, and listing is refused rather than truncated.
+    assert quotient.is_finite() is not True
+    with pytest.raises(AssertionError):
+        next(iter(quotient))
+
+
+def _definite_complement_lattice(c_rank: int, radical_rank: int):
+    gram = [[2 if row == column and row < c_rank else 0
+             for column in range(c_rank + radical_rank)]
+            for row in range(c_rank + radical_rank)]
+    return lattice(gram)
+
+
+def _kernel_shears(c_rank: int, radical_rank: int, marked_coordinates):
+    """The shear blocks of the pointwise stabilizer on a real lattice, with identity diagonal blocks."""
+    lattice_ = _definite_complement_lattice(c_rank, radical_rank)
+    marked = element(lattice_, marked_coordinates)
+    stabilizer = tuple(_RECURSION.pointed_automorphism_generators(marked))
+    assert stabilizer, "the pointwise stabilizer has a generating family"
+    assert all(generator(marked) == marked for generator in stabilizer)
+
+    identity_c = identity_matrix(ZZ, c_rank)
+    identity_r = identity_matrix(ZZ, radical_rank)
+    labels = tuple(lattice_.module_generating_set())
+    marked_coordinates = vector(ZZ, [int(marked.to_vector()(label)) for label in labels])
+    quotient_part = marked_coordinates[:c_rank]
+    shears = []
+    for generator in stabilizer:
+        A, shear, D = _split_blocks(_column_matrix(generator), c_rank, radical_rank)
+        if shear == 0:
+            continue
+        # A kernel shear has both diagonal blocks trivial and annihilates the marked C-coordinate.
+        assert A == identity_c
+        assert D == identity_r
+        assert shear * quotient_part == 0
+        shears.append(shear)
+    return lattice_, marked, shears
+
+
+@pytest.mark.parametrize(
+    ("c_rank", "radical_rank", "marked", "expected_rank"),
+    [
+        (2, 1, (1, 0, 0), 1),
+        (3, 1, (1, 0, 0, 0), 2),
+        (2, 1, (5, 0, 0), 1),          # content 5: the same primitive direction, so the same kernel
+    ],
+)
+def test_pointwise_stabilizer_shears_span_the_full_shear_kernel(c_rank, radical_rank, marked, expected_rank):
+    """The kernel `{B : B x = 0}` has rank `rank(R)*(rank(C)-1)` for primitive `x`, and all of
+    `Hom(C,R)` when `x = 0`; the port's shears must span a *saturated* lattice of exactly that rank.
+
+    For `rank(C) = 2`, `rank(R) = 1`, `x_0 = (1,0)` primitive, the map `Hom(C,R) -> R`, `B |-> Bx`, is onto a
+    rank-1 radical, so the kernel is free of rank 1; for `x = 0` the condition is vacuous and the kernel is
+    all of `Hom(C,R)`, of rank `rank(C)*rank(R)`.
+    """
+    lattice_, marked_vector, shears = _kernel_shears(c_rank, radical_rank, marked)
+    assert shears, "the shear kernel should be generated"
+
+    rows = [[int(entry) for row in shear.rows() for entry in row] for shear in shears]
+    stacked = matrix(ZZ, rows)
+    assert stacked.rank() == expected_rank
+    invariants = [int(entry) for entry in stacked.smith_form()[0].diagonal() if int(entry) != 0]
+    assert invariants == [1] * expected_rank, invariants

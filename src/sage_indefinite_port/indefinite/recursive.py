@@ -349,6 +349,31 @@ class EichlerRecursion:
         """
         return self.marked_orbit_action(vector.parent()).orbits().orbit_of(vector).points()
 
+    def marked_square_slice(self, lattice: Lattices.ParentMethods, square):
+        r"""The set `L[n] = {v in L : q(v) = n}` as the provider's predicate-cut set.
+
+        This is a mathematical set, not a list: it is cut out by a predicate on the lattice, so membership
+        is decided exactly and the set is never materialized.
+        """
+        target = int(square)
+        return Sets().condition_set(lattice, lambda candidate: int(candidate.q()) == target)
+
+    def marked_orbit_quotient(self, lattice: Lattices.ParentMethods, square):
+        r"""`L[n] / O(L)`: the quotient set of orbit classes of square-`n` vectors (issues #41 and #53).
+
+        This is the object the orbit consumer needs, and it is *not* the points of a single orbit:
+        `action.orbits()` returns the provider's `_OrbitSet`, whose points are orbit classes, obtained
+        through `orbit_of`. It is lazy: nothing is enumerated until asked, `orbit_of` returns the class of
+        one vector, and `is_finite()` stays a proposition -- `L[n]/O(L)` may be infinite (see #53's
+        example), so neither a finite list nor a finiteness claim is made here.
+        """
+        action = GObjects(lattice.O(), Sets()).on_set(
+            self.marked_square_slice(lattice, square),
+            lambda isometry, point: isometry(point),
+            orbit_relation=lambda left, right: self.pointed_isometry(left, right) is not None,
+        )
+        return action.orbits()
+
     def orthogonal_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
         if lattice.is_definite():
             # IndefiniteForms.g:1275-1310 INDEF_FORM_AutomorphismGroup_Memoize
