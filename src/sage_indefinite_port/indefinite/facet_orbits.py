@@ -341,54 +341,62 @@ def _orbit(incidence, permutations):
     return members
 
 
-def _compose(first, second):
-    """The permutation ``first ∘ second`` (apply ``second``, then ``first``)."""
-    return tuple(first[second[index]] for index in range(len(second)))
+def _orbit_with_images(incidence, permutations):
+    r"""The orbit of a facet together with the image of its incidence under every orbit word.
 
-
-def _inverse(permutation):
-    inverse = [0] * len(permutation)
-    for index, image in enumerate(permutation):
-        inverse[image] = index
-    return tuple(inverse)
-
-
-def _restrict(permutation, positions):
-    """A permutation of the ambient ray positions, restricted to a stable set of positions."""
-    offset = {position: index for index, position in enumerate(positions)}
-    return tuple(offset[permutation[position]] for position in positions)
-
-
-def _schreier_stabilizer(seed, permutations, orbit_words):
-    r"""Generators of the set stabilizer of ``seed``, by Schreier's lemma.
-
-    ``orbit_words[point]`` is a word of generator indices with ``w(seed) = point``. For a point ``u`` and a
-    generator ``s_i``, the element ``w_{u·s_i}^{-1} · s_i · w_u`` fixes ``seed``; these generate the stabilizer.
+    ``members[face] = (word, image)`` where ``word`` is a tuple of generator indices with
+    ``word(incidence) = face`` and ``image`` is that word applied to the *sorted* positions of ``incidence``,
+    point by point. Carrying the image along costs ``O(|F|)`` per step and removes the need ever to build a
+    permutation of the whole ray set -- which on the A7 specimen has 49 861 positions and was the measured
+    bottleneck (`_compose` at every (orbit point x generator) pair).
     """
-    generators = []
-    for point, word in orbit_words.items():
-        current = _apply_word(seed, permutations, word)
+    positions = tuple(sorted(incidence))
+    members = {incidence: ((), positions)}
+    queue = deque([incidence])
+    while queue:
+        current = queue.popleft()
+        word, image = members[current]
         for index, permutation in enumerate(permutations):
-            moved = frozenset(permutation[position] for position in current)
-            tail = orbit_words[moved]
-            candidate = _compose(
-                _compose(_inverse(_apply_word_permutation(permutations, tail)), permutation),
-                _apply_word_permutation(permutations, word),
-            )
-            if candidate not in generators:
-                generators.append(candidate)
+            moved_image = tuple(int(permutation[position]) for position in image)
+            moved = frozenset(moved_image)
+            if moved not in members:
+                members[moved] = (word + (index,), moved_image)
+                queue.append(moved)
+    return members
+
+
+def _stabilizer_on_facet(permutations, members):
+    r"""Generators of the facet's set stabilizer, as permutations **of the facet's own positions**.
+
+    For an orbit point ``u`` with image ``image_u`` and a generator ``s``, the Schreier element
+    ``w_x^{-1} . s . w_u`` (with ``x = s(u)``) fixes the facet, and its action on the facet's positions is
+    ``i -> (w_x^{-1})(s(image_u[i]))``: both ``image_u`` and ``image_x`` are bijections between the facet's
+    positions and their images, so the inverse is a dictionary lookup. Every step is ``O(|F|)``; no permutation of
+    the ambient ray set is formed.
+    """
+    generators: list[tuple[int, ...]] = []
+    for _face, (_word, image_u) in members.items():
+        for permutation in permutations:
+            moved = frozenset(int(permutation[position]) for position in image_u)
+            if moved not in members:
+                continue
+            image_x = members[moved][1]
+            inverse_x = {position: index for index, position in enumerate(image_x)}
+            action = []
+            for position in image_u:
+                target = int(permutation[position])
+                index = inverse_x.get(target)
+                if index is None:
+                    raise ArithmeticError(
+                        "a Schreier element did not map the facet onto itself; the orbit data is inconsistent"
+                    )
+                action.append(index)
+            if sorted(action) != list(range(len(action))):
+                raise ArithmeticError("a Schreier element is not a permutation of the facet's positions")
+            action_tuple = tuple(action)
+            if action_tuple not in generators:
+                generators.append(action_tuple)
     return tuple(generators)
-
-
-def _apply_word_permutation(permutations, word):
-    result = tuple(range(len(permutations[0]))) if permutations else ()
-    for index in word:
-        result = _compose(permutations[index], result)
-    return result
-
-
-def _apply_word(seed, permutations, word):
-    return frozenset(_apply_word_permutation(permutations, word)[position] for position in seed)
 
 
 def orbit_representatives(rays, permutations):
@@ -428,14 +436,11 @@ def orbit_representatives(rays, permutations):
         index = pending.pop()
         incidence, normal = representatives[index]
         positions = sorted(incidence)
-        orbit_words = _orbit(incidence, permutations)
-        stabilizer = _schreier_stabilizer(incidence, permutations, orbit_words)
+        members = _orbit_with_images(incidence, permutations)
+        local_permutations = _stabilizer_on_facet(permutations, members)
         local_rays, local_dimension = _local_coordinates(rays, incidence)
         if local_dimension < 2:
             continue
-        local_permutations = tuple(_restrict(permutation, positions) for permutation in stabilizer)
-        if not local_permutations:
-            local_permutations = (tuple(range(len(positions))),)
         for ridge_local, _ridge_normal in orbit_representatives(local_rays, local_permutations):
             ridge = frozenset(positions[offset] for offset in sorted(ridge_local))
             for candidate in _normal_cone_through_ridge(rays, ridge, dimension):
