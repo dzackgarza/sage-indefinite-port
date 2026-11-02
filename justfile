@@ -109,7 +109,28 @@ ci-acceptance family shard shards selection="":
     out={{ci_dir}}/results/{{family}}-{{shard}}
     mkdir -p "$out"
     git rev-parse HEAD > "$out/commit"
-    git -C {{ci_dir}}/research rev-parse HEAD > "$out/research_commit"
+    # The provider checkout is created by `ci-provision-sage` at
+    # {{ci_dir}}/sage-extensions, at the revision pyproject.toml pins. The artifact keeps its
+    # historical name `research_commit` because ci/acceptance_summary.py and its tests read that
+    # file; only the path below is the live one. Record the revision actually checked out and
+    # refuse a checkout that drifted from the pin, so the provenance the summary reports is the
+    # provenance the tests ran against.
+    provider_dir={{ci_dir}}/sage-extensions
+    if [ ! -d "$provider_dir/.git" ]; then
+        echo "ERROR: no provider checkout at $provider_dir; run 'just ci-provision-sage' first" >&2
+        exit 1
+    fi
+    provider_head="$(git -C "$provider_dir" rev-parse HEAD)"
+    pinned_rev="$(sed -n 's|.*sage-extensions @ git+https://github.com/dzackgarza/sage-extensions@\([0-9a-f]\{40\}\).*|\1|p' pyproject.toml | head -1)"
+    if [ -z "$pinned_rev" ]; then
+        echo "ERROR: pyproject.toml declares no sage-extensions revision" >&2
+        exit 1
+    fi
+    if [ "$provider_head" != "$pinned_rev" ]; then
+        echo "ERROR: provider checkout $provider_head does not match the pyproject.toml pin $pinned_rev" >&2
+        exit 1
+    fi
+    printf '%s\n' "$provider_head" > "$out/research_commit"
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     export PYTHONPATH="$PWD/{{ci_dir}}/ai-review-ci/tool-artifacts/pytest_plugins:$PWD/src:$PWD"
     # SIGINT before the job's hard limit, so pytest still writes the JUnit

@@ -34,7 +34,7 @@ Port `47b69d86` (src unchanged since `49e3965f`), provider `42d7361c`, unless a 
 | A_BOUNDARIES — classical indices (3 nodes) | **not run** | — |
 | **A_REFLECTIVE — representative families** | **ACCEPTED 116/116**, zero failures, max peak 2 452 MiB (the E10 node), cap 1 800 s, guard 6 144 MiB: 6 non-parametrised (edgewalk routes, promised-go, both labelled-coordinate period cases, branch sample), 103 `ListSimpleRootSystem`, 4+2 Vinberg, 1 E10 | job `jmvzi4n08` |
 | A_REFLECTIVE — long tail (8 821 `ListReflect` + 8 595 Allcock) | **not gated, sampled and paused**: a stride-500 sample ran **14 nodes, 14 passed, 0 failures**, then the run was stopped **between nodes** (not mid-node) to free the shared heavy slot for the library's Enriques stage probe. Not a failure and not a cap | job `jmvzj3scc` |
-| A_PERFECT | 92/92 **locally** at `cdafca84`. The hosted requirement is discharged by `.github/workflows/acceptance.yml`, which runs on every push (a required sample) and on `workflow_dispatch` (full corpora), in `ghcr.io/dzackgarza/sage:develop`; every push to main this session is a trigger. The connector exposes no Actions runs, so the hosted result is read in the repository's Actions tab, not from here — no hosted evidence is claimed | `.github/workflows/acceptance.yml` |
+| A_PERFECT | **Hosted CI defect found and fixed** (see below): `ci-acceptance` read the provider revision from `.tmp/ci/research`, a path no recipe creates — `ci-provision-sage` provisions `.tmp/ci/sage-extensions` at the `pyproject.toml` pin — so every shard aborted before pytest with `fatal: cannot change to .tmp/ci/research` (exit 128). Repaired, with a pin check. 92/92 **locally** at `cdafca84`. The hosted requirement is discharged by `.github/workflows/acceptance.yml`, which runs on every push (a required sample) and on `workflow_dispatch` (full corpora), in `ghcr.io/dzackgarza/sage:develop`; every push to main this session is a trigger. The connector exposes no Actions runs, so the hosted result is read in the repository's Actions tab, not from here — no hosted evidence is claimed | `.github/workflows/acceptance.yml` |
 | Unit suite | **240 passed** over all of `tests/` at the final HEAD, 155.6 s — includes the facet-certificate, orbit-contract, walk and traversal-seam files | `unit-final.log` |
 
 Three things this table must not be read as: K3 acceptance is one test, not A_VECTORS; a green unit suite is
@@ -593,6 +593,37 @@ genuinely non-integral image must raise `ArithmeticError` rather than be truncat
 above executed the *working tree*, whose content is commit `06bc9562` with src tree
 `965041fd64e6cad6d0a7f4cebff69ef28f06b0f5` — i.e. `87fbf863` plus this one repair. A header line reading
 `87fbf863` for those runs is the pre-commit `HEAD:src`, not the tree under test.
+
+## Hosted acceptance blocker: the shard recipe's provider path
+
+Run `41491347704` at `55f1c70e` failed in `perfect_domains` shards 1-3 **before pytest**, in the `family` job
+(`20275011328`-family, step `just ci-acceptance`), with
+
+```
+fatal: cannot change to '.tmp/ci/research': No such file or directory
+recipe ci-acceptance exit 128
+```
+
+after `ci-provision-sage` and the Julia cache restore had succeeded. That is a path-contract defect in the port
+repository, not a mathematical failure:
+
+* `ci-provision-sage` clones the provider to **`.tmp/ci/sage-extensions`** and checks out the revision that
+  `pyproject.toml` pins (`sage-extensions @ git+...@cdafca84...`), so the provider is present and at a known
+  revision when the shard starts;
+* `ci-acceptance` recorded the provider revision from **`.tmp/ci/research`**, a path no recipe creates and which a
+  fresh checkout cannot contain because `.tmp/` is ignored. The name is a leftover from before the library moved
+  to `sage-extensions`.
+
+Why it was invisible locally: local runs bind `~/sage-extensions-42d7361c`, and the recipe is only used by CI.
+
+The repair keeps the artifact name `research_commit`, because `ci/acceptance_summary.py` and
+`tests/test_acceptance_ci.py` read that file, and changes only the source path. It also adds two refusals so this
+cannot recur silently: a missing provider checkout names the recipe to run, and a checkout whose `HEAD` differs
+from the `pyproject.toml` pin is rejected rather than recorded as provenance.
+
+Validated locally on a synthetic workspace: the happy path writes the provider `HEAD` it read; a drifted
+checkout is refused with both revisions named; a missing checkout is refused naming `ci-provision-sage`; and the
+rendered recipe passes `bash -n`, with its pin `sed` byte-identical to the provisioning recipe's.
 
 ## A_REFLECTIVE: the #33 identity defect, and what actually gates this family
 
