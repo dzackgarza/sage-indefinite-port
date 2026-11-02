@@ -146,6 +146,8 @@ converge on the same operation:
 | Enriques `case_1` | after 219 s of coinvariant construction, **> 681 s unfinished just to generate `Γ_h`** |
 | `test_o_plus_n_has_two_line_and_two_plane_orbits` | capped earlier on the same path |
 | `test_stabilizer_images_…_indices` (unrun) | asserts through `n.O_plus().stabilizer(...).group_generators()` |
+| Dawes `[dawes_2U2_A2_stable]` | re-run at `42d7361c` (changed pin, not a chained wait): **capped** 1 800 s, 4 304 MiB; 8 of 29 dumps in `subgroup_classes` |
+| the 3 classical-index cases | same `_gamma_h` + `subgroup_on(...)` path by source read |
 
 So the request below is not four requests. It is one: **generators of a stabilizer, or of an intersection of
 subgroups, cheaply enough to then split orbits.** Everything else in these families is either cheap here or

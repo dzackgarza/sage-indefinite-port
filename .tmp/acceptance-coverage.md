@@ -29,7 +29,8 @@ Port `47b69d86` (src unchanged since `49e3965f`), provider `42d7361c`, unless a 
 | A_ISOTROPIC — `test_published_representatives_lie_in_distinct_o_plus_orbits[rank0]` | **capped again** at 1 800 s, peak 4 641 MiB; 29 dumps put it in `subgroup_classes` | job `jmvz88la4` |
 | A_ISOTROPIC — remaining tail (6 unrun + 1 capped) | **open** — same `subgroup_classes`/stabilizer-generation locus | this session |
 | A_BOUNDARIES — Enriques 87 cases | **open — external owner**: 219 s to build the coinvariant subgroup, then > 681 s unfinished just to *generate* `Γ_h`; the rest of the case never runs | `.tmp/handoff-owner-enriques-oqn.md` |
-| A_BOUNDARIES — Dawes tail (3 nodes) | **open** — memory-bound at the 6 144 MiB guard (6 147 MiB peak) and one 1 800 s cap | earlier record |
+| A_BOUNDARIES — Dawes tail (3 nodes) | **open — same subgroup primitive**: `dawes_2U2_A2_stable` re-run at `42d7361c` still caps at 1 800 s (4 304 MiB), 8 of 29 dumps in `subgroup_classes` | job `jmvzaglti` |
+| A_BOUNDARIES — classical indices (3 nodes) | **open — same locus**: asserts through `_gamma_h` and `subgroup_on(discriminant_morphism…)` | source read |
 | A_BOUNDARIES — classical indices (3 nodes) | **not run** | — |
 | A_REFLECTIVE | 2 nodes accepted; **#33 blocker** — the fixture has 8 595 entries for 176 ids | earlier record |
 | A_PERFECT | 92/92 locally at `cdafca84`; **no hosted run at an accepted head** | earlier record |
@@ -179,6 +180,8 @@ was labelled with:
 | `test_published_representatives_lie_in_distinct_o_plus_orbits[rank0]` | 29 dumps, **5 in `subgroup_classes`**, the rest in the same call's element work — the split needs `apex_stabilizer(marked)` per class |
 | `test_o_plus_n_has_two_line_and_two_plane_orbits` (capped earlier) | same `subgroup_classes` path |
 | `test_stabilizer_images_…_indices` (unrun) | asserts through `n.O_plus().stabilizer(...).group_generators()` — the same primitive |
+| Dawes `[dawes_2U2_A2_stable]` | re-run at `42d7361c`: **capped** 1 800 s, 4 304 MiB; 29 dumps, **8 in `subgroup_classes`**, 2 in `isotropic_classes`, 19 in provider element work |
+| the 3 classical-index nodes | same `_gamma_h` + `subgroup_on(discriminant_morphism…)` path, by source read |
 
 What is *not* the cause in any of them: `O(q_N)` (a passing node builds it and asks its order cheaply), the
 port's isotropic enumeration (memoized, and its line node passes in 150 s where the split is what fails), or a
