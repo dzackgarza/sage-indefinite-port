@@ -135,6 +135,22 @@ What is **not** established, and should not be assumed by the owner:
   it is a method *on* the ambient group object and still needs that engine group; whether the engine group
   parent (as opposed to its `.gens()`) is the expensive part is unmeasured.
 
+## 3b. The same primitive explains three other capped nodes
+
+After instrumenting the Enriques case, the capped A_ISOTROPIC nodes were run and their dumps read. They
+converge on the same operation:
+
+| item | measured |
+| --- | --- |
+| `test_published_representatives_lie_in_distinct_o_plus_orbits[rank0]` | **capped** 1 800 s, peak 4 641 MiB; 29 dumps, 5 inside `subgroup_classes`, the rest in the same call's element work |
+| Enriques `case_1` | after 219 s of coinvariant construction, **> 681 s unfinished just to generate `Γ_h`** |
+| `test_o_plus_n_has_two_line_and_two_plane_orbits` | capped earlier on the same path |
+| `test_stabilizer_images_…_indices` (unrun) | asserts through `n.O_plus().stabilizer(...).group_generators()` |
+
+So the request below is not four requests. It is one: **generators of a stabilizer, or of an intersection of
+subgroups, cheaply enough to then split orbits.** Everything else in these families is either cheap here or
+already known.
+
 ## 4. What the owner is asked to consider (not a claim that it is possible)
 
 Decide `|π(Γ_h)| ≤ O(q_N)` for a subgroup **given by its generators in `O^+(N)`** without materializing the
