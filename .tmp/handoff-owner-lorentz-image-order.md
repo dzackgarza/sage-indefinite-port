@@ -159,20 +159,26 @@ What the Lorentz nodes actually need, and where it comes from, measured inside t
   packages in `/usr/share/gap/pkg`, currently AClib, Alnuth, AtlasRep, AutPGrp, Congruence, Cryst, CrystCat,
   CtblLib, FGA, GAPDoc, HAP, Polycyclic, PrimGrp, RadiRoot, SmallGrp and the rest of the Debian set — no `recog`,
   no `genss`.
-* **Supported reproducible route for `genss`.** Sage's optional package `gap_packages` (spkg version 4.16.1,
-  `/sage/build/pkgs/gap_packages/spkg-install.in`) installs `genss` into `$SAGE_LOCAL/lib/gap/pkg` as part of its
-  documented package list. That is a maintained install (`sage -i gap_packages`), owned by the Sage build, and it
-  is the narrowest supported dependency: `genss` supplies randomized Schreier–Sims for matrix groups, which is
-  precisely the order computation these nodes lack.
-* **`recog` is not in that bundle.** `grep -c '^    recog' spkg-install.in` returns 0: the Sage bundle ships
-  `genss` but not `recog`. `recog` (group recognition over finite fields, `RecognizeGroup`) comes from the GAP
-  package distribution as a standalone package, installed into the GAP root's `pkg` directory by whoever owns the
-  image's GAP (`/usr/share/gap/pkg`). That is a different owner from the Sage build.
+* **The `gap_packages` route is refuted for this image, by the image's own evidence.** Sage's optional package
+  `gap_packages` (spkg 4.16.1, `/sage/build/pkgs/gap_packages/spkg-install.in`) does list `genss`, and installs it
+  into `$SAGE_LOCAL/lib/gap/pkg`. That directory is on **none** of the roots libgap uses here: Sage's libgap runs
+  the system `gap` binary and takes the roots it reports, which the Debian wrapper sets to
+  `$HOME/gap;/usr/local/lib/gap;/usr/local/share/gap;/usr/lib/gap;/usr/share/gap`. So `sage -i gap_packages` in
+  this image installs files that never load. I asserted that route earlier in this document from the spkg's
+  package list alone; the load/root contract falsifies it.
+* **What the packages need and where they went.** The image now installs them into `/usr/share/gap/pkg` from
+  pinned release tarballs, which is the root libgap actually reads (`gap-dev` supplies the `gac` that orb's C
+  module compiles against; Debian trixie packages none of the four):
 
-So there are two names to route, in this order: the Sage optional `gap_packages` for `genss` (a reproducible
-install that also gives a checkable stabilizer chain), and the image's GAP owner for `recog` if recognition
-rather than a Schreier–Sims order is required. Neither requires a provider patch, and neither changes the
-assertion: the nodes still have to reproduce the recorded order at the original primes.
+  | package | version | requires |
+  | --- | --- | --- |
+  | recog | 1.5.1 | GAP >= 4.13, AtlasRep >= 2.1.0, FactInt >= 1.6.3, Forms >= 1.2.11, genss >= 1.6.8, Orb >= 4.9.0 |
+  | genss | 1.6.10 | GAP >= 4.9, orb >= 4.5 |
+  | forms | 1.3.0 | GAP >= 4.9 |
+  | orb | 5.1.0 | GAP >= 4.12, compiled module |
+
+  That closes the **packaging** question: the capability loads and runs in a published image. It does not change
+  what the capability *decides*, which is the next section, and it is not acceptance for any node.
 
 ## What the maintained contracts actually permit for an exact order
 
@@ -239,3 +245,41 @@ open until such an operation exists and reproduces them.
 leaves, with `immediate verification` checks in the tree. That is a third, weaker candidate: it is constructive
 recognition rather than a proof of order, and it can return `fail`. It is recorded here as a fallback to
 cross-check against, not as the certificate.
+
+## The immutable image, and the adoption boundary
+
+The packaging blocker is solved at the load/isolated-consumer level and the evidence is recorded by the image's
+own repository (`docker/gap-matrix-group-packages.md`, revision `1bde2cfd`):
+
+| item | value |
+| --- | --- |
+| image (immutable) | `ghcr.io/dzackgarza/sage@sha256:122ccd3aac6d7dc7a991a3c35bbeb9e5749125dab8b0b62d6da004731e2ab8fb` |
+| amd64 manifest | `83aeb8ac2f05ee1a75d8b5a8b915991c1c609d97c1e1f434c4810473822a6a8d` |
+| source revision | `6dc2659` |
+| asserted by the build | the reported GAP roots contain `/usr/share/gap/`; `orb`, `forms`, `genss`, `recog` all load
+there; `RecognizeGroup` is bound; a degree-4 `GF(5)` upper-triangular (Borel) subgroup is ordered through a genss
+chain as **62 500 = 4·5^6** |
+
+**What that does and does not establish.** It establishes that the packages load in the runtime libgap actually
+uses, and that the genss chain runs and returns the right order on a scoped, tractable group. It does **not**
+establish an exact order for this port's degree-10 Lorentz subgroup: the chain is Monte Carlo, `Size` is not
+redirected, and `VerifyStabilizerChainMC` has no plain-matrix-group method. No degree-10 computation is attempted
+in the image check — the natural module has 9 765 625 points at p = 5 — and an order obtained this way is evidence
+that the capability exists, not an accepted order. The p = 5 / p = 7 nodes therefore stay open, and the
+deterministic-or-certified order remains the maintained library's task.
+
+**Adoption, at an immutable boundary and only where a consumer needs it.** The live rootfs must not change while
+the library's Enriques job is running, and nothing here should be adopted speculatively. When a consumer actually
+needs the capability, the safe form is:
+
+* pin by **digest**, never the moving `:develop` tag. The acceptance workflow currently names
+  `ghcr.io/dzackgarza/sage:develop` in three places (the `julia` and `family` jobs), so switching to
+  `ghcr.io/dzackgarza/sage@sha256:122ccd3a…` is a **workflow change** and is therefore also blocked by the same
+  missing GitHub App `workflows` permission; it belongs in the parked patch series, not in a bypass;
+* validate the pinned image on this host without a container runtime, with the guard unchanged, using the
+  published recipe: `docker/sage-image.py --cache DIR --reference sha256:<index digest> fetch|info`, then
+  `PEAKRSS_LIMIT_MIB=6144 python peakrss.py -- python3 docker/sage-image.py --cache DIR run -- <consumer>`;
+* keep the port's own provider pin (`pyproject.toml` → `.tmp/ci/sage-extensions`, verified by the shard recipe)
+  independent of the image pin, so an image change cannot silently move the provider revision.
+
+Until then: live rootfs untouched, no adoption, no repeated capped run of the p = 5 / p = 7 nodes.
