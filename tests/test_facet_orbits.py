@@ -222,3 +222,25 @@ def test_orbit_stabilizer_and_transport_witnesses_are_exact(name) -> None:
         )
         total += len(members)
     assert total == len(cone_facets([tuple(int(e) for e in row) for row in cell.rows]))
+
+
+@pytest.mark.parametrize("name", sorted(SPECIMENS))
+def test_walk_permutations_match_the_port_action_convention(name) -> None:
+    r"""The walk's ray action must be the port's `_facet_mask_data` action, element for element.
+
+    The traversal carries stabilizer permutations as position images of the rows. If the walk used a different
+    convention -- inverse composition, a different row order, or the covector action -- its orbit records would
+    still look self-consistent while being incompatible with `flip_across` and the side-pairing words. This pins
+    the two conventions together.
+    """
+    backend, cell = _cell(SPECIMENS[name])
+    mine = set(ray_permutations_from_stabilizer(cell, backend.cell_stabilizer(cell)))
+
+    masks, port_permutations, _keys = backend._facet_mask_data(cell, use_owned_cone=True)
+    list(masks)  # the facet keys are an iterator; this test is about the permutations only
+    theirs = {tuple(int(entry) for entry in permutation) for permutation in port_permutations}
+
+    assert mine == theirs, (
+        f"the walk's ray action differs from the port's: {len(mine)} vs {len(theirs)} generators, "
+        f"{len(mine - theirs)} only in the walk, {len(theirs - mine)} only in the port"
+    )
