@@ -18,6 +18,7 @@ For L of positive index at least 2 after the sign normalization of AttackProfile
 Definite lattices are the preamble's; signature (1, n) is the Lorentzian leaf (#15).
 """
 
+import itertools
 from dataclasses import dataclass
 from math import gcd
 
@@ -191,6 +192,23 @@ def _isometry_from_column_matrix(source: Lattices.ParentMethods, target: Lattice
         images.append(_from_column(target, target_coordinates))
     morphism_parent = source.O() if source is target else source.Isom(target)
     return morphism_parent(tuple(images))
+
+
+def _coordinate_box(lattice: Lattices.ParentMethods, height: int):
+    r"""The integer coordinate tuples of a lattice with `max |entry| = height`, in a fixed order.
+
+    Used only to walk candidate vectors for :meth:`EichlerRecursion.marked_orbit_representatives`. The order
+    is by height and then lexicographically, so the walk is exhaustive on the box and never materialises more
+    than one box at a time.
+    """
+    rank = int(lattice.rank())
+    if height == 0:
+        yield tuple(0 for _ in range(rank))
+        return
+    ranges = [range(-height, height + 1)] * rank
+    for coordinates in itertools.product(*ranges):
+        if max(abs(entry) for entry in coordinates) == height:
+            yield coordinates
 
 
 def _conjugated(transport: LatticeIsometryMethods, generators: tuple[LatticeIsometryMethods, ...]) -> tuple[LatticeIsometryMethods, ...]:
@@ -374,6 +392,41 @@ class EichlerRecursion:
             orbit_relation=lambda left, right: self.pointed_isometry(left, right) is not None,
         )
         return action.orbits()
+
+    def marked_orbit_representatives(self, lattice: Lattices.ParentMethods, square, limit: int | None = None):
+        r"""Lazy enumeration of one representative per `O(L)`-orbit among the square-`n` vectors.
+
+        The provider's `_OrbitSet` refuses to iterate unless the underlying G-set is placed finite, which is
+        the right discipline but not an enumeration, so this walks candidates itself: vectors of the lattice
+        by increasing coordinate height, filtered to square `n`, deduplicated against the representatives
+        already yielded through the exact orbit decision `pointed_isometry`.
+
+        The stream is infinite by construction and never materialized. `limit` stops it after that many
+        representatives; without `limit` the caller takes what it needs. This is a *semidecision* of
+        coverage in the #53 sense: new classes appear as candidates are reached, and no finiteness or
+        completeness claim is made.
+        """
+        target = int(square)
+        representatives: list = []
+        height = 0
+        while limit is None or len(representatives) < limit:
+            for coordinates in _coordinate_box(lattice, height):
+                candidate = lattice.linear_combination(
+                    {
+                        label: int(entry)
+                        for label, entry in zip(lattice.module_generating_set(), coordinates, strict=True)
+                        if entry
+                    }
+                ) if any(coordinates) else lattice.zero()
+                if int(candidate.q()) != target:
+                    continue
+                if any(self.pointed_isometry(candidate, representative) is not None for representative in representatives):
+                    continue
+                representatives.append(candidate)
+                yield candidate
+                if limit is not None and len(representatives) >= limit:
+                    return
+            height += 1
 
     def orthogonal_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
         if lattice.is_definite():
@@ -657,12 +710,16 @@ class EichlerRecursion:
         content = 0
         for entry in entries:
             content = gcd(content, entry)
-        if content != 1:
-            raise ValueError(f"the radical row {entries} is not primitive")
+        if content == 0:
+            raise ValueError("the zero vector is fixed by every isometry; it has no radical stabiliser")
+        # R is torsion-free, so r D = r holds exactly when (r/content) D = r/content: the stabiliser of a
+        # non-primitive row is the stabiliser of its primitive direction.
+        entries = tuple(entry // content for entry in entries)
         if rank == 1:
             return (identity,)
 
         _, _, change = matrix(SageZZ, [list(entries)]).smith_form()
+        assert change.det() in (1, -1)
         larger = OwnedGroups().GL(rank - 1, ZZ)
 
         def embedded(action) -> Matrix_integer_dense:
@@ -683,33 +740,24 @@ class EichlerRecursion:
         inverse = change.inverse().change_ring(SageZZ)
         return tuple(change * block * inverse for block in stabilizer_of_first)
 
-    def _degenerate_radical_pointed_generators(self, vector: Lattices.ElementMethods) -> tuple[LatticeIsometryMethods, ...]:
-        r"""Generators of `Aut((L, v))` for `v` inside the radical of a degenerate `L`.
+    def _radical_blocks(self, lattice: Lattices.ParentMethods, vector: Lattices.ElementMethods) -> tuple[Matrix_integer_dense, ...]:
+        r"""Row-matrix blocks of `Aut((L, v))` for `v = (0, r)` in a *reduced*, radical-last presentation.
 
-        This is the missing constructive path of issue #41's split-radical form. With `L = C + R` in column
-        blocks `g = [[A,0],[B,D]]` (row blocks `[[A,B],[0,D]]` for the constructor used here), a vector
-        `v = (0, r)` maps to `(0, r D)`, so
-
-            Aut((L, v)) = { [[A,B],[0,D]] : A in O(C), r D = r, B in Hom(C,R) arbitrary }.
-
-        The three factors are independent, so it is generated by the embedded generators of `O(C)`, the
-        generators of the `GL(R)`-stabilizer of `r`, and the standard basis of `Hom(C,R)` as shears. The
-        isotropic stabilizer route does not apply: `v` is isotropic but the isotropic reduction expects a
-        nondegenerate ambient form and refuses with "the isotropic pairing L -> J* must have finite
-        cokernel".
+        The retained reduction is what supplies the split: `indefinite_reduced_presentation` puts the
+        radical in the final coordinates and provides the coordinate transport, so the block form
+        `[[A,B],[0,D]]` is available here and nowhere else. `A` runs over `O(C)`, `D` over the `GL(R)`
+        stabilizer of `r`, and `B` over all of `Hom(C,R)`, independently.
         """
-        lattice = vector.parent()
         gram = _gram_in_label_order(lattice)
         size, complement_rank = gram.nrows(), gram.rank()
         radical_rank = size - complement_rank
         labels = tuple(lattice.module_generating_set())
         coordinates = tuple(_integer(vector.to_vector()(label)) for label in labels)
         if any(coordinates[:complement_rank]):
-            raise ValueError(
-                "the vector is not in the radical: its nondegenerate-complement coordinates are nonzero"
+            raise ArithmeticError(
+                "the retained reduction must place the radical in the final coordinates, but this vector "
+                "has a nonzero nondegenerate-complement coordinate"
             )
-        if complement_rank == 0:
-            raise ValueError("a purely radical lattice has no nondegenerate complement block to extend")
 
         blocks = []
         if complement_rank:
@@ -728,20 +776,42 @@ class EichlerRecursion:
                         block[row_index, column_index] = top[row_index][column_index]
                 blocks.append(block)
 
-        for action in self._radical_stabilizer_of_row(coordinates[complement_rank:]):
-            block = identity_matrix(SageZZ, size)
-            for row_index in range(radical_rank):
-                for column_index in range(radical_rank):
-                    block[complement_rank + row_index, complement_rank + column_index] = action[row_index, column_index]
-            blocks.append(block)
+        if radical_rank:
+            for action in self._radical_stabilizer_of_row(coordinates[complement_rank:]):
+                block = identity_matrix(SageZZ, size)
+                for row_index in range(radical_rank):
+                    for column_index in range(radical_rank):
+                        block[complement_rank + row_index, complement_rank + column_index] = action[row_index, column_index]
+                blocks.append(block)
 
         for row_index in range(complement_rank):
             for radical_index in range(radical_rank):
                 block = identity_matrix(SageZZ, size)
                 block[row_index, complement_rank + radical_index] = 1
                 blocks.append(block)
+        return tuple(blocks)
 
-        return tuple(_isometry_from_row_matrix(lattice, lattice, block) for block in blocks)
+    def _degenerate_radical_pointed_generators(self, vector: Lattices.ElementMethods) -> tuple[LatticeIsometryMethods, ...]:
+        r"""Generators of `Aut((L, v))` for `v` inside the radical of a degenerate `L` (issue #41).
+
+        The radical is *not* assumed to occupy the final coordinates of the caller's basis. The retained
+        reduction `indefinite_reduced_presentation` supplies the split and its exact coordinate transport,
+        so a permuted or mixed basis is carried into the radical-last presentation, the block generators are
+        built there, and the results are conjugated back to the caller's lattice. `v = 0` fixes every
+        isometry, so the answer is simply the whole group.
+        """
+        lattice = vector.parent()
+        labels = tuple(lattice.module_generating_set())
+        if not any(_integer(vector.to_vector()(label)) for label in labels):
+            return self.orthogonal_group_generators(lattice)
+
+        reduction = indefinite_reduced_presentation(lattice)
+        reduced = reduction.reduced
+        transport = reduction.isometry
+        reduced_vector = transport.inverse()(vector)
+        blocks = self._radical_blocks(reduced, reduced_vector)
+        reduced_generators = tuple(_isometry_from_row_matrix(reduced, reduced, block) for block in blocks)
+        return _conjugated(transport, reduced_generators)
 
     def vector_lies_in_radical(self, vector: Lattices.ElementMethods) -> bool:
         r"""Whether the vector pairs trivially with the whole lattice, i.e. lies in `rad(L)`.

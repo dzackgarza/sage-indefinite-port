@@ -82,3 +82,4 @@ references/Indefinite.jl/
 !.tmp/probe-quotient-orbit.py
 !.tmp/probe-hom-kernel.py
 !.tmp/probe-radical-pointed.py
+!.tmp/probe-reduction-transport.py

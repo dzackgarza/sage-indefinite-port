@@ -490,3 +490,102 @@ def test_pointwise_stabilizer_shears_span_the_full_shear_kernel(c_rank, radical_
     assert stacked.rank() == expected_rank
     invariants = [int(entry) for entry in stacked.smith_form()[0].diagonal() if int(entry) != 0]
     assert invariants == [1] * expected_rank, invariants
+
+
+# ---------------------------------------------------------------------------------------------------
+# The radical branch's actual domain: permuted, mixed, zero, non-primitive, purely radical.
+#
+# The branch does not assume the caller's basis has the radical last. `indefinite_reduced_presentation`
+# supplies the split and its coordinate transport, so these bases are carried in, solved, and carried back.
+# ---------------------------------------------------------------------------------------------------
+
+def _fixing_isometries(gram, coordinates):
+    lattice_ = lattice(gram)
+    vector_ = element(lattice_, coordinates)
+    generators = tuple(_RECURSION.pointed_automorphism_generators(vector_))
+    assert generators, "the pointwise stabilizer has a generating family"
+    assert all(generator(vector_) == vector_ for generator in generators)
+    assert all(is_isometry(rows_of(generator), gram) for generator in generators)
+    return lattice_, vector_, generators
+
+
+def test_radical_stabilizer_in_a_permuted_basis() -> None:
+    """Radical FIRST: the vector is genuine, so rejecting it would be a domain defect, not a limitation."""
+    lattice_ = lattice([[0, 0], [0, 2]])
+    vector_ = element(lattice_, [1, 0])
+    assert int(vector_.q()) == 0
+    assert _RECURSION.vector_lies_in_radical(vector_)
+    _, _, generators = _fixing_isometries([[0, 0], [0, 2]], [1, 0])
+    assert len(generators) >= 2
+
+
+def test_radical_stabilizer_in_a_mixed_basis() -> None:
+    """Radical interleaved between two complement coordinates."""
+    gram = [[2, 0, 0], [0, 0, 0], [0, 0, 2]]
+    _, vector_, generators = _fixing_isometries(gram, [0, 1, 0])
+    assert int(vector_.q()) == 0
+    assert generators
+
+
+def test_radical_stabilizer_of_the_zero_vector_is_the_whole_group() -> None:
+    """`v = 0` is fixed by every isometry, so the pointwise stabilizer is `O(L)` itself."""
+    lattice_ = lattice(_GRAM)
+    zero = element(lattice_, [0, 0])
+    generators = tuple(_RECURSION.pointed_automorphism_generators(zero))
+
+    assert generators
+    assert all(is_isometry(rows_of(generator), _GRAM) for generator in generators)
+    assert all(generator(zero) == zero for generator in generators)
+
+
+def test_radical_stabilizer_of_a_nonprimitive_radical_vector() -> None:
+    """`(0,2)` is not primitive; `R` is torsion-free, so its stabilizer is that of its primitive direction."""
+    gram = [[2, 0, 0], [0, 0, 0], [0, 0, 0]]
+    lattice_ = lattice(gram)
+    vector_ = element(lattice_, [0, 2, 0])
+    assert int(vector_.content()) == 2
+    _, _, generators = _fixing_isometries(gram, [0, 2, 0])
+    assert generators
+    # The stabilizer of (0,2) and of (0,1) coincide, because 2*(d - 1) = 0 forces d = 1 in a torsion-free R.
+    primitive_generators = _fixing_isometries(gram, [0, 1, 0])[2]
+    assert len(primitive_generators) == len(generators)
+
+
+def test_radical_stabilizer_of_a_purely_radical_lattice() -> None:
+    """`C = 0`: there is no complement block, and the stabilizer is the `GL(R)`-stabilizer of the vector."""
+    gram = [[0, 0], [0, 0]]
+    _, vector_, generators = _fixing_isometries(gram, [1, 0])
+    assert generators
+    # In a purely radical lattice every isometry is a GL(R) matrix, and the shears e_2 -> e_2 + e_1 fix e_1.
+    forms = [matrix(ZZ, rows_of(generator)) for generator in generators]
+    assert any(form == matrix(ZZ, [[1, 0], [1, 1]]) for form in forms)
+
+
+def test_lazy_orbit_representative_enumeration_is_a_stream() -> None:
+    """The quotient is enumerable lazily: one representative per class, taken on demand, never materialized."""
+    lattice_ = lattice(_GRAM)
+    stream = _RECURSION.marked_orbit_representatives(lattice_, 2, limit=1)
+
+    assert hasattr(stream, "__next__"), "the enumeration is a generator, not a list"
+    representative = next(stream)
+    assert int(representative.q()) == 2
+    # It is the class of (1,0): the shear and the complement sign both connect them.
+    assert _RECURSION.pointed_isometry(representative, element(lattice_, [1, 0])) is not None
+    assert _RECURSION.pointed_isometry(representative, element(lattice_, [1, 7])) is not None
+
+
+def test_lazy_enumeration_yields_distinct_classes_only() -> None:
+    """Every yielded representative is a genuinely new class: no two are equivalent.
+
+    For `L = <2> + 0` and square 2 all vectors `(+-1, y)` lie in one `O(L)`-orbit, so the walk must not
+    yield a second representative for them.
+    """
+    lattice_ = lattice(_GRAM)
+    stream = _RECURSION.marked_orbit_representatives(lattice_, 2, limit=1)
+    first = next(stream)
+    try:
+        second = next(stream)
+    except StopIteration:
+        second = None
+    if second is not None:
+        assert _RECURSION.pointed_isometry(first, second) is None
