@@ -41,7 +41,7 @@ observed, so the row stays open.
 | **square `[10]`** | src `87fbf863` | **`565fc6b9`** | **passed 238 s, peak 3 834 MiB** |
 | **`r_-1`** | src `65ea68a68af0` | **`42d7361c`** | **passed 1 271 s, peak 4 708 MiB** |
 | **`r_0`** | src `65ea68a68af0` | **`42d7361c`** | **passed 498 s, peak 3 988 MiB** |
-| **`r_1`** | src `65ea68a68af0` | **`42d7361c`** | in flight (sweep `jmvyzjrg9`, nodes 21–30) |
+| **`r_1`** | src `65ea68a68af0` | **`42d7361c`** | **passed 352 s, peak 4 121 MiB** |
 
 Eleven accepted cases at the older pins, none a cap, spanning 6.07 s to 1850.35 s. Four (`r_-1`, `r_0`,
 `r_1`, `r_7`) would have been lost to the 600 s cap used earlier.
@@ -53,8 +53,8 @@ provider `e83c4d6`) → **1 271 s** (peak 4 708 MiB), and `r_0` 696.33 s (port `
 `9dc89ac`) → **498 s** (peak 3 988 MiB). Both earlier figures differ from the current one in the port as
 well as the provider, so this is a re-baseline rather than a controlled comparison: what it establishes is
 that the assertions pass at the current pins, and the two nodes land under the old times. Same assertions,
-same 6 144 MiB guard. `r_1` is running; the sweep takes one node at a time because these nodes are the
-current memory ceiling.
+same 6 144 MiB guard. `r_1` 402.82 s → **352 s**. The sweep takes one node at a time because these nodes
+are the current memory ceiling.
 
 **The six square nodes are now all accepted** on the maintained provider `565fc6b9`, which carries the
 composite-disjunct-first reorder in `IntegralStructureAction.stabilizer()` (plus the two earlier
@@ -457,7 +457,7 @@ covering `test_edgewalk_rank2`, `test_lorentzian_flipping`, `test_perfect_cell_t
 `test_pinned_lorentzian_cells`, `test_configuration_pairings`, `test_cell_faces_facet_orbits`,
 `test_allcock_fixture_identity`, plus the three targeted files of this unit.
 
-## Not port acceptance## Not port acceptance
+## Not port acceptance
 
 The 80/80 Normaliz-vs-PPL engine agreement is an **engine-only** statement about identical ray sets. It
 is not owned-cone cost and not acceptance, and it never depended on the provider.
