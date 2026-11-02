@@ -66,3 +66,8 @@ references/Indefinite.jl/
 !.tmp/probe-lorentz-provider-subgroup.py
 !.tmp/probe-lorentz-placement.py
 !.tmp/probe-gap-packages.py
+!.tmp/issue41-degenerate-markings-status.md
+!.tmp/probe-degenerate-baseline.py
+!.tmp/probe-degenerate-boundary.py
+!.tmp/probe-degenerate-public.py
+!.tmp/probe-degenerate-permuted.py
