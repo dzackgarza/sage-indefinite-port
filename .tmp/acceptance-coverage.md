@@ -260,24 +260,38 @@ is required for this operation and none was made. Old-pin record: provider `c546
   So the isotropic-line family is healthy everywhere it was sampled, and the heavy tail is the
   Enriques-adjacent group-orbit set, which is where the known blocker lives.
 
-## Pre-existing unit-test failures (not acceptance, not attributed to #41)
+## Unit-suite failures: two real test defects, repaired
 
-Running the non-acceptance unit suite (`tests/*.py`, 143 nodes) on provider `42d7361c`:
+Running the non-acceptance unit suite on provider `42d7361c` first gave `2 failed, 141 passed`. Both
+failures were **defects in the tests themselves**, not in the port and not environmental:
 
 ```
-2 failed, 141 passed in 124 s
-FAILED tests/test_edgewalk_rank2.py::test_edgewalk_period_action_matrix_uses_coordinate_label_order
-FAILED tests/test_pinned_lorentzian_cells.py::test_positive_vector_shell_respects_explicit_coordinate_labels
+tests/test_edgewalk_rank2.py::test_edgewalk_period_action_matrix_uses_coordinate_label_order
   TypeError: base_ring (=Integer Ring) must be a ring or a semiring
+tests/test_pinned_lorentzian_cells.py::test_positive_vector_shell_respects_explicit_coordinate_labels
   TypeError: unable to coerce <class 'dict'> to an integer
 ```
 
-Both reproduce **identically at `3c2425a1`**, which predates the whole #41 radical/kernel unit, verified by
-running them in a detached worktree of that commit bound in place of the live tree. So they are pre-existing
-failures of this environment (a Sage-level `base_ring` check and a dict-to-integer coercion), not
-regressions from the #41 work. Neither is an acceptance case.
+Both tests do `from sage_extensions.all import ZZ`, which shadows Sage's `ZZ`, and then hand that provider ring
+object to a **Sage** constructor — `matrix(ZZ, ...)` and `vector(ZZ, ...)`. The provider ring is a different
+object, so Sage refuses it. Repairing the second site exposed the reciprocal half of the same mixup: once the
+matrix is a Sage matrix its entries are Sage integers, and the provider's `linear_combination` rejects those
+("construct it from a ring of this session") while accepting a Python `int` — which is what every other
+coefficient in the port and tests uses, and what `consumer.element` does with `int(entry)`.
 
-## Not port acceptance
+I had first attributed these to the environment after reproducing them at `3c2425a1` in a detached worktree.
+That attribution was wrong: an older commit failing identically shows the defects are old, not that they are
+environmental. After the repair the whole non-acceptance suite is green:
+
+```
+182 passed in 223.6 s   (peak tree RSS 3 963 MiB)
+```
+
+covering `test_edgewalk_rank2`, `test_lorentzian_flipping`, `test_perfect_cell_transporter`,
+`test_pinned_lorentzian_cells`, `test_configuration_pairings`, `test_cell_faces_facet_orbits`,
+`test_allcock_fixture_identity`, plus the three targeted files of this unit.
+
+## Not port acceptance## Not port acceptance
 
 The 80/80 Normaliz-vs-PPL engine agreement is an **engine-only** statement about identical ray sets. It
 is not owned-cone cost and not acceptance, and it never depended on the provider.

@@ -29,7 +29,9 @@ def test_binary_cycle_form_uses_the_coordinate_label_order() -> None:
 def test_edgewalk_period_action_matrix_uses_coordinate_label_order() -> None:
     """The period action rows align with the coordinate frame of the sublattice."""
     from sage_extensions.all import ZZ, Lattices
-    from sage.all import QQ, matrix
+    # Sage's own ZZ for the Sage matrix: the provider's ZZ is a different ring object, and passing it to
+    # sage.all.matrix raises "base_ring (=Integer Ring) must be a ring or a semiring".
+    from sage.all import QQ, ZZ as SageZZ, matrix
 
     from sage_indefinite_port.indefinite.edgewalk import (
         _isometry_row_matrix_in_coordinate_order,
@@ -37,10 +39,12 @@ def test_edgewalk_period_action_matrix_uses_coordinate_label_order() -> None:
 
     lattice_ = Lattices(ZZ)([[2, 1], [1, 2]], module_generators=("right", "left"))
     labels = tuple(lattice_.module_generating_set())
-    row_matrix = matrix(ZZ, [[-1, 1], [0, 1]])
+    row_matrix = matrix(SageZZ, [[-1, 1], [0, 1]])
+    # int(), like every other coefficient the port and tests hand to linear_combination: a Sage integer is
+    # rejected ("construct it from a ring of this session"), a Python int is not.
     images = {
         label: lattice_.linear_combination(
-            {target_label: row_matrix[row, column] for column, target_label in enumerate(labels) if row_matrix[row, column]}
+            {target_label: int(row_matrix[row, column]) for column, target_label in enumerate(labels) if row_matrix[row, column]}
         )
         for row, label in enumerate(labels)
     }

@@ -2543,8 +2543,10 @@ def test_positive_vector_shell_respects_explicit_coordinate_labels() -> None:
     assert first is not None and first[0] == 4
     rows = first[1]
     assert set(rows) == {(1, -1, -1), (1, -1, 0), (1, -1, 1)}
+    from sage.all import ZZ as SageZZ     # the provider's ZZ is a different ring object for Sage's vector
+
     for row in rows:
-        coordinates = vector(ZZ, row)
+        coordinates = vector(SageZZ, row)
         assert (coordinates * labelled.gram * coordinates.column())[0] >= 0
         assert (coordinates * labelled.timelike_covector)[0] == 4
 
