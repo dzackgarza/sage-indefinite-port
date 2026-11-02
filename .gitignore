@@ -58,3 +58,7 @@ references/Indefinite.jl/
 !.tmp/probe-verify-provider.py
 !.tmp/probe-tco-specimen.py
 !.tmp/probe-regression-evidence.py
+!.tmp/handoff-owner-lorentz-image-order.md
+!.tmp/probe-lorentz-image-api.py
+!.tmp/probe-lorentz-structural.py
+!.tmp/probe-lorentz-recognition.py

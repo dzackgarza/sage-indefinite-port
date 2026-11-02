@@ -92,21 +92,35 @@ The 37 passing nodes are the degenerate/radical family (10–17) and the OSCAR d
 
 ### The three Lorentzian nodes are open, with a measured cause
 
-Generation of the group is **12.9–20.8 s** (2 quotient cells, 3 adjacencies). The rest of a 1 200 s run is the
-acceptance assertion's own mod-p image-order comparison: `reduction_image_order` is
-`MatrixGroup([matrix(GF(p), rows)…]).order()` (`consumer.py:111`), and `comparison_primes` returns
-`{2,3,5,7}` for all three cases (det −1024, −256, −1024). Measured on `LORENTZ_OrthogonalGroup0`:
+**They are capped, not wrong.** Every prime the harness can finish agrees on both sides, for all three cases
+(`tests/test_lorentzian_reduction_image_orders.py`, 3 tests, 87 s):
 
-| p | image order | cost |
+| case | p=2 | p=3 |
 | --- | --- | --- |
-| 2 | 46 998 591 897 600 = `|O^+_10(2)|` | 0.06 s |
-| 3 | 5 158 051 199 765 220 556 800 = `|O^+_10(3)|` | 4.94 s |
-| 5 | not obtained | **> 1 000 s**, flat 535 MiB, GAP `Size` on a matrix group over `F_5` |
-| 7 | not reached | action space `7^10 = 282 475 249` points |
+| `LORENTZ_OrthogonalGroup0` | 46 998 591 897 600 both sides | 5 158 051 199 765 220 556 800 both sides |
+| `LORENTZ_OrthogonalGroup1` | 45 660 871 065 600 both sides | 5 158 051 199 765 220 556 800 both sides |
+| `LORENTZ_OrthogonalGroup2` | 46 998 591 897 600 both sides | 5 158 051 199 765 220 556 800 both sides |
 
-Both sides agree at p=2 and p=3. Mutual containment was tested as a cheaper criterion and **also fails at
-p=5** (900 s cap, 3 862 MiB), so it is not a fix. Restricted-prime runs are diagnostics only and are **not**
-counted as all-prime acceptance. Detail: `.tmp/investigation-lorentzian-image-order.md`.
+At p=5 the run does not finish; p=7 is never reached. `LORENTZ_OrthogonalGroup1` has determinant −256, so its
+p=2 reduction is degenerate and its image is *not* a full orthogonal group there (`2^30·3^5·5^2·7`); where
+`p ∤ det` the image is exactly `|O^+_10(p)|`.
+
+Generation is 12–21 s. The measured cost of every route to the p=5/p=7 *orders*:
+
+| route | p=5 | p=7 |
+| --- | --- | --- |
+| `MatrixGroup(...).order()` (the harness) | > 1 000 s, flat 535 MiB | not reached |
+| mutual containment (`g in H`) | > 880 s, 3 862 MiB | — |
+| `libgap.IsSubgroup(GO, G)` | 5 660 MiB, killed at 1 200 s | — |
+| `libgap.Size(libgap.GO(+1, 10, q))` | **0.00 s** | **0.00 s** |
+| provider `orthogonal_group_base_change` → `F_p` | rejected: base_change does not accept `Z → F_p` | — |
+| GAP `IsomorphismTypeOfMatrixGroup` | **not bound in this build** | — |
+
+So the orders are not in doubt — `|O^+_10(5)| = 54 461 311 079 175 000 000 000 000 000 000` and
+`|O^+_10(7)| = 209 544 577 891 300 558 570 289 055 128 616 960 000`, each returned instantly by GAP's
+classical group object — but *certifying that a given generating set spans that group* needs recognition or a
+structural certificate, neither of which is available here. Full detail and the exact owner ask:
+`.tmp/handoff-owner-lorentz-image-order.md`.
 
 ## A_VECTORS (new: first run on current pins)
 

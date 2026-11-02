@@ -1,0 +1,20 @@
+computed 16 generators in 21.4s
+--- orders of the classical groups, both primes, no lattice involved ---
+[p=5 Size(GO(+1,10,q))] 54461311079175000000000000000000 in 0.00s
+[p=7 Size(GO(+1,10,q))] 209544577891300558570289055128616960000 in 0.00s
+--- membership against the classical group, p=5 ---
+Killed
+[peakrss] lorstruct2: child waited=137 shell_code=137 samples=252
+[peakrss] peak tree RSS      : 5664 MiB
+[peakrss] low-water MemAvail : 1519 MiB
+[peakrss] peak single VmHWM  : 5672 MiB
+[peakrss] peak VmHWM by executable (this is the per-process attribution):
+[peakrss]   python                     5660 MiB peak
+[peakrss]   timeout                       7 MiB peak
+[peakrss]   proot-x86_64                  3 MiB peak
+[peakrss]   sh                            1 MiB peak
+[peakrss]   t=   476.6s procs=  4 rss=  5664 MiB hwm=  5672 MiB avail=  3076 MiB
+[peakrss]   t=   478.6s procs=  4 rss=  5664 MiB hwm=  5672 MiB avail=  3082 MiB
+[peakrss]   t=   480.6s procs=  4 rss=  5664 MiB hwm=  5672 MiB avail=  3074 MiB
+[peakrss]   t=   482.6s procs=  4 rss=  5664 MiB hwm=  5672 MiB avail=  3055 MiB
+[peakrss]   t=   484.6s procs=  4 rss=  5664 MiB hwm=  5672 MiB avail=  3153 MiB

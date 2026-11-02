@@ -1,0 +1,26 @@
+available recognition entry points:
+  IsomorphismTypeOfMatrixGroup: False
+  IsomorphismTypeOfMatrixGroupGeneric: False
+  SizeOfMatrixGroup: False
+  NiceMonomorphism: True
+  IsomorphismPermGroup: True
+--- control: GL_2(5) ---
+[control IsomorphismPermGroup] 240 in 0.01s
+[control IsomorphismTypeOfMatrixGroup] raised AttributeError: No such attribute: IsomorphismTypeOfMatrixGroup. after 0.00s
+--- the real case: O(L) mod 5, degree 10 ---
+  17 generators built
+[p=5 IsomorphismTypeOfMatrixGroup] raised AttributeError: No such attribute: IsomorphismTypeOfMatrixGroup. after 0.00s
+[peakrss] lorrecog: child waited=0 shell_code=0 samples=8
+[peakrss] peak tree RSS      : 436 MiB
+[peakrss] low-water MemAvail : 12138 MiB
+[peakrss] peak single VmHWM  : 436 MiB
+[peakrss] peak VmHWM by executable (this is the per-process attribution):
+[peakrss]   python                      424 MiB peak
+[peakrss]   timeout                       7 MiB peak
+[peakrss]   proot-x86_64                  3 MiB peak
+[peakrss]   sh                            1 MiB peak
+[peakrss]   t=    14.0s procs=  4 rss=   436 MiB hwm=   436 MiB avail= 12151 MiB
+[peakrss]   t=     4.0s procs=  4 rss=   435 MiB hwm=   435 MiB avail= 12138 MiB
+[peakrss]   t=     6.0s procs=  4 rss=   435 MiB hwm=   435 MiB avail= 12145 MiB
+[peakrss]   t=     8.0s procs=  4 rss=   435 MiB hwm=   435 MiB avail= 12150 MiB
+[peakrss]   t=    10.0s procs=  4 rss=   435 MiB hwm=   435 MiB avail= 12150 MiB
