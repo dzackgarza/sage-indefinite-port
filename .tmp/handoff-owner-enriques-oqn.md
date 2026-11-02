@@ -55,10 +55,11 @@ job `jmvz5p00r`:
 | `lattice(E10).twist(2).Isom(invariant).an_element()` | **19.5 s** | case-independent; note `2r` in the `.sage` file preparses to the integer `2` |
 | `involution.polarized(h).coinvariant_extension_subgroup()` | **249 s** | per case |
 | `∩ N.O_plus()` | 0.1 s | per case |
-| **bundled stage**: `N.discriminant_group()`, `.orthogonal_group()`, `discriminant_morphism()` per `Γ_h` generator | **≥ 1 090 s, unfinished at the 2 400 s cap in the `case_3` run** | per case |
+| **bundled stage**: `N.discriminant_group()`, `.orthogonal_group()`, `discriminant_morphism()` per `Γ_h` generator | **> 2 127 s and unfinished** — the probe ended at its own 2 400 s cap, still inside this stage | per case |
 
-So the per-case cost is: ~250 s to build `Γ_h`, then a bundle that already exceeds ~1 090 s and had not
-finished. Sum ≈ 1 340 s before any of the three orbit counts, which is why 1 800 s caps.
+So the per-case cost is: ~250 s to build `Γ_h`, then a bundle that ran **more than 2 127 s without finishing**
+(probe peak 4 943 MiB tree: julia 3 177, python 1 754). Sum > 2 380 s before any of the three orbit counts,
+which is why 1 800 s caps — and why raising the cap would not help: the bundle alone already exceeds it.
 
 ## 3. What is *established* about the bundle, and what is *not*
 
