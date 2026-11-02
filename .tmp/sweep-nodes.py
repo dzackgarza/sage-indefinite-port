@@ -7,6 +7,7 @@ so a long sweep leaves usable evidence even if it is stopped.
 """
 import argparse
 import os
+import uuid
 import re
 import signal
 import subprocess
@@ -52,6 +53,26 @@ def _parent_of(pid):
         return None
 
 
+def kill_by_token(token):
+    """Kill every process carrying this run's environment token.
+
+    A descendant walk is not enough: `timeout` fires first, the traced program is reparented to init, and by
+    the time the driver notices it is no longer anyone's child. The environment is inherited across exec and
+    survives reparenting, so the token is what actually identifies the run.
+    """
+    needle = f"SWEEP_TOKEN={token}".encode()
+    killed = 0
+    for pid in _all_pids():
+        try:
+            with open(f"/proc/{pid}/environ", "rb") as handle:
+                if needle in handle.read():
+                    os.kill(pid, signal.SIGKILL)
+                    killed += 1
+        except (OSError, ProcessLookupError, PermissionError):
+            continue
+    return killed
+
+
 def kill_everything(root):
     """Kill root and every descendant, whatever process group they were moved into.
 
@@ -78,7 +99,7 @@ def kill_everything(root):
             pass
 
 
-def run_bounded(cmd, env, cap, grace=60):
+def run_bounded(cmd, env, cap, grace=60, token=None):
     """Run cmd, and enforce the cap on its whole process GROUP.
 
     `timeout` alone does not bound these runs: it kills the ptrace supervisor, the traced python survives,
@@ -91,6 +112,8 @@ def run_bounded(cmd, env, cap, grace=60):
         out, err = process.communicate(timeout=cap + grace)
         return Finished(process.returncode, out, err)
     except subprocess.TimeoutExpired:
+        if token:
+            kill_by_token(token)
         kill_everything(process.pid)
         try:
             out, err = process.communicate(timeout=60)
@@ -111,14 +134,16 @@ def collect(test_file):
 
 
 def run_node(node, cap, guard, label, extra_binds, pytest_extra=()):
-    inner = ["/usr/bin/env", f"PYTHONPATH={PYTHONPATH}", "python", "-u", "-m", "pytest", node,
+    token = uuid.uuid4().hex
+    # `run.sh` execs `env -i`, so the token has to be re-established inside, not only in the outer env.
+    inner = ["/usr/bin/env", f"PYTHONPATH={PYTHONPATH}", f"SWEEP_TOKEN={token}", "python", "-u", "-m", "pytest", node,
              "-p", "qc_sage_session", "-q", "--no-header", "-p", "no:cacheprovider", "-o", "addopts=",
              *pytest_extra]
     cmd = ["python3", os.path.join(IMAGE, "peakrss.py"), "--",
            "timeout", "-s", "KILL", str(cap)] + proot(extra_binds, inner)
-    env = dict(os.environ, PEAKRSS_LABEL=label, PEAKRSS_LIMIT_MIB=str(guard))
+    env = dict(os.environ, PEAKRSS_LABEL=label, PEAKRSS_LIMIT_MIB=str(guard), SWEEP_TOKEN=token)
     started = time.monotonic()
-    result = run_bounded(cmd, env, cap)
+    result = run_bounded(cmd, env, cap, token=token)
     elapsed = round(time.monotonic() - started)
     output = result.stdout + result.stderr
     peak = 0

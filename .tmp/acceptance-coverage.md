@@ -212,10 +212,17 @@ RESULT: returned True
 **The old-pin `TypeError` does not persist.** It was raised at the engine's `recursive.py:154`
 `int(coordinates(label))`, and that site has since been reading through `_integer` (`ab140b70`), so no repair
 is required for this operation and none was made. Old-pin record: provider `c546077d`, Sage 11.0.beta5.
-- **A_ISOTROPIC**: **not run**. The file collects **8 832** nodes (8 821 of them
-  `test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors`, ranks 3–18,
-  6 476 with `has_isotropic=False`). The earlier "186 cases" figure was wrong. A systematic stride sample,
-  not an unbounded chain, is the intended coverage.
+- **A_ISOTROPIC**: covered by a **documented systematic sample**, not the 8 832-node chain. The file collects
+  8 832 nodes: 8 821 `test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors`
+  (ranks 3–18; 6 476 with `has_isotropic=False`), plus 11 others. The earlier "186 cases" figure was wrong.
+
+  | coverage | result |
+  | --- | --- |
+  | every 100th node (`stride 100`, 89 cases across the whole index range) | **89/89 passed**, 0 failures, max peak 749 MiB, slowest 548 s, sum 968 s |
+  | the 11 non-parametrised nodes | 1 `CAPPED` (`test_o_plus_n_has_two_line_and_two_plane_orbits`, 1 800 s cap, peak 4 604 MiB); the other 10 not run |
+
+  So the isotropic-line family is healthy everywhere it was sampled, and the heavy tail is the
+  Enriques-adjacent group-orbit set, which is where the known blocker lives.
 
 ## Not port acceptance
 
