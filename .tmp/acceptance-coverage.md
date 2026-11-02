@@ -22,7 +22,7 @@ Port `47b69d86` (src unchanged since `49e3965f`), provider `42d7361c`, unless a 
 | A_CENTRALIZERS | accepted 5/5 at `c546077d` | earlier record |
 | A_GROUPS — nodes 10–45, 47 | accepted 37/37 at `565fc6b9` | earlier record |
 | A_GROUPS — LORENTZ 0/1/2 | **open — external owner**, no GAP recognition route in the pinned image | `.tmp/handoff-owner-lorentz-image-order.md` |
-| A_GROUPS — node 46 `a7_plus_diagonal` | **open** — cone conversion of a 49 861-vector configuration, not a cap | `.tmp/HANDOFF.md` |
+| A_GROUPS — node 46 `a7_plus_diagonal` | **open** — cone conversion of a 49 861-vector configuration; the two cone routes now have an equality test (`tests/test_large_cell_cone_route.py`), so disagreement is out as an explanation; termination is still untested | `.tmp/HANDOFF.md` |
 | A_ISOTROPIC — stride-100 sample | accepted 89/89 | `isotropic-sample.log` |
 | A_ISOTROPIC — `test_o_n_maps_onto_o_of_the_discriminant_form` | **accepted 468 s, peak 3 868 MiB** at `42d7361c` (first of the unrun tail) | job `jmvz75d9x` |
 | A_ISOTROPIC — `test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank0,rank1]` | **accepted 2/2**: 150 s / 3 703 MiB (lines) and **1 661 s / 4 926 MiB** (planes) | job `jmvz88la4` |
@@ -145,6 +145,28 @@ planes through every line class and deduplicates by exact `plane_isometry`, and 
 lattice that costs 11× the line node. It is recorded as accepted, not as marginal-by-design — but a change that
 makes plane enumeration slower by ~8 % would turn it into a cap, which is worth knowing before anyone touches
 that path.
+
+### A7 `a7_plus_diagonal`: a changed source since the failure, and the cone routes now checked against each other
+
+The recorded A7 failure is old (provider `07b24a2`) and its logs are **no longer on disk**, like the earlier
+transporter artifact. Since then `lorentzian_cells.py` gained a chain of large-cell work that routes cells with
+≥ 10 000 rows to Normaliz instead of PPL: `c8fec49e`, `f3ddefb1`, `93c9dfad`, `334ff23d`, `6ca7a83d`,
+`6c740c48` (all 2026-10-28). So a rerun is not "the same wait again" — the branch that the 49 861-ray
+configuration takes did not exist when the failure was recorded.
+
+What was missing, and is now in `tests/test_large_cell_cone_route.py`, is any check that the upper branch is
+*right*. The recorded 80/80 PPL-vs-Normaliz agreement is about identical ray **sets**; nothing compared the
+cones. The test builds one genuine perfect cell (rank 3, signature (2,1), six isotropic rays) and asserts:
+
+- the Normaliz H-presentation describes the same cone as `from_rays` (`is_equal_to`);
+- every primitive ray of the Normaliz-built cone is an exact **positive** rational multiple of exactly one of
+  the cell's configuration rows, as a bijection covering every row once — so `v` and `-v` are not merged and a
+  rational ratio is not truncated;
+- a small cell still takes the ray route, so the branch choice is guarded.
+
+Scope, stated narrowly: one cell, two routes, agreement. It says nothing about terminating on 49 861 rays in a
+rank-8 lattice. It does remove "the routes might disagree" as an explanation for the A7 blocker, which leaves
+termination/memory as the open question the node itself must answer.
 
 ### One primitive explains the capped family: **generating a subgroup**, not `O(q_N)`
 
