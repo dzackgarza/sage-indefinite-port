@@ -215,9 +215,10 @@ def test_pointedness_functional_requires_both_rank_hypotheses() -> None:
     r"""The constructor supplies only `rank[1|A] = n`; `rank A = n` must be verified separately.
 
     Rank-2 rows `(1,0), (2,0)`: `rank[1|A] = 2 = n` and `rank A = 1 < n`, and the affine hyperplane is the
-    x-axis, which passes through the origin. The cone is a ray, contained in a linear hyperplane: neither
-    full-dimensional nor pointed. Treating the augmented-rank hypothesis alone as a pointedness theorem would
-    accept exactly this degenerate case.
+    x-axis, which passes through the origin, so the cone lies in a linear hyperplane and is **not
+    full-dimensional**. Pointedness is not what fails here -- that cone is a ray, which is pointed -- so the
+    refusal is for the hypothesis the facet theory needs (dimension `n`), and the message says so. Treating the
+    augmented-rank hypothesis alone as a pointedness theorem would accept this degenerate case.
     """
     from types import SimpleNamespace
 
@@ -227,3 +228,35 @@ def test_pointedness_functional_requires_both_rank_hypotheses() -> None:
     # A 3-row version in dimension 2 with the same defect: augmented rank 2, row rank 1.
     with pytest.raises(ArithmeticError):
         pointedness_functional(SimpleNamespace(rows=((1, 0), (3, 0), (-2, 0))))
+
+
+def test_pointedness_functional_is_exact_on_a_fractional_kernel_basis() -> None:
+    r"""Sage's kernel basis is rational, and int-casting it silently truncates.
+
+    For the rows `(2,0), (0,2)` the augmented kernel is spanned by `(1, -1/2, -1/2)` in Sage's basis: `w_0 = 1`,
+    `w' = (-1/2,-1/2)`, and `w'*a_i = -1` on both rows. Truncating `w'` to integers gives `(0,0)`, whose pairings
+    are all zero -- so the earlier version refused a perfectly valid cone over a segment. Exact rational
+    arithmetic plus the port's denominator-clearing contract returns the primitive `(1,1)` with pairings `1`.
+    """
+    from types import SimpleNamespace
+
+    cell = SimpleNamespace(rows=((2, 0), (0, 2)))
+    functional, pairings = pointedness_functional(cell)
+    # w' = (-1/2,-1/2) -> primitive (-1,-1) -> sign-corrected (1,1), pairing 1*2 = 2 on both rows.
+    assert functional == (1, 1), f"expected the primitive integral functional, got {functional}"
+    assert pairings == [2, 2], f"expected the constant pairing 2 on both rows, got {pairings}"
+
+    # And the raw kernel really is fractional, so this is not a vacuous case.
+    kernel = matrix(QQ, [[1, 2, 0], [1, 0, 2]]).right_kernel().basis_matrix()
+    assert any(QQ(entry).denominator() != 1 for entry in kernel.row(0)), (
+        "the regression must exercise a fractional kernel basis"
+    )
+
+    cell = SimpleNamespace(rows=((3, 0), (0, 3)))
+    functional, pairings = pointedness_functional(cell)
+    assert functional == (1, 1) and pairings == [3, 3]
+
+    cell = SimpleNamespace(rows=((2, 1), (1, 3)))
+    functional, pairings = pointedness_functional(cell)
+    assert len(set(pairings)) == 1 and pairings[0] != 0
+    assert all(entry == int(entry) for entry in functional)

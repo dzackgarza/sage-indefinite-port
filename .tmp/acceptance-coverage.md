@@ -189,9 +189,12 @@ so `subspace` cannot help), entries ≤ 15, initial cell built in 4.5 s.
 *not* check) and `rank[1|A] = 10` (which it does), for the 49 861 × 10 configuration; the augmented kernel is
 `w = (1,-1,0,…,0,-1)` so `w_0 = 1 ≠ 0`, and `w' = (1,0,…,0,1)` takes the value 1 on **every** row (min = max = 1).
 The rows lie in the affine hyperplane `w'·x = -1`, which misses the origin, so the cone is the cone over a
-9-polytope: pointed and full-dimensional. 0.4 s, exact. Both ranks are required — with `rank A = n-1` the
-augmented-rank hypothesis still holds and the conclusion fails — so this is not offered as a constructor theorem,
-and a test pins the degenerate case. It replaces the invalid inference "row rank = ambient dimension, so no
+9-polytope: pointed and full-dimensional. 0.4 s, exact, with the kernel taken over `Q` and the functional cleared
+to a primitive integral vector by `_primitive_integral_direction` (all kernel denominators are 1 here). Both ranks
+are required: with `rank A = n-1` the augmented-rank hypothesis still holds and the cone is then **not
+full-dimensional** (pointedness is not what fails — `cone{(1,0),(2,0)}` is a pointed ray), so this is not offered
+as a constructor theorem and a test pins the degenerate case. A second test pins the truncation hazard: for the
+rows `(2,0), (0,2)` the kernel basis is `(1,-1/2,-1/2)`, which an int-cast would flatten to `(0,0)`. It replaces the invalid inference "row rank = ambient dimension, so no
 lineality".
 
 **And it was run: the answer is the engine, not the port.** `test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q`

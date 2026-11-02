@@ -177,6 +177,13 @@ Three of these are mine, and two of them I had asserted as fact:
 | `w_0 ≠ 0` | `w = (1, -1, 0, …, 0, -1)`, so `w_0 = 1` | follows from the two ranks, checked here |
 | `w'` strictly positive on the rays | `w' = (1, 0, …, 0, 1)`, value **1 on every row** (min = max = 1) | the certificate |
 
+The computation is exact rational throughout: the kernel is taken over `Q` with basis `(1, -1, 0, …, 0, -1)`
+(all denominators 1 here), `w_0 = 1` is compared as a rational rather than truncated, and the integer functional
+comes from the port's `_primitive_integral_direction` (the `RemoveFractionPlusCoef` contract). A regression pins
+the case where truncation would have broken it: for the rows `(2,0), (0,2)` Sage's kernel basis is
+`(1, -1/2, -1/2)`, so an int-cast turns `w'` into `(0,0)` and refuses a valid cone; the exact path returns the
+primitive `(1,1)` with the constant pairing 2.
+
 So the rows lie in the single affine hyperplane `w'·x = -1`, which misses the origin, the cone is the cone over a
 9-polytope, and it is pointed and full-dimensional. This replaces the invalid inference "row rank = ambient
 dimension, so no lineality", and it is **not** offered as a constructor theorem: with `rank A = n-1` the same
