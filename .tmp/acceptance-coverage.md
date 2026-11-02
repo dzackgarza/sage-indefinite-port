@@ -172,6 +172,24 @@ have not been re-run at `42d7361c`; their rows keep the pin they ran on.
 
 One invocation per node, src `87fbf863`, provider `cdafca84`, guard 6 144 MiB, cap 1 200 s.
 
+### The K3 per-norm family is now **accepted, 4/4**, at the original limits
+
+src = the `49e3965f` tree (memo + immutable shared Gram), provider `42d7361c`, one pytest invocation per node,
+**cap 1 800 s and guard 6 144 MiB unchanged**, original assertions, each node with its own transcript and
+60 s stack dumps:
+
+| node | result | peak |
+| --- | --- | --- |
+| `test_k3_lattice_has_one_primitive_orbit_per_norm[-2]` | **passed 462 s** | 3 948 MiB |
+| `[2]` | **passed 466 s** | 3 960 MiB |
+| `[4]` | **passed 448 s** | 3 938 MiB |
+| `[-4]` | **passed 430 s** | 3 957 MiB |
+
+Sum 1 806 s, no node within 1 200 s of its cap. Before the memo two of these capped at 1 800 s (3 579 /
+3 564 MiB) and the other two had never been started, so this is a family that moved from "not established" to
+accepted on a **port fix**, with no cap raised and no assertion weakened. The stack dumps put the bulk of each
+node inside `right_coset_transversal()` — the finite-representation coset space, not the vector dedup.
+
 | what | result |
 | --- | --- |
 | 60 of 64 nodes executed | **58 passed**, max peak 4 341 MiB, sum 5 619 s, slowest 569 s |
