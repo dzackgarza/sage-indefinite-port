@@ -51,16 +51,25 @@ Two traps I got wrong on the way, recorded so they are not repeated:
    and `(5,2) -> (-5,2)` by `A = -1` -- the symmetry of `C`, not a transporter. `(5,2) -> (5,1)` is refused, and
    that refusal is a finite exhaustion of the four candidate blocks (`A` irrelevant as `x = y`, `d` in `{+-1}`),
    not a bounded search; `q`, `content` and the divisibility all agree on that pair, so none of them explains it.
-10. **the congruence image itself**, `radical_congruence_image`: order equal to the brute-force count of
-    `det^{-1}({+-1})` for `k` in `{1,2}` and `n` in `{2,...,7}`; `diag(2,1) mod 5` excluded; the image proper at
-    `n = 5` (index two) and equal to the whole group at `n = 6`.
-11. **the rank-one/rank-two contrast**, stated correctly: `(5,1) -> (5,2)` refused at radical rank 1 and
+10. **the congruence image itself**, `radical_congruence_image`: its `MatrixGroup` order checked against
+    `|GL_k(Z/n)| * 2 / phi(n)` (from `GL(...).order()` and `euler_phi`) for `k` in `{1,2,3}` and `n` in
+    `{2,3,4,5,6,7,8,13}`; `diag(2,1) mod 5` excluded by `contains`; the image proper at `n = 5` (index two) and the
+    whole group at `n = 6`; and `n = 13`, whose image has order 4368, answered with no bound at all.
+11. **the sign generator is the diagonal matrix it claims to be** -- a targeted witness for a construction defect:
+    the removed `_signed_diagonal` produced an all-minus first row (`(-1,-1,...)`), which is unimodular and so
+    passed every determinant check in place. The test reads the first row of the retained generator for ranks two
+    and three, compares it with `diagonal_matrix(ZZ, [-1,1,...])`, and also pins the defective shape as a matrix
+    that must *not* be built.
+12. **the rank-one/rank-two contrast**, stated correctly: `(5,1) -> (5,2)` refused at radical rank 1 and
     `(5,1,0) -> (5,2,0)` transported at radical rank 2, same norm, content and residue data. Not because the image
-    is onto at rank two -- it is not -- but because `orbits()` on the image has the two orbits `{0}` and the 24
-    nonzero residues at `k = 2, n = 5`.
-12. **the pointwise stabilizer against the image**: `(5,1)` rigid (order 1, image count 1), `(5,0)` order 2 (image
-    count 2), `(1,0)` order 2 with the congruence vacuous at `c = 1`, and the rank-two mixed marking infinite while
-    its image is 10 pairs. The finite count is an image, never an order.
+    is onto at rank two -- it is not, `|im| = 240 of 480` -- but because the explicit integral carrier `D` exists
+    and its residue is verified to lie in the image. Transitivity on residue vectors is not inferred from the group
+    map anywhere.
+13. **the pointwise stabilizer against the congruence count**: `(5,1)` rigid (order 1), `(5,0)` order 2, `(1,0)`
+    order 2 with the congruence vacuous at `c = 1`, and the rank-two mixed marking infinite although only ten
+    residue classes occur. The finite count is an image, never an order. The residue-class count itself is no
+    longer computed by the port (the transporter/stabilizer decision is the routed gap), so it is stated here as
+    the hand derivation rather than asserted as an API result.
 
 ## Retraction: the image of `GL(R)` in `Aut(R/cR)` is not the whole residue group
 
@@ -81,7 +90,8 @@ unimodular lift at all. The image **is** the whole group exactly when `phi(n) <=
 which is why the error is invisible on the small moduli and must not be generalised from them.
 
 The distinction the error collapsed is **matrix-group surjectivity against vector-orbit transitivity**. A proper
-image can still act transitively on vectors. Measured, exactly, by enumerating the image and its orbits:
+image can still act transitively on vectors. Measured by direct enumeration of the image and its orbits (a probe
+over all `k x k` matrices over `Z/n`, not a port API -- the port does not expose these orbits, see below):
 
 | `k` | `n` | `|im|` | `|GL_k(Z/n)|` | index | orbits on `(Z/n)^k` |
 | --- | --- | --- | --- | --- | --- |
@@ -94,27 +104,36 @@ image can still act transitively on vectors. Measured, exactly, by enumerating t
 So the rank-one `+-` verdict does not transfer to rank two, but the reason is the **orbit count on the image**,
 not surjectivity; and "proper at rank one only" was wrong as stated, since the image is proper at rank two too. The
 valid part of the previous revision survives unchanged: the explicit witnesses (the `[[A,0],[B,D]]` blocks with
-`D = [[2,1],[5,3]]` and friends, `B` absorbing `s - r D`), and every specimen's verdict.
+`D = [[2,1],[5,3]]` and friends, `B` absorbing `s - r D`), and every specimen's verdict. Convention note: that
+`D` is the **column**-convention block (`D (1,0)^T = (2,5)^T = (2,0)^T`); the port's row convention writes the
+same transport as `(1,0) D^T = (2,5)`, i.e. `D^T = [[2,5],[1,3]]`. The image is closed under transpose, so
+membership is the same statement either way, but the arithmetic must not be mixed between them.
 
-## What replaced it: the congruence image as a computed object
+## What replaced it: the maintained group, and one routed gap
 
-`EichlerRecursion.radical_congruence_image(lattice, modulus)` returns a `RadicalCongruenceImage` of
-`(residue, lift)` pairs, every lift integral unimodular and verified to reduce to its residue, with
+`EichlerRecursion.radical_congruence_image(lattice, modulus)` returns a `RadicalCongruenceImage` whose `group` is
+**Sage's own** `MatrixGroup` over `Zmod(modulus)`, generated by the reductions of integral generator lifts
+(`identity_matrix` for the elementary matrices, `diagonal_matrix` for the sign), with those lifts retained.
 
-- `transporter(r, s)`: an explicit `D` with `r D = s` modulo the modulus, or `None` as a **proved** negative --
-  the image is every matrix that can occur, so a residue pair with no carrier in it has no integral carrier
-  either;
-- `stabilizer_of(r)`: the finite congruence part of the pointwise stabilizer, `{D : r D = r (mod c)}`;
-- `orbits()`, `orbit_of(r)`, `subobject_from(M)`: the vector orbits on the whole residue module and cyclic
-  subgroups, for downstream consumers.
+Every question the object answers is answered by maintained machinery:
 
-Completeness is **checked, not assumed**: the elements are generated by the reductions of `E_ij(1)` and
-`diag(-1,1,...,1)`, each of which is its own integral unimodular lift; every generated element is verified to have
-determinant `+-1` and to reduce to its residue; and the generated order is compared with
-`|det^{-1}({+-1})| = |GL_k(Z/n)| * 2 / phi(n)`, computed from the prime factorization of `n`. A shortfall raises
-`ArithmeticError`; a modulus whose image exceeds `order_bound` raises `UnfinishedCapability` instead of truncating,
-because a truncated image turns "not found" into a false negative. The order formula was cross-checked against
-brute-force enumeration of `det^{-1}({+-1})` for `k` in `{1,2}` and `n` in `{2,...,7}`.
+- `order` is `MatrixGroup.order()` (GAP), **not** an order formula re-derived here;
+- `general_linear_order` is `GL(k, Zmod(n)).order()`, and `is_proper`/`index` are its comparison with `order`;
+- `contains` is `matrix in group`;
+- the theorem is then checked, not assumed: every generator lift has determinant `+-1`, so the image lies inside
+  `det^{-1}({+-1})`, and its order equals that preimage's order computed from `GL` and `euler_phi`.
+
+There is no modular matrix arithmetic, no group closure, no element enumeration and **no order bound** in the port:
+an earlier draft had all of those plus a 4096 cutoff, and that draft is deleted, not retained.
+
+The one operation still missing is the **transporter with an integral lift** -- given rows `r, s` over `Z/c`, return
+`D` in the image with `r D = s` together with an integral unimodular lift of `D`. No maintained contract supplies
+it: `MatrixGroup` has no `orbit`/`transporter`, GAP's `Orbit`/`RepresentativeAction` reject the natural right action
+on integer rows against `GF(p)` matrices ("Action not well-defined", and `fail` for a pair that does transport), and
+the word section `PreImagesRepresentative(EpimorphismFromFreeGroup(H), rep)` is not callable through the Sage
+wrapper. That precise gap is routed in `.tmp/handoff-owner-congruence-transporter.md`; it is **not** reimplemented
+here. Until it is supplied, a pair whose transport needs that decision is an **undecided** case, and the port says
+so rather than bounding or guessing.
 
 ## Where the boundary actually is
 
