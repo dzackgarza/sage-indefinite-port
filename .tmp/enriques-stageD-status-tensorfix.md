@@ -152,3 +152,21 @@ original acceptance -- 5/10/19 orbits and S1 -- stays open on its own terms unti
   termination, not a measured cause split against image evaluation; that attribution is unmeasured.
   The per-image integral-conversion stage, not the stabilizer construction, remains the acceptance
   frontier; the same capped run is not repeated before owner work on it.
+
+## Terminal of the unimodular-gate rerun (`jmw0yl5kn`, cap unchanged) and the gate's ring contract
+
+- `action.stabilizer()` **completed: 1383.2 s with the full 25600 Schreier family** (through the
+  retained transition table / verbatim family), then the conversions ran ~995 s and hit the unchanged
+  2400 s cap (peak tree 4491 MiB of 6144). No processed conversion count or rate is in the log, so the
+  conversion total is unmeasured, not an estimate. Raw log: `.tmp/enriques_stageD_unimodularfix_b6bd572.log`,
+  published with this note.
+- The unimodular gate's ring contract was exact afterward: it originally read `int(det)` in `{1,-1}` on
+  any common base ring; over a general domain units are not +-1 and the cast refuses or truncates
+  scalars (exact instantiation on `GF(5)`, det 2 unit: `TypeError` from the gate). Provider `45fa8f3`
+  gates the reading to the owned integers; the maintained route answers outside. The same rerun that
+  also surfaced a **separate pre-existing defect** on the quotient ring (backward composition tries to
+  read a lattice morphism as a scalar, verified identical on pre-gate code) is registered in the
+  provider TRAPS with its exact specimen, not hidden.
+- The same capped run over ZZ gains nothing from the restriction and is not repeated. 5/10/19 orbit
+  acceptance and S1 stay open by name; the per-image conversion cost on the full family remains the
+  measured frontier, its total unmeasured.

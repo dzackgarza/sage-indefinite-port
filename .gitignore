@@ -123,3 +123,5 @@ references/Indefinite.jl/
 !.tmp/launch-stageD-schreierfix.sh
 !.tmp/enriques_stageD_dedupefix_6c1500f.log
 !.tmp/launch-stageD-dedupefix.sh
+!.tmp/enriques_stageD_unimodularfix_b6bd572.log
+!.tmp/launch-stageD-unimodularfix.sh
