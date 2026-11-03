@@ -125,3 +125,9 @@ references/Indefinite.jl/
 !.tmp/launch-stageD-dedupefix.sh
 !.tmp/enriques_stageD_unimodularfix_b6bd572.log
 !.tmp/launch-stageD-unimodularfix.sh
+!.tmp/stageD-rate.log
+!.tmp/stageD-convprof.log
+!.tmp/probe-stageD-conversion-rate.py
+!.tmp/launch-stageD-rate.sh
+!.tmp/probe-stageD-convprof.py
+!.tmp/launch-stageD-convprof.sh

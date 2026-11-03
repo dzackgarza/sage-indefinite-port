@@ -1,0 +1,21 @@
+[t=     0.0s] imports
+[t=     0.9s] N, line I_1_1
+[t=    21.3s] isotropic_stabilizer_action 20.4s
+Timeout (0:02:00)!
+Thread 0x00007320aa5d3780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in __init__
+  <invalid frame>
+[t=   179.2s] atomA finite_representation 157.9s (orbit 1024)
+[t=   180.5s] rho + finite_stabilizer 1.3s
+[t=   181.0s] stab construct 0.4s
+[t=   181.0s] family labels 25600
+[t=   181.0s] rate loop over the first 300 letters
+[t=   186.1s] processed 50/300: eval 5.9 ms/lr, conv 96.0 ms/lr
+[t=   192.1s] processed 100/300: eval 7.2 ms/lr, conv 104.0 ms/lr
+[t=   198.4s] processed 150/300: eval 8.1 ms/lr, conv 108.1 ms/lr
+[t=   204.9s] processed 200/300: eval 8.8 ms/lr, conv 110.6 ms/lr
+[t=   211.4s] processed 250/300: eval 9.5 ms/lr, conv 112.3 ms/lr
+[t=   219.4s] processed 300/300: eval 10.2 ms/lr, conv 117.9 ms/lr
+[t=   219.4s] MEASURED processed=300 eval_total=3.05s (10.17 ms/lr) conv_total=35.37s (117.90 ms/lr)
+[t=   219.4s] DERIVED full-family figures (formula: labels x measured rate; NOT a measured total): group_generators_est=260s, conversions_est=3018s
+[t=   219.4s] RATE_OK

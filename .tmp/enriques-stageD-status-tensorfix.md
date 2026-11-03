@@ -170,3 +170,28 @@ original acceptance -- 5/10/19 orbits and S1 -- stays open on its own terms unti
 - The same capped run over ZZ gains nothing from the restriction and is not repeated. 5/10/19 orbit
   acceptance and S1 stay open by name; the per-image conversion cost on the full family remains the
   measured frontier, its total unmeasured.
+
+## Measured per-letter conversion rates on the family (`jmw10qusq`, `jmw0x9jp`-line probes; no prior-phase rebuild)
+
+- Bounded rate probe (`.tmp/stageD-rate.log`): atom A 157.9 s (orbit 1024), dispatch 1.7 s total, then the
+  **first 300 letters read one at a time** with independent timers: evaluation 6-10 ms/letter (rising
+  with progression), conversion 96-120 ms/letter (rising). MEASURED processed=300, eval 10.17 ms/lr,
+  conv 117.9 ms/lr. Derived figures carry their formula in the log (`25600 x measured rate`, labeled
+  NOT a measured total): generators_est ~=260 s, conversions_est ~=3018 s - rates rise with index, so
+  the derived figures are lower status, matching the caps hit in the full runs.
+- Profiled run (`.tmp/stageD-convprof.log`, cProfile; ratio, not absolute): `finite_representation`
+  cumulative ~342 s of the run, `_act_on_position` over 25600 (letter, point) pairs ~12 ms each
+  profiled; the conversion/evaluation volume collects in the module-morphism call paths
+  (`_linear_combination_of_generator_images`, `_framing_lift`, `_selected_presentation_kernel`).
+  These frames attribute volume, not cause.
+- **Serialization contract finding (measured, `.scratch/persist-*.log` + this note):** a full
+  Sage-pickle round trip of genuine stabilizer-family elements is NOT supported today - the first
+  blocker is a local lambda retained on ring parents (`_OwnedRingParent.__init__.<locals>.<lambda>`)
+  and behind it the owned parent graph keeps a nest of local closures; SagePickler refuses at the
+  first lambda. No custom certificate was written; the finding is recorded as a defect, not repaired
+  piecemeal, and my partial closure change was reverted with the tree kept honest.
+- Fixture correction carried from the provider: the differing-frame fixture ([[2,0],[0,2]] vs
+  [[0,2],[2,0]]) is not an isometry - replaced by the genuine congruence [[2,0],[0,2]] vs
+  [[4,2],[2,2]] = Q(2I)Q^T with every pairing asserted and both inverse compositions; the GF(5)
+  gate-excluded branch is labeled a known old failure (pre-existing backward-composition defect),
+  not demonstrated functionality. Provider `17a863d`.
