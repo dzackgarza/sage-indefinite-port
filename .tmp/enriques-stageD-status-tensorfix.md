@@ -134,7 +134,13 @@ original acceptance -- 5/10/19 orbits and S1 -- stays open on its own terms unti
   as `_deduplicated_generating_morphism`, with its contract stated - image family and subgroup
   preserved, not the free domain or word enumeration - and its unhashable boundary stated. The raw
   log of this rerun is `.tmp/enriques_stageD_dedupefix_6c1500f.log`, published with this note.
-- What did not move: the measured conversion frontier on the verbatim family in `jmw0urc9n`
-  (~476 s spent of ~512 s implied, per-image `integral_restriction`). That stage, not the stabilizer
-  construction, remains the acceptance frontier; the same capped run is not repeated before owner
-  work on it.
+- What `jmw0urc9n` establishes about the conversion stage, and no more: the probe finished
+  `action.stabilizer()` at t=1919.0 s and hit the unchanged 2400 s cap ~481 s later inside its
+  per-element `N.integral_isometry(g)` loop (frames `integral_restriction -> factor_through_or_none
+  -> _preimage_or_none`); no processed conversion count and no per-conversion rate was logged, so the
+  previously quoted "~512 s implied" total is withdrawn. Likewise the parenthetical attributing the
+  `jmw0whgrg` cap to coordinate hashing is beyond the evidence: its terminal frames land at
+  `_tensor_view -> tensor.from_morphism -> from_matrix -> matrix_entry`, the attributed stack at
+  termination, not a measured cause split against image evaluation; that attribution is unmeasured.
+  The per-image integral-conversion stage, not the stabilizer construction, remains the acceptance
+  frontier; the same capped run is not repeated before owner work on it.
