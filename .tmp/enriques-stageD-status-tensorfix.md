@@ -2,16 +2,25 @@
 
 ## Provenance of what ran
 
-- Provider `sage-extensions` `50de3c1` (contains the tensor repair `c2c81a3`; its recorded
-  `src/sage_extensions/tensors/tensor.py` sha256 `8da116e10f939e86eb3f3ef849d8f541b3c1f763f254042efd703543eaa1d029`,
-  runtime import `/repos/sage-extensions/src/sage_extensions/tensors/tensor.py` under the proot binding;
-  the attribution probes also print `lattice_morphisms.py sha256[:16] = 00f0c682880cc022` per run).
-- Port `3f24ab905d56bad2e009bacb38b9f98dc0b318e6` (`refs/heads/main` of the port remote, verified
-  2026-11-03; the earlier working note that it was local-only was stale). The stage-D witness-scope
-  correction `d5507b07` (det +1, proper subgroup, index unproved) stays evidence.
-- Launch/provenance records: provider `.tmp/launch_stageD_tensorfix.sh` (tracked in `5c6ad9b`),
-  `.tmp/launch-stageD-cost-atoms.sh`, `.tmp/launch-stageD-atomB.sh` here; every run under
-  `PEAKRSS_LIMIT_MIB=6144`, one heavy slot, probes bound read-only as `/probe.py`.
+**Launch-time evidence, i.e. what the runs themselves recorded.** Both launchers bind the library checkout read-only
+(`PROV=/workspace/nucleus/work/projects/p-8c69fc…/repo` → `/repos/sage-extensions`, PYTHONPATH
+`/repos/sage-extensions/src`), and each run header prints the runtime module path plus
+`lattice_morphisms.py sha256[:16] = 00f0c682880cc022`. **No commit OID was recorded at launch**, and the logs do not
+print a `tensor.py` digest. A run is therefore pinned by those recorded digests (and the bound path), not by a commit
+name.
+
+**Repair identity is a repository object, not a launch reading.** `c2c81a3` is the tensor-repair commit, and the
+`tensor.py` digest quoted here — sha256 `8da116e10f939e86eb3f3ef849d8f541b3c1f763f254042efd703543eaa1d029` — is the
+object *at that commit*, verified by hashing `c2c81a3:src/sage_extensions/tensors/tensor.py`. It identifies the code
+that must be present, not the instant a job started.
+
+**Later record commits are not launch pins.** `50de3c1` **postdates the original job launch**: it is the later
+equivalent record commit whose tree contains the same tensor repair. An earlier version of this note named it as the
+provider "that ran", which is wrong; where a commit name is wanted for the *repair*, use `c2c81a3`, and where the pin
+of a *specific run* is wanted, quote that run's own header digests. Likewise the port commit
+`3f24ab905d56bad2e009bacb38b9f98dc0b318e6` (`refs/heads/main`, remote-verified) is the artifact commit, not a
+launch reading; the stage-D witness-scope correction `d5507b07` (det +1, proper subgroup, index unproved) stays
+evidence on its own terms.
 
 ## What is measured where
 
