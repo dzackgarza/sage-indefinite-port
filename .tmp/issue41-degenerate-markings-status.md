@@ -1,7 +1,8 @@
 # Issue #41, `<2> + 0` retained checks: what was supported, and where the boundary is
 
-Provider `565fc6b9`, port `350e0569`. Evidence: `tests/test_degenerate_pointed_markings.py`, 7 tests, 71 s,
-peak 3628 MiB (julia baseline 3209, python 435).
+Provider `42d7361c` (staged tree `~/sage-extensions-42d7361c`), port: the commit this note is in.
+Evidence: `tests/test_degenerate_pointed_markings.py`, 53 tests, 94.99 s, peak tree RSS 3849 MiB (Julia baseline
+3181, python 677). The original seven checks were 71 s / 3628 MiB on provider `565fc6b9`, port `350e0569`.
 
 ## What was already supported (measured, before writing any test)
 
@@ -41,16 +42,40 @@ Two traps I got wrong on the way, recorded so they are not repeated:
 6. a presentation with the radical in the **first** coordinate transports correctly (`[[1,1],[0,1]]`), so
    the route is not a Gram-block special case;
 7. the unmarked radical `Aut` route still generates the negation and the shear and has order > 2.
+8. **radical rank 2, mixed markings** (`L = <2> + 0 + 0`, `v = (5, r)`, `R = Z^2`): six transports, each with the
+   `[[A, 0], [B, D]]` block built by hand from the conditions and checked before the port is asked -- unimodular,
+   `g^T G g = G`, and `g v = w`. Three refusals, each separated by `content` (a proved invariant) rather than by the
+   residue, which at rank 2 is everything.
+9. **the rank-one sign, both ways**: `(5,1) -> (5,4)` and `(5,2) -> (5,3)` transport by the negating radical unit,
+   and `(5,2) -> (-5,2)` by `A = -1` -- the symmetry of `C`, not a transporter. `(5,2) -> (5,1)` is refused, and
+   that refusal is a finite exhaustion of the four candidate blocks (`A` irrelevant as `x = y`, `d` in `{+-1}`),
+   not a bounded search; `q`, `content` and the divisibility all agree on that pair, so none of them explains it.
+10. **the rank-one/rank-two contrast is a test, not a remark**: `(5,1) -> (5,2)` refused at radical rank 1 and
+    `(5,1,0) -> (5,2,0)` transported at radical rank 2, with the same norm, content and residue data. That is the
+    image of `GL(R)` in `Aut(R/xR)` being a proper subgroup exactly at rank one.
 
 ## Where the boundary actually is
 
+The first of the three open items is now discharged, and by evidence rather than by a code change:
+
+- **the image of `GL(R)` in `Aut(R/xR)`** was the worry ("an integral lift of a residue automorphism has
+  determinant `+-1`, so the image can be a proper subgroup"). It is real and it is rank-dependent. At `R = Z`,
+  `GL_1(Z) = {+-1}` and the image in `(Z/x)*` is `{+-1}`, proper for `x >= 3`, so `s = +- r (mod x)` is the whole
+  test -- the two signs are different orbits and a dropped sign is a false negative, which is why the sign cases are
+  pinned separately. At `R = Z^k` with `k >= 2` the map `GL_k(Z) -> GL_k(Z/n)` is onto, so the residue condition is
+  all of `GL_k(Z/n)`, and `GL_k(Z/n)` is transitive on the primitive residue vectors; the rank-two verdicts are
+  correspondingly *coarser*. The retained route gets both right, and the witnesses show the integral lift
+  (`D = [[2,1],[5,3]]` for `(5,1,0) -> (5,2,0)`: `D(1,0) = (2,5) = (2,0) mod 5`, and the shear `B = (0,-1)` absorbs
+  the difference). The shear `B` is exercised throughout, since it is what absorbs `s - D r`; the `B = 0` cases are
+  the ones where `D` alone closes the gap, and the `B`-only cases (`(5,5,0) -> (5,10,0)` with `D = 1`) are where the
+  radical block is the identity and the shear does all the work.
+
 Still open under #41, and not discharged by the above:
 
-- the rank-two radical case that exercises **the actual image of `GL(R)` in `Aut(R/cR)`** — an integral lift of
-  a residue automorphism has determinant `±1`, so the image can be a proper subgroup — together with the
-  nontrivial shear kernel `{B : Bx = 0}`;
+- the general statement for an arbitrary `R`, not `Z^k`: the criterion above is the split-radical one and the tests
+  are on `Z` and `Z^2`, not on a ring with torsion or a non-free radical;
 - lazy/infinite orbit sets: `c = 0` (the condition is exactly `D r = s`), and marked vectors whose quotient
   image has unbounded content, where a finite orbit list is a false claim;
 - downstream subgroup consumers on those orbit sets.
 
-Those need the split-radical construction in the issue body; nothing in this note claims them.
+Those need the split-radical construction in the issue body for arbitrary `R`; nothing in this note claims them.

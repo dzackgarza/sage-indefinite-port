@@ -15,6 +15,13 @@ followed by the linear equation `B x = s - D r`. Those two conditions are what t
 the positive ones exhibit the integral unimodular witness, and the negative one fails the congruence rather
 than any norm, content or divisibility invariant (all three agree there).
 
+At radical rank `k` the same computation runs with `D` in `GL_k(Z)`, and `s - D r` in `x R` asks for
+`D r = s mod x`, i.e. for `s mod x` to lie in the `GL_k(Z)`-orbit of `r mod x`. That image is the subtle part:
+`GL_1(Z) = {+-1}`, so at rank one only `s = +- r (mod x)` is reachable and the two signs are genuinely different
+orbits; at rank `k >= 2`, `GL_k(Z) -> GL_k(Z/n)` is onto, so the residue condition is the whole of `GL_k(Z/n)`
+and is coarser than the rank-one test. The tests below pin both, with the witness or the refusal built by hand
+from the block conditions rather than read off the port's answer.
+
 The unmarked radical `Aut`/`Isom` route is implemented separately and must keep working; it is checked here
 so a change to the marked path cannot quietly take it out.
 """
@@ -25,6 +32,8 @@ from sage.all import MatrixGroup, ZZ, identity_matrix, matrix, vector
 from sage_indefinite_port.indefinite.recursive import EichlerRecursion, _column_matrix
 from tests.acceptance.consumer import (
     automorphisms,
+    content,
+    coordinates,
     element,
     is_isometry,
     isomorphisms,
@@ -784,3 +793,200 @@ def test_the_index_check_detects_a_deficient_sublattice() -> None:
     assert coordinates.denominator() == 1
     value, invariants = index_in(coordinates.change_ring(ZZ), full_rank)
     assert value == 2 ** full_rank, f"a doubled sublattice must have index 2^rank, got {value} ({invariants})"
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Issue #41, remaining open items: mixed markings at radical rank 2, and the image of GL(R) in Aut(R/xR).
+# ---------------------------------------------------------------------------------------------------------------------
+
+_RANK_TWO_RADICAL_GRAM = [[2, 0, 0], [0, 0, 0], [0, 0, 0]]
+
+
+def _rank_two_radical_lattice():
+    return lattice(_RANK_TWO_RADICAL_GRAM)
+
+
+def _block(unit, shear, radical_block):
+    r"""The `[[A, 0], [B, D]]` block, column convention: `g v = (A x, B x + D r)` for `v = (x, r)`.
+
+    Written out here so the witness for a transport is built from the *conditions* and then checked against the
+    lattice, rather than copied from whatever the port returns. At `C = <2>` the only symmetry is `A = +-1`; `B` is
+    a column of length `k`; `D` is `k x k`.
+    """
+    size = 1 + len(radical_block)
+    rows = [[0] * size for _ in range(size)]
+    rows[0][0] = unit
+    for index in range(len(radical_block)):
+        rows[1 + index][0] = shear[index]
+        for column in range(len(radical_block)):
+            rows[1 + index][1 + column] = radical_block[index][column]
+    return matrix(ZZ, rows)
+
+
+def _checked_block(source_coordinates, target_coordinates, unit, shear, radical_block, gram):
+    r"""Build the block and assert it is an automorphism of the lattice carrying `source` onto `target`.
+
+    Three things are checked and none of them is the port's word: the matrix is invertible over `Z` (`|det| = 1`,
+    which for an integral matrix is exactly integral invertibility), it preserves the pairing
+    (`g^T G g = G`), and it sends the source coordinates onto the target coordinates. Only then is the transport
+    known to exist, independently of any search.
+    """
+    block = _block(unit, shear, radical_block)
+    assert abs(int(block.det())) == 1, "an automorphism of the lattice must be unimodular"
+    form = matrix(ZZ, gram)
+    assert block.transpose() * form * block == form, "the block must preserve the pairing"
+    image = block * vector(ZZ, source_coordinates)
+    assert tuple(int(entry) for entry in image) == tuple(target_coordinates), (
+        "the hand-built block must carry the source onto the target"
+    )
+    return block
+
+
+# (source, target, A, B, D, why) -- every one of these must transport, and the hand-built block proves it.
+_RANK_TWO_TRANSPORTS = [
+    ((5, 1, 0), (5, 2, 0), 1, (0, -1), [[2, 1], [5, 3]],
+     "both residues are nonzero modulo 5, and GL_2(Z/5) moves one to the other"),
+    ((5, 1, 0), (5, 3, 0), 1, (0, -1), [[3, 1], [5, 2]],
+     "same residue orbit, a different lift"),
+    ((5, 1, 0), (5, 0, 1), 1, (0, 0), [[0, 1], [1, 0]],
+     "the radical swap"),
+    ((5, 1, 1), (5, 1, -1), 1, (0, 0), [[1, 0], [-2, 1]],
+     "a shear in GL_2(Z) alone"),
+    ((5, 5, 0), (5, 10, 0), 1, (1, 0), [[1, 0], [0, 1]],
+     "both residues are zero modulo 5, so the shear B carries the difference"),
+    ((5, 5, 0), (5, 0, 5), 1, (0, 0), [[0, 1], [1, 0]],
+     "zero residues again, moved by the swap"),
+]
+
+
+@pytest.mark.parametrize(
+    "source_coordinates, target_coordinates, unit, shear, radical_block, why",
+    _RANK_TWO_TRANSPORTS,
+    ids=[f"{case[0]}->{case[1]}" for case in _RANK_TWO_TRANSPORTS],
+)
+def test_rank_two_radical_mixed_markings_transport_by_an_explicit_gl2_block(
+    source_coordinates, target_coordinates, unit, shear, radical_block, why
+) -> None:
+    r"""Mixed markings at radical rank 2: the residue condition is `GL_2(Z)`, and each transport is exhibited.
+
+    `L = <2> + 0 + 0` has radical `R = Z^2` and `C = <2>`, and every isometry is `[[A, 0], [B, D]]` with `A` in
+    `O(<2>) = {+-1}`, `D` in `GL_2(Z)` and `B` in `Hom(C, R) = Z^2`. So `g(v) = w` asks for `A x = y` and
+    `s - D r` in `x R`, and `B` then carries it. Each case below builds that block, checks it is a lattice
+    automorphism, and only then asks the port -- so agreement is two independent computations, not a rerun.
+    """
+    lattice_ = _rank_two_radical_lattice()
+    _checked_block(
+        source_coordinates, target_coordinates, unit, shear, radical_block, _RANK_TWO_RADICAL_GRAM
+    )
+
+    source = element(lattice_, source_coordinates)
+    target = element(lattice_, target_coordinates)
+    witness = _RECURSION.pointed_isometry(source, target)
+    assert witness is not None, f"expected a transport ({why})"
+    assert witness(source) == target, "the returned witness must carry the source onto the target"
+    assert is_isometry(rows_of(witness), _RANK_TWO_RADICAL_GRAM), "the witness must be an isometry of L"
+
+
+def test_rank_two_residue_orbit_is_coarser_than_the_rank_one_sign_test() -> None:
+    r"""`(5,1) -> (5,2)` at radical rank 1 and `(5,1,0) -> (5,2,0)` at radical rank 2 differ, and must.
+
+    At rank one the residue condition is `s = +- r (mod 5)`, so `2` is not reachable from `1`. At rank two
+    `GL_2(Z) -> GL_2(Z/5)` is onto and `GL_2(Z/5)` is transitive on the nonzero vectors, so `(2,0)` *is* reachable
+    from `(1,0)`. Same residue data, same norm, same content, opposite verdicts: the difference is the image of
+    `GL(R)` in `Aut(R/xR)`, which is a proper subgroup exactly at rank one.
+    """
+    rank_one_lattice = _degenerate_lattice()
+    rank_one_source = element(rank_one_lattice, (5, 1))
+    rank_one_target = element(rank_one_lattice, (5, 2))
+    assert _RECURSION.pointed_isometry(rank_one_source, rank_one_target) is None, (
+        "at rank one the sign is the whole of GL_1(Z), so 2 = +-1 mod 5 is false"
+    )
+
+    rank_two_lattice = _rank_two_radical_lattice()
+    _checked_block((5, 1, 0), (5, 2, 0), 1, (0, -1), [[2, 1], [5, 3]], _RANK_TWO_RADICAL_GRAM)
+    assert _RECURSION.pointed_isometry(
+        element(rank_two_lattice, (5, 1, 0)), element(rank_two_lattice, (5, 2, 0))
+    ) is not None, "at rank two the lift exists, so the refusal must not carry over"
+
+
+def test_rank_two_transport_is_refused_when_the_content_differs() -> None:
+    r"""The rank-two negatives in this family are separated by `content`, which is a proved invariant.
+
+    The residue orbit is everything modulo 5, so a refusal cannot come from the residue: `r = 0 mod 5` forces every
+    radical coordinate of `v` to be divisible by 5 while `x = 5`, hence `content(v)` a multiple of 5, whereas
+    `s` not `0 mod 5` forces `content(w) = 1`. The refusal is therefore explained by the invariant rather than by a
+    failed search, and the check is that the port agrees while the naive residue data would not separate them.
+    """
+    lattice_ = _rank_two_radical_lattice()
+    for source_coordinates, target_coordinates in (
+        ((5, 1, 0), (5, 0, 5)),
+        ((5, 5, 0), (5, 1, 5)),
+        ((5, 0, 1), (5, 5, 5)),
+    ):
+        source = element(lattice_, source_coordinates)
+        target = element(lattice_, target_coordinates)
+        assert int(source.q()) == int(target.q()), "the norms agree, so the refusal is not a norm test"
+        assert content(source) != content(target), "content is the invariant that separates them"
+        assert _RECURSION.pointed_isometry(source, target) is None
+
+
+# (source, target, A, B, D, why) -- the rank-one sign cases, each with the hand-built block that realises it.
+# `D` is the radical unit and `B` is the shear that absorbs `s - D r` over `x`.
+_RANK_ONE_SIGN_CASES = [
+    ((5, 1), (5, 4), 1, (1,), [[-1]], "4 = -1 mod 5, so the negating radical unit is the witness"),
+    ((5, 1), (5, 9), 1, (2,), [[-1]], "9 = -1 mod 5, reached by the same unit plus a doubling shear"),
+    ((5, 2), (5, 3), 1, (1,), [[-1]], "3 = -2 mod 5: the sign, not equality of residues"),
+    ((5, 2), (-5, 2), -1, (0,), [[1]], "A = -1 is a symmetry of C, not a transporter, so it must be allowed"),
+    ((-5, 1), (5, 4), -1, (-1,), [[-1]], "both blocks negated"),
+]
+
+
+@pytest.mark.parametrize(
+    "source_coordinates, target_coordinates, unit, shear, radical_block, why",
+    _RANK_ONE_SIGN_CASES,
+    ids=[f"{case[0]}->{case[1]}" for case in _RANK_ONE_SIGN_CASES],
+)
+def test_rank_one_radical_image_is_the_sign_and_the_symmetry_of_c(
+    source_coordinates, target_coordinates, unit, shear, radical_block, why
+) -> None:
+    r"""At `R = Z`, `GL_1(Z) = {+-1}` and `O(<2>) = {+-1}`: both signs are witnesses, and both are needed.
+
+    A dropped sign here is a false negative of exactly the kind the pointwise-shell `abs(m)` defect was: the
+    division `s - D r` in `cR` would report "not divisible" for a pair that the negating unit transports. Each case
+    builds the block first and then asks the port.
+    """
+    lattice_ = _degenerate_lattice()
+    _checked_block(source_coordinates, target_coordinates, unit, shear, radical_block, _GRAM)
+
+    source = element(lattice_, source_coordinates)
+    target = element(lattice_, target_coordinates)
+    witness = _RECURSION.pointed_isometry(source, target)
+    assert witness is not None, f"expected a transport ({why})"
+    assert witness(source) == target
+    assert is_isometry(rows_of(witness), _GRAM)
+
+
+def test_rank_one_refusal_is_exhaustive_over_the_two_units_and_two_symmetries() -> None:
+    r"""`(5,2) -> (5,1)` is refused, and the refusal is a finite exhaustion, not a bounded search.
+
+    At rank one there are four candidate blocks: `A` in `{+-1}` (irrelevant here, as `x = y`) and `D` in `{+-1}`.
+    Neither unit satisfies `d r = s (mod 5)`, so no transporter exists -- and the check below runs those four, which
+    is *all* of them, rather than trusting that the port's search covered enough. `q`, `content` and the
+    divisibility agree on the pair, so the refusal cannot be blamed on any of them.
+    """
+    lattice_ = _degenerate_lattice()
+    source = element(lattice_, (5, 2))
+    target = element(lattice_, (5, 1))
+
+    assert int(source.q()) == int(target.q())
+    assert content(source) == content(target)
+    source_x, source_r = coordinates(source)
+    target_x, target_r = coordinates(target)
+    assert (source_x, target_x) == (5, 5)
+    for unit in (1, -1):
+        for radical_unit in (1, -1):
+            remainder = target_r - radical_unit * source_r
+            assert remainder % source_x != 0, (
+                f"A={unit}, d={radical_unit} must fail the congruence, so no shear can absorb it"
+            )
+    assert _RECURSION.pointed_isometry(source, target) is None
