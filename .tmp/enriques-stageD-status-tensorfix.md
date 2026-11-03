@@ -2,9 +2,11 @@
 
 ## Provenance of what ran
 
-**Launch-time evidence, i.e. what the runs themselves recorded.** Both launchers bind the library checkout read-only
-(`PROV=/workspace/nucleus/work/projects/p-8c69fc…/repo` → `/repos/sage-extensions`, PYTHONPATH
-`/repos/sage-extensions/src`), and each run header prints the runtime module path plus
+**Launch-time evidence, i.e. what the runs themselves recorded.** Both launchers bind the library checkout with proot's
+plain `-b` (`PROV=/workspace/nucleus/work/projects/p-8c69fc…/repo` → `/repos/sage-extensions`, PYTHONPATH
+`/repos/sage-extensions/src`). A plain `-b` is **not** a read-only mount (proot mounts read-write by default);
+the recorded content is the launch content because nothing wrote through that path, not because writing was
+impossible. The same holds for the `/probe.py` binds of the probe sources themselves, and each run header prints the runtime module path plus
 `lattice_morphisms.py sha256[:16] = 00f0c682880cc022`. **No commit OID was recorded at launch**, and the logs do not
 print a `tensor.py` digest. A run is therefore pinned by those recorded digests (and the bound path), not by a commit
 name.
