@@ -124,12 +124,20 @@ original acceptance -- 5/10/19 orbits and S1 -- stays open on its own terms unti
 
 ## Terminal of the deduped-presentation rerun (`jmw0whgrg`, cap unchanged): the in-line dedupe is cost-negative at N scale
 
-- The rerun with provider `6c1500f` (stabilizer presenting each distinct Schreier image once) hit its
-  unchanged 2400 s inner cap **inside** `action.stabilizer().group_generators()` (exit 124), peak tree
-  3675 MiB of 6144: the stabilizer itself did not complete. The per-image work of the dedupe - each
-  of the 25600 images evaluated, coordinate-tensor digested for hashing, equality-merged - out-priced
-  the downstream gain at rank 12. Frames on termination: lattice-morphism tensor construction.
-- Corrected at the owner: provider `71f5c13` makes `lattice_stabilizer` return the verbatim Schreier
+- The rerun with provider `6c1500ff` (stabilizer presenting each distinct Schreier image once; the log filename
+  carries the 7-character abbreviation `6c1500f`) hit its unchanged 2400 s inner cap **inside**
+  `action.stabilizer().group_generators()` (exit 124) after **40m1s**, peak tree 3675 MiB of 6144: the stabilizer
+  itself did not complete. That is checked rather than inferred: the raw log is scanned for the completion line
+  `action.stabilizer() <seconds>: <n> generators`, and **no such line exists** there — the last stage line is the
+  call's own announcement. The run manager reports **one descendant cleaned up**; `peakrss` records the tree's peak
+  and wait status, not cleanup, so that fact is attributed to the manager.
+- What that measures: the in-line dedupe is **cost-negative at N scale** — it did not finish where the verbatim
+  family did (1898.5 s). Its termination frames land in lattice-morphism tensor construction
+  (`_tensor_view -> tensor.from_morphism -> from_matrix -> matrix_entry`). That is the attributed stack at
+  termination and **not** an isolated hashing cost: no per-component split against image evaluation was measured, so
+  no such split is claimed.
+- Corrected at the owner (the corrections this section makes are carried in provider `77da8a3`, which withdrew the
+  unsupported timing and causal estimates): provider `71f5c13` makes `lattice_stabilizer` return the verbatim Schreier
   family again (whose measured completion on N is 1898.5 s, from `jmw0urc9n`), and keeps the dedupe
   as `_deduplicated_generating_morphism`, with its contract stated - image family and subgroup
   preserved, not the free domain or word enumeration - and its unhashable boundary stated. The raw
