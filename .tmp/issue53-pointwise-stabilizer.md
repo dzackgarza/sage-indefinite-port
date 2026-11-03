@@ -86,6 +86,38 @@ Independence of the evidence, since a classification checked only against itself
 generator of `Aut((L, e1))` is applied to eleven shell vectors and must preserve the class key. That catches a key
 that is too *fine* -- the plausible error -- and it passed on all six generators.
 
+## The action, integrated through the retained constructor
+
+`pointwise_shell_action(lattice)` builds the `Gamma`-set with the same maintained constructor
+`EichlerRecursion.marked_orbit_action` uses for `O(L)`:
+
+    GObjects(pointwise_shell_group(lattice), Sets()).on_set(shell, action, orbit_relation=gamma_equivalent)
+
+The point set is a predicate cut (primitive, isotropic), so no shell element is materialised; the orbit relation is
+the exact decision above. `pointwise_shell_quotient` is the provider's `orbits()`, whose `is_finite()` stays a
+proposition because this quotient is infinite. No second quotient framework is introduced -- the group is the
+pointwise stabilizer, the relation is ours, and the machinery is the provider's.
+
+## A proved generating set, and an exact decomposition instead of sampled checks
+
+`pointwise_shell_group` generates `Gamma` from `{sigma, tau, u(1,0), u(0,1)}`, and this set's completeness is
+*proved*, not sampled:
+
+* `u(rho1,gam1) u(rho2,gam2) = u(rho1+rho2, gam1+gam2)` -- on the four basis images the `e2` and `f2` coordinates
+  add, and the `f1` coordinate gives `-(gam1+gam2)(rho1+rho2) = -gam1rho1 - gam1rho2 - gam2rho1 - gam2rho2`, which
+  is exactly the `f1` coordinate of `u(rho1+rho2, gam1+gam2)`. So `N = <u(1,0), u(0,1)> ~ Z^2`;
+* `Theta = <sigma, tau>` is the Klein four group and maps onto `O(Q)`;
+* `Gamma = N |> Theta` is the module theorem, so the four elements generate `Gamma`.
+
+The six generators returned by `pointed_automorphism_generators` are the *source's* claim, whose completeness this
+port does not re-derive, so the action is driven by the set whose completeness follows from the decomposition.
+
+`gamma_decompose(lattice, g)` is the exact membership decision that replaces comparing a few images: read `g(e2)` and
+`g(f2)`, require their `Q`-images to be `S(1,0)` and `S(0,1)` for one of the four symmetries (which determines `S`),
+read `rho`, `gam` from the `e1` coefficients, then require agreement with `u(rho, gam) S` on **all four** basis
+vectors. It returns `(symmetry_index, rho, gam)` or `None`. Every retained generator is decided this way; a test
+asserts each decomposes, and that an isometry moving `e1` does not.
+
 ## What is refused, deliberately
 
 * **No `Γ`-orbit G-set over the *whole* shell.** `pointwise_shell.gamma_equivalent` is an exact decision on the
@@ -108,7 +140,7 @@ that is too *fine* -- the plausible error -- and it passed on all six generators
 ## Numbers
 
 `tests/test_pointwise_stabilizer_shell.py`: 7 tests, 7.2 s, peak 433 MiB.
-`tests/test_pointwise_shell_decision.py`: 12 tests, 6.8 s, peak 429 MiB -- the exact decision, its witnesses, the
+`tests/test_pointwise_shell_decision.py`: 15 tests, 8.8 s, peak 435 MiB -- the exact decision, its witnesses, the
 generator cross-check, the signed-pairing and opposite-vector regressions, the invariant-vs-classification law,
 negative `m`, and the refusals outside the shell.
 With the facet and canonical files: 36 passed in 23.4 s, 646 MiB.

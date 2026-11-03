@@ -14,8 +14,12 @@ from sage_indefinite_port.indefinite.pointwise_shell import (
     U_PLUS_U_GRAM,
     gamma_action,
     gamma_class,
+    gamma_decompose,
     gamma_equivalent,
     gamma_witness,
+    pointwise_shell_action,
+    pointwise_shell_group,
+    pointwise_shell_quotient,
     shell_coordinates,
 )
 from sage_indefinite_port.indefinite.recursive import EichlerRecursion
@@ -266,3 +270,63 @@ def test_opposite_vectors_are_never_equivalent_unless_the_class_says_so() -> Non
             assert witness(vector) == negated
             assert witness(_e1()) == _e1()
 
+
+def test_the_proved_generating_set_decomposes_exactly_and_generates_gamma() -> None:
+    r"""`Gamma = <sigma, tau, u(1,0), u(0,1)>`, and each generator's decomposition is decided, not sampled.
+
+    The four elements decompose to `(1,0,0)`, `(2,0,0)`, `(0,1,0)` and `(0,0,1)`, the structural statement that the
+    generating set is the `N`-part times the `Theta`-part. Every generator returned by the retained
+    `pointed_automorphism_generators` also decomposes, which decides its membership in `Gamma` exactly instead of
+    comparing a few images.
+    """
+    L = _L()
+    assert gamma_decompose(L, gamma_action(L, "sigma")) == (1, 0, 0)
+    assert gamma_decompose(L, gamma_action(L, "tau")) == (2, 0, 0)
+    assert gamma_decompose(L, gamma_action(L, "u", 1, 0)) == (0, 1, 0)
+    assert gamma_decompose(L, gamma_action(L, "u", 0, 1)) == (0, 0, 1)
+    # composition lands where the semidirect product says
+    assert gamma_decompose(L, gamma_action(L, "u", 1, 1)) == (0, 1, 1)
+
+    retained = _RECURSION.pointwise_stabilizer_generators(_e1())
+    assert retained
+    for generator in retained:
+        assert gamma_decompose(L, generator) is not None, (
+            "a retained generator failed the exact membership test in Gamma"
+        )
+
+    assert len(tuple(pointwise_shell_group(L).group_generators())) == 4
+
+
+def test_an_isometry_outside_gamma_does_not_decompose() -> None:
+    r"""The decomposition decides membership: an isometry moving `e1` returns `None`."""
+    from sage.all import ZZ, matrix
+
+    from sage_indefinite_port.indefinite.recursive import _isometry_from_row_matrix
+
+    L = _L()
+    not_gamma = _isometry_from_row_matrix(
+        L, L, matrix(ZZ, [[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+    )
+    assert not_gamma(_e1()) != _e1()
+    assert gamma_decompose(L, not_gamma) is None
+
+
+def test_the_retained_action_constructor_carries_the_pointwise_shell() -> None:
+    r"""The G-set is the provider's, driven by `Gamma`, with the exact relation as its orbit relation.
+
+    Reusing `GObjects(...).on_set(...)` rather than a second framework: `in_same_orbit` agrees with
+    `gamma_equivalent` on the shell, `orbit_of` returns the provider's orbit object, and the quotient's
+    `is_finite()` stays a proposition, because the quotient here is infinite.
+    """
+    L = _L()
+    action = pointwise_shell_action(L)
+
+    pairs = [(_v(0, 2, 1, 0), _v(-6, 2, 3, 4)), (_v(0, 2, 1, 0), _v(0, 3, 1, 0)),
+             (_v(0, 1, 0, 0), _v(0, -1, 0, 0)), (_v(1, 0, 3, 0), _v(4, 0, 3, 0))]
+    for left, right in pairs:
+        assert action.in_same_orbit(left, right) == gamma_equivalent(L, left, right)
+
+    assert action.orbits().orbit_of(_v(0, 2, 1, 0)) is not None
+    assert pointwise_shell_quotient(L).is_finite() is not True, (
+        "the quotient is infinite and must not be reported finite"
+    )
