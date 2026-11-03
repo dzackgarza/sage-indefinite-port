@@ -62,6 +62,8 @@ references/Indefinite.jl/
 !.tmp/handoff-owner-congruence-transporter.md
 !.tmp/handoff-port-enriques-stageD-attribution.md
 !.tmp/probe-enriques-stageD-attribution.py
+!.tmp/handoff-port-enriques-stageD-hashfix.md
+!.tmp/probe-enriques-stageD-attribution-hashfix.py
 !.tmp/probe-lorentz-image-api.py
 !.tmp/probe-lorentz-structural.py
 !.tmp/probe-lorentz-recognition.py
