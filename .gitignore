@@ -119,3 +119,5 @@ references/Indefinite.jl/
 !.tmp/probe-stageD-atomB.py
 !.tmp/launch-stageD-atomB.sh
 !.tmp/enriques-stageD-status-tensorfix.md
+!.tmp/enriques_stageD_schreierfix_6675f1f.log
+!.tmp/launch-stageD-schreierfix.sh

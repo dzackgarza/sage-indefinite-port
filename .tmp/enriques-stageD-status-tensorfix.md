@@ -71,3 +71,9 @@ name**; nothing here substitutes for them, and no partial stage is reported as a
 The remaining stage is an owning-library item in `g_sets.py`, whose central repair is now being implemented in
 `sage-extensions` after this job ended. This port does not duplicate that repair and starts no further heavy probe;
 its consumer integration resumes once the repair is measured and available.
+
+## Terminal of the retained-transition acceptance rerun (`jmw0urc9n`, cap unchanged)
+
+- `action.stabilizer()` **completed: 1898.5 s, 25600 generators** (the full $1024 \times 25$ Schreier family): B3 words through the retained transition table, then B4 realization of every preimage word into a group element. No second sweep, no per-row re-acts.
+- The run then entered the probe's own conversion loop `tuple(N.integral_isometry(g) for g in ...)` and hit its **unchanged** 2400 s inner cap there (exit 124), PEAKRSS peak tree 3637 MiB of the 6144 MiB guard: again **time-bound, no memory wall**. The first boundary the conversions own (`integral_restriction -> factor_through_or_none -> _preimage_or_none`) is thus measured real, not from a sample: 25600 per-element conversions, one preimage computation each; the conversion stage, not the stabilizer realization, is now the acceptance frontier.
+- The raw log `.tmp/enriques_stageD_schreierfix_6675f1f.log` is published with this note. The stabilized Schreier family size (25600) is itself the cost driver of that stage; deducing semantics from it duplicates nothing.
