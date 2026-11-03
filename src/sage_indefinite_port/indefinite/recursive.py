@@ -377,12 +377,19 @@ class RadicalCongruenceImage:
         return int(libgap.Size(stabilizer))
 
     def stabilizer_generators(self, row):
-        r"""Integral unimodular generators of `{D in im : r D = r}` -- GAP's `Stabilizer`, lifted by their words.
+        r"""Integral lifts of generators of the **residue** stabilizer `{D in im : r D = r (mod modulus)}`.
 
-        This is the finite congruence part of the pointwise stabilizer of a mixed marking (issue #41): the elements
-        of `GL_k(Z)` whose residue class fixes `r`. Each generator is pulled back to a word in the integral
-        generators, composed from `lifts`, and verified to be unimodular and to fix the residue -- the same
-        lift-word obligation `transporter` discharges, on the same convention.
+        Each generator of GAP's `Stabilizer` subgroup of the image is pulled back to a word in the integral
+        generating set, composed from `lifts`, and verified to be unimodular and to fix the residue -- the same
+        lift-word obligation `transporter` discharges, on the same row convention.
+
+        **Scope, exactly.** These matrices generate the residue stabilizer, i.e. the image of the stabilizer in
+        `GL_k(Z/modulus)`. They do **not** generate the integral inverse image
+        `{D in GL_k(Z) : r D = r (mod modulus)}`, which is infinite and contains the congruence kernel
+        `{D : D = 1 (mod modulus), r D = r}`. Agreement with `stabilizer_order` modulo the modulus is precisely a
+        statement about that finite image and says nothing about the kernel, so no downstream claim of full
+        integral stabilizer generation may rest on this method. Generating the integral inverse image needs the
+        kernel as well, and that is a separate obligation which is **not** supplied here.
         """
         point, _ = self._orbit_gap(row)
         group = self.group.gap()
@@ -1320,6 +1327,51 @@ class EichlerRecursion:
             general_linear_order=int(GL(radical_rank, residue_ring).order()),
         )
 
+    def _mixed_marking_residue_obstruction(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> bool:
+        r"""Whether the radical-residue condition admits a carrier; `False` is a **proved** obstruction (issue #41).
+
+        In the reduced presentation `L = C + R` write `v = (x, r)` and `w = (y, s)`, with `c = content(x)`. Every
+        isometry `g(v) = w` has a block form whose radical part `D` satisfies
+
+            r D = s (mod c R),      i.e.  r D = s (mod c),
+
+        so if no integral unimodular `D` does that, no isometry carries `v` onto `w` and the caller may answer
+        `None` without any search. That is exactly the fast negative this returns `False` for.
+
+        It is a **necessary condition only**: `True` reports "no obstruction found", never "an isometry exists" --
+        the complementary condition `A x = y` with `A` in `O(C)` is not tested here, and `C`'s own orbit problem is
+        the nondegenerate backend's. `c = 0` is the radical case, decided by `_radical_pointed_isometry`, and
+        `c = 1` makes the congruence vacuous; both return `True`.
+
+        The coordinates come from the lattice's cached reduced presentation, the same one
+        `radical_congruence_image` reads, so the rows handed to the image are in one convention throughout: rows
+        of length `radical_rank`, multiplied on the right.
+        """
+        lattice = source.parent()
+        reduction = indefinite_reduced_presentation(lattice)
+        reduced = reduction.reduced
+        gram = _gram_in_label_order(reduced)
+        nonsingular_rank = int(gram.rank())
+        radical_rank = int(gram.nrows()) - nonsingular_rank
+        if radical_rank == 0:
+            return True
+        labels = tuple(reduced.module_generating_set())
+        inverse = reduction.isometry.inverse()
+
+        def split(vector):
+            coordinates = tuple(_integer(inverse(vector).to_vector()(label)) for label in labels)
+            return coordinates[:nonsingular_rank], coordinates[nonsingular_rank:]
+
+        source_complement, source_radical = split(source)
+        _, target_radical = split(target)
+        content = 0
+        for entry in source_complement:
+            content = gcd(content, entry)
+        if content <= 1:
+            return True
+        image = self.radical_congruence_image(lattice, content)
+        return image.transporter(source_radical, target_radical) is not None
+
     def _transported_radical_pointed_isometry(
         self, source: Lattices.ElementMethods, target: Lattices.ElementMethods
     ) -> LatticeIsometryMethods | None:
@@ -1531,6 +1583,14 @@ class EichlerRecursion:
             # primitive and non-degenerate, and it asserts for a radical vector of content > 1. The radical has
             # its own exact description (see `_radical_pointed_isometry`), so route it before that machinery.
             return self._radical_pointed_isometry(source, target)
+        if (
+            source_lattice is target_lattice
+            and not source_lattice.is_nondegenerate()
+            and not self._mixed_marking_residue_obstruction(source, target)
+        ):
+            # A proved obstruction: the radical residues cannot be matched modulo `content(x)`, so no isometry
+            # carries one marking onto the other. Answering here is exact and skips the search below.
+            return None
         if source.q() == source_lattice.base_ring().zero():
             if source_lattice.is_even() and source.div() == source_lattice.base_ring().one():
                 return self._split_isotropic_isometry(source, target)

@@ -147,9 +147,33 @@ rank one, modulus 5, `1 -> 2`, with the GAP sentinel itself asserted alongside i
 `RadicalCongruenceImage.transporter` composes the integral lifts along that word -- the lift-word obligation, which
 is the port's own data -- and verifies unimodularity and the transport before returning; the reversed letter order
 is a different matrix and is rejected by that verification rather than returned. `orbit_of`, `stabilizer_order` and `stabilizer_generators`
-use GAP's `Orbit` and `Stabilizer` with the same typing; the last lifts GAP's stabilizer generators by their words
-and the test checks that those lifts generate a group of exactly `stabilizer_order` elements (1, 2 and 10 for the
-#41 specimens). The full trace, the three failing calls and why each failed
+use GAP's `Orbit` and `Stabilizer` with the same typing; the last lifts GAP's stabilizer generators by their words,
+and the test checks that those lifts generate, *modulo the modulus*, a group of exactly `stabilizer_order` elements
+(1, 2 and 10 for the #41 specimens).
+
+**Scope of `stabilizer_generators`, stated exactly.** It generates the **residue** stabilizer
+`{D in im : r D = r (mod c)}`. It does **not** generate the integral inverse image
+`{D in GL_k(Z) : r D = r (mod c)}`, which is infinite and additionally contains the congruence kernel
+`{D : D = 1 (mod c), r D = r}`. Agreement modulo `c` is a statement about the finite image and says nothing about the
+kernel, so no downstream claim of full integral stabilizer generation rests on it. **Generating the integral inverse
+image (image plus congruence kernel) is an open arithmetic obligation**, not a supplied capability.
+
+## The mixed-marking fast negative, wired into `pointed_isometry`
+
+`_mixed_marking_residue_obstruction(source, target)` reads the reduced presentation `L = C + R` once (the same
+cached reduction `radical_congruence_image` uses, so the rows are in one convention), writes `v = (x, r)`,
+`w = (y, s)` and `c = content(x)`, and asks the image whether some `D` has `r D = s (mod c)`. Every isometry
+`g(v) = w` satisfies that, so a `False` is a **proved** obstruction and `pointed_isometry` answers `None` before any
+search. It is a necessary condition only: `True` means "no obstruction found", never "an isometry exists" -- the
+complementary `A x = y` condition with `A` in `O(C)` is the nondegenerate backend's problem and is untouched. `c = 0`
+is the radical route and `c = 1` is vacuous; both return `True`.
+
+The regression is two-sided: the obstruction fires on `(5,2) -> (5,1)` at radical rank one -- where `q`, `content`
+and the divisibility all agree, so nothing else explains the refusal -- and it passes on *every* positive specimen in
+the rank-one and rank-two tables, since a necessary condition that blocked a transport would be a false negative.
+The pair is also taken through `marked_orbit_action(...).in_same_orbit`, which reaches the same verdict through the
+same call. `pointed_isometry` on `<2> + 0` is what the #62 canonicalizer runs on, so that file is re-run with the
+fast path in place. The full trace, the three failing calls and why each failed
 are in `.tmp/handoff-owner-congruence-transporter.md`, which is now a resolved record and not a request.
 
 ## Where the boundary actually is
@@ -168,8 +192,10 @@ Still open under #41, and not discharged by the above:
   `Z` and `Z^2`, not on a ring with torsion or a non-free radical;
 - lazy/infinite orbit sets: `c = 0` (the condition is exactly `D r = s`), and marked vectors whose quotient image
   has unbounded content, where a finite orbit list is a false claim;
-- downstream **orbit-set** consumers (the congruence-pair consumer is now supplied and tested; the orbit-set
-  consumers are not).
+- downstream **orbit-set** consumers: the verdict-agreement consumer (`in_same_orbit`) is now tested against the
+  obstruction and the residue stabilizer is exposed; general subgroup consumers on those orbit sets are still open;
+- **generating the integral inverse image** `{D in GL_k(Z) : r D = r (mod c)}`, which needs the congruence kernel
+  `{D = 1 (mod c), r D = r}` in addition to the image. `stabilizer_generators` supplies only the image part.
 
 Pointwise stabilizers are now cross-checked against the image: for `v = (x, r)` the stabilizer maps **onto**
 `{A x = x} x {D : r D = r (mod c)}` with kernel `{D : r D = r, D = 1 (mod c)}`. At radical rank one that kernel is
