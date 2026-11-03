@@ -852,6 +852,94 @@ class EichlerRecursion:
         action = self.isotropic_stabilizer_action((vector,), ((-vector,),))
         return tuple(lattice.integral_isometry(generator) for generator in action.stabilizer().group_generators())
 
+    def pointwise_stabilizer_generators(self, vector: Lattices.ElementMethods) -> tuple[LatticeIsometryMethods, ...]:
+        r"""Generators of `Aut((L, v))`, the **pointwise** stabilizer `{g : g(v) = v}` (issues #53 and #62).
+
+        This is the group a quotient such as `L[n]/Gamma` runs over when `Gamma` is a pointwise stabilizer, and it
+        is deliberately distinct from :meth:`line_stabilizer_generators`, which is `Aut((L, Zv))` and admits
+        `-1` on the line. For a primitive isotropic `v` the two differ, and the difference is visible: the line
+        group contains an element with `g(v) = -v`, the pointwise group contains none.
+
+        The generators are the ones :meth:`pointed_automorphism_generators` computes, re-verified here: each is
+        applied to `v` and must return `v` exactly, because the consumer's quotient is only the pointwise one if
+        that holds for every generator.
+
+        What this does *not* supply, and what decidability of equivalence does not give: a claim that these
+        generators are complete for `Aut((L, v))` beyond the source's own statement, or any way to decide
+        membership in the subgroup they generate. Deciding `Gamma`-equivalence of two vectors is a different
+        problem from having generators, and this port decides it only as far as
+        :meth:`pointwise_stabilizer_invariant` reaches.
+        """
+        generators = self.pointed_automorphism_generators(vector)
+        for generator in generators:
+            if generator(vector) != vector:
+                raise ArithmeticError(
+                    "a claimed pointwise stabilizer generator does not fix the marked vector; the quotient would "
+                    "be over a larger group than the pointwise stabilizer"
+                )
+        return generators
+
+    def pointwise_stabilizer_invariant(
+        self, marked: tuple[Lattices.ElementMethods, ...], vector: Lattices.ElementMethods
+    ) -> tuple[int, ...]:
+        r"""An exact `Gamma`-invariant of `vector`, for `Gamma = {g : g(u) = u for u in marked}` (issue #53).
+
+        The entry is `(q(v), content(v), b(u_1, v), ..., b(u_k, v))`. Every component is invariant: `q` and the
+        content are preserved by any isometry, and `b(u_i, .)` is preserved because `g` fixes `u_i` and preserves
+        the pairing, so `b(u_i, g v) = b(g u_i, g v) = b(u_i, v)`.
+
+        Two vectors with different entries therefore lie in **different** `Gamma`-orbits -- a proved negative, not
+        a search that failed. Equal entries prove nothing: the invariant is not claimed to be complete, and this
+        port does not decide `Gamma`-equivalence beyond what the invariant separates.
+        """
+        lattice = vector.parent()
+        for one in marked:
+            if one.parent() is not lattice:
+                raise ValueError(
+                    "the pointwise stabilizer is of vectors of one lattice, and this vector belongs to another"
+                )
+        return (int(vector.q()), int(vector.content()), *(int(lattice.b(one, vector)) for one in marked))
+
+    def pointwise_stabilizer_separates(
+        self, marked: tuple[Lattices.ElementMethods, ...], source: Lattices.ElementMethods, target: Lattices.ElementMethods
+    ) -> bool:
+        r"""Whether :meth:`pointwise_stabilizer_invariant` **proves** `source` and `target` inequivalent.
+
+        `True` is a decision: the two lie in different orbits of the pointwise stabilizer of `marked`. `False`
+        means only that the invariant did not separate them, and must never be read as equivalence.
+        """
+        if source.parent() is not target.parent():
+            raise ValueError("the invariant compares vectors of one lattice presentation")
+        return self.pointwise_stabilizer_invariant(marked, source) != self.pointwise_stabilizer_invariant(
+            marked, target
+        )
+
+    def verify_pointwise_stabilizer_transport(
+        self,
+        marked: tuple[Lattices.ElementMethods, ...],
+        source: Lattices.ElementMethods,
+        target: Lattices.ElementMethods,
+        candidate: LatticeIsometryMethods,
+    ) -> None:
+        r"""Certify that `candidate` lies in the pointwise stabilizer of `marked` and carries `source` to `target`.
+
+        A certificate *checker*, not a search: it runs in the time of a few evaluations and makes no completeness
+        claim. Schematically, given the generator set, "does some word give a witness" is membership in a subgroup
+        of infinite index, which this port does not decide -- so a caller supplies a candidate element (for
+        example one built from the structure of the lattice) and this decides whether it really is a Gamma-element
+        with the required action.
+        """
+        lattice = source.parent()
+        if target.parent() is not lattice:
+            raise ValueError("a pointwise stabilizer transport runs inside one lattice presentation")
+        if candidate.domain() is not lattice or candidate.codomain() is not lattice:
+            raise ValueError("the candidate must be an isometry of the lattice of the two markings")
+        for one in marked:
+            if candidate(one) != one:
+                raise ArithmeticError(f"the candidate does not fix the marked vector {one} pointwise")
+        if candidate(source) != target:
+            raise ArithmeticError("the candidate does not carry the source marking onto the target marking")
+
     def levi_image(self, vector: Lattices.ElementMethods) -> Parent:
         r"""H, the image of Aut((L, Zv)) in O(K), K = v-perp/v, generated by the images of its computed generators."""
         reduction = vector.parent().primitive_isotropic_subobject(vector).isotropic_reduction()

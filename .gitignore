@@ -103,3 +103,4 @@ references/Indefinite.jl/
 !.tmp/pending-ci-disk-fix.patch
 !.tmp/contract-discriminant-image-identity.md
 !.tmp/issue62-canonicalizer-status.md
+!.tmp/issue53-pointwise-stabilizer.md
