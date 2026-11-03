@@ -121,3 +121,5 @@ references/Indefinite.jl/
 !.tmp/enriques-stageD-status-tensorfix.md
 !.tmp/enriques_stageD_schreierfix_6675f1f.log
 !.tmp/launch-stageD-schreierfix.sh
+!.tmp/enriques_stageD_dedupefix_6c1500f.log
+!.tmp/launch-stageD-dedupefix.sh

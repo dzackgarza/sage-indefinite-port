@@ -1,0 +1,1223 @@
+[t=     0.0s] imports
+[t=     1.1s] provider package: /repos/sage-extensions/src/sage_extensions/__init__.py
+[t=     1.1s] lattice_morphisms.py sha256[:16] = 00f0c682880cc022
+[t=     1.1s] N: rank 12, signature (2, 10), det 1024; line I_1_1
+[t=     2.4s] isotropic_reduction 1.3s
+[t=     2.4s] K: rank 10, signature (1, 9), det 1024
+[t=     4.9s] orthogonal_group_generators(K) 2.5s: 22 gens
+[t=    25.5s] isotropic_stabilizer_action 20.6s
+[t=    25.5s] action.stabilizer().group_generators()  <- the previously non-returning call
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/modules/free_module.py", line 2335 in _eq
+  File "/sage/.venv/lib/python3.14/site-packages/sage/modules/free_module.py", line 1522 in __richcmp__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 1444 in lift
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 3876 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1764 in _preimage_or_none
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1845 in is_in_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/orbit_spans.py", line 68 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/orbit_spans.py", line 68 in _call_
+  File "/sage/.venv/lib/python3.14/site-packages/sage/categories/category.py", line 592 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_objects.py", line 997 in orbit_generated_submodule
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 415 in invariant_module_construction
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 421 in invariant_module
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 440 in finite_quotient_action
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 444 in finite_module
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 147 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 468 in finite_representation
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 723 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/additive_mors.py", line 46 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/additive_mors.py", line 85 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/additive_mors.py", line 420 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/magmas.py", line 33 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 125 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/magmas.py", line 880 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/semirings.py", line 265 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 134 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 938 in elementwise
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 577 in _ringlike_mor_element
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 933 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_foundation.py", line 61 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 996 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 927 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2751 in _ring_morphism_defining_module_action
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2786 in scalar_action
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2843 in scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1086 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 206 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 205 in _act_on_position
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 184 in _orbit_words
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 215 in from_finite_orbits
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 156 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 468 in finite_representation
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/finitely_generated/finitely_presented_modules.py", line 2588 in _pid_presentation_kernel
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/finitely_generated/finitely_presented_modules.py", line 2450 in _selected_presentation_kernel
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/finitely_generated/finitely_presented_modules.py", line 667 in _represented_kernel_of_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1344 in kernel
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/finitely_generated/finitely_presented_modules.py", line 735 in subobject_on
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 216 in _act_on_position
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 184 in _orbit_words
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 215 in from_finite_orbits
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 156 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 468 in finite_representation
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/modules/free_module.py", line 3073 in coordinate_ring
+  File "/sage/.venv/lib/python3.14/site-packages/sage/modules/free_module.py", line 2790 in basis_matrix
+  File "/sage/.venv/lib/python3.14/site-packages/sage/modules/fg_pid/fgp_module.py", line 258 in FGP_Module
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/finitely_generated/finitely_presented_modules.py", line 3400 in _presented_module_from_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/finitely_generated/finitely_presented_modules.py", line 2681 in _pid_presentation_kernel
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/finitely_generated/finitely_presented_modules.py", line 2450 in _selected_presentation_kernel
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/finitely_generated/finitely_presented_modules.py", line 667 in _represented_kernel_of_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1344 in kernel
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/finitely_generated/finitely_presented_modules.py", line 735 in subobject_on
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 216 in _act_on_position
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 184 in _orbit_words
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 215 in from_finite_orbits
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 156 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 468 in finite_representation
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/modules/free_module.py", line 7052 in _echelonized_basis
+  File "/sage/.venv/lib/python3.14/site-packages/sage/modules/free_module.py", line 6835 in __init__
+  File "/sage/.venv/lib/python3.14/site-packages/sage/modules/free_module.py", line 7894 in __init__
+  File "/sage/.venv/lib/python3.14/site-packages/sage/modules/free_module.py", line 1795 in span
+  File "/sage/.venv/lib/python3.14/site-packages/sage/modules/free_module.py", line 1883 in submodule
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/finitely_generated/finitely_presented_modules.py", line 1979 in _submodule_key_from_generators
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 209 in _act_on_position
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 184 in _orbit_words
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 215 in from_finite_orbits
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 156 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 468 in finite_representation
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/categories/category.py", line 463 in __classcall__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in __eq__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line ??? in _element_constructor_
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6516 in __init__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line ??? in __eq__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in _engine_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 674 in _free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 6930 in free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 127 in _deduplicated_generating_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 273 in lattice_stabilizer
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line ??? in __init__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line ??? in _element_constructor_
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2752 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2843 in scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1086 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6922 in _matrix_column_coordinates
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6931 in matrix_entry
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6936 in __getitem__
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2672 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2671 in from_matrix
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2684 in from_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 308 in _tensor_view
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 986 in _coordinate_tensor
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1509 in __hash__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 128 in _deduplicated_generating_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 273 in lattice_stabilizer
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/categories/category.py", line ??? in __classcall__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 2448 in Of
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_foundation.py", line ??? in End
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6770 in row_index_set
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6929 in matrix_entry
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6936 in __getitem__
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2672 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2671 in from_matrix
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2684 in from_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 308 in _tensor_view
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 986 in _coordinate_tensor
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1509 in __hash__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 128 in _deduplicated_generating_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 273 in lattice_stabilizer
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 6315 in _from_engine_element
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 6443 in zero
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 2127 in _fraction_equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1195 in equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1200 in _richcmp_
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1212 in __eq__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 103 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 410 in _raw_scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 209 in _lmul_
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2564 in _owned_scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2753 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2843 in scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1086 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6922 in _matrix_column_coordinates
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6931 in matrix_entry
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6936 in __getitem__
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2672 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2671 in from_matrix
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2684 in from_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 308 in _tensor_view
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 986 in _coordinate_tensor
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1509 in __hash__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 128 in _deduplicated_generating_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 273 in lattice_stabilizer
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 245 in _is_group_algebra
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 295 in __classcall__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 1741 in module_category
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 1750 in module_generating_set
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6773 in column_index_set
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6930 in matrix_entry
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6936 in __getitem__
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2672 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2671 in from_matrix
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2684 in from_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 308 in _tensor_view
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 986 in _coordinate_tensor
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1509 in __hash__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 128 in _deduplicated_generating_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 273 in lattice_stabilizer
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1195 in equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1200 in _richcmp_
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1212 in __eq__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 197 in _add_
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6922 in _matrix_column_coordinates
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6931 in matrix_entry
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6936 in __getitem__
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2672 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2671 in from_matrix
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2684 in from_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 308 in _tensor_view
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 986 in _coordinate_tensor
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1509 in __hash__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 128 in _deduplicated_generating_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 273 in lattice_stabilizer
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/categories/category.py", line 706 in __contains__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py", line 172 in __contains__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 7413 in _own_ring
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 7696 in _owned_engine_element
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 5541 in _mul_
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 5588 in __mul__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 2121 in _fraction_equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1195 in equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1200 in _richcmp_
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1212 in __eq__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 103 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 410 in _raw_scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 209 in _lmul_
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2564 in _owned_scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2753 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2843 in scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1086 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 2197 in localization_submonoid
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 2135 in _fraction_equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1195 in equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1200 in _richcmp_
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1212 in __eq__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 103 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 201 in _add_
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6922 in _matrix_column_coordinates
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6931 in matrix_entry
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6936 in __getitem__
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2672 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2671 in from_matrix
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2684 in from_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 308 in _tensor_view
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 986 in _coordinate_tensor
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1509 in __hash__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 128 in _deduplicated_generating_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 273 in lattice_stabilizer
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 6446 in one
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1577 in _valid_denominator
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1626 in fraction
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 2011 in zero
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 197 in _add_
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6922 in _matrix_column_coordinates
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6931 in matrix_entry
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6936 in __getitem__
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2672 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2671 in from_matrix
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2684 in from_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 308 in _tensor_view
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 986 in _coordinate_tensor
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1509 in __hash__
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py", line 169 in __contains__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 7413 in _own_ring
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 7696 in _owned_engine_element
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 5541 in _mul_
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 5588 in __mul__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1123 in _mul_
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 413 in _raw_scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 209 in _lmul_
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2564 in _owned_scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2753 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2843 in scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1086 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6922 in _matrix_column_coordinates
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6931 in matrix_entry
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6936 in __getitem__
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2672 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2671 in from_matrix
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2684 in from_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 308 in _tensor_view
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 986 in _coordinate_tensor
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1509 in __hash__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 128 in _deduplicated_generating_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 273 in lattice_stabilizer
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 5517 in _add_
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 5523 in __add__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 2126 in _fraction_equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1195 in equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1200 in _richcmp_
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1212 in __eq__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 197 in _add_
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6922 in _matrix_column_coordinates
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6931 in matrix_entry
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6936 in __getitem__
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2672 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2671 in from_matrix
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2684 in from_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 308 in _tensor_view
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 986 in _coordinate_tensor
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1509 in __hash__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 128 in _deduplicated_generating_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 273 in lattice_stabilizer
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 244 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 239 in _is_group_algebra
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 303 in __classcall__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line ??? in _element_constructor_
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in source_element
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 2121 in _fraction_equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1195 in equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1200 in _richcmp_
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1212 in __eq__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line ??? in __init__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line ??? in _cached_between
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py", line ??? in __contains__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _from_engine_element
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _from_engine_element
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/categories/category_with_axiom.py", line ??? in __classget__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _from_engine_element
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1625 in fraction
+  File "/repos/sage-extensions/src/sage_extensions/categories/algebras/algebras.py", line 1491 in __add__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 197 in _add_
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6922 in _matrix_column_coordinates
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6931 in matrix_entry
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6936 in __getitem__
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2672 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2671 in from_matrix
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2684 in from_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 308 in _tensor_view
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 986 in _coordinate_tensor
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1509 in __hash__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 128 in _deduplicated_generating_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 273 in lattice_stabilizer
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 244 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 243 in _is_group_algebra
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 295 in __classcall__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 1741 in module_category
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 1750 in module_generating_set
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 659 in module_rank
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 922 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 2904 in _morphism_from_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 2879 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_foundation.py", line 61 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 996 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2461 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in compose
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1522 in __mul__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3922 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 128 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 128 in _deduplicated_generating_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 273 in lattice_stabilizer
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line ??? in <genexpr>
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line ??? in __init__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in localization_source
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1122 in _mul_
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 413 in _raw_scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 209 in _lmul_
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2564 in _owned_scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2753 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2843 in scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1086 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6922 in _matrix_column_coordinates
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6931 in matrix_entry
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6936 in __getitem__
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2672 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2671 in from_matrix
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2684 in from_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 308 in _tensor_view
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 986 in _coordinate_tensor
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1509 in __hash__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 128 in _deduplicated_generating_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 273 in lattice_stabilizer
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in __eq__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _from_engine_element
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _sage_numeral
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in __call__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 6443 in zero
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 2129 in _fraction_equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1195 in equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1200 in _richcmp_
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in __eq__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 5541 in _mul_
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _fraction_with_admitted_denominator
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py", line 170 in __contains__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _fraction_with_admitted_denominator
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/algebras/algebras.py", line ??? in _operator_operand
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _element_constructor_
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _sage_numeral
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in fraction
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line ??? in _remember_between
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in NoZeroDivisors
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _from_engine_element
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 244 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line ??? in _is_group_algebra
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py", line ??? in __contains__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 2120 in _fraction_equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1195 in equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1200 in _richcmp_
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1212 in __eq__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 103 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 201 in _add_
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6922 in _matrix_column_coordinates
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6931 in matrix_entry
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6936 in __getitem__
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2672 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2671 in from_matrix
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2684 in from_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 308 in _tensor_view
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in NoZeroDivisors
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2786 in scalar_action
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2843 in scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1086 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6922 in _matrix_column_coordinates
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6931 in matrix_entry
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6936 in __getitem__
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2672 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2671 in from_matrix
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2684 in from_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 308 in _tensor_view
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 986 in _coordinate_tensor
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1509 in __hash__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 128 in _deduplicated_generating_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 273 in lattice_stabilizer
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2843 in scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1086 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6922 in _matrix_column_coordinates
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6931 in matrix_entry
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 6936 in __getitem__
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2672 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2671 in from_matrix
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 2684 in from_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 308 in _tensor_view
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 986 in _coordinate_tensor
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1509 in __hash__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 128 in _deduplicated_generating_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 273 in lattice_stabilizer
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line ??? in _cached_between
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _from_engine_element
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _from_engine_element
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _element_constructor_
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 244 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 240 in _is_group_algebra
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/categories/category_with_axiom.py", line ??? in __classget__
+  <invalid frame>
+------------------------------------------------------------------------
+/sage/.venv/lib/python3.14/site-packages/cysignals/signals.cpython-314-x86_64-linux-gnu.so(+0x86e5) [0x7c3b9a6c76e5]
+/sage/.venv/lib/python3.14/site-packages/cysignals/signals.cpython-314-x86_64-linux-gnu.so(+0x8786) [0x7c3b9a6c7786]
+/sage/.venv/lib/python3.14/site-packages/cysignals/signals.cpython-314-x86_64-linux-gnu.so(+0x8b54) [0x7c3b9a6c7b54]
+/lib/x86_64-linux-gnu/libc.so.6(+0x3fd70) [0x7c3b9c3d2d70]
+/lib/x86_64-linux-gnu/libc.so.6(+0xa06a6) [0x7c3b9c4336a6]
+/lib/x86_64-linux-gnu/libc.so.6(+0xa1eeb) [0x7c3b9c434eeb]
+/lib/x86_64-linux-gnu/libc.so.6(malloc+0xfe) [0x7c3b9c4359ce]
+python() [0x1803a33]
+python(_PyObject_GC_NewVar+0x84) [0x189c304]
+python(_PyTuple_FromArraySteal+0x14f) [0x189cee3]
+python(PySequence_Tuple+0x48b) [0x1831d4b]
+/sage/.venv/lib/python3.14/site-packages/sage/misc/cachefunc.cpython-314-x86_64-linux-gnu.so(+0x3b501) [0x7c3b9a8b0501]
+/sage/.venv/lib/python3.14/site-packages/sage/misc/cachefunc.cpython-314-x86_64-linux-gnu.so(+0x3b986) [0x7c3b9a8b0986]
+/sage/.venv/lib/python3.14/site-packages/sage/misc/cachefunc.cpython-314-x86_64-linux-gnu.so(+0x3bf11) [0x7c3b9a8b0f11]
+python() [0x1807477]
+python() [0x1812dbd]
+python() [0x181385f]
+python() [0x1805cf1]
+python() [0x1806669]
+python() [0x1801032]
+python() [0x1812dbd]
+python() [0x181385f]
+python() [0x1805cf1]
+python() [0x1805cf1]
+python(PyDict_GetItemRef+0x204) [0x1836a44]
+/sage/.venv/lib/python3.14/site-packages/sage/misc/cachefunc.cpython-314-x86_64-linux-gnu.so(+0x492f0) [0x7c3b9a8be2f0]
+python() [0x1807764]
+python() [0x181660f]
+python() [0x18b4ff4]
+python() [0x1818563]
+python() [0x1812dc6]
+python() [0x1812656]
+python() [0x1831230]
+python() [0x1812dbd]
+python() [0x1930c55]
+python() [0x1807764]
+python() [0x1812dbd]
+/sage/.venv/lib/python3.14/site-packages/sage/misc/cachefunc.cpython-314-x86_64-linux-gnu.so(+0x17ce1) [0x7c3b9a88cce1]
+/sage/.venv/lib/python3.14/site-packages/sage/cpython/string.cpython-314-x86_64-linux-gnu.so(+0x53cd) [0x7c3b9bfc83cd]
+python() [0x1ac3098]
+/sage/.venv/lib/python3.14/site-packages/sage/misc/cachefunc.cpython-314-x86_64-linux-gnu.so(+0x109af) [0x7c3b9a8859af]
+/sage/.venv/lib/python3.14/site-packages/sage/misc/cachefunc.cpython-314-x86_64-linux-gnu.so(+0x49907) [0x7c3b9a8be907]
+python() [0x1807764]
+python() [0x181664d]
+python() [0x18b4ff4]
+python() [0x1818563]
+python() [0x1812dc6]
+python() [0x1812656]
+python() [0x1831230]
+python() [0x1812dbd]
+python() [0x1930c55]
+python() [0x1807764]
+python() [0x181660f]
+python() [0x184030a]
+python() [0x1856ce3]
+python() [0x1812dc6]
+/sage/.venv/lib/python3.14/site-packages/sage/misc/cachefunc.cpython-314-x86_64-linux-gnu.so(+0x182cc) [0x7c3b9a88d2cc]
+python() [0x1856fc0]
+python() [0x1855b91]
+python(PyEval_EvalCode+0xa6) [0x189b67c]
+python() [0x18e2351]
+python() [0x1a7048d]
+python() [0x1a702c1]
+python() [0x1984486]
+python() [0x19843d4]
+python() [0x19842e3]
+python(Py_RunMain+0x40c) [0x1984f0c]
+python() [0x1984ad6]
+python() [0x198492c]
+/lib/x86_64-linux-gnu/libc.so.6(+0x29ca8) [0x7c3b9c3bcca8]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x85) [0x7c3b9c3bcd65]
+python(_start+0x29) [0x19fab29]
+------------------------------------------------------------------------
+Timeout (0:00:30)!
+Thread 0x00007c3b9c390780 (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 435 in _tensor_hash
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1505 in __hash__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3922 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 128 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 128 in _deduplicated_generating_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 273 in lattice_stabilizer
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 490 in stabilizer
+  File "/probe.py", line 55 in <module>
+[peakrss] stageD-dedupefix: child waited=124 shell_code=124 samples=1200
+[peakrss] peak tree RSS      : 3675 MiB
+[peakrss] low-water MemAvail : 6742 MiB
+[peakrss] peak single VmHWM  : 3675 MiB
+[peakrss] peak VmHWM by executable (this is the per-process attribution):
+[peakrss]   python                     3664 MiB peak
+[peakrss]   timeout                       7 MiB peak
+[peakrss]   proot-x86_64                  3 MiB peak
+[peakrss]   t=  2399.0s procs=  3 rss=  3675 MiB hwm=  3675 MiB avail=  8184 MiB
+[peakrss]   t=  2397.0s procs=  3 rss=  3672 MiB hwm=  3672 MiB avail=  8184 MiB
+[peakrss]   t=  2395.0s procs=  3 rss=  3669 MiB hwm=  3669 MiB avail=  8184 MiB
+[peakrss]   t=  2393.0s procs=  3 rss=  3666 MiB hwm=  3666 MiB avail=  8192 MiB
+[peakrss]   t=  2391.0s procs=  3 rss=  3663 MiB hwm=  3663 MiB avail=  8192 MiB

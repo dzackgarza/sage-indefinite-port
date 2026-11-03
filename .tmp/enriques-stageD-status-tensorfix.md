@@ -121,3 +121,20 @@ Two port-side obligations follow from the measurement, and neither duplicates th
 stage is the frontier (25600 per-element `integral_isometry` conversions, one preimage computation each), so the port
 consumer must decide what it actually needs from that family instead of realizing all 25600 unconditionally; and the
 original acceptance -- 5/10/19 orbits and S1 -- stays open on its own terms until the consumer verdict exists.
+
+## Terminal of the deduped-presentation rerun (`jmw0whgrg`, cap unchanged): the in-line dedupe is cost-negative at N scale
+
+- The rerun with provider `6c1500f` (stabilizer presenting each distinct Schreier image once) hit its
+  unchanged 2400 s inner cap **inside** `action.stabilizer().group_generators()` (exit 124), peak tree
+  3675 MiB of 6144: the stabilizer itself did not complete. The per-image work of the dedupe - each
+  of the 25600 images evaluated, coordinate-tensor digested for hashing, equality-merged - out-priced
+  the downstream gain at rank 12. Frames on termination: lattice-morphism tensor construction.
+- Corrected at the owner: provider `71f5c13` makes `lattice_stabilizer` return the verbatim Schreier
+  family again (whose measured completion on N is 1898.5 s, from `jmw0urc9n`), and keeps the dedupe
+  as `_deduplicated_generating_morphism`, with its contract stated - image family and subgroup
+  preserved, not the free domain or word enumeration - and its unhashable boundary stated. The raw
+  log of this rerun is `.tmp/enriques_stageD_dedupefix_6c1500f.log`, published with this note.
+- What did not move: the measured conversion frontier on the verbatim family in `jmw0urc9n`
+  (~476 s spent of ~512 s implied, per-image `integral_restriction`). That stage, not the stabilizer
+  construction, remains the acceptance frontier; the same capped run is not repeated before owner
+  work on it.
