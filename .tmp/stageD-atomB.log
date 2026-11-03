@@ -41,3 +41,214 @@ Thread 0x0000707c3465e780 [python] (most recent call first):
 [t=   522.1s] B3 row split section(act_p): 0.0 ms avg
 [t=   522.1s] B3 row split section(p): 0.0 ms avg
 [t=   522.1s] B3 row split word ops: 0.0 ms avg
+Timeout (0:02:00)!
+Thread 0x0000707c3465e780 [python] (most recent call first):
+  <invalid frame>
+Timeout (0:02:00)!
+Thread 0x0000707c3465e780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 5582 in __mul__
+  <invalid frame>
+Timeout (0:02:00)!
+Thread 0x0000707c3465e780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line ??? in __contains__
+  <invalid frame>
+Timeout (0:02:00)!
+Thread 0x0000707c3465e780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/matrix/matrix_space.py", line ??? in get_matrix_class
+  <invalid frame>
+Timeout (0:02:00)!
+Thread 0x0000707c3465e780 [python] (most recent call first):
+  <invalid frame>
+Timeout (0:02:00)!
+Thread 0x0000707c3465e780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _sage_numeral
+  <invalid frame>
+Timeout (0:02:00)!
+Thread 0x0000707c3465e780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _from_engine_element
+  <invalid frame>
+Timeout (0:02:00)!
+Thread 0x0000707c3465e780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/matrix/matrix_space.py", line 1194 in _element_constructor_
+  <invalid frame>
+Timeout (0:02:00)!
+Thread 0x0000707c3465e780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 435 in _tensor_hash
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1505 in __hash__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 435 in contains
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 187 in __contains__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 219 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 177 in position_of
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 384 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 116 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 78 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 75 in _orbit_schreier_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 520 in orbit_schreier_morphism
+  File "/probe.py", line 99 in <module>
+Timeout (0:02:00)!
+Thread 0x0000707c3465e780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py", line ??? in __contains__
+  <invalid frame>
+Timeout (0:02:00)!
+Thread 0x0000707c3465e780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 197 in _add_
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1483 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1482 in __eq__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_objects.py", line 1452 in act
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 317 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_objects.py", line 1452 in act
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 76 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 75 in _orbit_schreier_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 520 in orbit_schreier_morphism
+  File "/probe.py", line 99 in <module>
+Timeout (0:02:00)!
+Thread 0x0000707c3465e780 [python] (most recent call first):
+  <invalid frame>
+Timeout (0:02:00)!
+Thread 0x0000707c3465e780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line ??? in Of
+  <invalid frame>
+[t=  2042.3s] B3 orbit_schreier_morphism FULL 1520.2s
+[t=  2042.3s] B4 preimage_subgroup construct 0.0s
+------------------------------------------------------------------------
+/sage/.venv/lib/python3.14/site-packages/cysignals/signals.cpython-314-x86_64-linux-gnu.so(+0x86e5) [0x707c329956e5]
+/sage/.venv/lib/python3.14/site-packages/cysignals/signals.cpython-314-x86_64-linux-gnu.so(+0x8786) [0x707c32995786]
+/sage/.venv/lib/python3.14/site-packages/cysignals/signals.cpython-314-x86_64-linux-gnu.so(+0x8b54) [0x707c32995b54]
+/lib/x86_64-linux-gnu/libc.so.6(+0x3fd70) [0x707c346a0d70]
+/lib/x86_64-linux-gnu/libc.so.6(+0xa06a6) [0x707c347016a6]
+/lib/x86_64-linux-gnu/libc.so.6(+0xa1eeb) [0x707c34702eeb]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_calloc+0x1c7) [0x707c34704cc7]
+/sage/.venv/lib/python3.14/site-packages/sage/structure/coerce_dict.cpython-314-x86_64-linux-gnu.so(+0xff6e) [0x707c329b3f6e]
+/sage/.venv/lib/python3.14/site-packages/sage/structure/coerce_dict.cpython-314-x86_64-linux-gnu.so(+0x10c5d) [0x707c329b4c5d]
+/sage/.venv/lib/python3.14/site-packages/sage/structure/coerce_dict.cpython-314-x86_64-linux-gnu.so(+0x14bd2) [0x707c329b8bd2]
+/sage/.venv/lib/python3.14/site-packages/sage/structure/parent.cpython-314-x86_64-linux-gnu.so(+0x2e2d6) [0x707c329212d6]
+python() [0x1807948]
+/sage/.venv/lib/python3.14/site-packages/sage/misc/classcall_metaclass.cpython-314-x86_64-linux-gnu.so(+0x9ff6) [0x707c32c5fff6]
+python() [0x1831606]
+python() [0x1812dc6]
+python() [0x1813512]
+python() [0x18079ad]
+/sage/.venv/lib/python3.14/site-packages/sage/misc/classcall_metaclass.cpython-314-x86_64-linux-gnu.so(+0x9ff6) [0x707c32c5fff6]
+python() [0x1807764]
+python() [0x1812d85]
+python() [0x1812656]
+python() [0x1831230]
+python() [0x1812dbd]
+python() [0x1930c55]
+python() [0x1807764]
+python() [0x1812d85]
+python() [0x1813512]
+python() [0x18079ad]
+/sage/.venv/lib/python3.14/site-packages/sage/misc/classcall_metaclass.cpython-314-x86_64-linux-gnu.so(+0x9ff6) [0x707c32c5fff6]
+python() [0x1807764]
+python() [0x1812dbd]
+python() [0x1812656]
+python() [0x1831230]
+python() [0x1812dbd]
+python() [0x1812656]
+python() [0x1831230]
+python() [0x1812d85]
+python() [0x1930c55]
+python() [0x1807764]
+python() [0x1812dc6]
+python() [0x181273d]
+python() [0x1831230]
+python() [0x1812dc6]
+python() [0x1812656]
+python() [0x1831230]
+python() [0x1812dbd]
+python() [0x1930c55]
+python() [0x1807764]
+python() [0x1812dbd]
+/sage/.venv/lib/python3.14/site-packages/sage/misc/cachefunc.cpython-314-x86_64-linux-gnu.so(+0x17ce1) [0x707c32b5ace1]
+/sage/.venv/lib/python3.14/site-packages/sage/cpython/string.cpython-314-x86_64-linux-gnu.so(+0x53cd) [0x707c342963cd]
+python() [0x1ac3098]
+/sage/.venv/lib/python3.14/site-packages/sage/misc/cachefunc.cpython-314-x86_64-linux-gnu.so(+0x109af) [0x707c32b539af]
+/sage/.venv/lib/python3.14/site-packages/sage/misc/cachefunc.cpython-314-x86_64-linux-gnu.so(+0x49907) [0x707c32b8c907]
+python() [0x1807764]
+python() [0x181664d]
+python() [0x18b4ff4]
+python() [0x1818563]
+python() [0x1812dc6]
+python() [0x1812656]
+python() [0x1831230]
+python() [0x1812dbd]
+python() [0x1930c55]
+python() [0x1831606]
+python() [0x1812dbd]
+python() [0x1930c55]
+python() [0x1807764]
+python() [0x181660f]
+python(PySequence_Tuple+0x421) [0x1831ce1]
+python() [0x1856ce3]
+python() [0x1855b91]
+python(PyEval_EvalCode+0xa6) [0x189b67c]
+python() [0x18e2351]
+python() [0x1a7048d]
+python() [0x1a702c1]
+python() [0x1984486]
+python() [0x19843d4]
+python() [0x19842e3]
+python(Py_RunMain+0x40c) [0x1984f0c]
+python() [0x1984ad6]
+python() [0x198492c]
+/lib/x86_64-linux-gnu/libc.so.6(+0x29ca8) [0x707c3468aca8]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x85) [0x707c3468ad65]
+python(_start+0x29) [0x19fab29]
+------------------------------------------------------------------------
+Timeout (0:02:00)!
+Thread 0x0000707c3465e780 (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/owned_category.py", line 1660 in _object_of
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 424 in indexed_family
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 565 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 2945 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/algebras/algebras.py", line 3178 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_foundation.py", line 61 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 996 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 3181 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 920 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 2904 in _morphism_from_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 2879 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_foundation.py", line 61 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 996 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2461 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 2926 in identity
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_foundation.py", line 403 in operation
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 2929 in one
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 1461 in one
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3912 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3664 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 107 in <module>
+[peakrss] stageD-atomB: child waited=124 shell_code=124 samples=1080
+[peakrss] peak tree RSS      : 1660 MiB
+[peakrss] low-water MemAvail : 10943 MiB
+[peakrss] peak single VmHWM  : 1660 MiB
+[peakrss] peak VmHWM by executable (this is the per-process attribution):
+[peakrss]   python                     1649 MiB peak
+[peakrss]   timeout                       7 MiB peak
+[peakrss]   proot-x86_64                  3 MiB peak
+[peakrss]   t=  2158.9s procs=  3 rss=  1660 MiB hwm=  1660 MiB avail= 10943 MiB
+[peakrss]   t=  2156.9s procs=  3 rss=  1654 MiB hwm=  1654 MiB avail= 10943 MiB
+[peakrss]   t=  2154.9s procs=  3 rss=  1649 MiB hwm=  1649 MiB avail= 10951 MiB
+[peakrss]   t=  2152.9s procs=  3 rss=  1644 MiB hwm=  1644 MiB avail= 10958 MiB
+[peakrss]   t=  2150.9s procs=  3 rss=  1638 MiB hwm=  1638 MiB avail= 10958 MiB
