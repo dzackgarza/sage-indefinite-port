@@ -41,6 +41,7 @@ from sage.rings.integer_ring import ZZ as SageZZ
 from sage.structure.parent import Parent
 
 from sage_indefinite_port.indefinite.edgewalk_scalars import _integer
+from sage_indefinite_port.readiness import UnfinishedCapability
 from sage_indefinite_port.indefinite.eichler import OrbitCoverModel
 from sage_indefinite_port.indefinite.groupoid_cache import IsometryGroupoidCache, _gram_in_label_order
 from sage_indefinite_port.indefinite.indefinite_reduction import (
@@ -243,6 +244,94 @@ class VectorClass:
     witnesses: tuple[LatticeIsometryMethods, ...]
 
 
+@dataclass(frozen=True)
+class MarkedOrbitCanonical:
+    r"""The canonical representative of a pointed orbit, with a transporter back to the input.
+
+    ``representative`` is the least element, in the declared coordinate order, of the orbit of the
+    canonicalized vector among the lattice's elements; ``transporter`` is the actual isometry with
+    ``transporter(representative) == vector``; ``height`` is ``max |coordinate|`` of the representative.
+
+    The representative is canonical **relative to the declared basis and coordinate order**, not a
+    functorial object: a different basis presents the same orbit relation with different minima. The orbit
+    relation itself is untouched.
+    """
+
+    representative: Lattices.ElementMethods
+    transporter: LatticeIsometryMethods
+    height: int
+
+
+@dataclass(frozen=True)
+class MarkedOrbitDecision:
+    r"""One candidate's verdict in the duplicate-free orbit enumeration (issue #62, part B).
+
+    ``candidate`` is the vector under test, ``emitted`` says whether it is the first member of its orbit in
+    the enumeration order -- and therefore that orbit's canonical representative -- and ``representative``
+    with ``transporter`` carries the verdict's witness: the canonical representative of the candidate's orbit
+    and the isometry with ``transporter(representative) == candidate``. For an emitted candidate the
+    representative is the candidate itself and the transporter is the identity.
+
+    A comparison that cannot be decided is never read as inequivalence: ``UnfinishedCapability`` raised by
+    the equivalence backend propagates out of the enumeration, because turning "undecided" into "distinct"
+    would emit one class twice.
+    """
+
+    candidate: Lattices.ElementMethods
+    emitted: bool
+    representative: Lattices.ElementMethods
+    transporter: LatticeIsometryMethods
+
+
+def _coordinate_height(lattice: Lattices.ParentMethods, vector: Lattices.ElementMethods) -> int:
+    """The height of a vector: ``max |coordinate|`` in the lattice's declared label order."""
+    coordinates = vector.to_vector()
+    return max((abs(_integer(coordinates(label))) for label in lattice.module_generating_set()), default=0)
+
+
+def _require_decidable_pointed_domain(recursion, vector: Lattices.ElementMethods) -> None:
+    r"""Refuse a vector whose pointed transport `pointed_isometry` does not decide, instead of letting it assert.
+
+    Measured on `L = <2> + 0`, whose radical is the `y`-axis:
+
+    * primitive radical vectors are decided -- `(0, 1)` and `(0, -1)` get a witness, `(0, 1)` against `(0, 2)`
+      and `(0, 3)` against `(0, 1)` correctly return `None`;
+    * a **non-primitive** radical vector is not: `(0, 2)` against `(0, -2)` reaches
+      `primitive_isotropic_subobject`, which asserts that the span of `(2 e_1)` has torsion and must be saturated
+      first. `pointed_isometry` routes every square-zero vector to the isotropic-*line* machinery, which needs
+      the line primitive and non-degenerate, and it does not first detour through `vector_lies_in_radical` the
+      way `pointed_automorphism_generators` does.
+
+    So the undecided subdomain is narrow and is named exactly: a radical vector of content greater than one.
+    Raising keeps issue #62's rule that an unknown comparison is never read as a distinction; refusing the whole
+    radical would be wrong in the other direction, since the primitive part *is* decided.
+    """
+    lattice = vector.parent()
+    if lattice.is_nondegenerate():
+        return
+    if not recursion.vector_lies_in_radical(vector):
+        return
+    content = abs(int(vector.content()))
+    if content in (0, 1):
+        return
+    raise UnfinishedCapability(
+        f"pointed_isometry does not decide transport of the non-primitive radical vector {vector} (content "
+        f"{content}): it routes square-zero vectors to the isotropic-line machinery, whose primitivity "
+        "assumption fails here, so canonicalization and orbit enumeration refuse rather than report this class "
+        "as distinct. Primitive radical vectors, and the zero vector, are decided and are not refused"
+    )
+
+
+def _coordinate_element(lattice: Lattices.ParentMethods, coordinates) -> Lattices.ElementMethods:
+    """The lattice element with the given coordinates in declared label order."""
+    entries = {
+        label: int(entry)
+        for label, entry in zip(lattice.module_generating_set(), coordinates, strict=True)
+        if entry
+    }
+    return lattice.linear_combination(entries) if entries else lattice.zero()
+
+
 class EichlerRecursion:
     r"""The recursion; every general step is a preamble operation."""
 
@@ -393,42 +482,126 @@ class EichlerRecursion:
         )
         return action.orbits()
 
-    def marked_orbit_representatives(self, lattice: Lattices.ParentMethods, square, limit: int | None = None):
-        r"""Lazy enumeration of one representative per `O(L)`-orbit among the square-`n` vectors.
+    def marked_orbit_canonical(self, vector: Lattices.ElementMethods) -> MarkedOrbitCanonical:
+        r"""The canonical representative of `vector`'s pointed orbit, with its transporter (issue #62, part C).
 
-        The provider's `_OrbitSet` refuses to iterate unless the underlying G-set is placed finite, which is
-        the right discipline but not an enumeration, so this walks candidates itself: vectors of the lattice
-        by increasing coordinate height, filtered to square `n`, deduplicated against the representatives
-        already yielded through the exact orbit decision `pointed_isometry`.
+        ``can_Gamma(x) = min_{y ~ x} y`` in the declared coordinate order: height ``max |coordinate|`` first,
+        then lexicographic within one height. The search walks only the **finite initial segment** of that
+        order up to `vector`'s own height and returns the first `y` with an isometry carrying `y` onto
+        `vector`; it terminates because `vector` lies in its own box, and the first hit is the global minimum
+        of the orbit, since any smaller equivalent member would be inside the segment.
 
-        Nothing is materialized, and `limit` is a **maximum on the number of representatives yielded,
-        not a termination guarantee for the search**. The candidate walk is unbounded, but the outputs need
-        not be: a square whose classes are already exhausted keeps searching for a next representative and
-        may never find one, so this is *not* an infinite stream of distinct representatives merely because
-        the search over candidates is infinite. It is a semidecision of coverage in the #53 sense: new
-        classes appear as candidates are reached, and no finiteness or completeness claim is made.
+        Three properties follow from minimality and are what orbit consumers use:
+
+        * stability, ``x ~ x'`` implies ``can(x) = can(x')``;
+        * idempotence, ``can(can(x)) = can(x)``;
+        * ``can(x)`` together with its transporter is exactly the orbit-class equality check: two vectors are
+          in one orbit iff their canonical representatives are equal as lattice elements.
+
+        The equivalence decided here is :meth:`pointed_isometry`. On the ``#41`` domain this is exact and
+        terminating for degenerate `L` too, which is what makes the search a decision procedure rather than a
+        search that might give up. It is **not** total everywhere: a backend that cannot decide raises
+        ``UnfinishedCapability``, and that propagates -- an undecided comparison is never read as
+        inequivalence, because that would split one orbit into two.
+        """
+        lattice = vector.parent()
+        _require_decidable_pointed_domain(self, vector)
+        target_height = _coordinate_height(lattice, vector)
+        for height in range(target_height + 1):
+            for coordinates in _coordinate_box(lattice, height):
+                candidate = _coordinate_element(lattice, coordinates)
+                transporter = self.pointed_isometry(candidate, vector)
+                if transporter is None:
+                    continue
+                return MarkedOrbitCanonical(candidate, transporter, height)
+        raise ArithmeticError(
+            "the coordinate box of a vector's own height contains the vector, so the canonical search cannot "
+            "fail to terminate; reaching this point means the equivalence backend denied a vector to itself"
+        )
+
+    def marked_orbit_is_canonical(self, vector: Lattices.ElementMethods) -> bool:
+        """Whether `vector` is the canonical representative of its own pointed orbit."""
+        canonical = self.marked_orbit_canonical(vector)
+        return canonical.representative == vector
+
+    def marked_orbit_enumeration(self, lattice: Lattices.ParentMethods, square, limit: int | None = None, height_bound: int | None = None):
+        r"""Exhaustive, duplicate-free enumeration of the orbits of square-`square` vectors, with witnesses.
+
+        Each amplification step walks the next coordinate box of :func:`_coordinate_box` and decides every
+        square-`square` candidate against the representatives already emitted. A candidate is **emitted** iff
+        it is equivalent to none of them, and otherwise yields its witness -- the isometry carrying an earlier
+        representative onto it. Since candidates are reached in the declared order, an emitted vector is the
+        first member of its orbit to be reached, i.e. that orbit's canonical representative; two emitted
+        vectors therefore cannot be equivalent (both would be minimal, hence equal). That is the
+        duplicate-free and exhaustive argument of issue #62 part B, and it needs no finiteness of the
+        quotient.
+
+        What this does **not** do is signal that a finite quotient has ended. The candidate walk is unbounded,
+        so a quotient whose classes are exhausted stops producing representatives while the search continues:
+        absence of further output is not a completion certificate. `limit` bounds the number of
+        representatives yielded, not the search.
+
+        ``height_bound`` restricts the **search** to candidates of height at most that value and is issue #62 part
+        D's bounded-height classification: one representative is emitted per orbit *meeting* the bound. The
+        equivalence test stays global -- a transporter may carry a vector out of the box, which is why classes
+        are never split by the bound. With no bound the search is unbounded, as above.
+
+        ``UnfinishedCapability`` from the equivalence backend propagates: an undecided pair never becomes two
+        classes. The same signal is raised up front for a vector whose transport is outside the decided domain
+        (see :func:`_require_decidable_pointed_domain`).
         """
         target = int(square)
-        representatives: list = []
+        emitted: list[Lattices.ElementMethods] = []
         height = 0
-        while limit is None or len(representatives) < limit:
+        while (limit is None or len(emitted) < limit) and (height_bound is None or height <= int(height_bound)):
             for coordinates in _coordinate_box(lattice, height):
-                candidate = lattice.linear_combination(
-                    {
-                        label: int(entry)
-                        for label, entry in zip(lattice.module_generating_set(), coordinates, strict=True)
-                        if entry
-                    }
-                ) if any(coordinates) else lattice.zero()
+                candidate = _coordinate_element(lattice, coordinates)
                 if int(candidate.q()) != target:
                     continue
-                if any(self.pointed_isometry(candidate, representative) is not None for representative in representatives):
+                _require_decidable_pointed_domain(self, candidate)
+                witness = None
+                for representative in emitted:
+                    witness = self.pointed_isometry(representative, candidate)
+                    if witness is not None:
+                        break
+                if witness is not None:
+                    yield MarkedOrbitDecision(
+                        candidate=candidate,
+                        emitted=False,
+                        representative=representative,
+                        transporter=witness,
+                    )
                     continue
-                representatives.append(candidate)
-                yield candidate
-                if limit is not None and len(representatives) >= limit:
+                emitted.append(candidate)
+                yield MarkedOrbitDecision(
+                    candidate=candidate,
+                    emitted=True,
+                    representative=candidate,
+                    # An emitted candidate is carried onto itself by the identity; `pointed_isometry(v, v)`
+                    # returns exactly that, through the provider's own identity constructor.
+                    transporter=self.pointed_isometry(candidate, candidate),
+                )
+                if limit is not None and len(emitted) >= limit:
                     return
             height += 1
+
+    def marked_orbit_representatives(self, lattice: Lattices.ParentMethods, square, limit: int | None = None, height_bound: int | None = None):
+        r"""One canonical representative per `O(L)`-orbit among the square-`square` vectors.
+
+        The emitted vectors are the ones :meth:`marked_orbit_enumeration` marks ``emitted``: the first member
+        of each orbit in the declared coordinate order, hence canonical relative to that order and
+        duplicate-free. The provider's own ``_OrbitSet`` refuses to iterate unless the underlying G-set is
+        placed finite, which is the right discipline but not an enumeration; this walks candidates instead.
+
+        Nothing is materialized beyond the representatives already yielded, and `limit` is a **maximum on the
+        number of representatives yielded, not a termination guarantee for the search**. A square whose
+        classes are exhausted keeps searching for a next representative and may never find one, so this is not
+        an infinite stream merely because the candidate walk is infinite: new classes appear as candidates are
+        reached, and no finiteness or completeness claim is made.
+        """
+        for decision in self.marked_orbit_enumeration(lattice, square, limit, height_bound):
+            if decision.emitted:
+                yield decision.candidate
 
     def shear_kernel(self, complement: Lattices.ParentMethods, radical: Lattices.ParentMethods, marked):
         r"""The kernel of `Hom_Z(C,R) -> R`, `B |-> B x`, through the provider's own contracts.
@@ -1072,4 +1245,4 @@ class EichlerRecursion:
         )
 
 
-__all__ = ["EichlerRecursion", "VectorClass"]
+__all__ = ["EichlerRecursion", "MarkedOrbitCanonical", "MarkedOrbitDecision", "VectorClass"]
