@@ -111,3 +111,11 @@ references/Indefinite.jl/
 !.tmp/issue62-canonicalizer-status.md
 !.tmp/issue53-pointwise-stabilizer.md
 !.tmp/stageD-mechanism/
+!.tmp/enriques_stageD_hashfix_tensorfix.log
+!.tmp/stageD-cost-atoms.log
+!.tmp/stageD-atomB.log
+!.tmp/probe-stageD-cost-atoms.py
+!.tmp/launch-stageD-cost-atoms.sh
+!.tmp/probe-stageD-atomB.py
+!.tmp/launch-stageD-atomB.sh
+!.tmp/enriques-stageD-status-tensorfix.md

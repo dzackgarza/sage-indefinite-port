@@ -1,0 +1,43 @@
+[t=     0.0s] imports
+[t=     0.9s] N from unpolarized_enriques.json, line I_1_1
+Timeout (0:02:00)!
+Thread 0x0000707c3465e780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/modules/free_module.py", line 2483 in is_submodule
+  File "/sage/.venv/lib/python3.14/site-packages/sage/modules/free_module.py", line 1885 in submodule
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/finitely_generated/finitely_presented_modules.py", line 1979 in _submodule_key_from_generators
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 185 in _act_on_position
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 156 in _orbit_words
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 172 in from_finite_orbits
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 132 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 437 in finite_representation
+  File "/probe.py", line 41 in <module>
+[t=   177.6s] ATOM A finite_representation() 156.6s: points=1024
+[t=   177.6s] B1 permutation_representation 0.0s (codomain Symmetric group on 1024 points)
+[t=   179.4s] B2 finite_stabilizer 1.8s
+Timeout (0:02:00)!
+Thread 0x0000707c3465e780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 2448 in Of
+  <invalid frame>
+Timeout (0:02:00)!
+Thread 0x0000707c3465e780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 5588 in __mul__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 2126 in _fraction_equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1195 in equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1200 in _richcmp_
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in __call__
+  <invalid frame>
+Timeout (0:02:00)!
+Thread 0x0000707c3465e780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _owned_engine_element
+  <invalid frame>
+[t=   516.3s] B3 dims: points=1024 letters=25 -> 25600 words
+[t=   516.4s] B3 letter images cached
+[t=   518.2s] B3 rows 50: 1.85s so far (37.0 ms/row)
+[t=   519.3s] B3 rows 100: 2.94s so far (29.4 ms/row)
+[t=   520.4s] B3 rows 150: 4.06s so far (27.0 ms/row)
+[t=   521.5s] B3 rows 200: 5.17s so far (25.8 ms/row)
+[t=   521.5s] B3 estimate: 25.8 ms/row -> full words tuple ~662s
+[t=   522.1s] B3 row split act: 18.0 ms avg
+[t=   522.1s] B3 row split section(act_p): 0.0 ms avg
+[t=   522.1s] B3 row split section(p): 0.0 ms avg
+[t=   522.1s] B3 row split word ops: 0.0 ms avg

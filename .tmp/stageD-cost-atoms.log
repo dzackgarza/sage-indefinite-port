@@ -1,0 +1,148 @@
+[t=     0.0s] imports
+[t=     0.9s] N from unpolarized_enriques.json: rank 12, det 1024; line I_1_1
+[t=     0.9s] build isotropic_stabilizer_action (warmed like the stage-D probes)
+[t=    20.5s] action built
+Timeout (0:02:00)!
+Thread 0x00007a34fdbf86c0 [Thread-1 (polle] (most recent call first):
+  File "/probe.py", line 56 in poller
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x00007a359c5a8780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1218 in _repr_
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 435 in _tensor_hash
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1505 in __hash__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 419 in quotient_automorphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 179 in _act_on_position
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 156 in _orbit_words
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 172 in from_finite_orbits
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 132 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 437 in finite_representation
+  File "/probe.py", line 62 in <module>
+[t=   175.3s] ATOM A finite_representation() 154.8s: orbit points=1024
+[t=   185.6s] POLL orbit points=1024 positions=1024
+[t=   200.6s] POLL orbit points=1024 positions=1024
+[t=   215.6s] POLL orbit points=1024 positions=1024
+[t=   230.6s] POLL orbit points=1024 positions=1024
+Timeout (0:02:00)!
+Thread 0x00007a34fdbf86c0 [Thread-1 (polle] (most recent call first):
+  File "/probe.py", line 56 in poller
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x00007a359c5a8780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 4927 in OwnedIntegralDomains
+  <invalid frame>
+[t=   245.6s] POLL orbit points=1024 positions=1024
+[t=   260.6s] POLL orbit points=1024 positions=1024
+[t=   275.6s] POLL orbit points=1024 positions=1024
+[t=   290.7s] POLL orbit points=1024 positions=1024
+[t=   305.7s] POLL orbit points=1024 positions=1024
+[t=   320.7s] POLL orbit points=1024 positions=1024
+[t=   335.7s] POLL orbit points=1024 positions=1024
+[t=   350.7s] POLL orbit points=1024 positions=1024
+Timeout (0:02:00)!
+Thread 0x00007a34fdbf86c0 [Thread-1 (polle] (most recent call first):
+  File "/probe.py", line 56 in poller
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x00007a359c5a8780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/categories/category.py", line ??? in __contains__
+  <invalid frame>
+[t=   365.7s] POLL orbit points=1024 positions=1024
+[t=   380.8s] POLL orbit points=1024 positions=1024
+[t=   395.8s] POLL orbit points=1024 positions=1024
+[t=   410.8s] POLL orbit points=1024 positions=1024
+[t=   425.8s] POLL orbit points=1024 positions=1024
+[t=   440.8s] POLL orbit points=1024 positions=1024
+[t=   455.8s] POLL orbit points=1024 positions=1024
+[t=   470.8s] POLL orbit points=1024 positions=1024
+Timeout (0:02:00)!
+Thread 0x00007a34fdbf86c0 [Thread-1 (polle] (most recent call first):
+  File "/probe.py", line 56 in poller
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x00007a359c5a8780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/magmas.py", line ??? in Commutative
+  <invalid frame>
+[t=   485.9s] POLL orbit points=1024 positions=1024
+[t=   500.9s] POLL orbit points=1024 positions=1024
+[t=   515.9s] POLL orbit points=1024 positions=1024
+[t=   530.9s] POLL orbit points=1024 positions=1024
+[t=   545.9s] POLL orbit points=1024 positions=1024
+[t=   560.9s] POLL orbit points=1024 positions=1024
+[t=   575.9s] POLL orbit points=1024 positions=1024
+[t=   591.0s] POLL orbit points=1024 positions=1024
+Timeout (0:02:00)!
+Thread 0x00007a34fdbf86c0 [Thread-1 (polle] (most recent call first):
+  File "/probe.py", line 56 in poller
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x00007a359c5a8780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/categories/category.py", line ??? in __classcall__
+  <invalid frame>
+[t=   606.0s] POLL orbit points=1024 positions=1024
+[t=   621.0s] POLL orbit points=1024 positions=1024
+[t=   636.0s] POLL orbit points=1024 positions=1024
+[t=   651.0s] POLL orbit points=1024 positions=1024
+[t=   666.0s] POLL orbit points=1024 positions=1024
+[t=   681.0s] POLL orbit points=1024 positions=1024
+[t=   696.1s] POLL orbit points=1024 positions=1024
+[t=   711.1s] POLL orbit points=1024 positions=1024
+Timeout (0:02:00)!
+Thread 0x00007a34fdbf86c0 [Thread-1 (polle] (most recent call first):
+  File "/probe.py", line 56 in poller
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x00007a359c5a8780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in localization_source
+  <invalid frame>
+[t=   726.1s] POLL orbit points=1024 positions=1024
+[t=   741.1s] POLL orbit points=1024 positions=1024
+[t=   756.1s] POLL orbit points=1024 positions=1024
+[t=   771.1s] POLL orbit points=1024 positions=1024
+[t=   786.1s] POLL orbit points=1024 positions=1024
+[t=   801.2s] POLL orbit points=1024 positions=1024
+[t=   816.2s] POLL orbit points=1024 positions=1024
+[t=   831.2s] POLL orbit points=1024 positions=1024
+Timeout (0:02:00)!
+Thread 0x00007a34fdbf86c0 [Thread-1 (polle] (most recent call first):
+  File "/probe.py", line 56 in poller
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1025 in run
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1083 in _bootstrap_inner
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/threading.py", line 1045 in _bootstrap
+
+Thread 0x00007a359c5a8780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line ??? in value
+  <invalid frame>
+[t=   846.2s] POLL orbit points=1024 positions=1024
+[t=   861.2s] POLL orbit points=1024 positions=1024
+[t=   876.2s] POLL orbit points=1024 positions=1024
+[t=   891.3s] POLL orbit points=1024 positions=1024
+[t=   906.3s] POLL orbit points=1024 positions=1024
+[t=   921.3s] POLL orbit points=1024 positions=1024
+[t=   936.3s] POLL orbit points=1024 positions=1024
+[t=   951.3s] POLL orbit points=1024 positions=1024
+[peakrss] stageD-cost-atoms: child waited=124 shell_code=124 samples=480
+[peakrss] peak tree RSS      : 1238 MiB
+[peakrss] low-water MemAvail : 11367 MiB
+[peakrss] peak single VmHWM  : 1238 MiB
+[peakrss] peak VmHWM by executable (this is the per-process attribution):
+[peakrss]   python                     1227 MiB peak
+[peakrss]   timeout                       7 MiB peak
+[peakrss]   proot-x86_64                  3 MiB peak
+[peakrss]   t=   958.4s procs=  3 rss=  1238 MiB hwm=  1238 MiB avail= 11374 MiB
+[peakrss]   t=   938.4s procs=  3 rss=  1237 MiB hwm=  1237 MiB avail= 11367 MiB
+[peakrss]   t=   940.4s procs=  3 rss=  1237 MiB hwm=  1237 MiB avail= 11367 MiB
+[peakrss]   t=   942.4s procs=  3 rss=  1237 MiB hwm=  1237 MiB avail= 11367 MiB
+[peakrss]   t=   944.4s procs=  3 rss=  1237 MiB hwm=  1237 MiB avail= 11367 MiB
