@@ -16,20 +16,32 @@ the positive ones exhibit the integral unimodular witness, and the negative one 
 than any norm, content or divisibility invariant (all three agree there).
 
 At radical rank `k` the same computation runs with `D` in `GL_k(Z)`, and `s - D r` in `x R` asks for
-`D r = s mod x`, i.e. for `s mod x` to lie in the `GL_k(Z)`-orbit of `r mod x`. That image is the subtle part:
-`GL_1(Z) = {+-1}`, so at rank one only `s = +- r (mod x)` is reachable and the two signs are genuinely different
-orbits; at rank `k >= 2`, `GL_k(Z) -> GL_k(Z/n)` is onto, so the residue condition is the whole of `GL_k(Z/n)`
-and is coarser than the rank-one test. The tests below pin both, with the witness or the refusal built by hand
-from the block conditions rather than read off the port's answer.
+`r D = s (mod x)`. What acts there is the **image** of `GL_k(Z)` in `GL_k(Z/x)`, and that image is *not* the whole
+residue group: a lift is integral and unimodular, so its determinant is `+-1`, and the image is exactly
+`det^{-1}({+-1})`, of index `phi(x)/2`. `diag(2,1) mod 5` has determinant `2` and no integral unimodular lift at
+all. The image is proper for every `x` with `phi(x) > 2` -- `x = 5` already has index two -- and coincides with the
+whole group only for `x` in `{1, 2, 3, 4, 6}`. An earlier revision of this file asserted that `GL_k(Z) -> GL_k(Z/n)`
+is onto for `k >= 2`; that is false, and the sections below are stated without it.
+
+What the image does on **vectors** is a separate question from whether the map of groups is onto, and it must be
+computed rather than inferred: at `k = 2, x = 5` the image has order 240 (index two, so definitely not onto) and is
+transitive on the 24 nonzero residues, giving the same two orbits as the whole group, while at `k = 1` it is
+`{+-1}` with three orbits on `Z/5`. So the rank-one "sign only" verdict does not transfer to rank two, but the
+reason is an orbit computation on the image, not surjectivity. Every positive below is still exhibited by an
+explicit integral unimodular `D` and a shear `B`, checked before the port is asked.
 
 The unmarked radical `Aut`/`Isom` route is implemented separately and must keep working; it is checked here
 so a change to the marked path cannot quietly take it out.
 """
+from itertools import product
+from math import gcd
+
 import pytest
 
-from sage.all import MatrixGroup, ZZ, identity_matrix, matrix, vector
+from sage.all import Infinity, MatrixGroup, ZZ, identity_matrix, matrix, vector
 
 from sage_indefinite_port.indefinite.recursive import EichlerRecursion, _column_matrix
+from sage_indefinite_port.readiness import UnfinishedCapability
 from tests.acceptance.consumer import (
     automorphisms,
     content,
@@ -170,8 +182,10 @@ def test_unmarked_radical_automorphism_route_is_preserved() -> None:
 #
 # For rank(R) >= 2 the integral group GL(R) genuinely moves residues: on the specimen below the witness
 # needs D = [[2,-1],[5,-2]] (determinant 1), not the identity, because s - r is not in 5R. The decision is
-# the action of the *integral* generators on R/5R; over Z the image of GL(R) is what must be used, and at
-# rank one it is a proper subgroup of Aut(R/cR), which is the (5,1) -/-> (5,2) refusal above.
+# the action of the *integral* generators on R/5R, so the group acting is the image of GL(R) in GL(R/5R), and
+# that image is proper at every rank whenever phi(5) = 4 > 2 -- at rank one it is {+-1} (the (5,1) -/-> (5,2)
+# refusal above), at rank two it is det^{-1}({+-1}) of index two. Properness is therefore not what separates the
+# two ranks; the orbit structure on residues is, and it is computed below rather than read off a group map.
 # ---------------------------------------------------------------------------------------------------
 
 _RANK_TWO_GRAM = [[2, 0, 0], [0, 0, 0], [0, 0, 0]]
@@ -796,14 +810,8 @@ def test_the_index_check_detects_a_deficient_sublattice() -> None:
 
 
 # ---------------------------------------------------------------------------------------------------------------------
-# Issue #41, remaining open items: mixed markings at radical rank 2, and the image of GL(R) in Aut(R/xR).
+# Issue #41: the image of GL(R) in Aut(R/cR), the mixed markings it decides, and the stabilizer it maps onto.
 # ---------------------------------------------------------------------------------------------------------------------
-
-_RANK_TWO_RADICAL_GRAM = [[2, 0, 0], [0, 0, 0], [0, 0, 0]]
-
-
-def _rank_two_radical_lattice():
-    return lattice(_RANK_TWO_RADICAL_GRAM)
 
 
 def _block(unit, shear, radical_block):
@@ -827,9 +835,8 @@ def _checked_block(source_coordinates, target_coordinates, unit, shear, radical_
     r"""Build the block and assert it is an automorphism of the lattice carrying `source` onto `target`.
 
     Three things are checked and none of them is the port's word: the matrix is invertible over `Z` (`|det| = 1`,
-    which for an integral matrix is exactly integral invertibility), it preserves the pairing
-    (`g^T G g = G`), and it sends the source coordinates onto the target coordinates. Only then is the transport
-    known to exist, independently of any search.
+    which for an integral matrix is exactly integral invertibility), it preserves the pairing (`g^T G g = G`), and
+    it sends the source coordinates onto the target coordinates. Only then is the transport known to exist.
     """
     block = _block(unit, shear, radical_block)
     assert abs(int(block.det())) == 1, "an automorphism of the lattice must be unimodular"
@@ -842,20 +849,106 @@ def _checked_block(source_coordinates, target_coordinates, unit, shear, radical_
     return block
 
 
-# (source, target, A, B, D, why) -- every one of these must transport, and the hand-built block proves it.
+def _enumerated_image_order(rank, modulus):
+    r"""`|det^{-1}({+-1})|` in `GL_rank(Z/modulus)` by brute force -- independent of the formula the port uses."""
+    signed = {unit for unit in range(modulus) if gcd(unit, modulus) == 1 and unit in (1, modulus - 1)}
+    count = 0
+    for entries in product(range(modulus), repeat=rank * rank):
+        determinant = int(matrix(ZZ, rank, rank, list(entries)).det()) % modulus
+        if gcd(determinant, modulus) == 1 and determinant in signed:
+            count += 1
+    return count
+
+
+def test_the_congruence_image_is_the_sign_condition_and_not_the_whole_residue_group() -> None:
+    r"""`im(GL_k(Z) -> GL_k(Z/x)) = det^{-1}({+-1})`, of index `phi(x)/2`, checked against brute force.
+
+    This is the correction of a published error: the image is **not** all of `GL_k(Z/x)` for `k >= 2`. A lift is
+    integral and unimodular, so its determinant is `+-1`, and the elementary matrices together with `diag(-1,1,...)`
+    realize exactly that preimage. `diag(2,1) mod 5`, determinant `2`, is not in it and has no integral unimodular
+    lift. For `x` in `{1,2,3,4,6}` the preimage *is* the whole group, because `phi(x) <= 2` -- which is why the
+    distinction is invisible on the small moduli and cannot be dropped in general.
+    """
+    rank_one_lattice = _degenerate_lattice()
+    rank_two_lattice = lattice(_RANK_TWO_GRAM)
+    for name, lattice_, rank in (("rank one", rank_one_lattice, 1), ("rank two", rank_two_lattice, 2)):
+        for modulus in (2, 3, 4, 5, 6, 7):
+            image = _RECURSION.radical_congruence_image(lattice_, modulus)
+            assert image.radical_rank == rank, f"{name}: the radical rank must come from the lattice"
+            assert image.complete, f"{name} modulus {modulus}: the generated image must reach its computed order"
+            assert image.order == _enumerated_image_order(rank, modulus), (
+                f"{name} modulus {modulus}: image order disagrees with the brute-force count of det^-1(+-1)"
+            )
+            assert all(lift.det() % modulus in (1, modulus - 1) for _, lift in image.elements), (
+                "every element of the image is the reduction of an integral unimodular matrix"
+            )
+
+    # the image is proper at modulus 5 -- index 2 at both ranks -- and the whole group at modulus 6
+    image_five = _RECURSION.radical_congruence_image(rank_two_lattice, 5)
+    assert image_five.order == 240 and image_five.expected_order == 240
+    assert image_five.order * 2 == 480, "GL_2(Z/5) has order 480, so the image has index two"
+    assert not image_five.contains((2, 0, 0, 1)), "diag(2,1) mod 5 has determinant 2 and no integral unimodular lift"
+    image_six = _RECURSION.radical_congruence_image(rank_two_lattice, 6)
+    assert image_six.order == image_six.expected_order == 288, "phi(6) = 2, so the sign condition is vacuous"
+
+    # a modulus whose image is too large is refused, never truncated
+    with pytest.raises(UnfinishedCapability) as refused:
+        _RECURSION.radical_congruence_image(rank_two_lattice, 97, order_bound=512)
+    assert "truncat" in str(refused.value), f"the refusal must say it is a bound, got: {refused.value}"
+
+
+def test_the_rank_one_image_realizes_only_the_two_signs() -> None:
+    r"""At `k = 1` the image is `{+-1}`: `1 -> 2` has no carrier, `1 -> 4` is carried by `-1`.
+
+    The naive route -- allow any unit of `(Z/5)^*` -- would accept `1 -> 2` by multiplication by `2`, whose matrix
+    has determinant `2` and no integral unimodular lift. The refusal is therefore a fact about the image and not a
+    failed search, and it is the same statement as the `(5,1) -/-> (5,2)` example at the level of residues.
+    """
+    image = _RECURSION.radical_congruence_image(_degenerate_lattice(), 5)
+    assert image.residues == {(1,), (4,)}, f"the rank-one image is {{+-1}}, got {sorted(image.residues)}"
+
+    assert image.transporter((1,), (2,)) is None, "multiplication by 2 is not available"
+    carrier = image.transporter((1,), (4,))
+    assert carrier is not None and carrier == matrix(ZZ, [[-1]]), "the negating unit carries 1 to 4"
+
+    # the matrix the naive route would use is in GL_1(Z/5) but not in the image
+    assert not image.contains((2,))
+    assert gcd(2, 5) == 1, "2 is a unit modulo 5, so only the determinant condition excludes it"
+    assert image.orbits() == (frozenset({(0,)}), frozenset({(1,), (4,)}), frozenset({(2,), (3,)}))
+
+
+def test_the_rank_two_image_is_transitive_on_nonzero_residues_although_it_is_proper() -> None:
+    r"""Vector transitivity is not group surjectivity: the image is proper (index two) and still transitive.
+
+    `|im| = 240` out of `|GL_2(Z/5)| = 480`, so the map is not onto, and yet the image has just two orbits on
+    `(Z/5)^2` -- `{0}` and everything else -- by the orbit count below. That is the fact that carries `(1,0)` to
+    `(2,0)`; it is computed, not inferred, and the explicit carrier the image returns is checked to be integral
+    unimodular and to move the residue correctly.
+    """
+    image = _RECURSION.radical_congruence_image(lattice(_RANK_TWO_GRAM), 5)
+    assert image.order == 240 < 480
+    assert sorted(len(orbit) for orbit in image.orbits()) == [1, 24]
+    assert len(image.stabilizer_of((1, 0))) == 10, "orbit-stabilizer: 240 / 10 = 24 = the nonzero residues"
+
+    carrier = image.transporter((1, 0), (2, 0))
+    assert carrier is not None
+    assert abs(int(carrier.det())) == 1, "the carrier must be an integral unimodular matrix"
+    moved = vector(ZZ, [1, 0]) * carrier
+    assert tuple(int(entry) % 5 for entry in moved) == (2, 0), "the carrier moves the residue as required"
+
+
+# (source, target, A, B, D, why) -- each `why` states the explicit arithmetic, not a group-surjectivity claim.
 _RANK_TWO_TRANSPORTS = [
     ((5, 1, 0), (5, 2, 0), 1, (0, -1), [[2, 1], [5, 3]],
-     "both residues are nonzero modulo 5, and GL_2(Z/5) moves one to the other"),
+     "D of determinant 1 sends (1,0) to (2,5) = (2,0) mod 5, and B = (0,-1) absorbs the difference"),
     ((5, 1, 0), (5, 3, 0), 1, (0, -1), [[3, 1], [5, 2]],
-     "same residue orbit, a different lift"),
-    ((5, 1, 0), (5, 0, 1), 1, (0, 0), [[0, 1], [1, 0]],
-     "the radical swap"),
+     "the same residue argument with D sending (1,0) to (3,5) = (3,0) mod 5"),
+    ((5, 1, 0), (5, 0, 1), 1, (0, 0), [[0, 1], [1, 0]], "the radical swap, determinant -1"),
     ((5, 1, 1), (5, 1, -1), 1, (0, 0), [[1, 0], [-2, 1]],
-     "a shear in GL_2(Z) alone"),
+     "a determinant-one shear in GL_2(Z) alone: it sends (1,1) to (1,-1)"),
     ((5, 5, 0), (5, 10, 0), 1, (1, 0), [[1, 0], [0, 1]],
-     "both residues are zero modulo 5, so the shear B carries the difference"),
-    ((5, 5, 0), (5, 0, 5), 1, (0, 0), [[0, 1], [1, 0]],
-     "zero residues again, moved by the swap"),
+     "both residues vanish modulo 5, so D = 1 and the shear carries the difference"),
+    ((5, 5, 0), (5, 0, 5), 1, (0, 0), [[0, 1], [1, 0]], "zero residues again, moved by the swap"),
 ]
 
 
@@ -864,60 +957,69 @@ _RANK_TWO_TRANSPORTS = [
     _RANK_TWO_TRANSPORTS,
     ids=[f"{case[0]}->{case[1]}" for case in _RANK_TWO_TRANSPORTS],
 )
-def test_rank_two_radical_mixed_markings_transport_by_an_explicit_gl2_block(
+def test_rank_two_mixed_markings_transport_by_an_explicit_congruence_lift(
     source_coordinates, target_coordinates, unit, shear, radical_block, why
 ) -> None:
-    r"""Mixed markings at radical rank 2: the residue condition is `GL_2(Z)`, and each transport is exhibited.
+    r"""Mixed markings at radical rank 2: each transport is exhibited by a block whose properties are checked.
 
     `L = <2> + 0 + 0` has radical `R = Z^2` and `C = <2>`, and every isometry is `[[A, 0], [B, D]]` with `A` in
-    `O(<2>) = {+-1}`, `D` in `GL_2(Z)` and `B` in `Hom(C, R) = Z^2`. So `g(v) = w` asks for `A x = y` and
-    `s - D r` in `x R`, and `B` then carries it. Each case below builds that block, checks it is a lattice
-    automorphism, and only then asks the port -- so agreement is two independent computations, not a rerun.
+    `O(<2>) = {+-1}`, `D` integral unimodular and `B` in `Hom(C, R) = Z^2`. So `g(v) = w` asks for `A x = y`,
+    `r D = s (mod x)` and then `B x = s - r D`. Each case builds that block, checks it, and only then asks the port.
     """
-    lattice_ = _rank_two_radical_lattice()
-    _checked_block(
-        source_coordinates, target_coordinates, unit, shear, radical_block, _RANK_TWO_RADICAL_GRAM
+    lattice_ = lattice(_RANK_TWO_GRAM)
+    _checked_block(source_coordinates, target_coordinates, unit, shear, radical_block, _RANK_TWO_GRAM)
+
+    # the residue condition the block satisfies, stated on the congruence image rather than assumed
+    image = _RECURSION.radical_congruence_image(lattice_, 5)
+    source_residue = tuple(int(entry) % 5 for entry in source_coordinates[1:])
+    target_residue = tuple(int(entry) % 5 for entry in target_coordinates[1:])
+    assert image.transporter(source_residue, target_residue) is not None, (
+        f"the congruence image must carry {source_residue} to {target_residue} ({why})"
     )
 
     source = element(lattice_, source_coordinates)
     target = element(lattice_, target_coordinates)
     witness = _RECURSION.pointed_isometry(source, target)
     assert witness is not None, f"expected a transport ({why})"
-    assert witness(source) == target, "the returned witness must carry the source onto the target"
-    assert is_isometry(rows_of(witness), _RANK_TWO_RADICAL_GRAM), "the witness must be an isometry of L"
+    assert witness(source) == target
+    assert is_isometry(rows_of(witness), _RANK_TWO_GRAM)
 
 
-def test_rank_two_residue_orbit_is_coarser_than_the_rank_one_sign_test() -> None:
-    r"""`(5,1) -> (5,2)` at radical rank 1 and `(5,1,0) -> (5,2,0)` at radical rank 2 differ, and must.
+def test_rank_two_verdicts_agree_with_the_congruence_image_and_the_public_pointed_route() -> None:
+    r"""Three independent computations of the same verdict: the image, the hand block, and the public route.
 
-    At rank one the residue condition is `s = +- r (mod 5)`, so `2` is not reachable from `1`. At rank two
-    `GL_2(Z) -> GL_2(Z/5)` is onto and `GL_2(Z/5)` is transitive on the nonzero vectors, so `(2,0)` *is* reachable
-    from `(1,0)`. Same residue data, same norm, same content, opposite verdicts: the difference is the image of
-    `GL(R)` in `Aut(R/xR)`, which is a proper subgroup exactly at rank one.
+    The residues are the whole question at rank two because `B` is free once `s - r D` is in `x R`; so the image's
+    answer fixes the verdict, the public pointed route must agree, and where they agree the witness is explicit.
     """
-    rank_one_lattice = _degenerate_lattice()
-    rank_one_source = element(rank_one_lattice, (5, 1))
-    rank_one_target = element(rank_one_lattice, (5, 2))
-    assert _RECURSION.pointed_isometry(rank_one_source, rank_one_target) is None, (
-        "at rank one the sign is the whole of GL_1(Z), so 2 = +-1 mod 5 is false"
-    )
+    lattice_ = lattice(_RANK_TWO_GRAM)
+    image = _RECURSION.radical_congruence_image(lattice_, 5)
+    cases = [
+        ((5, 1, 0), (5, 2, 0)),
+        ((5, 1, 0), (5, 0, 1)),
+        ((5, 5, 0), (5, 0, 5)),
+        ((5, 1, 0), (5, 0, 5)),
+        ((5, 0, 1), (5, 5, 5)),
+    ]
+    for source_coordinates, target_coordinates in cases:
+        source_residue = tuple(int(entry) % 5 for entry in source_coordinates[1:])
+        target_residue = tuple(int(entry) % 5 for entry in target_coordinates[1:])
+        image_verdict = image.transporter(source_residue, target_residue) is not None
+        public = _RECURSION.pointed_isometry(
+            element(lattice_, source_coordinates), element(lattice_, target_coordinates)
+        )
+        assert (public is not None) == image_verdict, (
+            f"the image and the public pointed route disagree on {source_coordinates} -> {target_coordinates}"
+        )
 
-    rank_two_lattice = _rank_two_radical_lattice()
-    _checked_block((5, 1, 0), (5, 2, 0), 1, (0, -1), [[2, 1], [5, 3]], _RANK_TWO_RADICAL_GRAM)
-    assert _RECURSION.pointed_isometry(
-        element(rank_two_lattice, (5, 1, 0)), element(rank_two_lattice, (5, 2, 0))
-    ) is not None, "at rank two the lift exists, so the refusal must not carry over"
 
+def test_the_rank_two_refusals_are_separated_by_content_which_is_a_proved_invariant() -> None:
+    r"""At rank two the refusals cannot come from the residue: `content` separates them, and it is invariant.
 
-def test_rank_two_transport_is_refused_when_the_content_differs() -> None:
-    r"""The rank-two negatives in this family are separated by `content`, which is a proved invariant.
-
-    The residue orbit is everything modulo 5, so a refusal cannot come from the residue: `r = 0 mod 5` forces every
-    radical coordinate of `v` to be divisible by 5 while `x = 5`, hence `content(v)` a multiple of 5, whereas
-    `s` not `0 mod 5` forces `content(w) = 1`. The refusal is therefore explained by the invariant rather than by a
-    failed search, and the check is that the port agrees while the naive residue data would not separate them.
+    If `r = 0` modulo 5 then every radical coordinate of `v` is divisible by 5 while `x = 5`, so `content(v)` is a
+    multiple of 5; if `s` is not `0` modulo 5 then `content(w) = 1`. That is an invariant argument, independent of
+    any orbit computation -- which is the right way to justify a negative when the residue condition is vacuous.
     """
-    lattice_ = _rank_two_radical_lattice()
+    lattice_ = lattice(_RANK_TWO_GRAM)
     for source_coordinates, target_coordinates in (
         ((5, 1, 0), (5, 0, 5)),
         ((5, 5, 0), (5, 1, 5)),
@@ -931,7 +1033,6 @@ def test_rank_two_transport_is_refused_when_the_content_differs() -> None:
 
 
 # (source, target, A, B, D, why) -- the rank-one sign cases, each with the hand-built block that realises it.
-# `D` is the radical unit and `B` is the shear that absorbs `s - D r` over `x`.
 _RANK_ONE_SIGN_CASES = [
     ((5, 1), (5, 4), 1, (1,), [[-1]], "4 = -1 mod 5, so the negating radical unit is the witness"),
     ((5, 1), (5, 9), 1, (2,), [[-1]], "9 = -1 mod 5, reached by the same unit plus a doubling shear"),
@@ -952,8 +1053,7 @@ def test_rank_one_radical_image_is_the_sign_and_the_symmetry_of_c(
     r"""At `R = Z`, `GL_1(Z) = {+-1}` and `O(<2>) = {+-1}`: both signs are witnesses, and both are needed.
 
     A dropped sign here is a false negative of exactly the kind the pointwise-shell `abs(m)` defect was: the
-    division `s - D r` in `cR` would report "not divisible" for a pair that the negating unit transports. Each case
-    builds the block first and then asks the port.
+    division of `s - r D` by `x` would report "not divisible" for a pair that the negating unit transports.
     """
     lattice_ = _degenerate_lattice()
     _checked_block(source_coordinates, target_coordinates, unit, shear, radical_block, _GRAM)
@@ -969,10 +1069,10 @@ def test_rank_one_radical_image_is_the_sign_and_the_symmetry_of_c(
 def test_rank_one_refusal_is_exhaustive_over_the_two_units_and_two_symmetries() -> None:
     r"""`(5,2) -> (5,1)` is refused, and the refusal is a finite exhaustion, not a bounded search.
 
-    At rank one there are four candidate blocks: `A` in `{+-1}` (irrelevant here, as `x = y`) and `D` in `{+-1}`.
-    Neither unit satisfies `d r = s (mod 5)`, so no transporter exists -- and the check below runs those four, which
-    is *all* of them, rather than trusting that the port's search covered enough. `q`, `content` and the
-    divisibility agree on the pair, so the refusal cannot be blamed on any of them.
+    At rank one the image of `GL_1(Z)` in `(Z/5)^*` is `{+-1}`, so there are four candidate blocks -- `A` in
+    `{+-1}`, irrelevant here as `x = y`, and `d` in `{+-1}` -- and neither unit satisfies `d r = s (mod 5)`. The
+    check below runs those four, which is *all* of them. `q`, `content` and the divisibility agree on the pair, so
+    the refusal cannot be blamed on any of them.
     """
     lattice_ = _degenerate_lattice()
     source = element(lattice_, (5, 2))
@@ -983,10 +1083,49 @@ def test_rank_one_refusal_is_exhaustive_over_the_two_units_and_two_symmetries() 
     source_x, source_r = coordinates(source)
     target_x, target_r = coordinates(target)
     assert (source_x, target_x) == (5, 5)
+    image = _RECURSION.radical_congruence_image(lattice_, 5)
     for unit in (1, -1):
         for radical_unit in (1, -1):
+            assert image.transporter((source_r,), (target_r,)) is None, "no image element carries the residue"
             remainder = target_r - radical_unit * source_r
             assert remainder % source_x != 0, (
                 f"A={unit}, d={radical_unit} must fail the congruence, so no shear can absorb it"
             )
     assert _RECURSION.pointed_isometry(source, target) is None
+
+
+def test_the_pointwise_stabilizer_maps_onto_the_congruence_pairs_and_is_infinite_at_rank_two() -> None:
+    r"""Issue #41's stabilizer statement: the stabilizer maps **onto** the congruence pairs, with a kernel.
+
+    For `v = (x, r)`, `g(v) = v` forces `A x = x`, `r D = r (mod x)` and `B x = r - r D`. The finite set of `(A,D)`
+    residues is what the congruence image computes -- here 1, 2 and 10 for the three specimens. That set is the
+    **image** of the stabilizer, not its order: at radical rank two, `D = [[1,5],[0,1]]` fixes `r` modulo 5 and is
+    unimodular, so the stabilizer is infinite while its image is one of ten pairs. At rank one the kernel is
+    trivial (`d = +-1` and `d = 1 (mod 5)` forces `d = 1`), so there the two numbers do coincide -- except at
+    `x = 1`, where the congruence is vacuous and the count comes from `GL(R)` itself, not from any image.
+    """
+    rank_one_lattice = _degenerate_lattice()
+    rank_two_lattice = lattice(_RANK_TWO_GRAM)
+    image_one = _RECURSION.radical_congruence_image(rank_one_lattice, 5)
+    image_two = _RECURSION.radical_congruence_image(rank_two_lattice, 5)
+
+    assert len(image_one.stabilizer_of((1,))) == 1, "1 is fixed only by d = 1"
+    assert len(image_one.stabilizer_of((0,))) == 2, "0 is fixed by both signs"
+    assert len(image_two.stabilizer_of((1, 0))) == 10
+
+    def generated_order(vector_):
+        generators = tuple(_RECURSION.pointed_automorphism_generators(vector_))
+        assert all(generator(vector_) == vector_ for generator in generators)
+        forms = [matrix(ZZ, rows_of(generator)) for generator in generators]
+        return 1 if not forms else MatrixGroup(forms).order()
+
+    rigid = element(rank_one_lattice, (5, 1))
+    assert generated_order(rigid) == 1, "a marking with x = 5 and r = +-1 is rigid: c = 5 forces d = 1"
+    assert generated_order(element(rank_one_lattice, (5, 0))) == 2
+    # x = 1 makes the congruence vacuous, so the stabilizer is GL(R) = {+-1} and no image count applies
+    assert generated_order(element(rank_one_lattice, (1, 0))) == 2
+
+    mixed = element(rank_two_lattice, (5, 1, 0))
+    assert generated_order(mixed) == Infinity, (
+        "the rank-two stabilizer is infinite although its image is 10 pairs; the finite count is not its order"
+    )

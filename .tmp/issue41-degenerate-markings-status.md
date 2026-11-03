@@ -1,8 +1,9 @@
 # Issue #41, `<2> + 0` retained checks: what was supported, and where the boundary is
 
 Provider `42d7361c` (staged tree `~/sage-extensions-42d7361c`), port: the commit this note is in.
-Evidence: `tests/test_degenerate_pointed_markings.py`, 53 tests, 94.99 s, peak tree RSS 3849 MiB (Julia baseline
-3181, python 677). The original seven checks were 71 s / 3628 MiB on provider `565fc6b9`, port `350e0569`.
+Evidence: `tests/test_degenerate_pointed_markings.py`, 57 tests, 102.72 s, peak tree RSS 3895 MiB (Julia baseline
+3149, python 733); whole unit suite `-m "not slow"`, 304 passed, 2 deselected, 208.02 s, peak 4433 MiB (Julia 3188,
+python 1232). The original seven checks were 71 s / 3628 MiB on provider `565fc6b9`, port `350e0569`.
 
 ## What was already supported (measured, before writing any test)
 
@@ -50,32 +51,93 @@ Two traps I got wrong on the way, recorded so they are not repeated:
    and `(5,2) -> (-5,2)` by `A = -1` -- the symmetry of `C`, not a transporter. `(5,2) -> (5,1)` is refused, and
    that refusal is a finite exhaustion of the four candidate blocks (`A` irrelevant as `x = y`, `d` in `{+-1}`),
    not a bounded search; `q`, `content` and the divisibility all agree on that pair, so none of them explains it.
-10. **the rank-one/rank-two contrast is a test, not a remark**: `(5,1) -> (5,2)` refused at radical rank 1 and
-    `(5,1,0) -> (5,2,0)` transported at radical rank 2, with the same norm, content and residue data. That is the
-    image of `GL(R)` in `Aut(R/xR)` being a proper subgroup exactly at rank one.
+10. **the congruence image itself**, `radical_congruence_image`: order equal to the brute-force count of
+    `det^{-1}({+-1})` for `k` in `{1,2}` and `n` in `{2,...,7}`; `diag(2,1) mod 5` excluded; the image proper at
+    `n = 5` (index two) and equal to the whole group at `n = 6`.
+11. **the rank-one/rank-two contrast**, stated correctly: `(5,1) -> (5,2)` refused at radical rank 1 and
+    `(5,1,0) -> (5,2,0)` transported at radical rank 2, same norm, content and residue data. Not because the image
+    is onto at rank two -- it is not -- but because `orbits()` on the image has the two orbits `{0}` and the 24
+    nonzero residues at `k = 2, n = 5`.
+12. **the pointwise stabilizer against the image**: `(5,1)` rigid (order 1, image count 1), `(5,0)` order 2 (image
+    count 2), `(1,0)` order 2 with the congruence vacuous at `c = 1`, and the rank-two mixed marking infinite while
+    its image is 10 pairs. The finite count is an image, never an order.
+
+## Retraction: the image of `GL(R)` in `Aut(R/cR)` is not the whole residue group
+
+An earlier revision of this note, and the test docstrings it accompanied, claimed that for `k >= 2` the map
+`GL_k(Z) -> GL_k(Z/n)` is **onto**, that the residue condition could therefore be read as the whole of
+`GL_k(Z/n)`, and that the image is a proper subgroup "exactly at rank one". Both clauses are false. The issue body
+had already stated the correct caveat, and it is binding:
+
+> the relevant finite permutation action is that of the *image of `GL(R)`* in `Aut(R/cR)`. It need **not** be the
+> full group `GL(R/cR)`; over `Z`, a lifted integral automorphism has determinant `+-1`.
+
+A lift is integral and unimodular, so its determinant is `+-1`, and
+
+    im(GL_k(Z) -> GL_k(Z/n)) = {M in GL_k(Z/n) : det M = +-1 mod n} = det^{-1}({+-1}),
+
+of index `phi(n)/2`. `diag(2,1)` modulo 5 has determinant `2`, so it is not in the image and has no integral
+unimodular lift at all. The image **is** the whole group exactly when `phi(n) <= 2`, i.e. `n` in `{1,2,3,4,6}` --
+which is why the error is invisible on the small moduli and must not be generalised from them.
+
+The distinction the error collapsed is **matrix-group surjectivity against vector-orbit transitivity**. A proper
+image can still act transitively on vectors. Measured, exactly, by enumerating the image and its orbits:
+
+| `k` | `n` | `|im|` | `|GL_k(Z/n)|` | index | orbits on `(Z/n)^k` |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 5 | 2 | 4 | 2 | 3: `{0}`, `{+-1}`, `{+-2}` |
+| 2 | 5 | 240 | 480 | 2 | 2: `{0}` and all 24 nonzero |
+| 2 | 7 | 672 | 2016 | 3 | 2: `{0}` and all 48 nonzero |
+| 2 | 6 | 288 | 288 | 1 | 4: sizes 1, 3, 8, 24 |
+| 2 | 2 | 6 | 6 | 1 | 2: `{0}` and the 3 nonzero |
+
+So the rank-one `+-` verdict does not transfer to rank two, but the reason is the **orbit count on the image**,
+not surjectivity; and "proper at rank one only" was wrong as stated, since the image is proper at rank two too. The
+valid part of the previous revision survives unchanged: the explicit witnesses (the `[[A,0],[B,D]]` blocks with
+`D = [[2,1],[5,3]]` and friends, `B` absorbing `s - r D`), and every specimen's verdict.
+
+## What replaced it: the congruence image as a computed object
+
+`EichlerRecursion.radical_congruence_image(lattice, modulus)` returns a `RadicalCongruenceImage` of
+`(residue, lift)` pairs, every lift integral unimodular and verified to reduce to its residue, with
+
+- `transporter(r, s)`: an explicit `D` with `r D = s` modulo the modulus, or `None` as a **proved** negative --
+  the image is every matrix that can occur, so a residue pair with no carrier in it has no integral carrier
+  either;
+- `stabilizer_of(r)`: the finite congruence part of the pointwise stabilizer, `{D : r D = r (mod c)}`;
+- `orbits()`, `orbit_of(r)`, `subobject_from(M)`: the vector orbits on the whole residue module and cyclic
+  subgroups, for downstream consumers.
+
+Completeness is **checked, not assumed**: the elements are generated by the reductions of `E_ij(1)` and
+`diag(-1,1,...,1)`, each of which is its own integral unimodular lift; every generated element is verified to have
+determinant `+-1` and to reduce to its residue; and the generated order is compared with
+`|det^{-1}({+-1})| = |GL_k(Z/n)| * 2 / phi(n)`, computed from the prime factorization of `n`. A shortfall raises
+`ArithmeticError`; a modulus whose image exceeds `order_bound` raises `UnfinishedCapability` instead of truncating,
+because a truncated image turns "not found" into a false negative. The order formula was cross-checked against
+brute-force enumeration of `det^{-1}({+-1})` for `k` in `{1,2}` and `n` in `{2,...,7}`.
 
 ## Where the boundary actually is
 
-The first of the three open items is now discharged, and by evidence rather than by a code change:
+The first of #41's three open items is discharged, now on the correct statement:
 
-- **the image of `GL(R)` in `Aut(R/xR)`** was the worry ("an integral lift of a residue automorphism has
-  determinant `+-1`, so the image can be a proper subgroup"). It is real and it is rank-dependent. At `R = Z`,
-  `GL_1(Z) = {+-1}` and the image in `(Z/x)*` is `{+-1}`, proper for `x >= 3`, so `s = +- r (mod x)` is the whole
-  test -- the two signs are different orbits and a dropped sign is a false negative, which is why the sign cases are
-  pinned separately. At `R = Z^k` with `k >= 2` the map `GL_k(Z) -> GL_k(Z/n)` is onto, so the residue condition is
-  all of `GL_k(Z/n)`, and `GL_k(Z/n)` is transitive on the primitive residue vectors; the rank-two verdicts are
-  correspondingly *coarser*. The retained route gets both right, and the witnesses show the integral lift
-  (`D = [[2,1],[5,3]]` for `(5,1,0) -> (5,2,0)`: `D(1,0) = (2,5) = (2,0) mod 5`, and the shear `B = (0,-1)` absorbs
-  the difference). The shear `B` is exercised throughout, since it is what absorbs `s - D r`; the `B = 0` cases are
-  the ones where `D` alone closes the gap, and the `B`-only cases (`(5,5,0) -> (5,10,0)` with `D = 1`) are where the
-  radical block is the identity and the shear does all the work.
+- **the image of `GL(R)` in `Aut(R/xR)`**: it is `det^{-1}({+-1})`, proper whenever `phi(x) > 2`. At `R = Z` it is
+  `{+-1}`, so `s = +- r (mod x)` is the whole test and a dropped sign is a false negative -- the sign cases are
+  pinned separately. At `R = Z^2` it is the index-two subgroup of `GL_2(Z/x)`, whose action on `(Z/5)^2` happens to
+  have the same two orbits as the whole group; that is computed by `orbits()`, not inferred. The retained public
+  route gets every specimen right, and the witnesses show the integral lift.
 
 Still open under #41, and not discharged by the above:
 
-- the general statement for an arbitrary `R`, not `Z^k`: the criterion above is the split-radical one and the tests
-  are on `Z` and `Z^2`, not on a ring with torsion or a non-free radical;
-- lazy/infinite orbit sets: `c = 0` (the condition is exactly `D r = s`), and marked vectors whose quotient
-  image has unbounded content, where a finite orbit list is a false claim;
-- downstream subgroup consumers on those orbit sets.
+- the general statement for an arbitrary `R`, not `Z^k`: the criterion is the split-radical one and the tests are on
+  `Z` and `Z^2`, not on a ring with torsion or a non-free radical;
+- lazy/infinite orbit sets: `c = 0` (the condition is exactly `D r = s`), and marked vectors whose quotient image
+  has unbounded content, where a finite orbit list is a false claim;
+- downstream **orbit-set** consumers (the congruence-pair consumer is now supplied and tested; the orbit-set
+  consumers are not).
 
-Those need the split-radical construction in the issue body for arbitrary `R`; nothing in this note claims them.
+Pointwise stabilizers are now cross-checked against the image: for `v = (x, r)` the stabilizer maps **onto**
+`{A x = x} x {D : r D = r (mod c)}` with kernel `{D : r D = r, D = 1 (mod c)}`. At radical rank one that kernel is
+trivial, so the stabilizer's order equals the image's count (`(5,1)` is rigid, order 1; `(5,0)` has order 2). At
+radical rank two it is not: `D = [[1,5],[0,1]]` fixes `r` modulo 5 and is unimodular, so the stabilizer is infinite
+while its image is one of ten pairs, and the port reports `+Infinity` for the generated group. The finite count is
+an image, never an order.

@@ -283,6 +283,235 @@ class MarkedOrbitDecision:
     transporter: LatticeIsometryMethods
 
 
+@dataclass(frozen=True)
+class RadicalCongruenceImage:
+    r"""The **actual** image of `GL_k(Z)` in `GL_k(Z/modulus)`, with an integral unimodular lift of each element.
+
+    `elements` holds `(residue, lift)` pairs: `residue` is the `k x k` matrix modulo `modulus`, in row-major order,
+    and `lift` is an integral unimodular matrix reducing to it. Rows multiply on the right in this port, so a
+    radical row `r` moves to `r D`; the image is closed under transpose, which is why the row and column readings
+    give the same set and the same vector orbits.
+
+    This group is **not** `GL_k(Z/modulus)` in general: a lift is integral and unimodular, so `det D = +-1` modulo
+    the modulus, and the image is exactly `det^{-1}({+-1})`, of index `phi(modulus)/2`. That is proper as soon as
+    `phi(modulus) > 2` -- `modulus = 5` already has index two, and `diag(2, 1) mod 5` has determinant `2` and no
+    integral unimodular lift at all. The image *is* the whole group for `modulus` in `{1, 2, 3, 4, 6}`, where
+    `phi(modulus) <= 2`, which is why the distinction is invisible on small moduli and must not be dropped.
+
+    Whether the image is transitive on residues is a **separate** question from whether the group map is onto: at
+    `k = 2, modulus = 5` the image has order 240 and acts transitively on the 24 nonzero residues -- the same two
+    orbits as the whole group of order 480 -- while at `k = 1` it is `{+-1}` with three orbits on `Z/5`. This object
+    computes the orbits; it never reads them off a surjectivity claim.
+    """
+
+    modulus: int
+    radical_rank: int
+    elements: tuple[tuple[tuple[int, ...], Matrix_integer_dense], ...]
+    expected_order: int
+
+    @property
+    def order(self) -> int:
+        return len(self.elements)
+
+    @property
+    def complete(self) -> bool:
+        r"""Whether the generated image reached `|det^{-1}({+-1})|` -- verified when the object was built."""
+        return self.order == self.expected_order
+
+    @property
+    def residues(self) -> frozenset[tuple[int, ...]]:
+        return frozenset(residue for residue, _ in self.elements)
+
+    @property
+    def determinant_class(self) -> frozenset[int]:
+        r"""The determinants realized modulo the modulus; `{1}`, `{1, -1}`, or just `{1}` again for `modulus <= 2`."""
+        return frozenset(int(lift.det()) % self.modulus for _, lift in self.elements)
+
+    def contains(self, residue) -> bool:
+        r"""Whether a `k x k` residue matrix lies in the image."""
+        return _residue_key(residue, self.modulus, self.radical_rank) in self.residues
+
+    def lift_of(self, residue):
+        r"""An integral unimodular matrix reducing to the residue `residue`, or `None`."""
+        key = _residue_key(residue, self.modulus, self.radical_rank)
+        for candidate, lift in self.elements:
+            if candidate == key:
+                return lift
+        return None
+
+    def transporter(self, source_row, target_row):
+        r"""`D` in the image with `source_row D = target_row` modulo the modulus, or `None` -- a **proved** negative.
+
+        A radical row moves to `r D`, so the argument is a row of length `k`, not a matrix. `None` is a decision and
+        not a failure: the image contains every matrix that can occur, so a pair with no carrier in it cannot be
+        carried by any integral unimodular matrix either.
+        """
+        source = _row_key(source_row, self.modulus, self.radical_rank)
+        target = _row_key(target_row, self.modulus, self.radical_rank)
+        for candidate, lift in self.elements:
+            if _row_times_matrix(source, candidate, self.radical_rank, self.modulus) == target:
+                return lift
+        return None
+
+    def orbit_of(self, row) -> frozenset[tuple[int, ...]]:
+        r"""The orbit of a radical row under the image."""
+        source = _row_key(row, self.modulus, self.radical_rank)
+        return frozenset(
+            _row_times_matrix(source, candidate, self.radical_rank, self.modulus)
+            for candidate, _ in self.elements
+        )
+
+    def orbits(self, *, module_bound: int = 65536) -> tuple[frozenset[tuple[int, ...]], ...]:
+        r"""The orbits of the image on the whole residue module `(Z/modulus)^k`.
+
+        Computed, not deduced: this is the answer to "which residues are reachable", as opposed to the different
+        question of whether `GL_k(Z) -> GL_k(Z/modulus)` is onto, which it is not. A module larger than
+        `module_bound` is refused rather than sampled.
+        """
+        size = self.modulus**self.radical_rank
+        if size > module_bound:
+            raise UnfinishedCapability(
+                f"the residue module (Z/{self.modulus})^{self.radical_rank} has {size} elements, above the bound "
+                f"{module_bound}; the orbit list is not sampled"
+            )
+        seen: set[tuple[int, ...]] = set()
+        orbits = []
+        for row in itertools.product(range(self.modulus), repeat=self.radical_rank):
+            if row in seen:
+                continue
+            orbit = self.orbit_of(row)
+            seen |= orbit
+            orbits.append(orbit)
+        return tuple(orbits)
+
+    def stabilizer_of(self, row):
+        r"""The pairs `(residue, lift)` fixing the radical row `row` -- the finite congruence part of a pointwise
+        stabilizer, `{D : r D = r (mod c)}` (issue #41's stabilizer condition)."""
+        source = _row_key(row, self.modulus, self.radical_rank)
+        return tuple(
+            (candidate, lift)
+            for candidate, lift in self.elements
+            if _row_times_matrix(source, candidate, self.radical_rank, self.modulus) == source
+        )
+
+    def subobject_from(self, residue):
+        r"""The cyclic subgroup generated by a residue **matrix**, as `(residue, lift)` pairs -- a downstream
+        subgroup consumer for the congruence action."""
+        generator = _residue_key(residue, self.modulus, self.radical_rank)
+        by_residue = dict(self.elements)
+        if generator not in by_residue:
+            return ()
+        generated = {generator}
+        frontier = {generator}
+        while frontier:
+            new = set()
+            for current in frontier:
+                product = _residue_multiply(current, generator, self.radical_rank, self.modulus)
+                if product not in generated:
+                    new.add(product)
+            generated |= new
+            frontier = new
+        return tuple((candidate, by_residue[candidate]) for candidate in sorted(generated))
+
+
+def _row_key(row, modulus: int, rank: int) -> tuple[int, ...]:
+    r"""A radical row as a canonical tuple of length `rank` modulo `modulus`."""
+    entries = tuple(int(entry) for entry in row)
+    if len(entries) != rank:
+        raise ValueError(f"a radical row must have {rank} entries, got {len(entries)}")
+    return tuple(entry % modulus for entry in entries)
+
+
+def _row_times_matrix(row, matrix_residue, rank: int, modulus: int) -> tuple[int, ...]:
+    r"""`row . matrix` for a row of length `rank` and a row-major `rank x rank` residue."""
+    return tuple(
+        sum(row[inner] * matrix_residue[inner * rank + column] for inner in range(rank)) % modulus
+        for column in range(rank)
+    )
+
+
+def _residue_key(residue, modulus: int, rank: int) -> tuple[int, ...]:
+    r"""A `rank x rank` residue as a canonical row-major tuple modulo `modulus`."""
+    if hasattr(residue, "nrows"):
+        entries = tuple(int(residue[row, column]) for row in range(residue.nrows()) for column in range(residue.ncols()))
+    else:
+        entries = tuple(int(entry) for entry in residue)
+    if len(entries) != rank * rank:
+        raise ValueError(f"a residue matrix of rank {rank} needs {rank * rank} entries, got {len(entries)}")
+    return tuple(entry % modulus for entry in entries)
+
+
+def _residue_multiply(left, right, rank: int, modulus: int) -> tuple[int, ...]:
+    r"""`left . right` on `rank x rank` row-major residues modulo `modulus`."""
+    return tuple(
+        sum(left[row * rank + inner] * right[inner * rank + column] for inner in range(rank)) % modulus
+        for row in range(rank)
+        for column in range(rank)
+    )
+
+
+def _containing_prime_powers(number: int):
+    r"""`(p, a)` for each prime power `p^a` exactly dividing `number`."""
+    remaining, prime = number, 2
+    factors = []
+    while prime * prime <= remaining:
+        if remaining % prime == 0:
+            power = 0
+            while remaining % prime == 0:
+                remaining //= prime
+                power += 1
+            factors.append((prime, power))
+        prime += 1
+    if remaining > 1:
+        factors.append((remaining, 1))
+    return tuple(factors)
+
+
+def _general_linear_order(rank: int, modulus: int) -> int:
+    r"""`|GL_rank(Z/modulus)|`, exactly, from the prime factorization of `modulus`."""
+    if modulus <= 1:
+        return 1
+    order = 1
+    for prime, power in _containing_prime_powers(modulus):
+        order *= prime ** ((power - 1) * rank * rank)
+        for index in range(rank):
+            order *= prime**rank - prime**index
+    return order
+
+
+def _image_order_of_the_sign_condition(rank: int, modulus: int) -> int:
+    r"""`|det^{-1}({+-1})|` in `GL_rank(Z/modulus)`.
+
+    `det : GL_rank(Z/modulus) -> (Z/modulus)^*` is onto, so `|SL| = |GL|/phi(modulus)` and the preimage of a set of
+    `s` units has `s|SL|` elements. `{+-1}` is a `2`-element set of units for `modulus >= 3`, and equals `{1}` for
+    `modulus <= 2` -- where the sign condition is vacuous and the preimage is the whole group.
+    """
+    if modulus <= 2:
+        return _general_linear_order(rank, modulus)
+    return 2 * _general_linear_order(rank, modulus) // _euler_phi(modulus)
+
+
+def _euler_phi(number: int) -> int:
+    if number <= 0:
+        raise ValueError("phi is defined for positive integers")
+    phi = number
+    for prime, _ in _containing_prime_powers(number):
+        phi = phi // prime * (prime - 1)
+    return phi
+
+
+def _elementary_matrix(row: int, column: int, rank: int) -> Matrix_integer_dense:
+    r"""`E_{row,column}(1)`, of determinant one -- already its own integral unimodular lift."""
+    entries = [[1 if r == c else 0 for c in range(rank)] for r in range(rank)]
+    entries[row][column] = 1
+    return matrix(SageZZ, entries)
+
+
+def _signed_diagonal(rank: int) -> Matrix_integer_dense:
+    r"""`diag(-1, 1, ..., 1)`, of determinant `-1` -- the lift that supplies the other sign."""
+    return matrix(SageZZ, [[-1 if index == 0 else (1 if index == other else 0) for other in range(rank)] for index in range(rank)])
+
+
 def _coordinate_height(lattice: Lattices.ParentMethods, vector: Lattices.ElementMethods) -> int:
     """The height of a vector: ``max |coordinate|`` in the lattice's declared label order."""
     coordinates = vector.to_vector()
@@ -1046,6 +1275,99 @@ class EichlerRecursion:
         if witness(source) != target:
             raise ArithmeticError("the constructed radical isometry does not carry the marking onto its image")
         return witness
+
+    def radical_congruence_image(
+        self, lattice: Lattices.ParentMethods, modulus: int, *, order_bound: int = 4096
+    ) -> RadicalCongruenceImage:
+        r"""The actual image of `GL(R)` in `GL_k(Z/modulus)`, with integral unimodular lifts (issue #41).
+
+        The mixed marking condition of #41 needs `s - D r` in `c R`, i.e. `r D = s` modulo `c` for some `D` in
+        `GL_k(Z)` -- the port multiplies rows on the right. The finite group that acts there is the **image** of
+        `GL_k(Z)`, not all of `GL_k(Z/c)`: a lift is integral and unimodular, hence has determinant `+-1`, and the
+        image is exactly `det^{-1}({+-1})`, of index `phi(c)/2`. So `diag(2, 1) mod 5`, determinant `2`, is not in
+        it and has no integral unimodular lift; the two groups coincide only for `c` in `{1, 2, 3, 4, 6}`.
+
+        **Completeness is checked, not assumed.** The elements are generated by the reductions of the elementary
+        matrices `E_ij(1)` and `diag(-1, 1, ..., 1)`, each of which *is* its own integral unimodular lift; every
+        generated element is verified to reduce correctly and to have determinant `+-1`; and the generated order is
+        compared with `|det^{-1}({+-1})| = |GL_k(Z/c)| * 2 / phi(c)`, computed from the prime factorization of `c`.
+        A shortfall raises, and a modulus whose image exceeds `order_bound` is refused as `UnfinishedCapability`
+        rather than silently truncated -- a truncated image would turn "not found" into a false negative.
+
+        This is the decision primitive the mixed case needs: `transporter` answers `r -> s` exactly, and
+        `stabilizer_of` gives the finite congruence part of a pointwise stabilizer. Whether the image is transitive
+        on residues is *not* inferred from the group map; `orbits` computes it.
+        """
+        modulus = int(modulus)
+        if modulus < 1:
+            raise ValueError(f"a congruence modulus must be positive, got {modulus}")
+        reduction = indefinite_reduced_presentation(lattice)
+        gram = _gram_in_label_order(reduction.reduced)
+        radical_rank = int(gram.nrows()) - int(gram.rank())
+        if radical_rank == 0:
+            raise ArithmeticError("a nondegenerate lattice has no radical, so there is no congruence image to build")
+
+        identity = identity_matrix(SageZZ, radical_rank)
+        if modulus == 1:
+            return RadicalCongruenceImage(
+                modulus=1,
+                radical_rank=radical_rank,
+                elements=(((0,) * (radical_rank * radical_rank), identity),),
+                expected_order=1,
+            )
+        if radical_rank == 1:
+            generators = (matrix(SageZZ, [[1]]), matrix(SageZZ, [[-1]]))
+        else:
+            generators = tuple(
+                _elementary_matrix(row, column, radical_rank)
+                for row in range(radical_rank)
+                for column in range(radical_rank)
+                if row != column
+            ) + (_signed_diagonal(radical_rank),)
+
+        expected = _image_order_of_the_sign_condition(radical_rank, modulus)
+        if expected > order_bound:
+            raise UnfinishedCapability(
+                f"the image of GL_{radical_rank}(Z) in GL_{radical_rank}(Z/{modulus}) has order {expected}, above the "
+                f"bound {order_bound}; the congruence decision is not truncated"
+            )
+
+        lifts = {_residue_key(identity, modulus, radical_rank): identity}
+        frontier = [identity]
+        while frontier:
+            current = frontier.pop()
+            for generator in generators:
+                candidate = current * generator
+                key = _residue_key(candidate, modulus, radical_rank)
+                if key in lifts:
+                    continue
+                lifts[key] = candidate
+                frontier.append(candidate)
+                if len(lifts) > expected:
+                    raise ArithmeticError(
+                        f"the generated congruence image exceeded its computed order {expected} at modulus {modulus}"
+                    )
+        if len(lifts) != expected:
+            raise ArithmeticError(
+                f"the generated congruence image has order {len(lifts)}, not {expected} = |det^-1(+-1)| at modulus "
+                f"{modulus}, rank {radical_rank}: the images of E_ij(1) and diag(-1,1,...) do not generate it"
+            )
+        elements = []
+        for key in sorted(lifts):
+            lift = lifts[key]
+            if abs(int(lift.det())) != 1:
+                raise ArithmeticError("a congruence image lift must be integral unimodular")
+            if _residue_key(lift, modulus, radical_rank) != key:
+                raise ArithmeticError("a congruence image lift does not reduce to its residue")
+            elements.append((key, lift))
+        if any(int(lift.det()) % modulus not in (1, modulus - 1) for _, lift in elements):
+            raise ArithmeticError("a congruence image element has determinant outside {+-1} modulo the modulus")
+        return RadicalCongruenceImage(
+            modulus=modulus,
+            radical_rank=radical_rank,
+            elements=tuple(elements),
+            expected_order=expected,
+        )
 
     def _transported_radical_pointed_isometry(
         self, source: Lattices.ElementMethods, target: Lattices.ElementMethods
