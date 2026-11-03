@@ -61,10 +61,32 @@ algorithm and through the retained radical splitting:
   back to `L` with the retained `_conjugated`, and the result is verified to carry the marking onto its image.
 * everything happens in the **reduced** presentation, so a permuted or mixed basis needs no special case: the
   radical is never assumed to occupy the last coordinates of the *given* basis. Tested on `<2> + 0`, on the
-  radical-first presentation `[[0,0],[0,2]]`, and on the mixed basis `[[2,2],[2,2]]` whose radical is spanned by
-  `(1, -1)`.
+  radical-first presentation `[[0,0],[0,2]]`, on the mixed basis `[[2,2],[2,2]]` whose radical is spanned by
+  `(1, -1)`, and at **radical rank 2** on `<2> + 0 + 0` (radical `span(e_1, e_2)`) and on `[[0,0,0],[0,0,0],[0,0,2]]`
+  (radical first).
 * integral invertibility is asserted where it is used: `|det| = 1` for the radical block and for the returned
-  isometry, in the port's column convention.
+  isometry, in the port's column convention, and the integral inverse is checked to have unit determinant;
+* at radical rank 2 the transport `(0,1,0) -> (0,0,1)` **requires** an off-diagonal unimodular entry — no diagonal
+  block can do it — so that specimen is the one that proves a genuine `GL_2(Z)` block is being constructed rather
+  than a scaling. Pairing preservation is checked against a spread of arbitrary lattice vectors, not only against
+  the marked one, which is what makes the result an isometry rather than a vector-matching map.
+
+### Convention correction
+
+The first version of this note had the block layout **transposed**: it wrote `(0, r) M = (r B, r D)` for
+`M = [[A, 0],[B, D]]` while computing with row multiplication, and concluded that an arbitrary `B` could push a
+radical vector out of the radical. Both are wrong. The retained form (`_degenerate_group_generators`, and the shear
+`block[row, nonsingular_rank] = 1` in the code) is
+
+    M = [[A, B],
+         [0, D]]        (row blocks; the zero is bottom-left, B upper-right)
+
+and in the row convention `(x, y) M = (x A, x B + y D)`. So a radical vector `(0, r)` maps to `(0, r D)`: it
+**stays in the radical**, as it must, since the radical is characteristic — an isometry preserves the pairing and
+hence `{v : b(v, L) = 0}`. `B` moves the nondegenerate part into the radical direction (the shear) and is
+irrelevant to radical transport, which is decided by `D` alone. The implemented witness takes `A = 1`, `B = 0`:
+that is a *choice* for simplicity, not a requirement, and it is now judged as such rather than being justified by a
+false general statement.
 
 `UnfinishedCapability` survives where support is genuinely not proved: cross-lattice radical transport between two
 distinct loci would need an isometry between their reduced presentations carrying one radical coordinate onto the
@@ -72,12 +94,14 @@ other, and that is refused rather than guessed.
 
 ## Two findings from the work, kept
 
-1. **The hyperbolic plane costs 57 s per non-integral pointed transport.** `q` of `U = [[0,1],[1,0]]` is `2xy`
-   (not `xy`), and transporting `(2, 1)` to `(-2, -1)` does not take the already-integral branch: it reaches the
-   `_lattice_action(target).transporter(image)` correction locus -- the one recorded as correct-but-costly. That is
-   a property of that branch, not of canonicalization, so the hyperbolic test asserts only that an
-   already-canonical vector is recognised, which the search does on its first comparison. Order-of-magnitude
-   check, not a claim about the branch.
+1. **The hyperbolic plane costs about 55 s per non-integral pointed transport, and that regression is kept.** `q`
+   of `U = [[0,1],[1,0]]` is `2xy` (not `xy`), and transporting `(2, 1)` onto `(-2, -1)` does not take the
+   already-integral branch: it reaches `_lattice_action(target).transporter(image)`, the correction locus recorded
+   as correct-but-costly. An "already canonical, identity path" test does **not** cover this: the identity path
+   returns before any complement, extension or correction machinery runs. So the transport regression lives in
+   `tests/test_canonical_hyperbolic_transport.py`, marked `slow` (registered in `pyproject.toml`, with no `addopts`,
+   so nothing is hidden by default and a rapid iteration deselects it with `-m "not slow"`). Measured: 55.2 s for
+   the transport test, 0.01 s for the derived-minima test, peak tree RSS 3.47 GiB.
 2. **The declared order is what makes the minimum negative.** `-v` is always in the orbit of `v`, so the least
    member is frequently a negative tuple; my first expectations were written against the positive representative
    and were wrong. The tests now derive the expected minima from the orbit description (`x = ±5` forced, `y mod 5`

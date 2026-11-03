@@ -862,19 +862,34 @@ class EichlerRecursion:
     def _radical_pointed_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
         r"""An isometry of `L` carrying the radical vector `source` onto `target`, or `None` (issues #41 and #62).
 
-        For `L` degenerate with reduced presentation `C + R`, every isometry has the block form
-        `[[A, 0], [B, D]]` with `A` in `O(C)`, `D` in `GL(R)` and `B` in `Hom(C, R)` arbitrary (row convention:
-        a vector `v` maps to `v M`). A radical vector is `(0, r)` in that presentation, so
+        **Conventions.** The port works in the row convention -- an isometry is a matrix `M` whose rows are the
+        images of the basis vectors, and a vector `v` maps to `v M`. In the reduced presentation `L = C + R` with
+        `R = rad(L)`, the retained block form (`_degenerate_group_generators`, `IndefiniteForms.g:853-901`) is
 
-            `(0, r) M = (r B, r D)`,
+            M = [[A, B],
+                 [0, D]]
 
-        which is `(0, s)` exactly when `r B = 0` and `r D = s`. Taking `B = 0` and `A = 1` leaves the single
-        condition `D r = s` with `D` unimodular, and `GL_k(Z)` acts on a column by its **content**: `r = d r_0`
-        with `r_0` primitive, `GL_k(Z)` is transitive on primitive vectors, so `r ~ s` iff `gcd(r) = gcd(s)`.
-        The zero vector is the content-0 case and is fixed by everything.
+        with the zero block **bottom-left**, `A` in `O(C)`, `D` in `GL(R)` and `B` in `Hom(C, R)` arbitrary. So
 
-        The witness is constructed, not asserted: `V_r r_0 = e_1` and `V_s s_0 = e_1` come from Smith normal
-        form of the primitive rows, `D = V_r V_s^{-1}` is unimodular, and `D r = s` is checked on the way out.
+            (x, y) M = (x A, x B + y D),
+
+        and a radical vector `(0, r)` maps to `(0, r D)`: it **stays in the radical**, because the radical is
+        characteristic -- an isometry preserves the pairing, hence preserves `{v : b(v, L) = 0}`. `B` never moves a
+        radical vector; it moves the nondegenerate part into the radical direction, which is exactly the shear
+        `e_i -> e_i + z_1` of the source. (An earlier version of this docstring had the block layout transposed,
+        wrote `(0, r) M = (r B, r D)`, and concluded that arbitrary `B` could push a radical vector out of the
+        radical. Neither the layout nor the consequence is right.)
+
+        **The decision.** Since a radical marking is `(0, r)` and its image is `(0, r D)`, transport is decided by
+        `D` alone: `r D = s` with `D` unimodular, and `GL_k(Z)` acts on a column by its **content** and is
+        transitive on primitive vectors, so `r ~ s` iff `gcd(r) = gcd(s)`. The zero vector is the content-0 case
+        and is fixed by everything.
+
+        **The witness built here** takes `A = 1` and `B = 0` -- a choice, not a requirement, and the simplest one
+        that leaves `D` free: Smith normal form gives `V_r r_0 = e_1` and `V_s s_0 = e_1` for the primitive parts,
+        `D = V_r V_s^{-1}` is unimodular, and `D r = s` is checked as it is built. The block is conjugated back to
+        `L` with the retained `_conjugated` and the result is verified to carry the marking onto its image.
+
         Everything happens in the **reduced** presentation, so a permuted or mixed basis is handled by the
         retained reduction rather than by assuming the radical occupies the last coordinates of the given one.
 

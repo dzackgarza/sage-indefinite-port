@@ -65,11 +65,23 @@ def _canonical(lattice_, coordinates) -> MarkedOrbitCanonical:
     return _CANONICAL_CACHE[key]
 
 
+def _column_transport(isometry):
+    """The isometry as a column-convention matrix, through the port's own conversion."""
+    from sage_indefinite_port.indefinite.recursive import _column_matrix
+
+    return _column_matrix(isometry)
+
+
 def _column_det(isometry) -> int:
     """The determinant of an isometry, in the port's column convention."""
     from sage_indefinite_port.indefinite.recursive import _column_matrix
 
     return int(_column_matrix(isometry).det())
+
+
+def _pairing(left, right):
+    """The lattice pairing of two elements, as an exact integer."""
+    return int(left.parent().b(left, right))
 
 
 def _coordinates(lattice_, vector) -> tuple[int, ...]:
@@ -234,6 +246,65 @@ def test_the_unbounded_content_family_is_a_constructive_infinite_quotient() -> N
     far = element(L, (0, 7))
     assert _RECURSION.pointed_isometry(far, element(L, (0, -7))) is not None
     assert _coordinates(L, _canonical(L, (0, 7)).representative) == (0, -7)
+
+
+def test_radical_transport_at_radical_rank_two_needs_a_nontrivial_unimodular_block() -> None:
+    r"""Radical rank 2: `(0,1,0) -> (0,0,1)` cannot be done by diagonal scaling, only by an honest `GL_2(Z)` block.
+
+    `L = <2> + 0 + 0` has radical `span(e_1, e_2)` of rank 2. Content is the `GL_2(Z)` orbit invariant, so
+    `(0,1,0)` and `(0,0,1)` are equivalent although no diagonal `D` carries one to the other: the witness must
+    contain a genuine off-diagonal unimodular entry. Pairings are checked against arbitrary lattice vectors, which
+    is the property that makes the result an isometry rather than merely a vector-matching map.
+    """
+    L = _presentation([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    labels = tuple(L.module_generating_set())
+
+    def vector(coordinates):
+        return element(L, coordinates)
+
+    def coordinates_of(value):
+        raw = value.to_vector()
+        return tuple(int(raw(label)) for label in labels)
+
+    source, target = vector((0, 1, 0)), vector((0, 0, 1))
+    witness = _RECURSION.pointed_isometry(source, target)
+    assert witness is not None, "equal content at radical rank 2 must be transported"
+    assert witness(source) == target
+
+    block = _column_transport(witness)
+    assert abs(int(block.det())) == 1, f"the witness must be unimodular, got det {int(block.det())}"
+    assert any(int(block[i, j]) for i in range(3) for j in range(3) if i != j), (
+        "transporting (0,1,0) to (0,0,1) needs an off-diagonal entry: no diagonal block can do it"
+    )
+    assert int(block.inverse().det() * block.det()) == 1, "the integral inverse must exist with unit determinant"
+
+    # an isometry preserves the pairing against every lattice vector, not just the marked one
+    for probe in ((1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0), (2, -1, 3), (0, 2, 4)):
+        other = vector(probe)
+        assert witness(source).q() == source.q()
+        assert int(witness(other).q()) == int(other.q()), f"norm not preserved on {probe}"
+        assert int(_pairing(witness(source), witness(other))) == int(_pairing(source, other))
+        assert int(_pairing(witness(other), witness(vector((1, 0, 0))))) == int(_pairing(other, vector((1, 0, 0))))
+
+    # unequal content is not transported, and the zero vector is its own class at this rank too
+    assert _RECURSION.pointed_isometry(vector((0, 2, 0)), vector((0, 0, 1))) is None
+    assert _RECURSION.pointed_isometry(vector((0, 2, 4)), vector((0, 0, 2))) is not None
+    assert _RECURSION.pointed_isometry(vector((0, 2, 4)), vector((0, 1, 2))) is None
+    zero = vector((0, 0, 0))
+    identity_like = _RECURSION.pointed_isometry(zero, zero)
+    assert identity_like is not None and identity_like(zero) == zero
+    assert _RECURSION.pointed_isometry(zero, vector((0, 0, 2))) is None
+
+
+def test_radical_transport_at_rank_two_in_a_permuted_basis() -> None:
+    r"""The rank-2 radical need not sit in the last coordinates: `span(e_0, e_1)` with the radical first."""
+    L = _presentation([[0, 0, 0], [0, 0, 0], [0, 0, 2]])
+    source, target = element(L, (1, 0, 0)), element(L, (0, 1, 0))
+
+    witness = _RECURSION.pointed_isometry(source, target)
+    assert witness is not None, "content 1 both, in a presentation whose radical is the first two coordinates"
+    assert witness(source) == target
+    assert abs(int(_column_transport(witness).det())) == 1
 
 
 def test_radical_transport_in_a_permuted_and_mixed_basis() -> None:
