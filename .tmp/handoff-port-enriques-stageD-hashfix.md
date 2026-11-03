@@ -1,4 +1,4 @@
-# Stage-D after the provider hash fix: the wall is gone, and the returned group is index two short
+# Stage-D after the provider hash fix: the wall is gone, and the returned group is proper (index unproved)
 
 Continues `.tmp/handoff-port-enriques-stageD-attribution.md`. Measured on provider
 `e609d03221be54240a510f29c7fd6950f7125965` (contains `46b2c392`, native tensor hash), port `3e2bbd51` + this
@@ -41,11 +41,40 @@ the line **setwise**. But their action on the line is
 line action per generator: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 ```
 
-— every one is in the **pointwise** stabilizer. `Aut((N, Z e1))` is strictly larger: the element `M = diag(-1,-1,1,
-...,1)` on the fixture basis is integral, `M G M^T = G`, `det M = -1` and `M e1 = -e1` (checked directly against the
-fixture gram, which is block diagonal in the `U, U(2), E8(-2)` splitting). A generating set whose elements all act as
-`+1` generates a subgroup of the pointwise stabilizer, so the returned 25 generators cannot generate the setwise line
-stabilizer: the delivered group is index two short.
+— every one is in the **pointwise** stabilizer. `Aut((N, Z e1))` is strictly larger, and the sign-reversing
+semantic witness is explicit. On the fixture basis (block diagonal in the `U, U(2), E8(-2)` splitting), take
+
+```
+M = diag(-1, -1, 1, ..., 1)          # 12 x 12, two negative diagonal entries, the rest +1
+```
+
+with, all checked exactly against the fixture gram in this repository and no run required:
+
+| property | value |
+| --- | --- |
+| integral | yes |
+| `M G M^T = G` (row convention) | **true** |
+| `det M` | **+1** (`(-1)(-1) = +1`; orientation-preserving) |
+| `M e1` | `-e1` |
+
+**Correction to the previous version of this note:** it asserted `det M = -1`. That was wrong, and it was written from
+a hardcoded print rather than a computation: with two negative diagonal entries the determinant is `+1`. The
+conclusion does not depend on the determinant — what matters is that `M` is a genuine integral isometry of `N`
+negating the line vector, and that is unaffected. It does refine the statement: the sign-reversing element is in
+`SO(N)`, so no orientation-preserving restriction can exclude it.
+
+A generating set whose elements all act as `+1` on the line generates a subgroup of the **pointwise** stabilizer, while
+`M` lies in the setwise stabilizer and not in that subgroup. Therefore the delivered 25 generators do not generate
+`Aut((N, Z e1))`: the returned subgroup is **proper**.
+
+**What that does *not* prove.** It does not establish the index. Exact index two would additionally require that the
+returned subgroup is the *full* pointwise stabilizer, and no such completeness proof is available here: the only
+route to the pointwise stabilizer in this port is
+`pointwise_stabilizer_generators` → `pointed_automorphism_generators` → the same
+`isotropic_stabilizer_action(...).stabilizer()` construction, so comparing the two would not be an independent check.
+The previous version of this note said "index two short"; that is retracted, and the claim published here is
+**proper, index unproved**. An index would need an independent generator set or order for `Stab_{O(N)}(e1)`, which
+would have to come from the owning layer.
 
 That is the remaining owning-library call, and it is a **semantic** one, not a cost one:
 `IntegralStructureAction.stabilizer()` (`rational_integral_stabilizers.py:459`) returned through
@@ -65,11 +94,21 @@ The dumps during the (now bounded) 31.7 s land in `orbit_schreier_morphism` (`g_
 so the remaining cost is quadratic in the orbit; it is a cost item for the library, not a wall, and it no longer
 prevents the call from returning.
 
+## Retained raw measurement and guard output
+
+The full captured output of the run is tracked verbatim at `.tmp/enriques_stageD_hashfix_e609d032.log` (4018 bytes):
+the provenance lines above, every stage line, the 25-generator result, the per-generator sign list, the
+form-preservation and setwise checks, and the `peakrss` block. Its guard figures are the ones quoted here — peak tree
+RSS **496 MiB** against the 6144 MiB limit, `child waited=0`, `shell_code=0` — together with the `low-water MemAvail`
+line the supervisor wrote. The three stack dumps it contains are the residual-cost frames named below; no dump reaches
+the old hash path.
+
 ## Kept open, unchanged
 
 - `case_3` acceptance: line/plane/flag counts **5/10/19** and generators that are genuine integral isometries — the
   count obligation is untouched by this measurement, and the generator obligation is now **partly** met (integral,
-  form-preserving) and **not** met (setwise line action).
+  form-preserving) and **not** met (the returned subgroup is proper: it misses the explicit sign-reversing witness).
+  The size of the shortfall is unproved, and the setwise group contract stands as stated.
 - The Enriques family's other stages and the Z/2-shortfall above are port-consumer obligations, not discharged here.
 - No provider patch was made in this repository; the semantic finding is routed to `sage-extensions`, which owns
   `rational_integral_stabilizers.py`.
