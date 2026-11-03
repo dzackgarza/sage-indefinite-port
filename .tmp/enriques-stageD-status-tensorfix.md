@@ -76,4 +76,48 @@ its consumer integration resumes once the repair is measured and available.
 
 - `action.stabilizer()` **completed: 1898.5 s, 25600 generators** (the full $1024 \times 25$ Schreier family): B3 words through the retained transition table, then B4 realization of every preimage word into a group element. No second sweep, no per-row re-acts.
 - The run then entered the probe's own conversion loop `tuple(N.integral_isometry(g) for g in ...)` and hit its **unchanged** 2400 s inner cap there (exit 124), PEAKRSS peak tree 3637 MiB of the 6144 MiB guard: again **time-bound, no memory wall**. The first boundary the conversions own (`integral_restriction -> factor_through_or_none -> _preimage_or_none`) is thus measured real, not from a sample: 25600 per-element conversions, one preimage computation each; the conversion stage, not the stabilizer realization, is now the acceptance frontier.
-- The raw log `.tmp/enriques_stageD_schreierfix_6675f1f.log` is published with this note. The stabilized Schreier family size (25600) is itself the cost driver of that stage; deducing semantics from it duplicates nothing.
+- The raw log `.tmp/enriques_stageD_schreierfix_6675f1f.log` is published with this note, together with its launcher
+  `.tmp/launch-stageD-schreierfix.sh` (`PEAKRSS_LIMIT_MIB=6144`, inner cap `timeout -s KILL 2400`, outer 2700). The
+  stabilized Schreier family size (25600) is itself the cost driver of that stage; deducing semantics from it
+  duplicates nothing.
+- **Cleanup, from the run manager rather than the log:** one descendant was cleaned up after the KILL. `peakrss`
+  records the process tree's peak and wait status, not the cleanup, so this fact is attributed to the manager's
+  report and is not read out of the log.
+
+### Provenance scope of this run, stated precisely
+
+- The launcher binds the library working tree (`PROV=…/p-8c69fc…/repo` → `/repos/sage-extensions`), and the log's
+  header prints the runtime module path plus `lattice_morphisms.py sha256[:16] = 00f0c682880cc022`. **That digest
+  does not identify the repaired file**: this repair is in `g_sets.py`, and `lattice_morphisms.py` is unchanged by
+  it. The log therefore does not by itself prove which `g_sets.py` ran; the run's repair identity is the
+  operator-recorded tree `6675f1f`, which is why it is encoded in the log's filename. A future run should print the
+  `g_sets.py` digest for the same reason the earlier ones print `lattice_morphisms.py`.
+- **`6c1500ff` is not this job's pin.** It is the subsequently published provider repair (exact retained
+  augmentation, one-shot-safe seeds, distinct Schreier-image presentation). It is what the changed-source guarded
+  probe `jmw0whgrg`, already running in the library session under the same 2400 s / 6144 MiB bounds, is being
+  measured against. Nothing in this note claims `jmw0urc9n` imported it.
+
+### The exact consumer continuation (prepared, not yet run)
+
+When `jmw0whgrg` reports, the port-side continuation is one chain and one check, with no new provider code here:
+
+```
+IsotropicInduction._stabilizer_generators            (port: isotropic_induction.py)
+  -> recursion.isotropic_stabilizer_action(isotropic, radical_images)      # port, unchanged
+  -> .stabilizer().group_generators()                                     # provider (repaired)
+  -> port consumer: lattice.integral_isometry(g) per generator            # the measured frontier
+```
+
+Expected data from the provider: a finite ordered set of isometries fixing the lattice, of size 1024 x 25 = 25600 on
+this input. The port's acceptance checks on it, exactly the ones already used:
+
+- every returned generator is an integral unimodular isometry of `N` (`M G M^T = G`, integer rows);
+- each fixes the line **setwise**, and the family contains at least one element acting as `-1` on it -- the
+  sign-reversing witness `diag(-1,-1,1,...,1)` is an element of `Aut((N, Z e1))` and must be *in the generated
+  group*, which a family acting `+1` throughout is not (index unproved, as recorded in
+  `.tmp/handoff-port-enriques-stageD-hashfix.md`).
+
+Two port-side obligations follow from the measurement, and neither duplicates the provider repair: the conversion
+stage is the frontier (25600 per-element `integral_isometry` conversions, one preimage computation each), so the port
+consumer must decide what it actually needs from that family instead of realizing all 25600 unconditionally; and the
+original acceptance -- 5/10/19 orbits and S1 -- stays open on its own terms until the consumer verdict exists.
