@@ -67,6 +67,21 @@ So, on the primitive isotropic shell (`a m + c d = 0`, content one):
 `gamma_class` computes the key, `gamma_witness` returns the constructed element (`sigma`/`tau` composed with
 `u(rho, gam)`, with `(rho, gam)` solved through Smith normal form), `None` means **proved** inequivalence.
 
+**Defect found and repaired in the first published version.** The `m != 0` key used `abs(m)`, which erased the
+signed invariant `b(e1, v)`: `f1 = (0,1,0,0)` and `-f1 = (0,-1,0,0)` are both primitive isotropic, both had the
+key `("affine", 1, (0,0))`, `gamma_equivalent` returned `True`, and `gamma_witness` returned the identity -- which
+does not carry one onto the other. Reproduced exactly before fixing, and now:
+
+* the key carries **signed** `m`; only the residue lattice uses `|m|`, because `u` shifts `(c,d)` by `m Z^2` and
+  `m Z^2 = |m| Z^2`;
+* every success path builds its witness through `_certified`, which compares `candidate(source)` with the actual
+  `target` and checks `candidate(e1) == e1` before returning, so no branch can hand back an unchecked composite;
+* the two branches that could fall out of their loop now raise rather than returning `None` after the classes
+  agreed -- agreement followed by "no witness" would be a contradiction, not an answer;
+* a law test pins the general defect class: whenever the retained invariant separates a pair, the classification
+  must separate it too. The invariant is proved, so a key that merges a separated pair is wrong by construction --
+  which is exactly what `abs(m)` did. It is checked over the whole sample, so its relatives would be caught.
+
 Independence of the evidence, since a classification checked only against itself proves little: every retained
 generator of `Aut((L, e1))` is applied to eleven shell vectors and must preserve the class key. That catches a key
 that is too *fine* -- the plausible error -- and it passed on all six generators.
@@ -93,8 +108,9 @@ that is too *fine* -- the plausible error -- and it passed on all six generators
 ## Numbers
 
 `tests/test_pointwise_stabilizer_shell.py`: 7 tests, 7.2 s, peak 433 MiB.
-`tests/test_pointwise_shell_decision.py`: 8 tests, 6.0 s, peak 426 MiB -- the exact decision, its witnesses, the
-generator cross-check, and the refusals outside the shell.
+`tests/test_pointwise_shell_decision.py`: 12 tests, 6.8 s, peak 429 MiB -- the exact decision, its witnesses, the
+generator cross-check, the signed-pairing and opposite-vector regressions, the invariant-vs-classification law,
+negative `m`, and the refusals outside the shell.
 With the facet and canonical files: 36 passed in 23.4 s, 646 MiB.
 
 ## Shared-gap routing

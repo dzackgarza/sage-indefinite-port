@@ -151,9 +151,13 @@ def gamma_class(lattice, vector) -> tuple:
     """
     a, m, c, d = shell_coordinates(lattice, vector)
     if m != 0:
-        residue = m if m > 0 else -m
+        # SIGNED m is the key. `b(e1, .)` is invariant under every pointwise stabilizer element, so `m` and `-m`
+        # are different classes; keying on `abs(m)` merged `f1` with `-f1`, which the invariant separates and no
+        # Gamma element can do. Only the residue lattice uses `|m|`, because `u(rho, gam)` shifts `(c, d)` by
+        # `m Z^2` and `m Z^2 = |m| Z^2`.
+        residue = abs(m)
         candidates = [tuple(value % residue for value in symmetry(c, d)) for symmetry in _SYMMETRIES]
-        return ("affine", residue, min(candidates))
+        return ("affine", m, min(candidates))
     g = gcd(abs(c), abs(d))
     candidates = [tuple(symmetry(c, d)) for symmetry in _SYMMETRIES]
     return ("linear", min(candidates), a % g if g else a)
@@ -178,7 +182,7 @@ def gamma_witness(lattice, source, target):
             if (x - target_coordinates[2]) % m == 0 and (y - target_coordinates[3]) % m == 0:
                 gam = (x - target_coordinates[2]) // m
                 rho = (y - target_coordinates[3]) // m
-                return _compose_symmetry_then_unipotent(lattice, symmetry, rho, gam)
+                return _certified(lattice, source, target, symmetry, rho, gam)
         raise ArithmeticError("the classes agree but no symmetry matches modulo m; the classification is wrong")
     g = gcd(abs(c), abs(d))
     for symmetry in _SYMMETRIES:
@@ -188,17 +192,13 @@ def gamma_witness(lattice, source, target):
         delta = target_coordinates[0] - a
         if g == 0:
             if delta == 0:
-                candidate = _compose_symmetry_then_unipotent(lattice, symmetry, 0, 0)
-                if candidate(source) != target:
-                    raise ArithmeticError("the identity-unipotent composite missed the target")
-                return candidate
+                return _certified(lattice, source, target, symmetry, 0, 0)
             continue
         rho, gam = _solve(x, y, delta)
-        candidate = _compose_symmetry_then_unipotent(lattice, symmetry, rho, gam)
-        if candidate(source) != target:
-            raise ArithmeticError("the constructed Gamma element does not carry the source onto the target")
-        return candidate
-    return None
+        return _certified(lattice, source, target, symmetry, rho, gam)
+    raise ArithmeticError(
+        "the classes agree but no symmetry carries (c, d) onto the target's; the classification is wrong"
+    )
 
 
 def gamma_equivalent(lattice, source, target) -> bool:
@@ -224,6 +224,27 @@ def _solve(x, y, delta):
     if rho * x + gam * y != delta:
         raise ArithmeticError("the Smith-based solution does not satisfy the divisibility equation")
     return rho, gam
+
+
+def _certified(lattice, source, target, symmetry, rho, gam):
+    r"""Build `u(rho, gam) . S` and **check** that it lies in `Gamma` and carries `source` onto `target`.
+
+    Every success path goes through here, so a branch cannot return a constructed element whose endpoint was never
+    compared with the actual target. That check is what the previous revision of the `m != 0` branch lacked: it
+    returned a composite for a pair whose classes only agreed because the key used `abs(m)`, and the composite was
+    the identity.
+    """
+    candidate = _compose_symmetry_then_unipotent(lattice, symmetry, rho, gam)
+    labels = tuple(lattice.module_generating_set())
+    e1 = lattice.module_generator(labels[0])
+    if candidate(e1) != e1:
+        raise ArithmeticError("the constructed Gamma element does not fix e1")
+    if candidate(source) != target:
+        raise ArithmeticError(
+            "the constructed Gamma element does not carry the source onto the target; the classification or the "
+            "witness construction is wrong"
+        )
+    return candidate
 
 
 def _compose_symmetry_then_unipotent(lattice, symmetry, rho, gam):

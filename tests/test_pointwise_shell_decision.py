@@ -45,7 +45,10 @@ def _shell_sample():
     """Primitive isotropic vectors: `a m + c d = 0` and content one."""
     sample = [_v(0, 1, 1, 0), _v(-6, 1, 2, 3), _v(0, 1, 3, 0), _v(3, 1, -3, 1),
               _v(0, 2, 1, 0), _v(0, 0, 1, 0), _v(1, 0, 2, 0), _v(2, 0, 3, 0),
-              _v(1, 0, 0, 0), _v(-1, 0, 0, 0), _v(0, 0, 0, 1)]
+              _v(1, 0, 0, 0), _v(-1, 0, 0, 0), _v(0, 0, 0, 1),
+              # negative `m` and opposite vectors: `b(e1, .)` is signed, so these are not the negatives' classes
+              _v(0, -1, 1, 0), _v(0, -2, 1, 0), _v(0, 1, 0, 0), _v(0, -1, 0, 0),
+              _v(0, -1, -1, 0), _v(6, -2, 3, 4)]
     for vector in sample:
         assert int(vector.q()) == 0 and int(vector.content()) == 1, f"bad sample member {vector}"
     return sample
@@ -178,3 +181,88 @@ def test_the_classification_covers_the_whole_shell() -> None:
     outside = element(L, (2, 0, 0, 0))  # content 2
     with pytest.raises(UnfinishedCapability):
         gamma_class(L, outside)
+
+
+def test_the_signed_pairing_defect_is_fixed() -> None:
+    r"""`f1` and `-f1` are primitive isotropic, and they are **not** `Gamma`-equivalent.
+
+    The published revision keyed the affine class on `abs(m)` and lost `sign b(e1, v)`, which every pointwise
+    stabilizer preserves. `f1 = (0,1,0,0)` and `-f1 = (0,-1,0,0)` therefore shared a key, `gamma_equivalent`
+    returned `True`, and `gamma_witness` returned the identity -- which does not carry one onto the other. Both
+    halves are pinned here.
+    """
+    L = _L()
+    source, target = _v(0, 1, 0, 0), _v(0, -1, 0, 0)
+
+    assert int(L.b(_e1(), source)) == 1 and int(L.b(_e1(), target)) == -1
+    assert gamma_class(L, source) != gamma_class(L, target), "signed m must be part of the class key"
+    assert not gamma_equivalent(L, source, target)
+    assert gamma_witness(L, source, target) is None
+
+    # and every returned witness must actually reach its target, which the identity did not
+    for candidate in (_v(0, 1, 1, 0), _v(0, -1, 1, 0), _v(-6, 1, 2, 3)):
+        for other in _shell_sample():
+            witness = gamma_witness(L, candidate, other)
+            if witness is not None:
+                assert witness(candidate) == other, "a successful witness must carry source onto target"
+                assert witness(_e1()) == _e1()
+
+
+def test_the_invariant_is_never_finer_than_the_classification() -> None:
+    r"""Whenever the retained invariant separates two vectors, the classification must separate them too.
+
+    The invariant `(q, content, b(e1, .))` is proved `Gamma`-invariant, so a class key that merges a pair the
+    invariant separates is wrong by construction -- which is exactly the `abs(m)` defect. This law is checked over
+    the whole sample in both directions of the pair, so it would have caught the defect and will catch its
+    relatives.
+    """
+    L = _L()
+    marked = (_e1(),)
+    sample = _shell_sample()
+    for index, source in enumerate(sample):
+        for target in sample[index + 1:]:
+            if _RECURSION.pointwise_stabilizer_separates(marked, source, target):
+                assert not gamma_equivalent(L, source, target), (
+                    f"the proved invariant separates {source} and {target} but the classification merged them"
+                )
+
+
+def test_negative_m_classes_behave_like_positive_ones() -> None:
+    r"""`m < 0` follows the same rule with `m` kept signed: `(Z/|m|)^2` up to symmetries, `a = -cd/m`."""
+    L = _L()
+    # m = -2, (c,d) = (1,0) and (3,4) agree modulo 2 and are equivalent, with a witnessed transport
+    source, target = _v(0, -2, 1, 0), _v(6, -2, 3, 4)
+    assert shell_coordinates(L, source) == (0, -2, 1, 0)
+    assert shell_coordinates(L, target) == (6, -2, 3, 4)
+    assert gamma_equivalent(L, source, target)
+    witness = gamma_witness(L, source, target)
+    assert witness is not None and witness(source) == target and witness(_e1()) == _e1()
+
+    # the same (c,d) data with the opposite sign of m is a different class
+    mirrored = _v(0, 2, 1, 0)
+    assert not gamma_equivalent(L, source, mirrored)
+    assert gamma_witness(L, source, mirrored) is None
+
+    # and within one sign the symmetries act: (1,0) ~ (-1,0)
+    assert gamma_equivalent(L, _v(0, -1, 1, 0), _v(0, -1, -1, 0))
+
+
+def test_opposite_vectors_are_never_equivalent_unless_the_class_says_so() -> None:
+    r"""`-v` need not lie in the `Gamma`-orbit of `v`; each case is decided, not assumed."""
+    L = _L()
+    decided = []
+    for vector in _shell_sample():
+        negated = element(L, tuple(-entry for entry in shell_coordinates(L, vector)))
+        decided.append((vector, gamma_equivalent(L, vector, negated)))
+    # `-e1` is fixed by no element of Gamma, and neither is `-f1` reachable from `f1`; but `-` does preserve some
+    # classes, so the point is that each is decided rather than that all are the same
+    assert any(equivalent for _, equivalent in decided)
+    assert any(not equivalent for _, equivalent in decided)
+
+    for vector in _shell_sample():
+        negated = element(L, tuple(-entry for entry in shell_coordinates(L, vector)))
+        witness = gamma_witness(L, vector, negated)
+        if witness is not None:
+            assert witness(vector) == negated
+            assert witness(_e1()) == _e1()
+
