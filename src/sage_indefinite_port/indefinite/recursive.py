@@ -376,6 +376,39 @@ class RadicalCongruenceImage:
         stabilizer = libgap.Stabilizer(self.group.gap(), point, libgap.OnRight)
         return int(libgap.Size(stabilizer))
 
+    def stabilizer_generators(self, row):
+        r"""Integral unimodular generators of `{D in im : r D = r}` -- GAP's `Stabilizer`, lifted by their words.
+
+        This is the finite congruence part of the pointwise stabilizer of a mixed marking (issue #41): the elements
+        of `GL_k(Z)` whose residue class fixes `r`. Each generator is pulled back to a word in the integral
+        generators, composed from `lifts`, and verified to be unimodular and to fix the residue -- the same
+        lift-word obligation `transporter` discharges, on the same convention.
+        """
+        point, _ = self._orbit_gap(row)
+        group = self.group.gap()
+        stabilizer = libgap.Stabilizer(group, point, libgap.OnRight)
+        epimorphism = libgap.EpimorphismFromFreeGroup(self.group)
+        residue = tuple(int(entry) % self.modulus for entry in row)
+        lifts = []
+        for generator in libgap.GeneratorsOfGroup(stabilizer):
+            word = libgap.PreImagesRepresentative(epimorphism, generator)
+            syllables = [int(entry) for entry in libgap.ExtRepOfObj(word)]
+            lift = identity_matrix(SageZZ, self.radical_rank)
+            for generator_index, exponent in zip(syllables[0::2], syllables[1::2], strict=True):
+                lift = lift * self.lifts[generator_index - 1] ** exponent
+            if abs(int(lift.det())) != 1:
+                raise ArithmeticError("a stabilizer lift is not unimodular")
+            image = tuple(
+                int(entry) % self.modulus
+                for entry in (matrix(SageZZ, [list(residue)]) * lift).list()
+            )
+            if image != residue:
+                raise ArithmeticError(
+                    f"a stabilizer lift carries {residue} to {image}: the word order and the lift order disagree"
+                )
+            lifts.append(lift)
+        return tuple(lifts)
+
     def transporter(self, source_row, target_row):
         r"""An integral unimodular `D` with `source_row D = target_row` modulo the modulus, or `None`.
 
@@ -391,19 +424,26 @@ class RadicalCongruenceImage:
         """
         point, orbit = self._orbit_gap(source_row)
         target = self._point(target_row)
-        target_position = libgap.Position(orbit, target)
-        if str(target_position) == "false":
+        target_position = _gap_position(orbit, target)
+        if target_position is None:
+            # Exhaustive nonmembership: the orbit list is complete, so no element of the image carries the source
+            # residue onto the target -- and none of `GL_k(Z)` does either.
             return None
-        source_position = libgap.Position(orbit, point)
-        if str(source_position) == "false":
+        source_position = _gap_position(orbit, point)
+        if source_position is None:
             raise ArithmeticError("the source residue is not a row of the module the image acts on")
         group = self.group.gap()
         action = libgap.ActionHomomorphism(group, orbit, libgap.OnRight)
         permutation = libgap.RepresentativeAction(
             libgap.Image(action), source_position, target_position, libgap.OnPoints
         )
-        if str(permutation) == "fail":
-            return None
+        if permutation == libgap.fail:
+            # Both positions exist and the image acts transitively on its orbit, so this is an unfinished
+            # execution, not a decision: it must never be reported as "no carrier".
+            raise ArithmeticError(
+                "RepresentativeAction returned fail although both residues lie in the same orbit; the transport "
+                "is undecided rather than absent"
+            )
         element = libgap.PreImagesRepresentative(action, permutation)
         word = libgap.PreImagesRepresentative(libgap.EpimorphismFromFreeGroup(self.group), element)
         syllables = [int(entry) for entry in libgap.ExtRepOfObj(word)]
@@ -423,6 +463,21 @@ class RadicalCongruenceImage:
                 "free-group letter order and the lift order disagree"
             )
         return lift
+
+
+def _gap_position(sequence, element):
+    r"""GAP's `Position` with its real sentinel: `fail` when absent, an integer when present.
+
+    GAP returns `fail`, not `false`, for an absent entry, and libgap hands that back as a `GapElement_Boolean`
+    whose string is `'fail'`. Comparing `str(value) == "false"` is therefore never true and silently leaves the
+    sentinel in place, which is what an earlier revision did: the missing-target case then fell through to
+    `RepresentativeAction` with a `fail` argument, whose own `fail` return was read as "no carrier". Those are
+    different facts -- an exhaustive nonmembership versus an unfinished execution -- so they are separated here.
+    """
+    position = libgap.Position(sequence, element)
+    if position == libgap.fail:
+        return None
+    return int(position)
 
 
 def _coordinate_height(lattice: Lattices.ParentMethods, vector: Lattices.ElementMethods) -> int:

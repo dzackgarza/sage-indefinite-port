@@ -136,10 +136,20 @@ live in the ring of the matrices:
     element = libgap.PreImagesRepresentative(action, permutation)
     word = libgap.PreImagesRepresentative(EpimorphismFromFreeGroup(group), element)
 
+**Sentinel contract.** `Position` answers GAP's `fail` for an absent entry, not `false`: libgap returns a
+`GapElement_Boolean` whose string is `'fail'`. An earlier revision tested `str(position) == "false"`, which is never
+true, so the missing-target case fell through to `RepresentativeAction` with a `fail` argument, and *that* `fail`
+was read as "no carrier". The two facts are now separated -- an exhaustive orbit nonmembership returns `None`, while
+a `RepresentativeAction` failure after both positions are present raises, because the image acts transitively on its
+own orbit and such a failure is an undecided execution, not a decision. The regression is direct and non-vacuous:
+rank one, modulus 5, `1 -> 2`, with the GAP sentinel itself asserted alongside it.
+
 `RadicalCongruenceImage.transporter` composes the integral lifts along that word -- the lift-word obligation, which
 is the port's own data -- and verifies unimodularity and the transport before returning; the reversed letter order
-is a different matrix and is rejected by that verification rather than returned. `orbit_of` and `stabilizer_order`
-use GAP's `Orbit` and `Stabilizer` with the same typing. The full trace, the three failing calls and why each failed
+is a different matrix and is rejected by that verification rather than returned. `orbit_of`, `stabilizer_order` and `stabilizer_generators`
+use GAP's `Orbit` and `Stabilizer` with the same typing; the last lifts GAP's stabilizer generators by their words
+and the test checks that those lifts generate a group of exactly `stabilizer_order` elements (1, 2 and 10 for the
+#41 specimens). The full trace, the three failing calls and why each failed
 are in `.tmp/handoff-owner-congruence-transporter.md`, which is now a resolved record and not a request.
 
 ## Where the boundary actually is
