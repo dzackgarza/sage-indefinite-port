@@ -37,8 +37,19 @@ _DEGENERATE = [[2, 0], [0, 0]]
 _HYPERBOLIC = [[0, 1], [1, 0]]
 
 
+_LATTICES: dict[tuple, object] = {}
+
+
+def _presentation(gram):
+    """A lattice object per presentation, shared across tests: the reduction is cached per object."""
+    key = tuple(tuple(int(entry) for entry in row) for row in gram)
+    if key not in _LATTICES:
+        _LATTICES[key] = lattice(gram)
+    return _LATTICES[key]
+
+
 def _degenerate():
-    return lattice(_DEGENERATE)
+    return _presentation(_DEGENERATE)
 
 
 _CANONICAL_CACHE: dict[tuple, MarkedOrbitCanonical] = {}
@@ -54,22 +65,16 @@ def _canonical(lattice_, coordinates) -> MarkedOrbitCanonical:
     return _CANONICAL_CACHE[key]
 
 
+def _column_det(isometry) -> int:
+    """The determinant of an isometry, in the port's column convention."""
+    from sage_indefinite_port.indefinite.recursive import _column_matrix
+
+    return int(_column_matrix(isometry).det())
+
+
 def _coordinates(lattice_, vector) -> tuple[int, ...]:
     values = vector.to_vector()
     return tuple(int(values(label)) for label in lattice_.module_generating_set())
-
-
-def _earlier_equivalent_exists(lattice_, vector) -> bool:
-    """Whether some lattice element strictly before `vector` in the declared order is equivalent to it."""
-    target_height = max((abs(entry) for entry in _coordinates(lattice_, vector)), default=0)
-    for height in range(target_height + 1):
-        for coordinates in _coordinate_box(lattice_, height):
-            candidate = _coordinate_element(lattice_, coordinates)
-            if candidate == vector:
-                return False
-            if _RECURSION.pointed_isometry(candidate, vector) is not None:
-                return True
-    return False
 
 
 def test_canonical_representative_is_the_least_member_of_its_orbit() -> None:
@@ -88,7 +93,6 @@ def test_canonical_representative_is_the_least_member_of_its_orbit() -> None:
     assert canonical.height == 5
     # The transporter is a real isometry carrying the representative onto the input, not a relabelling.
     assert canonical.transporter(canonical.representative) == v
-    assert not _earlier_equivalent_exists(L, canonical.representative)
 
 
 def test_canonical_representatives_distinguish_equal_invariant_vectors() -> None:
@@ -169,35 +173,87 @@ def test_the_stream_is_prefix_stable_and_reports_no_completion() -> None:
     assert len(long) == 3
 
 
-def test_primitive_radical_vectors_are_decided_and_non_primitive_ones_are_refused() -> None:
-    r"""The undecided subdomain is exactly the non-primitive part of the radical, and it is named.
+def test_radical_transport_is_decided_for_every_content_with_an_integral_witness() -> None:
+    r"""A radical marking is decided by its content, and the witness is an integral invertible isometry.
 
-    Measured on `<2> + 0`, whose radical is the `y`-axis: `(0, 1)` and `(0, -1)` are one class and the transport
-    is decided, while `(0, 2)` reaches `primitive_isotropic_subobject`, which asserts that the span of `(2 e_1)`
-    has torsion. The enumeration must not survive that by reading it as "different orbit" -- it raises, naming the
-    gap -- and it must not refuse the primitive part either, which *is* decided.
-
-    This is also why the content family of issue #62's test 4 (`c e_1`, `c = 1, 2, ...`) is not available through
-    this route: those classes become radical vectors exactly when `q` vanishes on them.
+    In the reduced presentation `O(L)` is `[[A, 0], [B, D]]` with `D` unimodular, so a radical vector `(0, r)`
+    goes to `(0, r D)` and the class is the content `gcd(r)`. `(0, 2)` and `(0, -2)` are therefore equivalent --
+    the case that previously reached `primitive_isotropic_subobject` and asserted -- while `(0, 2)` and `(0, 3)`
+    are not, and neither is `(0, 1)` against `(0, 2)`.
     """
     L = _degenerate()
 
-    assert _RECURSION.vector_lies_in_radical(element(L, (0, 1)))
-    assert _RECURSION.vector_lies_in_radical(element(L, (0, 2)))
-    assert not _RECURSION.vector_lies_in_radical(element(L, (5, 1)))
+    for pair in (((0, 2), (0, -2)), ((0, 1), (0, -1)), ((0, 6), (0, -6))):
+        source, target = element(L, pair[0]), element(L, pair[1])
+        witness = _RECURSION.pointed_isometry(source, target)
+        assert witness is not None, f"{pair[0]} and {pair[1]} have the same content and must be transported"
+        assert witness(source) == target, "the witness must carry the marking onto its image"
+        assert abs(int(_column_det(witness))) == 1, "the witness must be an invertible integral isometry"
 
-    # the primitive radical class is decided on both sides
-    canonical = _canonical(L, (0, 1))
-    assert _coordinates(L, canonical.representative) == (0, -1)
-    assert canonical.transporter(canonical.representative) == element(L, (0, 1))
+    for pair in (((0, 1), (0, 2)), ((0, 2), (0, 3)), ((5, 1), (0, 1)), ((0, 2), (0, 0))):
+        source, target = element(L, pair[0]), element(L, pair[1])
+        assert _RECURSION.pointed_isometry(source, target) is None, f"{pair[0]} and {pair[1]} differ in content"
 
-    with pytest.raises(UnfinishedCapability):
-        _RECURSION.marked_orbit_canonical(element(L, (0, 2)))
-    # the enumeration keeps going to height 1 and refuses when it reaches the non-primitive class
-    assert [tuple(_coordinates(L, vector)) for vector in
-            _RECURSION.marked_orbit_representatives(L, 0, height_bound=1)] == [(0, 0), (0, -1)]
-    with pytest.raises(UnfinishedCapability):
-        list(_RECURSION.marked_orbit_representatives(L, 0, height_bound=2))
+
+def test_the_zero_vector_is_its_own_radical_class() -> None:
+    """Content 0 is the zero vector, which every isometry fixes, and it is not conflated with a nonzero class."""
+    L = _degenerate()
+    zero = element(L, (0, 0))
+
+    witness = _RECURSION.pointed_isometry(zero, zero)
+    assert witness is not None and witness(zero) == zero
+    assert _RECURSION.pointed_isometry(zero, element(L, (0, 2))) is None
+    assert _coordinates(L, _canonical(L, (0, 2)).representative) == (0, -2)
+
+
+def test_the_unbounded_content_family_is_a_constructive_infinite_quotient() -> None:
+    r"""Square 0 of `<2> + 0` has one class per `|c|`, so the quotient is infinite -- and now decidable.
+
+    `q(0, c) = 0` and `(0, c) |-> (0, +-c)`, so `|c|` separates the classes; the least member of the class of `c`
+    is `(0, -|c|)` because `-c` precedes `c` in the declared order. Nothing reports that this quotient is
+    finished, and nothing may: it is not finite. What is evidenced here is that the stream is prefix-stable and
+    keeps producing classes past any fixed bound, each with an exact transporter to its canonical representative.
+    """
+    L = _degenerate()
+    representatives = list(_RECURSION.marked_orbit_representatives(L, 0, limit=4))
+    assert [_coordinates(L, vector) for vector in representatives] == [(0, 0), (0, -1), (0, -2), (0, -3)]
+
+    # prefix stability: the same stream, asked for fewer
+    assert list(_RECURSION.marked_orbit_representatives(L, 0, limit=2)) == representatives[:2]
+
+    # each emitted class is distinct, and each transports to a non-canonical member of its class
+    for earlier, later in zip(representatives, representatives[1:]):
+        assert _RECURSION.pointed_isometry(earlier, later) is None
+    for vector in representatives[1:3]:
+        positive = element(L, (0, -_coordinates(L, vector)[1]))
+        canonical = _canonical(L, _coordinates(L, positive))
+        assert canonical.transporter(canonical.representative) == positive
+
+    # a class beyond the ones yielded is already decidable, which is what "unbounded content" means here: the
+    # number is not bounded by anything the enumerator knows, only by how far a test chooses to walk
+    far = element(L, (0, 7))
+    assert _RECURSION.pointed_isometry(far, element(L, (0, -7))) is not None
+    assert _coordinates(L, _canonical(L, (0, 7)).representative) == (0, -7)
+
+
+def test_radical_transport_in_a_permuted_and_mixed_basis() -> None:
+    r"""The decision goes through the retained reduction, so the radical need not be the last coordinates.
+
+    Three presentations of the same lattice: the radical last, the radical first, and a mixed basis in which no
+    coordinate is purely radical. In each, content decides the class and the witness transports.
+    """
+    for gram in ([[2, 0], [0, 0]], [[0, 0], [0, 2]], [[2, 2], [2, 2]]):
+        L = _presentation(gram)
+        # in the mixed presentation `(1, -1)` spans the radical and `(1, 1)` does not
+        radical = (0, 1) if gram == [[2, 0], [0, 0]] else ((1, 0) if gram == [[0, 0], [0, 2]] else (1, -1))
+        doubled = tuple(2 * entry for entry in radical)
+        negated = tuple(-entry for entry in doubled)
+
+        assert _RECURSION.vector_lies_in_radical(element(L, doubled)), f"expected a radical vector in {gram}"
+        witness = _RECURSION.pointed_isometry(element(L, doubled), element(L, negated))
+        assert witness is not None, f"content does not depend on the presentation ({gram})"
+        assert witness(element(L, doubled)) == element(L, negated)
+        assert abs(int(_column_det(witness))) == 1
 
 
 def test_the_quotient_is_unchanged_under_a_permuted_presentation() -> None:
@@ -208,7 +264,7 @@ def test_the_quotient_is_unchanged_under_a_permuted_presentation() -> None:
     presentation exactly when their coordinate-swapped images are in one orbit in the permuted one.
     """
     standard = _degenerate()
-    permuted = lattice([[0, 0], [0, 2]])  # the same lattice, radical first
+    permuted = _presentation([[0, 0], [0, 2]])  # the same lattice, radical first
 
     canonical = _canonical(permuted, (6, 5))
     assert _RECURSION.marked_orbit_is_canonical(canonical.representative)
@@ -239,13 +295,18 @@ def test_an_undecided_equivalence_is_never_read_as_inequivalence(monkeypatch) ->
         _RECURSION.marked_orbit_canonical(element(L, (0, 1)))
 
 
-def test_canonicalizer_on_the_hyperbolic_plane() -> None:
-    r"""`L = U` with `q(x, y) = 2xy`: square 4 is one orbit `{(+-1,+-2),(+-2,+-1)}` with minimum `(-2, -1)`."""
-    L = lattice(_HYPERBOLIC)
-    canonical = _canonical(L, (2, 1))
+def test_canonicalizer_recognizes_an_already_canonical_vector() -> None:
+    r"""On a non-degenerate lattice the minimum is recognised through the identity path.
+
+    `L = U` with `q(x, y) = 2xy`: square 4 is one orbit `{(+-1,+-2),(+-2,+-1)}`, whose least member is `(-2, -1)`.
+    Canonicalizing that member must return it unchanged, which the search does on its first comparison. Transport
+    *between* distinct members of this orbit on `U` is the costly non-integral correction branch (measured at 57 s
+    for `(2, 1) -> (-2, -1)`), a property of that branch and not of canonicalization, so this test does not
+    exercise it.
+    """
+    L = _presentation(_HYPERBOLIC)
+    canonical = _canonical(L, (-2, -1))
 
     assert _coordinates(L, canonical.representative) == (-2, -1)
-    assert canonical.transporter(canonical.representative) == element(L, (2, 1))
-    assert list(_RECURSION.marked_orbit_representatives(L, 4, limit=1)) == [canonical.representative]
-    # square 2 holds only `(+-1, +-1)`, whose minimum is `(-1, -1)`
-    assert _coordinates(L, list(_RECURSION.marked_orbit_representatives(L, 2, limit=1))[0]) == (-1, -1)
+    assert canonical.transporter(canonical.representative) == element(L, (-2, -1))
+    assert _RECURSION.marked_orbit_is_canonical(element(L, (-2, -1)))

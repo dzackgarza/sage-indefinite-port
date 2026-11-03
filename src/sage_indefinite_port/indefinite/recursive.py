@@ -289,39 +289,6 @@ def _coordinate_height(lattice: Lattices.ParentMethods, vector: Lattices.Element
     return max((abs(_integer(coordinates(label))) for label in lattice.module_generating_set()), default=0)
 
 
-def _require_decidable_pointed_domain(recursion, vector: Lattices.ElementMethods) -> None:
-    r"""Refuse a vector whose pointed transport `pointed_isometry` does not decide, instead of letting it assert.
-
-    Measured on `L = <2> + 0`, whose radical is the `y`-axis:
-
-    * primitive radical vectors are decided -- `(0, 1)` and `(0, -1)` get a witness, `(0, 1)` against `(0, 2)`
-      and `(0, 3)` against `(0, 1)` correctly return `None`;
-    * a **non-primitive** radical vector is not: `(0, 2)` against `(0, -2)` reaches
-      `primitive_isotropic_subobject`, which asserts that the span of `(2 e_1)` has torsion and must be saturated
-      first. `pointed_isometry` routes every square-zero vector to the isotropic-*line* machinery, which needs
-      the line primitive and non-degenerate, and it does not first detour through `vector_lies_in_radical` the
-      way `pointed_automorphism_generators` does.
-
-    So the undecided subdomain is narrow and is named exactly: a radical vector of content greater than one.
-    Raising keeps issue #62's rule that an unknown comparison is never read as a distinction; refusing the whole
-    radical would be wrong in the other direction, since the primitive part *is* decided.
-    """
-    lattice = vector.parent()
-    if lattice.is_nondegenerate():
-        return
-    if not recursion.vector_lies_in_radical(vector):
-        return
-    content = abs(int(vector.content()))
-    if content in (0, 1):
-        return
-    raise UnfinishedCapability(
-        f"pointed_isometry does not decide transport of the non-primitive radical vector {vector} (content "
-        f"{content}): it routes square-zero vectors to the isotropic-line machinery, whose primitivity "
-        "assumption fails here, so canonicalization and orbit enumeration refuse rather than report this class "
-        "as distinct. Primitive radical vectors, and the zero vector, are decided and are not refused"
-    )
-
-
 def _coordinate_element(lattice: Lattices.ParentMethods, coordinates) -> Lattices.ElementMethods:
     """The lattice element with the given coordinates in declared label order."""
     entries = {
@@ -505,7 +472,6 @@ class EichlerRecursion:
         inequivalence, because that would split one orbit into two.
         """
         lattice = vector.parent()
-        _require_decidable_pointed_domain(self, vector)
         target_height = _coordinate_height(lattice, vector)
         for height in range(target_height + 1):
             for coordinates in _coordinate_box(lattice, height):
@@ -547,8 +513,7 @@ class EichlerRecursion:
         are never split by the bound. With no bound the search is unbounded, as above.
 
         ``UnfinishedCapability`` from the equivalence backend propagates: an undecided pair never becomes two
-        classes. The same signal is raised up front for a vector whose transport is outside the decided domain
-        (see :func:`_require_decidable_pointed_domain`).
+        classes.
         """
         target = int(square)
         emitted: list[Lattices.ElementMethods] = []
@@ -558,7 +523,6 @@ class EichlerRecursion:
                 candidate = _coordinate_element(lattice, coordinates)
                 if int(candidate.q()) != target:
                     continue
-                _require_decidable_pointed_domain(self, candidate)
                 witness = None
                 for representative in emitted:
                     witness = self.pointed_isometry(representative, candidate)
@@ -895,6 +859,95 @@ class EichlerRecursion:
         parabolic = reduction.parabolic_subgroup()
         return reduction.quotient_lattice().O().subgroup(tuple(levi(parabolic(generator)) for generator in self.line_stabilizer_generators(vector)))
 
+    def _radical_pointed_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
+        r"""An isometry of `L` carrying the radical vector `source` onto `target`, or `None` (issues #41 and #62).
+
+        For `L` degenerate with reduced presentation `C + R`, every isometry has the block form
+        `[[A, 0], [B, D]]` with `A` in `O(C)`, `D` in `GL(R)` and `B` in `Hom(C, R)` arbitrary (row convention:
+        a vector `v` maps to `v M`). A radical vector is `(0, r)` in that presentation, so
+
+            `(0, r) M = (r B, r D)`,
+
+        which is `(0, s)` exactly when `r B = 0` and `r D = s`. Taking `B = 0` and `A = 1` leaves the single
+        condition `D r = s` with `D` unimodular, and `GL_k(Z)` acts on a column by its **content**: `r = d r_0`
+        with `r_0` primitive, `GL_k(Z)` is transitive on primitive vectors, so `r ~ s` iff `gcd(r) = gcd(s)`.
+        The zero vector is the content-0 case and is fixed by everything.
+
+        The witness is constructed, not asserted: `V_r r_0 = e_1` and `V_s s_0 = e_1` come from Smith normal
+        form of the primitive rows, `D = V_r V_s^{-1}` is unimodular, and `D r = s` is checked on the way out.
+        Everything happens in the **reduced** presentation, so a permuted or mixed basis is handled by the
+        retained reduction rather than by assuming the radical occupies the last coordinates of the given one.
+
+        Cross-lattice radical transport is refused rather than guessed: it would need an isometry between the two
+        reduced presentations carrying one radical coordinate onto the other, and this port does not decide that
+        yet.
+        """
+        source_lattice, target_lattice = source.parent(), target.parent()
+        if source_lattice is not target_lattice:
+            raise UnfinishedCapability(
+                "radical pointed transport is decided only inside one lattice; carrying a radical marking between "
+                f"distinct loci ({source_lattice} and {target_lattice}) would need a radical-respecting isometry "
+                "between their reduced presentations, which this port does not decide"
+            )
+        lattice = source_lattice
+        reduction = indefinite_reduced_presentation(lattice)
+        reduced = reduction.reduced
+        transport = reduction.isometry
+        gram = _gram_in_label_order(reduced)
+        size, nonsingular_rank = int(gram.nrows()), int(gram.rank())
+        radical_rank = size - nonsingular_rank
+        if radical_rank == 0:
+            raise ArithmeticError("a nondegenerate lattice has no radical vectors to transport")
+
+        inverse = transport.inverse()
+        labels = tuple(reduced.module_generating_set())
+        def radical_coordinates(vector):
+            coordinates = tuple(_integer(inverse(vector).to_vector()(label)) for label in labels)
+            if any(coordinates[:nonsingular_rank]):
+                raise ArithmeticError(
+                    "a radical vector must vanish on the nondegenerate complement in the reduced presentation"
+                )
+            return coordinates[nonsingular_rank:]
+
+        left = radical_coordinates(source)
+        right = radical_coordinates(target)
+        left_content = 0
+        for entry in left:
+            left_content = gcd(left_content, entry)
+        right_content = 0
+        for entry in right:
+            right_content = gcd(right_content, entry)
+        if left_content != right_content:
+            return None
+
+        if left_content == 0:
+            block = identity_matrix(SageZZ, size)
+        else:
+            def normalize(row):
+                """A unimodular `V` with `row V = e_1`, from Smith form of the primitive row."""
+                primitive = [entry // left_content for entry in row]
+                _, _, change = matrix(SageZZ, [primitive]).smith_form()
+                if abs(int(change.det())) != 1:
+                    raise ArithmeticError("Smith form must return a unimodular change of basis")
+                if tuple(int(entry) for entry in (matrix(SageZZ, [primitive]) * change).list()) != (1,) + (0,) * (radical_rank - 1):
+                    raise ArithmeticError("Smith reduction must carry a primitive row to e_1")
+                return change
+            from_left = normalize(left)
+            from_right = normalize(right)
+            radical_block = from_left * from_right.inverse().change_ring(SageZZ)
+            if abs(int(radical_block.det())) != 1:
+                raise ArithmeticError("the constructed radical block must be unimodular")
+            if tuple(int(entry) for entry in (matrix(SageZZ, [left]) * radical_block).list()) != tuple(right):
+                raise ArithmeticError("the constructed radical block must carry one content onto the other")
+            block = identity_matrix(SageZZ, size)
+            for row in range(radical_rank):
+                for column in range(radical_rank):
+                    block[nonsingular_rank + row, nonsingular_rank + column] = radical_block[row, column]
+        witness = _conjugated(transport, (_isometry_from_row_matrix(reduced, reduced, block),))[0]
+        if witness(source) != target:
+            raise ArithmeticError("the constructed radical isometry does not carry the marking onto its image")
+        return witness
+
     def _radical_stabilizer_of_row(self, row) -> tuple[Matrix_integer_dense, ...]:
         r"""Generators of `{D in GL_k(Z) : r D = r}` for a primitive row `r` (issue #41).
 
@@ -1053,6 +1106,11 @@ class EichlerRecursion:
             return source_lattice.O().identity()
         if source_lattice is not target_lattice and LatticePrefilter.from_lattice(source_lattice) != LatticePrefilter.from_lattice(target_lattice):
             return None
+        if not source_lattice.is_nondegenerate() and self.vector_lies_in_radical(source):
+            # A radical marking is not an isotropic *line*: the source's isotropic machinery needs the line
+            # primitive and non-degenerate, and it asserts for a radical vector of content > 1. The radical has
+            # its own exact description (see `_radical_pointed_isometry`), so route it before that machinery.
+            return self._radical_pointed_isometry(source, target)
         if source.q() == source_lattice.base_ring().zero():
             if source_lattice.is_even() and source.div() == source_lattice.base_ring().one():
                 return self._split_isotropic_isometry(source, target)

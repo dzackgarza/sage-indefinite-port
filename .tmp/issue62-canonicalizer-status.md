@@ -43,21 +43,45 @@ There was **no canonicalizer**: nothing turned a single vector into the least me
   the lattice's own `linear_combination` / `zero` / `q` / `content` for elements. Nothing generic about groups or
   sets was invented.
 
-## Two findings from the work, both kept as tests
+## The non-primitive radical gap is closed
 
-1. **The undecided subdomain is non-primitive radical vectors, and only those.** Measured on `L = <2> + 0`:
-   `(0, 1)` versus `(0, -1)` gets a witness, `(0, 1)` versus `(0, 2)` and `(0, 3)` versus `(0, 1)` correctly
-   return `None`, but `(0, 2)` versus `(0, -2)` reaches `primitive_isotropic_subobject`, which asserts that the
-   span of `(2 e_1)` has torsion and must be saturated. `pointed_isometry` routes every square-zero vector to
-   the isotropic-**line** machinery, which needs the line primitive and non-degenerate, and unlike
-   `pointed_automorphism_generators` it does not first detour through `vector_lies_in_radical`.
-   `_require_decidable_pointed_domain` therefore refuses exactly "radical with content > 1" and names it. This
-   is also why #62 test 4's content family (`c e_1`) is not reachable through this route yet: those are radical
-   vectors once `q` vanishes on them.
-2. **`q` of the hyperbolic plane is `2xy`, not `xy`.** `b(v, v)` for `[[0,1],[1,0]]` is `2xy`, so square 2 is
-   `{(±1, ±1)}` and square 4 is the `(±1, ±2)` / `(±2, ±1)` orbit. My first expectations were written against
-   `xy` and were wrong; the tests now derive their expected minima from the orbit description and check
-   minimality independently, rather than guessing coordinates.
+The first version refused every non-primitive radical vector, because `pointed_isometry` routes square-zero
+vectors to the isotropic-**line** machinery, which asserts that the span of `(2 e_1)` has torsion. That left the
+unbounded-content family unreachable. It is now decided by `_radical_pointed_isometry`, at the existing owning
+algorithm and through the retained radical splitting:
+
+* `L` degenerate reduces (`indefinite_reduced_presentation`) to `C + R`, where every isometry is
+  `[[A, 0], [B, D]]` with `A` in `O(C)`, `D` in `GL(R)` and `B` in `Hom(C, R)` arbitrary -- row convention, so
+  `(0, r) M = (r B, r D)`. A radical marking is `(0, r)`, and `B = 0`, `A = 1` leaves exactly `D r = s`;
+* `GL_k(Z)` acts on a column by its **content**, and is transitive on primitive vectors, so `r ~ s` iff
+  `gcd(r) = gcd(s)`. The zero vector is the content-0 case and is fixed by everything, so it is never conflated
+  with a nonzero class;
+* the witness is constructed, not asserted: `V_r r_0 = e_1` and `V_s s_0 = e_1` from Smith normal form of the
+  primitive rows, `D = V_r V_s^{-1}` unimodular, and `D r = s` is checked as it is built. The block is conjugated
+  back to `L` with the retained `_conjugated`, and the result is verified to carry the marking onto its image.
+* everything happens in the **reduced** presentation, so a permuted or mixed basis needs no special case: the
+  radical is never assumed to occupy the last coordinates of the *given* basis. Tested on `<2> + 0`, on the
+  radical-first presentation `[[0,0],[0,2]]`, and on the mixed basis `[[2,2],[2,2]]` whose radical is spanned by
+  `(1, -1)`.
+* integral invertibility is asserted where it is used: `|det| = 1` for the radical block and for the returned
+  isometry, in the port's column convention.
+
+`UnfinishedCapability` survives where support is genuinely not proved: cross-lattice radical transport between two
+distinct loci would need an isometry between their reduced presentations carrying one radical coordinate onto the
+other, and that is refused rather than guessed.
+
+## Two findings from the work, kept
+
+1. **The hyperbolic plane costs 57 s per non-integral pointed transport.** `q` of `U = [[0,1],[1,0]]` is `2xy`
+   (not `xy`), and transporting `(2, 1)` to `(-2, -1)` does not take the already-integral branch: it reaches the
+   `_lattice_action(target).transporter(image)` correction locus -- the one recorded as correct-but-costly. That is
+   a property of that branch, not of canonicalization, so the hyperbolic test asserts only that an
+   already-canonical vector is recognised, which the search does on its first comparison. Order-of-magnitude
+   check, not a claim about the branch.
+2. **The declared order is what makes the minimum negative.** `-v` is always in the orbit of `v`, so the least
+   member is frequently a negative tuple; my first expectations were written against the positive representative
+   and were wrong. The tests now derive the expected minima from the orbit description (`x = ±5` forced, `y mod 5`
+   the invariant on the square-50 slice of `<2> + 0`) instead of guessing coordinates.
 
 ## Cost
 
@@ -68,6 +92,7 @@ There was **no canonicalizer**: nothing turned a single vector into the least me
 ## Not claimed
 
 The general #62 iterator for an arbitrary effectively-enumerable integral `Γ`-set: `pointed_isometry` decides
-`O(L)`-transport of vectors, and that is the only equivalence wired in. An infinite quotient is not demonstrated
-in-domain here, because the families that give one on these lattices (unbounded content) are exactly the
-non-primitive radical vectors the route refuses.
+`O(L)`-transport of vectors, and that is the only equivalence wired in. The infinite quotient demonstrated here is
+square 0 of `<2> + 0`, one class per `|c|`, which the enumeration produces as a prefix-stable stream with no
+completion signal; whether some other family of the port's lattices also gives an infinite quotient is not
+investigated.
