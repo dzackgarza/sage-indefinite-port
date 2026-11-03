@@ -40,9 +40,15 @@ _HYPERBOLIC = [[0, 1], [1, 0]]
 _LATTICES: dict[tuple, object] = {}
 
 
-def _presentation(gram):
-    """A lattice object per presentation, shared across tests: the reduction is cached per object."""
+def _presentation(gram, fresh=False):
+    """A lattice object per presentation, shared across tests: the reduction is cached per object.
+
+    ``fresh=True`` builds a new parent with the same data, which is how the tests distinguish "equal" from
+    "identical": a witness must never silently identify two distinct parents.
+    """
     key = tuple(tuple(int(entry) for entry in row) for row in gram)
+    if fresh:
+        return lattice(gram)
     if key not in _LATTICES:
         _LATTICES[key] = lattice(gram)
     return _LATTICES[key]
@@ -70,6 +76,13 @@ def _column_transport(isometry):
     from sage_indefinite_port.indefinite.recursive import _column_matrix
 
     return _column_matrix(isometry)
+
+
+def matrix_identity(size):
+    from sage.all import identity_matrix
+    from sage.rings.integer_ring import ZZ as SageZZ
+
+    return identity_matrix(SageZZ, size)
 
 
 def _column_det(isometry) -> int:
@@ -305,6 +318,97 @@ def test_radical_transport_at_rank_two_in_a_permuted_basis() -> None:
     assert witness is not None, "content 1 both, in a presentation whose radical is the first two coordinates"
     assert witness(source) == target
     assert abs(int(_column_transport(witness).det())) == 1
+
+
+def test_radical_transport_between_distinct_presentations() -> None:
+    r"""Two different parents, isometric presentations, radical markings carried by a real isometry.
+
+    `<2> + 0` and `0 + <2>` are the same abstract lattice presented with the radical last and first. The transport
+    must run **between** the two parents -- never identify them -- and satisfy endpoint, invertibility and pairing
+    checks on the way. Equal but distinct parents are built separately here so that a silent identification would
+    show up as a wrong domain or codomain.
+    """
+    last = _presentation([[2, 0], [0, 0]])       # radical = second coordinate
+    first = _presentation([[0, 0], [0, 2]])      # radical = first coordinate
+
+    for content in (1, 3, 5):
+        source = element(last, (0, content))
+        target = element(first, (content, 0))
+        witness = _RECURSION.pointed_isometry(source, target)
+
+        assert witness is not None, f"content {content} must be transported across presentations"
+        assert witness(source) == target, "the endpoint must be exact"
+        assert witness.domain() is last and witness.codomain() is first, (
+            "the witness must run between the two given parents, not identify them"
+        )
+        columns = _column_transport(witness)
+        assert abs(int(columns.det())) == 1, "integral and invertible, with unit determinant"
+        inverse = columns.inverse().change_ring(__import__("sage.all", fromlist=["ZZ"]).ZZ)
+        assert abs(int(inverse.det())) == 1, "the integral inverse must exist and be unimodular"
+        assert (columns * inverse) == matrix_identity(2)
+
+        # isometry, not merely a vector-matching map: norms and pairings across the two presentations
+        for probe in ((-1, 0), (0, 1), (2, 3), (0, -4)):
+            other = element(last, probe)
+            assert int(witness(other).q()) == int(other.q())
+            assert int(first.b(witness(other), witness(source))) == int(last.b(other, source))
+
+
+def test_radical_transport_between_presentations_at_rank_two() -> None:
+    r"""Radical rank 2 across presentations: `<2> + 0 + 0` and `0 + 0 + <2>`, with a non-diagonal transport."""
+    last = _presentation([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    first = _presentation([[0, 0, 0], [0, 0, 0], [0, 0, 2]])   # radical = first two coordinates
+
+    source, target = element(last, (0, 1, 0)), element(first, (0, 1, 0))
+    witness = _RECURSION.pointed_isometry(source, target)
+    assert witness is not None
+    assert witness(source) == target
+    assert witness.domain() is last and witness.codomain() is first
+    columns = _column_transport(witness)
+    assert abs(int(columns.det())) == 1
+    assert any(int(columns[i, j]) for i in range(3) for j in range(3) if i != j), (
+        "carrying (0,1,0) to (0,0,1) across presentations still needs an off-diagonal entry"
+    )
+
+    # unequal content stays refused across presentations too
+    assert _RECURSION.pointed_isometry(element(last, (0, 2, 0)), element(first, (0, 1, 0))) is None
+    assert _RECURSION.pointed_isometry(element(last, (0, 1, 0)), element(first, (0, 2, 0))) is None
+    # the zero vector is its own class in both
+    zero_transport = _RECURSION.pointed_isometry(element(last, (0, 0, 0)), element(first, (0, 0, 0)))
+    assert zero_transport is not None and zero_transport(element(last, (0, 0, 0))) == element(first, (0, 0, 0))
+
+
+def test_radical_transport_between_presentations_distinguishes_inequivalence_from_undecided() -> None:
+    r"""Not isometric is `None`; undecided propagates. The two must never be conflated.
+
+    `<2> + 0` and `<4> + 0` differ in the determinant of their nondegenerate part, so no isometry exists and the
+    markings cannot be transported -- a *proved* negative. When the underlying isometry decision cannot be made at
+    all, the honest signal is `UnfinishedCapability`, and reading it as `None` would report "different orbits" on
+    no evidence.
+    """
+    two = _presentation([[2, 0], [0, 0]])
+    four = _presentation([[4, 0], [0, 0]])
+
+    assert _RECURSION.isometry(two, four) is None, "the two presentations are not isometric"
+    assert _RECURSION.pointed_isometry(element(two, (0, 3)), element(four, (0, 3))) is None
+
+    # A pair untouched elsewhere in this module, so the groupoid's isometry cache cannot answer for the patched
+    # call. Note that `lattice(gram)` returns the *same* parent for equal data, so "equal but distinct parents"
+    # cannot be manufactured that way: cross-presentation means genuinely different presentations, as here.
+    six_last = _presentation([[6, 0], [0, 0]])
+    six_first = _presentation([[0, 0], [0, 6]])
+    assert six_last is not six_first
+
+    def refuse(*_args, **_kwargs):
+        raise UnfinishedCapability("the isometry decision is unfinished: work unit #54 owns it")
+
+    original = EichlerRecursion.isometry
+    EichlerRecursion.isometry = refuse
+    try:
+        with pytest.raises(UnfinishedCapability):
+            _RECURSION.pointed_isometry(element(six_last, (0, 3)), element(six_first, (3, 0)))
+    finally:
+        EichlerRecursion.isometry = original
 
 
 def test_radical_transport_in_a_permuted_and_mixed_basis() -> None:

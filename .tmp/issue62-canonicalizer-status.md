@@ -71,6 +71,33 @@ algorithm and through the retained radical splitting:
   than a scaling. Pairing preservation is checked against a spread of arbitrary lattice vectors, not only against
   the marked one, which is what makes the result an isometry rather than a vector-matching map.
 
+### Cross-presentation radical transport
+
+Radical transport now also runs between **distinct presentations**, composed from maintained operations rather
+than by assuming the two coincide. `_transported_radical_pointed_isometry`:
+
+    transport = self.isometry(L, M)            # maintained, unpointed, decides degenerate lattices
+    if transport is None:                      # the lattices are not isometric: a PROVED negative
+        return None
+    image = transport(source)                  # in rad(M), because an isometry preserves the radical
+    correction = self._radical_pointed_isometry(image, target)   # same-lattice decision on M
+    composed = correction . transport          # through _column_matrix / _isometry_from_column_matrix
+
+The argument, and the reason the answer does not depend on which isometry is picked: every `g : L -> M` with
+`g(v) = w` factors as `sigma . phi` with `sigma` in `O(M)`, so the question is whether `phi(v)` and `w` are in one
+`O(M)`-orbit; and for two isometries `phi_1, phi_2` the difference `phi_2 phi_1^{-1}` is in `O(M)`, so the orbit
+tested is the same either way.
+
+Proved inequivalence and the undecided case are kept apart, and both are tested: `<2> + 0` versus `<4> + 0` differ
+in the determinant of the nondegenerate part, `self.isometry` returns `None`, and the marking is refused as a
+*proved* negative; patching `isometry` to raise `UnfinishedCapability` propagates instead of being read as `None`.
+
+Two parents are never silently identified: the composition asserts `domain() is source_lattice` and
+`codomain() is target_lattice` -- the two given parents, not one of them. Note that `lattice(gram)` memoizes by
+data, so equal-but-distinct parents cannot be manufactured through that constructor; cross-presentation means
+genuinely different presentations, which is what the tests use (`<2>+0` / `0+<2>`, and `<2>+0+0` / `0+0+<2>` at
+radical rank 2, where the transport still needs an off-diagonal unimodular entry).
+
 ### Convention correction
 
 The first version of this note had the block layout **transposed**: it wrote `(0, r) M = (r B, r D)` for

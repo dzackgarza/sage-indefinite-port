@@ -899,11 +899,7 @@ class EichlerRecursion:
         """
         source_lattice, target_lattice = source.parent(), target.parent()
         if source_lattice is not target_lattice:
-            raise UnfinishedCapability(
-                "radical pointed transport is decided only inside one lattice; carrying a radical marking between "
-                f"distinct loci ({source_lattice} and {target_lattice}) would need a radical-respecting isometry "
-                "between their reduced presentations, which this port does not decide"
-            )
+            return self._transported_radical_pointed_isometry(source, target)
         lattice = source_lattice
         reduction = indefinite_reduced_presentation(lattice)
         reduced = reduction.reduced
@@ -962,6 +958,54 @@ class EichlerRecursion:
         if witness(source) != target:
             raise ArithmeticError("the constructed radical isometry does not carry the marking onto its image")
         return witness
+
+    def _transported_radical_pointed_isometry(
+        self, source: Lattices.ElementMethods, target: Lattices.ElementMethods
+    ) -> LatticeIsometryMethods | None:
+        r"""Radical pointed transport between two presentations (issues #41 and #62), or `None`.
+
+        Two distinct parent objects are never identified: the result is an isometry from `source`'s parent to
+        `target`'s parent, built by composing maintained operations rather than by assuming the two presentations
+        coincide.
+
+        The argument is short and it is also the reason the answer does not depend on which isometry is chosen.
+        Suppose `phi : L -> M` is an isometry. Then every isometry `g : L -> M` with `g(v) = w` factors as
+        `g = sigma . phi` with `sigma = g . phi^{-1}` in `O(M)`, so
+
+            such a `g` exists  <=>  `phi(v)` and `w` lie in one `O(M)`-orbit,
+
+        and if `phi_1`, `phi_2` are two isometries `L -> M` then `phi_2 phi_1^{-1}` is in `O(M)`, so `phi_1(v)` and
+        `phi_2(v)` are in the same orbit: the class tested is independent of the choice. Both `phi(v)` and `w` lie
+        in `rad(M)`, because an isometry preserves the radical, so the second question is the **same-lattice**
+        radical decision already implemented above.
+
+        Provable inequivalence is separated from the undecided case:
+
+        * if no isometry `L -> M` exists, `self.isometry` returns `None` and this returns `None` -- the markings
+          cannot be transported because the lattices themselves are not isometric;
+        * if `isometry` cannot decide, it raises `UnfinishedCapability` and that propagates untouched;
+        * if `phi(v)` and `w` differ in radical content, the same-lattice decision returns `None`.
+        """
+        source_lattice, target_lattice = source.parent(), target.parent()
+        transport = self.isometry(source_lattice, target_lattice)
+        if transport is None:
+            return None
+        image = transport(source)
+        if not self.vector_lies_in_radical(image):
+            raise ArithmeticError(
+                "an isometry must carry the radical onto the radical, so a radical marking cannot have a "
+                "non-radical image"
+            )
+        correction = self._radical_pointed_isometry(image, target)
+        if correction is None:
+            return None
+        columns = _column_matrix(correction) * _column_matrix(transport)
+        composed = _isometry_from_column_matrix(source_lattice, target_lattice, columns)
+        if composed(source) != target:
+            raise ArithmeticError("the composed radical isometry does not carry the marking onto its image")
+        if composed.domain() is not source_lattice or composed.codomain() is not target_lattice:
+            raise ArithmeticError("the composed witness must run between the two given parents, not one of them")
+        return composed
 
     def _radical_stabilizer_of_row(self, row) -> tuple[Matrix_integer_dense, ...]:
         r"""Generators of `{D in GL_k(Z) : r D = r}` for a primitive row `r` (issue #41).
