@@ -897,44 +897,47 @@ def test_the_sign_generator_is_the_diagonal_matrix_it_claims_to_be() -> None:
         assert sign != all_minus_first_row, "the defect produced this matrix, which must not be what is built"
 
 
-def test_the_rank_one_image_realizes_only_the_two_signs() -> None:
-    r"""At `k = 1` the image is `{+-1}`: `2` is a unit of `(Z/5)^*` but has no integral unimodular lift.
+def test_the_rank_one_transporter_realizes_only_the_two_signs() -> None:
+    r"""At `k = 1` the image is `{+-1}`: `1 -> 2` has no carrier, `1 -> 4` is carried by the negating unit.
 
     The naive route -- allow any unit of `(Z/5)^*` -- would carry `1` to `2` by multiplication by `2`, whose matrix
-    has determinant `2`. The exclusion is therefore a fact about the image, the same statement as the
-    `(5,1) -/-> (5,2)` example at the level of residues, and the positive direction is the explicit unit `-1`.
+    has determinant `2` and no integral unimodular lift. `transporter` answers `None` there, which is a decision:
+    the orbit is exhaustive. The positive direction returns the lift itself, checked to be unimodular and to move
+    the residue.
     """
     image = _RECURSION.radical_congruence_image(_degenerate_lattice(), 5)
     assert image.order == 2 and image.is_proper and image.index == 2
     assert image.contains(matrix(Zmod(5), [[1]])) and image.contains(matrix(Zmod(5), [[4]]))
     assert not image.contains(matrix(Zmod(5), [[2]])), "multiplication by 2 has determinant 2, so no lift exists"
 
-    carrier = matrix(ZZ, [[-1]])
-    assert abs(int(carrier.det())) == 1
-    assert vector(Zmod(5), [1]) * matrix(Zmod(5), carrier) == vector(Zmod(5), [4])
+    assert image.transporter((1,), (2,)) is None, "no integral unimodular matrix realizes the unit 2"
+    carrier = image.transporter((1,), (4,))
+    assert carrier is not None and abs(int(carrier.det())) == 1
+    assert int((vector(ZZ, [1]) * carrier)[0]) % 5 == 4
+    assert set(image.orbit_of((1,))) == {(1,), (4,)}, "the two signs are one orbit at rank one"
 
 
 def test_a_proper_image_still_carries_the_rank_two_residue() -> None:
     r"""Vector transport is not group surjectivity: the image is proper (index two) and the residue still moves.
 
-    `|im| = 240` out of `|GL_2(Z/5)| = 480`, and `(5,1,0) -> (5,2,0)` transports anyway. The witness is the explicit
-    integral `D = [[2,1],[5,3]]`, whose residue lies in the image -- checked through `contains`, not assumed -- and
-    whose action on the residue is the modular matrix-vector product. No transitivity is read off the group map: the
-    general transporter in the image, with an integral word section, is the missing owner contract routed in
-    `.tmp/handoff-owner-congruence-transporter.md`.
+    `|im| = 240` out of `|GL_2(Z/5)| = 480`, and `(1,0) -> (2,0)` transports anyway. The carrier comes from GAP's
+    orbit/action-homomorphism/word chain, and the integral lift assembled from that word is verified before it is
+    returned; the orbit is computed, not inferred from the group map.
     """
     lattice_ = lattice(_RANK_TWO_GRAM)
     image = _RECURSION.radical_congruence_image(lattice_, 5)
     assert image.is_proper and image.order == 240 and image.general_linear_order == 480
+    assert image.orbit_of((0, 0)) == ((0, 0),), "the zero residue is fixed"
+    assert len(image.orbit_of((1, 0))) == 24, "the image is transitive on the 24 nonzero residues"
+    assert all(any(entry for entry in residue) for residue in image.orbit_of((1, 0)))
 
-    # The port multiplies rows on the right, so the row-convention carrier has first row = (2, 0) mod 5.
-    # (The block `[[2,1],[5,3]]` used below is the *column*-convention witness for the same transport; the image
-    # is closed under transpose, so membership is the same statement either way, but the action is not.)
-    carrier = matrix(ZZ, [[2, 5], [1, 3]])
-    assert abs(int(carrier.det())) == 1
-    assert image.contains(_residue(carrier)), "the witness's residue must be in the actual image"
-    assert vector(Zmod(5), [1, 0]) * matrix(Zmod(5), carrier) == vector(Zmod(5), [2, 0])
-    assert image.contains(_residue([[2, 1], [5, 3]])), "the column-convention witness is in the image too"
+    carrier = image.transporter((1, 0), (2, 0))
+    assert carrier is not None and abs(int(carrier.det())) == 1
+    moved = vector(ZZ, [1, 0]) * carrier
+    assert tuple(int(entry) % 5 for entry in moved) == (2, 0)
+    assert image.contains(carrier.change_ring(Zmod(5))), "the carrier's residue is in the image"
+    # and a residue pair in different orbits is a proved negative
+    assert image.transporter((1, 0), (0, 0)) is None
 
 
 # (source, target, A, B, D, why) -- each `why` states the explicit arithmetic, not a group-surjectivity claim.
@@ -1083,6 +1086,12 @@ def test_the_pointwise_stabilizer_maps_onto_the_congruence_pairs_and_is_infinite
         assert all(generator(vector_) == vector_ for generator in generators)
         forms = [matrix(ZZ, rows_of(generator)) for generator in generators]
         return 1 if not forms else MatrixGroup(forms).order()
+
+    image_one = _RECURSION.radical_congruence_image(rank_one_lattice, 5)
+    image_two = _RECURSION.radical_congruence_image(rank_two_lattice, 5)
+    assert image_one.stabilizer_order((1,)) == 1, "1 is fixed only by d = 1"
+    assert image_one.stabilizer_order((0,)) == 2, "0 is fixed by both signs"
+    assert image_two.stabilizer_order((1, 0)) == 10, "orbit-stabilizer: 240 / 10 = 24 = the nonzero residues"
 
     assert generated_order(element(rank_one_lattice, (5, 1))) == 1, (
         "a marking with x = 5 and r = +-1 is rigid: c = 5 forces d = 1"

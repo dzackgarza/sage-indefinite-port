@@ -1,68 +1,50 @@
-# Owner handoff: a transporter in the image of `GL_k(Z)`, with an integral word section
+# Resolved record: the congruence transporter is GAP's orbit / action-homomorphism / word chain
 
-**Owner:** `sage-extensions` (the finite-group action layer). **Port-side need:** issue #41's mixed marking
-decision, `s - D r in c R` for `D in GL_k(Z)`.
+**Status: not an owner gap.** An earlier version of this file claimed the transporter in the image of `GL_k(Z)`
+"is not supplied by any maintained contract". That was wrong, and the wrong conclusion came from three calls made
+with ill-typed arguments, not from missing capability. Recorded here so the mistake is not repeated.
 
-## What the port has, and what it does not
+## What the failed calls actually proved
 
-`EichlerRecursion.radical_congruence_image(lattice, modulus)` now builds the *actual* image of `GL_k(Z)` in
-`GL_k(Z/c)` as Sage's own `MatrixGroup` over `Zmod(c)`, from integral unimodular generator lifts. Order,
-membership and properness all come from that group (`MatrixGroup.order()`, `in`, `GL(k, Zmod(c)).order()`), so
-the corrected theorem `im = det^{-1}({+-1})`, index `phi(c)/2`, is executable with no port-local group framework:
-no modular matrix arithmetic, no order formula, no element enumeration, no size bound.
+1. `H.orbit(...)` on a `FinitelyGeneratedMatrixGroup_gap_with_category` — the attribute does not exist. That says
+   nothing about the group's action: GAP's `Orbit` is reached through `H.gap()`.
+2. `libgap.Orbit(G, [1,0], libgap.OnRight)` — `GAPError: Action not well-defined`, and
+   `libgap.RepresentativeAction(...)` returned `fail`. Cause: the group's matrices are over `GF(5)` while the point
+   was a list of **integers**. GAP's `Z(5)` is a primitive root (`Z(5)^2` is the field element 4), so even a
+   hand-built point has to be a field element, not a small integer.
+3. `PreImagesRepresentative(EpimorphismFromFreeGroup(H), rep)` — `no method found ... The 2nd argument is 'fail'`.
+   The word map was fine; its second argument was the `fail` produced by (2).
 
-What it deliberately does **not** answer is *which residue pairs transport*, i.e.
+## The contract that works, with typed arguments
 
-> given rows `r, s` over `Z/c` and this image `H <= GL_k(Z/c)`, return `D in H` with `r D = s`, **and** an integral
-> unimodular lift of `D` (equivalently a word in the lifts of the generators).
+    ring  = libgap.ZmodnZ(modulus)          # GF(p) when the modulus is prime
+    one   = libgap.One(ring)
+    point = libgap([libgap(entry % modulus) * one for entry in row])     # a row of the ring's own module
+    orbit = libgap.Orbit(group.gap(), point, libgap.OnRight)             # rows act on the right here
+    action = libgap.ActionHomomorphism(group.gap(), orbit, libgap.OnRight)
+    permutation = libgap.RepresentativeAction(libgap.Image(action), source_position, target_position,
+                                              libgap.OnPoints)
+    element = libgap.PreImagesRepresentative(action, permutation)         # back in the matrix group
+    word    = libgap.PreImagesRepresentative(libgap.EpimorphismFromFreeGroup(group), element)
+    syllables = [int(entry) for entry in libgap.ExtRepOfObj(word)]        # [generator, exponent, ...]
 
-That is the one operation the mixed marking decision needs and no maintained contract supplies. It is routed here
-rather than reimplemented in the port.
+Minimal trace, `k = 2`, modulus 5, `(1,0) -> (2,0)`: `orbit` has 24 elements, `Image(action)` has order 240,
+`permutation = (1,20,3,17)(2,8,7,10)...`, `element = [[Z(5), 0], [Z(5)^2, Z(5)^3]]`,
+`word = x1^-1*x2^-1*x1^-2`, syllables `[1,-1,2,-1,1,-2]`.
 
-## The precise gap, with the failing calls
+**The lift-word obligation** stays in the port: the word is composed from the *integral* generator lifts in
+textual order, and the result is verified to be unimodular and to carry the source residue onto the target before it
+is returned. For that trace the product is `E12^-1 * E21^-1 * E12^-2`, of determinant 1, sending `(1,0)` to
+`(2,0)`. The reversed order sends it to `(3,0)`, so the order is not a convention to be guessed at: the
+verification in `RadicalCongruenceImage.transporter` raises rather than returning a wrong carrier.
 
-Reproduced on the pinned image, `k = 2`, `c = 5`, `H = <E12(1), E21(1), diag(-1,1)> mod 5` (`H.order() == 240`).
+`Stabilizer(group.gap(), point, OnRight)` and `Size` of it work under the same typing, which is what
+`RadicalCongruenceImage.stabilizer_order` uses (1, 2 and 10 for the three #41 specimens).
 
-1. **No orbit or transporter on a Sage matrix group.** `H` is a `FinitelyGeneratedMatrixGroup_gap_with_category`;
-   it has `order()`, `in`, `gens()` but **no `orbit`/`transporter`**:
-   `AttributeError: 'FinitelyGeneratedMatrixGroup_gap_with_category' object has no attribute 'orbit'`.
-2. **GAP's own operations reject the natural action.** With points as integer rows,
-   `libgap.Orbit(G, [1,0], libgap.OnRight)` raises
-   `GAPError: Action not well-defined. See the manual section "Action on canonical representatives"`, and
-   `libgap.RepresentativeAction(G, [1,0], [2,0], libgap.OnRight)` returns `fail` — even though `[1,0]*D = [2,0]`
-   holds for `D = [[2,1],[5,3]] in H`. `OnPoints` raises
-   `no 1st choice method found for '^' on 2 arguments`. The mismatch is the ring: the GAP matrices are over
-   `GF(5)` while the point is a list of integers.
-3. **`function_factory` takes GAP source, not a Python callable** (`TypeError: Expected str, got function`), and a
-   GAP function object is not an *operation*, so `Orbit(G, p, act)` still evaluates `p^g` and fails as in (2).
-4. **The word section is not reachable through the Sage wrapper.** `libgap.EpimorphismFromFreeGroup(H)` returns a
-   homomorphism, but `libgap.PreImagesRepresentative(epi, rep)` raises
-   `GAPError: no 1st choice method found for 'PreImagesRepresentative' on 2 arguments` for `rep` a GAP matrix in
-   `H`; the Sage-side `H(rep)` conversion is what the call needs and is not exposed.
+`Orbit`, `ActionHomomorphism`, `Image`, `RepresentativeAction`, `Stabilizer` and the word map were verified for
+moduli `2, 4, 5, 6, 8` — prime and composite alike, `ZmodnZ(m)` being `GF(p)` exactly when `m` is prime.
 
-## Why the port cannot paper over it
+## What is still genuinely port-side
 
-An integral lift is *not* recoverable from the residue matrix alone by rounding: `diag(2,1) mod 5` has determinant
-`2` and no lift at all, and for the elements that do lift, the lift needs a word in the generator lifts (or an exact
-construction). Guessing one would be the "rational solution is not an integral witness" failure that #54 forbids.
-
-## What is asked for
-
-Either of these, at the action layer:
-
-- a finite-group action object over `Zmod(c)` modules supporting `orbit`, `in_same_orbit`, `stabilizer`, and
-  `transporter` returning a **group element plus a word in the named generators** (so the caller composes its own
-  lifts); or
-- an operation `lift(self, residue_matrix)` on a matrix group over `Zmod(c)` that returns an integral unimodular
-  matrix reducing to it, for the image of a subgroup generated by named integral lifts.
-
-With the second, the port's decision becomes `D = H.lift(H.transporter(r, s))` and #41's congruence half is
-discharged with no enumeration and no bound.
-
-## Until then
-
-`radical_congruence_image` supplies order, membership, properness and index; the port's mixed marking decision stays
-on `EichlerRecursion.pointed_isometry`, which decides every specimen by search and integral correction, and the
-positives are pinned by explicit hand-built `D` blocks. A modulus whose element list would be needed is an
-**undecided** case, not an accepted one, and is recorded as such in
-`.tmp/issue41-degenerate-markings-status.md`.
+Nothing in the action layer. The port supplies its own integral lifts and composes the word; that composition and
+its verification are the port's obligation and remain in `RadicalCongruenceImage.transporter`.
