@@ -36,7 +36,7 @@ and imposing the three conditions `b(g e1, g f1) = 1`, `b(g e2, g f1) = b(e2, f1
 `O(U) = {I, -I, swap, -swap}` (from `M [[0,1],[1,0]] M^T = [[0,1],[1,0]]` for integral `M`), and `sigma`, `tau`
 realize `-I` and `swap`, so `Theta -> O(Q)` is onto. ∎
 
-The orbit of `v` in the **primitive isotropic shell** (`q(v) = 0`, content one, so `a m + c d = 0`) is therefore:
+The orbit of a **primitive** isotropic `v` (`q(v) = 0`, content one, so `a m + c d = 0`) is therefore:
 
 * `m != 0`: `a = -cd/m`, and the orbit is the class of `(c, d)` in `(Z/m)^2` under `m Z^2` together with the four
   symmetries `(c,d), (-c,-d), (d,c), (-d,-c)`;
@@ -44,7 +44,16 @@ The orbit of `v` in the **primitive isotropic shell** (`q(v) = 0`, content one, 
   class of `(c,d)` under the same four symmetries together with `a mod gcd(c, d)` (and for `c = d = 0`, `a`
   itself -- `e1` and `-e1` are different orbits).
 
-This module decides that relation exactly and returns an explicit element of `Gamma`.
+**Content.** Every nonzero isotropic `v` is `t w` with `w` primitive isotropic and `t = content(v) >= 1`. An
+isometry of `L` is a unimodular change of the basis, so it preserves `content`; it is also `Z`-linear, so
+`g(t w) = t g(w)`. Hence `t w` and `t' w'` are `Gamma`-equivalent exactly when `t = t'` and `w, w'` are, and the
+`Gamma`-orbits on the **whole isotropic cone** are `{(t, [w]) : t >= 1, [w] a primitive Gamma-orbit}`. The class
+key therefore carries `t`, and a witness for a scaled pair is the primitive witness -- certified against the actual
+endpoints, so the scaled statement is checked rather than inferred.
+
+This module decides that relation exactly on the whole isotropic cone and returns an explicit element of `Gamma`.
+Non-isotropic vectors are outside it and are refused: `q` is the only invariant supplied there and it does not
+classify.
 """
 
 from __future__ import annotations
@@ -64,6 +73,7 @@ __all__ = [
     "gamma_element",
     "gamma_equivalent",
     "gamma_witness",
+    "isotropic_content",
     "pointwise_shell_action",
     "pointwise_shell_group",
     "pointwise_shell_quotient",
@@ -82,11 +92,12 @@ _SYMMETRIES = (
 
 
 def shell_coordinates(lattice, vector) -> tuple[int, int, int, int]:
-    r"""`(a, m, c, d)` of `vector` in the distinguished basis, with the shell hypotheses checked.
+    r"""`(a, m, c, d)` of an isotropic vector in the distinguished basis, with the presentation checked.
 
-    The shell is the set of **primitive isotropic** vectors: `q(v) = 0` and content one. Both are checked here
-    because the classification below uses `m != 0`, `a = -cd/m` and `gcd` of the radical-free coordinates, none of
-    which are meaningful for an imprimitive or non-isotropic vector.
+    The isotropic condition `q(v) = 0` is checked here because the classification below uses `a m + c d = 0`, which
+    is not meaningful for a non-isotropic vector. Content is **not** restricted: imprimitive isotropic vectors are
+    classified by splitting off content (see :func:`gamma_class` and the module docstring), so the only refusal here
+    is the genuine boundary of the decision.
     """
     labels = tuple(lattice.module_generating_set())
     if len(labels) != 4:
@@ -97,15 +108,23 @@ def shell_coordinates(lattice, vector) -> tuple[int, int, int, int]:
     coordinates = tuple(int(raw(label)) for label in labels)
     a, m, c, d = coordinates
     if int(vector.q()) != 0:
-        raise UnfinishedCapability(f"{coordinates} is not isotropic; this decision covers the isotropic shell only")
-    if int(vector.content()) != 1:
         raise UnfinishedCapability(
-            f"{coordinates} is not primitive (content {int(vector.content())}); the classification below is for "
-            "the primitive shell"
+            f"{coordinates} is not isotropic; this decision covers the isotropic cone only, and `q` alone does not "
+            "classify the non-isotropic vectors"
         )
     if a * m + c * d != 0:
         raise ArithmeticError(f"an isotropic vector in this basis must satisfy a*m + c*d = 0, got {coordinates}")
     return coordinates
+
+
+def isotropic_content(coordinates) -> int:
+    r"""`content` of `(a, m, c, d)` -- the gcd of its entries, which is `0` only for the zero vector.
+
+    This is the `t` of the module's content corollary. It is a `Gamma`-invariant: an isometry of `L` is a
+    unimodular change of the basis, so it cannot change the gcd of a vector's coordinates.
+    """
+    a, m, c, d = coordinates
+    return gcd(gcd(abs(a), abs(m)), gcd(abs(c), abs(d)))
 
 
 def _gram_rows(lattice):
@@ -239,37 +258,52 @@ def gamma_decompose(lattice, isometry):
 
 
 def pointwise_shell_action(lattice):
-    r"""The `Gamma`-set on the primitive isotropic shell, through the provider's own action constructor.
+    r"""The `Gamma`-set on the whole isotropic cone `L[0]`, through the provider's own action constructor.
 
     This is the maintained machinery, not a second framework: `GObjects(Gamma, Sets()).on_set(points, action,
     orbit_relation)` is what :meth:`EichlerRecursion.marked_orbit_action` uses for `O(L)`, and here the group is the
-    pointwise stabilizer and the relation is :func:`gamma_equivalent`, which is exact on this shell. The point set
-    is a predicate cut, so no shell element is ever materialised; `orbits()` keeps returning the provider's lazy
-    orbit set, and its `is_finite()` stays a proposition because the quotient here is infinite.
+    pointwise stabilizer and the relation is :func:`gamma_equivalent`, which is exact on the whole cone -- imprimitive
+    vectors included, by the content corollary. The point set is a predicate cut, so no point is ever materialised;
+    `orbits()` keeps returning the provider's lazy orbit set, and its `is_finite()` stays a proposition because the
+    quotient here is infinite.
+
+    The zero vector is a member and a fixed point; it has its own class, so including it costs nothing and the point
+    set is then exactly the cone `q = 0` rather than the cone minus a point.
     """
     from sage_extensions.all import GObjects, Sets
 
-    shell = Sets().condition_set(
-        lattice, lambda vector: int(vector.q()) == 0 and int(vector.content()) == 1
-    )
+    cone = Sets().condition_set(lattice, lambda vector: int(vector.q()) == 0)
     return GObjects(pointwise_shell_group(lattice), Sets()).on_set(
-        shell,
+        cone,
         lambda isometry, point: isometry(point),
         orbit_relation=lambda left, right: gamma_equivalent(lattice, left, right),
     )
 
 
 def pointwise_shell_quotient(lattice):
-    r"""`L[0]_prim / Gamma` as the provider's orbit set, built on :func:`pointwise_shell_action`."""
+    r"""`L[0] / Gamma` as the provider's orbit set, built on :func:`pointwise_shell_action`."""
     return pointwise_shell_action(lattice).orbits()
 
 
 def gamma_class(lattice, vector) -> tuple:
-    r"""The `Gamma`-orbit class of a primitive isotropic `vector`, as a hashable key.
+    r"""The `Gamma`-orbit class of an isotropic `vector`, as a hashable key -- imprimitive vectors included.
 
-    Two vectors are `Gamma`-equivalent exactly when their keys agree (see the module docstring for the proof).
+    Two isotropic vectors are `Gamma`-equivalent exactly when their keys agree. For content `t > 1` the key is
+    `("content", t, primitive_key)`, by the module's content corollary: an isometry is a unimodular change of basis
+    and is `Z`-linear, so it preserves `content` and sends `t w` to `t g(w)`. For a primitive vector the key is the
+    class of `(c, d)` described in the module docstring. The zero vector has content `0`, gets the unique key
+    `("linear", (0, 0), 0)`, and is its own orbit -- every isometry fixes it.
     """
-    a, m, c, d = shell_coordinates(lattice, vector)
+    coordinates = shell_coordinates(lattice, vector)
+    a, m, c, d = coordinates
+    t = isotropic_content(coordinates)
+    if t > 1:
+        return ("content", t, _primitive_class(a // t, m // t, c // t, d // t))
+    return _primitive_class(a, m, c, d)
+
+
+def _primitive_class(a, m, c, d) -> tuple:
+    r"""The class key of a **primitive** isotropic `(a, m, c, d)`."""
     if m != 0:
         # SIGNED m is the key. `b(e1, .)` is invariant under every pointwise stabilizer element, so `m` and `-m`
         # are different classes; keying on `abs(m)` merged `f1` with `-f1`, which the invariant separates and no
@@ -288,41 +322,57 @@ def gamma_witness(lattice, source, target):
 
     `None` is a **decision**, not a failure: it means the two classes differ, which the module's theorem proves
     is the same as being in different `Gamma`-orbits. The witness is constructed -- a symmetry followed by a
-    unipotent element solving a linear divisibility condition -- then verified to fix `e1` and to carry `source`
-    onto `target`.
+    unipotent element solving a linear divisibility condition -- then verified to fix `e1` and to carry the
+    *actual* `source` onto the *actual* `target`. Factoring content off first is therefore not a shortcut that
+    escapes checking: an imprimitive pair is certified at the scaled endpoints.
     """
-    source_class = gamma_class(lattice, source)
-    if source_class != gamma_class(lattice, target):
+    if gamma_class(lattice, source) != gamma_class(lattice, target):
         return None
-    a, m, c, d = shell_coordinates(lattice, source)
+    source_coordinates = shell_coordinates(lattice, source)
     target_coordinates = shell_coordinates(lattice, target)
+    t = isotropic_content(source_coordinates)
+    if t > 1:
+        source_coordinates = tuple(value // t for value in source_coordinates)
+        target_coordinates = tuple(value // t for value in target_coordinates)
+    symmetry, rho, gam = _primitive_witness_parameters(source_coordinates, target_coordinates)
+    return _certified(lattice, source, target, symmetry, rho, gam)
+
+
+def _primitive_witness_parameters(source_coordinates, target_coordinates):
+    r"""`(symmetry, rho, gam)` carrying one **primitive** class onto another of the same class.
+
+    Split out of :func:`gamma_witness` so content is factored off once: the answer for `t w -> t w'` is the answer
+    for `w -> w'`, and the caller certifies it against the scaled endpoints.
+    """
+    a, m, c, d = source_coordinates
+    target_a, _, target_c, target_d = target_coordinates
     if m != 0:
         for symmetry in _SYMMETRIES:
             x, y = symmetry(c, d)
-            if (x - target_coordinates[2]) % m == 0 and (y - target_coordinates[3]) % m == 0:
-                gam = (x - target_coordinates[2]) // m
-                rho = (y - target_coordinates[3]) // m
-                return _certified(lattice, source, target, symmetry, rho, gam)
+            if (x - target_c) % m == 0 and (y - target_d) % m == 0:
+                gam = (x - target_c) // m
+                rho = (y - target_d) // m
+                return symmetry, rho, gam
         raise ArithmeticError("the classes agree but no symmetry matches modulo m; the classification is wrong")
     g = gcd(abs(c), abs(d))
     for symmetry in _SYMMETRIES:
         x, y = symmetry(c, d)
-        if (x, y) != (target_coordinates[2], target_coordinates[3]):
+        if (x, y) != (target_c, target_d):
             continue
-        delta = target_coordinates[0] - a
+        delta = target_a - a
         if g == 0:
             if delta == 0:
-                return _certified(lattice, source, target, symmetry, 0, 0)
+                return symmetry, 0, 0
             continue
         rho, gam = _solve(x, y, delta)
-        return _certified(lattice, source, target, symmetry, rho, gam)
+        return symmetry, rho, gam
     raise ArithmeticError(
         "the classes agree but no symmetry carries (c, d) onto the target's; the classification is wrong"
     )
 
 
 def gamma_equivalent(lattice, source, target) -> bool:
-    """Whether two primitive isotropic vectors lie in one `Gamma`-orbit, exactly."""
+    r"""Whether two isotropic vectors lie in one `Gamma`-orbit, exactly."""
     return gamma_class(lattice, source) == gamma_class(lattice, target)
 
 

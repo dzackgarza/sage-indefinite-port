@@ -13,12 +13,13 @@ Measured facts this file establishes, all through the retained APIs:
 * a **non-identity** witnessed `Gamma`-transport exists for the family: the isometry swapping `e2` and `f2` (and
   fixing `e1`, `f1`) lies in `Gamma` and carries `v_m` to `f2 + m f1`, a different vector with the same invariant.
 
-What is *not* established, and must not be inferred: that vectors sharing an invariant are equivalent. For fixed
-`m` the orbit is not decided here beyond the witnesses actually produced, and having generators of `Gamma` says
-nothing about deciding membership in it -- that is subgroup membership in infinite index, which this port does not
-decide. `L[0]/Gamma` as a whole is therefore **not** supplied as a decidable quotient; what is supplied is the
-exact action input (generators fixing `e1`), a proved separating invariant, and a certificate checker for
-transport witnesses.
+What this file does *not* establish, and what must not be inferred from it: that vectors sharing an invariant are
+equivalent -- they need not be, and an invariant is not a decision. Nor do generators of `Gamma` decide membership
+in it: that is subgroup membership in infinite index, which this port does not decide. The exact decision on the
+cone lives in `pointwise_shell.py`, where the normal form `Gamma = N |> Theta` does hold: it classifies `L[0]/Gamma`
+for this specimen as `{(t, primitive class) : t >= 1}`, with a constructed element on every positive answer. What
+this file supplies is the action input (generators fixing `e1`), the proved separating invariant, and the
+certificate checker for transport witnesses.
 """
 import pytest
 from sage.all import ZZ, matrix

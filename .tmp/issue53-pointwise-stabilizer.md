@@ -56,7 +56,8 @@ On `v = a e1 + m f1 + c e2 + d f2` the action is `(c, d) -> (c - m gam, d - m rh
 m gam rho` under `u`, `(c,d) -> (-c,-d)` and `(c,d) -> (d,c)` under `sigma`, `tau`, with `m` fixed. **This was
 checked numerically before being used**: `u(1,3)` sends `(-6,1,2,3)` to `(2,1,-1,2)`, exactly the predicted values.
 
-So, on the primitive isotropic shell (`a m + c d = 0`, content one):
+So, on the primitive isotropic shell (`a m + c d = 0`, content one -- the imprimitive case is the content
+corollary below, not a separate computation):
 
 * `m != 0`: `a = -cd/m`, and the orbit is the class of `(c,d)` in `(Z/m)^2` modulo `m Z^2` and the four
   symmetries;
@@ -66,6 +67,25 @@ So, on the primitive isotropic shell (`a m + c d = 0`, content one):
 
 `gamma_class` computes the key, `gamma_witness` returns the constructed element (`sigma`/`tau` composed with
 `u(rho, gam)`, with `(rho, gam)` solved through Smith normal form), `None` means **proved** inequivalence.
+
+## The whole cone, not just the primitive shell
+
+The decision above was first published on the **primitive** shell, with imprimitive vectors refused. That boundary
+is removable and was removed:
+
+> An isometry of `L` is a unimodular change of the basis, so it preserves `content`; it is `Z`-linear, so
+> `g(t w) = t g(w)`. Hence `t w ~ t' w'` exactly when `t = t'` and `w ~ w'`, and the `Gamma`-orbits on the whole
+> isotropic cone are `{(t, [w]) : t >= 1, [w] a primitive Gamma-orbit}`.
+
+So `gamma_class` carries `t` (`("content", t, primitive_key)`) and factors the primitive part off, and
+`gamma_witness` factors the same way -- but certifies against the **scaled** endpoints, so factoring content is not
+a shortcut that escapes the check. `pointwise_shell_action` now takes the whole cone `q = 0` as its point set (the
+zero vector included: it is a fixed point and its own class), so the G-set is `L[0]` rather than a slice of it.
+
+Verified on a box rather than by inspection: every isotropic vector of `[-2,2]^4` (128 of them, 32 imprimitive) is
+classified; every same-class pair inside the box gets an explicitly constructed element that fixes `e1` and carries
+one onto the other; the six retained generators preserve both `content` and the class on the imprimitive vectors; and
+`content` separates the classes it must, since the proved invariant contains `content`.
 
 **Defect found and repaired in the first published version.** The `m != 0` key used `abs(m)`, which erased the
 signed invariant `b(e1, v)`: `f1 = (0,1,0,0)` and `-f1 = (0,-1,0,0)` are both primitive isotropic, both had the
@@ -114,16 +134,29 @@ port does not re-derive, so the action is driven by the set whose completeness f
 
 `gamma_decompose(lattice, g)` is the exact membership decision that replaces comparing a few images: read `g(e2)` and
 `g(f2)`, require their `Q`-images to be `S(1,0)` and `S(0,1)` for one of the four symmetries (which determines `S`),
-read `rho`, `gam` from the `e1` coefficients, then require agreement with `u(rho, gam) S` on **all four** basis
-vectors. It returns `(symmetry_index, rho, gam)` or `None`. Every retained generator is decided this way; a test
-asserts each decomposes, and that an isometry moving `e1` does not.
+solve for `(rho, gam)`, then require agreement with `u(rho, gam) S` on **all four** basis vectors. It returns
+`(symmetry_index, rho, gam)` or `None`. Every retained generator is decided this way; a test asserts each
+decomposes, and that an isometry moving `e1` does not.
+
+**Defect found and repaired in the decomposition.** The first published extraction read `rho`, `gam` directly off
+the `e1` coefficients of `g(e2)` and `g(f2)`, which is correct only for `S = identity`. The element is
+`u(rho, gam) . S` with `S` applied **first**, so those coefficients are `<S(e2), (rho, gam)>`: for `S = sigma` the
+first is `-rho`. Taking the coefficient as `rho` rebuilt `u(-1, 0) sigma` for `u(1, 0) sigma` -- an element that
+fixes `e1`, hence a member of `Gamma` -- and reported it as outside. The extraction now solves
+`A . (rho, gam)^T = (e1-coeff of g(e2), e1-coeff of g(f2))` with the rows of `A` being `S(1,0)` and `S(0,1)`
+(`|det A| = 1` for all four symmetries, and the inverse is integral because `A` is a signed permutation). Regression:
+32 round trips over all four symmetries and eight `(rho, gam)`, the reported case with its exact images, and
+totality of the decomposition on `{g : g(e1) = e1}`, with an explicit refusal for an element that moves `e1`.
 
 ## What is refused, deliberately
 
-* **No `Γ`-orbit G-set over the *whole* shell.** `pointwise_shell.gamma_equivalent` is an exact decision on the
-  primitive isotropic shell of this specimen; what is still missing for a G-set is the same decision for the
-  imprimitive and non-isotropic parts, which the classification does not cover and which `shell_coordinates`
-  therefore refuses. The generic enumerator built on a decidable relation is research's framework.
+* **No G-set over the non-isotropic vectors.** The G-set *does* exist, on the whole isotropic cone `L[0]`, and it is
+  built through the retained constructor: `pointwise_shell_action` is
+  `GObjects(Gamma, Sets()).on_set(cone, action, orbit_relation=gamma_equivalent)`, with the cone the predicate cut
+  `q = 0` and the relation exact there -- imprimitive vectors by the content corollary. What is refused is the
+  non-isotropic part: `q` is the only invariant supplied there, it does not classify, and `shell_coordinates` raises
+  rather than handing out a class. The generic enumerator built on a decidable relation is research's framework, and
+  it is now given a relation that is total on `L[0]`.
 * **No `pointwise_stabilizer_equivalent` on `EichlerRecursion`.** The invariant-based helpers there stay
   non-deciding by design, because a general lattice has no analogue of this specimen's normal form; the exact
   decision lives in `pointwise_shell` where the theorem holds, and a test asserts the absence of a general
@@ -131,25 +164,29 @@ asserts each decomposes, and that an isometry moving `e1` does not.
 * **No completeness claim for the generators** beyond the source's own statement, and in particular **no inference
   from decidability to finite generation** -- the two are independent, and #62 says so explicitly.
 * **No parametrisation of the shell.** The `v_m` family is a test instrument for the invariant and the witness
-  checker, not a substitute for `L[0]/Γ`. Fixed `m`, the orbit is not decided here beyond the witnesses actually
-  produced.
+  checker, not a substitute for `L[0]/Gamma`. The quotient itself is decided by classification, not by slicing: for
+  fixed `m != 0` the remaining class data is the residue of `(c, d)` in `(Z/m)^2` under the four symmetries.
 * **No subgroup membership.** Given generators of `Γ`, "is this element in `Γ`" is membership in a subgroup of
   infinite index; the certificate checker takes a candidate element and verifies it, which is a different (and
   decidable) question.
 
 ## Numbers
 
-`tests/test_pointwise_stabilizer_shell.py`: 7 tests, 7.2 s, peak 433 MiB.
-`tests/test_pointwise_shell_decision.py`: 15 tests, 8.8 s, peak 435 MiB -- the exact decision, its witnesses, the
-generator cross-check, the signed-pairing and opposite-vector regressions, the invariant-vs-classification law,
-negative `m`, and the refusals outside the shell.
-With the facet and canonical files: 36 passed in 23.4 s, 646 MiB.
+`tests/test_pointwise_stabilizer_shell.py`: 7 tests, 6.71 s, peak 435 MiB.
+`tests/test_pointwise_shell_decision.py`: 22 tests, 22.37 s, peak 439 MiB -- the exact decision on the whole cone,
+the content corollary, the exhaustive box, its witnesses, the generator cross-checks, the signed-pairing and
+opposite-vector regressions, the invariant-vs-classification law, negative `m`, the widened G-set, and the refusal
+of non-isotropic vectors.
+With the facet and canonical files (seven files together): 80 passed in 109.27 s, peak tree RSS 3887 MiB, of which
+Julia's baseline is 3185 MiB (python 708 MiB).
+Whole unit suite, `-m "not slow"`: 286 passed, 2 deselected, 180.40 s, peak tree RSS 4187 MiB, Julia 3140 MiB.
+All at HEAD `c28a8976` plus this change, provider `~/sage-extensions-42d7361c`.
 
 ## Shared-gap routing
 
-The exact decision is now supplied for the specimen's primitive isotropic shell, by normal-form classification
-rather than by a generic subgroup-membership algorithm: `(Z/m)^2` up to four symmetries for `m != 0`, and
-`gcd(c,d)`-ideals for `m = 0`. What remains genuinely open, and what research's framework needs from #54's
-arithmetic decision source in general, is the same question for an arbitrary infinite-index `Γ` where no such
-normal form is available. The port's inputs there are the verified generator set, the proved separating invariant
-and the certificate checker.
+The exact decision is now supplied for the specimen's whole isotropic cone, by normal-form classification rather
+than by a generic subgroup-membership algorithm: `(Z/m)^2` up to four symmetries for `m != 0`, `gcd(c,d)`-ideals for
+`m = 0`, and `(content, primitive class)` in general. What remains genuinely open, and what research's framework
+needs from #54's arithmetic decision source in general, is the same question for an arbitrary infinite-index `Γ`
+where no such normal form is available. The port's inputs there are the verified generator set, the proved
+separating invariant and the certificate checker.

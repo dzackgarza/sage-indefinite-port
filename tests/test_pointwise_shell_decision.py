@@ -1,13 +1,18 @@
-r"""Exact `Gamma`-equivalence on the primitive isotropic shell of `U + U` (issues #53 and #62).
+r"""Exact `Gamma`-equivalence on the whole isotropic cone of `U + U` (issues #53 and #62).
 
 `Gamma = Stab_{O(L)}(e1)` **pointwise**. The decision is by classification -- for `m = b(e1, v) != 0` the class of
-`(c, d)` in `(Z/m)^2` up to `m Z^2` and four symmetries; for `m = 0` the class of `(c, d)` plus `a mod gcd(c, d)`
--- and every witness is an explicit element of `Gamma`, validated by the port's checked row-matrix boundary.
+`(c, d)` in `(Z/m)^2` up to `m Z^2` and four symmetries; for `m = 0` the class of `(c, d)` plus `a mod gcd(c, d)`;
+and in general the pair `(content, primitive class)`, since an isometry is a unimodular change of basis that is
+`Z`-linear -- and every witness is an explicit element of `Gamma`, validated by the port's checked row-matrix
+boundary.
 
 The classification is cross-checked against the **retained generator set** rather than against itself: each
-retained `Gamma` generator is applied to a sample of shell vectors, and the class key must agree. That would fail if
-the key were too fine (which is the plausible error, since a too-coarse key would not be caught by it).
+retained `Gamma` generator is applied to a sample of cone vectors, and the class key must agree. That would fail if
+the key were too fine (which is the plausible error, since a too-coarse key would not be caught by it). The other
+direction is checked as a law against the proved separating invariant.
 """
+from itertools import product
+
 import pytest
 
 from sage_indefinite_port.indefinite.pointwise_shell import (
@@ -18,6 +23,7 @@ from sage_indefinite_port.indefinite.pointwise_shell import (
     gamma_element,
     gamma_equivalent,
     gamma_witness,
+    isotropic_content,
     pointwise_shell_action,
     pointwise_shell_group,
     pointwise_shell_quotient,
@@ -46,6 +52,19 @@ def _v(a, m, c, d):
     return element(_L(), (a, m, c, d))
 
 
+def _cone_box(radius):
+    r"""Every isotropic vector of the box `[-radius, radius]^4`, the zero vector included.
+
+    Satisfying `a m + c d = 0` is the isotropic condition in this basis, so this enumerates the cone exactly rather
+    than by testing `q` -- an independent statement of the same hypothesis, and it includes the imprimitive vectors.
+    """
+    return [
+        _v(a, m, c, d)
+        for a, m, c, d in product(range(-radius, radius + 1), repeat=4)
+        if a * m + c * d == 0
+    ]
+
+
 def _shell_sample():
     """Primitive isotropic vectors: `a m + c d = 0` and content one."""
     sample = [_v(0, 1, 1, 0), _v(-6, 1, 2, 3), _v(0, 1, 3, 0), _v(3, 1, -3, 1),
@@ -59,14 +78,22 @@ def _shell_sample():
     return sample
 
 
-def test_the_shell_hypotheses_are_checked_not_assumed() -> None:
-    """Non-isotropic and imprimitive vectors are refused, and the coordinates satisfy `a m + c d = 0`."""
+def test_the_cone_hypotheses_are_checked_not_assumed() -> None:
+    """A non-isotropic vector is refused, an imprimitive one is not, and `a m + c d = 0` holds for every cone vector.
+
+    Content is deliberately *not* a hypothesis: imprimitive isotropic vectors are classified by splitting content
+    off, so refusing them here would hide a decision the module makes.
+    """
     L = _L()
     assert shell_coordinates(L, _v(-6, 1, 2, 3)) == (-6, 1, 2, 3)
     with pytest.raises(UnfinishedCapability):
         shell_coordinates(L, element(L, (1, 0, 0, 0)) + element(L, (0, 1, 0, 0)))  # q = 2
-    with pytest.raises(UnfinishedCapability):
-        shell_coordinates(L, _v(0, 2, 2, 0))
+    assert shell_coordinates(L, _v(0, 2, 2, 0)) == (0, 2, 2, 0), "content must not be a refusal"
+    assert shell_coordinates(L, _v(0, 0, 0, 0)) == (0, 0, 0, 0)
+    for vector in _cone_box(2):
+        a, m, c, d = shell_coordinates(L, vector)
+        assert a * m + c * d == 0
+        assert int(vector.q()) == 0
 
 
 def test_the_class_key_is_invariant_under_the_retained_gamma_generators() -> None:
@@ -174,18 +201,147 @@ def test_every_witness_is_a_genuine_gamma_element_of_the_retained_generators_gro
                 )
 
 
-def test_the_classification_covers_the_whole_shell() -> None:
-    r"""A vector outside the shell is refused rather than classed; inside it, every vector gets a class.
+def test_the_classification_covers_the_whole_cone_and_only_the_cone() -> None:
+    r"""Every isotropic vector gets a class -- imprimitive and zero included -- and a non-isotropic one is refused.
 
-    The refusal is the honest boundary: the classification uses `a m + c d = 0` and primitivity, and neither is
-    meaningful outside. Nothing is silently given a class it has no business having.
+    The refusal is the honest boundary of the decision: `q` alone does not classify the non-isotropic vectors, so
+    none of them is given a class it has no business having.
     """
     L = _L()
-    for vector in _shell_sample():
+    for vector in _cone_box(2):
         assert gamma_class(L, vector) is not None
-    outside = element(L, (2, 0, 0, 0))  # content 2
+    assert gamma_class(L, _v(0, 0, 0, 0)) == ("linear", (0, 0), 0), "the zero vector is its own class"
+    assert gamma_class(L, _v(0, 2, 2, 0)) == ("content", 2, gamma_class(L, _v(0, 1, 1, 0)))
     with pytest.raises(UnfinishedCapability):
-        gamma_class(L, outside)
+        gamma_class(L, element(L, (1, 0, 0, 0)) + element(L, (0, 1, 0, 0)))  # q = 2, not isotropic
+
+
+def test_content_splits_the_cone_into_scaled_primitive_orbits() -> None:
+    r"""`t w` and `t' w'` are equivalent exactly when `t = t'` and `w ~ w'` -- the content corollary, executed.
+
+    `content` is preserved because an isometry of `L` is a unimodular change of basis, and `g(t w) = t g(w)` because
+    it is `Z`-linear. So the cone's orbits are the primitive orbits scaled by `t`, and the check is two-sided:
+    same-content witnesses are certified at the scaled endpoints, and scaling is shown **not** to be an orbit map.
+    """
+    L = _L()
+    sample = _shell_sample()
+    scaled_by_content = {}
+    for t in (1, 2, 3):
+        scaled = [_v(*(t * entry for entry in shell_coordinates(L, w))) for w in sample]
+        scaled_by_content[t] = scaled
+        for w, tw in zip(sample, scaled, strict=True):
+            assert int(tw.content()) == t, "the scaled sample must have content t"
+            assert isotropic_content(shell_coordinates(L, tw)) == t
+            expected_class = gamma_class(L, w) if t == 1 else ("content", t, gamma_class(L, w))
+            assert gamma_class(L, tw) == expected_class
+        for index, source in enumerate(scaled):
+            for other in range(index + 1, len(scaled)):
+                target = scaled[other]
+                expected = gamma_equivalent(L, sample[index], sample[other])
+                assert gamma_equivalent(L, source, target) == expected, (
+                    f"scaling by {t} changed the orbit relation: {source} vs {target}"
+                )
+                witness = gamma_witness(L, source, target)
+                if expected:
+                    assert witness is not None and witness(source) == target
+                    assert witness(_e1()) == _e1()
+                else:
+                    assert witness is None
+
+    # different contents are never equivalent: `content` is a proved Gamma-invariant
+    for t, scaled in scaled_by_content.items():
+        for other_t, other_scaled in scaled_by_content.items():
+            if other_t <= t:
+                continue
+            for source in scaled[:4]:
+                for target in other_scaled[:4]:
+                    assert not gamma_equivalent(L, source, target), (
+                        f"content {t} and {other_t} must not be merged"
+                    )
+                    assert gamma_witness(L, source, target) is None
+
+
+def test_the_cone_is_decided_exhaustively_on_a_box() -> None:
+    r"""On every box of the cone: same class means a certified witness, and the proved invariant never splits a class.
+
+    Same class is checked **constructively**, and that direction is not a formality: every element of `Gamma` is
+    `u(rho, gam) . S` by the module's theorem, so if the key merged two vectors no such composite carries one onto
+    the other and `_certified` raises rather than passing. So on this box, class equality implies an exhibited
+    element of `Gamma` -- a key that is too coarse cannot survive the loop.
+
+    Different class is the direction no search can settle, and the class key is its authority. What can be checked
+    independently is the **proved** separating invariant as a law: whenever it separates a pair, the classification
+    must separate that pair too. That catches a key that is too fine; the constructive loop above catches one that is
+    too coarse.
+    """
+    L = _L()
+    box = _cone_box(2)
+    by_class = {}
+    for vector in box:
+        by_class.setdefault(gamma_class(L, vector), []).append(vector)
+
+    witnessed = 0
+    for members in by_class.values():
+        for index, source in enumerate(members):
+            for target in members[index + 1:]:
+                witness = gamma_witness(L, source, target)
+                assert witness is not None, f"same class but no witness: {source} -> {target}"
+                assert witness(source) == target, "the witness must carry the source onto the target"
+                assert witness(_e1()) == _e1(), "the witness must fix e1"
+                witnessed += 1
+    assert witnessed > 100, f"the box must exercise many same-class pairs, saw {witnessed}"
+
+    marked = (_e1(),)
+    for index, source in enumerate(box):
+        for target in box[index + 1:]:
+            if _RECURSION.pointwise_stabilizer_separates(marked, source, target):
+                assert gamma_class(L, source) != gamma_class(L, target), (
+                    f"the proved invariant separates {source} and {target} but the classification merged them"
+                )
+
+
+def test_retained_generators_preserve_content_and_class_on_the_imprimitive_cone() -> None:
+    r"""Content and class survive the retained generators on imprimitive vectors, not only on primitive ones.
+
+    This is the too-fine direction of the same cross-check, carried past primitivity: an isometry cannot change the
+    gcd of a vector's coordinates, and it cannot merge content classes.
+    """
+    L = _L()
+    generators = _RECURSION.pointwise_stabilizer_generators(_e1())
+    assert generators
+    imprimitive = [vector for vector in _cone_box(2) if int(vector.content()) > 1]
+    assert len(imprimitive) == 32, f"the radius-two box has 32 imprimitive cone vectors, got {len(imprimitive)}"
+    for vector in imprimitive:
+        for generator in generators:
+            image = generator(vector)
+            assert int(image.content()) == int(vector.content()), "content is an isometry invariant"
+            assert int(image.q()) == 0, "an isometry maps the cone to itself"
+            assert gamma_class(L, image) == gamma_class(L, vector), (
+                f"the class key split a Gamma-orbit: {vector} and its image {image}"
+            )
+
+
+def test_the_gamma_set_reaches_the_imprimitive_cone() -> None:
+    r"""The widened G-set: `in_same_orbit` is the exact decision on imprimitive vectors and on the zero vector.
+
+    The point set is now the whole cone `q = 0` rather than the primitive slice, and the relation is the same exact
+    one, driven through the provider's retained action constructor.
+    """
+    L = _L()
+    action = pointwise_shell_action(L)
+    pairs = [
+        (_v(0, 2, 2, 0), _v(0, 2, 6, 0)),   # 2*(0,1,1,0) and 2*(0,1,3,0): m = 1, so equivalent
+        (_v(0, 2, 2, 0), _v(0, 3, 3, 0)),   # content 2 against content 3
+        (_v(0, 0, 0, 0), _v(0, 0, 0, 0)),   # the zero vector is a fixed point
+        (_v(0, 0, 0, 0), _v(0, 2, 2, 0)),
+        (_v(-12, 2, 4, 6), _v(-6, 1, 2, 3)),  # 2*(-6,1,2,3) against (-6,1,2,3): content 2 against 1
+    ]
+    for left, right in pairs:
+        assert action.in_same_orbit(left, right) == gamma_equivalent(L, left, right)
+    assert action.orbits().orbit_of(_v(0, 2, 2, 0)) is not None
+    assert pointwise_shell_quotient(L).is_finite() is not True, (
+        "the quotient is infinite and must not be reported finite"
+    )
 
 
 def test_the_signed_pairing_defect_is_fixed() -> None:
