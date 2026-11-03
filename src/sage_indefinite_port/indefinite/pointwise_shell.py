@@ -51,7 +51,7 @@ from __future__ import annotations
 
 from math import gcd
 
-from sage.all import ZZ, matrix
+from sage.all import ZZ, matrix, vector
 
 from sage_indefinite_port.readiness import UnfinishedCapability
 from sage_indefinite_port.indefinite.recursive import _isometry_from_row_matrix
@@ -61,6 +61,7 @@ __all__ = [
     "gamma_action",
     "gamma_class",
     "gamma_decompose",
+    "gamma_element",
     "gamma_equivalent",
     "gamma_witness",
     "pointwise_shell_action",
@@ -177,6 +178,19 @@ def pointwise_shell_group(lattice):
     return lattice.O().subgroup(elements)
 
 
+def gamma_element(lattice, symmetry_index: int, rho: int, gam: int):
+    r"""The element `u(rho, gam) . S` with `S` the symmetry of that index, applied **after** nothing -- `S` first.
+
+    Public so callers and tests can build the mixed elements that decompose to `(symmetry_index, rho, gam)` without
+    reaching into the private composition helper. Validated the same way: an isometry through the checked
+    row-matrix boundary, fixing `e1`.
+    """
+    index = int(symmetry_index)
+    if not 0 <= index < len(_SYMMETRIES):
+        raise ValueError(f"symmetry index must be in 0..{len(_SYMMETRIES) - 1}, got {symmetry_index}")
+    return _compose_symmetry_then_unipotent(lattice, _SYMMETRIES[index], int(rho), int(gam))
+
+
 def gamma_decompose(lattice, isometry):
     r"""Decompose an isometry of `L` as `u(rho, gam) . S`, or `None` if it is not in `Gamma`.
 
@@ -199,20 +213,28 @@ def gamma_decompose(lattice, isometry):
 
     second = coordinates(isometry(lattice.module_generator(labels[2])))   # image of e2
     fourth = coordinates(isometry(lattice.module_generator(labels[3])))   # image of f2
-    if second[1] or fourth[1] or second[2:] == () or fourth[2:] == ():
-        return None
     q_image_of_e2 = (second[2], second[3])
     q_image_of_f2 = (fourth[2], fourth[3])
     for index, symmetry in enumerate(_SYMMETRIES):
-        if (symmetry(1, 0), symmetry(0, 1)) == (q_image_of_e2, q_image_of_f2):
-            rho, gam = second[0], fourth[0]
-            candidate = _compose_symmetry_then_unipotent(lattice, symmetry, rho, gam)
-            for position in range(4):
-                if candidate(lattice.module_generator(labels[position])) != isometry(
-                    lattice.module_generator(labels[position])
-                ):
-                    return None
-            return (index, rho, gam)
+        if (symmetry(1, 0), symmetry(0, 1)) != (q_image_of_e2, q_image_of_f2):
+            continue
+        # The element is `u(rho, gam) . S` with `S` applied FIRST, so `g(e2) = u(S(e2))`: the `e1` coefficient of
+        # `g(e2)` is `<S(e2), (rho, gam)>`, not `rho`. For `S = sigma` it is `-rho`, which an extraction reading
+        # `rho` off that coefficient gets wrong -- it rebuilds `u(-1,0) sigma` for `u(1,0) sigma` and reports the
+        # element as outside `Gamma`. Solve the actual 2x2 system instead: with `A` the matrix whose rows are
+        # `S(1,0)` and `S(0,1)`, `A . (rho, gam)^T = (coefficient of e1 in g(e2), coefficient of e1 in g(f2))`.
+        system = matrix(ZZ, [[q_image_of_e2[0], q_image_of_e2[1]], [q_image_of_f2[0], q_image_of_f2[1]]])
+        if abs(int(system.det())) != 1:
+            return None
+        solution = system.inverse().change_ring(ZZ) * vector(ZZ, [second[0], fourth[0]])
+        rho, gam = int(solution[0]), int(solution[1])
+        candidate = _compose_symmetry_then_unipotent(lattice, symmetry, rho, gam)
+        for position in range(4):
+            if candidate(lattice.module_generator(labels[position])) != isometry(
+                lattice.module_generator(labels[position])
+            ):
+                return None
+        return (index, rho, gam)
     return None
 
 

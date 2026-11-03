@@ -15,6 +15,7 @@ from sage_indefinite_port.indefinite.pointwise_shell import (
     gamma_action,
     gamma_class,
     gamma_decompose,
+    gamma_element,
     gamma_equivalent,
     gamma_witness,
     pointwise_shell_action,
@@ -330,3 +331,69 @@ def test_the_retained_action_constructor_carries_the_pointwise_shell() -> None:
     assert pointwise_shell_quotient(L).is_finite() is not True, (
         "the quotient is infinite and must not be reported finite"
     )
+
+
+def test_mixed_symmetry_unipotent_round_trips_across_all_four_symmetries() -> None:
+    r"""Every `u(rho, gam) . S` decomposes back to `(S, rho, gam)` -- for all four `S` and mixed `(rho, gam)`.
+
+    The published `gamma_decompose` read `rho` off the `e1` coefficient of `g(e2)`, which is only correct for
+    `S = identity`; for `S = sigma` that coefficient is `-rho`, so `u(1,0) sigma` -- an element that fixes `e1` --
+    came back as `None`. The extraction now solves `A . (rho, gam)^T = (e1-coefficient of g(e2), ... of g(f2))`,
+    where the rows of `A` are `S(1,0)` and `S(0,1)`.
+    """
+    L = _L()
+    cases = [(0, 0), (1, 0), (0, 1), (1, 1), (-1, 0), (0, -1), (2, -3), (-2, 5)]
+    for index in range(4):
+        for rho, gam in cases:
+            element_ = gamma_element(L, index, rho, gam)
+            assert element_(_e1()) == _e1(), "a Gamma element must fix e1"
+            assert gamma_decompose(L, element_) == (index, rho, gam), (
+                f"round trip failed for S index {index}, rho {rho}, gam {gam}"
+            )
+
+
+def test_the_reported_mixed_composition_case_is_decided() -> None:
+    r"""`u(1,0) . sigma`: `g(e2) = -e2 - e1`, `g(f2) = -f2`, and the decomposition is `(1, 1, 0)`.
+
+    This is the exact false negative reported against the previous revision: the element fixes `e1` and was
+    reported outside `Gamma`.
+    """
+    L = _L()
+    labels = tuple(L.module_generating_set())
+    element_ = gamma_element(L, 1, 1, 0)
+
+    assert element_(_e1()) == _e1()
+
+    def image_coordinates(position):
+        image = element_(L.module_generator(labels[position])).to_vector()
+        return [int(image(label)) for label in labels]
+
+    assert image_coordinates(2) == [-1, 0, -1, 0], "g(e2) must be -e2 - e1"
+    assert image_coordinates(3) == [0, 0, 0, -1], "g(f2) must be -f2"
+    assert gamma_decompose(L, element_) == (1, 1, 0)
+
+
+def test_decompose_is_total_exactly_on_the_isometries_fixing_e1() -> None:
+    r"""`Gamma` *is* `{g : g(e1) = e1}`, so `None` means precisely "moves `e1`" -- and nothing else.
+
+    An earlier attempt to build an isometry that fixes `e1` yet has a non-symmetry `Q`-part was abandoned: `O(Q)` has
+    exactly four elements, so no such isometry exists, and that is exactly why the decomposition is total on `Gamma`
+    rather than a partial extraction. The refusals are therefore the elements that move `e1`.
+    """
+    from sage.all import ZZ, matrix
+
+    from sage_indefinite_port.indefinite.recursive import _isometry_from_row_matrix
+
+    L = _L()
+    labels = tuple(L.module_generating_set())
+    moving = _isometry_from_row_matrix(
+        L, L, matrix(ZZ, [[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+    )
+    assert moving(_e1()) != _e1()
+    assert gamma_decompose(L, moving) is None
+
+    # every mixed element fixes e1 and decomposes; that is the other half of the same statement
+    for index in range(4):
+        candidate = gamma_element(L, index, 1, -2)
+        assert candidate(_e1()) == _e1()
+        assert gamma_decompose(L, candidate) is not None
