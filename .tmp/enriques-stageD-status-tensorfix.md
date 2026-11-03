@@ -1,4 +1,4 @@
-# Stage-D after the tensor-hash repair: terminal and instrumentation records (run state: atom-B live)
+# Stage-D after the tensor-hash repair: terminal and instrumentation records (run state: atom-B ended, capped)
 
 ## Provenance of what ran
 
@@ -34,18 +34,40 @@ evidence on its own terms.
   **ATOM A finished: `finite_representation()` 154.8 s with an honest orbit of exactly 1024 points**
   (poller: 1024/1024 positions stable from ~t=175 s). The later stabilizer stage did not end by its
   960 s cap. Before the repair the orbit collapsed to 1 point and hid all of this.
-- `.tmp/stageD-atomB.log` (probe `.tmp/probe-stageD-atomB.py`, run jmw0t49hp still live with its cap)
-  — disaggregation of the post-BFS stages. Measured so far: `permutation_representation` 0.0 s;
-  `finite_stabilizer` 1.8 s; then `_orbit_of`'s second orbit traversal (with word retention) in-band
-  ~340 s before the words comprehension; words tuple dimensions **1024 points x 25 letters = 25600
-  rows** at ~30-37 ms/row by the first 100 rows. The whole cost is **not** assigned to one internal
-  operation until this raw log is complete.
+- `.tmp/stageD-atomB.log` (probe `.tmp/probe-stageD-atomB.py`, job **jmw0t49hp, ended**) — the completed
+  disaggregation of the post-BFS stages, with its **actual** figure in place of the earlier sample estimate:
+
+  | atom | measured | note |
+  | --- | --- | --- |
+  | A `finite_representation()` | 156.6 s | orbit of 1024 points |
+  | B1 `permutation_representation` | 0.0 s | codomain `Symmetric group on 1024 points` |
+  | B2 `finite_stabilizer` | 1.8 s | — |
+  | B3 `dims` | 1024 points x 25 letters = **25600 words** | letter images cached |
+  | B3 `orbit_schreier_morphism` | **1520.2 s**, finished at **t = 2042.3 s** | supersedes the ~662 s first-200-row estimate (25.8 ms/row at row 200 was an early sample, not the average) |
+  | B4 `preimage_subgroup` construct | 0.0 s | at t = 2042.3 s |
+  | B4 generator realization | **did not finish by the 2160 s cap** | terminal dump in Sage parent/classcall/`coerce_dict` construction |
+
+  The run ended exit **124** after **36m1s**; the run manager stopped its **1 descendant**. Guard block from the
+  same raw log: `child waited=124 shell_code=124 samples=1080`, **peak tree RSS 1660 MiB of the 6144 MiB guard**,
+  `low-water MemAvail 10943 MiB` — time-bound throughout, not a memory wall, and the low-water reading is the one
+  that matters for that claim.
+
+  The in-band row-split accounting it also printed (`act` 18.0 ms, `section(act_p)` 0.0 ms, `section(p)` 0.0 ms,
+  word ops 0.0 ms per row) shows the cost is in the action evaluation itself, not in the word bookkeeping around it.
+
+**Who owns what now.** The stage that remains is `g_sets.py` (`orbit_schreier_morphism` and the realization that
+follows it), and the central repair there is being implemented in `sage-extensions` *after* this job ended. It is not
+duplicated in this port, and no further heavy probe is started here. The port's consumer integration resumes once
+that repair is measured and available.
 
 ## Boundary
 
 Semantic content is repaired (port `3f24ab90`: on U+U(2) every supplied generator's actual action and
 its converted integral output compare correctly, the stabilizer family carries the -e element, small
-model). **Small-model success is not full acceptance**: on N the BFS finishes (1024 points) and the
-later stabilizer stage is time-bound; 5/10/19 orbit acceptance and S1 stay open by name. The
-stabilizer stage's cost is an owning-library item (`rational_integral_stabilizers.py` /
-`g_sets.py`), which the atom-B log is measuring before any change.
+model). **Small-model success is not full acceptance**: on N the BFS finishes (1024 points), B3 is measured at
+1520.2 s, and the run is capped inside B4 generator realization. 5/10/19 orbit acceptance and S1 stay open **by
+name**; nothing here substitutes for them, and no partial stage is reported as an acceptance.
+
+The remaining stage is an owning-library item in `g_sets.py`, whose central repair is now being implemented in
+`sage-extensions` after this job ended. This port does not duplicate that repair and starts no further heavy probe;
+its consumer integration resumes once the repair is measured and available.
