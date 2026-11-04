@@ -1,0 +1,66 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______ test_enriques_modular_groups_match_dutour_sikiric_hulek[case_87] _______
+sage/misc/cachefunc.pyx:1965: in sage.misc.cachefunc.CachedMethodCaller.__call__
+    return cache[k]
+E   KeyError: ((Subgroup of Orthogonal group of Finitely presented module on 12 module generators over Integer Ring with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2],), ())
+
+During handling of the above exception, another exception occurred:
+.scratch/probe67/test_prehoist87.sage:226: in test_enriques_modular_groups_match_dutour_sikiric_hulek
+    image = target.subgroup_on(tuple(g.discriminant_morphism() for g in group.group_generators()))
+                                                                        ^^^^^^^^^^^^^^^^^^^^^^^^
+/repos/sage-extensions/src/sage_extensions/categories/group/groups.py:5438: in group_generators
+    return self.selected_group_resolution().generators(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/repos/sage-extensions/src/sage_extensions/categories/group/groups.py:5416: in selected_group_resolution
+    return self.selected_resolution(OwnedGroups())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py:383: in selected_resolution
+    resolution = selected.realize()
+                 ^^^^^^^^^^^^^^^^^^
+/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py:116: in realize
+    return self._resolution_factory()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/repos/sage-extensions/src/sage_extensions/categories/group/predicate_subgroups.py:47: in resolution
+    augmentation = generating_morphism(subgroup)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/repos/sage-extensions/src/sage_extensions/categories/group/predicate_subgroups.py:1100: in <lambda>
+    intersection._restricted_preimage_generating_morphism(
+/repos/sage-extensions/src/sage_extensions/categories/group/predicate_subgroups.py:1138: in _restricted_preimage_generating_morphism
+    augmentation = restricted.schreier_generating_morphism()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/repos/sage-extensions/src/sage_extensions/categories/group/predicate_subgroups.py:821: in schreier_generating_morphism
+    return self.coset_space(generators=generators).schreier_generating_morphism()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/repos/sage-extensions/src/sage_extensions/categories/group/predicate_subgroups.py:811: in coset_space
+    return _preimage_coset_space(
+/repos/sage-extensions/src/sage_extensions/categories/group/predicate_subgroups.py:78: in _preimage_coset_space
+    image_cosets = morphism.codomain().left_cosets(target)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/repos/sage-extensions/src/sage_extensions/categories/group/groups.py:6188: in left_cosets
+    return self._left_coset_construction(subgroup)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sage/misc/cachefunc.pyx:1970: in sage.misc.cachefunc.CachedMethodCaller.__call__
+    ???
+sage/misc/cachefunc.pyx:1848: in sage.misc.cachefunc.CachedMethodCaller._instance_call
+    ???
+/repos/sage-extensions/src/sage_extensions/categories/modules/framed/formed/torsion_form_modules.py:1297: in _left_coset_construction
+    return _engine_left_coset_g_set(self, subgroup)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/repos/sage-extensions/src/sage_extensions/categories/group/groups.py:542: in _engine_left_coset_g_set
+    return FiniteGSets(group).pointed_orbit(
+/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py:190: in pointed_orbit
+    points, words = self._orbit_words((base,), action, augmentation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py:156: in _orbit_words
+    image = action(element, points[position])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/repos/sage-extensions/src/sage_extensions/categories/group/groups.py:528: in act
+    image = self._transversal[point._position] * self._multiplier(element)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sage/libs/gap/element.pyx:3166: in sage.libs.gap.element.GapElement_List.__getitem__
+    ???
+E   OverflowError: value too large to convert to int
+=========================== short test summary info ============================
+FAILED .scratch/probe67/test_prehoist87.sage::test_enriques_modular_groups_match_dutour_sikiric_hulek[case_87]
+1 failed, 86 deselected in 136.76s (0:02:16)
