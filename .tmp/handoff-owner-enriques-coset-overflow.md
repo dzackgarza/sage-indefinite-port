@@ -120,6 +120,37 @@ What this did **not** do: it did not change this repo's pin, and it did not edit
 measurement of whether `ba4efaa` makes the port's failing cases pass is run against a per-process bind
 of a tree extracted from that commit, which is how this repo consumes a provider revision in a run.
 
+## Measured against `ba4efaa`: the overflow clears, a second provider error appears
+
+Both cases were re-run at the same port with the provider tree extracted from `ba4efaa` bound in place
+of the pin (`--tb=line`, each with its own 650 s inner cap):
+
+| case | at pin `cdafca84` | at `ba4efaa` |
+| --- | --- | --- |
+| `case_87` | `OverflowError` at ~140 s | **no error**: ran past the 650 s cap |
+| `case_50` | `OverflowError` at 141.31 s | **different failure at 130.35 s** |
+
+So the transversal fix does what it says: the `_TransversalCoset` index overflow is gone, and `case_87`
+stops failing fast and becomes a long computation instead. That is progress, and it is not acceptance —
+`case_87` has no verdict yet, only "longer than 650 s".
+
+`case_50` at `ba4efaa` exposes the **next** provider defect (`.tmp/enriques-case50-ba4efaa-next-error.log`):
+
+```
+E   KeyError: (({g in Orthogonal group O(rank 10, (1,9)) : g fixes -11*e_0 - 30*e_1 + ...},), ())
+During handling of the above exception, another exception occurred:
+E   ValueError: Pcgs([f1, ..., f10]) -> [f1, f1*f2*f5*f7*f9*f10, ...] is not in the group
+    Group of isometries of Finite quadratic module over Z with invariants (2, 2, 2, 2, 2, 2, 2, 2, 2, 2)
+```
+
+i.e. a pcgs/permutation-representation image that is not recognized as a member of the target isometry
+group of the discriminant module. That is a provider-layer membership/representation matter, in the same
+family of machinery but a distinct defect from the transversal index.
+
+**Reported to supervision as the exact missing provider acceptance:** at `ba4efaa`, `case_50` needs the
+pcgs image membership to resolve; `case_87` needs a bounded run long enough to finish (650 s was not).
+Neither is something this repository may patch, and neither is a reason to weaken or skip the case.
+
 ## Status kept honest
 
 `case_87` is one of the 87; this note establishes one failing case and its owner, not the family's state.
