@@ -78,8 +78,14 @@ body, executed directly (`just` is not installed here). Through it, at `c746b913
 | --- | --- | --- |
 | `centralizers 0 1 ''` | **5 passed in 78.71 s** | `.tmp/ci/results/centralizers-0/{junit.xml,log,commit,research_commit}` |
 | `perfect_domains 0 1 ''` | **92 passed in 357.79 s** | `.tmp/ci/results/perfect_domains-0/`, `junit.xml` = 92 tests, 0 failures, 0 errors |
+| `isometry 0 1 ''` | **166 passed in 1279.75 s** | `junit.xml` = 166 tests, 0 failures, 0 errors; peak tree RSS 5106 MiB of 6144 |
+| `double_cosets 0 1 ''` | **19 passed in 1.33 s** | `junit.xml` = 19 tests, 0 failures, 0 errors; peak tree RSS 397 MiB |
 
-The county records are the ones the recipe writes: the port commit, the provider revision it verified
+The four runs are the ones whose records are quoted; each writes the same three files. The `isometry`
+figure is the family baseline's own count (166) re-measured at this pair, and the `double_cosets` run is
+the new module of clause 1.
+
+The records are the ones the recipe writes: the port commit, the provider revision it verified
 against the pin, and a JUnit file with one entry per case. That is the "per-case results recorded"
 mechanism, demonstrated rather than asserted, and the `perfect_domains` run doubles as `#65`'s
 A_PERFECT gate re-measured on the corrected runtime through the actual gate recipe.
