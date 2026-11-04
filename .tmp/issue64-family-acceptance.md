@@ -40,18 +40,37 @@ Following the sharding conclusion, the cases after the guard stop were run one p
   **6186 MiB (hwm 6758)** at t = 214 s, over the 6144 MiB guard, and the run stopped there; `pgrep`
   shows no surviving process.
 
-**Not attributed, and deliberately so.** An earlier sweep of these same node ids at provider `42d7361c`
-recorded peaks of 3735–3846 MiB. This run, at port `7b6102e7` + provider `cdafca84` under the gate
-runner, reached 6186 MiB before the same case finished. The two runs differ in provider revision and in
-harness, so the difference is **measured but not attributed** — it is neither a provider regression nor
-a port regression on this evidence, and calling it either would be exactly the inference the standing
-rules forbid.
+**Attributed, by holding everything but the provider fixed.** The earlier sweep's figure came from a
+different harness, so it proved nothing on its own. The same case was therefore re-run at the *same port
+commit*, with the *same command*, under the *same runner and guard*, changing only the provider tree:
 
-What it does mean for `#64`: `vector_stabilizers` at this pair cannot be accepted from this repository
-under the 6144 MiB guard as the file stands, and the single E10 case that was sampled does not fit
-either. Establishing the family needs either the CI six-shard arrangement (which partitions work but
-does not by itself lower a single case's peak) or a case-level memory investigation that starts by
-reproducing the `42d7361c` figure under this exact runner.
+| provider | result |
+| --- | --- |
+| `cdafca84` (this repo's pin) | **guard stop**: tree 6186 MiB (hwm 6758) at t = 214 s |
+| `42d7361c` | **1 passed in 134.99 s**, peak tree RSS **3702 MiB**, low-water 6841 MiB |
+
+Provider lineage, from `git merge-base --is-ancestor` on the provider repository:
+
+```
+cdafca84 (2026-11-01, our pin) -> 42d7361c (2026-11-02) -> ba4efaa (2026-11-04)
+```
+
+So the pin this repository is on is **an ancestor** of the revision at which the case passes, and the
+difference is provider-attributable: ~2.5 GiB of process-tree memory on this one case. That is not a
+port regression (the port commit is identical in both runs) and it is not a harness artefact (the
+harness is identical in both runs).
+
+What it does mean for `#64`: `vector_stabilizers` at this pin cannot be accepted from this repository
+under the 6144 MiB guard — not because the file needs sharding (CI's six shards partition work but do not
+lower a single case's peak), but because **one case needs ~2.5 GiB more at this pin than at a later
+provider revision**. The two provider-side items now measured are therefore, together:
+
+1. `ba4efaa` (Nov 4) fixes the coset transversal index overflow that fails `case_87`/`case_50` of the
+   Enriques family — absent at the pin (0 occurrences of `_gap_list_entry`/`ELM_LIST`), present there (14);
+2. a revision between the pin and `42d7361c` (Nov 2) brings the E10 stabilizer case under the guard —
+   6186 MiB at the pin against 3702 MiB there, same port, same harness.
+
+Pin adoption is the owner's decision; both measurements are recorded so it can be made on evidence.
 
 ## What is *not* claimed
 
