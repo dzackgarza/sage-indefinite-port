@@ -67,7 +67,23 @@ state that arbitrary-rank isotropic k-planes and partial flags remain required a
 
 ## Failing exposed operations, filed at their owner
 
-The reconciliation found no operation that is exposed and fails *as a port route* at a recorded pair:
-the four families run at a pair all pass. What it found instead is coverage gaps, which belong to
-`#64` (family acceptance at one pair) rather than to a defect report — reporting them as defects would
-misdescribe an untested route as a broken one.
+One is now identified, and it is filed.
+
+`test_enriques_modular_groups_match_dutour_sikiric_hulek[case_87]` — which gates on
+`automorphism_group_generators` and `primitive_marking_classes` — fails at port `1bedc833` + provider
+`cdafca84` in ~140 s against a 1860 s cap, not by capping. `group.group_generators()` for the
+intersection subgroup `{g in O(N) : g lies in every selected subgroup}` traces through the provider's
+`predicate_subgroups.py` preimage/coset construction and dies with
+`OverflowError: value too large to convert to int` inside a `_TransversalCoset` repr, after a
+superseded `cached_method` `KeyError`.
+
+It is routed to `sage-extensions` as `.tmp/handoff-owner-enriques-coset-overflow.md`, with the raw
+`--tb=long` log beside it, and with the contract the consumer needs stated: generators or a typed
+refusal, never an untyped `OverflowError` (`#33`'s typed-error invariant).
+
+The rest of the reconciliation found no exposed operation failing *as a port route* at a recorded
+pair: the four families run at a pair all pass. The remaining items are coverage gaps, which belong to
+`#64`, not defects — reporting an untested route as a broken one would misdescribe it.
+
+Attribution note: the failure was proven independent of the port's `#67` caching change by running the
+same case against a genuine pre-hoist copy — identical failure at 136.76 s against 141.62 s.
