@@ -25,34 +25,39 @@ The consumer-API table lists twelve operations. Nine modules cover eleven of the
 | Centralizers | `test_centralizers.sage` | 1 parametrized test over 5 cases |
 | **Integral structures / double cosets** | **no case** | see below |
 
-### The one real gap, and why it is not closable here
+### The gap was real, and is now closed
 
 `tests/fixtures/double_coset_cases.json` is cited in `oracle_manifest.yaml`
 (`extraction: references/extract/polyhedral_common_ci.py`, source
-`references/vendor/polyhedral_common@1592b246/CI_tests/DoubleCosets/DBL`), and **no acceptance module
-consumes it**:
+`references/vendor/polyhedral_common@1592b246/CI_tests/DoubleCosets/DBL`), and until this unit **no
+acceptance module consumed it** (`load_double_coset_cases -> 0 acceptance file(s)`), although its
+internal test `test_integral_structures.sage` had been removed — the exact situation clause 4 forbids.
+
+`tests/acceptance/test_double_cosets.sage` now supplies that case. It asserts the upstream
+decomposition test's own fact, `TestDoubleCosetPermDecomposition`
+(`CI_tests/01_RatIntAutomorphy/ProcessExamples.g:179-253`): for `H <= G` the double cosets `H g H`
+**partition** `G` — pairwise disjoint, cardinalities summing to `|G|`. The two group orders are
+re-derived from the permutation generators rather than trusted from the file name, and each class is
+counted as `|H| * #{left cosets of H in H g H}`, which is `|H g H|` for a subgroup, so the sum is a
+completeness check and not a restatement of a count.
+
+Route: the operation is provider-owned after the ownership amendment, and the case calls the provider's
+`Group.double_cosets` (`sage-extensions categories/group/groups.py`, realized as the `H`-orbits of the
+finite `G`-set `G/H`). The port supplies no group theory: the case builds the groups with the owned
+constructor and reads the decomposition through that method.
+
+Measured through the gate recipe on the corrected runtime, pinned pair (`c746b913` + `cdafca84`):
 
 ```
-load_double_coset_cases -> 0 acceptance file(s)
+just ci-acceptance double_cosets 0 1 ''   ->   19 passed in 1.33 s
+junit.xml: 19 tests, 0 failures, 0 errors; peak tree RSS 397 MiB of 6144
 ```
 
-The disposition table says `test_integral_structures.sage → double-coset cases`; that internal file is
-gone and its replacement cases were never written, so one capability currently has no suite coverage —
-the exact situation `#33`'s item 4 forbids ("removed once that case exists").
-
-Three facts decide the disposition:
-
-1. Under the ownership amendment the operation is **provider-owned**: this port has no
-   `integral_structures` module (correctly — the amendment says that port entry point is not created),
-   and the oracle is the provider's double-coset decomposition.
-2. A tenth acceptance module **cannot be run by the gate as it stands**: `acceptance.yml` carries an
-   explicit `shards` dict of exactly the nine families, and adding one is a workflow edit, which this
-   connector cannot make (missing App `workflows` permission; `#66` records the same boundary).
-3. The fixture is pure permutation-group data (degree 55, group orders 5760/1440), so it cannot be
-   folded into an existing lattice-case family without misdescribing it.
-
-So the gap is precise and blocked, not overlooked: provider-owned operation, oracle cited and unused,
-gate matrix not extensible from here.
+One follow-on remains outside this unit's reach: the `Acceptance` workflow's `shards` dict names
+exactly nine families, so CI does not *schedule* the new family until one line is added. That is a
+workflow edit, which needs the App `workflows` permission this connection lacks (`#66` records the
+same boundary); the line is parked as `.tmp/pending-ci-double-cosets-family.patch` with its README.
+The recipe itself needs no change — its `*` branch already runs any family.
 
 ## 2. "The suite runs under the gate (just test-push), and its per-case results are recorded"
 
@@ -120,7 +125,26 @@ manifest fixtures: 26 | missing fixture files: none
 missing/absent extraction scripts: none | cited sources absent: none
 ```
 
-## Why #33 is not being closed
+## Status of this unit
+
+All five clauses now stand on delivered evidence: nine acceptance modules plus the new double-coset
+module cover all twelve table rows; the gate recipe runs and records per-case JUnit; the case-owning
+units name their cases; every named internal test is gone with its replacement case now existing; and
+all 26 corpus fixtures are cited with present extraction scripts.
+
+The residual item is the CI scheduling line for the new family, which is a permission boundary rather
+than missing work, and is parked with a patch.
+
+Closing the issue itself is not available from here: this connection reads issues and cannot publish
+comments or change issue state (its description states it does not provide issue/review publishing), and
+`gh`/`itree` are not installed in this environment. The closure command to run where they are:
+
+```
+itree close dzackgarza/sage-indefinite-port#33 --reason completed \
+  --comment "contract items 1-5 delivered; double-coset cases added in <sha>; CI scheduling line parked in .tmp/pending-ci-double-cosets-family.patch (workflows permission)"
+```
+
+## Original reasoning, kept for the record: why closing was withheld before the case existed
 
 Items 2, 3 and 4 stand on the evidence above, and the corpus half is intact. Item 1 does not: one
 operation in the unit's own table has no case, its internal test was removed ahead of its replacement,

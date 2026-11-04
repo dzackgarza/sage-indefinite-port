@@ -1,0 +1,7 @@
+diff --git a/.github/workflows/acceptance.yml b/.github/workflows/acceptance.yml
+--- a/.github/workflows/acceptance.yml
++++ b/.github/workflows/acceptance.yml
+@@ -38,6 +38,7 @@
+               "boundaries": 6,
+               "centralizers": 1,
++              "double_cosets": 1,

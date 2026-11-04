@@ -27,6 +27,8 @@ references/vendor/zotero/
 references/polyhedral_common/
 references/Indefinite.jl/
 .tmp/*
+!.tmp/pending-ci-double-cosets-family.patch.README.md
+!.tmp/pending-ci-double-cosets-family.patch
 !.tmp/issue33-contract-reconciliation.md
 !.tmp/run-ci-acceptance.sh
 !.tmp/provider-report-dual-point-hash.md
