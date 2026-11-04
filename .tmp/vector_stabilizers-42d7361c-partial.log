@@ -1,0 +1,31 @@
+============================= test session starts ==============================
+collecting ... collected 31 items
+
+tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_automorphism_generators_preserve_marking_and_form PASSED [  3%]
+tests/acceptance/test_vector_stabilizers.sage::test_divisibility_two_isotropic_pointed_isometry_has_exact_witness PASSED [  6%]
+tests/acceptance/test_vector_stabilizers.sage::test_odd_lattice_isotropic_pointed_isometry_uses_general_divisibility_two_route PASSED [  9%]
+tests/acceptance/test_vector_stabilizers.sage::test_general_isotropic_pointed_isometry_carries_negative_marking PASSED [ 12%]
+tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_isometry_transports_between_changed_basis_parents PASSED [ 16%]
+tests/acceptance/test_vector_stabilizers.sage::test_split_divisibility_one_pointed_isometry_carries_actual_negative_marking PASSED [ 19%]
+tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_isometry_rejects_different_divisibility PASSED [ 22%]
+tests/acceptance/test_vector_stabilizers.sage::test_isotropic_plane_isometry_carries_changed_basis_plane PASSED [ 25%]
+tests/acceptance/test_vector_stabilizers.sage::test_isotropic_plane_isometry_transports_between_changed_basis_parents PASSED [ 29%]
+tests/acceptance/test_vector_stabilizers.sage::test_isotropic_flag_isometry_preserves_line_inside_plane PASSED [ 32%]
+tests/acceptance/test_vector_stabilizers.sage::test_isotropic_flag_isometry_transports_between_changed_basis_parents PASSED [ 35%]
+tests/acceptance/test_vector_stabilizers.sage::test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks PASSED [ 38%]
+tests/acceptance/test_vector_stabilizers.sage::test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound PASSED [ 41%]
+tests/acceptance/test_vector_stabilizers.sage::test_divisibility_four_isotropic_plane_stabilizer_constructs_exact_containing_bound PASSED [ 45%]
+tests/acceptance/test_vector_stabilizers.sage::test_vector_stabilizer_has_oscars_order PASSED [ 48%]
+tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[0] PASSED [ 51%]
+tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[2] PASSED [ 54%]
+tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[4] PASSED [ 58%]
+tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[6] PASSED [ 61%]
+tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[8] PASSED [ 64%]
+tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[10] PASSED [ 67%]
+tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_-1] 
+
+- generated xml file: /work/.tmp/ci/results/vector_stabilizers-42d7361c/junit.xml -
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! KeyboardInterrupt !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+cysignals/signals.pyx:357: KeyboardInterrupt
+(to show a full traceback on KeyboardInterrupt use --full-trace)
+======================= 21 passed in 3200.93s (0:53:20) ========================

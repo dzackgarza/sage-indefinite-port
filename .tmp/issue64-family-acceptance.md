@@ -87,6 +87,13 @@ stopped the pin run on the guard. The ten `test_equivalence_witness_carries_a_re
 cases had not completed when the bounded run's cap was reached; `r_-1` alone has taken ~1271 s in an
 earlier measurement, so this is a horizon question, not a failure.
 
+Final figures of that run, from its own files: `junit.xml` records **21 tests, 0 failures, 0 errors**;
+the log's last verdict is `...alonso[10] PASSED [ 67%]`, so the cap was reached entering the `r_*` block;
+`peakrss` records **peak tree RSS 5139 MiB** of the 6144 MiB guard with low-water MemAvail 3265 MiB.
+The 5139 MiB is the accumulated high-water of 21 cases in one process, well above the 3702 MiB of the
+single E10 case measured alone — which is what a shard boundary is for, and why the CI arrangement runs
+this family as six shards rather than one process.
+
 Per-case lines and the in-flight `junit.xml` are in `.tmp/ci/results/vector_stabilizers-42d7361c/`.
 This is **bounded branch coverage at a non-pin provider**, and it is labelled that way on purpose: the
 pin remains `cdafca84`, where the family cannot be accepted at all because of the memory difference. It
