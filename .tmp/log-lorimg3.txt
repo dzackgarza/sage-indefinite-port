@@ -1,0 +1,25 @@
+=== LORENTZ_OrthogonalGroup2: rank 10, determinant -1024, 14 recorded generators
+    comparison primes: (2, 3, 5, 7)
+    computed 16 generators in 20.1s
+[p=2] provider route failed: ValueError: the identity morphism exists only on Mor(R, R), but this is Mor(Integer Ring, Integer Ring / Ideal (2) of Integer Ring)
+[p=2] harness 46998591897600 (0.03s) | provider None (0.02s) -> DISAGREE
+[p=2] recorded-side harness 46998591897600
+[p=3] provider route failed: ValueError: the identity morphism exists only on Mor(R, R), but this is Mor(Integer Ring, Integer Ring / Ideal (3) of Integer Ring)
+[p=3] harness 5158051199765220556800 (9.07s) | provider None (0.02s) -> DISAGREE
+[p=3] recorded-side harness 5158051199765220556800
+--- now p=5 on LORENTZ_OrthogonalGroup2 (unchanged prime, no cap change here beyond the harness guard) ---
+[p=5] provider route raised ValueError: the identity morphism exists only on Mor(R, R), but this is Mor(Integer Ring, Integer Ring / Ideal (5) of Integer Ring) after 0.0s
+[peakrss] lorimg3: child waited=0 shell_code=0 samples=20
+[peakrss] peak tree RSS      : 551 MiB
+[peakrss] low-water MemAvail : 6717 MiB
+[peakrss] peak single VmHWM  : 551 MiB
+[peakrss] peak VmHWM by executable (this is the per-process attribution):
+[peakrss]   python                      538 MiB peak
+[peakrss]   timeout                       7 MiB peak
+[peakrss]   proot-x86_64                  3 MiB peak
+[peakrss]   sh                            1 MiB peak
+[peakrss]   t=    38.0s procs=  4 rss=   551 MiB hwm=   551 MiB avail=  6717 MiB
+[peakrss]   t=    36.0s procs=  4 rss=   528 MiB hwm=   528 MiB avail=  6740 MiB
+[peakrss]   t=    32.0s procs=  4 rss=   522 MiB hwm=   522 MiB avail=  6794 MiB
+[peakrss]   t=    34.0s procs=  4 rss=   522 MiB hwm=   522 MiB avail=  6769 MiB
+[peakrss]   t=    30.0s procs=  4 rss=   513 MiB hwm=   513 MiB avail=  6850 MiB

@@ -1,26 +1,25 @@
-# Reference Subtrees and Software Sources
+# Pinned algorithm and literature sources
 
-This directory contains upstream reference repositories for algorithm extraction and differential verification:
+The authoritative reference implementations for this port are **committed**
+under `references/vendor/`, not local machine-only reference checkouts:
 
-- `polyhedral_common`: Clone of [MathieuDutSik/polyhedral_common](https://github.com/MathieuDutSik/polyhedral_common). C++ implementation of polyhedral computations, Delaunay polytopes, and indefinite quadratic form algorithms.
+- [`polyhedral_common@1592b246`](vendor/polyhedral_common@1592b246/) — pinned
+  C++ Lorentzian and indefinite algorithms (read for translation; do not compile).
+- [`Indefinite.jl@374a5ebb`](vendor/Indefinite.jl@374a5ebb/) —
+  pinned Julia/GAP routines (including `Lorentzian.g`).
+- [Allcock reference and rank-three cases](vendor/arxiv/2110.03784/) and
+  [rank-three lattice table](vendor/GeometryDatabase_Rank3_Lorentzian_lattices@63a9067a/).
+- [Complete provenance and revision pins](vendor/README.md).
 
-- `Indefinite.jl`: Clone of [MathieuDutSik/Indefinite.jl](https://github.com/MathieuDutSik/Indefinite.jl).
-  Julia package for indefinite lattices and forms with vendored GAP algorithms.
-
-- `source-to-sage-translation-map.md`: the source-to-Sage translation map that the issue tree cites as "map §N".
-
-## Pinned revisions
-
-The mirrors are ignored by git; each checkout is pinned to the revision the translation plan was written against.
-
-| Mirror | Revision | Notes |
-| --- | --- | --- |
-| `polyhedral_common` | `a55fcb7b71af48c88d7abbeab7889e9347916e43` | corpus layout: `CI_tests/01_RatIntAutomorphy`, `CI_tests/28B_LorentzianPerfStabEqui`, `CI_tests/DoubleCosets/DBL`, `CI_tests/19_IndefiniteComp` |
-| `Indefinite.jl` | `374a5ebb5ae33e5688fd95052a4c68cbc91ae6aa` | GAP sources in `indef/lib/` |
+Use the [source-to-Sage translation map](source-to-sage-translation-map.md)
+and [port-design assignments](port-design.md) to locate the required
+routine and its exact generic callee. Some historically used directories
+`references/polyhedral_common/` and `references/Indefinite.jl/` were
+ignored local clones; they are **not** prerequisites for a cloud checkout.
 
 ## Mathematical Literature
 
-For complete academic citations, bibliography, and BibTeX entries, see [CITATIONS.md](file:///home/dzack/gitclones/sage-indefinite-port/CITATIONS.md).
+For complete academic citations, bibliography, and BibTeX entries, see [CITATIONS.md](../CITATIONS.md).
 
 Key papers:
 

@@ -1,0 +1,11 @@
+case cube3 / octahedral, rank 4 m 8 d 4
+   ok 6 facets 1 orbits
+case cuboctahedron / A3 roots, rank 4 m 12 d 4
+   ok 14 facets 2 orbits
+case octahedron, rank 4 m 6 d 4
+   ok 8 facets 1 orbits
+case triangular prism / C2, rank 4 m 6 d 4
+   ok 5 facets 4 orbits
+case 4-cube / hyperoctahedral, rank 5 m 16 d 5
+   ok 8 facets 1 orbits
+case 24-cell / hyperoctahedral, rank 5 m 24 d 5

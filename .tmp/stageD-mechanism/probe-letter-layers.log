@@ -1,0 +1,58 @@
+[t=     2.6s] aug type=OwnedIndexedFreeGroupMor_with_category_with_category.ArrowType; aug._generator_morphism is gm: True
+[t=     2.6s] F.free_basis() is res basis: True; cardinalities 7 / 7
+  label 0: engine_basis_label=0; letter=g_Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2); word data=((Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2), 1),)
+      _admitted_generator_image -> [['1', '0', '0', '0'], ['0', '1', '0', '0'], ['0', '0', '-1', '0'], ['0', '0', '0', '-1']]
+  label 1: engine_basis_label=1; letter=g_Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2); word data=((Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2), 1),)
+      _admitted_generator_image -> [['1', '0', '0', '0'], ['0', '1', '0', '0'], ['0', '0', '1', '0'], ['0', '0', '0', '1']]
+  label 2: engine_basis_label=2; letter=g_Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2); word data=((Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2), 1),)
+      _admitted_generator_image -> [['1', '0', '0', '0'], ['0', '1', '0', '0'], ['0', '0', '0', '-1'], ['0', '0', '-1', '0']]
+  label 3: engine_basis_label=3; letter=g_Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2); word data=((Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2), 1),)
+      _admitted_generator_image -> [['1', '0', '0', '0'], ['0', '1', '0', '0'], ['0', '0', '0', '1'], ['0', '0', '1', '0']]
+  label 4: engine_basis_label=4; letter=g_Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2); word data=((Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2), 1),)
+      _admitted_generator_image -> [['-1', '0', '0', '0'], ['0', '-1', '0', '0'], ['0', '0', '1', '0'], ['0', '0', '0', '1']]
+  label 5: engine_basis_label=5; letter=g_Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2); word data=((Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2), 1),)
+      _admitted_generator_image -> [['1', '0', '0', '0'], ['0', '1', '0', '(-1)/(2)'], ['1', '0', '1', '0'], ['0', '0', '0', '1']]
+  label 6: engine_basis_label=6; letter=g_Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2); word data=((Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2), 1),)
+      _admitted_generator_image -> [['1', '0', '0', '0'], ['0', '1', '(-1)/(2)', '0'], ['0', '0', '1', '0'], ['1', '0', '0', '1']]
+[t=     2.7s] signed images in order (cache-seeding order 0..n):
+  s0: _signed_generator_image(label, 1) -> [['1', '0', '0', '0'], ['0', '1', '0', '0'], ['0', '0', '-1', '0'], ['0', '0', '0', '-1']]
+  s1: _signed_generator_image(label, 1) -> [['1', '0', '0', '0'], ['0', '1', '0', '0'], ['0', '0', '1', '0'], ['0', '0', '0', '1']]
+  s2: _signed_generator_image(label, 1) -> [['1', '0', '0', '0'], ['0', '1', '0', '0'], ['0', '0', '0', '-1'], ['0', '0', '-1', '0']]
+  s3: _signed_generator_image(label, 1) -> [['1', '0', '0', '0'], ['0', '1', '0', '0'], ['0', '0', '0', '1'], ['0', '0', '1', '0']]
+  s4: _signed_generator_image(label, 1) -> [['-1', '0', '0', '0'], ['0', '-1', '0', '0'], ['0', '0', '1', '0'], ['0', '0', '0', '1']]
+  s5: _signed_generator_image(label, 1) -> [['1', '0', '0', '0'], ['0', '1', '0', '(-1)/(2)'], ['1', '0', '1', '0'], ['0', '0', '0', '1']]
+  s6: _signed_generator_image(label, 1) -> [['1', '0', '0', '0'], ['0', '1', '(-1)/(2)', '0'], ['0', '0', '1', '0'], ['1', '0', '0', '1']]
+[t=     2.8s] group_generators() of F and their augmentation images:
+  gen 0: word data=((Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2), 1),); aug -> [['1', '0', '0', '0'], ['0', '1', '0', '0'], ['0', '0', '-1', '0'], ['0', '0', '0', '-1']]
+  gen 1: word data=((Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2), 1),); aug -> [['1', '0', '0', '0'], ['0', '1', '0', '0'], ['0', '0', '1', '0'], ['0', '0', '0', '1']]
+  gen 2: word data=((Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2), 1),); aug -> [['1', '0', '0', '0'], ['0', '1', '0', '0'], ['0', '0', '0', '-1'], ['0', '0', '-1', '0']]
+  gen 3: word data=((Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2), 1),); aug -> [['1', '0', '0', '0'], ['0', '1', '0', '0'], ['0', '0', '0', '1'], ['0', '0', '1', '0']]
+  gen 4: word data=((Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2), 1),); aug -> [['-1', '0', '0', '0'], ['0', '-1', '0', '0'], ['0', '0', '1', '0'], ['0', '0', '0', '1']]
+  gen 5: word data=((Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2), 1),); aug -> [['1', '0', '0', '0'], ['0', '1', '0', '(-1)/(2)'], ['1', '0', '1', '0'], ['0', '0', '0', '1']]
+  gen 6: word data=((Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2), 1),); aug -> [['1', '0', '0', '0'], ['0', '1', '(-1)/(2)', '0'], ['0', '0', '1', '0'], ['1', '0', '0', '1']]
+[t=     2.9s] two-letter word decomposition:
+  letter0*letter4 word data=((Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2), 1), (Morphism from Lattice of rank 4 and signature (2, 2) to Lattice of rank 4 and signature (2, 2), 1))
+[t=     2.9s] from_finite_orbits generator source check:
+    def from_finite_orbits(self, seeds, action):
+        r"""The union of the finite orbits of supplied points under a given action.
+
+        The caller supplies an effective action and the hypothesis that these
+        orbits are finite. Enumerating generator images then terminates at
+        exactly their union; no search bound is a finiteness certificate.
+        """
+        points, _words = self._orbit_words(
+            seeds, action, self.group().selected_group_resolution().augmentation()
+        )
+        return self(finite_ordered_set(tuple(points)), action)
+
+[t=     2.9s] PROBE_DONE
+[peakrss] probe-sign-loss3: child waited=0 shell_code=0 samples=2
+[peakrss] peak tree RSS      : 391 MiB
+[peakrss] low-water MemAvail : 12192 MiB
+[peakrss] peak single VmHWM  : 391 MiB
+[peakrss] peak VmHWM by executable (this is the per-process attribution):
+[peakrss]   python                      380 MiB peak
+[peakrss]   timeout                       7 MiB peak
+[peakrss]   proot-x86_64                  3 MiB peak
+[peakrss]   t=     2.0s procs=  3 rss=   391 MiB hwm=   391 MiB avail= 12192 MiB
+[peakrss]   t=     0.0s procs=  1 rss=     0 MiB hwm=     0 MiB avail= 12465 MiB

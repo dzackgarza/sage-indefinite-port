@@ -20,10 +20,10 @@ import importlib
 from functools import reduce
 from math import gcd
 
-from dzack_research.preamble.all import ZZ as PreambleZZ
-from dzack_research.preamble.all import Cat, Lattices
-from dzack_research.preamble.categories.abstract_categories.arrow_categories import CosliceCategory
-from dzack_research.preamble.categories.abstract_categories.products import FiniteOrdinalCategory
+from sage_extensions.all import ZZ as PreambleZZ
+from sage_extensions.all import Cat, Lattices
+from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
 from sage.all import GF, ZZ, MatrixGroup, matrix, prime_divisors
 
 from sage_indefinite_port.readiness import UNFINISHED, UnfinishedCapability
@@ -168,13 +168,13 @@ def flag_category():
 
 def marked_sublattice(lattice_, vectors):
     """The marked lattice (L, I -> L) for the sublattice I spanned by the vectors."""
-    return sublattice_category().object(lattice_.vector_configuration(list(vectors)).inclusion())
+    return sublattice_category().object(lattice_.subobject_on(list(vectors)).inclusion())
 
 
 def sublattice_of(marked):
     """The sublattice I of a marked lattice (L, I -> L), as a preamble subobject of L."""
     arrow = marked.arrow()
-    return arrow.codomain().vector_configuration([arrow(generator) for generator in basis(arrow.domain())])
+    return arrow.codomain().subobject_on([arrow(generator) for generator in basis(arrow.domain())])
 
 
 def totally_isotropic_source(rank):

@@ -1,0 +1,1 @@
+"""The frozen acceptance suite."""

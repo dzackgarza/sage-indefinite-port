@@ -1,0 +1,1268 @@
+[t=     0.0s] imports
+[t=     0.9s] provider package: /repos/sage-extensions/src/sage_extensions/__init__.py
+[t=     0.9s] lattice_morphisms.py sha256[:16] = 00f0c682880cc022
+[t=     0.9s] N: rank 12, signature (2, 10), det 1024; line I_1_1
+[t=     1.9s] isotropic_reduction 1.0s
+[t=     1.9s] K: rank 10, signature (1, 9), det 1024
+[t=     3.9s] orthogonal_group_generators(K) 2.0s: 22 gens
+[t=    20.5s] isotropic_stabilizer_action 16.6s
+[t=    20.5s] action.stabilizer().group_generators()  <- the previously non-returning call
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/submonoids.py", line ??? in _structure_data
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line ??? in <genexpr>
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/finitely_generated/finitely_presented_modules.py", line 1999 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line ??? in _element_constructor_
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _repr_
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in __call__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line ??? in __contains__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 231 in _is_group_algebra
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 295 in __classcall__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 1741 in module_category
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 908 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 2904 in _morphism_from_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 2879 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_foundation.py", line 61 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 996 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2461 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 2926 in identity
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_foundation.py", line 403 in operation
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 2929 in one
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 1461 in one
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3912 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3664 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line ??? in __call__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6534 in __eq__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6616 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6622 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line ??? in <lambda>
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 435 in _tensor_hash
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1505 in __hash__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3922 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3664 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/categories/homset.py", line ??? in homset_category
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _operand_in_ring
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6622 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6536 in __eq__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in _engine_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 674 in _free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 6930 in free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in _owned_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 695 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 694 in _reduced_word_data
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3910 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3664 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6520 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6616 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6622 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 459 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in _owned_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 695 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 694 in _reduced_word_data
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3910 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6516 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6616 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6622 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 459 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in _owned_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 695 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 694 in _reduced_word_data
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3910 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3664 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1624 in fraction
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6634 in __contains__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6534 in __eq__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in _engine_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 674 in _free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 6930 in free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6524 in __int__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in _owned_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 695 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 694 in _reduced_word_data
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3910 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6637 in __contains__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1218 in _repr_
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 435 in _tensor_hash
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1505 in __hash__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3922 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3664 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6536 in __eq__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "<frozen abc>", line 119 in __instancecheck__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 5216 in __classcall__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 303 in __classcall__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 1741 in module_category
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 1750 in module_generating_set
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 659 in module_rank
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 922 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 2904 in _morphism_from_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 2879 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_foundation.py", line 61 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 996 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2461 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in compose
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1522 in __mul__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6616 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6622 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 459 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in _owned_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 695 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 694 in _reduced_word_data
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3910 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3664 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line ??? in _element_constructor_
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1218 in _repr_
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 435 in _tensor_hash
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1505 in __hash__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3922 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3664 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 459 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in _engine_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 674 in _free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 6930 in free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6616 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6622 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 459 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in _owned_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 695 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 694 in _reduced_word_data
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3910 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3664 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6521 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6616 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6622 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 459 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in _owned_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 695 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 694 in _reduced_word_data
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3910 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6524 in __int__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6536 in __eq__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in _engine_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 674 in _free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 6930 in free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 721 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1218 in _repr_
+  File "/repos/sage-extensions/src/sage_extensions/tensors/tensor.py", line 435 in _tensor_hash
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1505 in __hash__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3922 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3664 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6616 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6622 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 459 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in _owned_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 695 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 694 in _reduced_word_data
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3910 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6536 in __eq__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6615 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6622 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 459 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in _engine_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 674 in _free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 6930 in free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6616 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line ??? in __call__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 303 in __classcall__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6516 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6616 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6622 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 459 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in _engine_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 674 in _free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 6930 in free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6516 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6616 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6622 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 459 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in _engine_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 674 in _free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 6930 in free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 721 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6613 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6622 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 459 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in _owned_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 695 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 694 in _reduced_word_data
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3910 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3664 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _from_engine_element
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6622 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 459 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in _owned_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 695 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 694 in _reduced_word_data
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3910 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3664 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6524 in __int__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6536 in __eq__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in _engine_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 674 in _free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 6930 in free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 721 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6622 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 459 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in _owned_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 695 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 694 in _reduced_word_data
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3910 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3664 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6616 in _element_constructor_
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattices.py", line 2975 in base_ring
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/fibered_modules.py", line 71 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 326 in _initialize_lower_arrow
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 430 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/formed/form_modules.py", line 429 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 395 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 967 in _initialize_formed_module_arrow
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 949 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 2904 in _morphism_from_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 2879 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_foundation.py", line 61 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 996 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2461 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 2926 in identity
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_foundation.py", line 403 in operation
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 2929 in one
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 1461 in one
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3912 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3922 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3664 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line ??? in _element_constructor_
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6534 in __eq__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 459 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in _owned_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 695 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 694 in _reduced_word_data
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3910 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3664 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line ??? in <lambda>
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6616 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6622 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 459 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in _owned_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 695 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 694 in _reduced_word_data
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3910 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3664 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6521 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6616 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6622 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 459 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in _engine_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 674 in _free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 6930 in free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 721 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6534 in __eq__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6536 in __eq__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in _engine_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 674 in _free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 6930 in free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 459 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in _owned_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 695 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 694 in _reduced_word_data
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3910 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 459 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 159 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in _engine_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 674 in _free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 6930 in free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 4152 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3854 in _admitted_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3902 in _signed_generator_image
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3909 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3906 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 663 in _owned_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 695 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 694 in _reduced_word_data
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3910 in _evaluate_reduced_word
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 3014 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 720 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6534 in __eq__
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 652 in _engine_basis_label
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 674 in _free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/groups.py", line 6930 in free_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 721 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 757 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/resolutions.py", line 951 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/probe.py", line 55 in <module>
+[t=  1919.0s] action.stabilizer() 1898.5s: 25600 generators
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6616 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 6622 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 511 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 116 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/functors/scalar_change.py", line 233 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1099 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 2320 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1099 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1891 in factor_through_or_none
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1364 in integral_restriction
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattices.py", line 3125 in integral_isometry
+  File "/probe.py", line 59 in <genexpr>
+  File "/probe.py", line 59 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1609 in source_element
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1624 in fraction
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 2014 in one
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 322 in _basis_element
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 4817 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/resolutions.py", line 703 in generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py", line 405 in selected_resolution_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 1756 in module_generator
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/functors/scalar_change.py", line 233 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1099 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 2320 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1099 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1891 in factor_through_or_none
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1364 in integral_restriction
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattices.py", line 3125 in integral_isometry
+  File "/probe.py", line 59 in <genexpr>
+  File "/probe.py", line 59 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 5502 in _backend
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 5632 in __eq__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 2138 in _fraction_equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1195 in equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1200 in _richcmp_
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1212 in __eq__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 103 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 410 in _raw_scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 209 in _lmul_
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2564 in _owned_scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2753 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2843 in scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1086 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/functors/scalar_change.py", line 233 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1099 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 2320 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1099 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1891 in factor_through_or_none
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1364 in integral_restriction
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattices.py", line 3125 in integral_isometry
+  File "/probe.py", line 59 in <genexpr>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_foundation.py", line 343 in _asked_of_the_category
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_foundation.py", line 401 in operation
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 138 in _category_mor
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 157 in _category_accepts_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2484 in _require_base_morphisms
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2492 in _from_known_inverse_pair
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2608 in _isomorphism_from_known_inverse_pair
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1599 in inverse
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 361 in __getitem__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 177 in solve
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 243 in solve
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 257 in _solve_preimage_integrally
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1816 in _preimage_or_none
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 2055 in _preimage_through_the_extension_framing
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1809 in _preimage_or_none
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1895 in factor_through_or_none
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1369 in integral_restriction
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattices.py", line 3125 in integral_isometry
+  File "/probe.py", line 59 in <genexpr>
+  File "/probe.py", line 59 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 6315 in _from_engine_element
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 7696 in _owned_engine_element
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 5541 in _mul_
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 5588 in __mul__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 2120 in _fraction_equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1195 in equality_status
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1200 in _richcmp_
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1212 in __eq__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 103 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 201 in _add_
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 3991 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 118 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 90 in value
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1088 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/functors/scalar_change.py", line 233 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1099 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 2320 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1099 in _call_
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line ??? in __int__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/categories/category.py", line ??? in __classcall__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line ??? in __contains__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/categories/category.py", line ??? in __contains__
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/workspace/nucleus/work/home/sage-image/rootfs/opt/uv-python/cpython-3.14.10-linux-x86_64-gnu/lib/python3.14/functools.py", line 52 in update_wrapper
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_foundation.py", line 405 in __get__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2776 in scalar_action
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2843 in scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 2969 in _apply_pointwise_scalar
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/additive_mors.py", line 178 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1099 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 171 in solve
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 243 in solve
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 257 in _solve_preimage_integrally
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1816 in _preimage_or_none
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 2055 in _preimage_through_the_extension_framing
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1809 in _preimage_or_none
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1895 in factor_through_or_none
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1369 in integral_restriction
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattices.py", line 3125 in integral_isometry
+  File "/probe.py", line 59 in <genexpr>
+  File "/probe.py", line 59 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 134 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 938 in elementwise
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line ??? in _mul_
+  <invalid frame>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/owned_category.py", line 1898 in category
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/cat.py", line 171 in __contains__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_foundation.py", line 348 in _asked_of_the_category
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_foundation.py", line 401 in operation
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 138 in _category_mor
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 157 in _category_accepts_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2484 in _require_base_morphisms
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2492 in _from_known_inverse_pair
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/arrow_categories.py", line 2608 in _isomorphism_from_known_inverse_pair
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1599 in inverse
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 361 in __getitem__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 177 in solve
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 243 in solve
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 257 in _solve_preimage_integrally
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1816 in _preimage_or_none
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 2055 in _preimage_through_the_extension_framing
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1809 in _preimage_or_none
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1895 in factor_through_or_none
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1369 in integral_restriction
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattices.py", line 3125 in integral_isometry
+  File "/probe.py", line 59 in <genexpr>
+  File "/probe.py", line 59 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/categories/category_with_axiom.py", line 2068 in __classget__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 5063 in OwnedFields
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 122 in _integral_preimage_solver
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 240 in _integral_preimage_positional_solver
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 257 in _solve_preimage_integrally
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1816 in _preimage_or_none
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 2055 in _preimage_through_the_extension_framing
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1809 in _preimage_or_none
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1895 in factor_through_or_none
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1369 in integral_restriction
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattices.py", line 3125 in integral_isometry
+  File "/probe.py", line 59 in <genexpr>
+  File "/probe.py", line 59 in <module>
+Timeout (0:00:30)!
+Thread 0x00007eba700db780 [python] (most recent call first):
+  File "/sage/.venv/lib/python3.14/site-packages/sage/categories/category.py", line 463 in __classcall__
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 7413 in _own_ring
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 7682 in _engine_element
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 5560 in _lmul_
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 6310 in _native_scalar_action
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/native_modules.py", line 155 in scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2560 in _owned_scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1425 in localization_scalar
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 1433 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/native_modules.py", line 155 in scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2753 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/algebras/algebras.py", line 1306 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 5238 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 5244 in scalar_multiple
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1086 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 2320 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1099 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1891 in factor_through_or_none
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1364 in integral_restriction
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattices.py", line 3125 in integral_isometry
+  File "/probe.py", line 59 in <genexpr>
+  File "/probe.py", line 59 in <module>
+[peakrss] stageD-schreierfix: child waited=124 shell_code=124 samples=1199
+[peakrss] peak tree RSS      : 3637 MiB
+[peakrss] low-water MemAvail : 2188 MiB
+[peakrss] peak single VmHWM  : 3643 MiB
+[peakrss] peak VmHWM by executable (this is the per-process attribution):
+[peakrss]   python                     3632 MiB peak
+[peakrss]   timeout                       7 MiB peak
+[peakrss]   proot-x86_64                  3 MiB peak
+[peakrss]   t=  2398.2s procs=  3 rss=  3637 MiB hwm=  3643 MiB avail=  4458 MiB
+[peakrss]   t=  2396.2s procs=  3 rss=  3636 MiB hwm=  3641 MiB avail=  4368 MiB
+[peakrss]   t=  2394.2s procs=  3 rss=  3635 MiB hwm=  3640 MiB avail=  4368 MiB
+[peakrss]   t=  2392.2s procs=  3 rss=  3633 MiB hwm=  3639 MiB avail=  4491 MiB
+[peakrss]   t=  2390.2s procs=  3 rss=  3632 MiB hwm=  3638 MiB avail=  4492 MiB

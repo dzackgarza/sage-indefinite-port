@@ -1,0 +1,97 @@
+diff --git a/.github/workflows/acceptance.yml b/.github/workflows/acceptance.yml
+index 7ce17a02..401c76e3 100644
+--- a/.github/workflows/acceptance.yml
++++ b/.github/workflows/acceptance.yml
+@@ -104,13 +104,12 @@ jobs:
+     name: ${{ matrix.family }} ${{ matrix.shard }}/${{ matrix.shards }}
+     runs-on: ubuntu-latest
+     timeout-minutes: 360
+-    container:
+-      image: ghcr.io/dzackgarza/sage:develop
+-      credentials:
+-        username: ${{ github.actor }}
+-        password: ${{ github.token }}
+-      options: --user root
++    # No job-level `container:`: it is pulled during job initialisation, before any step, and
++    # that pull is what failed with `write /var/lib/docker/tmp/GetImageBlob...: no space left
++    # on device` (run 41501559444, job 125480676579). Pulling from a step lets disk be freed
++    # first. The image still provides `/sage` for the run itself.
+     env:
++      SAGE_IMAGE: ghcr.io/dzackgarza/sage:develop
+       SAGE_BIN: /sage/.venv/bin/sage
+       # The image's read-only depot holds Oscar; the cached writable depot
+       # in front of it holds the bridge environment's resolved packages.
+@@ -122,11 +121,35 @@ jobs:
+       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+     steps:
+       - uses: actions/checkout@v4
+-      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
++      - name: Free runner disk before the image pull
++        run: |
++          set -euxo pipefail
++          df -h /
++          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
++            /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/lib/node_modules || true
++          sudo docker image prune -af || true
++          df -h /
++      - name: Log in to GHCR and pull the pinned image
++        run: |
++          set -euo pipefail
++          echo "${{ github.token }}" | sudo docker login ghcr.io \
++            --username "${{ github.actor }}" --password-stdin
++          sudo docker pull "$SAGE_IMAGE"
+       - uses: extractions/setup-just@v4
+         with:
+           github-token: ${{ github.token }}
+-      - run: just ci-provision-sage
++      # The cache is keyed by CONTENT *and versioned by its path list*: `getCacheVersion` hashes
++      # `paths.join('|')` plus the compression method, and the tar carries absolute entries
++      # (`-P`). So the consumer must name the producer's paths character for character; a
++      # different path would be a different version (a miss) and, on a hit, would extract to the
++      # wrong place. These two absolute paths are therefore created on the runner, restored, and
++      # then bind-mounted back into the container at the same paths, where the image expects them.
++      - name: Create the provider-independent cache mount points
++        run: |
++          set -euxo pipefail
++          sudo mkdir -p /github/home \
++            /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env
++          sudo chown -R "$(id -u):$(id -g)" /github/home /sage
+       - uses: actions/cache/restore@v4
+         with:
+           path: |
+@@ -134,7 +157,34 @@ jobs:
+             /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
+           key: ${{ needs.julia.outputs.key }}
+           fail-on-cache-miss: true
+-      - run: just ci-acceptance ${{ matrix.family }} ${{ matrix.shard }} ${{ matrix.shards }} '${{ matrix.selection }}'
++      - name: Run the shard inside the pinned image
++        env:
++          FAMILY: ${{ matrix.family }}
++          SHARD: ${{ matrix.shard }}
++          SHARDS: ${{ matrix.shards }}
++          SELECTION: ${{ matrix.selection }}
++        run: |
++          set -euo pipefail
++          just_dir="$(dirname "$(command -v just)")"
++          sudo docker run --rm \
++            --volume "$GITHUB_WORKSPACE:/work" \
++            --workdir /work \
++            --volume "/github/home/.julia:/github/home/.julia" \
++            --volume "/sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml:/sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml" \
++            --volume "$just_dir:/opt/just:ro" \
++            --env PATH="/opt/just:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
++            --env SAGE_BIN="$SAGE_BIN" \
++            --env JULIA_DEPOT_PATH="$JULIA_DEPOT_PATH" \
++            --env FAMILY="$FAMILY" --env SHARD="$SHARD" \
++            --env SHARDS="$SHARDS" --env SELECTION="$SELECTION" \
++            "$SAGE_IMAGE" \
++            bash -lc 'set -euo pipefail
++              git config --global --add safe.directory /work
++              if [[ -n "${MAXIMA_PREFIX:-}" && -d "${MAXIMA_PREFIX}/share/to_poly_solve" && ! -d "${MAXIMA_PREFIX}/to_poly_solve" ]]; then
++                export MAXIMA_PREFIX="${MAXIMA_PREFIX}/share"
++              fi
++              just ci-provision-sage
++              just ci-acceptance "$FAMILY" "$SHARD" "$SHARDS" "$SELECTION"'
+       - if: always()
+         uses: actions/upload-artifact@v4
+         with:

@@ -7,11 +7,11 @@ representatives of norm <= 30), Brandhorst--Gonzalez-Alonso (E10, norms 0..10), 
 (I_{2,10}, norm -1) and Gritsenko--Hulek--Sankaran's Eichler criterion (the K3 lattice).
 """
 
+import builtins
 from collections import Counter
 
 import pytest
 
-from sage_indefinite_port.readiness import UnfinishedCapability
 from tests.acceptance.consumer import (
     MARKED_CLASSES,
     MARKED_ISOMETRY,
@@ -39,7 +39,6 @@ def _e10():
 
 
 @pytest.mark.parametrize("case", load_enriques_polarization_orbits(), ids=lambda case: f"2d_{case['two_d']}")
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek(case) -> None:
     require(MARKED_CLASSES)
 
@@ -47,7 +46,6 @@ def test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek(case) ->
 
 
 @pytest.mark.parametrize("degree", sorted({rep["degree"] for rep in _E10["orbit_representatives"]}))
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_published_representatives_are_one_per_orbit(degree) -> None:
     require(MARKED_CLASSES, MARKED_ISOMETRY)
 
@@ -58,26 +56,50 @@ def test_published_representatives_are_one_per_orbit(degree) -> None:
 
     assert len(computed) == len(published)
     for representative in computed:
-        assert sum(are_isomorphic(category, representative, listed) for listed in published) == 1
+        assert builtins.sum(are_isomorphic(category, representative, listed) for listed in published) == 1
 
 
 @pytest.mark.parametrize("square", sorted(Counter(orbit["h_squared"] for orbit in load_e10_vector_orbits()["orbits"])))
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_e10_orbit_counts_match_brandhorst_gonzalez_alonso(square) -> None:
     require(MARKED_CLASSES)
 
-    recorded = sum(orbit["h_squared"] == square for orbit in load_e10_vector_orbits()["orbits"])
+    recorded = builtins.sum(orbit["h_squared"] == square for orbit in load_e10_vector_orbits()["orbits"])
 
     assert len(vector_classes(_e10(), square)) == recorded
 
 
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_i_2_10_is_transitive_on_norm_minus_one_vectors() -> None:
     require(MARKED_CLASSES)
 
     case = load_allcock_i_2_10_orbits()
 
     assert len(vector_classes(lattice(case["gram"]), -1)) == case["norm_minus_one_vector_orbits"]
+
+
+def test_anisotropic_binary_vector_classes_use_primitive_embeddings() -> None:
+    """An anisotropic (1,1) plane has no perfect-cell cusp to enumerate."""
+    require(MARKED_CLASSES, MARKED_ISOMETRY)
+
+    binary = lattice([[2, 0], [0, -3]])
+    assert not binary.is_isotropic()
+    assert vector_classes(binary, 0) == ()
+    # 2*x^2 - 3*y^2 = 1 has no integer solution modulo 3.
+    assert vector_classes(binary, 1) == ()
+    for square in (2, -3):
+        classes = vector_classes(binary, square)
+        assert classes
+        category = pointed_category(square)
+        canonical = pointed(binary, element(binary, (1, 0) if square == 2 else (0, 1)))
+        assert builtins.sum(are_isomorphic(category, marked, canonical) for marked in classes) == 1
+        witnesses = []
+        for marked in classes:
+            generators = tuple(marked.arrow()(g) for g in marked.arrow().domain().module_generators())
+            assert len(generators) == 1
+            witness, = generators
+            assert int(witness.q()) == square
+            assert int(witness.content()) == 1
+            assert all(not are_isomorphic(category, marked, previous) for previous in witnesses)
+            witnesses.append(marked)
 
 
 def _k3_gram() -> list[list[int]]:
@@ -88,7 +110,6 @@ def _k3_gram() -> list[list[int]]:
 
 
 @pytest.mark.parametrize("square", load_k3_modular_strata()["k3_unimodular_lattice"]["tested_represented_norms"])
-@pytest.mark.xfail(reason="recursive indefinite algorithm: owned by #18", raises=UnfinishedCapability, strict=True)
 def test_k3_lattice_has_one_primitive_orbit_per_norm(square) -> None:
     require(MARKED_CLASSES)
 

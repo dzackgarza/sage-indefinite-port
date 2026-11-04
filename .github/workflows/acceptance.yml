@@ -1,0 +1,165 @@
+# The required acceptance sample runs on every push. Amended long-tail corpora
+# are reserved for workflow_dispatch; explicit full-file contracts stay full.
+# The summary job collates every executed shard into one failure list.
+name: Acceptance
+on:
+  push: {}
+  workflow_dispatch: {}
+concurrency:
+  # A newer push replaces a queued run but never cancels one in progress.
+  group: acceptance-${{ github.ref }}
+  cancel-in-progress: false
+permissions:
+  contents: read
+  packages: read
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - id: plan
+        # family=shards; the family is tests/acceptance/test_<family>.sage.
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python3 - >> "$GITHUB_OUTPUT" <<'PY'
+          import json
+          import os
+          shards = {
+              "perfect_domains": 8,
+              "reflective": 20,
+              "orthogonal_group": 4,
+              "isometry": 8,
+              "vector_stabilizers": 6,
+              "vector_orbits": 4,
+              "isotropic_orbits": 16,
+              "boundaries": 6,
+              "centralizers": 1,
+          }
+          if os.environ["GITHUB_EVENT_NAME"] == "push":
+              # #33's amended acceptance nodes run explicit branch samples on
+              # push; full files remain available on workflow_dispatch.
+              sampled = {"reflective", "orthogonal_group", "vector_stabilizers", "vector_orbits", "isotropic_orbits", "boundaries"}
+              include = [
+                  {"family": f, "shard": i, "shards": n, "selection": ""}
+                  for f, n in shards.items() if f not in sampled
+                  for i in range(n)
+              ]
+              include.extend(
+                  {"family": f, "shard": 0, "shards": 1, "selection": f}
+                  for f in sorted(sampled)
+              )
+          else:
+              include = [
+                  {"family": f, "shard": i, "shards": n, "selection": ""}
+                  for f, n in shards.items() for i in range(n)
+              ]
+          print("matrix=" + json.dumps({"include": include}))
+          PY
+  julia:
+    # Instantiates the bridge environment once into the Julia depot cache that every shard restores.
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    container:
+      image: ghcr.io/dzackgarza/sage:develop
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+      options: --user root
+    env:
+      SAGE_BIN: /sage/.venv/bin/sage
+      # The image's read-only depot holds Oscar; the cached writable depot
+      # in front of it holds the bridge environment's resolved packages.
+      JULIA_DEPOT_PATH: "/github/home/.julia:/opt/julia-depot:"
+    outputs:
+      key: ${{ steps.key.outputs.key }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: extractions/setup-just@v4
+        with:
+          github-token: ${{ github.token }}
+      - run: just ci-provision-sage
+      - id: key
+        run: echo "key=$(just ci-julia-key)" >> "$GITHUB_OUTPUT"
+      - id: restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            /github/home/.julia
+            /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
+          key: ${{ steps.key.outputs.key }}
+      - if: steps.restore.outputs.cache-hit != 'true'
+        run: just ci-provision-julia
+      - if: steps.restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            /github/home/.julia
+            /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
+          key: ${{ steps.key.outputs.key }}
+  family:
+    needs: [plan, julia]
+    name: ${{ matrix.family }} ${{ matrix.shard }}/${{ matrix.shards }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    container:
+      image: ghcr.io/dzackgarza/sage:develop
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+      options: --user root
+    env:
+      SAGE_BIN: /sage/.venv/bin/sage
+      # The image's read-only depot holds Oscar; the cached writable depot
+      # in front of it holds the bridge environment's resolved packages.
+      JULIA_DEPOT_PATH: "/github/home/.julia:/opt/julia-depot:"
+    strategy:
+      fail-fast: false
+      # Keep independent Sage processes below the runner memory-pressure threshold.
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: extractions/setup-just@v4
+        with:
+          github-token: ${{ github.token }}
+      - run: just ci-provision-sage
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            /github/home/.julia
+            /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
+          key: ${{ needs.julia.outputs.key }}
+          fail-on-cache-miss: true
+      - run: just ci-acceptance ${{ matrix.family }} ${{ matrix.shard }} ${{ matrix.shards }} '${{ matrix.selection }}'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-${{ matrix.family }}-${{ matrix.shard }}
+          path: .tmp/ci/results/
+  summary:
+    needs: [plan, family]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: acceptance-*
+          path: results
+          merge-multiple: true
+      - env:
+          ACCEPTANCE_MATRIX: ${{ needs.plan.outputs.matrix }}
+          ACCEPTANCE_FAMILY_RESULT: ${{ needs.family.result }}
+          ACCEPTANCE_PLAN_RESULT: ${{ needs.plan.result }}
+        run: |
+          set -o pipefail
+          python3 ci/acceptance_summary.py results "$ACCEPTANCE_MATRIX" "$ACCEPTANCE_FAMILY_RESULT" "$ACCEPTANCE_PLAN_RESULT" | tee -a "$GITHUB_STEP_SUMMARY" acceptance-failures.md
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-summary
+          path: acceptance-failures.md

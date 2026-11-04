@@ -60,6 +60,15 @@ Deciding whether two marked lattices are isometric means deciding whether the co
 Research #403 owns these objects and dispatches their indefinite computations to this port.
 A homset definition is not an isometry, orbit or generator algorithm.
 
+## Full source domain
+
+The pinned routines define the minimum required functionality. Preserve their
+ranks, dimension sequences, branches, outputs and witnesses when adapting them
+to the public mathematical objects. Translate the general source algorithm
+directly; application examples and the frozen corpus do not define a smaller
+implementation domain. Missing source-supported cases remain incomplete port
+work, including cases tracked by later milestone issues.
+
 ## What the port owns
 
 - **#15:** the Lorentzian perfect-cell search, flips, side pairings and quotient traversal; Allcock edgewalk, cusp handling, rank-two edge cycles, root selection and termination.
@@ -193,13 +202,22 @@ Research supplies the maps and independent equation/kernel primitives.
 Postcomputed Levi images and lift tables may consume the resulting generators; they cannot supply those generators' own prerequisite.
 Defining `Aut((L,v))` or calling its `group_generators()` is not an implementation of this step.
 
-### Isotropic induction, rank at most two (#18)
+### General isotropic k-plane and flag induction (#18, #44)
 
-For each line representative I, form K = I-perp/I with research's quotient construction.
-Compute P_I = Aut((L,I)) here, then its image H_I in O(K). Recurse for isotropic classes u of K and their stabilizers Q_u. Construct the required finite coset action for Q_u \ O(K) / H_I, consume its generic double-coset computation, and lift and saturate the resulting lines to planes.
-Identify planes and flags by the port's marked-isometry algorithm.
-Compute their stabilizers by composing the research-owned section and kernel computations above with the port's recursive reduced-group computation.
-Rank greater than two remains outside the frozen acceptance scope.
+Preserve the pinned `SeqDims` data and rank-extension recursion in
+`CombinedAlgorithms.h:1266–1335,1975–2479`. For each representative I of the
+previous rank, form K = I-perp/I with research's quotient construction.
+Compute P_I = Aut((L,I)) with its specified flag constraints, then its image
+H_I in O(K). Recurse for isotropic classes u of K and their stabilizers Q_u.
+Construct the finite action for Q_u \ O(K) / H_I, compute its double cosets,
+and lift and saturate the resulting extensions of I. Repeat through the
+requested rank and dimension sequence. Retain exact deduplication, transporters,
+stabilizers and induced quotient actions for every supported plane or flag.
+
+The existing line/plane implementation is partial. The rank-two frozen cases
+remain regression obligations; higher source-supported ranks and flags require
+mathematical evidence as part of port completion. Issue #44 owns that remaining
+translation within the source-parity obligation.
 
 ### Arithmetic subgroups and centralizers (#18)
 

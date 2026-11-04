@@ -1,0 +1,54 @@
+##### seed 0
+.                                                                        [100%]
+1 passed in 193.52s (0:03:13)
+[peakrss] run: child waited=0 shell_code=0 samples=100
+[peakrss] peak tree RSS      : 3903 MiB
+[peakrss] low-water MemAvail : 9430 MiB
+[peakrss] peak single VmHWM  : 4026 MiB
+[peakrss] peak VmHWM by executable (this is the per-process attribution):
+[peakrss]   julia                      3344 MiB peak
+[peakrss]   python                      671 MiB peak
+[peakrss]   timeout                       7 MiB peak
+[peakrss]   proot-x86_64                  3 MiB peak
+[peakrss]   sh                            1 MiB peak
+[peakrss]   t=    92.0s procs=  5 rss=  3903 MiB hwm=  3903 MiB avail=  9430 MiB
+[peakrss]   t=   194.1s procs=  5 rss=  3782 MiB hwm=  4026 MiB avail=  9548 MiB
+[peakrss]   t=   192.1s procs=  5 rss=  3781 MiB hwm=  4025 MiB avail=  9548 MiB
+[peakrss]   t=   190.1s procs=  5 rss=  3780 MiB hwm=  4024 MiB avail=  9548 MiB
+[peakrss]   t=   188.1s procs=  5 rss=  3777 MiB hwm=  4021 MiB avail=  9548 MiB
+##### seed 1
+.                                                                        [100%]
+1 passed in 162.57s (0:02:42)
+[peakrss] run: child waited=0 shell_code=0 samples=84
+[peakrss] peak tree RSS      : 3989 MiB
+[peakrss] low-water MemAvail : 9361 MiB
+[peakrss] peak single VmHWM  : 4061 MiB
+[peakrss] peak VmHWM by executable (this is the per-process attribution):
+[peakrss]   julia                      3414 MiB peak
+[peakrss]   python                      634 MiB peak
+[peakrss]   timeout                       7 MiB peak
+[peakrss]   proot-x86_64                  3 MiB peak
+[peakrss]   sh                            1 MiB peak
+[peakrss]   t=   164.1s procs=  5 rss=  3989 MiB hwm=  4061 MiB avail=  9361 MiB
+[peakrss]   t=   162.1s procs=  5 rss=  3982 MiB hwm=  4060 MiB avail=  9369 MiB
+[peakrss]   t=   160.1s procs=  5 rss=  3981 MiB hwm=  4059 MiB avail=  9370 MiB
+[peakrss]   t=   158.1s procs=  5 rss=  3978 MiB hwm=  4056 MiB avail=  9370 MiB
+[peakrss]   t=   156.1s procs=  5 rss=  3974 MiB hwm=  4052 MiB avail=  9377 MiB
+##### seed 2
+.                                                                        [100%]
+1 passed in 197.06s (0:03:17)
+[peakrss] run: child waited=0 shell_code=0 samples=101
+[peakrss] peak tree RSS      : 3980 MiB
+[peakrss] low-water MemAvail : 9354 MiB
+[peakrss] peak single VmHWM  : 4092 MiB
+[peakrss] peak VmHWM by executable (this is the per-process attribution):
+[peakrss]   julia                      3417 MiB peak
+[peakrss]   python                      663 MiB peak
+[peakrss]   timeout                       7 MiB peak
+[peakrss]   proot-x86_64                  3 MiB peak
+[peakrss]   sh                            1 MiB peak
+[peakrss]   t=   108.1s procs=  5 rss=  3980 MiB hwm=  3980 MiB avail=  9354 MiB
+[peakrss]   t=   110.1s procs=  5 rss=  3980 MiB hwm=  3980 MiB avail=  9354 MiB
+[peakrss]   t=   112.1s procs=  5 rss=  3980 MiB hwm=  3980 MiB avail=  9354 MiB
+[peakrss]   t=   194.1s procs=  5 rss=  3928 MiB hwm=  4092 MiB avail=  9401 MiB
+[peakrss]   t=   196.1s procs=  5 rss=  3928 MiB hwm=  4092 MiB avail=  9401 MiB
