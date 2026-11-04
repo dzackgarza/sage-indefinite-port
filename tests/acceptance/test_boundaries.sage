@@ -8,6 +8,8 @@ planes and line-in-plane flags: the isomorphism classes of marked lattices (L, I
 arXiv:1607.01324), Scattone's K3 boundaries of degree 2 and 4 (Mem. AMS 374, §§5.4, 6), and Dutour Sikirić--Hulek's 87 Enriques modular groups (arXiv:2302.01679).
 """
 
+from functools import cache
+
 import pytest
 
 from tests.acceptance.consumer import (
@@ -197,18 +199,35 @@ _E10 = load_e10_fundamental_domain()
 _ORDER_O_PLUS_10_2 = 2**21 * 3**5 * 5**2 * 7 * 17 * 31
 
 
-def _gamma_h(face_polarization):
-    """Gamma_h^+ = O^+(N) cap pi_N^{-1}(pi_M(O(M, h))) for h in M(1/2) = U + E8(-1).
+@cache
+def _enriques_transport():
+    """The case-independent Enriques setup: the involution, its invariant lattice, and the transport.
 
-    The K3 lattice with the Enriques involution carries M = U(2) + E8(-2) as invariant and
-    N as anti-invariant lattice. h is transported from Dutour Sikirić--Hulek's coordinates
-    on U + E8(-1) into M along an isometry (U + E8(-1))(2) -> M.
+    None of these depends on the polarization: the involution is a fixed catalogue object, M is its
+    primitive extension's invariant lattice, and the transport is an isometry (U + E8(-1))(2) -> M
+    chosen from the `Isom` homset. Measured at provider `42d7361c`, the primitive extension costs
+    4.3 s and `Isom(...).an_element()` 19.5 s, recomputed for every one of the 87 cases; this caching
+    makes the whole family pay them once per acceptance run instead (issue #67).
     """
     from sage_extensions.catalogue import Involutions
 
     involution = Involutions.I_En
     invariant = involution.primitive_extension().invariant
     transport = lattice(_E10["gram"]).twist(2r).Isom(invariant).an_element()
+    return involution, invariant, transport
+
+
+def _gamma_h(face_polarization):
+    """Gamma_h^+ = O^+(N) cap pi_N^{-1}(pi_M(O(M, h))) for h in M(1/2) = U + E8(-1).
+
+    The K3 lattice with the Enriques involution carries M = U(2) + E8(-2) as invariant and
+    N as anti-invariant lattice. h is transported from Dutour Sikirić--Hulek's coordinates
+    on U + E8(-1) into M along an isometry (U + E8(-1))(2) -> M.
+
+    Only the polarization-dependent stages run per case: the involution, its invariant lattice and
+    the transport come from the cached setup above, whose objects are the same on every call.
+    """
+    involution, invariant, transport = _enriques_transport()
     polarization = invariant.inclusion()(transport(element(transport.domain(), face_polarization)))
     anti_invariant_group = involution.polarized(polarization).coinvariant_extension_subgroup()
     anti_invariant = anti_invariant_group.supergroup().domain()
