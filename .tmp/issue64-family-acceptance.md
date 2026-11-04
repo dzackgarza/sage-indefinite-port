@@ -29,6 +29,30 @@ Two things follow, and neither is a verdict on the family:
   small groups — each finishing under the guard, exactly as the standing "one heavy node at a time" rule
   requires. A guard stop is not a case verdict and not a cost measurement.
 
+## Bounded subsets of `vector_stabilizers` at this pair
+
+Following the sharding conclusion, the cases after the guard stop were run one process each:
+
+* cases 1–15 of 31 completed in the whole-file run before the guard stopped it (no per-case verdict
+  lines, because `-rA` prints its summary at the end and the run never reached it);
+* the six E10 square cases (`test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[0,2,4,6,8,10]`)
+  were then run individually, each with its own 380 s cap. The first one already took the tree to
+  **6186 MiB (hwm 6758)** at t = 214 s, over the 6144 MiB guard, and the run stopped there; `pgrep`
+  shows no surviving process.
+
+**Not attributed, and deliberately so.** An earlier sweep of these same node ids at provider `42d7361c`
+recorded peaks of 3735–3846 MiB. This run, at port `7b6102e7` + provider `cdafca84` under the gate
+runner, reached 6186 MiB before the same case finished. The two runs differ in provider revision and in
+harness, so the difference is **measured but not attributed** — it is neither a provider regression nor
+a port regression on this evidence, and calling it either would be exactly the inference the standing
+rules forbid.
+
+What it does mean for `#64`: `vector_stabilizers` at this pair cannot be accepted from this repository
+under the 6144 MiB guard as the file stands, and the single E10 case that was sampled does not fit
+either. Establishing the family needs either the CI six-shard arrangement (which partitions work but
+does not by itself lower a single case's peak) or a case-level memory investigation that starts by
+reproducing the `42d7361c` figure under this exact runner.
+
 ## What is *not* claimed
 
 Nothing here says a family is complete because its file exists, because its markers are absent, or
