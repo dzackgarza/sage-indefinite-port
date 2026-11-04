@@ -72,6 +72,26 @@ provider revision**. The two provider-side items now measured are therefore, tog
 
 Pin adoption is the owner's decision; both measurements are recorded so it can be made on evidence.
 
+## `vector_stabilizers` bounded run at `42d7361c`: 21 of 31, zero failures
+
+With the attribution above established, the whole file was run once at provider `42d7361c` (port
+unchanged, `-v` so each verdict prints as it lands, inner cap 3200 s):
+
+```
+passed = 21   failed = 0
+```
+
+The 21 are the fifteen base cases plus **all six E10 squares**
+(`test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[0,2,4,6,8,10]`) — the very cases that
+stopped the pin run on the guard. The ten `test_equivalence_witness_carries_a_representative_to_its_reflection`
+cases had not completed when the bounded run's cap was reached; `r_-1` alone has taken ~1271 s in an
+earlier measurement, so this is a horizon question, not a failure.
+
+Per-case lines and the in-flight `junit.xml` are in `.tmp/ci/results/vector_stabilizers-42d7361c/`.
+This is **bounded branch coverage at a non-pin provider**, and it is labelled that way on purpose: the
+pin remains `cdafca84`, where the family cannot be accepted at all because of the memory difference. It
+is not the family's acceptance and does not become one by being quoted.
+
 ## What is *not* claimed
 
 Nothing here says a family is complete because its file exists, because its markers are absent, or
