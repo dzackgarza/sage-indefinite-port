@@ -77,9 +77,15 @@ Four cases sampled at the same pair, each with its own 500 s inner cap:
 | case | outcome |
 | --- | --- |
 | `case_87` | **failed** at ~140 s (the provider `OverflowError` above, full traceback captured) |
-| `case_50` | **failed** at 151.04 s (`--tb=line` in that sample, so the exception text was not captured; not verified to be the identical exception) |
+| `case_50` | **failed** at 141.31 s with the **same** traceback, captured afterwards with `--tb=long` (see below) |
 | `case_1` | exceeded 500 s (killed by the sampling cap) |
 | `case_2` | exceeded 500 s (killed by the sampling cap) |
+
+**`case_50` shares case_87's cause — now measured, not inferred.** The first sample used `--tb=line` and
+captured only `1 failed in 151.04s`, so the exception was left unattributed at that point. A second run
+with `--tb=long` (`.tmp/enriques-case50-coset-overflow.log`) shows the identical signature:
+`OverflowError: value too large to convert to int` raised in the `repr` of a `_TransversalCoset`, at
+`sage/libs/gap/element.pyx:3166`, `1 failed in 141.31 s`. Same failure, 141 s rather than 151 s.
 
 **Correction, recorded rather than quietly fixed.** The first version of this table said `case_50`
 exceeded 500 s. That was inferred from two `Killed` lines in a log whose output was buffered behind a
@@ -90,6 +96,29 @@ note now only carries what the finished logs show.
 So the family contains at least two distinct failure modes: a fast, reproducible provider error, and
 cases that need more than 500 s. Those must not be merged into one story: an error is a defect to fix, a
 slow case is a cost question, and only a bounded run that finishes can call any case "expensive".
+
+## The published fix, located and compared (source-grounded)
+
+The provider line already contains the repair for this exact failure:
+
+```
+ba4efaa  fix: coset positions are read at GAP's index width, not a machine int's
+```
+
+* It is **155 commits downstream of this repo's pin** `cdafca84` (`git merge-base --is-ancestor`
+  confirms `cdafca84` is an ancestor of `ba4efaa`).
+* The fix is **absent at our pin and present at `ba4efaa`**, by source inspection:
+  `grep -c '_gap_list_entry\|ELM_LIST' src/sage_extensions/categories/group/groups.py` gives **0** in
+  `cdafca84` and **14** in `ba4efaa`.
+* Its own diagnosis matches ours exactly: `GapElement_List.__getitem__` binds its index through
+  `cdef int`, and the right transversal of `O(A_N)` has index `|O(A_N)| = 46998591897600 > 2**31`, so a
+  valid position raises `OverflowError: value too large to convert to int` at
+  `sage/libs/gap/element.pyx:3166` — the line in both of our tracebacks. The repair reads transversals
+  through GAP's `ELM_LIST`, which takes the index as a GAP integer.
+
+What this did **not** do: it did not change this repo's pin, and it did not edit the provider. The
+measurement of whether `ba4efaa` makes the port's failing cases pass is run against a per-process bind
+of a tree extracted from that commit, which is how this repo consumes a provider revision in a run.
 
 ## Status kept honest
 

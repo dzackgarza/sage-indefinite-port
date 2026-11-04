@@ -33,6 +33,7 @@ references/Indefinite.jl/
 !.tmp/issue67-hoist-measurement.md
 !.tmp/probe67-enriques-cache.sage
 !.tmp/handoff-owner-enriques-coset-overflow.md
+!.tmp/enriques-case50-coset-overflow.log
 !.tmp/enriques-case87-coset-overflow.log
 !.tmp/issue33-contract-reconciliation.md
 !.tmp/run-ci-acceptance.sh
