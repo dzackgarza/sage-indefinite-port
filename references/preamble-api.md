@@ -256,6 +256,6 @@ Development in this repository focuses on:
 
 2. **$2U$-Eichler approximate models & Higher-Witt-index recursion**: Generating $A(L)$ and lifting covering sets to full $O(L)$ for Witt index $\geq 2$.
 
-3. **Parabolic recursion & Isotropic orbit decomposition**: Compose research's group actions, sections and kernels with recursive reduced-group computations to obtain cusp and flag stabilizers and the frozen rank-at-most-two isotropic orbits.
+3. **Parabolic recursion & Isotropic orbit decomposition**: Compose research's group actions, sections and kernels with recursive reduced-group computations to obtain cusp and flag stabilizers and isotropic orbits at every source-supported rank and flag dimension sequence. The frozen line/plane cases verify part of that general translation.
 
 4. **Centralizer and arithmetic-subgroup consumers**: Supply indefinite orthogonal-group and orbit computations to research's general centralizer, gluing and subgroup operations; verify all frozen consumer cases.

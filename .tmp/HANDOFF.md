@@ -8,6 +8,13 @@ ownership. The required scope is isometry, boundaries, centralizers, isotropic
 orbits, orthogonal groups, reflective lattices, vector orbits and vector
 stabilizers. Preserve perfect-domain correctness and every frozen assertion.
 
+The ambient port task also requires full pinned-source functionality as defined
+in [AGENTS.md](../AGENTS.md#full-upstream-coverage). Every source-supported rank,
+flag dimension sequence and branch remains required. The general isotropic
+k-plane and flag translation is open under TODO.md UPSTREAM_PARITY (#18/#44);
+the present line/plane routines do not discharge it. Requirements beyond the
+pinned sources remain open under their recorded contracts.
+
 The repair is incomplete. Work is paused at the user's request. Resume only
 when requested. This document replaces the previous handoff.
 
@@ -33,7 +40,8 @@ runners or missing reports require execution. Final evidence must identify one
 published port/provider pair across all families. Shared provider repairs also
 need independent mathematical assertions at their owners. No additional stubs
 or weakened expectations are authorized. A helper pass or a selected case does
-not discharge its family.
+not discharge its family. Completion also requires the full source domain;
+missing general k-plane and flag functionality remains unfinished port work.
 
 The original failure set is Acceptance
 [40205836899](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40205836899),

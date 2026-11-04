@@ -69,6 +69,22 @@ The submitting repo must prove its own claimed behavior and do the blocker foren
 Do not require a receiving or downstream repo to classify another project’s internal uncertainty unless the original issue explicitly made that part of acceptance.
 When an external issue is created, it should be written for that receiving repo, not for a reader who already knows the submitting repo’s context.
 
+## Source coverage required for acceptance
+
+Compare each pinned routine's dispatch and parameter domain with its production
+translation. Require all source-supported ranks, flag dimension sequences,
+branches, outputs, witnesses and stopping rules. A language, representation or
+backend change must preserve those capabilities through the public consumers.
+An artificial rank cap is missing port functionality when the source accepts
+the higher rank. Treat #44's general isotropic k-plane and flag translation as
+required upstream coverage under #18.
+
+Use the general source algorithm as the implementation boundary. Passing line
+and plane examples cannot discharge a general k-plane routine. A frozen sample
+controls regression execution; it does not remove untested source branches
+from the completion condition. Keep every missing branch assigned to its
+algorithm until its production computation and mathematical evidence exist.
+
 ## Evidence Expectations
 
 Review tests as evidence, not as decoration.

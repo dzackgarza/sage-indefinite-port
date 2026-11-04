@@ -8,8 +8,11 @@ supersedes older full-file, type, performance and refinement gates in this DAG.
 Keep every frozen fixture and the complete CI workflow; its long-tail failures
 remain evidence for later work and do not gate functional publication. A known
 missing general branch remains an implementation obligation.
-Post-v1 functionality stays open with its required results recorded, including
-cases for which the pinned upstream supplies no implementation.
+Completion includes every capability supported by the pinned sources, with
+their full ranks, dimension sequences and branch domains. Translate the general
+source routines directly. Missing upstream coverage remains port work regardless
+of milestone labels. Requirements beyond the pinned sources also remain open
+under their recorded contracts.
 
 The [issue tree rooted at #4](https://github.com/dzackgarza/sage-indefinite-port/issues/4) owns implementation claims, issue dependencies, and acceptance.
 The nodes below decompose that contract; they do not replace it, and they
@@ -20,6 +23,25 @@ Read the specific TODO node selected by the tracked handoff; do not
 re-survey this DAG at every turn. Change a node when actual acceptance
 evidence (commit, CI case IDs and run), or a demonstrated issue obligation,
 changes its status or contract.
+
+## Upstream functionality required for completion
+
+- [ ] **UPSTREAM_PARITY / #18, #44.** Complete isotropic k-plane and flag
+  algorithms for every source-supported rank and dimension sequence. The pinned
+  `CombinedAlgorithms.h:1266–1335,1975–2479` supplies the `SeqDims` machinery,
+  stabilizers, equivalence, right cosets and orbit induction. Preserve that
+  general construction and its witnesses through the public marked-lattice
+  operations. The current `marked_lattices.py` rank-two rejection and
+  `IsotropicInduction` line/plane-only construction leave this obligation open.
+  Verify rank-three sublattices, complete and partial flags, their stabilizers,
+  transporters and orbit consumers against the source and independent
+  mathematical assertions. The existing frozen rank-two cases remain required.
+  Issue #44 tracks missing upstream parity within port completion.
+
+Every algorithm node below retains the full domain of its source routines.
+Its frozen cases supply regression evidence; their parameter range does not
+define the implementation's scope. Add uncovered source branches to the owning
+node and require them before marking that node complete.
 
 ## Sources, scope, and execution constraints
 
@@ -137,9 +159,9 @@ A mathematical deviation needs a source-backed proof or counterexample on its ow
 | **EXTEND / #18** | CONTRACT | Verify the current integration in `indefinite/recursive.py` (`_IsotropicExtension`) through owned partial isometries and `partial.witt_extension(source_inclusion,target_inclusion)`, plus `R.pointwise_perpendicular_kernel().group_generators()`. Preserve the source's Euclidean-nullspace complement; do not substitute an arbitrary complement. Convert the complete kernel family `1+T_j` to `1+T_j/d` through rational morphisms; justify the scaling using `T_i T_j=0`, since each direction kills `N=I-perp` and has image in `I⊆N`. Retain the port's `Hom(K,I)` shears. Keep raw engine coordinates inside the tensor owner. Verify both the assigned provider calls and their complete use by the general route. |
 | **POINTED / #18** | EXTEND | Verify and repair the existing `_isotropic_pointed_isometry` route using primitive markings, recursive reduction Isom, and `R.rational_lifts(S,reduced).integral_members()`. Preserve rational/integral base-point handling, the full target correction assembly when one reduced map has an empty integral fibre (an empty fibre for one reduced map does not make the whole Isom empty), and upstream's global-sign normalization against the actual marked vectors. Repair the general route beyond the even divisibility-one shortcut. Discharge the relevant A_ISOMETRY/A_STABILIZERS cases and invalid/nonisometric examples. |
 | **BOUND / #18** | EXTEND | In `isotropic_stabilizer_action` and `isotropic_subspace_isometry`, retain the certified bound `D=2 d² e² a`: `d` is the source period/common generator denominator, `e` the absolute reduction discriminant, and `a=|coker(L→I*)|` the intrinsic pairing index. Construct that pairing with owned dualization and `metric_map` after checking their contracts. The finite-cokernel index is now computed exactly from the product of nonzero Smith entries of the full-row-rank integral pairing matrix, rather than provider `index()`/`cardinality()` dispatch. Targeted regressions pass for divisibility-four isotropic lines and rank-two planes in `U(4)⊕U(4)`, and for div-1/div-2 pointed stabilizer routes (`.tmp/isotropic-stabilizer-regressions-6b9116c-20261025T152931Z.log`, port `6b9116cf`). The full bound/containment predecessor remains open. **Its recorded blocker is now partly refuted at provider `42d7361c`:** the finite-representation transporter is reachable and *works* on a rational-nonintegral specimen — `L = U + <-2>`, `(-2,-2,-1) -> (2,2,-1)`, where `pointed_isometry` must correct through `_lattice_action(target).transporter(image)` and the transporter returns a witness instead of raising. Pinned by `tests/test_finite_representation_transporter.py`, which fails as an invalid specimen if the branch is never entered. Not settled: the note's specific torsion-module variant, because the failing artifact it cites (`.tmp/isotropic-stabilizer-regressions-6b9116c-*.log`) is no longer on disk, so there is a measured working specimen but no reproduced failure to compare it with. Use the recorded line/plane/flag bound proof, the complete orbit-generated module, and its containment certificate; do not truncate the orbit or use a coordinate-complement determinant for `a`. |
-| **PARABOLIC / #18** | BOUND | Implement/verify `IsotropicInduction.line_automorphism_generators`, `plane_automorphism_generators`, `flag_automorphism_generators`, and isotropic `EichlerRecursion.pointed_automorphism_generators`. Supply recursive reduced groups, compatibility actions, arithmetic image discovery, and assembly of appropriate sections and kernels. Distinguish the pointwise-perpendicular kernel from the joint-action kernel. Calling the same unresolved parabolic `.group_generators()` is circular. Discharge A_STABILIZERS and the line/plane/flag portions of A_ISOTROPIC. |
+| **PARABOLIC / #18** | BOUND | Implement/verify `IsotropicInduction.line_automorphism_generators`, `plane_automorphism_generators`, `flag_automorphism_generators`, and isotropic `EichlerRecursion.pointed_automorphism_generators`. Supply recursive reduced groups, compatibility actions, arithmetic image discovery, and assembly of appropriate sections and kernels. Distinguish the pointwise-perpendicular kernel from the joint-action kernel. Preserve the general source rank and `SeqDims` parameters under UPSTREAM_PARITY; the current line/plane entry points leave higher-rank stabilizers and flags unfinished. Calling the same unresolved parabolic `.group_generators()` is circular. Discharge A_STABILIZERS and A_ISOTROPIC plus the uncovered source-supported ranks and flags. |
 | **RECURSION / #18** | POINTED, PARABOLIC, CELLS | Finish/verify `EichlerEnvelope`, `OrbitCoverModel` approximate generators, prescribed-invariant covers, splitting vectors, full orthogonal-group assembly, and Isom decisions. Supply the rational generated group, inclusion, and applicability proof to research's `IntegralStructureAction`; retain exact witnesses and full fibres. Recheck direct-sum factors, transvection signs, content corrections, primitive-in-L versus primitive-in-envelope coverage, and the earlier Eichler `[-1]` repair. The current scaled-dual isometry (replacing the old mass/group-based qfisom emptiness path), reduced-dual full-group and cached fixed-map preimage implementations are the routes to verify; do not revive obsolete diagnoses of their predecessors. Discharge A_GROUPS/A_ISOMETRY. |
-| **ORBITS / #18** | RECURSION | Finish all fixed-norm vector and rank-at-most-two isotropic line/plane/flag classification: finite double-coset actions, saturation, exact identifications, representatives, stabilizers, and witnesses. Trace the full pinned dispatcher for zero/negative norms, spacelike cases, and higher-index Eichler covers. A restriction in one Lorentzian helper does not prove a project-wide source gap. Obtain missing headers and preserve the existing full orbit scopes. Discharge A_VECTORS/A_ISOTROPIC. |
+| **ORBITS / #18** | RECURSION | Finish all fixed-norm vector and source-supported isotropic k-plane/flag classification, preserving the full dimension sequences: finite double-coset actions, saturation, exact identifications, representatives, stabilizers, and witnesses. Trace the full pinned dispatcher for zero/negative norms, spacelike cases, and higher-index Eichler covers. A restriction in one Lorentzian helper does not prove a project-wide source gap. Obtain missing headers and preserve the existing full orbit scopes. Discharge A_VECTORS/A_ISOTROPIC. |
 | **ARITHMETIC / #18** | ORBITS | Supply ambient indefinite groups, orbits, stabilizers, and finite discriminant/character actions to generic preimage and orbit-splitting computations. Reconstruct subgroup representatives, witnesses, stabilizers, and boundary labels; verify coinvariant extension and selected enumeration. Retain all absorbed #19–#22 obligations. Discharge A_BOUNDARIES and the arithmetic subgroup cases elsewhere in the suite. |
 | **CENTRALIZERS / #18** | RECURSION | Supply the indefinite component orthogonal-group computations to research's invariant-decomposition and compatible-gluing construction. Verify every finite-order frozen case, including discriminant images. For a non-scalar component, identify its actual computational route and hypotheses; full component O(L) or a subgroup predicate is insufficient. Research #397 owns its independent computation; #18 retains the full consumer obligation. Discharge A_CENTRALIZERS. |
 | **PERFORMANCE / #18** | Deferred until functional MVP | Do not profile, benchmark, optimize or tune runtime during this phase. If an essential small correctness example cannot execute, repair its immediate correctness/importability defect and resume implementation. Preserve expensive cases for later CI-reported work. |
@@ -186,10 +208,11 @@ case or drop an assertion to form the cited evidence sample.
 
 ## Functional MVP evidence from the current implementation work
 
-**V1 functional status: the pinned algorithm routes are implemented.** The
-algorithm families and public consumers below have small
-independently justified examples. Full historical acceptance and refinement
-remain separate obligations, together with the post-v1 functional backlog.
+**Functional port status: incomplete.** The general isotropic k-plane and flag
+translation remains open under UPSTREAM_PARITY. The examples below establish
+only their exercised branches. Completion requires the full source-supported
+domain, working public consumers and evidence for every mathematical branch.
+The full frozen suite and additional functional requirements remain required.
 The lower-rational-Witt-index cases are still required functionality. Their
 inherited source limitation makes them post-v1 work; it does not remove them
 from the project. The open requirements and implementation context follow

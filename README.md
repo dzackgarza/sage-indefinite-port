@@ -2,6 +2,20 @@
 
 Native Sage/Python implementations of the indefinite-lattice isometry, orthogonal-group, orbit, Lorentzian perfect-domain and Allcock edgewalk algorithms from pinned upstream sources. The public mathematical lattice objects and operations are supplied by [research](https://github.com/dzackgarza/research).
 
+## Completion scope
+
+The port must preserve every mathematical capability of the pinned sources,
+including their general input domains, ranks, flags, branches, outputs and
+certificates. General source routines are translated with their parameters
+intact. Full upstream isotropic k-plane and flag functionality is required;
+the current line/plane implementation leaves that translation incomplete.
+
+Milestones and test samples order delivery and verification. They do not
+authorize a smaller port. Every missing source-supported capability remains
+required until implemented through its public consumers. See
+[full upstream coverage](AGENTS.md#full-upstream-coverage) and
+[the remaining parity obligation](TODO.md#upstream-functionality-required-for-completion).
+
 ## Cloud-agent entry point
 
 The active integration branch is `main`; the former `implement/lorentzian-completion` line is merged into it.

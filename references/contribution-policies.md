@@ -19,6 +19,13 @@ reimplementation.
 
 The port-specific consequences are:
 
+- **Full source functionality.** Preserve every supported source input domain,
+  rank, flag dimension sequence, branch, result and witness. Translate general
+  routines with their parameters intact. A restricted application or test
+  sample establishes only that sample; the complete source algorithm remains
+  the implementation obligation. Missing upstream coverage stays unfinished
+  port work regardless of milestone or issue labels.
+
 - **Mathematical ownership.** Represent lattice isometries, marked objects,
   fixed pointwise markings, sublattices, flags, forms, discriminant modules
   and group actions using the existing preamble category/morphism objects.

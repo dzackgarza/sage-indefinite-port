@@ -10,6 +10,34 @@ This project translates the specialized indefinite-form algorithms of the
 consuming the mathematical operations of [research](https://github.com/dzackgarza/research).
 It is **a port of existing algorithms**, not an algorithm-design project.
 
+## Full upstream coverage
+
+Completion requires every mathematical capability supported by the pinned
+sources, through the public Sage/research consumers. Preserve the full input
+domain, ranks, dimension sequences, branches, outputs, witnesses, group
+generation, enumeration and stopping rules of each source algorithm.
+
+Translate the source's general routine with its parameters intact. A general
+rank-k routine stays general in the port. In particular, isotropic k-planes
+and partial or complete flags must retain the source's supported ranks and
+dimension sequences. Lines and planes are examples of that general routine.
+Keep its arithmetic and recursion; adapt representations and generic callees
+at their existing owners.
+
+An omitted source branch is unfinished port work. Milestone labels, a frozen
+test corpus, application-specific examples, provider ownership and publication
+of a partial implementation do not reduce the required functionality.
+Source-supported functionality belongs to the port's completion condition,
+including functionality tracked by an issue titled v2 or post-v1. Additional
+requirements beyond the source remain required under their own contracts.
+
+Before accepting an implementation or completion claim, map the source's
+dispatch branches and parameter domain to the production route and its
+mathematical evidence. Record every uncovered branch in TODO.md at its owning
+algorithm. Missing source functionality keeps that algorithm incomplete.
+A rank-three isotropic sublattice accepted upstream but rejected by the port
+is a missing translation, even when every line and plane example passes.
+
 ## Current functional MVP phase
 
 The user's 2026-10-22 MVP directive supersedes older completion and refinement
@@ -20,7 +48,8 @@ acceptance matrix. Preserve the full frozen CI suite as nonblocking long-tail
 evidence. Performance, typing (#36), formatting, refactoring, exhaustive
 coverage and repeated audits are deferred until functional MVP delivery.
 Repair only defects that block the required mathematical computations or their
-small correctness examples. Do not report an unimplemented branch as complete.
+small correctness examples. Functional publication may be incremental; port
+completion requires the full upstream coverage specified above.
 
 The v1 boundary sets delivery priority, not the eventual functional scope.
 Cases unsupported by the pinned upstream, including higher-real-index forms
