@@ -72,19 +72,24 @@ A minimal reproducer is the shipped case: `_gamma_h` at `case_87`'s polarization
 
 ## The family is heterogeneous, measured
 
-Three further cases sampled at the same pair, each with its own 500 s inner cap:
+Four cases sampled at the same pair, each with its own 500 s inner cap:
 
 | case | outcome |
 | --- | --- |
-| `case_87` | **error** at ~140 s (the provider `OverflowError` above) |
+| `case_87` | **failed** at ~140 s (the provider `OverflowError` above, full traceback captured) |
+| `case_50` | **failed** at 151.04 s (`--tb=line` in that sample, so the exception text was not captured; not verified to be the identical exception) |
 | `case_1` | exceeded 500 s (killed by the sampling cap) |
 | `case_2` | exceeded 500 s (killed by the sampling cap) |
-| `case_50` | exceeded 500 s (killed by the sampling cap) |
 
-So the family contains at least two distinct failure modes: a fast, reproducible provider error on one
-case, and cases that simply need more time than the sampling cap allowed. Those must not be merged into
-one story: an error is a defect to fix, a slow case is a cost question, and only a bounded run that
-finishes can call any case "expensive".
+**Correction, recorded rather than quietly fixed.** The first version of this table said `case_50`
+exceeded 500 s. That was inferred from two `Killed` lines in a log whose output was buffered behind a
+pipe, before the run finished; the completed log shows `1 failed in 151.04s`. Two cases error quickly
+and two outrun the sampling cap — inferred outcomes from partial logs are not measurements, and this
+note now only carries what the finished logs show.
+
+So the family contains at least two distinct failure modes: a fast, reproducible provider error, and
+cases that need more than 500 s. Those must not be merged into one story: an error is a defect to fix, a
+slow case is a cost question, and only a bounded run that finishes can call any case "expensive".
 
 ## Status kept honest
 
