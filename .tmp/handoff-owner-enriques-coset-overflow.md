@@ -70,6 +70,22 @@ and which `#33`'s "typed errors" invariant forbids.
 A minimal reproducer is the shipped case: `_gamma_h` at `case_87`'s polarization, then
 `group.group_generators()`.
 
+## The family is heterogeneous, measured
+
+Three further cases sampled at the same pair, each with its own 500 s inner cap:
+
+| case | outcome |
+| --- | --- |
+| `case_87` | **error** at ~140 s (the provider `OverflowError` above) |
+| `case_1` | exceeded 500 s (killed by the sampling cap) |
+| `case_2` | exceeded 500 s (killed by the sampling cap) |
+| `case_50` | exceeded 500 s (killed by the sampling cap) |
+
+So the family contains at least two distinct failure modes: a fast, reproducible provider error on one
+case, and cases that simply need more time than the sampling cap allowed. Those must not be merged into
+one story: an error is a defect to fix, a slow case is a cost question, and only a bounded run that
+finishes can call any case "expensive".
+
 ## Status kept honest
 
 `case_87` is one of the 87; this note establishes one failing case and its owner, not the family's state.
