@@ -2,7 +2,7 @@
 
 `test_lorentzian_generators_match_polyhedral_common` certifies a generating set by comparing image orders
 modulo every prime in `comparison_primes(gram)` = {2, 3, 5, 7}. At p=5 and p=7 that comparison does not
-terminate in the resource envelope (see `.tmp/handoff-owner-lorentz-image-order.md`), so the acceptance node
+terminate in the resource envelope (see https://github.com/dzackgarza/sage-extensions/issues/19), so the acceptance node
 stays open. This regression pins what *is* affordable, at p=2 and p=3:
 
 * always: the computed and the recorded generating set have the **same** image order -- the property the

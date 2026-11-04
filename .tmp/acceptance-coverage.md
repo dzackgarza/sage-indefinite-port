@@ -2,44 +2,14 @@
 
 Every row names the port checkout and provider revision that produced it. `captured` means the run
 header echoed both SHAs; `derived` means they were reconstructed from commit timestamps and tree
-hashes, with the reasoning recorded in `.tmp/HANDOFF.md`. No row is attributed to a revision it did not
+hashes, with the reasoning recorded on [#64](https://github.com/dzackgarza/sage-indefinite-port/issues/64). No row is attributed to a revision it did not
 run on, and no cap is counted as a pass or a failure.
 
-## Status at the current pins (read this first; the sections below keep the history)
+## Status at the current pins
 
-Port `47b69d86` (src unchanged since `49e3965f`), provider `42d7361c`, unless a row says otherwise.
-"Accepted" always means the original assertions passed under the original limits (1 800 s cap,
-6 144 MiB guard).
-
-| family | state | evidence |
-| --- | --- | --- |
-| A_STABILIZERS — pointed-isometry nodes 1–14 | **accepted 14/14** at `42d7361c`, 194 s total, max peak 3 651 MiB | `stab-pointed-42d7361c.log` |
-| A_STABILIZERS — roots `r_-1`…`r_8` | **accepted 10/10** at `42d7361c`, 3 293 s total, slowest 1 271 s, max peak 4 708 MiB | job `jmvyzjrg9` |
-| A_STABILIZERS — E10 squares `[0,2,4,6,8,10]` + OSCAR | **accepted 7/7** at `42d7361c`, 1 168 s total | job `jmvz3a0di` |
-| A_VECTORS — K3 per-norm `[-2,2,4,-4]` | **accepted 4/4** at `42d7361c`, 1 806 s total, max peak 3 960 MiB — was 2 caps + 2 never started | jobs `jmvz1n63h`, `jmvz21tji` |
-| A_VECTORS — the rest of `test_vector_orbits.sage` | 58/64 passed in the earlier sweep; `[14]` recorded as not reproducing; **not re-run at `42d7361c`** | `sweep-vectors.log` |
-| A_ISOMETRY | accepted 166/166 at `c546077d` (earlier pin) | sweep `jmvxurihq` |
-| A_CENTRALIZERS | accepted 5/5 at `c546077d` | earlier record |
-| A_GROUPS — nodes 10–45, 47 | accepted 37/37 at `565fc6b9` | earlier record |
-| A_GROUPS — LORENTZ 0/1/2 | **open; the exact-order capability is a maintained-library request, not a port task** (`reduction_image_order` was checked and is a harness `MatrixGroup(...).order()` BSGS helper, not a provider API, so it is retracted as an independent route). **open — dependency named, not an impossibility**: the image's system GAP (`/usr/share/gap/pkg`) lacks `recog`/`genss`; the packaging blocker is now **solved separately** (immutable image `@sha256:122ccd3a…`, packages loaded from `/usr/share/gap/pkg`, Borel 62 500 check), but `sage -i gap_packages` is **not** a working route in this image — it installs into `$SAGE_LOCAL/lib/gap/pkg`, which libgap's GAP roots do not include, so those files never load; the capability is still Monte Carlo and does not decide these orders | `.tmp/handoff-owner-lorentz-image-order.md`, § "The GAP capability" |
-| **A_GROUPS — node 46 `a7_plus_diagonal`** | **ACCEPTED — passed 662 s, peak 1 616 MiB**, original assertions, 1 800 s cap and 6 144 MiB guard unchanged, via the orbit-pruned facet route (was CAPPED at 5 405 MiB on the engine route) | job `jmvzh3n3l` |
-| A_ISOTROPIC — stride-100 sample | accepted 89/89 | `isotropic-sample.log` |
-| A_ISOTROPIC — `test_o_n_maps_onto_o_of_the_discriminant_form` | **accepted 468 s, peak 3 868 MiB** at `42d7361c` (first of the unrun tail) | job `jmvz75d9x` |
-| A_ISOTROPIC — `test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank0,rank1]` | **accepted 2/2**: 150 s / 3 703 MiB (lines) and **1 661 s / 4 926 MiB** (planes) | job `jmvz88la4` |
-| A_ISOTROPIC — `test_published_representatives_lie_in_distinct_o_plus_orbits[rank0]` | **capped again** at 1 800 s, peak 4 641 MiB; 29 dumps put it in `subgroup_classes` | job `jmvz88la4` |
-| A_ISOTROPIC — remaining tail (6 unrun + 1 capped) | **open** — same `subgroup_classes`/stabilizer-generation locus | this session |
-| A_BOUNDARIES — Enriques 87 cases | **open — external owner**: 219 s to build the coinvariant subgroup, then > 681 s unfinished just to *generate* `Γ_h`; the rest of the case never runs | `.tmp/handoff-owner-enriques-oqn.md` |
-| A_BOUNDARIES — Dawes tail (3 nodes) | **open — same subgroup primitive**: `dawes_2U2_A2_stable` re-run at `42d7361c` still caps at 1 800 s (4 304 MiB), 8 of 29 dumps in `subgroup_classes` | job `jmvzaglti` |
-| A_BOUNDARIES — classical indices (3 nodes) | **open — same locus**: asserts through `_gamma_h` and `subgroup_on(discriminant_morphism…)` | source read |
-| A_BOUNDARIES — classical indices (3 nodes) | **not run** | — |
-| **A_REFLECTIVE — representative families** | **ACCEPTED 116/116**, zero failures, max peak 2 452 MiB (the E10 node), cap 1 800 s, guard 6 144 MiB: 6 non-parametrised (edgewalk routes, promised-go, both labelled-coordinate period cases, branch sample), 103 `ListSimpleRootSystem`, 4+2 Vinberg, 1 E10 | job `jmvzi4n08` |
-| A_REFLECTIVE — long tail (8 821 `ListReflect` + 8 595 Allcock) | **not gated, sampled and paused**: a stride-500 sample ran **14 nodes, 14 passed, 0 failures**, then the run was stopped **between nodes** (not mid-node) to free the shared heavy slot for the library's Enriques stage probe. Not a failure and not a cap | job `jmvzj3scc` |
-| A_PERFECT | **Hosted CI defect found and fixed** (see below): `ci-acceptance` read the provider revision from `.tmp/ci/research`, a path no recipe creates — `ci-provision-sage` provisions `.tmp/ci/sage-extensions` at the `pyproject.toml` pin — so every shard aborted before pytest with `fatal: cannot change to .tmp/ci/research` (exit 128). Repaired, with a pin check. 92/92 **locally** at `cdafca84`. The hosted requirement is discharged by `.github/workflows/acceptance.yml`, which runs on every push (a required sample) and on `workflow_dispatch` (full corpora), in `ghcr.io/dzackgarza/sage:develop`; every push to main this session is a trigger. The connector exposes no Actions runs, so the hosted result is read in the repository's Actions tab, not from here — no hosted evidence is claimed | `.github/workflows/acceptance.yml` |
-| Unit suite | **240 passed** over all of `tests/` at the final HEAD, 155.6 s — includes the facet-certificate, orbit-contract, walk and traversal-seam files | `unit-final.log` |
-
-Three things this table must not be read as: K3 acceptance is one test, not A_VECTORS; a green unit suite is
-not port acceptance; and none of the "external owner" rows is a cap that a longer limit would fix — each has a
-measured cause in the document below.
+The per-family status table is maintained on [#64](https://github.com/dzackgarza/sage-indefinite-port/issues/64) under [#33](https://github.com/dzackgarza/sage-indefinite-port/issues/33). This file keeps the
+measured history behind each row. K3 acceptance is one test, not A_VECTORS; a green unit suite is not port
+acceptance; and none of the external-owner rows is a cap that a longer limit would fix.
 
 ## A_PERFECT
 
@@ -177,7 +147,7 @@ do establish is the size of the symmetry reduction (89 rays → 6 orbits, 27 →
 worth implementing, and the contracts that route must satisfy are now pinned in `tests/test_facet_orbit_contracts.py`.
 
 **Retraction.** I first wrote below that A7 is "engine-bound: no port-side lever remains". That inference came
-from `interior` being unsupported, which does not establish anything about supported routes. `.tmp/handoff-a7-facet-route.md`
+from `interior` being unsupported, which does not establish anything about supported routes. [#65](https://github.com/dzackgarza/sage-indefinite-port/issues/65)
 replaces it: the reference implementation of this exact requirement enumerates facets **one per stabilizer orbit**
 from the cell stabilizer (`f_adj` → `DualDescriptionRecordFullDim(EXT_T, GRPperm, rddo)`, not vendored), builds
 the initial cell by a rank-growing critical-set loop with no H-description at all, and never calls Normaliz. The
@@ -319,7 +289,7 @@ The first guess was that `orthogonal_group()` materialized the whole `O(q_N)`; `
 selection is lazy, so that was retracted. The second guess was that the per-generator `discriminant_morphism()`
 loop dominated; the discriminant-order node shows `O(q_N)`'s construction and order are cheap, and the shorter
 probe shows the generator list never arrives — `group_generators()` alone exceeds 681 s. Both corrections are
-in `.tmp/handoff-owner-enriques-oqn.md` with the measurements that forced them.
+in [sage-extensions#17](https://github.com/dzackgarza/sage-extensions/issues/17) with the measurements that forced them.
 
 ### A_BOUNDARIES, Enriques: stage attribution (a staged probe, not a second cap)
 
@@ -349,7 +319,7 @@ What would materialize it is `_computed_group_generators` → `_engine_group().g
 family — plausibly `subgroup_on` (`:1523`), which the probe had not reached. Whether a subgroup order can be
 decided without that ambient family is **not established**, and neither is that such an API is missing.
 
-This is published as `.tmp/handoff-owner-enriques-oqn.md` with the exact specimen, the source trace, the
+This is published as [sage-extensions#17](https://github.com/dzackgarza/sage-extensions/issues/17) with the exact specimen, the source trace, the
 measured stages, the four timings that would discriminate construction cost from a missing API, and the
 unchanged input/output obligation. No provider patch, no ambient-order substitution, one bounded probe.
 
@@ -448,7 +418,7 @@ retained `Z -> F_p` map, and with it `orthogonal_group_base_change` → `base_ch
 `is_finite()` is already `True`, but `cardinality()` falls through to `_group_cardinality`
 (`groups.py:383-394`), which counts only groups *placed* in `OwnedFiniteGroups()`, and no
 `_selected_cardinality_decision` is installed. Exact contract and the two things the owner must supply:
-`.tmp/handoff-owner-lorentz-image-order.md`.
+[sage-extensions#19](https://github.com/dzackgarza/sage-extensions/issues/19).
 
 Nothing here concludes anything about the image from the ambient order or from p=2/p=3 agreement.
 
@@ -631,7 +601,7 @@ An outside controller edited `tests/acceptance/test_boundaries.sage` here, repla
 `target.subgroup_on(tuple(g.discriminant_morphism() for g in group.group_generators()))` with
 `group.discriminant_image()` and then weakening the added identity check to cardinality equality. The worktree is
 restored and the file is byte-identical to `HEAD`. The contract analysis is recorded in
-`.tmp/contract-discriminant-image-identity.md`; in short, that expression carries three obligations -- generator
+[sage-extensions#17](https://github.com/dzackgarza/sage-extensions/issues/17); in short, that expression carries three obligations -- generator
 realization (`g.discriminant_morphism()` must be constructible for actual generators), typed endpoint identity
 (the subgroup lives in *that* `target`), and the cardinality/index -- and an image API preserves the obligation only
 if its contract fixes all three. Returning only an order, or a subgroup whose equality with the generated one is
@@ -702,10 +672,10 @@ An inventory of the remaining obligations and what actually blocks each:
 | A_STABILIZERS pointed-isometry nodes 1–14 | **cheap re-baseline pending** — accepted at `565fc6b9` only, 146 s together | ~300 s serial with startup |
 | A_BOUNDARIES (87 Enriques + 3 classical indices + Dawes tail) | Enriques `case_1`: **capped again at 1 800 s**, now with attribution (below) — diffuse provider overhead, no single port hot spot | 4 Dawes nodes, then this case |
 | A_ISOTROPIC tail (10 non-parametrised + 1 capped) | **heavy slot**; the capped one is the Enriques-adjacent set | 89/89 stride sample passed |
-| A_GROUPS LORENTZ 0/1/2 | **external owner** — GAP lacks `recog`/`genss`, and no recognition route exists for the generated matrix group | `.tmp/handoff-owner-lorentz-image-order.md` |
-| A_GROUPS node 46 `a7_plus_diagonal` | **cone conversion**, not a cap — see below | `.tmp/HANDOFF.md` |
+| A_GROUPS LORENTZ 0/1/2 | **external owner** — GAP lacks `recog`/`genss`, and no recognition route exists for the generated matrix group | [sage-extensions#19](https://github.com/dzackgarza/sage-extensions/issues/19) |
+| A_GROUPS node 46 `a7_plus_diagonal` | **cone conversion**, not a cap — see below | [#64](https://github.com/dzackgarza/sage-indefinite-port/issues/64) |
 | BOUND/#18 finite-representation transporter | **unverified since the provider moved**, not known-failing | see below |
-| FINITE, LIFTS | **research #401** | TODO |
+| FINITE, LIFTS | **research #401** | [#18](https://github.com/dzackgarza/sage-indefinite-port/issues/18) |
 
 ### BOUND/#18: the note predates `42d7361c` and is now unverified
 
@@ -826,7 +796,7 @@ the pipe, shows the real attribution.
 
 ### `a7_plus_diagonal`: blocked on cone conversion, with the artifact
 
-The node needs `O(L).discriminant_image()` for `A7 + diag(1,1,-1)`. `.tmp/HANDOFF.md:163-172` records the
+The node needs `O(L).discriminant_image()` for `A7 + diag(1,1,-1)`. [#64](https://github.com/dzackgarza/sage-indefinite-port/issues/64) records the
 concrete block: its initial perfect configuration has **49 861 distinct vectors**; the streamed pairing/hash
 passes reach exact cone conversion, but neither the full PPL consumer (`.tmp/repair-orthogonal-a7-flint.log`,
 provider `07b24a2`) nor the separate Normaliz probe (`.tmp/repair_a7_normaliz.py`,
@@ -868,7 +838,7 @@ case above and has no unit coverage.
 ### Shared GAP capability: a handoff to coordinate, not a stop
 
 The missing `recog`/`genss` packages are recorded as a concrete request in
-`.tmp/handoff-owner-lorentz-image-order.md` (exact contract, measured routes, what a recognition build would
+[sage-extensions#19](https://github.com/dzackgarza/sage-extensions/issues/19) (exact contract, measured routes, what a recognition build would
 unblock). That is an item to coordinate with the provider owner, not a reason to consider LORENTZ closed or
 impossible.
 

@@ -27,27 +27,21 @@ references/vendor/zotero/
 references/polyhedral_common/
 references/Indefinite.jl/
 .tmp/*
-!.tmp/HANDOFF.md
 !.tmp/provider-report-dual-point-hash.md
 !.tmp/probe-gamma-h-stabilizer.py
-!.tmp/handoff-owner-symmetric-group-description.md
 !.tmp/probe-one-pointed-isom.py
-!.tmp/handoff-owner-engine-finiteness.md
 !.tmp/probe-pointed-unit-profile.py
 !.tmp/pointed-q6-pstats.txt
 !.tmp/handoff-owner-torsionform-hash.md
 !.tmp/acceptance-coverage.md
 !.tmp/peakrss.py
-!.tmp/handoff-owner-finiteness-shortcircuit.md
 !.tmp/probe-cellfaces-baseline.py
 !.tmp/probe-owned-permgroup.py
 !.tmp/probe-multicycle.py
-!.tmp/facet-orbit-substitution-draft.md
 !.tmp/probe-gset-api.py
 !.tmp/probe-tuple-transport.py
 !.tmp/probe-stabilizer-disjunct.py
 !.tmp/probe-lattice-action-rss.py
-!.tmp/investigation-lorentzian-image-order.md
 !.tmp/probe-lorentzian-stages.py
 !.tmp/probe-e10-premises.py
 !.tmp/probe-image-membership.py
@@ -58,11 +52,8 @@ references/Indefinite.jl/
 !.tmp/probe-verify-provider.py
 !.tmp/probe-tco-specimen.py
 !.tmp/probe-regression-evidence.py
-!.tmp/handoff-owner-lorentz-image-order.md
 !.tmp/handoff-owner-congruence-transporter.md
-!.tmp/handoff-port-enriques-stageD-attribution.md
 !.tmp/probe-enriques-stageD-attribution.py
-!.tmp/handoff-port-enriques-stageD-hashfix.md
 !.tmp/enriques_stageD_hashfix_e609d032.log
 !.tmp/probe-enriques-stageD-attribution-hashfix.py
 !.tmp/probe-lorentz-image-api.py
@@ -72,7 +63,6 @@ references/Indefinite.jl/
 !.tmp/probe-lorentz-provider-subgroup.py
 !.tmp/probe-lorentz-placement.py
 !.tmp/probe-gap-packages.py
-!.tmp/issue41-degenerate-markings-status.md
 !.tmp/probe-degenerate-baseline.py
 !.tmp/probe-degenerate-boundary.py
 !.tmp/probe-degenerate-public.py
@@ -98,18 +88,12 @@ references/Indefinite.jl/
 !.tmp/probe-k3-envelope.py
 !.tmp/probe-gram-cost.py
 !.tmp/probe-gram-cache.py
-!.tmp/handoff-owner-enriques-oqn.md
 .scratch/
-!.tmp/handoff-a7-facet-route.md
 
 # UltraMath run scratch: keep the proof/prototype/ground-truth artifacts, drop caches and vendored libs
 .ultramath/**/__pycache__/
 .ultramath/smvzd6hvn/m7/pylibs/
-!.tmp/handoff-owner-enriques-repro.md
 !.tmp/pending-ci-disk-fix.patch
-!.tmp/contract-discriminant-image-identity.md
-!.tmp/issue62-canonicalizer-status.md
-!.tmp/issue53-pointwise-stabilizer.md
 !.tmp/stageD-mechanism/
 !.tmp/enriques_stageD_hashfix_tensorfix.log
 !.tmp/stageD-cost-atoms.log
@@ -118,7 +102,6 @@ references/Indefinite.jl/
 !.tmp/launch-stageD-cost-atoms.sh
 !.tmp/probe-stageD-atomB.py
 !.tmp/launch-stageD-atomB.sh
-!.tmp/enriques-stageD-status-tensorfix.md
 !.tmp/enriques_stageD_schreierfix_6675f1f.log
 !.tmp/launch-stageD-schreierfix.sh
 !.tmp/enriques_stageD_dedupefix_6c1500f.log

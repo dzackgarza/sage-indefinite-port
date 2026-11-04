@@ -33,8 +33,8 @@ requirements beyond the source remain required under their own contracts.
 
 Before accepting an implementation or completion claim, map the source's
 dispatch branches and parameter domain to the production route and its
-mathematical evidence. Record every uncovered branch in TODO.md at its owning
-algorithm. Missing source functionality keeps that algorithm incomplete.
+mathematical evidence. Record every uncovered branch on the issue that owns its
+algorithm in the tree rooted at #4. Missing source functionality keeps that algorithm incomplete.
 A rank-three isotropic sublattice accepted upstream but rejected by the port
 is a missing translation, even when every line and plane example passes.
 
@@ -63,8 +63,7 @@ not cancel the requirement. These deferred cases do not gate v1 delivery.
 | Source | Responsibility |
 | --- | --- |
 | [Issue #4](https://github.com/dzackgarza/sage-indefinite-port/issues/4), [#33](https://github.com/dzackgarza/sage-indefinite-port/issues/33), [#15](https://github.com/dzackgarza/sage-indefinite-port/issues/15), [#18](https://github.com/dzackgarza/sage-indefinite-port/issues/18), [#36](https://github.com/dzackgarza/sage-indefinite-port/issues/36) | Original obligation, ownership, issue dependencies and acceptance |
-| [TODO.md](TODO.md) | Remaining algorithm, dependency and acceptance obligations; a checked node needs source-backed evidence |
-| [`.tmp/HANDOFF.md`](.tmp/HANDOFF.md) | One concrete **Now** action, its source/consumer and latest known remote revision; replace obsolete Now rather than append a history |
+| [Issue tree rooted at #4](https://github.com/dzackgarza/sage-indefinite-port/issues/4), navigated with `uvx --from git+https://github.com/dzackgarza/itree itree next dzackgarza/sage-indefinite-port` | Remaining algorithm, dependency and acceptance obligations, one work unit per node; a closed node needs source-backed evidence, and the next action lives on the open node |
 | [Port design](references/port-design.md), [assignments](references/port-design.md#implementation-assignments), [translation map](references/source-to-sage-translation-map.md) | Frozen API, owner split, exact upstream routine locations |
 | [Vendored source and Allcock paper](references/vendor/README.md) | **Algorithm authority**; translation notes never replace source |
 | [Acceptance workflow](.github/workflows/acceptance.yml), [oracle manifest](tests/fixtures/oracle_manifest.yaml) | Frozen executable cases and results for exact published revisions |
@@ -73,15 +72,15 @@ not cancel the requirement. These deferred cases do not gate v1 delivery.
 
 For a **new cloud checkout**, work from `main`, where
 implementation and acceptance now land. Read this document once, then
-`.tmp/HANDOFF.md` **Now** and the relevant
-TODO/issue/source sections. Fetch the branch and identify its current commit and
-newest *completed* Acceptance run before changing it. If the handoff commit or
-selected failure predates newer code/results, replace Now with the actual next
-unresolved implementation step; do not enact its stale instructions.
+the next open work unit from `itree next` and the relevant
+issue/source sections. Fetch the branch and identify its current commit and
+newest *completed* Acceptance run before changing it. If the issue's recorded commit or
+selected failure predates newer code/results, record the actual next
+unresolved implementation step on the issue; do not enact its stale instructions.
 
-A normal continuation starts with the current Now action and its precise
+A normal continuation starts with the next open work unit and its precise
 source/consumer, rather than repeat source-wide surveys, re-read the entire DAG,
-or reselect work. The handoff is **not** proof that named people or agents remain
+or reselect work. An issue comment is **not** proof that named people or agents remain
 active. Separate branch tips can contain unmerged work without an active owner.
 Never overwrite or discard another checkout's dirty source. Use a dedicated
 worktree/branch for parallel work and integrate only demonstrated relevant diffs.
@@ -149,7 +148,7 @@ the cloud checkout's required inputs.
 `A_REFLECTIVE`, `A_GROUPS` and `A_ISOTROPIC` use a
 **branch-representative sample** of unchanged cases exercising *every*
 branch of the pinned algorithm. The other families use the exact criteria
-in the TODO acceptance table, which identifies where sample evidence applies.
+in the acceptance table on [#64](https://github.com/dzackgarza/sage-indefinite-port/issues/64), which identifies where sample evidence applies.
 Record selected case IDs, covered and uncovered branches, ranks/signatures,
 passing results and the exact commit. A sample must not avoid a genuinely
 distinct case branch or alter any assertion. Full-corpus failures outside the
@@ -202,12 +201,12 @@ GitHub Actions; local Snap Docker, `sage-dev-develop`, the former
   committed source. Treat other CI failures as evidence to route to their
   algorithm/provider owner; investigate concrete failing cases instead of
   performing broad cleanup, optimization or repetitive diagnostics.
-- The final issue #4 closure requires the TODO acceptance evidence and public
+- The final issue #4 closure requires the acceptance evidence on [#33](https://github.com/dzackgarza/sage-indefinite-port/issues/33) and [#64](https://github.com/dzackgarza/sage-indefinite-port/issues/64) and public
   research-to-port consumers, with a recorded port and provider revision.
   `just test-ci` is a nonblocking diagnostic collection, not a substitute
   for the frozen Acceptance workflow.
 
 Do not require a local agent-memory vault, home-directory paths, or a running
 coordinator to resume cloud work. Durable mathematical decisions belong in
-the owning source/issue; the tracked handoff records only the next actionable
+the owning source/issue; the open work unit records only the next actionable
 step, not an activity log.

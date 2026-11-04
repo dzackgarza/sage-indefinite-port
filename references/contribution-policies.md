@@ -52,7 +52,7 @@ The port-specific consequences are:
 - **Publication and review.** Local commit/push checks cover syntax only.
   Detailed CI quality/type diagnostics are nonblocking during development;
   mathematical acceptance is the committed-port CI evidence specified in
-  TODO.md. Tooling, formatting or type cleanup does not interrupt an
+  [#33](https://github.com/dzackgarza/sage-indefinite-port/issues/33) and [#64](https://github.com/dzackgarza/sage-indefinite-port/issues/64). Tooling, formatting or type cleanup does not interrupt an
   unfinished port algorithm.
 
 These are the relevant constraints for a remote checkout. Host-specific

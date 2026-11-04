@@ -14,7 +14,7 @@ Milestones and test samples order delivery and verification. They do not
 authorize a smaller port. Every missing source-supported capability remains
 required until implemented through its public consumers. See
 [full upstream coverage](AGENTS.md#full-upstream-coverage) and
-[the remaining parity obligation](TODO.md#upstream-functionality-required-for-completion).
+[the remaining parity obligation](https://github.com/dzackgarza/sage-indefinite-port/issues/44).
 
 ## Cloud-agent entry point
 
@@ -26,7 +26,7 @@ cd sage-indefinite-port
 git switch --track origin/main
 ```
 
-Read [AGENTS.md](AGENTS.md) for ownership and source-fidelity constraints; then read the single action in [the tracked handoff](.tmp/HANDOFF.md). Follow its relevant [TODO.md](TODO.md) node and the [issue tree rooted at #4](https://github.com/dzackgarza/sage-indefinite-port/issues/4). The handoff is a starting locator, not evidence that its recorded commit is still the remote tip: fetch and compare GitHub before editing. Do not infer another agent owns a file from an old handoff or a branch name.
+Read [AGENTS.md](AGENTS.md) for ownership and source-fidelity constraints; then take the next open work unit from the [issue tree rooted at #4](https://github.com/dzackgarza/sage-indefinite-port/issues/4) with `uvx --from git+https://github.com/dzackgarza/itree itree next dzackgarza/sage-indefinite-port`. An issue is a starting locator, not evidence that its recorded commit is still the remote tip: fetch and compare GitHub before editing. Do not infer another agent owns a file from an old issue comment or a branch name.
 
 ## Exact source and acceptance material
 
@@ -37,7 +37,7 @@ Read [AGENTS.md](AGENTS.md) for ownership and source-fidelity constraints; then 
 - [Academic citations](CITATIONS.md) and [review criteria](references/review-guidelines.md)
 - [Acceptance workflow](.github/workflows/acceptance.yml) and [Acceptance runs](https://github.com/dzackgarza/sage-indefinite-port/actions/workflows/acceptance.yml)
 
-The CI workflow provisions Sage and installs the published `research` dependency; it runs the full frozen fixture suite on pushes. Each run is tied to its own port commit and recorded research revision. The accepted development criterion for large families is **branch-representative sample evidence**, not completion of all long-tail cases; see [issue #33's October 22 amendment](https://github.com/dzackgarza/sage-indefinite-port/issues/33#issuecomment-6343829665) and TODO.md. No fixture or assertion is deleted to form a sample.
+The CI workflow provisions Sage and installs the published `research` dependency; it runs the full frozen fixture suite on pushes. Each run is tied to its own port commit and recorded research revision. The accepted development criterion for large families is **branch-representative sample evidence**, not completion of all long-tail cases; see [issue #33's October 22 amendment](https://github.com/dzackgarza/sage-indefinite-port/issues/33#issuecomment-6343829665) and the acceptance table on [#64](https://github.com/dzackgarza/sage-indefinite-port/issues/64). No fixture or assertion is deleted to form a sample.
 
 ## Local development checks
 
