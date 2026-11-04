@@ -27,6 +27,7 @@ references/vendor/zotero/
 references/polyhedral_common/
 references/Indefinite.jl/
 .tmp/*
+!.tmp/run-ci-acceptance.sh
 !.tmp/provider-report-dual-point-hash.md
 !.tmp/probe-gamma-h-stabilizer.py
 !.tmp/probe-one-pointed-isom.py

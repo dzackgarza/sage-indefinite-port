@@ -16,7 +16,7 @@ from typing import Literal, cast, overload
 
 import numpy as np
 from cypari2.handle_error import PariError
-from sage_extensions.all import Lattices, OwnedGroups, Sets
+from sage_extensions.all import Lattices, Sets
 from sage_extensions.categories.modules.framed.framed_free_modules import FramedFreeModules
 from sage_extensions.categories.definite_lattices import (
     LatticeReduction,
@@ -34,7 +34,7 @@ from sage_extensions.categories.reduction_complexes import (
     PerfectDomainOrbitAdjacency,
 )
 from sage_extensions.categories.group.g_sets import FiniteGSets
-from sage_extensions.categories.group.groups import _engine_group
+from sage_extensions.categories.group.groups import OwnedGroups, _engine_group
 from sage_extensions.categories.rings.ring_foundation import (
     _owned_engine_element,
 )
