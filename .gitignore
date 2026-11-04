@@ -30,6 +30,8 @@ references/Indefinite.jl/
 !.tmp/pending-ci-double-cosets-family.patch.README.md
 !.tmp/pending-ci-double-cosets-family.patch
 !.tmp/vector_stabilizers-42d7361c-partial.log
+!.tmp/boundaries-fast-0-INTERRUPTED.log
+!.tmp/boundaries-subset-0-INTERRUPTED.log
 !.tmp/issue64-family-acceptance.md
 !.tmp/issue63-capability-reconciliation.md
 !.tmp/issue67-hoist-measurement.md

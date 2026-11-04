@@ -106,3 +106,42 @@ because a sample passed. `#64`'s obligation is the remaining families at one pai
 have that and one is measured as needing sharding. The Enriques-dependent parts of `boundaries` are
 blocked on provider items recorded in `.tmp/handoff-owner-enriques-coset-overflow.md`, which is a
 provider matter and not a port defect.
+
+## Interrupted at the runtime checkpoint (NOT acceptance)
+
+Two runs of the `boundaries` family were stopped for runtime maintenance. Neither is evidence of
+passing, and neither is reported as such.
+
+**1. `dawes`/`dtower`/`k3` subset, 25 selected cases — stopped by me after 30 min on its first case.**
+The first selected case, `test_dawes_building_incidence_graph_is_the_published_figure[dawes_2U2_A2_stable]`,
+had not finished in ~30 minutes; it builds the same Dawes building whose counts case has capped
+historically. Verdict: **interrupted, zero cases completed**. A case that has not finished may not be
+called expensive; it is simply unfinished.
+
+**2. `dtower` + `k3` subset, 23 selected cases — interrupted by the runtime checkpoint at 2 passed.**
+
+```
+test_dtower_boundary_component_counts[N_3] PASSED [  4%]
+test_dtower_boundary_component_counts[N_4] PASSED [  8%]
+```
+
+Two cases completed, zero failed, and the run was killed with the rest unrun. That is **2 of 23 at the
+pin with a per-case record**, not 23, and not the family. No `junit.xml` was written (pytest writes it at
+the end), so the record here is the per-case `-v` lines and the log itself, which is retained.
+
+Both runs are preserved under `.tmp/ci/results/boundaries-subset-0/` and
+`.tmp/ci/results/boundaries-fast-0/` with their `commit` and `research_commit` files.
+
+## Runtime checkpoint: quiescence evidence
+
+At the stop instruction the rootfs was checked before and after termination:
+
+```
+my processes in the rootfs (test_boundaries / peakrss.py / run.sh, this project) : 3 before, NONE after
+any rootfs user, all projects (proot-x86_64 / sage-image/rootfs)               : NONE
+```
+
+Three PIDs (`1294461`, `1294469`, `1294470`) were sent `TERM`, then re-checked; `NONE` remained. No new
+rootfs job was launched, and none will be until a verified resume. Pins, guard (`6144 MiB`), and
+ownership are unchanged: `pyproject.toml` still pins `cdafca84`, the provisioned provider checkout is
+untouched, and no dependency repository was edited.
