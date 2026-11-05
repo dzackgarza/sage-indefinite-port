@@ -140,6 +140,26 @@ jobs:
         with:
           name: acceptance-${{ matrix.family }}-${{ matrix.shard }}
           path: .tmp/ci/results/
+  readme:
+    # The README example is the smallest acceptance; it needs no Julia bridge.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: ghcr.io/dzackgarza/sage:develop
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+      options: --user root
+    env:
+      SAGE_BIN: /sage/.venv/bin/sage
+    steps:
+      - uses: actions/checkout@v4
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: extractions/setup-just@v4
+        with:
+          github-token: ${{ github.token }}
+      - run: just ci-provision-sage
+      - run: just readme-example
   summary:
     needs: [plan, family]
     if: always()

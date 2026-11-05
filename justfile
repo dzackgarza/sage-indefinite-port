@@ -30,8 +30,19 @@ test-push:
 test-ci:
     @just -f ~/ai-review-ci/justfiles/sage.just -d . test-ci
 
+# Run the README example as a doctest; it is the smallest acceptance.
+readme-example:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -n "${SAGE_BIN:-}" ]; then
+        sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
+    else
+        sage_python="$(just -f ~/ai-review-ci/justfiles/sage.just -d . _sage-python)"
+    fi
+    PYTHONPATH=src "$sage_python" -m doctest README.md
+
 # The acceptance workflow's jobs run inside the Sage image named in
-# .github/workflows/acceptance.yml; these two recipes are its only steps.
+# .github/workflows/acceptance.yml; these recipes are its only steps.
 ci_dir := ".tmp/ci"
 
 # CI only: install the acceptance dependencies into the Sage image's interpreter.

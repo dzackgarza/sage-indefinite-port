@@ -1,6 +1,26 @@
 # Sage indefinite lattice port
 
-Native Sage/Python implementations of the indefinite-lattice isometry, orthogonal-group, orbit, Lorentzian perfect-domain and Allcock edgewalk algorithms from pinned upstream sources. The public mathematical lattice objects and operations are supplied by [research](https://github.com/dzackgarza/research).
+Native Sage/Python implementations of the indefinite-lattice isometry, orthogonal-group, orbit, Lorentzian perfect-domain and Allcock edgewalk algorithms from pinned upstream sources. The public mathematical lattice objects and operations are supplied by [sage-extensions](https://github.com/dzackgarza/sage-extensions).
+
+## Run it
+
+Two even lattices of signature $(2,1)$ with the same discriminant form are isometric, and the port finds an isometry:
+
+```python
+>>> from sage_extensions.all import ZZ, Lattices
+>>> A = Lattices(ZZ)([[0, 1, 0], [1, 0, 0], [0, 0, 2]])
+>>> B = Lattices(ZZ)([[2, 1, 0], [1, 0, 0], [0, 0, 2]])
+>>> A
+Integral lattice of rank 3 and signature (2, 1)
+>>> A.is_isometric(B)
+True
+>>> A.Isom(B).an_element()
+Morphism from Integral lattice of rank 3 and signature (2, 1) to Integral lattice of rank 3 and signature (2, 1)
+
+```
+
+The block runs as a doctest, locally with `just readme-example` and in CI on every push as the
+`readme` job of the [acceptance workflow](.github/workflows/acceptance.yml).
 
 ## Completion scope
 
