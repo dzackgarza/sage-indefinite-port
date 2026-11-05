@@ -36,6 +36,7 @@ jobs:
               "isotropic_orbits": 16,
               "boundaries": 6,
               "centralizers": 1,
+              "double_cosets": 1,
           }
           if os.environ["GITHUB_EVENT_NAME"] == "push":
               # #33's amended acceptance nodes run explicit branch samples on
