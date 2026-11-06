@@ -123,6 +123,10 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
         case _ if category is LATTICES:
             return RECURSION.isometry(source, target)
         case _ if category is ARROWS:
+            source_rank = int(source.arrow().domain().rank())
+            target_rank = int(target.arrow().domain().rank())
+            if source_rank == 0 or target_rank == 0:
+                return RECURSION.isometry(source.arrow().codomain(), target.arrow().codomain()) if source_rank == target_rank else None
             source_sublattice = _isotropic_sublattice(source.arrow())
             target_sublattice = _isotropic_sublattice(target.arrow())
             match int(source_sublattice.inclusion().domain().rank()), int(target_sublattice.inclusion().domain().rank()):
@@ -159,12 +163,15 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
         case _ if category is LATTICES:
             generators = RECURSION.orthogonal_group_generators(marked)
         case _ if category is ARROWS:
-            sublattice = _isotropic_sublattice(marked.arrow())
-            match int(sublattice.inclusion().domain().rank()):
-                case 1:
-                    generators = INDUCTION.line_automorphism_generators(marked.arrow().codomain(), INDUCTION.plane_vectors(sublattice)[0])
-                case _:
-                    generators = INDUCTION.plane_automorphism_generators(sublattice)
+            if int(marked.arrow().domain().rank()) == 0:
+                generators = RECURSION.orthogonal_group_generators(marked.arrow().codomain())
+            else:
+                sublattice = _isotropic_sublattice(marked.arrow())
+                match int(sublattice.inclusion().domain().rank()):
+                    case 1:
+                        generators = INDUCTION.line_automorphism_generators(marked.arrow().codomain(), INDUCTION.plane_vectors(sublattice)[0])
+                    case _:
+                        generators = INDUCTION.plane_automorphism_generators(sublattice)
         case _FiniteSequenceFunctorCategory() if category.codomain_category() is LATTICES:
             _dimensions, basis, images = _flag_action(marked)
             generators = INDUCTION._stabilizer_generators(basis, images)
@@ -238,11 +245,16 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
     """
     match category:
         case CosliceCategory():
-            classes = _pointed_classes(category, lattice, int(source.q(next(iter(source.module_generators())))))
+            if int(source.rank()) == 0:
+                classes = (category.object(source.hom([], codomain=lattice)),)
+            else:
+                classes = _pointed_classes(category, lattice, int(source.q(next(iter(source.module_generators())))))
         case _ if category is ARROWS:
             if int(source.rank()) > int(lattice.witt_index()):
                 return finite_ordered_set(())
             match int(source.rank()):
+                case 0:
+                    classes = (ARROWS.object(source.hom([], codomain=lattice)),)
                 case 1:
                     classes = tuple(ARROWS.object(lattice.primitive_isotropic_subobject(vector_).inclusion()) for vector_ in INDUCTION.isotropic_vector_classes(lattice))
                 case 2:
