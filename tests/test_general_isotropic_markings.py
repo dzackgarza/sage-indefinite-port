@@ -171,3 +171,24 @@ def test_public_complete_flag_classes_in_three_u():
         assert arrows[-1].codomain() is ambient
         assert all(arrow.is_primitive() for arrow in arrows)
         assert all(left.codomain() is right.domain() for left, right in zip(arrows, arrows[1:]))
+
+
+def test_zero_isotropic_marking_is_the_unique_empty_embedding():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import primitive_marking_classes
+
+    ambient = lattice([[0, 1], [1, 0]])
+    source = Lattices(ZZ)(0)
+    fixed = CosliceCategory(Lattices(ZZ), source)
+    for category in (ARROWS, fixed):
+        classes = tuple(primitive_marking_classes(category, source, ambient))
+        assert len(classes) == 1
+        arrow = classes[0].arrow()
+        assert int(arrow.domain().rank()) == 0
+        assert arrow.codomain() is ambient
+        witness = isometry(category, classes[0], classes[0])
+        assert witness is not None
+        basis = tuple(ambient.module_generators())
+        assert all((~witness)(witness(point)) == point for point in basis)
+        assert all(ambient.b(witness(left), witness(right)) == ambient.b(left, right) for left in basis for right in basis)
