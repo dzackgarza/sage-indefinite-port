@@ -80,11 +80,15 @@ def test_isotropic_rank_above_witt_index_has_no_markings():
 
 
 def test_three_u_general_induction_classifies_maximal_isotropic_spaces():
-    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
-    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+    from sage_indefinite_port.indefinite.marked_lattices import primitive_marking_classes
 
     ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
-    representatives = IsotropicInduction(EichlerRecursion()).isotropic_flag_bases(ambient, (3,))
+    shape = lattice([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    markings = tuple(primitive_marking_classes(ARROWS, shape, ambient))
+    representatives = tuple(
+        tuple(marking.arrow()(marking.arrow().domain().module_generator(label)) for label in marking.arrow().domain().module_generating_set())
+        for marking in markings
+    )
     assert len(representatives) == 1
     for basis in representatives:
         assert len(basis) == 3
