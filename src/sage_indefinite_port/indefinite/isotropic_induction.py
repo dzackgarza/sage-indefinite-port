@@ -86,7 +86,10 @@ class IsotropicInduction:
             entries = tuple(_rational(coordinates(label)) for label in labels)
             denominator = lcm(*(int(entry.denominator()) for entry in entries))
             integral_radical.append(integral.linear_combination({label: ZZ(int(denominator * entry)) for label, entry in zip(integral_labels, entries, strict=True)}))
-        reduction = integral.primitive_isotropic_subobject(*integral_radical).isotropic_reduction()
+        saturated = integral.subobject_on(tuple(integral_radical)).saturation()
+        saturated_inclusion = saturated.inclusion()
+        saturated_basis = tuple(saturated_inclusion(saturated_inclusion.domain().module_generator(label)) for label in saturated_inclusion.domain().module_generating_set())
+        reduction = integral.primitive_isotropic_subobject(*saturated_basis).isotropic_reduction()
         result = []
         for generator in reduction.pointwise_perpendicular_kernel().group_generators():
             images = {}

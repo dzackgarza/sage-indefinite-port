@@ -25,3 +25,13 @@ def test_glued_line_stabilizer_has_a_proper_quotient_image():
     full = [matrix(GF(3), [[int(generator(quotient.module_generator(label)).to_vector()(target)) for target in labels] for label in labels]) for generator in induction.recursion.orthogonal_group_generators(quotient)]
     assert MatrixGroup(images).order() == 2
     assert MatrixGroup(full).order() == 4
+
+
+def test_glued_line_extensions_split_the_full_quotient_orbit():
+    ambient = lattice([[0, 2, 0, 0], [2, 0, 1, 0], [0, 1, 0, 2], [0, 0, 2, 0]])
+    line = ambient.module_generator(tuple(ambient.module_generating_set())[0])
+    induction = IsotropicInduction(EichlerRecursion())
+    extensions = tuple(induction.subspace_extensions(ambient, (line,), ((-line,),)))
+    assert len(extensions) == 2
+    flags = tuple((line, ambient.primitive_isotropic_subobject(*basis)) for basis in extensions)
+    assert induction.flag_isometry(flags[0], flags[1]) is None
