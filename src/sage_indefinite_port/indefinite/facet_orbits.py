@@ -474,11 +474,21 @@ def cell_facet_orbits(cell, stabilizer) -> tuple[FacetOrbitRecord, ...]:
     onto every member of its orbit -- the transport witness a consumer needs to reconstruct any facet of the
     orbit exactly.
     """
+    permutations = ray_permutations_from_stabilizer(cell, stabilizer)
+    return _cell_facet_orbits_from_permutations(cell, permutations)
+
+
+def _cell_facet_orbits_from_permutations(cell, permutations) -> tuple[FacetOrbitRecord, ...]:
+    r"""Walk facet orbits using the certified ray action supplied by the caller.
+
+    Lorentzian.g:1318-1322 passes GRPperm to adjacency decomposition.
+    The local backend computes this action on the ambient basis and applies
+    it to the ray rows; the public caller computes it on the ray elements.
+    """
     rays = [tuple(int(entry) for entry in row) for row in cell.rows]
     _height, pairings = pointedness_functional(cell)
     if not all(value > 0 for value in pairings):
         raise ArithmeticError("the cell must be pointed: the sum of its rays has to be an interior point")
-    permutations = ray_permutations_from_stabilizer(cell, stabilizer)
 
     records = []
     for incidence, normal in orbit_representatives(rays, permutations):

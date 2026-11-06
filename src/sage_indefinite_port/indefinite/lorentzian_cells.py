@@ -1662,11 +1662,10 @@ class LorentzianPerfectLocalBackend:
         nested `SchreierWord` representation this module uses is built as `(previous, next)` so that
         `_schreier_generator_indices` recovers the action order.
         """
-        from sage_indefinite_port.indefinite.facet_orbits import cell_facet_orbits, ray_permutations_from_stabilizer
+        from sage_indefinite_port.indefinite.facet_orbits import _cell_facet_orbits_from_permutations
 
-        stabilizer = self.cell_stabilizer(cell)
-        permutations = ray_permutations_from_stabilizer(cell, stabilizer)
-        records = cell_facet_orbits(cell, stabilizer)
+        permutations = self.point_permutations_from_rows(cell, cell.rows)
+        records = _cell_facet_orbits_from_permutations(cell, permutations)
         ray_count = len(cell.rows)
         full_mask = (1 << ray_count) - 1
 
