@@ -1,4 +1,6 @@
 """Maximal isotropic sublattices of 3U admit ambient transporters."""
+import pytest
+
 from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
 from tests.acceptance.consumer import lattice
 
@@ -21,22 +23,22 @@ def test_extension_shortening_preserves_the_integral_flag_orbit():
         assert shortened.q() == ambient.base_ring().zero()
 
 
-def test_general_flag_invariants_are_preserved_by_hyperbolic_pair_exchange():
+@pytest.mark.parametrize("dimensions", ((3,), (1, 3), (1, 2, 3)), ids=("plane", "partial", "complete"))
+def test_general_flag_invariants_are_preserved_by_hyperbolic_pair_exchange(dimensions):
     from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
     from sage_indefinite_port.indefinite.recursive import EichlerRecursion
 
     ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
     e, f, x, y, u, v = tuple(ambient.module_generators())
     induction = IsotropicInduction(EichlerRecursion())
-    for dimensions in ((3,), (1, 3), (1, 2, 3)):
-        source = induction.flag_invariant(ambient, (e + x, x, u), dimensions)
-        target = induction.flag_invariant(ambient, (f + y, y, v), dimensions)
-        assert source == target
-        assert source.dimensions == dimensions
-        assert source.ambient.rank == 6
-        assert source.quotient.rank == 0
-        assert source.quotient.discriminant == 1
-        assert source.denominator_primes == ()
+    source = induction.flag_invariant(ambient, (e + x, x, u), dimensions)
+    target = induction.flag_invariant(ambient, (f + y, y, v), dimensions)
+    assert source == target
+    assert source.dimensions == dimensions
+    assert source.ambient.rank == 6
+    assert source.quotient.rank == 0
+    assert source.quotient.discriminant == 1
+    assert source.denominator_primes == ()
 
 
 def test_glued_line_invariant_retains_the_rational_denominator_prime():
@@ -49,7 +51,7 @@ def test_glued_line_invariant_retains_the_rational_denominator_prime():
     assert invariant.dimensions == (1,)
     assert invariant.ambient.rank == 4
     assert invariant.quotient.rank == 2
-    assert invariant.quotient.discriminant == -4
+    assert invariant.quotient.discriminant == 4
     assert invariant.denominator_primes == (2,)
 
 

@@ -50,7 +50,7 @@ from sage_indefinite_port.indefinite.recursive import (
     _extend_rational_perpendicular,
     _integral_generator_set,
 )
-from sage_indefinite_port.invariants import AttackProfile
+from sage_indefinite_port.invariants import AttackProfile, IsotropicFlagPrefilter, LatticePrefilter
 
 ARROWS = Cat().Mor(FiniteOrdinalCategory(2), Lattices(ZZ))
 """Ar(Lattices): a sublattice I of L is the marked lattice (L, I -> L)."""
@@ -460,15 +460,67 @@ class IsotropicInduction:
         for rank in range(2, dimensions[-1] + 1):
             previous_dimensions = tuple(value for value in dimensions if value < rank - 1) + (rank - 1,)
             next_dimensions = tuple(value for value in dimensions if value < rank) + (rank,)
-            kept = []
+            kept: list[tuple[Vector, ...]] = []
+            invariants: dict[tuple[tuple[int, ...], ...], IsotropicFlagPrefilter] = {}
+            labels = tuple(lattice.module_generating_set())
+
+            def invariant(basis: tuple[Vector, ...]) -> IsotropicFlagPrefilter:
+                # Source get_planeinv/fInsert retains each invariant once.
+                # Delay it until a comparison: a sole candidate needs no
+                # rejection test and no extra rational group construction.
+                coordinates = tuple(point.to_vector() for point in basis)
+                key = tuple(tuple(_integer(row(label)) for label in labels) for row in coordinates)
+                if key not in invariants:
+                    invariants[key] = self.flag_invariant(lattice, basis, next_dimensions)
+                return invariants[key]
+
             for previous in representatives:
                 basis, images = self.basis_flag_action(lattice, previous, previous_dimensions)
                 for candidate in self.subspace_extensions(lattice, basis, images):
                     target_basis, target_images = self.basis_flag_action(lattice, candidate, next_dimensions)
-                    if all(self.recursion.isotropic_subspace_isometry(source, target_basis, target_images) is None for source in kept):
+                    if all(
+                        invariant(source) != invariant(target_basis)
+                        or self.recursion.isotropic_subspace_isometry(source, target_basis, target_images) is None
+                        for source in kept
+                    ):
                         kept.append(target_basis)
             representatives = tuple(kept)
         return representatives
+
+    def flag_invariant(
+        self, lattice: Lattices.ParentMethods, basis: tuple[Vector, ...], dimensions: tuple[int, ...]
+    ) -> IsotropicFlagPrefilter:
+        r"""The source invariant for a general isotropic subspace or flag.
+
+        CombinedAlgorithms.h:1361-1395 and :2424-2433. Keep the structured
+        source fields instead of adding two machine hashes. The prime
+        support is read from the complete supplied rational flag action,
+        before integral stabilization; that stabilization would erase it.
+        """
+        ambient = LatticePrefilter.from_lattice(lattice)
+        if not basis and dimensions == (0,):
+            return IsotropicFlagPrefilter(dimensions, ambient, ambient, ())
+        if (
+            not dimensions or dimensions[0] < 1 or dimensions[-1] != len(basis)
+            or any(left >= right for left, right in zip(dimensions, dimensions[1:]))
+        ):
+            raise ValueError("isotropic flag ranks must increase to the rank of its basis")
+        adapted, images = self.basis_flag_action(lattice, basis, dimensions)
+        reduction = self.reduction(lattice, *adapted)
+        action = self.recursion.isotropic_stabilizer_action(adapted, images)
+        rational = lattice.base_change(lattice.base_ring().fraction_field_map())
+        labels = tuple(rational.module_generating_set())
+        primes = {
+            int(prime)
+            for generator in action.rational_group().group_generators()
+            for point in rational.module_generators()
+            for coordinates in (generator(point).to_vector(),)
+            for label in labels
+            for prime in _rational(coordinates(label)).denominator().prime_divisors()
+        }
+        return IsotropicFlagPrefilter(
+            dimensions, ambient, LatticePrefilter.from_lattice(reduction.quotient_lattice()), tuple(sorted(primes))
+        )
 
     def flags_through(self, lattice: Lattices.ParentMethods, line: Vector) -> Iterator[Flag]:
         r"""Flags (Zu, J) meeting every Aut((L, Zu))-orbit of isotropic planes J through u.
