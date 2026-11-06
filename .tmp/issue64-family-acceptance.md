@@ -1,5 +1,11 @@
 # #64 family acceptance at one pair: what runs, what does not, and why
 
+> **Superseded in part, 2026-11-06.** The tables below were measured on the pre-2026-11-05 runtime and
+> are history. The current per-family figures, measured on the adopted runtime at port `45c22a7c` +
+> provider `cdafca84`, are in `.tmp/acceptance-coverage.md` under "Full rerun on the adopted runtime,
+> 2026-11-05/06", together with the per-case `orthogonal_group` table and the `boundaries` guard stop.
+> Read that section for the state of #64; the text below is kept for its method and its attributions.
+
 Recorded pair for every row: port at the commit named, provider **`cdafca84`** (the `pyproject.toml`
 pin), corrected runtime, guard `PEAKRSS_LIMIT_MIB=6144` process-tree. Each accepted row is a run whose
 per-case `junit.xml` and log sit in `.tmp/ci/results/<family>-0/`.
@@ -145,3 +151,26 @@ Three PIDs (`1294461`, `1294469`, `1294470`) were sent `TERM`, then re-checked; 
 rootfs job was launched, and none will be until a verified resume. Pins, guard (`6144 MiB`), and
 ownership are unchanged: `pyproject.toml` still pins `cdafca84`, the provisioned provider checkout is
 untouched, and no dependency repository was edited.
+
+## State of #64 at 2026-11-06, port `45c22a7c` + provider `cdafca84`
+
+Measured on the adopted runtime (`/sage` at `9f1680d2`), 6144 MiB tree guard, one family per process.
+Full detail and the per-case tables are in `.tmp/acceptance-coverage.md`.
+
+| family | cases run / in criterion | result | what #64 still needs |
+| --- | --- | --- | --- |
+| double_cosets | 19/19 full file | **19 passed** | nothing; now also scheduled by CI (plan row added in `45c22a7c`) |
+| centralizers | 5/5 full file | **5 passed** | nothing |
+| perfect_domains | 92/92 full file | **92 passed** | nothing |
+| isometry | 166/166 full file | **166 passed** | nothing |
+| reflective | 5/5 sample | **5 passed** | nothing for the amended node |
+| orthogonal_group | 9 sample cases, one process each | **7 passed; 2 with no verdict at the 1800 s cap** | `LORENTZ_OrthogonalGroup0` and `a7_plus_diagonal` need a horizon decision (both under the guard) |
+| isotropic_orbits | 2 of 13 at the 2400 s cap | 2 passed, 0 failed | 11 sample cases unrun |
+| vector_orbits | 7 of 30 at the 2400 s cap | 7 passed, 0 failed | 23 sample cases unrun |
+| vector_stabilizers | 14 of 25 at the 3400 s cap | 14 passed, 0 failed | 11 sample cases unrun (`alonso[10]`, `r_-1..r_8`) |
+| boundaries | 1 passed then guard stop at 6146 MiB, no JUnit | **no verdict** | the Enriques provider item, and the Dawes/classical-index subgroup primitive |
+
+Nothing in this table is an acceptance of a family that did not finish, and no cap or guard stop is
+counted as a pass or as a failure. The hosted requirement is unchanged: `ci-acceptance` in the
+Acceptance workflow is the only source of hosted evidence, and no hosted run at this head has been
+observed from this workspace (the connector exposes no Actions runs).

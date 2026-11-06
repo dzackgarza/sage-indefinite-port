@@ -883,3 +883,85 @@ covering `test_edgewalk_rank2`, `test_lorentzian_flipping`, `test_perfect_cell_t
 
 The 80/80 Normaliz-vs-PPL engine agreement is an **engine-only** statement about identical ray sets. It
 is not owned-cone cost and not acceptance, and it never depended on the provider.
+
+## Full rerun on the adopted runtime, 2026-11-05/06
+
+Pair for every row: port `main` `45c22a7c` (the `src/` and `tests/` trees are identical to
+`9cfc6284`; the only change is the `double_cosets` row in the Acceptance plan), provider
+`cdafca84065405cb810bba047f8a965299b03762` (the `pyproject.toml` pin).
+
+Runtime verified before use, not assumed:
+
+    /sage HEAD 9f1680d2a7bcf001e50714768e6066e6652d1708
+    Sage 11.0.beta5, CPython 3.14.10, GAP 4.16.1 via /sage/.venv/lib/libgap.so.11
+    sage_extensions resolved from the pinned checkout first on PYTHONPATH
+
+One family per pytest process, 6144 MiB process-tree guard (`peakrss.py`), per-family JUnit in
+`.tmp/ci/results/<family>-verified/`. Scope follows the frozen criteria: full file for the first four,
+the amended branch sample for the rest.
+
+| family | JUnit | result | peak tree RSS |
+| --- | --- | --- | --- |
+| double_cosets | tests=19 failures=0 errors=0 skipped=0 time=1.987s | **19 passed** | 391 MiB |
+| centralizers | tests=5 failures=0 errors=0 skipped=0 time=83.513s | **5 passed** | 3235 MiB |
+| perfect_domains | tests=92 failures=0 errors=0 skipped=0 time=412.664s | **92 passed** | 962 MiB |
+| isometry | tests=166 failures=0 errors=0 skipped=0 time=1400.877s | **166 passed** | 4708 MiB |
+| reflective (sample) | tests=5 failures=0 errors=0 skipped=0 time=38.050s | **5 passed** | 2568 MiB |
+| orthogonal_group (sample) | per case, below | **7 passed, 2 unverified at the cap** | 5490 MiB max |
+| isotropic_orbits (sample) | tests=2 failures=0 errors=0 skipped=0 time=2399.211s | 2 passed, exit 124 | 4844 MiB |
+| vector_orbits (sample) | tests=7 failures=0 errors=0 skipped=0 time=2401.499s | 7 passed, exit 124 | 1281 MiB |
+| vector_stabilizers (sample) | tests=14 failures=0 errors=0 skipped=0 time=3400.993s | 14 passed, exit 124 | 4405 MiB |
+| boundaries (sample) | none written (SIGKILL) | 1 case passed, then guard stop | **6146 MiB** |
+
+A cap is a horizon, not a verdict; a guard stop is neither. Neither is a case failure and neither
+accepts a family.
+
+### A_GROUPS: the nine sample cases, one process each
+
+The whole-sample run reached 6154 MiB at t = 1171 s with five cases' state still resident (python
+3437 + julia 3352 MiB), so each case was then run in its own pytest process under the same guard.
+Wall time is the driver's start-to-end interval; the JUnit time is pytest's own case duration.
+
+| idx | case | verdict | wall | JUnit | peak tree RSS |
+| --- | --- | --- | --- | --- | --- |
+| 0 | `test_mertens_omega_and_minus_one_generate_o_l` | **passed** | 13 s | 9.898 s | 381 MiB |
+| 1 | `test_degenerate_orthogonal_group_contains_radical_shear_and_gl_action` | **passed** | 94 s | 87.136 s | 2959 MiB |
+| 2 | `test_degenerate_orthogonal_group_generates_rank_two_radical_action` | **passed** | 83 s | 77.709 s | 2989 MiB |
+| 3 | `test_degenerate_orthogonal_group_embeds_non_diagonal_complement` | **passed** | 87 s | 81.041 s | 3089 MiB |
+| 4 | `test_zero_form_orthogonal_group_is_the_full_general_linear_group` | **passed** | 5 s | 1.553 s | 326 MiB |
+| 5 | `test_lorentzian_generators_match_polyhedral_common[LORENTZ_OrthogonalGroup0]` | **no verdict**: exit 124 at the 1800 s cap | 2002 s | none | 5490 MiB |
+| 6 | `test_orthogonal_group_of_the_hyperbolic_plane_has_order_four` | **passed** | 3 s | 0.950 s | 291 MiB |
+| 7 | `test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q` | **no verdict**: exit 124 at the 1800 s cap | 1810 s | tests=0, time=1801.204 s | 1858 MiB |
+| 8 | `test_signed_discriminant_image_of_u_plus_minus_three_is_all_of_o_q` | **passed** | 8 s | 4.220 s | 368 MiB |
+
+Case 7's JUnit is the honest record of a cap: `tests=0 failures=0 errors=0 time=1801.204`, with
+`KeyboardInterrupt / no tests ran`. Two cases therefore have no verdict, and both sit **under** the
+guard (5490 and 1858 MiB), so neither is a case that is too large for the bound. The family run's
+6154 MiB was accumulation across cases, which the one-process-per-case arrangement removes.
+
+`a7_plus_diagonal` has a recorded pass at provider `42d7361c` (662 s, peak 1616 MiB, job
+`jmvzh3n3l`). That makes the cap here a pin difference measured at two providers, not a port
+regression; the pin is the owner's decision.
+
+### A_BOUNDARIES at this pair: stopped by the guard, not failed
+
+`boundaries` ran its branch sample from 02:46:58 and was stopped at 03:29:33 by the guard at a peak
+tree RSS of **6146 MiB** (limit 6144, low-water MemAvail 1349 MiB). `peakrss` wrote
+`STOPPED_AT_MEMORY_LIMIT`, the process was SIGKILLed, and **no JUnit was written**; the log's last
+line is `tests/acceptance/test_boundaries.sage .`, i.e. **one case passed and the second was in
+flight** when the run was killed. This is neither an acceptance nor a failure of any case. The
+previously recorded cause still stands: the Enriques rows need a provider revision past the pin
+(`.tmp/handoff-owner-enriques-coset-overflow.md`), and the Dawes/classical-index rows share the
+subgroup primitive.
+
+### A_STABILIZERS at this pair: 14 of 25, and a cost change that is not attributed
+
+`vector_stabilizers` ran its branch sample from 01:49:55 and reached the 3400 s cap at 02:46:57 with
+**14 passed, 0 failed, 0 errors**. The eleven unrun cases are `alonso[10]` and the ten
+`test_equivalence_witness_carries_a_representative_to_its_reflection[r_-1..r_8]` cases; nothing is
+claimed about them.
+
+The E10 square cases took **85–865 s each** here against **116–242 s each** for the same cases on the
+same port at provider `42d7361c` (job `jmvz3a0di`). Either the pin costs more in this direction or this
+host was loaded. What is measured is that MemAvail fell to 1519 MiB during the run; host load and pin
+cost cannot be separated retroactively, so this is not attributed and is not quoted as a regression.
