@@ -26,6 +26,28 @@ jobs:
           python3 - >> "$GITHUB_OUTPUT" <<'PY'
           import json
           import os
+          # Each family's own bound, in seconds, as the local harness applies it. The job's
+          # `timeout-minutes` is derived from it (plus a setup margin), because GitHub's job
+          # timeout is the only thing that actually ends a hung container: the recipe's inner
+          # `timeout --signal=INT` is 345m and does not escalate by itself.
+          caps = {
+              "perfect_domains": 2400,
+              "reflective": 1800,
+              "orthogonal_group": 1800,
+              "isometry": 3600,
+              "vector_stabilizers": 3400,
+              "vector_orbits": 2400,
+              "isotropic_orbits": 2400,
+              "boundaries": 3400,
+              "centralizers": 900,
+              "double_cosets": 600,
+          }
+          # Checkout, Sage provisioning, provider clone, Julia cache restore.
+          setup_margin_minutes = 20
+
+          def timeout_minutes(family):
+              return -(-caps[family] // 60) + setup_margin_minutes
+
           shards = {
               "perfect_domains": 8,
               "reflective": 20,
@@ -55,7 +77,13 @@ jobs:
                   "boundaries": (1, None),
               }
               include = [
-                  {"family": f, "shard": i, "shards": n, "selection": ""}
+                  {
+                      "family": f,
+                      "shard": i,
+                      "shards": n,
+                      "selection": "",
+                      "timeout": timeout_minutes(f),
+                  }
                   for f, n in shards.items() if f not in sampled
                   for i in range(n)
               ]
@@ -65,13 +93,20 @@ jobs:
                       "shard": i,
                       "shards": count,
                       "selection": f if pattern is None else pattern.format(shard=i),
+                      "timeout": timeout_minutes(f),
                   }
                   for f, (count, pattern) in sorted(sampled.items())
                   for i in range(count)
               )
           else:
               include = [
-                  {"family": f, "shard": i, "shards": n, "selection": ""}
+                  {
+                      "family": f,
+                      "shard": i,
+                      "shards": n,
+                      "selection": "",
+                      "timeout": timeout_minutes(f),
+                  }
                   for f, n in shards.items() for i in range(n)
               ]
           print("matrix=" + json.dumps({"include": include}))
@@ -122,7 +157,9 @@ jobs:
     needs: [plan, julia]
     name: ${{ matrix.family }} ${{ matrix.shard }}/${{ matrix.shards }}
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    # The family's own cap plus setup margin, from the plan step. A single 360 here let a
+    # hung family hold the concurrency group for six hours and starve the next push's run.
+    timeout-minutes: ${{ matrix.timeout }}
     container:
       image: ghcr.io/dzackgarza/sage:develop
       credentials:
