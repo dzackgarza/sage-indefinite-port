@@ -104,6 +104,26 @@ def _extend_perpendicular_isometry(
     rational_target = target.base_change(fraction_map)
     source_rationalize = ModulesOverIntegralDomains(source.base_ring())(source).generic_fibre_map()
     target_rationalize = ModulesOverIntegralDomains(target.base_ring())(target).generic_fibre_map()
+    extension = _extend_rational_perpendicular(
+        rational_source, rational_target,
+        tuple(source_rationalize(point).underlying_element() for point in source_basis),
+        tuple(target_rationalize(point).underlying_element() for point in images),
+    )
+    (denominator,) = tuple(extension.denominator_ideal(source, target).ideal_generators())
+    return extension, int(denominator)
+
+
+def _extend_rational_perpendicular(
+    rational_source: Lattices.ParentMethods, rational_target: Lattices.ParentMethods,
+    source_basis: tuple[Lattices.ElementMethods, ...], images: tuple[Lattices.ElementMethods, ...],
+) -> LatticeIsometryMethods:
+    r"""Invoke the pinned Witt extension in the supplied rational framings.
+
+    CombinedAlgorithms.h:314-332 LiftToFullAutomorphism changes the
+    ambient framing before invoking the same perpendicular extension.
+    """
+    field = rational_source.base_ring()
+    rank = len(source_basis)
     # The source's Subspace1 and Subspace2 are the rows of the two families.
     # Here they are the maps D -> L_Q and D -> M_Q out of the rational
     # lattice D on the basis, with the Gram pulled back along the first; the
@@ -111,18 +131,16 @@ def _extend_perpendicular_isometry(
     frame = field.free_module(rank)
     labels = tuple(frame.module_generating_set())
     gram = rational_source.gram_tensor().pullback(
-        Modules(field).Mor(frame, rational_source)(dict(zip(labels, (source_rationalize(point).underlying_element() for point in source_basis), strict=True)))
+        Modules(field).Mor(frame, rational_source)(dict(zip(labels, source_basis, strict=True)))
     )
     span = Lattices(field)([[gram[row, column] for column in range(rank)] for row in range(rank)])
     span_labels = tuple(span.module_generating_set())
     source_inclusion = Modules(field).Mor(span, rational_source)(
-        dict(zip(span_labels, (source_rationalize(point).underlying_element() for point in source_basis), strict=True))
+        dict(zip(span_labels, source_basis, strict=True))
     )
-    target_inclusion = Modules(field).Mor(span, rational_target)(dict(zip(span_labels, (target_rationalize(point).underlying_element() for point in images), strict=True)))
+    target_inclusion = Modules(field).Mor(span, rational_target)(dict(zip(span_labels, images, strict=True)))
     partial = span.Isom(span).identity()
-    extension = partial.witt_extension(source_inclusion, target_inclusion)
-    (denominator,) = tuple(extension.denominator_ideal(source, target).ideal_generators())
-    return extension, int(denominator)
+    return partial.witt_extension(source_inclusion, target_inclusion)
 
 
 def _column_matrix(isometry: LatticeIsometryMethods) -> Matrix_integer_dense:

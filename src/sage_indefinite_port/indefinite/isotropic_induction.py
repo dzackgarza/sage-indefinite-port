@@ -31,7 +31,7 @@ from sage_extensions.categories.rational_integral_stabilizers import (
 from sage.arith.misc import xgcd
 from sage.structure.parent import Parent
 
-from sage_indefinite_port.indefinite.edgewalk_scalars import _integer
+from sage_indefinite_port.indefinite.edgewalk_scalars import _integer, _rational
 from sage_indefinite_port.indefinite.indefinite_reduction import (
     indefinite_reduced_presentation,
 )
@@ -44,6 +44,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
 from sage_indefinite_port.indefinite.recursive import (
     EichlerRecursion,
     _extend_perpendicular_isometry,
+    _extend_rational_perpendicular,
 )
 from sage_indefinite_port.invariants import AttackProfile
 
@@ -60,6 +61,29 @@ class UnsupportedRankError(ValueError):
 
 
 class IsotropicInduction:
+    @staticmethod
+    def lift_invariant_frame(
+        frame: LatticeIsometryMethods, basis: tuple[Vector, ...], images: tuple[Vector, ...]
+    ) -> LatticeIsometryMethods:
+        r"""Lift a perpendicular action using one common invariant-lattice frame.
+
+        CombinedAlgorithms.h:314-332 LiftToFullAutomorphism and :496-534.
+        The frame sends the chosen integral coordinate lattice to the common
+        invariant module. Both directions of the lift must preserve it.
+        """
+        inverse = ~frame
+        space = frame.domain()
+        extension = _extend_rational_perpendicular(
+            space, space, tuple(inverse(point) for point in basis), tuple(inverse(point) for point in images)
+        )
+        labels = tuple(space.module_generating_set())
+        for generator in (extension, ~extension):
+            for label in labels:
+                moved = generator(space.module_generator(label)).to_vector()
+                if any(_rational(moved(target)).denominator() != 1 for target in labels):
+                    raise ArithmeticError("the perpendicular lift does not preserve the common invariant lattice")
+        return frame * extension * inverse
+
     def __init__(self, recursion: EichlerRecursion) -> None:
         self.recursion = recursion
         self._line_classes: dict[int, tuple[Lattices.ParentMethods, tuple[Vector, ...]]] = {}
