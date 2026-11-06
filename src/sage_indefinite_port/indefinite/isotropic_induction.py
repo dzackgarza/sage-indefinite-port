@@ -18,7 +18,7 @@ Levi actions as maps, double cosets and GL are the preamble's; the recursion sup
 isotropic classes of K and every stabilizer generating set.
 """
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterable, Iterator
 from math import lcm
 
 from sage_extensions.all import ZZ, Cat, Lattices
@@ -232,6 +232,70 @@ class IsotropicInduction:
         # which also keeps the integrality invariant instead of truncating a non-integral entry.
         return lattice.linear_combination({label: lattice.base_ring()(_integer(moved(label))) for label in labels if moved(label)})
 
+    @staticmethod
+    def shortened_extension(
+        lattice: Lattices.ParentMethods,
+        transporter: LatticeIsometryMethods,
+        point: Vector,
+        generators: Callable[[], Iterable[LatticeIsometryMethods]],
+    ) -> Vector:
+        r"""Shorten a coset and its extension in the same integral flag orbit.
+
+        CombinedAlgorithms.h:2356-2370 invokes the pinned
+        MatrixGroupSimplification.h:1702-1822 greedy right-coset and vector
+        routines. Row-matrix right multiplication is postcomposition here.
+        Each accepted move strictly lowers the exact coordinate L1 norm.
+        Rational matrix denominators divide the initial common denominator;
+        the vector is integral. Thus both descents terminate.
+        """
+        labels = tuple(lattice.module_generating_set())
+        rational = transporter.domain()
+        basis = tuple(rational.module_generator(label) for label in labels)
+
+        def matrix_norm(isometry: LatticeIsometryMethods):
+            return sum(
+                abs(_rational(coordinates(label)))
+                for vector in basis
+                for coordinates in (isometry(vector).to_vector(),)
+                for label in labels
+            )
+
+        def vector_norm(vector: Vector) -> int:
+            coordinates = vector.to_vector()
+            return sum(abs(_integer(coordinates(label))) for label in labels)
+
+        matrix_size = matrix_norm(transporter)
+        moved = IsotropicInduction._integral_image(lattice, transporter, point)
+        # A determinant-one-in-absolute-value matrix has L1 norm at least
+        # its rank (Hadamard and AM-GM); a nonzero integral vector has norm
+        # at least one. At both minima no stabilizer needs to be evaluated.
+        if matrix_size == len(labels) and vector_norm(moved) == 1:
+            return moved
+        moves = tuple(move for generator in generators() for move in (generator, ~generator))
+        while matrix_size > len(labels):
+            improved = False
+            for move in moves:
+                candidate = move * transporter
+                size = matrix_norm(candidate)
+                if size < matrix_size:
+                    transporter, matrix_size = candidate, size
+                    improved = True
+            if not improved:
+                break
+        moved = IsotropicInduction._integral_image(lattice, transporter, point)
+        vector_size = vector_norm(moved)
+        while vector_size > 1:
+            improved = False
+            for move in moves:
+                candidate = IsotropicInduction._integral_image(lattice, move, moved)
+                size = vector_norm(candidate)
+                if size < vector_size:
+                    moved, vector_size = candidate, size
+                    improved = True
+            if not improved:
+                break
+        return moved
+
     def _plane_stabilizer_generators(self, reduction: Parent, line: Vector, isotropic: Vector) -> tuple:
         r"""Rational generators of V: the plane span(u, x~) stabilizer inside the line's rational group G.
 
@@ -320,7 +384,11 @@ class IsotropicInduction:
             section = double_cosets.double_coset_section()
             lifted = self._lift(lattice, labels, lifts, isotropic)
             for orbit in double_cosets:
-                yield (*radical, self._integral_image(lattice, ~section(orbit), lifted))
+                shortened = self.shortened_extension(
+                    lattice, ~section(orbit), lifted,
+                    lambda: integral_action.finite_representation().lattice_stabilizer().group_generators(),
+                )
+                yield (*radical, shortened)
 
     def basis_marking_classes(
         self, lattice: Lattices.ParentMethods, radical: tuple[Vector, ...]
@@ -421,7 +489,7 @@ class IsotropicInduction:
         _plane_stabilizer_generators), so the line action's stable containing module still
         bounds it, and V is a subgroup on selected generators of that presentation. The
         source's ExhaustiveMatrixRightCosetSimplifications and ExhaustiveVectorSimplification
-        only shorten representatives and are not translated.
+        shorten the coset and vector under this same integral line stabilizer.
         """
         # The candidates through a line are data of (L, u); plane_classes and flag_classes both
         # read them, and building the line action and its cosets dominates their cost.
@@ -442,7 +510,12 @@ class IsotropicInduction:
                 action = IntegralStructureAction(group, line_action.lattice_inclusion()).with_stable_containing_bound(line_action.stable_containing_bound())
                 double_cosets = action.double_cosets(group.subgroup(plane_generators))
                 section = double_cosets.double_coset_section()
-                candidates.extend((line, lattice.primitive_isotropic_subobject(line, self._integral_image(lattice, ~section(orbit), lifted))) for orbit in double_cosets)
+                for orbit in double_cosets:
+                    shortened = self.shortened_extension(
+                        lattice, ~section(orbit), lifted,
+                        lambda: action.finite_representation().lattice_stabilizer().group_generators(),
+                    )
+                    candidates.append((line, lattice.primitive_isotropic_subobject(line, shortened)))
             self._candidates[key] = (lattice, tuple(candidates))
         return iter(self._candidates[key][1])
 
