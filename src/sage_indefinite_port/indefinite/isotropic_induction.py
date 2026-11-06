@@ -98,7 +98,12 @@ class IsotropicInduction:
             for label, integral_label in zip(labels, integral_labels, strict=True):
                 coordinates = generator(integral.module_generator(integral_label)).to_vector()
                 images[label] = space.linear_combination({target: space.base_ring()(_integer(coordinates(integral_target))) for target, integral_target in zip(labels, integral_labels, strict=True)})
-            result.append(frame * space.Isom(space)(images) * ~frame)
+            transported = frame * space.Isom(space)(images) * ~frame
+            ambient = frame.codomain()
+            result.append(ambient.Isom(ambient)({
+                label: transported(ambient.module_generator(label))
+                for label in ambient.module_generating_set()
+            }))
         return tuple(result)
 
     @staticmethod
@@ -137,7 +142,15 @@ class IsotropicInduction:
                 moved = generator(space.module_generator(label)).to_vector()
                 if any(_rational(moved(target)).denominator() != 1 for target in labels):
                     raise ArithmeticError("the perpendicular lift does not preserve the common invariant lattice")
-        return frame * extension * inverse
+        # MapOrthogonalSublatticeGroupUsingSublattice retains the resulting
+        # matrix, not a composition to evaluate for every later action.
+        # Supply its exact basis images to the owned isometry constructor.
+        transported = frame * extension * inverse
+        ambient = frame.codomain()
+        return ambient.Isom(ambient)({
+            label: transported(ambient.module_generator(label))
+            for label in ambient.module_generating_set()
+        })
 
     def __init__(self, recursion: EichlerRecursion) -> None:
         self.recursion = recursion
