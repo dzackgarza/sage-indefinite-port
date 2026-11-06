@@ -19,6 +19,7 @@ Definite lattices are the preamble's; signature (1, n) is the Lorentzian leaf (#
 """
 
 import itertools
+from collections.abc import Iterable
 from dataclasses import dataclass
 from math import gcd
 
@@ -68,6 +69,33 @@ _UNTWIST = Lattices(ZZ).twist_functor(-1)
 def _untwisted(isometry: LatticeIsometryMethods, profile: AttackProfile) -> LatticeIsometryMethods:
     r"""An isometry of the signed view, as an isometry of the lattice itself."""
     return isometry if profile.sign == 1 else _UNTWIST(isometry)
+
+
+def _integral_generator_set(
+    lattice: Lattices.ParentMethods, generators: Iterable[LatticeIsometryMethods]
+) -> tuple[LatticeIsometryMethods, ...]:
+    r"""Retain distinct nonidentity actions before constructing integral maps.
+
+    The initial exact-map reduction in pinned MatrixGroupSimplification.h:
+    798-812 ExhaustiveReductionComplexityKernelInner_V2 stores generators
+    in a map. Here actions are distinguished on the full integral basis,
+    including kernel elements with the same finite residue image. Removing
+    identities and repeated maps leaves exactly the same generated group.
+    """
+    labels = tuple(lattice.module_generating_set())
+    inclusion = ModulesOverIntegralDomains(lattice.base_ring())(lattice).generic_fibre_map()
+    basis = tuple(inclusion(lattice.module_generator(label)).underlying_element() for label in labels)
+    identity = tuple(tuple(int(row == column) for column in range(len(labels))) for row in range(len(labels)))
+    seen = {identity}
+    result = []
+    for generator in generators:
+        images = tuple(generator(point).to_vector() for point in basis)
+        key = tuple(tuple(_integer(image(label)) for label in labels) for image in images)
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(lattice.integral_isometry(generator))
+    return tuple(result)
 
 
 def _extend_perpendicular_isometry(
@@ -1072,7 +1100,7 @@ class EichlerRecursion:
         r"""Generators of Aut((L, Zv)) for primitive isotropic v: Gamma = {+-1} on the line."""
         lattice = vector.parent()
         action = self.isotropic_stabilizer_action((vector,), ((-vector,),))
-        return tuple(lattice.integral_isometry(generator) for generator in action.stabilizer().group_generators())
+        return _integral_generator_set(lattice, action.stabilizer().group_generators())
 
     def pointwise_stabilizer_generators(self, vector: Lattices.ElementMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""Generators of `Aut((L, v))`, the **pointwise** stabilizer `{g : g(v) = v}` (issues #53 and #62).
@@ -1585,7 +1613,7 @@ class EichlerRecursion:
         if self.vector_lies_in_radical(vector):
             return self._degenerate_radical_pointed_generators(vector)
         action = self.isotropic_stabilizer_action((vector,), ()) if vector.q() == lattice.base_ring().zero() else self._lattice_action(vector)
-        return tuple(lattice.integral_isometry(generator) for generator in action.stabilizer().group_generators())
+        return _integral_generator_set(lattice, action.stabilizer().group_generators())
 
     def pointed_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
         r"""An element of Isom((L, v), (M, w)), or None."""
