@@ -322,6 +322,44 @@ class IsotropicInduction:
             for orbit in double_cosets:
                 yield (*radical, self._integral_image(lattice, ~section(orbit), lifted))
 
+    def basis_marking_classes(
+        self, lattice: Lattices.ParentMethods, radical: tuple[Vector, ...]
+    ) -> Iterator[tuple[Vector, ...]]:
+        r"""Fixed-source classes of bases in one moving-subspace orbit.
+
+        Use CombinedAlgorithms.h:2076-2190's common-lattice orbit splitting,
+        with the pointwise perpendicular group as the left subgroup. If G
+        lifts GL(I) and V fixes I pointwise, bases are G/V; their integral
+        classes are V\G/G_L, represented on I by t^-1. Both lifted groups
+        contain the same complete pointwise-perpendicular kernel. The
+        quotient therefore uses the actual integral Levi image.
+        """
+        sublattice = lattice.primitive_isotropic_subobject(*radical)
+        radical = self.plane_vectors(sublattice)
+        action = self.recursion.isotropic_stabilizer_action(radical, self.sublattice_action_images(sublattice))
+        invariant = action.invariant_module()
+        frame = self.invariant_module_frame(lattice, invariant)
+        rationalize = ModulesOverIntegralDomains(lattice.base_ring())(lattice).generic_fibre_map()
+        reduction = sublattice.isotropic_reduction()
+        labels, lifts = self._frame_lifts(reduction)
+        basis = tuple(rationalize(point).underlying_element() for point in (*radical, *(lifts[label] for label in labels)))
+        kernel = self.invariant_frame_kernel(frame, tuple(rationalize(point).underlying_element() for point in radical))
+        ambient_generators = tuple(
+            self.lift_invariant_frame(frame, basis, tuple(generator(point) for point in basis))
+            for generator in action.rational_group().group_generators()
+        ) + kernel
+        pointwise = self.recursion.isotropic_stabilizer_action(radical, ())
+        pointwise_generators = tuple(
+            self.lift_invariant_frame(frame, basis, tuple(generator(point) for point in basis))
+            for generator in pointwise.rational_group().group_generators()
+        ) + kernel
+        group = frame.codomain().O().subgroup((*ambient_generators, *pointwise_generators))
+        integral_action = IntegralStructureAction(group, action.lattice_inclusion()).with_stable_containing_bound(invariant)
+        double_cosets = integral_action.double_cosets(group.subgroup(pointwise_generators))
+        section = double_cosets.double_coset_section()
+        for orbit in double_cosets:
+            yield tuple(self._integral_image(lattice, ~section(orbit), point) for point in radical)
+
     def basis_flag_action(
         self, lattice: Lattices.ParentMethods, basis: tuple[Vector, ...], dimensions: tuple[int, ...]
     ) -> tuple[tuple[Vector, ...], tuple[tuple[Vector, ...], ...]]:

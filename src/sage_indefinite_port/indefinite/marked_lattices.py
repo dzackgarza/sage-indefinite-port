@@ -247,8 +247,17 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
         case CosliceCategory():
             if int(source.rank()) == 0:
                 classes = (category.object(source.hom([], codomain=lattice)),)
-            else:
+            elif int(source.rank()) == 1:
                 classes = _pointed_classes(category, lattice, int(source.q(next(iter(source.module_generators())))))
+            else:
+                source_basis = tuple(source.module_generators())
+                if any(source.b(left, right) != 0 for left in source_basis for right in source_basis):
+                    raise ValueError("fixed-source class induction requires a totally isotropic source")
+                classes = tuple(
+                    category.object(source.hom(list(images), codomain=lattice))
+                    for basis in INDUCTION.isotropic_flag_bases(lattice, (int(source.rank()),))
+                    for images in INDUCTION.basis_marking_classes(lattice, basis)
+                )
         case _ if category is ARROWS:
             if int(source.rank()) > int(lattice.witt_index()):
                 return finite_ordered_set(())
