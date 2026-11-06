@@ -11,11 +11,11 @@ across ridges.
 Every decision uses a documented exact operator:
 
 * **seed** -- a vertex of the dual slice ``{u : <u,r> >= 0, <h,u> = 1}`` where ``h = sum(rays)`` is an interior
-  point of the cone. This is a **linear-programming engine call** (Sage's PPL backend), not a hand computation:
+  point of the cone. This is a **linear-programming engine call** (cddlib's GMP backend), not a hand computation:
   the route removes the *complete H-description* call, not every engine call, and the seed is one LP per
   coordinate. The slice is bounded exactly because `h` is interior to the *primal* cone (a functional
   positive on the rays is not enough -- it leaves the slice unbounded), and its vertices are exactly the facet
-  normals. Computed by lexicographic minimisation with Sage's PPL backend: exact rational, no perturbation.
+  normals. Computed by lexicographic minimisation with cddlib's GMP backend: exact rational, no perturbation.
 * **rank / kernel** -- ``matrix(...).rank()``, ``.right_kernel()``, ``.left_kernel_matrix()``,
   ``.row_space().basis_matrix()``.
 * **ridges** -- the ridges of a facet are the facets of that facet's cone inside its own span, so the routine
@@ -34,6 +34,7 @@ from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass
+from fractions import Fraction
 from math import gcd
 
 from sage.all import QQ, ZZ, matrix, vector
@@ -130,36 +131,45 @@ def _seed_facet(rays, dimension: int) -> tuple[int, ...]:
 
     Take ``h = sum(rays)``, which lies in the **interior** of the cone (the sum of all generators of a pointed
     cone spans its interior). Then ``S = {u : <u,r> >= 0 for all r, <h,u> = 1}`` is a bounded polytope -- this is
-    the aperture condition, and it is why the normalising vector must be an interior point of the *primal* cone
+  the aperture condition, and it is why the normalising vector must be an interior point of the *primal* cone
     and not a functional positive on the rays: the latter leaves ``S`` unbounded, which is exactly how the first
     version of this routine failed (PPL: "Solution is unbounded"). The vertices of `S` are the extreme rays of
     the dual cone, i.e. exactly the facet normals. Lexicographic minimisation finds one vertex, in exact rational
-    arithmetic through Sage's PPL backend.
+    arithmetic through cddlib's GMP backend.
     """
-    from sage.numerical.mip import MixedIntegerLinearProgram
+    import cdd.gmp as cdd
 
     interior = [sum(int(ray[index]) for ray in rays) for index in range(dimension)]
     if all(entry == 0 for entry in interior):
         raise ArithmeticError("the sum of the rays vanished, so the cone cannot be pointed here")
-    program = MixedIntegerLinearProgram(maximization=False, solver="PPL")
-    variables = program.new_variable(real=True, indices=range(dimension))
-    program.add_constraint(sum(ZZ(interior[index]) * variables[index] for index in range(dimension)) == 1)
-    for ray in rays:
-        program.add_constraint(sum(ZZ(ray[index]) * variables[index] for index in range(dimension)) >= 0)
+    # cdd's H rows encode b + A*x >= 0. Mark the normalization and
+    # subsequent lexicographic constraints as equalities. The GMP module
+    # retains exact rational inputs and outputs:
+    # https://pycddlib.readthedocs.io/en/stable/cdd.html#linear-programming
+    rows = [[0, *(int(entry) for entry in ray)] for ray in rays]
+    rows.append([-1, *interior])
+    equalities = {len(rows) - 1}
     span_basis = matrix(ZZ, [list(ray) for ray in rays]).row_space().basis_matrix()
     if span_basis.nrows() < dimension:
         annihilator = matrix(QQ, span_basis).right_kernel().basis_matrix()
         for row in range(annihilator.nrows()):
-            program.add_constraint(
-                sum(QQ(annihilator[row, index]) * variables[index] for index in range(dimension)) == 0
-            )
+            rows.append([Fraction(0), *(Fraction(int(entry.numerator()), int(entry.denominator())) for entry in annihilator.row(row))])
+            equalities.add(len(rows) - 1)
     coordinates = []
     for index in range(dimension):
-        program.set_objective(variables[index])
-        program.solve()
-        value = QQ(program.get_values(variables)[index])
-        coordinates.append(value)
-        program.add_constraint(variables[index] == value)
+        objective = [0] * (dimension + 1)
+        objective[index + 1] = 1
+        data = cdd.matrix_from_array(rows, lin_set=equalities, rep_type=cdd.RepType.INEQUALITY, obj_type=cdd.LPObjType.MIN, obj_func=objective)
+        program = cdd.linprog_from_matrix(data)
+        cdd.linprog_solve(program)
+        if program.status != cdd.LPStatusType.OPTIMAL:
+            raise ArithmeticError(f"the exact dual-slice program has status {program.status}")
+        value = program.primal_solution[index]
+        coordinates.append(QQ(value.numerator) / QQ(value.denominator))
+        equality = [0] * (dimension + 1)
+        equality[0], equality[index + 1] = -value, 1
+        rows.append(equality)
+        equalities.add(len(rows) - 1)
     normal, _incidence = _orient(rays, _primitive(coordinates))
     return normal
 
