@@ -2036,6 +2036,31 @@ class LorentzianPerfectLocalBackend:
         # some incompatible configurations before the large image search.
         if source_moment.det() != target_moment.det():
             return () if all_images else None
+        # The auxiliary configuration form used by GetQmatrix (see
+        # fund_domain_vertices.h:146) is the inverse second moment.  If
+        # target_rows = source_rows*A, then M_t = A^T*M_s*A. Thus
+        # A*adj(M_t)*A^T = adj(M_s) for a unimodular A. Its diagonal
+        # and anchor pairings constrain every partial basis assignment,
+        # rather than waiting for the full moment certificate at a leaf.
+        # Keep the determinant-scaled form integral and its pairings lazy.
+        source_auxiliary = _ConfigurationPairings(source_rows, source_moment.adjugate(), cache_columns=True)
+        target_auxiliary = (
+            source_auxiliary
+            if source is target
+            else _ConfigurationPairings(target_rows, target_moment.adjugate(), cache_columns=True)
+        )
+        source_spectra = tuple(
+            (*signature, norm)
+            for signature, norm in zip(source_spectra, source_auxiliary.diagonal(), strict=True)
+        )
+        target_spectra = (
+            source_spectra
+            if source is target
+            else tuple(
+                (*signature, norm)
+                for signature, norm in zip(target_spectra, target_auxiliary.diagonal(), strict=True)
+            )
+        )
         # The row sum itself transforms by the same unimodular action. Its
         # coordinate content and its norm in the ambient Gram form are exact
         # invariants too, and cost only O(rank) arithmetic before backtracking.
@@ -2387,14 +2412,18 @@ class LorentzianPerfectLocalBackend:
                         # actual exact pairing values by a large factor.
                         if v not in target_neighbour_signatures:
                             index_typecode = "I" if n <= 2**32 else "Q"
-                            target_neighbour_signatures[v] = _packed_pairing_fibres(
+                            fibres = {}
+                            for position, signature in enumerate(zip(
                                 target_colours,
                                 target_pairings.column(v),
-                                index_typecode,
-                            )
+                                target_auxiliary.column(v),
+                                strict=True,
+                            )):
+                                fibres.setdefault(signature, array(index_typecode)).append(position)
+                            target_neighbour_signatures[v] = fibres
                             if len(target_neighbour_signatures) > anchor_cache_limit:
                                 target_neighbour_signatures.pop(next(iter(target_neighbour_signatures)))
-                        signature = (source_colours[i], source_pairings[i, k])
+                        signature = (source_colours[i], source_pairings[i, k], source_auxiliary[i, k])
                         compatible_images[key] = target_neighbour_signatures[v].get(signature, frozenset())
                         if len(compatible_images) > anchor_cache_limit:
                             compatible_images.pop(next(iter(compatible_images)))
