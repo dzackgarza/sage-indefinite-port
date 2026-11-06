@@ -30,6 +30,7 @@ from sage_extensions.categories.rational_integral_stabilizers import (
 )
 from sage.arith.misc import xgcd
 from sage.structure.parent import Parent
+from sage.categories.morphism import Morphism
 
 from sage_indefinite_port.indefinite.edgewalk_scalars import _integer, _rational
 from sage_indefinite_port.indefinite.indefinite_reduction import (
@@ -61,6 +62,21 @@ class UnsupportedRankError(ValueError):
 
 
 class IsotropicInduction:
+    @staticmethod
+    def invariant_module_frame(lattice: Lattices.ParentMethods, inclusion: Morphism) -> LatticeIsometryMethods:
+        r"""The rational formed frame of the common invariant integral module.
+
+        CombinedAlgorithms.h:314-332 pulls the form back to the invariant
+        lattice before extending either perpendicular group. Keep this
+        change of frame as an isometry, including its inverse.
+        """
+        rational = lattice.base_change(lattice.base_ring().fraction_field_map())
+        module = inclusion.domain()
+        points = tuple(inclusion(module.module_generator(label)).underlying_element() for label in module.module_generating_set())
+        formed = Lattices(rational.base_ring())([[rational.b(left, right) for right in points] for left in points])
+        labels = tuple(formed.module_generating_set())
+        return formed.Isom(rational)(dict(zip(labels, points, strict=True)))
+
     @staticmethod
     def lift_invariant_frame(
         frame: LatticeIsometryMethods, basis: tuple[Vector, ...], images: tuple[Vector, ...]
