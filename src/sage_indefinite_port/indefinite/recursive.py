@@ -134,6 +134,15 @@ def _integral_generator_set(
                     normalized(a * b_inverse, b * a_inverse),
                     normalized(a_inverse * b_inverse, b * a),
                 )
+                # The same source pair products can certify redundancy
+                # even when no L1 norm decreases. If c = a^eps*b^eta
+                # (up to inversion) is already retained independently of
+                # a and b, either a or b is a word in the other and c.
+                # Delete one using equality of the full integral actions;
+                # equality only in a finite quotient would lose kernels.
+                if any(key in actions and key not in (current, other) for key, _entry in candidates):
+                    del actions[current if a_norm >= b_norm else other]
+                    continue
                 candidate_key, candidate = min(candidates, key=lambda item: (item[1][0], item[0]))
                 if candidate[0] >= max(a_norm, b_norm):
                     continue
