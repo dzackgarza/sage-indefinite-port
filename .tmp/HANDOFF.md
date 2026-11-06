@@ -21,7 +21,7 @@ The existing isotropic_stabilizer_action supplies a rational group, its stable c
 
 The provider tensor engine _engine_coisotropic_witt_extension is explicitly the pinned Lorentzian.g extension and denominator-elimination computation. Invoke its public witt_extension owner; preserve the module framing through morphisms. Generic module/form/kernel defects belong to sage-extensions.
 
-After the common lift, translate the iK loop at CombinedAlgorithms.h:2192-2394 with seq_dims_reduced, quotient isotropic classes, extension stabilizers, double-coset sections, and exact flag-equivalence deduplication. Connect it to primitive_marking_classes for arrow and finite-chain categories.
+subspace_extensions assembles the common-lift double-coset step; its rank-two step in 3U produces one maximal extension. isotropic_flag_bases translates the iK loop at CombinedAlgorithms.h:2192-2394 with reduced cumulative ranks, quotient isotropic classes, extension stabilizers, double-coset sections, and exact flag-equivalence deduplication. Verify its end-to-end mathematical checks, then connect it to primitive_marking_classes for arrow and finite-chain categories. Include a proper quotient-action image specimen before claiming the orbit obligation complete.
 
 ## Source and runtime entry points
 

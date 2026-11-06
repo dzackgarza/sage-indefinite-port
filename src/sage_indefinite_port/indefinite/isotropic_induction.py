@@ -318,6 +318,48 @@ class IsotropicInduction:
             for orbit in double_cosets:
                 yield (*radical, self._integral_image(lattice, ~section(orbit), lifted))
 
+    def basis_flag_action(
+        self, lattice: Lattices.ParentMethods, basis: tuple[Vector, ...], dimensions: tuple[int, ...]
+    ) -> tuple[tuple[Vector, ...], tuple[tuple[Vector, ...], ...]]:
+        r"""Adapt an isotropic basis to the cumulative ranks of its flag.
+
+        CombinedAlgorithms.h:655-679 f_get_list_spaces, followed by
+        GetAutomorphismOfFlag. The final rank is the whole sublattice.
+        """
+        space = lattice.primitive_isotropic_subobject(*basis)
+        inclusion = space.inclusion()
+        terms = tuple(
+            inclusion.domain().primitive_isotropic_subobject(*(inclusion.lift(point) for point in basis[:rank]))
+            for rank in dimensions[:-1]
+        )
+        return self.flag_action_data(space, terms)
+
+    def isotropic_flag_bases(self, lattice: Lattices.ParentMethods, dimensions: tuple[int, ...]) -> tuple[tuple[Vector, ...], ...]:
+        r"""One adapted isotropic basis for each orbit of a specified flag shape.
+
+        CombinedAlgorithms.h:2192-2394 INDEF_FORM_GetOrbit_IsotropicKstuff_Method.
+        Cumulative ranks encode SeqDims; intersecting them with ranks at
+        each step is seq_dims_reduced (:594-613). Every candidate is tested
+        by exact flag equivalence, as fInsert (:2238-2258) requires.
+        """
+        if not dimensions or dimensions[0] < 1 or any(left >= right for left, right in zip(dimensions, dimensions[1:])):
+            raise ValueError("isotropic flag ranks must be positive and strictly increasing")
+        if dimensions[-1] > int(lattice.witt_index()):
+            return ()
+        representatives = tuple((point,) for point in self.isotropic_vector_classes(lattice))
+        for rank in range(2, dimensions[-1] + 1):
+            previous_dimensions = tuple(value for value in dimensions if value < rank - 1) + (rank - 1,)
+            next_dimensions = tuple(value for value in dimensions if value < rank) + (rank,)
+            kept = []
+            for previous in representatives:
+                basis, images = self.basis_flag_action(lattice, previous, previous_dimensions)
+                for candidate in self.subspace_extensions(lattice, basis, images):
+                    target_basis, target_images = self.basis_flag_action(lattice, candidate, next_dimensions)
+                    if all(self.recursion.isotropic_subspace_isometry(source, target_basis, target_images) is None for source in kept):
+                        kept.append(target_basis)
+            representatives = tuple(kept)
+        return representatives
+
     def flags_through(self, lattice: Lattices.ParentMethods, line: Vector) -> Iterator[Flag]:
         r"""Flags (Zu, J) meeting every Aut((L, Zu))-orbit of isotropic planes J through u.
 

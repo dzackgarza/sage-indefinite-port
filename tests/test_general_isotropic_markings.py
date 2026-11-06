@@ -77,3 +77,16 @@ def test_isotropic_rank_above_witt_index_has_no_markings():
     ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
     shape = lattice([[0 for _ in range(4)] for _ in range(4)])
     assert tuple(primitive_marking_classes(ARROWS, shape, ambient)) == ()
+
+
+def test_three_u_general_induction_classifies_maximal_isotropic_spaces():
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    representatives = IsotropicInduction(EichlerRecursion()).isotropic_flag_bases(ambient, (3,))
+    assert len(representatives) == 1
+    for basis in representatives:
+        assert len(basis) == 3
+        assert all(ambient.b(left, right) == 0 for left in basis for right in basis)
+        assert ambient.primitive_isotropic_subobject(*basis).inclusion().domain().rank() == 3
