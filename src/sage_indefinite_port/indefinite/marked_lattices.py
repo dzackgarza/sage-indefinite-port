@@ -104,7 +104,22 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
     r"""The isometry of an isomorphism of marked lattices ``source -> target`` in ``category``, or ``None`` when there is none."""
     match category:
         case CosliceCategory():
-            return RECURSION.pointed_isometry(_marked_vector(source), _marked_vector(target))
+            rank = int(category.base_object().rank())
+            if rank == 0:
+                return RECURSION.isometry(source.arrow().codomain(), target.arrow().codomain())
+            if rank == 1:
+                return RECURSION.pointed_isometry(_marked_vector(source), _marked_vector(target))
+            _isotropic_sublattice(source.arrow())
+            _isotropic_sublattice(target.arrow())
+            labels = tuple(category.base_object().module_generating_set())
+            basis = tuple(category.base_object().module_generator(label) for label in labels)
+            # IndefiniteForms.g:1660-1694 with trivial action on the
+            # source: every supplied generator is fixed by the marking.
+            return RECURSION.isotropic_subspace_isometry(
+                tuple(source.arrow()(point) for point in basis),
+                tuple(target.arrow()(point) for point in basis),
+                (),
+            )
         case _ if category is LATTICES:
             return RECURSION.isometry(source, target)
         case _ if category is ARROWS:
@@ -130,7 +145,17 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
     r"""Generators of the automorphism group of a marked lattice in ``category``, as a finite ordered set of isometries of L."""
     match category:
         case CosliceCategory():
-            generators = RECURSION.pointed_automorphism_generators(_marked_vector(marked))
+            rank = int(category.base_object().rank())
+            if rank == 0:
+                generators = RECURSION.orthogonal_group_generators(marked.arrow().codomain())
+            elif rank == 1:
+                generators = RECURSION.pointed_automorphism_generators(_marked_vector(marked))
+            else:
+                _isotropic_sublattice(marked.arrow())
+                # The same perpendicular extension as the setwise case,
+                # with trivial radical action (IndefiniteForms.g:1710-1723).
+                basis = tuple(marked.arrow()(point) for point in category.base_object().module_generators())
+                generators = INDUCTION._stabilizer_generators(basis, ())
         case _ if category is LATTICES:
             generators = RECURSION.orthogonal_group_generators(marked)
         case _ if category is ARROWS:
