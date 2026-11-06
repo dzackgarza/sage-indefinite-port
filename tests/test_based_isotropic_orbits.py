@@ -40,3 +40,17 @@ def test_public_fixed_maximal_plane_classes_in_two_u():
     images = tuple(arrow(point) for point in source.module_generators())
     assert all(ambient.b(left, right) == 0 for left in images for right in images)
     assert arrow.is_primitive()
+
+
+def test_public_moving_maximal_plane_class_in_two_u():
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
+
+    ambient = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    source = lattice([[0, 0], [0, 0]])
+    classes = tuple(primitive_marking_classes(ARROWS, source, ambient))
+    assert len(classes) == 1
+    arrow = classes[0].arrow()
+    assert int(arrow.domain().rank()) == 2 and arrow.codomain() is ambient
+    images = tuple(arrow(point) for point in arrow.domain().module_generators())
+    assert all(ambient.b(left, right) == 0 for left in images for right in images)
+    assert arrow.is_primitive()

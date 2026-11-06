@@ -259,17 +259,11 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                     for images in INDUCTION.basis_marking_classes(lattice, basis)
                 )
         case _ if category is ARROWS:
-            if int(source.rank()) > int(lattice.witt_index()):
-                return finite_ordered_set(())
-            match int(source.rank()):
-                case 0:
-                    classes = (ARROWS.object(source.hom([], codomain=lattice)),)
-                case 1:
-                    classes = tuple(ARROWS.object(lattice.primitive_isotropic_subobject(vector_).inclusion()) for vector_ in INDUCTION.isotropic_vector_classes(lattice))
-                case 2:
-                    classes = tuple(ARROWS.object(plane.inclusion()) for plane in INDUCTION.plane_classes(lattice))
-                case rank:
-                    classes = tuple(ARROWS.object(lattice.primitive_isotropic_subobject(*basis).inclusion()) for basis in INDUCTION.isotropic_flag_bases(lattice, (rank,)))
+            rank = int(source.rank())
+            if rank == 0:
+                classes = (ARROWS.object(source.hom([], codomain=lattice)),)
+            else:
+                classes = tuple(ARROWS.object(lattice.primitive_isotropic_subobject(*basis).inclusion()) for basis in INDUCTION.isotropic_flag_bases(lattice, (rank,)))
         case _FiniteSequenceFunctorCategory() if category.codomain_category() is LATTICES:
             if isinstance(source, Morphism):
                 shape_arrows = (source,)
