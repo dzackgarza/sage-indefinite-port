@@ -8,8 +8,8 @@ Complete the pinned indefinite algorithms over arbitrary isotropic sublattice ra
 
 | Required capability | Current evidence and gap |
 | --- | --- |
-| Arbitrary-rank sublattice Isom and Aut | General dispatch and radical GL actions are implemented. Maximal rank-three 3U transporters pass. The general stabilizer mathematical check needs its result. |
-| Partial and complete finite flags | General chain dispatch, adapted bases, and radical flag actions are implemented. Transporters for ranks (1,3) and (1,2,3) in 3U pass. General flag orbit checks need their result. |
+| Arbitrary-rank sublattice Isom and Aut | General dispatch and radical GL actions are implemented. Maximal rank-three 3U transporters and the expected maximal-parabolic image over F3 pass. |
+| Partial and complete finite flags | General chain dispatch, adapted bases, and radical flag actions are implemented. Transporters and single-orbit checks for ranks (1,3) and (1,2,3) in 3U pass. The public (2,3) marking-class check needs its result. |
 | General orbit induction | The SeqDims loop, common invariant-frame lifts, common integral kernel, double cosets, and exact flag-equivalence deduplication are implemented. Maximal rank-three 3U enumeration passes. |
 | Proper quotient-action image | The glued rank-four lattice in tests/test_isotropic_quotient_image.py has image order two versus full quotient order four modulo three. Its double-coset step produces two inequivalent flags. Both checks pass. |
 | Impossible ranks | Rank-four sublattices in 3U and impossible partial flags return empty marking sets in the small checks. |
@@ -19,7 +19,7 @@ Complete the pinned indefinite algorithms over arbitrary isotropic sublattice ra
 
 ## Next work
 
-1. Resolve the complete/partial 3U flag orbit check and the maximal rank-three stabilizer check. Test public marking-class construction for arbitrary sublattice ranks and finite-chain shapes, including the partial shape (2,3). Keep the source domain intact when a check fails.
+1. Resolve the public (2,3) marking-class check, then check public marking-class construction for arbitrary sublattice ranks and longer finite-chain shapes. Complete the flag-stabilizer mathematical examples. Keep the source domain intact when a check fails.
 2. Obtain the A7 discriminant-image result at the repaired revision. Diagnose its actual active stage before changing it. The old element-by-element ray-action path is superseded by the existing basis-action implementation; do not implement a new facet walk.
 3. Measure the stabilizer-family reduction on the required large consumer. Full-basis equality preserves the integral kernel; selection solely by finite image does not. Exact duplicate removal is implemented, but runtime sufficiency for #70 is still unproven. Generic provider defects belong to sage-extensions with exact inputs and provider revision.
 4. Reverify the chosen small assertions at the final published source/provider pair. Preserve the broader retained backlog and avoid claiming it complete from these specimens.

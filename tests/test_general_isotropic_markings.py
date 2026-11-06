@@ -127,3 +127,20 @@ def test_three_u_general_induction_classifies_complete_and_partial_flags():
             assert all(ambient.b(left, right) == 0 for left in basis for right in basis)
             for rank in dimensions:
                 assert ambient.primitive_isotropic_subobject(*basis[:rank]).inclusion().domain().rank() == rank
+
+
+def test_public_partial_two_three_flag_classes_in_three_u():
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, primitive_marking_classes
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    shape = lattice([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    shape_basis = tuple(shape.module_generator(label) for label in shape.module_generating_set())
+    first_term = shape.primitive_isotropic_subobject(*shape_basis[:2])
+    classes = tuple(primitive_marking_classes(FLAGS, first_term.inclusion(), ambient))
+    assert len(classes) == 1
+    for flag in classes:
+        arrows = tuple(flag.arrows())
+        assert tuple(int(arrow.domain().rank()) for arrow in arrows) == (2, 3)
+        assert arrows[-1].codomain() is ambient
+        assert arrows[0].codomain() is arrows[1].domain()
+        assert all(arrow.is_primitive() for arrow in arrows)
