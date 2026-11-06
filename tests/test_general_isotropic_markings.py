@@ -11,8 +11,9 @@ def test_extension_shortening_preserves_the_integral_flag_orbit():
     ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(4)] for i in range(4)])
     rational = ambient.base_change(ambient.base_ring().fraction_field_map())
     labels = tuple(rational.module_generating_set())
-    e, f, x, y = (rational.module_generator(label) for label in labels)
-    shear = rational.Isom(rational)(dict(zip(labels, (e, f + x, x, y - e), strict=True)))
+    e, f, x, y = (ambient.module_generator(label) for label in labels)
+    integral_shear = ambient.Isom(ambient)(dict(zip(labels, (e, f + x, x, y - e), strict=True)))
+    shear = integral_shear.base_change(ambient.base_ring().fraction_field_map())
     identity = rational.Isom(rational).identity()
     integral_basis = tuple(ambient.module_generator(label) for label in ambient.module_generating_set())
     radical, extension = integral_basis[0], integral_basis[3]

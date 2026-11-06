@@ -65,6 +65,10 @@ from sage_indefinite_port.invariants import (
 
 _UNTWIST = Lattices(ZZ).twist_functor(-1)
 
+type _IsotropicActionKey = tuple[
+    int, tuple[tuple[int, ...], ...], tuple[tuple[tuple[int, ...], ...], ...]
+]
+
 
 def _untwisted(isometry: LatticeIsometryMethods, profile: AttackProfile) -> LatticeIsometryMethods:
     r"""An isometry of the signed view, as an isometry of the lattice itself."""
@@ -629,6 +633,7 @@ class EichlerRecursion:
         # every recursive orthogonal-group and lattice-equivalence request.
         self._groupoid = IsometryGroupoidCache()
         self._models: dict[Lattices.ParentMethods, OrbitCoverModel] = {}
+        self._isotropic_actions: dict[_IsotropicActionKey, IntegralStructureAction] = {}
 
     def _degenerate_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""IndefiniteForms.g:853–901, 1496–1511: extend O(C) over the radical.
@@ -1082,6 +1087,22 @@ class EichlerRecursion:
         e = |disc K| and a = |coker(L -> J^*)| (issue #18); leaving that module raises.
         """
         lattice = isotropic[0].parent()
+        labels = tuple(lattice.module_generating_set())
+
+        def coordinates(point: Lattices.ElementMethods) -> tuple[int, ...]:
+            if point.parent() is not lattice:
+                raise ValueError("an isotropic stabilizer action needs all basis images in its ambient lattice")
+            row = point.to_vector()
+            return tuple(_integer(row(label)) for label in labels)
+
+        key = (
+            id(lattice), tuple(coordinates(point) for point in isotropic),
+            tuple(tuple(coordinates(point) for point in images) for images in radical_images),
+        )
+        cached = self._isotropic_actions.pop(key, None)
+        if cached is not None:
+            self._isotropic_actions[key] = cached
+            return cached
         reduction = lattice.primitive_isotropic_subobject(*isotropic).isotropic_reduction()
         quotient = reduction.quotient_lattice()
         perpendicular = reduction.orthogonal_complement().inclusion()
@@ -1166,7 +1187,16 @@ class EichlerRecursion:
         )
         action = IntegralStructureAction(rational.O().subgroup(tuple(generators)), inclusion)
         span = OrbitSpanConstructions(lattice.base_ring())(action.ambient_action_functor(), inclusion, containing=containing)
-        return action.with_stable_containing_bound(span.inclusion())
+        result = action.with_stable_containing_bound(span.inclusion())
+        # Invariant comparison, extension and integral correction consume
+        # the same source f_stab datum. Retain the two current actions, with
+        # their exact bases and allowed radical images, rather than rebuild
+        # their Witt lifts and stable modules. Each action retains L through
+        # its inclusion, so a live key cannot be reused for another parent.
+        self._isotropic_actions[key] = result
+        while len(self._isotropic_actions) > 2:
+            del self._isotropic_actions[next(iter(self._isotropic_actions))]
+        return result
 
     def line_stabilizer_generators(self, vector: Lattices.ElementMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""Generators of Aut((L, Zv)) for primitive isotropic v: Gamma = {+-1} on the line."""

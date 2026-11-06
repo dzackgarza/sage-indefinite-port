@@ -19,6 +19,7 @@ isotropic classes of K and every stabilizer generating set.
 """
 
 from collections.abc import Callable, Iterable, Iterator
+from functools import cache
 from math import lcm
 
 from sage_extensions.all import ZZ, Cat, Lattices
@@ -372,6 +373,18 @@ class IsotropicInduction:
             for generator in action.rational_group().group_generators()
         ) + kernel
         ambient = frame.codomain().O()
+
+        @cache
+        def integral_flag_generators() -> tuple[LatticeIsometryMethods, ...]:
+            # Source LGenStab is computed for the previous integral flag,
+            # before the quotient-vector loop. Reduce its full actions once
+            # before producing the maps consumed by representative descent.
+            generators = _integral_generator_set(
+                lattice, action.finite_representation().lattice_stabilizer().group_generators()
+            )
+            field_map = lattice.base_ring().fraction_field_map()
+            return tuple(generator.base_change(field_map) for generator in generators)
+
         for isotropic in self.isotropic_vector_classes(quotient):
             extension_basis, families = self.extension_stabilizer_images(reduction, radical, radical_images, isotropic)
             stabilizer_generators = tuple(
@@ -386,7 +399,7 @@ class IsotropicInduction:
             for orbit in double_cosets:
                 shortened = self.shortened_extension(
                     lattice, ~section(orbit), lifted,
-                    lambda: integral_action.finite_representation().lattice_stabilizer().group_generators(),
+                    integral_flag_generators,
                 )
                 yield (*radical, shortened)
 
@@ -555,6 +568,15 @@ class IsotropicInduction:
             line_generators = tuple(line_action.rational_group().group_generators())
             ambient = line_action.rational_group().supergroup()
             candidates = []
+
+            @cache
+            def integral_line_generators() -> tuple[LatticeIsometryMethods, ...]:
+                generators = _integral_generator_set(
+                    lattice, line_action.finite_representation().lattice_stabilizer().group_generators()
+                )
+                field_map = lattice.base_ring().fraction_field_map()
+                return tuple(generator.base_change(field_map) for generator in generators)
+
             for isotropic in self.isotropic_vector_classes(quotient):
                 lifted = self._lift(lattice, labels, lifts, isotropic)
                 plane_generators = self._plane_stabilizer_generators(reduction, line, isotropic)
@@ -565,7 +587,7 @@ class IsotropicInduction:
                 for orbit in double_cosets:
                     shortened = self.shortened_extension(
                         lattice, ~section(orbit), lifted,
-                        lambda: action.finite_representation().lattice_stabilizer().group_generators(),
+                        integral_line_generators,
                     )
                     candidates.append((line, lattice.primitive_isotropic_subobject(line, shortened)))
             self._candidates[key] = (lattice, tuple(candidates))
