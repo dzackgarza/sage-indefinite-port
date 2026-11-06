@@ -21,6 +21,38 @@ def test_extension_shortening_preserves_the_integral_flag_orbit():
         assert shortened.q() == ambient.base_ring().zero()
 
 
+def test_general_flag_invariants_are_preserved_by_hyperbolic_pair_exchange():
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    e, f, x, y, u, v = tuple(ambient.module_generators())
+    induction = IsotropicInduction(EichlerRecursion())
+    for dimensions in ((3,), (1, 3), (1, 2, 3)):
+        source = induction.flag_invariant(ambient, (e + x, x, u), dimensions)
+        target = induction.flag_invariant(ambient, (f + y, y, v), dimensions)
+        assert source == target
+        assert source.dimensions == dimensions
+        assert source.ambient.rank == 6
+        assert source.quotient.rank == 0
+        assert source.quotient.discriminant == 1
+        assert source.denominator_primes == ()
+
+
+def test_glued_line_invariant_retains_the_rational_denominator_prime():
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 2, 0, 0], [2, 0, 1, 0], [0, 1, 0, 2], [0, 0, 2, 0]])
+    line = next(iter(ambient.module_generators()))
+    invariant = IsotropicInduction(EichlerRecursion()).flag_invariant(ambient, (line,), (1,))
+    assert invariant.dimensions == (1,)
+    assert invariant.ambient.rank == 4
+    assert invariant.quotient.rank == 2
+    assert invariant.quotient.discriminant == -4
+    assert invariant.denominator_primes == (2,)
+
+
 def test_three_u_maximal_isotropic_sublattices_have_a_transporter():
     gram = [[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)]
     ambient = lattice(gram)
