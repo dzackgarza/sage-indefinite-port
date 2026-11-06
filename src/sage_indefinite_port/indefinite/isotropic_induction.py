@@ -19,6 +19,7 @@ isotropic classes of K and every stabilizer generating set.
 """
 
 from collections.abc import Iterator
+from math import lcm
 
 from sage_extensions.all import ZZ, Cat, Lattices
 from sage_extensions.categories.abstract_categories.products import (
@@ -62,6 +63,38 @@ class UnsupportedRankError(ValueError):
 
 
 class IsotropicInduction:
+    @staticmethod
+    def invariant_frame_kernel(frame: LatticeIsometryMethods, radical: tuple[Vector, ...]) -> tuple[LatticeIsometryMethods, ...]:
+        r"""The kernel fixing J-perp and preserving the common integral frame.
+
+        CombinedAlgorithms.h:487-493 ComputeRelevantKernel. Multiplying
+        the rational form by a nonzero integer leaves its orthogonal group,
+        perpendiculars and pointwise kernel unchanged. The provider solves
+        the integral kernel on this scaled form; transport the maps back.
+        """
+        space = frame.domain()
+        labels = tuple(space.module_generating_set())
+        points = tuple(space.module_generator(label) for label in labels)
+        gram = tuple(tuple(_rational(space.b(left, right)) for right in points) for left in points)
+        scale = lcm(*(int(entry.denominator()) for row in gram for entry in row))
+        integral = Lattices(ZZ)([[int(scale * entry) for entry in row] for row in gram])
+        integral_labels = tuple(integral.module_generating_set())
+        integral_radical = []
+        for point in radical:
+            coordinates = (~frame)(point).to_vector()
+            entries = tuple(_rational(coordinates(label)) for label in labels)
+            denominator = lcm(*(int(entry.denominator()) for entry in entries))
+            integral_radical.append(integral.linear_combination({label: ZZ(int(denominator * entry)) for label, entry in zip(integral_labels, entries, strict=True)}))
+        reduction = integral.primitive_isotropic_subobject(*integral_radical).isotropic_reduction()
+        result = []
+        for generator in reduction.pointwise_perpendicular_kernel().group_generators():
+            images = {}
+            for label, integral_label in zip(labels, integral_labels, strict=True):
+                coordinates = generator(integral.module_generator(integral_label)).to_vector()
+                images[label] = space.linear_combination({target: space.base_ring()(_integer(coordinates(integral_target))) for target, integral_target in zip(labels, integral_labels, strict=True)})
+            result.append(frame * space.Isom(space)(images) * ~frame)
+        return tuple(result)
+
     @staticmethod
     def invariant_module_frame(lattice: Lattices.ParentMethods, inclusion: Morphism) -> LatticeIsometryMethods:
         r"""The rational formed frame of the common invariant integral module.

@@ -37,3 +37,25 @@ def test_invariant_module_frame_retains_the_module_and_pairing():
     for left in framed_points:
         for right in framed_points:
             assert space.b(left, right) == frame.codomain().b(frame(left), frame(right))
+
+
+def test_common_rank_two_kernel_is_nontrivial_and_integral_in_its_frame():
+    from sage.all import GF, MatrixGroup, matrix
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(4)] for i in range(4)])
+    rational = ambient.base_change(ambient.base_ring().fraction_field_map())
+    labels = tuple(rational.module_generating_set())
+    points = tuple(rational.module_generator(label) for label in labels)
+    field = rational.base_ring()
+    frame = rational.Isom(rational)({label: rational.scalar_multiple(scale, point) for label, scale, point in zip(labels, (field(2), field.one()/field(2), field.one(), field.one()), points)})
+    radical = (frame(points[0]), frame(points[2]))
+    generators = IsotropicInduction.invariant_frame_kernel(frame, radical)
+    matrices = []
+    for generator in generators:
+        assert all(generator(point) == point for point in radical)
+        conjugate = ~frame * generator * frame
+        matrices.append(matrix(GF(3), [[_rational(conjugate(point).to_vector()(label)) for label in labels] for point in points]))
+        for left in points:
+            for right in points:
+                assert rational.b(generator(left), generator(right)) == rational.b(left, right)
+    assert MatrixGroup(matrices).order() == 3
