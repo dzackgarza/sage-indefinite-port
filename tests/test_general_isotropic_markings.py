@@ -90,3 +90,24 @@ def test_three_u_general_induction_classifies_maximal_isotropic_spaces():
         assert len(basis) == 3
         assert all(ambient.b(left, right) == 0 for left in basis for right in basis)
         assert ambient.primitive_isotropic_subobject(*basis).inclusion().domain().rank() == 3
+
+
+def test_complete_flag_marking_retains_each_primitive_term():
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    basis = tuple(ambient.module_generator(label) for label in ambient.module_generating_set())[::2]
+    arrows = _flag_marking_from_basis(ambient, basis, (1, 2, 3))
+    assert tuple(int(arrow.domain().rank()) for arrow in arrows) == (1, 2, 3)
+    assert arrows[-1].codomain() is ambient
+    assert all(arrow.is_primitive() for arrow in arrows)
+    assert all(left.codomain() is right.domain() for left, right in zip(arrows, arrows[1:]))
+
+
+def test_partial_flag_above_witt_index_has_no_markings():
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, primitive_marking_classes
+
+    ambient = lattice([[0, 1], [1, 0]])
+    plane = lattice([[0, 0], [0, 0]])
+    line = plane.primitive_isotropic_subobject(next(iter(plane.module_generators())))
+    assert tuple(primitive_marking_classes(FLAGS, line.inclusion(), ambient)) == ()

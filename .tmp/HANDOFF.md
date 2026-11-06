@@ -21,7 +21,9 @@ The existing isotropic_stabilizer_action supplies a rational group, its stable c
 
 The provider tensor engine _engine_coisotropic_witt_extension is explicitly the pinned Lorentzian.g extension and denominator-elimination computation. Invoke its public witt_extension owner; preserve the module framing through morphisms. Generic module/form/kernel defects belong to sage-extensions.
 
-subspace_extensions assembles the common-lift double-coset step; its rank-two step in 3U produces one maximal extension. isotropic_flag_bases translates the iK loop at CombinedAlgorithms.h:2192-2394 with reduced cumulative ranks, quotient isotropic classes, extension stabilizers, double-coset sections, and exact flag-equivalence deduplication. Verify its end-to-end mathematical checks, then connect it to primitive_marking_classes for arrow and finite-chain categories. Include a proper quotient-action image specimen before claiming the orbit obligation complete.
+subspace_extensions assembles the common-lift double-coset step; its rank-two step in 3U produces one maximal extension. isotropic_flag_bases translates the iK loop at CombinedAlgorithms.h:2192-2394 with reduced cumulative ranks, quotient isotropic classes, extension stabilizers, double-coset sections, and exact flag-equivalence deduplication. primitive_marking_classes dispatches higher-rank arrows and finite-chain shapes to this loop and constructs the returned marking diagrams.
+
+The end-to-end 3U orbit check exits 139 in the pinned provider coloured_vector_families.py:270 canonical_form call, reached through recursive quotient orthogonal-group generation. Provider issue https://github.com/dzackgarza/sage-extensions/issues/277 records the reproducer and stack. The native cause is unproven. Capture the failing graph and repair the owning provider/backend path under its own contribution rules; do not bypass the recursive group computation. Reverify the port against its required pin or an explicitly adopted repaired pin. The general orbit obligation remains unverified. Include a proper quotient-action image specimen before claiming it complete.
 
 ## Source and runtime entry points
 

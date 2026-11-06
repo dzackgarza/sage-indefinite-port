@@ -223,13 +223,29 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 case 2:
                     classes = tuple(ARROWS.object(plane.inclusion()) for plane in INDUCTION.plane_classes(lattice))
                 case rank:
-                    raise UnsupportedRankError(f"isotropic sublattices of rank {rank}: the isotropic induction covers ranks 1 and 2")
-        case _ if category is FLAGS:
-            # A diagram on the finite ordinal [2] is read from its two consecutive arrows.
-            classes = tuple(FLAGS(_flag_marking(line, plane)) for line, plane in INDUCTION.flag_classes(lattice))
+                    classes = tuple(ARROWS.object(lattice.primitive_isotropic_subobject(*basis).inclusion()) for basis in INDUCTION.isotropic_flag_bases(lattice, (rank,)))
+        case _FiniteSequenceFunctorCategory() if category.codomain_category() is LATTICES:
+            if isinstance(source, Morphism):
+                shape_arrows = (source,)
+            else:
+                shape_arrows = tuple(source.arrows())
+            dimensions = (int(shape_arrows[0].domain().rank()), *(int(arrow.codomain().rank()) for arrow in shape_arrows))
+            classes = tuple(category(_flag_marking_from_basis(lattice, basis, dimensions)) for basis in INDUCTION.isotropic_flag_bases(lattice, dimensions))
         case _:
             raise ValueError(f"{category} is not a category of marked lattices this port classifies: a coslice <n>/Lattices, Ar(Lattices) or Fun([2], Lattices)")
     return finite_ordered_set(classes)
+
+
+def _flag_marking_from_basis(lattice: Lattices.ParentMethods, basis: tuple[Lattices.ElementMethods, ...], dimensions: tuple[int, ...]) -> tuple[Morphism, ...]:
+    r"""The chain of primitive isotropic prefix sublattices of an adapted basis."""
+    space = lattice.primitive_isotropic_subobject(*basis)
+    composite = space.inclusion()
+    arrows = [composite]
+    for rank in reversed(dimensions[:-1]):
+        term = composite.domain().primitive_isotropic_subobject(*(composite.lift(point) for point in basis[:rank]))
+        arrows.insert(0, term.inclusion())
+        composite = composite * term.inclusion()
+    return tuple(arrows)
 
 
 def _flag_marking(line: Lattices.ElementMethods, plane: Parent) -> tuple[Morphism, Morphism]:
