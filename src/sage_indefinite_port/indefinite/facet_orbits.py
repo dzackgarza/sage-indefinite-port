@@ -37,7 +37,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 from math import gcd
 
-from sage.all import QQ, ZZ, matrix, vector
+from sage.all import QQ, ZZ, Permutation, PermutationGroup, matrix, vector
 
 from sage_indefinite_port.indefinite.facet_certificates import (
     is_facet_certificate,
@@ -366,64 +366,21 @@ def _orbit(incidence, permutations):
     return members
 
 
-def _orbit_with_images(incidence, permutations):
-    r"""The orbit of a facet together with the image of its incidence under every orbit word.
+def _stabilizer_on_facet(group, incidence):
+    r"""The induced action of the exact set stabilizer on its facet.
 
-    ``members[face] = (word, image)`` where ``word`` is a tuple of generator indices with
-    ``word(incidence) = face`` and ``image`` is that word applied to the *sorted* positions of ``incidence``,
-    point by point. Carrying the image along costs ``O(|F|)`` per step and removes the need ever to build a
-    permutation of the whole ray set -- which on the A7 specimen has 49 861 positions and was the measured
-    bottleneck (`_compose` at every (orbit point x generator) pair).
+    Sage's PermutationGroup.stabilizer(..., action="OnSets") delegates
+    the finite set stabilizer to GAP. Restricting its generators gives
+    the full image on the facet, including when the restriction has a
+    kernel. Global transport words still use the supplied ray generators.
     """
     positions = tuple(sorted(incidence))
-    members = {incidence: ((), positions)}
-    queue = deque([incidence])
-    while queue:
-        current = queue.popleft()
-        word, image = members[current]
-        for index, permutation in enumerate(permutations):
-            moved_image = tuple(int(permutation[position]) for position in image)
-            moved = frozenset(moved_image)
-            if moved not in members:
-                members[moved] = (word + (index,), moved_image)
-                queue.append(moved)
-    return members
-
-
-def _stabilizer_on_facet(permutations, members):
-    r"""Generators of the facet's set stabilizer, as permutations **of the facet's own positions**.
-
-    For an orbit point ``u`` with image ``image_u`` and a generator ``s``, the Schreier element
-    ``w_x^{-1} . s . w_u`` (with ``x = s(u)``) fixes the facet, and its action on the facet's positions is
-    ``i -> (w_x^{-1})(s(image_u[i]))``: both ``image_u`` and ``image_x`` are bijections between the facet's
-    positions and their images, so the inverse is a dictionary lookup. Every step is ``O(|F|)``; no permutation of
-    the ambient ray set is formed.
-    """
-    generators: list[tuple[int, ...]] = []
-    seen: set[tuple[int, ...]] = set()
-    for _face, (_word, image_u) in members.items():
-        for permutation in permutations:
-            moved = frozenset(int(permutation[position]) for position in image_u)
-            if moved not in members:
-                continue
-            image_x = members[moved][1]
-            inverse_x = {position: index for index, position in enumerate(image_x)}
-            action = []
-            for position in image_u:
-                target = int(permutation[position])
-                index = inverse_x.get(target)
-                if index is None:
-                    raise ArithmeticError(
-                        "a Schreier element did not map the facet onto itself; the orbit data is inconsistent"
-                    )
-                action.append(index)
-            if sorted(action) != list(range(len(action))):
-                raise ArithmeticError("a Schreier element is not a permutation of the facet's positions")
-            action_tuple = tuple(action)
-            if action_tuple not in seen:
-                seen.add(action_tuple)
-                generators.append(action_tuple)
-    return tuple(generators)
+    local_position = {position + 1: index for index, position in enumerate(positions)}
+    stabilizer = group.stabilizer([position + 1 for position in positions], action="OnSets")
+    return tuple(
+        tuple(local_position[int(generator(position + 1))] for position in positions)
+        for generator in stabilizer.gens()
+    )
 
 
 def orbit_representatives(rays, permutations):
@@ -452,6 +409,10 @@ def orbit_representatives(rays, permutations):
             representatives.append((incidence, normal))
         return tuple(representatives)
 
+    group = PermutationGroup(
+        [Permutation([int(position) + 1 for position in permutation]) for permutation in permutations],
+        domain=tuple(range(1, len(rays) + 1)),
+    )
     seed_normal = _seed_facet(rays, dimension)
     seed = _incidence(rays, seed_normal)
     if not is_facet_certificate(seed_normal, seed, rays):
@@ -463,8 +424,7 @@ def orbit_representatives(rays, permutations):
         index = pending.pop()
         incidence, normal = representatives[index]
         positions = sorted(incidence)
-        members = _orbit_with_images(incidence, permutations)
-        local_permutations = _stabilizer_on_facet(permutations, members)
+        local_permutations = _stabilizer_on_facet(group, incidence)
         local_rays, local_dimension = _local_coordinates(rays, incidence)
         if local_dimension < 2:
             continue
