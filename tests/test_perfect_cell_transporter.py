@@ -344,6 +344,41 @@ def test_coarse_large_configuration_colours_preserve_exact_stabilizer(monkeypatc
         assert set(map(tuple, matrix(ZZ, cell.rows) * transform)) == set(cell.rows)
 
 
+def test_a3_root_cell_has_its_complete_facet_orbits_and_transport_words(monkeypatch) -> None:
+    r"""The A3 root polytope has triangular and square facets.
+
+    In the realization by e_i-e_j in R^4, a nonempty proper subset S
+    defines a facet with |S|(4-|S|) vertices. Subsets of sizes one and
+    three give eight triangles, and subsets of size two give six squares.
+    S4 and root negation give the full root-system symmetry group of order
+    48, acting transitively on each of those two facet types.
+    """
+    from sage.all import SymmetricGroup
+    from sage_indefinite_port.indefinite.facet_orbits import _cell_facet_orbits_from_permutations
+
+    gram = matrix(ZZ, [[2, -1, 0, 0], [-1, 2, -1, 0], [0, -1, 2, 0], [0, 0, 0, -2]])
+    positive_roots = tuple(
+        tuple(int(start <= index < stop) for index in range(3))
+        for start in range(3) for stop in range(start + 1, 4)
+    )
+    roots = (*positive_roots, *(tuple(-entry for entry in root) for root in positive_roots))
+    cell = LorentzianPerfectCell(lattice(gram.rows()), tuple((*root, 1) for root in roots), ZERO_SQUARES)
+    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
+    permutations = LorentzianPerfectLocalBackend().point_permutations_from_rows(cell, cell.rows)
+    symmetric = SymmetricGroup(len(cell.rows))
+    group = symmetric.subgroup([symmetric([position + 1 for position in p]) for p in permutations])
+    assert group.order() == 48
+    records = _cell_facet_orbits_from_permutations(cell, permutations)
+    assert sorted((len(record.incidence), record.orbit_size) for record in records) == [(3, 8), (4, 6)]
+    for record in records:
+        assert len(record.words) == record.orbit_size
+        for incidence, word in record.words:
+            moved = record.incidence
+            for generator in word:
+                moved = frozenset(permutations[generator][position] for position in moved)
+            assert moved == incidence
+
+
 def test_class_sum_pairing_colours_are_isometry_invariants() -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     rows = matrix(ZZ, [[1, 0], [0, 1], [1, 1], [-1, -1]])
