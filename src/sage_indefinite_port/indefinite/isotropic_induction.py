@@ -32,6 +32,7 @@ from sage_extensions.categories.rational_integral_stabilizers import (
 from sage.arith.misc import xgcd
 from sage.structure.parent import Parent
 from sage.categories.morphism import Morphism
+from sage_extensions.categories.modules.pure.modules import ModulesOverIntegralDomains
 
 from sage_indefinite_port.indefinite.edgewalk_scalars import _integer, _rational
 from sage_indefinite_port.indefinite.indefinite_reduction import (
@@ -273,6 +274,49 @@ class IsotropicInduction:
             for point in radical:
                 families.append((*radical, *(lifted + point if position == sheared else lifted for position, lifted in enumerate(frame))))
         return basis, tuple(families)
+
+    def subspace_extensions(
+        self, lattice: Lattices.ParentMethods, radical: tuple[Vector, ...], radical_images: tuple[tuple[Vector, ...], ...]
+    ) -> Iterator[tuple[Vector, ...]]:
+        r"""Extend an isotropic flag by one rank, up to its integral stabilizer.
+
+        CombinedAlgorithms.h:2076-2190 f_double_cosets and :2259-2377
+        SpanRepresentatives. Both lifted groups preserve the same module
+        and include its full pointwise-perpendicular kernel. Their images
+        on the perpendicular are the ambient flag group and the extension
+        stabilizer, respectively; thus the second group lies in the first.
+        """
+        reduction = self.reduction(lattice, *radical)
+        quotient = reduction.quotient_lattice()
+        action = self.recursion.isotropic_stabilizer_action(radical, radical_images)
+        invariant = action.invariant_module()
+        frame = self.invariant_module_frame(lattice, invariant)
+        rationalize = ModulesOverIntegralDomains(lattice.base_ring())(lattice).generic_fibre_map()
+
+        def rational(point: Vector) -> Vector:
+            return rationalize(point).underlying_element()
+
+        labels, lifts = self._frame_lifts(reduction)
+        basis = tuple(rational(point) for point in (*radical, *(lifts[label] for label in labels)))
+        kernel = self.invariant_frame_kernel(frame, tuple(rational(point) for point in radical))
+        ambient_generators = tuple(
+            self.lift_invariant_frame(frame, basis, tuple(generator(point) for point in basis))
+            for generator in action.rational_group().group_generators()
+        ) + kernel
+        ambient = frame.codomain().O()
+        for isotropic in self.isotropic_vector_classes(quotient):
+            extension_basis, families = self.extension_stabilizer_images(reduction, radical, radical_images, isotropic)
+            stabilizer_generators = tuple(
+                self.lift_invariant_frame(frame, tuple(rational(point) for point in extension_basis), tuple(rational(point) for point in images))
+                for images in families
+            ) + kernel
+            group = ambient.subgroup((*ambient_generators, *stabilizer_generators))
+            integral_action = IntegralStructureAction(group, action.lattice_inclusion()).with_stable_containing_bound(invariant)
+            double_cosets = integral_action.double_cosets(group.subgroup(stabilizer_generators))
+            section = double_cosets.double_coset_section()
+            lifted = self._lift(lattice, labels, lifts, isotropic)
+            for orbit in double_cosets:
+                yield (*radical, self._integral_image(lattice, ~section(orbit), lifted))
 
     def flags_through(self, lattice: Lattices.ParentMethods, line: Vector) -> Iterator[Flag]:
         r"""Flags (Zu, J) meeting every Aut((L, Zu))-orbit of isotropic planes J through u.

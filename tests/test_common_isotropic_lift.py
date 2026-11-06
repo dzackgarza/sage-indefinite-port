@@ -59,3 +59,18 @@ def test_common_rank_two_kernel_is_nontrivial_and_integral_in_its_frame():
             for right in points:
                 assert rational.b(generator(left), generator(right)) == rational.b(left, right)
     assert MatrixGroup(matrices).order() == 3
+
+
+def test_rank_two_induction_in_three_u_reaches_a_maximal_isotropic_space():
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    points = tuple(ambient.module_generator(label) for label in ambient.module_generating_set())
+    space = ambient.primitive_isotropic_subobject(points[0], points[2])
+    induction = IsotropicInduction(EichlerRecursion())
+    extensions = tuple(induction.subspace_extensions(ambient, induction.plane_vectors(space), induction.sublattice_action_images(space)))
+    assert len(extensions) == 1
+    for basis in extensions:
+        assert len(basis) == 3
+        assert all(ambient.b(left, right) == 0 for left in basis for right in basis)
+        assert ambient.primitive_isotropic_subobject(*basis).inclusion().domain().rank() == 3
