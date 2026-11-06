@@ -148,3 +148,26 @@ def test_public_partial_two_three_flag_classes_in_three_u():
         assert arrows[-1].codomain() is ambient
         assert arrows[0].codomain() is arrows[1].domain()
         assert all(arrow.is_primitive() for arrow in arrows)
+
+
+def test_public_complete_flag_classes_in_three_u():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import primitive_marking_classes
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    shape = lattice([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    shape_basis = tuple(shape.module_generator(label) for label in shape.module_generating_set())
+    plane = shape.primitive_isotropic_subobject(*shape_basis[:2])
+    line = plane.inclusion().domain().primitive_isotropic_subobject(plane.inclusion().lift(shape_basis[0] + shape_basis[1]))
+    shape_category = Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))
+    source = shape_category((line.inclusion(), plane.inclusion()))
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    classes = tuple(primitive_marking_classes(category, source, ambient))
+    assert len(classes) == 1
+    for flag in classes:
+        arrows = tuple(flag.arrows())
+        assert tuple(int(arrow.domain().rank()) for arrow in arrows) == (1, 2, 3)
+        assert arrows[-1].codomain() is ambient
+        assert all(arrow.is_primitive() for arrow in arrows)
+        assert all(left.codomain() is right.domain() for left, right in zip(arrows, arrows[1:]))
