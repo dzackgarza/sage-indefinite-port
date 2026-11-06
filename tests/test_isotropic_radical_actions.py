@@ -30,3 +30,23 @@ def test_rank_three_partial_flag_action_is_a_proper_subgroup():
     basis_matrix = matrix(GF(2), [[int(point.to_vector()(label)) for label in labels] for point in adapted])
     generators = [~basis_matrix * matrix(GF(2), [[int(point.to_vector()(label)) for label in labels] for point in family]) for family in images]
     assert MatrixGroup(generators).order() == 24
+
+
+def test_rank_two_induction_extension_stabilizer_has_expected_mod_two_image():
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    vectors = tuple(ambient.module_generator(label) for label in ambient.module_generating_set())
+    space = ambient.primitive_isotropic_subobject(vectors[0], vectors[2])
+    induction = IsotropicInduction(EichlerRecursion())
+    reduction = space.isotropic_reduction()
+    quotient = reduction.quotient_lattice()
+    isotropic = next(iter(quotient.module_generators()))
+    basis, images = induction.extension_stabilizer_images(reduction, induction.plane_vectors(space), induction.sublattice_action_images(space), isotropic)
+    labels = tuple(ambient.module_generating_set())
+    basis_matrix = matrix(GF(2), [[int(point.to_vector()(label)) for label in labels] for point in basis])
+    generators = []
+    for family in images:
+        rows = matrix(GF(2), [[int(point.to_vector()(label)) for label in labels] for point in family])
+        generators.append(basis_matrix.transpose().solve_right(rows.transpose()).transpose())
+    assert MatrixGroup(generators).order() == 96
