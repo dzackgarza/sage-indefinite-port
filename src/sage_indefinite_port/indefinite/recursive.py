@@ -1100,7 +1100,10 @@ class EichlerRecursion:
         r"""Generators of Aut((L, Zv)) for primitive isotropic v: Gamma = {+-1} on the line."""
         lattice = vector.parent()
         action = self.isotropic_stabilizer_action((vector,), ((-vector,),))
-        return _integral_generator_set(lattice, action.stabilizer().group_generators())
+        # The source supplies a stable containing module, so this is the
+        # finite residue action (GroupAction.g:813-900), independently of
+        # whether the rational arithmetic group itself is finite.
+        return _integral_generator_set(lattice, action.finite_representation().lattice_stabilizer().group_generators())
 
     def pointwise_stabilizer_generators(self, vector: Lattices.ElementMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""Generators of `Aut((L, v))`, the **pointwise** stabilizer `{g : g(v) = v}` (issues #53 and #62).
@@ -1613,7 +1616,7 @@ class EichlerRecursion:
         if self.vector_lies_in_radical(vector):
             return self._degenerate_radical_pointed_generators(vector)
         action = self.isotropic_stabilizer_action((vector,), ()) if vector.q() == lattice.base_ring().zero() else self._lattice_action(vector)
-        return _integral_generator_set(lattice, action.stabilizer().group_generators())
+        return _integral_generator_set(lattice, action.finite_representation().lattice_stabilizer().group_generators())
 
     def pointed_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
         r"""An element of Isom((L, v), (M, w)), or None."""

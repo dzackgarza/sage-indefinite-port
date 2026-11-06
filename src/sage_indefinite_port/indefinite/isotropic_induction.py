@@ -520,7 +520,7 @@ class IsotropicInduction:
         # (GroupAction.g:869-886); the action reads each one on the basis of L once.
         action = self.recursion.isotropic_stabilizer_action(isotropic, radical_images)
         lattice = isotropic[0].parent()
-        return _integral_generator_set(lattice, action.stabilizer().group_generators())
+        return _integral_generator_set(lattice, action.finite_representation().lattice_stabilizer().group_generators())
 
     def line_automorphism_generators(self, lattice: Lattices.ParentMethods, line: Vector) -> tuple[LatticeIsometryMethods, ...]:
         r"""Aut((L, Zu)): Gamma = {+-1} on the line (IndefiniteForms.g:1711-1725 with k = 1)."""
