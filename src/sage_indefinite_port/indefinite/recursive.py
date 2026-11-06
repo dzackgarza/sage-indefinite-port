@@ -1187,7 +1187,7 @@ class EichlerRecursion:
         )
         action = IntegralStructureAction(rational.O().subgroup(tuple(generators)), inclusion)
         span = OrbitSpanConstructions(lattice.base_ring())(action.ambient_action_functor(), inclusion, containing=containing)
-        result = action.with_stable_containing_bound(span.inclusion())
+        result = action.with_invariant_module_construction(span)
         # Invariant comparison, extension and integral correction consume
         # the same source f_stab datum. Retain the two current actions, with
         # their exact bases and allowed radical images, rather than rebuild
