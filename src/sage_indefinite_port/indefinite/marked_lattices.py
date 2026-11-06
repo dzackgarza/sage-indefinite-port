@@ -20,6 +20,7 @@ from sage_extensions.categories.abstract_categories.arrow_categories import (
 )
 from sage_extensions.categories.abstract_categories.products import (
     FiniteOrdinalCategory,
+    _FiniteSequenceFunctorCategory,
 )
 from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
 from sage_extensions.categories.sets.finite_ordered_sets import (
@@ -78,6 +79,27 @@ def _flag(marked: Parent) -> Flag:
     return second(first(next(iter(first.domain().module_generators())))), plane
 
 
+def _flag_action(marked: Parent) -> tuple[tuple[int, ...], tuple[Lattices.ElementMethods, ...], tuple[tuple[Lattices.ElementMethods, ...], ...]]:
+    r"""Read a primitive isotropic chain and its radical flag action.
+
+    CombinedAlgorithms.h:655-679 f_get_list_spaces and :682-717
+    GetAutomorphismOfFlag, expressed as subobjects of the last isotropic term.
+    """
+    arrows = tuple(marked.arrows())
+    space = _isotropic_sublattice(arrows[-1])
+    terms = []
+    composite = None
+    for arrow in reversed(arrows[:-1]):
+        composite = arrow if composite is None else composite * arrow
+        terms.append(_isotropic_sublattice(composite))
+    terms.reverse()
+    dimensions = tuple(int(term.inclusion().domain().rank()) for term in terms) + (int(space.inclusion().domain().rank()),)
+    if any(left >= right for left, right in zip(dimensions, dimensions[1:])):
+        raise ValueError("an isotropic flag must have strictly increasing ranks")
+    basis, images = INDUCTION.flag_action_data(space, tuple(terms))
+    return dimensions, basis, images
+
+
 def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsometryMethods | None:
     r"""The isometry of an isomorphism of marked lattices ``source -> target`` in ``category``, or ``None`` when there is none."""
     match category:
@@ -95,8 +117,12 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                     return INDUCTION.plane_isometry(source_sublattice, target_sublattice)
                 case _:
                     return None
-        case _ if category is FLAGS:
-            return INDUCTION.flag_isometry(_flag(source), _flag(target))
+        case _FiniteSequenceFunctorCategory() if category.codomain_category() is LATTICES:
+            source_dimensions, source_basis, _source_images = _flag_action(source)
+            target_dimensions, target_basis, target_images = _flag_action(target)
+            if source_dimensions != target_dimensions:
+                return None
+            return RECURSION.isotropic_subspace_isometry(source_basis, target_basis, target_images)
     raise ValueError(f"{category} is not a category of marked lattices this port decides: Lattices, a coslice <n>/Lattices, Ar(Lattices) or Fun([2], Lattices)")
 
 
@@ -114,8 +140,9 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                     generators = INDUCTION.line_automorphism_generators(marked.arrow().codomain(), INDUCTION.plane_vectors(sublattice)[0])
                 case _:
                     generators = INDUCTION.plane_automorphism_generators(sublattice)
-        case _ if category is FLAGS:
-            generators = INDUCTION.flag_automorphism_generators(_flag(marked))
+        case _FiniteSequenceFunctorCategory() if category.codomain_category() is LATTICES:
+            _dimensions, basis, images = _flag_action(marked)
+            generators = INDUCTION._stabilizer_generators(basis, images)
         case _:
             raise ValueError(f"{category} is not a category of marked lattices this port decides: Lattices, a coslice <n>/Lattices, Ar(Lattices) or Fun([2], Lattices)")
     return finite_ordered_set(tuple(generators))

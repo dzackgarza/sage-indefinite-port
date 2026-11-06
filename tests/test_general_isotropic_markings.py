@@ -43,3 +43,29 @@ def test_three_u_partial_flags_have_a_transporter():
     for left in basis:
         for right in basis:
             assert ambient.b(witness(left), witness(right)) == ambient.b(left, right)
+
+
+def test_three_u_complete_flags_have_a_transporter():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+
+    gram = [[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)]
+    ambient = lattice(gram)
+    basis = tuple(ambient.module_generator(label) for label in ambient.module_generating_set())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+
+    def marking(vectors):
+        space = ambient.primitive_isotropic_subobject(*vectors)
+        domain = space.inclusion().domain()
+        plane = domain.primitive_isotropic_subobject(*(space.inclusion().lift(point) for point in vectors[:2]))
+        line = plane.inclusion().domain().primitive_isotropic_subobject(plane.inclusion().lift(space.inclusion().lift(vectors[0] + vectors[1])))
+        return category((line.inclusion(), plane.inclusion(), space.inclusion()))
+
+    witness = isometry(category, marking(basis[::2]), marking(basis[1::2]))
+    assert witness is not None
+    for size in (1, 2, 3):
+        source_vectors = (basis[0] + basis[2],) if size == 1 else basis[::2][:size]
+        target_vectors = (basis[1] + basis[3],) if size == 1 else basis[1::2][:size]
+        target_term = ambient.primitive_isotropic_subobject(*target_vectors)
+        assert all(target_term.inclusion().is_in_image(witness(point)) for point in source_vectors)
+    assert all(ambient.b(witness(left), witness(right)) == ambient.b(left, right) for left in basis for right in basis)
