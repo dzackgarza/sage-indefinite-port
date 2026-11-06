@@ -3,6 +3,24 @@ from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
 from tests.acceptance.consumer import lattice
 
 
+def test_extension_shortening_preserves_the_integral_flag_orbit():
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(4)] for i in range(4)])
+    rational = ambient.base_change(ambient.base_ring().fraction_field_map())
+    labels = tuple(rational.module_generating_set())
+    e, f, x, y = (rational.module_generator(label) for label in labels)
+    shear = rational.Isom(rational)(dict(zip(labels, (e, f + x, x, y - e), strict=True)))
+    identity = rational.Isom(rational).identity()
+    integral_basis = tuple(ambient.module_generator(label) for label in ambient.module_generating_set())
+    radical, extension = integral_basis[0], integral_basis[3]
+    for transporter, point in ((shear * shear * shear, extension), (identity, extension + radical + radical + radical)):
+        shortened = IsotropicInduction.shortened_extension(ambient, transporter, point, lambda: (shear,))
+        assert shortened == extension
+        assert ambient.b(shortened, radical) == 0
+        assert shortened.q() == ambient.base_ring().zero()
+
+
 def test_three_u_maximal_isotropic_sublattices_have_a_transporter():
     gram = [[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)]
     ambient = lattice(gram)
