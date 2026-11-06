@@ -69,3 +69,11 @@ def test_three_u_complete_flags_have_a_transporter():
         target_term = ambient.primitive_isotropic_subobject(*target_vectors)
         assert all(target_term.inclusion().is_in_image(witness(point)) for point in source_vectors)
     assert all(ambient.b(witness(left), witness(right)) == ambient.b(left, right) for left in basis for right in basis)
+
+
+def test_isotropic_rank_above_witt_index_has_no_markings():
+    from sage_indefinite_port.indefinite.marked_lattices import primitive_marking_classes
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    shape = lattice([[0 for _ in range(4)] for _ in range(4)])
+    assert tuple(primitive_marking_classes(ARROWS, shape, ambient)) == ()

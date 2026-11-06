@@ -215,6 +215,8 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
         case CosliceCategory():
             classes = _pointed_classes(category, lattice, int(source.q(next(iter(source.module_generators())))))
         case _ if category is ARROWS:
+            if int(source.rank()) > int(lattice.witt_index()):
+                return finite_ordered_set(())
             match int(source.rank()):
                 case 1:
                     classes = tuple(ARROWS.object(lattice.primitive_isotropic_subobject(vector_).inclusion()) for vector_ in INDUCTION.isotropic_vector_classes(lattice))
