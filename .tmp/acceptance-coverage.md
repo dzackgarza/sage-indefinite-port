@@ -965,3 +965,55 @@ The E10 square cases took **85–865 s each** here against **116–242 s each** 
 same port at provider `42d7361c` (job `jmvz3a0di`). Either the pin costs more in this direction or this
 host was loaded. What is measured is that MemAvail fell to 1519 MiB during the run; host load and pin
 cost cannot be separated retroactively, so this is not attributed and is not quoted as a regression.
+
+## Second full rerun on the adopted runtime, 2026-11-06: the suite's own lines
+
+Runtime: rootfs `/sage` at `281da26ffd`, image `@sha256:220293469c53…`; Sage 11.0.beta5, CPython 3.14.10,
+GAP 4.16.1 with **173 packages including `recog` and `genss`** (the pair whose absence was recorded as the
+A_GROUPS library blocker), Julia 1.12.5, `/usr/share/gap` absent.
+
+Pair: port `893cb233` + provider `cdafca84`, guard 6144 MiB on the process tree, one family per process,
+JUnit under `.tmp/ci/results/<family>-22029346/`.
+
+| family | line, verbatim | peak tree RSS |
+| --- | --- | --- |
+| double_cosets | `19 passed in 1.57s` | 378 MiB |
+| centralizers | `5 passed in 76.94s (0:01:16)` | 3753 MiB |
+| perfect_domains | `92 passed in 403.74s (0:06:43)` | 1054 MiB |
+| isometry | `166 passed in 2210.18s (0:36:50)` | 5050 MiB |
+| reflective | `5 passed in 39.70s` | 2654 MiB |
+| isotropic_orbits | `2 passed in 2399.52s (0:39:59)` — exit 124 at the cap | 4881 MiB |
+| vector_orbits | `7 passed in 2399.21s (0:39:59)` — exit 124 at the cap | 1339 MiB |
+| orthogonal_group | undivided sample: `STOPPED_AT_MEMORY_LIMIT` at 6236 MiB, 5 of 9 cases | 6236 MiB |
+| boundaries | `STOPPED_AT_MEMORY_LIMIT` at 6146 MiB, 1 case passed, no JUnit | 6146 MiB |
+| vector_stabilizers | `STOPPED_AT_MEMORY_LIMIT` at 6150 MiB, 4 cases passed, no JUnit | 6150 MiB |
+
+No `FAILED` line appeared in any family.
+
+### A_GROUPS at this runtime: the nine sample cases, one process each
+
+| idx | case | verdict | JUnit | peak |
+| --- | --- | --- | --- | --- |
+| 0 | `test_mertens_omega_and_minus_one_generate_o_l` | passed | 9.898 s | 381 MiB |
+| 1 | `degenerate…contains_radical_shear_and_gl_action` | passed | 87.136 s | 2959 MiB |
+| 2 | `degenerate…generates_rank_two_radical_action` | passed | 77.709 s | 2989 MiB |
+| 3 | `degenerate…embeds_non_diagonal_complement` | passed | 81.041 s | 3089 MiB |
+| 4 | `zero_form…is_the_full_general_linear_group` | passed | 1.553 s | 326 MiB |
+| 5 | `[LORENTZ_OrthogonalGroup0]` | **STOPPED_AT_MEMORY_LIMIT**, exit 137 | none (t = 879 s) | **6429 MiB** |
+| 6 | `…hyperbolic_plane_has_order_four` | passed | 0.817 s | 307 MiB |
+| 7 | `discriminant_image_of_a7_plus_diagonal…` | **exit 124 at the 1800 s cap** | `tests=0 time=1800.072s` | 2566 MiB |
+| 8 | `signed_discriminant_image_of_u_plus_minus_three…` | passed | 2.478 s | 477 MiB |
+
+Two of the nine have no verdict, and they are unlike each other:
+
+- **Case 5 is one case over the guard.** 6429 MiB of 6144, python 4067 + julia 2503, at t = 879 s, with
+  `recog`/`genss` present in the image. On the previous runtime (9f1680d2 image) the same case reached its
+  1800 s cap at 5490 MiB, i.e. **under** the guard. So the case is not "too slow at the bound" any more; at
+  this runtime it is *too large* for the bound, and no shard partition changes a single case's peak.
+  `orthogonal_group_0` (this case alone) therefore cannot pass at 6144 MiB here.
+- **Case 7 is a time horizon.** 2566 MiB, `tests=0`, `no tests ran in 1800.07s`. Its recorded pass at
+  provider `42d7361c` was 662 s at 1616 MiB (job `jmvzh3n3l`), so the difference is between pairs, not a
+  local cost of the arrangement.
+
+Both peaks moved up between the two runtimes (5490 → 6429 and 1858 → 2566 MiB), so "this runtime costs more
+on these two cases" is the first hypothesis to test, ahead of "the pin is slower"; neither is attributed yet.
