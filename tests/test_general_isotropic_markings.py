@@ -173,6 +173,54 @@ def test_public_complete_flag_classes_in_three_u():
         assert all(left.codomain() is right.domain() for left, right in zip(arrows, arrows[1:]))
 
 
+def test_core_partial_flags_have_a_natural_isomorphism_across_presentations():
+    from itertools import pairwise
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS
+
+    gram = [[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)]
+    source = lattice(gram)
+    # Replace e_0 by e_0 + f_0 in the target presentation of 3U.
+    target_gram = [row[:] for row in gram]
+    target_gram[0][0] = 2
+    target = lattice(target_gram)
+    e = tuple(source.module_generators())
+    f = tuple(target.module_generators())
+
+    def marking(ambient, vectors):
+        space = ambient.primitive_isotropic_subobject(*vectors)
+        line = space.inclusion().domain().primitive_isotropic_subobject(
+            space.inclusion().lift(vectors[0])
+        )
+        return FLAGS((line.inclusion(), space.inclusion()))
+
+    first = marking(source, (e[0] + e[2], e[2], e[4]))
+    second = marking(target, (f[0] - f[1] + f[2], f[2], f[4]))
+    homset = FLAGS.Core().Mor(first, second)
+    assert homset.is_empty() is False
+    witness = homset.an_element()
+    assert witness.domain().functor() is first.functor()
+    assert witness.codomain().functor() is second.functor()
+    forward = witness.forward()
+    inverse = (~witness).forward()
+    shape = FLAGS.domain_category()
+    objects = tuple(shape.objects())
+    apex = forward.component(objects[-1])
+    assert apex.domain() is source and apex.codomain() is target
+    assert all(target.b(apex(x), apex(y)) == source.b(x, y) for x in e for y in e)
+    for obj in objects:
+        assert all(
+            inverse.component(obj)(forward.component(obj)(point)) == point
+            for point in first.functor()(obj).module_generators()
+        )
+    for left, right in pairwise(objects):
+        arrow = shape.Mor(left, right).unique()
+        assert all(
+            second.functor()(arrow)(forward.component(left)(point))
+            == forward.component(right)(first.functor()(arrow)(point))
+            for point in first.functor()(left).module_generators()
+        )
+
+
 def test_zero_isotropic_marking_is_the_unique_empty_embedding():
     from sage_extensions.all import Lattices, ZZ
     from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
