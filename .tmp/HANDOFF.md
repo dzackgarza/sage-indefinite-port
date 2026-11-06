@@ -25,6 +25,8 @@ subspace_extensions assembles the common-lift double-coset step; its rank-two st
 
 The end-to-end 3U orbit check exits 139 in the pinned provider coloured_vector_families.py:270 canonical_form call, reached through recursive quotient orthogonal-group generation. Provider issue https://github.com/dzackgarza/sage-extensions/issues/277 records the reproducer and stack. The native cause is unproven. Capture the failing graph and repair the owning provider/backend path under its own contribution rules; do not bypass the recursive group computation. Reverify the port against its required pin or an explicitly adopted repaired pin. The general orbit obligation remains unverified. Include a proper quotient-action image specimen before claiming it complete.
 
+The captured graph reduces to a standalone Sage failure: `from sage.all import graphs; from sage.graphs.bliss import canonical_form; canonical_form(graphs.CompleteGraph(3), certificate=True)` exits 139 without provider or port imports. Labels and loops are unnecessary. The running container has libbliss-dev and libbliss2 0.77-3+b3, with the extension resolving /lib/x86_64-linux-gnu/libbliss.so.2. Diagnose and repair the installed Sage/Bliss path; repeating the full port computation cannot narrow this failure further. The captured original input is /home/dzack/.cache/sage-port-last-bliss-input.sobj, but the standalone triangle needs no saved artifact.
+
 ## Source and runtime entry points
 
 - Branch: implement/general-isotropic-parity. Remote source revision before this handoff: 7a2ea68.
