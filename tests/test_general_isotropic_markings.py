@@ -111,3 +111,19 @@ def test_partial_flag_above_witt_index_has_no_markings():
     plane = lattice([[0, 0], [0, 0]])
     line = plane.primitive_isotropic_subobject(next(iter(plane.module_generators())))
     assert tuple(primitive_marking_classes(FLAGS, line.inclusion(), ambient)) == ()
+
+
+def test_three_u_general_induction_classifies_complete_and_partial_flags():
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    induction = IsotropicInduction(EichlerRecursion())
+    for dimensions in ((1, 3), (1, 2, 3)):
+        representatives = induction.isotropic_flag_bases(ambient, dimensions)
+        assert len(representatives) == 1
+        for basis in representatives:
+            assert len(basis) == 3
+            assert all(ambient.b(left, right) == 0 for left in basis for right in basis)
+            for rank in dimensions:
+                assert ambient.primitive_isotropic_subobject(*basis[:rank]).inclusion().domain().rank() == rank
