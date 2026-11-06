@@ -44,3 +44,39 @@ def test_partial_and_complete_flag_stabilizers_have_their_parabolic_images():
             assert all(ambient.b(generator(left), generator(right)) == ambient.b(left, right) for left in basis for right in basis)
         images = [matrix(GF(3), [[int(generator(point).to_vector()(label)) for label in labels] for point in basis]) for generator in generators]
         assert MatrixGroup(images).order() == 3**3 * levi_order
+
+
+def test_fixed_rank_two_embedding_has_pointwise_parabolic_image():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(4)] for i in range(4)])
+    labels = tuple(ambient.module_generating_set())
+    basis = tuple(ambient.module_generator(label) for label in labels)
+    source = lattice([[0, 0], [0, 0]])
+    category = CosliceCategory(Lattices(ZZ), source)
+    marked = category.object(source.hom([basis[0], basis[2]], codomain=ambient))
+    generators = tuple(automorphism_group_generators(category, marked))
+    assert all(generator(point) == point for generator in generators for point in basis[::2])
+    images = [matrix(GF(3), [[int(generator(point).to_vector()(label)) for label in labels] for point in basis]) for generator in generators]
+    # The pointwise maximal parabolic in O(2U) is Alt^2(Z^2).
+    assert MatrixGroup(images).order() == 3
+
+
+def test_fixed_embedding_transporter_respects_every_source_generator():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(4)] for i in range(4)])
+    basis = tuple(ambient.module_generator(label) for label in ambient.module_generating_set())
+    source = lattice([[0, 0], [0, 0]])
+    category = CosliceCategory(Lattices(ZZ), source)
+    first = category.object(source.hom([basis[0], basis[2]], codomain=ambient))
+    second = category.object(source.hom([basis[0], basis[2] + basis[0]], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert witness(basis[0]) == basis[0]
+    assert witness(basis[2]) == basis[2] + basis[0]
+    assert (~witness)(basis[2] + basis[0]) == basis[2]
+    assert all(ambient.b(witness(left), witness(right)) == ambient.b(left, right) for left in basis for right in basis)
