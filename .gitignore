@@ -35,6 +35,7 @@ references/Indefinite.jl/
 !.tmp/issue64-family-acceptance.md
 !.tmp/issue70-schreier-conversion-blocker.md
 !.tmp/issue64-shard-decisions.md
+!.tmp/issue64-timeouts-workflow.patch
 !.tmp/issue63-capability-reconciliation.md
 !.tmp/issue67-hoist-measurement.md
 !.tmp/probe67-enriques-cache.sage

@@ -334,9 +334,13 @@ ci-acceptance family shard shards selection="":
         ;;
     esac
     if [[ "{{family}}" == reflective && "{{selection}}" == "" ]]; then
-        timeout --signal=INT 345m "$sage_python" ci/pytest_batches.py --python "$sage_python" --out "$out" --batch-size 10 -- "${tests[@]}" "${shard_args[@]}" 2>&1 | tee "$out/log"
+        timeout --signal=INT --kill-after=300 345m "$sage_python" ci/pytest_batches.py --python "$sage_python" --out "$out" --batch-size 10 -- "${tests[@]}" "${shard_args[@]}" 2>&1 | tee "$out/log"
         exit "${PIPESTATUS[0]}"
     fi
-    timeout --signal=INT 345m "$sage_python" -c 'import sage.all, sys, pytest; sys.exit(pytest.main(sys.argv[1:]))' \
+    # Backstop only. The family's own bound is the job's `timeout-minutes`, derived from the
+    # same per-family cap in the workflow's plan step; this 345m line is six times the longest
+    # cap and, without --kill-after, a SIGINT is not acted on while a C call is running, so it
+    # cannot be what bounds a family. --kill-after escalates if pytest ignores the INT.
+    timeout --signal=INT --kill-after=300 345m "$sage_python" -c 'import sage.all, sys, pytest; sys.exit(pytest.main(sys.argv[1:]))' \
         -p qc_sage_session "${tests[@]}" --runxfail -rA --tb=long --instafail \
         "${shard_args[@]}" --junitxml="$out/junit.xml" 2>&1 | tee "$out/log"
