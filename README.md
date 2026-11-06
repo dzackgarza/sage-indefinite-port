@@ -19,8 +19,8 @@ Morphism from Integral lattice of rank 3 and signature (2, 1) to Integral lattic
 
 ```
 
-The block runs as a doctest, locally with `just readme-example` and in CI on every push as the
-`readme` job of the [acceptance workflow](.github/workflows/acceptance.yml).
+The block runs as a doctest, locally with `just readme-example` and in CI on every push in the
+[README example workflow](.github/workflows/readme.yml).
 
 ## Completion scope
 

@@ -1,0 +1,31 @@
+name: README example
+# The README example is the smallest acceptance: it runs as a doctest on
+# every push, inside the shared Sage image. It is its own workflow so that
+# it never waits in the acceptance workflow's concurrency queue behind the
+# long shard runs.
+on:
+  push: {}
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  packages: read
+jobs:
+  readme:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: ghcr.io/dzackgarza/sage:develop
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+      options: --user root
+    env:
+      SAGE_BIN: /sage/.venv/bin/sage
+    steps:
+      - uses: actions/checkout@v4
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: extractions/setup-just@v4
+        with:
+          github-token: ${{ github.token }}
+      - run: just ci-provision-sage
+      - run: just readme-example
