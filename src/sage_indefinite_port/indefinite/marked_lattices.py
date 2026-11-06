@@ -65,8 +65,6 @@ def _isotropic_sublattice(arrow: Morphism) -> Parent:
     r"""The primitive totally isotropic sublattice that a marking of Ar(Lattices) embeds, as a subobject of L."""
     lattice = arrow.codomain()
     vectors = tuple(arrow(generator) for generator in arrow.domain().module_generators())
-    if len(vectors) > 2:
-        raise UnsupportedRankError(f"{arrow} marks a sublattice of rank {len(vectors)}: the isotropic induction covers ranks 1 and 2")
     if any(lattice.b(left, right) != 0 for left in vectors for right in vectors):
         raise ValueError(f"{arrow} does not mark a totally isotropic sublattice: Isom and Aut of other sublattice markings are the preamble's (research#399)")
     if not arrow.is_primitive():
@@ -93,7 +91,7 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             match int(source_sublattice.inclusion().domain().rank()), int(target_sublattice.inclusion().domain().rank()):
                 case 1, 1:
                     return INDUCTION.line_isometry(INDUCTION.plane_vectors(source_sublattice)[0], INDUCTION.plane_vectors(target_sublattice)[0])
-                case 2, 2:
+                case source_rank, target_rank if source_rank == target_rank:
                     return INDUCTION.plane_isometry(source_sublattice, target_sublattice)
                 case _:
                     return None
