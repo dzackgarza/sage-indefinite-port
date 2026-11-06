@@ -198,7 +198,9 @@ def _normal_cone_through_ridge(rays, ridge, dimension: int):
     span_basis = _span_basis(rays)
     if ridge:
         gram = span_basis * matrix(ZZ, [list(rays[index]) for index in sorted(ridge)]).transpose()
-        kernel = gram.left_kernel_matrix()
+        # The pencil is a rational subspace; an integral kernel would
+        # additionally saturate a lattice that this operation never uses.
+        kernel = gram.change_ring(QQ).left_kernel_matrix()
         parameters = [[QQ(entry) for entry in kernel.row(index)] for index in range(kernel.nrows())]
     else:
         parameters = [[QQ(1 if index == position else 0) for position in range(span_basis.nrows())]
