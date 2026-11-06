@@ -606,6 +606,20 @@ class LorentzianPerfectCell:
     def vector_configuration(self) -> tuple[Lattices.ElementMethods, ...]:
         return tuple(_ambient_element(self.lattice, row) for row in self.rows)
 
+    @cached_property
+    def affine_nullspace_row(self) -> tuple[Rational, ...]:
+        r"""The source affine supporting row before facet-dependent orientation.
+
+        Lorentzian.g:1221 computes this from the whole configuration EXT.
+        It depends only on the cell, while its sign is selected separately
+        for each flip using the chosen nonincident vertex.
+        """
+        expanded = matrix(SageQQ, [[1, *row] for row in self.rows])
+        nullspace = _pinned_nullspace_matrix(expanded.transpose())
+        if nullspace.nrows() != 1:
+            raise ArithmeticError("a perfect cell must have a unique affine supporting functional")
+        return tuple(nullspace.row(0))
+
     def __post_init__(self) -> None:
         if self.allowed_squares not in (NONNEGATIVE_SQUARES, ZERO_SQUARES):
             raise ValueError(f"unsupported normalized-norm locus {self.allowed_squares!r}")
@@ -1779,12 +1793,8 @@ class LorentzianPerfectLocalBackend:
         if direction.dot_product(outside) < 0:
             direction = -direction
         normal_direction = _source_remove_fraction(vector(SageQQ, [0, *direction]))
-        expanded = matrix(SageQQ, [[1, *row] for row in vectors])
         # Preserve the source affine-nullspace row and its normalization.
-        base_nullspace = _pinned_nullspace_matrix(expanded.transpose())
-        if base_nullspace.nrows() != 1:
-            raise ArithmeticError("a perfect cell must have a unique affine supporting functional")
-        base_normal = base_nullspace.row(0)
+        base_normal = vector(SageQQ, cell.affine_nullspace_row)
         if vector(SageQQ, base_normal[1:]).dot_product(outside) <= 0:
             base_normal = -base_normal
         base_normal = _source_remove_fraction(base_normal)
