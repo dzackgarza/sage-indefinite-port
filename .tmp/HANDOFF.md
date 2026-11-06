@@ -4,6 +4,8 @@
 
 Complete the pinned indefinite algorithms over arbitrary isotropic sublattice ranks and flag dimension sequences. Repair computations that prevent required answers, including stabilizer-family conversion and the existing A7 facet-orbit consumer. Use the provider revision in pyproject.toml. The additional mathematical capabilities in issue #69 remain retained requirements; they are not established by isotropic source parity.
 
+Select individual assertions with independently known answers: transporters in 3U, coprime unipotent generators, the glued rank-four quotient image, and A2/A3 facet walks. Each check exercises the changed operation directly on these bounded inputs.
+
 ## Completion condition
 
 | Required capability | Current evidence and gap |
@@ -14,15 +16,14 @@ Complete the pinned indefinite algorithms over arbitrary isotropic sublattice ra
 | Proper quotient-action image | The glued rank-four lattice in tests/test_isotropic_quotient_image.py has image order two versus full quotient order four modulo three. Its double-coset step produces two inequivalent flags. Both checks pass. |
 | Impossible ranks | Rank-four sublattices in 3U and impossible partial flags return empty marking sets in the small checks. |
 | Stabilizer computation | All three conversion sites use the supplied finite lattice action directly. _integral_generator_set applies exact product/inverse L1 reduction before constructing owned integral morphisms. Small checks retain sign and unipotent kernel actions invisible modulo two, reduce coprime unipotent powers to their primitive generator, and preserve the maximal 3U parabolic image and the proper glued quotient image. Large-family runtime adequacy remains unverified; #70 is open. |
-| A7 consumer | The existing facet walk uses point_permutations_from_rows and supplies its certified action directly to facet enumeration. Facet seeding now uses exact cddlib GMP lexicographic LPs: the targeted A7 seed is certified, and small A2 orbit, neighbour, and traversal checks pass. The unchanged A7 discriminant-image assertion needs a result at 1f9abdf or a later source revision. |
+| A7 consumer | The existing facet walk uses point_permutations_from_rows and supplies its certified action directly to facet enumeration. Facet seeding uses exact cddlib GMP lexicographic LPs; rational span/kernel calculations avoid unnecessary integral saturation, each cell caches its exact affine supporting row, and facet-stabilizer actions use hash-set deduplication while preserving generator order. Small A2/A3 orbit, neighbour, and traversal checks pass. Full A7 runtime remains unverified. |
 | Publication | Coherent source changes are on implement/general-isotropic-parity. Completion requires the remaining small mathematical checks and the actual computation-blocking repairs, not exhaustive family reruns. |
 
 ## Next work
 
-1. Obtain the A7 discriminant-image result at the repaired revision. Diagnose its actual active stage before changing it. Its first cell's facet-orbit enumeration reaches adjacent-cell construction with the exact LP and rational span repairs. The old element-by-element ray-action path is superseded by the existing basis-action implementation; do not implement a new facet walk.
-2. Public maximal-rank and complete finite-chain marking-class construction have small passing checks. Reverify affected assertions only when subsequent source changes require it. Keep the source domain intact when a check fails.
-3. Measure the stabilizer-family reduction on the required large consumer. Full-basis Nielsen transformations preserve the integral kernel; selection solely by finite image does not. Exact product/inverse reduction is implemented, but runtime sufficiency for #70 is still unproven. Generic provider defects belong to sage-extensions with exact inputs and provider revision.
-4. Reverify the chosen small assertions at the final published source/provider pair. Preserve the broader retained backlog and avoid claiming it complete from these specimens.
+1. For a subsequent source change, select a small assertion that exercises its mathematical branch directly. Read that assertion's claim before selecting its individual node. The delivered source has passing coprime-unipotent, complete-flag transporter, proper quotient-image, and A2/A3 facet assertions.
+2. Public maximal-rank and complete finite-chain marking-class construction have passing small examples. Reverify affected assertions only when subsequent source changes require it. Keep the source domain intact when a check fails.
+3. Keep #70's large-input runtime gap and #69's additional mathematical implementations with their owning backlog. Full-basis Nielsen transformations preserve the integral kernel; selection solely by finite image does not. Generic provider defects belong to sage-extensions with exact inputs and provider revision.
 
 ## Source and runtime
 

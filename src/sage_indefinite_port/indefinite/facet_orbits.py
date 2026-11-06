@@ -400,6 +400,7 @@ def _stabilizer_on_facet(permutations, members):
     the ambient ray set is formed.
     """
     generators: list[tuple[int, ...]] = []
+    seen: set[tuple[int, ...]] = set()
     for _face, (_word, image_u) in members.items():
         for permutation in permutations:
             moved = frozenset(int(permutation[position]) for position in image_u)
@@ -419,7 +420,8 @@ def _stabilizer_on_facet(permutations, members):
             if sorted(action) != list(range(len(action))):
                 raise ArithmeticError("a Schreier element is not a permutation of the facet's positions")
             action_tuple = tuple(action)
-            if action_tuple not in generators:
+            if action_tuple not in seen:
+                seen.add(action_tuple)
                 generators.append(action_tuple)
     return tuple(generators)
 
