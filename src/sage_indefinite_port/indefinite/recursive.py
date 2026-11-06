@@ -94,7 +94,19 @@ def _integral_generator_set(
         if key in seen:
             continue
         seen.add(key)
-        result.append(lattice.integral_isometry(generator))
+        # The stabilizer supplies an automorphism preserving this integral
+        # structure. Its full basis action has just been read exactly; use
+        # those images in the owned isometry homset instead of evaluating
+        # the rational expression again through integral restriction.
+        integral_images = {}
+        for source_label, row in zip(labels, key, strict=True):
+            integral_images[source_label] = lattice.linear_combination(
+                {
+                    label: lattice.base_ring()(coefficient)
+                    for label, coefficient in zip(labels, row, strict=True)
+                }
+            )
+        result.append(lattice.Isom(lattice)(integral_images))
     return tuple(result)
 
 
