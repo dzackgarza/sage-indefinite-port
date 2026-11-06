@@ -41,15 +41,33 @@ jobs:
           if os.environ["GITHUB_EVENT_NAME"] == "push":
               # #33's amended acceptance nodes run explicit branch samples on
               # push; full files remain available on workflow_dispatch.
-              sampled = {"reflective", "orthogonal_group", "vector_stabilizers", "vector_orbits", "isotropic_orbits", "boundaries"}
+              # A sample is partitioned by what binds it, measured per case:
+              # `orthogonal_group` is memory-bound and names one selection per
+              # shard, `vector_stabilizers` is memory-bound and is ordered by
+              # peak so round-robin pairs each heavy case with a light one, and
+              # the rest are split by time or not yet measurable.
+              sampled = {
+                  "reflective": (1, None),
+                  "orthogonal_group": (6, "orthogonal_group_{shard}"),
+                  "vector_stabilizers": (18, None),
+                  "vector_orbits": (3, None),
+                  "isotropic_orbits": (1, None),
+                  "boundaries": (1, None),
+              }
               include = [
                   {"family": f, "shard": i, "shards": n, "selection": ""}
                   for f, n in shards.items() if f not in sampled
                   for i in range(n)
               ]
               include.extend(
-                  {"family": f, "shard": 0, "shards": 1, "selection": f}
-                  for f in sorted(sampled)
+                  {
+                      "family": f,
+                      "shard": i,
+                      "shards": count,
+                      "selection": f if pattern is None else pattern.format(shard=i),
+                  }
+                  for f, (count, pattern) in sorted(sampled.items())
+                  for i in range(count)
               )
           else:
               include = [
