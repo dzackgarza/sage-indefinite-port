@@ -155,7 +155,7 @@ ci-acceptance family shard shards selection="":
             tests/acceptance/test_reflective.sage::test_vinberg_roots_match_oscars_chamber_up_to_isometry
             tests/acceptance/test_reflective.sage::test_e10_simple_roots_match_dutour_sikiric_hulek
         )
-        shard_args=()
+        shard_args=(--shard-id={{shard}} --num-shards={{shards}})
         ;;
       orthogonal_group)
         tests=(
@@ -169,37 +169,88 @@ ci-acceptance family shard shards selection="":
             tests/acceptance/test_orthogonal_group.sage::test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q
             tests/acceptance/test_orthogonal_group.sage::test_signed_discriminant_image_of_u_plus_minus_three_is_all_of_o_q
         )
-        shard_args=()
+        shard_args=(--shard-id={{shard}} --num-shards={{shards}})
         ;;
-      vector_stabilizers)
+      # orthogonal_group is bounded by memory, not by time: the undivided sample reached a
+      # 6236 MiB process tree with five cases resident (2026-11-06, guard 6144 MiB). Each
+      # shard below is one case whose own peak was measured alone, or the light tail whose
+      # peaks are 291-381 MiB. Do not merge the heavy shards.
+      orthogonal_group_0)
         tests=(
-            tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_automorphism_generators_preserve_marking_and_form
-            tests/acceptance/test_vector_stabilizers.sage::test_divisibility_two_isotropic_pointed_isometry_has_exact_witness
-            tests/acceptance/test_vector_stabilizers.sage::test_general_isotropic_pointed_isometry_carries_negative_marking
-            tests/acceptance/test_vector_stabilizers.sage::test_split_divisibility_one_pointed_isometry_carries_actual_negative_marking
-            tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_isometry_rejects_different_divisibility
-            tests/acceptance/test_vector_stabilizers.sage::test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound
-            tests/acceptance/test_vector_stabilizers.sage::test_divisibility_four_isotropic_plane_stabilizer_constructs_exact_containing_bound
-            tests/acceptance/test_vector_stabilizers.sage::test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks
-            tests/acceptance/test_vector_stabilizers.sage::test_vector_stabilizer_has_oscars_order
-            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[0]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[2]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[4]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[6]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[8]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[10]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_-1]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_0]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_1]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_2]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_3]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_4]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_5]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_6]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_7]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_8]'
+            'tests/acceptance/test_orthogonal_group.sage::test_lorentzian_generators_match_polyhedral_common[LORENTZ_OrthogonalGroup0]'
         )
         shard_args=()
+        ;;
+      orthogonal_group_1)
+        tests=(
+            tests/acceptance/test_orthogonal_group.sage::test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q
+        )
+        shard_args=()
+        ;;
+      orthogonal_group_2)
+        tests=(
+            tests/acceptance/test_orthogonal_group.sage::test_degenerate_orthogonal_group_contains_radical_shear_and_gl_action
+        )
+        shard_args=()
+        ;;
+      orthogonal_group_3)
+        tests=(
+            tests/acceptance/test_orthogonal_group.sage::test_degenerate_orthogonal_group_generates_rank_two_radical_action
+        )
+        shard_args=()
+        ;;
+      orthogonal_group_4)
+        tests=(
+            tests/acceptance/test_orthogonal_group.sage::test_degenerate_orthogonal_group_embeds_non_diagonal_complement
+        )
+        shard_args=()
+        ;;
+      orthogonal_group_5)
+        tests=(
+            tests/acceptance/test_orthogonal_group.sage::test_mertens_omega_and_minus_one_generate_o_l
+            tests/acceptance/test_orthogonal_group.sage::test_zero_form_orthogonal_group_is_the_full_general_linear_group
+            tests/acceptance/test_orthogonal_group.sage::test_orthogonal_group_of_the_hyperbolic_plane_has_order_four
+            tests/acceptance/test_orthogonal_group.sage::test_signed_discriminant_image_of_u_plus_minus_three_is_all_of_o_q
+        )
+        shard_args=()
+        ;;
+      # Ordered by measured process-tree peak, descending: this family is bounded by memory,
+      # not by time. Seventeen cases peak above 3.6 GiB alone (roots 3673-4708 MiB, e10 squares
+      # 3735-3846 MiB, the divisibility-four bound 3651 MiB, the OSCAR order 3608 MiB) and eight
+      # peak under 440 MiB, so with the matrix's 18 shards no shard holds two heavy cases: the
+      # worst is 4708 + 297 = 5005 MiB, under the 6144 MiB guard. Round-robin over this order is
+      # what makes that true; do not re-sort it alphabetically or into file order. Peaks are the
+      # per-case measurements recorded in .tmp/acceptance-coverage.md (jobs jmvz58wdp, jmvyzjrg9,
+      # jmvz3a0di).
+      vector_stabilizers)
+        tests=(
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_-1]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_1]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_7]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_0]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[10]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_2]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_4]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[4]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[8]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[6]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[0]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_8]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[2]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_3]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_6]'
+            tests/acceptance/test_vector_stabilizers.sage::test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound
+            tests/acceptance/test_vector_stabilizers.sage::test_vector_stabilizer_has_oscars_order
+            tests/acceptance/test_vector_stabilizers.sage::test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks
+            tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_automorphism_generators_preserve_marking_and_form
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_5]'
+            tests/acceptance/test_vector_stabilizers.sage::test_general_isotropic_pointed_isometry_carries_negative_marking
+            tests/acceptance/test_vector_stabilizers.sage::test_divisibility_four_isotropic_plane_stabilizer_constructs_exact_containing_bound
+            tests/acceptance/test_vector_stabilizers.sage::test_split_divisibility_one_pointed_isometry_carries_actual_negative_marking
+            tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_isometry_rejects_different_divisibility
+            tests/acceptance/test_vector_stabilizers.sage::test_divisibility_two_isotropic_pointed_isometry_has_exact_witness
+        )
+        shard_args=(--shard-id={{shard}} --num-shards={{shards}})
         ;;
       vector_orbits)
         tests=(
@@ -234,7 +285,7 @@ ci-acceptance family shard shards selection="":
             'tests/acceptance/test_vector_orbits.sage::test_k3_lattice_has_one_primitive_orbit_per_norm[4]'
             'tests/acceptance/test_vector_orbits.sage::test_k3_lattice_has_one_primitive_orbit_per_norm[-4]'
         )
-        shard_args=()
+        shard_args=(--shard-id={{shard}} --num-shards={{shards}})
         ;;
       isotropic_orbits)
         tests=(
@@ -252,7 +303,7 @@ ci-acceptance family shard shards selection="":
             'tests/acceptance/test_isotropic_orbits.sage::test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank0-primitive_isotropic_vector_orbits]'
             'tests/acceptance/test_isotropic_orbits.sage::test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank1-isotropic_plane_orbits]'
         )
-        shard_args=()
+        shard_args=(--shard-id={{shard}} --num-shards={{shards}})
         ;;
       boundaries)
         tests=(
@@ -275,7 +326,7 @@ ci-acceptance family shard shards selection="":
             'tests/acceptance/test_boundaries.sage::test_classical_polarization_indices[degree_2]'
             'tests/acceptance/test_boundaries.sage::test_classical_polarization_indices[degree_10]'
         )
-        shard_args=()
+        shard_args=(--shard-id={{shard}} --num-shards={{shards}})
         ;;
       *)
         tests=(tests/acceptance/test_{{family}}.sage)
