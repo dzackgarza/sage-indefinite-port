@@ -56,6 +56,27 @@ def test_glued_line_invariant_retains_the_rational_denominator_prime():
     assert invariant.denominator_primes == (2,)
 
 
+def test_isotropic_orbit_bases_retain_the_original_lattice_presentation():
+    r"""Every primitive maximal isotropic plane in 2U has an integral hyperbolic completion.
+
+    Thus O(2U) has one such orbit. The first block here is U written in
+    the basis (e+f,f), so reduction must transport its result back.
+    """
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[2, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    bases = IsotropicInduction(EichlerRecursion()).isotropic_flag_bases(ambient, (2,))
+    assert len(bases) == 1
+    basis = bases[0]
+    assert len(basis) == 2
+    assert all(point.parent() is ambient for point in basis)
+    assert all(ambient.b(left, right) == 0 for left in basis for right in basis)
+    subobject = ambient.subobject_on(basis)
+    assert subobject.inclusion().domain().rank() == 2
+    assert subobject.inclusion().is_primitive()
+
+
 def test_three_u_maximal_isotropic_sublattices_have_a_transporter():
     gram = [[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)]
     ambient = lattice(gram)

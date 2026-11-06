@@ -469,6 +469,18 @@ class IsotropicInduction:
             raise ValueError("isotropic flag ranks must be positive and strictly increasing")
         if dimensions[-1] > int(lattice.witt_index()):
             return ()
+        # CombinedAlgorithms.h:2396-2418 reduces once, runs the general
+        # SeqDims method there, and transports every returned basis back.
+        reduction = indefinite_reduced_presentation(lattice)
+        return tuple(
+            tuple(reduction.isometry(point) for point in basis)
+            for basis in self._reduced_isotropic_flag_bases(reduction.reduced, dimensions)
+        )
+
+    def _reduced_isotropic_flag_bases(
+        self, lattice: Lattices.ParentMethods, dimensions: tuple[int, ...]
+    ) -> tuple[tuple[Vector, ...], ...]:
+        r"""CombinedAlgorithms.h:2192-2394 on the reduced presentation."""
         representatives = tuple((point,) for point in self.isotropic_vector_classes(lattice))
         for rank in range(2, dimensions[-1] + 1):
             previous_dimensions = tuple(value for value in dimensions if value < rank - 1) + (rank - 1,)
@@ -484,7 +496,7 @@ class IsotropicInduction:
                 coordinates = tuple(point.to_vector() for point in basis)
                 key = tuple(tuple(_integer(row(label)) for label in labels) for row in coordinates)
                 if key not in invariants:
-                    invariants[key] = self.flag_invariant(lattice, basis, next_dimensions)
+                    invariants[key] = self._reduced_flag_invariant(lattice, basis, next_dimensions)
                 return invariants[key]
 
             for previous in representatives:
@@ -518,6 +530,19 @@ class IsotropicInduction:
             or any(left >= right for left, right in zip(dimensions, dimensions[1:]))
         ):
             raise ValueError("isotropic flag ranks must increase to the rank of its basis")
+        # The public Kernel wrapper (:1390-1395) transports the input plane
+        # by the inverse reduction before forming the rational flag group.
+        reduction = indefinite_reduced_presentation(lattice)
+        inverse = ~reduction.isometry
+        return self._reduced_flag_invariant(
+            reduction.reduced, tuple(inverse(point) for point in basis), dimensions
+        )
+
+    def _reduced_flag_invariant(
+        self, lattice: Lattices.ParentMethods, basis: tuple[Vector, ...], dimensions: tuple[int, ...]
+    ) -> IsotropicFlagPrefilter:
+        r"""CombinedAlgorithms.h:1361-1387 in the reduced integral chart."""
+        ambient = LatticePrefilter.from_lattice(lattice)
         adapted, images = self.basis_flag_action(lattice, basis, dimensions)
         reduction = self.reduction(lattice, *adapted)
         action = self.recursion.isotropic_stabilizer_action(adapted, images)
