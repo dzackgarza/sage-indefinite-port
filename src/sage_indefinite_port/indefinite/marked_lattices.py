@@ -14,6 +14,8 @@ isometry of the underlying lattices: the markings are monomorphisms, so the isom
 the other components.
 """
 
+from itertools import pairwise
+
 from sage_extensions.all import ZZ, Cat, Lattices
 from sage_extensions.categories.abstract_categories.arrow_categories import (
     CosliceCategory,
@@ -74,9 +76,19 @@ def _isotropic_sublattice(arrow: Morphism) -> Parent:
 
 
 def _flag(marked: Parent) -> Flag:
-    first, second = marked.arrows()
+    first, second = _flag_arrows(marked)
     plane = _isotropic_sublattice(second)
     return second(first(next(iter(first.domain().module_generators())))), plane
+
+
+def _flag_arrows(marked: Parent) -> tuple[Morphism, ...]:
+    r"""Read adjacent arrows from the retained finite-ordinal diagram."""
+    diagram = marked.functor()
+    shape = diagram.domain()
+    return tuple(
+        diagram(shape.Mor(source, target).unique())
+        for source, target in pairwise(shape.objects())
+    )
 
 
 def _flag_action(marked: Parent) -> tuple[tuple[int, ...], tuple[Lattices.ElementMethods, ...], tuple[tuple[Lattices.ElementMethods, ...], ...]]:
@@ -85,7 +97,7 @@ def _flag_action(marked: Parent) -> tuple[tuple[int, ...], tuple[Lattices.Elemen
     CombinedAlgorithms.h:655-679 f_get_list_spaces and :682-717
     GetAutomorphismOfFlag, expressed as subobjects of the last isotropic term.
     """
-    arrows = tuple(marked.arrows())
+    arrows = _flag_arrows(marked)
     space = _isotropic_sublattice(arrows[-1])
     terms = []
     composite = None
@@ -268,7 +280,7 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
             if isinstance(source, Morphism):
                 shape_arrows = (source,)
             else:
-                shape_arrows = tuple(source.arrows())
+                shape_arrows = _flag_arrows(source)
             dimensions = (int(shape_arrows[0].domain().rank()), *(int(arrow.codomain().rank()) for arrow in shape_arrows))
             classes = tuple(category(_flag_marking_from_basis(lattice, basis, dimensions)) for basis in INDUCTION.isotropic_flag_bases(lattice, dimensions))
         case _:
