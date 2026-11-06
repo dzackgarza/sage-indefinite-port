@@ -74,26 +74,77 @@ def _untwisted(isometry: LatticeIsometryMethods, profile: AttackProfile) -> Latt
 def _integral_generator_set(
     lattice: Lattices.ParentMethods, generators: Iterable[LatticeIsometryMethods]
 ) -> tuple[LatticeIsometryMethods, ...]:
-    r"""Retain distinct nonidentity actions before constructing integral maps.
+    r"""Reduce full integral actions before constructing integral maps.
 
-    The initial exact-map reduction in pinned MatrixGroupSimplification.h:
-    798-812 ExhaustiveReductionComplexityKernelInner_V2 stores generators
-    in a map. Here actions are distinguished on the full integral basis,
-    including kernel elements with the same finite residue image. Removing
-    identities and repeated maps leaves exactly the same generated group.
+    Pinned MatrixGroupSimplification.h:650-751 reduces pairs by products
+    and inverses; :1386-1487 applies this to the entrywise L1 norm.
+    These are invertible Nielsen transformations, so the integral kernel
+    survives even when several generators have the same finite image.
+    Native matrices are temporary exact basis actions; the result consists
+    of owned lattice isometries.
     """
     labels = tuple(lattice.module_generating_set())
     inclusion = ModulesOverIntegralDomains(lattice.base_ring())(lattice).generic_fibre_map()
     basis = tuple(inclusion(lattice.module_generator(label)).underlying_element() for label in labels)
     identity = tuple(tuple(int(row == column) for column in range(len(labels))) for row in range(len(labels)))
     seen = {identity}
-    result = []
+    actions = {}
+
+    def normalized(action, inverse):
+        direct_key = tuple(tuple(int(entry) for entry in row) for row in action.rows())
+        inverse_key = tuple(tuple(int(entry) for entry in row) for row in inverse.rows())
+        direct_norm = sum(abs(entry) for row in direct_key for entry in row)
+        inverse_norm = sum(abs(entry) for row in inverse_key for entry in row)
+        # Choose a fixed representative of {g,g^-1} at equal complexity.
+        if (inverse_norm, inverse_key) < (direct_norm, direct_key):
+            return inverse_key, (inverse_norm, inverse, action)
+        return direct_key, (direct_norm, action, inverse)
+
     for generator in generators:
         images = tuple(generator(point).to_vector() for point in basis)
         key = tuple(tuple(_integer(image(label)) for label in labels) for image in images)
         if key in seen:
             continue
         seen.add(key)
+        action = matrix(SageZZ, key)
+        key, entry = normalized(action, action.inverse().change_ring(SageZZ))
+        if key in actions:
+            continue
+        actions[key] = entry
+        pending = [key]
+        # A newly inserted action must meet every retained action. An
+        # unchanged pair needs no second visit. Replacements strictly lower
+        # total L1 complexity, including when a repeated action disappears.
+        # Thus this worklist reaches the source's exhaustive pair reduction
+        # without constructing all pending pairs of a Schreier family.
+        while pending:
+            current = pending.pop()
+            if current not in actions:
+                continue
+            for other in tuple(actions):
+                if current not in actions:
+                    break
+                if other == current:
+                    continue
+                a_norm, a, a_inverse = actions[current]
+                b_norm, b, b_inverse = actions[other]
+                candidates = (
+                    normalized(a * b, b_inverse * a_inverse),
+                    normalized(a_inverse * b, b_inverse * a),
+                    normalized(a * b_inverse, b * a_inverse),
+                    normalized(a_inverse * b_inverse, b * a),
+                )
+                candidate_key, candidate = min(candidates, key=lambda item: (item[1][0], item[0]))
+                if candidate[0] >= max(a_norm, b_norm):
+                    continue
+                replaced = current if a_norm >= b_norm else other
+                del actions[replaced]
+                if candidate_key != identity and candidate_key not in actions:
+                    actions[candidate_key] = candidate
+                    pending.append(candidate_key)
+
+    result = []
+    for key in actions:
         # The stabilizer supplies an automorphism preserving this integral
         # structure. Its full basis action has just been read exactly; use
         # those images in the owned isometry homset instead of evaluating
