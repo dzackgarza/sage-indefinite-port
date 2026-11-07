@@ -74,3 +74,75 @@ def test_equal_norm_block_permutations_reduce_to_generators_of_symmetric_group()
     assert len(reduced) == 2
     assert MatrixGroup(actions).order() == 6
     assert all(sum(abs(entry) for entry in action.list()) == 6 for action in actions)
+
+
+def test_large_unipotent_powers_generate_their_full_integral_cyclic_subgroup():
+    ambient = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    rational = ambient.base_change(ambient.base_ring().fraction_field_map())
+    labels = tuple(rational.module_generating_set())
+    e, f, x, y = tuple(rational.module_generators())
+    ring = rational.base_ring()
+    step = 2**80
+
+    def shear(coefficient):
+        return rational.Isom(rational)(dict(zip(
+            labels,
+            (e, f + rational.scalar_multiple(ring(coefficient), x),
+             x, y - rational.scalar_multiple(ring(coefficient), e)),
+            strict=True,
+        )))
+
+    reduced = _integral_generator_set(ambient, (shear(2 * step), shear(3 * step)))
+    e, f, x, y = tuple(ambient.module_generators())
+    increment_x = ambient.scalar_multiple(ambient.base_ring()(step), x)
+    increment_e = ambient.scalar_multiple(ambient.base_ring()(step), e)
+    actions = tuple(tuple(generator(point) for point in (e, f, x, y)) for generator in reduced)
+
+    assert len(actions) == 1
+    assert actions[0] in (
+        (e, f + increment_x, x, y - increment_e),
+        (e, f - increment_x, x, y + increment_e),
+    )
+
+
+def test_large_noncommuting_actions_retain_their_exact_integral_generating_family():
+    ambient = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    rational = ambient.base_change(ambient.base_ring().fraction_field_map())
+    labels = tuple(rational.module_generating_set())
+    e, f, x, y = tuple(rational.module_generators())
+    ring = rational.base_ring()
+    step = 2**40
+
+    def multiple(coefficient, point):
+        return rational.scalar_multiple(ring(coefficient), point)
+
+    first = rational.Isom(rational)(dict(zip(
+        labels, (e, f - multiple(step, y), x + multiple(step, e), y), strict=True,
+    )))
+    second = rational.Isom(rational)(dict(zip(
+        labels, (e + multiple(step, x), f, x, y - multiple(step, f)), strict=True,
+    )))
+    assert (first * second)(e) == multiple(1 + step**2, e) + multiple(step, x)
+
+    reduced = _integral_generator_set(ambient, (first, second))
+    integral_basis = tuple(ambient.module_generators())
+    e, f, x, y = integral_basis
+    ke, kf, kx, ky = (
+        ambient.scalar_multiple(ambient.base_ring()(step), point)
+        for point in integral_basis
+    )
+    first_images = (e, f - ky, x + ke, y)
+    second_images = (e + kx, f, x, y - kf)
+    inverse_first_images = (e, f + ky, x - ke, y)
+    inverse_second_images = (e - kx, f, x, y + kf)
+    for expected in (first_images, second_images):
+        assert any(
+            tuple(action(point) for point in integral_basis) == expected
+            for generator in reduced for action in (generator, ~generator)
+        )
+    assert all(
+        tuple(generator(point) for point in integral_basis) in (
+            first_images, second_images, inverse_first_images, inverse_second_images,
+        )
+        for generator in reduced
+    )
