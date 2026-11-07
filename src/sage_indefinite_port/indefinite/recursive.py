@@ -125,7 +125,7 @@ def _integral_generator_set(
     frame = field.free_module(lattice.module_generating_set())
     comparisons = {}
     row_positions = {}
-    identity = tuple(tuple(int(row == column) for column in range(len(labels))) for row in range(len(labels)))
+    identity = tuple(int(row == column) for row in range(len(labels)) for column in range(len(labels)))
     seen = {identity}
     actions = {}
     # MatrixGroupSimplification.h:1495-1605 selects bounded integer
@@ -135,7 +135,8 @@ def _integral_generator_set(
     machine_bound = isqrt(int(np.iinfo(np.int64).max))
 
     def action_data(action):
-        key = tuple(map(tuple, action.tolist()))
+        # Fixed-size row-major keys preserve equality and lexicographic order.
+        key = tuple(action.ravel().tolist())
         return key, int(np.abs(action).sum())
 
     def normalized(action, inverse):
@@ -146,10 +147,10 @@ def _integral_generator_set(
         inverse = np.asarray(inverse, dtype=dtype)
         # Choose a fixed representative of {g,g^-1} at equal complexity.
         if inverse_norm < direct_norm:
-            return tuple(map(tuple, inverse.tolist())), (inverse_norm, inverse, action)
-        direct_key = tuple(map(tuple, action.tolist()))
+            return tuple(inverse.ravel().tolist()), (inverse_norm, inverse, action)
+        direct_key = tuple(action.ravel().tolist())
         if inverse_norm == direct_norm:
-            inverse_key = tuple(map(tuple, inverse.tolist()))
+            inverse_key = tuple(inverse.ravel().tolist())
             if inverse_key < direct_key:
                 return inverse_key, (inverse_norm, inverse, action)
         return direct_key, (direct_norm, action, inverse)
@@ -228,7 +229,8 @@ def _integral_generator_set(
         # those images in the owned isometry homset instead of evaluating
         # the rational expression again through integral restriction.
         integral_images = {}
-        for source_label, row in zip(labels, key, strict=True):
+        for position, source_label in enumerate(labels):
+            row = key[position * len(labels):(position + 1) * len(labels)]
             integral_images[source_label] = lattice.linear_combination(
                 {
                     label: lattice.base_ring()(coefficient)
