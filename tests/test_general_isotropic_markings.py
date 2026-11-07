@@ -56,6 +56,27 @@ def test_glued_line_invariant_retains_the_rational_denominator_prime():
     assert invariant.denominator_primes == (2,)
 
 
+def test_public_pointwise_plane_stabilizer_in_two_u_is_the_integral_skew_shear_group():
+    r"""Fixing e,u in 2U leaves f -> f+t*u, v -> v-t*e, with t in ZZ.
+
+    The pairing equations force this form. A unit parameter ideal proves
+    the returned family generates every integral value of t.
+    """
+    ambient = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    e, f, u, v = tuple(ambient.module_generators())
+    plane = ambient.primitive_isotropic_subobject(e, u)
+    family = tuple(ambient.O().pointwise_stabilizer(plane.inclusion()).group_generators())
+    labels = tuple(ambient.module_generating_set())
+    parameters = []
+    for generator in family:
+        parameter = generator(f).to_vector()(labels[2])
+        assert generator(e) == e and generator(u) == u
+        assert generator(f) == f + parameter * u
+        assert generator(v) == v - parameter * e
+        parameters.append(parameter)
+    assert ambient.base_ring().ideal(parameters) == ambient.base_ring().ideal(1)
+
+
 def test_isotropic_orbit_bases_retain_the_original_lattice_presentation():
     r"""Every primitive maximal isotropic plane in 2U has an integral hyperbolic completion.
 
