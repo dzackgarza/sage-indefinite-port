@@ -215,6 +215,44 @@ def test_complete_isotropic_flags_in_three_u_split_into_two_special_orthogonal_o
     )
 
 
+@pytest.mark.parametrize("exchanged_pairs", (1, 2), ids=("negative-determinant", "positive-determinant"))
+def test_complete_flag_transporters_respect_the_requested_special_orthogonal_group(exchanged_pairs):
+    r"""A complete maximal null-flag stabilizer has determinant one.
+
+    Exchanging hyperbolic pairs carries the coordinate flag to the target.
+    Every transporter has that exchange's determinant, (-1)^exchanged_pairs.
+    """
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    basis = tuple(ambient.module_generators())
+    source_vectors = basis[::2]
+    target_vectors = tuple(basis[2 * index + int(index < exchanged_pairs)] for index in range(3))
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    source = category(_flag_marking_from_basis(ambient, source_vectors, (1, 2, 3)))
+    target = category(_flag_marking_from_basis(ambient, target_vectors, (1, 2, 3)))
+    homset = category.Core().Mor(source, target)
+    assert homset.is_empty() is False
+
+    witness = homset.an_element_in(ambient.SO())
+
+    if exchanged_pairs == 1:
+        assert witness is None
+        return
+    forward, backward = witness.forward(), (~witness).forward()
+    shape = category.domain_category()
+    assert forward.component(shape(3)) in ambient.SO()
+    for obj in shape.objects():
+        for point in source.functor()(obj).module_generators():
+            assert backward.component(obj)(forward.component(obj)(point)) == point
+    for index in range(3):
+        arrow = shape.Mor(shape(index), shape(index + 1)).unique()
+        for point in source.functor()(shape(index)).module_generators():
+            assert target.functor()(arrow)(forward.component(shape(index))(point)) == forward.component(shape(index + 1))(source.functor()(arrow)(point))
+
+
 def test_isotropic_rank_above_witt_index_has_no_markings():
     from sage_indefinite_port.indefinite.marked_lattices import primitive_marking_classes
 
