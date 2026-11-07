@@ -75,6 +75,39 @@ def _untwisted(isometry: LatticeIsometryMethods, profile: AttackProfile) -> Latt
     return isometry if profile.sign == 1 else _UNTWIST(isometry)
 
 
+def _integral_stabilizer_family(action: IntegralStructureAction) -> Iterable[LatticeIsometryMethods]:
+    r"""Realize the provider's full Schreier family from its supplied factors.
+
+    GroupAction.g:869-886 supplies the integral stabilizer before the source
+    generator simplification. The provider retains its orbit, letters and
+    transversals and specifies ``t_(s.p)^-1 s t_p`` in orbit-major order.
+    Read each factor on the rational basis once. All later composites use
+    the owned isometry multiplication, preserving every source family entry.
+    """
+    letters, transversals = action.stabilizer_schreier_factors()
+    g_set = action.finite_representation().g_set()
+    if g_set.cardinality() == 1:
+        yield from letters
+        return
+    representation = g_set.permutation_representation()
+    permutations = tuple(representation(letter) for letter in letters)
+    points = tuple(g_set)
+    positions = {point: position for position, point in enumerate(points)}
+    rational = action.lattice_inclusion().codomain().module_over_extension()
+    basis = tuple(rational.module_generators())
+
+    def realize(factor):
+        return rational.Isom(rational)(tuple(factor(point) for point in basis))
+
+    realized_letters = tuple(realize(letter) for letter in letters)
+    realized_transversals = tuple(realize(transversal) for transversal in transversals)
+    inverse_transversals = tuple(~transversal for transversal in realized_transversals)
+    for position, point in enumerate(points):
+        for letter, permutation in zip(realized_letters, permutations, strict=True):
+            image_position = positions[permutation(point)]
+            yield inverse_transversals[image_position] * letter * realized_transversals[position]
+
+
 def _integral_generator_set(
     lattice: Lattices.ParentMethods, generators: Iterable[LatticeIsometryMethods]
 ) -> tuple[LatticeIsometryMethods, ...]:
@@ -1208,7 +1241,7 @@ class EichlerRecursion:
         # The source supplies a stable containing module, so this is the
         # finite residue action (GroupAction.g:813-900), independently of
         # whether the rational arithmetic group itself is finite.
-        return _integral_generator_set(lattice, action.finite_representation().lattice_stabilizer().group_generators())
+        return _integral_generator_set(lattice, _integral_stabilizer_family(action))
 
     def pointwise_stabilizer_generators(self, vector: Lattices.ElementMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""Generators of `Aut((L, v))`, the **pointwise** stabilizer `{g : g(v) = v}` (issues #53 and #62).
@@ -1721,7 +1754,7 @@ class EichlerRecursion:
         if self.vector_lies_in_radical(vector):
             return self._degenerate_radical_pointed_generators(vector)
         action = self.isotropic_stabilizer_action((vector,), ()) if vector.q() == lattice.base_ring().zero() else self._lattice_action(vector)
-        return _integral_generator_set(lattice, action.finite_representation().lattice_stabilizer().group_generators())
+        return _integral_generator_set(lattice, _integral_stabilizer_family(action))
 
     def pointed_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
         r"""An element of Isom((L, v), (M, w)), or None."""
