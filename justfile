@@ -350,5 +350,5 @@ ci-acceptance family shard shards selection="":
     # cap and, without --kill-after, a SIGINT is not acted on while a C call is running, so it
     # cannot be what bounds a family. --kill-after escalates if pytest ignores the INT.
     timeout --signal=INT --kill-after=300 345m "$sage_python" -c 'import sage.all, sys, pytest; sys.exit(pytest.main(sys.argv[1:]))' \
-        -p qc_sage_session "${tests[@]}" --runxfail -rA --tb=long --instafail \
+        -p qc_sage_session "${tests[@]}" --runxfail -vv -rA --tb=long --instafail \
         "${shard_args[@]}" --junitxml="$out/junit.xml" 2>&1 | tee "$out/log"
