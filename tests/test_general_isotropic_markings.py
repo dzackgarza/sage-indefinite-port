@@ -278,6 +278,13 @@ def test_three_u_general_induction_classifies_complete_and_partial_flags():
 
 
 def test_public_partial_two_three_flag_classes_in_three_u():
+    r"""O(3U) has one primitive isotropic flag class of ranks (2,3).
+
+    Unimodularity supplies integral duals to a primitive maximal null
+    basis. Evenness lets null-basis corrections make those duals null,
+    giving a hyperbolic basis. Its Levi GL(3,ZZ) is transitive on the
+    primitive rank-two sublattices of the maximal null sublattice.
+    """
     from sage_indefinite_port.indefinite.marked_lattices import FLAGS, primitive_marking_classes
 
     ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
