@@ -15,6 +15,8 @@ def test_glued_line_stabilizer_has_a_proper_quotient_image():
     ambient = lattice([[0, 2, 0, 0], [2, 0, 1, 0], [0, 1, 0, 2], [0, 0, 2, 0]])
     line = ambient.module_generator(tuple(ambient.module_generating_set())[0])
     induction = IsotropicInduction(EichlerRecursion())
+    action = induction.recursion.isotropic_stabilizer_action((line,), ((-line,),))
+    action.validate_stable_containing_bound(check=True)
     reduction = induction.reduction(ambient, line)
     quotient = reduction.quotient_lattice()
     labels, lifts = induction._frame_lifts(reduction)
