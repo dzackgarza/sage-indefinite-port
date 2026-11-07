@@ -5,8 +5,8 @@ A marked lattice is a diagram of lattice morphisms ending at a lattice L
 
 - a plain lattice L, an object of ``Lattices``;
 - a pointed lattice ``<n> -> L``, an object of the coslice ``<n>/Lattices``;
-- a primitive totally isotropic sublattice ``I -> L`` of rank 1 or 2, an object of ``Ar(Lattices)``;
-- a flag ``I_1 -> I_2 -> L`` of ranks (1, 2), an object of ``Fun([2], Lattices)``.
+- a primitive totally isotropic sublattice ``I -> L`` of any attainable rank, an object of ``Ar(Lattices)``;
+- a partial or complete isotropic flag ``I_1 -> ... -> I_t -> L``, an object of ``Fun([t], Lattices)``.
 
 The research preamble's core homsets of these categories call these three entry points, with
 the category, when L is indefinite. An isomorphism of marked lattices is returned as its
@@ -154,7 +154,7 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             if source_dimensions != target_dimensions:
                 return None
             return RECURSION.isotropic_subspace_isometry(source_basis, target_basis, target_images)
-    raise ValueError(f"{category} is not a category of marked lattices this port decides: Lattices, a coslice <n>/Lattices, Ar(Lattices) or Fun([2], Lattices)")
+    raise ValueError(f"{category} is not a category of marked lattices this port decides: Lattices, a coslice <n>/Lattices, Ar(Lattices) or Fun([t], Lattices) for finite [t]")
 
 
 def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
@@ -188,7 +188,7 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
             _dimensions, basis, images = _flag_action(marked)
             generators = INDUCTION._stabilizer_generators(basis, images)
         case _:
-            raise ValueError(f"{category} is not a category of marked lattices this port decides: Lattices, a coslice <n>/Lattices, Ar(Lattices) or Fun([2], Lattices)")
+            raise ValueError(f"{category} is not a category of marked lattices this port decides: Lattices, a coslice <n>/Lattices, Ar(Lattices) or Fun([t], Lattices) for finite [t]")
     return finite_ordered_set(tuple(generators))
 
 
@@ -251,7 +251,7 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
     r"""One marked lattice for each isomorphism class of primitive markings of ``lattice`` of shape ``source``.
 
     ``category`` is the category of the marking: the coslice under ``<n>`` for pointed
-    lattices, ``Ar(Lattices)`` for sublattices, ``Fun([2], Lattices)`` for flags. ``source``
+    lattices, ``Ar(Lattices)`` for sublattices, ``Fun([t], Lattices)`` for finite flags. ``source``
     is the shape: the lattice ``<n>``, a totally isotropic lattice of rank ``k`` (zero form),
     or the chain of such lattices for a flag.
     """
@@ -284,7 +284,7 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
             dimensions = (int(shape_arrows[0].domain().rank()), *(int(arrow.codomain().rank()) for arrow in shape_arrows))
             classes = tuple(category(_flag_marking_from_basis(lattice, basis, dimensions)) for basis in INDUCTION.isotropic_flag_bases(lattice, dimensions))
         case _:
-            raise ValueError(f"{category} is not a category of marked lattices this port classifies: a coslice <n>/Lattices, Ar(Lattices) or Fun([2], Lattices)")
+            raise ValueError(f"{category} is not a category of marked lattices this port classifies: a coslice <n>/Lattices, Ar(Lattices) or Fun([t], Lattices) for finite [t]")
     return finite_ordered_set(classes)
 
 
