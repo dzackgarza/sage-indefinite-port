@@ -3,10 +3,10 @@
 `cell_cone` asks an engine for the **complete** H-description of the cell's ray cone and then keeps one facet per
 stabilizer orbit (``lorentzian_cells.py:2834-2840``); on the A7 specimen that single ``SupportHyperplanes`` call
 does not finish in 1 800 s. This module computes what the traversal consumes: the facets of ``cone(cell.rows)``,
-grouped into orbits of the cell stabilizer, with exact normals, incidences and transport words. The facet set is
-produced by the reference's adjacency decomposition (``polyhedral_common`` ``lorentzian_perfect.h:1433-1472``:
-``f_adj`` -> ``DualDescriptionRecordFullDim(EXT_T, GRPperm, rddo)``): seed one facet, then walk the facet graph
-across ridges.
+grouped into orbits of the cell stabilizer, with exact normals, incidences and transport words. The reference's
+``lorentzian_perfect.h:1433-1472`` calls ``DualDescriptionRecordFullDim(EXT_T, GRPperm, rddo)``. Its splitting
+rules select direct exact dual description or adjacency decomposition: seed one facet, then walk the facet
+graph across ridges, using the same dispatch on each face.
 
 Every decision uses a documented exact operator:
 
@@ -18,8 +18,8 @@ Every decision uses a documented exact operator:
   normals. Computed by lexicographic minimisation with cddlib's GMP backend: exact rational, no perturbation.
 * **rank / kernel** -- ``matrix(...).rank()``, ``.right_kernel()``, ``.left_kernel_matrix()``,
   ``.row_space().basis_matrix()``.
-* **ridges** -- the ridges of a facet are the facets of that facet's cone inside its own span, so the routine
-  recurses one dimension down, on the facet's rows written in a basis of its span.
+* **ridges** -- the ridges of a facet are the facets of its cone inside its own span. The source's splitting
+  rules select direct Normaliz computation or recursion on an injective coordinate projection of its rows.
 * **ridge pencil** -- the covectors vanishing on a ridge form a 2-dimensional space, and the normal cone in it is
   a pointed 2-cone whose extreme rays are exactly the two facet normals through the ridge. Found by exact integer
   comparison of the constraint directions; no linear program, no tolerance.
@@ -388,10 +388,11 @@ def _stabilizer_on_facet(group, incidence):
     )
 
 
-def orbit_representatives(rays, permutations):
+def orbit_representatives(rays, permutations, *, level: int = 1):
     r"""One certified ``(incidence, normal)`` per orbit, by the orbit-pruned adjacency decomposition.
 
-    The ambient facet family is **never** enumerated: the worklist holds one representative per orbit, and a
+    The source's splitting rules select direct dual description or adjacency decomposition. In the latter,
+    the worklist holds one representative per orbit, and a
     representative contributes only the orbits of its own ridges, computed by the same routine one dimension down
     on the facet's cone modulo the facet's own stabilizer (Schreier). A new facet enters only if its orbit is
     disjoint from every orbit already found, so no orbit is duplicated, and termination with an empty worklist is
@@ -419,6 +420,39 @@ def orbit_representatives(rays, permutations):
         [Permutation([int(position) + 1 for position in permutation]) for permutation in permutations],
         domain=tuple(range(1, len(rays) + 1)),
     )
+    # POLY_Heuristics.h:320-328, StandardHeuristicSplitting, in rule order.
+    # LORENTZ_GetGeneratorsAutom_Reduced sets dimEXT = n + 1, so the
+    # initial n-dimensional cone has level one. Each facet lowers rank by
+    # one. Both source dispatches compute the complete exact facet set;
+    # these rules select computation, not a search bound.
+    order = int(group.order())
+    if len(rays) - dimension < 20:
+        split = False
+    elif order > 5000 and level < 3:
+        split = True
+    else:
+        split = len(rays) >= 40 and level <= 1 and order >= 100
+    if not split:
+        # POLY_RecursiveDualDesc.h:1465-1474, DirectFacetOrbitComputation.
+        # Use the exact Normaliz cone backend already owned by the local
+        # perfect-cell engine boundary. It replaces the source's choice
+        # between LRS and Normaliz while retaining every supporting row.
+        from sage.geometry.polyhedron.backend_normaliz import NmzCone, NmzResult
+
+        cone = NmzCone(cone=rays, subspace=())
+        if NmzResult(cone, "Equations"):
+            raise ArithmeticError("direct facet enumeration requires a full-dimensional cone")
+        representatives = []
+        covered = set()
+        for row in NmzResult(cone, "SupportHyperplanes"):
+            normal, incidence = _orient(rays, _primitive(row))
+            if not is_facet_certificate(normal, incidence, rays):
+                raise ArithmeticError("a direct facet failed certification")
+            if incidence in covered:
+                continue
+            covered.update(_orbit(incidence, permutations))
+            representatives.append((incidence, normal))
+        return tuple(representatives)
     seed_normal = _seed_facet(rays, dimension)
     seed = _incidence(rays, seed_normal)
     if not is_facet_certificate(seed_normal, seed, rays):
@@ -434,7 +468,7 @@ def orbit_representatives(rays, permutations):
         local_rays, local_dimension = _local_coordinates(rays, incidence)
         if local_dimension < 2:
             continue
-        for ridge_local, _ridge_normal in orbit_representatives(local_rays, local_permutations):
+        for ridge_local, _ridge_normal in orbit_representatives(local_rays, local_permutations, level=level + 1):
             ridge = frozenset(positions[offset] for offset in sorted(ridge_local))
             for candidate in _normal_cone_through_ridge(rays, ridge, span_basis):
                 if _same_ray(candidate, normal):
@@ -462,7 +496,7 @@ def cell_facet_orbits(cell, stabilizer) -> tuple[FacetOrbitRecord, ...]:
     r"""One certified record per orbit of ``stabilizer`` on the facets of ``cone(cell.rows)``.
 
     ``stabilizer`` is the cell's stabilizer as isometries (``cell_stabilizer(cell)``). The records come from
-    `orbit_representatives`, so the ambient facet family is never materialised: each record carries a
+    `orbit_representatives`, with the source's direct or recursive dispatch. Each record carries a
     representative normal and incidence, its orbit size, and a word of generators transporting the representative
     onto every member of its orbit -- the transport witness a consumer needs to reconstruct any facet of the
     orbit exactly.
