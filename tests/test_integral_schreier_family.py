@@ -3,7 +3,6 @@
 import pytest
 
 from tests.acceptance.consumer import lattice
-from sage_indefinite_port.indefinite.recursive import EichlerRecursion
 
 
 @pytest.mark.parametrize(
@@ -15,17 +14,38 @@ from sage_indefinite_port.indefinite.recursive import EichlerRecursion
     ids=("two_u", "scaled_hyperbolic_line"),
 )
 def test_factored_integral_family_equals_every_source_action(gram):
+    from sage_extensions.all import IntegralStructureAction
+    from sage_extensions.categories.modules.pure.modules import ModulesOverIntegralDomains
     from sage_indefinite_port.indefinite.recursive import _integral_stabilizer_family
 
     ambient = lattice(gram)
     integral_basis = tuple(ambient.module_generators())
-    line = integral_basis[0]
-    action = EichlerRecursion().isotropic_stabilizer_action((line,), ((-line,),))
+    inclusion = ModulesOverIntegralDomains(ambient.base_ring())(ambient).generic_fibre_map()
+    space = inclusion.codomain()
+    rational = space.module_over_extension()
+    rational_basis = tuple(rational.module_generators())
+    if len(rational_basis) == 4:
+        e, f, u, v = rational_basis
+        images = (
+            (e, f, u, v), (e, f, -u, -v),
+            (e, f, v, u), (e, f, -v, -u),
+            (-e, -f, u, v), (e, f - v, u + e, v), (e, f - u, u, v + e),
+        )
+        bound = inclusion
+    else:
+        e, f, w = rational_basis
+        field = rational.base_ring()
+        extra = rational.scalar_multiple(field(1) / field(4), e) + rational.scalar_multiple(field(1) / field(2), w)
+        images = ((e, f, -w), (-e, -f, w), (e, f + extra, e + w))
+        bound = space.subobject_on((*tuple(inclusion(point) for point in integral_basis), space.wrap(extra))).inclusion()
+    group_generators = tuple(rational.O()(family) for family in images)
+    assert all(
+        rational.b(generator(left), generator(right)) == rational.b(left, right)
+        for generator in group_generators for left in rational_basis for right in rational_basis
+    )
+    action = IntegralStructureAction(rational.O().subgroup(group_generators), inclusion).with_stable_containing_bound(bound)
     original = tuple(action.finite_representation().lattice_stabilizer().group_generators())
     realized = tuple(_integral_stabilizer_family(action))
-    rational = action.lattice_inclusion().codomain().module_over_extension()
-    rational_basis = tuple(rational.module_generators())
-    inclusion = action.lattice_inclusion()
 
     assert len(realized) == len(original)
     for source, target in zip(original, realized, strict=True):
