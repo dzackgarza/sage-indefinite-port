@@ -2,6 +2,7 @@
 from sage.all import ZZ as SageZZ, matrix
 from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
 from tests.acceptance.consumer import lattice
+import pytest
 
 
 def test_bases_of_a_maximal_plane_in_u_plus_two_u_have_three_classes():
@@ -54,3 +55,43 @@ def test_public_moving_maximal_plane_class_in_two_u():
     images = tuple(arrow(point) for point in arrow.domain().module_generators())
     assert all(ambient.b(left, right) == 0 for left in images for right in images)
     assert arrow.is_primitive()
+
+
+@pytest.mark.parametrize("exchange", (False, True), ids=("integral-levi", "divisibility-obstruction"))
+def test_fixed_plane_transporters_retain_the_basis_divisibilities(exchange):
+    r"""In U+2U, e and u have divisibilities one and two.
+
+    Swapping them cannot extend to an integral ambient isometry. The
+    change (e,u) -> (e+u,u) does extend: fix f and send v to v-2f.
+    Both changes preserve the same unbased primitive null plane.
+    """
+    from sage_extensions.all import Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS
+
+    ambient = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 2], [0, 0, 2, 0]])
+    e, f, u, v = tuple(ambient.module_generators())
+    source = lattice([[0, 0], [0, 0]])
+    category = CosliceCategory(Lattices(ZZ), source)
+    first_arrow = source.hom([e, u], codomain=ambient)
+    target_images = (u, e) if exchange else (e + u, u)
+    second_arrow = source.hom(list(target_images), codomain=ambient)
+    first, second = category(first_arrow), category(second_arrow)
+    homset = category.Core().Mor(first, second)
+    assert homset.is_empty() is exchange
+    if not exchange:
+        witness = homset.an_element()
+        apex = witness.forward().right()
+        inverse = (~witness).forward().right()
+        assert apex(e) == e + u and apex(u) == u
+        basis = (e, f, u, v)
+        assert all(inverse(apex(point)) == point for point in basis)
+        assert all(ambient.b(apex(x), apex(y)) == ambient.b(x, y) for x in basis for y in basis)
+    moving_homset = ARROWS.Core().Mor(ARROWS(first_arrow), ARROWS(second_arrow))
+    assert moving_homset.is_empty() is False
+    moving = moving_homset.an_element()
+    forward, backward = moving.forward(), (~moving).forward()
+    for point in source.module_generators():
+        assert second_arrow(forward.left()(point)) == forward.right()(first_arrow(point))
+        assert backward.left()(forward.left()(point)) == point
+    assert all(backward.right()(forward.right()(point)) == point for point in (e, f, u, v))
