@@ -302,6 +302,11 @@ def test_public_partial_two_three_flag_classes_in_three_u():
 
 
 def test_public_complete_flag_classes_in_three_u():
+    r"""Primitive complete null flags in 3U admit adapted hyperbolic bases.
+
+    Hyperbolic completion and the integral Levi GL(3,ZZ) carry each
+    such flag to the coordinate flag, giving one moving-flag class.
+    """
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
     from sage_indefinite_port.indefinite.marked_lattices import primitive_marking_classes
