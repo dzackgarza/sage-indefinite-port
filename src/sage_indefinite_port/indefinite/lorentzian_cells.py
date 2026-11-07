@@ -5557,6 +5557,8 @@ class _PositiveVectorEnumerator:
         affine_rows = matrix(SageZZ, [shift, *self.inclusion_rows.rows()])
         block_size = _configuration_pairing_block_size(self.gram.nrows())
         bound = multiplier**2 * self.base_bound
+        coordinate_count = self.gram.ncols()
+        norm_weights = vector(SageZZ, [1] * coordinate_count)
         for start in range(0, len(close_coordinates), block_size):
             coordinates = close_coordinates[start:start + block_size]
             for offset, close in enumerate(coordinates):
@@ -5568,8 +5570,11 @@ class _PositiveVectorEnumerator:
             rows = matrix(SageZZ, [(1, *close) for close in coordinates]) * affine_rows
             gram_rows = rows * self.gram
             pairings = rows * self.timelike_covector
-            for offset, row in enumerate(rows.rows()):
-                candidate_square = int(row.dot_product(gram_rows.row(offset)))
+            # Exact row sums of Sage's Hadamard product give diag(R*G*R^t).
+            squared_norms = rows.elementwise_product(gram_rows) * norm_weights
+            row_entries = tuple(map(int, rows.list()))
+            for offset in range(rows.nrows()):
+                candidate_square = int(squared_norms[offset])
                 expected_square = bound - close_squares[start + offset]
                 # The independent Gram computation certifies the returned
                 # CVP distance as well as nonnegativity of the norm.
@@ -5582,7 +5587,7 @@ class _PositiveVectorEnumerator:
                     raise ArithmeticError("a close-vector shell returned a vector outside its prescribed pairing fibre")
                 if candidate_square not in self.allowed_squares:
                     continue
-                result.append(tuple(int(entry) for entry in row))
+                result.append(row_entries[offset * coordinate_count:(offset + 1) * coordinate_count])
         # Keep the exact CVP backend's enumeration order. The pinned
         # LATT_near/FindAtMostDistVectors path orders through its LLL-reduced
         # basis and recursive coordinate bounds, not by norm; the first row
