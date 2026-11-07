@@ -809,12 +809,13 @@ class _ConfigurationPairings:
         # copy of their coordinate matrix merely to obtain the diagonal.
         row_count, rank = self.rows.dimensions()
         block_size = max(1, min(1024, 100_000 // max(1, rank)))
+        weights = matrix(SageZZ, rank, 1, [1] * rank)
         for start in range(0, row_count, block_size):
             stop = min(start + block_size, row_count)
             products = self.covectors.matrix_from_rows(range(start, stop)).elementwise_product(
                 self.rows.matrix_from_rows(range(start, stop))
             )
-            yield tuple(sum(row) for row in products.rows())
+            yield tuple((products * weights).list())
 
     def column(self, index: int, *, cache: bool | None = None):
         # The form is symmetric, so column j holds b(v_l, v_j) for every l.
