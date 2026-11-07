@@ -32,6 +32,7 @@ from sage_extensions.categories.modules.orbit_spans import (
 from sage_extensions.categories.modules.pure.modules import (
     Modules,
     ModulesOverIntegralDomains,
+    _engine_matrix,
 )
 from sage_extensions.categories.rational_integral_stabilizers import (
     IntegralStructureAction,
@@ -81,8 +82,9 @@ def _integral_stabilizer_family(action: IntegralStructureAction) -> Iterable[Lat
     GroupAction.g:869-886 supplies the integral stabilizer before the source
     generator simplification. The provider retains its orbit, letters and
     transversals and specifies ``t_(s.p)^-1 s t_p`` in orbit-major order.
-    Read each factor on the rational basis once. All later composites use
-    the owned isometry multiplication, preserving every source family entry.
+    The provider's ambient-group inclusion retains each factor's actual
+    rational isometry. Composites use owned isometry multiplication and
+    preserve every source family entry.
     """
     letters, transversals = action.stabilizer_schreier_factors()
     g_set = action.finite_representation().g_set()
@@ -92,14 +94,9 @@ def _integral_stabilizer_family(action: IntegralStructureAction) -> Iterable[Lat
     points = tuple(g_set)
     permutations = g_set.orbit_generator_permutations(points[0])
     positions = {point: position for position, point in enumerate(points)}
-    rational = action.lattice_inclusion().codomain().module_over_extension()
-    basis = tuple(rational.module_generators())
-
-    def realize(factor):
-        return rational.Isom(rational)(tuple(factor(point) for point in basis))
-
-    realized_letters = tuple(realize(letter) for letter in letters)
-    realized_transversals = tuple(realize(transversal) for transversal in transversals)
+    inclusion = action.ambient_group_inclusion()
+    realized_letters = tuple(inclusion(letter) for letter in letters)
+    realized_transversals = tuple(inclusion(transversal) for transversal in transversals)
     inverse_transversals = tuple(~transversal for transversal in realized_transversals)
     for position, point in enumerate(points):
         for letter, permutation in zip(realized_letters, permutations, strict=True):
@@ -122,6 +119,10 @@ def _integral_generator_set(
     labels = tuple(lattice.module_generating_set())
     inclusion = ModulesOverIntegralDomains(lattice.base_ring())(lattice).generic_fibre_map()
     basis = tuple(inclusion(lattice.module_generator(label)).underlying_element() for label in labels)
+    field = inclusion.codomain().extension_ring()
+    frame = field.free_module(lattice.module_generating_set())
+    comparisons = {}
+    row_positions = {}
     identity = tuple(tuple(int(row == column) for column in range(len(labels))) for row in range(len(labels)))
     seen = {identity}
     actions = {}
@@ -137,12 +138,24 @@ def _integral_generator_set(
         return direct_key, (direct_norm, action, inverse)
 
     for generator in generators:
-        images = tuple(generator(point).to_vector() for point in basis)
-        key = tuple(tuple(_integer(image(label)) for label in labels) for image in images)
+        domain, codomain = generator.domain(), generator.codomain()
+        if domain not in comparisons:
+            comparison = Modules(field).Mor(frame, domain)({
+                label: domain(point) for label, point in zip(labels, basis, strict=True)
+            })
+            comparisons[domain] = _engine_matrix(comparison)
+        if codomain not in row_positions:
+            target_labels = tuple(codomain.module_generating_set())
+            row_positions[codomain] = tuple(target_labels.index(label) for label in labels)
+        # Lower the actual linear map through its owner's selected framing.
+        # The comparison uses the original lifted lattice basis, and row
+        # selection keeps the same output labels as the integral action.
+        columns = _engine_matrix(generator.module_morphism()) * comparisons[domain]
+        action = columns.matrix_from_rows(row_positions[codomain]).transpose().change_ring(SageZZ)
+        key = tuple(tuple(int(entry) for entry in row) for row in action.rows())
         if key in seen:
             continue
         seen.add(key)
-        action = matrix(SageZZ, key)
         key, entry = normalized(action, action.inverse().change_ring(SageZZ))
         if key in actions:
             continue
