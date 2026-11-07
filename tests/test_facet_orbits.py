@@ -19,6 +19,7 @@ from sage.all import QQ, ZZ, matrix
 
 from sage_indefinite_port.indefinite.facet_certificates import is_facet_certificate
 from sage_indefinite_port.indefinite.facet_orbits import (
+    _stabilizer_on_facet,
     cell_facet_orbits,
     cone_facets,
     orbit_representatives,
@@ -40,6 +41,25 @@ SPECIMENS = {
         [0, 0, 0, 0, -1],
     ],
 }
+
+
+@pytest.mark.parametrize("reflection, orbit_size, expected_order", ((False, 4, 1), (True, 4, 2)))
+def test_square_edge_stabilizer_has_the_exact_induced_action(reflection, orbit_size, expected_order):
+    """A square edge has trivial rotation stabilizer and a reflection in D4."""
+    from sage.all import PermutationGroup
+
+    generators = ["(1,2,3,4)"]
+    if reflection:
+        generators.append("(1,2)(3,4)")
+    group = PermutationGroup(generators, domain=(1, 2, 3, 4))
+    induced = _stabilizer_on_facet(group, frozenset((0, 1)), orbit_size)
+    stabilizer = PermutationGroup(
+        [[position + 1 for position in permutation] for permutation in induced],
+        domain=(1, 2),
+    )
+    assert int(stabilizer.order()) == expected_order
+    if reflection:
+        assert tuple(int(stabilizer.gen(0)(position)) for position in (1, 2)) == (2, 1)
 
 
 def _cell(gram):

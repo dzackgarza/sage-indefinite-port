@@ -371,7 +371,7 @@ def _orbit(incidence, permutations):
     return members
 
 
-def _stabilizer_on_facet(group, incidence):
+def _stabilizer_on_facet(group, incidence, orbit_size):
     r"""The induced action of the exact set stabilizer on its facet.
 
     Sage's PermutationGroup.stabilizer(..., action="OnSets") delegates
@@ -379,6 +379,10 @@ def _stabilizer_on_facet(group, incidence):
     the full image on the facet, including when the restriction has a
     kernel. Global transport words still use the supplied ray generators.
     """
+    # POLY_RecursiveDualDesc.h:211-226, StabilizerUsingOrbSize_OnSets.
+    # Orbit-stabilizer certifies the trivial group before set backtracking.
+    if orbit_size == int(group.order()):
+        return ()
     positions = tuple(sorted(incidence))
     local_position = {position + 1: index for index, position in enumerate(positions)}
     stabilizer = group.stabilizer([position + 1 for position in positions], action="OnSets")
@@ -463,12 +467,13 @@ def orbit_representatives(rays, permutations, *, level: int = 1):
         raise ArithmeticError("the seed facet failed certification")
     representatives: list[tuple[frozenset[int], tuple[int, ...]]] = [(seed, seed_normal)]
     covered = set(_orbit(seed, permutations))
+    orbit_sizes = [len(covered)]
     pending = [0]
     while pending:
         index = pending.pop()
         incidence, normal = representatives[index]
         positions = sorted(incidence)
-        local_permutations = _stabilizer_on_facet(group, incidence)
+        local_permutations = _stabilizer_on_facet(group, incidence, orbit_sizes[index])
         local_rays, local_dimension = _local_coordinates(rays, incidence)
         if local_dimension < 2:
             continue
@@ -492,6 +497,7 @@ def orbit_representatives(rays, permutations, *, level: int = 1):
                     continue
                 covered.update(members)
                 representatives.append((adjacent, oriented))
+                orbit_sizes.append(len(members))
                 pending.append(len(representatives) - 1)
     return tuple(representatives)
 
