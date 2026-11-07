@@ -1,9 +1,9 @@
 """The LORENTZ reduction images: the acceptance property, and identification where the form is nondegenerate.
 
 `test_lorentzian_generators_match_polyhedral_common` certifies a generating set by comparing image orders
-modulo every prime in `comparison_primes(gram)` = {2, 3, 5, 7}. At p=5 and p=7 that comparison does not
-terminate in the resource envelope (see https://github.com/dzackgarza/sage-extensions/issues/19), so the acceptance node
-stays open. This regression pins what *is* affordable, at p=2 and p=3:
+modulo every prime in `comparison_primes(gram)` = {2, 3, 5, 7}. The helper uses the
+public cardinality of the actual generated subgroup of the reduced orthogonal group.
+This test states the additional identification at p=2 and p=3:
 
 * always: the computed and the recorded generating set have the **same** image order -- the property the
   acceptance assertion checks, and the only one that is meaningful when `p` divides `det L`;
@@ -46,8 +46,8 @@ def test_reduction_images_agree_and_are_orthogonal_groups_where_nondegenerate(ca
     computed_rows = [rows_of(isometry) for isometry in lattice_.O().group_generators()]
 
     for prime in (2, 3):
-        computed_order = reduction_image_order(computed_rows, prime)
-        recorded_order = reduction_image_order(case["generators"], prime)
+        computed_order = reduction_image_order(case["gram"], computed_rows, prime)
+        recorded_order = reduction_image_order(case["gram"], case["generators"], prime)
         assert computed_order == recorded_order, (case_id, prime)
         if determinant % prime:
             assert computed_order == orthogonal_plus_order(5, prime), (case_id, prime)

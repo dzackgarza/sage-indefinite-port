@@ -408,7 +408,7 @@ def test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso(square) -> None
         orbit["stabilizer_image_index_in_O_E10_F2"] for orbit in load_e10_vector_orbits()["orbits"] if orbit["h_squared"] == square
     )
 
-    computed = Counter(_ORDER_O_PLUS_10_2 // reduction_image_order(_automorphism_rows(marked), 2) for marked in vector_classes(lattice(_E10["gram"]), square))
+    computed = Counter(_ORDER_O_PLUS_10_2 // reduction_image_order(_E10["gram"], _automorphism_rows(marked), 2) for marked in vector_classes(lattice(_E10["gram"]), square))
 
     assert computed == recorded
 
