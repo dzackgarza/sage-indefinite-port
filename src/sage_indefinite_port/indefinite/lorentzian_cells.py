@@ -616,7 +616,11 @@ class LorentzianPerfectCell:
         # every ordered row relation, including the coefficients produced
         # by GAP's SemiEchelonMatTransformation, while sending only a basis
         # of the configuration constraints to NullspaceMat.
-        independent = constraints.matrix_from_columns(constraints.pivots())
+        # Sage defaults to FLINT's multimodular elimination. Classical exact
+        # elimination avoids its cost on this short, wide constraint matrix;
+        # the rational reduced echelon form has the same pivot columns.
+        pivots = constraints.echelon_form(algorithm="flint:classical").pivots()
+        independent = constraints.matrix_from_columns(pivots)
         nullspace = _pinned_nullspace_matrix(independent)
         if nullspace.nrows() != 1:
             raise ArithmeticError("a perfect cell must have a unique affine supporting functional")
