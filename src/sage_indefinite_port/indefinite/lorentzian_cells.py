@@ -73,10 +73,6 @@ from sage_indefinite_port.invariants import AttackProfile
 
 type PerfectMode = Literal["total", "isotropic"]
 type FacetIncidence = frozenset[int]
-#: Above this many rays the traversal takes its facet orbits from the orbit-pruned walk
-#: (`indefinite/facet_orbits.py`) instead of asking an engine for the complete H-description.
-_WALK_FACET_THRESHOLD = 10_000
-
 type SchreierWord = tuple[SchreierWord, int] | None
 type FacetMaskKey = int | tuple[bool, tuple[int, ...] | int]
 
@@ -2662,29 +2658,13 @@ class LorentzianPerfectComplex:
         )
         source = representatives[source_position]
         new_representatives: list[LorentzianPerfectCell] = []
-        # Traversal needs exact facet incidences, not owned covectors. Use
-        # Normaliz's raw H rows even when retaining Schreier words for public
-        # side-pairing consumers; the owned cone remains lazy for consumers
-        # that actually need its covector interface. This avoids materializing
-        # a second full owned H-family solely to encode incidence keys.
-        if len(source.rows) >= _WALK_FACET_THRESHOLD:
-            # The engine's complete H-description is what this route replaces: on the A7 specimen that single
-            # SupportHyperplanes call does not finish inside the acceptance cap. Above the threshold the facet
-            # orbits come from the orbit-pruned walk instead, in the same key/word encoding.
-            generator_permutations, facet_orbits = backend._facet_mask_orbits_via_walk(
-                source, retain_words=self._retain_facet_orbits
-            )
-            canonical_facet_keys = None
-        else:
-            facet_masks, generator_permutations, canonical_facet_keys = backend._facet_mask_data(
-                source, use_owned_cone=False
-            )
-            facet_orbits = backend._iter_facet_mask_orbits(
-                facet_masks,
-                generator_permutations,
-                retain_words=self._retain_facet_orbits,
-                canonical_keys=canonical_facet_keys,
-            )
+        # lorentzian_perfect.h:1433-1452 sends every cell to
+        # DualDescriptionRecordFullDim. POLY_Heuristics.h:320-328 chooses
+        # direct enumeration or adjacency decomposition from rank, incidence,
+        # group order and recursion depth inside orbit_representatives.
+        generator_permutations, facet_orbits = backend._facet_mask_orbits_via_walk(
+            source, retain_words=self._retain_facet_orbits
+        )
         source_id = id(source)
         # Side-pairing witnesses are only queried for actual adjacencies, so
         # retain the Schreier words for those facet orbits alone. Yielding one
