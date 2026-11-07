@@ -190,6 +190,31 @@ def test_three_u_complete_flags_have_a_transporter():
     assert all(ambient.b(witness(left), witness(right)) == ambient.b(left, right) for left in basis for right in basis)
 
 
+def test_complete_isotropic_flags_in_three_u_split_into_two_special_orthogonal_orbits():
+    r"""A maximal isotropic stabilizer has determinant det(A) det(A^-T)=1.
+
+    Thus its O(3U)-orbit has two SO(3U)-orbits. Exchanging a hyperbolic
+    pair has determinant -1, so both determinant classes occur in O(3U).
+    """
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    basis = tuple(ambient.module_generators())[::2]
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    marked = category(_flag_marking_from_basis(ambient, basis, (1, 2, 3)))
+
+    representatives = tuple(ambient.O().split_orbit(marked, ambient.SO()))
+
+    assert len(representatives) == 2
+    assert all(representative in category for representative in representatives)
+    assert all(
+        tuple(int(arrow.domain().rank()) for arrow in representative.arrows()) == (1, 2, 3)
+        for representative in representatives
+    )
+
+
 def test_isotropic_rank_above_witt_index_has_no_markings():
     from sage_indefinite_port.indefinite.marked_lattices import primitive_marking_classes
 
