@@ -4221,7 +4221,7 @@ def _fixed_distance_dual_lll_solutions(
             raise ArithmeticError("dual-LLL sphere reconstruction produced nonintegral coordinates")
         original = tuple(SageZZ(original_column[row, 0]) for row in range(rank))
         solutions.append((original, distance))
-    return tuple(sorted(solutions, key=lambda item: _dual_lll_enumeration_key(item[0], enumeration_order_transform)))
+    return _dual_lll_ordered_solutions(solutions, enumeration_order_transform)
 
 
 def _bounded_distance_dual_lll_solutions(
@@ -4266,7 +4266,7 @@ def _bounded_distance_dual_lll_solutions(
             raise ArithmeticError("dual-LLL bounded-sphere reconstruction produced nonintegral coordinates")
         original = tuple(SageZZ(original_column[row, 0]) for row in range(rank))
         solutions.append((original, distance))
-    return tuple(sorted(solutions, key=lambda item: _dual_lll_enumeration_key(item[0], enumeration_order_transform)))
+    return _dual_lll_ordered_solutions(solutions, enumeration_order_transform)
 
 
 def _fixed_distance_vectors(
@@ -5166,6 +5166,30 @@ def _dual_lll_enumeration_key(
     return tuple(reduced[index, 0] for index in reversed(range(transform.nrows())))
 
 
+def _dual_lll_ordered_solutions(
+    solutions: list[tuple[tuple[Integer, ...], Rational]] | tuple[tuple[tuple[Integer, ...], Rational], ...],
+    transform: Matrix_integer_dense | Matrix_rational_dense,
+) -> tuple[tuple[tuple[Integer, ...], Rational], ...]:
+    """Order exact CVP witnesses by reversed ``P*x`` coordinates in one batch.
+
+    Pinned ``Shvec_exact.h:335-505`` increments coordinate zero in the inner
+    loop. Row storage computes all of the same column keys as ``X * P^T``;
+    distances and original coordinate witnesses stay attached to their rows.
+    """
+    if not solutions:
+        return ()
+    coordinates = matrix(
+        SageZZ, len(solutions), transform.ncols(),
+        [entry for point, _distance in solutions for entry in point],
+    )
+    recursive_coordinates = coordinates * transform.change_ring(SageZZ).transpose()
+    keys = tuple(
+        tuple(recursive_coordinates[row, column] for column in reversed(range(transform.nrows())))
+        for row in range(len(solutions))
+    )
+    return tuple(solutions[row] for row in sorted(range(len(solutions)), key=keys.__getitem__))
+
+
 def _pinned_sublattice_basis_reduction(basis: Matrix_integer_dense) -> Matrix_integer_dense:
     r"""Reproduce ``SublatticeBasisReductionKernel`` from pinned ClassicLLL.h.
 
@@ -5506,7 +5530,7 @@ class _PositiveVectorEnumerator:
                 )
             # CVPSolver's dual-LLL map gives recursive coordinates y=P*x;
             # the shared key follows computeIt_Gen_Kernel's outer-to-inner order.
-            distances = tuple(sorted(distances, key=lambda item: _dual_lll_enumeration_key(item[0], self.enumeration_order_transform)))
+            distances = _dual_lll_ordered_solutions(distances, self.enumeration_order_transform)
         close_coordinates = tuple(coordinates for coordinates, _square in distances)
         close_squares = tuple(square for _coordinates, square in distances)
         return self._ambient_vectors(multiplier, close_coordinates, close_squares)
