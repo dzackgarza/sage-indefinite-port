@@ -127,11 +127,15 @@ def _integral_generator_set(
     seen = {identity}
     actions = {}
 
+    def action_data(action):
+        entries = tuple(map(int, action.list()))
+        size = len(labels)
+        key = tuple(entries[row * size:(row + 1) * size] for row in range(action.nrows()))
+        return key, sum(map(abs, entries))
+
     def normalized(action, inverse):
-        direct_key = tuple(tuple(int(entry) for entry in row) for row in action.rows())
-        inverse_key = tuple(tuple(int(entry) for entry in row) for row in inverse.rows())
-        direct_norm = sum(abs(entry) for row in direct_key for entry in row)
-        inverse_norm = sum(abs(entry) for row in inverse_key for entry in row)
+        direct_key, direct_norm = action_data(action)
+        inverse_key, inverse_norm = action_data(inverse)
         # Choose a fixed representative of {g,g^-1} at equal complexity.
         if (inverse_norm, inverse_key) < (direct_norm, direct_key):
             return inverse_key, (inverse_norm, inverse, action)
@@ -152,7 +156,7 @@ def _integral_generator_set(
         # selection keeps the same output labels as the integral action.
         columns = _engine_matrix(generator.module_morphism()) * comparisons[domain]
         action = columns.matrix_from_rows(row_positions[codomain]).transpose().change_ring(SageZZ)
-        key = tuple(tuple(int(entry) for entry in row) for row in action.rows())
+        key, _norm = action_data(action)
         if key in seen:
             continue
         seen.add(key)
