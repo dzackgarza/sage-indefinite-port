@@ -611,9 +611,17 @@ class LorentzianPerfectCell:
         for each flip using the chosen nonincident vertex.
         """
         expanded = matrix(SageQQ, [[1, *row] for row in self.rows])
-        nullspace = _pinned_nullspace_matrix(expanded.transpose())
+        constraints = expanded.transpose()
+        # Pivot-column projection is injective on the row space. It keeps
+        # every ordered row relation, including the coefficients produced
+        # by GAP's SemiEchelonMatTransformation, while sending only a basis
+        # of the configuration constraints to NullspaceMat.
+        independent = constraints.matrix_from_columns(constraints.pivots())
+        nullspace = _pinned_nullspace_matrix(independent)
         if nullspace.nrows() != 1:
             raise ArithmeticError("a perfect cell must have a unique affine supporting functional")
+        if nullspace * constraints != 0:
+            raise ArithmeticError("the affine supporting row must annihilate the whole configuration")
         return tuple(nullspace.row(0))
 
     def __post_init__(self) -> None:
