@@ -77,6 +77,30 @@ def test_public_pointwise_plane_stabilizer_in_two_u_is_the_integral_skew_shear_g
     assert ambient.base_ring().ideal(parameters) == ambient.base_ring().ideal(1)
 
 
+def test_public_pointwise_maximal_stabilizer_in_three_u_has_all_three_skew_parameters():
+    r"""Fixing e,u,w in 3U leaves the full three-parameter integral skew group."""
+    from sage_extensions.all import cardinal
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    e, f, u, v, w, z = tuple(ambient.module_generators())
+    subspace = ambient.primitive_isotropic_subobject(e, u, w)
+    family = tuple(ambient.O().pointwise_stabilizer(subspace.inclusion()).group_generators())
+    labels = tuple(ambient.module_generating_set())
+    parameter_space = ambient.base_ring().free_module(3)
+    x, y, s = tuple(parameter_space.module_generators())
+    parameters = []
+    for generator in family:
+        first = generator(f).to_vector()
+        second = generator(v).to_vector()
+        a, b, c = first(labels[2]), first(labels[4]), second(labels[4])
+        assert generator(e) == e and generator(u) == u and generator(w) == w
+        assert generator(f) == f + a * u + b * w
+        assert generator(v) == v - a * e + c * w
+        assert generator(z) == z - b * e - c * u
+        parameters.append(a * x + b * y + c * s)
+    assert parameter_space.subobject_on(parameters).inclusion().cokernel().cardinality() == cardinal(1)
+
+
 def test_isotropic_orbit_bases_retain_the_original_lattice_presentation():
     r"""Every primitive maximal isotropic plane in 2U has an integral hyperbolic completion.
 
