@@ -1,10 +1,13 @@
-"""Maximal isotropic stabilizers in 3U have their split orthogonal parabolic images.
+"""Isotropic flag stabilizers have their split orthogonal parabolic images.
 
 Over F3 the stabilizer of a maximal isotropic 3-space is
 Alt^2(F3^3) semidirect GL3(F3). Its order is 3^3 times
 (3^3-1)(3^3-3)(3^3-3^2). Integral GL3 generators map onto GL3(F3)
 because the only nonzero determinants in F3 are +1 and -1.
+In 4U the flag (1,3,4) has GL4 blocks (1,2,1), with five
+unipotent block entries and a six-dimensional orthogonal radical.
 """
+import pytest
 from sage.all import GF, MatrixGroup, matrix
 
 from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
@@ -24,16 +27,25 @@ def test_maximal_isotropic_stabilizer_in_three_u_has_full_parabolic_image():
     assert MatrixGroup(images).order() == 3**3 * (27 - 1) * (27 - 3) * (27 - 9)
 
 
-def test_partial_and_complete_flag_stabilizers_have_their_parabolic_images():
+@pytest.mark.parametrize(
+    "hyperbolic_rank, flags",
+    (
+        (3, (((1, 3), 2 * 48 * 3**2), ((2, 3), 48 * 2 * 3**2), ((1, 2, 3), 2**3 * 3**3))),
+        (4, (((1, 3, 4), 2 * 48 * 2 * 3**5),)),
+    ),
+    ids=("three_u", "four_u"),
+)
+def test_partial_and_complete_flag_stabilizers_have_their_parabolic_images(hyperbolic_rank, flags):
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
     from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis
 
-    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    size = 2 * hyperbolic_rank
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(size)] for i in range(size)])
     labels = tuple(ambient.module_generating_set())
     basis = tuple(ambient.module_generator(label) for label in labels)
-    adapted = (basis[0] + basis[2], basis[2], basis[4])
-    for dimensions, levi_order in (((1, 3), 2 * 48 * 3**2), ((2, 3), 48 * 2 * 3**2), ((1, 2, 3), 2**3 * 3**3)):
+    adapted = (basis[0] + basis[2], *basis[2::2])
+    for dimensions, levi_order in flags:
         category = Cat().Mor(FiniteOrdinalCategory(len(dimensions) + 1), Lattices(ZZ))
         marking = category(_flag_marking_from_basis(ambient, adapted, dimensions))
         generators = tuple(automorphism_group_generators(category, marking))
@@ -43,7 +55,10 @@ def test_partial_and_complete_flag_stabilizers_have_their_parabolic_images():
                 assert all(term.inclusion().is_in_image(generator(point)) for point in adapted[:rank])
             assert all(ambient.b(generator(left), generator(right)) == ambient.b(left, right) for left in basis for right in basis)
         images = [matrix(GF(3), [[int(generator(point).to_vector()(label)) for label in labels] for point in basis]) for generator in generators]
-        assert MatrixGroup(images).order() == 3**3 * levi_order
+        # The maximal orthogonal radical is Alt^2(F3^r). The Levi factor
+        # is the indicated flag parabolic in GL_r(F3); its block-upper
+        # entries contribute one F3 factor for each pair of distinct blocks.
+        assert MatrixGroup(images).order() == 3**(hyperbolic_rank * (hyperbolic_rank - 1) // 2) * levi_order
 
 
 def test_fixed_rank_two_embedding_has_pointwise_parabolic_image():
