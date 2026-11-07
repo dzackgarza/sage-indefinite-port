@@ -252,14 +252,6 @@ ci-acceptance family shard shards selection="":
             tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_isometry_rejects_different_divisibility
             tests/acceptance/test_vector_stabilizers.sage::test_divisibility_two_isotropic_pointed_isometry_has_exact_witness
         )
-        # Preserve the measured order: pytest-shard hashes node IDs and cannot
-        # enforce the positional memory allocation above.
-        assigned_tests=()
-        for ((index={{shard}}; index<${#tests[@]}; index+={{shards}})); do
-            assigned_tests+=("${tests[index]}")
-        done
-        tests=("${assigned_tests[@]}")
-        shard_args=()
         ;;
       vector_orbits)
         tests=(
@@ -294,7 +286,6 @@ ci-acceptance family shard shards selection="":
             'tests/acceptance/test_vector_orbits.sage::test_k3_lattice_has_one_primitive_orbit_per_norm[4]'
             'tests/acceptance/test_vector_orbits.sage::test_k3_lattice_has_one_primitive_orbit_per_norm[-4]'
         )
-        shard_args=(--shard-id={{shard}} --num-shards={{shards}})
         ;;
       isotropic_orbits)
         tests=(
@@ -312,7 +303,6 @@ ci-acceptance family shard shards selection="":
             'tests/acceptance/test_isotropic_orbits.sage::test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank0-primitive_isotropic_vector_orbits]'
             'tests/acceptance/test_isotropic_orbits.sage::test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank1-isotropic_plane_orbits]'
         )
-        shard_args=(--shard-id={{shard}} --num-shards={{shards}})
         ;;
       boundaries)
         tests=(
@@ -335,11 +325,22 @@ ci-acceptance family shard shards selection="":
             'tests/acceptance/test_boundaries.sage::test_classical_polarization_indices[degree_2]'
             'tests/acceptance/test_boundaries.sage::test_classical_polarization_indices[degree_10]'
         )
-        shard_args=(--shard-id={{shard}} --num-shards={{shards}})
         ;;
       *)
         tests=(tests/acceptance/test_{{family}}.sage)
         shard_args=(--shard-id={{shard}} --num-shards={{shards}})
+        ;;
+    esac
+    case "{{selection}}" in
+      vector_stabilizers|vector_orbits|isotropic_orbits|boundaries)
+        # Preserve the selected order and the vector-stabilizer memory allocation.
+        # Orbit and boundary selections assign one case to each planned shard.
+        assigned_tests=()
+        for ((index={{shard}}; index<${#tests[@]}; index+={{shards}})); do
+            assigned_tests+=("${tests[index]}")
+        done
+        tests=("${assigned_tests[@]}")
+        shard_args=()
         ;;
     esac
     if [[ "{{family}}" == reflective && "{{selection}}" == "" ]]; then

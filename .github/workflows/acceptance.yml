@@ -22,7 +22,7 @@ jobs:
         # family=shards; the family is tests/acceptance/test_<family>.sage.
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
-        run: |
+        run: |+
           python3 - >> "$GITHUB_OUTPUT" <<'PY'
           import json
           import os
@@ -67,14 +67,14 @@ jobs:
               # `orthogonal_group` is memory-bound and names one selection per
               # shard, `vector_stabilizers` is memory-bound and is ordered by
               # peak so round-robin pairs each heavy case with a light one, and
-              # the rest are split by time or not yet measurable.
+              # each selected orbit or boundary case has its own shard.
               sampled = {
                   "reflective": (1, None),
                   "orthogonal_group": (6, "orthogonal_group_{shard}"),
                   "vector_stabilizers": (18, None),
-                  "vector_orbits": (3, None),
-                  "isotropic_orbits": (1, None),
-                  "boundaries": (1, None),
+                  "vector_orbits": (30, None),
+                  "isotropic_orbits": (13, None),
+                  "boundaries": (18, None),
               }
               include = [
                   {
@@ -111,6 +111,7 @@ jobs:
               ]
           print("matrix=" + json.dumps({"include": include}))
           PY
+
   julia:
     # Instantiates the bridge environment once into the Julia depot cache that every shard restores.
     runs-on: ubuntu-latest

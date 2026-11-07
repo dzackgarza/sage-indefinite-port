@@ -1,16 +1,21 @@
 # Inspected Acceptance case reports at 1a59c86/fe615e7
 
-[Acceptance 42382920784](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/42382920784) records port `1a59c8626a8c7c2049e28df946afdf3154119bf3` and provider `fe615e7eb9453377af95baa9dfd28e81a38386ad`. Every testcase listed below has no failure, error or skip. Final-pair evidence remains required.
+[Acceptance 42382920784](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/42382920784) completed with failure. Its artifacts record port `1a59c8626a8c7c2049e28df946afdf3154119bf3` and provider `fe615e7eb9453377af95baa9dfd28e81a38386ad`. Every testcase listed below has no failure, error or skip. Final-pair evidence remains required.
 
 | Family | Inspected passing cases |
 | --- | ---: |
 | centralizers | 5 |
 | double_cosets | 19 |
 | isometry | 166 |
-| orthogonal_group | 2 |
+| orthogonal_group | 8 |
 | perfect_domains | 92 |
+| reflective | 5 |
+| vector_orbits | 6 |
+| vector_stabilizers | 25 |
 
-All planned isometry and perfect-domain shards have JUnit reports. The centralizer and double-coset shards are complete. Orthogonal-group reports currently verify only `LORENTZ_OrthogonalGroup0` and the degenerate radical-shear/GL assertion. The LORENTZ call is 107.287 seconds. No completed A7, isotropic or boundary case report was present in this inspected artifact set. Pending jobs supply no mathematical result.
+All planned isometry and perfect-domain shard reports, the centralizer and double-coset reports, and every planned vector-stabilizer sample shard have nonempty JUnit reports. The vector-stabilizer collection failure from the earlier run is not present in this sample at this pair. The orthogonal-group sample still lacks A7. Vector-orbit evidence covers only shard 2. Reflective evidence covers the selected sample.
+
+The published summary identifies report-less `boundaries-0`, `isotropic_orbits-0`, `orthogonal_group-1`, `vector_orbits-0` and `vector_orbits-1`. The boundary log stops on `dawes_2U_minus2_minus6`; the isotropic log stops on the public O_plus(N) line/plane class consumer. Those prefixes do not establish completion of their selected families.
 
 ## Recorded case IDs
 
@@ -217,6 +222,12 @@ All planned isometry and perfect-domain shards have JUnit reports. The centraliz
 
 - `orthogonal_group-0`: `test_lorentzian_generators_match_polyhedral_common[LORENTZ_OrthogonalGroup0]`
 - `orthogonal_group-2`: `test_degenerate_orthogonal_group_contains_radical_shear_and_gl_action`
+- `orthogonal_group-3`: `test_degenerate_orthogonal_group_generates_rank_two_radical_action`
+- `orthogonal_group-4`: `test_degenerate_orthogonal_group_embeds_non_diagonal_complement`
+- `orthogonal_group-5`: `test_mertens_omega_and_minus_one_generate_o_l`
+- `orthogonal_group-5`: `test_zero_form_orthogonal_group_is_the_full_general_linear_group`
+- `orthogonal_group-5`: `test_orthogonal_group_of_the_hyperbolic_plane_has_order_four`
+- `orthogonal_group-5`: `test_signed_discriminant_image_of_u_plus_minus_three_is_all_of_o_q`
 
 ### perfect_domains
 
@@ -312,3 +323,48 @@ All planned isometry and perfect-domain shards have JUnit reports. The centraliz
 - `perfect_domains-7`: `test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_30]`
 - `perfect_domains-7`: `test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_35]`
 - `perfect_domains-7`: `test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_36]`
+
+### reflective
+
+- `reflective-0`: `test_edgewalk_branch_representative_sample`
+- `reflective-0`: `test_edgewalk_period_action_matrix_uses_coordinate_label_order`
+- `reflective-0`: `test_binary_cycle_coordinate_order_and_period_certificate`
+- `reflective-0`: `test_vinberg_roots_match_oscars_chamber_up_to_isometry`
+- `reflective-0`: `test_e10_simple_roots_match_dutour_sikiric_hulek`
+
+### vector_orbits
+
+- `vector_orbits-2`: `test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[2]`
+- `vector_orbits-2`: `test_published_representatives_are_one_per_orbit[6]`
+- `vector_orbits-2`: `test_published_representatives_are_one_per_orbit[10]`
+- `vector_orbits-2`: `test_k3_lattice_has_one_primitive_orbit_per_norm[2]`
+- `vector_orbits-2`: `test_k3_lattice_has_one_primitive_orbit_per_norm[4]`
+- `vector_orbits-2`: `test_k3_lattice_has_one_primitive_orbit_per_norm[-4]`
+
+### vector_stabilizers
+
+- `vector_stabilizers-0`: `test_equivalence_witness_carries_a_representative_to_its_reflection[r_-1]`
+- `vector_stabilizers-0`: `test_isotropic_pointed_automorphism_generators_preserve_marking_and_form`
+- `vector_stabilizers-1`: `test_equivalence_witness_carries_a_representative_to_its_reflection[r_1]`
+- `vector_stabilizers-1`: `test_equivalence_witness_carries_a_representative_to_its_reflection[r_5]`
+- `vector_stabilizers-10`: `test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[0]`
+- `vector_stabilizers-11`: `test_equivalence_witness_carries_a_representative_to_its_reflection[r_8]`
+- `vector_stabilizers-12`: `test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[2]`
+- `vector_stabilizers-13`: `test_equivalence_witness_carries_a_representative_to_its_reflection[r_3]`
+- `vector_stabilizers-14`: `test_equivalence_witness_carries_a_representative_to_its_reflection[r_6]`
+- `vector_stabilizers-15`: `test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound`
+- `vector_stabilizers-16`: `test_vector_stabilizer_has_oscars_order`
+- `vector_stabilizers-17`: `test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks`
+- `vector_stabilizers-2`: `test_equivalence_witness_carries_a_representative_to_its_reflection[r_7]`
+- `vector_stabilizers-2`: `test_general_isotropic_pointed_isometry_carries_negative_marking`
+- `vector_stabilizers-3`: `test_equivalence_witness_carries_a_representative_to_its_reflection[r_0]`
+- `vector_stabilizers-3`: `test_divisibility_four_isotropic_plane_stabilizer_constructs_exact_containing_bound`
+- `vector_stabilizers-4`: `test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[10]`
+- `vector_stabilizers-4`: `test_split_divisibility_one_pointed_isometry_carries_actual_negative_marking`
+- `vector_stabilizers-5`: `test_equivalence_witness_carries_a_representative_to_its_reflection[r_2]`
+- `vector_stabilizers-5`: `test_isotropic_pointed_isometry_rejects_different_divisibility`
+- `vector_stabilizers-6`: `test_equivalence_witness_carries_a_representative_to_its_reflection[r_4]`
+- `vector_stabilizers-6`: `test_divisibility_two_isotropic_pointed_isometry_has_exact_witness`
+- `vector_stabilizers-7`: `test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[4]`
+- `vector_stabilizers-8`: `test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[8]`
+- `vector_stabilizers-9`: `test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[6]`
