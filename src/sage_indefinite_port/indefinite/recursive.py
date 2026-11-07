@@ -26,6 +26,9 @@ from math import gcd
 from sage_extensions.all import GObjects, Lattices, Modules, Sets, ZZ
 from sage_extensions.categories.group.groups import OwnedGroups
 from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
+from sage_extensions.categories.modules.orbit_spans import (
+    OrbitSpanConstructions,
+)
 from sage_extensions.categories.modules.pure.modules import (
     Modules,
     ModulesOverIntegralDomains,
@@ -1183,7 +1186,11 @@ class EichlerRecursion:
             lambda label: space.wrap(rational.scalar_multiple(scale, inclusion(lattice.module_generator(label)).underlying_element()))
         )
         action = IntegralStructureAction(rational.O().subgroup(tuple(generators)), inclusion)
-        result = action.with_stable_containing_bound(containing)
+        # The source's scalar dilation bounds the orbit span but need not
+        # itself be invariant under nonintegral rational generators. Close
+        # the orbit inside that finite bound before supplying a stable module.
+        span = OrbitSpanConstructions(lattice.base_ring())(action.ambient_action_functor(), inclusion, containing=containing)
+        result = action.with_stable_containing_bound(span.inclusion())
         # Invariant comparison, extension and integral correction consume
         # the same source f_stab datum. Retain the two current actions, with
         # their exact bases and allowed radical images, rather than rebuild
