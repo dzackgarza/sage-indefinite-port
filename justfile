@@ -64,7 +64,8 @@ ci-provision-sage:
     export MESONPY_EDITABLE_VERBOSE=1
     "$SAGE_BIN" -c 'import sage.all; from sage.features.bliss import Bliss; Bliss().require(); from sage.interfaces.maxima_lib import maxima_lib; assert str(maxima_lib.eval("1+1")) == "2"'
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
-    uv pip install --quiet --python "$sage_python" "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard pytest-instafail PyNormaliz
+    uv pip install --quiet --python "$sage_python" "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard pytest-instafail PyNormaliz "pycddlib>=3.0.2"
+    "$sage_python" -c 'import cdd.gmp'
     # The acceptance contract is against the shared-library revision declared in
     # pyproject.toml; read it from there so the packaging pin and the CI pin
     # cannot drift apart. The library is sage-extensions: the pre-move
