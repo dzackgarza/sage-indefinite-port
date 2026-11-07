@@ -442,9 +442,13 @@ def orbit_representatives(rays, permutations, *, level: int = 1):
         cone = NmzCone(cone=rays, subspace=())
         if NmzResult(cone, "Equations"):
             raise ArithmeticError("direct facet enumeration requires a full-dimensional cone")
+        hyperplanes = NmzResult(cone, "SupportHyperplanes")
+        # POLY_DirectDualDesc.h:334-337 rejects an empty direct result.
+        if not hyperplanes:
+            raise ArithmeticError("the direct facet computation returned no facets")
         representatives = []
         covered = set()
-        for row in NmzResult(cone, "SupportHyperplanes"):
+        for row in hyperplanes:
             normal, incidence = _orient(rays, _primitive(row))
             if not is_facet_certificate(normal, incidence, rays):
                 raise ArithmeticError("a direct facet failed certification")
