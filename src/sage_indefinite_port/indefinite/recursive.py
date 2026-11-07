@@ -21,7 +21,9 @@ Definite lattices are the preamble's; signature (1, n) is the Lorentzian leaf (#
 import itertools
 from collections.abc import Iterable
 from dataclasses import dataclass
-from math import gcd
+from math import gcd, isqrt
+
+import numpy as np
 
 from sage_extensions.all import GObjects, Lattices, Modules, Sets, ZZ
 from sage_extensions.categories.group.groups import OwnedGroups
@@ -126,16 +128,22 @@ def _integral_generator_set(
     identity = tuple(tuple(int(row == column) for column in range(len(labels))) for row in range(len(labels)))
     seen = {identity}
     actions = {}
+    # MatrixGroupSimplification.h:1495-1605 selects bounded integer
+    # arithmetic. Entrywise L1 is submultiplicative. If both directions
+    # of each pair have norm <= B, every product and partial dot sum has
+    # absolute sum <= B^2 <= 2^63-1. Larger pairs use Python integers.
+    machine_bound = isqrt(int(np.iinfo(np.int64).max))
 
     def action_data(action):
-        entries = tuple(map(int, action.list()))
-        size = len(labels)
-        key = tuple(entries[row * size:(row + 1) * size] for row in range(action.nrows()))
-        return key, sum(map(abs, entries))
+        key = tuple(tuple(row) for row in action.tolist())
+        return key, int(np.abs(action).sum())
 
     def normalized(action, inverse):
         direct_key, direct_norm = action_data(action)
         inverse_key, inverse_norm = action_data(inverse)
+        dtype = np.dtype(np.int64) if max(direct_norm, inverse_norm) <= machine_bound else np.dtype("object")
+        action = np.asarray(action, dtype=dtype)
+        inverse = np.asarray(inverse, dtype=dtype)
         # Choose a fixed representative of {g,g^-1} at equal complexity.
         if (inverse_norm, inverse_key) < (direct_norm, direct_key):
             return inverse_key, (inverse_norm, inverse, action)
@@ -155,12 +163,15 @@ def _integral_generator_set(
         # The comparison uses the original lifted lattice basis, and row
         # selection keeps the same output labels as the integral action.
         columns = _engine_matrix(generator.module_morphism()) * comparisons[domain]
-        action = columns.matrix_from_rows(row_positions[codomain]).transpose().change_ring(SageZZ)
+        engine_action = columns.matrix_from_rows(row_positions[codomain]).transpose().change_ring(SageZZ)
+        action = np.asarray(tuple(map(int, engine_action.list())), dtype="object").reshape(len(labels), len(labels))
         key, _norm = action_data(action)
         if key in seen:
             continue
         seen.add(key)
-        key, entry = normalized(action, action.inverse().change_ring(SageZZ))
+        engine_inverse = engine_action.inverse().change_ring(SageZZ)
+        inverse = np.asarray(tuple(map(int, engine_inverse.list())), dtype="object").reshape(len(labels), len(labels))
+        key, entry = normalized(action, inverse)
         if key in actions:
             continue
         actions[key] = entry
@@ -182,10 +193,10 @@ def _integral_generator_set(
                 a_norm, a, a_inverse = actions[current]
                 b_norm, b, b_inverse = actions[other]
                 candidates = (
-                    normalized(a * b, b_inverse * a_inverse),
-                    normalized(a_inverse * b, b_inverse * a),
-                    normalized(a * b_inverse, b * a_inverse),
-                    normalized(a_inverse * b_inverse, b * a),
+                    normalized(a @ b, b_inverse @ a_inverse),
+                    normalized(a_inverse @ b, b_inverse @ a),
+                    normalized(a @ b_inverse, b @ a_inverse),
+                    normalized(a_inverse @ b_inverse, b @ a),
                 )
                 # The same source pair products can certify redundancy
                 # even when no L1 norm decreases. If c = a^eps*b^eta
