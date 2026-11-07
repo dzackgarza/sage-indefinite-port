@@ -5529,32 +5529,39 @@ class _PositiveVectorEnumerator:
         result: list[tuple[int, ...]] = []
         if len(close_squares) != len(close_coordinates):
             raise ValueError("each closest-vector coordinate must have exactly one squared distance")
-        for index, close in enumerate(close_coordinates):
-            distance = close_squares[index]
-            if distance < 0 or distance > multiplier**2 * self.base_bound:
-                raise ArithmeticError("a closest-vector result lies outside its exact squared-distance bound")
-            if any(SageQQ(coordinate).denominator() != 1 for coordinate in close):
-                raise ArithmeticError("a closest-vector result has nonintegral lattice coordinates")
-            row = shift + vector(SageZZ, [int(coordinate) for coordinate in close]) * self.inclusion_rows
-            candidate_square = int(row * self.gram * row)
-            expected_square = multiplier**2 * self.base_bound - distance
-            # Since the distance was checked against the full radius above,
-            # expected_square is nonnegative. Equality therefore also rejects
-            # negative-norm candidates without a redundant later norm branch.
-            if candidate_square != expected_square:
-                raise ArithmeticError(
-                    "the reconstructed Lorentzian norm disagrees with its exact CVP squared distance"
-                )
-            # Lorentzian.g:377-385 verifies both the scalar-product shell
-            # and norm after reconstructing each closest-vector solution.
-            pairing = (row * self.timelike_covector)[0]
-            if pairing != multiplier * self.d or pairing <= 0 or pairing > self.scaled_max:
-                raise ArithmeticError("a close-vector shell returned a vector outside its prescribed pairing fibre")
-            # Lorentzian.g:382-388: the isotropic option keeps fNorm = 0 among
-            # the closest-vector solutions, which lie within the distance.
-            if candidate_square not in self.allowed_squares:
-                continue
-            result.append(tuple(int(entry) for entry in row))
+        # Lorentzian.g:375-385 reconstructs eBasSol + eSolA*Ubasis and
+        # checks its exact norm and pairing. Homogeneous coordinate rows
+        # (1, eSolA) apply that same affine map in native matrix blocks;
+        # candidate order and every individual certificate are retained.
+        affine_rows = matrix(SageZZ, [shift, *self.inclusion_rows.rows()])
+        block_size = _configuration_pairing_block_size(self.gram.nrows())
+        bound = multiplier**2 * self.base_bound
+        for start in range(0, len(close_coordinates), block_size):
+            coordinates = close_coordinates[start:start + block_size]
+            for offset, close in enumerate(coordinates):
+                distance = close_squares[start + offset]
+                if distance < 0 or distance > bound:
+                    raise ArithmeticError("a closest-vector result lies outside its exact squared-distance bound")
+                if any(SageQQ(coordinate).denominator() != 1 for coordinate in close):
+                    raise ArithmeticError("a closest-vector result has nonintegral lattice coordinates")
+            rows = matrix(SageZZ, [(1, *close) for close in coordinates]) * affine_rows
+            gram_rows = rows * self.gram
+            pairings = rows * self.timelike_covector
+            for offset, row in enumerate(rows.rows()):
+                candidate_square = int(row.dot_product(gram_rows.row(offset)))
+                expected_square = bound - close_squares[start + offset]
+                # The independent Gram computation certifies the returned
+                # CVP distance as well as nonnegativity of the norm.
+                if candidate_square != expected_square:
+                    raise ArithmeticError(
+                        "the reconstructed Lorentzian norm disagrees with its exact CVP squared distance"
+                    )
+                pairing = pairings[offset, 0]
+                if pairing != multiplier * self.d or pairing <= 0 or pairing > self.scaled_max:
+                    raise ArithmeticError("a close-vector shell returned a vector outside its prescribed pairing fibre")
+                if candidate_square not in self.allowed_squares:
+                    continue
+                result.append(tuple(int(entry) for entry in row))
         # Keep the exact CVP backend's enumeration order. The pinned
         # LATT_near/FindAtMostDistVectors path orders through its LLL-reduced
         # basis and recursive coordinate bounds, not by norm; the first row
