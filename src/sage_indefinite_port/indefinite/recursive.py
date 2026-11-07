@@ -89,9 +89,8 @@ def _integral_stabilizer_family(action: IntegralStructureAction) -> Iterable[Lat
     if g_set.cardinality() == 1:
         yield from letters
         return
-    representation = g_set.permutation_representation()
-    permutations = tuple(representation(letter) for letter in letters)
     points = tuple(g_set)
+    permutations = g_set.orbit_generator_permutations(points[0])
     positions = {point: position for position, point in enumerate(points)}
     rational = action.lattice_inclusion().codomain().module_over_extension()
     basis = tuple(rational.module_generators())
