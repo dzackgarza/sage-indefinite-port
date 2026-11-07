@@ -238,19 +238,20 @@ def _normal_cone_through_ridge(rays, ridge, span_basis):
 
 
 def _local_coordinates(rays, incidence):
-    """The facet's rows in a basis of its own span, with the parent's positive functional carried along.
+    """The facet's rows in an injective coordinate projection of its span.
 
     Returns ``(local_rays, local_dimension)``.
     """
     face_rows = matrix(ZZ, [list(rays[index]) for index in sorted(incidence)])
-    span_basis = _span_basis(face_rows.rows())
-    local_dimension = span_basis.nrows()
-    coordinates = span_basis * face_rows.transpose()
-    local_rays = [
-        tuple(int(coordinates[row, column]) for row in range(local_dimension))
-        for column in range(coordinates.ncols())
-    ]
-    return local_rays, local_dimension
+    # The row-echelon basis has an invertible submatrix in its pivot
+    # columns. Projection to those columns is therefore an isomorphism on
+    # the rational span: it preserves all faces, incidences and supplied
+    # ray permutations in the recursive adjacency decomposition
+    # (lorentzian_perfect.h:1453-1454). Its coordinates are entries of the
+    # original rays, so recursive charts introduce no coefficient growth.
+    pivots = face_rows.pivots()
+    coordinates = face_rows.matrix_from_columns(pivots)
+    return [tuple(int(entry) for entry in row) for row in coordinates.rows()], len(pivots)
 
 
 def cone_facets(rays) -> dict[frozenset[int], tuple[int, ...]]:
