@@ -56,3 +56,30 @@ def test_factored_integral_family_equals_every_source_action(gram):
             for mapping in (target, ~target)
             for point in integral_basis
         )
+
+
+def test_factored_family_uses_the_noncommuting_lattice_action():
+    """S3 permutes three distinct axis indices; central sign remains in the stabilizer."""
+    from sage_extensions.all import IntegralStructureAction, Lattices, Modules, QQ, ZZ
+    from sage_indefinite_port.indefinite.recursive import _integral_stabilizer_family
+
+    rational = Lattices(QQ)(3)
+    e, f, w = tuple(rational.module_generators())
+    space = Modules(QQ).restriction_of_scalars(ZZ.fraction_field_map())(rational)
+    selected = space.subobject_on((space(e), space(2 * f), space(3 * w)))
+    bound = space.subobject_on(tuple(space(point) for point in (e, f, w)))
+    group = rational.O().subgroup(tuple(
+        rational.O()(images) for images in ((f, w, e), (f, e, w), (-e, -f, -w))
+    ))
+    action = IntegralStructureAction(group, selected.inclusion()).with_stable_containing_bound(bound.inclusion())
+    original = tuple(action.stabilizer().group_generators())
+    realized = tuple(_integral_stabilizer_family(action))
+
+    assert action.right_cosets().cardinality() == 6
+    assert len(original) == len(realized) == 18
+    assert all(
+        source(point) == target(point) and (~source)(point) == (~target)(point)
+        for source, target in zip(original, realized, strict=True)
+        for point in (e, f, w)
+    )
+    assert any(all(generator(point) == -point for point in (e, f, w)) for generator in realized)
