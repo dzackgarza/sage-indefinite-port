@@ -141,16 +141,23 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: |
-            /github/home/.julia
+            /github/home/.julia/packages
+            /github/home/.julia/artifacts
+            /github/home/.julia/compiled
+            /github/home/.julia/registries
+            /github/home/.julia/scratchspaces
             /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
           key: ${{ steps.key.outputs.key }}
-      - if: steps.restore.outputs.cache-hit != 'true'
-        run: just ci-provision-julia
+      - run: just ci-provision-julia
       - if: steps.restore.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: |
-            /github/home/.julia
+            /github/home/.julia/packages
+            /github/home/.julia/artifacts
+            /github/home/.julia/compiled
+            /github/home/.julia/registries
+            /github/home/.julia/scratchspaces
             /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
           key: ${{ steps.key.outputs.key }}
   family:
@@ -186,10 +193,15 @@ jobs:
       - uses: actions/cache/restore@v4
         with:
           path: |
-            /github/home/.julia
+            /github/home/.julia/packages
+            /github/home/.julia/artifacts
+            /github/home/.julia/compiled
+            /github/home/.julia/registries
+            /github/home/.julia/scratchspaces
             /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
           key: ${{ needs.julia.outputs.key }}
           fail-on-cache-miss: true
+      - run: just ci-provision-julia
       - run: just ci-acceptance ${{ matrix.family }} ${{ matrix.shard }} ${{ matrix.shards }} '${{ matrix.selection }}'
       - if: always()
         uses: actions/upload-artifact@v4

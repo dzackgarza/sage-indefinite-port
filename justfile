@@ -102,16 +102,17 @@ ci-provision-julia:
     set -euo pipefail
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     env_dir="$("$sage_python" -c 'import pathlib, sage_julia_bridge; print(pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env")')"
-    julia --project="$env_dir" -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+    # The worker sees both its JSON project and the shared Oscar project.
+    # Instantiate each selected manifest before exercising the same imports.
+    JULIA_PKG_PRECOMPILE_AUTO=0 julia --project="$env_dir" -e 'using Pkg; bridge_project = Base.active_project(); Pkg.activate("v$(VERSION.major).$(VERSION.minor)"; shared=true); Pkg.instantiate(); Pkg.activate(dirname(bridge_project)); Pkg.instantiate(); using Oscar, JSON'
 
-# CI only: the cache key of the bridge's Julia environment (its Project; the
-# installed package ships no Manifest, so the julia job resolves one and the
-# cache carries it).
+# CI only: key Julia packages by the bridge project and shared image lock.
 ci-julia-key:
     #!/usr/bin/env bash
     set -euo pipefail
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
-    "$sage_python" -c 'import hashlib, pathlib, sage_julia_bridge; print("julia-depot-" + hashlib.sha256((pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env" / "Project.toml").read_bytes()).hexdigest()[:16])'
+    env_dir="$("$sage_python" -c 'import pathlib, sage_julia_bridge; print(pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env")')"
+    julia --startup-file=no --project="$env_dir" -e 'using Pkg, SHA; bridge_project = Base.active_project(); Pkg.activate("v$(VERSION.major).$(VERSION.minor)"; shared=true); shared_project = Base.active_project(); inputs = vcat(read(bridge_project), read(shared_project), read(joinpath(dirname(shared_project), "Manifest.toml"))); println("julia-depot-" * bytes2hex(sha256(inputs))[1:16])'
 
 # CI only: run one acceptance shard, or a required amended branch sample;
 # results land in .tmp/ci/results/<family>-<shard>.
