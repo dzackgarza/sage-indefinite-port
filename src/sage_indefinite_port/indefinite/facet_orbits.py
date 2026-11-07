@@ -187,7 +187,7 @@ def _seed_facet(rays, dimension: int) -> tuple[int, ...]:
     return normal
 
 
-def _normal_cone_through_ridge(rays, ridge, dimension: int):
+def _normal_cone_through_ridge(rays, ridge, span_basis):
     r"""The two facet normals whose incidence contains ``ridge``, by the 2-dimensional normal cone.
 
     The covectors annihilating the ridge span a 2-dimensional space `W`; the normal cone
@@ -195,7 +195,7 @@ def _normal_cone_through_ridge(rays, ridge, dimension: int):
     the ridge. Every extreme ray of a pointed 2-cone is orthogonal to one of its boundary constraints, so the
     candidate set is complete and each candidate is tested exactly.
     """
-    span_basis = _span_basis(rays)
+    dimension = span_basis.ncols()
     if ridge:
         gram = span_basis * matrix(ZZ, [list(rays[index]) for index in sorted(ridge)]).transpose()
         # The pencil is a rational subspace; an integral kernel would
@@ -265,8 +265,12 @@ def cone_facets(rays) -> dict[frozenset[int], tuple[int, ...]]:
     if dimension == 1:
         raise ArithmeticError("a one-dimensional cone has no facet in this sense")
 
+    # DualDescriptionRecordFullDim retains one cone representation while
+    # walking its facets (lorentzian_perfect.h:1453-1454). The rational
+    # span depends only on these rays, so all ridge pencils share it.
+    span_basis = _span_basis(rays)
     if dimension == 2:
-        normals = _normal_cone_through_ridge(rays, frozenset(), 2)
+        normals = _normal_cone_through_ridge(rays, frozenset(), span_basis)
         facets = {}
         for candidate in normals:
             normal, incidence = _orient(rays, candidate)
@@ -285,7 +289,7 @@ def cone_facets(rays) -> dict[frozenset[int], tuple[int, ...]]:
         current = pending.pop()
         normal = facets[current]
         for ridge in _ridges(rays, current):
-            for candidate in _normal_cone_through_ridge(rays, ridge, dimension):
+            for candidate in _normal_cone_through_ridge(rays, ridge, span_basis):
                 if _same_ray(candidate, normal):
                     continue
                 oriented, incidence = _orient(rays, candidate)
@@ -396,10 +400,11 @@ def orbit_representatives(rays, permutations):
     dimension = len(rays[0])
     if dimension < 2:
         raise ArithmeticError("a cone of dimension below two has no facets in this sense")
+    span_basis = _span_basis(rays)
     if dimension == 2:
         representatives = []
         covered: set[frozenset[int]] = set()
-        for candidate in _normal_cone_through_ridge(rays, frozenset(), 2):
+        for candidate in _normal_cone_through_ridge(rays, frozenset(), span_basis):
             normal, incidence = _orient(rays, candidate)
             if not is_facet_certificate(normal, incidence, rays):
                 raise ArithmeticError("a two-dimensional facet failed certification")
@@ -430,7 +435,7 @@ def orbit_representatives(rays, permutations):
             continue
         for ridge_local, _ridge_normal in orbit_representatives(local_rays, local_permutations):
             ridge = frozenset(positions[offset] for offset in sorted(ridge_local))
-            for candidate in _normal_cone_through_ridge(rays, ridge, dimension):
+            for candidate in _normal_cone_through_ridge(rays, ridge, span_basis):
                 if _same_ray(candidate, normal):
                     continue
                 oriented, adjacent = _orient(rays, candidate)
