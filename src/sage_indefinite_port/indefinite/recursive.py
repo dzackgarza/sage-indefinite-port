@@ -135,18 +135,23 @@ def _integral_generator_set(
     machine_bound = isqrt(int(np.iinfo(np.int64).max))
 
     def action_data(action):
-        key = tuple(tuple(row) for row in action.tolist())
+        key = tuple(map(tuple, action.tolist()))
         return key, int(np.abs(action).sum())
 
     def normalized(action, inverse):
-        direct_key, direct_norm = action_data(action)
-        inverse_key, inverse_norm = action_data(inverse)
+        direct_norm = int(np.abs(action).sum())
+        inverse_norm = int(np.abs(inverse).sum())
         dtype = np.dtype(np.int64) if max(direct_norm, inverse_norm) <= machine_bound else np.dtype("object")
         action = np.asarray(action, dtype=dtype)
         inverse = np.asarray(inverse, dtype=dtype)
         # Choose a fixed representative of {g,g^-1} at equal complexity.
-        if (inverse_norm, inverse_key) < (direct_norm, direct_key):
-            return inverse_key, (inverse_norm, inverse, action)
+        if inverse_norm < direct_norm:
+            return tuple(map(tuple, inverse.tolist())), (inverse_norm, inverse, action)
+        direct_key = tuple(map(tuple, action.tolist()))
+        if inverse_norm == direct_norm:
+            inverse_key = tuple(map(tuple, inverse.tolist()))
+            if inverse_key < direct_key:
+                return inverse_key, (inverse_norm, inverse, action)
         return direct_key, (direct_norm, action, inverse)
 
     for generator in generators:
