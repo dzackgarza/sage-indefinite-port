@@ -250,7 +250,14 @@ ci-acceptance family shard shards selection="":
             tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_isometry_rejects_different_divisibility
             tests/acceptance/test_vector_stabilizers.sage::test_divisibility_two_isotropic_pointed_isometry_has_exact_witness
         )
-        shard_args=(--shard-id={{shard}} --num-shards={{shards}})
+        # Preserve the measured order: pytest-shard hashes node IDs and cannot
+        # enforce the positional memory allocation above.
+        assigned_tests=()
+        for ((index={{shard}}; index<${#tests[@]}; index+={{shards}})); do
+            assigned_tests+=("${tests[index]}")
+        done
+        tests=("${assigned_tests[@]}")
+        shard_args=()
         ;;
       vector_orbits)
         tests=(
