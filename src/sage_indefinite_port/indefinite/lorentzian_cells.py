@@ -848,7 +848,13 @@ class _ConfigurationPairings:
         for start in range(0, len(self), block_size):
             stop = min(start + block_size, len(self))
             pairing_block = self.covectors.matrix_from_rows(range(start, stop)) * transposed_rows
-            yield start, np.array(pairing_block.rows(), dtype=object)
+            # Export the flat exact integer entries as objects, then restore
+            # the block shape without casting the coefficients.
+            values = np.fromiter(
+                pairing_block.list(), dtype=object,
+                count=pairing_block.nrows() * pairing_block.ncols(),
+            )
+            yield start, values.reshape(pairing_block.nrows(), pairing_block.ncols())
 
 
 def _configuration_pairing_block_size(configuration_size: int) -> int:
@@ -972,7 +978,7 @@ def _refined_signatures(pairings: _ConfigurationPairings, colours: tuple[int, ..
     if modulus <= 0 or len(colours) != len(pairings):
         raise ValueError("refinement requires one colour per configuration vector and a positive modulus")
     # Keep both pairings and colour encodings in arbitrary-precision arithmetic.
-    colour_array = np.array(colours, dtype=object)
+    colour_array = np.fromiter(colours, dtype=object, count=len(colours))
     signatures = []
     for start, block in pairings.blocks():
         codes = block.astype(object) * modulus + colour_array[None, :]
