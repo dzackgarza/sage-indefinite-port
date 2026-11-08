@@ -25,9 +25,11 @@ Every decision uses a documented exact operator:
   comparison of the constraint directions; no linear program, no tolerance.
 * **certification** -- ``facet_certificates``: every incidence is checked with `is_facet_certificate`.
 
-Completeness is the closure argument, not a sample: the set produced is closed under ridge adjacency, and the
-facet graph of a full-dimensional pointed cone is connected, so a closed non-empty set containing a seed is every
-facet. Orbit grouping is then exact set-stabiliser bookkeeping.
+Completeness uses ridge adjacency and the pinned Balinski termination certificate. After one orbit has been
+expanded, the remaining known facets cannot separate a processed region from an undiscovered region when their
+full count is below the dual graph's connectivity, or when they all contain a common ray. Every discovered orbit
+is returned, including those whose further expansion the certificate makes unnecessary. Otherwise the walk
+expands an orbit of minimum facet incidence.
 """
 
 from __future__ import annotations
@@ -35,6 +37,7 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import dataclass
 from fractions import Fraction
+from heapq import heappop, heappush
 from math import gcd
 
 from sage.all import QQ, ZZ, Permutation, PermutationGroup, matrix, vector
@@ -408,8 +411,8 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
     the worklist holds one representative per orbit, and a
     representative contributes only the orbits of its own ridges, computed by the same routine one dimension down
     on the facet's cone modulo the facet's own stabilizer (Schreier). A new facet enters only if its orbit is
-    disjoint from every orbit already found, so no orbit is duplicated, and termination with an empty worklist is
-    the closure certificate, so none is missed.
+    disjoint from every orbit already found, so no orbit is duplicated. The source Balinski certificate or an
+    empty worklist establishes completeness. Every discovered representative is yielded before further expansion.
     """
     rays = [tuple(int(entry) for entry in ray) for ray in rays]
     dimension = len(rays[0])
@@ -495,16 +498,36 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
         raise ArithmeticError("the seed facet failed certification")
     seed_record = register(seed_normal, seed)
     assert seed_record is not None
-    pending = [0]
+    # SetFunctionality.g:304-323 and POLY_RecursiveDualDesc.h:837-855
+    # expand a pending facet of minimum incidence, rather than the last one
+    # discovered. Equal incidences retain their discovery order.
+    pending = [(len(seed), 0)]
+    point_orbits = tuple(frozenset(int(point) - 1 for point in orbit) for orbit in group.orbits())
+    processed_any = False
     yield seed_record
     while pending:
-        index = pending.pop()
+        if processed_any:
+            # DualDescriptionAndADM.g:133-145; Balinski_basic.h:55-60.
+            # Count full disjoint facet orbits. A common ray must belong
+            # to every translate of every pending incidence, hence its
+            # entire point orbit must lie in their intersection.
+            if sum(records[index].orbit_size for _size, index in pending) <= dimension - 2:
+                return
+            common = set(records[pending[0][1]].incidence)
+            for _size, index in pending[1:]:
+                common.intersection_update(records[index].incidence)
+                if not common:
+                    break
+            if common and any(orbit <= common for orbit in point_orbits):
+                return
+        _size, index = heappop(pending)
         record = records[index]
         incidence, normal = record.incidence, record.normal
         positions = sorted(incidence)
         local_permutations = _stabilizer_on_facet(group, incidence, record.orbit_size)
         local_rays, local_dimension = _local_coordinates(rays, incidence)
         if local_dimension < 2:
+            processed_any = True
             continue
         for local_record in _facet_orbit_records(
             local_rays, local_permutations, level=level + 1, retain_words=retain_words
@@ -525,8 +548,9 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
                     )
                 adjacent_record = register(oriented, adjacent)
                 if adjacent_record is not None:
-                    pending.append(len(records) - 1)
+                    heappush(pending, (len(adjacent), len(records) - 1))
                     yield adjacent_record
+        processed_any = True
 
 
 def cell_facet_orbits(cell, stabilizer) -> tuple[FacetOrbitRecord, ...]:

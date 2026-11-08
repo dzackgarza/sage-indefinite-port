@@ -416,3 +416,45 @@ def test_signed_cube_facet_representatives_have_the_full_orbit_size(dimension, s
                 if any(all(rows[index][axis] == sign for index in record.incidence) for axis in range(dimension)):
                     signs.add(sign)
         assert signs == {-1, 1}
+
+
+@pytest.mark.parametrize("retain_words", (False, True))
+@pytest.mark.parametrize("moving_axes", (7, 8))
+def test_second_hypersimplex_has_the_complete_coordinate_facet_orbits(retain_words, moving_axes):
+    r"""Delta(8,2) has coordinate-zero and coordinate-one facets.
+
+    Coordinate permutations are transitive on the moving axes. A fixed axis
+    has separate facet orbits. Together these families contain every facet.
+    """
+    from sage_indefinite_port.indefinite.facet_orbits import _facet_orbit_records
+
+    rows = tuple(tuple(int(index in pair) for index in range(8)) for pair in itertools.combinations(range(8), 2))
+    positions = {row: index for index, row in enumerate(rows)}
+    permutations = (
+        tuple(positions[row[1:moving_axes] + row[:1] + row[moving_axes:]] for row in rows),
+        tuple(positions[(row[1], row[0], *row[2:])] for row in rows),
+    )
+    coordinate_facets = {
+        frozenset(index for index, row in enumerate(rows) if row[axis] == value): (axis, value)
+        for axis in range(8)
+        for value in (0, 1)
+    }
+    expected = set(coordinate_facets)
+    records = tuple(_facet_orbit_records(rows, permutations, retain_words=retain_words))
+    expected_orbits = {(value, -1 if axis < moving_axes else axis) for axis in range(8) for value in (0, 1)}
+    found_orbits = {(coordinate_facets[record.incidence][1], -1 if coordinate_facets[record.incidence][0] < moving_axes else coordinate_facets[record.incidence][0]) for record in records}
+    assert found_orbits == expected_orbits
+    assert len(records) == len(expected_orbits)
+    assert {len(record.incidence) for record in records} == {7, 21}
+    assert all(record.orbit_size == (moving_axes if coordinate_facets[record.incidence][0] < moving_axes else 1) for record in records)
+    assert all(record.incidence in expected and is_facet_certificate(record.normal, record.incidence, rows) for record in records)
+    if retain_words:
+        members = set()
+        for record in records:
+            for member, word in record.words:
+                transported = record.incidence
+                for letter in word:
+                    transported = frozenset(permutations[letter][index] for index in transported)
+                assert transported == member
+                members.add(member)
+        assert members == expected
