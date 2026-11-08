@@ -25,3 +25,6 @@ This measures the membership operation, not an entire lattice consumer. The port
 
 
 At port 583b36d625bcbadcf1ef397b4140230ce3fa300e/provider 16c798dbea898555a1373686bec1bb893edb973a, the unchanged full spanning-cell transporter assertion passes with JUnit case time 33.137 seconds and total time 38.63 seconds. The supplied integral unimodular witness and complete configuration equality are checked. This is additional complete small-consumer evidence for the coefficient-family lift. Its timing does not isolate this change from other wall-time variation. The full A7 assertion remains required.
+
+
+At committed provider 16c798db, `tests/groups/test_orbit_generator_permutations.sage` passes both its single-orbit and union assertions under the unchanged owner limits (2.34 seconds total). It verifies the actual selected generator permutations on every orbit point, transversal actions and augmentation words. The earlier cab1d797 import-limit exit remains a historical unexecuted attempt; these latest-provider assertions are executed mathematical evidence.
