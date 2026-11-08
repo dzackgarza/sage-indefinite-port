@@ -152,12 +152,23 @@ def is_facet_certificate(normal, incidence, ray_rows) -> bool:
     ``n - 1`` (the upper bound is free, so only the certified lower bound enters).
     """
     normal = tuple(int(entry) for entry in normal)
-    dimension = len(normal)
     # Retain the ray sequence once. Pairings below convert every entry to
     # an exact integer, and the incidence rank check converts its own rows;
     # rebuilding every integer row first duplicates the full cone scan.
     ray_rows = tuple(ray_rows)
     values = [sum(a * int(b) for a, b in zip(normal, row, strict=True)) for row in ray_rows]
+    return _is_facet_certificate_from_pairings(normal, incidence, ray_rows, values)
+
+
+def _is_facet_certificate_from_pairings(normal, incidence, ray_rows, values) -> bool:
+    r"""Certify using the exact pairings computed for these rows and this normal.
+
+    Both callers obtain the values by evaluating the normal on every ray.
+    The walk retains the result of ``orient_facet_normal``; the independent
+    public certificate computes it directly. Rank, content and the complete
+    zero set are checked here in both cases.
+    """
+    dimension = len(normal)
     zeros = frozenset(index for index, value in enumerate(values) if value == 0)
     if zeros != frozenset(int(index) for index in incidence):
         return False

@@ -44,6 +44,7 @@ from sage.all import QQ, ZZ, Permutation, PermutationGroup, matrix, vector
 from sage.libs.gap.libgap import libgap
 
 from sage_indefinite_port.indefinite.facet_certificates import (
+    _is_facet_certificate_from_pairings,
     is_facet_certificate,
     orient_facet_normal,
     pointedness_functional,
@@ -120,14 +121,10 @@ def _same_ray(left, right) -> bool:
     return all(left[index] * denominator == numerator * right[index] for index in range(len(left)))
 
 
-def _incidence(rays, normal) -> frozenset[int]:
-    return frozenset(index for index, ray in enumerate(rays) if _pair(normal, ray) == 0)
-
-
 def _orient(rays, normal):
-    """The sign of ``normal`` that is non-negative on every ray, plus its incidence."""
+    """The non-negative normal, its incidence and all its exact ray pairings."""
     oriented, values = orient_facet_normal(normal, rays)
-    return oriented, frozenset(index for index, value in enumerate(values) if value == 0)
+    return oriented, frozenset(index for index, value in enumerate(values) if value == 0), values
 
 
 def _span_basis(rays):
@@ -143,7 +140,7 @@ def _span_basis(rays):
     return matrix(ZZ, [_primitive(row) for row in rational_basis.rows()])
 
 
-def _seed_facet(rays, dimension: int) -> tuple[int, ...]:
+def _seed_facet(rays, dimension: int) -> tuple[tuple[int, ...], frozenset[int], list[int]]:
     r"""A facet normal of ``cone(rays)``, from a vertex of the dual slice.
 
     Take ``h = sum(rays)``, which lies in the **interior** of the cone (the sum of all generators of a pointed
@@ -187,8 +184,7 @@ def _seed_facet(rays, dimension: int) -> tuple[int, ...]:
         equality[0], equality[index + 1] = -value, 1
         rows.append(equality)
         equalities.add(len(rows) - 1)
-    normal, _incidence = _orient(rays, _primitive(coordinates))
-    return normal
+    return _orient(rays, _primitive(coordinates))
 
 
 def _normal_cone_through_ridge(rays, ridge, span_basis):
@@ -278,15 +274,14 @@ def cone_facets(rays) -> dict[frozenset[int], tuple[int, ...]]:
         normals = _normal_cone_through_ridge(rays, frozenset(), span_basis)
         facets = {}
         for candidate in normals:
-            normal, incidence = _orient(rays, candidate)
-            if not is_facet_certificate(normal, incidence, rays):
+            normal, incidence, values = _orient(rays, candidate)
+            if not _is_facet_certificate_from_pairings(normal, incidence, rays, values):
                 raise ArithmeticError("a two-dimensional facet failed certification")
             facets[incidence] = normal
         return facets
 
-    seed_normal = _seed_facet(rays, dimension)
-    seed_incidence = _incidence(rays, seed_normal)
-    if not is_facet_certificate(seed_normal, seed_incidence, rays):
+    seed_normal, seed_incidence, values = _seed_facet(rays, dimension)
+    if not _is_facet_certificate_from_pairings(seed_normal, seed_incidence, rays, values):
         raise ArithmeticError("the seed facet failed certification")
     facets: dict[frozenset[int], tuple[int, ...]] = {seed_incidence: seed_normal}
     pending = [seed_incidence]
@@ -297,10 +292,10 @@ def cone_facets(rays) -> dict[frozenset[int], tuple[int, ...]]:
             for candidate in _normal_cone_through_ridge(rays, ridge, span_basis):
                 if _same_ray(candidate, normal):
                     continue
-                oriented, incidence = _orient(rays, candidate)
+                oriented, incidence, values = _orient(rays, candidate)
                 if incidence in facets:
                     continue
-                if not is_facet_certificate(oriented, incidence, rays):
+                if not _is_facet_certificate_from_pairings(oriented, incidence, rays, values):
                     raise ArithmeticError(
                         "a facet adjacent across a ridge failed certification (incidence size "
                         f"{len(incidence)}); excluding it is not proved, so the walk refuses to continue"
@@ -452,8 +447,8 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
 
     if dimension == 2:
         for candidate in _normal_cone_through_ridge(rays, frozenset(), span_basis):
-            normal, incidence = _orient(rays, candidate)
-            if not is_facet_certificate(normal, incidence, rays):
+            normal, incidence, values = _orient(rays, candidate)
+            if not _is_facet_certificate_from_pairings(normal, incidence, rays, values):
                 raise ArithmeticError("a two-dimensional facet failed certification")
             record = register(normal, incidence)
             if record is not None:
@@ -485,16 +480,15 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
         if not hyperplanes:
             raise ArithmeticError("the direct facet computation returned no facets")
         for row in hyperplanes:
-            normal, incidence = _orient(rays, _primitive(row))
-            if not is_facet_certificate(normal, incidence, rays):
+            normal, incidence, values = _orient(rays, _primitive(row))
+            if not _is_facet_certificate_from_pairings(normal, incidence, rays, values):
                 raise ArithmeticError("a direct facet failed certification")
             record = register(normal, incidence)
             if record is not None:
                 yield record
         return
-    seed_normal = _seed_facet(rays, dimension)
-    seed = _incidence(rays, seed_normal)
-    if not is_facet_certificate(seed_normal, seed, rays):
+    seed_normal, seed, values = _seed_facet(rays, dimension)
+    if not _is_facet_certificate_from_pairings(seed_normal, seed, rays, values):
         raise ArithmeticError("the seed facet failed certification")
     seed_record = register(seed_normal, seed)
     assert seed_record is not None
@@ -536,10 +530,10 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
             for candidate in _normal_cone_through_ridge(rays, ridge, span_basis):
                 if _same_ray(candidate, normal):
                     continue
-                oriented, adjacent = _orient(rays, candidate)
+                oriented, adjacent, values = _orient(rays, candidate)
                 if adjacent in covered:
                     continue
-                if not is_facet_certificate(oriented, adjacent, rays):
+                if not _is_facet_certificate_from_pairings(oriented, adjacent, rays, values):
                     # Silence here would be a completeness claim built on a dropped facet: the worklist could
                     # empty with a genuine facet left unfound and the closure certificate would be false.
                     raise ArithmeticError(
