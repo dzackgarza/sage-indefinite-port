@@ -2205,15 +2205,21 @@ class LorentzianPerfectLocalBackend:
         stabilizer_elements: list[LatticeIsometryMethods] = []
         first_witness: LatticeIsometryMethods | None = None
         first_only = not all_images
+        # Lorentzian.g:660-696 supplies the target automorphism group to
+        # integral transporter search. A certified target subgroup suffices
+        # here: composing a witness with a target automorphism preserves its
+        # existence. Its pointwise stabilizer fixes all assigned images, so
+        # one next-image representative per orbit is sufficient.
+        reduce_basis_images = generators_only or (first_only and target_distinct_rows)
+        positions = source_positions if generators_only else target_positions
         if use_position_certificate:
             # Reuse the row-position maps built with the invariant data. This
             # avoids a separate set for distinctness followed by another full
             # row-key dictionary here. Stabilizers use source positions;
             # ordinary large-cell transporters use target positions.
-            positions = source_positions if generators_only else target_positions
             if len(positions) != n:
                 raise ArithmeticError("the exact row-position certificate requires distinct configuration vectors")
-        if generators_only:
+        if reduce_basis_images:
             symmetric = SymmetricGroup(n)
             subgroup = symmetric.subgroup([])
             group_permutations = []
@@ -2230,18 +2236,18 @@ class LorentzianPerfectLocalBackend:
             candidate_actions = [
                 action
                 for basis_index in range(rank)
-                if (action := _integral_basis_reflection(source_gram, basis_index)) is not None
+                if (action := _integral_basis_reflection(target_gram, basis_index)) is not None
             ]
-            candidate_actions.extend(_gram_component_sign_flips(source_gram))
+            candidate_actions.extend(_gram_component_sign_flips(target_gram))
             # Basis transpositions are another cheap family of exact integral
             # isometries. The row/column equality test avoids constructing a
             # matrix unless the transposition preserves every Gram entry.
             for first in range(rank):
                 for second in range(first + 1, rank):
-                    if source_gram[first, first] != source_gram[second, second]:
+                    if target_gram[first, first] != target_gram[second, second]:
                         continue
                     if any(
-                        source_gram[first, other] != source_gram[second, other]
+                        target_gram[first, other] != target_gram[second, other]
                         for other in range(rank)
                         if other not in (first, second)
                     ):
@@ -2249,7 +2255,7 @@ class LorentzianPerfectLocalBackend:
                     action = identity_matrix(SageZZ, rank)
                     action[first, first] = action[second, second] = 0
                     action[first, second] = action[second, first] = 1
-                    if action * source_gram * action.transpose() != source_gram:
+                    if action * target_gram * action.transpose() != target_gram:
                         raise ArithmeticError("a Gram-row transposition failed its exact isometry certificate")
                     candidate_actions.append(action)
             for action in candidate_actions:
@@ -2257,7 +2263,7 @@ class LorentzianPerfectLocalBackend:
                 preserves_configuration = True
                 for start in range(0, n, _configuration_pairing_block_size(n)):
                     stop = min(start + _configuration_pairing_block_size(n), n)
-                    transformed_block = source_rows.matrix_from_rows(range(start, stop)) * action
+                    transformed_block = target_rows.matrix_from_rows(range(start, stop)) * action
                     for row in transformed_block.rows():
                         position = positions.get(tuple(int(entry) for entry in row))
                         if position is None:
@@ -2271,19 +2277,20 @@ class LorentzianPerfectLocalBackend:
                 permutation = symmetric(list(permutation_images))
                 if permutation in group_permutations:
                     continue
-                witness = source.lattice.Isom(source.lattice)(
-                    {
-                        label: source.lattice.linear_combination(
-                            {
-                                target_label: source.lattice.base_ring()(int(entry))
-                                for target_label, entry in zip(source_labels, row, strict=True)
-                                if entry
-                            }
-                        )
-                        for label, row in zip(source_labels, action.rows(), strict=True)
-                    }
-                )
-                stabilizer_elements.append(witness)
+                if generators_only:
+                    witness = target.lattice.Isom(target.lattice)(
+                        {
+                            label: target.lattice.linear_combination(
+                                {
+                                    target_label: target.lattice.base_ring()(int(entry))
+                                    for target_label, entry in zip(target_labels, row, strict=True)
+                                    if entry
+                                }
+                            )
+                            for label, row in zip(target_labels, action.rows(), strict=True)
+                        }
+                    )
+                    stabilizer_elements.append(witness)
                 group_permutations.append(permutation)
             # Construct the initial generated subgroup once, after all exact
             # seed candidates have been certified. Rebuilding a degree-n
@@ -2493,7 +2500,7 @@ class LorentzianPerfectLocalBackend:
             next_source_columns = None
             source_signature_counts = None
             for j in candidates_for_choice:
-                if generators_only:
+                if reduce_basis_images:
                     # A witness found in an earlier sibling can enlarge H.
                     # The current sibling list was fixed before that
                     # discovery, so recompute the H_a-orbit partition.
