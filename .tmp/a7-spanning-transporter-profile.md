@@ -38,3 +38,13 @@ A ten-second sample during that original computation places the sampled main thr
 These interval measurements do not give whole-computation proportions. The selected-generator transition-table realization published in provider 9f578022 addresses reuse after a completed sweep; the sweep and each distinct generator's quotient automorphism still require their exact computations. Preserve the full original assertion before claiming a gain on A7.
 
 For live sampling, the [py-spy documentation](https://github.com/benfred/py-spy#how-can-i-avoid-pausing-the-python-program) states that `--nonblocking` permits read races and incomplete frames. Both nonblocking and default dumps can fail to locate this running interpreter; a standard ten-second recording with py-spy 0.4.3 produced the interval above without sampling errors. A failed dump supplies no stack evidence and does not show that the mathematical process ended.
+
+
+Port 1078c61 retains the actual indexed family on each perfect cell. Both source and target roles use that family; the provider's identity-based configuration realization can then recognize repeated comparisons. The unchanged spanning-cell assertion passes with call time 39.65 seconds. A separate probe repeats the full comparison of the same source and target, checking the explicit form and vector-set certificate on every returned witness.
+
+| Port / provider | First comparison, seconds | Repeated comparison, seconds |
+| --- | ---: | ---: |
+| 57faa73 / 9f578022 | 35.530857 | 32.717218 |
+| 1078c61 / 9f578022 | 42.436372 | 25.293352 |
+
+These sequential measurements run beside the active original cases. They establish the displayed exact comparisons and do not isolate all wall-time variation. The configuration owner's realization cache uses weak values; retaining the input family does not by itself keep every derived realization alive. Complete A7 evidence remains required.
