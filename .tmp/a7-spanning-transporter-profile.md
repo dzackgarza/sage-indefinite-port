@@ -23,6 +23,8 @@ Provider eb2ab6dd3b27ebed220ad391b87c347898bed516 delegates the finite lattice p
 
 At provider 6b0a47415ae76eeb561d4b45e300c111e3b2c555 the same assertion passes with call time 28.93 seconds. The unchanged original A7 computation at port 1716980/provider 6b0a4741 remains separate evidence. Its live stack reaches both the facet walk's point-permutation construction and the neighbouring-cell transporter.
 
+At port 57faa7359724ebd7f1a19304ad8a26d3912ab969/provider 9f578022486b6e6771ee7df320fe467b5bed9549 the same assertion passes with call time 36.50 seconds. This measurement runs beside the active original cases. It establishes the exact transporter assertion under the transition-table implementation; it supplies no measured whole-transporter gain over 6b0a4741. The additional owner index-two commensurability test did not reach its assertions because its session import exceeded the existing ceiling. It supplies no mathematical result.
+
 A ten-second sample during that original computation places the sampled main thread in the neighbouring-cell transporter. Inclusive times overlap:
 
 | Operation during the sampled interval | Seconds |
