@@ -19,6 +19,7 @@ Definite lattices are the preamble's; signature (1, n) is the Lorentzian leaf (#
 """
 
 import itertools
+from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass
 from math import gcd, isqrt
@@ -194,6 +195,14 @@ def _integral_generator_set(
     identity = tuple(int(row == column) for row in range(len(labels)) for column in range(len(labels)))
     seen = {identity}
     actions = {}
+    norm_counts = Counter()
+
+    def retire(key):
+        norm = actions.pop(key)[0]
+        norm_counts[norm] -= 1
+        if norm_counts[norm] == 0:
+            del norm_counts[norm]
+
     # MatrixGroupSimplification.h:1495-1605 selects bounded integer
     # arithmetic. Entrywise L1 is submultiplicative. If both directions
     # of each pair have norm <= B, every product and partial dot sum has
@@ -235,6 +244,7 @@ def _integral_generator_set(
         if key in actions:
             continue
         actions[key] = entry
+        norm_counts[entry[0]] += 1
         pending = [key]
         # A newly inserted action must meet every retained action. An
         # unchanged pair needs no second visit. Replacements strictly lower
@@ -259,10 +269,20 @@ def _integral_generator_set(
                     (b, b, b_inverse, b_inverse, a_inverse, a, a_inverse, a)
                 )
                 norms = np.add.reduce(np.abs(products), axis=(1, 2))
+                # Equal integral actions have equal L1 norms. A product
+                # can change this source step only by shortening the pair
+                # or matching a retained action, so other full matrix keys
+                # need no materialization.
                 candidates = tuple(
                     normalized(products[index], products[index + 4], int(norms[index]), int(norms[index + 4]))
                     for index in range(4)
+                    if (
+                        min(int(norms[index]), int(norms[index + 4])) < max(a_norm, b_norm)
+                        or min(int(norms[index]), int(norms[index + 4])) in norm_counts
+                    )
                 )
+                if not candidates:
+                    continue
                 # The same source pair products can certify redundancy
                 # even when no L1 norm decreases. If c = a^eps*b^eta
                 # (up to inversion) is already retained independently of
@@ -270,15 +290,16 @@ def _integral_generator_set(
                 # Delete one using equality of the full integral actions;
                 # equality only in a finite quotient would lose kernels.
                 if any(key in actions and key not in (current, other) for key, _entry in candidates):
-                    del actions[current if a_norm >= b_norm else other]
+                    retire(current if a_norm >= b_norm else other)
                     continue
                 candidate_key, candidate = min(candidates, key=lambda item: (item[1][0], item[0]))
                 if candidate[0] >= max(a_norm, b_norm):
                     continue
                 replaced = current if a_norm >= b_norm else other
-                del actions[replaced]
+                retire(replaced)
                 if candidate_key != identity and candidate_key not in actions:
                     actions[candidate_key] = candidate
+                    norm_counts[candidate[0]] += 1
                     pending.append(candidate_key)
 
     result = []
