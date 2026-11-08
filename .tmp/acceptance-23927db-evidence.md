@@ -13,7 +13,8 @@
 | perfect_domains | passed | 92 |
 | orthogonal_group | passed | 8 |
 | reflective | passed | 5 |
-| vector_orbits | passed | 4 |
+| vector_orbits | passed | 30 |
+| vector_stabilizers | passed | 4 |
 
 ## Failed assertions
 
@@ -365,3 +366,43 @@
 | I_2_1 | passed | 3002.232 |
 
 The new orthogonal-group reports include LORENTZ_OrthogonalGroup0 and Mertens. A7 and the rank-one-labelled published-representative and I_2_10 plane-class shards supply logs without JUnit; their final assertions remain unproved. All reports above retain the port/provider pair in the heading.
+
+
+## Additional vector assertions
+
+The following archives retain the exact port/provider commits above. Every inspected JUnit case has no failure, error or skip, and its case ID occurs in the matching shard log. These are push-selected cases; the complete frozen file remains required at the final pair. The successful vector-stabilizer shards establish collection and their listed assertions, while the other shards remain open.
+
+| Artifact | ID | Case | Outcome | JUnit seconds |
+| --- | ---: | --- | --- | ---: |
+| `acceptance-vector_orbits-4` | 13603890524 | `test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[2]` | passed | 991.473 |
+| `acceptance-vector_orbits-5` | 13603485801 | `test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[4]` | passed | 562.383 |
+| `acceptance-vector_orbits-6` | 13603975213 | `test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[6]` | passed | 618.115 |
+| `acceptance-vector_orbits-7` | 13603293303 | `test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[8]` | passed | 842.340 |
+| `acceptance-vector_orbits-8` | 13604031672 | `test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[10]` | passed | 774.395 |
+| `acceptance-vector_orbits-9` | 13603598221 | `test_published_representatives_are_one_per_orbit[2]` | passed | 1125.670 |
+| `acceptance-vector_orbits-10` | 13604215936 | `test_published_representatives_are_one_per_orbit[4]` | passed | 837.065 |
+| `acceptance-vector_orbits-11` | 13603837516 | `test_published_representatives_are_one_per_orbit[6]` | passed | 377.424 |
+| `acceptance-vector_orbits-12` | 13604578472 | `test_published_representatives_are_one_per_orbit[8]` | passed | 905.537 |
+| `acceptance-vector_orbits-13` | 13604518555 | `test_published_representatives_are_one_per_orbit[10]` | passed | 972.211 |
+| `acceptance-vector_orbits-14` | 13604149686 | `test_published_representatives_are_one_per_orbit[12]` | passed | 694.801 |
+| `acceptance-vector_orbits-15` | 13604768083 | `test_published_representatives_are_one_per_orbit[14]` | passed | 987.725 |
+| `acceptance-vector_orbits-16` | 13605596123 | `test_published_representatives_are_one_per_orbit[16]` | passed | 864.865 |
+| `acceptance-vector_orbits-17` | 13605980532 | `test_published_representatives_are_one_per_orbit[18]` | passed | 763.108 |
+| `acceptance-vector_orbits-18` | 13605039569 | `test_published_representatives_are_one_per_orbit[20]` | passed | 809.294 |
+| `acceptance-vector_orbits-19` | 13605391608 | `test_published_representatives_are_one_per_orbit[22]` | passed | 423.112 |
+| `acceptance-vector_orbits-20` | 13605692454 | `test_published_representatives_are_one_per_orbit[24]` | passed | 490.716 |
+| `acceptance-vector_orbits-21` | 13606261334 | `test_published_representatives_are_one_per_orbit[26]` | passed | 711.443 |
+| `acceptance-vector_orbits-22` | 13606034850 | `test_published_representatives_are_one_per_orbit[28]` | passed | 1576.437 |
+| `acceptance-vector_orbits-23` | 13606590529 | `test_published_representatives_are_one_per_orbit[30]` | passed | 1103.091 |
+| `acceptance-vector_orbits-24` | 13605519902 | `test_i_2_10_is_transitive_on_norm_minus_one_vectors` | passed | 366.623 |
+| `acceptance-vector_orbits-25` | 13606208135 | `test_k3_lattice_has_one_primitive_orbit_per_norm[0]` | passed | 113.482 |
+| `acceptance-vector_orbits-26` | 13606283297 | `test_k3_lattice_has_one_primitive_orbit_per_norm[-2]` | passed | 181.965 |
+| `acceptance-vector_orbits-27` | 13606581457 | `test_k3_lattice_has_one_primitive_orbit_per_norm[2]` | passed | 190.673 |
+| `acceptance-vector_orbits-28` | 13606551625 | `test_k3_lattice_has_one_primitive_orbit_per_norm[4]` | passed | 164.184 |
+| `acceptance-vector_orbits-29` | 13607285226 | `test_k3_lattice_has_one_primitive_orbit_per_norm[-4]` | passed | 191.283 |
+| `acceptance-vector_stabilizers-1` | 13607028039 | `test_equivalence_witness_carries_a_representative_to_its_reflection[r_1]` | passed | 335.068 |
+| `acceptance-vector_stabilizers-1` | 13607028039 | `test_equivalence_witness_carries_a_representative_to_its_reflection[r_5]` | passed | 6.370 |
+| `acceptance-vector_stabilizers-2` | 13607068114 | `test_equivalence_witness_carries_a_representative_to_its_reflection[r_7]` | passed | 341.216 |
+| `acceptance-vector_stabilizers-2` | 13607068114 | `test_general_isotropic_pointed_isometry_carries_negative_marking` | passed | 0.553 |
+
+The all-pages job response still reports vector-stabilizer shards 0, 3, 4 and 5 in progress and shards 6 through 17 queued. Their status supplies no mathematical result. Earlier boundary/isotropic/A7 failures retain their literal status above.
