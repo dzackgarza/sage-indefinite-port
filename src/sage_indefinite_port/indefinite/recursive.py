@@ -70,7 +70,8 @@ from sage_indefinite_port.invariants import (
 _UNTWIST = Lattices(ZZ).twist_functor(-1)
 
 type _IsotropicActionKey = tuple[
-    int, tuple[tuple[int, ...], ...], tuple[tuple[tuple[int, ...], ...], ...]
+    int, tuple[tuple[int, ...], ...], tuple[tuple[tuple[int, ...], ...], ...],
+    tuple[tuple[tuple[int, ...], ...], ...] | None, int,
 ]
 
 
@@ -1215,7 +1216,8 @@ class EichlerRecursion:
         return IntegralStructureAction(rational.O().subgroup(extensions), inclusion).with_stable_containing_bound(containing)
 
     def isotropic_stabilizer_action(
-        self, isotropic: tuple[Lattices.ElementMethods, ...], radical_images: tuple[tuple[Lattices.ElementMethods, ...], ...]
+        self, isotropic: tuple[Lattices.ElementMethods, ...], radical_images: tuple[tuple[Lattices.ElementMethods, ...], ...],
+        *, quotient_generators: tuple[LatticeIsometryMethods, ...] | None = None, extension_denominator: int = 1,
     ) -> IntegralStructureAction:
         r"""The stabilizer problem of the primitive totally isotropic J = span(isotropic), at L.
 
@@ -1232,9 +1234,28 @@ class EichlerRecursion:
         they generate is the stabilizer of J (with its marking). Every element preserves N, so the
         orbit span of L is computed inside L/D for D = 2 d^2 e^2 a, where d is that denominator,
         e = |disc K| and a = |coker(L -> J^*)| (issue #18); leaving that module raises.
+
+        Supplied quotient generators replace O(K); the empty family fixes K
+        pointwise. Lorentzian.g:225-249 permits the common denominator d in
+        its saturated kernel module. Include a prescribed rational lift's
+        denominator when this action corrects that lift in its quotient fibre.
         """
         lattice = isotropic[0].parent()
         labels = tuple(lattice.module_generating_set())
+        if extension_denominator < 1:
+            raise ValueError("the isotropic extension denominator must be positive")
+        reduction = lattice.primitive_isotropic_subobject(*isotropic).isotropic_reduction()
+        quotient = reduction.quotient_lattice()
+        quotient_labels = tuple(quotient.module_generating_set())
+        if quotient_generators is not None and any(
+            generator.domain() is not quotient or generator.codomain() is not quotient
+            for generator in quotient_generators
+        ):
+            raise ValueError("the supplied quotient generators must act on this isotropic reduction")
+        quotient_key = None if quotient_generators is None else tuple(
+            tuple(tuple(_integer(generator(point).to_vector()(label)) for label in quotient_labels) for point in quotient.module_generators())
+            for generator in quotient_generators
+        )
 
         def coordinates(point: Lattices.ElementMethods) -> tuple[int, ...]:
             if point.parent() is not lattice:
@@ -1245,13 +1266,12 @@ class EichlerRecursion:
         key = (
             id(lattice), tuple(coordinates(point) for point in isotropic),
             tuple(tuple(coordinates(point) for point in images) for images in radical_images),
+            quotient_key, extension_denominator,
         )
         cached = self._isotropic_actions.pop(key, None)
         if cached is not None:
             self._isotropic_actions[key] = cached
             return cached
-        reduction = lattice.primitive_isotropic_subobject(*isotropic).isotropic_reduction()
-        quotient = reduction.quotient_lattice()
         perpendicular = reduction.orthogonal_complement().inclusion()
         frame = reduction.coordinate_frame()
         labels = tuple(quotient.module_generating_set())
@@ -1265,7 +1285,8 @@ class EichlerRecursion:
         # Images of the basis (J, then the frame lifts), in that order.
         frame = tuple(lifts[label] for label in labels)
         image_families = []
-        for isometry in self.orthogonal_group_generators(quotient):
+        reduced_generators = self.orthogonal_group_generators(quotient) if quotient_generators is None else quotient_generators
+        for isometry in reduced_generators:
             image_families.append((*isotropic, *(lift(isometry(quotient.module_generator(label))) for label in labels)))
         for radical in radical_images:
             image_families.append((*radical, *frame))
@@ -1273,7 +1294,7 @@ class EichlerRecursion:
             for point in isotropic:
                 image_families.append((*isotropic, *(lifted + point if position == sheared else lifted for position, lifted in enumerate(frame))))
         extended = [_extend_perpendicular_isometry(reduction, reduction, basis, images) for images in image_families]
-        denominator = SageZZ.one()
+        denominator = SageZZ(extension_denominator)
         for _isometry, entry_denominator in extended:
             denominator = denominator.lcm(entry_denominator)
         # Lorentzian.g:115-249 supplies 1 + T/d for every generator T of the
@@ -1922,7 +1943,7 @@ class EichlerRecursion:
         normalization of :1639-1641 is then the identity). Its extension is
         ``LORENTZ_ExtendOrthogonalIsotropicIsomorphism``.
         """
-        target_lattice = target[0].parent()
+        target_lattice = target_reduction.isotropic_embedding().codomain()
         source_quotient = source_reduction.quotient_lattice()
         target_quotient = target_reduction.quotient_lattice()
         source_labels = tuple(source_quotient.module_generating_set())
@@ -1941,6 +1962,35 @@ class EichlerRecursion:
         images = (*target, *(target_lift(reduced(source_quotient.module_generator(label))) for label in source_labels))
         rational_transport, _denominator = _extend_perpendicular_isometry(source_reduction, target_reduction, (*source, *source_lifts), images)
         return rational_transport
+
+    def isotropic_quotient_lift(self, reduction, reduced: LatticeIsometryMethods) -> LatticeIsometryMethods | None:
+        r"""An integral parabolic lift of a prescribed quotient isometry, or None.
+
+        Lorentzian.g:115-249 extends the integral map of the perpendicular.
+        CombinedAlgorithms.h:779-877 supplies its triangular correction group
+        with identity quotient action. The full GL(I), integral Hom(K,I)
+        and saturated pointwise-perpendicular kernel preserve the prescribed
+        reduction map throughout the finite integral-structure transporter.
+        """
+        from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+
+        embedding = reduction.isotropic_embedding()
+        lattice = embedding.codomain()
+        isotropic = tuple(embedding(point) for point in embedding.domain().module_generators())
+        rational_transport = self._reduced_isotropic_extension(reduction, reduction, isotropic, isotropic, reduced)
+        if rational_transport.is_integral_on(lattice, lattice):
+            return lattice.integral_isometry(rational_transport)
+        subspace = lattice.primitive_isotropic_subobject(*isotropic)
+        (denominator,) = tuple(rational_transport.denominator_ideal(lattice, lattice).ideal_generators())
+        correction_action = self.isotropic_stabilizer_action(
+            isotropic, IsotropicInduction.sublattice_action_images(subspace),
+            quotient_generators=(), extension_denominator=_integer(denominator),
+        )
+        fraction_map = lattice.base_ring().fraction_field_map()
+        restriction = Modules(fraction_map.codomain()).restriction_of_scalars(fraction_map)
+        image = restriction(rational_transport) * ModulesOverIntegralDomains(lattice.base_ring())(lattice).generic_fibre_map()
+        correction = correction_action.transporter(image)
+        return None if correction is None else lattice.integral_isometry(correction.inverse() * rational_transport)
 
     def _isotropic_correction(
         self,
