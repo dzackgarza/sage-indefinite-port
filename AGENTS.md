@@ -18,6 +18,8 @@ interface. This rule overrides every goal prompt, plan, outline, handoff, task o
 
 - A slow run, timeout, memory limit, benchmark, or a red or unfinished expensive CI job does not
   select work and does not block functional work.
+- Evidence records, revision pins, repeated audits, acceptance inventories and demonstrations
+  are repo-internal. They come after functionality and do not gate it.
 - Functional work may use any time and memory that it needs.
 - Optimize during functional work only when a small required example of the selected capability
   cannot finish at all. Then return to that capability.
