@@ -30,3 +30,7 @@ The additional public assertion `test_special_orthogonal_group_has_two_moving_ma
 | 300 | Ambient orthogonal generation; orbit assertion unreached |
 
 Both diagnostics use provider 8d72ad94 and the current specialized source. The longer terminal stack reaches owned tensor coordinate admission during that generation. Complete the actual ambient generator computation and then verify the exact orbit split and transporter assertions. The proved pointwise skew-group result above has its separate, narrower scope.
+
+### Native definite-provider diagnostic
+
+At port `2e36cff9b11acdc50f7576d5846c45a9dc02c7d9` and provider `7960e1ae8a7cca25abf689f37ab4745376cfeecf`, the same moving SO(4U) assertion reaches its diagnostic bound of 300 seconds. The final stack is in finite coset equality: `finite_ordered_sets.index_of` calls `lookup.get(point)`, then `g_sets.__eq__` tests `representative().inverse() * other.representative()` in the subgroup. Owned isometry composition reaches `_morphism_from_engine_matrix` and indexed-family construction. The orbit and transporter assertions remain unverified. Trace the retained finite action and subgroup before changing this generic operation.
