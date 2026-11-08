@@ -44,6 +44,7 @@ from sage_extensions.categories.sets.finite_ordered_sets import (
 from sage_extensions.categories.sets.indexed_families import (
     finite_indexed_family,
 )
+from sage_extensions.categories.sets.set_categories import OwnedSetMorphism
 from sage_extensions.tensors.tensor import _engine_component_matrix
 from sage.combinat.permutation import Permutation
 from sage.groups.perm_gps.permgroup_named import SymmetricGroup
@@ -601,6 +602,18 @@ class LorentzianPerfectCell:
     @cached_property
     def vector_configuration(self) -> tuple[Lattices.ElementMethods, ...]:
         return tuple(_ambient_element(self.lattice, row) for row in self.rows)
+
+    @cached_property
+    def vector_family(self) -> OwnedSetMorphism:
+        r"""The indexed family EXT retained in Lorentzian.g:660-696.
+
+        Its ordered indices and actual lattice vectors belong to this cell.
+        Repeated source and target comparisons use this same family, so the
+        configuration owner can retain its graph and rational group.
+        """
+        return Sets().Mor(Sets.Δ[len(self.rows) - 1], self.lattice)(
+            lambda index: self.vector_configuration[int(index)]
+        )
 
     @cached_property
     def affine_nullspace_row(self) -> tuple[Rational, ...]:
@@ -1995,12 +2008,8 @@ class LorentzianPerfectLocalBackend:
             if n <= _PAIRING_GRAPH_CANONICAL_LABEL_LIMIT:
                 if source.lattice is target.lattice and Counter(source.rows) == Counter(target.rows):
                     return source.lattice.Aut().identity()
-                source_family = Sets().Mor(Sets.Δ[n - 1], source.lattice)(
-                    lambda index: source.vector_configuration[int(index)]
-                )
-                target_family = Sets().Mor(Sets.Δ[n - 1], target.lattice)(
-                    lambda index: target.vector_configuration[int(index)]
-                )
+                source_family = source.vector_family
+                target_family = target.vector_family
                 return source.lattice.Isom(target.lattice).transporter(source_family, target_family)
             # The preamble's labelled finite-family transporter constructs a
             # complete pairing graph. For large cells, use the same exact
