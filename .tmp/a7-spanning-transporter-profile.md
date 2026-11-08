@@ -62,3 +62,15 @@ The [GAP orb manual](https://gap-packages.github.io/orb/doc/chap3.html) supplies
 | Construction of Python incidences and words | 0.2686 |
 
 This specimen does not support replacing the existing orbit realization with that export route. The production facet-orbit implementation is unchanged. Its full A7 result remains required.
+
+
+A later ten-second sample at afa1176/25288942 reaches large-cell identification throughout. Pairing-column extraction accounts for 4.90 seconds, including 2.60 seconds in its Python conversion generator; inclusive times overlap. Direct export of the one-column integer matrix avoids the intermediate Sage vector and retains the same Python integer tuple.
+
+An isolated measurement on an exact 49861-by-1 integer matrix compares ten complete column exports per repetition:
+
+| Export | Repetition times, seconds |
+| --- | --- |
+| Vector extraction and generator conversion | 0.2804, 0.2601, 0.2864 |
+| Flat entries and builtin integer conversion | 0.2409, 0.2144, 0.2095 |
+
+The complete hyperbolic-quadrant transporter and its coarse-colour stabilizer assertions pass with the flat export. A separate direct production assertion checks every pairing among the six roots of the provider's negative A2 lattice scaled by `2^70+1`, against the owned bilinear form, with and without column reuse. Its simple-root square is exactly `-2*(2^70+1)^2`. These establish the exercised exact export and transporter contracts; the live original A7 computation predates this change.

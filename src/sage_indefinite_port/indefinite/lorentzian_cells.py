@@ -839,7 +839,7 @@ class _ConfigurationPairings:
         if use_cache and cached is not None:
             return cached
         covector = self.covectors.matrix_from_rows([index]).transpose()
-        result = tuple(int(entry) for entry in (self.rows * covector).column(0))
+        result = tuple(map(int, (self.rows * covector).list()))
         if not use_cache:
             return result
         if len(self._column_cache) >= self._column_cache_limit:
