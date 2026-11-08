@@ -88,4 +88,6 @@ An isolated comparison of the same rational map and basis input, with 500 evalua
 | bc6bd572 | 2.0117, 2.4550, 2.0147 |
 | 0580f98d | 0.3551, 0.3888, 0.3263 |
 
-These measure basis evaluation, not a whole transporter or the complete A7 computation. The live original cases predate this provider change.
+These measure basis evaluation, not a whole transporter or the complete A7 computation. The active A7, I_1_1 and stable Dawes cases predate this provider change.
+
+At port a170e2e91c0759649d48059e2cce9ea5c9893a56/provider 0580f98daaf1e698078429b99f93a0d2e0513ba8, the unchanged full spanning-cell transporter assertion passes with call time 35.72 seconds (44.28 seconds total). This confirms the complete witness under direct selected-generator evaluation. Compared with the 28.92-second call at 12b3d2d/bc6bd572, this measurement supplies no whole-transporter timing gain; the isolated basis-evaluation comparison remains a different measurement. Full A7 evidence remains required.
