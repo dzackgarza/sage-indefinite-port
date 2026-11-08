@@ -861,10 +861,11 @@ class _ConfigurationPairings:
         for start in range(0, len(self), block_size):
             stop = min(start + block_size, len(self))
             pairing_block = self.covectors.matrix_from_rows(range(start, stop)) * transposed_rows
-            # Export the flat exact integer entries as objects, then restore
-            # the block shape without casting the coefficients.
+            # Export exact Python integers for the object-array arithmetic.
+            # Both representations are unbounded; lowering here avoids Sage
+            # scalar dispatch for every colour-code product and sum.
             values = np.fromiter(
-                pairing_block.list(), dtype=object,
+                map(int, pairing_block.list()), dtype=object,
                 count=pairing_block.nrows() * pairing_block.ncols(),
             )
             yield start, values.reshape(pairing_block.nrows(), pairing_block.ncols())

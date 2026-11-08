@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections import Counter
+
 import pytest
 
 from sage.all import ZZ, matrix
@@ -13,8 +15,34 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     _ConfigurationPairings,
     _configuration_pairing_block_size,
     _perfect_form_hash_key,
+    _refined_signatures,
 )
 from tests.acceptance.consumer import lattice
+
+
+@pytest.mark.parametrize("scale, modulus", ((1, 3), (2**80, 3), (1, 2**80)))
+def test_coloured_hyperbolic_neighbour_multiplicities_in_every_integral_basis(scale, modulus):
+    """In scale*U, the coloured pairing code is scale*(ad+bc)*m+c_j.
+
+    Each vertex counts every other indexed vector, including repeated
+    vectors. Changing an integral basis preserves each entire multiset.
+    """
+    rows = ((1, 0), (0, 1), (1, 0), (0, -1))
+    colours = (0, 1, 0, 1)
+    expected = tuple(
+        (colours[i], tuple(sorted(Counter(
+            scale * (a * d + b * c) * modulus + colours[j]
+            for j, (c, d) in enumerate(rows) if j != i
+        ).items())))
+        for i, (a, b) in enumerate(rows)
+    )
+    gram = scale * matrix(ZZ, [[0, 1], [1, 0]])
+    shear = matrix(ZZ, [[1, 2**80 + 1], [0, 1]])
+    for coordinates, form in (
+        (matrix(ZZ, rows), gram),
+        (matrix(ZZ, rows) * shear, shear.inverse() * gram * shear.inverse().transpose()),
+    ):
+        assert _refined_signatures(_ConfigurationPairings(coordinates, form), colours, modulus) == expected
 
 
 def test_hyperbolic_plane_pairings_preserve_integral_change_of_basis() -> None:
