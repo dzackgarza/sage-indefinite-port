@@ -1,6 +1,6 @@
 # Partial Acceptance reports at 23927db/16485a1
 
-[Acceptance 42412497409](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/42412497409) records port `23927dbb9f3bedc9cb765c2dc69dde7a748420d1` and provider `16485a149e2ac30c660d2eb3083da2b01731fab2`. This is a partial artifact snapshot. A testcase marked passed below has no failure, error or skip in its inspected JUnit report. Remaining shards and final-pair evidence remain required.
+[Acceptance 42412497409](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/42412497409) records port `23927dbb9f3bedc9cb765c2dc69dde7a748420d1` and provider `16485a149e2ac30c660d2eb3083da2b01731fab2`. This is the inspected result set of the completed failed run. It contains push-selected samples; full-file final-pair evidence remains required. A testcase marked passed below has no failure, error or skip in its inspected JUnit report. Remaining shards and final-pair evidence remain required.
 
 | Family | Outcome | Inspected cases |
 | --- | --- | ---: |
@@ -14,7 +14,7 @@
 | orthogonal_group | passed | 8 |
 | reflective | passed | 5 |
 | vector_orbits | passed | 30 |
-| vector_stabilizers | passed | 4 |
+| vector_stabilizers | passed | 25 |
 
 ## Failed assertions
 
@@ -400,9 +400,35 @@ The following archives retain the exact port/provider commits above. Every inspe
 | `acceptance-vector_orbits-27` | 13606581457 | `test_k3_lattice_has_one_primitive_orbit_per_norm[2]` | passed | 190.673 |
 | `acceptance-vector_orbits-28` | 13606551625 | `test_k3_lattice_has_one_primitive_orbit_per_norm[4]` | passed | 164.184 |
 | `acceptance-vector_orbits-29` | 13607285226 | `test_k3_lattice_has_one_primitive_orbit_per_norm[-4]` | passed | 191.283 |
-| `acceptance-vector_stabilizers-1` | 13607028039 | `test_equivalence_witness_carries_a_representative_to_its_reflection[r_1]` | passed | 335.068 |
-| `acceptance-vector_stabilizers-1` | 13607028039 | `test_equivalence_witness_carries_a_representative_to_its_reflection[r_5]` | passed | 6.370 |
-| `acceptance-vector_stabilizers-2` | 13607068114 | `test_equivalence_witness_carries_a_representative_to_its_reflection[r_7]` | passed | 341.216 |
-| `acceptance-vector_stabilizers-2` | 13607068114 | `test_general_isotropic_pointed_isometry_carries_negative_marking` | passed | 0.553 |
 
-The all-pages job response still reports vector-stabilizer shards 0, 3, 4 and 5 in progress and shards 6 through 17 queued. Their status supplies no mathematical result. Earlier boundary/isotropic/A7 failures retain their literal status above.
+## Completed vector-stabilizer assertions
+
+Every vector-stabilizer shard now has an inspected JUnit report, matching log and exact port/provider files for the pair above. All reports have no failures, errors or skips. The table gives every selected node and its JUnit call time. The E10 assertions compare the complete multiset of stabilizer-image indices over every vector class at each displayed norm with the published fixture. Reflected-vector tests verify the actual pointed isometry witnesses. The other nodes check the stated integral isotropic actions, containing bounds, markings and negative decisions. The OSCAR-order assertion compares the actual vector stabilizer order with its fixture. These are the run's selected assertions; the full frozen module remains required at the final pair.
+
+| Artifact | Case | JUnit seconds |
+| --- | --- | ---: |
+| `acceptance-vector_stabilizers-0` | `test_equivalence_witness_carries_a_representative_to_its_reflection[r_-1]` | 1917.173 |
+| `acceptance-vector_stabilizers-0` | `test_isotropic_pointed_automorphism_generators_preserve_marking_and_form` | 7.579 |
+| `acceptance-vector_stabilizers-1` | `test_equivalence_witness_carries_a_representative_to_its_reflection[r_1]` | 335.068 |
+| `acceptance-vector_stabilizers-1` | `test_equivalence_witness_carries_a_representative_to_its_reflection[r_5]` | 6.370 |
+| `acceptance-vector_stabilizers-2` | `test_equivalence_witness_carries_a_representative_to_its_reflection[r_7]` | 341.216 |
+| `acceptance-vector_stabilizers-2` | `test_general_isotropic_pointed_isometry_carries_negative_marking` | 0.553 |
+| `acceptance-vector_stabilizers-3` | `test_divisibility_four_isotropic_plane_stabilizer_constructs_exact_containing_bound` | 0.905 |
+| `acceptance-vector_stabilizers-3` | `test_equivalence_witness_carries_a_representative_to_its_reflection[r_0]` | 524.983 |
+| `acceptance-vector_stabilizers-4` | `test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[10]` | 755.403 |
+| `acceptance-vector_stabilizers-4` | `test_split_divisibility_one_pointed_isometry_carries_actual_negative_marking` | 0.604 |
+| `acceptance-vector_stabilizers-5` | `test_equivalence_witness_carries_a_representative_to_its_reflection[r_2]` | 275.880 |
+| `acceptance-vector_stabilizers-5` | `test_isotropic_pointed_isometry_rejects_different_divisibility` | 0.018 |
+| `acceptance-vector_stabilizers-6` | `test_divisibility_two_isotropic_pointed_isometry_has_exact_witness` | 0.848 |
+| `acceptance-vector_stabilizers-6` | `test_equivalence_witness_carries_a_representative_to_its_reflection[r_4]` | 151.738 |
+| `acceptance-vector_stabilizers-7` | `test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[4]` | 749.733 |
+| `acceptance-vector_stabilizers-8` | `test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[8]` | 487.086 |
+| `acceptance-vector_stabilizers-9` | `test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[6]` | 502.181 |
+| `acceptance-vector_stabilizers-10` | `test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[0]` | 180.472 |
+| `acceptance-vector_stabilizers-11` | `test_equivalence_witness_carries_a_representative_to_its_reflection[r_8]` | 249.798 |
+| `acceptance-vector_stabilizers-12` | `test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[2]` | 912.813 |
+| `acceptance-vector_stabilizers-13` | `test_equivalence_witness_carries_a_representative_to_its_reflection[r_3]` | 164.087 |
+| `acceptance-vector_stabilizers-14` | `test_equivalence_witness_carries_a_representative_to_its_reflection[r_6]` | 120.441 |
+| `acceptance-vector_stabilizers-15` | `test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound` | 4.547 |
+| `acceptance-vector_stabilizers-16` | `test_vector_stabilizer_has_oscars_order` | 87.958 |
+| `acceptance-vector_stabilizers-17` | `test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks` | 8.496 |
