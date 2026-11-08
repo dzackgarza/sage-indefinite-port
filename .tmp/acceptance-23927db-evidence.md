@@ -9,7 +9,7 @@
 | centralizers | passed | 5 |
 | double_cosets | passed | 19 |
 | isometry | passed | 166 |
-| isotropic_orbits | passed | 2 |
+| isotropic_orbits | passed | 8 |
 | perfect_domains | passed | 92 |
 
 ## Failed assertions
@@ -26,6 +26,10 @@
 - `acceptance-boundaries-15`
 - `acceptance-boundaries-16`
 - `acceptance-boundaries-8`
+
+- `acceptance-isotropic_orbits-3`
+- `acceptance-boundaries-17`
+- `acceptance-isotropic_orbits-2`
 
 ## Recorded case IDs
 
@@ -233,6 +237,12 @@
 | `acceptance-isometry-7` | `test_change_of_basis_gives_an_isometric_lattice[ci_indef_U_U_E7]` | passed |
 | `acceptance-isotropic_orbits-0` | `test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors[IsotropicCases_0]` | passed |
 | `acceptance-isotropic_orbits-1` | `test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors[IsotropicCases_15]` | passed |
+| `acceptance-isotropic_orbits-11` | `test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank0-primitive_isotropic_vector_orbits]` | passed |
+| `acceptance-isotropic_orbits-7` | `test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_1_1]` | passed |
+| `acceptance-isotropic_orbits-5` | `test_published_representatives_lie_in_distinct_o_plus_orbits[rank0]` | passed |
+| `acceptance-isotropic_orbits-8` | `test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_1_2]` | passed |
+| `acceptance-isotropic_orbits-10` | `test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_2_2]` | passed |
+| `acceptance-isotropic_orbits-4` | `test_o_n_maps_onto_o_of_the_discriminant_form` | passed |
 | `acceptance-perfect_domains-0` | `test_large_pairing_graph_fallback_returns_exact_transporter` | passed |
 | `acceptance-perfect_domains-0` | `test_non_diagonal_positive_shell_uses_the_pinned_cvp_center` | passed |
 | `acceptance-perfect_domains-0` | `test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_19]` | passed |
