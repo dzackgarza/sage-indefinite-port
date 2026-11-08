@@ -131,6 +131,79 @@ def _nonprimitive_setwise_generators(arrow: Morphism, generators: tuple[LatticeI
     return tuple(element for element in schreier if element != lattice.O().one())
 
 
+def _product(values: tuple[int, ...]) -> int:
+    result = 1
+    for value in values:
+        result *= value
+    return result
+
+
+def nonprimitive_sublattice_classes(saturated: Morphism, divisors: tuple[int, ...]) -> tuple[Morphism, ...]:
+    r"""Inclusions of the classes of ``J <= S`` with elementary divisors ``divisors``, under ``Stab(S)``.
+
+    #48: ``S`` is primitive and each ``J`` contains ``mS``, so the classes are
+    the orbits of the actual stabilizer image on the finite set of such ``J``.
+    """
+    from itertools import product
+
+    from sage.matrix.constructor import matrix
+    from sage.rings.integer_ring import ZZ as SageZZ
+
+    ambient = saturated.codomain()
+    module = saturated.domain()
+    labels = tuple(module.module_generating_set())
+    rank = len(labels)
+    if len(divisors) != rank:
+        raise ValueError(f"{divisors} must have one elementary divisor for each of the {rank} generators of {module}")
+    wanted = sorted(int(divisor) for divisor in divisors)
+    index = _product(tuple(wanted))
+    candidates: list[tuple[tuple[int, ...], ...]] = []
+    for diagonal in product(*[[d for d in range(1, index + 1) if index % d == 0]] * rank):
+        if _product(diagonal) != index:
+            continue
+        free = [(i, j) for i in range(rank) for j in range(i + 1, rank)]
+        for values in product(*[range(diagonal[j]) for _i, j in free]):
+            rows = [[0] * rank for _ in range(rank)]
+            for i, value in enumerate(diagonal):
+                rows[i][i] = value
+            for (i, j), value in zip(free, values, strict=True):
+                rows[i][j] = value
+            if sorted(int(d) for d in matrix(SageZZ, rows).elementary_divisors()) == wanted:
+                candidates.append(tuple(tuple(row) for row in rows))
+    generators = tuple(automorphism_group_generators(ARROWS, ARROWS.object(saturated)))
+
+    def act(generator, rows):
+        moved = []
+        for row in rows:
+            point = saturated(module.linear_combination({label: module.base_ring()(entry) for label, entry in zip(labels, row, strict=True) if entry}))
+            coordinates = saturated.lift(generator(point)).to_vector()
+            moved.append([int(coordinates(label)) for label in labels])
+        return tuple(tuple(int(entry) for entry in row) for row in matrix(SageZZ, moved).hermite_form().rows())
+
+    remaining = set(candidates)
+    classes = []
+    while remaining:
+        start = min(remaining)
+        orbit = {start}
+        frontier = [start]
+        while frontier:
+            current = frontier.pop()
+            for generator in generators:
+                moved = act(generator, current)
+                if moved not in orbit:
+                    orbit.add(moved)
+                    frontier.append(moved)
+        remaining -= orbit
+        classes.append(start)
+    return tuple(
+        ambient.subobject_on(tuple(
+            saturated(module.linear_combination({label: module.base_ring()(entry) for label, entry in zip(labels, row, strict=True) if entry}))
+            for row in rows
+        )).inclusion()
+        for rows in classes
+    )
+
+
 def _flag(marked: Parent) -> Flag:
     first, second = _flag_arrows(marked)
     plane = _isotropic_sublattice(second)
