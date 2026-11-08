@@ -75,6 +75,62 @@ def _isotropic_sublattice(arrow: Morphism) -> Parent:
     return lattice.primitive_isotropic_subobject(*vectors)
 
 
+def _is_totally_isotropic(arrow: Morphism) -> bool:
+    lattice = arrow.codomain()
+    vectors = tuple(arrow(generator) for generator in arrow.domain().module_generators())
+    return all(lattice.b(left, right) == 0 for left in vectors for right in vectors)
+
+
+def _is_nondegenerate_primitive(arrow: Morphism) -> bool:
+    return arrow.is_primitive() and arrow.domain().is_nondegenerate() is True
+
+
+def _saturated_arrow(arrow: Morphism) -> Morphism:
+    r"""The inclusion of the saturation of the image of ``arrow``."""
+    return arrow.saturation().inclusion()
+
+
+def _saturation_exponent(arrow: Morphism, inclusion: Morphism) -> int:
+    return int(arrow.factor_through(inclusion).cokernel().exponent())
+
+
+def _nonprimitive_setwise_generators(arrow: Morphism, generators: tuple[LatticeIsometryMethods, ...]) -> tuple[LatticeIsometryMethods, ...]:
+    r"""Schreier generators of the stabilizer of ``im(arrow)`` in the setwise stabilizer of its saturation.
+
+    The stabilizer acts on ``S'/nS'``. Reidemeister--Schreier on the finite orbit of the span of ``S``.
+    """
+    lattice = arrow.codomain()
+    inclusion = _saturated_arrow(arrow)
+    modulus = _saturation_exponent(arrow, inclusion)
+    base = [inclusion.lift(arrow(point)) for point in arrow.domain().module_generators()]
+
+    def span_key(points):
+        from sage.matrix.constructor import matrix
+        from sage.rings.finite_rings.integer_mod_ring import Zmod
+
+        rows = [[int(point.to_vector()(label)) % modulus for label in inclusion.domain().module_generating_set()] for point in points]
+        return tuple(tuple(row) for row in matrix(Zmod(modulus), rows).echelon_form().rows() if any(row))
+
+    def act(generator, points):
+        return [inclusion.lift(generator(inclusion(point))) for point in points]
+
+    transversal = {span_key(base): (lattice.O().one(), base)}
+    frontier = [span_key(base)]
+    schreier = []
+    while frontier:
+        key = frontier.pop()
+        element, points = transversal[key]
+        for generator in generators:
+            moved = act(generator, points)
+            moved_key = span_key(moved)
+            if moved_key not in transversal:
+                transversal[moved_key] = (generator * element, moved)
+                frontier.append(moved_key)
+            else:
+                schreier.append(~transversal[moved_key][0] * generator * element)
+    return tuple(element for element in schreier if element != lattice.O().one())
+
+
 def _flag(marked: Parent) -> Flag:
     first, second = _flag_arrows(marked)
     plane = _isotropic_sublattice(second)
@@ -121,6 +177,10 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 return RECURSION.isometry(source.arrow().codomain(), target.arrow().codomain())
             if rank == 1:
                 return RECURSION.pointed_isometry(_marked_vector(source), _marked_vector(target))
+            if not _is_totally_isotropic(source.arrow()) and _is_nondegenerate_primitive(source.arrow()):
+                from sage_extensions.categories.lattice_embeddings import _nondegenerate_marking_transporter
+
+                return _nondegenerate_marking_transporter(source.arrow(), target.arrow(), pointwise=True)
             _isotropic_sublattice(source.arrow())
             _isotropic_sublattice(target.arrow())
             labels = tuple(category.base_object().module_generating_set())
@@ -134,11 +194,22 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             )
         case _ if category is LATTICES:
             return RECURSION.isometry(source, target)
+        case _ if category is ARROWS and not source.arrow().is_primitive():
+            inclusion = _saturated_arrow(source.arrow())
+            target_inclusion = _saturated_arrow(target.arrow())
+            transporter = isometry(ARROWS, ARROWS.object(inclusion), ARROWS.object(target_inclusion))
+            if transporter is None:
+                return None
+            return _nonprimitive_transporter(source.arrow(), target.arrow(), transporter, inclusion)
         case _ if category is ARROWS:
             source_rank = int(source.arrow().domain().rank())
             target_rank = int(target.arrow().domain().rank())
             if source_rank == 0 or target_rank == 0:
                 return RECURSION.isometry(source.arrow().codomain(), target.arrow().codomain()) if source_rank == target_rank else None
+            if not _is_totally_isotropic(source.arrow()) and _is_nondegenerate_primitive(source.arrow()):
+                from sage_extensions.categories.lattice_embeddings import _nondegenerate_marking_transporter
+
+                return _nondegenerate_marking_transporter(source.arrow(), target.arrow(), pointwise=False)
             source_sublattice = _isotropic_sublattice(source.arrow())
             target_sublattice = _isotropic_sublattice(target.arrow())
             match int(source_sublattice.inclusion().domain().rank()), int(target_sublattice.inclusion().domain().rank()):
@@ -157,6 +228,38 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
     raise ValueError(f"{category} is not a category of marked lattices this port decides: Lattices, a coslice <n>/Lattices, Ar(Lattices) or Fun([t], Lattices) for finite [t]")
 
 
+def _nonprimitive_transporter(source: Morphism, target: Morphism, transporter: LatticeIsometryMethods, inclusion: Morphism) -> LatticeIsometryMethods | None:
+    r"""Correct ``transporter`` by the stabilizer of the target saturation, or return ``None``.
+
+    BFS in the finite orbit of the moved finite-index sublattice in ``S'/nS'``.
+    """
+    from sage.matrix.constructor import matrix
+    from sage.rings.finite_rings.integer_mod_ring import Zmod
+
+    lattice = source.codomain()
+    target_inclusion = _saturated_arrow(target)
+    modulus = _saturation_exponent(target, target_inclusion)
+    generators = tuple(automorphism_group_generators(ARROWS, ARROWS.object(target_inclusion)))
+
+    def span_key(points):
+        rows = [[int(target_inclusion.lift(point).to_vector()(label)) % modulus for label in target_inclusion.domain().module_generating_set()] for point in points]
+        return tuple(tuple(row) for row in matrix(Zmod(modulus), rows).echelon_form().rows() if any(row))
+
+    target_key = span_key([target(point) for point in target.domain().module_generators()])
+    start_points = [transporter(source(point)) for point in source.domain().module_generators()]
+    seen = {span_key(start_points): (transporter, start_points)}
+    frontier = [span_key(start_points)]
+    while frontier and target_key not in seen:
+        element, points = seen[frontier.pop()]
+        for generator in generators:
+            moved = [generator(point) for point in points]
+            key = span_key(moved)
+            if key not in seen:
+                seen[key] = (generator * element, moved)
+                frontier.append(key)
+    return seen[target_key][0] if target_key in seen else None
+
+
 def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
     r"""Generators of the automorphism group of a marked lattice in ``category``, as a finite ordered set of isometries of L."""
     match category:
@@ -166,6 +269,10 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                 generators = RECURSION.orthogonal_group_generators(marked.arrow().codomain())
             elif rank == 1:
                 generators = RECURSION.pointed_automorphism_generators(_marked_vector(marked))
+            elif not _is_totally_isotropic(marked.arrow()) and _is_nondegenerate_primitive(marked.arrow()):
+                from sage_extensions.categories.lattice_embeddings import _nondegenerate_marking_stabilizer_generators
+
+                generators = _nondegenerate_marking_stabilizer_generators(marked.arrow(), pointwise=True)
             else:
                 _isotropic_sublattice(marked.arrow())
                 # The same perpendicular extension as the setwise case,
@@ -174,9 +281,16 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                 generators = INDUCTION._stabilizer_generators(basis, ())
         case _ if category is LATTICES:
             generators = RECURSION.orthogonal_group_generators(marked)
+        case _ if category is ARROWS and not marked.arrow().is_primitive():
+            inclusion = _saturated_arrow(marked.arrow())
+            generators = _nonprimitive_setwise_generators(marked.arrow(), tuple(automorphism_group_generators(ARROWS, ARROWS.object(inclusion))))
         case _ if category is ARROWS:
             if int(marked.arrow().domain().rank()) == 0:
                 generators = RECURSION.orthogonal_group_generators(marked.arrow().codomain())
+            elif not _is_totally_isotropic(marked.arrow()) and _is_nondegenerate_primitive(marked.arrow()):
+                from sage_extensions.categories.lattice_embeddings import _nondegenerate_marking_stabilizer_generators
+
+                generators = _nondegenerate_marking_stabilizer_generators(marked.arrow(), pointwise=False)
             else:
                 sublattice = _isotropic_sublattice(marked.arrow())
                 match int(sublattice.inclusion().domain().rank()):
