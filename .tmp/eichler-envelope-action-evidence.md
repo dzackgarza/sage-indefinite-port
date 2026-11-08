@@ -17,3 +17,16 @@ For a proper envelope, `OrbitCoverModel.approximate_generators` uses the existin
 The first three assertions pass in 40.68 seconds. The existing normalization assertions pass in 6.56 seconds; the other complete-family assertions pass in 20.85 seconds. These establish the exercised source operations. The original O_plus_N and Dawes public consumers remain required at the published port/provider pair.
 
 The prior actual rank-six Dawes model input retains its original Gram, rational embedding, envelope Gram and complete source generating matrices. Its optional reconstruction benchmark uses actual owned lattice and integral-structure objects; it does not fabricate an envelope model. Timing of that operation does not establish an entire public boundary computation.
+
+## Actual retained Dawes approximate model
+
+The input is the actual retained rank-six lattice Gram, rational embedding, envelope Gram, scale and complete source matrices from the public Dawes recursion. Reconstruction uses owned lattices and an actual integral-structure action. Before reduction, the native factor realization gives exactly the same distinct nonidentity action set as the complete owned rational Schreier family conjugated through that embedding. Every native factor product is included. The equality check is complete for this input.
+
+| Complete operation on the retained input | Wall seconds |
+| --- | ---: |
+| Owned rational Schreier maps, basis evaluation, conjugation and integral map construction | 168.057231 |
+| Based native full Schreier realization, exact source reduction and integral map construction | 20.775315 |
+
+The outputs are different generating families of the same group, by the complete pre-reduction equality and reversible Nielsen operations. Both output families preserve the actual Gram form and have integral unit determinant. These are scoped wall measurements; independent local jobs overlapped part of the execution. They establish neither an entire Dawes boundary nor its final-pair proof.
+
+Optional reproduction: `.tmp/dawes-approx-framed-benchmark.py owned`, `.py native`, `.tmp/dawes-approx-framed-action-equality.py columns`, their `.log` files and the saved input/output matrices. The complete equality run reports all supplied native columns, including identities and duplicates before set comparison.
