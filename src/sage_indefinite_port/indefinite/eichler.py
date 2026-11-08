@@ -39,7 +39,7 @@ from sage_extensions.categories.sets.indexed_families import (
     IndexedFamily,
     finite_indexed_family,
 )
-from sage_extensions.tensors.tensor import _engine_component_matrix
+from sage_extensions.tensors.tensor import _engine_component_matrix, _engine_row_action_matrix
 from sage.graphs.graph import Graph
 from sage.groups.perm_gps.permgroup import PermutationGroup
 from sage.matrix.constructor import identity_matrix, matrix
@@ -817,14 +817,27 @@ class OrbitCoverModel:
         # U.  With y = k/d this is the vector of E-coordinates of g(k) modulo d.
         labels = tuple(lattice.module_generating_set())
 
-        def residue(vector: Lattices.ElementMethods, order: RingElement) -> tuple[SageQQ, ...]:
-            coordinates = vector.to_vector()
+        def residue(coordinates, order: RingElement) -> tuple[SageQQ, ...]:
             modulus = int(order)
-            return tuple(SageQQ(int(coordinates(label)) % modulus) / modulus for label in labels)
+            return tuple(SageQQ(int(entry) % modulus) / modulus for entry in coordinates)
 
-        positions = {residue(inclusion(k), order): position for position, (order, k) in enumerate(lifts[point] for point in classes)}
+        orders = tuple(lifts[point][0] for point in classes)
+        lift_coordinates = tuple(lifts[point][1].to_vector() for point in classes)
+        # ApproximateModels.h:337-356 applies each easy generator's row
+        # matrix to the complete lifted class family before VectorModulo1.
+        # The based inclusion and isometry tensors supply those same exact
+        # matrices; linearity avoids rebuilding an owned image per class.
+        point_rows = matrix(
+            SageZZ, len(classes), len(complement_labels),
+            [int(coordinates(label)) for coordinates in lift_coordinates for label in complement_labels],
+        ) * _engine_row_action_matrix(inclusion).change_ring(SageZZ)
+        positions = {
+            residue(row, order): position
+            for position, (order, row) in enumerate(zip(orders, point_rows, strict=True))
+        }
         permutations = [
-            [positions[residue(isometry(inclusion(k)), order)] + 1 for order, k in (lifts[point] for point in classes)]
+            [positions[residue(row, order)] + 1
+             for order, row in zip(orders, point_rows * _engine_row_action_matrix(isometry).change_ring(SageZZ), strict=True)]
             for isometry in OrbitCoverModel.source_easy_generators(model)
         ]
         # DecomposeOrbitPoint_FullRepr (:394-400): one class per orbit of the

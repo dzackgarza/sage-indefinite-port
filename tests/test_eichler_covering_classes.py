@@ -2,6 +2,7 @@
 
 from itertools import combinations
 
+from sage_extensions.all import Lattices, ZZ
 from sage_extensions.categories.eichler_criterion import TwoUEichlerModel
 
 from sage_indefinite_port.indefinite.eichler import OrbitCoverModel
@@ -35,3 +36,16 @@ def test_covering_classes_of_two_u_plus_four_negative_roots():
         assert len(actual) == 1 and actual <= expected
         assert all(int(point.additive_order()) == 2 for point in expected)
     assert not tuple(OrbitCoverModel.split_covering_vectors(model, ring(1)))
+
+
+def test_covering_classes_of_two_u_with_zero_complement():
+    """The unimodular model has only its trivial divided class at each even norm."""
+    plane = Lattices(ZZ)("U")
+    model = (plane + plane).two_u_eichler_model_from_represented_biproduct()
+    ambient = model.lattice()
+    for square in (0, 2):
+        representatives = tuple(OrbitCoverModel.split_covering_vectors(model, ambient.base_ring()(square)))
+        assert len(representatives) == 1
+        point = representatives[0]
+        assert int(point.q()) == square and point.is_primitive() and int(point.div()) == 1
+    assert not tuple(OrbitCoverModel.split_covering_vectors(model, ambient.base_ring()(1)))
