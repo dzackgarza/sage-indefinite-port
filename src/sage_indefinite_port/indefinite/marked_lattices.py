@@ -382,7 +382,11 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
             else:
                 source_basis = tuple(source.module_generators())
                 if any(source.b(left, right) != 0 for left in source_basis for right in source_basis):
-                    raise ValueError("fixed-source class induction requires a totally isotropic source")
+                    # #46: fixed-source classes of a nondegenerate source are genus and glue data.
+                    return finite_ordered_set(tuple(
+                        category.object(embedding)
+                        for embedding in source.Emb(lattice).primitive_embedding_class_representatives(classification="emb")
+                    ))
                 classes = tuple(
                     category.object(source.hom(list(images), codomain=lattice))
                     for basis in INDUCTION.isotropic_flag_bases(lattice, (int(source.rank()),))

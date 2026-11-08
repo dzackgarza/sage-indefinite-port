@@ -72,7 +72,7 @@ Rows that do not name a dependency proceed independently. Work on several at onc
 | Degenerate ambient consumers (#41) | Provider consumers on degenerate L; congruence-kernel generators | open |
 | Commuting-involution centralizers (#49) | Joint eigensublattices and simultaneous gluing | done |
 | Rational isotropic flag complex (#45) | Faces of every `FlagType`, face identities, stabilizer maps, incidence multiplicities | done |
-| Gram-constrained embeddings (#46) | Rank-r fixed-source Isom, Aut and classes; requires #47 | open |
+| Gram-constrained embeddings (#46) | Rank-r fixed-source Isom, Aut and classes; requires #47 | done |
 | Infinite-index orbit sets (#53) | Γ-parametrized orbit-set interface; pairing slices through the #47 stabilizer | open |
 | Degenerate and nonprimitive equivariant markings (#61) | Nonprimitive through #48; prescribed Gram through #47 | open |
 | Normalizers (#50) | Twisted transporter on cyclotomic summands; generators of N(H) | open |
