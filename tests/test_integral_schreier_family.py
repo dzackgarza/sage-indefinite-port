@@ -97,3 +97,20 @@ def test_factored_family_uses_the_noncommuting_lattice_action():
         for point in (e, f, w)
     )
     assert any(all(generator(point) == -point for point in (e, f, w)) for generator in realized)
+
+    from sage_indefinite_port.indefinite.recursive import _integral_stabilizer_action_columns
+
+    columns = tuple(_integral_stabilizer_action_columns(selected, action))
+    labels = tuple(selected.module_generating_set())
+    basis = tuple(selected.module_generators())
+    assert len(columns) == len(original)
+    for source, coefficients in zip(original, columns, strict=True):
+        for mapping, matrix_columns in ((source, coefficients), (~source, coefficients.inverse())):
+            for index, point in enumerate(basis):
+                image = selected.linear_combination({
+                    label: ZZ(int(matrix_columns[row, index]))
+                    for row, label in enumerate(labels)
+                })
+                assert selected.inclusion()(image).underlying_element() == mapping(
+                    selected.inclusion()(point).underlying_element()
+                )

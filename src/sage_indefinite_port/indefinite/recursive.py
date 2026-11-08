@@ -106,8 +106,74 @@ def _integral_stabilizer_family(action: IntegralStructureAction) -> Iterable[Lat
             yield inverse_transversals[image_position] * letter * realized_transversals[position]
 
 
+def _rational_action_columns(lattice, generators, *, inclusion=None):
+    r"""Read the supplied maps in the lattice's retained rational framing."""
+    labels = tuple(lattice.module_generating_set())
+    if inclusion is None:
+        inclusion = ModulesOverIntegralDomains(lattice.base_ring())(lattice).generic_fibre_map()
+    if inclusion.domain() is not lattice:
+        raise ValueError("the rational framing must retain the supplied integral lattice")
+    basis = tuple(inclusion(lattice.module_generator(label)).underlying_element() for label in labels)
+    field = inclusion.codomain().extension_ring()
+    frame = field.free_module(lattice.module_generating_set())
+    comparisons = {}
+    inverse_comparisons = {}
+    for generator in generators:
+        domain, codomain = generator.domain(), generator.codomain()
+        for endpoint in (domain, codomain):
+            if endpoint not in comparisons:
+                comparison = Modules(field).Mor(frame, endpoint)({
+                    label: endpoint(point) for label, point in zip(labels, basis, strict=True)
+                })
+                comparisons[endpoint] = _engine_matrix(comparison)
+        if codomain not in inverse_comparisons:
+            inverse_comparisons[codomain] = comparisons[codomain].inverse()
+        yield (
+            inverse_comparisons[codomain]
+            * _engine_matrix(generator.module_morphism())
+            * comparisons[domain]
+        )
+
+
+def _integral_stabilizer_action_columns(lattice, action):
+    r"""Every full integral Schreier action, with factors in one rational frame.
+
+    GroupAction.g:869-886 constructs the integral stabilizer before
+    MatrixGroupSimplification.h reduces its full matrix generators.
+    The provider supplies t_(s.p)^-1 s t_p and the exact orbit action.
+    Rational factors are composed before their product is admitted over ZZ.
+    """
+    g_set = action.finite_representation().g_set()
+    if g_set.cardinality() == 1:
+        for columns in _rational_action_columns(
+            lattice, _integral_stabilizer_family(action), inclusion=action.lattice_inclusion()
+        ):
+            yield columns.change_ring(SageZZ)
+        return
+    letters, transversals = action.stabilizer_schreier_factors()
+    inclusion = action.ambient_group_inclusion()
+    factors = itertools.chain(
+        (inclusion(letter) for letter in letters),
+        (inclusion(transversal) for transversal in transversals),
+    )
+    columns = tuple(_rational_action_columns(lattice, factors, inclusion=action.lattice_inclusion()))
+    letter_columns = columns[:len(letters)]
+    transversal_columns = columns[len(letters):]
+    inverse_transversals = tuple(transversal.inverse() for transversal in transversal_columns)
+    points = tuple(g_set)
+    permutations = g_set.orbit_generator_permutations(points[0])
+    positions = {point: position for position, point in enumerate(points)}
+    for position, point in enumerate(points):
+        for letter, permutation in zip(letter_columns, permutations, strict=True):
+            image_position = positions[permutation(point)]
+            yield (
+                inverse_transversals[image_position] * letter * transversal_columns[position]
+            ).change_ring(SageZZ)
+
+
 def _integral_generator_set(
-    lattice: Lattices.ParentMethods, generators: Iterable[LatticeIsometryMethods]
+    lattice: Lattices.ParentMethods,
+    generators: Iterable[LatticeIsometryMethods] | IntegralStructureAction,
 ) -> tuple[LatticeIsometryMethods, ...]:
     r"""Reduce full integral actions before constructing integral maps.
 
@@ -116,15 +182,15 @@ def _integral_generator_set(
     These are invertible Nielsen transformations, so the integral kernel
     survives even when several generators have the same finite image.
     Native matrices are temporary exact basis actions; the result consists
-    of owned lattice isometries.
+    of owned lattice isometries. A supplied integral-structure action
+    realizes its complete Schreier family in the common frame first.
     """
     labels = tuple(lattice.module_generating_set())
-    inclusion = ModulesOverIntegralDomains(lattice.base_ring())(lattice).generic_fibre_map()
-    basis = tuple(inclusion(lattice.module_generator(label)).underlying_element() for label in labels)
-    field = inclusion.codomain().extension_ring()
-    frame = field.free_module(lattice.module_generating_set())
-    comparisons = {}
-    row_positions = {}
+    columns = (
+        _integral_stabilizer_action_columns(lattice, generators)
+        if isinstance(generators, IntegralStructureAction)
+        else _rational_action_columns(lattice, generators)
+    )
     identity = tuple(int(row == column) for row in range(len(labels)) for column in range(len(labels)))
     seen = {identity}
     actions = {}
@@ -155,21 +221,8 @@ def _integral_generator_set(
                 return inverse_key, (inverse_norm, inverse, action)
         return direct_key, (direct_norm, action, inverse)
 
-    for generator in generators:
-        domain, codomain = generator.domain(), generator.codomain()
-        if domain not in comparisons:
-            comparison = Modules(field).Mor(frame, domain)({
-                label: domain(point) for label, point in zip(labels, basis, strict=True)
-            })
-            comparisons[domain] = _engine_matrix(comparison)
-        if codomain not in row_positions:
-            target_labels = tuple(codomain.module_generating_set())
-            row_positions[codomain] = tuple(target_labels.index(label) for label in labels)
-        # Lower the actual linear map through its owner's selected framing.
-        # The comparison uses the original lifted lattice basis, and row
-        # selection keeps the same output labels as the integral action.
-        columns = _engine_matrix(generator.module_morphism()) * comparisons[domain]
-        engine_action = columns.matrix_from_rows(row_positions[codomain]).transpose().change_ring(SageZZ)
+    for action_columns in columns:
+        engine_action = action_columns.transpose().change_ring(SageZZ)
         action = np.asarray(tuple(map(int, engine_action.list())), dtype="object").reshape(len(labels), len(labels))
         key, _norm = action_data(action)
         if key in seen:
@@ -1278,7 +1331,7 @@ class EichlerRecursion:
         # The source supplies a stable containing module, so this is the
         # finite residue action (GroupAction.g:813-900), independently of
         # whether the rational arithmetic group itself is finite.
-        return _integral_generator_set(lattice, _integral_stabilizer_family(action))
+        return _integral_generator_set(lattice, action)
 
     def pointwise_stabilizer_generators(self, vector: Lattices.ElementMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""Generators of `Aut((L, v))`, the **pointwise** stabilizer `{g : g(v) = v}` (issues #53 and #62).
@@ -1791,7 +1844,7 @@ class EichlerRecursion:
         if self.vector_lies_in_radical(vector):
             return self._degenerate_radical_pointed_generators(vector)
         action = self.isotropic_stabilizer_action((vector,), ()) if vector.q() == lattice.base_ring().zero() else self._lattice_action(vector)
-        return _integral_generator_set(lattice, _integral_stabilizer_family(action))
+        return _integral_generator_set(lattice, action)
 
     def pointed_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
         r"""An element of Isom((L, v), (M, w)), or None."""

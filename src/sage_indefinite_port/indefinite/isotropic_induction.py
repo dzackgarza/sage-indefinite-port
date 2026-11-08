@@ -50,7 +50,6 @@ from sage_indefinite_port.indefinite.recursive import (
     _extend_perpendicular_isometry,
     _extend_rational_perpendicular,
     _integral_generator_set,
-    _integral_stabilizer_family,
 )
 from sage_indefinite_port.invariants import AttackProfile, IsotropicFlagPrefilter, LatticePrefilter
 
@@ -393,9 +392,7 @@ class IsotropicInduction:
             # Source LGenStab is computed for the previous integral flag,
             # before the quotient-vector loop. Reduce its full actions once
             # before producing the maps consumed by representative descent.
-            generators = _integral_generator_set(
-                lattice, _integral_stabilizer_family(action)
-            )
+            generators = _integral_generator_set(lattice, action)
             field_map = lattice.base_ring().fraction_field_map()
             return tuple(generator.base_change(field_map) for generator in generators)
 
@@ -610,9 +607,7 @@ class IsotropicInduction:
 
             @cache
             def integral_line_generators() -> tuple[LatticeIsometryMethods, ...]:
-                generators = _integral_generator_set(
-                    lattice, _integral_stabilizer_family(line_action)
-                )
+                generators = _integral_generator_set(lattice, line_action)
                 field_map = lattice.base_ring().fraction_field_map()
                 return tuple(generator.base_change(field_map) for generator in generators)
 
@@ -744,7 +739,7 @@ class IsotropicInduction:
         # (GroupAction.g:869-886); the action reads each one on the basis of L once.
         action = self.recursion.isotropic_stabilizer_action(isotropic, radical_images)
         lattice = isotropic[0].parent()
-        return _integral_generator_set(lattice, _integral_stabilizer_family(action))
+        return _integral_generator_set(lattice, action)
 
     def line_automorphism_generators(self, lattice: Lattices.ParentMethods, line: Vector) -> tuple[LatticeIsometryMethods, ...]:
         r"""Aut((L, Zu)): Gamma = {+-1} on the line (IndefiniteForms.g:1711-1725 with k = 1)."""
