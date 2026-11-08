@@ -51,6 +51,8 @@ The SL₂(Z) action on E₁ extends by the contragredient action on
 ⟨f₁,f₂⟩ and the identity on ⟨v,w⟩. These extensions lie in stable
 SO⁺(L). They act transitively on primitive lines in E₁. Hence E₁
 contributes one flag orbit, incident with the divisor-one line orbit.
+The transvections t(e₁,−f₂) and t(e₂,−f₁) realize its two
+elementary generators on (e₁,e₂).
 
 For E₂, take the integral Eichler transvections
 
@@ -87,7 +89,7 @@ numbers of points, curves and edges are (2,2,3).
 
 `tests/test_dawes_L2_boundary_witnesses.py` checks the complete finite
 discriminant calculation, the primitive null vector and its divisor,
-the two transvection actions, preservation of all basis pairings,
+the elementary transvection actions on both planes, preservation of all basis pairings,
 and inverse identities. It uses the owned lattice and isometry
 operations. The plane classification uses the cited source normal
 form; the finite witnesses alone do not replace that classification.

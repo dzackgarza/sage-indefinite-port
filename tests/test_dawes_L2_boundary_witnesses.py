@@ -34,13 +34,19 @@ def test_L2_plane_stabilizer_transvections():
     assert null.is_primitive()
     assert int(null.div()) == 2
     assert int(e1.div()) == 1
+    first_upper = ambient.eichler_transvection(e1, -f2)
+    first_lower = ambient.eichler_transvection(e2, -f1)
+    assert first_upper(e1) == e1
+    assert first_upper(e2) == e2 + e1
+    assert first_lower(e1) == e1 + e2
+    assert first_lower(e2) == e2
     upper = ambient.eichler_transvection(e1, -e2)
     lower = ambient.eichler_transvection(null, -f1)
     assert upper(e1) == e1
     assert upper(null) == null + e1 + e1
     assert lower(e1) == e1 + null
     assert lower(null) == null
-    for transformation in (upper, lower):
+    for transformation in (first_upper, first_lower, upper, lower):
         for x in basis(ambient):
             assert (~transformation)(transformation(x)) == x
             for y in basis(ambient):
