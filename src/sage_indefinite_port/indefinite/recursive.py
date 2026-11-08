@@ -1992,6 +1992,26 @@ class EichlerRecursion:
         correction = correction_action.transporter(image)
         return None if correction is None else lattice.integral_isometry(correction.inverse() * rational_transport)
 
+    def isotropic_quotient_kernel_generators(self, reduction) -> tuple[LatticeIsometryMethods, ...]:
+        r"""Integral generators fixing the perpendicular quotient pointwise.
+
+        CombinedAlgorithms.h:779-877 with the trivial quotient group retains
+        GL(I), Hom(K,I) and the full pointwise-perpendicular kernel. The
+        source integral-structure stabilizer selects their integral subgroup.
+        """
+        from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+
+        embedding = reduction.isotropic_embedding()
+        lattice = embedding.codomain()
+        isotropic = tuple(embedding(point) for point in embedding.domain().module_generators())
+        if not isotropic:
+            return ()
+        subspace = lattice.primitive_isotropic_subobject(*isotropic)
+        action = self.isotropic_stabilizer_action(
+            isotropic, IsotropicInduction.sublattice_action_images(subspace), quotient_generators=(),
+        )
+        return _integral_generator_set(lattice, action)
+
     def _isotropic_correction(
         self,
         rational_transport: LatticeIsometryMethods,
