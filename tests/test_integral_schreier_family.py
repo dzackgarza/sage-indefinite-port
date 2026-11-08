@@ -46,6 +46,20 @@ def test_factored_integral_family_equals_every_source_action(gram):
     action = IntegralStructureAction(rational.O().subgroup(group_generators), inclusion).with_stable_containing_bound(bound)
     original = tuple(action.finite_representation().lattice_stabilizer().group_generators())
     realized = tuple(_integral_stabilizer_family(action))
+    from sage_indefinite_port.indefinite.recursive import _integral_stabilizer_action_columns
+
+    columns = tuple(_integral_stabilizer_action_columns(ambient, action))
+    labels = tuple(ambient.module_generating_set())
+    assert len(columns) == len(original)
+    for source, action_columns in zip(original, columns, strict=True):
+        inverse_columns = action_columns.inverse()
+        for index, point in enumerate(integral_basis):
+            for mapping, coefficients in ((source, action_columns), (~source, inverse_columns)):
+                image = ambient.linear_combination({
+                    label: ambient.base_ring()(int(coefficients[row, index]))
+                    for row, label in enumerate(labels)
+                })
+                assert inclusion(image).underlying_element() == mapping(inclusion(point).underlying_element())
 
     assert len(realized) == len(original)
     for source, target in zip(original, realized, strict=True):

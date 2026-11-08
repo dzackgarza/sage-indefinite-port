@@ -194,3 +194,12 @@ The three call sites are correct; they are simply priced by the family's size. N
 assertion was touched, and the families that use these routes keep their recorded results (see the
 acceptance rerun of 2026-11-06 in `.tmp/acceptance-coverage.md`). #70 stays open until the operation above
 exists and the port's conversion count is bounded by the factors rather than by the family.
+
+
+## Current original O_plus_N failure
+
+At immutable port 2e36cff/provider 7960e1ae, the unchanged original line/plane assertion is terminal under its original 2400-second bound. The final stack is `_integral_stabilizer_family` yielding `inverse_transversals[image_position] * letter * realized_transversals[position]`, through owned isometry composition and formed-module-arrow construction. Its process group is empty. The complete requested assertion remains open.
+
+The supplied finite action already retains every Schreier factor and its exact generator permutation. The next repair lowers those retained factors into the same rational framing once, forms every exact Schreier matrix product there and applies the existing integral Nielsen reduction. A product is admitted over ZZ only after the rational factors compose. Each surviving full integral action is raised in the actual lattice isometry homset. The complete family, including integral kernels invisible in finite quotients, must survive as the same generated group.
+
+Verification must compare every factored full forward/inverse action with the owned source family on small noncommuting and nonintegral-factor examples, then establish the unchanged original O_plus_N assertion. A reduced family size or isolated matrix timing cannot establish that assertion.
