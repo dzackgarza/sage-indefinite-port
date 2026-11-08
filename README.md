@@ -59,7 +59,7 @@ Read [AGENTS.md](AGENTS.md) for ownership and source-fidelity constraints; then 
 - [Academic citations](CITATIONS.md) and [review criteria](references/review-guidelines.md)
 - [Acceptance workflow](.github/workflows/acceptance.yml) and [Acceptance runs](https://github.com/dzackgarza/sage-indefinite-port/actions/workflows/acceptance.yml)
 
-The CI workflow provisions Sage and installs the published `research` dependency; it runs the full frozen fixture suite on pushes. Each run is tied to its own port commit and recorded research revision. The accepted development criterion for large families is **branch-representative sample evidence**, not completion of all long-tail cases; see [issue #33's October 22 amendment](https://github.com/dzackgarza/sage-indefinite-port/issues/33#issuecomment-6343829665) and the acceptance table on [#64](https://github.com/dzackgarza/sage-indefinite-port/issues/64). No fixture or assertion is deleted to form a sample.
+The CI workflow provisions Sage and installs the published `research` dependency; it runs the frozen fixture suite only by manual dispatch, with `corpus=sample` or `corpus=full`. Each run is tied to its own port commit and recorded research revision. The accepted development criterion for large families is **branch-representative sample evidence**, not completion of all long-tail cases; see [issue #33's October 22 amendment](https://github.com/dzackgarza/sage-indefinite-port/issues/33#issuecomment-6343829665) and the acceptance table on [#64](https://github.com/dzackgarza/sage-indefinite-port/issues/64). No fixture or assertion is deleted to form a sample.
 
 ## Local development checks
 

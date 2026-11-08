@@ -1,12 +1,19 @@
-# The required acceptance sample runs on every push. Amended long-tail corpora
-# are reserved for workflow_dispatch; explicit full-file contracts stay full.
+# Acceptance runs only by manual dispatch. A result does not select the next task.
+# The sample corpus runs the amended branch samples; the full corpus runs every file.
 # The summary job collates every executed shard into one failure list.
 name: Acceptance
 on:
-  push: {}
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      corpus:
+        description: sample runs the amended branch samples; full runs every file
+        required: true
+        type: choice
+        options:
+          - sample
+          - full
 concurrency:
-  # A newer push replaces a queued run but never cancels one in progress.
+  # A newer dispatch replaces a queued run but never cancels one in progress.
   group: acceptance-${{ github.ref }}
   cancel-in-progress: false
 permissions:
@@ -21,7 +28,7 @@ jobs:
       - id: plan
         # family=shards; the family is tests/acceptance/test_<family>.sage.
         env:
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          ACCEPTANCE_CORPUS: ${{ inputs.corpus }}
         run: |+
           python3 - >> "$GITHUB_OUTPUT" <<'PY'
           import json
@@ -60,9 +67,9 @@ jobs:
               "centralizers": 1,
               "double_cosets": 1,
           }
-          if os.environ["GITHUB_EVENT_NAME"] == "push":
-              # #33's amended acceptance nodes run explicit branch samples on
-              # push; full files remain available on workflow_dispatch.
+          if os.environ["ACCEPTANCE_CORPUS"] == "sample":
+              # #33's amended acceptance nodes run explicit branch samples in
+              # the sample corpus; the full corpus runs every file.
               # A sample is partitioned by what binds it, measured per case:
               # `orthogonal_group` is memory-bound and names one selection per
               # shard, `vector_stabilizers` is memory-bound and is ordered by
@@ -166,7 +173,7 @@ jobs:
     name: ${{ matrix.family }} ${{ matrix.shard }}/${{ matrix.shards }}
     runs-on: ubuntu-latest
     # The family's own cap plus setup margin, from the plan step. A single 360 here let a
-    # hung family hold the concurrency group for six hours and starve the next push's run.
+    # hung family hold the concurrency group for six hours and starve the next run.
     timeout-minutes: ${{ matrix.timeout }}
     container:
       image: ghcr.io/dzackgarza/sage:develop
