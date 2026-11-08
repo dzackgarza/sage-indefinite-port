@@ -1717,9 +1717,9 @@ its general parameters, and record any demonstrated source defect at that
 routine. A source warning requires source analysis and mathematical evidence;
 it does not authorize a blanket rank restriction on the port's operations.
 
-Translate the general induction once. Use lines, planes, higher-rank subspaces
-and complete or partial flags to verify its branches. The current rank-two
-public limit leaves the source translation incomplete under #18/#44.
+Use the general rank-extension induction for all these operations. Verify
+lines, planes, higher-rank subspaces and complete or partial flags through
+their public marking categories under #18/#44.
 
 * * *
 
