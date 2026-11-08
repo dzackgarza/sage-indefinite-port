@@ -50,6 +50,8 @@ def test_pointwise_maximal_stabilizer_in_four_u_has_the_full_skew_parameter_modu
 def test_special_orthogonal_group_has_two_moving_maximal_isotropic_orbits_in_four_u():
     r"""The maximal parabolic in O(4U) has determinant one.
 
+    Unimodularity supplies integral duals to a primitive null basis;
+    evenness permits null corrections, giving a hyperbolic completion.
     Its diagonal blocks are A and A^(-T), and its unipotent radical has
     determinant one. Swapping one hyperbolic pair has determinant minus
     one, so the single O(4U) orbit splits into two SO(4U) orbits.
@@ -73,9 +75,15 @@ def test_special_orthogonal_group_has_two_moving_maximal_isotropic_orbits_in_fou
         assert all(ambient.b(x, y) == ZZ.zero() for x in null_basis for y in null_basis)
         self_witness = ARROWS.Core().Mor(representative, representative).an_element_in(special)
         assert self_witness is not None
+        apex = self_witness.forward().right()
+        assert apex in special
+        assert all(arrow.is_in_image(apex(point)) for point in null_basis)
     homset = ARROWS.Core().Mor(*representatives)
     assert homset.an_element_in(special) is None
     witness = homset.an_element().forward().right()
     assert witness.determinant() == -ZZ.one()
+    first, second = (representative.arrow() for representative in representatives)
+    assert all(second.is_in_image(witness(first(point))) for point in first.domain().module_generators())
+    assert all(first.is_in_image((~witness)(second(point))) for point in second.domain().module_generators())
     assert all((~witness)(witness(point)) == point for point in basis)
     assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y) for x in basis for y in basis)

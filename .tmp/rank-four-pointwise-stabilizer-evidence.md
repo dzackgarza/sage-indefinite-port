@@ -19,3 +19,14 @@ The assertion verifies those full forward and inverse actions and skew equations
 | Selected pytest total seconds | 27.79 |
 
 The selected assertion passes in the shared Sage container. It is outside the frozen suite. General source parity still requires the other markings, requested subgroup actions, dimension sequences and nontrivial quotient/gluing branches; final-pair frozen evidence remains required.
+
+## Moving maximal markings under SO(4U)
+
+The additional public assertion `test_special_orthogonal_group_has_two_moving_maximal_isotropic_orbits_in_four_u` remains unverified. A primitive maximal null sublattice has an integral hyperbolic completion, so O(4U) is transitive. Its parabolic stabilizer has diagonal blocks A and A^(-T) and a unipotent radical, hence determinant one. Swapping one hyperbolic pair has determinant minus one; the full orbit must therefore split into two SO(4U) orbits. The assertion retains the caller's subgroup, exact moving markings and forward/inverse transporter conditions.
+
+| Diagnostic bound seconds | Result |
+| ---: | --- |
+| 60 | Ambient orthogonal generation; orbit assertion unreached |
+| 300 | Ambient orthogonal generation; orbit assertion unreached |
+
+Both diagnostics use provider 8d72ad94 and the current specialized source. The longer terminal stack reaches owned tensor coordinate admission during that generation. Complete the actual ambient generator computation and then verify the exact orbit split and transporter assertions. The proved pointwise skew-group result above has its separate, narrower scope.
