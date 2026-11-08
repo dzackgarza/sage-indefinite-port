@@ -45,8 +45,8 @@ Rows that do not name a dependency proceed independently. Work on several at onc
 | Capability | First example | Status |
 |---|---|---|
 | Right cosets of k-plane and k-flag stabilizers (#44; `CombinedAlgorithms.h:1565-1628,2461-2471`) | U+⟨2⟩, I=Ze: \|G/H\|=2 | done |
-| Induced action on successive flag quotients (#44) | 3U complete flag: image (±1)³ of order 8 | open |
-| Oriented and based marking variants (#44) | 2U oriented maximal null plane: one class; stabilizer of index 2 in the parabolic | open |
+| Induced action on successive flag quotients (#44) | 3U complete flag: image (±1)³ of order 8 | done |
+| Oriented and based marking variants (#44) | 2U oriented maximal null plane: one class; stabilizer of index 2 in the parabolic | done |
 | Full edgewalk on non-reflective lattices: all vertex orbits, polyhedron isometries (#15) | U+⟨46⟩: every edge neighbour of a listed vertex is equivalent to a listed vertex | open |
 | Edgewalk `OptionNorms="K3"`, W₂ walls (#15) | U+⟨4⟩: (0,0,1) is a wall in "all" mode and not in K3 mode | open |
 | Edgewalk `OptionInitialVertex`, `reason_non_reflective`, isomorphism route (#15) | U+⟨2⟩ from a prescribed vertex; U+⟨46⟩ reason; U+⟨2⟩ and a basis change return a witness | open |
