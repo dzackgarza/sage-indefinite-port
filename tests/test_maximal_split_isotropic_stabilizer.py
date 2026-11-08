@@ -45,3 +45,37 @@ def test_pointwise_maximal_stabilizer_in_four_u_has_the_full_skew_parameter_modu
             for label, (i, j) in zip(parameter_labels, pairs, strict=True)
         }))
     assert parameters.subobject_on(images).inclusion().cokernel().cardinality() == cardinal(1)
+
+
+def test_special_orthogonal_group_has_two_moving_maximal_isotropic_orbits_in_four_u():
+    r"""The maximal parabolic in O(4U) has determinant one.
+
+    Its diagonal blocks are A and A^(-T), and its unipotent radical has
+    determinant one. Swapping one hyperbolic pair has determinant minus
+    one, so the single O(4U) orbit splits into two SO(4U) orbits.
+    """
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS
+
+    hyperbolic = Lattices(ZZ)("U")
+    ambient = hyperbolic + hyperbolic + hyperbolic + hyperbolic
+    basis = tuple(ambient.module_generators())
+    null = ambient.primitive_isotropic_subobject(*basis[::2])
+    marking = ARROWS(null.inclusion())
+    group, special = ambient.O(), ambient.SO()
+    representatives = tuple(group.split_orbit(marking, special))
+    assert len(representatives) == 2
+    for representative in representatives:
+        arrow = representative.arrow()
+        assert arrow.codomain() is ambient
+        assert arrow.is_primitive()
+        assert arrow.domain().rank() == 4
+        null_basis = tuple(arrow(point) for point in arrow.domain().module_generators())
+        assert all(ambient.b(x, y) == ZZ.zero() for x in null_basis for y in null_basis)
+        self_witness = ARROWS.Core().Mor(representative, representative).an_element_in(special)
+        assert self_witness is not None
+    homset = ARROWS.Core().Mor(*representatives)
+    assert homset.an_element_in(special) is None
+    witness = homset.an_element().forward().right()
+    assert witness.determinant() == -ZZ.one()
+    assert all((~witness)(witness(point)) == point for point in basis)
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y) for x in basis for y in basis)
