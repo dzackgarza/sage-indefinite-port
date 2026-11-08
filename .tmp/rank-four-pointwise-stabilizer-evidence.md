@@ -34,3 +34,12 @@ Both diagnostics use provider 8d72ad94 and the current specialized source. The l
 ### Native definite-provider diagnostic
 
 At port `2e36cff9b11acdc50f7576d5846c45a9dc02c7d9` and provider `7960e1ae8a7cca25abf689f37ab4745376cfeecf`, the same moving SO(4U) assertion reaches its diagnostic bound of 300 seconds. The final stack is in finite coset equality: `finite_ordered_sets.index_of` calls `lookup.get(point)`, then `g_sets.__eq__` tests `representative().inverse() * other.representative()` in the subgroup. Owned isometry composition reaches `_morphism_from_engine_matrix` and indexed-family construction. The orbit and transporter assertions remain unverified. Trace the retained finite action and subgroup before changing this generic operation.
+
+
+## Verified moving SO(4U) maximal markings
+
+The unchanged assertion `test_special_orthogonal_group_has_two_moving_maximal_isotropic_orbits_in_four_u` passes at published port `e0e9ab6` / provider `2dfd20b685cdb57361f280553345f207864bd75f`. The retained JUnit is `.tmp/four-u-special-maximal-orbits-e0e9ab6-2dfd20b6.xml`. It records a mathematical call of 263.269 seconds and session of 270.911 seconds, under the same 300-second diagnostic bound used above.
+
+The assertion returns exactly two moving primitive maximal rank-four null markings under SO(4U). Each has a self transporter in the requested subgroup preserving its marked sublattice. The two classes have no SO transporter. An O transporter has determinant minus one, carries each null sublattice onto the other, has the correct inverse action, and preserves every ambient basis pairing. These are the expected consequences of the determinant-one maximal parabolic proof above.
+
+The provider realizes finite-character cosets through its owned joint character morphism and finite-preimage action. Small independent character/coset assertions are recorded in `.tmp/joint-character-representation-evidence.md`. This rank-four public result supplies one source-parity example; every remaining rank, marking, requested subgroup and nontrivial quotient/gluing branch still requires its own evidence.
