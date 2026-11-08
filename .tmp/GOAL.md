@@ -50,7 +50,7 @@ Rows that do not name a dependency proceed independently. Work on several at onc
 | Full edgewalk on non-reflective lattices: all vertex orbits, polyhedron isometries (#15) | U+⟨46⟩: every edge neighbour of a listed vertex is equivalent to a listed vertex | open |
 | Edgewalk `OptionNorms="K3"`, W₂ walls (#15) | U+⟨4⟩: (0,0,1) is a wall in "all" mode and not in K3 mode | open |
 | Edgewalk `OptionInitialVertex`, `reason_non_reflective`, isomorphism route (#15) | U+⟨2⟩ from a prescribed vertex; U+⟨46⟩ reason; U+⟨2⟩ and a basis change return a witness | open |
-| Public invariant, indefinite reduction and approximate canonical form (#18) | Basis change of U+⟨2⟩ preserves invariant and canonical form | open |
+| Public invariant, indefinite reduction and approximate canonical form (#18) | Basis change of U+⟨2⟩ preserves invariant and canonical form | done |
 | Routes with no finished example: spacelike Lorentzian vector orbits; rank ≥3 flags with proper Levi image; rank-3 discriminant image; odd-glued negative lift; SO splitting of (1,3) flags. Run each small example once, with no bound, in the background. | A1 in U+A1; U+U+U(3); 3U+⟨-6⟩; the #44 odd-glued case; (1,3) flags in 3U | open |
 
 ### Foundations that open several families

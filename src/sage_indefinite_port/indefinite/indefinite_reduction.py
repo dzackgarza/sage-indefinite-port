@@ -309,25 +309,76 @@ def _order_blocks_by_signature(gram):
     return basis, basis * gram * basis.transpose()
 
 
-def _approximate_indefinite_reduction(gram):
-    """The present exact-presentation part of ApproxCanonicalIndefiniteForm.
+def _definite_canonical_basis(gram):
+    """Canonical basis of a positive definite Gram matrix.
 
-    The source IndefiniteReduction is followed by blockwise indefinite
-    sign/permutation normalization and stable ordering (lines 374-389).
-    For definite blocks of rank greater than one, its separate definite
-    ComputeCanonicalForm backend (LatticeStabEquiCan.h) is not yet supplied.
-    Those blocks retain their *isometric* reduced presentation; no differing
-    approximate presentation is used to decide nonisometry.
+    IndefApproxCanonical.h:314 calls ComputeCanonicalForm, outside the pinned
+    vendored files. This follows its published method: Dutour Sikiric,
+    Haensel, Schuermann, "On symmetries of vector configurations". The vectors
+    up to the least norm at which they generate L are an intrinsic
+    configuration. The canonical graph labelling orders it, up to isometries.
+    """
+    from sage.graphs.graph import Graph
+
+    rank = gram.nrows()
+    if rank == 1:
+        return identity_matrix(SageZZ, 1)
+    lll = gram.LLL_gram()
+    bound = max((lll.transpose() * gram * lll).diagonal())
+    columns = gram.__pari__().qfminim(bound, flag=0)[2]
+    found = matrix(SageZZ, columns.sage()).transpose().rows()
+    norms = sorted({row * gram * row for row in found})
+    for norm in norms:
+        selected = [row for row in found if row * gram * row <= norm]
+        generated = matrix(SageZZ, selected)
+        if generated.rank() == rank and all(d == 1 for d in generated.elementary_divisors()[:rank]):
+            break
+    else:
+        raise ArithmeticError("LLL-bounded vectors must generate a definite lattice")
+    configuration = [*selected, *(-row for row in selected)]
+    size = len(configuration)
+    products = [[configuration[i] * gram * configuration[j] for j in range(size)] for i in range(size)]
+    graph = Graph()
+    graph.add_vertices(range(size))
+    graph.add_edges((i, j, products[i][j]) for i in range(size) for j in range(i + 1, size))
+    colours = sorted({products[i][i] for i in range(size)})
+    partition = [[i for i in range(size) if products[i][i] == colour] for colour in colours]
+    _, label = graph.canonical_label(partition=partition, certificate=True, edge_labels=True, algorithm="sage")
+    ordered = matrix(SageZZ, [configuration[i] for i in sorted(range(size), key=label.__getitem__)])
+    pivots = ordered.transpose().pivots()
+    frame = ordered.matrix_from_rows(pivots[:rank])
+    coordinates = ordered.change_ring(SageQQ) * ~frame.change_ring(SageQQ)
+    denominator = coordinates.denominator()
+    hermite = (denominator * coordinates).change_ring(SageZZ).hermite_form(include_zero_rows=False)
+    basis = (hermite.change_ring(SageQQ) / denominator * frame.change_ring(SageQQ)).change_ring(SageZZ)
+    if abs(basis.det()) != 1:
+        raise ArithmeticError("the canonical definite basis must be unimodular")
+    return basis
+
+
+def _approximate_indefinite_reduction(gram):
+    """ApproxCanonicalIndefiniteForm, IndefApproxCanonical.h:374-389.
+
+    IndefiniteReduction, then each connected block by its signature:
+    a null block is left alone, an indefinite block takes the signed
+    permutation normalization and a definite block its canonical basis
+    (lines 285-325), and finally the stable block ordering.
     """
     first, reduced = _indefinite_reduction(gram)
     second = identity_matrix(SageZZ, gram.nrows())
     for component in _gram_connected_components(reduced):
         block = reduced.matrix_from_rows_and_columns(component, component)
-        if not (block.is_positive_definite() or (-block).is_positive_definite()):
+        if block.is_zero():
+            continue
+        if block.is_positive_definite():
+            transform = _definite_canonical_basis(block)
+        elif (-block).is_positive_definite():
+            transform = _definite_canonical_basis(-block)
+        else:
             transform, _ = _canonicalize_permutation_signs(block)
-            for i, old_i in enumerate(component):
-                for j, old_j in enumerate(component):
-                    second[old_i, old_j] = transform[i, j]
+        for i, old_i in enumerate(component):
+            for j, old_j in enumerate(component):
+                second[old_i, old_j] = transform[i, j]
     reordered = second * reduced * second.transpose()
     third, _ = _order_blocks_by_signature(reordered)
     basis = third * second * first
@@ -527,6 +578,14 @@ def _indefinite_reduction(gram):
     if abs(basis.det()) != 1:
         raise ArithmeticError("indefinite reduction must retain an integral isometry")
     return basis, reduced
+
+
+@cache
+def approximate_canonical_presentation(lattice) -> LatticeReduction:
+    """ApproxCanonicalIndefiniteForm as an isometric change of presentation."""
+    original = _engine_component_matrix(lattice.gram_tensor()).change_ring(SageZZ)
+    basis, _reduced = _approximate_indefinite_reduction(original)
+    return _reduction_from_backend_rows(lattice, basis)
 
 
 @cache
