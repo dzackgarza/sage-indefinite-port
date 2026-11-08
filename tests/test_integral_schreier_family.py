@@ -5,6 +5,41 @@ import pytest
 from tests.acceptance.consumer import lattice
 
 
+def test_eichler_envelope_retains_the_supplied_lattice_action():
+    """The full rational Schreier action commutes with the based inclusion and its inverse."""
+    from sage.all import matrix, ZZ
+    from sage_indefinite_port.indefinite.eichler import EichlerEnvelope
+    from sage_indefinite_port.indefinite.recursive import _integral_stabilizer_action_columns
+
+    gram = matrix(ZZ, [[0, 2, 0, 0], [2, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    ambient = lattice(gram.rows())
+    envelope = EichlerEnvelope(ambient)
+    action = envelope.stabilizer_of_lattice()
+    inclusion = action.lattice_inclusion()
+    assert inclusion.domain() is ambient
+    basis = tuple(ambient.module_generators())
+    labels = tuple(ambient.module_generating_set())
+    rational = envelope.rational_isometry
+    assert all(
+        inclusion(point).underlying_element() == rational(rational.domain().module_generator(label))
+        for label, point in zip(labels, basis, strict=True)
+    )
+    original = tuple(action.stabilizer().group_generators())
+    columns = tuple(_integral_stabilizer_action_columns(ambient, action))
+    assert len(original) == len(columns)
+    assert columns
+    for source, coefficients in zip(original, columns, strict=True):
+        assert coefficients.transpose() * gram * coefficients == gram
+        assert coefficients.det() in (-1, 1)
+        for mapping, values in ((source, coefficients), (~source, coefficients.inverse())):
+            for index, point in enumerate(basis):
+                image = ambient.linear_combination({
+                    label: ambient.base_ring()(int(values[row, index]))
+                    for row, label in enumerate(labels)
+                })
+                assert inclusion(image).underlying_element() == mapping(inclusion(point).underlying_element())
+
+
 @pytest.mark.parametrize(
     "gram",
     (
