@@ -176,7 +176,11 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             if rank == 0:
                 return RECURSION.isometry(source.arrow().codomain(), target.arrow().codomain())
             if rank == 1:
-                return RECURSION.pointed_isometry(_marked_vector(source), _marked_vector(target))
+                source_vector, target_vector = _marked_vector(source), _marked_vector(target)
+                if source_vector.content() != target_vector.content():
+                    return None
+                # An isometry carries v=c*v0 to w=c*w0 exactly when it carries v0 to w0 (#48).
+                return RECURSION.pointed_isometry(source_vector.primitive_part(), target_vector.primitive_part())
             if not _is_totally_isotropic(source.arrow()) and _is_nondegenerate_primitive(source.arrow()):
                 from sage_extensions.categories.lattice_embeddings import _nondegenerate_marking_transporter
 
@@ -268,7 +272,7 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
             if rank == 0:
                 generators = RECURSION.orthogonal_group_generators(marked.arrow().codomain())
             elif rank == 1:
-                generators = RECURSION.pointed_automorphism_generators(_marked_vector(marked))
+                generators = RECURSION.pointed_automorphism_generators(_marked_vector(marked).primitive_part())
             elif not _is_totally_isotropic(marked.arrow()) and _is_nondegenerate_primitive(marked.arrow()):
                 from sage_extensions.categories.lattice_embeddings import _nondegenerate_marking_stabilizer_generators
 
