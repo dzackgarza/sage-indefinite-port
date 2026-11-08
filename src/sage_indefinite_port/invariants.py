@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from dzack_research.preamble.categories.lattices import Lattices
-from dzack_research.preamble.tensors.tensor import _engine_component_matrix
+from sage_extensions.categories.lattices import Lattices
+from sage_extensions.tensors.tensor import _engine_component_matrix
 from sage.matrix.constructor import matrix as SageMatrix
 from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.modules.free_module_element import vector as SageVector
@@ -30,6 +30,23 @@ class LatticePrefilter:
     def from_lattice(cls, lattice: Lattices.ParentMethods) -> LatticePrefilter:
         positive, negative = lattice.signature_pair()
         return cls(int(lattice.rank()), (int(positive), int(negative)), bool(lattice.is_even()), int(lattice.discriminant()))
+
+
+@dataclass(frozen=True)
+class IsotropicFlagPrefilter:
+    r"""Structured fields of the pinned isotropic k-stuff invariant.
+
+    CombinedAlgorithms.h:1361-1395 combines the raw rank/ambient/quotient
+    invariant of IndefiniteFormFundamental.h:164-197 with the primes in
+    the denominators of the rational flag group. The pinned
+    MatrixGroupBasic.h:54-79 and GroupAction.g:14-30 compute that prime
+    set. Equal fields never decide equivalence.
+    """
+
+    dimensions: tuple[int, ...]
+    ambient: LatticePrefilter
+    quotient: LatticePrefilter
+    denominator_primes: tuple[int, ...]
 
 
 @dataclass(frozen=True)

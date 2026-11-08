@@ -18,19 +18,24 @@ Levi actions as maps, double cosets and GL are the preamble's; the recursion sup
 isotropic classes of K and every stabilizer generating set.
 """
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterable, Iterator
+from functools import cache
+from math import lcm
 
-from dzack_research.preamble.all import ZZ, Cat, Lattices
-from dzack_research.preamble.categories.abstract_categories.products import (
+from sage_extensions.all import ZZ, Cat, Lattices
+from sage_extensions.categories.abstract_categories.products import (
     FiniteOrdinalCategory,
 )
-from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
-from dzack_research.preamble.categories.rational_integral_stabilizers import (
+from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
+from sage_extensions.categories.rational_integral_stabilizers import (
     IntegralStructureAction,
 )
 from sage.arith.misc import xgcd
 from sage.structure.parent import Parent
+from sage.categories.morphism import Morphism
+from sage_extensions.categories.modules.pure.modules import ModulesOverIntegralDomains
 
+from sage_indefinite_port.indefinite.edgewalk_scalars import _integer, _rational
 from sage_indefinite_port.indefinite.indefinite_reduction import (
     indefinite_reduced_presentation,
 )
@@ -43,8 +48,10 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
 from sage_indefinite_port.indefinite.recursive import (
     EichlerRecursion,
     _extend_perpendicular_isometry,
+    _extend_rational_perpendicular,
+    _integral_generator_set,
 )
-from sage_indefinite_port.invariants import AttackProfile
+from sage_indefinite_port.invariants import AttackProfile, IsotropicFlagPrefilter, LatticePrefilter
 
 ARROWS = Cat().Mor(FiniteOrdinalCategory(2), Lattices(ZZ))
 """Ar(Lattices): a sublattice I of L is the marked lattice (L, I -> L)."""
@@ -59,6 +66,92 @@ class UnsupportedRankError(ValueError):
 
 
 class IsotropicInduction:
+    @staticmethod
+    def invariant_frame_kernel(frame: LatticeIsometryMethods, radical: tuple[Vector, ...]) -> tuple[LatticeIsometryMethods, ...]:
+        r"""The kernel fixing J-perp and preserving the common integral frame.
+
+        CombinedAlgorithms.h:487-493 ComputeRelevantKernel. Multiplying
+        the rational form by a nonzero integer leaves its orthogonal group,
+        perpendiculars and pointwise kernel unchanged. The provider solves
+        the integral kernel on this scaled form; transport the maps back.
+        """
+        space = frame.domain()
+        labels = tuple(space.module_generating_set())
+        points = tuple(space.module_generator(label) for label in labels)
+        gram = tuple(tuple(_rational(space.b(left, right)) for right in points) for left in points)
+        scale = lcm(*(int(entry.denominator()) for row in gram for entry in row))
+        integral = Lattices(ZZ)([[int(scale * entry) for entry in row] for row in gram])
+        integral_labels = tuple(integral.module_generating_set())
+        integral_radical = []
+        for point in radical:
+            coordinates = (~frame)(point).to_vector()
+            entries = tuple(_rational(coordinates(label)) for label in labels)
+            denominator = lcm(*(int(entry.denominator()) for entry in entries))
+            integral_radical.append(integral.linear_combination({label: ZZ(int(denominator * entry)) for label, entry in zip(integral_labels, entries, strict=True)}))
+        saturated = integral.subobject_on(tuple(integral_radical)).saturation()
+        saturated_inclusion = saturated.inclusion()
+        saturated_basis = tuple(saturated_inclusion(saturated_inclusion.domain().module_generator(label)) for label in saturated_inclusion.domain().module_generating_set())
+        reduction = integral.primitive_isotropic_subobject(*saturated_basis).isotropic_reduction()
+        result = []
+        for generator in reduction.pointwise_perpendicular_kernel().group_generators():
+            images = {}
+            for label, integral_label in zip(labels, integral_labels, strict=True):
+                coordinates = generator(integral.module_generator(integral_label)).to_vector()
+                images[label] = space.linear_combination({target: space.base_ring()(_integer(coordinates(integral_target))) for target, integral_target in zip(labels, integral_labels, strict=True)})
+            transported = frame * space.Isom(space)(images) * ~frame
+            ambient = frame.codomain()
+            result.append(ambient.Isom(ambient)({
+                label: transported(ambient.module_generator(label))
+                for label in ambient.module_generating_set()
+            }))
+        return tuple(result)
+
+    @staticmethod
+    def invariant_module_frame(lattice: Lattices.ParentMethods, inclusion: Morphism) -> LatticeIsometryMethods:
+        r"""The rational formed frame of the common invariant integral module.
+
+        CombinedAlgorithms.h:314-332 pulls the form back to the invariant
+        lattice before extending either perpendicular group. Keep this
+        change of frame as an isometry, including its inverse.
+        """
+        rational = lattice.base_change(lattice.base_ring().fraction_field_map())
+        module = inclusion.domain()
+        points = tuple(inclusion(module.module_generator(label)).underlying_element() for label in module.module_generating_set())
+        formed = Lattices(rational.base_ring())([[rational.b(left, right) for right in points] for left in points])
+        labels = tuple(formed.module_generating_set())
+        return formed.Isom(rational)(dict(zip(labels, points, strict=True)))
+
+    @staticmethod
+    def lift_invariant_frame(
+        frame: LatticeIsometryMethods, basis: tuple[Vector, ...], images: tuple[Vector, ...]
+    ) -> LatticeIsometryMethods:
+        r"""Lift a perpendicular action using one common invariant-lattice frame.
+
+        CombinedAlgorithms.h:314-332 LiftToFullAutomorphism and :496-534.
+        The frame sends the chosen integral coordinate lattice to the common
+        invariant module. Both directions of the lift must preserve it.
+        """
+        inverse = ~frame
+        space = frame.domain()
+        extension = _extend_rational_perpendicular(
+            space, space, tuple(inverse(point) for point in basis), tuple(inverse(point) for point in images)
+        )
+        labels = tuple(space.module_generating_set())
+        for generator in (extension, ~extension):
+            for label in labels:
+                moved = generator(space.module_generator(label)).to_vector()
+                if any(_rational(moved(target)).denominator() != 1 for target in labels):
+                    raise ArithmeticError("the perpendicular lift does not preserve the common invariant lattice")
+        # MapOrthogonalSublatticeGroupUsingSublattice retains the resulting
+        # matrix, not a composition to evaluate for every later action.
+        # Supply its exact basis images to the owned isometry constructor.
+        transported = frame * extension * inverse
+        ambient = frame.codomain()
+        return ambient.Isom(ambient)({
+            label: transported(ambient.module_generator(label))
+            for label in ambient.module_generating_set()
+        })
+
     def __init__(self, recursion: EichlerRecursion) -> None:
         self.recursion = recursion
         self._line_classes: dict[int, tuple[Lattices.ParentMethods, tuple[Vector, ...]]] = {}
@@ -148,7 +241,74 @@ class IsotropicInduction:
         moved = element(rational_point).to_vector()
         if any(moved(label).denominator() != 1 for label in labels):
             raise ArithmeticError(f"{element} does not preserve u^perp integrally: it carries {vector} to a nonintegral vector")
-        return lattice.linear_combination({label: lattice.base_ring()(int(moved(label))) for label in labels if moved(label)})
+        # `moved` lives in the rational space, so its coordinates are base-ring elements, not Python
+        # integers: `int(...)` raises TypeError on them. Read them through the exact-rational helper,
+        # which also keeps the integrality invariant instead of truncating a non-integral entry.
+        return lattice.linear_combination({label: lattice.base_ring()(_integer(moved(label))) for label in labels if moved(label)})
+
+    @staticmethod
+    def shortened_extension(
+        lattice: Lattices.ParentMethods,
+        transporter: LatticeIsometryMethods,
+        point: Vector,
+        generators: Callable[[], Iterable[LatticeIsometryMethods]],
+    ) -> Vector:
+        r"""Shorten a coset and its extension in the same integral flag orbit.
+
+        CombinedAlgorithms.h:2356-2370 invokes the pinned
+        MatrixGroupSimplification.h:1702-1822 greedy right-coset and vector
+        routines. Row-matrix right multiplication is postcomposition here.
+        Each accepted move strictly lowers the exact coordinate L1 norm.
+        Rational matrix denominators divide the initial common denominator;
+        the vector is integral. Thus both descents terminate.
+        """
+        labels = tuple(lattice.module_generating_set())
+        rational = transporter.domain()
+        basis = tuple(rational.module_generator(label) for label in labels)
+
+        def matrix_norm(isometry: LatticeIsometryMethods):
+            return sum(
+                abs(_rational(coordinates(label)))
+                for vector in basis
+                for coordinates in (isometry(vector).to_vector(),)
+                for label in labels
+            )
+
+        def vector_norm(vector: Vector) -> int:
+            coordinates = vector.to_vector()
+            return sum(abs(_integer(coordinates(label))) for label in labels)
+
+        matrix_size = matrix_norm(transporter)
+        moved = IsotropicInduction._integral_image(lattice, transporter, point)
+        # A determinant-one-in-absolute-value matrix has L1 norm at least
+        # its rank (Hadamard and AM-GM); a nonzero integral vector has norm
+        # at least one. At both minima no stabilizer needs to be evaluated.
+        if matrix_size == len(labels) and vector_norm(moved) == 1:
+            return moved
+        moves = tuple(move for generator in generators() for move in (generator, ~generator))
+        while matrix_size > len(labels):
+            improved = False
+            for move in moves:
+                candidate = move * transporter
+                size = matrix_norm(candidate)
+                if size < matrix_size:
+                    transporter, matrix_size = candidate, size
+                    improved = True
+            if not improved:
+                break
+        moved = IsotropicInduction._integral_image(lattice, transporter, point)
+        vector_size = vector_norm(moved)
+        while vector_size > 1:
+            improved = False
+            for move in moves:
+                candidate = IsotropicInduction._integral_image(lattice, move, moved)
+                size = vector_norm(candidate)
+                if size < vector_size:
+                    moved, vector_size = candidate, size
+                    improved = True
+            if not improved:
+                break
+        return moved
 
     def _plane_stabilizer_generators(self, reduction: Parent, line: Vector, isotropic: Vector) -> tuple:
         r"""Rational generators of V: the plane span(u, x~) stabilizer inside the line's rational group G.
@@ -170,18 +330,246 @@ class IsotropicInduction:
         O(K) generators, the sign of u and the frame shears generate every automorphism of N
         preserving Zu, and V's generators are such automorphisms.
         """
-        lattice = line.parent()
+        basis, families = self.extension_stabilizer_images(reduction, (line,), ((-line,),), isotropic)
+        return tuple(_extend_perpendicular_isometry(reduction, reduction, basis, images)[0] for images in families)
+
+    def extension_stabilizer_images(
+        self, reduction: Parent, radical: tuple[Vector, ...], radical_images: tuple[tuple[Vector, ...], ...], isotropic: Vector
+    ) -> tuple[tuple[Vector, ...], tuple[tuple[Vector, ...], ...]]:
+        r"""Generators on J-perp preserving the flag on J and span(J, x).
+
+        CombinedAlgorithms.h:1975-2075 f_stab_plane_v, before its common
+        invariant-lattice lift. The third family is contained in Hom(K,J):
+        primitive x extends to a basis of K, so a functional taking x to
+        one is integral and is generated by the coordinate functionals.
+        """
+        lattice = radical[0].parent()
         quotient = reduction.quotient_lattice()
         labels, lifts = self._frame_lifts(reduction)
         frame = tuple(lifts[label] for label in labels)
-        basis = (line, *frame)
-        families = [(-line, *(-lifted for lifted in frame))]
+        basis = (*radical, *frame)
+        families = [tuple(-point for point in basis)]
         for automorphism in self.recursion.pointed_automorphism_generators(isotropic):
-            families.append((line, *(self._lift(lattice, labels, lifts, automorphism(quotient.module_generator(label))) for label in labels)))
-        families.append((-line, *frame))
+            families.append((*radical, *(self._lift(lattice, labels, lifts, automorphism(quotient.module_generator(label))) for label in labels)))
+        families.extend((*images, *frame) for images in radical_images)
         for sheared in range(len(frame)):
-            families.append((line, *(lifted + line if position == sheared else lifted for position, lifted in enumerate(frame))))
-        return tuple(_extend_perpendicular_isometry(reduction, reduction, basis, images)[0] for images in families)
+            for point in radical:
+                families.append((*radical, *(lifted + point if position == sheared else lifted for position, lifted in enumerate(frame))))
+        return basis, tuple(families)
+
+    def subspace_extensions(
+        self, lattice: Lattices.ParentMethods, radical: tuple[Vector, ...], radical_images: tuple[tuple[Vector, ...], ...]
+    ) -> Iterator[tuple[Vector, ...]]:
+        r"""Extend an isotropic flag by one rank, up to its integral stabilizer.
+
+        CombinedAlgorithms.h:2076-2190 f_double_cosets and :2259-2377
+        SpanRepresentatives. Both lifted groups preserve the same module
+        and include its full pointwise-perpendicular kernel. Their images
+        on the perpendicular are the ambient flag group and the extension
+        stabilizer, respectively; thus the second group lies in the first.
+        """
+        reduction = self.reduction(lattice, *radical)
+        quotient = reduction.quotient_lattice()
+        action = self.recursion.isotropic_stabilizer_action(radical, radical_images)
+        invariant = action.invariant_module()
+        frame = self.invariant_module_frame(lattice, invariant)
+        rationalize = ModulesOverIntegralDomains(lattice.base_ring())(lattice).generic_fibre_map()
+
+        def rational(point: Vector) -> Vector:
+            return rationalize(point).underlying_element()
+
+        labels, lifts = self._frame_lifts(reduction)
+        basis = tuple(rational(point) for point in (*radical, *(lifts[label] for label in labels)))
+        kernel = self.invariant_frame_kernel(frame, tuple(rational(point) for point in radical))
+        ambient_generators = tuple(
+            self.lift_invariant_frame(frame, basis, tuple(generator(point) for point in basis))
+            for generator in action.rational_group().group_generators()
+        ) + kernel
+        ambient = frame.codomain().O()
+
+        @cache
+        def integral_flag_generators() -> tuple[LatticeIsometryMethods, ...]:
+            # Source LGenStab is computed for the previous integral flag,
+            # before the quotient-vector loop. Reduce its full actions once
+            # before producing the maps consumed by representative descent.
+            generators = _integral_generator_set(lattice, action)
+            field_map = lattice.base_ring().fraction_field_map()
+            return tuple(generator.base_change(field_map) for generator in generators)
+
+        for isotropic in self.isotropic_vector_classes(quotient):
+            extension_basis, families = self.extension_stabilizer_images(reduction, radical, radical_images, isotropic)
+            stabilizer_generators = tuple(
+                self.lift_invariant_frame(frame, tuple(rational(point) for point in extension_basis), tuple(rational(point) for point in images))
+                for images in families
+            ) + kernel
+            group = ambient.subgroup((*ambient_generators, *stabilizer_generators))
+            integral_action = IntegralStructureAction(group, action.lattice_inclusion()).with_stable_containing_bound(invariant)
+            double_cosets = integral_action.double_cosets(group.subgroup(stabilizer_generators))
+            section = double_cosets.double_coset_section()
+            lifted = self._lift(lattice, labels, lifts, isotropic)
+            for orbit in double_cosets:
+                shortened = self.shortened_extension(
+                    lattice, ~section(orbit), lifted,
+                    integral_flag_generators,
+                )
+                yield (*radical, shortened)
+
+    def basis_marking_classes(
+        self, lattice: Lattices.ParentMethods, radical: tuple[Vector, ...]
+    ) -> Iterator[tuple[Vector, ...]]:
+        r"""Fixed-source classes of bases in one moving-subspace orbit.
+
+        Use CombinedAlgorithms.h:2076-2190's common-lattice orbit splitting,
+        with the pointwise perpendicular group as the left subgroup. If G
+        lifts GL(I) and V fixes I pointwise, bases are G/V; their integral
+        classes are V\G/G_L, represented on I by t^-1. Both lifted groups
+        contain the same complete pointwise-perpendicular kernel. The
+        quotient therefore uses the actual integral Levi image.
+        """
+        sublattice = lattice.primitive_isotropic_subobject(*radical)
+        radical = self.plane_vectors(sublattice)
+        action = self.recursion.isotropic_stabilizer_action(radical, self.sublattice_action_images(sublattice))
+        invariant = action.invariant_module()
+        frame = self.invariant_module_frame(lattice, invariant)
+        rationalize = ModulesOverIntegralDomains(lattice.base_ring())(lattice).generic_fibre_map()
+        reduction = sublattice.isotropic_reduction()
+        labels, lifts = self._frame_lifts(reduction)
+        basis = tuple(rationalize(point).underlying_element() for point in (*radical, *(lifts[label] for label in labels)))
+        kernel = self.invariant_frame_kernel(frame, tuple(rationalize(point).underlying_element() for point in radical))
+        ambient_generators = tuple(
+            self.lift_invariant_frame(frame, basis, tuple(generator(point) for point in basis))
+            for generator in action.rational_group().group_generators()
+        ) + kernel
+        pointwise = self.recursion.isotropic_stabilizer_action(radical, ())
+        pointwise_generators = tuple(
+            self.lift_invariant_frame(frame, basis, tuple(generator(point) for point in basis))
+            for generator in pointwise.rational_group().group_generators()
+        ) + kernel
+        group = frame.codomain().O().subgroup((*ambient_generators, *pointwise_generators))
+        integral_action = IntegralStructureAction(group, action.lattice_inclusion()).with_stable_containing_bound(invariant)
+        double_cosets = integral_action.double_cosets(group.subgroup(pointwise_generators))
+        section = double_cosets.double_coset_section()
+        for orbit in double_cosets:
+            yield tuple(self._integral_image(lattice, ~section(orbit), point) for point in radical)
+
+    def basis_flag_action(
+        self, lattice: Lattices.ParentMethods, basis: tuple[Vector, ...], dimensions: tuple[int, ...]
+    ) -> tuple[tuple[Vector, ...], tuple[tuple[Vector, ...], ...]]:
+        r"""Adapt an isotropic basis to the cumulative ranks of its flag.
+
+        CombinedAlgorithms.h:655-679 f_get_list_spaces, followed by
+        GetAutomorphismOfFlag. The final rank is the whole sublattice.
+        """
+        space = lattice.primitive_isotropic_subobject(*basis)
+        inclusion = space.inclusion()
+        terms = tuple(
+            inclusion.domain().primitive_isotropic_subobject(*(inclusion.lift(point) for point in basis[:rank]))
+            for rank in dimensions[:-1]
+        )
+        return self.flag_action_data(space, terms)
+
+    def isotropic_flag_bases(self, lattice: Lattices.ParentMethods, dimensions: tuple[int, ...]) -> tuple[tuple[Vector, ...], ...]:
+        r"""One adapted isotropic basis for each orbit of a specified flag shape.
+
+        CombinedAlgorithms.h:2192-2394 INDEF_FORM_GetOrbit_IsotropicKstuff_Method.
+        Cumulative ranks encode SeqDims; intersecting them with ranks at
+        each step is seq_dims_reduced (:594-613). Every candidate is tested
+        by exact flag equivalence, as fInsert (:2238-2258) requires.
+        """
+        if not dimensions or dimensions[0] < 1 or any(left >= right for left, right in zip(dimensions, dimensions[1:])):
+            raise ValueError("isotropic flag ranks must be positive and strictly increasing")
+        if dimensions[-1] > int(lattice.witt_index()):
+            return ()
+        # CombinedAlgorithms.h:2396-2418 reduces once, runs the general
+        # SeqDims method there, and transports every returned basis back.
+        reduction = indefinite_reduced_presentation(lattice)
+        return tuple(
+            tuple(reduction.isometry(point) for point in basis)
+            for basis in self._reduced_isotropic_flag_bases(reduction.reduced, dimensions)
+        )
+
+    def _reduced_isotropic_flag_bases(
+        self, lattice: Lattices.ParentMethods, dimensions: tuple[int, ...]
+    ) -> tuple[tuple[Vector, ...], ...]:
+        r"""CombinedAlgorithms.h:2192-2394 on the reduced presentation."""
+        representatives = tuple((point,) for point in self.isotropic_vector_classes(lattice))
+        for rank in range(2, dimensions[-1] + 1):
+            previous_dimensions = tuple(value for value in dimensions if value < rank - 1) + (rank - 1,)
+            next_dimensions = tuple(value for value in dimensions if value < rank) + (rank,)
+            kept: list[tuple[Vector, ...]] = []
+            invariants: dict[tuple[tuple[int, ...], ...], IsotropicFlagPrefilter] = {}
+            labels = tuple(lattice.module_generating_set())
+
+            def invariant(basis: tuple[Vector, ...]) -> IsotropicFlagPrefilter:
+                # Source get_planeinv/fInsert retains each invariant once.
+                # Delay it until a comparison: a sole candidate needs no
+                # rejection test and no extra rational group construction.
+                coordinates = tuple(point.to_vector() for point in basis)
+                key = tuple(tuple(_integer(row(label)) for label in labels) for row in coordinates)
+                if key not in invariants:
+                    invariants[key] = self._reduced_flag_invariant(lattice, basis, next_dimensions)
+                return invariants[key]
+
+            for previous in representatives:
+                basis, images = self.basis_flag_action(lattice, previous, previous_dimensions)
+                for candidate in self.subspace_extensions(lattice, basis, images):
+                    target_basis, target_images = self.basis_flag_action(lattice, candidate, next_dimensions)
+                    if all(
+                        invariant(source) != invariant(target_basis)
+                        or self.recursion.isotropic_subspace_isometry(source, target_basis, target_images) is None
+                        for source in kept
+                    ):
+                        kept.append(target_basis)
+            representatives = tuple(kept)
+        return representatives
+
+    def flag_invariant(
+        self, lattice: Lattices.ParentMethods, basis: tuple[Vector, ...], dimensions: tuple[int, ...]
+    ) -> IsotropicFlagPrefilter:
+        r"""The source invariant for a general isotropic subspace or flag.
+
+        CombinedAlgorithms.h:1361-1395 and :2424-2433. Keep the structured
+        source fields instead of adding two machine hashes. The prime
+        support is read from the complete supplied rational flag action,
+        before integral stabilization; that stabilization would erase it.
+        """
+        ambient = LatticePrefilter.from_lattice(lattice)
+        if not basis and dimensions == (0,):
+            return IsotropicFlagPrefilter(dimensions, ambient, ambient, ())
+        if (
+            not dimensions or dimensions[0] < 1 or dimensions[-1] != len(basis)
+            or any(left >= right for left, right in zip(dimensions, dimensions[1:]))
+        ):
+            raise ValueError("isotropic flag ranks must increase to the rank of its basis")
+        # The public Kernel wrapper (:1390-1395) transports the input plane
+        # by the inverse reduction before forming the rational flag group.
+        reduction = indefinite_reduced_presentation(lattice)
+        inverse = ~reduction.isometry
+        return self._reduced_flag_invariant(
+            reduction.reduced, tuple(inverse(point) for point in basis), dimensions
+        )
+
+    def _reduced_flag_invariant(
+        self, lattice: Lattices.ParentMethods, basis: tuple[Vector, ...], dimensions: tuple[int, ...]
+    ) -> IsotropicFlagPrefilter:
+        r"""CombinedAlgorithms.h:1361-1387 in the reduced integral chart."""
+        ambient = LatticePrefilter.from_lattice(lattice)
+        adapted, images = self.basis_flag_action(lattice, basis, dimensions)
+        reduction = self.reduction(lattice, *adapted)
+        action = self.recursion.isotropic_stabilizer_action(adapted, images)
+        rational = lattice.base_change(lattice.base_ring().fraction_field_map())
+        labels = tuple(rational.module_generating_set())
+        primes = {
+            int(prime)
+            for generator in action.rational_group().group_generators()
+            for point in rational.module_generators()
+            for coordinates in (generator(point).to_vector(),)
+            for label in labels
+            for prime in _rational(coordinates(label)).denominator().prime_divisors()
+        }
+        return IsotropicFlagPrefilter(
+            dimensions, ambient, LatticePrefilter.from_lattice(reduction.quotient_lattice()), tuple(sorted(primes))
+        )
 
     def flags_through(self, lattice: Lattices.ParentMethods, line: Vector) -> Iterator[Flag]:
         r"""Flags (Zu, J) meeting every Aut((L, Zu))-orbit of isotropic planes J through u.
@@ -202,7 +590,7 @@ class IsotropicInduction:
         _plane_stabilizer_generators), so the line action's stable containing module still
         bounds it, and V is a subgroup on selected generators of that presentation. The
         source's ExhaustiveMatrixRightCosetSimplifications and ExhaustiveVectorSimplification
-        only shorten representatives and are not translated.
+        shorten the coset and vector under this same integral line stabilizer.
         """
         # The candidates through a line are data of (L, u); plane_classes and flag_classes both
         # read them, and building the line action and its cosets dominates their cost.
@@ -216,6 +604,13 @@ class IsotropicInduction:
             line_generators = tuple(line_action.rational_group().group_generators())
             ambient = line_action.rational_group().supergroup()
             candidates = []
+
+            @cache
+            def integral_line_generators() -> tuple[LatticeIsometryMethods, ...]:
+                generators = _integral_generator_set(lattice, line_action)
+                field_map = lattice.base_ring().fraction_field_map()
+                return tuple(generator.base_change(field_map) for generator in generators)
+
             for isotropic in self.isotropic_vector_classes(quotient):
                 lifted = self._lift(lattice, labels, lifts, isotropic)
                 plane_generators = self._plane_stabilizer_generators(reduction, line, isotropic)
@@ -223,7 +618,12 @@ class IsotropicInduction:
                 action = IntegralStructureAction(group, line_action.lattice_inclusion()).with_stable_containing_bound(line_action.stable_containing_bound())
                 double_cosets = action.double_cosets(group.subgroup(plane_generators))
                 section = double_cosets.double_coset_section()
-                candidates.extend((line, lattice.primitive_isotropic_subobject(line, self._integral_image(lattice, ~section(orbit), lifted))) for orbit in double_cosets)
+                for orbit in double_cosets:
+                    shortened = self.shortened_extension(
+                        lattice, ~section(orbit), lifted,
+                        integral_line_generators,
+                    )
+                    candidates.append((line, lattice.primitive_isotropic_subobject(line, shortened)))
             self._candidates[key] = (lattice, tuple(candidates))
         return iter(self._candidates[key][1])
 
@@ -273,22 +673,64 @@ class IsotropicInduction:
         Bases (u, j) and (u', j') with the lines first; the correction group's action on J' is the
         stabilizer of Zu' in GL(J').
         """
-        line, other = self.flag_basis(source)
-        target_line, target_other = self.flag_basis(target)
+        source_line, source_space = source
+        target_line, target_space = target
+        if int(source_space.inclusion().domain().rank()) != int(target_space.inclusion().domain().rank()):
+            return None
+        source_term = source_space.inclusion().domain().primitive_isotropic_subobject(source_space.inclusion().lift(source_line))
+        target_term = target_space.inclusion().domain().primitive_isotropic_subobject(target_space.inclusion().lift(target_line))
+        source_basis, _source_images = self.flag_action_data(source_space, (source_term,))
+        target_basis, target_images = self.flag_action_data(target_space, (target_term,))
         return self.recursion.isotropic_subspace_isometry(
-            (line, other),
-            (target_line, target_other),
-            ((-target_line, target_other), (target_line, -target_other), (target_line, target_other + target_line)),
+            source_basis,
+            target_basis,
+            target_images,
         )
 
     def plane_isometry(self, source: Parent, target: Parent) -> LatticeIsometryMethods | None:
         r"""An isometry carrying the plane J onto J', or None (f_equiv_plane): the correction group acts on J' through GL(J')."""
-        first, second = self.plane_vectors(source)
-        target_first, target_second = self.plane_vectors(target)
+        source_basis = self.plane_vectors(source)
+        target_basis = self.plane_vectors(target)
+        if len(source_basis) != len(target_basis):
+            return None
         return self.recursion.isotropic_subspace_isometry(
-            (first, second),
-            (target_first, target_second),
-            ((target_second, target_first), (target_first + target_second, target_second), (-target_first, target_second)),
+            source_basis,
+            target_basis,
+            self.sublattice_action_images(target),
+        )
+
+    @staticmethod
+    def flag_action_data(sublattice: Parent, terms: tuple[Parent, ...]) -> tuple[tuple[Vector, ...], tuple[tuple[Vector, ...], ...]]:
+        r"""An adapted basis and the radical action preserving a saturated flag.
+
+        CombinedAlgorithms.h:682-717 GetAutomorphismOfFlag: block GL
+        generators and shears from later blocks into earlier blocks.
+        The provider constructs the adapted basis and the flag subgroup.
+        Terms are subobjects of the domain of the sublattice inclusion.
+        """
+        inclusion = sublattice.inclusion()
+        domain = inclusion.domain()
+        group = domain.general_linear_group().flag_stabilizer(terms)
+        change = group.basis_change()
+        basis = tuple(change(domain.module_generator(label)) for label in domain.module_generating_set())
+        return (
+            tuple(inclusion(point) for point in basis),
+            tuple(tuple(inclusion(generator(point)) for point in basis) for generator in group.group_generators()),
+        )
+
+    @staticmethod
+    def sublattice_action_images(sublattice: Parent) -> tuple[tuple[Vector, ...], ...]:
+        r"""Images of an isotropic basis under generators of its full GL group.
+
+        CombinedAlgorithms.h:636-638, :682-717 GetAutomorphismOfFlag,
+        with the single block seq_dims_plane(k). The provider owns GL.
+        """
+        inclusion = sublattice.inclusion()
+        domain = inclusion.domain()
+        basis = tuple(domain.module_generator(label) for label in domain.module_generating_set())
+        return tuple(
+            tuple(inclusion(generator(point)) for point in basis)
+            for generator in domain.general_linear_group().group_generators()
         )
 
     def _stabilizer_generators(self, isotropic: tuple[Vector, ...], radical_images: tuple[tuple[Vector, ...], ...]) -> tuple[LatticeIsometryMethods, ...]:
@@ -297,7 +739,7 @@ class IsotropicInduction:
         # (GroupAction.g:869-886); the action reads each one on the basis of L once.
         action = self.recursion.isotropic_stabilizer_action(isotropic, radical_images)
         lattice = isotropic[0].parent()
-        return tuple(lattice.integral_isometry(generator) for generator in action.stabilizer().group_generators())
+        return _integral_generator_set(lattice, action)
 
     def line_automorphism_generators(self, lattice: Lattices.ParentMethods, line: Vector) -> tuple[LatticeIsometryMethods, ...]:
         r"""Aut((L, Zu)): Gamma = {+-1} on the line (IndefiniteForms.g:1711-1725 with k = 1)."""
@@ -307,9 +749,7 @@ class IsotropicInduction:
 
     def plane_automorphism_generators(self, plane: Parent) -> tuple[LatticeIsometryMethods, ...]:
         r"""Aut((L, J)): Gamma = GL(J), generated by the swap, the elementary shear and a sign (IndefiniteForms.g:1711-1725)."""
-        first, second = self.plane_vectors(plane)
-        # Images of (first, second): the swap, the elementary shear and a sign generate GL(J).
-        return self._stabilizer_generators((first, second), ((second, first), (first + second, second), (-first, second)))
+        return self._stabilizer_generators(self.plane_vectors(plane), self.sublattice_action_images(plane))
 
     @staticmethod
     def flag_basis(flag: Flag) -> tuple[Vector, Vector]:
@@ -330,11 +770,11 @@ class IsotropicInduction:
 
     def flag_automorphism_generators(self, flag: Flag) -> tuple[LatticeIsometryMethods, ...]:
         r"""Aut of the flag Zu < J: Gamma = the stabilizer of Zu in GL(J), generated by two signs and the shear j -> j + u (f_stab_flag)."""
-        line, other = self.flag_basis(flag)
-        return self._stabilizer_generators(
-            (line, other),
-            ((-line, other), (line, -other), (line, other + line)),
-        )
+        line, space = flag
+        inclusion = space.inclusion()
+        term = inclusion.domain().primitive_isotropic_subobject(inclusion.lift(line))
+        basis, images = self.flag_action_data(space, (term,))
+        return self._stabilizer_generators(basis, images)
 
 
 __all__ = ["IsotropicInduction", "UnsupportedRankError"]

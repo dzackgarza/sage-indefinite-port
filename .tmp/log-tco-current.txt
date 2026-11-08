@@ -1,0 +1,34 @@
+provenance
+  sage-extensions module : /repos/sage-extensions/src/sage_extensions/__init__.py
+  sage-extensions pin    : 565fc6b9929ba1c7a131d38b6135443bcce64093
+  port module           : /work/src/sage_indefinite_port/__init__.py
+  port engine revision  : 44dc4d6c3e1261ec3c32b933392e9c29fa3917f8:87fbf863c413e955997d42b52971c2ed3f2b10d9
+  Sage                  : 11.0.beta5
+  categories/rational_integral_stabilizers.py  sha256 4b0bff018f332d3e
+  categories/lattices.py                       sha256 90f05468f9ba2a97
+
+construction: Lattices(ZZ)(Gram of <2> + U(2) + E8(2))
+  rank 11, determinant -2048, signature (2, 9), even True
+call: L.discriminant_representation_is_surjective()
+  returned True
+
+control specimens, same call, same session:
+  S_Co = <2> + <-2>^10                       -> True
+  M = S_En + <delta> = U(2) + E8(2) + <-2>   -> True
+
+RESULT: returned True
+[peakrss] tco: child waited=0 shell_code=0 samples=867
+[peakrss] peak tree RSS      : 4239 MiB
+[peakrss] low-water MemAvail : 9071 MiB
+[peakrss] peak single VmHWM  : 4479 MiB
+[peakrss] peak VmHWM by executable (this is the per-process attribution):
+[peakrss]   julia                      3306 MiB peak
+[peakrss]   python                     1161 MiB peak
+[peakrss]   timeout                       7 MiB peak
+[peakrss]   proot-x86_64                  3 MiB peak
+[peakrss]   sh                            1 MiB peak
+[peakrss]   t=  1258.6s procs=  5 rss=  4239 MiB hwm=  4239 MiB avail=  9071 MiB
+[peakrss]   t=  1722.9s procs=  5 rss=  4203 MiB hwm=  4479 MiB avail=  9107 MiB
+[peakrss]   t=  1724.9s procs=  5 rss=  4203 MiB hwm=  4479 MiB avail=  9111 MiB
+[peakrss]   t=  1720.9s procs=  5 rss=  4202 MiB hwm=  4479 MiB avail=  9101 MiB
+[peakrss]   t=  1718.8s procs=  5 rss=  4198 MiB hwm=  4478 MiB avail=  9117 MiB

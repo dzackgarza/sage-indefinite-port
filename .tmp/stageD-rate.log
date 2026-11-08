@@ -1,0 +1,21 @@
+[t=     0.0s] imports
+[t=     1.3s] N, line I_1_1
+[t=    22.2s] isotropic_stabilizer_action 20.9s
+Timeout (0:02:00)!
+Thread 0x0000795bc89b1780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py", line ??? in __contains__
+  <invalid frame>
+[t=   189.8s] atomA finite_representation 167.6s (orbit 1024)
+[t=   191.1s] rho + finite_stabilizer 1.3s
+[t=   191.6s] stab construct 0.5s
+[t=   191.6s] family labels 25600
+[t=   191.6s] rate loop over the first 300 letters
+[t=   194.8s] processed 50/300: eval 5.5 ms/lr, conv 57.5 ms/lr
+[t=   198.9s] processed 100/300: eval 6.8 ms/lr, conv 65.9 ms/lr
+[t=   203.3s] processed 150/300: eval 7.8 ms/lr, conv 70.2 ms/lr
+[t=   207.8s] processed 200/300: eval 8.4 ms/lr, conv 72.6 ms/lr
+[t=   212.5s] processed 250/300: eval 9.1 ms/lr, conv 74.5 ms/lr
+[t=   218.6s] processed 300/300: eval 9.8 ms/lr, conv 80.1 ms/lr
+[t=   218.6s] MEASURED processed=300 eval_total=2.94s (9.81 ms/lr) conv_total=24.03s (80.09 ms/lr)
+[t=   218.6s] DERIVED full-family figures (formula: labels x measured rate; NOT a measured total): group_generators_est=251s, conversions_est=2050s
+[t=   218.6s] RATE_OK

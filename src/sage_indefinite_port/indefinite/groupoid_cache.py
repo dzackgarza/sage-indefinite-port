@@ -10,8 +10,8 @@ from __future__ import annotations
 
 from collections import deque
 
-from dzack_research.preamble.all import ZZ, Lattices
-from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
+from sage_extensions.all import ZZ, Lattices
+from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
 from sage.matrix.constructor import matrix
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
@@ -21,21 +21,50 @@ type Lattice = Lattices.ParentMethods
 type Isometry = LatticeIsometryMethods
 
 
+_GRAM_IN_LABEL_ORDER: dict[int, tuple[Lattice, object]] = {}
+
+
 def _gram_in_label_order(lattice: Lattice):
-    """Gram matrix of the declared coordinate generators, in their given order."""
+    r"""Gram matrix of the declared coordinate generators, in their given order.
+
+    Memoized per lattice, keyed by identity and holding the lattice so the identity cannot be reused
+    (the same pattern as `invariants._gram`). The matrix is a pure function of the immutable lattice:
+    it is read from the declared label order and the pairing, both of which the lattice fixes.
+
+    Without the memo the cost is quadratic in the rank and is paid repeatedly. On the rank-22 K3
+    rational envelope one call is **25 s** (the rational branch converts every pairing's numerator and
+    denominator), and `_isometry_from_row_matrix` asks for the source and the target Gram on *every*
+    generator — for the envelope's 136 approximate generators that is 272 calls, about 6 800 s of
+    recomputing identical matrices, which is why that acceptance node could not finish.
+
+    The memo makes the matrix *shared*, so it is returned immutable: a caller that wrote an entry
+    would silently corrupt every later consumer of the same lattice. The current consumers
+    (`recursive.py:150,151,180,181,265,309,310,779,853`, `groupoid_cache.py:72,73,99`) only read
+    entries, take ranks and products, or copy out through `matrix_from_rows_and_columns`; marking the
+    matrix immutable keeps any future in-place edit a `ValueError` at the point of the bug instead of
+    a wrong group. Ask for a mutable copy with `_gram_in_label_order(l).__copy__()`.
+    """
+    key = id(lattice)
+    cached = _GRAM_IN_LABEL_ORDER.get(key)
+    if cached is not None and cached[0] is lattice:
+        return cached[1]
     labels = tuple(lattice.module_generating_set())
     basis = tuple(lattice.module_generator(label) for label in labels)
     if lattice.base_ring() == ZZ:
         entries = [[int(lattice.b(left, right)) for right in basis] for left in basis]
-        return matrix(SageZZ, entries)
-    entries = [
-        [
-            SageQQ(int(value.numerator())) / int(value.denominator())
-            for value in (lattice.b(left, right) for right in basis)
+        result = matrix(SageZZ, entries)
+    else:
+        entries = [
+            [
+                SageQQ(int(value.numerator())) / int(value.denominator())
+                for value in (lattice.b(left, right) for right in basis)
+            ]
+            for left in basis
         ]
-        for left in basis
-    ]
-    return matrix(SageQQ, entries)
+        result = matrix(SageQQ, entries)
+    result.set_immutable()
+    _GRAM_IN_LABEL_ORDER[key] = (lattice, result)
+    return result
 
 
 def coordinate_identification(source: Lattice, target: Lattice) -> Isometry:

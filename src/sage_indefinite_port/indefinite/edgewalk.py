@@ -16,14 +16,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import cmp_to_key
 
-from dzack_research.preamble.all import ZZ, HyperbolicLattices, Lattices
-from dzack_research.preamble.categories.definite_lattices import _ExactCVPEngine
-from dzack_research.preamble.categories.group.g_sets import FiniteGSets
-from dzack_research.preamble.categories.hyperbolic_lattices import AllcockEdgewalkReport
-from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
-from dzack_research.preamble.categories.polyhedral_cones import RationalPolyhedralCones
-from dzack_research.preamble.categories.sets.set_categories import Sets
-from dzack_research.preamble.tensors.tensor import _engine_component_matrix
+from sage_extensions.all import ZZ, HyperbolicLattices, Lattices
+from sage_extensions.categories.definite_lattices import _ExactCVPEngine
+from sage_extensions.categories.group.g_sets import FiniteGSets
+from sage_extensions.categories.hyperbolic_lattices import AllcockEdgewalkReport
+from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
+from sage_extensions.categories.polyhedral_cones import RationalPolyhedralCones
+from sage_extensions.categories.sets.set_categories import Sets
+from sage_extensions.tensors.tensor import _engine_component_matrix
 from sage.geometry.polyhedron.constructor import Polyhedron
 from sage.matrix.constructor import identity_matrix, matrix
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense

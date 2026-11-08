@@ -96,8 +96,8 @@ def test_degenerate_orthogonal_group_contains_radical_shear_and_gl_action() -> N
 
 def test_degenerate_orthogonal_group_respects_permuted_radical_coordinates() -> None:
     """The radical extension generators are expressed in the declared coordinate frame."""
-    from dzack_research.preamble.all import ZZ as PreambleZZ
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import ZZ as PreambleZZ
+    from sage_extensions.all import Lattices
 
     require(MARKED_AUTOMORPHISMS)
     labels = ("radical", "nonsingular")
@@ -141,8 +141,8 @@ def test_degenerate_orthogonal_group_generates_rank_two_radical_action() -> None
 
 def test_degenerate_orthogonal_group_generates_permuted_rank_two_radical_action() -> None:
     """Rank-two radical GL and shears survive when the nonsingular coordinate is last."""
-    from dzack_research.preamble.all import ZZ as PreambleZZ
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import ZZ as PreambleZZ
+    from sage_extensions.all import Lattices
 
     require(MARKED_AUTOMORPHISMS)
     labels = ("radical_b", "radical_a", "nonsingular")
@@ -191,7 +191,7 @@ def test_zero_form_orthogonal_group_is_the_full_general_linear_group() -> None:
 
     gram = [[0, 0], [0, 0]]
     computed = lattice(gram).O().group_generators()
-    rows = tuple(rows_of(generator) for generator in computed)
+    rows = tuple(tuple(tuple(row) for row in rows_of(generator)) for generator in computed)
 
     assert all(is_isometry(generator_rows, gram) for generator_rows in rows)
     assert all(abs(int(matrix(SageZZ, generator_rows).determinant())) == 1 for generator_rows in rows)
@@ -214,8 +214,8 @@ def test_zero_form_orthogonal_group_is_the_full_general_linear_group() -> None:
 
 def test_zero_form_orthogonal_group_uses_permuted_coordinate_labels() -> None:
     """The full GL_2(Z) action is returned in the declared radical coordinate order."""
-    from dzack_research.preamble.all import ZZ as PreambleZZ
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import ZZ as PreambleZZ
+    from sage_extensions.all import Lattices
     from sage.all import ZZ as SageZZ
     from sage.all import matrix
 

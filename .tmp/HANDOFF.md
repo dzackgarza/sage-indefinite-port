@@ -1,244 +1,51 @@
-# Acceptance repair handoff
+# Complete indefinite-lattice implementation
 
 ## Ambient task
 
-Repair the actual failed mathematical computations in the frozen Acceptance
-suite, in sage-indefinite-port or its research provider according to operation
-ownership. The required scope is isometry, boundaries, centralizers, isotropic
-orbits, orthogonal groups, reflective lattices, vector orbits and vector
-stabilizers. Preserve perfect-domain correctness and every frozen assertion.
+Finish the pinned indefinite-lattice algorithms and public consumers, then deliver every retained arithmetic extension in #69. Functional implementation has priority. Each implemented branch needs a small independent mathematical example through its public operation.
 
-The repair is incomplete. Work is paused at the user's request. Resume only
-when requested. This document replaces the previous handoff.
+**Work priority:** required functionality has absolute priority over performance. Performance work is the last phase of this project and begins only when every required capability works through the public interface. A slow run, timeout, resource budget or red CI job does not select work and does not block functional work. [Full rule](https://github.com/dzackgarza/sage-indefinite-port/issues/4#work-priority).
 
-## Completion condition and verified status
+## Completion condition
 
-Every reported failing case must compute its required result. Cases with lost
-runners or missing reports require execution. Final evidence must identify one
-published port/provider pair across all families. Shared provider repairs also
-need independent mathematical assertions at their owners. No additional stubs
-or weakened expectations are authorized. A helper pass or a selected case does
-not discharge its family.
+Return the specified mathematical objects through sage-extensions, with complete integral generators, actual finite images, subgroup restrictions, source automorphism actions and exact witnesses. The unchanged frozen assertions at one published port/provider pair are the last phase; they follow all functional rows below. Interrupted cases remain open.
 
-The original failure set is Acceptance
-[40205836899](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40205836899),
-port `5c990fd35f20f194afdcd95e0bb3647118298645`, provider
-`f44e76f18e2e9cec43b09a846e2e74bca5fd50f6`.
-
-The latest inspected full run is
-[40339136782](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40339136782),
-port `b3f01e016440b405081a61a8517be536475f8ec1`, provider
-`07b24a2d3c02921d2a6098c32be0a1a171ce6406`. Its completed JUnit reports establish:
-
-| Required family | Evidence at this pair | Remaining acceptance |
-| --- | --- | --- |
-| perfect_domains | All 8 shards pass | Repeat at final pair |
-| isometry | All 8 shards pass | Repeat at final pair |
-| vector_stabilizers | All 6 shards pass | Repeat at final pair |
-| centralizers | Entire shard, 5 assertions, passes | Repeat at final pair |
-| isotropic_orbits | Shards 8 and 9 pass | Other shards and final pair |
-| vector_orbits | Shard 0 passes | Other shards and final pair |
-| reflective | Killed shards lack complete reports | All shards |
-| boundaries | Full-family evidence open | All shards |
-| orthogonal_group | Full-family evidence open | All shards |
-
-Job status alone is insufficient. Download JUnit and both revision files.
-Local copies are under `.tmp/repair-40339136782/`; `verified-junit.json`
-predates the centralizer download and is not an authoritative complete index.
-
-The current published port is `199168dad31efc17981411d04579a8cf68a1089d`,
-branch `implement/lorentzian-completion`. Its justfile pins provider
-`53d0db2e7d0c2ddb96617cfb361a43c18235d1d2`. Acceptance
-[40354157956](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/40354157956)
-was pending at the pause; 40339136782 was still in progress. Refresh those
-results before selecting failures. Subsequent handoff-only revisions do not
-change this code/provider pair.
+| Required scope | Acceptance and current state |
+| --- | --- |
+| Isotropic source parity (#44) | Source `6692163` and provider `0b49d165` additionally supply exact prescribed Levi image sections, public lifts and image generators; null-sublattice restriction with its pointwise kernel; higher-rank quotient-kernel generators; and the joint unipotent kernel. Split quotient transvections, a glued lift requiring motion of the null basis, a proper binary quotient image, full pointwise skew parameters and the full split Hom-plus-central unipotent parameter lattices have small independent passing assertions. Quotient-kernel modulo-three image assertions pass; their owner call-time gate remains red. The odd-gluing infinite-quotient negative example remains unverified at its bound. Provider `74cb82dc` supplies public `FlagType` construction/enumeration/transport, marked-diagram flag stabilizers and rank-zero null objects/loci/orbits/cusps. Small flag membership/generator examples, rank-zero O/SO/stabilizer transporters and the order-two zero-stabilizer discriminant image on `<6>` pass normal owner gates. The direct public `(1,3)` O(3U) orbit result passes; SO splitting remains unverified. The positive-rank stabilizer discriminant-image accessor now uses the general source action; the nontrivial line example passes, while the rank-three `3U + <-6>` image example times out before its result. Cover every attainable rank and dimension sequence, based embeddings, moving sublattices, flags, pointwise/setwise stabilizers, exact transporters and inverses, the actual induced quotient image, impossible ranks and requested finite-index groups. Public partial/complete flags in 3U, SO splitting and transporters, proper glued-line quotient images and pointwise skew-shear stabilizers have small verified examples on the recorded issue/proof pairs. The U+2U fixed-basis transporter test distinguishes the divisor-one and divisor-two basis vectors, admits the integral Levi shear, and verifies moving-source naturality and inverses; both cases pass with provider 0150cc2b. The combined determinant/discriminant U(3) example has actual image order 4 and kernel index 4; its kernel splits the based vector orbit into 4 classes and the moving line orbit into 2, with all distinct-class transporter decisions negative. The one-term flag uses the canonical arrow category and the same 2-class result. The public pointwise maximal stabilizer in 4U generates the full integral skew-parameter module, with exact forward/inverse actions and trivial parameter cokernel, at 23810a7/8d72ad94; `.tmp/rank-four-pointwise-stabilizer-evidence.md` gives the independent proof and node. The provider public complete-flag adapter now uses the full finite-ordinal diagram; `.tmp/complete-flag-adapter-evidence.md` records the verified rank-one/two/three orbit/transporter, rank-three stabilizer-preservation and impossible-rank assertions, together with their unresolved owner time-gate failures. Complete branch coverage remains open. |
+| Original public surface (#4, #18, #68) | Orthogonal, discriminant-kernel and component groups; isometry decisions; vector classes, stabilizers and transporters; isotropic markings and incidence; finite-order centralizers; perfect-domain quotients and Allcock outputs. Native split-genus coverage remains required beyond the verified Conway–Sloane specimen. |
+| Low rational Witt index (#69) | Effective orthogonal generators, isometries, fixed-norm operations and recursive consumers at higher real index with rational Witt index zero or one; isotropic lines at index one. Retain diag(2,2,-6,-6) and U plus <2,-4>. Explicit Li–Margulis constants, rank-four-through-six Clifford/order constructions and all-orbit primitive embedding bounds remain separate obligations. |
+| Finite-image subgroups (#69) | Joint finite representations with their actual image; exact preimages, subgroup generators, orbit splitting, stabilizers, transporters and combined discriminant/component/congruence/determinant/spinor/level conditions across supported markings. `.tmp/joint-character-representation-evidence.md` records the owned joint discriminant/sign map, exact finite-preimage cosets and independent proper-image/sign-action assertions at provider 2dfd20b6. The supplied-target-stabilizer correction also retains the actual character condition and native composition order; `.tmp/character-transporter-evidence.md` records a fixed nonnormal false-negative decision and the exact stable-component witnesses, with their unresolved owner call gates. General coverage remains open. |
+| Embeddings and markings (#69) | Complement and discriminant-glue constructions for nondegenerate embeddings and Gram configurations; content and saturation for nonprimitive markings; odd lattices; radical shear data for degenerate ambient lattices; degenerate/equivariant source diagrams. Null-vector content must retain its infinite parameter. General coverage remains open. |
+| Buildings and infinite quotients (#69) | Rational isotropic flag complexes with compatible face maps, incidence multiplicities and stabilizers; lazy representatives and pairing slices; exact equivalence witnesses; exhaustive duplicate-free enumeration and canonical representatives under the stated hypotheses. General coverage remains open. |
+| Centralizers and normalizers (#69) | Joint involution eigensublattices and actual gluing stabilizers; cyclotomic integral unitary groups; realized finite-group automorphisms and equivariant transporter lifts; the retained infinite-cyclic case; simultaneous arithmetic centralizers. Full groups or the promised constructive interface remain required. |
+| Unitary/arithmetic backends (#69) | ACT Eisenstein (4,1) and cubic-surface consumers; Hermitian-ocean and Picard reductions; integral Hermitian parabolics/flags with their unipotent law and liftable Levi image; effective Grunewald–Segal generation and orbit decisions for the required orders and modules. These implementations remain open. |
+| **Last phase, after all rows above:** original large computations (#64, #70) | Complete A7, Lorentzian groups, isotropic stabilizers and boundaries. The original I_1_2 index assertion passes at c342cd2/beea72b. Published frozen CI also establishes I_1_1, I_1_2, I_2_1 and I_2_2 at 23927db/16485a1; exact IDs are in `.tmp/acceptance-23927db-evidence.md`. LORENTZ_OrthogonalGroup0 and IsotropicCases_8716 pass at e3582d3/5493427. Mertens and LORENTZ_OrthogonalGroup1 pass at e66eb94/40642a1; exact nodes and assertions are in `.tmp/acceptance-e66eb94-evidence.md`. LORENTZ_OrthogonalGroup2 passes at b7ef2bf/16485a1; its exact assertion is in `.tmp/acceptance-b7ef2bf-evidence.md`. I_1_1 also passes at d22ee29/eba77164, afa1176/25288942, 2cdf004/bc6bd572 and 583b36d/16c798db. The Allcock rank-two primitive-plane parity assertion passes at 2e36cff/7960e1ae; its exact scope and retained JUnit are in `.tmp/acceptance-2e36cff-evidence.md`. A7, O_plus_N, Dawes and final-pair evidence remain open. |
 
 ## Next work, ranked
 
-### Now: remove the repeated preamble operations in the discriminant transport
+1. **Now: extend the requested-subgroup quotient action to general finite preimages, including a congruence condition, in #44.** Provider `0b49d165` supplies subgroup-aware setwise/pointwise Levi actions, actual images, image generators, exact lifts and joint unipotent kernels. The SO(2U) null-line image has order two and excludes the quotient exchange. The O_plus(2U) quotient-negation lift reverses the null line; its pointwise fibre is empty, and its quotient kernel spans the complete integral Hom(U,Z). All selected mathematical assertions pass.
 
-The Enriques route is now identified and `_gamma_h` for case_1 computes its
-exact result locally in 2609 s. It does not use the generic predicate coset
-path, so the finite-group transversal repair above is not what this case
-needs. The stages of `.tmp/probe_enriques_stages.py`, provider `53d0db2e7d`:
+The selected congruence input is L=2U, I=Ze and the inverse image of {Id,-Id} modulo three. Quotient negation must have a setwise lift with g(e)=-e and no pointwise lift. The pointwise kernel must have parameter lattice 3 Hom(U,Z), of index nine. Build the modular representation through scalar extension, the native module automorphism group and its actual finite image, as in `tests/lattices/test_congruence_levi_images.sage::_mod_three_representation`. Provider `365abfb4` supplies the needed finite module-automorphism decision and placement; plain and formed F3 planes have exact automorphism order 48.
 
-| stage | seconds |
-| --- | --- |
-| setup: lattice, transport isometry, polarization | 147 |
-| `invariant.O().stabilizer(h).image_under(discriminant_representation)` | 1356 |
-| `_coinvariant_glue_inverse_maps` | 332 |
-| 19 `_coinvariant_discriminant_from_invariant` transports | 400 |
-| `coinvariant_extension_subgroup` (`discriminant_preimage`) | 382 |
+**Complete this same small consumer before selecting another unit.** `_levi_lift_in_subgroup` now uses the actual supplied finite coset action at provider checkpoint `c3bf6acd`. Its selected modulus-three assertion has not finished under the normal owner call-time bound. Run this example without that bound and let it finish. If it finishes, the capability is verified and work moves on. The recorded slow call is `_preimage_coset_space -> morphism.codomain().left_cosets(target) -> pointed_orbit -> _orbit_words`, during augmentation of free generators. `_owned_basis_label` repeatedly admits retained native morphism labels through finite-set equality. Repair that call only if the run cannot finish at all. Preserve both exact finite coset semantics and the entire parameter-lattice assertion. General finite-image subgroup consumers in #69 use this same quotient-fibre mechanism.
 
-The stabilizer image is the port's pointed Aut((M,h)) (`.tmp/probe-enriques-pointed.log`):
-O(h^perp), a definite rank-9 lattice with 21 generators, 732 s; the
-`_lattice_action` stable bound 92 s; the residual stabilizer 86 s. A warm
-definite O(9) call costs 0.1 s (`.tmp/probe_isometry_group_sign.py`), so most
-of the 732 s is the first Julia engine call of the process, not the group.
+2. **Implement ready capabilities retained in #69.** Start with uniform finite-image subgroup operations and their marked consumers where existing group actions suffice. Continue with nonprimitive/odd/degenerate markings, embedding and gluing operations, quotient buildings, centralizers and normalizers according to their actual operation dependencies. Low-Witt, Clifford, unitary and general arithmetic algorithms remain full implementation obligations; choose them when their mathematical inputs are available. Each unit supplies its public outputs and a small independent branch example. The completion table above retains every required family.
 
-The transports are dominated by per-element preamble work, not by any group
-algorithm (`.tmp/probe-enriques-profile.log`: 20 conversions, 2081 s under
-cProfile, 10.08M `category.__classcall__`, 20.7M set-element constructions,
-9.2M `__contains__`, 2.0M `_own_ring`, 84k `abelian_group_gps.exponents`).
-That is roughly a hundred thousand preamble operations per converted
-generator for a 12-generator, order-1024 discriminant group.
+3. **Repair only what stops the selected functional unit from working.** State its public operation, the exact missing or failing callee, and the small required example that cannot finish at all. Slowness alone is not a failure; raise or remove the time bound. Repair at the operation's owner and return to the selected unit. Existing large A7, O_plus_N and Dawes cases are release obligations on #64/#70; their cost alone does not establish a prerequisite for another capability.
 
-Next specimen: one conversion of one invariant generator, timed before and
-after the change. The unit is filed as
-[research #621](https://github.com/dzackgarza/research/issues/621), whose body
-carries the same profile and the same specimen. It is not the port's to
-repair: `_presented_module_from_morphism`, `Mor.Of`,
-`_normalized_form_automorphism` and `_coinvariant_discriminant_from_invariant`
-are provider owners. The port now pins provider
-`d20472d309dd64d168a6aacd71f074570b81538`; the timings above were taken at
-`53d0db2e7d`. The same overhead multiplies the 2395-vector
-`IsotropicCases_8716` and the 49,861-vector A7 configuration, so measure the
-change on that conversion before rerunning either family. The case also still
-needs `_counts(group)`; no case has completed the unchanged assertion.
+4. **Last phase: performance and final-release evidence, after every functional row is complete.** Do not start this item earlier. #64 retains every original frozen result and the final common port/provider pair. #70 retains exact integral stabilizer generation and its large consumers. Resolve oracle changes through #33. Preserve mathematical expectations, integral kernels, witnesses and the full functional domain. Existing passing records establish their stated revision-specific scope; interrupted computations remain unresolved release evidence.
 
-The same route runs on a rank-4 specimen in seconds
-(`tests/lattices/test_polarized_equivariant_lattice.sage`: `U + U`, the
-involution exchanging the summands, `h = e + u + f + v`). There
-`.tmp/research-acceptance-repair/.tmp/probe_transport_profile.py` profiles two
-conversions there: 3.75 s in `_coinvariant_discriminant_from_invariant`, 2.50 s
-of it inside `TorsionFormOrthogonalGroup.from_morphism`, and 1.07 s in the
-caller's `morphism.inverse()`. `normalization_isometry` dominates the first
-conversion only (one cached call); the marginal cost is the presentation work
-each conversion repeats: `_normalized_form_automorphism` rebuilds the engine
-matrix by lifting every generator image through the framing,
-`_presented_module_from_morphism` and `Mor.Of` build a presentation per
-morphism, and `_from_engine` transports the automorphism and its inverse into
-two more presented morphisms. Measure on this specimen; do not rerun the
-43-minute Enriques probe.
+## Retired work
 
-The owner checks already passing on the stable provider are nonnormal S3
-cosets, the C4 preimage, the anisotropic F3 plane and the split four-dimensional
-F2 form. They verify actions, sections, stabilizer orders and Schreier data.
-Their sources are `tests/groups/test_finite_group_subgroups_and_quotients.sage`
-and `tests/lattices/test_elementary_two_discriminant_groups.sage`.
-The older protected `test_schreier_generating_morphisms.sage` uses a retired
-spelling; preserve its expectation and resolve any bridge at its owner.
+- Profiling, optimizing or rerunning A7, O_plus_N, Dawes or any other large case.
+- Selecting work from a timeout, a stack sample or a red CI job. Acceptance runs only by manual dispatch.
+- Recording evidence per revision pair in this file, and committing this file after each step. Change it when the next unit changes.
 
-Provider `53d0db2e7d` repairs an unconditional
-f-string in `BiproductModules.from_coproduct_cocone`. The owner biproduct
-universal-map identity assertion passes. That repair is not full Enriques
-acceptance. Earlier local I_1_2 stabilizer-index and D-tower N_6 boundary
-assertions pass; their final-pair hosted confirmation remains required.
+## Continuation boundary
 
-### Then: complete IsotropicCases_8716 and the killed reflective shards
-
-The current provider uses the owned lattice Gram tensor and family map at the
-private graph adapter, lowers their matrix pullback there, shares exact edge
-labels and releases temporary family realizations. Bliss supplies index
-certificates; their composite is checked against every exact colour, pairing
-and relation table. Canonical graph copies are released between the two
-certificate computations. These contracts must remain intact.
-
-Unchanged `IsotropicCases_8716` is still unverified. The latest isolated run
-at provider `daf20e327f` reached multiple neighbour transporters in the first
-perfect cell, then was stopped without a result. Use
-`.tmp/repair-isotropic-8716-certificates.log` and
-`.tmp/repair-isotropic-8716-current-stack.json` only as diagnostic evidence.
-The initial configuration has 2395 vectors. The earlier capped probes are
-not hosted-memory certificates: virtual reservations exceeded 6 GiB while
-resident memory and swap were much smaller. The latest run's artificial
-address-space limit was removed. Do not reinstate that limit as a correctness
-gate or treat interrupted argument rendering as a test result.
-
-At the older hosted pair, killed-shard progress logs locate these candidate
-active cases: isotropic shards 2/7/10/0 at 8716/8806/8714/8666; reflective
-shards 13/4/5 at 7551/7799/7528. They are locators, not completed failures.
-Additional killed shards are recorded in `.tmp/repair-current-jobs.json` and
-`.tmp/repair-*-hosted.log`; refresh the run before using that snapshot.
-The inspected killed logs contain exit 137 without an assertion traceback.
-
-On provider `53d0db2e7d`, unchanged ListReflect_7551 and ListReflect_7799
-pass in `.tmp/repair-reflective-hosted-locators.log`. They do not establish
-full-shard memory behaviour. The negative A2 pairing obstructions, positive
-redundant-family transporter, ListReflect_841 and ListReflect_964 also pass.
-Read the final-pair hosted results to determine whether retained graph data
-were the remaining full-shard defect.
-
-### Then: finish the A7 discriminant-image computation
-
-The unchanged
-`test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q` is still open.
-Its initial perfect configuration has 49,861 distinct vectors. Streamed
-pairing/hash calculations reach exact cone conversion, but neither the full
-PPL consumer nor the separate Normaliz cone probe has a result.
-
-- Full consumer log: `.tmp/repair-orthogonal-a7-flint.log`, provider 07b24a2.
-- Exact Normaliz probe: `.tmp/repair_a7_normaliz.py` and
-  `.tmp/repair-a7-normaliz.log`.
-- Reusable local initial rows: `.tmp/repair-a7-initial-rows.sobj`.
-
-Both computations were stopped. No backend change was made. Sage's installed
-Normaliz backend accepts the same rational V-presentation; see its
-[official documentation](https://doc.sagemath.org/html/en/reference/discrete_geometry/sage/geometry/polyhedron/backend_normaliz.html).
-Do not infer that it solves this case from availability alone.
-
-If complete facet construction remains the obstacle, inspect the actual
-pinned `lorentzian_perfect.h::DualDescriptionRecordFullDim` call and
-`POLY_RecursiveDualDesc.h` before changing the specialized facet-orbit route.
-The current `facet_orbit_permutations` materializes all facets and full ray
-permutation tuples. Assess its required memory before restarting another
-large cone computation. This is an unresolved implementation question, not
-a selected replacement algorithm. Preserve exact facets, orbit coverage,
-side pairings and the owned cone interfaces.
-
-### Finally: discharge all remaining families at one pair
-
-Read every completed artifact from the refreshed full run. Route each actual
-failure to the operation owner, repair it and execute its unchanged consumer.
-Keep missing/interrupted shards open. The full repair condition above remains
-a requirement even when selected mathematical examples pass.
-
-As of 2026-10-27 10:20 UTC every Acceptance run after 40339136782 is
-`cancelled`: successive pushes to `implement/lorentzian-completion` supersede
-each other, so no full suite has completed for over fourteen hours. A complete
-evidence run requires a quiet branch; read the run of the revision you cite,
-not the newest one.
-
-## Checkout and ownership constraints
-
-The stable provider worktree is `.tmp/research-acceptance-repair`, branch
-`fix/acceptance-quotient-cardinality`. Its published tip is the pinned
-`53d0db2e7d0c2ddb96617cfb361a43c18235d1d2`. Its tracked tree is clean.
-
-The replacement library checkout is `.tmp/sage-extensions-acceptance-repair`.
-The repairs are carried to its published main at
-`74d34ba59d6581969101556dcef9e8508af10aa2`; its tracked tree is clean.
-Do not switch the port provider merely because those changes are carried.
-The library still needs verification of presentation-square construction,
-lattice-isometry inverse construction and the selected free basis in group
-resolutions, tracked in
-[sage-extensions #1](https://github.com/dzackgarza/sage-extensions/issues/1).
-
-Research main at `/home/dzack/research` has unrelated migration conflicts;
-preserve them. Preserve the pre-existing port paths `.agents`, `.hermes`,
-`=2.18`, `cysignals_crash_logs/` and `tests/.report/`.
-
-Generic arithmetic, finite configurations, group sections and gluing belong
-to the provider. Indefinite search, perfect-domain traversal, Allcock cycles,
-parabolic compatibility-image discovery and specialized group assembly belong
-to this port. Polarized extension groups must restrict by O(L^f,h).
-Use the pinned upstream routines and their actual callees. Preserve the
-post-v1 requirements in TODO.md and issues #40/#41.
-
-## Reproduction constraints
-
-The local Sage wrapper uses container `sage-research`. A targeted command
-from the port root uses:
-
-```sh
-direnv exec . env \
-  PYTHONPATH="$PWD/.tmp/research-acceptance-repair/src:$PWD/src:$PWD:/home/dzack/ai-review-ci/tool-artifacts/pytest_plugins" \
-  sage-docker-python -m pytest -p qc_sage_session 'tests/acceptance/MODULE.sage::CASE' -q --tb=short
-```
-
-Run only selected cases locally. For combined owner and consumer checks,
-use `-c pyproject.toml` from the port root. Local probes and saved rows are
-optional aids, not cloud-checkout prerequisites. The four local long-running
-repair computations were terminated at the pause; none supplies a pass.
-Hosted Actions may still run independently. Refresh their state on resume.
+This is the authoritative handoff; issue #4 owns the functional sequence and
+AGENTS.md owns work selection. Verify current source and provider revisions
+before using a recorded result. Preserve immutable proof worktrees and their native inputs. The terminal large-consumer outcomes are recorded under #64. Resume with the functional unit above.
+The active source checkout is `/home/dzack/gitclones/sage-indefinite-computations`;
+generic dependencies belong to sage-extensions at their owning interfaces.

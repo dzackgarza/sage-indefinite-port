@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from dzack_research.preamble.all import NN, Lattices, ModulesOverIntegralDomains
-from dzack_research.preamble.categories.sets.set_categories import (
+from sage_extensions.all import NN, Lattices
+from sage_extensions.categories.modules.pure.modules import ModulesOverIntegralDomains
+from sage_extensions.categories.sets.set_categories import (
     CartesianProductsOfSets,
     Sets,
 )

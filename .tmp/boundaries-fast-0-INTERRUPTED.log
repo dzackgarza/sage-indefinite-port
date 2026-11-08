@@ -1,0 +1,6 @@
+============================= test session starts ==============================
+collecting ... collected 119 items / 96 deselected / 23 selected
+
+tests/acceptance/test_boundaries.sage::test_dtower_boundary_component_counts[N_3] PASSED [  4%]
+tests/acceptance/test_boundaries.sage::test_dtower_boundary_component_counts[N_4] PASSED [  8%]
+tests/acceptance/test_boundaries.sage::test_dtower_boundary_component_counts[N_5] 

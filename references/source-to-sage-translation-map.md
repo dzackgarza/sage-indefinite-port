@@ -1704,19 +1704,22 @@ The prefilter may use:
 
 but it may not decide equivalence.
 
-## 13.5 Do not expose arbitrary k until the rewrite is complete
+## 13.5 Preserve the general rank and flag parameters
 
-The source says that the initial-set computation "works by kind of chance" because only k = 1, 2 had been used.
+Translate `CombinedAlgorithms.h:2424–2479` with its `SeqDims` data and general
+rank-extension recursion intact. The source exports isotropic k-plane and
+k-flag invariant, equivalence, stabilizer, right-coset and orbit computations.
+Their full supported rank and flag domain belongs to the port's required scope.
 
-Therefore:
+The comment at `CombinedAlgorithms.h:2281–2284` identifies an initial-set
+coverage concern in orbit enumeration. Check the actual called path, preserve
+its general parameters, and record any demonstrated source defect at that
+routine. A source warning requires source analysis and mathematical evidence;
+it does not authorize a blanket rank restriction on the port's operations.
 
-1. implement rank-two planes and flags first;
-
-2. validate the exact parabolic/gluing construction;
-
-3. only then enable arbitrary `rank=k`.
-
-For signature (2,n), rank two is already the maximal isotropic rank and recovers the Baily–Borel/Tits-building applications.
+Use the general rank-extension induction for all these operations. Verify
+lines, planes, higher-rank subspaces and complete or partial flags through
+their public marking categories under #18/#44.
 
 * * *
 
@@ -2051,7 +2054,7 @@ Recover, for N = U ⊕ U(2) ⊕ E_8(−2), full O(N), explicit isometries, primi
 
 The upstream broad regression file exercises automorphisms, equivalence, norm-0 and norm-2 vector orbits, and isotropic planes/flags on six lattice families including the Enriques case.
 
-## Tranche 5: exact parabolics and rank-two isotropic planes
+## Tranche 5: exact parabolics and general isotropic k-planes and flags
 
 Implement:
 
@@ -2063,7 +2066,9 @@ isotropic rank extension
 quotient double-coset splitting
 ```
 
-Recover the published line, plane, and flag orbits for the Enriques and polarized K3 lattices from the preceding oracle addendum.
+Preserve every supported rank and dimension sequence in the pinned induction.
+Recover the published Enriques and polarized K3 line, plane and flag orbits,
+and verify higher-rank and partial-flag branches through the public consumers.
 
 ## Tranche 6: finite-index arithmetic groups
 

@@ -1,0 +1,41 @@
+=== OG | file tests/acceptance/test_orthogonal_group.sage | src 87fbf863c413 | provider sage-extensions-565fc6b9 | cap 1800s | guard 6144 MiB | nodes from 9
+nodes: 47
+OG 10/47 tests/acceptance/test_orthogonal_group.sage::test_degenerate_orthogonal_group_contains_radical_shear_and_gl_action exit=0 peak=3582 MiB verdict=1 passed  72s
+OG 11/47 tests/acceptance/test_orthogonal_group.sage::test_degenerate_orthogonal_group_respects_permuted_radical_coordinates exit=0 peak=3572 MiB verdict=1 passed  76s
+OG 12/47 tests/acceptance/test_orthogonal_group.sage::test_degenerate_orthogonal_group_generates_rank_two_radical_action exit=0 peak=3753 MiB verdict=1 passed  96s
+OG 13/47 tests/acceptance/test_orthogonal_group.sage::test_degenerate_orthogonal_group_generates_permuted_rank_two_radical_action exit=0 peak=3510 MiB verdict=1 passed  76s
+OG 14/47 tests/acceptance/test_orthogonal_group.sage::test_degenerate_orthogonal_group_embeds_non_diagonal_complement exit=0 peak=3706 MiB verdict=1 passed  74s
+OG 15/47 tests/acceptance/test_orthogonal_group.sage::test_zero_form_orthogonal_group_is_the_full_general_linear_group exit=0 peak=282 MiB verdict=1 passed  4s
+OG 16/47 tests/acceptance/test_orthogonal_group.sage::test_zero_form_orthogonal_group_uses_permuted_coordinate_labels exit=0 peak=293 MiB verdict=1 passed  4s
+OG 17/47 tests/acceptance/test_orthogonal_group.sage::test_orthogonal_group_of_the_hyperbolic_plane_has_order_four exit=0 peak=294 MiB verdict=1 passed  4s
+OG 18/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_0] exit=0 peak=2791 MiB verdict=1 passed  44s
+OG 19/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_1] exit=0 peak=2823 MiB verdict=1 passed  42s
+OG 20/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_2] exit=0 peak=2810 MiB verdict=1 passed  44s
+OG 21/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_3] exit=0 peak=2964 MiB verdict=1 passed  42s
+OG 22/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_4] exit=0 peak=2945 MiB verdict=1 passed  44s
+OG 23/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_5] exit=0 peak=2805 MiB verdict=1 passed  44s
+OG 24/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_6] exit=0 peak=2946 MiB verdict=1 passed  50s
+OG 25/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_7] exit=0 peak=2983 MiB verdict=1 passed  72s
+OG 26/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_8] exit=0 peak=2991 MiB verdict=1 passed  50s
+OG 27/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_9] exit=0 peak=2964 MiB verdict=1 passed  48s
+OG 28/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_10] exit=0 peak=2997 MiB verdict=1 passed  40s
+OG 29/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_11] exit=0 peak=2902 MiB verdict=1 passed  50s
+OG 30/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_12] exit=0 peak=2835 MiB verdict=1 passed  50s
+OG 31/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_13] exit=0 peak=2955 MiB verdict=1 passed  46s
+OG 32/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_14] exit=0 peak=2942 MiB verdict=1 passed  44s
+OG 33/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_15] exit=0 peak=2989 MiB verdict=1 passed  48s
+OG 34/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_16] exit=0 peak=2791 MiB verdict=1 passed  44s
+OG 35/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_17] exit=0 peak=2802 MiB verdict=1 passed  46s
+OG 36/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_18] exit=0 peak=2812 MiB verdict=1 passed  46s
+OG 37/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_19] exit=0 peak=2932 MiB verdict=1 passed  44s
+OG 38/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_20] exit=0 peak=2964 MiB verdict=1 passed  44s
+OG 39/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_21] exit=0 peak=3033 MiB verdict=1 passed  78s
+OG 40/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_22] exit=0 peak=2832 MiB verdict=1 passed  54s
+OG 41/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_23] exit=0 peak=3066 MiB verdict=1 passed  50s
+OG 42/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_24] exit=0 peak=2993 MiB verdict=1 passed  50s
+OG 43/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_25] exit=0 peak=2967 MiB verdict=1 passed  48s
+OG 44/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_26] exit=0 peak=2995 MiB verdict=1 passed  52s
+OG 45/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_images_match_oscar[from_sage_27] exit=0 peak=3027 MiB verdict=1 passed  52s
+OG 46/47 tests/acceptance/test_orthogonal_group.sage::test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q SKIPPED (excluded by --skip)
+OG 47/47 tests/acceptance/test_orthogonal_group.sage::test_signed_discriminant_image_of_u_plus_minus_three_is_all_of_o_q exit=0 peak=454 MiB verdict=1 passed  8s
+OG_DONE

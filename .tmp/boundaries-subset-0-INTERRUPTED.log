@@ -1,0 +1,4 @@
+============================= test session starts ==============================
+collecting ... collected 119 items / 94 deselected / 25 selected
+
+tests/acceptance/test_boundaries.sage::test_dawes_building_incidence_graph_is_the_published_figure[dawes_2U2_A2_stable] 

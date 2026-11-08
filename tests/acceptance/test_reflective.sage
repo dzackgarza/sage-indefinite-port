@@ -8,8 +8,8 @@ ten simple roots of U + E8(-1).
 """
 
 import pytest
-from dzack_research.preamble.all import ZZ as PreambleZZ
-from dzack_research.preamble.all import HyperbolicLattices, Lattices
+from sage_extensions.all import ZZ as PreambleZZ
+from sage_extensions.all import HyperbolicLattices, Lattices
 from sage.all import QQ, ZZ, Graph, matrix, vector
 
 import sage_indefinite_port.indefinite.edgewalk as edgewalk_module
@@ -79,7 +79,7 @@ def test_promised_go_left_preserves_left_supplement() -> None:
 
 def test_edgewalk_period_action_matrix_uses_coordinate_label_order() -> None:
     """The induced binary-period action is expressed in coordinate-label order."""
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import Lattices
     from sage.all import QQ as SageQQ
     from sage.all import ZZ as SageZZ
     from sage.all import matrix
@@ -155,8 +155,8 @@ def test_binary_cycle_coordinate_order_and_period_certificate() -> None:
 
 def test_binary_cycle_period_respects_permuted_coordinate_basis() -> None:
     """The oriented binary cycle returns its period in the declared basis order."""
-    from dzack_research.preamble.all import ZZ as PreambleZZ
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import ZZ as PreambleZZ
+    from sage_extensions.all import Lattices
 
     from sage_indefinite_port.indefinite.edgewalk_rank2 import _OrientedBinaryCycle
 
@@ -175,14 +175,17 @@ def test_binary_cycle_period_respects_permuted_coordinate_basis() -> None:
     period, representatives = result
     _default_period, default_representatives = default_result
 
-    # The custom basis swaps the two default coordinates. Compare the complete
-    # representative sets in the same frame, while allowing the oriented
-    # cycle's canonical companion to choose the inverse traversal direction.
+    # The custom basis reverses the two default coordinates, a determinant -1
+    # change of frame. The pinned source's cycle is orientation-equivariant,
+    # not invariant: two_dim_lorentzian.h (a55fcb7b) requires det_two(r,l) == 1
+    # in the supplied frame, so the reversed frame reflects the cycle in the
+    # positive coordinate. Compare the complete representative sets under that
+    # reflection, in the same frame.
     assert {
         (coordinates[1], coordinates[0])
         for coordinates in (cycle.coordinates(point) for point in representatives)
-    } == {default_cycle.coordinates(point) for point in default_representatives}
-    assert period.determinant() == 1
+    } == {(x, -y) for (x, y) in (default_cycle.coordinates(point) for point in default_representatives)}
+    assert int(period.determinant()) == 1
     assert all(
         lattice_.b(period(left), period(right)) == lattice_.b(left, right)
         for left in tuple(lattice_.module_generators())
@@ -334,7 +337,20 @@ def test_root_systems_match_polyhedral_common(case) -> None:
     _assert_same_root_system(case["gram"], case["roots"])
 
 
-@pytest.mark.parametrize("case", load_allcock_rank3_reflective(), ids=lambda case: case["id"])
+def _allcock_case_id(case) -> str:
+    r"""The retained source identity of a rank-3 Allcock lattice.
+
+    ``case["id"]`` is built from the lattice id alone
+    (``references/extract/allcock_rank3.py:56`` uses only capture group 5), so it names up
+    to 374 distinct lattices: 8,595 entries share 176 ids. ``(weyl_group_id, lattice_id)``
+    is Allcock's own identity and is unique across every entry, so composing it keeps the
+    node id both readable and unambiguous. Nothing but the reported id changes -- the
+    parametrized data, its order and every assertion are untouched.
+    """
+    return f"{case['id']}_w{case['weyl_group_id']}_l{case['lattice_id']}"
+
+
+@pytest.mark.parametrize("case", load_allcock_rank3_reflective(), ids=_allcock_case_id)
 def test_root_systems_match_allcock(case) -> None:
     require(EDGEWALK)
 

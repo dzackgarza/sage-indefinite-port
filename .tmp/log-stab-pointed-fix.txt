@@ -1,0 +1,17 @@
+=== STABP | file tests/acceptance/test_vector_stabilizers.sage | src 87fbf863c413 | provider sage-extensions-565fc6b9 | cap 3600s | guard 6144 MiB | nodes from 0
+nodes: 31
+STABP 1/31 tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_automorphism_generators_preserve_marking_and_form exit=0 peak=422 MiB verdict=1 passed  10s
+STABP 2/31 tests/acceptance/test_vector_stabilizers.sage::test_divisibility_two_isotropic_pointed_isometry_has_exact_witness exit=0 peak=411 MiB verdict=1 passed  6s
+STABP 3/31 tests/acceptance/test_vector_stabilizers.sage::test_odd_lattice_isotropic_pointed_isometry_uses_general_divisibility_two_route exit=0 peak=296 MiB verdict=1 passed  4s
+STABP 4/31 tests/acceptance/test_vector_stabilizers.sage::test_general_isotropic_pointed_isometry_carries_negative_marking exit=0 peak=288 MiB verdict=1 passed  6s
+STABP 5/31 tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_isometry_transports_between_changed_basis_parents exit=0 peak=411 MiB verdict=1 passed  6s
+STABP 6/31 tests/acceptance/test_vector_stabilizers.sage::test_split_divisibility_one_pointed_isometry_carries_actual_negative_marking exit=0 peak=288 MiB verdict=1 passed  4s
+STABP 7/31 tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_isometry_rejects_different_divisibility exit=0 peak=287 MiB verdict=1 passed  4s
+STABP 8/31 tests/acceptance/test_vector_stabilizers.sage::test_isotropic_plane_isometry_carries_changed_basis_plane exit=0 peak=288 MiB verdict=1 passed  4s
+STABP 9/31 tests/acceptance/test_vector_stabilizers.sage::test_isotropic_plane_isometry_transports_between_changed_basis_parents exit=0 peak=287 MiB verdict=1 passed  6s
+STABP 10/31 tests/acceptance/test_vector_stabilizers.sage::test_isotropic_flag_isometry_preserves_line_inside_plane exit=0 peak=306 MiB verdict=1 passed  4s
+STABP 11/31 tests/acceptance/test_vector_stabilizers.sage::test_isotropic_flag_isometry_transports_between_changed_basis_parents exit=0 peak=320 MiB verdict=1 passed  6s
+STABP 12/31 tests/acceptance/test_vector_stabilizers.sage::test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks exit=0 peak=438 MiB verdict=1 passed  12s
+STABP 13/31 tests/acceptance/test_vector_stabilizers.sage::test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound exit=0 peak=3581 MiB verdict=1 passed  68s
+STABP 14/31 tests/acceptance/test_vector_stabilizers.sage::test_divisibility_four_isotropic_plane_stabilizer_constructs_exact_containing_bound exit=0 peak=323 MiB verdict=1 passed  6s
+STABP_DONE

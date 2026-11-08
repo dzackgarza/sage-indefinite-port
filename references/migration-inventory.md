@@ -96,29 +96,9 @@ Paths: port paths are relative to `src/sage_indefinite_port/`; preamble paths ar
   Only the private `_first_close_vector_scale` (`lattices.py:3846`) and the engine-private `first_close_vector_scale_coordinates` (`definite_lattices.py:493`) exist.
   Added to research#401.
 
-## Correctness defects found (fixed when the code migrates or is rewritten; each needs a red reproducer first)
+## Correctness defects
 
-| Location | Defect | Owner | Basis |
-| --- | --- | --- | --- |
-| `vector_sections.py:333-438` `IsotropicVectorSection.rational_lift` | The lifts of ψ: v^⊥/v → v'^⊥/v' form an affine family of dimension n−2 (transvections E_{v',x}), but the torsor carries no directions, so integral transporters can be missed. | research#401, #18 | algebra checked |
-| `isotropic_lifts.py:316-451` `PointwisePerpendicularKernel` | Trivial for rank-1 I, its only use (`recursive.py:496`): an isometry fixing e^⊥ sends f to f + c·e with q(f) = q(f) + 2c·b(e, f), so c = 0. The odd-lattice branch adds no unipotent generators. | research#398, #18 | algebra checked |
-| `recursive.py:481-499` `_rational_stabilizer_lifts` | For isotropic v, all of O(K) is lifted rather than the gluing-preserving Levi image; the generated rational group may miss Stab(v). | #18 (via research#398, #396) | inference |
-| `eichler.py:112-170` `OrbitCoverModel.covering_representatives` | Norm 0 through the envelope asks only for vectors primitive in E, so vectors primitive in L but not in E are missed. | #18 | inference |
-| `invariants.py:108-124` `VectorPrefilter.discriminant_class_orbit_key` | A function of (norm, div, content) only; it does not use the class [v/div]. | research#401 | read |
-| `presentations.py` `ReducedLatticePresentation` | Calls `lll_reduction`, which raises on every indefinite lattice. | drop | read |
-| `lorentzian_cells.py:921-929, 891-918, 958-1000, 1017-1069` | Unbounded `while True` loops: `_search_initial_vectors` doubles forever on an anisotropic lattice in isotropic mode; `_find_positive_vectors` has no stop when `scaled_max ≤ 0`; `_upper_bound` doubles unboundedly. | #15 | inference |
-| `lorentzian_cells.py:77-87` | The rank-2 U special case depends on the basis: it fires only when both basis vectors are isotropic. | #15 | inference |
-| `lorentzian_cells.py:543` `perfect_domain_traversal` | Takes Gram rows and returns records; the frozen test passes a lattice and reads `.cells()`; research passes negated rows. | #15, research#403 | read |
-| `edgewalk.py` `_edge_directions` (517), `_isotropic_next_vertex` (486), `_edge_step` (504), `_corner_from_roots` (130), `_class_action_order` (266) | Unhandled cases: non-simplicial cones at multi-component cusps; anisotropic edge planes should return non-reflective but raise; tied candidates dropped; unverified corner vertices; an arbitrary bound `max(12, 12N²)`. | #15 | inference |
-| `edgewalk.py:598-606` | The rank-2 branch reports reflective with one wall, against the preamble's treatment of signature (1,1). | #15 | read |
-| `edgewalk.py:91,125,594` | `int(entry)` truncates a rational entry silently. | #15 | inference |
-| `recursive.py:409-428`, `eichler.py:181-211, 376-396` | The splitting vector is chosen only among e_i and e_i ± e_j, and the code raises when none is positive, although positive vectors exist; three copies. | #18 | read |
-| `recursive.py:861` | Vector-orbit deduplication discards its transporters, against the design. | #18 | read |
-| `integral_structures.py:256`, `recursive.py:458-461`, `integral_structures.py:1404-1443` | Error-swallowing fallbacks (`except … : return False / () / None`). | migration | read |
-| `canonization.py:263-264`, `polyhedral.py:63` | `libgap.Group([])` when a stabilizer has no generators (observed in #15's red cases). | research#399 | observed |
-| research `eichler_criterion.py:314-316` `from_represented_biproduct` | Takes `factors[-1]` as the complement and drops the middle factors when there are four or more. | research#402 | inference |
-| research `eichler_criterion.py:1064-1143` `TwoUEichlerModel.isometry_to` | False non-isometry for 2U + E8(-1)^2 against 2U + D16^+(-1). | research#402 | mathematics |
-| research `lattices.py:3269` against `isotropic_parabolics.py:243` | Two Eichler transvection conventions with opposite parameter sign. | research#402 | read |
+The correctness defects found during this inventory are tracked as issues, each needing a red reproducer before its fix: [#15](https://github.com/dzackgarza/sage-indefinite-port/issues/15) and [#18](https://github.com/dzackgarza/sage-indefinite-port/issues/18) in this repository, and [research#398](https://github.com/dzackgarza/research/issues/398), [research#399](https://github.com/dzackgarza/research/issues/399), [research#401](https://github.com/dzackgarza/research/issues/401), [research#402](https://github.com/dzackgarza/research/issues/402) and [research#403](https://github.com/dzackgarza/research/issues/403).
 
 ## groups/integral_structures.py (1515 lines)
 

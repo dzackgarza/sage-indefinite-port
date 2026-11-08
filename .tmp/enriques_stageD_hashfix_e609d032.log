@@ -1,0 +1,43 @@
+[t=     0.0s] imports
+[t=     1.2s] provider package: /repos/sage-extensions/src/sage_extensions/__init__.py
+[t=     1.2s] lattice_morphisms.py sha256[:16] = 00f0c682880cc022
+[t=     1.2s] N: rank 12, signature (2, 10), det 1024; line I_1_1
+[t=     2.3s] isotropic_reduction 1.1s
+[t=     2.3s] K: rank 10, signature (1, 9), det 1024
+[t=     4.4s] orthogonal_group_generators(K) 2.1s: 22 gens
+[t=    29.1s] isotropic_stabilizer_action 24.6s
+[t=    29.1s] action.stabilizer().group_generators()  <- the previously non-returning call
+Timeout (0:01:00)!
+Thread 0x00007c3efc2c2780 [python] (most recent call first):
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/pure/modules.py", line 2163 in base_ring
+  File "/repos/sage-extensions/src/sage_extensions/categories/rings/ring_foundation.py", line 2011 in zero
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 103 in __init__
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/framed/framed_free_modules.py", line 201 in _add_
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1084 in _linear_combination_of_generator_images
+  File "/repos/sage-extensions/src/sage_extensions/categories/modules/module_morphisms/module_morphisms.py", line 1101 in _call_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1483 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/lattice_morphisms.py", line 1482 in __eq__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 414 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/logic.py", line 160 in conjunction
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 413 in contains
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 187 in __contains__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 219 in _element_constructor_
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/finite_ordered_sets.py", line 177 in position_of
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 384 in <lambda>
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/set_categories.py", line 772 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/mor_categories.py", line 1631 in __call__
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 116 in _value_at_normalized_index
+  File "/repos/sage-extensions/src/sage_extensions/categories/sets/indexed_families.py", line 215 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 78 in <genexpr>
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 75 in _orbit_schreier_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py", line 520 in orbit_schreier_morphism
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 242 in lattice_stabilizer
+  File "/repos/sage-extensions/src/sage_extensions/categories/rational_integral_stabilizers.py", line 459 in stabilizer
+  File "/work/.scratch/probe-stage-attrib-hashfix.py", line 55 in <module>
+[t=    60.8s] action.stabilizer() 31.7s: 25 generators
+[t=    64.5s] line action per generator (1 = fixed, -1 = negated): [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+[t=    64.6s] all preserve the form: True
+[t=    64.6s] all fix the line setwise: True
+ATTRIB_HASHFIX_OK

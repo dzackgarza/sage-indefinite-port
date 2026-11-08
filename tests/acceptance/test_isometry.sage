@@ -55,6 +55,7 @@ def test_lorentzian_pairs_are_isometric(case) -> None:
 def test_row_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
     """The approximate-model row convention is translated at the owned O() boundary."""
     from sage.all import ZZ as SageZZ
+    from sage_extensions.all import ZZ as PreambleZZ
     from sage.all import matrix
 
     from sage_indefinite_port.indefinite.eichler import _isometry_from_row_matrix
@@ -76,8 +77,9 @@ def test_row_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
 
 def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
     """Matrix conventions survive different source/target generator iteration orders."""
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import Lattices
     from sage.all import ZZ as SageZZ
+    from sage_extensions.all import ZZ as PreambleZZ
     from sage.all import matrix
 
     from sage_indefinite_port.indefinite.eichler import (
@@ -92,8 +94,8 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
     source_labels = ("a", "z")
     target_labels = ("z", "a")
     gram = [[2, 1], [1, 2]]
-    source = Lattices(SageZZ)(gram, module_generators=source_labels)
-    target = Lattices(SageZZ)(gram, module_generators=target_labels)
+    source = Lattices(PreambleZZ)(gram, module_generators=source_labels)
+    target = Lattices(PreambleZZ)(gram, module_generators=target_labels)
     assert tuple(source.module_generating_set()) == source_labels
     assert tuple(target.module_generating_set()) == target_labels
 
@@ -204,8 +206,9 @@ def test_column_matrix_morphism_roundtrip_uses_coordinate_labels() -> None:
 
 def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> None:
     """Equal Gram presentations with different labels are identified by coordinates."""
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import Lattices
     from sage.all import ZZ as SageZZ
+    from sage_extensions.all import ZZ as PreambleZZ
 
     from sage_indefinite_port.indefinite.groupoid_cache import (
         IsometryGroupoidCache,
@@ -214,8 +217,8 @@ def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> Non
 
     source_labels = ("zeta", "alpha")
     target_labels = ("beta", "omega")
-    source = Lattices(SageZZ)([[2, 1], [1, 2]], module_generators=source_labels)
-    target = Lattices(SageZZ)([[2, 1], [1, 2]], module_generators=target_labels)
+    source = Lattices(PreambleZZ)([[2, 1], [1, 2]], module_generators=source_labels)
+    target = Lattices(PreambleZZ)([[2, 1], [1, 2]], module_generators=target_labels)
     assert source is not target
     assert tuple(source.module_generating_set()) == source_labels
     assert tuple(target.module_generating_set()) == target_labels
@@ -244,7 +247,7 @@ def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> Non
         image = witness(source.module_generator(source_label)).to_vector()
         assert tuple(int(image(label)) for label in target_labels) == tuple(int(index == j) for j in range(len(target_labels)))
 
-    different_gram = Lattices(SageZZ)([[2, 0], [0, 4]], module_generators=target_labels)
+    different_gram = Lattices(PreambleZZ)([[2, 0], [0, 4]], module_generators=target_labels)
     try:
         coordinate_identification(source, different_gram)
     except ValueError as error:
@@ -252,7 +255,7 @@ def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> Non
     else:
         raise AssertionError("coordinate identification accepted unequal Gram presentations")
 
-    different_rank = Lattices(SageZZ)([[2]], module_generators=("only",))
+    different_rank = Lattices(PreambleZZ)([[2]], module_generators=("only",))
     try:
         coordinate_identification(source, different_rank)
     except ValueError as error:
@@ -282,8 +285,9 @@ def test_equal_gram_groupoid_identification_preserves_coordinate_labels() -> Non
 
 def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
     """A non-diagonal nonsingular summand plus radical survives a basis change."""
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import Lattices
     from sage.all import ZZ as SageZZ
+    from sage_extensions.all import ZZ as PreambleZZ
     from sage.all import matrix
 
     require(MARKED_ISOMETRY)
@@ -293,8 +297,8 @@ def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
     conjugate = change * gram * change.transpose()
     source_labels = ("zeta", "alpha", "mu")
     target_labels = ("omega", "beta", "null")
-    source = Lattices(SageZZ)([[int(entry) for entry in row] for row in gram.rows()], module_generators=source_labels)
-    target = Lattices(SageZZ)([[int(entry) for entry in row] for row in conjugate.rows()], module_generators=target_labels)
+    source = Lattices(PreambleZZ)([[int(entry) for entry in row] for row in gram.rows()], module_generators=source_labels)
+    target = Lattices(PreambleZZ)([[int(entry) for entry in row] for row in conjugate.rows()], module_generators=target_labels)
     assert tuple(source.module_generating_set()) == source_labels
     assert tuple(target.module_generating_set()) == target_labels
 
@@ -324,9 +328,10 @@ def test_degenerate_isometry_witness_respects_complement_coordinates() -> None:
 
 def test_eichler_generator_families_preserve_nonlexical_complement() -> None:
     """GRPeasy and full generator matrices preserve a model with non-lexical complement labels."""
-    from dzack_research.preamble.all import ZZ as PreambleZZ
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import ZZ as PreambleZZ
+    from sage_extensions.all import Lattices
     from sage.all import ZZ as SageZZ
+    from sage_extensions.all import ZZ as PreambleZZ
     require(MARKED_ISOMETRY)
     category = Lattices(PreambleZZ)
     complement = category([[2, 0], [0, 4]], module_generators=("zeta", "alpha"))
@@ -377,9 +382,10 @@ def test_eichler_generator_families_preserve_nonlexical_complement() -> None:
 
 def test_two_u_full_generating_data_accepts_raw_sage_integer_norm() -> None:
     """The public full-generation consumer returns its norm in the owned ring."""
-    from dzack_research.preamble.all import Lattices, ZZ as PreambleZZ
+    from sage_extensions.all import Lattices, ZZ as PreambleZZ
     from sage.all import QQ as SageQQ
     from sage.all import ZZ as SageZZ
+    from sage_extensions.all import ZZ as PreambleZZ
 
     category = Lattices(PreambleZZ)
     lattice_ = category.orthogonal_sum((category("U"), category("U"), category([[2]])))
@@ -402,8 +408,8 @@ def test_two_u_full_generating_data_accepts_raw_sage_integer_norm() -> None:
 
 def test_odd_eichler_envelope_uses_declared_coordinate_order() -> None:
     """The even-sublattice envelope construction follows the declared basis labels."""
-    from dzack_research.preamble.all import ZZ as PreambleZZ
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import ZZ as PreambleZZ
+    from sage_extensions.all import Lattices
     from sage.all import QQ as SageQQ
     from sage.all import matrix, vector
 
@@ -502,7 +508,7 @@ def test_odd_eichler_envelope_uses_declared_coordinate_order() -> None:
 
 def test_large_cell_transporter_invariant_rejection_returns_none() -> None:
     """Large scalar transporters return None, not the empty all-images tuple."""
-    from dzack_research.preamble.all import Lattices, ZZ as PreambleZZ
+    from sage_extensions.all import Lattices, ZZ as PreambleZZ
     from sage_indefinite_port.indefinite.lorentzian_cells import (
         LorentzianPerfectCell,
         LorentzianPerfectLocalBackend,

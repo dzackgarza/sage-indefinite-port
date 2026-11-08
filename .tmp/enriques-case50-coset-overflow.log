@@ -1,0 +1,466 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______ test_enriques_modular_groups_match_dutour_sikiric_hulek[case_50] _______
+
+>   return cache[k]
+E   KeyError: ((Subgroup of Orthogonal group of Finitely presented module on 12 module generators over Integer Ring with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2],), ())
+
+sage/misc/cachefunc.pyx:1965: KeyError
+
+During handling of the above exception, another exception occurred:
+
+case = {'case': 50, 'S': '$\\overline{\\{1,2,3,7\\}}$', 'walls': [-1, 0, 4, 5, 6, 8], 'subsets_in_class': 3, ...}
+
+    @pytest.mark.parametrize("case", _ENRIQUES, ids=lambda case: f"case_{case['case']}")
+    def test_enriques_modular_groups_match_dutour_sikiric_hulek(case) -> None:
+        require(MARKED_CLASSES, MARKED_AUTOMORPHISMS)
+    
+        group = _gamma_h(case["face_polarization"])
+        anti_invariant = group.supergroup().domain()
+        target = anti_invariant.discriminant_group().orthogonal_group()
+    
+>       image = target.subgroup_on(tuple(g.discriminant_morphism() for g in group.group_generators()))
+                                                                            ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/acceptance/test_boundaries.sage:245: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = {g in Orthogonal group O(Integral lattice of rank 12 and signature (2, 10)) : g lies in every selected subgroup}
+
+    def group_generators(self):
+>       return self.selected_group_resolution().generators(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            name="Group generators"
+        )
+
+/repos/sage-extensions/src/sage_extensions/categories/group/groups.py:5438: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = {g in Orthogonal group O(Integral lattice of rank 12 and signature (2, 10)) : g lies in every selected subgroup}
+
+    def selected_group_resolution(self):
+>       return self.selected_resolution(OwnedGroups())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/group/groups.py:5416: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = {g in Orthogonal group O(Integral lattice of rank 12 and signature (2, 10)) : g lies in every selected subgroup}
+owner = Category of groups
+
+    def selected_resolution(self, owner):
+        r"""Return the chosen resolution relative to owner."""
+        registry = self._selected_data_registry()
+        selected = registry.get(owner)
+        match selected:
+            case None:
+                raise ValueError(
+                    f"{self} has no chosen resolution relative to {owner}"
+                )
+            case _PendingResolution():
+>               resolution = selected.realize()
+                             ^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py:383: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sage_extensions.categories.abstract_categories.objects._PendingResolution object at 0x775390c199d0>
+
+    def realize(self):
+>       return self._resolution_factory()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py:116: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def resolution():
+>       augmentation = generating_morphism(subgroup)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/group/predicate_subgroups.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+intersection = {g in Orthogonal group O(Integral lattice of rank 12 and signature (2, 10)) : g lies in every selected subgroup}
+morphism = Generic morphism:
+  From: Orthogonal group O(Integral lattice of rank 12 and signature (2, 10))
+  To:   Cyclic group C_2 of order 2
+target = Subgroup of Cyclic group C_2 of order 2
+generated = {g in Orthogonal group O(Integral lattice of rank 12 and signature (2, 10)) : rho_L(g) lies in Subgroup of Orthogonal ...with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]}
+
+        lambda intersection, morphism=morphism, target=target, generated=generated: (
+>           intersection._restricted_preimage_generating_morphism(
+                morphism, target, generated
+            )
+        ),
+    )
+
+/repos/sage-extensions/src/sage_extensions/categories/group/predicate_subgroups.py:1100: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = {g in Orthogonal group O(Integral lattice of rank 12 and signature (2, 10)) : g lies in every selected subgroup}
+morphism = Generic morphism:
+  From: Orthogonal group O(Integral lattice of rank 12 and signature (2, 10))
+  To:   Cyclic group C_2 of order 2
+target = Subgroup of Cyclic group C_2 of order 2
+generated = {g in Orthogonal group O(Integral lattice of rank 12 and signature (2, 10)) : rho_L(g) lies in Subgroup of Orthogonal ...with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]}
+
+    def _restricted_preimage_generating_morphism(self, morphism, target, generated):
+        r"""``E ->> f^-1(K) cap B`` through the Schreier morphism onto ``(f i)^-1(K)``."""
+        inclusion = generated.inclusion()
+        restricted = (morphism * inclusion).preimage_subgroup(target)
+>       augmentation = restricted.schreier_generating_morphism()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/group/predicate_subgroups.py:1138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = {g in {g in Orthogonal group O(Integral lattice of rank 12 and signature (2, 10)) : rho_L(g) lies in Subgroup of Ortho...2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]}
+  To:   Cyclic group C_2 of order 2(g) lies in Subgroup of Cyclic group C_2 of order 2}
+generators = None
+
+    def schreier_generating_morphism(self, *, generators=None):
+        r"""Schreier's lemma on the coset space ``G/f^-1(K)`` with its section.
+    
+        Explicit generators may replace the selected cover of the ambient
+        group; they must generate it.
+        """
+>       return self.coset_space(generators=generators).schreier_generating_morphism()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/group/predicate_subgroups.py:821: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = {g in {g in Orthogonal group O(Integral lattice of rank 12 and signature (2, 10)) : rho_L(g) lies in Subgroup of Ortho...2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]}
+  To:   Cyclic group C_2 of order 2(g) lies in Subgroup of Cyclic group C_2 of order 2}
+generators = None
+
+    def coset_space(self, *, generators=None):
+        r"""``G/f^-1(K)`` as the orbit of ``K`` in ``Q/K`` under ``G`` acting through ``f``."""
+>       return _preimage_coset_space(
+            self, self.preimage_morphism(), self.target_subgroup(), generators
+        )
+
+/repos/sage-extensions/src/sage_extensions/categories/group/predicate_subgroups.py:811: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+subgroup = {g in {g in Orthogonal group O(Integral lattice of rank 12 and signature (2, 10)) : rho_L(g) lies in Subgroup of Ortho...2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]}
+  To:   Cyclic group C_2 of order 2(g) lies in Subgroup of Cyclic group C_2 of order 2}
+morphism = Generic morphism:
+  From: {g in Orthogonal group O(Integral lattice of rank 12 and signature (2, 10)) : rho_L(g) lies ...tor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]}
+  To:   Cyclic group C_2 of order 2
+target = Subgroup of Cyclic group C_2 of order 2, generators = None
+
+    def _preimage_coset_space(subgroup, morphism, target, generators):
+        r"""``G/P`` for ``P = f^-1(K)``, ``f: G -> Q`` finite: the orbit of ``K`` in ``Q/K``.
+    
+        ``G`` acts on ``Q/K`` through ``f``; the stabilizer of the base point
+        ``K`` is ``f^-1(K) = P``.  The finiteness used is that of ``Q``.
+        """
+        from sage_extensions.categories.group.g_sets import FiniteGSets
+    
+        assert morphism.codomain() in OwnedFiniteGroups(), (
+            f"the cosets of {subgroup} are realized through the finite group {morphism.codomain()}, "
+            f"but it is not known to be finite"
+        )
+        image_cosets = morphism.codomain().left_cosets(target)
+        return FiniteGSets(subgroup.supergroup()).pointed_orbit(
+            subgroup,
+            image_cosets.base_point(),
+            lambda element, point: image_cosets.act(morphism(element), point),
+>           _free_cover(subgroup.supergroup(), generators),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        )
+
+/repos/sage-extensions/src/sage_extensions/categories/group/predicate_subgroups.py:83: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ambient = {g in Orthogonal group O(Integral lattice of rank 12 and signature (2, 10)) : rho_L(g) lies in Subgroup of Orthogonal ...with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]}
+generators = None
+
+    def _free_cover(ambient, generators):
+        r"""``pi: F ->> G``: the selected free cover, or the free group on supplied generators of ``G``."""
+        if generators is None:
+>           return ambient.selected_group_resolution().augmentation()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/group/predicate_subgroups.py:62: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = {g in Orthogonal group O(Integral lattice of rank 12 and signature (2, 10)) : rho_L(g) lies in Subgroup of Orthogonal ...with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]}
+
+    def selected_group_resolution(self):
+        r"""The selected generating epimorphism onto ``f^-1(K)``, assembled when ``f: G -> Q`` has infinite codomain.
+    
+        For finite ``Q`` the Schreier family is selected at construction.
+        For infinite ``Q``, ``f^-1(K) = f^-1(K cap f(G))`` is generated by
+        ``ker(f)`` together with one preimage of each generator of
+        ``K cap f(G)`` (``kernel_image_generating_morphism``), from three
+        data the caller supplies: generators selected on ``f.kernel()``,
+        a finite realization of ``Q / f(G)`` (``Q.left_cosets(f.image())``
+        a finite ``Q``-set, e.g. by ``Q.select_left_cosets``), and a
+        section of ``f`` on its image (``f.lift``).  Each missing datum is
+        asserted by name.  The family is computed on first request and
+        retained (``OWN-22``).
+        """
+        match self.preimage_morphism().codomain():
+            case _ if _retains_group_resolution(self):
+                pass
+            case codomain if codomain in OwnedFiniteGroups():
+                pass
+            case _:
+                _fix_selected_generating_morphism(
+                    self, lambda preimage: preimage.kernel_image_generating_morphism()
+                )
+>       return super().selected_group_resolution()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/group/predicate_subgroups.py:846: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = {g in Orthogonal group O(Integral lattice of rank 12 and signature (2, 10)) : rho_L(g) lies in Subgroup of Orthogonal ...with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]}
+
+    def selected_group_resolution(self):
+>       return self.selected_resolution(OwnedGroups())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/group/groups.py:5416: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = {g in Orthogonal group O(Integral lattice of rank 12 and signature (2, 10)) : rho_L(g) lies in Subgroup of Orthogonal ...with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]}
+owner = Category of groups
+
+    def selected_resolution(self, owner):
+        r"""Return the chosen resolution relative to owner."""
+        registry = self._selected_data_registry()
+        selected = registry.get(owner)
+        match selected:
+            case None:
+                raise ValueError(
+                    f"{self} has no chosen resolution relative to {owner}"
+                )
+            case _PendingResolution():
+>               resolution = selected.realize()
+                             ^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py:383: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sage_extensions.categories.abstract_categories.objects._PendingResolution object at 0x775390a5da30>
+
+    def realize(self):
+>       return self._resolution_factory()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/abstract_categories/objects.py:116: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def resolution():
+>       augmentation = generating_morphism(subgroup)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/group/predicate_subgroups.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+preimage = {g in Orthogonal group O(Integral lattice of rank 12 and signature (2, 10)) : rho_L(g) lies in Subgroup of Orthogonal ...with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]}
+
+>       self, lambda preimage: preimage.schreier_generating_morphism()
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+
+/repos/sage-extensions/src/sage_extensions/categories/group/predicate_subgroups.py:793: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = {g in Orthogonal group O(Integral lattice of rank 12 and signature (2, 10)) : rho_L(g) lies in Subgroup of Orthogonal ...with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]}
+generators = None
+
+    def schreier_generating_morphism(self, *, generators=None):
+        r"""Schreier's lemma on the coset space ``G/f^-1(K)`` with its section.
+    
+        Explicit generators may replace the selected cover of the ambient
+        group; they must generate it.
+        """
+>       return self.coset_space(generators=generators).schreier_generating_morphism()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/group/predicate_subgroups.py:821: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = {g in Orthogonal group O(Integral lattice of rank 12 and signature (2, 10)) : rho_L(g) lies in Subgroup of Orthogonal ...with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]}
+generators = None
+
+    def coset_space(self, *, generators=None):
+        r"""``G/f^-1(K)`` as the orbit of ``K`` in ``Q/K`` under ``G`` acting through ``f``."""
+>       return _preimage_coset_space(
+            self, self.preimage_morphism(), self.target_subgroup(), generators
+        )
+
+/repos/sage-extensions/src/sage_extensions/categories/group/predicate_subgroups.py:811: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+subgroup = {g in Orthogonal group O(Integral lattice of rank 12 and signature (2, 10)) : rho_L(g) lies in Subgroup of Orthogonal ...with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]}
+morphism = Generic morphism:
+  From: Orthogonal group O(Integral lattice of rank 12 and signature (2, 10))
+  To:   Orthogonal gro... with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]
+target = Subgroup of Orthogonal group of Finitely presented module on 12 module generators over Integer Ring with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]
+generators = None
+
+    def _preimage_coset_space(subgroup, morphism, target, generators):
+        r"""``G/P`` for ``P = f^-1(K)``, ``f: G -> Q`` finite: the orbit of ``K`` in ``Q/K``.
+    
+        ``G`` acts on ``Q/K`` through ``f``; the stabilizer of the base point
+        ``K`` is ``f^-1(K) = P``.  The finiteness used is that of ``Q``.
+        """
+        from sage_extensions.categories.group.g_sets import FiniteGSets
+    
+        assert morphism.codomain() in OwnedFiniteGroups(), (
+            f"the cosets of {subgroup} are realized through the finite group {morphism.codomain()}, "
+            f"but it is not known to be finite"
+        )
+>       image_cosets = morphism.codomain().left_cosets(target)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/group/predicate_subgroups.py:78: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Orthogonal group of Finitely presented module on 12 module generators over Integer Ring with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]
+subgroup = Subgroup of Orthogonal group of Finitely presented module on 12 module generators over Integer Ring with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]
+
+    def left_cosets(self, subgroup):
+        r"""Return the represented left-coset space ``G/H``.
+    
+        The result is the pointed transitive left ``G``-set ``G/H`` with
+        the projection ``G -> G/H`` and its section, the representative
+        map ``G/H -> G`` (a transversal).  A realization selected with
+        ``select_left_cosets`` is that object.  Otherwise, for infinite
+        ``G`` and ``H = f^-1(K)`` along a map to a finite group, ``G/H``
+        is realized as the finite orbit of ``K`` in ``F/K``.
+        """
+        from sage_extensions.categories.group.g_sets import LeftCosetGSets
+    
+        if self.has_selected_left_cosets(subgroup):
+            return self._selected_data_registry()[LeftCosetGSets(subgroup)]
+>       return self._left_coset_construction(subgroup)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/group/groups.py:6188: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+
+sage/misc/cachefunc.pyx:1970: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+
+sage/misc/cachefunc.pyx:1848: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Orthogonal group of Finitely presented module on 12 module generators over Integer Ring with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]
+subgroup = Subgroup of Orthogonal group of Finitely presented module on 12 module generators over Integer Ring with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]
+
+    @cached_method
+    def _left_coset_construction(self, subgroup):
+        from sage_extensions.categories.group.groups import _engine_left_coset_g_set
+    
+>       return _engine_left_coset_g_set(self, subgroup)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/modules/framed/formed/torsion_form_modules.py:1297: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+group = Orthogonal group of Finitely presented module on 12 module generators over Integer Ring with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]
+subgroup = Subgroup of Orthogonal group of Finitely presented module on 12 module generators over Integer Ring with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]
+
+    def _engine_left_coset_g_set(group, subgroup):
+        r"""Realize G/H through GAP's transversal, retaining its Schreier word section."""
+        from sage_extensions.categories.group.g_sets import FiniteGSets
+        from sage_extensions.categories.group.predicate_subgroups import PredicateSubgroups
+    
+        if subgroup.supergroup() is not group:
+            raise ValueError("a left-coset space needs a subgroup of its acting group")
+        if subgroup in PredicateSubgroups(group) and subgroup.has_finite_coset_space():
+            return subgroup.coset_space()
+        points = _TransversalCosets(group, subgroup)
+>       return FiniteGSets(group).pointed_orbit(
+            subgroup, points.point(points.position_of(group.one())), points.act,
+        )
+
+/repos/sage-extensions/src/sage_extensions/categories/group/groups.py:542: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Category of finite Orthogonal group of Finitely presented module on 12 module generators over Integer Ring with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]-sets
+subgroup = Subgroup of Orthogonal group of Finitely presented module on 12 module generators over Integer Ring with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]
+base = Form automorphism of Finitely presented module on 12 module generators over Integer Ring with invariant factors Invari... with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]
+action = <bound method _TransversalCosets.act of <sage_extensions.categories.group.groups._TransversalCosets_with_category object at 0x775390c9f050>>
+augmentation = Generic morphism:
+  From: Group generated by Group generators: [Form automorphism of Finitely presented module on 12 m... with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]
+
+    def pointed_orbit(self, subgroup, base, action, augmentation=None):
+        r"""``G/H`` realized as the orbit of ``base``, for ``H`` the stabilizer of ``base``.
+    
+        The defining hypothesis is the caller's: ``H`` is the stabilizer of
+        ``base`` and the orbit is finite.  Then ``gH |-> g.base`` identifies
+        ``G/H`` with the orbit; the orbit search supplies the section
+        ``p |-> t_p`` as a word section ``orbit -> F`` composed with the free
+        cover ``pi: F ->> G`` (by default the selected one).  The result is the
+        ``LeftCosetGSets(H)`` object retaining the orbit action, the base
+        point, the section and its word factor.
+        """
+        if augmentation is None:
+            augmentation = self.group().selected_group_resolution().augmentation()
+>       points, words = self._orbit_words((base,), action, augmentation)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py:190: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Category of finite Orthogonal group of Finitely presented module on 12 module generators over Integer Ring with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]-sets
+seeds = (Form automorphism of Finitely presented module on 12 module generators over Integer Ring with invariant factors Invar...ith invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2],)
+action = <bound method _TransversalCosets.act of <sage_extensions.categories.group.groups._TransversalCosets_with_category object at 0x775390c9f050>>
+augmentation = Generic morphism:
+  From: Group generated by Group generators: [Form automorphism of Finitely presented module on 12 m... with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]
+point_key = None
+
+    def _orbit_words(self, seeds, action, augmentation, *, point_key=None):
+        r"""The one orbit search: the union of the orbits of ``seeds``, each point with a word.
+    
+        ``augmentation`` is a free cover ``pi: F ->> G``.  Breadth-first search
+        over the free generators reaches each new point ``s.y`` by the word
+        ``s t_y``.  Points are recorded by rank in a dictionary keyed by the
+        point, or by its supplied injective rank key when the points are
+        unhashable. The caller supplies an effective action and the
+        hypothesis that these orbits are finite.
+        """
+        free = augmentation.domain()
+        steps = tuple((word, augmentation(word)) for word in free.group_generators())
+        points = list(finite_ordered_set(tuple(seeds)))
+        key = (lambda point: point) if point_key is None else point_key
+        rank = {key(point): position for position, point in enumerate(points)}
+        words = [free.one() for _point in points]
+        position = 0
+        while position < len(points):
+            for word, element in steps:
+>               image = action(element, points[position])
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/group/g_sets.py:156: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sage_extensions.categories.group.groups._TransversalCosets_with_category object at 0x775390c9f050>
+element = Form automorphism of Finitely presented module on 12 module generators over Integer Ring with invariant factors Invariant-factor family: [0 ↦ 2, 1 ↦ 2, 2 ↦ 2, 3 ↦ 2, 4 ↦ 2, 5 ↦ 2, 6 ↦ 2, 7 ↦ 2, 8 ↦ 2, 9 ↦ 2]
+point = <[OverflowError('value too large to convert to int') raised in repr()] _TransversalCoset object at 0x775390ef5810>
+
+    def act(self, element, point):
+>       image = self._transversal[point._position] * self._multiplier(element)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/repos/sage-extensions/src/sage_extensions/categories/group/groups.py:528: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   OverflowError: value too large to convert to int
+
+sage/libs/gap/element.pyx:3166: OverflowError
+=========================== short test summary info ============================
+FAILED tests/acceptance/test_boundaries.sage::test_enriques_modular_groups_match_dutour_sikiric_hulek[case_50]
+1 failed in 141.31s (0:02:21)

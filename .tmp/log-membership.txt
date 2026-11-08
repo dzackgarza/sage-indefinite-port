@@ -1,0 +1,17 @@
+[fixture] membership: (True, False, False) (expect (True, False, False)) VALIDATED
+[fixture] using membership
+[rows] 17 computed generators in 11.9s | 15 recorded
+[peakrss] membership: child waited=124 shell_code=124 samples=450
+[peakrss] peak tree RSS      : 3874 MiB
+[peakrss] low-water MemAvail : 4885 MiB
+[peakrss] peak single VmHWM  : 3874 MiB
+[peakrss] peak VmHWM by executable (this is the per-process attribution):
+[peakrss]   python                     3862 MiB peak
+[peakrss]   timeout                       7 MiB peak
+[peakrss]   proot-x86_64                  3 MiB peak
+[peakrss]   sh                            1 MiB peak
+[peakrss]   t=   830.5s procs=  4 rss=  3874 MiB hwm=  3874 MiB avail=  8997 MiB
+[peakrss]   t=   832.5s procs=  4 rss=  3874 MiB hwm=  3874 MiB avail=  8997 MiB
+[peakrss]   t=   834.5s procs=  4 rss=  3874 MiB hwm=  3874 MiB avail=  8997 MiB
+[peakrss]   t=   836.5s procs=  4 rss=  3874 MiB hwm=  3874 MiB avail=  8839 MiB
+[peakrss]   t=   838.5s procs=  4 rss=  3874 MiB hwm=  3874 MiB avail=  8839 MiB

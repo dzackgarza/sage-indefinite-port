@@ -296,8 +296,8 @@ def test_isotropic_flag_isometry_transports_between_changed_basis_parents() -> N
 
 def test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks() -> None:
     """The plane stabilizer preserves J setwise; the flag stabilizer also preserves Zu."""
-    from dzack_research.preamble.all import ZZ as PreambleZZ
-    from dzack_research.preamble.all import Lattices
+    from sage_extensions.all import ZZ as PreambleZZ
+    from sage_extensions.all import Lattices
 
     labels = ("z_first", "a_second", "m_third", "b_fourth")
     lattice_ = Lattices(PreambleZZ)(
@@ -305,8 +305,9 @@ def test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks()
         module_generators=labels,
     )
     assert tuple(lattice_.module_generating_set()) == labels
-    first = lattice_.linear_combination({labels[0]: 1})
-    second = lattice_.linear_combination({labels[2]: 1})
+    ring = lattice_.base_ring()
+    first = lattice_.linear_combination({labels[0]: ring.one()})
+    second = lattice_.linear_combination({labels[2]: ring.one()})
     plane = lattice_.primitive_isotropic_subobject(first, second)
     flag_line = first + second
     induction = IsotropicInduction(EichlerRecursion())
@@ -407,7 +408,7 @@ def test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso(square) -> None
         orbit["stabilizer_image_index_in_O_E10_F2"] for orbit in load_e10_vector_orbits()["orbits"] if orbit["h_squared"] == square
     )
 
-    computed = Counter(_ORDER_O_PLUS_10_2 // reduction_image_order(_automorphism_rows(marked), 2) for marked in vector_classes(lattice(_E10["gram"]), square))
+    computed = Counter(_ORDER_O_PLUS_10_2 // reduction_image_order(_E10["gram"], _automorphism_rows(marked), 2) for marked in vector_classes(lattice(_E10["gram"]), square))
 
     assert computed == recorded
 

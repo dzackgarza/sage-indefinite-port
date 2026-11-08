@@ -344,6 +344,41 @@ def test_coarse_large_configuration_colours_preserve_exact_stabilizer(monkeypatc
         assert set(map(tuple, matrix(ZZ, cell.rows) * transform)) == set(cell.rows)
 
 
+def test_a3_root_cell_has_its_complete_facet_orbits_and_transport_words(monkeypatch) -> None:
+    r"""The A3 root polytope has triangular and square facets.
+
+    In the realization by e_i-e_j in R^4, a nonempty proper subset S
+    defines a facet with |S|(4-|S|) vertices. Subsets of sizes one and
+    three give eight triangles, and subsets of size two give six squares.
+    S4 and root negation give the full root-system symmetry group of order
+    48, acting transitively on each of those two facet types.
+    """
+    from sage.all import SymmetricGroup
+    from sage_indefinite_port.indefinite.facet_orbits import _cell_facet_orbits_from_permutations
+
+    gram = matrix(ZZ, [[2, -1, 0, 0], [-1, 2, -1, 0], [0, -1, 2, 0], [0, 0, 0, -2]])
+    positive_roots = tuple(
+        tuple(int(start <= index < stop) for index in range(3))
+        for start in range(3) for stop in range(start + 1, 4)
+    )
+    roots = (*positive_roots, *(tuple(-entry for entry in root) for root in positive_roots))
+    cell = LorentzianPerfectCell(lattice(gram.rows()), tuple((*root, 1) for root in roots), ZERO_SQUARES)
+    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
+    permutations = LorentzianPerfectLocalBackend().point_permutations_from_rows(cell, cell.rows)
+    symmetric = SymmetricGroup(len(cell.rows))
+    group = symmetric.subgroup([symmetric([position + 1 for position in p]) for p in permutations])
+    assert group.order() == 48
+    records = _cell_facet_orbits_from_permutations(cell, permutations)
+    assert sorted((len(record.incidence), record.orbit_size) for record in records) == [(3, 8), (4, 6)]
+    for record in records:
+        assert len(record.words) == record.orbit_size
+        for incidence, word in record.words:
+            moved = record.incidence
+            for generator in word:
+                moved = frozenset(permutations[generator][position] for position in moved)
+            assert moved == incidence
+
+
 def test_class_sum_pairing_colours_are_isometry_invariants() -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     rows = matrix(ZZ, [[1, 0], [0, 1], [1, 1], [-1, -1]])
@@ -584,7 +619,7 @@ def test_normaliz_pairing_rows_match_owned_covectors(monkeypatch) -> None:
     )
     assert cell not in backend.__dict__.get("_normaliz_cell_cones", {})
     owned_rows = tuple(
-        tuple(int(covector(label)) for label in labels)
+        tuple(int(covector(cell.lattice.module_generator(label))) for label in labels)
         for covector in backend._iter_cell_halfspace_covectors(cell)
     )
     # The primitive-covector view now independently consumes the raw H-data
@@ -907,6 +942,7 @@ def test_configuration_invariant_cache_is_bounded_and_identity_keyed() -> None:
         LorentzianPerfectCell(ambient, ((1, 0), (0, 1)), ZERO_SQUARES),
         LorentzianPerfectCell(ambient, ((0, 1), (1, 0)), ZERO_SQUARES),
         LorentzianPerfectCell(ambient, ((-1, 0), (0, -1)), ZERO_SQUARES),
+        LorentzianPerfectCell(ambient, ((0, -1), (-1, 0)), ZERO_SQUARES),
     )
     backend = LorentzianPerfectLocalBackend()
     first = backend._integral_configuration_invariants(cells[0])
@@ -915,13 +951,15 @@ def test_configuration_invariant_cache_is_bounded_and_identity_keyed() -> None:
     backend._integral_configuration_invariants(cells[1])
     assert backend._integral_configuration_invariants(cells[0]) is first
     backend._integral_configuration_invariants(cells[2])
+    backend._integral_configuration_invariants(cells[3])
 
     cache = backend.__dict__["_configuration_invariant_cache"]
-    assert len(cache) == 2
+    assert len(cache) == 3
     assert id(cells[0]) in cache
     assert id(cells[1]) not in cache
     assert cache[id(cells[0])][0] is cells[0]
     assert cache[id(cells[2])][0] is cells[2]
+    assert cache[id(cells[3])][0] is cells[3]
 
 
 def test_owned_large_cell_cone_releases_normaliz_engine_cache() -> None:
@@ -1029,7 +1067,10 @@ def test_facet_incidence_streaming_preserves_exact_orbits() -> None:
     labels = tuple(cell.lattice.module_generating_set())
     covectors = tuple(backend._iter_cell_halfspace_covectors(cell))
     pairing_rows = tuple(backend._iter_cell_halfspace_pairing_rows(cell, labels))
-    assert pairing_rows == tuple(tuple(int(covector(label)) for label in labels) for covector in covectors)
+    assert pairing_rows == tuple(
+        tuple(int(covector(cell.lattice.module_generator(label))) for label in labels)
+        for covector in covectors
+    )
     permutation_orbits = backend.facet_orbit_permutations(cell)
     permutation_orbits_again = backend.facet_orbit_permutations(cell)
     assert permutation_orbits_again == permutation_orbits
@@ -1166,3 +1207,32 @@ def test_facet_flip_uses_pinned_gap_normals(monkeypatch) -> None:
     assert critical[0] != rows[0]  # GAP Set changes the first critical vector.
     assert direction == lorentzian_cells._source_remove_fraction(vector(QQ, [0, *pinned_direction]))
     assert base == lorentzian_cells._source_remove_fraction(pinned_base)
+
+
+def test_rank_three_minimized_halfspaces_pair_against_basis_elements() -> None:
+    r"""Result_Enumeration_0: the minimized H-presentation is exact and every facet meets a ray.
+
+    The provider's halfspace covectors are functionals on the lattice. Pairing them with a
+    basis label instead of the basis element produced a zero row and a row that is nonzero on
+    every ray, which raised ``a minimized H-presentation covector has no incident extreme
+    rays`` in facet-key generation. Evaluated on the basis elements, the same covectors are
+    exactly the four facet normals Normaliz reports for those rays, and both modes complete.
+    """
+    gram = matrix(ZZ, [[4, 0, 0], [0, 0, -1], [0, -1, -2]])
+    ambient = lattice(gram.rows())
+    backend = LorentzianPerfectLocalBackend()
+    cell = backend.initial_cell(ambient, NONNEGATIVE_SQUARES)
+    labels = tuple(cell.lattice.module_generating_set())
+    rays = tuple(tuple(int(entry) for entry in row) for row in cell.rows)
+    assert rays == ((0, -1, 1), (0, 1, 0), (-1, -1, 2), (-1, 1, 1))
+    rows = tuple(
+        tuple(int(covector(cell.lattice.module_generator(label))) for label in labels)
+        for covector in backend.cell_cone(cell).halfspace_covectors()
+    )
+    assert sorted(rows) == sorted(((-1, 0, 0), (1, 0, 1), (1, 1, 1), (3, 1, 2)))
+    for row in rows:
+        pairings = tuple(sum(left * right for left, right in zip(row, ray)) for ray in rays)
+        assert any(value == 0 for value in pairings), f"{row} is incident to no extreme ray"
+        assert any(value != 0 for value in pairings), f"{row} vanishes on every extreme ray"
+    total = ambient.lorentzian_reduction_complex()
+    assert len(total.cells()) == 1

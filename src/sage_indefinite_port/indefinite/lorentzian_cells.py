@@ -16,32 +16,37 @@ from typing import Literal, cast, overload
 
 import numpy as np
 from cypari2.handle_error import PariError
-from dzack_research.preamble.all import FramedFreeModules, Lattices, Sets
-from dzack_research.preamble.categories.definite_lattices import (
+from sage_extensions.all import Lattices, Sets
+from sage_extensions.categories.modules.framed.framed_free_modules import FramedFreeModules
+from sage_extensions.categories.definite_lattices import (
     LatticeReduction,
     _ExactCVPEngine,
 )
-from dzack_research.preamble.categories.lattice_morphisms import LatticeIsometryMethods
-from dzack_research.preamble.categories.modules.pure.modules import _engine_matrix
-from dzack_research.preamble.categories.polyhedral_cones import (
+from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
+from sage_extensions.categories.modules.pure.modules import _engine_matrix
+from sage_extensions.categories.polyhedral_cones import (
     RationalPolyhedralCones,
     _integral_covector,
     _rational_polyhedral_cone,
 )
-from dzack_research.preamble.categories.reduction_complexes import (
+from sage_extensions.categories.reduction_complexes import (
     LorentzianPerfectDomainTraversal,
     PerfectDomainOrbitAdjacency,
 )
-from dzack_research.preamble.categories.rings.ring_foundation import (
+from sage_extensions.categories.group.g_sets import FiniteGSets
+from sage_extensions.categories.group.groups import OwnedGroups, _engine_group
+from sage_extensions.categories.rings.ring_foundation import (
     _owned_engine_element,
 )
-from dzack_research.preamble.categories.sets.finite_ordered_sets import (
+from sage_extensions.categories.sets.finite_ordered_sets import (
     finite_ordered_set,
 )
-from dzack_research.preamble.categories.sets.indexed_families import (
+from sage_extensions.categories.sets.indexed_families import (
     finite_indexed_family,
 )
-from dzack_research.preamble.tensors.tensor import _engine_component_matrix
+from sage_extensions.categories.sets.set_categories import OwnedSetMorphism
+from sage_extensions.tensors.tensor import _engine_component_matrix
+from sage.combinat.permutation import Permutation
 from sage.groups.perm_gps.permgroup_named import SymmetricGroup
 from sage.libs.gap.libgap import libgap
 from sage.matrix.constructor import diagonal_matrix, matrix
@@ -598,6 +603,44 @@ class LorentzianPerfectCell:
     def vector_configuration(self) -> tuple[Lattices.ElementMethods, ...]:
         return tuple(_ambient_element(self.lattice, row) for row in self.rows)
 
+    @cached_property
+    def vector_family(self) -> OwnedSetMorphism:
+        r"""The indexed family EXT retained in Lorentzian.g:660-696.
+
+        Its ordered indices and actual lattice vectors belong to this cell.
+        Repeated source and target comparisons use this same family, so the
+        configuration owner can retain its graph and rational group.
+        """
+        return Sets().Mor(Sets.Δ[len(self.rows) - 1], self.lattice)(
+            lambda index: self.vector_configuration[int(index)]
+        )
+
+    @cached_property
+    def affine_nullspace_row(self) -> tuple[Rational, ...]:
+        r"""The source affine supporting row before facet-dependent orientation.
+
+        Lorentzian.g:1221 computes this from the whole configuration EXT.
+        It depends only on the cell, while its sign is selected separately
+        for each flip using the chosen nonincident vertex.
+        """
+        expanded = matrix(SageQQ, [[1, *row] for row in self.rows])
+        constraints = expanded.transpose()
+        # Pivot-column projection is injective on the row space. It keeps
+        # every ordered row relation, including the coefficients produced
+        # by GAP's SemiEchelonMatTransformation, while sending only a basis
+        # of the configuration constraints to NullspaceMat.
+        # Sage defaults to FLINT's multimodular elimination. Classical exact
+        # elimination avoids its cost on this short, wide constraint matrix;
+        # the rational reduced echelon form has the same pivot columns.
+        pivots = constraints.echelon_form(algorithm="flint:classical").pivots()
+        independent = constraints.matrix_from_columns(pivots)
+        nullspace = _pinned_nullspace_matrix(independent)
+        if nullspace.nrows() != 1:
+            raise ArithmeticError("a perfect cell must have a unique affine supporting functional")
+        if nullspace * constraints != 0:
+            raise ArithmeticError("the affine supporting row must annihilate the whole configuration")
+        return tuple(nullspace.row(0))
+
     def __post_init__(self) -> None:
         if self.allowed_squares not in (NONNEGATIVE_SQUARES, ZERO_SQUARES):
             raise ValueError(f"unsupported normalized-norm locus {self.allowed_squares!r}")
@@ -605,15 +648,14 @@ class LorentzianPerfectCell:
         if int(positive) != 1 and int(negative) != 1:
             raise ValueError(f"a Lorentzian perfect cell needs signature (1,n) or (n,1), but {self.lattice} has signature {self.lattice.signature_pair()}")
         gram = _gram_matrix(self.lattice)
-        rows = tuple(vector(SageZZ, row) for row in self.rows)
-        squares = tuple(int(row * gram * row) for row in rows)
+        squares = tuple(int(value) for value in _ConfigurationPairings(self.rows, gram).diagonal())
         normalized_sign = 1 if int(positive) == 1 else -1
         if any(normalized_sign * square not in self.allowed_squares for square in squares):
             raise ValueError(f"a perfect cell may contain only vectors with normalized square in {self.allowed_squares}")
         # Lorentzian.g:303-312 (LORENTZ_CheckCorrectnessVectorFamily):
         # the augmented vectors (1,v) span an affine hyperplane of rank n.
         # Both GetOnePerfect and DoFlipping certify this before returning.
-        augmented = matrix(SageQQ, [[1, *row] for row in rows])
+        augmented = matrix(SageQQ, [[1, *row] for row in self.rows])
         if augmented.rank() != gram.nrows():
             raise ArithmeticError("a perfect-cell vector family must have augmented rank equal to the lattice rank")
 
@@ -780,12 +822,13 @@ class _ConfigurationPairings:
         # copy of their coordinate matrix merely to obtain the diagonal.
         row_count, rank = self.rows.dimensions()
         block_size = max(1, min(1024, 100_000 // max(1, rank)))
+        weights = matrix(SageZZ, rank, 1, [1] * rank)
         for start in range(0, row_count, block_size):
             stop = min(start + block_size, row_count)
             products = self.covectors.matrix_from_rows(range(start, stop)).elementwise_product(
                 self.rows.matrix_from_rows(range(start, stop))
             )
-            yield tuple(sum(row) for row in products.rows())
+            yield tuple((products * weights).list())
 
     def column(self, index: int, *, cache: bool | None = None):
         # The form is symmetric, so column j holds b(v_l, v_j) for every l.
@@ -796,7 +839,7 @@ class _ConfigurationPairings:
         if use_cache and cached is not None:
             return cached
         covector = self.covectors.matrix_from_rows([index]).transpose()
-        result = tuple(int(entry) for entry in (self.rows * covector).column(0))
+        result = tuple(map(int, (self.rows * covector).list()))
         if not use_cache:
             return result
         if len(self._column_cache) >= self._column_cache_limit:
@@ -818,7 +861,14 @@ class _ConfigurationPairings:
         for start in range(0, len(self), block_size):
             stop = min(start + block_size, len(self))
             pairing_block = self.covectors.matrix_from_rows(range(start, stop)) * transposed_rows
-            yield start, np.array(pairing_block.rows(), dtype=object)
+            # Export exact Python integers for the object-array arithmetic.
+            # Both representations are unbounded; lowering here avoids Sage
+            # scalar dispatch for every colour-code product and sum.
+            values = np.fromiter(
+                map(int, pairing_block.list()), dtype=object,
+                count=pairing_block.nrows() * pairing_block.ncols(),
+            )
+            yield start, values.reshape(pairing_block.nrows(), pairing_block.ncols())
 
 
 def _configuration_pairing_block_size(configuration_size: int) -> int:
@@ -942,7 +992,7 @@ def _refined_signatures(pairings: _ConfigurationPairings, colours: tuple[int, ..
     if modulus <= 0 or len(colours) != len(pairings):
         raise ValueError("refinement requires one colour per configuration vector and a positive modulus")
     # Keep both pairings and colour encodings in arbitrary-precision arithmetic.
-    colour_array = np.array(colours, dtype=object)
+    colour_array = np.fromiter(colours, dtype=object, count=len(colours))
     signatures = []
     for start, block in pairings.blocks():
         codes = block.astype(object) * modulus + colour_array[None, :]
@@ -1119,12 +1169,16 @@ class LorentzianPerfectLocalBackend:
             # a nonzero integral scale that does not change incidence zeros.
             covectors = self.cell_cone(cell).halfspace_covectors()
             for covector in covectors:
-                yield tuple(int(covector(label)) for label in labels)
+                yield tuple(
+                    int(covector(cell.lattice.module_generator(label))) for label in labels
+                )
             return
         # Small owned cones are reused directly rather than querying Normaliz
         # for a second H-presentation.
         for covector in self.cell_cone(cell).halfspace_covectors():
-            yield tuple(int(covector(label)) for label in labels)
+            yield tuple(
+                int(covector(cell.lattice.module_generator(label))) for label in labels
+            )
 
     def _iter_cell_halfspace_covectors(self, cell: LorentzianPerfectCell):
         """Yield exact primitive facet covectors without forcing a large owned cone."""
@@ -1231,6 +1285,16 @@ class LorentzianPerfectLocalBackend:
         generators without first materializing the full stabilizer group.
         """
         return self.cell_transporter(cell, cell, all_images=True, generators_only=True)
+
+    @cached_method
+    def cell_stabilizer_permutations(self, cell: LorentzianPerfectCell) -> tuple[tuple[int, ...], ...]:
+        r"""The retained stabilizer action on this cell's ordered rays.
+
+        Lorentzian.g:1320-1322 retains ``PermutationStabilizer`` alongside
+        the cell stabilizer. Facet walks and later cell comparisons use the
+        same ordered action of the same cached integral generators.
+        """
+        return self.point_permutations_from_rows(cell, cell.rows)
 
     def point_permutations(self, cell: LorentzianPerfectCell, points: tuple[Lattices.ElementMethods, ...]) -> tuple[tuple[int, ...], ...]:
         r"""Each cell-stabilizer generator's permutation of a finite stable family of points, as position images."""
@@ -1640,6 +1704,46 @@ class LorentzianPerfectLocalBackend:
             permutations,
         )
 
+    def _facet_mask_orbits_via_walk(self, cell, *, retain_words: bool = True):
+        r"""Facet orbits from the orbit-pruned walk, in this traversal's key/word encoding.
+
+        The traversal consumes exactly two things per orbit: the representative's key, and -- when side-pairing
+        witnesses are retained -- a `(key, Schreier word)` entry for every member, the word carrying the
+        representative onto that member. Both are produced here from `facet_orbits.cell_facet_orbits`, whose
+        records are keyed by incidence and whose words are tuples of generator indices in action order; the
+        nested `SchreierWord` representation this module uses is built as `(previous, next)` so that
+        `_schreier_generator_indices` recovers the action order.
+        """
+        from sage_indefinite_port.indefinite.facet_orbits import _cell_facet_orbits_from_permutations
+
+        permutations = self.cell_stabilizer_permutations(cell)
+        records = _cell_facet_orbits_from_permutations(cell, permutations, retain_words=retain_words)
+        ray_count = len(cell.rows)
+        full_mask = (1 << ray_count) - 1
+
+        def facet_key(incidence):
+            complement = full_mask
+            for position in incidence:
+                complement &= ~(1 << int(position))
+            return _facet_complement_key(complement, ray_count)
+
+        def nested(word):
+            result = None
+            for generator_index in word:
+                result = (result, int(generator_index))
+            return result
+
+        orbits = []
+        for record in records:
+            entry = [(facet_key(record.incidence), None)]
+            if retain_words:
+                for member, word in record.words:
+                    if member == record.incidence:
+                        continue
+                    entry.append((facet_key(member), nested(word)))
+            orbits.append(entry)
+        return tuple(permutations), tuple(orbits)
+
     def _facet_orbit_transversal_words(
         self, cell: LorentzianPerfectCell
     ) -> tuple[
@@ -1727,12 +1831,8 @@ class LorentzianPerfectLocalBackend:
         if direction.dot_product(outside) < 0:
             direction = -direction
         normal_direction = _source_remove_fraction(vector(SageQQ, [0, *direction]))
-        expanded = matrix(SageQQ, [[1, *row] for row in vectors])
         # Preserve the source affine-nullspace row and its normalization.
-        base_nullspace = _pinned_nullspace_matrix(expanded.transpose())
-        if base_nullspace.nrows() != 1:
-            raise ArithmeticError("a perfect cell must have a unique affine supporting functional")
-        base_normal = base_nullspace.row(0)
+        base_normal = vector(SageQQ, cell.affine_nullspace_row)
         if vector(SageQQ, base_normal[1:]).dot_product(outside) <= 0:
             base_normal = -base_normal
         base_normal = _source_remove_fraction(base_normal)
@@ -1753,8 +1853,10 @@ class LorentzianPerfectLocalBackend:
         depend only on the configuration; the pairings are read from the
         n x rank rows on request, never stored as an n x n matrix. Cache these
         exact witnesses without replacing the integral-isometry decision by a
-        hash. The two-entry identity LRU retains the source and current target
-        while avoiding an unbounded cache of dense matrices for every neighbor.
+        hash. The identity LRU retains the source, previous target and next
+        neighbor: hashing that neighbor precedes its transporter comparison.
+        This keeps the source live across that insertion while bounding the
+        dense matrices retained from the quotient traversal.
         """
         cache = self.__dict__.setdefault("_configuration_invariant_cache", {})
         key = id(cell)
@@ -1777,15 +1879,16 @@ class LorentzianPerfectLocalBackend:
             moment_covectors = gram * row_moment
             moment_contents_list = []
             moment_norms_list = []
-            moment_block_size = _configuration_pairing_block_size(len(cell.rows))
+            rank = rows.ncols()
+            moment_block_size = max(1, min(1024, 100_000 // max(1, rank)))
+            norm_weights = matrix(SageZZ, rank, 1, [1] * rank)
             for start in range(0, len(cell.rows), moment_block_size):
                 stop = min(start + moment_block_size, len(cell.rows))
                 moment_block = rows.matrix_from_rows(range(start, stop)) * moment_covectors
                 moment_contents_list.extend(gcd(*map(int, row)) for row in moment_block.rows())
                 moment_pairing_block = moment_block * gram
                 moment_norms_list.extend(
-                    sum(int(left) * int(right) for left, right in zip(row, pairing_row, strict=True))
-                    for row, pairing_row in zip(moment_block.rows(), moment_pairing_block.rows(), strict=True)
+                    map(int, (moment_block.elementwise_product(moment_pairing_block) * norm_weights).list())
                 )
                 del moment_block, moment_pairing_block
             moment_contents = tuple(moment_contents_list)
@@ -1843,7 +1946,7 @@ class LorentzianPerfectLocalBackend:
         distinct_rows = len(row_positions) == len(cell.rows)
         data = (rows, pairings, spectra, smith_invariants, row_sum, row_moment, distinct_rows, row_positions)
         cache[key] = (cell, data)
-        while len(cache) > 2:
+        while len(cache) > 3:
             cache.pop(next(iter(cache)))
         return data
 
@@ -1914,20 +2017,26 @@ class LorentzianPerfectLocalBackend:
         if not all_images:
             if source.lattice is target.lattice and source.rows == target.rows:
                 return source.lattice.Aut().identity()
-            if n <= _PAIRING_GRAPH_CANONICAL_LABEL_LIMIT:
+            if (
+                n <= _PAIRING_GRAPH_CANONICAL_LABEL_LIMIT
+                and not self.cell_stabilizer.is_in_cache(source)
+                and not self.cell_stabilizer.is_in_cache(target)
+            ):
                 if source.lattice is target.lattice and Counter(source.rows) == Counter(target.rows):
                     return source.lattice.Aut().identity()
-                source_family = Sets().Mor(Sets.Δ[n - 1], source.lattice)(
-                    lambda index: source.vector_configuration[int(index)]
-                )
-                target_family = Sets().Mor(Sets.Δ[n - 1], target.lattice)(
-                    lambda index: target.vector_configuration[int(index)]
-                )
+                source_family = source.vector_family
+                target_family = target.vector_family
                 return source.lattice.Isom(target.lattice).transporter(source_family, target_family)
-            # The preamble's labelled finite-family transporter constructs a
-            # complete pairing graph. For large cells, use the same exact
-            # basis-image search as stabilizer enumeration but stop at the
-            # first fully certified witness instead of building that graph.
+            # Retained full integral cell groups supply target orbits for
+            # the exact basis-image search at every configuration size.
+            # Large cells also use this search to avoid a complete pairing
+            # graph. Stop at the first fully certified integral witness.
+            if self.cell_stabilizer.is_in_cache(source) and not self.cell_stabilizer.is_in_cache(target):
+                # Lorentzian.g:660-696 uses the target automorphism group.
+                # A processed representative already has its full group;
+                # search toward it and invert the resulting exact witness.
+                reverse = self.cell_transporter(target, source)
+                return None if reverse is None else ~reverse
         source_data = self._integral_configuration_invariants(source)
         # Stabilizer generation is the hot path for perfect-cell automorphisms:
         # source and target are literally the same configuration. Rebuilding
@@ -1974,6 +2083,31 @@ class LorentzianPerfectLocalBackend:
         # some incompatible configurations before the large image search.
         if source_moment.det() != target_moment.det():
             return () if all_images else None
+        # The auxiliary configuration form used by GetQmatrix (see
+        # fund_domain_vertices.h:146) is the inverse second moment.  If
+        # target_rows = source_rows*A, then M_t = A^T*M_s*A. Thus
+        # A*adj(M_t)*A^T = adj(M_s) for a unimodular A. Its diagonal
+        # and anchor pairings constrain every partial basis assignment,
+        # rather than waiting for the full moment certificate at a leaf.
+        # Keep the determinant-scaled form integral and its pairings lazy.
+        source_auxiliary = _ConfigurationPairings(source_rows, source_moment.adjugate(), cache_columns=True)
+        target_auxiliary = (
+            source_auxiliary
+            if source is target
+            else _ConfigurationPairings(target_rows, target_moment.adjugate(), cache_columns=True)
+        )
+        source_spectra = tuple(
+            (*signature, norm)
+            for signature, norm in zip(source_spectra, source_auxiliary.diagonal(), strict=True)
+        )
+        target_spectra = (
+            source_spectra
+            if source is target
+            else tuple(
+                (*signature, norm)
+                for signature, norm in zip(target_spectra, target_auxiliary.diagonal(), strict=True)
+            )
+        )
         # The row sum itself transforms by the same unimodular action. Its
         # coordinate content and its norm in the ambient Gram form are exact
         # invariants too, and cost only O(rank) arithmetic before backtracking.
@@ -2093,15 +2227,21 @@ class LorentzianPerfectLocalBackend:
         stabilizer_elements: list[LatticeIsometryMethods] = []
         first_witness: LatticeIsometryMethods | None = None
         first_only = not all_images
+        # Lorentzian.g:660-696 supplies the target automorphism group to
+        # integral transporter search. A certified target subgroup suffices
+        # here: composing a witness with a target automorphism preserves its
+        # existence. Its pointwise stabilizer fixes all assigned images, so
+        # one next-image representative per orbit is sufficient.
+        reduce_basis_images = generators_only or (first_only and target_distinct_rows)
+        positions = source_positions if generators_only else target_positions
         if use_position_certificate:
             # Reuse the row-position maps built with the invariant data. This
             # avoids a separate set for distinctness followed by another full
             # row-key dictionary here. Stabilizers use source positions;
             # ordinary large-cell transporters use target positions.
-            positions = source_positions if generators_only else target_positions
             if len(positions) != n:
                 raise ArithmeticError("the exact row-position certificate requires distinct configuration vectors")
-        if generators_only:
+        if reduce_basis_images:
             symmetric = SymmetricGroup(n)
             subgroup = symmetric.subgroup([])
             group_permutations = []
@@ -2118,18 +2258,18 @@ class LorentzianPerfectLocalBackend:
             candidate_actions = [
                 action
                 for basis_index in range(rank)
-                if (action := _integral_basis_reflection(source_gram, basis_index)) is not None
+                if (action := _integral_basis_reflection(target_gram, basis_index)) is not None
             ]
-            candidate_actions.extend(_gram_component_sign_flips(source_gram))
+            candidate_actions.extend(_gram_component_sign_flips(target_gram))
             # Basis transpositions are another cheap family of exact integral
             # isometries. The row/column equality test avoids constructing a
             # matrix unless the transposition preserves every Gram entry.
             for first in range(rank):
                 for second in range(first + 1, rank):
-                    if source_gram[first, first] != source_gram[second, second]:
+                    if target_gram[first, first] != target_gram[second, second]:
                         continue
                     if any(
-                        source_gram[first, other] != source_gram[second, other]
+                        target_gram[first, other] != target_gram[second, other]
                         for other in range(rank)
                         if other not in (first, second)
                     ):
@@ -2137,15 +2277,24 @@ class LorentzianPerfectLocalBackend:
                     action = identity_matrix(SageZZ, rank)
                     action[first, first] = action[second, second] = 0
                     action[first, second] = action[second, first] = 1
-                    if action * source_gram * action.transpose() != source_gram:
+                    if action * target_gram * action.transpose() != target_gram:
                         raise ArithmeticError("a Gram-row transposition failed its exact isometry certificate")
                     candidate_actions.append(action)
+            if first_only and self.cell_stabilizer.is_in_cache(target):
+                # Retain the full integral subgroup of the source's GRP2,
+                # certified on the complete configuration. This group
+                # contains every cheap seed.
+                group_permutations.extend(
+                    symmetric([image + 1 for image in permutation])
+                    for permutation in self.cell_stabilizer_permutations(target)
+                )
+                candidate_actions = []
             for action in candidate_actions:
                 permutation_images = array(permutation_typecode)
                 preserves_configuration = True
                 for start in range(0, n, _configuration_pairing_block_size(n)):
                     stop = min(start + _configuration_pairing_block_size(n), n)
-                    transformed_block = source_rows.matrix_from_rows(range(start, stop)) * action
+                    transformed_block = target_rows.matrix_from_rows(range(start, stop)) * action
                     for row in transformed_block.rows():
                         position = positions.get(tuple(int(entry) for entry in row))
                         if position is None:
@@ -2159,19 +2308,20 @@ class LorentzianPerfectLocalBackend:
                 permutation = symmetric(list(permutation_images))
                 if permutation in group_permutations:
                     continue
-                witness = source.lattice.Isom(source.lattice)(
-                    {
-                        label: source.lattice.linear_combination(
-                            {
-                                target_label: source.lattice.base_ring()(int(entry))
-                                for target_label, entry in zip(source_labels, row, strict=True)
-                                if entry
-                            }
-                        )
-                        for label, row in zip(source_labels, action.rows(), strict=True)
-                    }
-                )
-                stabilizer_elements.append(witness)
+                if generators_only:
+                    witness = target.lattice.Isom(target.lattice)(
+                        {
+                            label: target.lattice.linear_combination(
+                                {
+                                    target_label: target.lattice.base_ring()(int(entry))
+                                    for target_label, entry in zip(target_labels, row, strict=True)
+                                    if entry
+                                }
+                            )
+                            for label, row in zip(target_labels, action.rows(), strict=True)
+                        }
+                    )
+                    stabilizer_elements.append(witness)
                 group_permutations.append(permutation)
             # Construct the initial generated subgroup once, after all exact
             # seed candidates have been certified. Rebuilding a degree-n
@@ -2222,6 +2372,9 @@ class LorentzianPerfectLocalBackend:
                 return False
             return source_index, target_index
 
+        # AutomorphismPolytope.g:240-256 supplies both Qinv and LorMat to
+        # configuration isomorphism. Retain both forms in each joint prefix
+        # signature; their common determinant scaling was fixed above.
         def backtrack(images, source_columns, target_columns, certified_target_basis=None):
             nonlocal subgroup, first_witness
             if first_witness is not None:
@@ -2325,14 +2478,18 @@ class LorentzianPerfectLocalBackend:
                         # actual exact pairing values by a large factor.
                         if v not in target_neighbour_signatures:
                             index_typecode = "I" if n <= 2**32 else "Q"
-                            target_neighbour_signatures[v] = _packed_pairing_fibres(
+                            fibres = {}
+                            for position, signature in enumerate(zip(
                                 target_colours,
                                 target_pairings.column(v),
-                                index_typecode,
-                            )
+                                target_auxiliary.column(v),
+                                strict=True,
+                            )):
+                                fibres.setdefault(signature, array(index_typecode)).append(position)
+                            target_neighbour_signatures[v] = fibres
                             if len(target_neighbour_signatures) > anchor_cache_limit:
                                 target_neighbour_signatures.pop(next(iter(target_neighbour_signatures)))
-                        signature = (source_colours[i], source_pairings[i, k])
+                        signature = (source_colours[i], source_pairings[i, k], source_auxiliary[i, k])
                         compatible_images[key] = target_neighbour_signatures[v].get(signature, frozenset())
                         if len(compatible_images) > anchor_cache_limit:
                             compatible_images.pop(next(iter(compatible_images)))
@@ -2377,7 +2534,7 @@ class LorentzianPerfectLocalBackend:
             next_source_columns = None
             source_signature_counts = None
             for j in candidates_for_choice:
-                if generators_only:
+                if reduce_basis_images:
                     # A witness found in an earlier sibling can enlarge H.
                     # The current sibling list was fixed before that
                     # discovery, so recompute the H_a-orbit partition.
@@ -2433,14 +2590,14 @@ class LorentzianPerfectLocalBackend:
                         # exact multiset comparison.
                         if next_source_columns is None:
                             source_column = source_pairings.column(choice)
-                            next_source_columns = source_columns + (source_column,)
+                            next_source_columns = source_columns + (source_column, source_auxiliary.column(choice))
                             source_signature_counts = Counter(
                                 (colour, tuple(column[index] for column in next_source_columns))
                                 for index, colour in enumerate(source_colours)
                             )
                         assert next_source_columns is not None and source_signature_counts is not None
                         target_column = target_pairings.column(j)
-                        next_target_columns = target_columns + (target_column,)
+                        next_target_columns = target_columns + (target_column, target_auxiliary.column(j))
                         if _configuration_signature_multisets_match(
                             source_colours,
                             next_source_columns,
@@ -2483,14 +2640,14 @@ class LorentzianPerfectLocalBackend:
                     # assignment order keeps source/target coordinates aligned.
                     if next_source_columns is None:
                         source_column = source_pairings.column(choice)
-                        next_source_columns = source_columns + (source_column,)
+                        next_source_columns = source_columns + (source_column, source_auxiliary.column(choice))
                         source_signature_counts = Counter(
                             (colour, tuple(column[index] for column in next_source_columns))
                             for index, colour in enumerate(source_colours)
                         )
                     assert next_source_columns is not None and source_signature_counts is not None
                     target_column = target_pairings.column(j)
-                    next_target_columns = target_columns + (target_column,)
+                    next_target_columns = target_columns + (target_column, target_auxiliary.column(j))
                     if _configuration_signature_multisets_match(
                         source_colours,
                         next_source_columns,
@@ -2571,13 +2728,12 @@ class LorentzianPerfectComplex:
         )
         source = representatives[source_position]
         new_representatives: list[LorentzianPerfectCell] = []
-        # Traversal needs exact facet incidences, not owned covectors. Use
-        # Normaliz's raw H rows even when retaining Schreier words for public
-        # side-pairing consumers; the owned cone remains lazy for consumers
-        # that actually need its covector interface. This avoids materializing
-        # a second full owned H-family solely to encode incidence keys.
-        facet_masks, generator_permutations, canonical_facet_keys = backend._facet_mask_data(
-            source, use_owned_cone=False
+        # lorentzian_perfect.h:1433-1452 sends every cell to
+        # DualDescriptionRecordFullDim. POLY_Heuristics.h:320-328 chooses
+        # direct enumeration or adjacency decomposition from rank, incidence,
+        # group order and recursion depth inside orbit_representatives.
+        generator_permutations, facet_orbits = backend._facet_mask_orbits_via_walk(
+            source, retain_words=self._retain_facet_orbits
         )
         source_id = id(source)
         # Side-pairing witnesses are only queried for actual adjacencies, so
@@ -2587,12 +2743,7 @@ class LorentzianPerfectComplex:
         if self._retain_facet_orbits:
             self._traversal_facet_orbits[source_id] = {}
             self._traversal_facet_generators[source_id] = generator_permutations
-        for orbit in backend._iter_facet_mask_orbits(
-            facet_masks,
-            generator_permutations,
-            retain_words=self._retain_facet_orbits,
-            canonical_keys=canonical_facet_keys,
-        ):
+        for orbit in facet_orbits:
             facet = _facet_incidence(orbit[0][0], len(source.rows))
             neighbor = backend.flip_across(source, facet)
             if neighbor is None:
@@ -2887,7 +3038,9 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                 SageZZ,
                 len(covector_block),
                 len(labels),
-                lambda row, column, covector_block=covector_block: covector_block[row](labels[column]),
+                lambda row, column, covector_block=covector_block: covector_block[row](
+                    lattice.module_generator(labels[column])
+                ),
             )
             pairing_block = halfspace_block * ray_transpose
             del halfspace_block
@@ -3016,7 +3169,9 @@ def perfect_domain_traversal(lattice: Lattices.ParentMethods, mode: PerfectMode)
                     SageQQ,
                     len(target_covectors),
                     len(ambient_labels),
-                    lambda row, column: _rational(target_covectors[row](ambient_labels[column])),
+                    lambda row, column: _rational(
+                        target_covectors[row](lattice.module_generator(ambient_labels[column]))
+                    ),
                 )
                 del target_covectors
                 target_halfspace_cache_key = target_key
@@ -3446,7 +3601,7 @@ class MarkedCellOrbitAlgorithm:
             facet = frozenset(index for index, row in enumerate(source.rows) if normal.dot_product(row) == 0)
             if facet not in source.incidences:
                 raise ArithmeticError("an adjacency facet is not a facet of its source cone")
-            facet_group = libgap.Stabilizer(source.group, sorted(index + 1 for index in facet), libgap.OnSets)
+            facet_group = source.facet_stabilizer(facet)
             # The transporter carries the target representative onto the
             # neighbour across the facet; in row coordinates g(x) = x * action.
             action = matrix(SageZZ, [_coordinate_row(lattice, transporter(lattice.module_generator(label)), SageZZ) for label in source.labels])
@@ -3479,6 +3634,26 @@ class MarkedCellOrbitAlgorithm:
                 pending.extend(graph[node])
             orbits.append(tuple(structures[cell_position].element(local[cell_position][orbit_position].row) for cell_position, orbit_position in sorted(component)))
         return tuple(orbits)
+
+
+def _owned_permutation(symmetric, images):
+    r"""The owned element of ``symmetric`` with the given one-line images, in zero-based ray indices.
+
+    The owned constructor takes a **list of cycles**, not one argument per cycle and not a one-line
+    notation: ``symmetric(c1, c2)`` raises. The identity has no cycles, so it is built from the empty list.
+    """
+    cycles = Permutation([image + 1 for image in images]).cycle_tuples()
+    return symmetric([tuple(cycle) for cycle in cycles]) if cycles else symmetric([])
+
+
+def _subset_action(element, point) -> tuple[int, ...]:
+    r"""The action of a permutation on a set of ray indices, as a point of the same set.
+
+    ``action_on`` does not infer the induced action on subsets, and a finite G-set requires the image to be a
+    point of its declared point set, so a set is carried as its sorted tuple. Facets are compared as sets by
+    construction, and the sorted tuple is their canonical representative here.
+    """
+    return tuple(sorted(int(element(entry)) for entry in point))
 
 
 @dataclass(frozen=True)
@@ -3556,13 +3731,23 @@ class _CellFaces:
         self.incidences = frozenset(self.facet_incidences)
         self.all_facet_positions = frozenset(range(len(self.facet_incidences)))
         self.full_face = frozenset(range(len(self.rows)))
-        self.group = libgap.Group(
-            [
-                libgap.PermList([image + 1 for image in permutation])
-                for permutation in backend.point_permutations_from_rows(cell, cell.rows)
-            ],
-            libgap.eval("()"),
+        # The cell group is built with the maintained owned constructor: a subgroup of the symmetric
+        # group on the extreme rays, generated by the row permutations of the configuration. The GAP
+        # handle is *derived* from it rather than built beside it, and it is retained only for the two
+        # consumers that still need an engine object -- the frozen facet guard, and `classify` below,
+        # whose tuple-set orbit decision needs an orbit relation the owned layer does not offer yet.
+        self._ambient = OwnedGroups().S(len(self.rows))
+        self._group = self._ambient.subgroup(
+            tuple(
+                _owned_permutation(self._ambient, permutation)
+                for permutation in backend.cell_stabilizer_permutations(cell)
+            )
         )
+        self.group = _engine_group(self._group)
+        self._facet_points = tuple(
+            sorted(tuple(sorted(index + 1 for index in facet)) for facet in self.facet_incidences)
+        )
+        self._facet_g_set = FiniteGSets(self._group)(self._facet_points, _subset_action)
         self._ranks: dict[frozenset[int], int] = {}
         self._barycenter_pairings: dict[frozenset[int], FreeModuleElement[Rational]] = {}
         self._covector_matrix = covector_matrix
@@ -3581,21 +3766,43 @@ class _CellFaces:
         indices = sorted(face)
         return sum((self.rows[index] for index in indices[1:]), self.rows[indices[0]])
 
-    def flag_simplices(self, top: frozenset[int], group) -> tuple[tuple[frozenset[int], ...], ...]:
-        r"""One maximal flag of faces below ``top`` per orbit of ``group``, which must stabilize ``top``."""
+    def facet_stabilizer(self, facet: frozenset[int]):
+        r"""The subgroup of the cell group fixing ``facet``, as an owned subgroup of the ambient symmetric group.
+
+        The stabilizer the finite G-set returns retains the action of its own group but not the ambient
+        ``natural_points``/``action_on`` that the next rank down needs, so it is re-formed inside the ambient
+        symmetric group on the rays. That regrouping is the same constructor the cell group itself uses, so no
+        new carrier is introduced. The returned generators may include the identity; a subgroup tolerates that.
+        """
+        point = tuple(sorted(index + 1 for index in facet))
+        stabilizer = self._facet_g_set.stabilizer(point)
+        return self._ambient.subgroup(tuple(stabilizer.group_generators()))
+
+    def flag_simplices(self, top: frozenset[int], group=None) -> tuple[tuple[frozenset[int], ...], ...]:
+        r"""One maximal flag of faces below ``top`` per orbit of ``group``, which must stabilize ``top``.
+
+        The descent uses the maintained finite ``G``-set: the facets of the current face are the points, the
+        induced action on subsets is supplied explicitly, and ``orbits()`` yields one orbit per class with its
+        representative and stabilizer. ``group`` is an owned subgroup; it may also be this cell's engine handle
+        (as the frozen facet guard passes it), which maps back to the owned group it was derived from.
+        """
         flags: list[tuple[frozenset[int], ...]] = []
+        start = self._group if group is None or group is self.group else group
 
         def descend(chain: tuple[frozenset[int], ...], stabilizer) -> None:
             face = chain[-1]
             if self.rank(face) == 1:
                 flags.append(chain)
                 return
-            facets = sorted(sorted(index + 1 for index in facet) for facet in self.facets(face))
-            for orbit in libgap.Orbits(stabilizer, facets, libgap.OnSets):
-                representative = [int(point) for point in orbit[0]]
-                descend((*chain, frozenset(point - 1 for point in representative)), libgap.Stabilizer(stabilizer, representative, libgap.OnSets))
+            facets = tuple(sorted(tuple(sorted(index + 1 for index in facet)) for facet in self.facets(face)))
+            for orbit in FiniteGSets(stabilizer)(facets, _subset_action).orbits():
+                representative = tuple(orbit.representative())
+                descend(
+                    (*chain, frozenset(point - 1 for point in representative)),
+                    self._ambient.subgroup(tuple(orbit.stabilizer().group_generators())),
+                )
 
-        descend((top,), group)
+        descend((top,), start)
         return tuple(flags)
 
     def mark(self, row: FreeModuleElement[Integer]) -> _Mark:
@@ -4072,7 +4279,7 @@ def _fixed_distance_dual_lll_solutions(
             raise ArithmeticError("dual-LLL sphere reconstruction produced nonintegral coordinates")
         original = tuple(SageZZ(original_column[row, 0]) for row in range(rank))
         solutions.append((original, distance))
-    return tuple(sorted(solutions, key=lambda item: _dual_lll_enumeration_key(item[0], enumeration_order_transform)))
+    return _dual_lll_ordered_solutions(solutions, enumeration_order_transform)
 
 
 def _bounded_distance_dual_lll_solutions(
@@ -4117,7 +4324,7 @@ def _bounded_distance_dual_lll_solutions(
             raise ArithmeticError("dual-LLL bounded-sphere reconstruction produced nonintegral coordinates")
         original = tuple(SageZZ(original_column[row, 0]) for row in range(rank))
         solutions.append((original, distance))
-    return tuple(sorted(solutions, key=lambda item: _dual_lll_enumeration_key(item[0], enumeration_order_transform)))
+    return _dual_lll_ordered_solutions(solutions, enumeration_order_transform)
 
 
 def _fixed_distance_vectors(
@@ -5017,6 +5224,35 @@ def _dual_lll_enumeration_key(
     return tuple(reduced[index, 0] for index in reversed(range(transform.nrows())))
 
 
+def _dual_lll_ordered_solutions(
+    solutions: list[tuple[tuple[Integer, ...], Rational]] | tuple[tuple[tuple[Integer, ...], Rational], ...],
+    transform: Matrix_integer_dense | Matrix_rational_dense,
+) -> tuple[tuple[tuple[Integer, ...], Rational], ...]:
+    """Order exact CVP witnesses by reversed ``P*x`` coordinates in one batch.
+
+    Pinned ``Shvec_exact.h:335-505`` increments coordinate zero in the inner
+    loop. Row storage computes all of the same column keys as ``X * P^T``;
+    distances and original coordinate witnesses stay attached to their rows.
+    """
+    if not solutions:
+        return ()
+    coordinates = matrix(
+        SageZZ, len(solutions), transform.ncols(),
+        [entry for point, _distance in solutions for entry in point],
+    )
+    recursive_coordinates = coordinates * transform.change_ring(SageZZ).transpose()
+    width = recursive_coordinates.ncols()
+    if width == 0:
+        # Every recursive key is empty, so the stable sort is the identity.
+        return tuple(solutions)
+    entries = recursive_coordinates.list()
+    keys = tuple(
+        tuple(reversed(entries[start:start + width]))
+        for start in range(0, len(entries), width)
+    )
+    return tuple(solutions[row] for row in sorted(range(len(solutions)), key=keys.__getitem__))
+
+
 def _pinned_sublattice_basis_reduction(basis: Matrix_integer_dense) -> Matrix_integer_dense:
     r"""Reproduce ``SublatticeBasisReductionKernel`` from pinned ClassicLLL.h.
 
@@ -5357,7 +5593,7 @@ class _PositiveVectorEnumerator:
                 )
             # CVPSolver's dual-LLL map gives recursive coordinates y=P*x;
             # the shared key follows computeIt_Gen_Kernel's outer-to-inner order.
-            distances = tuple(sorted(distances, key=lambda item: _dual_lll_enumeration_key(item[0], self.enumeration_order_transform)))
+            distances = _dual_lll_ordered_solutions(distances, self.enumeration_order_transform)
         close_coordinates = tuple(coordinates for coordinates, _square in distances)
         close_squares = tuple(square for _coordinates, square in distances)
         return self._ambient_vectors(multiplier, close_coordinates, close_squares)
@@ -5372,32 +5608,44 @@ class _PositiveVectorEnumerator:
         result: list[tuple[int, ...]] = []
         if len(close_squares) != len(close_coordinates):
             raise ValueError("each closest-vector coordinate must have exactly one squared distance")
-        for index, close in enumerate(close_coordinates):
-            distance = close_squares[index]
-            if distance < 0 or distance > multiplier**2 * self.base_bound:
-                raise ArithmeticError("a closest-vector result lies outside its exact squared-distance bound")
-            if any(SageQQ(coordinate).denominator() != 1 for coordinate in close):
-                raise ArithmeticError("a closest-vector result has nonintegral lattice coordinates")
-            row = shift + vector(SageZZ, [int(coordinate) for coordinate in close]) * self.inclusion_rows
-            candidate_square = int(row * self.gram * row)
-            expected_square = multiplier**2 * self.base_bound - distance
-            # Since the distance was checked against the full radius above,
-            # expected_square is nonnegative. Equality therefore also rejects
-            # negative-norm candidates without a redundant later norm branch.
-            if candidate_square != expected_square:
-                raise ArithmeticError(
-                    "the reconstructed Lorentzian norm disagrees with its exact CVP squared distance"
-                )
-            # Lorentzian.g:377-385 verifies both the scalar-product shell
-            # and norm after reconstructing each closest-vector solution.
-            pairing = (row * self.timelike_covector)[0]
-            if pairing != multiplier * self.d or pairing <= 0 or pairing > self.scaled_max:
-                raise ArithmeticError("a close-vector shell returned a vector outside its prescribed pairing fibre")
-            # Lorentzian.g:382-388: the isotropic option keeps fNorm = 0 among
-            # the closest-vector solutions, which lie within the distance.
-            if candidate_square not in self.allowed_squares:
-                continue
-            result.append(tuple(int(entry) for entry in row))
+        # Lorentzian.g:375-385 reconstructs eBasSol + eSolA*Ubasis and
+        # checks its exact norm and pairing. Homogeneous coordinate rows
+        # (1, eSolA) apply that same affine map in native matrix blocks;
+        # candidate order and every individual certificate are retained.
+        affine_rows = matrix(SageZZ, [shift, *self.inclusion_rows.rows()])
+        block_size = _configuration_pairing_block_size(self.gram.nrows())
+        bound = multiplier**2 * self.base_bound
+        coordinate_count = self.gram.ncols()
+        norm_weights = vector(SageZZ, [1] * coordinate_count)
+        for start in range(0, len(close_coordinates), block_size):
+            coordinates = close_coordinates[start:start + block_size]
+            for offset, close in enumerate(coordinates):
+                distance = close_squares[start + offset]
+                if distance < 0 or distance > bound:
+                    raise ArithmeticError("a closest-vector result lies outside its exact squared-distance bound")
+                if any(SageQQ(coordinate).denominator() != 1 for coordinate in close):
+                    raise ArithmeticError("a closest-vector result has nonintegral lattice coordinates")
+            rows = matrix(SageZZ, [(1, *close) for close in coordinates]) * affine_rows
+            gram_rows = rows * self.gram
+            pairings = rows * self.timelike_covector
+            # Exact row sums of Sage's Hadamard product give diag(R*G*R^t).
+            squared_norms = rows.elementwise_product(gram_rows) * norm_weights
+            row_entries = tuple(map(int, rows.list()))
+            for offset in range(rows.nrows()):
+                candidate_square = int(squared_norms[offset])
+                expected_square = bound - close_squares[start + offset]
+                # The independent Gram computation certifies the returned
+                # CVP distance as well as nonnegativity of the norm.
+                if candidate_square != expected_square:
+                    raise ArithmeticError(
+                        "the reconstructed Lorentzian norm disagrees with its exact CVP squared distance"
+                    )
+                pairing = pairings[offset, 0]
+                if pairing != multiplier * self.d or pairing <= 0 or pairing > self.scaled_max:
+                    raise ArithmeticError("a close-vector shell returned a vector outside its prescribed pairing fibre")
+                if candidate_square not in self.allowed_squares:
+                    continue
+                result.append(row_entries[offset * coordinate_count:(offset + 1) * coordinate_count])
         # Keep the exact CVP backend's enumeration order. The pinned
         # LATT_near/FindAtMostDistVectors path orders through its LLL-reduced
         # basis and recursive coordinate bounds, not by norm; the first row

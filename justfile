@@ -30,8 +30,19 @@ test-push:
 test-ci:
     @just -f ~/ai-review-ci/justfiles/sage.just -d . test-ci
 
+# Run the README example as a doctest; it is the smallest acceptance.
+readme-example:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -n "${SAGE_BIN:-}" ]; then
+        sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
+    else
+        sage_python="$(just -f ~/ai-review-ci/justfiles/sage.just -d . _sage-python)"
+    fi
+    PYTHONPATH=src "$sage_python" -m doctest README.md
+
 # The acceptance workflow's jobs run inside the Sage image named in
-# .github/workflows/acceptance.yml; these two recipes are its only steps.
+# .github/workflows/acceptance.yml; these recipes are its only steps.
 ci_dir := ".tmp/ci"
 
 # CI only: install the acceptance dependencies into the Sage image's interpreter.
@@ -53,30 +64,35 @@ ci-provision-sage:
     export MESONPY_EDITABLE_VERBOSE=1
     "$SAGE_BIN" -c 'import sage.all; from sage.features.bliss import Bliss; Bliss().require(); from sage.interfaces.maxima_lib import maxima_lib; assert str(maxima_lib.eval("1+1")) == "2"'
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
-    uv pip install --quiet --python "$sage_python" "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard pytest-instafail PyNormaliz
-    # The acceptance contract is against this exact research API revision.
-    # Tracking main is not reproducible and currently imports a Sage category
-    # absent from the pinned CI Sage image (sage.categories.ordered_fields).
+    uv pip install --quiet --python "$sage_python" "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard pytest-instafail PyNormaliz "pycddlib>=3.0.2"
+    "$sage_python" -c 'import cdd.gmp'
+    # The acceptance contract is against the shared-library revision declared in
+    # pyproject.toml; read it from there so the packaging pin and the CI pin
+    # cannot drift apart. The library is sage-extensions: the pre-move
+    # dzack_research.preamble.categories modules no longer exist.
     # Keep the clone shallow and fetch the exact provider commit explicitly.
     mkdir -p {{ci_dir}}
-    git clone --quiet --depth 1 https://github.com/dzackgarza/research {{ci_dir}}/research
-    research_rev="064cd6e8e90cc9cbad17ce7d9574b497c864b8c0"
-    git -C {{ci_dir}}/research fetch --quiet --depth 1 origin "$research_rev"
-    git -C {{ci_dir}}/research -c advice.detachedHead=false checkout --quiet "$research_rev"
-    # uv, not pip: research declares tree-sitter-sage and sage-stubs only in
-    # [tool.uv.sources], which pip ignores.
+    git clone --quiet --depth 1 https://github.com/dzackgarza/sage-extensions {{ci_dir}}/sage-extensions
+    provider_rev="$(sed -n 's|.*sage-extensions @ git+https://github.com/dzackgarza/sage-extensions@\([0-9a-f]\{40\}\).*|\1|p' pyproject.toml | head -1)"
+    if [ -z "$provider_rev" ]; then
+        echo "ERROR: pyproject.toml declares no sage-extensions revision to provision" >&2
+        exit 1
+    fi
+    git -C {{ci_dir}}/sage-extensions fetch --quiet --depth 1 origin "$provider_rev"
+    git -C {{ci_dir}}/sage-extensions -c advice.detachedHead=false checkout --quiet "$provider_rev"
+    # uv, not pip: sage-extensions declares tree-sitter-sage and sage-stubs only
+    # in [tool.uv.sources], which pip ignores.
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
-    # The image owns sage-extensions, sage-julia-bridge and the other Sage
-    # projects research depends on, except that the bridge itself is not
-    # installed in this image. Install it separately: its only dependency is
-    # pydantic, and it does not re-resolve the image's conflicting
-    # tree-sitter-sage sources.
+    # The image owns sage-julia-bridge and the other Sage projects, except that
+    # the bridge itself is not installed in this image. Install it separately:
+    # its only dependency is pydantic, and it does not re-resolve the image's
+    # conflicting tree-sitter-sage sources.
     uv pip install --quiet --python "$sage_python" "sage-julia-bridge @ git+https://github.com/dzackgarza/sage-julia-bridge"
-    # Installing research with dependency resolution re-resolves the image's
+    # Installing the library with dependency resolution re-resolves the image's
     # already-installed editable projects and rejects their different
     # tree-sitter-sage source URLs. Install the exact provider checkout without
     # replacing the image's dependency graph.
-    uv pip install --quiet --python "$sage_python" --no-deps -e {{ci_dir}}/research
+    uv pip install --quiet --python "$sage_python" --no-deps -e {{ci_dir}}/sage-extensions
     uv pip install --quiet --python "$sage_python" --no-deps -e .
     git clone --quiet --depth 1 https://github.com/dzackgarza/ai-review-ci {{ci_dir}}/ai-review-ci
 
@@ -86,16 +102,17 @@ ci-provision-julia:
     set -euo pipefail
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     env_dir="$("$sage_python" -c 'import pathlib, sage_julia_bridge; print(pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env")')"
-    julia --project="$env_dir" -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+    # The worker sees both its JSON project and the shared Oscar project.
+    # Instantiate each selected manifest before exercising the same imports.
+    JULIA_PKG_PRECOMPILE_AUTO=0 julia --project="$env_dir" -e 'using Pkg; bridge_project = Base.active_project(); Pkg.activate("v$(VERSION.major).$(VERSION.minor)"; shared=true); Pkg.instantiate(); Pkg.activate(dirname(bridge_project)); Pkg.instantiate(); using Oscar, JSON'
 
-# CI only: the cache key of the bridge's Julia environment (its Project; the
-# installed package ships no Manifest, so the julia job resolves one and the
-# cache carries it).
+# CI only: key Julia packages by the bridge project and shared image lock.
 ci-julia-key:
     #!/usr/bin/env bash
     set -euo pipefail
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
-    "$sage_python" -c 'import hashlib, pathlib, sage_julia_bridge; print("julia-depot-" + hashlib.sha256((pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env" / "Project.toml").read_bytes()).hexdigest()[:16])'
+    env_dir="$("$sage_python" -c 'import pathlib, sage_julia_bridge; print(pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env")')"
+    julia --startup-file=no --project="$env_dir" -e 'using Pkg, SHA; bridge_project = Base.active_project(); Pkg.activate("v$(VERSION.major).$(VERSION.minor)"; shared=true); shared_project = Base.active_project(); inputs = vcat(read(bridge_project), read(shared_project), read(joinpath(dirname(shared_project), "Manifest.toml"))); println("julia-depot-" * bytes2hex(sha256(inputs))[1:16])'
 
 # CI only: run one acceptance shard, or a required amended branch sample;
 # results land in .tmp/ci/results/<family>-<shard>.
@@ -105,7 +122,28 @@ ci-acceptance family shard shards selection="":
     out={{ci_dir}}/results/{{family}}-{{shard}}
     mkdir -p "$out"
     git rev-parse HEAD > "$out/commit"
-    git -C {{ci_dir}}/research rev-parse HEAD > "$out/research_commit"
+    # The provider checkout is created by `ci-provision-sage` at
+    # {{ci_dir}}/sage-extensions, at the revision pyproject.toml pins. The artifact keeps its
+    # historical name `research_commit` because ci/acceptance_summary.py and its tests read that
+    # file; only the path below is the live one. Record the revision actually checked out and
+    # refuse a checkout that drifted from the pin, so the provenance the summary reports is the
+    # provenance the tests ran against.
+    provider_dir={{ci_dir}}/sage-extensions
+    if [ ! -d "$provider_dir/.git" ]; then
+        echo "ERROR: no provider checkout at $provider_dir; run 'just ci-provision-sage' first" >&2
+        exit 1
+    fi
+    provider_head="$(git -C "$provider_dir" rev-parse HEAD)"
+    pinned_rev="$(sed -n 's|.*sage-extensions @ git+https://github.com/dzackgarza/sage-extensions@\([0-9a-f]\{40\}\).*|\1|p' pyproject.toml | head -1)"
+    if [ -z "$pinned_rev" ]; then
+        echo "ERROR: pyproject.toml declares no sage-extensions revision" >&2
+        exit 1
+    fi
+    if [ "$provider_head" != "$pinned_rev" ]; then
+        echo "ERROR: provider checkout $provider_head does not match the pyproject.toml pin $pinned_rev" >&2
+        exit 1
+    fi
+    printf '%s\n' "$provider_head" > "$out/research_commit"
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     export PYTHONPATH="$PWD/{{ci_dir}}/ai-review-ci/tool-artifacts/pytest_plugins:$PWD/src:$PWD"
     # SIGINT before the job's hard limit, so pytest still writes the JUnit
@@ -119,7 +157,7 @@ ci-acceptance family shard shards selection="":
             tests/acceptance/test_reflective.sage::test_vinberg_roots_match_oscars_chamber_up_to_isometry
             tests/acceptance/test_reflective.sage::test_e10_simple_roots_match_dutour_sikiric_hulek
         )
-        shard_args=()
+        shard_args=(--shard-id={{shard}} --num-shards={{shards}})
         ;;
       orthogonal_group)
         tests=(
@@ -133,37 +171,87 @@ ci-acceptance family shard shards selection="":
             tests/acceptance/test_orthogonal_group.sage::test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q
             tests/acceptance/test_orthogonal_group.sage::test_signed_discriminant_image_of_u_plus_minus_three_is_all_of_o_q
         )
-        shard_args=()
+        shard_args=(--shard-id={{shard}} --num-shards={{shards}})
         ;;
-      vector_stabilizers)
+      # orthogonal_group is bounded by memory, not by time: the undivided sample reached a
+      # 6236 MiB process tree with five cases resident (2026-11-06, guard 6144 MiB). Each
+      # shard below is one case whose own peak was measured alone, or the light tail whose
+      # peaks are 291-381 MiB. Do not merge the heavy shards.
+      orthogonal_group_0)
         tests=(
-            tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_automorphism_generators_preserve_marking_and_form
-            tests/acceptance/test_vector_stabilizers.sage::test_divisibility_two_isotropic_pointed_isometry_has_exact_witness
-            tests/acceptance/test_vector_stabilizers.sage::test_general_isotropic_pointed_isometry_carries_negative_marking
-            tests/acceptance/test_vector_stabilizers.sage::test_split_divisibility_one_pointed_isometry_carries_actual_negative_marking
-            tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_isometry_rejects_different_divisibility
-            tests/acceptance/test_vector_stabilizers.sage::test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound
-            tests/acceptance/test_vector_stabilizers.sage::test_divisibility_four_isotropic_plane_stabilizer_constructs_exact_containing_bound
-            tests/acceptance/test_vector_stabilizers.sage::test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks
-            tests/acceptance/test_vector_stabilizers.sage::test_vector_stabilizer_has_oscars_order
-            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[0]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[2]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[4]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[6]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[8]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[10]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_-1]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_0]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_1]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_2]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_3]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_4]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_5]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_6]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_7]'
-            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_8]'
+            'tests/acceptance/test_orthogonal_group.sage::test_lorentzian_generators_match_polyhedral_common[LORENTZ_OrthogonalGroup0]'
         )
         shard_args=()
+        ;;
+      orthogonal_group_1)
+        tests=(
+            tests/acceptance/test_orthogonal_group.sage::test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q
+        )
+        shard_args=()
+        ;;
+      orthogonal_group_2)
+        tests=(
+            tests/acceptance/test_orthogonal_group.sage::test_degenerate_orthogonal_group_contains_radical_shear_and_gl_action
+        )
+        shard_args=()
+        ;;
+      orthogonal_group_3)
+        tests=(
+            tests/acceptance/test_orthogonal_group.sage::test_degenerate_orthogonal_group_generates_rank_two_radical_action
+        )
+        shard_args=()
+        ;;
+      orthogonal_group_4)
+        tests=(
+            tests/acceptance/test_orthogonal_group.sage::test_degenerate_orthogonal_group_embeds_non_diagonal_complement
+        )
+        shard_args=()
+        ;;
+      orthogonal_group_5)
+        tests=(
+            tests/acceptance/test_orthogonal_group.sage::test_mertens_omega_and_minus_one_generate_o_l
+            tests/acceptance/test_orthogonal_group.sage::test_zero_form_orthogonal_group_is_the_full_general_linear_group
+            tests/acceptance/test_orthogonal_group.sage::test_orthogonal_group_of_the_hyperbolic_plane_has_order_four
+            tests/acceptance/test_orthogonal_group.sage::test_signed_discriminant_image_of_u_plus_minus_three_is_all_of_o_q
+        )
+        shard_args=()
+        ;;
+      # Ordered by measured process-tree peak, descending: this family is bounded by memory,
+      # not by time. Seventeen cases peak above 3.6 GiB alone (roots 3673-4708 MiB, e10 squares
+      # 3735-3846 MiB, the divisibility-four bound 3651 MiB, the OSCAR order 3608 MiB) and eight
+      # peak under 440 MiB, so with the matrix's 18 shards no shard holds two heavy cases: the
+      # worst is 4708 + 297 = 5005 MiB, under the 6144 MiB guard. Round-robin over this order is
+      # what makes that true; do not re-sort it alphabetically or into file order. Peaks are the
+      # per-case measurements recorded in .tmp/acceptance-coverage.md (jobs jmvz58wdp, jmvyzjrg9,
+      # jmvz3a0di).
+      vector_stabilizers)
+        tests=(
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_-1]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_1]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_7]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_0]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[10]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_2]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_4]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[4]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[8]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[6]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[0]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_8]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[2]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_3]'
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_6]'
+            tests/acceptance/test_vector_stabilizers.sage::test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound
+            tests/acceptance/test_vector_stabilizers.sage::test_vector_stabilizer_has_oscars_order
+            tests/acceptance/test_vector_stabilizers.sage::test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks
+            tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_automorphism_generators_preserve_marking_and_form
+            'tests/acceptance/test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_5]'
+            tests/acceptance/test_vector_stabilizers.sage::test_general_isotropic_pointed_isometry_carries_negative_marking
+            tests/acceptance/test_vector_stabilizers.sage::test_divisibility_four_isotropic_plane_stabilizer_constructs_exact_containing_bound
+            tests/acceptance/test_vector_stabilizers.sage::test_split_divisibility_one_pointed_isometry_carries_actual_negative_marking
+            tests/acceptance/test_vector_stabilizers.sage::test_isotropic_pointed_isometry_rejects_different_divisibility
+            tests/acceptance/test_vector_stabilizers.sage::test_divisibility_two_isotropic_pointed_isometry_has_exact_witness
+        )
         ;;
       vector_orbits)
         tests=(
@@ -198,7 +286,6 @@ ci-acceptance family shard shards selection="":
             'tests/acceptance/test_vector_orbits.sage::test_k3_lattice_has_one_primitive_orbit_per_norm[4]'
             'tests/acceptance/test_vector_orbits.sage::test_k3_lattice_has_one_primitive_orbit_per_norm[-4]'
         )
-        shard_args=()
         ;;
       isotropic_orbits)
         tests=(
@@ -216,7 +303,6 @@ ci-acceptance family shard shards selection="":
             'tests/acceptance/test_isotropic_orbits.sage::test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank0-primitive_isotropic_vector_orbits]'
             'tests/acceptance/test_isotropic_orbits.sage::test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank1-isotropic_plane_orbits]'
         )
-        shard_args=()
         ;;
       boundaries)
         tests=(
@@ -239,17 +325,32 @@ ci-acceptance family shard shards selection="":
             'tests/acceptance/test_boundaries.sage::test_classical_polarization_indices[degree_2]'
             'tests/acceptance/test_boundaries.sage::test_classical_polarization_indices[degree_10]'
         )
-        shard_args=()
         ;;
       *)
         tests=(tests/acceptance/test_{{family}}.sage)
         shard_args=(--shard-id={{shard}} --num-shards={{shards}})
         ;;
     esac
+    case "{{selection}}" in
+      vector_stabilizers|vector_orbits|isotropic_orbits|boundaries)
+        # Preserve the selected order and the vector-stabilizer memory allocation.
+        # Orbit and boundary selections assign one case to each planned shard.
+        assigned_tests=()
+        for ((index={{shard}}; index<${#tests[@]}; index+={{shards}})); do
+            assigned_tests+=("${tests[index]}")
+        done
+        tests=("${assigned_tests[@]}")
+        shard_args=()
+        ;;
+    esac
     if [[ "{{family}}" == reflective && "{{selection}}" == "" ]]; then
-        timeout --signal=INT 345m "$sage_python" ci/pytest_batches.py --python "$sage_python" --out "$out" --batch-size 10 -- "${tests[@]}" "${shard_args[@]}" 2>&1 | tee "$out/log"
+        timeout --signal=INT --kill-after=300 345m "$sage_python" ci/pytest_batches.py --python "$sage_python" --out "$out" --batch-size 10 -- "${tests[@]}" "${shard_args[@]}" 2>&1 | tee "$out/log"
         exit "${PIPESTATUS[0]}"
     fi
-    timeout --signal=INT 345m "$sage_python" -c 'import sage.all, sys, pytest; sys.exit(pytest.main(sys.argv[1:]))' \
-        -p qc_sage_session "${tests[@]}" --runxfail -rA --tb=long --instafail \
+    # Backstop only. The family's own bound is the job's `timeout-minutes`, derived from the
+    # same per-family cap in the workflow's plan step; this 345m line is six times the longest
+    # cap and, without --kill-after, a SIGINT is not acted on while a C call is running, so it
+    # cannot be what bounds a family. --kill-after escalates if pytest ignores the INT.
+    timeout --signal=INT --kill-after=300 345m "$sage_python" -c 'import sage.all, sys, pytest; sys.exit(pytest.main(sys.argv[1:]))' \
+        -p qc_sage_session "${tests[@]}" --runxfail -vv -rA --tb=long --instafail \
         "${shard_args[@]}" --junitxml="$out/junit.xml" 2>&1 | tee "$out/log"
