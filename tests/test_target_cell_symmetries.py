@@ -7,7 +7,7 @@ Negation transports the opposite configuration onto this one.
 """
 
 import pytest
-from sage.all import ZZ, elementary_matrix, identity_matrix, matrix
+from sage.all import ZZ, SymmetricGroup, elementary_matrix, identity_matrix, matrix
 from sage_extensions.all import Lattices, ZZ as PreambleZZ
 
 from sage_indefinite_port.indefinite import lorentzian_cells
@@ -20,7 +20,8 @@ from tests.acceptance.consumer import lattice, rows_of
 
 
 @pytest.mark.parametrize("shear", (False, True), ids=("canonical_basis", "sheared_basis"))
-def test_octahedral_transport_has_one_witness_and_all_signed_permutations(monkeypatch, shear):
+@pytest.mark.parametrize("retained_stabilizer", ("neither", "source", "target"))
+def test_octahedral_transport_has_one_witness_and_all_signed_permutations(monkeypatch, shear, retained_stabilizer):
     negative = Lattices(PreambleZZ)("A1")
     ambient = negative + negative + negative + negative.twist(PreambleZZ(-1))
     first, second, third, time = tuple(ambient.module_generators())
@@ -41,6 +42,15 @@ def test_octahedral_transport_has_one_witness_and_all_signed_permutations(monkey
     assert set(map(tuple, matrix(ZZ, source_rows) * -basis_change)) == set(target_rows)
     monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_CANONICAL_LABEL_LIMIT", 0)
     backend = LorentzianPerfectLocalBackend()
+    if retained_stabilizer != "neither":
+        cell = source if retained_stabilizer == "source" else target
+        backend.cell_stabilizer(cell)
+        permutations = backend.point_permutations_from_rows(cell, cell.rows)
+        symmetric = SymmetricGroup(len(cell.rows))
+        group = symmetric.subgroup([
+            symmetric([image + 1 for image in permutation]) for permutation in permutations
+        ])
+        assert group.order() == 48
 
     witness = backend.cell_transporter(source, target)
     complete = backend.cell_transporter(source, target, all_images=True)
@@ -56,3 +66,8 @@ def test_octahedral_transport_has_one_witness_and_all_signed_permutations(monkey
         assert abs(action.det()) == 1
         assert action * target_gram * action.transpose() == source_gram
         assert set(map(tuple, matrix(ZZ, source_rows) * action)) == set(target_rows)
+    repeated = LorentzianPerfectCell(
+        ambient, (target_rows[0], *target_rows[:-1]), ZERO_SQUARES,
+    )
+    assert backend.cell_transporter(source, repeated) is None
+    assert backend.cell_transporter(source, repeated, all_images=True) == ()

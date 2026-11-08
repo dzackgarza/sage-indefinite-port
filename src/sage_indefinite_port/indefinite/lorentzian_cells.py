@@ -2015,6 +2015,12 @@ class LorentzianPerfectLocalBackend:
             # complete pairing graph. For large cells, use the same exact
             # basis-image search as stabilizer enumeration but stop at the
             # first fully certified witness instead of building that graph.
+            if self.cell_stabilizer.is_in_cache(source) and not self.cell_stabilizer.is_in_cache(target):
+                # Lorentzian.g:660-696 uses the target automorphism group.
+                # A processed representative already has its full group;
+                # search toward it and invert the resulting exact witness.
+                reverse = self.cell_transporter(target, source)
+                return None if reverse is None else ~reverse
         source_data = self._integral_configuration_invariants(source)
         # Stabilizer generation is the hot path for perfect-cell automorphisms:
         # source and target are literally the same configuration. Rebuilding
@@ -2258,6 +2264,15 @@ class LorentzianPerfectLocalBackend:
                     if action * target_gram * action.transpose() != target_gram:
                         raise ArithmeticError("a Gram-row transposition failed its exact isometry certificate")
                     candidate_actions.append(action)
+            if first_only and self.cell_stabilizer.is_in_cache(target):
+                # Retain the full integral subgroup of the source's GRP2,
+                # certified on the complete configuration. This group
+                # contains every cheap seed.
+                group_permutations.extend(
+                    symmetric([image + 1 for image in permutation])
+                    for permutation in self.point_permutations_from_rows(target, target.rows)
+                )
+                candidate_actions = []
             for action in candidate_actions:
                 permutation_images = array(permutation_typecode)
                 preserves_configuration = True
