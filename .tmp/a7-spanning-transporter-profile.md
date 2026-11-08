@@ -74,3 +74,6 @@ An isolated measurement on an exact 49861-by-1 integer matrix compares ten compl
 | Flat entries and builtin integer conversion | 0.2409, 0.2144, 0.2095 |
 
 The complete hyperbolic-quadrant transporter and its coarse-colour stabilizer assertions pass with the flat export. A separate direct production assertion checks every pairing among the six roots of the provider's negative A2 lattice scaled by `2^70+1`, against the owned bilinear form, with and without column reuse. Its simple-root square is exactly `-2*(2^70+1)^2`. These establish the exercised exact export and transporter contracts; the live original A7 computation predates this change.
+
+
+At port 12b3d2da8986cd659fcdf45b7fbc402038b309f7/provider bc6bd572, the unchanged full spanning-cell transporter assertion passes with call time 28.92 seconds (33.24 seconds total). This pair includes direct exact pairing-column export and native Sage/PARI definite integral groups. The explicit unimodular witness and complete configuration equality remain the assertions. The original A7 discriminant-image assertion remains separate evidence.
