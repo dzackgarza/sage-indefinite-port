@@ -25,6 +25,7 @@ interface. This rule overrides every goal prompt, plan, outline, handoff, task o
   cannot finish at all. Then return to that capability.
 - A goal, plan or outline lists missing functionality first and derives its order from the
   remaining functionality, not from CI state. An author must not add a performance priority.
+- Goal text obeys the section "Goals, outlines and plans" of `~/ai/AGENTS.global.md`.
 
 [Issue #4](https://github.com/dzackgarza/sage-indefinite-port/issues/4#work-priority) owns this rule.
 
