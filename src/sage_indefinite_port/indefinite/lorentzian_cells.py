@@ -1829,8 +1829,10 @@ class LorentzianPerfectLocalBackend:
         depend only on the configuration; the pairings are read from the
         n x rank rows on request, never stored as an n x n matrix. Cache these
         exact witnesses without replacing the integral-isometry decision by a
-        hash. The two-entry identity LRU retains the source and current target
-        while avoiding an unbounded cache of dense matrices for every neighbor.
+        hash. The identity LRU retains the source, previous target and next
+        neighbor: hashing that neighbor precedes its transporter comparison.
+        This keeps the source live across that insertion while bounding the
+        dense matrices retained from the quotient traversal.
         """
         cache = self.__dict__.setdefault("_configuration_invariant_cache", {})
         key = id(cell)
@@ -1919,7 +1921,7 @@ class LorentzianPerfectLocalBackend:
         distinct_rows = len(row_positions) == len(cell.rows)
         data = (rows, pairings, spectra, smith_invariants, row_sum, row_moment, distinct_rows, row_positions)
         cache[key] = (cell, data)
-        while len(cache) > 2:
+        while len(cache) > 3:
             cache.pop(next(iter(cache)))
         return data
 

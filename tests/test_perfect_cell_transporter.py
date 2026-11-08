@@ -942,6 +942,7 @@ def test_configuration_invariant_cache_is_bounded_and_identity_keyed() -> None:
         LorentzianPerfectCell(ambient, ((1, 0), (0, 1)), ZERO_SQUARES),
         LorentzianPerfectCell(ambient, ((0, 1), (1, 0)), ZERO_SQUARES),
         LorentzianPerfectCell(ambient, ((-1, 0), (0, -1)), ZERO_SQUARES),
+        LorentzianPerfectCell(ambient, ((0, -1), (-1, 0)), ZERO_SQUARES),
     )
     backend = LorentzianPerfectLocalBackend()
     first = backend._integral_configuration_invariants(cells[0])
@@ -950,13 +951,15 @@ def test_configuration_invariant_cache_is_bounded_and_identity_keyed() -> None:
     backend._integral_configuration_invariants(cells[1])
     assert backend._integral_configuration_invariants(cells[0]) is first
     backend._integral_configuration_invariants(cells[2])
+    backend._integral_configuration_invariants(cells[3])
 
     cache = backend.__dict__["_configuration_invariant_cache"]
-    assert len(cache) == 2
+    assert len(cache) == 3
     assert id(cells[0]) in cache
     assert id(cells[1]) not in cache
     assert cache[id(cells[0])][0] is cells[0]
     assert cache[id(cells[2])][0] is cells[2]
+    assert cache[id(cells[3])][0] is cells[3]
 
 
 def test_owned_large_cell_cone_releases_normaliz_engine_cache() -> None:
