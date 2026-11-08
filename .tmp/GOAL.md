@@ -76,7 +76,7 @@ Rows that do not name a dependency proceed independently. Work on several at onc
 | Infinite-index orbit sets (#53) | Γ-parametrized orbit-set interface; pairing slices through the #47 stabilizer | open |
 | Degenerate and nonprimitive equivariant markings (#61) | Nonprimitive through #48; prescribed Gram through #47 | open |
 | Normalizers (#50) | Twisted transporter on cyclotomic summands; generators of N(H) | open |
-| Unitary centralizers, definite components (#51) | Definite at every place, rank ≥2, through O(Tr(αh)) | open |
+| Unitary centralizers, definite components (#51) | Definite at every place, rank ≥2, through O(Tr(αh)) | done |
 | Eisenstein E⁴,¹ and cubic-surface consumers (#52) | Rank-10 trace lattice, reflection generators, cusp and root orbits | open |
 | Hermitian oceans and Picard groups (#59) | Gaussian four generators in trace coordinates, then the remaining source routes | open |
 | Integral Hermitian parabolics and flags (#60) | n(Z,T) law, liftable Levi image, flag stabilizers | open |
