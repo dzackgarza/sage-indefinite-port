@@ -80,8 +80,8 @@ not cancel the requirement. These deferred cases do not gate v1 delivery.
 
 Implement missing public capabilities before performance refinement and final
 corpus certification. Use the functional sequence in issue #4 and the current
-handoff. Start with the next concrete missing branch in #44; then implement
-ready capabilities in #69 using their actual mathematical prerequisites.
+handoff. Work on #44 and #69 together, using the tier order at the top of #69
+and their actual mathematical prerequisites.
 
 A prerequisite must name the dependent capability, the exact operation it
 consumes, and a small independently justified example that cannot complete
