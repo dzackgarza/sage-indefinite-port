@@ -205,9 +205,7 @@ def _integral_generator_set(
         key = tuple(action.ravel().tolist())
         return key, int(np.add.reduce(np.abs(action), axis=None))
 
-    def normalized(action, inverse):
-        direct_norm = int(np.add.reduce(np.abs(action), axis=None))
-        inverse_norm = int(np.add.reduce(np.abs(inverse), axis=None))
+    def normalized(action, inverse, direct_norm, inverse_norm):
         dtype = np.dtype(np.int64) if max(direct_norm, inverse_norm) <= machine_bound else np.dtype("object")
         action = np.asarray(action, dtype=dtype)
         inverse = np.asarray(inverse, dtype=dtype)
@@ -224,7 +222,7 @@ def _integral_generator_set(
     for action_columns in columns:
         engine_action = action_columns.transpose().change_ring(SageZZ)
         action = np.asarray(tuple(map(int, engine_action.list())), dtype="object").reshape(len(labels), len(labels))
-        key, _norm = action_data(action)
+        key, direct_norm = action_data(action)
         if key in seen:
             continue
         seen.add(key)
@@ -233,7 +231,7 @@ def _integral_generator_set(
         # Nielsen updates preserve the subgroup: both g and g^-1 remain
         # words in the retained family after either action is retired.
         seen.add(tuple(inverse.ravel().tolist()))
-        key, entry = normalized(action, inverse)
+        key, entry = normalized(action, inverse, direct_norm, int(np.add.reduce(np.abs(inverse), axis=None)))
         if key in actions:
             continue
         actions[key] = entry
@@ -254,11 +252,16 @@ def _integral_generator_set(
                     continue
                 a_norm, a, a_inverse = actions[current]
                 b_norm, b, b_inverse = actions[other]
-                candidates = (
-                    normalized(a @ b, b_inverse @ a_inverse),
-                    normalized(a_inverse @ b, b_inverse @ a),
-                    normalized(a @ b_inverse, b @ a_inverse),
-                    normalized(a_inverse @ b_inverse, b @ a),
+                # The same four source products and their inverses, evaluated
+                # together. The L1 bound above certifies every integer product
+                # and reduction independently of this batching.
+                products = np.asarray((a, a_inverse, a, a_inverse, b_inverse, b_inverse, b, b)) @ np.asarray(
+                    (b, b, b_inverse, b_inverse, a_inverse, a, a_inverse, a)
+                )
+                norms = np.add.reduce(np.abs(products), axis=(1, 2))
+                candidates = tuple(
+                    normalized(products[index], products[index + 4], int(norms[index]), int(norms[index + 4]))
+                    for index in range(4)
                 )
                 # The same source pair products can certify redundancy
                 # even when no L1 norm decreases. If c = a^eps*b^eta
