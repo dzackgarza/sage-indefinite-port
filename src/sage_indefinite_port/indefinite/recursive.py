@@ -177,6 +177,9 @@ def _integral_generator_set(
         seen.add(key)
         engine_inverse = engine_action.inverse().change_ring(SageZZ)
         inverse = np.asarray(tuple(map(int, engine_inverse.list())), dtype="object").reshape(len(labels), len(labels))
+        # Nielsen updates preserve the subgroup: both g and g^-1 remain
+        # words in the retained family after either action is retired.
+        seen.add(tuple(inverse.ravel().tolist()))
         key, entry = normalized(action, inverse)
         if key in actions:
             continue

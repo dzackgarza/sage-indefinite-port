@@ -1,4 +1,6 @@
 """Integral stabilizer generators retain actions invisible modulo two."""
+import pytest
+
 from sage_indefinite_port.indefinite.recursive import _integral_generator_set
 from tests.acceptance.consumer import lattice
 
@@ -24,7 +26,8 @@ def test_generating_set_keeps_sign_and_unipotent_kernel_actions():
     )
 
 
-def test_unipotent_powers_generate_the_primitive_integral_action():
+@pytest.mark.parametrize("powers", ((2, 3, 5), (2, 3, 5, -2, -3, -5)))
+def test_unipotent_powers_generate_the_primitive_integral_action(powers):
     ambient = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
     rational = ambient.base_change(ambient.base_ring().fraction_field_map())
     labels = tuple(rational.module_generating_set())
@@ -39,7 +42,7 @@ def test_unipotent_powers_generate_the_primitive_integral_action():
             strict=True,
         )))
 
-    reduced = _integral_generator_set(ambient, (shear(2), shear(3), shear(5)))
+    reduced = _integral_generator_set(ambient, tuple(shear(power) for power in powers))
     assert len(reduced) == 1
     integral_labels = tuple(ambient.module_generating_set())
     integral_basis = tuple(ambient.module_generator(label) for label in integral_labels)
@@ -76,7 +79,8 @@ def test_equal_norm_block_permutations_reduce_to_generators_of_symmetric_group()
     assert all(sum(abs(entry) for entry in action.list()) == 6 for action in actions)
 
 
-def test_large_unipotent_powers_generate_their_full_integral_cyclic_subgroup():
+@pytest.mark.parametrize("powers", ((2, 3), (2, 3, -2, -3)))
+def test_large_unipotent_powers_generate_their_full_integral_cyclic_subgroup(powers):
     ambient = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
     rational = ambient.base_change(ambient.base_ring().fraction_field_map())
     labels = tuple(rational.module_generating_set())
@@ -92,7 +96,7 @@ def test_large_unipotent_powers_generate_their_full_integral_cyclic_subgroup():
             strict=True,
         )))
 
-    reduced = _integral_generator_set(ambient, (shear(2 * step), shear(3 * step)))
+    reduced = _integral_generator_set(ambient, tuple(shear(power * step) for power in powers))
     e, f, x, y = tuple(ambient.module_generators())
     increment_x = ambient.scalar_multiple(ambient.base_ring()(step), x)
     increment_e = ambient.scalar_multiple(ambient.base_ring()(step), e)
