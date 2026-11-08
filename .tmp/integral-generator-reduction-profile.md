@@ -1,6 +1,6 @@
 # Full integral-generator reduction
 
-The unchanged I_1_1 assertion is active at port `2cdf004966bb1d16c79f0a19ddc79a0c0f7e63ae` / provider `bc6bd57262e576194e3c8764c83f3bb1d081ba52`, with its original 2400-second limit. The sample below does not establish its final index assertion.
+The unchanged I_1_1 assertion passes at port `2cdf004966bb1d16c79f0a19ddc79a0c0f7e63ae` / provider `bc6bd57262e576194e3c8764c83f3bb1d081ba52`, within its original 2400-second limit. JUnit case time is 2272.321 seconds and the required discriminant stabilizer index is 1. The exact report is in `.tmp/acceptance-2cdf004-evidence.md`; the interval sample below does not independently establish that assertion.
 
 A ten-second main-thread sample reaches `_integral_generator_set` while it consumes `_integral_stabilizer_family`. Inclusive times overlap and must not be added.
 
@@ -15,8 +15,8 @@ A ten-second main-thread sample reaches `_integral_generator_set` while it consu
 | Direct L1 norm in normalized at recursive.py:143 | 1.30 |
 | Inverse L1 norm at recursive.py:144 | 0.70 |
 
-A separate live stack in the first pair product has direct-action norms 71 and 14, with the last supplied action of norm 342. These sampled actions therefore fit the current certified int64 branch. This input does not support changing the large-integer arithmetic route. The original I_1_1 assertion remains live and must finish before assigning a new failure.
+A separate live stack in the first pair product has direct-action norms 71 and 14, with the last supplied action of norm 342. These sampled actions therefore fit the current certified int64 branch. This input does not support changing the large-integer arithmetic route. The completed original I_1_1 assertion passes; this sample supplies no arithmetic failure.
 
 The pinned source was read at [MatrixGroupSimplification.h](https://github.com/MathieuDutSik/polyhedral_common/blob/1592b2463bc7a04d94e900bf8efbada607405d8d/src_group/MatrixGroupSimplification.h): `f_reduce` at lines 685–750 computes the same four product/inverse pairs; the exhaustive V2 scheduler at lines 798–1074 retains untreated pair intervals and stops only after no pair improves. Lines 1454–1476 select the entrywise L1 complexity, and lines 1493–1605 bound fixed-width products. The existing port worklist retains complete integral actions and exact product/inverse witnesses. No new generator reduction or arithmetic change follows from this interval sample.
 
-Optional local samples are `.tmp/enriques-2cdf004-bc6bd57-reduction.json` and `.tmp/enriques-2cdf004-bc6bd57-reduction-locals.txt`. Whole-consumer timing and the final frozen assertion remain required.
+Optional local samples are `.tmp/enriques-2cdf004-bc6bd57-reduction.json` and `.tmp/enriques-2cdf004-bc6bd57-reduction-locals.txt`. Evidence for the full assertion at the latest port/provider pair remains required.
