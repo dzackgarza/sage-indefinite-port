@@ -1,5 +1,6 @@
 # Exact A7 moment-colour computation
 
+Source: 604d76248237f710c4741ef9911692a7b4845932.
 Provider: d0431b3f5c3ca0031dd74ea6fe3df649c269cfe9.
 
 The A7 discriminant-image consumer remains incomplete. Its terminal 2deaefb/2dfd20b6 stack reaches the moment-colour norm sum in `_integral_configuration_invariants`. That stack does not establish the cost of the whole consumer.
@@ -30,3 +31,5 @@ Every result agrees entry by entry. The entire revised invariant computation als
 The existing owner assertion `tests/test_configuration_pairings.py::test_large_coarse_hash_preserves_gcd_colours_under_integral_isometry` passes under the normal local checks. It exercises the moment branch and an integral shear larger than 2^80. The selected session passes in 3.99 seconds.
 
 Required next evidence is the complete unchanged A7 discriminant-image assertion under its original bound, followed by its final-pair frozen result. The measured component improvement does not establish either result.
+
+The unchanged A7 node is active at that pair in immutable `sage-indefinite-proof-604d762`, with its original 1800-second bound. Its optional log/JUnit are `.tmp/a7-604d762-d0431b3f.{log,xml}`. Preserve that computation until terminal. No full image result is available yet.
