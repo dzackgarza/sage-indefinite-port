@@ -5207,9 +5207,14 @@ def _dual_lll_ordered_solutions(
         [entry for point, _distance in solutions for entry in point],
     )
     recursive_coordinates = coordinates * transform.change_ring(SageZZ).transpose()
+    width = recursive_coordinates.ncols()
+    if width == 0:
+        # Every recursive key is empty, so the stable sort is the identity.
+        return tuple(solutions)
+    entries = recursive_coordinates.list()
     keys = tuple(
-        tuple(recursive_coordinates[row, column] for column in reversed(range(transform.nrows())))
-        for row in range(len(solutions))
+        tuple(reversed(entries[start:start + width]))
+        for start in range(0, len(entries), width)
     )
     return tuple(solutions[row] for row in sorted(range(len(solutions)), key=keys.__getitem__))
 
