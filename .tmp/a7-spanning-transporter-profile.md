@@ -91,3 +91,8 @@ An isolated comparison of the same rational map and basis input, with 500 evalua
 These measure basis evaluation, not a whole transporter or the complete A7 computation. The active A7, I_1_1 and stable Dawes cases predate this provider change.
 
 At port a170e2e91c0759649d48059e2cce9ea5c9893a56/provider 0580f98daaf1e698078429b99f93a0d2e0513ba8, the unchanged full spanning-cell transporter assertion passes with call time 35.72 seconds (44.28 seconds total). This confirms the complete witness under direct selected-generator evaluation. Compared with the 28.92-second call at 12b3d2d/bc6bd572, this measurement supplies no whole-transporter timing gain; the isolated basis-evaluation comparison remains a different measurement. Full A7 evidence remains required.
+
+
+## Stable Dawes coset Schreier construction
+
+At port 12b3d2d/provider bc6bd572, a ten-second main-thread sample spends 6.85 seconds in `GObjects.act` below `LeftCosetGSets.schreier_generating_morphism`, including 6.20 seconds in exact lattice-isometry tensor comparison. Inclusive times overlap. The constructor had retained the finite action but read its point actions again instead of its complete sweep table. Provider cab1d797 retains that table on the finite action and passes it under the identical augmentation to the existing Schreier constructor. Its literal point set preserves table positions. Every Schreier word and full integral image is retained. The S3/H stabilizer/double-coset assertions, two supplied free-cover orders, C4→C2 kernel and infinite cyclic parity kernel pass: six cases in 5.45 seconds under owner limits. The unchanged stable Dawes graph remains required; this sample and the small assertions do not establish its full result or a whole-consumer timing gain.
