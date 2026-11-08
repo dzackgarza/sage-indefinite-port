@@ -20,3 +20,19 @@ The selected lattice's finite pairing repeats the coordinate contraction in `Lat
 The unprofiled same-spanning-transporter comparison at providers 18cc2773 and 16bfac88 passes with call times 37.91 and 37.59 seconds. It gives no material whole-transporter improvement from scalar-action factory reuse.
 
 Provider eb2ab6dd3b27ebed220ad391b87c347898bed516 delegates the finite lattice pairing to the tensor owner. Its exact ZZ/QQ contraction uses Sage matrix/vector products. The full 2 A19 root-difference assertion passes within the unchanged owner call limit; named framings, the zero lattice, polynomial coefficients and rectangular exact contractions pass too. The same spanning perfect-cell transporter passes with call time 38.65 seconds. This gives no material whole-transporter gain over the earlier unprofiled comparison. Complete A7 evidence remains required.
+
+At provider 6b0a47415ae76eeb561d4b45e300c111e3b2c555 the same assertion passes with call time 28.93 seconds. The unchanged original A7 computation at port 1716980/provider 6b0a4741 remains separate evidence. Its live stack reaches both the facet walk's point-permutation construction and the neighbouring-cell transporter.
+
+A ten-second sample during that original computation places the sampled main thread in the neighbouring-cell transporter. Inclusive times overlap:
+
+| Operation during the sampled interval | Seconds |
+| --- | ---: |
+| Coloured-family transporter | 9.95 |
+| Integral-structure finite representation | 8.30 |
+| Finite orbit sweep | 5.75 |
+| Induced finite quotient automorphisms | 5.70 |
+| Intermediate-lattice image keys | 3.80 |
+
+These interval measurements do not give whole-computation proportions. The selected-generator transition-table realization published in provider 9f578022 addresses reuse after a completed sweep; the sweep and each distinct generator's quotient automorphism still require their exact computations. Preserve the full original assertion before claiming a gain on A7.
+
+For live sampling, the [py-spy documentation](https://github.com/benfred/py-spy#how-can-i-avoid-pausing-the-python-program) states that `--nonblocking` permits read races and incomplete frames. Both nonblocking and default dumps can fail to locate this running interpreter; a standard ten-second recording with py-spy 0.4.3 produced the interval above without sampling errors. A failed dump supplies no stack evidence and does not show that the mathematical process ended.
