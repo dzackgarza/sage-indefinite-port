@@ -21,7 +21,8 @@ from tests.acceptance.consumer import lattice, rows_of
 
 @pytest.mark.parametrize("shear", (False, True), ids=("canonical_basis", "sheared_basis"))
 @pytest.mark.parametrize("retained_stabilizer", ("neither", "source", "target"))
-def test_octahedral_transport_has_one_witness_and_all_signed_permutations(monkeypatch, shear, retained_stabilizer):
+@pytest.mark.parametrize("graph_limit", (0, 256), ids=("basis_search", "small_graph"))
+def test_octahedral_transport_has_one_witness_and_all_signed_permutations(monkeypatch, shear, retained_stabilizer, graph_limit):
     negative = Lattices(PreambleZZ)("A1")
     ambient = negative + negative + negative + negative.twist(PreambleZZ(-1))
     first, second, third, time = tuple(ambient.module_generators())
@@ -40,7 +41,7 @@ def test_octahedral_transport_has_one_witness_and_all_signed_permutations(monkey
     source = LorentzianPerfectCell(lattice(source_gram.rows()), source_rows, ZERO_SQUARES)
     target = LorentzianPerfectCell(ambient, target_rows, ZERO_SQUARES)
     assert set(map(tuple, matrix(ZZ, source_rows) * -basis_change)) == set(target_rows)
-    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_CANONICAL_LABEL_LIMIT", 0)
+    monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_CANONICAL_LABEL_LIMIT", graph_limit)
     backend = LorentzianPerfectLocalBackend()
     if retained_stabilizer != "neither":
         cell = source if retained_stabilizer == "source" else target

@@ -2005,16 +2005,20 @@ class LorentzianPerfectLocalBackend:
         if not all_images:
             if source.lattice is target.lattice and source.rows == target.rows:
                 return source.lattice.Aut().identity()
-            if n <= _PAIRING_GRAPH_CANONICAL_LABEL_LIMIT:
+            if (
+                n <= _PAIRING_GRAPH_CANONICAL_LABEL_LIMIT
+                and not self.cell_stabilizer.is_in_cache(source)
+                and not self.cell_stabilizer.is_in_cache(target)
+            ):
                 if source.lattice is target.lattice and Counter(source.rows) == Counter(target.rows):
                     return source.lattice.Aut().identity()
                 source_family = source.vector_family
                 target_family = target.vector_family
                 return source.lattice.Isom(target.lattice).transporter(source_family, target_family)
-            # The preamble's labelled finite-family transporter constructs a
-            # complete pairing graph. For large cells, use the same exact
-            # basis-image search as stabilizer enumeration but stop at the
-            # first fully certified witness instead of building that graph.
+            # Retained full integral cell groups supply target orbits for
+            # the exact basis-image search at every configuration size.
+            # Large cells also use this search to avoid a complete pairing
+            # graph. Stop at the first fully certified integral witness.
             if self.cell_stabilizer.is_in_cache(source) and not self.cell_stabilizer.is_in_cache(target):
                 # Lorentzian.g:660-696 uses the target automorphism group.
                 # A processed representative already has its full group;
