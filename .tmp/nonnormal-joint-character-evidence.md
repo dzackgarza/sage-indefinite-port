@@ -3,7 +3,7 @@
 Provider: `d0431b3f5c3ca0031dd74ea6fe3df649c269cfe9`.
 Residual finite-form backend computation: `6ae02422`.
 
-The standard root lattice A1 cubed has q(x)=2(x_0^2+x_1^2+x_2^2), so its minimal vectors force every integral isometry to be a signed permutation. In its discriminant form the classes e_i/2 are exactly the elements of square 1/2. Thus O(D) is S3, and independent coordinate signs give both determinants above every discriminant permutation. The joint image is the full product C2 times S3.
+The standard root lattice A1 cubed has q(x)=-2(x_0^2+x_1^2+x_2^2), so its minimal vectors force every integral isometry to be a signed permutation. In its discriminant form the classes e_i/2 are exactly the elements of square -1/2. Thus O(D) is S3, and independent coordinate signs give both determinants above every discriminant permutation. The joint image is the full product C2 times S3.
 
 Let K fix e_0/2 in S3, and H impose both rho(g) in K and det(g)=1. The transposition subgroup K is nonnormal; the assertion verifies an explicit conjugate outside K. The cosets of H have coordinates (det(g),rho(g)e_0/2). The owner assertion checks their entire coordinate set, every live coset lift, every chosen generator's left action and inverse on all cosets, and the noncommuting joint-character laws.
 

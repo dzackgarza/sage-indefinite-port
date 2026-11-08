@@ -31,3 +31,20 @@ An independent diagnostic uses V=U+<-2>^(n-2), H=<e,a_1,...,a_(n-2)> and the par
 These simple maps do not reproduce the original timeout. They give no basis for replacing the module-morphism comparison or weakening any extension equation.
 
 The current diagnostic executes the original public O_plus_N plane computation at port 8a19c4440a5e223a302e59ac74e7c1cf26509daa/provider d0431b3f5c3ca0031dd74ea6fe3df649c269cfe9, with a 2400-second in-process bound. Python monitoring records each actual Witt-extension duration and retains the solver's native source/target Gram matrices, inclusion/prescribed-image rows and solved extension. The latest and slowest completed inputs are optional local captures in `.tmp/o-plus-N-witt-capture/`; the log is `.tmp/o-plus-N-witt-capture.log`. It skips the separate line computation and therefore cannot establish the whole frozen node. Inspect the actual captured equations and duration distribution before choosing an owner repair. No source repair is justified by the small examples alone.
+
+## Actual extension phases
+
+A local observer records the complete phases of successive actual extension calls in the active old-pair plane diagnostic. Its finite sample is in `.tmp/o-plus-N-witt-capture/phases.jsonl`; the phase observer releases its monitoring slot when the sample is complete. The input-capture observer remains active for the bounded computation.
+
+| Phase | Returned calls sampled | Total seconds | Median seconds |
+| --- | ---: | ---: | ---: |
+| Locus and endpoint checks | 100 | 23.10818 | 0.06249 |
+| Native extension solve | 100 | 16.88973 | 0.16310 |
+| Raise full isometry | 100 | 47.22224 | 0.42737 |
+| Full extension-locus admission | 100 | 29.77822 | 0.28880 |
+
+These are measured phases in the active computation, not proportions of its whole runtime. The separate live sample reaches finite submodule orbit closure. Provider 03649cc9 repairs that measured image/key operation at its module owner; provider 438c23a5 also repairs the independently demonstrated nonnormal character-transporter decision. The full original unchanged node still requires a complete result at the new published pair. Every extension-locus equation remains required.
+
+## Plane-only diagnostic terminal
+
+The plane-only diagnostic at 8a19c444/d0431b3f is terminal at its 2400-second bound. Its Python and Docker launcher processes are gone. Its final stack is `subspace_extensions -> lift_invariant_frame -> ModuleMorphismMethods._call_`, constructing the lifted invariant frame. This is a different observed operation from the earlier finite-orbit sample. The plane assertion remains incomplete. The measured finite-image-key repair is published at provider 03649cc9 and retained in 438c23a5. The new published pair must execute the complete unchanged line-and-plane node under its original bound.
