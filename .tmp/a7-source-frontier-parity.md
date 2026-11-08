@@ -26,3 +26,19 @@ Orbit sizes count all facets in each disjoint orbit. The shared-ray test uses th
 The coordinate facets of Delta(8,2) form complete families of incidence cardinalities seven and twenty-one. Full coordinate permutations give two orbits; fixing one coordinate separates its two facets from the moving families. The assertion checks every family, its exact orbit cardinality and every retained transport word in both word modes. All four cases pass in 7.53 seconds. The six signed-cube and cube-coordinate cases and the complete signed six-cube transport assertion also pass (nine selected cases with the original hypersimplex pair, 9.95 seconds).
 
 The source `OrbitIntersection` is evaluated through the finite group owner's point orbits: the intersection of all translated pending sets is the union of the point orbits contained in their ordinary intersection. This is an exact callee substitution with the same full quantifier. The record and witness interfaces are unchanged. The large actual A7 facet computation and the original public consumer remain required.
+
+## Actual large configuration
+
+The complete facet operation on the retained large configuration finishes at published port 616a7fe/provider cfee1892. The input is the actual stable ray family and complete generator permutations from the earlier coupled cell. Each discovered facet retains its exact normal/incidence certificate and full orbit cardinality.
+
+| Complete source operation | Value |
+| --- | ---: |
+| Input rays | 49685 |
+| Facet orbits | 19 |
+| Total facets from the disjoint orbit sizes | 17611202 |
+| Wall seconds | 284.201973 |
+| CPU seconds | 287.707900 |
+
+This measures the finite facet core supplied with its actual stabilizer action. The earlier bounded isolated whole-cell walk also included stabilizer construction and diagnostic capture, so its time is not a like-for-like benchmark ratio. The original full A7 assertion is now active at 616a7fe/cfee1892 under its unchanged original 1800-second thread bound. The finite core result does not establish the whole orthogonal group or its discriminant image.
+
+Optional data: `.tmp/a7-bb69c92-facet-comparison/base-0.pickle`, `.tmp/a7-frontier-source-large-cell.json` and `.tmp/a7-frontier-source-large-cell-records.pickle`.
