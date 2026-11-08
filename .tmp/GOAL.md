@@ -38,13 +38,13 @@ Rows that do not name a dependency proceed independently. Work on several at onc
 | Capability | First example | Status |
 |---|---|---|
 | Decide finiteness of GL over a finite ring; the provider branch `fix/finite-orthogonal-cardinality` is red on `is_finite` of GL(F5²). Publish the branch and update the pin. | GL(F5²) has order 480 | done |
-| Requested-subgroup Levi action for a general finite preimage (#44). Run its example once, with no bound, in the background. | 2U, I=Ze, preimage of {Id,−Id} modulo 3: pointwise kernel has parameter lattice 3 Hom(U,Z), index 9 | open |
+| Requested-subgroup Levi action for a general finite preimage (#44). Run its example once, with no bound, in the background. | 2U, I=Ze, preimage of {Id,−Id} modulo 3: pointwise kernel has parameter lattice 3 Hom(U,Z), index 9 | done |
 
 ### Missing routes of the pinned sources
 
 | Capability | First example | Status |
 |---|---|---|
-| Right cosets of k-plane and k-flag stabilizers (#44; `CombinedAlgorithms.h:1565-1628,2461-2471`) | U+⟨2⟩, I=Ze: \|G/H\|=2 | open |
+| Right cosets of k-plane and k-flag stabilizers (#44; `CombinedAlgorithms.h:1565-1628,2461-2471`) | U+⟨2⟩, I=Ze: \|G/H\|=2 | done |
 | Induced action on successive flag quotients (#44) | 3U complete flag: image (±1)³ of order 8 | open |
 | Oriented and based marking variants (#44) | 2U oriented maximal null plane: one class; stabilizer of index 2 in the parabolic | open |
 | Full edgewalk on non-reflective lattices: all vertex orbits, polyhedron isometries (#15) | U+⟨46⟩: every edge neighbour of a listed vertex is equivalent to a listed vertex | open |
