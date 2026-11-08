@@ -137,11 +137,11 @@ def _integral_generator_set(
     def action_data(action):
         # Fixed-size row-major keys preserve equality and lexicographic order.
         key = tuple(action.ravel().tolist())
-        return key, int(np.abs(action).sum())
+        return key, int(np.add.reduce(np.abs(action), axis=None))
 
     def normalized(action, inverse):
-        direct_norm = int(np.abs(action).sum())
-        inverse_norm = int(np.abs(inverse).sum())
+        direct_norm = int(np.add.reduce(np.abs(action), axis=None))
+        inverse_norm = int(np.add.reduce(np.abs(inverse), axis=None))
         dtype = np.dtype(np.int64) if max(direct_norm, inverse_norm) <= machine_bound else np.dtype("object")
         action = np.asarray(action, dtype=dtype)
         inverse = np.asarray(inverse, dtype=dtype)
