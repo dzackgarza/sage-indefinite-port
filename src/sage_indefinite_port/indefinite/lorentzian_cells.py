@@ -1286,6 +1286,16 @@ class LorentzianPerfectLocalBackend:
         """
         return self.cell_transporter(cell, cell, all_images=True, generators_only=True)
 
+    @cached_method
+    def cell_stabilizer_permutations(self, cell: LorentzianPerfectCell) -> tuple[tuple[int, ...], ...]:
+        r"""The retained stabilizer action on this cell's ordered rays.
+
+        Lorentzian.g:1320-1322 retains ``PermutationStabilizer`` alongside
+        the cell stabilizer. Facet walks and later cell comparisons use the
+        same ordered action of the same cached integral generators.
+        """
+        return self.point_permutations_from_rows(cell, cell.rows)
+
     def point_permutations(self, cell: LorentzianPerfectCell, points: tuple[Lattices.ElementMethods, ...]) -> tuple[tuple[int, ...], ...]:
         r"""Each cell-stabilizer generator's permutation of a finite stable family of points, as position images."""
         lattice = cell.lattice
@@ -1706,7 +1716,7 @@ class LorentzianPerfectLocalBackend:
         """
         from sage_indefinite_port.indefinite.facet_orbits import _cell_facet_orbits_from_permutations
 
-        permutations = self.point_permutations_from_rows(cell, cell.rows)
+        permutations = self.cell_stabilizer_permutations(cell)
         records = _cell_facet_orbits_from_permutations(cell, permutations, retain_words=retain_words)
         ray_count = len(cell.rows)
         full_mask = (1 << ray_count) - 1
@@ -2276,7 +2286,7 @@ class LorentzianPerfectLocalBackend:
                 # contains every cheap seed.
                 group_permutations.extend(
                     symmetric([image + 1 for image in permutation])
-                    for permutation in self.point_permutations_from_rows(target, target.rows)
+                    for permutation in self.cell_stabilizer_permutations(target)
                 )
                 candidate_actions = []
             for action in candidate_actions:
@@ -3730,7 +3740,7 @@ class _CellFaces:
         self._group = self._ambient.subgroup(
             tuple(
                 _owned_permutation(self._ambient, permutation)
-                for permutation in backend.point_permutations_from_rows(cell, cell.rows)
+                for permutation in backend.cell_stabilizer_permutations(cell)
             )
         )
         self.group = _engine_group(self._group)
