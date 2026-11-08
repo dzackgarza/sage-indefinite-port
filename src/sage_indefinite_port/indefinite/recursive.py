@@ -1963,7 +1963,10 @@ class EichlerRecursion:
         rational_transport, _denominator = _extend_perpendicular_isometry(source_reduction, target_reduction, (*source, *source_lifts), images)
         return rational_transport
 
-    def isotropic_quotient_lift(self, reduction, reduced: LatticeIsometryMethods) -> LatticeIsometryMethods | None:
+    def isotropic_quotient_lift(
+        self, reduction, reduced: LatticeIsometryMethods,
+        *, radical_images: tuple[tuple[Lattices.ElementMethods, ...], ...] | None = None,
+    ) -> LatticeIsometryMethods | None:
         r"""An integral parabolic lift of a prescribed quotient isometry, or None.
 
         Lorentzian.g:115-249 extends the integral map of the perpendicular.
@@ -1971,6 +1974,8 @@ class EichlerRecursion:
         with identity quotient action. The full GL(I), integral Hom(K,I)
         and saturated pointwise-perpendicular kernel preserve the prescribed
         reduction map throughout the finite integral-structure transporter.
+        Supplied radical images restrict the correction action on I; the
+        empty family gives pointwise lifts.
         """
         from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
 
@@ -1980,10 +1985,12 @@ class EichlerRecursion:
         rational_transport = self._reduced_isotropic_extension(reduction, reduction, isotropic, isotropic, reduced)
         if rational_transport.is_integral_on(lattice, lattice):
             return lattice.integral_isometry(rational_transport)
-        subspace = lattice.primitive_isotropic_subobject(*isotropic)
+        if radical_images is None:
+            subspace = lattice.primitive_isotropic_subobject(*isotropic)
+            radical_images = IsotropicInduction.sublattice_action_images(subspace)
         (denominator,) = tuple(rational_transport.denominator_ideal(lattice, lattice).ideal_generators())
         correction_action = self.isotropic_stabilizer_action(
-            isotropic, IsotropicInduction.sublattice_action_images(subspace),
+            isotropic, radical_images,
             quotient_generators=(), extension_denominator=_integer(denominator),
         )
         fraction_map = lattice.base_ring().fraction_field_map()
