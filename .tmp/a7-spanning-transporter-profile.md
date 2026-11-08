@@ -77,3 +77,15 @@ The complete hyperbolic-quadrant transporter and its coarse-colour stabilizer as
 
 
 At port 12b3d2da8986cd659fcdf45b7fbc402038b309f7/provider bc6bd572, the unchanged full spanning-cell transporter assertion passes with call time 28.92 seconds (33.24 seconds total). This pair includes direct exact pairing-column export and native Sage/PARI definite integral groups. The explicit unimodular witness and complete configuration equality remain the assertions. The original A7 discriminant-image assertion remains separate evidence.
+
+
+Provider 0580f98d evaluates a module map at a selected generator by returning its admitted image when the framing lift is that single coefficient one. This is the defining equation of linear extension. The QQ, QQ[t] and M2(QQ) assertions verify the supplied images, zero, negation and left coefficients with reversed target labels. Module admission, tensor bifunctoriality and direct sums pass as well.
+
+An isolated comparison of the same rational map and basis input, with 500 evaluations per repetition, gives:
+
+| Provider source | Repetition times, seconds |
+| --- | --- |
+| bc6bd572 | 2.0117, 2.4550, 2.0147 |
+| 0580f98d | 0.3551, 0.3888, 0.3263 |
+
+These measure basis evaluation, not a whole transporter or the complete A7 computation. The live original cases predate this provider change.
