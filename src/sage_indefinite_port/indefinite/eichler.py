@@ -815,8 +815,6 @@ class OrbitCoverModel:
         # unimodular, so every image is one of the listed classes, even when a
         # GRPeasy element moves a hyperbolic block of K onto a distinguished
         # U.  With y = k/d this is the vector of E-coordinates of g(k) modulo d.
-        labels = tuple(lattice.module_generating_set())
-
         def residue(coordinates, order: RingElement) -> tuple[SageQQ, ...]:
             modulus = int(order)
             return tuple(SageQQ(int(entry) % modulus) / modulus for entry in coordinates)
