@@ -105,3 +105,25 @@ At port 583b36d625bcbadcf1ef397b4140230ce3fa300e/provider 16c798dbea898555a13736
 
 
 The unchanged stable Dawes graph at port 12b3d2da8986cd659fcdf45b7fbc402038b309f7/provider bc6bd57262e576194e3c8764c83f3bb1d081ba52 is terminal at its original 3400-second bound. Its final stack is `_splitting_isometries_in_im_rho_from_image -> stable.group_generators -> LeftCosetGSets.schreier_generating_morphism -> _orbit_schreier_morphism`, specifically `augmentation(generator)` in the point-major word comprehension, then owned lattice-isometry composition and category admission. It establishes no graph result. This pair predates cab1d797. The full unchanged assertion now runs at 583b36d/16c798db with the retained table, direct selected-generator images and finite-coefficient span lifts, under its original bound. No additional category-admission change follows from the old-pair terminal stack.
+
+
+## Exact CVP recursive-key export
+
+A late ten-second A7 sample at bf7f5c0/cab1d797 reaches closest-vector enumeration and ordering. Inclusive times overlap: `_ExactCVPEngine.close_vector_coordinates` accounts for 5.35 seconds and `_dual_lll_ordered_solutions` for 2.50 seconds, including 2.30 seconds in the nested matrix-entry key comprehension. This interval does not establish a whole-computation proportion.
+
+Port `66576eb5ee65a2c436d1168f6e413960239c8982` reads the same Sage integer key entries by row-major matrix export and reverses each row. It preserves arbitrary precision, the complete candidate family, all attached distances, stable ties and witness identities. A zero-column product gives only empty keys, so the stable order is the original order. The pinned recursion is `src_latt/Shvec_exact.h:335-505`, where coordinate zero varies in the innermost loop. The inspected cached source has Git blob `ef258d2ae8836bcfdfc29ab911ea960bc13d3241`, matching the GitHub tree at pinned commit 1592b2463bc7a04d94e900bf8efbada607405d8d.
+
+| Isolated key comparison input | Value |
+| --- | ---: |
+| Rows | 84663 |
+| Columns | 9 |
+| Included large coordinate | 2^100 |
+
+Each comparison verifies every key and the complete stable sorting permutation, including repeated keys.
+
+| Export | Repetition seconds |
+| --- | --- |
+| Individual indexed matrix entries | 0.6442, 0.6148, 0.5494 |
+| Flat row-major entries | 0.3433, 0.4833, 0.3073 |
+
+The unchanged ordering assertions pass before and after the change. They check arbitrary-precision coordinate order, retained witness identity, empty families and zero rank. The unchanged non-diagonal positive shell and exact-isotropic shell assertions also pass; they retain their explicit ordered rows, exact norms and pairings. Ordering assertions finish in 4.49 seconds total; shell assertions finish in 5.35 seconds total. These small assertions use provider 16c798db. The active full A7 proof at bf7f5c0/cab1d797 predates this change and the finite-coefficient lift. Its full final-pair assertion remains required.
