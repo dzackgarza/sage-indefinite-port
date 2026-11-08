@@ -1938,8 +1938,8 @@ class EichlerRecursion:
             return target_lattice.integral_isometry(rational_transport, source=source_lattice)
 
         torsor = source_reduction.rational_lifts(target_reduction, reduced)
-        if torsor.integral_members().is_empty() is False:
-            integral = torsor.integral_base_point()
+        integral = torsor.integral_base_point_or_none()
+        if integral is not None:
             # The torsor fixes the reductions' chosen line generators; when one
             # is the negative of the supplied marking, the global sign of
             # IndefiniteForms.g:1639-1641 is applied against the actual vectors.
