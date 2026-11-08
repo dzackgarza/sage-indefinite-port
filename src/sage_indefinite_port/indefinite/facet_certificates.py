@@ -153,7 +153,10 @@ def is_facet_certificate(normal, incidence, ray_rows) -> bool:
     """
     normal = tuple(int(entry) for entry in normal)
     dimension = len(normal)
-    ray_rows = _integer_rows(ray_rows)
+    # Retain the ray sequence once. Pairings below convert every entry to
+    # an exact integer, and the incidence rank check converts its own rows;
+    # rebuilding every integer row first duplicates the full cone scan.
+    ray_rows = tuple(ray_rows)
     values = [sum(a * int(b) for a, b in zip(normal, row, strict=True)) for row in ray_rows]
     zeros = frozenset(index for index, value in enumerate(values) if value == 0)
     if zeros != frozenset(int(index) for index in incidence):

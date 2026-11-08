@@ -54,3 +54,14 @@ The complete retained facet representative family on the same ray configuration 
 | Retained native matrix certificate family | 4.523677 |
 
 The retained matrix substitution is slower and is rejected. Production certificate arithmetic stays unchanged. Sage's matrix constructor also does not accept `copy=False`; the measurement passes the retained matrix directly. Optional reproduction: `.tmp/a7-retained-matrix-certificate-benchmark.py`, `.json` and `.log`.
+
+## Exact certificate row retention
+
+The existing certificate converted all cone entries to integers twice: once when rebuilding the full row family, then again in its exact pairing expression. Retaining the sequence without the first conversion preserves all pairings and zero sets; the incidence rank operation still converts its own selected rows. An input iterable is materialized once, so both scans use the same rays.
+
+| Complete retained family | Seconds |
+| --- | ---: |
+| Original certificate | 5.236482 |
+| Retained row sequence | 3.282984 |
+
+Every certificate agrees on the complete actual facet representative family. The two executions use the same process and inputs; other independent local work was running, so this wall measurement is a scoped comparison. The analytic cube certificate, engine facet recovery and complete coordinate-hypersimplex orbit/word assertions pass together in 9.67 seconds. No assertion about whole A7 completion follows from this local improvement. Optional paired input script/results: `.tmp/a7-retained-sequence-certificate-benchmark.{py,json,log}`.
