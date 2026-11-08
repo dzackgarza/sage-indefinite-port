@@ -48,3 +48,17 @@ Port 1078c61 retains the actual indexed family on each perfect cell. Both source
 | 1078c61 / 9f578022 | 42.436372 | 25.293352 |
 
 These sequential measurements run beside the active original cases. They establish the displayed exact comparisons and do not isolate all wall-time variation. The configuration owner's realization cache uses weak values; retaining the input family does not by itself keep every derived realization alive. Complete A7 evidence remains required.
+
+
+At port afa1176/provider 25288942, a ten-second live sample reaches the facet-orbit walk. The sampled main thread spends 8.15 seconds in `facet_orbits._orbit`, including 4.15 seconds in its set-image generator. These are interval measurements, not whole-computation proportions.
+
+The [GAP orb manual](https://gap-packages.github.io/orb/doc/chap3.html) supplies complete enumeration and `TraceSchreierTreeForward` in the original generators. A standalone exact comparison used a cyclic permutation of 1024 positions acting on a consecutive half-set. Both routes return exactly the same complete orbit and every word. The boundary conversion dominates the measured GAP route:
+
+| Operation | Seconds |
+| --- | ---: |
+| Existing Python orbit and words | 0.2181 |
+| GAP enumeration | 0.1370 |
+| Bulk export of points and Schreier words | 3.7036 |
+| Construction of Python incidences and words | 0.2686 |
+
+This specimen does not support replacing the existing orbit realization with that export route. The production facet-orbit implementation is unchanged. Its full A7 result remains required.
