@@ -1707,7 +1707,7 @@ class LorentzianPerfectLocalBackend:
         from sage_indefinite_port.indefinite.facet_orbits import _cell_facet_orbits_from_permutations
 
         permutations = self.point_permutations_from_rows(cell, cell.rows)
-        records = _cell_facet_orbits_from_permutations(cell, permutations)
+        records = _cell_facet_orbits_from_permutations(cell, permutations, retain_words=retain_words)
         ray_count = len(cell.rows)
         full_mask = (1 << ray_count) - 1
 

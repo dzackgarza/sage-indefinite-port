@@ -381,7 +381,8 @@ def test_the_walk_refuses_a_cone_it_cannot_certify() -> None:
 
 
 @pytest.mark.parametrize("dimension", (2, 3, 6))
-def test_signed_cube_facet_representatives_have_the_full_orbit_size(dimension):
+@pytest.mark.parametrize("sign_changes", (False, True))
+def test_signed_cube_facet_representatives_have_the_full_orbit_size(dimension, sign_changes):
     r"""Signed coordinate permutations act transitively on the 2d facets of a d-cube."""
     from sage_indefinite_port.indefinite.facet_orbits import _facet_orbit_records
 
@@ -395,13 +396,23 @@ def test_signed_cube_facet_representatives_have_the_full_orbit_size(dimension):
             lambda row: (-row[0], *row[1:]),
         )
     )
+    if not sign_changes:
+        permutations = permutations[:2]
     records = tuple(_facet_orbit_records(rows, permutations, retain_words=False))
-    assert len(records) == 1
-    record = records[0]
-    assert record.orbit_size == 2 * dimension
-    assert record.incidence in {
+    assert len(records) == (1 if sign_changes else 2)
+    expected = {
         frozenset(index for index, row in enumerate(rows) if row[axis] == sign)
         for axis in range(dimension)
         for sign in (-1, 1)
     }
-    assert is_facet_certificate(record.normal, record.incidence, rows)
+    for record in records:
+        assert record.orbit_size == (2 * dimension if sign_changes else dimension)
+        assert record.incidence in expected
+        assert is_facet_certificate(record.normal, record.incidence, rows)
+    if not sign_changes:
+        signs = set()
+        for record in records:
+            for sign in (-1, 1):
+                if any(all(rows[index][axis] == sign for index in record.incidence) for axis in range(dimension)):
+                    signs.add(sign)
+        assert signs == {-1, 1}

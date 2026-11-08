@@ -38,6 +38,7 @@ from fractions import Fraction
 from math import gcd
 
 from sage.all import QQ, ZZ, Permutation, PermutationGroup, matrix, vector
+from sage.libs.gap.libgap import libgap
 
 from sage_indefinite_port.indefinite.facet_certificates import (
     is_facet_certificate,
@@ -56,7 +57,7 @@ __all__ = [
 
 @dataclass(frozen=True)
 class FacetOrbitRecord:
-    """One stabilizer orbit of facets: a representative and its transport witnesses."""
+    """A facet representative and exact orbit size, with optional full transport words."""
 
     normal: tuple[int, ...]
     incidence: frozenset[int]
@@ -400,8 +401,8 @@ def orbit_representatives(rays, permutations, *, level: int = 1):
     )
 
 
-def _facet_orbit_records(rays, permutations, *, level: int = 1):
-    r"""One certified facet record per orbit, retaining the walk's transport words.
+def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bool = True):
+    r"""One certified facet record per orbit, with transport words when requested.
 
     The source's splitting rules select direct dual description or adjacency decomposition. In the latter,
     the worklist holds one representative per orbit, and a
@@ -415,29 +416,51 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1):
     if dimension < 2:
         raise ArithmeticError("a cone of dimension below two has no facets in this sense")
     span_basis = _span_basis(rays)
-    if dimension == 2:
-        covered: set[frozenset[int]] = set()
-        for candidate in _normal_cone_through_ridge(rays, frozenset(), span_basis):
-            normal, incidence = _orient(rays, candidate)
-            if not is_facet_certificate(normal, incidence, rays):
-                raise ArithmeticError("a two-dimensional facet failed certification")
-            if incidence in covered:
-                continue
-            members = _orbit(incidence, permutations)
-            covered.update(members)
-            yield FacetOrbitRecord(normal, incidence, len(members), tuple(members.items()))
-        return
-
     group = PermutationGroup(
         [Permutation([int(position) + 1 for position in permutation]) for permutation in permutations],
         domain=tuple(range(1, len(rays) + 1)),
     )
+    order = int(group.order())
+    records: list[FacetOrbitRecord] = []
+    covered: set[frozenset[int]] = set()
+
+    def register(normal, incidence):
+        if retain_words:
+            if incidence in covered:
+                return None
+            members = _orbit(incidence, permutations)
+            covered.update(members)
+            record = FacetOrbitRecord(normal, incidence, len(members), tuple(members.items()))
+        else:
+            # SetFunctionality.g:174-201,234-260: compare orbit
+            # representatives by RepresentativeAction(..., OnSets), and
+            # retain |G|/|Stab_G(F)| rather than enumerating the orbit.
+            positions = sorted(position + 1 for position in incidence)
+            for previous in records:
+                if len(previous.incidence) != len(incidence):
+                    continue
+                target = sorted(position + 1 for position in previous.incidence)
+                if libgap.RepresentativeAction(group, positions, target, libgap.OnSets) != libgap.eval("fail"):
+                    return None
+            stabilizer_order = int(group.stabilizer(positions, action="OnSets").order())
+            record = FacetOrbitRecord(normal, incidence, order // stabilizer_order, ())
+        records.append(record)
+        return record
+
+    if dimension == 2:
+        for candidate in _normal_cone_through_ridge(rays, frozenset(), span_basis):
+            normal, incidence = _orient(rays, candidate)
+            if not is_facet_certificate(normal, incidence, rays):
+                raise ArithmeticError("a two-dimensional facet failed certification")
+            record = register(normal, incidence)
+            if record is not None:
+                yield record
+        return
     # POLY_Heuristics.h:320-328, StandardHeuristicSplitting, in rule order.
     # LORENTZ_GetGeneratorsAutom_Reduced sets dimEXT = n + 1, so the
     # initial n-dimensional cone has level one. Each facet lowers rank by
     # one. Both source dispatches compute the complete exact facet set;
     # these rules select computation, not a search bound.
-    order = int(group.order())
     if len(rays) - dimension < 20:
         split = False
     elif order > 5000 and level < 3:
@@ -458,36 +481,34 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1):
         # POLY_DirectDualDesc.h:334-337 rejects an empty direct result.
         if not hyperplanes:
             raise ArithmeticError("the direct facet computation returned no facets")
-        covered = set()
         for row in hyperplanes:
             normal, incidence = _orient(rays, _primitive(row))
             if not is_facet_certificate(normal, incidence, rays):
                 raise ArithmeticError("a direct facet failed certification")
-            if incidence in covered:
-                continue
-            members = _orbit(incidence, permutations)
-            covered.update(members)
-            yield FacetOrbitRecord(normal, incidence, len(members), tuple(members.items()))
+            record = register(normal, incidence)
+            if record is not None:
+                yield record
         return
     seed_normal = _seed_facet(rays, dimension)
     seed = _incidence(rays, seed_normal)
     if not is_facet_certificate(seed_normal, seed, rays):
         raise ArithmeticError("the seed facet failed certification")
-    representatives: list[tuple[frozenset[int], tuple[int, ...]]] = [(seed, seed_normal)]
-    members = _orbit(seed, permutations)
-    covered = set(members)
-    orbit_sizes = [len(covered)]
+    seed_record = register(seed_normal, seed)
+    assert seed_record is not None
     pending = [0]
-    yield FacetOrbitRecord(seed_normal, seed, len(members), tuple(members.items()))
+    yield seed_record
     while pending:
         index = pending.pop()
-        incidence, normal = representatives[index]
+        record = records[index]
+        incidence, normal = record.incidence, record.normal
         positions = sorted(incidence)
-        local_permutations = _stabilizer_on_facet(group, incidence, orbit_sizes[index])
+        local_permutations = _stabilizer_on_facet(group, incidence, record.orbit_size)
         local_rays, local_dimension = _local_coordinates(rays, incidence)
         if local_dimension < 2:
             continue
-        for local_record in _facet_orbit_records(local_rays, local_permutations, level=level + 1):
+        for local_record in _facet_orbit_records(
+            local_rays, local_permutations, level=level + 1, retain_words=retain_words
+        ):
             ridge = frozenset(positions[offset] for offset in sorted(local_record.incidence))
             for candidate in _normal_cone_through_ridge(rays, ridge, span_basis):
                 if _same_ray(candidate, normal):
@@ -502,14 +523,10 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1):
                         "a facet adjacent across a ridge failed certification (incidence size "
                         f"{len(adjacent)}); excluding it is not proved, so the walk refuses to continue"
                     )
-                members = _orbit(adjacent, permutations)
-                if members.keys() & covered:
-                    continue
-                covered.update(members)
-                representatives.append((adjacent, oriented))
-                orbit_sizes.append(len(members))
-                pending.append(len(representatives) - 1)
-                yield FacetOrbitRecord(oriented, adjacent, len(members), tuple(members.items()))
+                adjacent_record = register(oriented, adjacent)
+                if adjacent_record is not None:
+                    pending.append(len(records) - 1)
+                    yield adjacent_record
 
 
 def cell_facet_orbits(cell, stabilizer) -> tuple[FacetOrbitRecord, ...]:
@@ -525,7 +542,7 @@ def cell_facet_orbits(cell, stabilizer) -> tuple[FacetOrbitRecord, ...]:
     return _cell_facet_orbits_from_permutations(cell, permutations)
 
 
-def _cell_facet_orbits_from_permutations(cell, permutations) -> tuple[FacetOrbitRecord, ...]:
+def _cell_facet_orbits_from_permutations(cell, permutations, *, retain_words: bool = True) -> tuple[FacetOrbitRecord, ...]:
     r"""Walk facet orbits using the certified ray action supplied by the caller.
 
     Lorentzian.g:1318-1322 passes GRPperm to adjacency decomposition.
@@ -538,7 +555,7 @@ def _cell_facet_orbits_from_permutations(cell, permutations) -> tuple[FacetOrbit
         raise ArithmeticError("the cell must be pointed: the sum of its rays has to be an interior point")
 
     records = []
-    for record in _facet_orbit_records(rays, permutations):
+    for record in _facet_orbit_records(rays, permutations, retain_words=retain_words):
         if not is_facet_certificate(record.normal, record.incidence, rays):
             raise ArithmeticError(f"the walk produced an uncertified facet with incidence of size {len(record.incidence)}")
         records.append(record)
