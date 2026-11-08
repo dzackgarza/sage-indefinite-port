@@ -20,7 +20,7 @@ import weakref
 from math import gcd
 from random import choice, randrange, sample
 
-from sage_extensions.all import Lattices
+from sage_extensions.all import Lattices, Modules
 from sage_extensions.categories.eichler_criterion import TwoUEichlerModel
 from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
 from sage_extensions.categories.modules.framed.formed.discriminant_modules import (
@@ -473,7 +473,16 @@ class EichlerEnvelope:
         # base change of each integral isometry.
         generators = tuple(_isometry_from_row_matrix(rational_envelope, generator) for generator in OrbitCoverModel.source_generator_matrices(self.model))
         rational_lattice = self.rational_isometry.domain()
-        image = rational_envelope.integral_structure(tuple(self.rational_isometry(rational_lattice.module_generator(label)) for label in self.lattice.module_generating_set()))
+        lattice_labels = tuple(self.lattice.module_generating_set())
+        vectors = tuple(self.rational_isometry(rational_lattice.module_generator(label)) for label in lattice_labels)
+        restricted = rational_envelope.integral_structure(vectors).codomain()
+        # ApproximateModels.h:1309-1349 retains Embed on the supplied
+        # lattice basis. Keep that inclusion, rather than replace its domain
+        # by the canonical image module, so full Schreier factors act in L.
+        image = Modules(self.lattice.base_ring()).Mor(self.lattice, restricted)({
+            label: restricted.wrap(point)
+            for label, point in zip(lattice_labels, vectors, strict=True)
+        })
         # sigma = N phi is integral, so phi(L) lies in (1/N)E, which the integral
         # generators of A_E preserve: the stable containing module.
         inverse_scale = _owned_engine_element(
@@ -892,6 +901,14 @@ class OrbitCoverModel:
         """
         if self.envelope is None:
             return tuple(self.model.approximate_generating_family())
+        if not self.envelope.is_integral_identification():
+            # The same complete stabilizer of Embed (source :1318-1349),
+            # conjugated in its supplied lattice frame. The existing source
+            # Nielsen reduction preserves the full integral group, including
+            # the kernel, before constructing owned lattice isometries.
+            from sage_indefinite_port.indefinite.recursive import _integral_generator_set
+
+            return _integral_generator_set(self.lattice, self.envelope.stabilizer_of_lattice())
         # :1337-1349 forms fGen = Embed * eGen * EmbedInv for each stabilizer
         # generator and requires it to be integral.  In rows, with R the
         # matrix of phi (row i the E-coordinates of phi(e_i)) and G that of a
@@ -912,15 +929,12 @@ class OrbitCoverModel:
         embedding_inverse = embedding.inverse()
         identity = identity_matrix(SageQQ, len(lattice_labels))
         conjugates: dict[tuple[int, ...], LatticeIsometryMethods] = {}
-        if envelope.is_integral_identification():
-            # ApproximateModels.h:1337-1349 conjugates the stabilizer's
-            # generators. Here that stabilizer is A_E itself.
-            generators = (
-                _isometry_from_row_matrix(rational_envelope, action)
-                for action in self.source_generator_matrices(self.model)
-            )
-        else:
-            generators = envelope.stabilizer_of_lattice().stabilizer().group_generators()
+        # ApproximateModels.h:1337-1349 conjugates the stabilizer's
+        # generators. Here that stabilizer is A_E itself.
+        generators = (
+            _isometry_from_row_matrix(rational_envelope, action)
+            for action in self.source_generator_matrices(self.model)
+        )
         for generator in generators:
             conjugate = embedding * matrix(SageQQ, [coordinates(generator(rational_envelope.module_generator(label))) for label in envelope_labels]) * embedding_inverse
             if conjugate.denominator() != 1:
