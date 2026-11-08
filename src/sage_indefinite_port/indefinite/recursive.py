@@ -1165,6 +1165,14 @@ class EichlerRecursion:
         source_profile = AttackProfile.from_lattice(source)
         target_profile = AttackProfile.from_lattice(target)
         signed_source, signed_target = source_profile.signed_view, target_profile.signed_view
+        if source_profile.positive_index != 1 and int(source.witt_index()) < 2:
+            # The approximate model needs two rational hyperbolic planes (#40).
+            from sage_extensions.categories.lattice_engines import isometric_within_genus
+            from sage_indefinite_port.indefinite.low_witt import low_witt_isometry_witness
+
+            if source.genus() != target.genus() or not isometric_within_genus(source, target):
+                return None
+            return low_witt_isometry_witness(source, target)
         match source_profile.positive_index:
             case 1:
                 witness = lorentzian_isometry(signed_source, signed_target)
