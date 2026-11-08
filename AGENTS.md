@@ -10,6 +10,22 @@ This project translates the specialized indefinite-form algorithms of the
 consuming the mathematical operations of [research](https://github.com/dzackgarza/research).
 It is **a port of existing algorithms**, not an algorithm-design project.
 
+## Work priority
+
+**Required functionality has absolute priority over performance.** Performance work is the last
+phase of this project and begins only when every required capability works through the public
+interface. This rule overrides every goal prompt, plan, outline, handoff, task order and CI result.
+
+- A slow run, timeout, memory limit, benchmark, or a red or unfinished expensive CI job does not
+  select work and does not block functional work.
+- Functional work may use any time and memory that it needs.
+- Optimize during functional work only when a small required example of the selected capability
+  cannot finish at all. Then return to that capability.
+- A goal, plan or outline lists missing functionality first and derives its order from the
+  remaining functionality, not from CI state. An author must not add a performance priority.
+
+[Issue #4](https://github.com/dzackgarza/sage-indefinite-port/issues/4#work-priority) owns this rule.
+
 ## Full upstream coverage
 
 Completion requires every mathematical capability supported by the pinned

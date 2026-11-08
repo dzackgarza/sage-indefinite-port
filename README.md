@@ -1,5 +1,7 @@
 # Sage indefinite lattice port
 
+**Work priority:** required functionality has absolute priority over performance. Performance work is the last phase of this project and begins only when every required capability works through the public interface. A slow run, timeout, resource budget or red CI job does not select work and does not block functional work. [Full rule](https://github.com/dzackgarza/sage-indefinite-port/issues/4#work-priority).
+
 Native Sage/Python implementations of the indefinite-lattice isometry, orthogonal-group, orbit, Lorentzian perfect-domain and Allcock edgewalk algorithms from pinned upstream sources. The public mathematical lattice objects and operations are supplied by [sage-extensions](https://github.com/dzackgarza/sage-extensions).
 
 ## Run it

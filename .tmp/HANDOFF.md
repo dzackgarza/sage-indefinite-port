@@ -4,6 +4,8 @@
 
 Finish the pinned indefinite-lattice algorithms and public consumers, then deliver every retained arithmetic extension in #69. Functional implementation has priority. Each implemented branch needs a small independent mathematical example through its public operation.
 
+**Work priority:** required functionality has absolute priority over performance. Performance work is the last phase of this project and begins only when every required capability works through the public interface. A slow run, timeout, resource budget or red CI job does not select work and does not block functional work. [Full rule](https://github.com/dzackgarza/sage-indefinite-port/issues/4#work-priority).
+
 ## Completion condition
 
 Return the specified mathematical objects through sage-extensions, with complete integral generators, actual finite images, subgroup restrictions, source automorphism actions and exact witnesses. Establish the unchanged frozen assertions at one published port/provider pair. Interrupted cases remain open.
