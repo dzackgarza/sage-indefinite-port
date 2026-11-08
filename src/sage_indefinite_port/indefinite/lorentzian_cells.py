@@ -2356,6 +2356,9 @@ class LorentzianPerfectLocalBackend:
                 return False
             return source_index, target_index
 
+        # AutomorphismPolytope.g:240-256 supplies both Qinv and LorMat to
+        # configuration isomorphism. Retain both forms in each joint prefix
+        # signature; their common determinant scaling was fixed above.
         def backtrack(images, source_columns, target_columns, certified_target_basis=None):
             nonlocal subgroup, first_witness
             if first_witness is not None:
@@ -2571,14 +2574,14 @@ class LorentzianPerfectLocalBackend:
                         # exact multiset comparison.
                         if next_source_columns is None:
                             source_column = source_pairings.column(choice)
-                            next_source_columns = source_columns + (source_column,)
+                            next_source_columns = source_columns + (source_column, source_auxiliary.column(choice))
                             source_signature_counts = Counter(
                                 (colour, tuple(column[index] for column in next_source_columns))
                                 for index, colour in enumerate(source_colours)
                             )
                         assert next_source_columns is not None and source_signature_counts is not None
                         target_column = target_pairings.column(j)
-                        next_target_columns = target_columns + (target_column,)
+                        next_target_columns = target_columns + (target_column, target_auxiliary.column(j))
                         if _configuration_signature_multisets_match(
                             source_colours,
                             next_source_columns,
@@ -2621,14 +2624,14 @@ class LorentzianPerfectLocalBackend:
                     # assignment order keeps source/target coordinates aligned.
                     if next_source_columns is None:
                         source_column = source_pairings.column(choice)
-                        next_source_columns = source_columns + (source_column,)
+                        next_source_columns = source_columns + (source_column, source_auxiliary.column(choice))
                         source_signature_counts = Counter(
                             (colour, tuple(column[index] for column in next_source_columns))
                             for index, colour in enumerate(source_colours)
                         )
                     assert next_source_columns is not None and source_signature_counts is not None
                     target_column = target_pairings.column(j)
-                    next_target_columns = target_columns + (target_column,)
+                    next_target_columns = target_columns + (target_column, target_auxiliary.column(j))
                     if _configuration_signature_multisets_match(
                         source_colours,
                         next_source_columns,
