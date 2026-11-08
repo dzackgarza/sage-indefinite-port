@@ -9,12 +9,15 @@
 | centralizers | passed | 5 |
 | double_cosets | passed | 19 |
 | isometry | passed | 166 |
-| isotropic_orbits | passed | 8 |
+| isotropic_orbits | passed | 9 |
 | perfect_domains | passed | 92 |
+| orthogonal_group | passed | 8 |
+| reflective | passed | 5 |
+| vector_orbits | passed | 4 |
 
 ## Failed assertions
 
-- `boundaries-2`: `test_dawes_buildings_have_the_published_counts[dawes_L2_gamma2]` returns `(2, 2, 3)` instead of `(3, 2, 4)`. The line and flag counts disagree; the plane count agrees. The current source/provider pair needs the unchanged assertion before this defect can be retired.
+- `boundaries-2`: `test_dawes_buildings_have_the_published_counts[dawes_L2_gamma2]` returns `(2, 2, 3)` instead of `(3, 2, 4)`. The line and flag counts disagree; the plane count agrees. The pinned line-orbit lemma and the independent argument in `references/dawes-L2-boundary.md` establish (2,2,3). The source theorem cited by the fixture contradicts that lemma. Issue #33 comment 6716895523 records the proposed correction; its application is pending a decision against the unchanged-suite requirement. The frozen assertion still fails.
 - `boundaries-3`: `test_dawes_building_incidence_graph_is_the_published_figure[dawes_2U2_A2_stable]` fails at `lattice.base_ring()(rank)` in `_isotropic_orbit_representatives`: the rank is a native Sage integer, rejected as a scalar of the owned coefficient ring. The graph assertion is unreached. Rank is an integer index; accepting it must preserve integral-index validation.
 
 ## Inspected artifacts without JUnit
@@ -30,6 +33,9 @@
 - `acceptance-isotropic_orbits-3`
 - `acceptance-boundaries-17`
 - `acceptance-isotropic_orbits-2`
+- `acceptance-orthogonal_group-1`
+- `acceptance-isotropic_orbits-12`
+- `acceptance-isotropic_orbits-6`
 
 ## Recorded case IDs
 
@@ -335,3 +341,27 @@
 | `acceptance-perfect_domains-7` | `test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_30]` | passed |
 | `acceptance-perfect_domains-7` | `test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_35]` | passed |
 | `acceptance-perfect_domains-7` | `test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_36]` | passed |
+| `acceptance-vector_orbits-2` | `test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_30]` | passed |
+| `acceptance-vector_orbits-1` | `test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek[2d_2]` | passed |
+| `acceptance-reflective-0` | `test_edgewalk_branch_representative_sample` | passed |
+| `acceptance-reflective-0` | `test_edgewalk_period_action_matrix_uses_coordinate_label_order` | passed |
+| `acceptance-reflective-0` | `test_binary_cycle_coordinate_order_and_period_certificate` | passed |
+| `acceptance-reflective-0` | `test_vinberg_roots_match_oscars_chamber_up_to_isometry` | passed |
+| `acceptance-reflective-0` | `test_e10_simple_roots_match_dutour_sikiric_hulek` | passed |
+| `acceptance-orthogonal_group-5` | `test_mertens_omega_and_minus_one_generate_o_l` | passed |
+| `acceptance-orthogonal_group-5` | `test_zero_form_orthogonal_group_is_the_full_general_linear_group` | passed |
+| `acceptance-orthogonal_group-5` | `test_orthogonal_group_of_the_hyperbolic_plane_has_order_four` | passed |
+| `acceptance-orthogonal_group-5` | `test_signed_discriminant_image_of_u_plus_minus_three_is_all_of_o_q` | passed |
+| `acceptance-orthogonal_group-4` | `test_degenerate_orthogonal_group_embeds_non_diagonal_complement` | passed |
+| `acceptance-vector_orbits-0` | `test_anisotropic_binary_vector_classes_use_primitive_embeddings` | passed |
+| `acceptance-isotropic_orbits-9` | `test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_2_1]` | passed |
+| `acceptance-vector_orbits-3` | `test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[0]` | passed |
+| `acceptance-orthogonal_group-2` | `test_degenerate_orthogonal_group_contains_radical_shear_and_gl_action` | passed |
+| `acceptance-orthogonal_group-3` | `test_degenerate_orthogonal_group_generates_rank_two_radical_action` | passed |
+| `acceptance-orthogonal_group-0` | `test_lorentzian_generators_match_polyhedral_common[LORENTZ_OrthogonalGroup0]` | passed |
+
+| Newly inspected index assertion | Outcome | Seconds |
+| --- | --- | ---: |
+| I_2_1 | passed | 3002.232 |
+
+The new orthogonal-group reports include LORENTZ_OrthogonalGroup0 and Mertens. A7 and the rank-one-labelled published-representative and I_2_10 plane-class shards supply logs without JUnit; their final assertions remain unproved. All reports above retain the port/provider pair in the heading.
