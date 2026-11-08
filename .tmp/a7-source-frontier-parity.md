@@ -39,6 +39,18 @@ The complete facet operation on the retained large configuration finishes at pub
 | Wall seconds | 284.201973 |
 | CPU seconds | 287.707900 |
 
-This measures the finite facet core supplied with its actual stabilizer action. The earlier bounded isolated whole-cell walk also included stabilizer construction and diagnostic capture, so its time is not a like-for-like benchmark ratio. The original full A7 assertion is now active at 616a7fe/cfee1892 under its unchanged original 1800-second thread bound. The finite core result does not establish the whole orthogonal group or its discriminant image.
+This measures the finite facet core supplied with its actual stabilizer action. The earlier bounded isolated whole-cell walk also included stabilizer construction and diagnostic capture, so its time is not a like-for-like benchmark ratio. The original full A7 assertion at 616a7fe/cfee1892 is terminal at its unchanged original 1800-second thread bound. Its terminal stack is in exact facet certification and integer row conversion. The finite core result does not establish the whole orthogonal group or its discriminant image.
 
 Optional data: `.tmp/a7-bb69c92-facet-comparison/base-0.pickle`, `.tmp/a7-frontier-source-large-cell.json` and `.tmp/a7-frontier-source-large-cell-records.pickle`.
+
+## Retained matrix certificate measurement
+
+The complete retained facet representative family on the same ray configuration was checked with the existing Python row arithmetic and with one native integer ray matrix retained across all certificates. Every certificate is true in both executions. Matrix construction is charged separately.
+
+| Operation | Seconds |
+| --- | ---: |
+| One native matrix construction | 0.299812 |
+| Existing complete certificate family | 3.158803 |
+| Retained native matrix certificate family | 4.523677 |
+
+The retained matrix substitution is slower and is rejected. Production certificate arithmetic stays unchanged. Sage's matrix constructor also does not accept `copy=False`; the measurement passes the retained matrix directly. Optional reproduction: `.tmp/a7-retained-matrix-certificate-benchmark.py`, `.json` and `.log`.
