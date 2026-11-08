@@ -378,3 +378,30 @@ def test_the_walk_refuses_a_cone_it_cannot_certify() -> None:
     rays = [(1, 0), (-1, 0), (0, 1)]
     with pytest.raises(Exception):
         cone_facets(rays)
+
+
+@pytest.mark.parametrize("dimension", (2, 3, 6))
+def test_signed_cube_facet_representatives_have_the_full_orbit_size(dimension):
+    r"""Signed coordinate permutations act transitively on the 2d facets of a d-cube."""
+    from sage_indefinite_port.indefinite.facet_orbits import _facet_orbit_records
+
+    rows = tuple(tuple(signs) + (1,) for signs in itertools.product((-1, 1), repeat=dimension))
+    positions = {row: index for index, row in enumerate(rows)}
+    permutations = tuple(
+        tuple(positions[image(row)] for row in rows)
+        for image in (
+            lambda row: row[1:dimension] + row[:1] + (1,),
+            lambda row: (row[1], row[0], *row[2:]),
+            lambda row: (-row[0], *row[1:]),
+        )
+    )
+    records = tuple(_facet_orbit_records(rows, permutations, retain_words=False))
+    assert len(records) == 1
+    record = records[0]
+    assert record.orbit_size == 2 * dimension
+    assert record.incidence in {
+        frozenset(index for index, row in enumerate(rows) if row[axis] == sign)
+        for axis in range(dimension)
+        for sign in (-1, 1)
+    }
+    assert is_facet_certificate(record.normal, record.incidence, rows)
