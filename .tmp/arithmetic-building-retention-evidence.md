@@ -39,3 +39,19 @@ Both bounded direct runs execute the entire unchanged owner assertion and exit s
 The generated initial parameter labels rank0 through rank3 denote the listed inputs; the committed test uses explicit U/2U/3U/4U labels. The assertions are unchanged.
 
 The original stable Dawes graph still requires its complete frozen figure at the new published port/provider pair. Its graph vertices, integral stabilizer kernels, incidence multiplicities and exact subgroup lifts remain required. The Gamma2 fixture decision and all final-pair/full-source/arithmetic obligations remain open.
+
+## Stable Dawes incidence failure
+
+The unchanged `test_dawes_building_incidence_graph_is_the_published_figure[dawes_2U2_A2_stable]` at port 2945e789ec5a6fe0ef76ee39a0aeafc237f85763/provider aa9b99f01f1107af240f88205272112f1c78c493 is terminal with a mathematical exception. The retained JUnit is `.tmp/dawes-incidence-2945e78-aa9b99f0.xml`.
+
+| Result | Value |
+| --- | --- |
+| Original bound seconds | 3400 |
+| Session seconds | 2483.55 |
+| Failure | ArithmeticError in PredicateSubgroups.tits_building_incidence |
+| Matching line cusps for the failing flag | 0 |
+| Matching plane cusps for the failing flag | 1 |
+
+Both cusp families were constructed, but no line-cusp count or complete graph assertion passed in this node. The incidence constructor correctly rejects the missing line endpoint. The terminal log has no retained coordinates for that flag. The cause could lie in orbit representatives, the primitive-isotropic universe decision, or the exact subgroup transporter; the exception alone does not select one.
+
+A bounded diagnostic at port 604d762/provider d0431b3f executes the same stable-group incidence operation and retains the failing flag terms, actual Gram, every cusp-representative inclusion and every term's universe-membership decision if this condition recurs. Optional local inputs/log: `.tmp/dawes-incidence-failed-input.pickle`, `.tmp/dawes-incidence-input-capture.log`. Its in-process bound is 3400 seconds. Preserve it until terminal. Reduce the actual failed membership to an owner assertion before changing the generic operation. Every incidence still needs a unique line endpoint, a unique plane endpoint and their exact subgroup witnesses.
