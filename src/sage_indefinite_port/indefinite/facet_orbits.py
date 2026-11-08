@@ -393,7 +393,15 @@ def _stabilizer_on_facet(group, incidence, orbit_size):
 
 
 def orbit_representatives(rays, permutations, *, level: int = 1):
-    r"""One certified ``(incidence, normal)`` per orbit, by the orbit-pruned adjacency decomposition.
+    r"""The certified incidences and normals of the complete facet-orbit walk."""
+    return tuple(
+        (record.incidence, record.normal)
+        for record in _facet_orbit_records(rays, permutations, level=level)
+    )
+
+
+def _facet_orbit_records(rays, permutations, *, level: int = 1):
+    r"""One certified facet record per orbit, retaining the walk's transport words.
 
     The source's splitting rules select direct dual description or adjacency decomposition. In the latter,
     the worklist holds one representative per orbit, and a
@@ -408,7 +416,6 @@ def orbit_representatives(rays, permutations, *, level: int = 1):
         raise ArithmeticError("a cone of dimension below two has no facets in this sense")
     span_basis = _span_basis(rays)
     if dimension == 2:
-        representatives = []
         covered: set[frozenset[int]] = set()
         for candidate in _normal_cone_through_ridge(rays, frozenset(), span_basis):
             normal, incidence = _orient(rays, candidate)
@@ -416,9 +423,10 @@ def orbit_representatives(rays, permutations, *, level: int = 1):
                 raise ArithmeticError("a two-dimensional facet failed certification")
             if incidence in covered:
                 continue
-            covered.update(_orbit(incidence, permutations))
-            representatives.append((incidence, normal))
-        return tuple(representatives)
+            members = _orbit(incidence, permutations)
+            covered.update(members)
+            yield FacetOrbitRecord(normal, incidence, len(members), tuple(members.items()))
+        return
 
     group = PermutationGroup(
         [Permutation([int(position) + 1 for position in permutation]) for permutation in permutations],
@@ -450,7 +458,6 @@ def orbit_representatives(rays, permutations, *, level: int = 1):
         # POLY_DirectDualDesc.h:334-337 rejects an empty direct result.
         if not hyperplanes:
             raise ArithmeticError("the direct facet computation returned no facets")
-        representatives = []
         covered = set()
         for row in hyperplanes:
             normal, incidence = _orient(rays, _primitive(row))
@@ -458,17 +465,20 @@ def orbit_representatives(rays, permutations, *, level: int = 1):
                 raise ArithmeticError("a direct facet failed certification")
             if incidence in covered:
                 continue
-            covered.update(_orbit(incidence, permutations))
-            representatives.append((incidence, normal))
-        return tuple(representatives)
+            members = _orbit(incidence, permutations)
+            covered.update(members)
+            yield FacetOrbitRecord(normal, incidence, len(members), tuple(members.items()))
+        return
     seed_normal = _seed_facet(rays, dimension)
     seed = _incidence(rays, seed_normal)
     if not is_facet_certificate(seed_normal, seed, rays):
         raise ArithmeticError("the seed facet failed certification")
     representatives: list[tuple[frozenset[int], tuple[int, ...]]] = [(seed, seed_normal)]
-    covered = set(_orbit(seed, permutations))
+    members = _orbit(seed, permutations)
+    covered = set(members)
     orbit_sizes = [len(covered)]
     pending = [0]
+    yield FacetOrbitRecord(seed_normal, seed, len(members), tuple(members.items()))
     while pending:
         index = pending.pop()
         incidence, normal = representatives[index]
@@ -477,8 +487,8 @@ def orbit_representatives(rays, permutations, *, level: int = 1):
         local_rays, local_dimension = _local_coordinates(rays, incidence)
         if local_dimension < 2:
             continue
-        for ridge_local, _ridge_normal in orbit_representatives(local_rays, local_permutations, level=level + 1):
-            ridge = frozenset(positions[offset] for offset in sorted(ridge_local))
+        for local_record in _facet_orbit_records(local_rays, local_permutations, level=level + 1):
+            ridge = frozenset(positions[offset] for offset in sorted(local_record.incidence))
             for candidate in _normal_cone_through_ridge(rays, ridge, span_basis):
                 if _same_ray(candidate, normal):
                     continue
@@ -499,7 +509,7 @@ def orbit_representatives(rays, permutations, *, level: int = 1):
                 representatives.append((adjacent, oriented))
                 orbit_sizes.append(len(members))
                 pending.append(len(representatives) - 1)
-    return tuple(representatives)
+                yield FacetOrbitRecord(oriented, adjacent, len(members), tuple(members.items()))
 
 
 def cell_facet_orbits(cell, stabilizer) -> tuple[FacetOrbitRecord, ...]:
@@ -528,16 +538,8 @@ def _cell_facet_orbits_from_permutations(cell, permutations) -> tuple[FacetOrbit
         raise ArithmeticError("the cell must be pointed: the sum of its rays has to be an interior point")
 
     records = []
-    for incidence, normal in orbit_representatives(rays, permutations):
-        if not is_facet_certificate(normal, incidence, rays):
-            raise ArithmeticError(f"the walk produced an uncertified facet with incidence of size {len(incidence)}")
-        members = _orbit(incidence, permutations)
-        records.append(
-            FacetOrbitRecord(
-                normal=normal,
-                incidence=incidence,
-                orbit_size=len(members),
-                words=tuple((member, word) for member, word in members.items()),
-            )
-        )
+    for record in _facet_orbit_records(rays, permutations):
+        if not is_facet_certificate(record.normal, record.incidence, rays):
+            raise ArithmeticError(f"the walk produced an uncertified facet with incidence of size {len(record.incidence)}")
+        records.append(record)
     return tuple(records)

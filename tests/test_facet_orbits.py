@@ -27,6 +27,8 @@ from sage_indefinite_port.indefinite.facet_orbits import (
 )
 from sage_indefinite_port.indefinite.lorentzian_cells import (
     NONNEGATIVE_SQUARES,
+    ZERO_SQUARES,
+    LorentzianPerfectCell,
     LorentzianPerfectLocalBackend,
 )
 from tests.acceptance.consumer import lattice
@@ -137,6 +139,58 @@ def test_cube_cone_facets_and_orbits_match_the_closed_form() -> None:
         for incidence, normal in facets.items():
             assert is_facet_certificate(normal, incidence, rays)
         assert all(len(incidence) == 2 ** (n - 2) for incidence in facets)
+
+
+def test_six_cube_facet_records_retain_the_complete_signed_permutation_action():
+    r"""The signed symmetries of a six-cube act transitively on its twelve facets."""
+    rows = tuple(tuple(signs) + (1,) for signs in itertools.product((-1, 1), repeat=6))
+    ambient = lattice([[(-1 if i < 6 else 6) if i == j else 0 for j in range(7)] for i in range(7)])
+    labels = tuple(ambient.module_generating_set())
+    basis = tuple(ambient.module_generators())
+    cycle_images = tuple(basis[(i + 1) % 6] for i in range(6)) + (basis[6],)
+    swap_images = (basis[1], basis[0], *basis[2:])
+    sign_images = (-basis[0], *basis[1:])
+    stabilizer = tuple(
+        ambient.Aut()(dict(zip(labels, images, strict=True)))
+        for images in (cycle_images, swap_images, sign_images)
+    )
+    cell = LorentzianPerfectCell(ambient, rows, ZERO_SQUARES)
+    records = cell_facet_orbits(cell, stabilizer)
+    expected = {
+        frozenset(index for index, row in enumerate(rows) if row[axis] == sign)
+        for axis in range(6)
+        for sign in (-1, 1)
+    }
+    assert len(records) == 1
+    record = records[0]
+    assert record.orbit_size == 12
+    assert set(dict(record.words)) == expected
+    assert is_facet_certificate(record.normal, record.incidence, rows)
+    permutations = ray_permutations_from_stabilizer(cell, stabilizer)
+    for member, word in record.words:
+        moved = record.incidence
+        for index in word:
+            moved = frozenset(permutations[index][position] for position in moved)
+        assert moved == member
+
+
+def test_null_quadrant_facets_retain_the_swap_transport():
+    r"""Swapping the null basis of U exchanges the two facets of its positive quadrant."""
+    ambient = lattice([[0, 1], [1, 0]])
+    labels = tuple(ambient.module_generating_set())
+    e, f = tuple(ambient.module_generators())
+    swap = ambient.Aut()({labels[0]: f, labels[1]: e})
+    cell = LorentzianPerfectCell(ambient, ((1, 0), (0, 1)), ZERO_SQUARES)
+    records = cell_facet_orbits(cell, (swap,))
+    assert len(records) == 1
+    record = records[0]
+    assert record.orbit_size == 2
+    assert set(dict(record.words)) == {frozenset((0,)), frozenset((1,))}
+    for member, word in record.words:
+        moved = record.incidence
+        for _index in word:
+            moved = frozenset(1 - position for position in moved)
+        assert moved == member
 
 
 def _group_closure(permutations, limit=20000):
