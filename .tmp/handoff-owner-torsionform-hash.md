@@ -1,3 +1,5 @@
+> **Last-phase record.** This note does not select work. The current handoff is [HANDOFF.md](HANDOFF.md).
+
 # sage-extensions: hashing a torsion-form automorphism costs a GAP round-trip
 
 Pinned `sage-extensions` **`9dc89ac1d9e4ab074da8872386aaf5b9df290f63`**; line numbers its own. No

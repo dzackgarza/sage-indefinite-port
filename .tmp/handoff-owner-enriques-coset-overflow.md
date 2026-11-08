@@ -1,3 +1,5 @@
+> **Last-phase record.** This note does not select work. The current handoff is [HANDOFF.md](HANDOFF.md).
+
 # Measured: Enriques case_87 fails in the provider coset/Schreier path, not in the port
 
 **Owner:** `sage-extensions` (`categories/group/predicate_subgroups.py` and the coset machinery).
