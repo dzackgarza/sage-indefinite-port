@@ -26,3 +26,24 @@ The unchanged O_plus_N line-and-plane assertion at a170e2e/0580f98d is terminal 
 
 
 A one-shot snapshot of the active I_1_1 proof at 583b36d/16c798db supplies full integral basis actions seen at that execution point. It is a prefix of the lazy Schreier family, with raw-key insertion order unavailable; future family entries are not captured. It cannot establish the whole original stabilizer or the original input order. The retained normalized actions retain their full inverses. Snapshot creation takes 0.0169 seconds through Python's documented remote debugger interface, included in the proof's original bound. The optional local input is `.tmp/integral-state-2942513.pickle`. Use the exact matrix data to compare the pinned reduction before making another reduction change; finite-image duplicates do not certify redundancy of these full integral maps.
+
+
+## Full inverse-pair memory
+
+Port `7f3146f189d1543620742bc380f8a60960dea1c2` remembers both full integral actions after processing either member of an inverse pair. Every Nielsen replacement preserves the generated subgroup. Consequently both g and g^-1 remain words in the retained family even when the earlier entry itself is retired; neither needs to be inserted again. This uses the actual full integral basis matrices, so it preserves all integral kernel actions. The source's `generate_comb_pair` at MatrixGroupSimplification.h:650–669 supplies the same inverse-pair datum. The complete four product/inverse reductions and stopping condition are unchanged.
+
+The captured prefix was independently checked against the frozen N Gram matrix. For every stored action A, A*G*A^T=G and G*A^T*G^-1 is an integral inverse with A*A^-1=1.
+
+| Captured prefix property | Value |
+| --- | ---: |
+| Rank | 12 |
+| Seen full matrix keys, including identity | 2495 |
+| Distinct non-involutory inverse pairs with both directions seen | 327 |
+| Those pairs with neither direction currently retained | 327 |
+| Inverse pairs with only one direction seen | 1098 |
+
+These data establish the occurrence of full inverse pairs. They do not establish their arrival order or how many underwent another pair reduction. No whole-consumer timing gain follows from these counts.
+
+The cyclic-law examples exercise positive and symmetric power families. Their generated subgroup is the primitive integral shear group, or the full large-step cyclic group with step 2^80. The sign/kernel, equal-norm symmetric-group and large noncommuting examples also pass. The targeted assertions pass before and after the change; the changed source run takes 11.31 seconds total. This establishes the exercised full-group laws, not the original large-case results.
+
+The full I_1_1 assertion at 583b36d/16c798db passes with index 1 and JUnit case time 2208.500 seconds, under its unchanged 2400-second bound. Its exact report is `.tmp/acceptance-583b36d-evidence.md`. It predates inverse-pair memory. Local repetitions of that case are retired until the final full frozen run. The original Allcock plane assertion is active at 7f3146f/16c798db and the earlier A7, O_plus_N and stable Dawes proofs remain governed by `.tmp/HANDOFF.md`.
