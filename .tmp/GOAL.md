@@ -60,7 +60,7 @@ Rows that do not name a dependency proceed independently. Work on several at onc
 | Public representation L → Aut(L/mL) with actual image; congruence, level and residue subgroups, jointly with determinant and spinor (#42) | #43 and every congruence consumer | Γ(3) on 2U: actual image and index | done |
 | Orbit splitting, stabilizer generators and transporters for general finite preimages, all markings (#43) | Requires the row above | Γ(3) on 2U: split a null-line orbit, with transporters | open |
 | Stabilizers and integral transporters of non-isotropic and nonprimitive sublattice markings in indefinite L, through complement and glue (#47) | #46, #56, #61 | A1 in U+A1: setwise and pointwise stabilizers | done |
-| Public Hermitian lattice object: order action, Hermitian form, trace form, isometries | #51, #58, #59, #60 | Eisenstein rank-two form with its rank-four trace lattice | open |
+| Public Hermitian lattice object: order action, Hermitian form, trace form, isometries | #51, #58, #59, #60 | Eisenstein rank-two form with its rank-four trace lattice | done |
 
 ### Retained families with available inputs
 
