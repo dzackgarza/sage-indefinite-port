@@ -127,3 +127,31 @@ Each comparison verifies every key and the complete stable sorting permutation, 
 | Flat row-major entries | 0.3433, 0.4833, 0.3073 |
 
 The unchanged ordering assertions pass before and after the change. They check arbitrary-precision coordinate order, retained witness identity, empty families and zero rank. The unchanged non-diagonal positive shell and exact-isotropic shell assertions also pass; they retain their explicit ordered rows, exact norms and pairings. Ordering assertions finish in 4.49 seconds total; shell assertions finish in 5.35 seconds total. These small assertions use provider 16c798db. The active full A7 proof at bf7f5c0/cab1d797 predates this change and the finite-coefficient lift. Its full final-pair assertion remains required.
+
+
+## Retained full cell stabilizers
+
+The original A7 assertion at bf7f5c0/cab1d797 is terminal at its unchanged 1800-second bound. The final stack is `_expand_traversal_once -> cell_transporter -> backtrack -> target_auxiliary.column`, inside large-configuration identification. It establishes no final discriminant image.
+
+Port `b2a3afb7e28d7da8d2d47f86a484e9feb5bb95b6` uses the full integral cell stabilizer already retained by the facet walk. The pinned `LORENTZ_TestEquivalence_General` supplies target GRP2 to its integral-transporter step at Lorentzian.g:660–696; AutomorphismPolytope.g:288–339 uses that action. The integral cell stabilizer is a subgroup of that target group. Postcomposition by this group preserves transporter existence, and its pointwise stabilizer preserves the assigned image prefix. If the retained full group belongs only to the source, inversion is a bijection between the forward and reverse transporter sets. Thus the reverse search can use it as target group and invert the fully certified result. This preserves the caller's typed endpoints and existence decision. The full target group contains every coordinate seed.
+
+The octahedral signed-permutation example now checks source, target and absent retained groups in both canonical and sheared bases, including the full order 48, every transporter and duplicate-row negative decisions. Together with the unchanged changed-basis, negative-return and multiset assertions, the targeted run passes in 12.52 seconds. The active original proof at 66576eb/16c798db predates this change.
+
+A one-shot capture from that active original proof supplies the actual comparison below. The observer disables its local function event after capture. Each retained generator is independently checked on the complete point set and Gram matrix during replay.
+
+| Captured A7 comparison | Value |
+| --- | ---: |
+| Source rows | 49861 |
+| Target rows | 49861 |
+| Retained source generators | 11 |
+| Retained target group | absent |
+| Capture seconds | 0.3367 |
+
+| Replay source | Transporter call seconds | Independent witness certificate |
+| --- | ---: | --- |
+| 66576eb, provider 16c798db | 35.5408 | The outer 60-second diagnostic limit occurs after the transporter returns, during the additional certificate |
+| b2a3afb, provider 16c798db | 34.9483 | pass |
+
+The new complete witness is integral and unimodular, preserves the entire Gram form and maps the complete source configuration onto the target. The replay timings do not establish a material gain on this comparison or on the full A7 computation. The first replay's outer limit is not the original A7 limit and does not establish failure of its transporter call, which returned a witness. Other large comparisons and the full unchanged original assertion remain required.
+
+The optional local input is `.tmp/cell-transporter-3241807.pickle`; logs are `.tmp/captured-cell-{66576eb,b2a3afb}.log`. Python's documented [remote debugger interface](https://docs.python.org/3.14/library/sys.html#sys.remote_exec) and [per-code event API](https://docs.python.org/3.14/library/sys.monitoring.html) supplied the snapshot. The source files and mathematical state of the running proof remain unchanged; capture overhead is included in its original bound.
