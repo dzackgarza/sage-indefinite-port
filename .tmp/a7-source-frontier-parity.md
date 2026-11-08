@@ -65,3 +65,16 @@ The existing certificate converted all cone entries to integers twice: once when
 | Retained row sequence | 3.282984 |
 
 Every certificate agrees on the complete actual facet representative family. The two executions use the same process and inputs; other independent local work was running, so this wall measurement is a scoped comparison. The analytic cube certificate, engine facet recovery and complete coordinate-hypersimplex orbit/word assertions pass together in 9.67 seconds. No assertion about whole A7 completion follows from this local improvement. Optional paired input script/results: `.tmp/a7-retained-sequence-certificate-benchmark.{py,json,log}`.
+
+## Pairings retained through certification
+
+At f46f4a1, each oriented candidate carries the exact value of its normal on every ray into the same certificate checks. The seed carries its incidence and pairings from its exact LP orientation, too. New facets still require the complete zero-set equality, sign, nontriviality, primitive content and exact incidence-rank minor. The public independent certificate evaluates its own pairings. Thus the representation change preserves every mathematical predicate while avoiding a repeated evaluation of the same covector on the same fixed ray family.
+
+| Complete retained orientation/certificate family | Seconds |
+| --- | ---: |
+| Recomputed pairings | 5.752527 |
+| Retained exact pairings | 3.135163 |
+
+Every certificate agrees on the complete actual large configuration's facet representatives. The analytic cube, coordinate hypersimplex, full word-action, null-quadrant and refusal assertions pass together in 16.86 seconds. The complete actual facet core is active at f46f4a1/cfee1892, checking every returned normal, incidence and orbit cardinality against the previous complete family and then independently rechecking each public certificate. Optional log/result: `.tmp/a7-pairing-retention-full-facet-core.{log,json}`. This is a source-operation check, not the whole A7 discriminant-image result.
+
+Further whole-matrix/rank variants remain slower. A complete native-matrix/rank reconstruction measures 6.229961 seconds against 2.732503 for the current Python-row certificate. Retaining the actual native matrix through its parent coercion and rank operation measures 5.862896 against 2.774936. Every certificate agrees, but neither substitution is selected. [Sage documents matrix-space coercion separately from matrix construction](https://doc.sagemath.org/html/en/reference/matrices/index.html); explicit parent coercion preserves the already represented matrix in the measured input. Optional probes: `.tmp/a7-native-certificate-rank-benchmark.py` and `.tmp/a7-retained-native-certificate-rank-benchmark.py`, with their matching log/JSON files.
