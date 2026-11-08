@@ -28,7 +28,7 @@ The port must preserve every mathematical capability of the pinned sources,
 including their general input domains, ranks, flags, branches, outputs and
 certificates. General source routines are translated with their parameters
 intact. Full upstream isotropic k-plane and flag functionality is required;
-the current line/plane implementation leaves that translation incomplete.
+general induction is implemented, with remaining public branch coverage tracked in #44.
 
 Milestones and test samples order delivery and verification. They do not
 authorize a smaller port. Every missing source-supported capability remains
@@ -46,7 +46,7 @@ cd sage-indefinite-port
 git switch --track origin/main
 ```
 
-Read [AGENTS.md](AGENTS.md) for ownership and source-fidelity constraints; then take the next open work unit from the [issue tree rooted at #4](https://github.com/dzackgarza/sage-indefinite-port/issues/4) with `uvx --from git+https://github.com/dzackgarza/itree itree next dzackgarza/sage-indefinite-port`. An issue is a starting locator, not evidence that its recorded commit is still the remote tip: fetch and compare GitHub before editing. Do not infer another agent owns a file from an old issue comment or a branch name.
+Read [AGENTS.md](AGENTS.md) for ownership and source-fidelity constraints; then apply the functional work selection in AGENTS.md and take the next eligible implementation unit from the [issue tree rooted at #4](https://github.com/dzackgarza/sage-indefinite-port/issues/4) with `uvx --from git+https://github.com/dzackgarza/itree itree next dzackgarza/sage-indefinite-port`. An issue is a starting locator, not evidence that its recorded commit is still the remote tip: fetch and compare GitHub before editing. Do not infer another agent owns a file from an old issue comment or a branch name.
 
 ## Exact source and acceptance material
 

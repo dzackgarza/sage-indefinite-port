@@ -58,6 +58,26 @@ Retain their inputs, required outputs and public consumers in the open backlog.
 An upstream limitation explains the additional implementation work; it does
 not cancel the requirement. These deferred cases do not gate v1 delivery.
 
+## Functional work selection
+
+Implement missing public capabilities before performance refinement and final
+corpus certification. Use the functional sequence in issue #4 and the current
+handoff. Start with the next concrete missing branch in #44; then implement
+ready capabilities in #69 using their actual mathematical prerequisites.
+
+A prerequisite must name the dependent capability, the exact operation it
+consumes, and a small independently justified example that cannot complete
+without the repair. A shared module or a timeout in a larger specimen does not
+establish that dependency. Repair the smallest blocking operation, verify that
+example, then return to the dependent implementation.
+
+Issues #64 and #70 retain expensive-case and final-release obligations. Schedule
+performance work there after functional coverage, except for a demonstrated
+blocking prerequisite above. A terminal expensive run contributes its result to
+that issue; it does not automatically select another optimization or rerun.
+Choose subsequent work by missing functionality. Full release acceptance remains
+required after implementation. Publication uses the existing small branch checks.
+
 ## Sources of authority
 
 | Source | Responsibility |
