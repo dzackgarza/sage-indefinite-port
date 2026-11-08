@@ -52,7 +52,7 @@ Read the provider at the pin or on the branch above. The checkout at `sage-repos
 
 ## Continuation boundary
 
-This is the authoritative handoff; issue #4 owns the functional sequence and
+`.tmp/GOAL.md` is the current goal and its status list. This is the authoritative handoff; issue #4 owns the functional sequence and
 AGENTS.md owns work selection. Verify current source and provider revisions
 before using a recorded result. Preserve immutable proof worktrees and their native inputs. The terminal large-consumer outcomes are recorded under #64. Resume with the functional unit above.
 The active source checkout is `/home/dzack/gitclones/sage-indefinite-computations`;
