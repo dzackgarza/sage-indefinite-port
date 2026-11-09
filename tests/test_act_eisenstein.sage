@@ -9,7 +9,7 @@ from sage_extensions.all import *
 from sage.modules.free_module_element import vector as sage_vector
 from sage_indefinite_port.indefinite.act_eisenstein import (
     AUT_PLUS_GENERATORS, BAR, BIFLECTION, FIELD, FORM, FULL_GENERATORS, OMEGA, ONE, R, RHO, ROOTS, THETA, ZERO,
-    h, is_aut_plus, is_isometry, is_primitive, lattice, reduce_null_vector, spinor_character, translation,
+    h, is_aut_plus, is_gamma_theta, trace_generators, triflection, is_isometry, is_primitive, lattice, reduce_null_vector, spinor_character, translation,
 )
 
 EDGES = ((1, 2), (2, 3), (3, 4), (4, 5), (3, 6), (6, 7))
@@ -110,3 +110,18 @@ def test_spinor_character_is_multiplicative():
         spinor_character(a * b) == spinor_character(a) * spinor_character(b)
         for a in elements for b in elements
     )
+
+
+def test_generators_are_trace_isometries_commuting_with_omega():
+    hermitian = lattice()
+    action = hermitian.order_action(OMEGA)
+    trace = hermitian.trace_lattice()
+    for isometry in trace_generators():
+        assert all(isometry(action(p)) == action(isometry(p)) for p in trace.module_generators())
+
+
+def test_gamma_theta_contains_triflections_and_not_hexflections():
+    r"""omega = 1 modulo theta, so an omega-reflection is trivial on V; -omega acts as -1 on the root."""
+    assert all(is_gamma_theta(triflection(r)) for r in ROOTS.values())
+    assert all(triflection(r) == R[i] ** int(4) for i, r in ROOTS.items())
+    assert not any(is_gamma_theta(R[i]) for i in R)

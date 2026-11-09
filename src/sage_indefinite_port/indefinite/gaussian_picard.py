@@ -105,19 +105,4 @@ def lattice() -> HermitianLattice:
 
 def trace_isometry(g):
     r"""Return ``g`` as an isometry of the rank-six trace lattice."""
-    hermitian = lattice()
-    trace = hermitian.trace_lattice()
-    positions = dict(zip(hermitian._labels(), trace.module_generating_set(), strict=True))
-    basis = hermitian.order_basis()
-
-    def image(name):
-        i, a = next(key for key, value in positions.items() if value == name)
-        result = {}
-        for row in range(3):
-            coordinates = hermitian._coordinates_in_order(g[row, i] * basis[a])
-            for b, value in enumerate(coordinates):
-                if value:
-                    result[positions[(row, b)]] = trace.base_ring()(value)
-        return trace.linear_combination(result)
-
-    return trace.Aut()(image)
+    return lattice().isometry_from_matrix(g)

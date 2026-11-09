@@ -1047,7 +1047,7 @@ source = { git = "https://github.com/dzackgarza/sage-categories?subdirectory=nat
 [[package]]
 name = "sage-extensions"
 version = "0.1.0"
-source = { git = "https://github.com/dzackgarza/sage-extensions?rev=a9ed296b8e278d68c48f4dc1707c11e3f643b5c9#a9ed296b8e278d68c48f4dc1707c11e3f643b5c9" }
+source = { git = "https://github.com/dzackgarza/sage-extensions?rev=a951e4fca4664f44fbc0aa2b299f8e5627c87cf8#a951e4fca4664f44fbc0aa2b299f8e5627c87cf8" }
 dependencies = [
     { name = "networkx" },
     { name = "sage-categories" },
@@ -1080,7 +1080,7 @@ dev = [
 requires-dist = [
     { name = "pycddlib", specifier = ">=3.0.2" },
     { name = "pynormaliz" },
-    { name = "sage-extensions", git = "https://github.com/dzackgarza/sage-extensions?rev=a9ed296b8e278d68c48f4dc1707c11e3f643b5c9" },
+    { name = "sage-extensions", git = "https://github.com/dzackgarza/sage-extensions?rev=a951e4fca4664f44fbc0aa2b299f8e5627c87cf8" },
 ]
 
 [package.metadata.requires-dev]

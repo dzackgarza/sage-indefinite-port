@@ -217,6 +217,24 @@ def is_aut_plus(g) -> bool:
     return spinor_character(g) == 1
 
 
+def is_gamma_theta(g) -> bool:
+    r"""Return whether ``g`` lies in ``Aut^+`` and acts trivially on ``Lambda / theta Lambda`` (7.24)."""
+    return is_aut_plus(g) and _mod_theta(g).is_one()
+
+
+def triflection(root):
+    r"""Return the ``omega``-reflection in a short root, the generators of ``Gamma_theta`` in Theorem 7.25."""
+    if h(root, root) != ONE:
+        raise ValueError(f"{root} is not a short root")
+    return reflection(root, OMEGA)
+
+
 def lattice() -> HermitianLattice:
     r"""Return ``Z[omega]^5`` with the source form; its trace lattice has rank 10."""
     return HermitianLattice((ONE, OMEGA), FORM.transpose())
+
+
+def trace_generators(generators=FULL_GENERATORS) -> tuple:
+    r"""Return the generators as integral isometries of the rank-ten trace lattice."""
+    hermitian = lattice()
+    return tuple(hermitian.isometry_from_matrix(g) for g in generators)
