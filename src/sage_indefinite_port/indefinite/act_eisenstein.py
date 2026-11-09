@@ -121,7 +121,7 @@ def _height_root(v):
 
 
 def reduce_null_vector(v):
-    r"""Return ``(g, unit)`` with ``g`` in ``Gamma`` and ``g v = unit rho`` (7.14, 7.22)."""
+    r"""Return ``g`` in ``Gamma`` with ``g v = rho`` (7.14, 7.16, 7.22)."""
     v = vector(FIELD, v)
     if h(v, v) != ZERO or not is_primitive(v):
         raise ValueError(f"{v} is not a primitive null vector")
@@ -148,10 +148,31 @@ def reduce_null_vector(v):
             raise ArithmeticError("the source reduction did not lower the height")
         v = next_vector
         g = step * g
-    unit = v[4]
-    if not unit.is_unit() or any(v[i] != ZERO for i in range(4)):
-        raise ArithmeticError("the reduction did not end at a multiple of rho")
-    return g, unit
+    if any(v[i] != ZERO for i in range(4)) or v[4].norm() != ONE:
+        raise ArithmeticError("the reduction did not end at a unit multiple of rho")
+    step = _unit_transport(v[4])
+    g = step * g
+    if step * v != RHO:
+        raise ArithmeticError("the unit transport did not reach rho")
+    return g
+
+
+def _unit_transport(unit):
+    r"""Return an element of ``Gamma`` carrying ``unit rho`` to ``rho`` (7.15, 7.16).
+
+    ``F = R_3 T_{0,0,0;-theta}`` has ``F^2 = omega`` on ``I_{1,1}``, and ``B``
+    times the central involution of ``I_{1,1}`` carries ``rho`` to ``-rho``.
+    """
+    F = R[3] * translation(_root(0, 0, 0), -THETA)
+    involution = matrix.identity(FIELD, 5)
+    involution[3, 3] = involution[4, 4] = -ONE
+    sign = BIFLECTION * involution
+    for negate in (False, True):
+        for power in range(3):
+            candidate = (F * F) ** power * (sign if negate else matrix.identity(FIELD, 5))
+            if candidate * (unit * RHO) == RHO:
+                return candidate
+    raise ArithmeticError(f"{unit} is not a unit of Z[omega]")
 
 
 def _move_root_to_r7(root):

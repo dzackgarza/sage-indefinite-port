@@ -57,9 +57,9 @@ def test_translation_composition_law():
 def test_null_reduction_from_source_shape():
     v = _t(THETA, 0, 0, 1, OMEGA - ONE)
     assert h(v, v) == ZERO
-    g, unit = reduce_null_vector(v)
+    g = reduce_null_vector(v)
     assert is_isometry(g)
-    assert g * v == unit * RHO
+    assert g * v == RHO
 
 
 def test_reduction_of_a_group_image_of_rho():
@@ -67,8 +67,24 @@ def test_reduction_of_a_group_image_of_rho():
     v = g * RHO
     assert is_primitive(v)
     assert v[3] != ZERO
-    back, unit = reduce_null_vector(v)
-    assert back * v == unit * RHO
+    back = reduce_null_vector(v)
+    assert is_isometry(back)
+    assert back * v == RHO
+
+
+def test_orthogonal_height_one_root_case():
+    r"""v = (1,1,1;theta,1-omega): Sum |v_i|^2 = 3 = |H|^2 and r = (0,0,0;1,-omega) is orthogonal to it."""
+    v = _t(ONE, ONE, ONE, THETA, ONE - OMEGA)
+    assert h(v, v) == ZERO
+    assert h(v, ROOTS[3]) == ZERO
+    g = reduce_null_vector(v)
+    assert is_isometry(g) and g * v == RHO
+
+
+def test_unit_multiples_of_rho_reach_rho():
+    for unit in (-ONE, OMEGA, -OMEGA, BAR, -BAR):
+        g = reduce_null_vector(unit * RHO)
+        assert is_isometry(g) and g * (unit * RHO) == RHO
 
 
 def test_eisenstein_primitivity_is_not_integer_primitivity():
