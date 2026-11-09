@@ -66,6 +66,14 @@ def test_tuple_slice_of_two_vectors():
     assert pointwise_transporter(L, (e1,), (e2, f2), (e1, f1)) is None
 
 
+def test_setwise_on_a_marking_with_a_radical():
+    r"""U + A1 + A1, S = A1 + A1, marking (x1, x2, e + x1), which has radical e. The swap sends it to (x2, x1, e + x2)."""
+    L = Lattices(ZZ)("U") + Lattices(ZZ)("A1") + Lattices(ZZ)("A1")
+    e, _f, x1, x2 = tuple(L.module_generators())
+    g = setwise_transporter(L, (x1, x2), e + x1, e + x2)
+    assert g is not None and g(e + x1) == e + x2
+
+
 def test_setwise_rank_two_stabilizer_exchanges_summands():
     r"""L = U + A1 + A1, S = A1 + A1. The swap preserves S and sends h + x1 to h + x2, h = e + f.
     Pointwise, the pairing with x1 differs. The vector h pairs to 0 with S, so it is not h + x1."""
@@ -78,3 +86,14 @@ def test_setwise_rank_two_stabilizer_exchanges_summands():
     assert g is not None and g(left) == right
     assert set(str(g(x)) for x in (x1, x2)) <= set(str(v) for v in (x1, x2, -x1, -x2))
     assert setwise_transporter(L, (x1, x2), left, h) is None
+
+
+def test_mixed_marking_is_decided_in_the_complement():
+    r"""L = U + A1, x the generator of A1. (x, e + x) spans a marking with radical e. O(U) swaps e, f,
+    so (x, e + x) moves to (x, f + x). The tuple (x, x + x) has a different Gram matrix.
+    """
+    L = Lattices(ZZ)("U") + Lattices(ZZ)("A1")
+    e, f, x = tuple(L.module_generators())
+    g = pointwise_transporter(L, (x,), e + x, f + x)
+    assert g is not None and g(x) == x and g(e + x) == f + x
+    assert pointwise_transporter(L, (x,), e + x, x + x) is None

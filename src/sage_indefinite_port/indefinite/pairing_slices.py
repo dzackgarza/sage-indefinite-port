@@ -9,6 +9,7 @@ markings of the same Gram lattice, which is a decision on coslice objects.
 from itertools import count, product
 
 from sage.matrix.constructor import matrix
+from sage.modules.free_module_element import vector
 from sage.rings.integer_ring import ZZ
 from sage.rings.rational_field import QQ
 from sage_extensions.categories.lattices import Lattices
@@ -67,6 +68,11 @@ def marked_transporter(lattice, source, target):
     bases = _saturated_bases(lattice, source, target)
     if bases is None:
         return None
+    mixed = _mixed_marking_transporter(lattice, *bases)
+    if mixed is not NotImplemented:
+        if mixed is not None:
+            assert all(mixed(x) == y for x, y in zip(source, target, strict=True))
+        return mixed
     category, marked_source = _marking(lattice, bases[0])
     _category, marked_target = _marking(lattice, bases[1])
     marked_target = category.object(_rebase(category, marked_target))
@@ -75,6 +81,73 @@ def marked_transporter(lattice, source, target):
         return None
     assert all(witness(x) == y for x, y in zip(source, target, strict=True))
     return witness
+
+
+def _mixed_marking_transporter(lattice, source, target):
+    r"""Decide a marking whose span has a nonzero radical and a nonzero nondegenerate part.
+
+    Choose a nonsingular principal block `S` of the Gram matrix. An element of `O(L)` moves
+    the block of ``source`` to that of ``target``, and any solution differs from it by the
+    pointwise stabilizer of `S'`. When `L = S' + K`, that stabilizer is `O(K)`, and the
+    remaining vectors project to a totally isotropic tuple of `K`. Returns
+    ``NotImplemented`` when the marking is not mixed.
+    """
+    gram = matrix(ZZ, [[int(lattice.b(x, y)) for y in source] for x in source])
+    rank = gram.rank()
+    if rank == 0 or rank == len(source):
+        return NotImplemented
+    pivots = tuple(gram.pivot_rows())
+    block = tuple(source[i] for i in pivots)
+    block_target = tuple(target[i] for i in pivots)
+    move = marked_transporter(lattice, block, block_target)
+    if move is None:
+        return None
+    frame = tuple(lattice.module_generators())
+    coordinates = lambda v: vector(ZZ, [int(c) for c in v])
+    ambient = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+    block_matrix = matrix(ZZ, [coordinates(v) for v in block_target])
+    complement = (block_matrix * ambient).right_kernel().basis_matrix()
+    together = block_matrix.stack(complement)
+    assert abs(together.det()) == 1, (
+        f"{block_target} does not split off {lattice}: its stabilizer needs the glue of the complement"
+    )
+    assemble = lambda row: sum(
+        (lattice.scalar_multiple(int(c), g) for c, g in zip(row, frame, strict=True)), lattice.zero()
+    )
+    complement_vectors = tuple(assemble(r) for r in complement.rows())
+    inverse = together.change_ring(QQ).inverse()
+    tail = len(block_target)
+
+    def in_complement(v):
+        return vector(ZZ, list(coordinates(v) * inverse)[tail:])
+
+    rest_source = tuple(move(source[i]) for i in range(len(source)) if i not in pivots)
+    rest_target = tuple(target[i] for i in range(len(source)) if i not in pivots)
+    complement_lattice = Lattices(lattice.base_ring())(
+        [[int(lattice.b(x, y)) for y in complement_vectors] for x in complement_vectors]
+    )
+    complement_frame = tuple(complement_lattice.module_generators())
+    build = lambda row: sum(
+        (complement_lattice.scalar_multiple(int(c), g) for c, g in zip(row, complement_frame, strict=True)),
+        complement_lattice.zero(),
+    )
+    image_source = tuple(build(in_complement(v)) for v in rest_source)
+    image_target = tuple(build(in_complement(v)) for v in rest_target)
+    inner = marked_transporter(complement_lattice, image_source, image_target)
+    if inner is None:
+        return None
+    labels = tuple(lattice.module_generating_set())
+    images = {}
+    for label, generator in zip(labels, frame, strict=True):
+        parts = coordinates(generator) * inverse
+        head = sum((int(c) * together.row(i) for i, c in enumerate(parts[:tail])), vector(ZZ, len(frame)))
+        moved = inner(build(parts[tail:]))
+        body = sum(
+            (int(c) * complement.row(j) for j, c in enumerate(moved)),
+            vector(ZZ, len(frame)),
+        )
+        images[label] = assemble(head + body)
+    return lattice.O()(images) * move
 
 
 def pointwise_transporter(lattice, fixed, left, right):
