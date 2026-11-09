@@ -59,21 +59,44 @@ def slice_invariant(lattice, fixed, vector):
     return tuple(lattice.b(s, vector) for s in fixed), lattice.q(vector)
 
 
-def pointwise_transporter(lattice, fixed, left, right):
-    r"""Return `g \in Stab_{O(L)}(fixed)` with `g(left) = right`, or ``None``."""
-    if slice_invariant(lattice, fixed, left) != slice_invariant(lattice, fixed, right):
+def marked_transporter(lattice, source, target):
+    r"""Return `g \in O(L)` with `g(source_i) = target_i` for tuples, or ``None``."""
+    gram = lambda vectors: [[lattice.b(x, y) for y in vectors] for x in vectors]
+    if gram(source) != gram(target):
         return None
-    bases = _saturated_bases(lattice, (*fixed, left), (*fixed, right))
+    bases = _saturated_bases(lattice, source, target)
     if bases is None:
         return None
-    category, source = _marking(lattice, bases[0])
-    _category, target = _marking(lattice, bases[1])
-    target = category.object(_rebase(category, target))
-    witness = isometry(category, source, target)
+    category, marked_source = _marking(lattice, bases[0])
+    _category, marked_target = _marking(lattice, bases[1])
+    marked_target = category.object(_rebase(category, marked_target))
+    witness = isometry(category, marked_source, marked_target)
     if witness is None:
         return None
-    assert all(witness(s) == s for s in fixed) and witness(left) == right
+    assert all(witness(x) == y for x, y in zip(source, target, strict=True))
     return witness
+
+
+def pointwise_transporter(lattice, fixed, left, right):
+    r"""Return `g \in Stab_{O(L)}(fixed)` with `g(left) = right`, or ``None``.
+
+    ``left`` and ``right`` are vectors or tuples of vectors of equal length.
+    """
+    left = left if isinstance(left, tuple) else (left,)
+    right = right if isinstance(right, tuple) else (right,)
+    return marked_transporter(lattice, (*fixed, *left), (*fixed, *right))
+
+
+def line_transporter(lattice, generator, left, right):
+    r"""Return `g` in the setwise stabilizer of `Z generator` with `g(left) = right`, or ``None``.
+
+    `g` sends `generator` to its positive or its negative, so two markings decide.
+    """
+    for image in (generator, -generator):
+        witness = marked_transporter(lattice, (generator, left), (image, right))
+        if witness is not None:
+            return witness
+    return None
 
 
 def _rebase(category, marked):

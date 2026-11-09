@@ -4,7 +4,7 @@ fixes e1 and sends v_1 to w = -2 e1 + f1 + 2 e2 + f2.
 """
 
 from sage_extensions.all import *
-from sage_indefinite_port.indefinite.pairing_slices import PointwiseStabilizerOrbits, pointwise_transporter, slice_invariant
+from sage_indefinite_port.indefinite.pairing_slices import PointwiseStabilizerOrbits, line_transporter, pointwise_transporter, slice_invariant
 
 
 def _setup():
@@ -48,3 +48,19 @@ def test_orbit_stream_on_two_planes_is_free_of_duplicates():
     assert all(v in orbits for v in found)
     assert all(not orbits.equivalent(found[i], found[j]) for i in range(int(6)) for j in range(i + int(1), int(6)))
     assert len(set(int(L.b(e1, v)) for v in found)) >= int(2)
+
+
+def test_setwise_line_stabilizer_identifies_signs():
+    r"""The setwise stabilizer of Ze in O(U) is {+-1}, so e ~ -e and e is not f."""
+    L = Lattices(ZZ)("U")
+    e, f = tuple(L.module_generators())
+    assert line_transporter(L, e, f, -f) is not None
+    assert pointwise_transporter(L, (e,), f, -f) is None
+    assert line_transporter(L, e, e, f) is None
+
+
+def test_tuple_slice_of_two_vectors():
+    r"""On U + U, the swap of planes moves (e2, f2) to (e1, f1), but it does not fix e1."""
+    L, e1, f1, e2, f2 = _setup()
+    assert pointwise_transporter(L, (), (e2, f2), (e1, f1)) is not None
+    assert pointwise_transporter(L, (e1,), (e2, f2), (e1, f1)) is None
