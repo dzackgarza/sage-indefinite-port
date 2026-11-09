@@ -56,3 +56,19 @@ def test_the_norm_one_extraction_applies_to_the_voronoi_generators():
     assert all(g.reduced_norm() == int(1) for g in generators)
     assert len(kernel) == int(1)
 
+
+def test_the_full_orthogonal_group_generators_of_the_anisotropic_lattice():
+    r"""The generators are integral isometries and include both determinants."""
+    from sage_indefinite_port.indefinite.quaternion_lattices import QuaternionNormLattice
+    from sage_indefinite_port.indefinite.quaternion_voronoi import orthogonal_group_generators
+
+    model = QuaternionNormLattice(int(-1), int(3), int(2))
+    generators = orthogonal_group_generators(model, QuaternionVoronoi(int(-1), int(3)), model.normalizer_classes_in_box(int(3)))
+    points = tuple(model.lattice().module_generators())
+    for generator in generators:
+        for x in points:
+            for y in points:
+                assert model.lattice().b(generator(x), generator(y)) == model.lattice().b(x, y)
+    assert generators[-1](points[1]) == -points[1]
+    assert len(generators) > int(12)
+
