@@ -69,7 +69,7 @@ Rows that do not name a dependency proceed independently. Work on several at onc
 | Low rational Witt index witnesses and lazy O(L) (#40) | Fair GL_r(Z) witness search; exact membership; diag(2,2,-6,-6) and U+⟨2,-4⟩ changed-basis witnesses | done |
 | Content, saturation and odd-form doubling (#48) | Public content parameter through the primitive part; doubling with original-discriminant semantics | done |
 | Canonical representatives and duplicate-free iterators (#62) | Γ parameter, HNF encoding for submodules, provider consumer | done |
-| Degenerate ambient consumers (#41) | Provider consumers on degenerate L; congruence-kernel generators | open |
+| Degenerate ambient consumers (#41) | Provider consumers on degenerate L; congruence-kernel generators | done |
 | Commuting-involution centralizers (#49) | Joint eigensublattices and simultaneous gluing | done |
 | Rational isotropic flag complex (#45) | Faces of every `FlagType`, face identities, stabilizer maps, incidence multiplicities | done |
 | Gram-constrained embeddings (#46) | Rank-r fixed-source Isom, Aut and classes; requires #47 | done |
