@@ -47,3 +47,27 @@ def test_the_isometry_preserves_the_form_and_inverts_through_the_conjugate():
             assert model.lattice().b(forward(x), forward(y)) == model.lattice().b(x, y)
     one = points[0]
     assert forward(one) == int(2) * points[0] + points[2]
+
+
+def test_conjugation_is_an_isometry_outside_every_pair_action():
+    r"""Conjugation fixes 1 and negates i, j, k, so it has determinant -1; a pair action has determinant 1."""
+    model = _model()
+    unit = _unit(model)
+    assert model.conjugation_matrix().det() == int(-1)
+    assert model.pair_matrix(unit, unit).det() == int(1)
+    image = model.conjugation_isometry()
+    points = tuple(model.lattice().module_generators())
+    assert image(points[0]) == points[0] and image(points[1]) == -points[1]
+
+
+def test_a_pair_of_norm_minus_one_units_has_nontrivial_spinor_class():
+    r"""Nrd(1+i+j) = 1+1-3 = -1, so the pair is an isometry with spinor class -1, unlike norm-one pairs."""
+    model = _model()
+    u = model.element(int(1), int(1), int(1), int(0))
+    forward = model.pair_isometry(u, u)
+    points = tuple(model.lattice().module_generators())
+    for x in points:
+        for y in points:
+            assert model.lattice().b(forward(x), forward(y)) == model.lattice().b(x, y)
+    assert model.pair_spinor_class(u) == int(-1)
+    assert model.pair_spinor_class(_unit(model)) == int(1)

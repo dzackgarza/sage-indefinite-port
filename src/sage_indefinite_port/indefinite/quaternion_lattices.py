@@ -58,3 +58,31 @@ class QuaternionNormLattice(SageObject):
         labels = tuple(self._lattice.module_generating_set())
         images = (sum((int(entry) * point for entry, point in zip(column, generators, strict=True)), self._lattice.zero()) for column in columns.columns())
         return self._lattice.O()(dict(zip(labels, images, strict=True)))
+
+    def _as_isometry(self, columns):
+        if columns.denominator() != 1:
+            raise ValueError("the map does not preserve the order ZZ<1, i, j, k>")
+        generators = tuple(self._lattice.module_generators())
+        labels = tuple(self._lattice.module_generating_set())
+        images = (sum((int(entry) * point for entry, point in zip(column, generators, strict=True)), self._lattice.zero()) for column in columns.columns())
+        return self._lattice.O()(dict(zip(labels, images, strict=True)))
+
+    def pair_matrix(self, u, v):
+        r"""Return the matrix of ``x -> u x conj(v)`` for ``nrd(u) nrd(v) = 1``."""
+        if u.reduced_norm() * v.reduced_norm() != 1:
+            raise ValueError("the pair does not scale the norm by one")
+        return matrix(QQ, [list(u * x * v.conjugate()) for x in self._basis]).transpose()
+
+    def pair_isometry(self, u, v):
+        return self._as_isometry(self.pair_matrix(u, v))
+
+    def conjugation_matrix(self):
+        return matrix(QQ, [list(x.conjugate()) for x in self._basis]).transpose()
+
+    def conjugation_isometry(self):
+        r"""Return quaternion conjugation, which has determinant ``-1``."""
+        return self._as_isometry(self.conjugation_matrix())
+
+    def pair_spinor_class(self, u):
+        r"""Return the squarefree part of ``nrd(u)``, the spinor class of the pair action of ``u``."""
+        return u.reduced_norm().squarefree_part()
