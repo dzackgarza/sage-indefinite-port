@@ -5,7 +5,7 @@ two orbits, divisors 1 and 2. A tuple (e, f) in U + U: primitive pairs with Gram
 """
 
 from sage_extensions.all import *
-from sage_indefinite_port.indefinite.li_margulis import embedding_orbits_in_box, is_isometric_in_box, primitive_tuples_in_box
+from sage_indefinite_port.indefinite.li_margulis import generator_bound, isometry_box_bound, embedding_orbits_in_box, is_isometric_in_box, primitive_tuples_in_box
 
 
 def test_null_vectors_of_u():
@@ -31,3 +31,19 @@ def test_isometry_found_and_absent():
     other = Lattices(ZZ)([[0, 1], [1, 0]])
     assert is_isometric_in_box(U, other, 1) is not None
     assert is_isometric_in_box(U, Lattices(ZZ)([[2, 0], [0, -2]]), 3) is None
+
+
+def test_generator_bound_formula():
+    r"""r = 3, B = diag(1, 2, -1): |det|^729 and ||B||^243 with C = 1."""
+    gram = [[1, 0, 0], [0, 2, 0], [0, 0, -1]]
+    expected = 2 ** int(729) * 2 ** int(243) + 1
+    assert int(generator_bound(gram, int(1))) == int(expected)
+
+
+def test_isometry_bound_exponents():
+    r"""The general exponent is negative for r = 3, so it is replaced by zero; the anisotropic one is (117 + 24 - 26)/30, rounded up to 4."""
+    gram = [[1, 0, 0], [0, 2, 0], [0, 0, -1]]
+    general = isometry_box_bound(gram, gram, int(1))
+    anisotropic = isometry_box_bound(gram, gram, int(1), anisotropic=True)
+    assert int(general) == int(2 ** int(81) + 1)
+    assert int(anisotropic) == int(2 ** int(4) * 2 ** int(81) + 1)
