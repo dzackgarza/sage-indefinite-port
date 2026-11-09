@@ -7,7 +7,9 @@ group. The kernel of ``U(2,1; O_d) -> PU(2,1; O_d)`` is the scalar units
 """
 
 from sage.matrix.constructor import matrix
+from sage.modules.free_module_element import vector
 from sage.rings.number_field.number_field import QuadraticField
+from sage.rings.rational_field import QQ
 from sage_extensions.categories.hermitian_lattices import HermitianLattice
 
 
@@ -66,6 +68,106 @@ def full_unitary_generators(d: int) -> tuple:
     r"""Return the five lifts with the scalar kernel generator ``-I``."""
     E = field(d)
     return (*generators(d).values(), -matrix.identity(E, 3))
+
+
+def evaluate(d: int, word) -> "matrix":
+    r"""Return the product of a word of ``(name, exponent)`` pairs; ``S`` is ``-I``."""
+    E = field(d)
+    table = dict(generators(d), S=-matrix.identity(E, 3))
+    result = matrix.identity(E, 3)
+    for name, exponent in word:
+        result = result * table[name] ** int(exponent)
+    return result
+
+
+def _shears(d: int):
+    r"""Return ``R2 R1`` and ``R3 R1``, the unipotent cusp elements spanning the ``z`` lattice."""
+    g = generators(d)
+    return g["R2"] * g["R1"], g["R3"] * g["R1"]
+
+
+def _shear_coordinates(d: int, value):
+    r"""Return rational ``(m, n)`` with ``value = m z_A + n z_B``."""
+    A, B = _shears(d)
+    basis = matrix(QQ, [list(A[1, 2].vector()), list(B[1, 2].vector())])
+    return tuple(vector(QQ, list(value.vector())) * ~basis)
+
+
+def _cusp_word(d: int, element):
+    r"""Return a word for an upper triangular element of ``U(2,1; O_d)``."""
+    E = field(d)
+    sign = element[0, 0]
+    if sign not in (E.one(), -E.one()) or element[2, 2] != sign:
+        raise ArithmeticError(f"{element} is not in the source cusp stabilizer")
+    scalar = [] if sign == E.one() else [("S", 1)]
+    current = sign * element
+    rotation = []
+    if current[1, 1] == -E.one():
+        current = current * generators(d)["R1"]
+        rotation = [("R1", 1)]
+    m, n = _shear_coordinates(d, current[1, 2])
+    if m.denominator() != 1 or n.denominator() != 1:
+        raise ArithmeticError(f"{current} has z outside the lattice of the source generators")
+    A, B = _shears(d)
+    central = ~(A ** int(m) * B ** int(n)) * current
+    k = central[0, 2] / E.gen()
+    if k not in QQ or QQ(k).denominator() != 1:
+        raise ArithmeticError(f"{central} is not a power of the vertical translation")
+    return [*scalar, *_shear_power("R2", int(m)), *_shear_power("R3", int(n)), ("T", int(k)), *rotation]
+
+
+def _shear_power(name: str, exponent: int):
+    r"""Return the word of ``(name R1)^exponent``."""
+    if exponent >= 0:
+        return [(name, 1), ("R1", 1)] * exponent
+    return [("R1", -1), (name, -1)] * (-exponent)
+
+
+def _reduction(d: int, g):
+    r"""Return ``(M, k)`` with ``|((T^k M g)_{11} / g_{31})| < 1`` and minimal among the window."""
+    E = field(d)
+    A, B = _shears(d)
+    ratio = g[1, 0] / g[2, 0]
+    m0, n0 = _shear_coordinates(d, -ratio)
+    best = None
+    for dm in range(-2, 3):
+        for dn in range(-2, 3):
+            M = A ** (m0.round() + dm) * B ** (n0.round() + dn)
+            value = (M * g)[0, 0] / g[2, 0]
+            coefficient = value.vector()[1] / E.gen().vector()[1]
+            for k in (-coefficient.floor() - 1, -coefficient.floor(), -coefficient.floor() + 1):
+                norm = (value + int(k) * E.gen()).norm()
+                if best is None or norm < best[0]:
+                    best = (norm, (m0.round() + dm, n0.round() + dn), int(k))
+    return best
+
+
+def word(d: int, g):
+    r"""Return a checked word for ``g`` in the five source matrices and ``-I``.
+
+    Each step applies ``I0 T^k N`` for a cusp translation ``N``. The new
+    ``|g_31|^2`` is ``|(T^k N g)_{11}|^2``, a smaller positive integer, so the
+    reduction stops at an upper triangular element.
+    """
+    if not is_element(d, g):
+        raise ValueError(f"{g} is not an element of U(2,1; O_{d})")
+    table = generators(d)
+    A, B = _shears(d)
+    prefix = []
+    current = g
+    while current[2, 0] != 0:
+        norm, (m, n), k = _reduction(d, current)
+        if norm >= 1:
+            raise ArithmeticError(f"the source covering failed to reduce {current}")
+        M = A ** int(m) * B ** int(n)
+        following = table["I0"] * table["T"] ** k * M * current
+        # g = M^-1 T^-k I0^-1 following, and I0 is an involution.
+        prefix += [*_shear_power("R3", -int(n)), *_shear_power("R2", -int(m)), ("T", -k), ("I0", 1)]
+        current = following
+    result = prefix + _cusp_word(d, current)
+    if evaluate(d, result) != g:
+        raise ArithmeticError("the word does not evaluate to the given element")
+    return tuple(result)
 
 
 def lattice(d: int) -> HermitianLattice:
