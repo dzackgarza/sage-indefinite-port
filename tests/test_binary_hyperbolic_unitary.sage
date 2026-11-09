@@ -38,3 +38,19 @@ def test_non_element_has_no_word():
     d = int(1)
     with raises(ValueError):
         word(d, field(d)(int(2)) * form(d))
+
+
+def test_public_centralizer_on_the_trace_of_the_hyperbolic_plane():
+    r"""Issue 51: the centralizer of zeta on the trace of J is U(1,1), which contains the unipotent T of infinite order."""
+    from sage.rings.number_field.number_field import CyclotomicField as SageCyclotomicField
+    from sage_extensions.categories.hermitian_lattices import HermitianLattice
+
+    for divisor in (int(3), int(4)):
+        E = SageCyclotomicField(divisor)
+        zeta = E.gen()
+        hermitian = HermitianLattice((E.one(), zeta), sage_matrix(E, int(2), int(2), [E.zero(), E.one(), E.one(), E.zero()]))
+        trace = hermitian.trace_lattice()
+        action = hermitian.unit_isometry(zeta)
+        generators_public = tuple(trace.O().centralizer(action).group_generators())
+        assert generators_public
+        assert all(g * action == action * g for g in generators_public)
