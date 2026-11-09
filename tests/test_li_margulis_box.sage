@@ -49,3 +49,13 @@ def test_isometry_bound_exponents():
     gram = [[1, 0, 0], [0, 2, 0], [0, 0, -1]]
     assert int(isometry_box_bound(gram, gram, int(1))) == int(2 ** int(22) + 1)
     assert int(isometry_box_bound(gram, gram, int(1), anisotropic=True)) == int(2 ** int(6) + 1)
+
+
+def test_prescribed_gram_fixtures_on_two_planes():
+    r"""Issue 61, item 4. In U + U: A = (0) has one orbit of primitive null vectors. A = 0 of size 2 has
+    one orbit of primitive null bases in the box, with Gram matrix 0, and A = diag(2, -2) is realized
+    by e1 + f1, e2 - f2, one orbit in the box with its two summands fixed in order."""
+    L = Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    assert len(embedding_orbits_in_box(L, [[0]], 1)) == int(1)
+    assert len(embedding_orbits_in_box(L, [[0, 0], [0, 0]], 1)) == int(1)
+    assert len(embedding_orbits_in_box(L, [[2, 0], [0, -2]], 1)) == int(1)
