@@ -59,6 +59,21 @@ def isometry_box_bound(left, right, constant, anisotropic=False):
     ) + 1
 
 
+def isotropic_pair_grams(lattice):
+    r"""Return the Gram matrices `[[0, d], [d, a]]` of primitive pairs `(v, w)` with `v` primitive isotropic.
+
+    `d = div(v)` divides `exp(A_L)`, and `w -> w + k v` reduces `a` modulo `2d`. An even lattice has
+    even `a`. Every primitive isotropic `v` occurs in such a pair with `b(v, w) = d`.
+    """
+    frame = tuple(lattice.module_generators())
+    gram = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+    exponent = max(gram.elementary_divisors())
+    even = all(gram[i, i] % 2 == 0 for i in range(gram.nrows()))
+    return tuple(
+        ((0, int(d)), (int(d), a)) for d in exponent.divisors() for a in range(0, 2 * int(d)) if not even or a % 2 == 0
+    )
+
+
 def _vectors_in_box(lattice, bound):
     generators = tuple(lattice.module_generators())
     for coordinates in product(range(-bound, bound + 1), repeat=len(generators)):

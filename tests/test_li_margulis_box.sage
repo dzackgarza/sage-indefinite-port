@@ -5,7 +5,7 @@ two orbits, divisors 1 and 2. A tuple (e, f) in U + U: primitive pairs with Gram
 """
 
 from sage_extensions.all import *
-from sage_indefinite_port.indefinite.li_margulis import generator_bound, isometry_box_bound, embedding_orbits_in_box, is_isometric_in_box, primitive_tuples_in_box
+from sage_indefinite_port.indefinite.li_margulis import isotropic_pair_grams, generator_bound, isometry_box_bound, embedding_orbits_in_box, is_isometric_in_box, primitive_tuples_in_box
 
 
 def test_null_vectors_of_u():
@@ -55,3 +55,10 @@ def test_prescribed_null_gram_on_two_planes():
     r"""Issue 61, item 4. In U + U, A = (0) has one orbit of primitive null vectors in the box."""
     L = Lattices(ZZ)("U") + Lattices(ZZ)("U")
     assert len(embedding_orbits_in_box(L, [[0]], 1)) == int(1)
+
+
+def test_isotropic_pair_grams_of_u_plus_u_three():
+    r"""L = U + U(3), even with exponent 3: d = 1 gives a = 0, and d = 3 gives a = 0, 2, 4."""
+    L = Lattices(ZZ)("U") + Lattices(ZZ)("U").twist(3)
+    expected = [((int(0), int(d)), (int(d), int(a))) for d, a in ((1, 0), (3, 0), (3, 2), (3, 4))]
+    assert list(isotropic_pair_grams(L)) == expected
