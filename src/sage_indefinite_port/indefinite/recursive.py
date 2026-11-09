@@ -511,6 +511,42 @@ def _transported(target_transport: LatticeIsometryMethods, witness: LatticeIsome
     return _isometry_from_column_matrix(source, target, columns)
 
 
+def _witt_zero_generators(lattice):
+    r"""Return ``O(L)`` generators for ``L`` isometric to the norm lattice of ``ZZ<1,i,j,k>`` of ``(-1, 3)``, or ``None``."""
+    from sage.matrix.constructor import matrix as sage_matrix
+
+    from sage_indefinite_port.indefinite.li_margulis import is_isometric_in_box
+    from sage_indefinite_port.indefinite.quaternion_lattices import QuaternionNormLattice
+    from sage_indefinite_port.indefinite.quaternion_voronoi import QuaternionVoronoi, orthogonal_group_generators
+
+    model = QuaternionNormLattice(-1, 3, 2)
+    source = model.lattice()
+    transport = is_isometric_in_box(source, lattice, 3)
+    if transport is None:
+        return None
+    frame = tuple(source.module_generators())
+    columns = sage_matrix([[int(c) for c in transport(v)] for v in frame]).transpose()
+    inverse = columns.inverse()
+    labels = tuple(lattice.module_generating_set())
+    target = tuple(lattice.module_generators())
+    result = []
+    for generator in orthogonal_group_generators(model, QuaternionVoronoi(-1, 3), model.normalizer_classes_in_box(3)):
+        on_model = sage_matrix([[int(c) for c in generator(v)] for v in frame]).transpose()
+        moved = columns * on_model * inverse
+        result.append(
+            lattice.O()(
+                {
+                    label: sum(
+                        (lattice.scalar_multiple(int(c), g) for c, g in zip(moved.column(j), target, strict=True)),
+                        lattice.zero(),
+                    )
+                    for j, label in enumerate(labels)
+                }
+            )
+        )
+    return tuple(result)
+
+
 def _witt_one_generators(lattice):
     r"""Return isometries generating ``O(L)`` from the Hilbert modular model, or ``None``."""
     from sage_indefinite_port.indefinite.witt_one_hilbert import recognized_generators
@@ -1124,6 +1160,10 @@ class EichlerRecursion:
             match profile.positive_index:
                 case 1:
                     generators = lorentzian_orthogonal_group_generators(profile.signed_view)
+                case _ if int(profile.signed_view.module_rank()) == 4 and int(profile.signed_view.witt_index()) == 0 and (
+                    witt_zero := _witt_zero_generators(profile.signed_view)
+                ) is not None:
+                    generators = witt_zero
                 case _ if int(profile.signed_view.module_rank()) == 4 and int(profile.signed_view.witt_index()) == 1 and (
                     witt_one := _witt_one_generators(profile.signed_view)
                 ) is not None:

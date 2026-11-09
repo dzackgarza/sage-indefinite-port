@@ -247,3 +247,42 @@ class PointwiseStabilizerOrbits:
                 if not any(self.equivalent(representative, vector) for representative in known):
                     known.append(vector)
                     yield vector
+
+
+class SubgroupVectorOrbits:
+    r"""The orbit set of a caller-fixed subgroup `\Gamma` on primitive vectors of a given square.
+
+    `\Gamma` needs a ``vector_equivalence_witness``, which is its exact decision. The stream visits
+    vectors by height and keeps the first of each orbit, so it is exhaustive and free of
+    duplicates, with no finiteness assumed.
+    """
+
+    def __init__(self, lattice, group, square):
+        self.lattice = lattice
+        self.group = group
+        self.square = square
+
+    def __contains__(self, vector):
+        return int(self.lattice.q(vector)) == int(self.square) and int(vector.content()) == 1
+
+    def transporter(self, left, right):
+        return self.group.vector_equivalence_witness(left, right)
+
+    def equivalent(self, left, right):
+        return self.transporter(left, right) is not None
+
+    def __iter__(self):
+        frame = tuple(self.lattice.module_generators())
+        known = []
+        for height in count(0):
+            for coordinates in product(range(-height, height + 1), repeat=len(frame)):
+                if max((abs(c) for c in coordinates), default=0) != height or not any(coordinates):
+                    continue
+                vector = sum(
+                    (self.lattice.scalar_multiple(c, g) for c, g in zip(coordinates, frame, strict=True)),
+                    self.lattice.zero(),
+                )
+                if vector in self and not any(self.equivalent(representative, vector) for representative in known):
+                    known.append(vector)
+                    yield vector
+

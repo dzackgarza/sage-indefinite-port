@@ -4,7 +4,7 @@ fixes e1 and sends v_1 to w = -2 e1 + f1 + 2 e2 + f2.
 """
 
 from sage_extensions.all import *
-from sage_indefinite_port.indefinite.pairing_slices import PointwiseStabilizerOrbits, line_transporter, setwise_transporter, pointwise_transporter, slice_invariant
+from sage_indefinite_port.indefinite.pairing_slices import PointwiseStabilizerOrbits, SubgroupVectorOrbits, line_transporter, setwise_transporter, pointwise_transporter, slice_invariant
 
 
 def _setup():
@@ -97,3 +97,13 @@ def test_mixed_marking_is_decided_in_the_complement():
     g = pointwise_transporter(L, (x,), e + x, f + x)
     assert g is not None and g(x) == x and g(e + x) == f + x
     assert pointwise_transporter(L, (x,), e + x, x + x) is None
+
+
+def test_congruence_subgroup_orbit_stream():
+    r"""O(U) is faithful modulo three, so Gamma(3) is trivial and each primitive null vector is its own orbit."""
+    L = Lattices(ZZ)("U")
+    e, f = tuple(L.module_generators())
+    gamma = L.O().congruence_preimage(3)
+    stream = iter(SubgroupVectorOrbits(L, gamma, 0))
+    found = [next(stream) for _ in range(int(4))]
+    assert set(str(v) for v in found) == set(str(v) for v in (e, -e, f, -f))

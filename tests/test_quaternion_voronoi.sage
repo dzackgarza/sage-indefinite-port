@@ -72,3 +72,12 @@ def test_the_full_orthogonal_group_generators_of_the_anisotropic_lattice():
     assert generators[-1](points[1]) == -points[1]
     assert len(generators) > int(12)
 
+
+
+def test_public_group_generators_of_the_anisotropic_lattice():
+    L = Lattices(ZZ)([[2, 0, 0, 0], [0, 2, 0, 0], [0, 0, -6, 0], [0, 0, 0, -6]])
+    generators = tuple(L.O().group_generators())
+    assert generators
+    frame = tuple(L.module_generators())
+    for g in generators:
+        assert all(L.b(g(v), g(w)) == L.b(v, w) for v in frame for w in frame)
