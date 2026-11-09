@@ -89,6 +89,12 @@ jobs:
             test: test_gamma_three_splits_null_lines_of_two_hyperbolic_planes_into_sixteen_orbits
           - file: test_orbits.sage
             test: test_rank_three_discriminant_image
+          - file: test_degenerate_ambient_consumers.sage
+            test: test_degenerate_vector_classes_of_square_two_and_fifty
+          - file: test_degenerate_ambient_consumers.sage
+            test: test_congruence_image_and_kernel_generators
+          - file: test_degenerate_ambient_consumers.sage
+            test: test_square_zero_classes_are_a_lazy_set
     steps:
       - uses: actions/checkout@v4
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
