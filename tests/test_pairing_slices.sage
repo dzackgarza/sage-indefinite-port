@@ -151,3 +151,15 @@ def test_congruence_transporter_is_in_the_subgroup():
     gamma = L.O().congruence_preimage(3)
     g = gamma.vector_equivalence_witness(e1, e1 + L.scalar_multiple(3, _e2))
     assert g is not None and g in gamma and g(e1) == e1 + L.scalar_multiple(3, _e2)
+
+
+def test_skipping_flag_tuples_in_three_planes():
+    r"""Issue 61, item 6. In U + U + U, the flag e1 in <e1, e2, e3> is the ordered tuple (e1, e2, e3) up to the
+    upper triangular source group, and the transporter carries the tuple and hence each face."""
+    from sage_indefinite_port.indefinite.pairing_slices import marked_transporter
+
+    L = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    e1, f1, e2, f2, e3, f3 = tuple(L.module_generators())
+    g = marked_transporter(L, (e1, e2, e3), (e2, e1, e3))
+    assert g is not None and (g(e1), g(e2), g(e3)) == (e2, e1, e3)
+    assert marked_transporter(L, (e1, e2, e3), (e1, e2, e2 + e3)) is not None
