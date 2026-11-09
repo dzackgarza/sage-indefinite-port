@@ -10,6 +10,7 @@ from itertools import product
 
 from sage.matrix.constructor import matrix
 from sage.modules.free_module_element import vector
+from sage.rings.finite_rings.finite_field_constructor import GF
 from sage.rings.number_field.number_field import CyclotomicField
 from sage_extensions.categories.hermitian_lattices import HermitianLattice
 
@@ -186,6 +187,34 @@ def _move_root_to_r7(root):
     if moved != ROOTS[3] and moved / moved[3] != ROOTS[3]:
         raise ArithmeticError("the translation did not reach r_3")
     return (R[6] * R[7]) * (R[3] * R[6]) * shift
+
+
+def _mod_theta(entries):
+    return entries.apply_map(lambda c: GF(3)(int(c.vector()[0]) + int(c.vector()[1])), GF(3))
+
+
+def spinor_character(g) -> int:
+    r"""Return the spinor norm ``nu(g)`` of (2.12) on ``Lambda / theta Lambda``, as ``+1`` or ``-1``.
+
+    Wall's form on ``im(1 - g)`` is ``chi((1-g) x, u) = b(x, u)``. A reflection in
+    ``v`` has ``chi(v, v) = q(v) / 2``, so ``nu = det(chi) 2^k`` for ``k = rk(1 - g)``.
+    """
+    if not is_isometry(g):
+        raise ValueError(f"{g} is not an isometry of the Eisenstein lattice")
+    reduced = _mod_theta(g)
+    form = _mod_theta(FORM)
+    difference = matrix.identity(GF(3), 5) - reduced
+    pivots = difference.pivots()
+    images = difference.matrix_from_columns(pivots)
+    sources = matrix.identity(GF(3), 5).matrix_from_columns(pivots)
+    chi = images.transpose() * form * sources
+    value = chi.det() * GF(3)(2) ** len(pivots) if pivots else GF(3)(1)
+    return 1 if value == 1 else -1
+
+
+def is_aut_plus(g) -> bool:
+    r"""Return whether ``g`` lies in the index-two subgroup ``Aut^+`` of (2.12)."""
+    return spinor_character(g) == 1
 
 
 def lattice() -> HermitianLattice:

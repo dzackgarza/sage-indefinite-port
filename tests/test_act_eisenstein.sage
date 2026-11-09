@@ -9,7 +9,7 @@ from sage_extensions.all import *
 from sage.modules.free_module_element import vector as sage_vector
 from sage_indefinite_port.indefinite.act_eisenstein import (
     AUT_PLUS_GENERATORS, BAR, BIFLECTION, FIELD, FORM, FULL_GENERATORS, OMEGA, ONE, R, RHO, ROOTS, THETA, ZERO,
-    h, is_isometry, is_primitive, lattice, reduce_null_vector, translation,
+    h, is_aut_plus, is_isometry, is_primitive, lattice, reduce_null_vector, spinor_character, translation,
 )
 
 EDGES = ((1, 2), (2, 3), (3, 4), (4, 5), (3, 6), (6, 7))
@@ -95,3 +95,18 @@ def test_trace_lattice_rank_ten_signature():
     trace = lattice().trace_lattice()
     assert int(trace.module_rank()) == int(10)
     assert tuple(int(x) for x in trace.signature_pair()) == (int(8), int(2))
+
+
+def test_spinor_character_separates_aut_plus():
+    r"""Hexflections reduce to reflections in vectors of norm 1, a square; B to one of norm 2 = -1, a nonsquare."""
+    assert all(is_aut_plus(g) for g in AUT_PLUS_GENERATORS)
+    assert spinor_character(BIFLECTION) == int(-1)
+    assert not is_aut_plus(BIFLECTION)
+
+
+def test_spinor_character_is_multiplicative():
+    elements = (R[1], R[3], R[6], BIFLECTION, translation(_t(ONE, OMEGA, 0), ZERO))
+    assert all(
+        spinor_character(a * b) == spinor_character(a) * spinor_character(b)
+        for a in elements for b in elements
+    )
