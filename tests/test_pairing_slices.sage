@@ -129,3 +129,25 @@ def test_equal_gram_with_only_a_rational_transporter():
 
     L, e1, _f1, _e2, _f2 = _setup()
     assert marked_transporter(L, (e1,), (L.scalar_multiple(2, e1),)) is None
+
+
+def test_setwise_and_based_stabilizers_of_a_null_plane():
+    r"""Issue 61, item 1. For I = <e1, e2> in U + U, based elements fix e1 and e2; setwise ones preserve I."""
+    L, e1, f1, e2, f2 = _setup()
+    embedding = L.primitive_isotropic_subobject(e1, e2).inclusion()
+    based = tuple(L.O().pointwise_stabilizer(embedding).group_generators())
+    setwise = tuple(L.O().setwise_stabilizer(embedding).group_generators())
+    assert based and setwise
+    assert all(g(e1) == e1 and g(e2) == e2 for g in based)
+    for g in setwise:
+        for v in (e1, e2):
+            assert int(L.b(g(v), e1)) == int(0) and int(L.b(g(v), e2)) == int(0)
+    assert any(g(e1) != e1 or g(e2) != e2 for g in setwise)
+
+
+def test_congruence_transporter_is_in_the_subgroup():
+    r"""Issue 61, item 8. A transporter under Gamma(3) reduces to the identity modulo three."""
+    L, e1, f1, _e2, _f2 = _setup()
+    gamma = L.O().congruence_preimage(3)
+    g = gamma.vector_equivalence_witness(e1, e1 + L.scalar_multiple(3, _e2))
+    assert g is not None and g in gamma and g(e1) == e1 + L.scalar_multiple(3, _e2)
