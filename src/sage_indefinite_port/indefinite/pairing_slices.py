@@ -23,7 +23,7 @@ def _marking(lattice, vectors):
     labels = tuple(source.module_generating_set())
     images = dict(zip(labels, vectors, strict=True))
     category = lattices.CosliceUnder(source)
-    return category, category.object(source.Mor(lattice)(lambda label: images[label]))
+    return category, category.object(lattices.Mor(source, lattice)(lambda label: images[label]))
 
 
 def _saturated_bases(lattice, source, target):
@@ -203,7 +203,7 @@ def _rebase(category, marked):
     lattice = arrow.codomain()
     labels = tuple(arrow.domain().module_generating_set())
     images = {label: arrow(arrow.domain().module_generator(label)) for label in labels}
-    return base.Mor(lattice)(lambda label: images[label])
+    return category.base_category().Mor(base, lattice)(lambda label: images[label])
 
 
 class PointwiseStabilizerOrbits:
