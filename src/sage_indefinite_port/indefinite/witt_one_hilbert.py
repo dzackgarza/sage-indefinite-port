@@ -166,10 +166,10 @@ class HilbertWittOneLattice:
         return h
 
 
-def recognized_generators(lattice):
-    r"""Return ``O(L)`` generators when ``L`` is isometric to a Hilbert model, or ``None``.
+def recognized_model(lattice):
+    r"""Return ``(model, basis)`` when ``L`` is isometric to a Hilbert model, or ``None``.
 
-    Finds a hyperbolic plane in a small box, splits it off, and matches the complement with the
+    Columns of ``basis`` are the images of the model coordinates. Finds a hyperbolic plane in a small box, splits it off, and matches the complement with the
     trace form of `O_E` for `E = Q(\sqrt{D})`, `D` the squarefree part of `|\det L|`. Generators of
     the model are conjugated back. Finding no plane or no match in the box returns ``None``,
     which is no statement about `L`.
@@ -200,6 +200,30 @@ def recognized_generators(lattice):
                     basis = matrix(ZZ, [e, f]).stack(change * complement).transpose()
                     if abs(basis.det()) != 1:
                         continue
-                    inverse = basis.inverse()
-                    return tuple(basis * g * inverse for g in model.generators())
+                    return model, basis
     return None
+
+
+def recognized_generators(lattice):
+    r"""Return ``O(L)`` generators when ``L`` is isometric to a Hilbert model, or ``None``."""
+    recognized = recognized_model(lattice)
+    if recognized is None:
+        return None
+    model, basis = recognized
+    inverse = basis.inverse()
+    return tuple(basis * g * inverse for g in model.generators())
+
+
+def isotropic_line_representative(lattice):
+    r"""Return the vector ``e`` of the one ``O(L)``-orbit of primitive isotropic lines, or ``None``.
+
+    Every primitive null vector reaches ``e`` under ``<SL_2(O), -1>``, so there is one orbit of lines.
+    """
+    recognized = recognized_model(lattice)
+    if recognized is None:
+        return None
+    _model, basis = recognized
+    frame = tuple(lattice.module_generators())
+    return sum(
+        (lattice.scalar_multiple(int(c), g) for c, g in zip(basis.column(0), frame, strict=True)), lattice.zero()
+    )

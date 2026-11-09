@@ -51,3 +51,8 @@ def test_public_group_generators_of_the_issue_lattice():
     e, f, x, y = tuple(L.module_generators())
     for g in generators:
         assert all(L.b(g(v), g(w)) == L.b(v, w) for v in (e, f, x, y) for w in (e, f, x, y))
+
+
+def test_one_orbit_of_primitive_isotropic_lines_through_the_public_group():
+    L = Lattices(ZZ)("U") + Lattices(ZZ)([[2, 0], [0, -4]])
+    assert int(L.O().isotropic_orbit_representatives(1).cardinality()) == int(1)
