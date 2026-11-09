@@ -95,6 +95,8 @@ jobs:
             test: test_congruence_image_and_kernel_generators
           - file: test_degenerate_ambient_consumers.sage
             test: test_square_zero_classes_are_a_lazy_set
+          - file: test_prescribed_gram.sage
+            test: test_prescribed_rank_two_gram_fixtures
     steps:
       - uses: actions/checkout@v4
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
