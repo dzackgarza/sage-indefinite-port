@@ -1,0 +1,116 @@
+name: Long witnesses
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - witnesses/**
+      - .github/workflows/long-witnesses.yml
+permissions:
+  contents: read
+  packages: read
+jobs:
+  julia:
+    # Instantiates the bridge environment once into the Julia depot cache that every shard restores.
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    container:
+      image: ghcr.io/dzackgarza/sage:develop
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+      options: --user root
+    env:
+      SAGE_BIN: /sage/.venv/bin/sage
+      # The image's read-only depot holds Oscar; the cached writable depot
+      # in front of it holds the bridge environment's resolved packages.
+      JULIA_DEPOT_PATH: '/github/home/.julia:/opt/julia-depot:'
+    outputs:
+      key: ${{ steps.key.outputs.key }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: extractions/setup-just@v4
+        with:
+          github-token: ${{ github.token }}
+      - run: just ci-provision-sage
+      - id: key
+        run: echo "key=$(just ci-julia-key)" >> "$GITHUB_OUTPUT"
+      - id: restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            /github/home/.julia/packages
+            /github/home/.julia/artifacts
+            /github/home/.julia/compiled
+            /github/home/.julia/registries
+            /github/home/.julia/scratchspaces
+            /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
+          key: ${{ steps.key.outputs.key }}
+      - run: just ci-provision-julia
+      - if: steps.restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            /github/home/.julia/packages
+            /github/home/.julia/artifacts
+            /github/home/.julia/compiled
+            /github/home/.julia/registries
+            /github/home/.julia/scratchspaces
+            /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
+          key: ${{ steps.key.outputs.key }}
+  witness:
+    needs:
+      - julia
+    name: ${{ matrix.test }}
+    runs-on: ubuntu-latest
+    # The family's own cap plus setup margin, from the plan step. A single 360 here let a
+    # hung family hold the concurrency group for six hours and starve the next run.
+    timeout-minutes: 360
+    container:
+      image: ghcr.io/dzackgarza/sage:develop
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+      options: --user root
+    env:
+      SAGE_BIN: /sage/.venv/bin/sage
+      # The image's read-only depot holds Oscar; the cached writable depot
+      # in front of it holds the bridge environment's resolved packages.
+      JULIA_DEPOT_PATH: '/github/home/.julia:/opt/julia-depot:'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - file: test_hermitian_levi.sage
+            test: test_split_gaussian_rank_two_levi_index
+          - file: test_hermitian_levi.sage
+            test: test_glued_eisenstein_rank_two_levi_index
+          - file: test_orbits.sage
+            test: test_gamma_three_splits_null_lines_of_two_hyperbolic_planes_into_sixteen_orbits
+          - file: test_orbits.sage
+            test: test_rank_three_discriminant_image
+    steps:
+      - uses: actions/checkout@v4
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: extractions/setup-just@v4
+        with:
+          github-token: ${{ github.token }}
+      - run: just ci-provision-sage
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            /github/home/.julia/packages
+            /github/home/.julia/artifacts
+            /github/home/.julia/compiled
+            /github/home/.julia/registries
+            /github/home/.julia/scratchspaces
+            /sage/.venv/lib/python3.14/site-packages/sage_julia_bridge/julia_env/Manifest.toml
+          key: ${{ needs.julia.outputs.key }}
+          fail-on-cache-miss: true
+      - run: just ci-provision-julia
+      - run: just ci-witness ${{ matrix.file }} ${{ matrix.test }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: witness-${{ matrix.test }}
+          path: .tmp/ci/results/

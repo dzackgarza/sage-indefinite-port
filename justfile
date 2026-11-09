@@ -106,6 +106,21 @@ ci-provision-julia:
     # Instantiate each selected manifest before exercising the same imports.
     JULIA_PKG_PRECOMPILE_AUTO=0 julia --project="$env_dir" -e 'using Pkg; bridge_project = Base.active_project(); Pkg.activate("v$(VERSION.major).$(VERSION.minor)"; shared=true); Pkg.instantiate(); Pkg.activate(dirname(bridge_project)); Pkg.instantiate(); using Oscar, JSON'
 
+# CI only: run one long true witness from witnesses/ against the pinned provider.
+ci-witness file test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    out={{ci_dir}}/results/{{test}}
+    mkdir -p "$out"
+    git rev-parse HEAD > "$out/commit"
+    git -C {{ci_dir}}/sage-extensions rev-parse HEAD > "$out/provider_commit"
+    sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
+    export PYTHONPATH="$PWD/{{ci_dir}}/ai-review-ci/tool-artifacts/pytest_plugins:$PWD/src:$PWD"
+    "$sage_python" -c 'import sage.all, sys, pytest; sys.exit(pytest.main(sys.argv[1:]))' \
+        -p qc_sage_session "witnesses/{{file}}::{{test}}" -vv -rA --tb=long --instafail \
+        --junitxml="$out/junit.xml" 2>&1 | tee "$out/log"
+    exit "${PIPESTATUS[0]}"
+
 # CI only: key Julia packages by the bridge project and shared image lock.
 ci-julia-key:
     #!/usr/bin/env bash
