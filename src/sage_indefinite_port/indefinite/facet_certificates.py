@@ -35,7 +35,8 @@ from __future__ import annotations
 
 from math import gcd
 
-from sage.all import QQ, ZZ, matrix
+from sage.matrix.constructor import matrix
+from sage.all import QQ, ZZ
 
 __all__ = [
     "adjacent_incidences",

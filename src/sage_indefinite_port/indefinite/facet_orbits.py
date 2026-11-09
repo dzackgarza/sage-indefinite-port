@@ -40,7 +40,8 @@ from fractions import Fraction
 from heapq import heappop, heappush
 from math import gcd
 
-from sage.all import QQ, ZZ, Permutation, PermutationGroup, matrix, vector
+from sage.matrix.constructor import matrix
+from sage.all import QQ, ZZ, Permutation, PermutationGroup, vector
 from sage.libs.gap.libgap import libgap
 
 from sage_indefinite_port.indefinite.facet_certificates import (

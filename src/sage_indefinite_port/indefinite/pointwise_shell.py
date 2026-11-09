@@ -60,7 +60,8 @@ from __future__ import annotations
 
 from math import gcd
 
-from sage.all import ZZ, matrix, vector
+from sage.matrix.constructor import matrix
+from sage.all import ZZ, vector
 
 from sage_indefinite_port.readiness import UnfinishedCapability
 from sage_indefinite_port.indefinite.recursive import _isometry_from_row_matrix
