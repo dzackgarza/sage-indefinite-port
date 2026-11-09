@@ -6,6 +6,11 @@ For a fixed tuple `s` of vectors, `\Gamma = Stab_{O(L)}(s)` preserves every `b(s
 markings of the same Gram lattice, which is a decision on coslice objects.
 """
 
+from itertools import count, product
+
+from sage.matrix.constructor import matrix
+from sage.rings.integer_ring import ZZ
+from sage.rings.rational_field import QQ
 from sage_extensions.categories.lattices import Lattices
 from sage_indefinite_port.indefinite.marked_lattices import isometry
 
@@ -20,6 +25,35 @@ def _marking(lattice, vectors):
     return category, category.object(source.Mor(lattice)(lambda label: images[label]))
 
 
+def _saturated_bases(lattice, source, target):
+    r"""Return bases of the saturation of the source span and its image, or ``None``.
+
+    A map fixing `source_i -> target_i` is rational-linear on the span, extends uniquely to
+    the saturation, and exists only when the relations match and the image is a saturated
+    integral basis, since an isometry carries a saturated sublattice to a saturated one.
+    """
+    rows = matrix(QQ, [[int(c) for c in v] for v in source])
+    images = matrix(QQ, [[int(c) for c in v] for v in target])
+    pivots = rows.pivot_rows()
+    independent = rows[list(pivots)]
+    transfer = independent.solve_left(rows)
+    if transfer * images[list(pivots)] != images:
+        return None
+    saturated = matrix(ZZ, independent.denominator() * independent).saturation().change_ring(QQ)
+    moved = independent.solve_left(saturated) * images[list(pivots)]
+    if moved.denominator() != 1 or any(d != 1 for d in matrix(ZZ, moved).elementary_divisors()):
+        return None
+    generators = tuple(lattice.module_generators())
+
+    def assemble(row):
+        return sum(
+            (lattice.scalar_multiple(int(c), g) for c, g in zip(row, generators, strict=True)),
+            lattice.zero(),
+        )
+
+    return tuple(assemble(r) for r in saturated.rows()), tuple(assemble(r) for r in moved.rows())
+
+
 def slice_invariant(lattice, fixed, vector):
     r"""Return the pairings with the fixed tuple and the square of ``vector``."""
     return tuple(lattice.b(s, vector) for s in fixed), lattice.q(vector)
@@ -29,8 +63,11 @@ def pointwise_transporter(lattice, fixed, left, right):
     r"""Return `g \in Stab_{O(L)}(fixed)` with `g(left) = right`, or ``None``."""
     if slice_invariant(lattice, fixed, left) != slice_invariant(lattice, fixed, right):
         return None
-    category, source = _marking(lattice, (*fixed, left))
-    _category, target = _marking(lattice, (*fixed, right))
+    bases = _saturated_bases(lattice, (*fixed, left), (*fixed, right))
+    if bases is None:
+        return None
+    category, source = _marking(lattice, bases[0])
+    _category, target = _marking(lattice, bases[1])
     target = category.object(_rebase(category, target))
     witness = isometry(category, source, target)
     if witness is None:
@@ -47,3 +84,46 @@ def _rebase(category, marked):
     labels = tuple(arrow.domain().module_generating_set())
     images = {label: arrow(arrow.domain().module_generator(label)) for label in labels}
     return base.Mor(lattice)(lambda label: images[label])
+
+
+class PointwiseStabilizerOrbits:
+    r"""The orbit set of `Stab_{O(L)}(fixed)` on primitive vectors of a given square.
+
+    The set can be infinite, so it has no list of representatives. Iteration visits all
+    vectors by sup-norm height and yields the first vector of each orbit. Every primitive
+    vector of the square has a height, and the transporter decides equivalence, so the
+    stream is exhaustive and free of duplicates.
+    """
+
+    def __init__(self, lattice, fixed, square):
+        self.lattice = lattice
+        self.fixed = tuple(fixed)
+        self.square = square
+
+    def __contains__(self, vector):
+        return self.lattice.q(vector) == self.square and vector.content() == 1
+
+    def equivalent(self, left, right):
+        return pointwise_transporter(self.lattice, self.fixed, left, right) is not None
+
+    def transporter(self, left, right):
+        return pointwise_transporter(self.lattice, self.fixed, left, right)
+
+    def _shell(self, height):
+        generators = tuple(self.lattice.module_generators())
+        for coordinates in product(range(-height, height + 1), repeat=len(generators)):
+            if max((abs(c) for c in coordinates), default=0) == height:
+                yield sum(
+                    (self.lattice.scalar_multiple(c, g) for c, g in zip(coordinates, generators, strict=True)),
+                    self.lattice.zero(),
+                )
+
+    def __iter__(self):
+        known = []
+        for height in count(0):
+            for vector in self._shell(height):
+                if vector == self.lattice.zero() or vector not in self:
+                    continue
+                if not any(self.equivalent(representative, vector) for representative in known):
+                    known.append(vector)
+                    yield vector

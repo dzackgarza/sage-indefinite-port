@@ -4,7 +4,7 @@ fixes e1 and sends v_1 to w = -2 e1 + f1 + 2 e2 + f2.
 """
 
 from sage_extensions.all import *
-from sage_indefinite_port.indefinite.pairing_slices import pointwise_transporter, slice_invariant
+from sage_indefinite_port.indefinite.pairing_slices import PointwiseStabilizerOrbits, pointwise_transporter, slice_invariant
 
 
 def _setup():
@@ -28,3 +28,23 @@ def test_transporter_in_the_stabilizer():
     assert L.q(w) == 0
     g = pointwise_transporter(L, (e1,), v, w)
     assert g is not None and g(e1) == e1 and g(v) == w
+
+
+def test_orbit_stream_on_the_plane_has_the_four_primitive_null_vectors():
+    r"""Stab(e) in O(U) is trivial, so each of +-e, +-f is its own orbit."""
+    L = Lattices(ZZ)("U")
+    e, f = tuple(L.module_generators())
+    orbits = iter(PointwiseStabilizerOrbits(L, (e,), 0))
+    found = [next(orbits) for _ in range(int(4))]
+    assert set(str(v) for v in found) == set(str(v) for v in (e, -e, f, -f))
+
+
+def test_orbit_stream_on_two_planes_is_free_of_duplicates():
+    r"""Pairings with e1 are invariants, and the first orbits realize several values."""
+    L, e1, _f1, _e2, _f2 = _setup()
+    orbits = PointwiseStabilizerOrbits(L, (e1,), 0)
+    stream = iter(orbits)
+    found = [next(stream) for _ in range(int(6))]
+    assert all(v in orbits for v in found)
+    assert all(not orbits.equivalent(found[i], found[j]) for i in range(int(6)) for j in range(i + int(1), int(6)))
+    assert len(set(int(L.b(e1, v)) for v in found)) >= int(2)
