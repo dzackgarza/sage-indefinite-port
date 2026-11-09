@@ -4,7 +4,7 @@ fixes e1 and sends v_1 to w = -2 e1 + f1 + 2 e2 + f2.
 """
 
 from sage_extensions.all import *
-from sage_indefinite_port.indefinite.pairing_slices import PointwiseStabilizerOrbits, line_transporter, pointwise_transporter, slice_invariant
+from sage_indefinite_port.indefinite.pairing_slices import PointwiseStabilizerOrbits, line_transporter, setwise_transporter, pointwise_transporter, slice_invariant
 
 
 def _setup():
@@ -64,3 +64,17 @@ def test_tuple_slice_of_two_vectors():
     L, e1, f1, e2, f2 = _setup()
     assert pointwise_transporter(L, (), (e2, f2), (e1, f1)) is not None
     assert pointwise_transporter(L, (e1,), (e2, f2), (e1, f1)) is None
+
+
+def test_setwise_rank_two_stabilizer_exchanges_summands():
+    r"""L = U + A1 + A1, S = A1 + A1. The swap preserves S and sends h + x1 to h + x2, h = e + f.
+    Pointwise, the pairing with x1 differs. The vector h pairs to 0 with S, so it is not h + x1."""
+    L = Lattices(ZZ)("U") + Lattices(ZZ)("A1") + Lattices(ZZ)("A1")
+    e, f, x1, x2 = tuple(L.module_generators())
+    h = e + f
+    left, right = h + x1, h + x2
+    assert pointwise_transporter(L, (x1, x2), left, right) is None
+    g = setwise_transporter(L, (x1, x2), left, right)
+    assert g is not None and g(left) == right
+    assert set(str(g(x)) for x in (x1, x2)) <= set(str(v) for v in (x1, x2, -x1, -x2))
+    assert setwise_transporter(L, (x1, x2), left, h) is None

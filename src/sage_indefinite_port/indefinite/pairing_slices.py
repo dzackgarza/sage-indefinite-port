@@ -99,6 +99,30 @@ def line_transporter(lattice, generator, left, right):
     return None
 
 
+def setwise_transporter(lattice, fixed, left, right):
+    r"""Return `g` preserving the span of ``fixed`` with `g(left) = right`, or ``None``.
+
+    The tuple ``fixed`` is a basis of a primitive definite sublattice `S`. Restriction sends the
+    setwise stabilizer into the finite group `O(S)`, so running over `O(S)` decides.
+    """
+    gram = [[int(lattice.b(x, y)) for y in fixed] for x in fixed]
+    source = Lattices(lattice.base_ring())(gram)
+    assert source.is_definite(), f"{fixed} does not span a definite sublattice"
+    frame = tuple(source.module_generators())
+    for automorphism in source.O():
+        images = tuple(
+            sum(
+                (lattice.scalar_multiple(int(c), f) for c, f in zip(automorphism(v), fixed, strict=True)),
+                lattice.zero(),
+            )
+            for v in frame
+        )
+        witness = marked_transporter(lattice, (*fixed, left), (*images, right))
+        if witness is not None:
+            return witness
+    return None
+
+
 def _rebase(category, marked):
     r"""Return the arrow of ``marked`` from the base object of ``category``."""
     base = category.base_object()
