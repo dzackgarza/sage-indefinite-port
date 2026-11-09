@@ -3,7 +3,8 @@ r"""Orbit witnesses whose group computations need long runs.
 Gamma(3) on 2U: the orbits of null lines are the 16 isotropic lines of the split form on F_3^4.
 
 L=3U+<-6>, maximal null plane in 3U: minus one on <-6> is in the stabilizer and
-is -1 on the discriminant group Z/6, whose orthogonal group is {+-1}.
+is -1 on the discriminant group Z/6, whose orthogonal group is {+-1}. The radical
+action uses adjacent transpositions, a shear and a sign, which generate GL_3(Z).
 """
 
 from sage_extensions.all import *
