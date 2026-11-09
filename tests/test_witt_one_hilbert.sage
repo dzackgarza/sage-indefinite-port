@@ -56,3 +56,17 @@ def test_public_group_generators_of_the_issue_lattice():
 def test_one_orbit_of_primitive_isotropic_lines_through_the_public_group():
     L = Lattices(ZZ)("U") + Lattices(ZZ)([[2, 0], [0, -4]])
     assert int(L.O().isotropic_orbit_representatives(1).cardinality()) == int(1)
+
+
+def test_vector_classes_at_witt_index_one_are_decided_exactly():
+    r"""x and -x are one orbit, since -1 is an isometry; g(x) is one orbit with x. On U + <2,-4>, the
+    vectors e + f and x both have square 2, with divisors 1 and 2, so they are in different orbits."""
+    from sage_indefinite_port.indefinite.pairing_slices import SubgroupVectorOrbits
+
+    L = Lattices(ZZ)("U") + Lattices(ZZ)([[2, 0], [0, -4]])
+    e, f, x, y = tuple(L.module_generators())
+    orbits = SubgroupVectorOrbits(L, L.O(), 2)
+    assert orbits.equivalent(x, -x)
+    g = tuple(L.O().group_generators())[int(0)]
+    assert orbits.equivalent(x, g(x))
+    assert not orbits.equivalent(x, e + f)
