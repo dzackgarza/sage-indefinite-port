@@ -340,6 +340,31 @@ def _nonprimitive_transporter(source: Morphism, target: Morphism, transporter: L
 
 def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
     r"""Generators of the automorphism group of a marked lattice in ``category``, as a finite ordered set of isometries of L."""
+    if isinstance(category, CosliceCategory) or category is ARROWS:
+        arrow = marked.arrow()
+        ambient = arrow.codomain()
+        source = arrow.domain()
+        if int(source.rank()) > 0 and not ambient.is_nondegenerate():
+            from sage_indefinite_port.indefinite.degenerate_markings import degenerate_marking_generators
+
+            frame = tuple(ambient.module_generators())
+            labels = tuple(ambient.module_generating_set())
+            vectors = tuple(arrow(point) for point in source.module_generators())
+            matrices = degenerate_marking_generators(ambient, vectors, isinstance(category, CosliceCategory))
+            return finite_ordered_set(
+                tuple(
+                    ambient.O()(
+                        {
+                            label: sum(
+                                (ambient.scalar_multiple(int(c), g) for c, g in zip(m.column(j), frame, strict=True)),
+                                ambient.zero(),
+                            )
+                            for j, label in enumerate(labels)
+                        }
+                    )
+                    for m in matrices
+                )
+            )
     match category:
         case CosliceCategory():
             rank = int(category.base_object().rank())
