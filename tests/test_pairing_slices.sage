@@ -107,3 +107,25 @@ def test_congruence_subgroup_orbit_stream():
     stream = iter(SubgroupVectorOrbits(L, gamma, 0))
     found = [next(stream) for _ in range(int(4))]
     assert set(str(v) for v in found) == set(str(v) for v in (e, -e, f, -f))
+
+
+def test_ordered_and_nonprimitive_null_tuples_on_two_planes():
+    r"""Issue 61, items 2 and 3. U + U swaps the planes, so (e1, e2) goes to (e2, e1). The tuple (2 e1, e2)
+    spans a sublattice of index two in its saturation and (e1, e2) has index one, so no isometry relates them."""
+    from sage_indefinite_port.indefinite.pairing_slices import marked_transporter
+
+    L, e1, f1, e2, f2 = _setup()
+    g = marked_transporter(L, (e1, e2), (e2, e1))
+    assert g is not None and g(e1) == e2 and g(e2) == e1
+    double = L.scalar_multiple(2, e1)
+    assert marked_transporter(L, (double, e2), (e1, e2)) is None
+    assert marked_transporter(L, (double, e2), (double, e2)) is not None
+
+
+def test_equal_gram_with_only_a_rational_transporter():
+    r"""Issue 61, item 9. (e1) and (2 e1) both have Gram (0), and no isometry maps a
+    primitive vector to a nonprimitive one."""
+    from sage_indefinite_port.indefinite.pairing_slices import marked_transporter
+
+    L, e1, _f1, _e2, _f2 = _setup()
+    assert marked_transporter(L, (e1,), (L.scalar_multiple(2, e1),)) is None
