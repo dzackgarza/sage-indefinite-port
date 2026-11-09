@@ -426,6 +426,70 @@ def _degenerate_pointed_classes(category: Category, lattice: Lattices.ParentMeth
     return tuple(category.object(base.hom([vector_], codomain=lattice)) for vector_ in vectors)
 
 
+class DegenerateNullClasses:
+    r"""Primitive square-zero classes of ``L = C + R``, in blocks of the content ``d`` of the ``C``-part (#41).
+
+    Block zero is the radical class ``(0, e_1)``. Block ``d >= 1`` has one class
+    per primitive isotropic class ``c'`` of ``C`` and per residue of
+    :func:`_radical_residues` modulo ``d``.
+    """
+
+    def __init__(self, lattice: Lattices.ParentMethods) -> None:
+        self.reduction = indefinite_reduced_presentation(lattice)
+        reduced = self.reduction.reduced
+        gram = _gram_in_label_order(reduced)
+        self.size, self.rank = int(gram.nrows()), int(gram.rank())
+        self.labels = tuple(reduced.module_generating_set())
+        self.ring = reduced.base_ring()
+        self.primitive: tuple[tuple[int, ...], ...] = ()
+        if self.rank:
+            complement = lattice.lattice_category()([[int(gram[i, j]) for j in range(self.rank)] for i in range(self.rank)])
+            names = tuple(complement.module_generating_set())
+            self.primitive = tuple(
+                tuple(int(point.to_vector()(name)) for name in names)
+                for point in complement.O().vector_orbit_representatives(0, content=1)
+            )
+
+    def is_finite(self) -> bool:
+        return not self.primitive
+
+    def _point(self, coordinates: tuple[int, ...]) -> Lattices.ElementMethods:
+        reduced = self.reduction.reduced
+        return self.reduction.isometry(reduced.linear_combination({
+            label: self.ring(value) for label, value in zip(self.labels, coordinates, strict=True) if value
+        }))
+
+    def _block(self, content: int) -> tuple[tuple[int, ...], ...]:
+        return tuple(
+            tuple(content * entry for entry in primitive) + residue
+            for primitive in self.primitive
+            for residue in _radical_residues(content, self.size - self.rank)
+        )
+
+    def coordinates(self):
+        yield (0,) * self.rank + (1,) + (0,) * (self.size - self.rank - 1)
+        if not self.primitive:
+            return
+        content = 1
+        while True:
+            yield from self._block(content)
+            content += 1
+
+    def __iter__(self):
+        return map(self._point, self.coordinates())
+
+    def index_of(self, vector: Lattices.ElementMethods) -> int | None:
+        inverse = self.reduction.isometry.inverse()
+        target = tuple(int(inverse(vector).to_vector()(label)) for label in self.labels)
+        bound = gcd(*target[: self.rank])
+        for index, candidate in enumerate(self.coordinates()):
+            if candidate == target:
+                return index
+            if gcd(*candidate[: self.rank]) > bound > 0 or (bound == 0 and index > 0):
+                return None
+        return None
+
+
 def _pointed_classes(category: Category, lattice: Lattices.ParentMethods, square: int) -> tuple[Parent, ...]:
     if not lattice.is_nondegenerate() and square != 0:
         return _degenerate_pointed_classes(category, lattice, square)
