@@ -41,9 +41,11 @@ def test_generator_bound_formula():
 
 
 def test_isometry_bound_exponents():
-    r"""The general exponent is negative for r = 3, so it is replaced by zero; the anisotropic one is (117 + 24 - 26)/30, rounded up to 4."""
+    r"""n = 3, A = B = diag(1, 2, -1), |det| = 2, norm 2, C = 1.
+
+    (3): exponents 0, (351 - 117 + 156 + 20)/40 = 41/4 and (351 - 117 + 216 - 20)/40 = 43/4,
+    with ceilings 11 and 11. (4): (117 + 24 - 26)/30 = 23/6, 1/2, 1, with ceilings 4, 1, 1.
+    """
     gram = [[1, 0, 0], [0, 2, 0], [0, 0, -1]]
-    general = isometry_box_bound(gram, gram, int(1))
-    anisotropic = isometry_box_bound(gram, gram, int(1), anisotropic=True)
-    assert int(general) == int(2 ** int(81) + 1)
-    assert int(anisotropic) == int(2 ** int(4) * 2 ** int(81) + 1)
+    assert int(isometry_box_bound(gram, gram, int(1))) == int(2 ** int(22) + 1)
+    assert int(isometry_box_bound(gram, gram, int(1), anisotropic=True)) == int(2 ** int(6) + 1)

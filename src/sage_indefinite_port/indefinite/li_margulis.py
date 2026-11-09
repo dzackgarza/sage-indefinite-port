@@ -31,23 +31,32 @@ def generator_bound(gram, constant):
 
 
 def isometry_box_bound(left, right, constant, anisotropic=False):
-    r"""Return an upper bound on the entries of `g` with `g^t B_2 g = B_1`, from Theorem 1.
+    r"""Return an integer strictly above the bound of Theorem 1 for `\gamma^t B \gamma = A`.
 
-    Equation (3) applies in general and has the negative determinant exponent of the source.
-    Equation (4) is the anisotropic case, for a caller who has established anisotropy.
-    The right-hand norm factors are replaced by the monotone majorant `\|B\|^{r^4}`, so
-    the box is larger than the source's and remains valid.
+    With `A` = ``left``, `B` = ``right`` and `n` the rank, equation (3) is
+    `C_n |\det B|^{-(13n^3 - 39n^2 + 36n + 52)/(20n)} \|A\|^{(13n^3 - 13n^2 + 52n + 20)/40}
+    \|B\|^{(13n^3 - 13n^2 + 72n - 20)/40}`, and equation (4), for anisotropic `Q_B`, is
+    `C_n |\det B|^{(13n^2 + 8n - 26)/(10n)} \|A\|^{1/2} \|B\|^{(n-1)/2}`. Each integer base
+    is at least one, so raising it to the ceiling of its exponent is an upper bound, and the
+    negative determinant power in (3) is at most one.
     """
     left, right = matrix(ZZ, left), matrix(ZZ, right)
-    rank = right.nrows()
-    if rank < 3 or left.det() == 0 or right.det() == 0:
+    n = right.nrows()
+    if n < 3 or left.det() == 0 or right.det() == 0:
         raise ValueError("Theorem 1 needs nonsingular forms of rank at least three")
-    norm = max(abs(entry) for entry in (*left.list(), *right.list()))
+    norm_left = max(abs(entry) for entry in left.list())
+    norm_right = max(abs(entry) for entry in right.list())
     determinant = abs(right.det())
-    numerator = 13 * rank**2 + 8 * rank - 26 if anisotropic else -(13 * rank**3 - 39 * rank**2 + 36 * rank + 52)
-    denominator = 10 * rank if anisotropic else 20 * rank
-    exponent = max(QQ(numerator) / denominator, 0)
-    return ceil(constant * determinant ** ceil(exponent) * norm ** (rank**4)) + 1
+    if anisotropic:
+        exponents = QQ(13 * n**2 + 8 * n - 26) / (10 * n), QQ(1) / 2, QQ(n - 1) / 2
+    else:
+        exponents = QQ(0), QQ(13 * n**3 - 13 * n**2 + 52 * n + 20) / 40, QQ(13 * n**3 - 13 * n**2 + 72 * n - 20) / 40
+    return ceil(
+        constant
+        * determinant ** ceil(exponents[0])
+        * norm_left ** ceil(exponents[1])
+        * norm_right ** ceil(exponents[2])
+    ) + 1
 
 
 def _vectors_in_box(lattice, bound):
