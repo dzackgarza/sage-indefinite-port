@@ -6,7 +6,11 @@ right multiplication by a unit of reduced norm one preserve ``Nrd`` and the orde
 so they are isometries of this lattice (issues #40 and #57).
 """
 
+from itertools import product
+
 from sage.algebras.quatalg.quaternion_algebra import QuaternionAlgebra
+from sage.arith.misc import gcd
+from sage.arith.functions import lcm
 from sage.matrix.constructor import matrix
 from sage.rings.rational_field import QQ
 from sage.structure.sage_object import SageObject
@@ -86,3 +90,38 @@ class QuaternionNormLattice(SageObject):
     def pair_spinor_class(self, u):
         r"""Return the squarefree part of ``nrd(u)``, the spinor class of the pair action of ``u``."""
         return u.reduced_norm().squarefree_part()
+
+    def _coordinates_are_integral(self, element):
+        return all(c.denominator() == 1 for c in element)
+
+    def normalizes_order(self, element):
+        r"""Return whether conjugation by ``element`` preserves ``ZZ<1, i, j, k>``."""
+        inverse = ~element
+        return all(self._coordinates_are_integral(element * x * inverse) for x in self._basis)
+
+    def _same_normalizer_class(self, first, second):
+        ratio = first * ~second
+        content = gcd([c.numerator() for c in ratio]) / lcm([c.denominator() for c in ratio])
+        primitive = ratio / content
+        return self._coordinates_are_integral(primitive) and abs(primitive.reduced_norm()) == 1
+
+    def normalizer_classes_in_box(self, radius: int):
+        r"""Return distinct classes of ``N(Lambda) / QQ^x Lambda^x`` with representatives in a coordinate box."""
+        classes = []
+        for point in product(range(-radius, radius + 1), repeat=4):
+            element = self.element(*point)
+            if element == 0 or element.reduced_norm() == 0 or not self.normalizes_order(element):
+                continue
+            if not any(self._same_normalizer_class(element, known) for known in classes):
+                classes.append(element)
+        return tuple(classes)
+
+    def conjugation_by_matrix(self, element):
+        r"""Return the matrix of ``x -> element x element^{-1}``."""
+        inverse = ~element
+        return matrix(QQ, [list(element * x * inverse) for x in self._basis]).transpose()
+
+    def conjugation_by_isometry(self, element):
+        r"""Return the isometry ``x -> element x element^{-1}`` for ``element`` normalizing the order."""
+        return self._as_isometry(self.conjugation_by_matrix(element))
+

@@ -71,3 +71,24 @@ def test_a_pair_of_norm_minus_one_units_has_nontrivial_spinor_class():
             assert model.lattice().b(forward(x), forward(y)) == model.lattice().b(x, y)
     assert model.pair_spinor_class(u) == int(-1)
     assert model.pair_spinor_class(_unit(model)) == int(1)
+
+
+def test_the_normalizer_quotient_has_exactly_twelve_classes():
+    r"""N(Lambda) / QQ^x Lambda^x embeds in the local groups, as QQ has class number one.
+
+    At 3 the algebra is ramified and Lambda is maximal, giving order 2. At 2 it is
+    ramified with Lambda = Z_2 + P, and A^x / Q^x Lambda^x has order 2 * |F_4^x / F_2^x| = 6.
+    So there are at most 12 classes, and twelve distinct classes in a box prove equality.
+    """
+    assert len(_model().normalizer_classes_in_box(int(3))) == int(12)
+
+
+def test_conjugation_by_one_plus_i_exchanges_j_and_k():
+    r"""(1+i) j (1+i)^{-1} = (j+k)(1-i)/2 = k, since ji = -k and ki = j; likewise k goes to -j."""
+    model = _model()
+    element = model.element(int(1), int(1), int(0), int(0))
+    points = tuple(model.lattice().module_generators())
+    isometry = model.conjugation_by_isometry(element)
+    assert isometry(points[0]) == points[0] and isometry(points[1]) == points[1]
+    assert isometry(points[2]) == points[3] and isometry(points[3]) == -points[2]
+
