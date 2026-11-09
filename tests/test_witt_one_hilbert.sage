@@ -42,3 +42,12 @@ def test_null_vectors_reach_e_and_products_factor():
             h = lattice.transporter_to_e(v)
             assert h * v == e
             assert (h * product) * e == e
+
+
+def test_public_group_generators_of_the_issue_lattice():
+    L = Lattices(ZZ)("U") + Lattices(ZZ)([[2, 0], [0, -4]])
+    generators = tuple(L.O().group_generators())
+    assert generators
+    e, f, x, y = tuple(L.module_generators())
+    for g in generators:
+        assert all(L.b(g(v), g(w)) == L.b(v, w) for v in (e, f, x, y) for w in (e, f, x, y))

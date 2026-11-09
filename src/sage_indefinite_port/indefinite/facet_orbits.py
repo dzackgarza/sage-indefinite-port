@@ -41,7 +41,10 @@ from heapq import heappop, heappush
 from math import gcd
 
 from sage.matrix.constructor import matrix
-from sage.all import QQ, ZZ, Permutation, PermutationGroup, vector
+from sage.rings.rational_field import QQ
+from sage.rings.integer_ring import ZZ
+from sage.modules.free_module_element import vector
+from sage.all import Permutation, PermutationGroup
 from sage.libs.gap.libgap import libgap
 
 from sage_indefinite_port.indefinite.facet_certificates import (

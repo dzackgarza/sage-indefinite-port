@@ -511,6 +511,29 @@ def _transported(target_transport: LatticeIsometryMethods, witness: LatticeIsome
     return _isometry_from_column_matrix(source, target, columns)
 
 
+def _witt_one_generators(lattice):
+    r"""Return isometries generating ``O(L)`` from the Hilbert modular model, or ``None``."""
+    from sage_indefinite_port.indefinite.witt_one_hilbert import recognized_generators
+
+    matrices = recognized_generators(lattice)
+    if matrices is None:
+        return None
+    frame = tuple(lattice.module_generators())
+    labels = tuple(lattice.module_generating_set())
+    return tuple(
+        lattice.O()(
+            {
+                label: sum(
+                    (lattice.scalar_multiple(int(c), g) for c, g in zip(m.column(j), frame, strict=True)),
+                    lattice.zero(),
+                )
+                for j, label in enumerate(labels)
+            }
+        )
+        for m in matrices
+    )
+
+
 @dataclass(frozen=True)
 class VectorClass:
     r"""An O(L)-orbit of primitive vectors: a representative, and the isometries of L found carrying it to the other covering vectors of its orbit."""
@@ -1101,6 +1124,10 @@ class EichlerRecursion:
             match profile.positive_index:
                 case 1:
                     generators = lorentzian_orthogonal_group_generators(profile.signed_view)
+                case _ if int(profile.signed_view.module_rank()) == 4 and int(profile.signed_view.witt_index()) == 1 and (
+                    witt_one := _witt_one_generators(profile.signed_view)
+                ) is not None:
+                    generators = witt_one
                 case _:
                     generators = self._generation_step(profile.signed_view)
             reduced_generators = tuple(_untwisted(generator, profile) for generator in generators)
