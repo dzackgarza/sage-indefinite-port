@@ -152,3 +152,12 @@ def test_nonroot_is_rejected():
 
     with raises(ValueError):
         reduce_short_root(RHO)
+
+
+def test_public_centralizer_of_omega_is_generated_by_the_source_group():
+    r"""U(Lambda, h) is the centralizer of omega in O(L), and (7.23) gives its generators R_i and B."""
+    trace = lattice().trace_lattice()
+    omega = lattice().unit_isometry(OMEGA)
+    generators = tuple(trace.O().centralizer(omega).group_generators())
+    assert len(generators) == len(FULL_GENERATORS)
+    assert all(g * omega == omega * g for g in generators)
