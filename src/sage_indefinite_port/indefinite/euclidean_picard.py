@@ -170,6 +170,29 @@ def word(d: int, g):
     return tuple(result)
 
 
+def null_transporter(d: int, v):
+    r"""Return ``g`` with ``g v`` a unit multiple of ``e_1``, for a primitive null vector ``v``."""
+    E = field(d)
+    v = vector(E, v)
+    if v.conjugate() * form(d) * v != 0:
+        raise ValueError(f"{v} is not a null vector")
+    table = generators(d)
+    A, B = _shears(d)
+    g = matrix.identity(E, 3)
+    current = v
+    while current[2] != 0:
+        probe = matrix(E, 3, 3, [[current[0], 0, 0], [current[1], 0, 0], [current[2], 0, 0]])
+        norm, (m, n), k = _reduction(d, probe)
+        if norm >= 1:
+            raise ArithmeticError(f"the source covering failed to reduce {current}")
+        step = table["I0"] * table["T"] ** k * A ** int(m) * B ** int(n)
+        current = step * current
+        g = step * g
+    if current[1] != 0 or current[0] not in (E.one(), -E.one()):
+        raise ArithmeticError(f"the reduction of {v} did not reach a unit multiple of e_1")
+    return g
+
+
 def lattice(d: int) -> HermitianLattice:
     r"""Return ``O_d^3`` with the source form."""
     return HermitianLattice(order_basis(d), form(d).transpose())

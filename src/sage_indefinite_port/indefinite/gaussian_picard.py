@@ -7,6 +7,7 @@ Elements are matrices over ``Q(i)`` acting on the form ``C = -E_13 - E_31 + E_22
 """
 
 from sage.matrix.constructor import matrix
+from sage.modules.free_module_element import vector
 from sage.rings.number_field.number_field import CyclotomicField
 from sage_extensions.categories.hermitian_lattices import HermitianLattice
 
@@ -96,6 +97,30 @@ def word(g):
     if evaluate(result) != g:
         raise ArithmeticError("the word does not evaluate to the given element")
     return tuple(result)
+
+
+def null_transporter(v):
+    r"""Return ``g`` in ``SU(2,1; Z[i])`` with ``g v`` a unit multiple of ``e_3``, for a primitive null ``v``.
+
+    The reduction of ``word`` lowers ``|v_1|^2`` by at least half. The last step is a power of ``M``.
+    """
+    v = vector(FIELD, v)
+    if v.conjugate() * FORM * v != ZERO:
+        raise ValueError(f"{v} is not a null vector")
+    g = matrix.identity(FIELD, 3)
+    current = v
+    while current[0] != ZERO:
+        probe = matrix(FIELD, 3, 3, [[ZERO, ZERO, current[0]], [ZERO, ZERO, current[1]], [ZERO, ZERO, current[2]]])
+        gamma, height = _reduction_step(probe)
+        step = GENERATORS["J"] * _translation(gamma, height)
+        following = step * current
+        if 2 * following[0].norm() > current[0].norm():
+            raise ArithmeticError("the source reduction did not halve |v_1|^2")
+        current = following
+        g = step * g
+    if current[1] != ZERO or current[2].norm() != ONE:
+        raise ArithmeticError(f"the reduction of {v} did not reach a unit multiple of e_3")
+    return g
 
 
 def lattice() -> HermitianLattice:
