@@ -46,3 +46,15 @@ def test_a_nonsplit_rank_six_form_has_a_quadratic_discriminant_field():
     assert (centre.volume_square() / SageQQ(int(32))).is_square()
     assert not centre.is_split()
     assert centre.discriminant_field().discriminant() == int(8)
+
+
+def test_the_nonsplit_rank_six_form_has_an_involution_of_the_second_kind():
+    r"""Reversing six factors has sign (-1)^15, so tau is conjugation on QQ(sqrt 2); C_0 has degree 4 there."""
+    centre = EvenCliffordCentre(block_diagonal_matrix([_u(), _u(), _diagonal(1, -2)], subdivide=False))
+    assert centre.is_second_kind()
+    assert centre.dimension_over_centre() == int(16)
+
+
+def test_rank_four_reversal_fixes_the_centre():
+    r"""Reversing four factors has sign (-1)^6 = 1, so tau is of the first kind on the centre."""
+    assert not EvenCliffordCentre(_diagonal(2, 2, -6, -6)).is_second_kind()

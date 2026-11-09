@@ -79,3 +79,20 @@ class EvenCliffordCentre(SageObject):
     def volume_is_central_in_even_part(self):
         r"""Return whether ``z`` commutes with every even basis element."""
         return all(self._volume * self._algebra.basis()[key] == self._algebra.basis()[key] * self._volume for key in self._even_keys())
+
+    def involution_sign_on_volume(self):
+        r"""Return ``epsilon`` with ``tau(z) = epsilon z`` for the reversal ``tau``."""
+        reversed_volume = self._volume.transpose()
+        if reversed_volume == self._volume:
+            return 1
+        if reversed_volume == -self._volume:
+            return -1
+        raise ValueError("the reversal does not preserve the line of the volume element")
+
+    def is_second_kind(self):
+        r"""Return whether the reversal restricts to a nontrivial automorphism of the centre."""
+        return self.involution_sign_on_volume() == -1
+
+    def dimension_over_centre(self):
+        r"""Return the dimension of ``C_0`` over ``Z(C_0)``."""
+        return len(self._even_keys()) // 2
