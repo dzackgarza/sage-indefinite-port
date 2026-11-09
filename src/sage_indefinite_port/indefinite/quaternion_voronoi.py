@@ -9,6 +9,7 @@ neighbour transports generate ``Lambda^x`` (issue #57).
 """
 
 from itertools import combinations
+from math import acos, atan2, pi, sqrt
 
 from sage.libs.pari import pari
 from sage.algebras.quatalg.quaternion_algebra import QuaternionAlgebra
@@ -19,6 +20,7 @@ from sage.rings.number_field.number_field import QuadraticField
 from sage.rings.rational_field import QQ
 from sage.rings.real_double import RDF
 from sage.rings.real_mpfr import RR
+from sage_extensions.algebras.norm_one_units import norm_one_generators
 
 
 class QuaternionVoronoi:
@@ -189,3 +191,41 @@ class QuaternionVoronoi:
             if value(best) >= value(current):
                 return current
             current = best
+
+    def _cell_area(self, form):
+        r"""Return the hyperbolic area of the polygon of the minimal vectors of ``form``."""
+        _, vectors = self._minimal_vectors(form)
+        rays = [self._ray(c) for c in vectors]
+        normals = self._facets(rays)
+        distinct = []
+        for ray in rays:
+            if not any(matrix(self._field, [ray, other]).rank() == 1 for other in distinct):
+                distinct.append(ray)
+        vertices = [ray for ray in distinct if sum(1 for normal in normals if normal.dot_product(ray) == 0) >= 2]
+        points = []
+        for ray in vertices:
+            x, y, z = (float(self._embedding(ray[0])), float(self._embedding(ray[1])) / 2, float(self._embedding(ray[2])))
+            root = sqrt(x * z - y * y)
+            points.append((x / root, y / root, z / root))
+        pairing = lambda p, q: (p[0] * q[2] + p[2] * q[0]) / 2 - p[1] * q[1]
+        centre = (sum(p[0] for p in points) / len(points), sum(p[1] for p in points) / len(points), sum(p[2] for p in points) / len(points))
+        klein = lambda p: ((p[0] - p[2]) / (p[0] + p[2]), 2 * p[1] / (p[0] + p[2]))
+        origin = klein(centre)
+        points.sort(key=lambda p: atan2(klein(p)[1] - origin[1], klein(p)[0] - origin[0]))
+        total = 0.0
+        for index, point in enumerate(points):
+            before, after = points[index - 1], points[(index + 1) % len(points)]
+            tangent = lambda q: tuple(a - pairing(point, q) * b for a, b in zip(q, point, strict=True))
+            first, second = tangent(before), tangent(after)
+            total += acos(-pairing(first, second) / sqrt(pairing(first, first) * pairing(second, second)))
+        return (len(points) - 2) * pi - total
+
+    def covolume(self):
+        r"""Return the area of ``Lambda^x / {1, -1}`` acting on the hyperbolic plane."""
+        forms, _ = self._enumerate()
+        return sum(self._cell_area(form) / (len(self._equivalences(form, form)) / 2) for form in forms)
+
+    def norm_one_generators(self):
+        r"""Return generators of the reduced-norm-one units, with the central kernel."""
+        return norm_one_generators(list(self.unit_generators()), [QQ(-1)], 2, lambda x: x.reduced_norm(), QQ)
+

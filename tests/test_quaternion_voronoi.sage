@@ -38,3 +38,21 @@ def test_units_in_a_box_are_words_in_the_generators():
     assert algebra.one() in units
     for unit in units:
         assert model.reduce_unit(unit, generators) in terminal
+
+
+def test_the_cell_area_equals_the_mass_formula():
+    r"""The maximal order of discriminant 6 has O^1 area (pi/3)(2-1)(3-1) = 2 pi / 3.
+
+    Lambda has index 2 in it, and locally at 2 the unit index is |F_4^x / F_2^x| = 3,
+    so Lambda^1 has area 2 pi. A unit of norm -1 reverses orientation, halving it to pi.
+    """
+    from math import pi
+
+    assert abs(QuaternionVoronoi(int(-1), int(3)).covolume() - pi) < int(1) / float(int(10) ** int(9))
+
+
+def test_the_norm_one_extraction_applies_to_the_voronoi_generators():
+    generators, kernel = QuaternionVoronoi(int(-1), int(3)).norm_one_generators()
+    assert all(g.reduced_norm() == int(1) for g in generators)
+    assert len(kernel) == int(1)
+
