@@ -9,7 +9,7 @@ from sage_extensions.all import *
 from sage.modules.free_module_element import vector as sage_vector
 from sage_indefinite_port.indefinite.act_eisenstein import (
     AUT_PLUS_GENERATORS, BAR, BIFLECTION, FIELD, FORM, FULL_GENERATORS, OMEGA, ONE, R, RHO, ROOTS, THETA, ZERO,
-    h, is_aut_plus, is_gamma_theta, trace_generators, triflection, is_isometry, is_primitive, lattice, reduce_null_vector, spinor_character, translation,
+    h, null_transporter, reduce_short_root, root_transporter, is_aut_plus, is_gamma_theta, trace_generators, triflection, is_isometry, is_primitive, lattice, reduce_null_vector, spinor_character, translation,
 )
 
 EDGES = ((1, 2), (2, 3), (3, 4), (4, 5), (3, 6), (6, 7))
@@ -125,3 +125,30 @@ def test_gamma_theta_contains_triflections_and_not_hexflections():
     assert all(is_gamma_theta(triflection(r)) for r in ROOTS.values())
     assert all(triflection(r) == R[i] ** int(4) for i, r in ROOTS.items())
     assert not any(is_gamma_theta(R[i]) for i in R)
+
+
+def test_null_transporter_carries_source_vectors():
+    v = _t(ONE, ONE, ONE, THETA, ONE - OMEGA)
+    w = _t(THETA, 0, 0, 1, OMEGA - ONE)
+    g = null_transporter(v, w)
+    assert is_isometry(g) and g * v == w and is_aut_plus(g)
+
+
+def test_short_roots_reduce_to_r7():
+    for root in (ROOTS[1], ROOTS[2], ROOTS[3], ROOTS[4], ROOTS[6], -ROOTS[5], OMEGA * ROOTS[1]):
+        g = reduce_short_root(root)
+        assert is_isometry(g) and g * root == ROOTS[7]
+
+
+def test_root_transporter_on_a_group_image():
+    start = ROOTS[3]
+    target = R[1] * R[2] * R[3] * R[6] * start
+    g = root_transporter(start, target)
+    assert is_isometry(g) and g * start == target
+
+
+def test_nonroot_is_rejected():
+    from pytest import raises
+
+    with raises(ValueError):
+        reduce_short_root(RHO)

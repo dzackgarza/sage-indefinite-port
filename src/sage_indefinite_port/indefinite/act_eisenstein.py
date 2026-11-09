@@ -6,7 +6,9 @@ of (7.15), ``T_{lambda,z}`` are the translations of (7.8). Theorem 7.21:
 ``Gamma = <R_i> = Aut^+`` acts transitively on primitive null vectors.
 """
 
-from itertools import product
+from itertools import count, product
+
+from sage.arith.functions import lcm
 
 from sage.matrix.constructor import matrix
 from sage.modules.free_module_element import vector
@@ -155,6 +157,82 @@ def reduce_null_vector(v):
     g = step * g
     if step * v != RHO:
         raise ArithmeticError("the unit transport did not reach rho")
+    return g
+
+
+def null_transporter(v, w):
+    r"""Return ``g`` in ``Gamma`` with ``g v = w`` for primitive null vectors (Theorem 7.21)."""
+    g = ~reduce_null_vector(w) * reduce_null_vector(v)
+    if g * vector(FIELD, v) != vector(FIELD, w) or not is_isometry(g):
+        raise ArithmeticError("the transporter does not carry the null vector")
+    return g
+
+
+def _null_vector_orthogonal_to(root):
+    r"""Return a primitive null vector orthogonal to ``root``, by increasing coefficient height.
+
+    ``root^perp`` is a Hermitian space of signature ``(3, 1)`` over ``Q(omega)``, so it is isotropic.
+    """
+    equation = matrix(FIELD, [(root.conjugate() * FORM).list()])
+    basis = equation.right_kernel().basis()
+    for bound in count(1):
+        scalars = [FIELD(a) + FIELD(b) * OMEGA for a in range(-bound, bound + 1) for b in range(-bound, bound + 1)]
+        for coefficients in product(scalars, repeat=len(basis)):
+            if not any(coefficients):
+                continue
+            candidate = vector(FIELD, list(sum(c * b for c, b in zip(coefficients, basis))))
+            if h(candidate, candidate) != ZERO:
+                continue
+            denominator = lcm([c.denominator() for entry in candidate for c in entry.vector()])
+            integral = denominator * candidate
+            ideal = FIELD.ideal(list(integral))
+            primitive = integral / ideal.gens_reduced()[0]
+            if is_primitive(primitive):
+                return primitive
+    raise AssertionError("an isotropic Hermitian space has a null vector")
+
+
+def reduce_short_root(root):
+    r"""Return ``g`` in ``Gamma`` with ``g root = r_7``, for a short root (Theorem 7.21)."""
+    root = vector(FIELD, root)
+    if h(root, root) != ONE:
+        raise ValueError(f"{root} is not a short root")
+    g = reduce_null_vector(_null_vector_orthogonal_to(root))
+    root = g * root
+    if root[3] != ZERO:
+        raise ArithmeticError("a root orthogonal to rho has nonzero height")
+    position = next(i for i in range(3) if root[i] != ZERO)
+    unit = root[position]
+    if unit.norm() != ONE or any(root[i] != ZERO for i in range(3) if i != position):
+        raise ArithmeticError("a height-zero short root is not a unit coordinate vector")
+    lam = vector(FIELD, [ZERO, ZERO, ZERO])
+    lam[position] = (root[4] / unit).conjugate()
+    step = _admissible_translation(lam)
+    root = step * root
+    g = step * g
+    if root[3] != ZERO or root[4] != ZERO:
+        raise ArithmeticError("the translation did not clear the root")
+    target = ROOTS[7]
+    letters = [*AUT_PLUS_GENERATORS, *(~r for r in AUT_PLUS_GENERATORS)]
+    frontier = [(root, matrix.identity(FIELD, 5))]
+    seen = {str(root)}
+    while frontier:
+        current, word = frontier.pop(0)
+        if current == target:
+            return word * g
+        for letter in letters:
+            image = letter * current
+            if str(image) not in seen and all(c.norm() <= 1 for c in image):
+                seen.add(str(image))
+                frontier.append((image, letter * word))
+    raise ArithmeticError(f"no bounded word carries {root} to r_7")
+
+
+def root_transporter(r, s):
+    r"""Return ``g`` in ``Gamma`` with ``g r = s`` for short roots (Theorem 7.21)."""
+    g = ~reduce_short_root(s) * reduce_short_root(r)
+    if g * vector(FIELD, r) != vector(FIELD, s) or not is_isometry(g):
+        raise ArithmeticError("the transporter does not carry the short root")
     return g
 
 
