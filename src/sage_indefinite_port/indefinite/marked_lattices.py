@@ -15,6 +15,7 @@ the other components.
 """
 
 from itertools import pairwise
+from math import gcd
 
 from sage_extensions.all import ZZ, Cat, Lattices
 from sage_extensions.categories.abstract_categories.arrow_categories import (
@@ -48,7 +49,7 @@ from sage_indefinite_port.indefinite.lorentzian_cells import (
     binary_split_primitive_vector_classes,
     perfect_complex,
 )
-from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+from sage_indefinite_port.indefinite.recursive import EichlerRecursion, _gram_in_label_order
 from sage_indefinite_port.invariants import AttackProfile
 
 LATTICES = Lattices(ZZ)
@@ -383,7 +384,51 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
     return finite_ordered_set(tuple(generators))
 
 
+def _radical_residues(content: int, radical_rank: int) -> tuple[tuple[int, ...], ...]:
+    r"""Representatives of ``{r in R/dR : gcd(content(r), d) = 1} / GL(R)``.
+
+    Rank at least two: ``SL_t(Z) -> SL_t(Z/d)`` is onto and transitive on
+    unimodular residues. Rank one: the units modulo ``+-1``.
+    """
+    if content == 1:
+        return ((0,) * radical_rank,)
+    if radical_rank >= 2:
+        return ((1,) + (0,) * (radical_rank - 1),)
+    return tuple((unit,) for unit in range(1, content // 2 + 1) if gcd(unit, content) == 1)
+
+
+def _degenerate_pointed_classes(category: Category, lattice: Lattices.ParentMethods, square: int) -> tuple[Parent, ...]:
+    r"""Primitive vector classes of nonzero square on ``L = C + R`` with ``R`` the radical (#41).
+
+    ``O(L)`` has blocks ``[A B; 0 D]`` with ``A in O(C)``, ``D in GL(R)`` and
+    ``B`` arbitrary. For ``v = (c, r)`` with ``c`` of content ``d``, the shears
+    translate ``r`` by exactly ``dR``, and ``v`` is primitive when ``r`` is
+    unimodular modulo ``d``. So classes are pairs of an ``O(C)``-class of ``c``
+    and a ``GL(R)``-class of ``r`` modulo ``d``.
+    """
+    reduction = indefinite_reduced_presentation(lattice)
+    reduced = reduction.reduced
+    gram = _gram_in_label_order(reduced)
+    size, rank = int(gram.nrows()), int(gram.rank())
+    labels = tuple(reduced.module_generating_set())
+    complement = lattice.lattice_category()([[int(gram[i, j]) for j in range(rank)] for i in range(rank)])
+    complement_labels = tuple(complement.module_generating_set())
+    ring = reduced.base_ring()
+    vectors = []
+    for point in complement.O().vector_orbit_representatives(square):
+        coordinates = tuple(int(point.to_vector()(label)) for label in complement_labels)
+        content = gcd(*coordinates)
+        for residue in _radical_residues(content, size - rank):
+            vectors.append(reduction.isometry(reduced.linear_combination({
+                label: ring(value) for label, value in zip(labels, coordinates + residue, strict=True) if value
+            })))
+    base = category.base_object()
+    return tuple(category.object(base.hom([vector_], codomain=lattice)) for vector_ in vectors)
+
+
 def _pointed_classes(category: Category, lattice: Lattices.ParentMethods, square: int) -> tuple[Parent, ...]:
+    if not lattice.is_nondegenerate() and square != 0:
+        return _degenerate_pointed_classes(category, lattice, square)
     profile = AttackProfile.from_lattice(lattice)
     if profile.positive_index == 1 and int(lattice.rank()) == 2 and tuple(map(int, lattice.signature_pair())) == (1, 1) and not lattice.is_isotropic():
         # An anisotropic binary plane has no isotropic cusp and therefore no
