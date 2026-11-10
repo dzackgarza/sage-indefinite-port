@@ -161,3 +161,27 @@ def test_public_centralizer_of_omega_is_generated_by_the_source_group():
     generators = tuple(trace.O().centralizer(omega).group_generators())
     assert len(generators) == len(FULL_GENERATORS)
     assert all(g * omega == omega * g for g in generators)
+
+
+def test_cusp_stabilizer_generators_fix_rho_and_decompose_a_conjugate():
+    r"""Every generator is integral, unitary and fixes rho. The product of two translations and a
+    Levi element decomposes back into a translation word and the same Levi element."""
+    from sage_indefinite_port.indefinite.act_eisenstein import CUSP_STABILIZER_GENERATORS, cusp_stabilizer_word
+
+    assert all(is_isometry(g) and g * RHO == RHO for g in CUSP_STABILIZER_GENERATORS)
+    first, second = CUSP_STABILIZER_GENERATORS[0], CUSP_STABILIZER_GENERATORS[3]
+    levi = CUSP_STABILIZER_GENERATORS[-1] * CUSP_STABILIZER_GENERATORS[-3]
+    g = first * second**2 * levi
+    built, k, exponents = cusp_stabilizer_word(g)
+    assert built * k == g and k == levi
+
+
+def test_source_reflections_fixing_rho_decompose_in_the_cusp_stabilizer():
+    r"""r_1, r_5, r_7 are orthogonal to rho, so R_1, R_5, R_7 fix rho; each is a translation word times a monomial Levi element."""
+    from sage_indefinite_port.indefinite.act_eisenstein import cusp_stabilizer_word, null_stabilizer_generators
+
+    for index in (1, 5, 7):
+        built, k, _exponents = cusp_stabilizer_word(R[index])
+        assert built * k == R[index]
+    v = R[2] * R[3] * RHO
+    assert all(g * v == v and is_isometry(g) for g in null_stabilizer_generators(v))

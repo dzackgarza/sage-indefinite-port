@@ -316,3 +316,70 @@ def trace_generators(generators=FULL_GENERATORS) -> tuple:
     r"""Return the generators as integral isometries of the rank-ten trace lattice."""
     hermitian = lattice()
     return tuple(hermitian.isometry_from_matrix(g) for g in generators)
+
+
+def _levi(permutation, units):
+    r"""Return the isometry acting on ``e_0, e_1, e_2`` by ``e_i -> units[i] e_{permutation[i]}`` and fixing ``e_3, e_4``."""
+    result = matrix.identity(FIELD, 5)
+    for i in range(3):
+        result[i, i] = ZERO
+    for i in range(3):
+        result[permutation[i], i] = units[i]
+    return result
+
+
+_HEISENBERG_BASIS = tuple(
+    _root(*[scalar if j == i else ZERO for j in range(3)]) for i in range(3) for scalar in (ONE, OMEGA)
+)
+CUSP_STABILIZER_GENERATORS = (
+    *(_admissible_translation(lam) for lam in _HEISENBERG_BASIS),
+    translation(_root(0, 0, 0), THETA),
+    _levi((1, 0, 2), (ONE, ONE, ONE)),
+    _levi((0, 2, 1), (ONE, ONE, ONE)),
+    _levi((0, 1, 2), (-OMEGA, ONE, ONE)),
+)
+
+
+def cusp_stabilizer_word(g):
+    r"""Return ``(T, k)`` with ``g = T k``, ``T`` a word in the translations and ``k`` in ``U(E^3)``.
+
+    The form is ``I_3 + H`` with ``H`` the hyperbolic plane on ``e_3, e_4 = rho``, and
+    ``<v|rho> = v_3``. If ``g rho = rho`` then ``w = g e_3`` has ``w_3 = 1`` and ``<w|w> = 0``,
+    so ``w_4 = z - |mu|^2 / 2`` with ``mu = (w_0, w_1, w_2)`` and ``z`` imaginary, and
+    ``T_{mu, z} e_3 = w`` (7.8). Then ``k = T_{mu,z}^{-1} g`` fixes ``e_3`` and ``rho``, so it is
+    a unitary map of ``span(e_0, e_1, e_2) = I_3``: a monomial matrix with entries in the units.
+    The translations with ``lambda`` in the ``Z``-basis of ``Z[omega]^3`` and ``T_{0,theta}``
+    generate all ``T_{mu, z}``, since the imaginary elements of ``Z[omega]`` are ``theta Z``.
+    Returns the factors as matrices together with the exponent words.
+    """
+    if not is_isometry(g) or g * RHO != RHO:
+        raise ValueError(f"{g} does not fix rho")
+    w = g.column(3)
+    mu = vector(FIELD, [w[0], w[1], w[2]])
+    square = mu.dot_product(mu.conjugate())
+    target = translation(mu, w[4] + square / 2)
+    exponents = []
+    built = matrix.identity(FIELD, 5)
+    for i in range(3):
+        a, b = mu[i].vector()
+        for step, power in ((_admissible_translation(_HEISENBERG_BASIS[2 * i]), int(a)), (_admissible_translation(_HEISENBERG_BASIS[2 * i + 1]), int(b))):
+            built = built * step**power
+            exponents.append(power)
+    central = ~built * target
+    assert all(central[i, j] == (ONE if i == j else ZERO) for i in range(5) for j in range(5) if (i, j) != (4, 3))
+    multiple = central[4, 3] / THETA
+    assert multiple in FIELD.ring_of_integers() and multiple.is_rational(), f"{central[4, 3]} is not in theta Z"
+    built = built * translation(_root(0, 0, 0), THETA) ** int(multiple)
+    exponents.append(int(multiple))
+    assert built == target
+    levi = ~built * g
+    assert levi.column(3) == vector(FIELD, [0, 0, 0, 1, 0]) and levi.column(4) == RHO
+    block = levi.submatrix(0, 0, 3, 3)
+    assert all(sum(1 for c in column if c != ZERO) == 1 and sum(c.norm() for c in column) == 1 for column in block.columns())
+    return built, levi, tuple(exponents)
+
+
+def null_stabilizer_generators(v):
+    r"""Return generators of the stabilizer of a primitive null vector ``v``: ``t^{-1} P t`` with ``t v = rho``."""
+    t = reduce_null_vector(v)
+    return tuple(~t * g * t for g in CUSP_STABILIZER_GENERATORS)
