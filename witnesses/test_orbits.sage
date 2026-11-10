@@ -53,3 +53,42 @@ def test_gamma_two_splits_null_lines_of_two_hyperbolic_planes_into_nine_orbits()
     orbits = tuple(group.split_orbit(marked, gamma))
     assert len(orbits) == 9
     assert arrows.Core().Mor(orbits[0], orbits[1]).an_element_in(gamma) is None
+
+
+def test_gamma_three_transporters_between_null_lines_of_two_hyperbolic_planes():
+    r"""Gamma(3) acts trivially on L/3L, so it preserves the line of a null vector modulo 3.
+
+    Ze and Z(e + 3u) have the same reduction, and the Eichler transvection
+    x -> x + b(x, e) 3u - b(x, 3u) e lies in Gamma(3) and moves e to e + 3u up to sign.
+    Ze and Zf have different reductions, so no element of Gamma(3) moves one to the other.
+    """
+    hyperbolic = Lattices(ZZ)("U")
+    ambient = hyperbolic + hyperbolic
+    group = ambient.O()
+    gamma = group.congruence_preimage(3)
+    e, f, u, _v = tuple(ambient.module_generators())
+    arrows = Cat().Mor(FiniteOrdinalCategory(2), Lattices(ZZ))
+    line = lambda vector: arrows.object(ambient.primitive_isotropic_subobject(vector).inclusion())
+    near = arrows.Core().Mor(line(e), line(e + u + u + u)).an_element_in(gamma)
+    assert near is not None
+    assert arrows.Core().Mor(line(e), line(f)).an_element_in(gamma) is None
+
+
+def test_rank_three_null_stabilizer_of_twisted_hyperbolic_sum_fixes_one_isotropic_line():
+    r"""L = U + U + U(3), I = <e1, e2, e3>. A_L = (Z/3)^2 with the hyperbolic form.
+
+    Its orthogonal group has order four: +-1 fix both isotropic lines, and +-swap exchange
+    them. Stab(I) fixes the isotropic line (I_Q meet L^dual)/I, so its image lies in {+-1},
+    and -1 on L lies in Stab(I) and acts by -1, which is not the identity on (Z/3)^2.
+    """
+    hyperbolic = Lattices(ZZ)("U")
+    ambient = hyperbolic + hyperbolic + hyperbolic.twist(3)
+    basis = tuple(ambient.module_generators())
+    labels = tuple(ambient.module_generating_set())
+    space = ambient.primitive_isotropic_subobject(*basis[::2])
+    minus = ambient.Aut()(dict(zip(labels, tuple(-b for b in basis), strict=True)))
+    assert space.stabilizes(minus)
+    rho = ambient.discriminant_representation()
+    image = space.stabilizer_discriminant_image()
+    assert image.cardinality() == cardinal(2)
+    assert rho(minus) in image

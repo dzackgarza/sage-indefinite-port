@@ -103,6 +103,10 @@ jobs:
             test: test_setwise_line_stabilizer_of_the_glued_lattice_induces_the_hand_levi_image
           - file: test_orbits.sage
             test: test_gamma_two_splits_null_lines_of_two_hyperbolic_planes_into_nine_orbits
+          - file: test_orbits.sage
+            test: test_gamma_three_transporters_between_null_lines_of_two_hyperbolic_planes
+          - file: test_orbits.sage
+            test: test_rank_three_null_stabilizer_of_twisted_hyperbolic_sum_fixes_one_isotropic_line
     steps:
       - uses: actions/checkout@v4
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
