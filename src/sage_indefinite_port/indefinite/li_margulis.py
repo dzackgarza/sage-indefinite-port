@@ -8,7 +8,7 @@ marked transporter. The result is a statement about the supplied box: the bound 
 
 from dataclasses import dataclass
 from itertools import product
-from math import factorial, isqrt
+from math import comb as binomial, factorial, isqrt
 
 from sage.matrix.constructor import matrix
 from sage.functions.other import ceil
@@ -203,6 +203,174 @@ def _theorem5_exponent(n):
     return QQ(13 * n) / 5 * (1 + QQ(n * (n - 1)) / 4)
 
 
+def _codimension(n):
+    r"""Return `\dim G - \dim H = (n^2 - 1) - n(n-1)/2 = \dim \mathfrak h'`."""
+    return (n * n + n - 2) // 2
+
+
+def lemma10_radius(n):
+    r"""Return `\eta_0 = (16 n^2 \binom{n}{\lfloor n/2 \rfloor})^{-1}`, an injectivity radius of Lemma 10.
+
+    Proof of Lemma 10 made explicit. For `u = 1 + E`, `\|E\| < \eta`, the coefficient `e_k(u)` of
+    the characteristic polynomial is a sum of `\binom{n}{k}` principal minors `\det(1_k + E_S)`;
+    a `j \times j` minor of `E` is at most `j! \eta^j`, so `|\det(1_k + E_S) - 1| \le \sum_j
+    \binom{k}{j} j! \eta^j \le k\eta/(1 - k\eta)`. With `\eta = (4n\binom{n}{\lfloor n/2 \rfloor})^{-1}`
+    each `|e_k(u) - \binom{n}{k}| < 1`, so an integral characteristic polynomial is `(x-1)^n` and `u`
+    is unipotent. Lemma 9: for `h_i \in B_G(\eta_0)`, `\eta_0 \le 1/(2n)`, `\|h_2^{-1}\| \le 2`
+    (Neumann series) and `\|h_2^{-1} h_1 - 1\| \le n \|h_2^{-1}\| \|h_1 - h_2\| < 4 n \eta_0 = \eta`.
+    """
+    return QQ(1) / (16 * n * n * binomial(n, n // 2))
+
+
+def lemma11_constant(n):
+    r"""Return `\kappa = 8 n^3 (n-1)!`: Lemma 11 holds with `\delta = (\kappa \|g\|^n)^{-1}`.
+
+    Proof of Lemma 11 made explicit. `\gamma - 1 = g^{-1} M g` with `M = g\gamma g^{-1} - 1`, so
+    `1 \le \|\gamma - 1\| \le n^2 \|g^{-1}\| \|M\| \|g\| \le n^2 (n-1)! \|g\|^n \|M\|` (Cramer,
+    `\|g^{-1}\| \le (n-1)! \|g\|^{n-1}` for `\det g = 1`). For `g_1, g_2 \in B_G(\delta)` with
+    `g_1.[g] = g_2.[g]`, `M = g_2^{-1} g_1 - 1` has `\|M\| < 4 n \delta` (as in :func:`lemma10_radius`).
+    """
+    return 8 * n**3 * factorial(n - 1)
+
+
+def lemma15_inverse_radius():
+    r"""Return 3, a majorant of `1/\eta_0` for `\eta_0 = \log(2)/2` in the proof of Lemma 15.
+
+    `\mathfrak h' = \{X \in \mathfrak{sl}_n : X_0 X^t X_0 = X\}` is the Frobenius complement of
+    `\mathfrak h`, and `\sigma(g) = X_0 (g^t)^{-1} X_0` fixes `O_{Q_0}(\mathbb R)` with
+    `\sigma(\exp w) = \exp(-w)` on `\mathfrak h'`. If `\exp(-w_2)\exp(w_1) = s \in SO_{Q_0}(\mathbb R)`,
+    then `g \sigma(g)^{-1}` for `g = \exp(w_1) = \exp(w_2) s` gives `\exp(2w_1) = \exp(2w_2)`, and
+    `\log \exp X = X` for `\|X\|_{op} < \log 2`. So `\eta_0 = \log(2)/2` in Frobenius norm, and
+    `2/\log 2 < 2.89`.
+    """
+    return QQ(3)
+
+
+def zeta_product_majorant(n):
+    r"""Return `n \ge \zeta(2)\cdots\zeta(n) = m_{G/\Gamma}(G/\Gamma)` of (8): `\zeta(k) \le k/(k-1)`."""
+    return QQ(n)
+
+
+def lemma15_constant_power(n):
+    r"""Return a majorant of `c_n^d`, `d = \dim G - \dim H`, in the proof of Lemma 15: `4 n^2 d^{\lceil d/2 \rceil}`.
+
+    From (22), `c_n^d = 4 \zeta(2)\cdots\zeta(n) / b_n`. The tube map `(w, h) \mapsto \exp(w) h`
+    has, for `m_H` and Lebesgue measure on `\mathfrak h'`, Jacobian `\det(P_{\mathfrak h'}
+    \phi(\operatorname{ad} w)|_{\mathfrak h'})`, `\phi(z) = (1 - e^{-z})/z`; for `\|w\| < \eta_0`,
+    `\|\operatorname{ad} w\|_{op} < \log 2` and `\|\phi(\operatorname{ad} w) - 1\| \le 1/\log 2 - 1 < 1/2`,
+    so the Jacobian is at least `2^{-d}`. At the identity `m_G` of (7) is `n^{-1/2}` times
+    Lebesgue measure on `\mathfrak{sl}_n` (the factor `t^{1/n} 1_n` has Frobenius speed
+    `n^{-1/2}`). The unit `d`-ball has volume at least `(2/\sqrt d)^d`. So
+    `b_n = n^{-1/2} d^{-d/2}`, `c_n^d \le 4 n \cdot n^{1/2} d^{d/2}`.
+    """
+    d = _codimension(n)
+    return QQ(4 * n * n * d ** ((d + 1) // 2))
+
+
+def appendix_inverse_epsilon(n):
+    r"""Return `\epsilon_n^{-1} = (2 a_n)^{n^2} = (4 n^3 6^n)^{n^2} (n^3 + n)`, appendix, after (32)."""
+    return ZZ(4 * n**3 * 6**n) ** (n * n) * (n**3 + n)
+
+
+def lemma14_constant(n):
+    r"""Return an integer `R_n` of Lemma 14 for `\Omega_{cpt} = \mathfrak S(\epsilon_n)` of the appendix.
+
+    A unimodular lattice with `\lambda_1 \ge \epsilon_n` has `\lambda_n \le \lambda_1 \cdots
+    \lambda_n / \lambda_1^{n-1} \le n^{n/2} \epsilon_n^{1-n}` (Minkowski's second theorem,
+    `2^n / V_n \le n^{n/2}` since the ball contains the cube of side `2/\sqrt n`), and a basis
+    with `|b_i| \le \max(1, i/2) \lambda_i \le (n/2) \lambda_n` [Cassels, Geometry of Numbers, V,
+    Lemma 8]; one sign change puts it in `SL_n`. Entries are at most `|b_i|`.
+    """
+    return ZZ(n ** ((n + 1) // 2 + 1) * appendix_inverse_epsilon(n) ** (n - 1)) // 2 + 1
+
+
+def theorem6_constant(n):
+    r"""Return a majorant of the constant of (18) for `N = 1`: `(9 n^2 R_n^2)^d \cdot 4 n^2 d^{\lceil d/2 \rceil}`.
+
+    Section 5.6 made explicit, `d = \dim G - \dim H`, `\eta_1 = c_n \operatorname{vol}^{-1/d}`.
+    If `\eta_1 < \eta_0`, Lemma 15 gives `u = \exp(-w_2)\exp(w_1)` with `\|w_i\| < \eta_1`, so
+    `\|u - 1\| \le e^{2\eta_1} - 1 \le 2\eta_1/\log 2 < 3 \eta_1`, and (23) gives
+    `\operatorname{vol} < (9 n^2 R_n^2 c_n)^d |\det Q|^{d/n}`. Otherwise `\operatorname{vol} \le
+    (c_n/\eta_0)^d \le (3 c_n)^d`, a smaller bound since `|\det Q| \ge 1`; this replaces the
+    finiteness argument of Lemma 15.
+    """
+    d = _codimension(n)
+    return QQ(9 * n * n * lemma14_constant(n) ** 2) ** d * lemma15_constant_power(n)
+
+
+def corollary1_constant(k):
+    r"""Return `C` with `\|\gamma^t A \gamma\| \le C |\det A|` for some `\gamma`, every nonsingular integral `A` of rank `k`.
+
+    Corollary 1, made explicit per signature. Definite: an LLL-reduced basis has
+    `\prod a_{ii} \le 2^{k(k-1)/2} |\det A|` [Lenstra-Lenstra-Lovasz 1982, (1.8)], integral
+    `a_{ii} \ge 1` and `|a_{ij}| \le \sqrt{a_{ii} a_{jj}}`. Indefinite binary: a Gauss-reduced form
+    has entries below `2 |\det A|^{1/2}`. Indefinite, `k \ge 3`: the proof of Theorem 3 gives
+    `\|A_1\| < k R_k^2 |\det A|^{1/k}`.
+    """
+    definite = ZZ(2) ** (k * (k - 1) // 2)
+    if k == 1:
+        return QQ(1)
+    if k == 2:
+        return QQ(max(definite, 2))
+    return QQ(max(definite, k * lemma14_constant(k) ** 2))
+
+
+def lemma20_constant(n):
+    r"""Return a majorant of the constant of (31), uniform in `1 \le m < n`.
+
+    Proof of Lemma 20 made explicit, `k = n - m`, `\lambda = \det A`. `T^t E T = \lambda^{-1}
+    T^t (\lambda E) T` has norm at most `C_1(k) |\lambda|^k |\det B|` by Corollary 1, since
+    `|\det \lambda E| \le |\lambda|^{k+1} |\det B|`. Rounding `r` makes `\|s\| \le 1/2`, so
+    `\|s A\| \le (m/2) \|A\|` and `\|s A s^t\| \le (m^2/4) \|A\|`.
+    """
+    return max(max(corollary1_constant(n - m), QQ(m * m) / 4, QQ(1)) for m in range(1, n))
+
+
+def section6_constant(n, theorem5, theorem6):
+    r"""Return `n^2 (n-1)! K_{24}^{n + 2e} K_{(13)} K_{(18)}^{13/5}`, the composite of section 6.
+
+    It majorizes `C_n` of (3) and the constant of (30): Lemma 18 bounds `g^{-1} h s g` with
+    `\|s\| = 1` and `\|h\|` from (13), (18) and (28) = (24), the same composite.
+    """
+    exponent = n + 2 * _theorem5_exponent(n)
+    return (
+        n**2
+        * factorial(n - 1)
+        * _power_majorant(lemma1_constant(n), exponent)
+        * QQ(theorem5)
+        * _power_majorant(theorem6, QQ(13) / 5)
+    )
+
+
+def default_constants(n, theorem5, theorem5_compact, corollary2, corollary3):
+    r"""Return the constants of rank ``n`` with every derivable majorant computed here.
+
+    The arguments are the four constants with no derivable value in the cited sources:
+
+    - ``theorem5``, ``theorem5_compact``: (13) rests on (12), an absolute `K` with
+      `|\langle \pi(g_t) v, w \rangle| \le K \Xi(g_t)^{25/32} S(v) S(w)` for every unitary
+      representation of `SL_2(\mathbb R)` strongly `L^{64/25+\epsilon}` and a Sobolev norm `S`.
+      Kontorovich-Oh, Prop. 3.2, cite it as well known [CHH88, Kna86] without a constant, and as
+      printed (12) uses `\|D v\|` alone, which vanishes on `K`-fixed vectors with nonzero
+      coefficients. The bump-function constant of Lemma 12 is measured in that norm.
+    - ``corollary2``, ``corollary3``: Lemma 24 as printed fails (`Q = \operatorname{diag}(\epsilon^2, 1)`
+      is `(\alpha, \beta)`-reduced and `k e_1`, `k \le 1/\epsilon`, satisfy `Q \le M`); the bound
+      holds for vectors realizing the successive minima [Cassels, Rational Quadratic Forms,
+      pp. 266-269], whose constant is not extracted.
+    """
+    theorem6 = theorem6_constant(n)
+    return LiMargulisConstants(
+        n,
+        QQ(theorem5),
+        QQ(theorem5_compact),
+        theorem6,
+        section6_constant(n, theorem5, theorem6),
+        QQ(corollary2),
+        QQ(corollary3),
+        lemma20_constant(n),
+    )
+
+
 def theorem_one_constant(constants):
     r"""Return a majorant of `C_n` in equation (3) of Theorem 1, for indefinite forms.
 
@@ -214,16 +382,7 @@ def theorem_one_constant(constants):
     The exponents of `|\det B|, \|A\|, \|B\|` then sum to those of (3), and the constant is
     `n^2 (n-1)! K_{24}^{n + 2e} K_{(13)} K_{(18)}^{13/5}`, `e = (13n/5)(1 + \dim H / 2)`.
     """
-    n = constants.rank
-    k24 = lemma1_constant(n)
-    exponent = n + 2 * _theorem5_exponent(n)
-    return (
-        n**2
-        * factorial(n - 1)
-        * _power_majorant(k24, exponent)
-        * QQ(constants.theorem5)
-        * _power_majorant(constants.theorem6, QQ(13) / 5)
-    )
+    return section6_constant(constants.rank, constants.theorem5, constants.theorem6)
 
 
 def theorem_one_anisotropic_constant(constants):
