@@ -32,10 +32,14 @@ meets every orbit.
 
 **Exact decision.** Two normal forms are joined when a group element maps one to the other: the images of
 the generators and of every coprime row ``w`` in a box with ``|h(w)| <= C``. Joined vectors are equivalent,
-with a verified transporter. Different classes are proved by invariants preserved by ``O(L)``: the content,
-the divisor ``div(v)`` and the ``O(L)``-orbit of ``v / div(v)`` in ``L^v / L``. When two components carry equal
-invariants the procedure has no proof either way and raises :class:`ArithmeticError`; it never returns an
-unproved answer.
+with a verified transporter. Different classes are first separated by invariants preserved by ``O(L)``: the
+content, the divisor ``div(v)`` and the ``O(L)``-orbit of ``v / div(v)`` in ``L^v / L``. Components with equal
+invariants are decided by :func:`marked_transporter` on the coslice ``<b(x, x)> -> L``. For ``b(x, x) != 0``
+this is ``EichlerRecursion.pointed_isometry`` (IndefiniteForms.g, INDEF_FORM_EquivalenceVector): an isometry
+of the rank-three complements ``x^perp -> y^perp``, which are indefinite ternary lattices, extended rationally
+across ``x -> y`` and corrected by the action of ``O(x^perp)`` on the finite glue ``L / (Zx + x^perp)``. It uses
+``O(x^perp)`` and never ``O(L)``, so the Witt-index-one hypothesis of ``L`` does not enter. Every answer is
+proved: a transporter is verified, and ``None`` is a negative decision.
 """
 
 from math import ceil, gcd, sqrt
@@ -47,6 +51,9 @@ from sage.modules.free_module_element import vector
 from sage.rings.integer_ring import ZZ
 from sage.rings.qqbar import AA
 from sage.rings.rational_field import QQ
+from sage_extensions.categories.lattices import Lattices
+
+from sage_indefinite_port.indefinite.pairing_slices import marked_transporter
 
 from sage_indefinite_port.indefinite.witt_one_hilbert import recognized_model
 
@@ -66,6 +73,7 @@ class HilbertFixedNormClasses:
         self._epsilon = epsilon
         self._generators = model.generators()
         self._gram = model.gram()
+        self._lattice = Lattices(ZZ)([[int(c) for c in row] for row in self._gram.rows()])
         self._components = {}
 
     # -- arithmetic of the model --
@@ -179,6 +187,19 @@ class HilbertFixedNormClasses:
             frontier = following
         return content, divisor, frozenset(orbit)
 
+    def _decided_transporter(self, x, y):
+        r"""Return the matrix of ``g in O(L)`` with ``g x = y``, or ``None`` when none exists (exact)."""
+        lattice = self._lattice
+        frame = tuple(lattice.module_generators())
+
+        def element(v):
+            return sum((lattice.scalar_multiple(int(c), g) for c, g in zip(v, frame, strict=True)), lattice.zero())
+
+        witness = marked_transporter(lattice, (element(x),), (element(y),))
+        if witness is None:
+            return None
+        return matrix(ZZ, [[int(c) for c in witness(g)] for g in frame]).transpose()
+
     # -- public interface --
 
     def candidates(self, square: int):
@@ -241,14 +262,26 @@ class HilbertFixedNormClasses:
                         root_of[image] = start
                         to_root[image] = (to_root[c] * m.inverse()).change_ring(ZZ)
                         queue.append(image)
+        kept = {}
+        for root in sorted(set(root_of.values())):
+            invariant = self._invariant(root)
+            link, target = None, None
+            for known in kept.get(invariant, ()):
+                link = self._decided_transporter(root, known)
+                if link is not None:
+                    target = known
+                    break
+            if link is None:
+                kept.setdefault(invariant, []).append(root)
+                continue
+            for c in [c for c, r in root_of.items() if r == root]:
+                root_of[c] = target
+                to_root[c] = (link * to_root[c]).change_ring(ZZ)
         self._components[square] = (root_of, to_root)
         return root_of, to_root
 
     def transporter(self, x, y):
-        r"""Return the matrix of an element of ``O(L)`` with ``x -> y``, ``None`` if none exists.
-
-        Raises :class:`ArithmeticError` when neither a transporter nor a separating invariant is found.
-        """
+        r"""Return the matrix of an element of ``O(L)`` with ``x -> y``, ``None`` if none exists."""
         x, y = vector(ZZ, x), vector(ZZ, y)
         square = x * self._gram * x
         if y * self._gram * y != square or self._invariant(x) != self._invariant(y):
@@ -259,7 +292,7 @@ class HilbertFixedNormClasses:
         cx.set_immutable()
         cy.set_immutable()
         if root_of[cx] != root_of[cy]:
-            raise ArithmeticError(f"{x} and {y} have equal invariants and lie in different components")
+            return None
         h = (my.inverse() * to_root[cy].inverse() * to_root[cx] * mx).change_ring(ZZ)
         if h * x != y or h.transpose() * self._gram * h != self._gram:
             raise ArithmeticError("the constructed transporter is not an isometry carrying x to y")
@@ -273,9 +306,6 @@ class HilbertFixedNormClasses:
         roots = sorted(set(root_of.values()))
         if primitive:
             roots = [r for r in roots if gcd(*(int(c) for c in r)) == 1]
-        invariants = [self._invariant(r) for r in roots]
-        if len(set(invariants)) != len(invariants):
-            raise ArithmeticError(f"two components of norm {square} have equal invariants")
         return tuple(roots)
 
 
