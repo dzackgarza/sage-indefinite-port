@@ -175,12 +175,14 @@ def line_transporter(lattice, generator, left, right):
 def setwise_transporter(lattice, fixed, left, right):
     r"""Return `g` preserving the span of ``fixed`` with `g(left) = right`, or ``None``.
 
-    The tuple ``fixed`` is a basis of a primitive definite sublattice `S`. Restriction sends the
-    setwise stabilizer into the finite group `O(S)`, so running over `O(S)` decides.
+    The tuple ``fixed`` is a basis of a primitive nondegenerate sublattice `S`. For definite
+    `S`, restriction sends the setwise stabilizer into the finite group `O(S)`, so running over
+    `O(S)` decides. For indefinite `S`, the decision splits along `S + S^\perp`.
     """
     gram = [[int(lattice.b(x, y)) for y in fixed] for x in fixed]
     source = Lattices(lattice.base_ring())(gram)
-    assert source.is_definite(), f"{fixed} does not span a definite sublattice"
+    if not source.is_definite():
+        return _glued_setwise_transporter(lattice, fixed, left, right)
     frame = tuple(source.module_generators())
     for automorphism in source.O():
         images = tuple(
@@ -194,6 +196,111 @@ def setwise_transporter(lattice, fixed, left, right):
         if witness is not None:
             return witness
     return None
+
+
+def _glued_setwise_transporter(lattice, fixed, left, right):
+    r"""Decide the setwise transporter for a nondegenerate primitive sublattice `S`.
+
+    Let `K = S^\perp`. Then `S + K \subseteq L \subseteq S^\vee + K^\vee`, and `L` is the
+    graph of an anti-isometry of subgroups of `A_S` and `A_K` (Nikulin, *Integral symmetric
+    bilinear forms*, Prop. 1.5.1). An isometry `g` with `g(S) = S` also preserves `K`, so
+    `g = h + k` with `h \in O(S)` and `k \in O(K)`; conversely `h + k` lies in `O(L)` exactly
+    when it maps `L` into `L`. Write `x = a + c` with `a \in S^\vee_Q` and `c \in K^\vee_Q`.
+    Then `g(x) = y` exactly when `h(a) = a'` and `k(c) = c'`. The solutions `h` form a coset
+    `h_0 Stab_{O(S)}(a)`, and only its image on the finite group `S^\vee/S` affects whether
+    `h + k` preserves `L`. The same holds for `k`. So finitely many pairs of classes decide.
+
+    Matrices act on coefficient rows from the right: `p \mapsto p M`.
+    """
+    frame = tuple(lattice.module_generators())
+    coordinates = lambda v: vector(QQ, [int(c) for c in v])
+    ambient = matrix(QQ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+    fixed_rows = matrix(QQ, [coordinates(v) for v in fixed])
+    complement_rows = matrix(ZZ, fixed_rows * ambient).right_kernel().basis_matrix().change_ring(QQ)
+    together = fixed_rows.stack(complement_rows)
+    inverse = together.inverse()
+    tail = fixed_rows.nrows()
+    left_parts = coordinates(left) * inverse
+    right_parts = coordinates(right) * inverse
+    cosets = []
+    for rows, source, target in (
+        (fixed_rows, left_parts[:tail], right_parts[:tail]),
+        (complement_rows, left_parts[tail:], right_parts[tail:]),
+    ):
+        if rows.nrows() == 0:
+            cosets.append((matrix(QQ, 0, 0),))
+            continue
+        coset = _dual_vector_coset(rows * ambient * rows.transpose(), source, target)
+        if coset is None:
+            return None
+        cosets.append(coset)
+    for first in cosets[0]:
+        for second in cosets[1]:
+            moved = inverse * matrix.block_diagonal([first, second], subdivide=False) * together
+            if moved.denominator() != 1:
+                continue
+            images = {
+                label: sum(
+                    (lattice.scalar_multiple(int(c), g) for c, g in zip(moved.row(i), frame, strict=True)),
+                    lattice.zero(),
+                )
+                for i, label in enumerate(lattice.module_generating_set())
+            }
+            witness = lattice.O()(images)
+            assert witness(left) == right
+            return witness
+    return None
+
+
+def _dual_vector_coset(gram, source, target):
+    r"""Return matrices of `\{h \in O(S) : h(a) = a'\}`, one for each class on `S^\vee/S`.
+
+    ``source`` and ``target`` are coefficient rows of `a, a' \in S^\vee_Q`. Returns ``None``
+    when no `h` exists. Two matrices `M_1, M_2` act equally on `S^\vee/S` exactly when
+    `G^{-1}(M_1 - M_2)` is integral, since the rows of `G^{-1}` span `S^\vee`.
+    """
+    if source.denominator() != target.denominator():
+        return None
+    abstract = Lattices(ZZ)([[int(c) for c in row] for row in gram])
+    generators = tuple(abstract.module_generators())
+    rank = len(generators)
+    scale = source.denominator()
+
+    def element(row):
+        return sum(
+            (abstract.scalar_multiple(int(c), g) for c, g in zip(scale * row, generators, strict=True)),
+            abstract.zero(),
+        )
+
+    def as_matrix(isometry):
+        return matrix(QQ, [[int(c) for c in isometry(g)] for g in generators])
+
+    group = abstract.O()
+    if source.is_zero():
+        if not target.is_zero():
+            return None
+        start = matrix.identity(QQ, rank)
+        stabilizer = tuple(group.group_generators())
+    else:
+        move = group.vector_equivalence_witness(element(source), element(target))
+        if move is None:
+            return None
+        start = as_matrix(move)
+        stabilizer = tuple(group.vector_stabilizer_generators(element(source)))
+    dual = gram.inverse()
+    key = lambda m: tuple(c - c.floor() for c in (dual * m).list())
+    steps = tuple(as_matrix(s) for s in stabilizer)
+    identity = matrix.identity(QQ, rank)
+    seen = {key(identity): identity}
+    frontier = [identity]
+    while frontier:
+        current = frontier.pop()
+        for step in steps:
+            following = current * step
+            if key(following) not in seen:
+                seen[key(following)] = following
+                frontier.append(following)
+    return tuple(m * start for m in seen.values())
 
 
 def _rebase(category, marked):

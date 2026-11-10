@@ -73,9 +73,9 @@ Rows that do not name a dependency proceed independently. Work on several at onc
 | Commuting-involution centralizers (#49) | Joint eigensublattices and simultaneous gluing | done |
 | Rational isotropic flag complex (#45) | Faces of every `FlagType`, face identities, stabilizer maps, incidence multiplicities | done |
 | Gram-constrained embeddings (#46) | Rank-r fixed-source Isom, Aut and classes; requires #47 | done |
-| Infinite-index orbit sets (#53) | Γ-parametrized orbit-set interface; pairing slices through the #47 stabilizer | open |
-| Degenerate and nonprimitive equivariant markings (#61) | Nonprimitive through #48; prescribed Gram through #47 | open |
-| Normalizers (#50) | Twisted transporter on cyclotomic summands; generators of N(H) | open |
+| Infinite-index orbit sets (#53) | Γ-parametrized orbit-set interface; pairing slices through the #47 stabilizer | done |
+| Degenerate and nonprimitive equivariant markings (#61) | Nonprimitive through #48; prescribed Gram through #47 | done |
+| Normalizers (#50) | Twisted transporter on cyclotomic summands; generators of N(H) | done |
 | Unitary centralizers, definite components (#51) | Definite at every place, rank ≥2, through O(Tr(αh)) | done |
 | Eisenstein E⁴,¹ and cubic-surface consumers (#52) | Rank-10 trace lattice, reflection generators, cusp and root orbits | open |
 | Hermitian oceans and Picard groups (#59) | Gaussian four generators in trace coordinates, then the remaining source routes | open |

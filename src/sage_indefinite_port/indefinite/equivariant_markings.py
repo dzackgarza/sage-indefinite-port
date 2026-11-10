@@ -298,3 +298,32 @@ def source_automorphism_kernel_generators(marking, source_generators):
     _transversal, kernel = _schreier(generators, marking, lambda a, x: x * a.inverse().change_ring(ZZ), one)
     assert all(marking * a == marking for a in kernel)
     return kernel
+
+
+def invisible_source_automorphism_generators(marking):
+    r"""Return generators of `\{a \in GL_k(\mathbb Z) : X a = X\}` for an integral `X : \mathbb Z^k \to L`.
+
+    This is the kernel of the projection of the diagram stabilizer to the ambient group when the
+    source group `J` is `GL_k(\mathbb Z)`, and also when `J = O(A)` for `A = X^t B X`, since
+    `X a = X` gives `a^t A a = A`. The group can be infinite. Choose a basis of `\mathbb Z^k`
+    whose first `m` vectors span `K = \ker X`, which is saturated. Then `a` fixes `\mathbb Z^k / K`
+    and preserves `K`, so in that basis `a = \begin{pmatrix} D & S \\ 0 & 1 \end{pmatrix}` with
+    `D \in GL_m(\mathbb Z)` and `S` integral. Elementary matrices and one sign generate
+    `GL_m(\mathbb Z)`, and the unit shears generate the `S` part.
+    """
+    marking = matrix(ZZ, marking)
+    size = marking.ncols()
+    kernel = marking.right_kernel_matrix()
+    rank = kernel.nrows()
+    if rank == 0:
+        return ()
+    _form, _left, right = kernel.smith_form()
+    basis = right.inverse().transpose()  # Columns: a basis of Z^k whose first `rank` columns span K.
+    unit = lambda i, j: matrix(ZZ, size, size, {(i, j): 1})
+    one = identity_matrix(ZZ, size)
+    adapted = [one + unit(i, j) for i in range(rank) for j in range(rank) if i != j]
+    adapted.append(one - 2 * unit(0, 0))
+    adapted.extend(one + unit(i, j) for i in range(rank) for j in range(rank, size))
+    generators = tuple(matrix(ZZ, basis * a * basis.inverse()) for a in adapted)
+    assert all(marking * a == marking for a in generators)
+    return generators

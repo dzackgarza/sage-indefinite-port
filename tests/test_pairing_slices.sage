@@ -175,3 +175,32 @@ def test_public_orbit_set_interface():
     stream = iter(level)
     assert len([next(stream) for _ in range(int(4))]) == int(4)
     assert not level.equivalent(e, f)
+
+
+def test_setwise_indefinite_sublattice_respects_the_glue():
+    r"""L = U, S = Z(e + 3f), K = S^perp = Z(e - 3f), glued along Z/6.
+
+    O(U) = {1, -1, s, -s}, with s the swap. The swap sends e + 3f to 3e + f, so the setwise
+    stabilizer of S is {1, -1} and the orbit of e is {e, -e}. The vector 3f has the same
+    projections up to the sign of the K part, so only the glue rejects it: (1, -1) on S + K
+    acts by different signs on the two copies of Z/6.
+    """
+    L = Lattices(ZZ)("U")
+    e, f = tuple(L.module_generators())
+    s = e + f + f + f
+    g = setwise_transporter(L, (s,), e, -e)
+    assert g is not None and g(e) == -e and g(s) == -s
+    assert setwise_transporter(L, (s,), e, f + f + f) is None
+
+
+def test_setwise_indefinite_unimodular_summand():
+    r"""L = U + U, S the first U. Its setwise stabilizer is O(U) x O(U).
+
+    The swap of e1 and f1 moves e1 + e2 to f1 + e2. The square of the projection to S is
+    invariant, and it is 2 for e1 + f1 + e2 and 0 for e1 + e2 + f2.
+    """
+    L, e1, f1, e2, f2 = _setup()
+    g = setwise_transporter(L, (e1, f1), e1 + e2, f1 + e2)
+    assert g is not None and g(e1 + e2) == f1 + e2
+    assert set(str(g(x)) for x in (e1, f1)) <= set(str(v) for v in (e1, f1, -e1, -f1))
+    assert setwise_transporter(L, (e1, f1), e1 + f1 + e2, e1 + e2 + f2) is None

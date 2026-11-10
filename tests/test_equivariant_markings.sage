@@ -25,7 +25,7 @@ from sage_extensions.all import *
 from sage.matrix.constructor import matrix as sage_matrix
 from sage.matrix.special import identity_matrix as sage_identity
 from sage.rings.integer_ring import ZZ as SageZZ
-from sage_indefinite_port.indefinite.equivariant_markings import EquivariantMarking, source_automorphism_kernel_generators
+from sage_indefinite_port.indefinite.equivariant_markings import EquivariantMarking, invisible_source_automorphism_generators, source_automorphism_kernel_generators
 
 
 def _m(rows):
@@ -153,3 +153,21 @@ def test_invisible_source_factor_has_a_projection_kernel():
     assert source_automorphism_kernel_generators(invisible, [flip]) == (flip,)
     injective = _m([[1, 0], [0, 0], [0, 1], [0, 0]])
     assert source_automorphism_kernel_generators(injective, [_m([[0, 1], [1, 0]])]) == ()
+
+
+def test_invisible_source_factor_with_infinite_automorphisms():
+    r"""S = Z^3 with X = (e1, 0, 0): K = ker X = Z e2 + Z e3 is invisible to L.
+
+    The kernel {a : X a = X} contains GL(K), which is infinite, and the shear e1 -> e1 + e2.
+    So the diagram stabilizer projects to O(L) with an infinite kernel.
+    """
+    from sage.groups.matrix_gps.finitely_generated import MatrixGroup
+
+    marking = _m([[1, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    generators = invisible_source_automorphism_generators(marking)
+    assert all(marking * a == marking for a in generators)
+    group = MatrixGroup(list(generators))
+    assert not group.is_finite()
+    shear = _m([[1, 0, 0], [1, 1, 0], [0, 0, 1]])
+    assert any(g == shear or g * shear == shear ** 0 for g in generators)
+    assert invisible_source_automorphism_generators(_m([[1, 0], [0, 0], [0, 1], [0, 0]])) == ()
