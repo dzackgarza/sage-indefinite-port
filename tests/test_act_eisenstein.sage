@@ -185,3 +185,13 @@ def test_source_reflections_fixing_rho_decompose_in_the_cusp_stabilizer():
         assert built * k == R[index]
     v = R[2] * R[3] * RHO
     assert all(g * v == v and is_isometry(g) for g in null_stabilizer_generators(v))
+
+
+def test_short_root_stabilizer_has_both_spinor_cosets():
+    from sage_indefinite_port.indefinite.act_eisenstein import R7_STABILIZER_GENERATORS, root_stabilizer_generators
+
+    r7 = ROOTS[7]
+    assert all(g * r7 == r7 and is_isometry(g) for g in R7_STABILIZER_GENERATORS)
+    assert sorted(spinor_character(g) for g in R7_STABILIZER_GENERATORS) == [-1, 1, 1, 1, 1, 1]
+    root = R[2] * ROOTS[5]
+    assert all(g * root == root and is_isometry(g) for g in root_stabilizer_generators(root))

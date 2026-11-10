@@ -383,3 +383,19 @@ def null_stabilizer_generators(v):
     r"""Return generators of the stabilizer of a primitive null vector ``v``: ``t^{-1} P t`` with ``t v = rho``."""
     t = reduce_null_vector(v)
     return tuple(~t * g * t for g in CUSP_STABILIZER_GENERATORS)
+
+
+R7_STABILIZER_GENERATORS = (*(R[index] for index in (1, 2, 3, 4, 5)), BIFLECTION)
+
+
+def root_stabilizer_generators(root):
+    r"""Return generators of the stabilizer of a short root ``r``.
+
+    ``<r_7|r_7> = 1``, so ``Lambda = Z[omega] r_7 + r_7^perp`` and an isometry fixing ``r_7`` is
+    an isometry of ``r_7^perp = I_{3,1}``, on coordinates ``0, 1, 3, 4``. Lemma 7.12: the
+    reflections in ``r_1, ..., r_5``, which span ``I_{3,1}``, generate ``Aut^+ I_{3,1}``. The
+    biflection ``B`` of (7.15) lies in ``U(I_{3,1})`` and has spinor character ``-1`` (7.23), so
+    it adjoins the other coset. Conjugation by ``t`` with ``t r = r_7`` moves the result to ``r``.
+    """
+    t = reduce_short_root(root)
+    return tuple(~t * g * t for g in R7_STABILIZER_GENERATORS)
