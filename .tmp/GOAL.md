@@ -78,7 +78,7 @@ Rows that do not name a dependency proceed independently. Work on several at onc
 | Normalizers (#50) | Twisted transporter on cyclotomic summands; generators of N(H) | done |
 | Unitary centralizers, definite components (#51) | Definite at every place, rank ≥2, through O(Tr(αh)) | done |
 | Eisenstein E⁴,¹ and cubic-surface consumers (#52) | Rank-10 trace lattice, reflection generators, cusp and root orbits | done |
-| Hermitian oceans and Picard groups (#59) | Gaussian four generators in trace coordinates, then the remaining source routes | open |
+| Hermitian oceans and Picard groups (#59) | Gaussian four generators in trace coordinates, then the remaining source routes | done |
 | Integral Hermitian parabolics and flags (#60) | n(Z,T) law, liftable Levi image, flag stabilizers | open |
 
 ### Arithmetic backends
