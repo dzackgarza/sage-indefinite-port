@@ -101,6 +101,8 @@ jobs:
             test: test_flag_stabilizers_based_and_setwise_on_the_split_frame
           - file: test_hermitian_parabolic_stabilizers.sage
             test: test_setwise_line_stabilizer_of_the_glued_lattice_induces_the_hand_levi_image
+          - file: test_orbits.sage
+            test: test_gamma_two_splits_null_lines_of_two_hyperbolic_planes_into_nine_orbits
     steps:
       - uses: actions/checkout@v4
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
