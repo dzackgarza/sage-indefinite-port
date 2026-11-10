@@ -163,3 +163,15 @@ def test_skipping_flag_tuples_in_three_planes():
     g = marked_transporter(L, (e1, e2, e3), (e2, e1, e3))
     assert g is not None and (g(e1), g(e2), g(e3)) == (e2, e1, e3)
     assert marked_transporter(L, (e1, e2, e3), (e1, e2, e2 + e3)) is not None
+
+
+def test_public_orbit_set_interface():
+    r"""O(U) has one orbit of primitive null vectors, and Gamma(3) = 1 has four."""
+    L = Lattices(ZZ)("U")
+    e, f = tuple(L.module_generators())
+    full = L.O().vector_orbit_set(0)
+    assert full.equivalent(e, -f)
+    level = L.O().vector_orbit_set(0, L.O().congruence_preimage(3))
+    stream = iter(level)
+    assert len([next(stream) for _ in range(int(4))]) == int(4)
+    assert not level.equivalent(e, f)
