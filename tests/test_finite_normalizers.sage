@@ -73,3 +73,25 @@ def test_glued_eigenlattices_of_the_hyperbolic_plane():
     assert _order(lattice, normalizer.centralizer_generators()) == 4
     assert _order(lattice, normalizer.normalizer_generators()) == 4
     assert normalizer.twisted_transporter((minus * swap, minus)) is None
+
+
+def test_order_six_rotation_on_an_indefinite_sum_of_hexagonal_planes():
+    r"""L = A2 + A2(-1), indefinite of signature (2, 2), F = (rho, -rho) with rho of order 3.
+
+    F has no eigenvalue +-1, so R = L is indefinite. The characteristic polynomials
+    x^2 + x + 1 and x^2 - x + 1 differ, so a centralizing isometry preserves both planes;
+    in the dihedral group O(A2) of order 12 the centralizer of a rotation of order 3 is the
+    six rotations. So C(H) has order 36. Aut(H) = {F -> F, F -> F^-1}, and the inverse is
+    realized by a reflection in each plane, so N(H) has order 72.
+    """
+    lattice = Lattices(ZZ)([[int(2), int(-1), int(0), int(0)], [int(-1), int(2), int(0), int(0)],
+                            [int(0), int(0), int(-2), int(1)], [int(0), int(0), int(1), int(-2)]])
+    a1, a2, b1, b2 = tuple(lattice.module_generators())
+    labels = tuple(lattice.module_generating_set())
+    rotation = lattice.O()(dict(zip(labels, (a2, -a1 - a2, -b2, b1 + b2), strict=True)))
+    normalizer = FiniteSubgroupNormalizer(lattice, (rotation,))
+    assert not normalizer.rest_definite
+    assert _order(lattice, normalizer.centralizer_generators()) == 36
+    assert _order(lattice, normalizer.normalizer_generators()) == 72
+    witness = normalizer.twisted_transporter((~rotation,))
+    assert witness is not None and witness * rotation * ~witness == ~rotation

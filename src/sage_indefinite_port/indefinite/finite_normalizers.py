@@ -2,7 +2,11 @@ r"""Normalizers and centralizers of finite subgroups of `O(L)` for indefinite `L
 
 Let `H = \langle F_1, \dots, F_s \rangle` be finite. For a sign vector `\epsilon`, let
 `L_\epsilon = \{x : F_i x = \epsilon_i x\}`, a primitive sublattice on which `H` acts by scalars,
-and let `R` be the orthogonal complement of their sum. This module supports `R` definite.
+and let `R` be the orthogonal complement of their sum. When `R` is definite, `O(R)` is finite and
+is enumerated. When `R` is indefinite, the equivariant isometries of `R` are a coset of the
+centralizer `C_{O(R)}(H)`, computed by the commutant algebra of `H` on `R`
+(:class:`sage_extensions.algebras.isometry_commutant.IsometryCommutant`), and a transporter;
+only the discriminant classes of that coset enter the gluing.
 
 `N(H) / C(H)` embeds in `\mathrm{Aut}(H)`. For `\varphi \in \mathrm{Aut}(H)`, an isometry `g` with
 `g F g^{-1} = \varphi(F)` for all `F \in H` maps `L_\epsilon` onto
@@ -20,6 +24,7 @@ from itertools import product
 from sage.matrix.constructor import matrix
 from sage.rings.integer_ring import ZZ
 from sage.rings.rational_field import QQ
+from sage_extensions.algebras.isometry_commutant import IsometryCommutant
 from sage_extensions.categories.lattice_centralizers import finite_preimage_generators
 from sage_extensions.categories.lattices import Lattices
 
@@ -132,7 +137,7 @@ def _orthogonal_generators(gram):
 
 
 class FiniteSubgroupNormalizer:
-    r"""`N_{O(L)}(H)` and `C_{O(L)}(H)` for a finite `H \le O(L)` with definite nonscalar part."""
+    r"""`N_{O(L)}(H)` and `C_{O(L)}(H)` for a finite `H \le O(L)`."""
 
     def __init__(self, lattice, generators):
         self.lattice = lattice
@@ -141,27 +146,65 @@ class FiniteSubgroupNormalizer:
         self.generators = tuple(generators)
         self.matrices = tuple(_frame_matrix(lattice, F) for F in self.generators)
         self.pieces, self.rest = _components(self.gram, self.matrices)
-        if self.rest.nrows():
-            rest_gram = self.rest * self.gram * self.rest.transpose()
-            assert _abstract(rest_gram).is_definite(), (
-                f"the part of {lattice} on which {self.generators} act by nonscalars is indefinite; "
-                f"its equivariant isometries are the Grunewald-Segal route (#54)"
-            )
+        self.rest_definite = not self.rest.nrows() or _abstract(self._gram_of(self.rest)).is_definite()
         self.basis = matrix.block([[basis] for _signs, basis in self.pieces] + [[self.rest]], subdivide=False)
         self.inverse = self.basis.inverse()
 
     def _gram_of(self, rows):
         return rows * self.gram * rows.transpose()
 
+    def _on_rest(self, F):
+        return self.rest.solve_left(self.rest * F)
+
+    def _rest_commutant(self):
+        r"""Return the commutant of `H` on `R`, in column convention: `F_{col} = F^t`."""
+        gram = matrix(ZZ, self._gram_of(self.rest))
+        return IsometryCommutant(gram, [matrix(ZZ, self._on_rest(F)).transpose() for F in self.matrices])
+
+    def _rest_centralizer(self):
+        r"""Return generators of `C_{O(R)}(H)` on `R`, in its basis and row convention."""
+        if self.rest_definite:
+            return self._rest_twisted(self.matrices)
+        return tuple(matrix(QQ, g).transpose() for g in self._rest_commutant().centralizer_generators())
+
+    def _rest_choices(self, images):
+        r"""Return equivariant isometries `h` of `R` with `F h = h \varphi(F)`, one per discriminant class.
+
+        For indefinite `R` they are `C_{O(R)}(H) h_0` for one transporter `h_0`. In column convention
+        `t = h^t` satisfies `t F^t = \varphi(F)^t t` and `t^t B t = B`.
+        """
+        if not self.rest.nrows():
+            return (matrix(QQ, 0, 0),)
+        if self.rest_definite:
+            return self._rest_twisted(images)
+        gram = self._gram_of(self.rest)
+        targets = tuple(self._on_rest(T) for T in images)
+        if all(self._on_rest(F) == T for F, T in zip(self.matrices, targets, strict=True)):
+            start = matrix.identity(QQ, self.rest.nrows())
+        else:
+            commutant = self._rest_commutant()
+            columns = tuple(matrix(ZZ, T).transpose() for T in targets)
+            if commutant.is_compact():
+                witness = commutant.compact_equivariant_transporter(matrix(ZZ, gram), columns)
+            else:
+                assert len(columns) == 1, (
+                    f"the twisted transporter on the indefinite part of {self.lattice} for {len(columns)} "
+                    f"generators with a noncompact commutant is the general Grunewald-Segal orbit decision (#54)"
+                )
+                witness = commutant.equivariant_transporter(matrix(ZZ, gram), columns[0])
+            if witness is None:
+                return ()
+            start = matrix(QQ, witness).transpose()
+        return _classes(gram, start, self._rest_centralizer())
+
     def _rest_twisted(self, images):
-        r"""Return the matrices on `R` (in its basis) of all `h \in O(R)` with `F h = h \varphi(F)` on `R`."""
+        r"""Return the matrices on `R` (in its basis) of all `h \in O(R)` with `F h = h \varphi(F)`, for definite `R`."""
         if not self.rest.nrows():
             return (matrix(QQ, 0, 0),)
         rest_lattice = _abstract(self._gram_of(self.rest))
         frame = tuple(rest_lattice.module_generators())
-        on_rest = lambda F: self.rest.solve_left(self.rest * F)
-        sources = tuple(on_rest(F) for F in self.matrices)
-        targets = tuple(on_rest(F) for F in images)
+        sources = tuple(self._on_rest(F) for F in self.matrices)
+        targets = tuple(self._on_rest(F) for F in images)
         result = []
         for element in rest_lattice.O():
             h = matrix(QQ, [[int(c) for c in element(g)] for g in frame])
@@ -201,7 +244,7 @@ class FiniteSubgroupNormalizer:
                 return None
             choices.append(_classes(self._gram_of(basis), start, _orthogonal_generators(self._gram_of(basis))))
             target_rows.append(target)
-        choices.append(self._rest_twisted(image_matrices))
+        choices.append(self._rest_choices(image_matrices))
         target_basis = matrix.block([[rows] for rows in target_rows] + [[self.rest]], subdivide=False)
         for blocks in product(*choices):
             moved = self._assemble(blocks, target_basis)
@@ -230,7 +273,7 @@ class FiniteSubgroupNormalizer:
         for index, (_signs, basis) in enumerate(self.pieces):
             generators.extend(embed(index, s) for s in _orthogonal_generators(self._gram_of(basis)))
         if self.rest.nrows():
-            generators.extend(embed(len(self.pieces), h) for h in self._rest_twisted(self.matrices))
+            generators.extend(embed(len(self.pieces), h) for h in self._rest_centralizer())
         generators.append(matrix.identity(QQ, total))
         integral = lambda m: (self.inverse * m * self.basis).denominator() == 1
         schreier, _index = finite_preimage_generators(generators, lambda m: m, integral)
