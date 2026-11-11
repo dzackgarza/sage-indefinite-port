@@ -455,9 +455,11 @@ class _DedekindModel:
         n = ZZ(len(component) // degree).isqrt()
         if n == 1:
             return [[idempotent]]
-        if n > 2:
+        if n == 3:
+            return self._split_cubic(index, component)
+        if n > 3:
             raise NotImplementedError(
-                f"Wedderburn component of dimension {n}^2 over {K}: explicit matrix units of a central simple algebra of degree n >= 3 need the "
+                f"Wedderburn component of dimension {n}^2 over {K}: explicit matrix units of a central simple algebra of degree n >= 4 need the "
                 f"splitting algorithm of Ivanyos, Ronyai and Schicho (J. Algebra 2012), which is not implemented (#54)"
             )
         a = next(b for b in component if any(b * c != c * b for c in component))
@@ -491,6 +493,103 @@ class _DedekindModel:
         units = [[first, upper], [lower, second]]
         assert all(units[p][q] * units[q2][r] == (units[p][r] if q == q2 else 0 * idempotent) for p in range(2) for q in range(2) for q2 in range(2) for r in range(2))
         return units
+
+    def _k_rank(self, index, elements):
+        r"""Return the `K_i`-dimension of the `K_i`-span of the ``elements`` of `B_i`."""
+        degree = self.factors[index].degree()
+        if not elements:
+            return 0
+        return matrix(QQ, [(self.theta**j * m).list() for m in elements for j in range(degree)]).rank() // degree
+
+    def _k_minimal_polynomial(self, index, x):
+        r"""Return the minimal polynomial over `K_i` of ``x`` `\in B_i`."""
+        K = self.fields[index]
+        ring = PolynomialRing(K, "y")
+        powers = [self.idempotents[index]]
+        while self._k_rank(index, powers + [powers[-1] * x]) > len(powers):
+            powers.append(powers[-1] * x)
+        coefficients = self._solve(index, powers[-1] * x, powers)
+        return ring.gen() ** len(powers) - sum(c * ring.gen() ** s for s, c in enumerate(coefficients))
+
+    def _field_matrix(self, index, x, value):
+        r"""Return the matrix of ``value`` `\in L = K_i[x]` (coefficients over `K_i` in the powers of the generator) at ``x``."""
+        result, power = 0 * x, self.idempotents[index]
+        for c in value.list():
+            result += self._embed(index, c) * power
+            power = power * x
+        return result
+
+    def _units_from_zero_divisor(self, index, z, component, n):
+        r"""Return matrix units of `B_i \cong M_n(K_i)` from a zero divisor `z \ne 0`.
+
+        `B_i` is von Neumann regular, so `z y z = z` has a solution `y` (linear over `Q`) and `e = z y` is an idempotent with `e B_i = z B_i`,
+        of reduced rank `r = \dim_K e B_i / n`. For `n = 3` one of `e, 1 - e` has reduced rank one. For a rank-one `e`, `e B e = K e`, and the pairing
+        `e B \times B e \to K e` is perfect; with `K`-bases `r_a` of `e B` and `c_b` of `B e`, `r_a c_b = G_{ab} e`, and the dual basis `c'_b = \sum_s
+        c_s (G^{-1})_{sb}`, the `e_{ab} = c'_a r_b` are matrix units (`e_{ab} e_{cd} = c'_a (r_b c'_c) r_d = \delta_{bc} e_{ad}`, as `e r_d = r_d`)."""
+        idempotent = self.idempotents[index]
+        K = self.fields[index]
+        columns = matrix(QQ, [(z * b * z).list() for b in component]).transpose()
+        solution = columns.solve_right(vector(QQ, z.list()))
+        e = z * sum((c * b for c, b in zip(solution, component)), 0 * z)
+        assert e * e == e and e * z == z
+        if self._k_rank(index, [e * b for b in component]) != n:
+            e = idempotent - e
+        assert self._k_rank(index, [e * b for b in component]) == n
+        rows, cols = [e], []
+        for b in component:
+            if len(rows) < n and self._k_rank(index, rows + [e * b]) > len(rows):
+                rows.append(e * b)
+            if len(cols) < n and self._k_rank(index, cols + [b * e]) > len(cols):
+                cols.append(b * e)
+        assert len(rows) == n and len(cols) == n
+        gram = matrix(K, n, n, [self._solve(index, r * c, [e])[0] for r in rows for c in cols])
+        inverse = gram.inverse()
+        duals = [sum((self._embed(index, inverse[s, b]) * cols[s] for s in range(n)), 0 * z) for b in range(n)]
+        units = [[duals[a] * rows[b] for b in range(n)] for a in range(n)]
+        assert sum(units[a][a] for a in range(n)) == idempotent
+        assert all(units[a][b] * units[c][d] == (units[a][d] if b == c else 0 * z) for a in range(n) for b in range(n) for c in range(n) for d in range(n))
+        return units
+
+    def _split_cubic(self, index, component):
+        r"""Return matrix units of a degree-three component `B_i`, or raise when it is a division algebra or no cyclic maximal subfield is found.
+
+        For `x \in B_i` with minimal polynomial `f` over `K = K_i`: a reducible `f = g h` gives the zero divisor `g(x)`. An irreducible cubic `f`
+        gives the maximal subfield `L = K(x)`; when `L / K` is cyclic (`f` has three roots in `L`), `\sigma(x) = s(x)` for a root `s \ne x`, and
+        Skolem-Noether gives `u` with `u x = s(x) u` (a linear equation). Then `B_i = (L/K, \sigma, a)` with `a = u^3 \in K`, which splits exactly
+        when `a = N_{L/K}(y)` (Pierce, *Associative Algebras*, Sec. 15.1), decided by PARI ``rnfisnorm``. Then `w = y^{-1} u` has
+        `w^3 = N(y)^{-1} a = 1` and `w \notin K`, so `w - 1` is a zero divisor (:meth:`_units_from_zero_divisor`). The trial elements are the
+        `Q`-basis of `B_i`, their pairwise sums and their products."""
+        K = self.fields[index]
+        candidates = [*component, *(b + c for s, b in enumerate(component) for c in component[s + 1 :]), *(b * c for b in component for c in component)]
+        for x in candidates:
+            if all(x * b == b * x for b in component):
+                continue
+            f = self._k_minimal_polynomial(index, x)
+            factors = f.factor()
+            if len(factors) > 1 or factors[0][1] > 1:
+                z = self._field_matrix(index, x, factors[0][0])
+                return self._units_from_zero_divisor(index, z, component, 3)
+            L = K.extension(f, "l")
+            roots = [r for r, _m in f.change_ring(L).roots() if r != L.gen()]
+            if len(roots) != 2:
+                continue
+            sigma = self._field_matrix(index, x, roots[0])
+            equations = matrix(QQ, [(b * x - sigma * b).list() for b in component])
+            kernel = equations.left_kernel().basis()
+            u = sum((c * b for c, b in zip(kernel[0], component)), 0 * x)
+            (a,) = self._solve(index, u * u * u, [self.idempotents[index]])
+            found, y = K(a).is_norm(L, element=True)
+            if not found:
+                raise NotImplementedError(
+                    f"Wedderburn component (L/K, sigma, {a}) with L = {L} is a cubic division algebra over {K}: lattices over its orders "
+                    f"are not classified by this route (#54)"
+                )
+            w = self._field_matrix(index, x, ~L(y)) * u
+            return self._units_from_zero_divisor(index, w - self.idempotents[index], component, 3)
+        raise NotImplementedError(
+            f"no cyclic maximal subfield of the degree-three component over {K} among the trial elements: explicit matrix units need the "
+            f"splitting algorithm of Ivanyos, Ronyai and Schicho (J. Algebra 2012), which is not implemented (#54)"
+        )
 
     def _quaternion(self, index, alpha, beta, i, j):
         r"""Record the division component `B_i = D = (\alpha, \beta)_K` (:meth:`_split`): the Sage algebra with integral `c^2 \alpha, c'^2 \beta`
