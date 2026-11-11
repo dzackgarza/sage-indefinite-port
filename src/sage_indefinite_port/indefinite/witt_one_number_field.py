@@ -26,7 +26,9 @@ positive integers `|N(x)|, N(y \mathfrak a_e^2)` strictly decreases the larger o
 `m = 0` (`M` anisotropic) and `x \in O_K^\times` since `g \mathfrak a_e e` is primitive. At `x = 0`, `v = y f` and primitivity gives
 `y \mathfrak a_e = \mathfrak a_e^{-1}`, so `\mathfrak a_e^{-2} = y O_K` is principal and the Weyl element returns `v` to `O_K^\times e`.
 So the generated group moves `g \mathfrak a_e e` back to `\mathfrak a_e e`, and with the stabilizer it is `O(\Lambda)`. Without the
-certificates, cusp classes are not decided here and the module raises.
+certificates, :func:`genus_number_field.cusp_links` adds the cusp links of Swan's generalised covering: elements `g_i` with
+`g_i \mathfrak a_e e` in the orbit of `\mathfrak a_e e`, found by the cusp classification, whose regions `|N(y_i)| |N(q(z - z_i))| < 1`
+cover the fundamental box except the singular cusps of the other classes.
 
 `O(M)` for totally definite `M` is the finite group of `Z`-automorphisms of `M_Z` preserving `\mathrm{Tr}(h)` and `\mathrm{Tr}(\omega h)` (these
 determine `h`; such maps are `O_K`-linear by nondegeneracy), from PARI ``qfauto`` (Plesken-Souvignier); for rank one it is `\pm 1` at any
