@@ -33,7 +33,8 @@ from sage.rings.integer_ring import ZZ
 from sage.rings.number_field.number_field import NumberField
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.rational_field import QQ
-from sage_extensions.algebras.isometry_commutant import _short_vectors
+from sage_extensions.algebras.isometry_commutant import IsometryCommutant, _short_vectors
+from sage_indefinite_port.indefinite.commutant_groups import _diagonal_null, _verified
 from sage_indefinite_port.indefinite.quaternion_voronoi_number_field import QuaternionOrderVoronoi
 
 
@@ -68,6 +69,7 @@ class CliffordModel:
         delta = (theta * theta)[0, 0]
         assert theta * theta == delta * identity_matrix(QQ, 6)
         assert not delta.is_square(), "the discriminant is a square: h is hyperbolic"
+        self.delta = delta
         self.field = NumberField(PolynomialRing(QQ, "x")([-delta, 0, 1]), "z")
         z = self.field.gen()
         self.tau = next(t for t in self.field.automorphisms() if t(z) == -z)
@@ -113,43 +115,38 @@ class CliffordModel:
         product = M * M.apply_map(self.tau)
         return matrix(QQ, [[QQ(x) for x in row] for row in product.rows()])
 
-    def _ramified_generators(self, voronoi):
-        r"""Return `n_P` with `\mathrm{nrd}(n_P) O_Z = P` for the finite ramified `P`, by enumeration in a positive form (terminates by Eichler)."""
-        primes = self.algebra.ramified_places(inf=False)
-        gram = voronoi.gram(self.algebra(1))
-        result = []
-        for prime in primes:
-            bound, found = QQ(1), None
-            while found is None:
-                for v in _short_vectors(gram, bound):
-                    x = voronoi.from_order(v)
-                    if self.field.ideal(x.reduced_norm()) == prime:
-                        found = x
-                        break
-                bound *= 2
-            result.append(found)
-        return primes, result
+    def voronoi(self):
+        if not hasattr(self, "_voronoi"):
+            self._voronoi = QuaternionOrderVoronoi(self.algebra, self.order_basis)
+        return self._voronoi
 
-    def _check_maximal(self, voronoi, primes):
+    def _generator(self, elements, target):
+        return _norm_generator(self.voronoi(), elements, target)
+
+    def _check_maximal(self, primes):
+        voronoi = self.voronoi()
         gram = matrix(QQ, [[voronoi.trace(x * y) for y in voronoi.order] for x in voronoi.order])
-        discriminant = self.field.discriminant()
-        expected = abs(discriminant) ** 4 * _norm_product(primes) ** 2
+        expected = abs(self.field.discriminant()) ** 4 * _norm_product(primes) ** 2
         if abs(gram.det()) != expected:
             raise NotImplementedError(
                 f"O_C = C cap M_r(O_Z) has discriminant {abs(gram.det())}, not that of a maximal order ({expected}); the "
-                f"normalizer of a non-maximal order is not computed here (#54)"
+                f"normalizer of a non-maximal order (the stabilizer of O_C in the normalizers of the maximal orders containing "
+                f"it) is not computed here (#54)"
             )
 
-    def centralizer_generators(self):
-        r"""Return generators of `C(Z)` (module docstring)."""
-        if self.field.class_number() != 1:
-            raise NotImplementedError(
-                f"Z = {self.field} has class number {self.field.class_number()}: the normalizer generators n_P need the lift "
-                f"through the class group of Z (#54)"
-            )
-        voronoi = QuaternionOrderVoronoi(self.algebra, self.order_basis)
-        primes, ramified = self._ramified_generators(voronoi)
-        self._check_maximal(voronoi, primes)
+    def normalizer_representatives(self):
+        r"""Return elements `n` of `C` whose classes generate `N(O_C) / (Z^\times SL_1(O_C))` together with `SL_1(O_C)`.
+
+        Units: representatives of `\mathrm{nrd}(O_C^\times)` modulo `(O_Z^\times)^2`. Ramified part: for each set `T` of finite ramified primes,
+        the two-sided ideal `\mathfrak P_T = \prod_{P \in T} \mathfrak P` times a central `\mathfrak b^{-1}` is principal exactly when
+        `\mathrm{nrd} = \prod_T P \cdot \mathfrak b^{-2}` is principal (Eichler's norm theorem, no real ramification; Voight Sec. 28.5, the lift
+        through the class group of `Z`); its generator is found in the lattice `\mathfrak b^{-1} O_C` with `\mathrm{nrd}` generating that ideal.
+        """
+        if hasattr(self, "_normalizer"):
+            return self._normalizer
+        voronoi = self.voronoi()
+        primes = list(self.algebra.ramified_places(inf=False))
+        self._check_maximal(primes)
         units = self.field.unit_group()
         width = len(units.gens())
         reps, span = [], matrix(GF(2), 0, width)
@@ -158,24 +155,167 @@ class CliffordModel:
             if span.stack(row).rank() > span.rank():
                 span = span.stack(row)
                 reps.append(u)
-        r = self.commutant.rank
-        result = [-identity_matrix(QQ, r), *(self.chi(c) for c in voronoi.sl1_generators())]
+        classes = [c.ideal() for c in self.field.class_group()]
+        ramified = []
+        for t in range(1, len(primes) + 1):
+            for chosen in combinations(primes, t):
+                product_ideal = self.field.ideal(1)
+                for prime in chosen:
+                    product_ideal *= prime
+                central = next((b for b in classes if (product_ideal / b**2).is_principal()), None)
+                if central is None:
+                    continue
+                inverse = central**-1
+                elements = [self.algebra(g) * o for g in inverse.basis() for o in self.order_basis]
+                ramified.append(self._generator(elements, product_ideal / central**2))
         one = self.algebra(1)
+        result = []
         for k in range(len(reps) + 1):
             for chosen_units in combinations(reps, k):
-                for t in range(len(ramified) + 1):
-                    for chosen_primes in combinations(ramified, t):
-                        n = one
-                        for x in (*chosen_units, *chosen_primes):
-                            n = n * x
-                        norm = QQ(self.field(n.reduced_norm()).norm())
-                        if norm <= 0 or not norm.is_square():
-                            continue
-                        g = self.chi(n) / norm.sqrt()
-                        if all(c in ZZ for c in g.list()) and all(c in ZZ for c in g.inverse().list()):
-                            result.extend([g, -g])
+                for extra in [one, *ramified]:
+                    n = extra
+                    for u in chosen_units:
+                        n = u * n
+                    result.append(n)
+        self._normalizer = tuple(result)
+        return self._normalizer
+
+    def centralizer_generators(self):
+        r"""Return generators of `C(Z)` (module docstring)."""
+        voronoi = self.voronoi()
+        r = self.commutant.rank
+        result = [-identity_matrix(QQ, r), *(self.chi(c) for c in voronoi.sl1_generators())]
+        for n in self.normalizer_representatives():
+            norm = QQ(self.field(n.reduced_norm()).norm())
+            if norm <= 0 or not norm.is_square():
+                continue
+            g = self.chi(n) / norm.sqrt()
+            if all(c in ZZ for c in g.list()) and all(c in ZZ for c in g.inverse().list()):
+                result.extend([g, -g])
         assert all(self.commutant.is_centralizer_element(matrix(ZZ, g)) for g in result)
         return tuple(result)
+
+
+def _norm_generator(voronoi, elements, target):
+    r"""Return `x` in the `Z`-span of ``elements`` (a lattice of a quaternion algebra over `Z`) with `\mathrm{nrd}(x) O_Z =` ``target``, by
+    enumeration in the positive form `\mathrm{Tr}(\iota(x) y)` of ``voronoi``; for a lattice that is an invertible left ideal of a maximal
+    order, such an `x` generates it, and one exists by Eichler's norm theorem (no real ramification), so the search ends."""
+    rows = matrix(QQ, [voronoi.coordinates(x) for x in elements])
+    scale = rows.denominator()
+    basis = matrix(QQ, matrix(ZZ, scale * rows).hermite_form(include_zero_rows=False)) / scale
+    assert basis.nrows() == 8
+    lattice = [voronoi.element(row) for row in basis.rows()]
+    iota = voronoi.involution
+    gram = matrix(QQ, [[(voronoi.trace(iota(x) * y) + voronoi.trace(iota(y) * x)) / 2 for y in lattice] for x in lattice])
+    field = voronoi.center
+    bound = QQ(1)
+    while True:
+        for v in _short_vectors(gram, bound):
+            x = sum((ZZ(c) * b for c, b in zip(v, lattice)), voronoi.algebra(0))
+            if field.ideal(x.reduced_norm()) == target:
+                return x
+        bound *= 2
+
+
+def _reduced_norm_ideal(field, elements):
+    r"""Return the ideal generated by `\mathrm{nrd}` on the `Z`-span of ``elements`` (values and polarizations)."""
+    values = [x.reduced_norm() for x in elements]
+    values += [(x + y).reduced_norm() - x.reduced_norm() - y.reduced_norm() for x in elements for y in elements]
+    return field.ideal([v for v in values if v != 0])
+
+
+def _algebra_isomorphism(source_algebra, target_algebra):
+    r"""Return the images `x, y` in ``target_algebra`` of the generators `i, j` of ``source_algebra`` (same centre).
+
+    `x` is a pure quaternion with `x^2 = a`: a null vector `(u, v, w, t)` of `\langle a', b', -a'b', -a \rangle` with `t \ne 0` (`t = 0` would
+    make the pure norm form isotropic, i.e. the algebra split, which a division algebra is not). `y` lies in the plane of pure quaternions
+    anticommuting with `x` and has `y^2 = b`: a null vector of the diagonalized ternary form, through the number-field conic (Voight,
+    *Quaternion Algebras*, Ch. 5 on standard generators: an isomorphism sends `i, j` to anticommuting pure elements of squares `a, b`)."""
+    field = source_algebra.base_ring()
+    a, b = source_algebra.invariants()
+    a2, b2 = target_algebra.invariants()
+    _one, i2, j2, k2 = target_algebra.basis()
+    null = _diagonal_null(field, [a2, b2, -a2 * b2, -a])
+    if null is None:
+        raise NotImplementedError(f"no pure quaternion of square {a} found in {target_algebra} by the bounded search (#54)")
+    assert null[3] != 0
+    x = (null[0] * i2 + null[1] * j2 + null[2] * k2) / null[3]
+    assert x * x == target_algebra(a)
+    pure = [i2, j2, k2]
+    equation = matrix(field, [[(x * p + p * x).coefficient_tuple()[0]] for p in pure])
+    plane = [sum((c * p for c, p in zip(k, pure)), target_algebra(0)) for k in equation.left_kernel().basis()]
+    assert len(plane) == 2
+    y1, y2 = plane
+    g11 = (y1 * y1).coefficient_tuple()[0]
+    g12 = (y1 * y2 + y2 * y1).coefficient_tuple()[0] / 2
+    w2 = y2 - (g12 / g11) * y1
+    g22 = (w2 * w2).coefficient_tuple()[0]
+    null = _diagonal_null(field, [g11, g22, -b])
+    assert null is not None and null[2] != 0
+    y = (null[0] * y1 + null[1] * w2) / null[2]
+    assert y * y == target_algebra(b) and x * y == -y * x
+    return x, y
+
+
+def clifford_transporter(source, start, square, target_gram, targets):
+    r"""Return an integral transporter to ``(target_gram, targets)`` for an anisotropic skew-Hermitian commutant, or ``None`` as a proof.
+
+    ``start`` is a rational intertwiner and ``square`` `= B^{-1} t_0^t B' t_0`. A transporter `t = t_0 b` makes `\mathrm{Int}(t)` an isomorphism
+    `(A, \sigma) \to (A', \sigma')` carrying `M_r(Z) \cap A` onto `M_r(Z) \cap A'`, hence the Clifford data `(Z, C, O_C)` onto those of the target,
+    composed with one of the two embeddings of the target discriminant field (the second swaps `C'` and `\tau(C')`). So: the discriminants
+    agree; for each embedding, `C \cong C''` (:func:`_algebra_isomorphism`), corrected by the generator `\alpha` of the connecting ideal
+    `\psi_0(O_C) O_{C''}` (Eichler, class number one) to an isomorphism of maximal orders; `b` is its unique lift to `A` up to `Q^\times`
+    (Skolem-Noether over `Z`, with `b` rational), a similitude with `\sigma(b) s b = \mu`. Every transporter is `\pm t_0 b \chi(n) / q` with `n`
+    in the normalizer of `O_C`, `q^2 = \mu N(\mathrm{nrd}\, n)`, modulo `\chi(SL_1(O_C)) \subseteq C(Z)`, so the finite list of
+    :meth:`CliffordModel.normalizer_representatives` decides."""
+    commutant = source.commutant
+    target = CliffordModel(IsometryCommutant(target_gram, targets))
+    if not (target.delta / source.delta).is_square():
+        return None
+    if source.field.class_number() != 1:
+        raise NotImplementedError(f"the connecting ideal over Z = {source.field} of class number > 1 need not be principal (#54)")
+    inverse = start.inverse()
+    r = commutant.rank
+    basis = [m.change_ring(QQ) for m in commutant.order_basis]
+    for embedding in target.field.embeddings(source.field):
+        a2, b2 = target.algebra.invariants()
+        algebra = QuaternionAlgebra(source.field, embedding(a2), embedding(b2))
+        move = lambda q: algebra([embedding(c) for c in q.coefficient_tuple()])
+        frame = [inverse * F.apply_map(embedding) * start for F in target.frame]
+        order = [move(o) for o in target.order_basis]
+        voronoi = QuaternionOrderVoronoi(algebra, order)
+        x, y = _algebra_isomorphism(source.algebra, algebra)
+        psi0 = lambda q: sum((c * g for c, g in zip(q.coefficient_tuple(), (algebra(1), x, y, x * y))), algebra(0))
+        connecting = [psi0(o) * o2 for o in source.order_basis for o2 in order]
+        alpha = _norm_generator(voronoi, connecting, _reduced_norm_ideal(source.field, connecting))
+        psi = lambda q: ~alpha * psi0(q) * alpha
+        assert all(voronoi.in_order(psi(o)) for o in source.order_basis)
+        image = lambda q: sum((c * F for c, F in zip(q.coefficient_tuple(), frame)), 0 * frame[0])
+        _one, i, j, _k = source.algebra.basis()
+        rows = []
+        for m in basis:
+            entries = []
+            for generator, matrix_generator in ((i, source.frame[1]), (j, source.frame[2])):
+                difference = m.change_ring(source.field) * matrix_generator - image(psi(generator)) * m.change_ring(source.field)
+                entries.extend(c for e in difference.list() for c in source.field(e).list())
+            rows.append(entries)
+        kernel = matrix(QQ, rows).left_kernel().basis()
+        assert len(kernel) == 1, f"the lift of the Clifford isomorphism is not unique up to Q^x: {len(kernel)}"
+        b = sum(QQ(c) * m for c, m in zip(kernel[0], basis))
+        assert b.det() != 0
+        similitude = commutant.adjoint(b) * square * b
+        mu = similitude[0, 0]
+        assert similitude == mu * identity_matrix(QQ, r)
+        for n in source.normalizer_representatives():
+            multiplier = mu * QQ(source.field(n.reduced_norm()).norm())
+            if multiplier <= 0 or not multiplier.is_square():
+                continue
+            candidate = start * b * source.chi(n) / multiplier.sqrt()
+            for sign in (1, -1):
+                found = _verified(commutant, sign * candidate, target_gram, targets)
+                if found is not None:
+                    return found
+    return None
 
 
 def _norm_product(primes):

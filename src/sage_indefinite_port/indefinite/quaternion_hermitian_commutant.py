@@ -51,7 +51,7 @@ Skew-Hermitian forms (`H_0^* = -H_0`). Then `h(x, x)` is pure and `h(y, x) = -\o
   `L(x)^{-1}` makes the column `e_1`, and the stabilizer of `e_1` is `n(Z)`. Hence `U(R^2, J) = \langle L(u), n(1), W \rangle`, `u` in generators of
   `R^\times`, with no covering certificate (the argument is the Euclidean algorithm on `P^1(Q)`, which parametrizes the null `D`-lines).
   Every primitive null vector of `\Lambda = q J` is in the `U`-orbit of `v`, so `h(\Lambda, v') = q R` for all of them, and `q J \cong q' J` exactly when
-  `q' = \pm q` (`diag(1, -1)` sends `J` to `-J`; reduced norms of determinants otherwise). An anisotropic skew-Hermitian `\Lambda` is treated by :mod:`clifford_commutant` (generators; its transporters raise). There
+  `q' = \pm q` (`diag(1, -1)` sends `J` to `-J`; reduced norms of determinants otherwise). An anisotropic skew-Hermitian `\Lambda` is treated by :mod:`clifford_commutant` (generators and transporters). There
   `\sigma_h` is an orthogonal involution of degree 4 with nontrivial discriminant (a trivial one makes `h` hyperbolic), so its Clifford
   algebra `C(A, \sigma_h)` is a quaternion algebra over `Z = Q(\sqrt \delta)` and `Spin(A, \sigma_h) \cong R_{Z/Q} SL_1(C)` (Knus-Merkurjev-
   Rost-Tignol, *The Book of Involutions*, Thm. 15.7, Cor. 15.12). The missing pieces are an integral model of `C(A, \sigma_h)` with the
@@ -528,7 +528,8 @@ class QuaternionMatrixCommutant:
         if found is None and sign == -1:
             from sage_indefinite_port.indefinite.clifford_commutant import CliffordModel
 
-            self._unitary = CliffordModel(self.commutant).centralizer_generators()
+            self._clifford = CliffordModel(self.commutant)
+            self._unitary = self._clifford.centralizer_generators()
             return self._unitary
         if found is None:
             raise NotImplementedError(
@@ -574,11 +575,10 @@ class QuaternionMatrixCommutant:
         square = commutant.gram.change_ring(QQ).inverse() * start.transpose() * target_gram * start
         assert commutant.contains(square)
         self.unitary_generators()
-        if not hasattr(self, "_model_data"):
-            raise NotImplementedError(
-                f"transporters of the anisotropic skew-Hermitian plane over ({self.a}, {self.b})_Q of the commutant of "
-                f"{self.commutant.isometries}: an isometry of the two Clifford models is not constructed (#54)"
-            )
+        if hasattr(self, "_clifford"):
+            from sage_indefinite_port.indefinite.clifford_commutant import clifford_transporter
+
+            return clifford_transporter(self._clifford, start, square, target_gram, targets)
         v, f, q = self._model_data
         H0, sign = self._hermitian_matrix()
         twisted = _mul(H0, self.block(square))

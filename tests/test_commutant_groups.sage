@@ -940,3 +940,25 @@ def test_anisotropic_skew_hermitian_quaternion_centralizer():
     assert all(F.transpose() * gram * F == gram for F in sources)
     generators = centralizer_generators(IsometryCommutant(gram, sources))
     assert all(g.transpose() * gram * g == gram and all(g * F == F * g for F in sources) for g in generators)
+
+
+def test_anisotropic_skew_hermitian_quaternion_transporters():
+    r"""In the anisotropic plane `h = diag(i, 3i + j)`, the diagonal left action `P` of `[[1, i], [0, 1]] \in GL_2(\Delta)` commutes with the
+    sources and is unimodular, so it is a transporter from `(B, F)` to `(P^{-t} B P^{-1}, F)`; `3B` has another determinant."""
+    alpha, beta = I, int(3) * I + J
+
+    def form(X, Y):
+        def h(x, y):
+            return y[int(0)].conjugate() * alpha * x[int(0)] + y[int(1)].conjugate() * beta * x[int(1)]
+
+        return (h(X[int(0)], Y[int(1)]) - h(X[int(1)], Y[int(0)])).reduced_trace()
+
+    gram = sage_matrix(SageZZ, [[int(form(X, Y)) for Y in QUADS] for X in QUADS])
+    _skew_gram, sources = _skew_hermitian_quaternion_lattice()
+    commutant = IsometryCommutant(gram, sources)
+    P = _diagonal_left(((ONE, I), (int(0) * ONE, ONE)))
+    assert P.det() in (int(1), int(-1)) and all(P * F == F * P for F in sources)
+    moved = (P.inverse().transpose() * gram * P.inverse()).change_ring(SageZZ)
+    t = equivariant_transporter(commutant, moved, sources)
+    assert t is not None and _is_transporter(t, gram, moved, sources, sources)
+    assert equivariant_transporter(commutant, int(3) * gram, sources) is None
