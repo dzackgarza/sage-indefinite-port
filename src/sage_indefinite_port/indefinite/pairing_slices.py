@@ -4,6 +4,10 @@ For a fixed tuple `s` of vectors, `\Gamma = Stab_{O(L)}(s)` preserves every `b(s
 `q(x)`. These invariants give exact negative decisions. On one slice, `x` and `y` are in one
 `\Gamma`-orbit exactly when the tuples `(s, x)` and `(s, y)` are `O(L)`-equivalent as
 markings of the same Gram lattice, which is a decision on coslice objects.
+
+For the centralizer `\Gamma = C_{O(L)}(F_1, \dots, F_s)` of arbitrary isometries, which has infinite
+index in general, :class:`CentralizerSubgroup` decides vector and tuple equivalence through the
+equivariant marked transporter of `(L, F, v)` (:class:`CentralizerTupleOrbit`, over #54).
 """
 
 from itertools import count, product
@@ -13,6 +17,7 @@ from sage.modules.free_module_element import vector
 from sage.rings.integer_ring import ZZ
 from sage.rings.rational_field import QQ
 from sage_extensions.categories.lattices import Lattices
+from sage_indefinite_port.indefinite.equivariant_markings import CentralizerTupleOrbit
 from sage_indefinite_port.indefinite.marked_lattices import isometry
 
 
@@ -393,3 +398,65 @@ class SubgroupVectorOrbits:
                     known.append(vector)
                     yield vector
 
+
+
+class CentralizerSubgroup:
+    r"""`C_{O(L)}(F_1, \dots, F_s)` for isometries `F_i` of `L`, with its exact vector and sublattice decisions.
+
+    Elements are elements of ``lattice.O()``; internally an isometry is the integer matrix whose
+    columns are the coordinates of the images of the module generators.
+    """
+
+    def __init__(self, lattice, isometries):
+        self.lattice = lattice
+        self.frame = tuple(lattice.module_generators())
+        self.labels = tuple(lattice.module_generating_set())
+        self.gram = matrix(ZZ, [[int(lattice.b(x, y)) for y in self.frame] for x in self.frame])
+        self.isometries = tuple(isometries)
+        self.matrices = tuple(self._matrix(F) for F in self.isometries)
+
+    def _matrix(self, element):
+        return matrix(ZZ, [[int(c) for c in element(g)] for g in self.frame]).transpose()
+
+    def _columns(self, vectors):
+        return matrix(ZZ, [[int(c) for c in v] for v in vectors]).transpose()
+
+    def _element(self, columns):
+        images = {
+            label: sum(
+                (self.lattice.scalar_multiple(int(c), g) for c, g in zip(columns.column(j), self.frame, strict=True)),
+                self.lattice.zero(),
+            )
+            for j, label in enumerate(self.labels)
+        }
+        return self.lattice.O()(images)
+
+    def __contains__(self, element):
+        g = self._matrix(element)
+        return g.transpose() * self.gram * g == self.gram and all(g * F == F * g for F in self.matrices)
+
+    def _orbit(self, vectors):
+        return CentralizerTupleOrbit(self.gram, self.matrices, self._columns(vectors))
+
+    def tuple_equivalence_witness(self, left, right):
+        r"""Return `g \in C` with `g(left_i) = right_i`, or ``None`` as a proof that none exists."""
+        found = self._orbit(left).transporter(self._columns(right))
+        if found is None:
+            return None
+        witness = self._element(found)
+        assert all(witness(x) == y for x, y in zip(left, right, strict=True))
+        return witness
+
+    def vector_equivalence_witness(self, left, right):
+        r"""Return `g \in C` with `g(left) = right`, or ``None`` as a proof that none exists."""
+        return self.tuple_equivalence_witness((left,), (right,))
+
+    def vector_stabilizer_generators(self, vector):
+        return tuple(self._element(g) for g in self._orbit((vector,)).stabilizer_generators())
+
+    def pointwise_stabilizer_generators(self, vectors):
+        return tuple(self._element(g) for g in self._orbit(tuple(vectors)).stabilizer_generators())
+
+    def setwise_stabilizer_generators(self, basis):
+        r"""Return generators of `\{g \in C : g \Lambda = \Lambda\}` for the sublattice `\Lambda` with ``basis``."""
+        return tuple(self._element(g) for g in self._orbit(tuple(basis)).setwise_stabilizer_generators())

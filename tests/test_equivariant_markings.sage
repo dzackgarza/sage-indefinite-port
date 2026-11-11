@@ -171,3 +171,42 @@ def test_invisible_source_factor_with_infinite_automorphisms():
     shear = _m([[1, 0, 0], [1, 1, 0], [0, 0, 1]])
     assert any(g == shear or g * shear == shear ** 0 for g in generators)
     assert invisible_source_automorphism_generators(_m([[1, 0], [0, 0], [0, 1], [0, 0]])) == ()
+
+
+PELL = _m([[3, 4], [2, 3]])
+PELL_GRAM = [[1, 0, 0, 0], [0, -2, 0, 0], [0, 0, 1, 0], [0, 0, 0, -2]]
+PELL_PAIR = _m([[3, 4, 0, 0], [2, 3, 0, 0], [0, 0, 3, 4], [0, 0, 2, 3]])
+FIRST = _m([[1, 0], [0, 1], [0, 0], [0, 0]])
+SECOND = _m([[0, 0], [0, 0], [1, 0], [0, 1]])
+
+
+def _infinite_order(g):
+    return not all(f.is_cyclotomic() for f, _e in g.charpoly().factor())
+
+
+def test_pell_pair_transporter_between_the_copies():
+    r"""L = P + P, P = <1> + <-2>, F = f + f with f = 3 + 2 sqrt 2 on Z[sqrt 2], of infinite order and
+    not unipotent. The swap of the copies commutes with F and sends X = P + 0 to Y = 0 + P, so a
+    transporter exists; it is found through C_K = +-f^Z on K = 0 + P."""
+    assert PELL.transpose() * _m([[1, 0], [0, -2]]) * PELL == _m([[1, 0], [0, -2]])
+    marking = EquivariantMarking(PELL_GRAM, FIRST, [PELL_PAIR], [PELL])
+    g = marking.transporter(SECOND)
+    assert g is not None and g * FIRST == SECOND and g * PELL_PAIR == PELL_PAIR * g
+    assert g.transpose() * _m(PELL_GRAM) * g == _m(PELL_GRAM)
+
+
+def test_pell_pair_pointwise_stabilizer_is_the_infinite_centralizer_of_the_complement():
+    r"""L = (P) + (P) splits with no glue, so Stab(X) = 1 + C_K = 1 + +-f^Z."""
+    marking = EquivariantMarking(PELL_GRAM, FIRST, [PELL_PAIR], [PELL])
+    generators = marking.pointwise_stabilizer_generators()
+    assert all(g * FIRST == FIRST and g * PELL_PAIR == PELL_PAIR * g for g in generators)
+    assert any(_infinite_order(g) for g in generators)
+
+
+def test_pell_pair_setwise_stabilizer_moves_the_source():
+    r"""The setwise stabilizer of P + 0 is C_{O(P)}(f) x C_K = (+-f^Z)^2, which acts nontrivially on X."""
+    marking = EquivariantMarking(PELL_GRAM, FIRST, [PELL_PAIR], [PELL])
+    generators = marking.setwise_stabilizer_generators()
+    assert all((g * FIRST).column_module() == FIRST.column_module() for g in generators)
+    assert any(g * FIRST != FIRST for g in generators)
+    assert any(_infinite_order(g) and g * FIRST == FIRST for g in generators)

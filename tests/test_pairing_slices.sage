@@ -204,3 +204,57 @@ def test_setwise_indefinite_unimodular_summand():
     assert g is not None and g(e1 + e2) == f1 + e2
     assert set(str(g(x)) for x in (e1, f1)) <= set(str(v) for v in (e1, f1, -e1, -f1))
     assert setwise_transporter(L, (e1, f1), e1 + f1 + e2, e1 + e2 + f2) is None
+
+
+def _pell_plus_two():
+    r"""L = <1> + <-2> + <2> with basis (e1, e2, e3) and f = (3 + 2 sqrt 2) + 1, of infinite order.
+
+    C(f) = (+-f^Z) x {+-1}: the eigenspaces of f split L with no glue, and the centralizer of
+    multiplication by a unit of Z[sqrt 2] in O(<1> + <-2>) is the norm-one group +-(3 + 2 sqrt 2)^Z.
+    """
+    from sage_indefinite_port.indefinite.pairing_slices import CentralizerSubgroup
+
+    L = Lattices(ZZ)([[1, 0, 0], [0, -2, 0], [0, 0, 2]])
+    e1, e2, e3 = tuple(L.module_generators())
+    labels = tuple(L.module_generating_set())
+    images = (L.scalar_multiple(3, e1) + L.scalar_multiple(2, e2), L.scalar_multiple(4, e1) + L.scalar_multiple(3, e2), e3)
+    f = L.O()(dict(zip(labels, images, strict=True)))
+    return L, e1, e2, e3, f, CentralizerSubgroup(L, (f,))
+
+
+def test_centralizer_vector_witness_and_obstruction():
+    r"""f(e1) = 3 e1 + 2 e2 is in the orbit of e1 (witness f). v = e1 + e2 + e3 has norm 1 but is not:
+    g(e1) = v forces g(f e1) = f v, and the saturated span of e1, f e1 is <e1, e2>, whose image would be
+    spanned by v and 2 e1 + e2 - e3 of norm 4, not -2."""
+    L, e1, e2, e3, f, group = _pell_plus_two()
+    w = f(e1)
+    g = group.vector_equivalence_witness(e1, w)
+    assert g is not None and g(e1) == w and g in group
+    v = e1 + e2 + e3
+    assert L.q(v) == L.q(e1)
+    assert group.vector_equivalence_witness(e1, v) is None
+    assert group.vector_equivalence_witness(e1, -e1) is not None
+
+
+def test_centralizer_orbit_stream_separates_the_glued_shell():
+    r"""Norm-one vectors with coordinates in {-1, 0, 1}: (+-1, 0, 0), one orbit, and (+-1, +-1, +-1), one orbit,
+    since x + y sqrt 2 of norm -1 is +- (1 + sqrt 2) (3 + 2 sqrt 2)^n and e3 -> -e3 is in C(f)."""
+    from sage_indefinite_port.indefinite.pairing_slices import SubgroupVectorOrbits
+
+    L, e1, e2, e3, f, group = _pell_plus_two()
+    stream = iter(SubgroupVectorOrbits(L, group, 1))
+    first, second = next(stream), next(stream)
+    assert set(int(abs(c)) for c in first) == set([int(1)])
+    assert list(second)[int(1):] == [int(0), int(0)]
+    assert group.vector_equivalence_witness(first, e1 + e2 + e3) is not None
+
+
+def test_centralizer_stabilizers_of_the_fixed_line():
+    r"""Stab(e3) = (+-f^Z) x 1, infinite. The setwise stabilizer of Z e3 adds 1 + (-1)."""
+    L, e1, e2, e3, f, group = _pell_plus_two()
+    pointwise = group.vector_stabilizer_generators(e3)
+    assert all(g(e3) == e3 and g in group for g in pointwise)
+    assert any(g(e1) not in (e1, -e1) for g in pointwise)
+    setwise = group.setwise_stabilizer_generators((e3,))
+    assert all(g(e3) in (e3, -e3) and g in group for g in setwise)
+    assert any(g(e3) == -e3 for g in setwise)

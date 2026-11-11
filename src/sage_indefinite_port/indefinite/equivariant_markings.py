@@ -1,10 +1,12 @@
-r"""Pointwise stabilizers and transporters of equivariant markings (#61, items 5 and 7).
+r"""Pointwise and setwise stabilizers and transporters of equivariant markings (#61, items 5 and 7).
 
 Let `L` be a nondegenerate integral lattice with Gram matrix `B`, let `F_i` be isometries of
 `L`, and let `X : S \to L` be a primitive injective integral matrix with `F_i X = X E_i`.
 Because `X` is primitive and `F_i` is invertible on `L`, each `E_i` lies in `GL(S)`. No
-hypothesis on the `F_i` is made: they may be unipotent and need not commute. The group is
-`Stab = \{g \in C : g X = X\}`, for `C` the simultaneous centralizer in `O(L)`.
+hypothesis on the `F_i` is made: they may be unipotent, of infinite order, and need not
+commute. The group is `Stab = \{g \in C : g X = X\}`, for `C` the simultaneous centralizer in
+`O(L)`. Centralizers and equivariant transporters of the `F_i` on nondegenerate lattices come
+from :mod:`commutant_groups` (#54).
 
 This module uses three complete routes, and it raises ``NotImplementedError`` outside them.
 
@@ -13,8 +15,11 @@ Nondegenerate source. If `A = X^t B X` is nonsingular, `L \otimes Q` is `XS \opl
 the centralizer `C_K` of the `F_i|_K` in `O(K)`. Conversely, `1 \oplus h` preserves `L` exactly
 when `h` fixes the finite group `P / K` pointwise, for `P` the projection of `L` to
 `K \otimes Q`. So `Stab` has finite index in `C_K`, and Schreier's lemma on the finite orbit
-of the generators of `P / K` gives its generators. `C_K` comes from
-:meth:`IsometryCommutant.centralizer_generators`.
+of the generators of `P / K` gives its generators. A transporter to `Y` is `1 \oplus t h` with
+`t : (K, F|_K) \to (K', F|_{K'})` one equivariant isometry onto `K' = (YS)^\perp` and
+`h \in C_K`; integrality depends only on the point `h p_K` of the same finite orbit. The
+setwise stabilizer is the subgroup of `C_{O(S)}(E) \times C_K` that preserves `L`, of finite
+index, with Schreier generators.
 
 Unipotent centralizer. If `A / rad A = Q` for the commutant on `L`, then `C = \pm \exp(\Lambda)`
 for a lattice `\Lambda` in the abelian skew radical. For nilpotent `x`, `\exp(x) - 1` is `x`
@@ -23,6 +28,10 @@ no eigenvalue `1`. Hence `Stab = \exp(\Lambda \cap \mathrm{Ann}(X))`.
 
 Finite orbit. If the image of `C` on the `Q`-span of the orbit of `X` is finite, then the orbit
 is finite and Schreier's lemma applies. The finiteness is decided by GAP.
+
+:class:`CentralizerTupleOrbit` reduces a tuple of vectors to the marking of the saturated
+`Q\langle F \rangle`-span of the tuple: `g` commutes with every word in the `F_i`, so it fixes
+the tuple exactly when it fixes that span pointwise.
 """
 
 from sage.arith.functions import lcm
@@ -33,6 +42,15 @@ from sage.modules.free_module_element import vector
 from sage.rings.integer_ring import ZZ
 from sage.rings.rational_field import QQ
 from sage_extensions.algebras.isometry_commutant import IsometryCommutant, _integer_solution
+from sage_extensions.categories.lattice_centralizers import finite_preimage_generators
+from sage_extensions.categories.lattices import Lattices
+
+
+def _commutant_groups():
+    r"""Return :mod:`commutant_groups`, which imports this module."""
+    from sage_indefinite_port.indefinite import commutant_groups
+
+    return commutant_groups
 
 
 def _schreier(generators, base, action, one):
@@ -108,19 +126,23 @@ class EquivariantMarking:
     def _is_stabilizer_element(self, element, target):
         return self._commutant.is_centralizer_element(element) and element * self.marking == target
 
+    def _orthogonal(self, marking):
+        r"""Return a basis of `K = (X S)^\perp`, its Gram matrix and the restrictions of the `F_i` to it."""
+        basis = (marking.transpose() * self.gram).right_kernel().basis_matrix().transpose()
+        gram_k = basis.transpose() * self.gram * basis
+        restricted = tuple(matrix(ZZ, basis.change_ring(QQ).solve_right(F * basis)) for F in self.ambient_actions)
+        return basis, gram_k, restricted
+
     def _complement(self):
         r"""Return the matrices of the nondegenerate-source decomposition.
 
         These are a basis of `K`, the `C_K` generators, the projections of the standard basis
         of `L` to `S` and to `K`, and the frame `[X \mid K]`.
         """
-        basis = (self.marking.transpose() * self.gram).right_kernel().basis_matrix().transpose()
-        size = basis.ncols()
-        if size == 0:
+        basis, gram_k, restricted = self._orthogonal(self.marking)
+        if basis.ncols() == 0:
             return basis, (), None, None, self.marking.change_ring(QQ)
-        gram_k = basis.transpose() * self.gram * basis
-        restricted = [matrix(ZZ, basis.change_ring(QQ).solve_right(F * basis)) for F in self.ambient_actions]
-        generators = IsometryCommutant(gram_k, restricted).centralizer_generators()
+        generators = _commutant_groups().centralizer_generators(IsometryCommutant(gram_k, restricted))
         frame = block_matrix(QQ, [[self.marking, basis]], subdivide=False)
         coordinates = frame.inverse()
         return basis, generators, coordinates[: self.source_rank], coordinates[self.source_rank :], frame
@@ -130,11 +152,6 @@ class EquivariantMarking:
         element = frame * block * frame.inverse()
         assert element.denominator() == 1, f"{element} is not integral"
         return matrix(ZZ, element)
-
-    @staticmethod
-    def _lift_full_rank(frame, source_part):
-        element = frame * source_part * frame.inverse()
-        return matrix(ZZ, element) if element.denominator() == 1 else None
 
     def _nondegenerate_stabilizer(self):
         basis, generators, _to_source, to_complement, frame = self._complement()
@@ -165,7 +182,7 @@ class EquivariantMarking:
 
     def _finite_orbit(self):
         r"""Return the transversal and stabilizer of `X` under `C`, or raise when the orbit is infinite."""
-        generators = self._commutant.centralizer_generators()
+        generators = _commutant_groups().centralizer_generators(self._commutant)
         if not _is_finite(self._span_restriction(generators)):
             raise NotImplementedError(
                 "the orbit of the marking under the centralizer is infinite, and the "
@@ -205,30 +222,60 @@ class EquivariantMarking:
             result = result * generator ** int(exponent)
         return result
 
-    def _same_image_transporter(self, target):
-        r"""Return `g` with `g X = Y` when `Y = X a`, or ``None``, for nonsingular `X^t B X`.
+    def _nondegenerate_transporter(self, target):
+        r"""Return `g \in C` with `g X = Y`, or ``None`` as a proof of absence, for nonsingular `X^t B X`.
 
-        An element is `a \oplus h`. It commutes with the `F_i` when `a` commutes with the `E_i`.
-        It preserves `L` when `a p_S + h p_K` is integral in the frame, and that depends
-        only on the point of the finite orbit of `p_K`.
+        `g = 1 \oplus k` on the frames `[X \mid K] \to [Y \mid K']`, with `k = t h` for one equivariant
+        isometry `t : K \to K'` (:func:`commutant_groups.equivariant_transporter`) and `h \in C_K`.
+        `g` is integral exactly when `Y p_S + K' t h p_K` is, which depends only on `h p_K` modulo
+        `K`, a point of the finite orbit of `p_K` under `C_K`.
         """
-        coefficient = self.marking.change_ring(QQ).solve_right(target)
-        if coefficient.denominator() != 1:
-            return None
-        a = matrix(ZZ, coefficient)
-        if a.det() not in (1, -1) or any(a * E != E * a for E in self.source_actions):
-            return None
         basis, generators, to_source, to_complement, frame = self._complement()
-        a_rational = a.change_ring(QQ)
         if basis.ncols() == 0:
-            return self._lift_full_rank(frame, a_rational)
-        identity_k = identity_matrix(ZZ, basis.ncols())
-        transversal, _stabilizer = _schreier(generators, to_complement, _glue_action, identity_k)
+            candidate = target.change_ring(QQ) * frame.inverse()
+            return matrix(ZZ, candidate) if candidate.denominator() == 1 else None
+        target_basis, target_gram, target_actions = self._orthogonal(target)
+        _basis, gram_k, restricted = self._orthogonal(self.marking)
+        start = _commutant_groups().equivariant_transporter(IsometryCommutant(gram_k, restricted), target_gram, target_actions)
+        if start is None:
+            return None
+        start = start.change_ring(QQ)
+        transversal, _stabilizer = _schreier(generators, to_complement, _glue_action, identity_matrix(ZZ, basis.ncols()))
         for element, _point in transversal.values():
-            candidate = frame * block_matrix(QQ, [[a_rational * to_source], [element.change_ring(QQ) * to_complement]], subdivide=False)
+            candidate = target * to_source + target_basis * start * element.change_ring(QQ) * to_complement
             if candidate.denominator() == 1:
-                return self._lift(frame, a_rational, element.change_ring(QQ))
+                return matrix(ZZ, candidate)
         return None
+
+    def setwise_stabilizer_generators(self):
+        r"""Return generators of `\{g \in C(F_1, \dots, F_s) : g X S = X S\}`, for nonsingular `X^t B X`.
+
+        Such `g` is `a \oplus h` on `[X \mid K]`, with `a \in O(A)` commuting with the `E_i` (from
+        `F_i g X = g X E_i`) and `h \in C_K`. Conversely `a \oplus h` lies in `O(L)` exactly when it is
+        integral, a condition on the finite group `L / (XS + K)`, so the stabilizer has finite
+        index in `C_{O(A)}(E) \times C_K` and Schreier's lemma gives generators.
+        """
+        assert self.source_gram.det() != 0, "the setwise route needs a nondegenerate source"
+        commutants = _commutant_groups()
+        source = tuple(
+            matrix(QQ, a) for a in commutants.centralizer_generators(IsometryCommutant(self.source_gram, self.source_actions))
+        )
+        basis, generators, _to_source, _to_complement, frame = self._complement()
+        size = basis.ncols()
+        one_s, one_k = identity_matrix(QQ, self.source_rank), identity_matrix(QQ, size)
+        diagonal = lambda a, h: a if size == 0 else block_matrix(QQ, [[a, 0], [0, h]], subdivide=False)
+        blocks = [diagonal(a, one_k) for a in source]
+        blocks.extend(diagonal(one_s, h.change_ring(QQ)) for h in generators)
+        blocks.append(identity_matrix(QQ, self.rank))
+        inverse = frame.inverse()
+        integral = lambda m: (frame * m * inverse).denominator() == 1
+        schreier, _index = finite_preimage_generators(blocks, lambda m: m, integral)
+        result = tuple(matrix(ZZ, frame * m * inverse) for m in schreier)
+        module = self.marking.column_module()
+        assert all(
+            self._commutant.is_centralizer_element(g) and (g * self.marking).column_module() == module for g in result
+        )
+        return result
 
     def _unipotent_transporter(self, target):
         r"""Return `\pm \exp(x)` with value ``target`` on `X`, or ``None``, where `x y X = 0` on `\Lambda`.
@@ -259,8 +306,7 @@ class EquivariantMarking:
         r"""Return `g \in C(F_1, \dots, F_s)` with `g X = Y`, or ``None``, for a marking `Y`.
 
         `Y` has the same source and the same actions, so `F_i Y = Y E_i` is required. The domain
-        is the one of :meth:`pointwise_stabilizer_generators`, except that a nondegenerate
-        source with a different image is decided through the finite-orbit route on `C(F)`.
+        is the one of :meth:`pointwise_stabilizer_generators`.
         """
         target = matrix(ZZ, target)
         assert all(
@@ -268,9 +314,8 @@ class EquivariantMarking:
         ), "the target is not equivariant for the given actions"
         if target.transpose() * self.gram * target != self.source_gram:
             return None
-        same_image = target.column_module() == self.marking.column_module()
-        if self.source_gram.det() != 0 and same_image:
-            result = self._same_image_transporter(target)
+        if self.source_gram.det() != 0:
+            result = self._nondegenerate_transporter(target)
         elif self._is_unipotent_type():
             result = self._unipotent_transporter(target)
         else:
@@ -279,6 +324,120 @@ class EquivariantMarking:
             result = found[0] if found is not None else None
         assert result is None or self._is_stabilizer_element(result, target)
         return result
+
+
+def _module_words(isometries, columns):
+    r"""Return pairs `(w, j)` of words in the `F_i` and columns with `w x_j` a basis of the `Q\langle F \rangle`-span of the `x_j`."""
+    one = identity_matrix(QQ, columns.nrows())
+    pairs, span = [], matrix(QQ, 0, columns.nrows())
+    for j in range(columns.ncols()):
+        stacked = span.stack(matrix(QQ, [columns.column(j)]))
+        if stacked.rank() > span.rank():
+            pairs.append((one, j))
+            span = stacked
+    position = 0
+    while position < len(pairs):
+        word, j = pairs[position]
+        position += 1
+        for F in isometries:
+            moved = F.change_ring(QQ) * word
+            stacked = span.stack(matrix(QQ, [moved * columns.column(j)]))
+            if stacked.rank() > span.rank():
+                pairs.append((moved, j))
+                span = stacked
+    return pairs
+
+
+class CentralizerTupleOrbit:
+    r"""The orbit of a tuple `x_1, \dots, x_k` of vectors of `L` under `C = C_{O(L)}(F_1, \dots, F_s)`.
+
+    `g \in C` commutes with every word `w` in the `F_i`, so `g x_j = y_j` for all `j` exactly when
+    `g W = W'` for `W = [w x_j]` and `W' = [w y_j]` on the pairs of :func:`_module_words`. With the
+    primitive basis `X = W C^{-1}` of the saturated span `M`, `F_i X = X E_i`, and `g X = Y = W' C^{-1}`.
+    Conversely `g X = Y` gives `g x = y` when `x = X c` and `y = Y c`, which is checked. So the
+    stabilizer and transporter are those of the equivariant marking `X` (:class:`EquivariantMarking`).
+    Vectors are integer columns.
+    """
+
+    def __init__(self, gram, isometries, columns):
+        self.gram = matrix(ZZ, gram)
+        self.isometries = tuple(matrix(ZZ, F) for F in isometries)
+        self.columns = matrix(ZZ, columns)
+        assert self.columns.nrows() == self.gram.nrows() and not self.columns.is_zero()
+        self.pairs = _module_words(self.isometries, self.columns)
+        spanning = self._words(self.columns)
+        saturated = matrix(ZZ, spanning.denominator() * spanning.transpose()).saturation().transpose()
+        self._change = saturated.change_ring(QQ).solve_right(spanning)
+        self._coefficients = saturated.change_ring(QQ).solve_right(self.columns.change_ring(QQ))
+        actions = tuple(matrix(ZZ, saturated.change_ring(QQ).solve_right(F * saturated)) for F in self.isometries)
+        self.marking = EquivariantMarking(self.gram, saturated, self.isometries, actions)
+
+    def _words(self, columns):
+        return matrix(QQ, [w * columns.column(j) for w, j in self.pairs]).transpose()
+
+    def target_marking(self, columns):
+        r"""Return `Y` with `g X = Y` for every `g \in C` taking the tuple to ``columns``, or ``None`` when no linear map does."""
+        columns = matrix(ZZ, columns)
+        target = self._words(columns) * self._change.inverse()
+        if target.denominator() != 1:
+            return None
+        target = matrix(ZZ, target)
+        if target * self._coefficients != columns:
+            return None
+        if any(F * target != target * E for F, E in zip(self.isometries, self.marking.source_actions, strict=True)):
+            return None
+        return target
+
+    def stabilizer_generators(self):
+        r"""Return generators of `\{g \in C : g x_j = x_j\}`."""
+        result = self.marking.pointwise_stabilizer_generators()
+        assert all(g * self.columns == self.columns for g in result)
+        return result
+
+    def transporter(self, columns):
+        r"""Return `g \in C` with `g x_j = y_j`, or ``None`` as a proof that none exists."""
+        target = self.target_marking(columns)
+        if target is None:
+            return None
+        found = self.marking.transporter(target)
+        assert found is None or found * self.columns == matrix(ZZ, columns)
+        return found
+
+    def setwise_stabilizer_generators(self):
+        r"""Return generators of `\{g \in C : g \Lambda = \Lambda\}` for `\Lambda` the span of the tuple, a basis.
+
+        Write `A` for the Gram matrix of the tuple. When `A` is definite, the induced action on `\Lambda`
+        lies in the finite `O(A)`, with kernel the pointwise stabilizer, so the pointwise generators
+        and one transporter `x \mapsto x a` for each realized `a \in O(A)` generate. When `\Lambda` is
+        primitive, nondegenerate and `F`-invariant, it is the equivariant marking itself and
+        :meth:`EquivariantMarking.setwise_stabilizer_generators` applies.
+        """
+        assert self.columns.rank() == self.columns.ncols(), "the tuple is not a basis of its span"
+        source_gram = self.columns.transpose() * self.gram * self.columns
+        source = Lattices(ZZ)([[int(c) for c in row] for row in source_gram])
+        if source.is_definite():
+            frame = tuple(source.module_generators())
+            result = list(self.stabilizer_generators())
+            for automorphism in source.O():
+                a = matrix(ZZ, [[int(c) for c in automorphism(v)] for v in frame]).transpose()
+                witness = self.transporter(self.columns * a)
+                if witness is not None:
+                    result.append(witness)
+        elif self.marking.source_rank == self.columns.ncols() and self.columns.column_module() == self.marking.marking.column_module():
+            if source_gram.det() == 0:
+                raise NotImplementedError(
+                    "the setwise stabilizer of a degenerate F-invariant sublattice under C(F) needs the "
+                    "parabolic route of the commutant (#54)"
+                )
+            result = list(self.marking.setwise_stabilizer_generators())
+        else:
+            raise NotImplementedError(
+                "the setwise stabilizer under C(F) of an indefinite or degenerate sublattice that is not a "
+                "primitive F-invariant sublattice has no implemented route"
+            )
+        module = self.columns.column_module()
+        assert all((g * self.columns).column_module() == module for g in result)
+        return tuple(result)
 
 
 def source_automorphism_kernel_generators(marking, source_generators):

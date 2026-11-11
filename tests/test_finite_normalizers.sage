@@ -15,6 +15,7 @@ along Z/2. C(H) = O(U), and no automorphism other than the identity is realized.
 
 from sage_extensions.all import *
 from sage.matrix.constructor import matrix
+from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
 from sage_indefinite_port.indefinite.finite_normalizers import FiniteSubgroupNormalizer
 
@@ -95,3 +96,46 @@ def test_order_six_rotation_on_an_indefinite_sum_of_hexagonal_planes():
     assert _order(lattice, normalizer.normalizer_generators()) == 72
     witness = normalizer.twisted_transporter((~rotation,))
     assert witness is not None and witness * rotation * ~witness == ~rotation
+
+
+def _from_columns(lattice, columns):
+    frame = tuple(lattice.module_generators())
+    labels = tuple(lattice.module_generating_set())
+    images = {}
+    for j, label in enumerate(labels):
+        images[label] = sum(
+            (lattice.scalar_multiple(int(columns[i][j]), g) for i, g in enumerate(frame)), lattice.zero()
+        )
+    return lattice.O()(images)
+
+
+def test_pell_isometry_normalizer_contains_the_inversion():
+    r"""L = <1> + <-2>. f = (3 + 2 sqrt 2) on x + y sqrt 2, columns (3, 2) and (4, 3), has infinite order.
+    The reflection y -> -y is conjugation of Z[sqrt 2], so it conjugates f to f^{-1}: N(<f>) = C(f) . 2."""
+    from sage_indefinite_port.indefinite.finite_normalizers import has_finite_order, infinite_cyclic_normalizer, normalizer_generators
+
+    lattice = Lattices(ZZ)([[1, 0], [0, -2]])
+    f = _from_columns(lattice, [[3, 4], [2, 3]])
+    reflection = _from_columns(lattice, [[1, 0], [0, -1]])
+    assert reflection * f * ~reflection == ~f
+    assert not has_finite_order(matrix(SageZZ, [[3, 4], [2, 3]]))
+    centralizer, inversion = infinite_cyclic_normalizer(lattice, f)
+    assert inversion is not None and inversion * f * ~inversion == ~f
+    assert all(g * f == f * g for g in centralizer)
+    assert any(g * f * ~g == ~f for g in normalizer_generators(lattice, (f,)))
+
+
+def test_unipotent_eichler_normalizer_contains_the_inversion():
+    r"""U + U with basis (e1, f1, e2, f2) and F = E(e1, a), a = e2 + f2. E(e1, a)^{-1} = E(e1, -a), and
+    t = 1 + (-1) fixes e1 and sends a to -a, so t F t^{-1} = F^{-1}."""
+    from sage_indefinite_port.indefinite.finite_normalizers import has_finite_order, infinite_cyclic_normalizer
+
+    lattice = Lattices(ZZ)([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    eichler = [[1, -1, -1, -1], [0, 1, 0, 0], [0, 1, 1, 0], [0, 1, 0, 1]]
+    F = _from_columns(lattice, eichler)
+    t = _from_columns(lattice, [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1, 0], [0, 0, 0, -1]])
+    assert t * F * ~t == ~F
+    assert not has_finite_order(matrix(SageZZ, eichler))
+    centralizer, inversion = infinite_cyclic_normalizer(lattice, F)
+    assert inversion is not None and inversion * F * ~inversion == ~F
+    assert all(g * F == F * g for g in centralizer)
