@@ -25,7 +25,9 @@ centralizers. This module adds the routes that need the port's arithmetic groups
   model, composes the model isometry, and searches the coset representatives of `C(Z)` in `U(\Lambda, h)`.
 
   A symmetric form of rank two over `O_K` (first kind) is decided on the torus `K[c]^1` of the skew line
-  `K c` and one reflection coset, through relative norm equations (:meth:`CentralFieldCommutant._binary_orthogonal_generators`).
+  `K c` and one reflection coset, through relative norm equations (:meth:`CentralFieldCommutant._binary_orthogonal_generators`);
+  its transporter composes a `K`-isometry from a conic point with the same norm-equation search
+  (:meth:`CentralFieldCommutant._binary_orthogonal_transporter`).
 
 :class:`VectorOrbit` decides the orbit of a vector under `C(Z)` and returns its stabilizer, through the
 marked transporter of the cyclic `F`-span of the vector.
@@ -49,6 +51,7 @@ from sage.rings.number_field.number_field import NumberField
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.rational_field import QQ
 from sage.rings.real_double import RDF
+from sage.schemes.plane_conics.constructor import Conic
 from sage_extensions.algebras.isometry_commutant import IsometryCommutant, _form_generators, _integer_solution, _short_vectors
 from sage_extensions.categories.lattice_centralizers import finite_preimage_generators
 from sage_extensions.categories.lattices import Lattices
@@ -415,6 +418,12 @@ class LeviFrame:
     of rank `r / n`, the module `\bar M = O e / (rad\, e) \cong Z^n` on which `A / rad` acts faithfully,
     and the form `b` with `\bar x^\dagger \bar y = b(x, y)\, t` modulo the radical. For a self-adjoint
     `h \in A` the twisted form `b_h(x, y)` is read from `x^\dagger h y` in the same way.
+
+    The image `\bar O` of `O` in `End(\bar M) = M_n(Z)` may be a proper (nonmaximal) suborder of finite index. A rational
+    preimage of any `\bar a \in M_n(Q)` is then still unique modulo the radical, and :meth:`lift` decides the integral
+    points over it; the liftable isometries `\bar\Gamma` lie in `\bar O^\times \cap O(\bar M, b)`, which contains a principal
+    congruence subgroup of `O(\bar M, b)`, so the coset enumeration of :meth:`coset_representatives` is Schreier descent from
+    the maximal order `M_n(Z)` and stays finite.
     """
 
     def __init__(self, commutant):
@@ -456,11 +465,7 @@ class LeviFrame:
             sum(c * m for c, m in zip(images.solve_left(row), order)) * e for row in self._basis.rows()
         ]
         action_rows = matrix(QQ, [self.on_module(m).list() for m in self._section])
-        if action_rows.denominator() != 1 or abs(action_rows.det()) != 1:
-            raise NotImplementedError(
-                f"the semisimple quotient of the order of the commutant of {commutant.isometries} is not End(M); "
-                f"its Levi transporter needs the nonmaximal Levi order (#54)"
-            )
+        assert action_rows.denominator() == 1 and action_rows.det() != 0
         self._action_inverse = action_rows.inverse()
         adjoint_e = commutant.adjoint(e)
         line = matrix(QQ, [self._project(adjoint_e * m * e) for m in order])
@@ -520,9 +525,8 @@ class LeviFrame:
 def levi_transporter(commutant, target_gram, targets):
     r"""Return an integral transporter when `A / rad A = M_n(Q)`, or ``None`` as a proof of absence.
 
-    Every transporter is `t_0 a` with `a \in X = \{a : t_0 a \in M_r(Z)\}` and `a^\dagger h a = 1`. The image
-    `\bar X` is a right `M_n(Z)`-module, so `\bar X = \{\phi : \phi \bar M \subseteq Y\}` for `Y = \bar X \bar M`
-    (Reiner, *Maximal Orders*, Thm. 21.6). The equation makes `\bar a` an isometry of `(\bar M, b)` onto
+    Every transporter is `t_0 a` with `a \in X = \{a : t_0 a \in M_r(Z)\}` and `a^\dagger h a = 1`. With
+    `Y = \bar X \bar M`, every such `\bar a` maps `\bar M` into `Y` (for any Levi order `\bar O`). The equation makes `\bar a` an isometry of `(\bar M, b)` onto
     a sublattice `Z \subseteq Y` for `b_h`, of index `k` with `k^2 \det b_h|_Y = \det b`. For each such
     `Z` and one isometry `\bar a_0`, the integral solutions over `\bar a_0 O(\bar M)` are right
     `C(Z)`-invariant, so one representative of each left `\bar\Gamma`-coset is lifted by :meth:`LeviFrame.lift`.
@@ -1014,18 +1018,43 @@ class CentralFieldCommutant:
         norm `N_{K/Q}(m^2/q)` modulo units, and `u` a unit of relative norm `m^2 / (q N(y))`, unique up to the norm-one
         units `E`. `M` is stable under `E \cap O`, so a transversal of `E / (E \cap O)` finishes the decision.
         """
+        torus = self._binary_torus()
+        one = identity_matrix(QQ, self.commutant.rank)
+        rotations = self.commutant._order_subgroup_generators(torus["moves"])
+        reflection = next(
+            (
+                w
+                for x in self._norm_points(one, torus["w1"], ~torus["q"])
+                for t in torus["transversal"]
+                for w in (x * t * torus["w1"],)
+                if self.commutant.is_centralizer_element(w)
+            ),
+            None,
+        )
+        result = [matrix(ZZ, g) for g in rotations]
+        if reflection is not None:
+            result.append(matrix(ZZ, reflection))
+        assert all(self.commutant.is_centralizer_element(g) for g in result)
+        return tuple(result)
+
+    def _binary_torus(self):
+        r"""Return the torus data of :meth:`_binary_orthogonal_generators`: `c`, the `Q`-basis of `L = K[c]`, the
+        generators ``moves`` of `\pm` the norm-one units of the maximal order of `L` as elements of `A`, a left
+        transversal of `\langle` ``moves`` `\rangle \cap O`, an anticommuting `w_1 \in O` and `q = w_1^\dagger w_1`."""
+        if hasattr(self, "_torus"):
+            return self._torus
         commutant = self.commutant
         one = identity_matrix(QQ, commutant.rank)
-        skew = _integral_kernel(self._order, lambda x: x + commutant.adjoint(x))
-        c = skew[0]
+        c = _integral_kernel(self._order, lambda x: x + commutant.adjoint(x))[0]
         delta = self._to_field(c * c)
         K = self.field
         assert delta != 0
-        lattice_basis = [*self._powers, *(p * c for p in self._powers)]
+        torus = {"c": c, "delta": delta, "basis": [*self._powers, *(p * c for p in self._powers)]}
         if delta.is_square():
             s = delta.sqrt()
             e = (one + self.embed(~s) * c) / 2
             split = lambda x1, x2: self.embed(x1) * e + self.embed(x2) * (one - e)
+            torus.update(s=s, split=split)
             moves = [split(K(u), ~K(u)) for u in K.unit_group().gens()]
         else:
             L = K.extension(PolynomialRing(K, "t")([-delta, 0, 1]), "c")
@@ -1035,9 +1064,9 @@ class CentralFieldCommutant:
             relative = from_abs(M.gen()).list()
             theta = to_abs(L(relative[0]) - L(relative[1]) * L.gen())
             norm_one = IsometryCommutant._norm_one_generators(M, theta, M.polynomial())
+            torus.update(L=L, M=M, from_abs=from_abs, to_abs=to_abs, to_matrix=to_matrix)
             moves = [to_matrix(u) for u in norm_one]
-        moves = [-one, *moves]
-        rotations = commutant._order_subgroup_generators(moves)
+        torus["moves"] = [-one, *moves]
         anticommuting = _integral_kernel(self._order, lambda x: x * c + c * x)
         rank = commutant.rank
         w1 = next(
@@ -1046,19 +1075,33 @@ class CentralFieldCommutant:
             for w in (sum(a * x for a, x in zip(values, anticommuting)),)
             if w.det() != 0
         )
-        q = self._to_field(commutant.adjoint(w1) * w1)
-        nu = ~q
-        rows = matrix(QQ, [commutant.coordinates(x * w1) for x in lattice_basis])
+        torus["w1"] = w1
+        torus["q"] = self._to_field(commutant.adjoint(w1) * w1)
+        torus["transversal"] = self._left_transversal(torus["moves"])
+        self._torus = torus
+        return torus
+
+    def _norm_points(self, prefix, suffix, nu):
+        r"""Return `x_1, \ldots \in L` with `N_{L/K}(x_i) = \nu` such that every `x \in L` with `N(x) = \nu` and
+        `\text{prefix}\, x\, \text{suffix} \in M_r(Z)` is some `x_i \varepsilon`, `\varepsilon \in \langle` ``moves`` `\rangle`.
+
+        `M = \{x : \text{prefix}\, x\, \text{suffix} \in M_r(Z)\}` is a lattice with `m M \subseteq O_L`, and the solutions are
+        `y u / m` for `y \in O_L` of absolute norm `N_{K/Q}(m^2 \nu)` modulo units and units `u` of relative norm
+        `m^2 \nu / N(y)` (see :meth:`_binary_orthogonal_generators`).
+        """
+        torus = self._binary_torus()
+        K = self.field
+        rows = matrix(QQ, [(prefix * x * suffix).list() for x in torus["basis"]])
         scale = rows.denominator()
         saturated = matrix(ZZ, scale * rows).saturation()
         span = [rows.solve_left(vector(QQ, row)) for row in saturated.rows()]
         d = self.degree
         pairs = [(K(list(x[:d])), K(list(x[d:]))) for x in span]
-        integral_basis = K.integral_basis()
-        integral_rows = matrix(QQ, [k.list() for k in integral_basis])
+        integral_rows = matrix(QQ, [k.list() for k in K.integral_basis()])
         denominator = lambda k: integral_rows.solve_left(vector(QQ, K(k).list())).denominator()
         candidates = []
-        if delta.is_square():
+        if "split" in torus:
+            s, split = torus["s"], torus["split"]
             m = lcm([denominator(a + b * s) for a, b in pairs] + [denominator(a - b * s) for a, b in pairs])
             target = m**2 * nu
             if target.is_integral():
@@ -1067,6 +1110,7 @@ class CentralFieldCommutant:
                         y1 = divisor.gens_reduced()[0]
                         candidates.append(split(y1 / m, target / y1 / m))
         else:
+            L, M, from_abs, to_abs = torus["L"], torus["M"], torus["from_abs"], torus["to_abs"]
             abs_rows = matrix(QQ, [b.list() for b in M.integral_basis()])
             abs_denominator = lambda x: abs_rows.solve_left(vector(QQ, x.list())).denominator()
             m = lcm([abs_denominator(to_abs(L(a) + L(b) * L.gen())) for a, b in pairs])
@@ -1091,24 +1135,41 @@ class CentralFieldCommutant:
                     u = M.one()
                     for value, exponent in zip(values, exponents):
                         u = u * value ** int(exponent)
-                    candidates.append(to_matrix(y * u / m))
-        assert all(self._to_field(commutant.adjoint(x) * x) == nu for x in candidates)
-        transversal = self._left_transversal(moves)
-        reflection = next(
-            (
-                w
-                for x in candidates
-                for t in transversal
-                for w in (x * t * w1,)
-                if commutant.is_centralizer_element(w)
-            ),
-            None,
-        )
-        result = [matrix(ZZ, g) for g in rotations]
-        if reflection is not None:
-            result.append(matrix(ZZ, reflection))
-        assert all(commutant.is_centralizer_element(g) for g in result)
-        return tuple(result)
+                    candidates.append(torus["to_matrix"](y * u / m))
+        assert all(self._to_field(self.commutant.adjoint(x) * x) == nu for x in candidates)
+        return candidates
+
+    def _binary_orthogonal_transporter(self, target_gram, targets):
+        r"""Return an integral transporter for a symmetric `h` of rank two over `O_K`, or ``None`` as a proof of absence.
+
+        Every rational transporter is `t_0 a` with `a^\dagger h_0 a = 1`, `h_0 = B^{-1} t_0^t B' t_0`. On `W` this says
+        `P^t G' P = G` for the Grams `G, G'` of `h, h_{h_0}`; :func:`_binary_isometry` decides it over `K` and returns one
+        `a_0`. Then `a = a_0 g` with `g \in O(h)(K) = L^1 \cup L^1 w_1` (:meth:`_binary_orthogonal_generators`): `g = x` with
+        `N(x) = 1` or `g = x w_1` with `N(x) = 1 / q`. The integral ones are found by :meth:`_norm_points` with prefix
+        `t_0 a_0`; the set `M` there is stable under right multiplication by `\langle` ``moves`` `\rangle \cap O \subset C(Z)`, so the
+        left transversal of that subgroup completes the search.
+        """
+        commutant = self.commutant
+        start = rational_intertwiner(commutant.isometries, targets)
+        if start is None:
+            return None
+        square = commutant.gram.change_ring(QQ).inverse() * start.transpose() * target_gram * start
+        assert commutant.contains(square)
+        block = _binary_isometry(self.gram, self.gram_of(square))
+        if block is None:
+            return None
+        one = identity_matrix(QQ, commutant.rank)
+        initial = self.element_of(block)
+        assert commutant.adjoint(initial) * square * initial == one
+        prefix = start * initial
+        torus = self._binary_torus()
+        for suffix, nu in ((one, self.field.one()), (torus["w1"], ~torus["q"])):
+            for x in self._norm_points(prefix, suffix, nu):
+                for t in torus["transversal"]:
+                    found = _verified(commutant, prefix * x * t * suffix, target_gram, targets)
+                    if found is not None:
+                        return found
+        return None
 
     def coset_representatives(self):
         r"""Return representatives `u` of the left cosets `u C(Z)` in `U(\Lambda, h)`.
@@ -1173,6 +1234,8 @@ class CentralFieldCommutant:
         commutant = self.commutant
         if abs(target_gram.det()) != abs(commutant.gram.det()):
             return None
+        if self.kind == "first" and self.form_kind == "symmetric" and self.n == 2:
+            return self._binary_orthogonal_transporter(target_gram, targets)
         start = rational_intertwiner(commutant.isometries, targets)
         if start is None:
             return None
@@ -1195,6 +1258,51 @@ class CentralFieldCommutant:
             if found is not None:
                 return found
         return None
+
+
+def _diagonal_frame(gram):
+    r"""Return `(Q, (d_1, d_2))` with `G = Q^t \mathrm{diag}(d_1, d_2) Q` for a nonsingular symmetric binary `G` over a field."""
+    F = gram.base_ring()
+    change = identity_matrix(F, 2)
+    if gram[0, 0] == 0:
+        change = matrix(F, 2, 2, [0, 1, 1, 0]) if gram[1, 1] != 0 else matrix(F, 2, 2, [1, 0, 1, 1])
+    moved = change.transpose() * gram * change
+    assert moved[0, 0] != 0
+    shear = matrix(F, 2, 2, [1, moved[0, 1] / moved[0, 0], 0, 1])
+    return shear * change.inverse(), (moved[0, 0], moved.det() / moved[0, 0])
+
+
+def _binary_isometry(source, target):
+    r"""Return `P \in GL_2(K)` with `P^t T P = S` for nonsingular symmetric binary ``source`` `S` and ``target`` `T`, or ``None``.
+
+    Diagonalize `S \sim \langle \alpha_1, \alpha_2 \rangle` and `T \sim \langle \beta_1, \beta_2 \rangle`. An isometry sends the first
+    basis vector to `x` with `T(x) = \alpha_1`, a point of the conic `\beta_1 X^2 + \beta_2 Y^2 = \alpha_1 Z^2` with `Z \ne 0`,
+    or, when `T` is isotropic (a point with `Z = 0`), `x = u + s v` for the two null lines `u, v`. The `T`-orthogonal line of
+    `x` is spanned by `y = (-\beta_2 x_2, \beta_1 x_1)` with `T(y) = \beta_1 \beta_2 \alpha_1`, so `\lambda y` has value `\alpha_2` exactly
+    when `\alpha_2 / (\alpha_1 \beta_1 \beta_2) = \lambda^2` (Witt cancellation; Lam, *Introduction to Quadratic Forms over
+    Fields*, Ch. I, Thm. 4.2). The conic is decided by Sage's number-field conic (PARI ``rnfisnorm``).
+    """
+    K = source.base_ring()
+    source_change, (a1, a2) = _diagonal_frame(source)
+    target_change, (b1, b2) = _diagonal_frame(target)
+    ratio = a2 / (a1 * b1 * b2)
+    if not ratio.is_square():
+        return None
+    found, point = Conic(K, [b1, b2, -a1]).has_rational_point(point=True)
+    if not found:
+        return None
+    X, Y, Z = list(point)
+    if Z == 0:
+        u, v = vector(K, [X, Y]), vector(K, [X, -Y])
+        pairing = b1 * X**2 - b2 * Y**2
+        assert pairing != 0
+        x = u + (a1 / (2 * pairing)) * v
+    else:
+        x = vector(K, [X / Z, Y / Z])
+    y = ratio.sqrt() * vector(K, [-b2 * x[1], b1 * x[0]])
+    result = target_change.inverse() * matrix(K, [x, y]).transpose() * source_change
+    assert result.transpose() * target * result == source
+    return result
 
 
 def _ocean_forms(*forms):

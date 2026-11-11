@@ -54,6 +54,17 @@ F_i = 1 (x) g for g = R = [[r, 1], [1, r]], r = sqrt 2, and D = diag(1, -1); bot
 the F_i generate 1 (x) M_2(K) and A = M_2(K) (x) 1 with the orthogonal adjoint of w: C(Z) = O(O^2, w) (x) 1.
 D R D = R^{-1} != R, so C(Z) is not abelian, and R has eigenvalues r +- 1, of infinite order.
 
+Real quadratic orthogonal transporters. In the plane above, A = M_2(K) (x) 1 and Lambda = O^2 (x) O^2, so a transporter
+between the forms Tr(w (x) w) and Tr(w' (x) w) with the same F_i is P (x) 1 with P in GL_2(O) and P^t w' P = w. The shear
+P = [[1, r], [0, 1]] gives one by construction. For w' = diag(u, -u^{-1}), u = 1 + r, of the same determinant, w would represent
+u: x^2 - y^2 = u forces x - y = e, x + y = u / e with e = +-u^k, and 2x = e + u/e is congruent to 1 + u = 2 + r modulo 2 O
+(u^2 = 3 + 2r is 1 modulo 2), which is not 0. So no transporter exists.
+
+Nonmaximal Levi order. In M + M with coordinates (e_1, f_1, g_1, e_2, f_2, g_2), the lattice L' spanned by e_1, e_2, g_1, g_2,
+f_1, 2 f_2 is stable under F = E + E (E e = e, E g = g - 2e, E f = f + g - e). Its order reduces modulo the radical to the
+matrices in M_2(Z) that preserve Z + 2Z, the Eichler order of level 2, not M_2(Z). A unimodular t_0 = 1 + E_{16} is a
+transporter from (B', F) to (t_0^{-t} B' t_0^{-1}, t_0 F t_0^{-1}) by construction; the Gram 3 B' has another determinant.
+
 Vector orbits. L = U, F = -1, so C(Z) = O(U) = {+-1, +-swap}. The orbit of v = (1, 1) is {+-v}; its stabilizer
 is {1, swap}, and (1, -1) has another norm, so it is not in the orbit.
 """
@@ -326,13 +337,15 @@ def test_anisotropic_gaussian_transporters():
     assert t is not None and _is_transporter(t, gram, negative, [F], [F])
 
 
-def _orthogonal_tensor_lattice():
+def _orthogonal_tensor_lattice(first):
+    r"""Return the Gram of `Tr(w' (x) w)` on `O^2 (x) O^2`, `w' = diag(` ``first(root)`` `)`, the sources `1 (x) R`, `1 (x) D`, and the map `P (x) Q -> GL_8(Z)`."""
     field = QuadraticField(int(2), "s")
     root = field.gen()
     signs = (int(1), int(-1))
+    weights = first(root)
 
     def pairing(x, y):
-        return sum(x[int(2) * a + b] * y[int(2) * a + b] * signs[a] * signs[b] for a in range(int(2)) for b in range(int(2)))
+        return sum(x[int(2) * a + b] * y[int(2) * a + b] * weights[a] * signs[b] for a in range(int(2)) for b in range(int(2)))
 
     frame = []
     for i in range(int(4)):
@@ -354,11 +367,15 @@ def _orthogonal_tensor_lattice():
         sage_matrix(field, int(2), int(2), [root, int(1), int(1), root]),
         sage_matrix(field, int(2), int(2), [int(1), int(0), int(0), int(-1)]),
     ]
-    return gram, [on_lattice(one.tensor_product(g)) for g in moves]
+    return gram, [on_lattice(one.tensor_product(g)) for g in moves], on_lattice
+
+
+def _hyperbolic_weights(root):
+    return (int(1), int(-1))
 
 
 def test_real_quadratic_orthogonal_centralizer():
-    gram, sources = _orthogonal_tensor_lattice()
+    gram, sources, _on_lattice = _orthogonal_tensor_lattice(_hyperbolic_weights)
     generators = centralizer_generators(IsometryCommutant(gram, sources))
     assert all(g.transpose() * gram * g == gram and all(g * F == F * g for F in sources) for g in generators)
     assert any(g * h != h * g for g in generators for h in generators)
@@ -376,3 +393,44 @@ def test_vector_orbit_in_the_hyperbolic_plane():
     t = orbit.transporter([int(-1), int(-1)])
     assert t is not None and t.transpose() * gram * t == gram and list(t * orbit.vector) == [int(-1), int(-1)]
     assert orbit.transporter([int(1), int(-1)]) is None
+
+
+def test_real_quadratic_orthogonal_transporters():
+    gram, sources, on_lattice = _orthogonal_tensor_lattice(_hyperbolic_weights)
+    commutant = IsometryCommutant(gram, sources)
+    field = QuadraticField(int(2), "s")
+    root = field.gen()
+    one = sage_identity(field, int(2))
+    shear = sage_matrix(field, int(2), int(2), [int(1), root, int(0), int(1)])
+    witness = on_lattice(shear.tensor_product(one))
+    moved = witness.inverse().transpose() * gram * witness.inverse()
+    assert witness.det() in (int(1), int(-1)) and moved.denominator() == int(1)
+    t = equivariant_transporter(commutant, sage_matrix(SageZZ, moved), sources)
+    assert t is not None and _is_transporter(t, gram, moved, sources, sources)
+    other, other_sources, _ = _orthogonal_tensor_lattice(lambda r: (int(1) + r, int(1) - r))
+    assert other_sources == sources and abs(other.det()) == abs(gram.det())
+    assert equivariant_transporter(commutant, other, sources) is None
+
+
+def test_nonmaximal_levi_transporter():
+    gram, E = _eichler()
+    double = sage_matrix(SageZZ, int(6), int(6), int(0))
+    pair = sage_matrix(SageZZ, int(6), int(6), int(0))
+    for offset in (int(0), int(3)):
+        double.set_block(offset, offset, gram)
+        pair.set_block(offset, offset, E)
+    basis = sage_matrix(SageZZ, int(6), int(6), int(0))
+    for column, (row, scale) in enumerate([(int(0), int(1)), (int(3), int(1)), (int(2), int(1)), (int(5), int(1)), (int(1), int(1)), (int(4), int(2))]):
+        basis[row, column] = scale
+    F = basis.inverse() * pair * basis
+    lattice_gram = basis.transpose() * double * basis
+    assert F.denominator() == int(1) and lattice_gram.denominator() == int(1)
+    F, lattice_gram = sage_matrix(SageZZ, F), sage_matrix(SageZZ, lattice_gram)
+    commutant = IsometryCommutant(lattice_gram, [F])
+    witness = sage_identity(SageZZ, int(6)).__copy__()
+    witness[int(0), int(5)] = int(1)
+    target = witness * F * witness.inverse()
+    target_gram = witness.inverse().transpose() * lattice_gram * witness.inverse()
+    t = equivariant_transporter(commutant, target_gram, [target])
+    assert t is not None and _is_transporter(t, lattice_gram, target_gram, [F], [target])
+    assert equivariant_transporter(commutant, int(3) * target_gram, [target]) is None
