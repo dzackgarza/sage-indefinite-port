@@ -15,6 +15,7 @@ along Z/2. C(H) = O(U), and no automorphism other than the identity is realized.
 
 from sage_extensions.all import *
 from sage.matrix.constructor import matrix
+from sage.rings.finite_rings.finite_field_constructor import GF
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
 from sage_indefinite_port.indefinite.finite_normalizers import FiniteSubgroupNormalizer
@@ -192,3 +193,44 @@ def test_infinite_dihedral_normalizer_is_the_orthogonal_group_of_the_pell_plane(
         assert g * f * ~g in (f, ~f)
         assert corner(g * r * ~g) > 0
     assert any(corner(g) < 0 for g in generators)
+
+
+def test_congruence_normalizer_of_the_summand_swap_modulo_three():
+    r"""L = U + U with basis (e1, f1, e2, f2), H = <sigma> Gamma_L(3) with sigma the swap of the two summands.
+    H is a full preimage of pi(H) = {1, sigma mod 3}, and Gamma_L(3) is normal in O(L), so g normalizes H exactly
+    when pi(g) normalizes a group of order 2, i.e. centralizes sigma mod 3. The diagonal (a, a) for a in O(U)
+    commutes with sigma, the Eichler cube E(e1, 3(e2 + f2)) lies in Gamma_L(3), and (s, 1) with s the swap e1 <-> f1
+    conjugates sigma to the map e1 -> f2, f1 -> e2, which is neither 1 nor sigma modulo 3."""
+    from sage_indefinite_port.indefinite.finite_normalizers import congruence_normalizer_generators
+
+    lattice = Lattices(ZZ)([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    sigma = _from_columns(lattice, [[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]])
+    diagonal_swap = _from_columns(lattice, [[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    diagonal_minus = _from_columns(lattice, [[-1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, -1]])
+    eichler = matrix(SageZZ, [[1, -1, -1, -1], [0, 1, 0, 0], [0, 1, 1, 0], [0, 1, 0, 1]])
+    eichler_cube = _from_columns(lattice, eichler ** int(3))
+    left_swap = _from_columns(lattice, [[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+    frame = tuple(lattice.module_generators())
+    reduce = lambda g: matrix(GF(int(3)), [[int(c) for c in g(x)] for x in frame])
+    generators = congruence_normalizer_generators(lattice, (sigma,), int(3))
+    for g in generators:
+        assert reduce(g * sigma * ~g) == reduce(sigma)
+    images = [reduce(g) for g in generators]
+    identity = matrix.identity(GF(int(3)), int(4))
+    identity.set_immutable()
+    closure = set([identity])
+    frontier = [identity]
+    while frontier:
+        current = frontier.pop()
+        for image in images:
+            following = current * image
+            following.set_immutable()
+            if following not in closure:
+                closure.add(following)
+                frontier.append(following)
+    def contains(g):
+        m = reduce(g)
+        m.set_immutable()
+        return m in closure
+    assert all(contains(g) for g in (sigma, diagonal_swap, diagonal_minus, eichler_cube))
+    assert not contains(left_swap)
