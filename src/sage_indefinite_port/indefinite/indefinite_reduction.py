@@ -7,7 +7,7 @@ The preamble LatticeReduction retains an exact integral isometry.
 from __future__ import annotations
 
 from functools import cache
-from random import choice, randrange
+from random import Random
 
 from sage_extensions.categories.definite_lattices import (
     LatticeReduction,
@@ -19,6 +19,11 @@ from sage.matrix.constructor import identity_matrix, matrix
 from sage.modules.free_module_element import vector
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
+
+# The pinned source draws its perturbations from an unseeded generator.
+# Every randomized computation of the port starts a Random(GENERATOR_SEED)
+# at its entry point and passes it down, so its result depends only on its input.
+GENERATOR_SEED = 0
 
 
 def _gram_l1(gram):
@@ -105,20 +110,20 @@ def _indefinite_lll(gram):
             return basis, basis * gram * basis.transpose(), None
 
 
-def _random_signed_permutation(rank):
+def _random_signed_permutation(rank, rng: Random):
     """get_random_int_matrix, Indefinite_LLL.h:190-213."""
     permutation = list(range(rank))
     for _ in range(4 * rank):
-        i, j = randrange(rank), randrange(rank)
+        i, j = rng.randrange(rank), rng.randrange(rank)
         if i != j:
             permutation[i], permutation[j] = permutation[j], permutation[i]
     result = matrix(SageZZ, rank, rank)
     for i, j in enumerate(permutation):
-        result[i, j] = choice((-1, 1))
+        result[i, j] = rng.choice((-1, 1))
     return result
 
 
-def _compute_indefinite_reduction(gram, *, look_for_isotropic=False):
+def _compute_indefinite_reduction(gram, rng: Random, *, look_for_isotropic=False):
     """ComputeReductionIndefinite, Indefinite_LLL.h:215-319.
 
     Both source modes are retained. In isotropic-search mode a rational
@@ -156,7 +161,7 @@ def _compute_indefinite_reduction(gram, *, look_for_isotropic=False):
         else:
             no_improvement = 0
             best_norm = current_norm
-        perturbation = _random_signed_permutation(rank)
+        perturbation = _random_signed_permutation(rank, rng)
         if abs(perturbation.det()) != 1:
             raise ArithmeticError("random signed perturbation is not unimodular")
         basis = perturbation * basis
@@ -165,7 +170,7 @@ def _compute_indefinite_reduction(gram, *, look_for_isotropic=False):
             raise ArithmeticError("random signed perturbation broke the accumulated Gram congruence")
 
 
-def _simple_indefinite_reduction(gram):
+def _simple_indefinite_reduction(gram, rng: Random):
     """SimpleIndefiniteReduction, Indefinite_LLL.h:379-588.
 
     Every accepted shear strictly decreases the nonnegative integer
@@ -184,7 +189,7 @@ def _simple_indefinite_reduction(gram):
         return 2 * delta_off + delta_diag
 
     while True:
-        first, second = randrange(rank), randrange(rank)
+        first, second = rng.randrange(rank), rng.randrange(rank)
         if first != second:
             indices[first], indices[second] = indices[second], indices[first]
         found = None
@@ -356,7 +361,7 @@ def _definite_canonical_basis(gram):
     return basis
 
 
-def _approximate_indefinite_reduction(gram):
+def _approximate_indefinite_reduction(gram, rng: Random):
     """ApproxCanonicalIndefiniteForm, IndefApproxCanonical.h:374-389.
 
     IndefiniteReduction, then each connected block by its signature:
@@ -364,7 +369,7 @@ def _approximate_indefinite_reduction(gram):
     permutation normalization and a definite block its canonical basis
     (lines 285-325), and finally the stable block ordering.
     """
-    first, reduced = _indefinite_reduction(gram)
+    first, reduced = _indefinite_reduction(gram, rng)
     second = identity_matrix(SageZZ, gram.nrows())
     for component in _gram_connected_components(reduced):
         block = reduced.matrix_from_rows_and_columns(component, component)
@@ -406,7 +411,7 @@ def _definite_lll(gram, *, dual, lll_gram=None):
     return transform, transform * gram * transform.transpose()
 
 
-def _nondegenerate_reduction(gram):
+def _nondegenerate_reduction(gram, rng: Random):
     """IndefiniteReductionNonDegenerate, Indefinite_LLL.h:615-822."""
     rank = gram.nrows()
     basis = identity_matrix(SageZZ, rank)
@@ -429,7 +434,7 @@ def _nondegenerate_reduction(gram):
                 block_gram = matrix(SageZZ, rank, rank)
                 for block in blocks:
                     component = working.matrix_from_rows_and_columns(block, block)
-                    step, reduced = _nondegenerate_reduction(component)
+                    step, reduced = _nondegenerate_reduction(component, rng)
                     for i, original_i in enumerate(block):
                         for j, original_j in enumerate(block):
                             block_basis[original_i, original_j] = step[i, j]
@@ -439,9 +444,9 @@ def _nondegenerate_reduction(gram):
                     raise ArithmeticError("blockwise indefinite reduction failed its exact basis certificate")
                 return combined_basis, block_gram
             if which == 0:
-                step, candidate, _ = _compute_indefinite_reduction(working)
+                step, candidate, _ = _compute_indefinite_reduction(working, rng)
             elif which == 1:
-                step, candidate = _simple_indefinite_reduction(working)
+                step, candidate = _simple_indefinite_reduction(working, rng)
             else:
                 step, candidate = _definite_lll(working, dual=which == 3)
             if step.nrows() != rank or step.ncols() != rank or abs(step.det()) != 1:
@@ -540,7 +545,7 @@ def _source_subspace_completion_int(kernel_basis, dimension):
     return completion
 
 
-def _indefinite_reduction(gram):
+def _indefinite_reduction(gram, rng: Random):
     """IndefiniteReduction, Indefinite_LLL.h:823-930, radical included.
 
     The source NullspaceIntMat basis is reduced by alternating direct/dual
@@ -568,7 +573,7 @@ def _indefinite_reduction(gram):
         if separated != matrix(SageZZ, rank, rank, 0):
             raise ArithmeticError("totally radical Gram matrix did not reduce to zero")
         return full_basis, separated
-    step, _ = _nondegenerate_reduction(nondegenerate)
+    step, _ = _nondegenerate_reduction(nondegenerate, rng)
     combined = identity_matrix(SageZZ, rank)
     for i in range(nondegenerate_rank):
         for j in range(nondegenerate_rank):
@@ -584,7 +589,7 @@ def _indefinite_reduction(gram):
 def approximate_canonical_presentation(lattice) -> LatticeReduction:
     """ApproxCanonicalIndefiniteForm as an isometric change of presentation."""
     original = _engine_component_matrix(lattice.gram_tensor()).change_ring(SageZZ)
-    basis, _reduced = _approximate_indefinite_reduction(original)
+    basis, _reduced = _approximate_indefinite_reduction(original, Random(GENERATOR_SEED))
     return _reduction_from_backend_rows(lattice, basis)
 
 
@@ -601,7 +606,7 @@ def indefinite_reduced_presentation(lattice) -> LatticeReduction:
     # IndefiniteForms.g:1379-1383 and :1480-1485 call IndefiniteReduction,
     # not the separate ApproxCanonicalIndefiniteForm (C++ IndefApproxCanonical.h).
     # Canonicalizing the blocks here changes the source recursion's reduction.
-    basis, reduced = _indefinite_reduction(original)
+    basis, reduced = _indefinite_reduction(original, Random(GENERATOR_SEED))
     if basis * original * basis.transpose() != reduced:
         raise ArithmeticError("reduced presentation has an incorrect Gram witness")
     return _reduction_from_backend_rows(lattice, basis)

@@ -10,7 +10,7 @@ from fractions import Fraction
 from functools import cache, cached_property
 from itertools import combinations, islice, product
 from math import gcd, isfinite, isqrt
-from random import choice, randrange, shuffle
+from random import Random
 from sys import float_info
 from typing import Literal, cast, overload
 
@@ -67,6 +67,7 @@ from sage.structure.element import RingElement
 from sage.structure.parent import Parent
 
 from sage_indefinite_port.indefinite.indefinite_reduction import (
+    GENERATOR_SEED,
     _compute_indefinite_reduction,
     _indefinite_reduction,
 )
@@ -1241,7 +1242,8 @@ class LorentzianPerfectLocalBackend:
 
     def initial_cell(self, lattice: Lattices.ParentMethods, allowed_squares: RealSet) -> LorentzianPerfectCell:
         normalized = _lorentzian_view(lattice)
-        direction = _positive_direction(normalized)
+        rng = Random(GENERATOR_SEED)
+        direction = _positive_direction(normalized, rng)
         # The search runs on coordinate rows; L and its normalized twist share them.
         critical = _search_initial_vectors(normalized, direction, allowed_squares)
         gram = _gram_matrix(normalized).change_ring(SageQQ)
@@ -1260,7 +1262,7 @@ class LorentzianPerfectLocalBackend:
             # Normalizing only the span basis globally changes the source's
             # candidate rows and therefore its negative-vector search order.
             directions = _outside_ray_directions(nullspace, gram)
-            outside_direction = _negative_direction_in_span(normalized, directions, critical, base_normal)
+            outside_direction = _negative_direction_in_span(normalized, directions, critical, base_normal, rng)
             direction_covector = gram * outside_direction.column()
             critical_row = vector(SageQQ, critical[0])
             direction_scalar = (critical_row * direction_covector)[0]
@@ -4856,8 +4858,9 @@ def _source_integral_vector_allmeth(
     gram: Matrix_integer_dense,
     critical_norm: Rational,
     strict_inequality: bool,
+    rng: Random,
     *,
-    reduction: Callable[[Matrix_integer_dense], tuple[Matrix_integer_dense, Matrix_integer_dense]] = _indefinite_reduction,
+    reduction: Callable[[Matrix_integer_dense, Random], tuple[Matrix_integer_dense, Matrix_integer_dense]] = _indefinite_reduction,
     isotropic_reduction: Callable[..., tuple[Matrix_integer_dense, Matrix_integer_dense, object]] = _compute_indefinite_reduction,
     find_vector: Callable[[Matrix_integer_dense, Matrix_integer_dense, Matrix_integer_dense, Rational, bool], tuple[Integer, ...]] = _source_integral_vector_allmeth_v2,
 ) -> tuple[Integer, ...]:
@@ -4875,7 +4878,7 @@ def _source_integral_vector_allmeth(
     isotropic_fine = critical_norm < 0 if strict_inequality else critical_norm <= 0
     reduced_result = None
     if isotropic_fine:
-        basis, reduced, isotropic = isotropic_reduction(gram, look_for_isotropic=True)
+        basis, reduced, isotropic = isotropic_reduction(gram, rng, look_for_isotropic=True)
         if isotropic is not None:
             integral = vector(SageZZ, _source_remove_fraction_vector(isotropic))
             if not any(integral) or (integral * gram * integral.column())[0] != 0:
@@ -4885,7 +4888,7 @@ def _source_integral_vector_allmeth(
         # used by the source fallback; do not run IndefiniteReduction again.
         reduced_result = basis, reduced
     if reduced_result is None:
-        basis, reduced = reduction(gram)
+        basis, reduced = reduction(gram, rng)
     else:
         basis, reduced = reduced_result
     _source_validate_integral_reduction(gram, basis, reduced)
@@ -4914,12 +4917,12 @@ def _source_certify_positive_integral_vector(
     return integral
 
 
-def _integral_positive_vector_allmeth(gram: Matrix_integer_dense) -> tuple[Integer, ...]:
+def _integral_positive_vector_allmeth(gram: Matrix_integer_dense, rng: Random) -> tuple[Integer, ...]:
     r"""Port ``GetIntegralPositiveVector_allmeth`` from Positivity.h:499-518."""
     if gram.nrows() == 0:
         raise ValueError("the Gram matrix has no positive direction")
     return _source_certify_positive_integral_vector(
-        gram, _source_integral_vector_allmeth(gram, SageQQ.zero(), True)
+        gram, _source_integral_vector_allmeth(gram, SageQQ.zero(), True, rng)
     )
 
 
@@ -4945,22 +4948,19 @@ def _source_graver_k_basis(dimension: int, degree: int) -> tuple[tuple[int, ...]
 
 def _source_random_matrix_perturbation(
     dimension: int,
-    *,
-    choose: Callable[[tuple[int, ...]], int] = choice,
-    shuffle_values: Callable[[list[int]], None] = shuffle,
-    choose_index: Callable[[int], int] = randrange,
+    rng: Random,
 ) -> Matrix_integer_dense:
     r"""Port ``GetRandomMatrixPerturbation`` from Positivity.h:536-559."""
     if dimension < 1:
         raise ValueError("a random matrix perturbation needs positive dimension")
-    if choose((0, 1)) == 0:
+    if rng.choice((0, 1)) == 0:
         permutation = list(range(dimension))
-        shuffle_values(permutation)
-        signs = tuple(choose((-1, 1)) for _ in range(dimension))
+        rng.shuffle(permutation)
+        signs = tuple(rng.choice((-1, 1)) for _ in range(dimension))
         return _source_permutation_sign_matrix(permutation, signs).change_ring(SageZZ)
-    row = choose_index(dimension)
-    column = choose_index(dimension)
-    sign = choose((-1, 1))
+    row = rng.randrange(dimension)
+    column = rng.randrange(dimension)
+    sign = rng.choice((-1, 1))
     return _source_elementary_perturbation(dimension, row, column, sign).change_ring(SageZZ)
 
 
@@ -5050,7 +5050,7 @@ def _source_positive_search_best(
 def _source_indefinite_short_positive_vector(
     gram: Matrix_integer_dense,
     find_positive: Callable[[Matrix_integer_dense], tuple[Integer, ...]],
-    perturbation_factory: Callable[[int], Matrix_integer_dense] = _source_random_matrix_perturbation,
+    perturbation_factory: Callable[[int], Matrix_integer_dense],
 ) -> tuple[Integer, ...]:
     r"""Port the complete ``INDEFINITE_GetShortPositiveVector`` loop.
 
@@ -5124,10 +5124,17 @@ def _source_indefinite_short_positive_vector(
 
 
 
-def _positive_direction(lattice: Lattices.ParentMethods) -> tuple[Rational, ...]:
+def _positive_direction(lattice: Lattices.ParentMethods, rng: Random) -> tuple[Rational, ...]:
     r"""Pinned polyhedral_common@a55fcb7b ``INDEFINITE_GetShortPositiveVector``."""
     gram = _gram_matrix(lattice)
-    return tuple(SageQQ(entry) for entry in _source_indefinite_short_positive_vector(gram, _integral_positive_vector_allmeth))
+    return tuple(
+        SageQQ(entry)
+        for entry in _source_indefinite_short_positive_vector(
+            gram,
+            lambda perturbed: _integral_positive_vector_allmeth(perturbed, rng),
+            lambda dimension: _source_random_matrix_perturbation(dimension, rng),
+        )
+    )
 
 
 def _primitive_integral_direction(
@@ -5953,6 +5960,7 @@ def _negative_direction_in_span(
     spanning_rows: Matrix_rational_dense,
     critical: tuple[tuple[int, ...], ...],
     base_normal: FreeModuleElement[Rational],
+    rng: Random,
     excluded_directions: list[FreeModuleElement[Rational]] | None = None,
 ) -> FreeModuleElement[Rational]:
     r"""The negative direction accepted by Lorentzian.g's GetOneOutsideRay.
@@ -5994,15 +6002,15 @@ def _negative_direction_in_span(
         # Match GetRandomMatrixPerturbation verbatim: the selected entry is
         # overwritten by +/-1, including when it is diagonal. Both the signed
         # permutation and identity-with-one-entry branches are unimodular.
-        if choice((1, 2)) == 1:
+        if rng.choice((1, 2)) == 1:
             permutation = list(range(dimension))
-            shuffle(permutation)
-            signs = tuple(choice((-1, 1)) for _ in range(dimension))
+            rng.shuffle(permutation)
+            signs = tuple(rng.choice((-1, 1)) for _ in range(dimension))
             modification = _source_permutation_sign_matrix(permutation, signs)
         else:
-            index = randrange(dimension)
-            image = randrange(dimension)
-            sign = choice((-1, 1))
+            index = rng.randrange(dimension)
+            image = rng.randrange(dimension)
+            sign = rng.choice((-1, 1))
             modification = _source_elementary_perturbation(dimension, index, image, sign)
         perturbation *= modification
 
