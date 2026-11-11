@@ -528,9 +528,14 @@ class EquivariantMarking:
         height at most `H = \max(h(X_0), h(Y_0))` is then explored from `X_0`; it is finite. If it reaches `Y_0`,
         the composed word is a transporter, checked by the caller.
 
-        The generators are not certified to connect that sublevel set (that needs Macbeath generators of a
+        First, unequal image lattices `I(X) \ne I(Y)` of :func:`effective_reduction.separated_by_invariant` prove
+        that no transporter exists, and ``None`` is returned. The generators are not certified to connect that sublevel set (that needs Macbeath generators of a
         Siegel-set fundamental domain), so a miss proves nothing and raises ``NotImplementedError``.
         """
+        from sage_indefinite_port.indefinite.effective_reduction import separated_by_invariant
+
+        if separated_by_invariant(self.gram, self.marking, target, self.ambient_actions):
+            return None
         generators = [matrix(ZZ, g) for g in _commutant_groups().centralizer_generators(self._commutant)]
         moves = [*generators, *(matrix(ZZ, g.inverse()) for g in generators)]
         height = lambda Z: sum(c * c for c in Z.list())
