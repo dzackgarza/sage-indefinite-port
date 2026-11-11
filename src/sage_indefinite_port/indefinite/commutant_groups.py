@@ -370,7 +370,7 @@ def _form_isometry(source, target):
         isometry = left.isometry_to(right)
         if isometry is None:
             return None
-        result = matrix(QQ, [[QQ(c) for c in isometry(v)] for v in left.module_generators()]).transpose()
+        result = matrix(QQ, [[int(c) for c in isometry(v)] for v in left.module_generators()]).transpose()
     assert result.transpose() * target * result == source and abs(result.det()) == 1
     return matrix(ZZ, result)
 
@@ -695,7 +695,7 @@ class CentralFieldCommutant:
         return "hermitian", gram
 
     def h(self, x, y, gram):
-        return (self._star(matrix(self.field, [y])) * gram * matrix(self.field, [x]).transpose())[0, 0]
+        return (self._star(matrix(self.field, [y]).transpose()) * gram * matrix(self.field, [x]).transpose())[0, 0]
 
     def _span_is_lattice(self, vectors):
         integers = self.field.ring_of_integers().basis()

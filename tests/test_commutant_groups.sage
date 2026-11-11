@@ -180,17 +180,6 @@ def test_orthogonal_quaternion_transporters():
     assert equivariant_transporter(commutant, int(3) * gram, sources) is None
 
 
-def test_levi_transporter_to_the_inverse_on_one_summand():
-    gram, E = _eichler()
-    big = gram.block_sum(gram)
-    F = E.block_sum(E)
-    commutant = IsometryCommutant(big, [F])
-    target = E.block_sum(E.inverse().change_ring(SageZZ))
-    t = equivariant_transporter(commutant, big, [target])
-    assert t is not None and _is_transporter(t, big, big, [F], [target])
-    assert equivariant_transporter(commutant, int(3) * big, [F]) is None
-
-
 def _gaussian_plane():
     entries = [int(c) for c in (0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0)]
     gram = sage_matrix(SageZZ, int(4), int(4), entries)

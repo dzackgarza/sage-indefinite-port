@@ -137,6 +137,8 @@ jobs:
             test: test_two_i_lines_with_isometric_quotients_have_no_transporter
           - file: test_hermitian_negative_transporter_and_preimages.sage
             test: test_gaussian_line_stabilizer_meets_a_joint_residue_and_determinant_preimage
+          - file: test_commutant_groups.sage
+            test: test_levi_transporter_to_the_inverse_on_one_summand
     steps:
       - uses: actions/checkout@v4
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
