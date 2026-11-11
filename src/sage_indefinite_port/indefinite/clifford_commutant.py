@@ -37,6 +37,7 @@ from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.rational_field import QQ
 from sage.schemes.plane_conics.constructor import Conic
 from sage_extensions.algebras.isometry_commutant import IsometryCommutant, _short_vectors
+from sage_extensions.categories.lattice_centralizers import finite_preimage_generators
 from sage_indefinite_port.indefinite.commutant_groups import _verified
 from sage_indefinite_port.indefinite.quaternion_voronoi_number_field import QuaternionOrderVoronoi
 
@@ -126,16 +127,14 @@ class CliffordModel:
     def _generator(self, elements, target):
         return _norm_generator(self.voronoi(), elements, target)
 
-    def _check_maximal(self, primes):
+    def expected_discriminant(self):
+        primes = list(self.algebra.ramified_places(inf=False))
+        return abs(self.field.discriminant()) ** 4 * _norm_product(primes) ** 2
+
+    def is_maximal(self):
         voronoi = self.voronoi()
         gram = matrix(QQ, [[voronoi.trace(x * y) for y in voronoi.order] for x in voronoi.order])
-        expected = abs(self.field.discriminant()) ** 4 * _norm_product(primes) ** 2
-        if abs(gram.det()) != expected:
-            raise NotImplementedError(
-                f"O_C = C cap M_r(O_Z) has discriminant {abs(gram.det())}, not that of a maximal order ({expected}); the "
-                f"normalizer of a non-maximal order (the stabilizer of O_C in the normalizers of the maximal orders containing "
-                f"it) is not computed here (#54)"
-            )
+        return abs(gram.det()) == self.expected_discriminant()
 
     def normalizer_representatives(self):
         r"""Return elements `n` of `C` whose classes generate `N(O_C) / (Z^\times SL_1(O_C))` together with `SL_1(O_C)`.
@@ -149,7 +148,11 @@ class CliffordModel:
             return self._normalizer
         voronoi = self.voronoi()
         primes = list(self.algebra.ramified_places(inf=False))
-        self._check_maximal(primes)
+        if not self.is_maximal():
+            raise NotImplementedError(
+                f"normalizer coset representatives of the non-maximal O_C (used by transporters); its generators come from "
+                f":func:`normalizer_generators` (#54)"
+            )
         units = self.field.unit_group()
         width = len(units.gens())
         reps, span = [], matrix(GF(2), 0, width)
@@ -183,8 +186,34 @@ class CliffordModel:
         self._normalizer = tuple(result)
         return self._normalizer
 
+    def _nonmaximal_centralizer_generators(self):
+        r"""Return generators of `C(Z)` for a non-maximal `O_C`.
+
+        `N(O_C)` comes from :func:`normalizer_generators` over the maximal orders containing `O_C`. Its elements with
+        `N_{Z/Q}(\mathrm{nrd}\, n)` a rational square form the preimage of a finite subgroup of `Q^\times / Q^{\times 2}` (the reduced norms of
+        `N(O_C)` are supported on the primes of the discriminant), so Schreier generators give it; their images `\pm \chi(n)/q` generate a group
+        containing `C(Z)` with finite index, and the commutant's Schreier descent to `O` returns `C(Z)`."""
+        from sage_indefinite_port.indefinite.quaternion_orders_number_field import maximal_orders_containing, normalizer_generators
+
+        maximal = maximal_orders_containing(self.algebra, self.order_basis, self.expected_discriminant())
+        generators = normalizer_generators(self.algebra, self.order_basis, maximal)
+
+        def square_class(n):
+            norm = QQ(self.field(n.reduced_norm()).norm())
+            return (norm.numerator() * norm.denominator()).squarefree_part()
+
+        subgroup, _index = finite_preimage_generators(generators, square_class, lambda c: c == 1)
+        r = self.commutant.rank
+        moves = [-identity_matrix(QQ, r)]
+        for n in subgroup:
+            norm = QQ(self.field(n.reduced_norm()).norm())
+            moves.append(self.chi(n) / norm.sqrt())
+        return tuple(self.commutant._order_subgroup_generators(moves))
+
     def centralizer_generators(self):
         r"""Return generators of `C(Z)` (module docstring)."""
+        if not self.is_maximal():
+            return self._nonmaximal_centralizer_generators()
         voronoi = self.voronoi()
         r = self.commutant.rank
         result = [-identity_matrix(QQ, r), *(self.chi(c) for c in voronoi.sl1_generators())]

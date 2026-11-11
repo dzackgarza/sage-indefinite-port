@@ -962,3 +962,26 @@ def test_anisotropic_skew_hermitian_quaternion_transporters():
     t = equivariant_transporter(commutant, moved, sources)
     assert t is not None and _is_transporter(t, gram, moved, sources, sources)
     assert equivariant_transporter(commutant, int(3) * gram, sources) is None
+
+
+def test_maximal_orders_containing_the_lipschitz_order_over_sqrt2():
+    r"""`(-1, -1)` over `Q(sqrt 2)` ramifies exactly at the two real places (even count, Hilbert reciprocity with no finite place), so a
+    maximal order has `|\det Tr(o_i o_j)| = d_Z^4 = 8^4`. `Z[sqrt 2]<1, i, j, k>` has a larger discriminant (it misses `(1 + i)/sqrt 2`, which
+    has reduced trace `sqrt 2` and reduced norm `1`), so it is not maximal, and every order returned contains it, is closed and integral, and
+    has the maximal discriminant."""
+    from sage_indefinite_port.indefinite.quaternion_orders_number_field import OrderLattices, maximal_orders_containing
+
+    algebra, voronoi = _lipschitz_over_sqrt2()
+    lattices = OrderLattices(algebra)
+    order = list(voronoi.order)
+    expected = int(8) ** int(4)
+    assert lattices.discriminant(order) > expected
+    root = algebra.base_ring().gen()
+    hurwitz_like = (int(1) + algebra.basis()[int(1)]) / root
+    assert lattices.integral(hurwitz_like)
+    maximal = maximal_orders_containing(algebra, order, expected)
+    assert len(maximal) >= int(1)
+    for basis in maximal:
+        assert lattices.discriminant(basis) == expected
+        assert lattices.closure(basis) is not None and lattices.key(lattices.closure(basis)) == lattices.key(basis)
+        assert lattices.key([*basis, *order]) == lattices.key(basis)
