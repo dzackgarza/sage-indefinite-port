@@ -21,6 +21,35 @@ from sage.rings.rational_field import QQ as SageQQ
 from sage_indefinite_port.indefinite.finite_normalizers import FiniteSubgroupNormalizer
 
 
+def _from_columns(lattice, columns):
+    frame = tuple(lattice.module_generators())
+    labels = tuple(lattice.module_generating_set())
+    images = {}
+    for j, label in enumerate(labels):
+        images[label] = sum(
+            (lattice.scalar_multiple(int(columns[i][j]), g) for i, g in enumerate(frame)), lattice.zero()
+        )
+    return lattice.O()(images)
+
+
+def _reduction_closure(lattice, isometries):
+    frame = tuple(lattice.module_generators())
+    images = [matrix(GF(int(3)), [[int(c) for c in g(x)] for x in frame]) for g in isometries]
+    identity = matrix.identity(GF(int(3)), len(frame))
+    identity.set_immutable()
+    closure = set([identity])
+    frontier = [identity]
+    while frontier:
+        current = frontier.pop()
+        for image in images:
+            following = current * image
+            following.set_immutable()
+            if following not in closure:
+                closure.add(following)
+                frontier.append(following)
+    return closure
+
+
 def test_arithmetic_normalizer_of_the_full_orthogonal_group_of_two_hyperbolic_planes():
     r"""L = U + U, H = <O(L), E> = O(L) with E = E(e1, e2 + f2) unipotent. H contains SO(L) cap Gamma(3) and is
     Zariski dense in O(L) (log E spans an Ad-orbit generating so(4) = sl2 + sl2, whose factors are swapped by the
