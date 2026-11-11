@@ -560,6 +560,21 @@ def levi_transporter(commutant, target_gram, targets):
 _IMAGINARY_MODELS = {-4: 1, -8: 2, -3: 3, -7: 7, -11: 11}
 
 
+def _ideal_divisors(ideal):
+    r"""Return the integral ideals dividing ``ideal``, the products of the prime powers of its factorization."""
+    from itertools import product as cartesian
+
+    factors = list(ideal.factor())
+    one = ideal.number_field().ideal(1)
+    result = []
+    for exponents in cartesian(*[range(e + 1) for _p, e in factors]):
+        divisor = one
+        for (prime, _e), k in zip(factors, exponents):
+            divisor = divisor * prime**k
+        result.append(divisor)
+    return result
+
+
 class CentralFieldCommutant:
     r"""An explicit identification of a central simple commutant over `K \ne Q` with a form over `O_K`.
 
@@ -1047,7 +1062,7 @@ class CentralFieldCommutant:
             m = lcm([denominator(a + b * s) for a, b in pairs] + [denominator(a - b * s) for a, b in pairs])
             target = m**2 * nu
             if target.is_integral():
-                for divisor in K.ideal(target).divisors():
+                for divisor in _ideal_divisors(K.ideal(target)):
                     if divisor.is_principal():
                         y1 = divisor.gens_reduced()[0]
                         candidates.append(split(y1 / m, target / y1 / m))
@@ -1373,7 +1388,7 @@ class VectorOrbit:
             start = equivariant_transporter(IsometryCommutant(gram, actions), target_gram, target_actions)
             if start is None:
                 return None
-                transversal, _stabilizer = _schreier(generators, to_complement, _glue_action, identity_matrix(ZZ, basis.ncols()))
+            transversal, _stabilizer = _schreier(generators, to_complement, _glue_action, identity_matrix(ZZ, basis.ncols()))
             candidates = (
                 target * to_source + target_basis * start.change_ring(QQ) * c.change_ring(QQ) * to_complement
                 for c, _point in transversal.values()

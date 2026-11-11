@@ -211,6 +211,7 @@ def _gaussian_plane():
 def test_gaussian_hyperbolic_centralizer_contains_the_scalar_units():
     gram, F = _gaussian_plane()
     generators = centralizer_generators(IsometryCommutant(gram, [F]))
+    one = sage_identity(SageZZ, int(4))
     assert all(g * F == F * g and g.transpose() * gram * g == gram for g in generators)
     assert F in generators and -one in generators and -F in generators
     assert any(g != one and (g - one) ** int(2) == int(0) for g in generators)
