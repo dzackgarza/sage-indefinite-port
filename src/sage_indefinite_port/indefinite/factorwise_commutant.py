@@ -457,7 +457,7 @@ class _DedekindModel:
         if n == 1:
             return [[idempotent]]
         if n == 3:
-            return self._split_cubic(index, component)
+            return self._split_cubic(index, component, algebra_basis)
         if n > 3:
             return self._split_general(index, component, n, algebra_basis)
         alpha, beta, i, j = self._quaternion_presentation(index, component, idempotent)
@@ -542,8 +542,8 @@ class _DedekindModel:
         assert all(units[a][b] * units[c][d] == (units[a][d] if b == c else 0 * z) for a in range(n) for b in range(n) for c in range(n) for d in range(n))
         return units
 
-    def _split_cubic(self, index, component):
-        r"""Return matrix units of a degree-three component `B_i`, or raise when it is a division algebra.
+    def _split_cubic(self, index, component, algebra_basis):
+        r"""Return matrix units of a degree-three component `B_i`, or `[[\epsilon_i]]` when it is a division algebra (:meth:`_cubic_division`).
 
         For `x \in B_i` with minimal polynomial `f` over `K = K_i`: a reducible `f = g h` gives the zero divisor `g(x)`. An irreducible cubic `f`
         gives the maximal subfield `L = K(x)`; when `L / K` is cyclic (`f` has three roots in `L`), `\sigma(x) = s(x)` for a root `s \ne x`, and
@@ -564,13 +564,13 @@ class _DedekindModel:
                 if max(abs(c) for c in coefficients) != bound:
                     continue
                 x = sum((c * b for c, b in zip(coefficients, component)), 0 * component[0])
-                units = self._cubic_trial(index, component, x)
+                units = self._cubic_trial(index, component, x, algebra_basis)
                 if units is not None:
                     return units
 
-    def _cubic_trial(self, index, component, x):
+    def _cubic_trial(self, index, component, x, algebra_basis):
         r"""Return matrix units from the trial element ``x`` (:meth:`_split_cubic`), or ``None`` when ``x`` is central or `K(x) / K` is not
-        cyclic; raise for a division algebra."""
+        cyclic; `[[\epsilon_i]]` for a division algebra, recorded by :meth:`_cubic_division`."""
         K = self.fields[index]
         if all(x * b == b * x for b in component):
             return None
@@ -590,12 +590,69 @@ class _DedekindModel:
         (a,) = self._solve(index, u * u * u, [self.idempotents[index]])
         found, y = K(a).is_norm(L, element=True)
         if not found:
-            raise NotImplementedError(
-                f"Wedderburn component (L/K, sigma, {a}) with L = {L} is a cubic division algebra over {K}: lattices over its orders "
-                f"are not classified by this route (#54)"
-            )
+            return self._cubic_division(index, component, x, u, L, roots, a, algebra_basis)
         w = self._field_matrix(index, x, ~L(y)) * u
         return self._units_from_zero_divisor(index, w - self.idempotents[index], component, 3)
+
+    def _cubic_division(self, index, component, x, u, L, roots, a, algebra_basis):
+        r"""Record the cubic division component `B_i = D = (L/K, \sigma, a)` and return `[[\epsilon_i]]`.
+
+        `D` is handled as matrices on `V` through :class:`~sage_indefinite_port.indefinite.quaternion_orders_number_field.MatrixAlgebraLattices`,
+        with a maximal order `O` containing `\epsilon_i Z[F]`
+        (:func:`~sage_indefinite_port.indefinite.quaternion_orders_number_field.maximal_order`) and a `D`-basis `w_1, \ldots, w_d` of `V_i`, as
+        in :meth:`_quaternion`. Unit groups of its orders come from
+        :class:`~sage_indefinite_port.indefinite.semisimple_voronoi.SemisimpleOrderVoronoi` in the split model of :class:`_CubicDivision`;
+        a degree-three algebra satisfies the Eichler condition and has no real ramification, so an invertible ideal is principal exactly
+        when its reduced norm is principal in `\mathrm{Cl}(K)` (Reiner, *Maximal Orders*, Thm. 34.9 and 35.14), which decides
+        :meth:`_division_transport`."""
+        from sage_indefinite_port.indefinite.quaternion_orders_number_field import MatrixAlgebraLattices, maximal_order
+
+        epsilon = self.idempotents[index]
+        lattices = MatrixAlgebraLattices(component, epsilon)
+        order = lattices.closure([epsilon * b for b in algebra_basis])
+        assert order is not None, "the projection of Z[F] to the component is not integral"
+        maximal = maximal_order(lattices, order)
+        k = epsilon.nrows()
+        frame, columns = [], []
+        for v in epsilon.columns():
+            w = matrix(QQ, k, 1, list(v))
+            block = [q * w for q in component]
+            if matrix(QQ, [list(b.column(0)) for b in columns + block]).rank() == len(columns) + len(component):
+                columns.extend(block)
+                frame.append(w)
+        image = block_matrix(QQ, [columns], subdivide=False)
+        assert image.rank() == epsilon.rank()
+        self.division[index] = (_CubicDivision(self, index, x, u, L, roots, a), lattices, maximal, [epsilon], frame, image)
+        return [[epsilon]]
+
+    def _unit_engine(self, index, order):
+        r"""Return the unit-group engine of the order ``order`` of the division component."""
+        from sage_indefinite_port.indefinite.fuchsian_domain import quaternion_unit_engine
+
+        algebra = self.division[index][0]
+        if isinstance(algebra, _CubicDivision):
+            return algebra.engine(self.division[index][1].key(order), order)
+        return quaternion_unit_engine(algebra, order)
+
+    def _norm_ideal(self, index, lattice):
+        r"""Return the reduced norm `\mathrm{nrd}(I)` of the full lattice ``lattice`` of the division component."""
+        from sage_indefinite_port.indefinite.clifford_commutant import _reduced_norm_ideal
+
+        algebra = self.division[index][0]
+        if isinstance(algebra, _CubicDivision):
+            return algebra.norm_ideal(lattice)
+        return _reduced_norm_ideal(self.fields[index], lattice)
+
+    def _stably_free(self, index, ratio):
+        r"""Decide whether `O^{d-1} \oplus I \cong O^{d-1} \oplus I'` for `\mathrm{nrd}(I') \mathrm{nrd}(I)^{-1} =` ``ratio``: a generator positive at
+        the ramified real places (Swan 1980; Reiner Thm. 34.9), which for a cubic algebra is principality."""
+        from sage.rings.real_mpfr import RealField
+        from sage_indefinite_port.indefinite.fuchsian_domain import positive_generator, ramified_real_places
+
+        algebra = self.division[index][0]
+        if isinstance(algebra, _CubicDivision):
+            return ratio.is_principal()
+        return positive_generator(self.fields[index], ratio, ramified_real_places(algebra, RealField(256))) is not None
 
     def _quaternion_presentation(self, index, corner, unit):
         r"""Return `(\alpha, \beta, i, j)` with `i^2 = \alpha`, `j^2 = \beta`, `ij = -ji` in the quaternion algebra over `K_i` with unit ``unit``
@@ -767,19 +824,21 @@ class _DedekindModel:
     def _quaternion_matrix(self, index, x):
         r"""Return the matrix on `V` of `x \in D` (left multiplication on `V_i`, zero on the other `V_j`)."""
         algebra, _lattices, _maximal, units, _frame, _image = self.division[index]
+        if isinstance(algebra, _CubicDivision):
+            return x
         return sum((self._embed(index, c) * u for c, u in zip(algebra(x).coefficient_tuple(), units)), 0 * units[0])
 
     def _vectors(self, index, columns):
         r"""Return `W^{-1}(\epsilon_i m)` as `d`-tuples of elements of `D`, for the columns `m` of ``columns``."""
         _algebra, lattices, _maximal, _units, frame, image = self.division[index]
-        size = 4 * self.factors[index].degree()
+        size = len(lattices._q_basis)
         coordinates = image.solve_right(self.division[index][3][0] * columns)
         return [tuple(lattices.element(list(c)[t * size : (t + 1) * size]) for t in range(len(frame))) for c in coordinates.columns()]
 
     def _tuple_span(self, index, vectors):
         r"""Return the Hermite `Z`-basis (as `d`-tuples) of the `Z`-span of the `d`-tuples ``vectors``."""
         lattices = self.division[index][1]
-        size, d = 4 * self.factors[index].degree(), len(vectors[0])
+        size, d = len(lattices._q_basis), len(vectors[0])
         rows = matrix(QQ, [[c for b in x for c in lattices.coordinates(b)] for x in vectors])
         scale = rows.denominator()
         hermite = matrix(QQ, matrix(ZZ, scale * rows).hermite_form(include_zero_rows=False)) / scale
@@ -813,13 +872,9 @@ class _DedekindModel:
         `O_R(I)`-ideal of reduced norm `\mathrm{nrd}(I') \mathrm{nrd}(I)^{-1}`, and any element of that reduced norm generates it (Voight, *Quaternion
         Algebras*, Sec. 16.6, 17.4), so `I x = I I^{-1} I' = I'`. ``norm_generator`` of the unit engine of the maximal order `O_R(I)` finds such an
         element or proves there is none."""
-        from sage_indefinite_port.indefinite.clifford_commutant import _reduced_norm_ideal
-        from sage_indefinite_port.indefinite.fuchsian_domain import quaternion_unit_engine
-
-        algebra, lattices, _maximal, _units, _frame, _image = self.division[index]
-        K = self.fields[index]
-        engine = quaternion_unit_engine(algebra, lattices.right_order(source))
-        delta = engine.norm_generator(self._colon(index, source, target), _reduced_norm_ideal(K, target) / _reduced_norm_ideal(K, source))
+        lattices = self.division[index][1]
+        engine = self._unit_engine(index, lattices.right_order(source))
+        delta = engine.norm_generator(self._colon(index, source, target), self._norm_ideal(index, target) / self._norm_ideal(index, source))
         if delta is None:
             return None
         assert lattices.key([b * delta for b in source]) == lattices.key(target)
@@ -835,21 +890,22 @@ class _DedekindModel:
         `r - 1`, and the recursion continues on `N`. Unimodular elements exist for `r \ge 2` (Reiner, *Maximal Orders*, Thm. 27.8 and Sec. 35),
         and the complements `N` realize every class with the reduced-norm class of `M` (Swan, *Strong approximation and locally free modules*,
         1980; Reiner Thm. 35.14), so the search over `v` at rank two ends once ``accept`` holds for some class with that reduced norm."""
-        algebra, lattices, maximal, _units, _frame, _image = self.division[index]
+        _algebra, lattices, maximal, _units, _frame, _image = self.division[index]
         d = len(lattice[0])
-        size = 4 * self.factors[index].degree()
+        size = len(lattices._q_basis)
         rank = len(lattice) // size
         if rank == 1:
             x = lattice[0]
             t = next(s for s in range(d) if x[s] != 0)
-            ideal = lattices.basis([y[t] * ~x[t] for y in lattice])
+            inverse = lattices.inverse(x[t])
+            ideal = lattices.basis([y[t] * inverse for y in lattice])
             accepted = accept(ideal)
             return None if accepted is None else ([], x, ideal, accepted)
         assert rank == d
         order_inverse = matrix(QQ, [lattices.coordinates(o) for o in maximal]).inverse()
         in_order = lambda z: vector(QQ, lattices.coordinates(z)) * order_inverse
-        dot = lambda x, y: sum((a * b for a, b in zip(x, y)), algebra(0))
-        unit_vectors = [tuple(q if s == t else algebra(0) for s in range(d)) for t in range(d) for q in lattices._q_basis]
+        dot = lambda x, y: sum((a * b for a, b in zip(x, y)), lattices.zero())
+        unit_vectors = [tuple(q if s == t else lattices.zero() for s in range(d)) for t in range(d) for q in lattices._q_basis]
         rows = []
         for m in lattice:
             rows.extend(matrix(QQ, [in_order(dot(m, e)) for e in unit_vectors]).columns())
@@ -858,15 +914,15 @@ class _DedekindModel:
         hermite = matrix(QQ, matrix(ZZ, scale * rows).hermite_form(include_zero_rows=False)) / scale
         dual = []
         for row in hermite.inverse().transpose().rows():
-            dual.append(tuple(sum((QQ(c) * e[t] for c, e in zip(row, unit_vectors)), algebra(0)) for t in range(d)))
-        one = in_order(algebra(1))
+            dual.append(tuple(sum((QQ(c) * e[t] for c, e in zip(row, unit_vectors)), lattices.zero()) for t in range(d)))
+        one = in_order(lattices.one())
         bound = 0
         while True:
             bound += 1
             for coefficients in product(range(-bound, bound + 1), repeat=len(lattice)):
                 if max(abs(c) for c in coefficients) != bound or gcd(coefficients) != 1:
                     continue
-                v = tuple(sum((c * m[t] for c, m in zip(coefficients, lattice)), algebra(0)) for t in range(d))
+                v = tuple(sum((c * m[t] for c, m in zip(coefficients, lattice)), lattices.zero()) for t in range(d))
                 values = matrix(ZZ, [in_order(dot(v, y)) for y in dual])
                 reduced, transform = values.hermite_form(transformation=True)
                 r = reduced.rank()
@@ -877,22 +933,22 @@ class _DedekindModel:
                 if any(c not in ZZ for c in solution):
                     continue
                 combination = vector(ZZ, list(solution) + [0] * (len(dual) - r)) * transform
-                y = tuple(sum((c * z[t] for c, z in zip(combination, dual)), algebra(0)) for t in range(d))
-                assert dot(v, y) == 1
+                y = tuple(sum((c * z[t] for c, z in zip(combination, dual)), lattices.zero()) for t in range(d))
+                assert dot(v, y) == lattices.one()
                 complement = self._tuple_span(index, [tuple(a - dot(m, y) * b for a, b in zip(m, v)) for m in lattice])
                 assert len(complement) == (rank - 1) * size
                 frame, coordinates = self._reframe(index, complement)
                 found = self._decompose(index, coordinates, accept)
                 if found is not None:
                     frees, x, ideal, accepted = found
-                    back = lambda c: tuple(sum((a * z[t] for a, z in zip(c, frame)), algebra(0)) for t in range(d))
+                    back = lambda c: tuple(sum((a * z[t] for a, z in zip(c, frame)), lattices.zero()) for t in range(d))
                     return [v, *(back(f) for f in frees)], back(x), ideal, accepted
 
     def _reframe(self, index, lattice):
         r"""Return ``(frame, coordinates)``: a `D`-basis `z_1, \ldots, z_r` of the `D`-span of the `d`-tuples ``lattice``, chosen among them, and
         the `r`-tuples `c` with `m = \sum_s c_s z_s` for its elements `m`."""
         lattices = self.division[index][1]
-        size = 4 * self.factors[index].degree()
+        size = len(lattices._q_basis)
         flat = lambda x: [c for b in x for c in lattices.coordinates(b)]
         block = lambda z: [flat(tuple(q * b for b in z)) for q in lattices._q_basis]
         frame, rows = [], []
@@ -912,13 +968,11 @@ class _DedekindModel:
         summand, `O_R(I)^\times` on `I x`, from the unit engines) and the elementary maps `b_s \mapsto b_s + a b_t` with `a` over a `Z`-basis of
         `\mathrm{Hom}`: `O` between free summands, `I` into `I x`, `(I : O)` out of it (Bass, *Algebraic K-theory*, Ch. V, elementary and diagonal
         generation in the stable range; Vaserstein, Ann. Math. 96 (1972), for orders satisfying the Eichler condition)."""
-        from sage_indefinite_port.indefinite.fuchsian_domain import quaternion_unit_engine
-
-        algebra, lattices, maximal, _units, _frame, _image = self.division[index]
+        _algebra, lattices, maximal, _units, _frame, _image = self.division[index]
         basis = [*frees, x]
         last = len(basis) - 1
-        free_units = quaternion_unit_engine(algebra, maximal).unit_generators() if frees else ()
-        ideal_units = quaternion_unit_engine(algebra, lattices.right_order(ideal)).unit_generators()
+        free_units = self._unit_engine(index, maximal).unit_generators() if frees else ()
+        ideal_units = self._unit_engine(index, lattices.right_order(ideal)).unit_generators()
         homs = lambda s, t: maximal if s < last and t < last else (ideal if s < last else self._colon(index, ideal, maximal))
         result = []
         for s in range(len(basis)):
@@ -943,19 +997,13 @@ class _DedekindModel:
         generator positive at the ramified real places (Swan 1980; Reiner, *Maximal Orders*, Thm. 34.9 and Sec. 35: `M_d(D)` satisfies the
         Eichler condition), and then the decomposition of `\epsilon_i M'` is searched for one whose ideal is isomorphic to `I`, `I' = I \delta`.
         `\varphi` sends `v_t \mapsto v'_t` and `x \mapsto \delta x'`."""
-        from sage.rings.real_mpfr import RealField
-        from sage_indefinite_port.indefinite.clifford_commutant import _reduced_norm_ideal
-        from sage_indefinite_port.indefinite.fuchsian_domain import positive_generator, ramified_real_places
-
-        algebra = self.division[index][0]
-        K = self.fields[index]
         source, target = self._vectors(index, maximal), self._vectors(index, target_maximal)
         source, target = self._tuple_span(index, source), self._tuple_span(index, target)
         frees, x, ideal, _ = self._decompose(index, source, lambda I: True)
         if frees:
             _f, _x, first, _ = self._decompose(index, target, lambda I: True)
-            ratio = _reduced_norm_ideal(K, first) / _reduced_norm_ideal(K, ideal)
-            if positive_generator(K, ratio, ramified_real_places(algebra, RealField(256))) is None:
+            ratio = self._norm_ideal(index, first) / self._norm_ideal(index, ideal)
+            if not self._stably_free(index, ratio):
                 return None
         found = self._decompose(index, target, lambda I: self._ideal_generator(index, ideal, I))
         if found is None:
@@ -1136,6 +1184,82 @@ class _DedekindModel:
                     return action
                 frontier.append(element)
         return None
+
+
+class _CubicDivision:
+    r"""The split model of a cubic division component `D = (L/K, \sigma, a)` of :class:`_DedekindModel`, for
+    :class:`~sage_indefinite_port.indefinite.semisimple_voronoi.SemisimpleOrderVoronoi`.
+
+    `D = \bigoplus_{i < 3} L u^i` with `u \ell = \sigma(\ell) u` and `u^3 = a`. Left multiplication on the right `L`-space `D` with basis `1, u,
+    u^2` is the splitting `D \otimes_K L \cong M_3(L)`: since `\ell u^m = u^m \sigma^{-m}(\ell)`, `\ell u^i` sends `u^j` to `u^m \sigma^{-m}(\ell)`,
+    times `a` when `i + j \ge 3`, `m = i + j \bmod 3` (Pierce, *Associative Algebras*, Sec. 15.1). `L/K` is Galois of odd degree over the
+    totally real `K`, so `L` is totally real, and so is the Galois closure `N` of `L/Q`, embedded in `R`. Each real place of `K` extends to an
+    embedding `L \to N`; one of them for each place gives `h_v : D \to M_3(N)` with `D \otimes R \cong \prod_v M_3(R)`."""
+
+    def __init__(self, model, index, x, u, L, roots, a):
+        from sage.rings.number_field.number_field import NumberField
+        from sage.rings.qqbar import AA
+
+        self.model, self.index, self.L, self.a = model, index, L, a
+        K, epsilon = model.fields[index], model.idempotents[index]
+        powers_x, powers_u = [epsilon, x, x * x], [epsilon, u, u * u]
+        self.basis = [powers_x[t] * powers_u[i] for i in range(3) for t in range(3)]
+        # sigma(l) = roots[0] (the Skolem-Noether element u of _cubic_trial), so sigma^{-1}(l) = roots[1].
+        self.conjugates = [L.gen(), roots[1], roots[0]]
+        absolute = L.absolute_field("b")
+        _from_absolute, self.to_absolute = absolute.structure()
+        closure = absolute.galois_closure("c")
+        self.field = NumberField(closure.polynomial(), "c", embedding=closure.polynomial().roots(AA)[0][0])
+        places, self.embeddings = [], []
+        for phi in absolute.embeddings(self.field):
+            place = AA(phi(self.to_absolute(L(K.gen()))))
+            if place not in places:
+                places.append(place)
+                self.embeddings.append(phi)
+        assert len(self.embeddings) == K.degree()
+        self.engines = {}
+
+    def split(self, y):
+        r"""Return the matrix in `M_3(L)` of ``y`` `\in D` (class docstring)."""
+        L = self.L
+        c = self.model._solve(self.index, y, self.basis)
+        result = matrix(L, 3, 3)
+        for i in range(3):
+            for j in range(3):
+                m = (i + j) % 3
+                entry = sum((L(c[3 * i + t]) * self.conjugates[m] ** t for t in range(3)), L(0))
+                result[m, j] += entry * (L(self.a) if i + j >= 3 else L(1))
+        return result
+
+    def places(self):
+        return [lambda y, phi=phi: self.split(y).apply_map(lambda e: phi(self.to_absolute(e)), self.field) for phi in self.embeddings]
+
+    def engine(self, key, order):
+        from sage_indefinite_port.indefinite.semisimple_voronoi import SemisimpleOrderVoronoi
+
+        if key not in self.engines:
+            center = (self.model.fields[self.index], lambda c: self.model._embed(self.index, c))
+            self.engines[key] = SemisimpleOrderVoronoi(order, splitting=(self.field, self.places()), center=center)
+        return self.engines[key]
+
+    def reduced_norm(self, y):
+        r"""Return `\mathrm{nrd}(y)`: `-f(0)` for the cubic minimal polynomial `f` over `K`, `c^3` for `y = c \in K`."""
+        f = self.model._k_minimal_polynomial(self.index, y)
+        return -f[0] if f.degree() == 3 else (-f[0]) ** 3
+
+    def norm_ideal(self, lattice):
+        r"""Return the ideal generated by `\mathrm{nrd}` on the `Z`-span of ``lattice``, which is `\mathrm{nrd}(I)` for a locally principal `I`
+        (`\mathrm{nrd}(O_p^\times) = O_{K,p}^\times`). The values of the cubic form `t \mapsto \mathrm{nrd}(\sum t_s b_s)` on `Z^m` are integral
+        combinations of its finite differences at `0`, which are combinations of its values at the `t \ge 0` with `\sum t_s \le 3`."""
+        from itertools import combinations_with_replacement
+
+        values = []
+        for size in range(1, 4):
+            for chosen in combinations_with_replacement(range(len(lattice)), size):
+                value = self.reduced_norm(sum((lattice[s] for s in chosen), 0 * lattice[0]))
+                if value != 0:
+                    values.append(value)
+        return self.model.fields[self.index].ideal(values)
 
 
 def _lattice_basis(vectors):

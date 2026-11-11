@@ -51,6 +51,9 @@ class OrderLattices:
     def zero(self):
         return self.algebra(0)
 
+    def inverse(self, x):
+        return ~self.algebra(x)
+
     def element(self, row):
         return sum((QQ(c) * q for c, q in zip(row, self._q_basis)), self.zero())
 
@@ -137,6 +140,12 @@ class MatrixAlgebraLattices(OrderLattices):
 
     def zero(self):
         return 0 * self._unit
+
+    def inverse(self, x):
+        r"""Return `x^{-1}` in `A`: the solution `y` of `x y = 1` in the span of the basis (``x`` invertible)."""
+        y = self.element(matrix(QQ, [(x * b).list() for b in self._q_basis]).solve_left(vector(QQ, self._unit.list())))
+        assert x * y == self._unit and y * x == self._unit, f"{x} is not invertible"
+        return y
 
     def trace(self, x):
         return QQ(x.trace())
