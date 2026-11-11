@@ -317,13 +317,16 @@ class Cusps:
 
     def neighbour_vector(self, v, b, partner, tilde, x0, prime, pi):
         r"""Return the cusp `u = \pi v + \lambda v' + x` of the `\mathfrak p`-neighbour at the line of ``x0`` `\in \tilde C = \mathfrak b^{-1} C`
-        (``tilde``), or ``None`` when the mod-2 lift does not exist (module docstring). ``partner`` must be even.
+        (``tilde``), or ``None`` when the lift modulo 2 (even partner) or 4 (odd partner) does not exist (module docstring).
 
-        `\tilde C` carries values in `J = \mathfrak b^{-2}`; the conditions `h(x, x) \in 2\pi^2 J` and `\lambda = -h(x, x)/(2\pi) \in \pi J` make
-        `u \in \mathfrak b^{-1} \Lambda`."""
+        `\tilde C` carries values in `J = \mathfrak b^{-2}`. For an even partner, `h(x, x) \in 2\pi^2 J` and `\lambda = -h(x, x)/(2\pi) \in \pi J`
+        make `u \in \mathfrak b^{-1} \Lambda`. For an odd partner, `c = h(v', v') \in \mathfrak b^2`, the isotropic `v' - (c/2) v \in K \Lambda`
+        replaces `v'`: `u = (\pi - \lambda c/2) v + \lambda v' + x` is isotropic, and `h(x, x) \in 4\pi^2 J` makes `\lambda c/2 \in \pi O_K`; the
+        condition modulo `4 J` depends on the correction `t_2` only modulo `2 \tilde C`, which is searched exhaustively."""
         h = self.h
         J = b**-2
-        assert h(partner, partner) == 0 and self._in(h(x0, x0), prime * J)
+        c0 = h(partner, partner)
+        assert self._in(h(x0, x0), prime * J)
         pivot = next(c for c in tilde if not self._in(h(x0, c), prime * J))
         residue = prime.residue_field()
         s = residue.lift(residue(-h(x0, x0) / (pi * 2 * h(x0, pivot))))
@@ -331,33 +334,64 @@ class Cusps:
         B = 1 - A
         x1 = x0 + pi * A * s * pivot
         square = pi**2
-        rho = _gf2_solution([self.coordinates.mod2(square * w) for w in self.coordinates.basis], self.coordinates.mod2(1))
-        assert rho is not None
-        rho = sum((r * w for r, w in zip(rho, self.coordinates.basis)), self.field(0))
-        beta = _gf2_solution([self._parity(J, h(c, c)) for c in tilde], self._parity(J, rho * h(x1, x1)))
-        if beta is None:
-            return None
-        x = x1 + pi * B * sum((ZZ(r) * c for r, c in zip(beta, tilde)), vector(self.field, self.n))
-        assert self._in(h(x, x) / (2 * square), J)
-        u = pi * v + (-h(x, x) / (2 * pi)) * partner + x
+        if c0 == 0:
+            rho = _gf2_solution([self.coordinates.mod2(square * w) for w in self.coordinates.basis], self.coordinates.mod2(1))
+            assert rho is not None
+            rho = sum((r * w for r, w in zip(rho, self.coordinates.basis)), self.field(0))
+            beta = _gf2_solution([self._parity(J, h(c, c)) for c in tilde], self._parity(J, rho * h(x1, x1)))
+            if beta is None:
+                return None
+            x = x1 + pi * B * sum((ZZ(r) * c for r, c in zip(beta, tilde)), vector(self.field, self.n))
+            assert self._in(h(x, x) / (2 * square), J)
+        else:
+            x = next(
+                (x1 + pi * B * t for t in self._residues(tilde, [2 * c for c in tilde]) if self._in(h(x1 + pi * B * t, x1 + pi * B * t) / (4 * square), J)),
+                None,
+            )
+            if x is None:
+                return None
+        lam = -h(x, x) / (2 * pi)
+        u = (pi - lam * c0 / 2) * v + lam * partner + x
         assert h(u, u) == 0
         return u
 
+    def perp_quotient(self, v):
+        r"""Return a `Z`-basis of a complement of `\mathfrak b v` in `v^\perp \cap \Lambda`, carrying the form of `v^\perp / \mathfrak b v`.
+
+        `\mathfrak b v` is saturated in `v^\perp \cap \Lambda`, so in the Smith form `D = U A V` of its coordinates `A` the first rows of
+        `V^{-1}` span it and the remaining rows span a complement."""
+        rows = matrix(QQ, [[c for c in self.coordinates.scalar(self.h(v, x))] for x in self.lam]).transpose()
+        kernel = matrix(ZZ, rows.denominator() * rows).right_kernel_matrix()
+        perp = [sum((ZZ(r) * x for r, x in zip(row, self.lam)), vector(self.field, self.n)) for row in kernel.rows()]
+        flat = matrix(QQ, [self.coordinates.flat(x) for x in perp])
+        line = [w * v for w in self.content(v).basis()]
+        A = matrix(ZZ, [flat.solve_left(self.coordinates.flat(x)) for x in line])
+        D, _U, V = A.smith_form()
+        assert all(D[i, i] == 1 for i in range(len(line)))
+        Vinv = V.inverse()
+        return [sum((ZZ(c) * x for c, x in zip(Vinv.row(i), perp)), vector(self.field, self.n)) for i in range(len(line), len(perp))]
+
     def cusp_classes(self, prime=None):
         r"""Return the cusp classes reached by iterated `\mathfrak p`-neighbours from `\mathfrak a_e e`, as dicts with the cusp ``vector``, its
-        ``content``, ``partner``, ``complement``, ``even`` and, when the line lies in `O(\Lambda) \mathfrak a_e e`, its ``link``. Classes are
-        distinct by the invariant (parity of the partner, isometry class of `v^\perp/v`); the first is `e`."""
+        ``content``, ``divisor``, ``partner`` (``None`` for a divisor `\ne O_K`), ``complement`` (a basis of `v^\perp / v`), ``even`` (``None``
+        without a partner) and, when the line lies in `O(\Lambda) \mathfrak a_e e`, its ``link``. Classes are distinct by the invariant
+        (divisor, isometry class of `v^\perp/v`) with the parity of the partner as a further invariant; the first is `e`. Every class with a
+        partner, even or odd, is expanded."""
         if prime is None:
             prime, pi = self.good_prime()
         else:
             pi = prime.gens_reduced()[0]
+        one = self.field.ideal(1)
         classes = [
-            dict(vector=self.e, content=self.ae, partner=self.f, complement=list(self.lattice.z_basis), even=True, link=identity_matrix(self.field, self.n))
+            dict(
+                vector=self.e, content=self.ae, divisor=one, partner=self.f, complement=list(self.lattice.z_basis), even=True,
+                link=identity_matrix(self.field, self.n),
+            )
         ]
         queue = [0]
         while queue:
             current = classes[queue.pop()]
-            if not current["even"]:
+            if current["partner"] is None:
                 continue
             tilde = self.scaled_complement(current["content"], current["complement"])
             for x0 in self._residues(tilde, [pi * c for c in tilde]):
@@ -366,16 +400,21 @@ class Cusps:
                 u = self.neighbour_vector(current["vector"], current["content"], current["partner"], tilde, x0, prime, pi)
                 if u is None:
                     continue
+                divisor = self.divisor(u)
                 framed = self.frame(u)
                 if framed is None:
-                    continue
-                content, partner, new, even = framed
+                    content, partner, new, even = self.content(u), None, self.perp_quotient(u), None
+                else:
+                    content, partner, new, even = framed
                 if any(
-                    c["even"] == even and lattice_isometry(self.field, self.sign, self.lattice.gram, c["complement"], self.lattice.gram, new) is not None
+                    c["divisor"] == divisor
+                    and c["even"] == even
+                    and lattice_isometry(self.field, self.sign, self.lattice.gram, c["complement"], self.lattice.gram, new) is not None
                     for c in classes
                 ):
                     continue
-                classes.append(dict(vector=u, content=content, partner=partner, complement=new, even=even, link=self.link(u)))
+                link = self.link(u) if even else None
+                classes.append(dict(vector=u, content=content, divisor=divisor, partner=partner, complement=new, even=even, link=link))
                 queue.append(len(classes) - 1)
         return classes
 
