@@ -36,7 +36,7 @@ An issue comment, a handoff or an earlier goal is a claim. Before you trust a ro
 | #15 | `edge_directions` at multi-component cusps (`edgewalk.py:1358-1372`, takes `omitted[0]` without proof); tied candidates; unverified corner vertices; raw `int(entry)` (`edgewalk.py:1073`, `edgewalk_rank2.py:48`) | Red reproducer for each observed defect, then the source-faithful fix | done |
 | #15 | Loop defects: the `scaled_max ≤ 0` guard and the `_upper_bound` doubling (`lorentzian_cells.py:5789`) | Reproducer or termination proof | done |
 | #70 | Regression: line-stabilizer generators on the Enriques N lattice against the exact stabilizer | Generated group equals the stabilizer | done |
-| #4 | Generators of O⁺(L) and O^Ω(L) for the consumer, including O^Ω on T_Co; the O⁺ (2,2) reflection check (`prov/lattices.py:4131`) | Check the owning issue; then a small example of each | open |
+| #4 | Generators of O⁺(L) and O^Ω(L) for the consumer, including O^Ω on T_Co; the O⁺ (2,2) reflection check (`prov/lattices.py:4131`) | Check the owning issue; then a small example of each | done |
 
 ## Verification
 
