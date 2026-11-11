@@ -1125,8 +1125,7 @@ class CentralFieldCommutant:
     def _first_kind_isotropic(self, vectors, gram):
         r"""Return a null vector of the symmetric `h` on the `K`-span of ``vectors``, or ``None`` if none is found.
 
-        Gram-Schmidt gives an orthogonal `K`-basis `u_i` with values `a_i`. A binary span is isotropic exactly when
-        `-a_1 a_2` is a square; a ternary diagonal subform is decided by Sage's number-field conic.
+        Gram-Schmidt gives an orthogonal `K`-basis `u_i` with values `a_i`, and :func:`_diagonal_null` searches `\langle a_i \rangle`.
         """
         K = self.field
         frame = []
@@ -1142,15 +1141,10 @@ class CentralFieldCommutant:
                 return x
             orthogonal.append(x)
             values.append(value)
-        if len(orthogonal) == 2:
-            ratio = -values[1] / values[0]
-            return orthogonal[0] * ratio.sqrt() + orthogonal[1] if ratio.is_square() else None
-        for i, j, k in combinations(range(len(orthogonal)), 3):
-            found, point = Conic(K, [values[i], values[j], values[k]]).has_rational_point(point=True)
-            if found:
-                X, Y, Z = list(point)
-                return X * orthogonal[i] + Y * orthogonal[j] + Z * orthogonal[k]
-        return None
+        point = _diagonal_null(K, values)
+        if point is None:
+            return None
+        return sum(c * u for c, u in zip(point, orthogonal))
 
     def _orthogonal_pair(self, vectors, gram, v):
         r"""Return `f \in` span(``vectors``) with `h(f, f) = 0`, `h(f, v) = 1`, or ``None``.
@@ -1199,8 +1193,9 @@ class CentralFieldCommutant:
         v2 = self._first_kind_isotropic(rest, scaled)
         if v2 is None:
             raise NotImplementedError(
-                f"{self.description()}: Lambda = H + M with M found anisotropic in its ternary subforms; O(Lambda) for one "
-                f"hyperbolic plane is not implemented (GHS Prop. 3.3 needs two) (#54)"
+                f"{self.description()}: Lambda = H + M and the diagonal null search of M found no null vector; for M anisotropic "
+                f"over K the Witt index of Lambda is one, the Eichler criterion (GHS Prop. 3.3) needs two hyperbolic planes, and "
+                f"O(Lambda) needs a reflective or Voronoi-type fundamental domain over O_K (#54)"
             )
         v2 = self._primitive(v2, matrix(QQ, [self._q_vector(x) for x in rest]))
         if K.ideal([self.h(x, v2, scaled) for x in rest]) != K.ideal(1):
@@ -2108,6 +2103,52 @@ def equivariant_transporter(commutant, target_gram, targets):
     if all(x * y == y * x for x in commutant.order_basis for y in commutant.order_basis):
         return EtaleCommutant(commutant).equivariant_transporter(target_gram, targets)
     raise NotImplementedError(_missing_group(commutant))
+
+
+NULL_SEARCH_BOUND = 3
+
+
+def _diagonal_null(field, values):
+    r"""Return a nonzero null vector of `\langle a_1, \ldots, a_m \rangle` over the number field ``field``, or ``None``.
+
+    `m = 1` has none; `m = 2` is isotropic exactly when `-a_1 a_2` is a square; `m = 3` is decided by Sage's number-field conic
+    (``has_rational_point``). For `m \ge 4` the form is `\langle a_1, a_2 \rangle \perp \langle a_3, \ldots, a_m \rangle`, and a null vector with
+    `(x_1, x_2) \ne 0` is a value `c = a_1 x_1^2 + a_2 x_2^2 \ne 0` that `\langle a_3, \ldots \rangle` represents as `-c`, i.e. a null vector
+    `(t, y)` of `\langle c, a_3, \ldots, a_m \rangle` with `t \ne 0`; one with `t = 0` is a null vector of `\langle a_3, \ldots \rangle` (Lam,
+    *Introduction to Quadratic Forms over Fields*, Ch. I, Thm. 3.4; Cassels, *Rational Quadratic Forms*, Ch. 6, Lemma 2.4, the reduction
+    behind Hasse-Minkowski). The values `c` are taken over `x_1, x_2` with `O_K`-coordinates in `[-B, B]`, `B \le` :data:`NULL_SEARCH_BOUND`;
+    ``None`` for `m \ge 4` means the search found no null vector, not that the form is anisotropic.
+    """
+    values = [field(a) for a in values]
+    m = len(values)
+    if m <= 1:
+        return None
+    if m == 2:
+        ratio = -values[1] / values[0]
+        return [ratio.sqrt(), field.one()] if ratio.is_square() else None
+    if m == 3:
+        found, point = Conic(field, values).has_rational_point(point=True)
+        return list(point) if found else None
+    tail = _diagonal_null(field, values[2:])
+    if tail is not None:
+        return [field.zero(), field.zero(), *tail]
+    integers = field.ring_of_integers().basis()
+    seen = set()
+    for bound in range(1, NULL_SEARCH_BOUND + 1):
+        box = [sum(c * b for c, b in zip(coefficients, integers)) for coefficients in product(range(-bound, bound + 1), repeat=len(integers))]
+        for x1, x2 in product(box, repeat=2):
+            c = values[0] * x1**2 + values[1] * x2**2
+            if c == 0 or c in seen:
+                continue
+            seen.add(c)
+            point = _diagonal_null(field, [c, *values[2:]])
+            if point is None or point[0] == 0:
+                continue
+            tail = [y / point[0] for y in point[1:]]
+            null = [x1, x2, *tail]
+            assert sum(a * z**2 for a, z in zip(values, null)) == 0
+            return null
+    return None
 
 
 def _cyclic_words(isometries, v):

@@ -852,3 +852,15 @@ def test_skew_hermitian_quaternion_transporters():
     t = equivariant_transporter(commutant, moved, sources)
     assert t is not None and _is_transporter(t, gram, moved, sources, sources)
     assert equivariant_transporter(commutant, int(3) * gram, sources) is None
+
+
+def test_diagonal_null_vector_beyond_ternary_subforms():
+    r"""`<1, 1, 1, 1, -7>` over `Q(sqrt 2)` is isotropic (`2^2 + 1 + 1 + 1 = 7`); `<1, 1, 1, -7>` over `Q` is not (`7` is not a sum of three
+    rational squares), so a null vector needs all five coordinates or the quaternary reduction."""
+    from sage_indefinite_port.indefinite.commutant_groups import _diagonal_null
+
+    field = QuadraticField(int(2), "r")
+    values = [int(1), int(1), int(1), int(1), int(-7)]
+    null = _diagonal_null(field, values)
+    assert null is not None and any(z != int(0) for z in null)
+    assert sum(a * z**int(2) for a, z in zip(values, null)) == int(0)
