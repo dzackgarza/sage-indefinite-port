@@ -50,6 +50,7 @@ marked transporter of the cyclic `F`-span of the vector.
 Other noncompact commutants raise :class:`NotImplementedError` naming the missing group.
 """
 
+from random import Random
 from itertools import combinations, product
 
 from sage.arith.functions import lcm
@@ -108,18 +109,38 @@ def intertwiner_basis(sources, targets):
 def rational_intertwiner(sources, targets):
     r"""Return an invertible rational intertwiner, or ``None`` when there is none.
 
-    `\det(\sum x_m t_m)` is a polynomial of degree `r` in the coordinates. If it is not zero,
-    it is not zero at a point of `\{0, \ldots, r\}^n` (Schwartz, J. ACM 27 (1980), Lemma 1).
+    `P(x) = \det(\sum x_m t_m)` is a polynomial of degree `r` in the `n` coordinates. A point with
+    `P \ne 0` certifies an invertible intertwiner. Points are drawn from `\{-N, \ldots, N\}^n` with
+    `N = 10 r`; when `P \ne 0` each draw is a zero of `P` with probability at most `r / (2N + 1) < 1/20`
+    (Schwartz, J. ACM 27 (1980), Lemma 1). After the draws, `P` is computed exactly: `P = 0` proves
+    that no invertible intertwiner exists, and otherwise a nonzero point is found one coordinate at
+    a time, since a nonzero polynomial of degree `\le r` in `x_1` vanishes identically at `\le r`
+    values of `x_1`.
     """
     basis = intertwiner_basis(sources, targets)
     if not basis:
         return None
     r = sources[0].nrows()
-    for values in product(range(r + 1), repeat=len(basis)):
+    draws = Random(0)
+    bound = 10 * r
+    for _attempt in range(24):
+        values = [draws.randint(-bound, bound) for _m in basis]
         candidate = sum(c * m for c, m in zip(values, basis))
         if candidate.det() != 0:
             return candidate
-    return None
+    ring = PolynomialRing(QQ, "x", len(basis))
+    generic = sum((x * m.change_ring(ring) for x, m in zip(ring.gens(), basis)), matrix(ring, r, r))
+    polynomial = generic.det()
+    if polynomial == 0:
+        return None
+    point = []
+    for x in ring.gens():
+        value = next(c for c in range(r + 1) if polynomial.subs({x: c}) != 0)
+        polynomial = polynomial.subs({x: value})
+        point.append(value)
+    candidate = sum(c * m for c, m in zip(point, basis))
+    assert candidate.det() != 0
+    return candidate
 
 
 def solution_lattice(commutant, start):
