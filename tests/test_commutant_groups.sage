@@ -20,10 +20,28 @@ so v = +-(2 + j)^n, the norm-one units of Z[sqrt 3]. One with n(v) = -1 anticomm
 with x^2 - 3 y^2 = -1, which has no solution modulo 3. So C(Z) = <-1> x <R_{2+j}>.
 
 A transporter to the Gram matrix 3B has determinant squared 1/3^r, so there is none.
+
+Levi commutant. On L = M + M, M = U + <2>, F = E + E has commutant M_2(Q[E - 1]), with radical
+M_2((E - 1)) and Levi quotient M_2(Q). With s the reflection in g of the second summand,
+t = 1 + s carries F to E + E^{-1}, so the Levi transporter exists.
+
+Gaussian hyperbolic plane. L = Z[i]^2 with b = Re h, h(x, y) = x_1 conj(y_2) + x_2 conj(y_1), and F
+the multiplication by i. The commutant is M_2(Q(i)), centre Q(i), with the second-kind adjoint of h,
+and C(Z) = U(1,1; Z[i]). Its scalar units u I, u in mu_4, are the generators D_u of the model
+(D_u = diag(u, conj(u)^{-1}) = u I), and they are F, -1, -F in every basis; T is unipotent.
+
+Real quadratic symplectic. L = O^2 (x) O^2, O = Z[sqrt 2], with b = Tr(w (x) w), w the standard
+alternating form, and F_i = 1 (x) g for g in E_12(1), E_21(1), diag(u, u^{-1}), u = 1 + sqrt 2. These
+generate 1 (x) M_2(K), so A = M_2(K) (x) 1 with the symplectic adjoint of w and C(Z) = SL_2(O) (x) 1.
+The model generator diag(u, u^{-1}) has eigenvalues u, u^{-1} and their conjugates, each twice on Q^8,
+so characteristic polynomial (x^2 - 2x - 1)^2 (x^2 + 2x - 1)^2 for every choice of fundamental unit.
 """
 
 from sage_extensions.all import *
 from sage.algebras.quatalg.quaternion_algebra import QuaternionAlgebra
+from sage.matrix.special import identity_matrix as sage_identity
+from sage.rings.number_field.number_field import QuadraticField
+from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.matrix.constructor import matrix as sage_matrix
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
@@ -160,3 +178,77 @@ def test_orthogonal_quaternion_transporters():
     t = equivariant_transporter(commutant, gram, moved)
     assert t is not None and _is_transporter(t, gram, gram, sources, moved)
     assert equivariant_transporter(commutant, int(3) * gram, sources) is None
+
+
+def test_levi_transporter_to_the_inverse_on_one_summand():
+    gram, E = _eichler()
+    big = gram.block_sum(gram)
+    F = E.block_sum(E)
+    commutant = IsometryCommutant(big, [F])
+    target = E.block_sum(E.inverse().change_ring(SageZZ))
+    t = equivariant_transporter(commutant, big, [target])
+    assert t is not None and _is_transporter(t, big, big, [F], [target])
+    assert equivariant_transporter(commutant, int(3) * big, [F]) is None
+
+
+def _gaussian_plane():
+    entries = [int(c) for c in (0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0)]
+    gram = sage_matrix(SageZZ, int(4), int(4), entries)
+    rotation = [int(c) for c in (0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0)]
+    return gram, sage_matrix(SageZZ, int(4), int(4), rotation)
+
+
+def test_gaussian_hyperbolic_centralizer_contains_the_scalar_units():
+    gram, F = _gaussian_plane()
+    generators = centralizer_generators(IsometryCommutant(gram, [F]))
+    one = sage_identity(SageZZ, int(4))
+    assert all(g * F == F * g and g.transpose() * gram * g == gram for g in generators)
+    assert F in generators and -one in generators and -F in generators
+    assert any(g != one and (g - one) ** int(2) == int(0) for g in generators)
+
+
+def _symplectic_tensor_lattice():
+    field = QuadraticField(int(2), "s")
+    root = field.gen()
+    omega = ((int(0), int(1)), (int(-1), int(0)))
+
+    def pairing(x, y):
+        return sum(
+            x[int(2) * a + b] * y[int(2) * c + d] * omega[a][c] * omega[b][d]
+            for a in range(int(2)) for b in range(int(2)) for c in range(int(2)) for d in range(int(2))
+        )
+
+    frame = []
+    for i in range(int(4)):
+        for scalar in (field.one(), root):
+            v = [field.zero()] * int(4)
+            v[i] = scalar
+            frame.append(v)
+    gram = sage_matrix(SageZZ, [[SageZZ(pairing(x, y).trace()) for y in frame] for x in frame])
+
+    def on_lattice(block):
+        images = []
+        for v in frame:
+            image = block * sage_matrix(field, int(4), int(1), v)
+            images.append([SageQQ(c) for i in range(int(4)) for c in image[i, int(0)].list()])
+        return sage_matrix(SageZZ, images).transpose()
+
+    one = sage_identity(field, int(2))
+    unit = int(1) + root
+    moves = [
+        sage_matrix(field, int(2), int(2), [int(1), int(1), int(0), int(1)]),
+        sage_matrix(field, int(2), int(2), [int(1), int(0), int(1), int(1)]),
+        sage_matrix(field, int(2), int(2), [unit, int(0), int(0), ~unit]),
+    ]
+    return gram, [on_lattice(one.tensor_product(g)) for g in moves]
+
+
+def test_real_quadratic_symplectic_centralizer():
+    gram, sources = _symplectic_tensor_lattice()
+    generators = centralizer_generators(IsometryCommutant(gram, sources))
+    one = sage_identity(SageZZ, int(8))
+    assert all(g.transpose() * gram * g == gram and all(g * F == F * g for F in sources) for g in generators)
+    assert -one in generators
+    x = PolynomialRing(SageQQ, "x").gen()
+    expected = (x**int(2) - int(2) * x - int(1)) ** int(2) * (x**int(2) + int(2) * x - int(1)) ** int(2)
+    assert any(g.charpoly() == expected for g in generators)
