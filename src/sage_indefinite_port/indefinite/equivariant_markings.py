@@ -202,6 +202,23 @@ def _endomorphism_unit_generators(actions, size):
     """
     if size == 0:
         return ()
+    order_basis = _endomorphism_order_basis(actions, size)
+    if len(order_basis) == size**2:
+        return tuple(matrix(ZZ, g) for g in _general_linear_generators(size))
+    if _is_etale_order(order_basis):
+        return _commutative_unit_generators(order_basis, size)
+    return _hyperbolic_unit_generators(actions, size)
+
+
+def _is_etale_order(order_basis):
+    r"""Decide whether the order spans a commutative algebra with nondegenerate trace form, i.e. an etale `Q`-algebra."""
+    commutative = all(x * y == y * x for x in order_basis for y in order_basis)
+    form = matrix(QQ, [[(x * y).trace() for y in order_basis] for x in order_basis])
+    return commutative and form.det() != 0
+
+
+def _endomorphism_order_basis(actions, size):
+    r"""Return a `Z`-basis of the order `\{a \in M_k(Z) : a E_i = E_i a\}`."""
     rows = []
     for E in actions:
         E = matrix(ZZ, E)
@@ -213,14 +230,7 @@ def _endomorphism_unit_generators(actions, size):
                     row[i * size + k] += E[k, j]
                 rows.append(row)
     equations = matrix(ZZ, rows) if rows else matrix(ZZ, 0, size**2)
-    order_basis = tuple(matrix(ZZ, size, size, list(v)) for v in equations.right_kernel().basis())
-    if len(order_basis) == size**2:
-        return tuple(matrix(ZZ, g) for g in _general_linear_generators(size))
-    commutative = all(x * y == y * x for x in order_basis for y in order_basis)
-    form = matrix(QQ, [[(x * y).trace() for y in order_basis] for x in order_basis])
-    if commutative and form.det() != 0:
-        return _commutative_unit_generators(order_basis, size)
-    return _hyperbolic_unit_generators(actions, size)
+    return tuple(matrix(ZZ, size, size, list(v)) for v in equations.right_kernel().basis())
 
 
 def _hyperbolic_unit_generators(actions, size):
