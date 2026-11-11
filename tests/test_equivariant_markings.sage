@@ -25,7 +25,7 @@ from sage_extensions.all import *
 from sage.matrix.constructor import matrix as sage_matrix
 from sage.matrix.special import identity_matrix as sage_identity
 from sage.rings.integer_ring import ZZ as SageZZ
-from sage_indefinite_port.indefinite.equivariant_markings import EquivariantMarking, invisible_source_automorphism_generators, source_automorphism_kernel_generators
+from sage_indefinite_port.indefinite.equivariant_markings import CentralizerTupleOrbit, EquivariantMarking, _endomorphism_unit_generators, invisible_source_automorphism_generators, source_automorphism_kernel_generators
 
 
 def _m(rows):
@@ -279,3 +279,31 @@ def test_degenerate_setwise_stabilizer_with_a_non_scalar_radical_action():
         restrictions.append(_m(X.solve_right(image)))
     two = sage_identity(SageZZ, int(2))
     assert set(_closure(restrictions, two)) == set(m.str() for m in (two, -two, s, -s))
+
+
+def test_setwise_stabilizer_of_a_degenerate_span_that_is_not_invariant():
+    r"""L = U + U, F = F2 the swap of the planes, Lambda = Z e1: isotropic, so degenerate, and F e1 = e2 is not in
+    Lambda_Q. -1 commutes with F and sends e1 to -e1, so the image of the setwise stabilizer on Lambda is {+-1},
+    and a generating set must contain an element acting by -1 on e1."""
+    e1 = _m([[1], [0], [0], [0]])
+    orbit = CentralizerTupleOrbit(U2, [F2], e1)
+    generators = orbit.setwise_stabilizer_generators()
+    for g in generators:
+        assert g * F2 == F2 * g and g.transpose() * _m(U2) * g == _m(U2)
+        assert g * e1 in (e1, -e1)
+    assert any(g * e1 == -e1 for g in generators)
+
+
+def test_unit_group_of_an_endomorphism_order_with_radical():
+    r"""E = [[1, 1], [0, 1]] = 1 + N with N^2 = 0. Its commutant in M_2(Z) is Z[N] = Z + Z N, commutative with radical
+    Z N, so its unit group is {s (1 + n N) : s = +-1, n in Z}, isomorphic to Z/2 x Z by s (1 + n N) -> (s, n). A set
+    generates it exactly when the images (e, n), e = 0 for s = 1 and e = 1 for s = -1, together with (2, 0), span Z^2."""
+    E = _m([[1, 1], [0, 1]])
+    generators = _endomorphism_unit_generators([E], int(2))
+    rows = [[int(2), int(0)]]
+    for g in generators:
+        assert g * E == E * g and g.det() in (int(1), int(-1))
+        s = g[0, 0]
+        assert s in (int(1), int(-1)) and g[1, 1] == s and g[1, 0] == 0
+        rows.append([int(0) if s == 1 else int(1), int(g[0, 1] * s)])
+    assert _m(rows).elementary_divisors()[:2] == [int(1), int(1)]
