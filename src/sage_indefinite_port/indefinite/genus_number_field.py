@@ -11,7 +11,8 @@ vector of content `\mathfrak a_e` passes the test below; the heights are `N(y \m
 Isometry test. For totally definite `M` of sign `s`, an `O_K`-isometry is a `Z`-isometry of the pairs of `Z`-lattices with the forms
 `s \mathrm{Tr}(h), \mathrm{Tr}(\theta h), \ldots, \mathrm{Tr}(\theta^{d-1} h)`, `\theta` a generator of `K`: these forms determine `h`, and a
 `Z`-map preserving `h` is `O_K`-linear by nondegeneracy (`h(g(\lambda x), g y) = \lambda h(x, y) = h(\lambda g x, g y)`). PARI ``qfisom``
-(Plesken-Souvignier) decides it. Rank one: `\mathfrak a t \cong \mathfrak b t'` iff `\mathfrak b \mathfrak a^{-1} = (\gamma)` is principal and
+(Plesken-Souvignier) decides it. Otherwise (indefinite or mixed signs) an `O_K`-isometry is a `Z`-isometry of `\mathrm{Tr}(h)` commuting with the
+self-adjoint multiplication by an integral primitive element, decided by ``commutant_groups.equivariant_transporter``. Rank one: `\mathfrak a t \cong \mathfrak b t'` iff `\mathfrak b \mathfrak a^{-1} = (\gamma)` is principal and
 `h(t, t) / (\gamma^2 h(t', t'))` is the square of a unit.
 
 Cusps. For a primitive isotropic `v \in \Lambda` of divisor `h(v, \Lambda) = O_K` there is `v'` with `h(v, v') = 1` (an integral solution
@@ -141,6 +142,43 @@ def _rank_one_module(basis):
     return field.ideal([x[j] / t[j] for x in basis]), t, j
 
 
+def _multiplication(field, theta, basis):
+    r"""Return the integer matrix of `x \mapsto \theta x` on the `Z`-basis ``basis`` (columns are images)."""
+    coordinates = _Coordinates(field)
+    flat = matrix(QQ, [coordinates.flat(x) for x in basis])
+    columns = [flat.solve_left(coordinates.flat(theta * x)) for x in basis]
+    return matrix(ZZ, columns).transpose()
+
+
+def _commutant_isometry(field, gram_a, basis_a, gram_b, basis_b):
+    r"""Return the images of ``basis_a`` under an `O_K`-isometry onto the span of ``basis_b``, or ``None``, for lattices of any signature.
+
+    An `O_K`-isometry is a `Z`-isometry of `\mathrm{Tr}(h)` commuting with multiplication by an integral primitive element `\theta`
+    (`\mathrm{Tr}(h)` determines `h` together with `\theta`-linearity: `\mathrm{Tr}(c\, h(x, y)) = \mathrm{Tr}(h(c x, y))`). Multiplication by
+    `\theta` is `\mathrm{Tr}(h)`-self-adjoint. ``equivariant_transporter`` returns `t` with `t^t B_b t = B_a` and `t F_a = F_b t`, so
+    `x = \sum c_j a_j \mapsto \sum (t c)_i b_i`."""
+    from sage_indefinite_port.indefinite.commutant_groups import equivariant_transporter
+    from sage_extensions.algebras.isometry_commutant import IsometryCommutant
+
+    d = field.degree()
+    coordinates = _Coordinates(field)
+    theta = next(w for w in coordinates.basis if w.minpoly().degree() == d)
+    trace_a = _trace_forms(field, gram_a, basis_a, 1)[0]
+    trace_b = _trace_forms(field, gram_b, basis_b, 1)[0]
+    scale = ZZ(trace_a.denominator()).lcm(trace_b.denominator())
+    source = _multiplication(field, theta, basis_a)
+    target = _multiplication(field, theta, basis_b)
+    t = equivariant_transporter(IsometryCommutant(matrix(ZZ, scale * trace_a), [source]), matrix(ZZ, scale * trace_b), [target])
+    if t is None:
+        return None
+    n = len(basis_b[0])
+    images = [sum((t[i, j] * basis_b[i] for i in range(len(basis_b))), vector(field, n)) for j in range(len(basis_a))]
+    assert all(
+        _pairing(gram_b, images[i], images[j]) == _pairing(gram_a, basis_a[i], basis_a[j]) for i in range(len(images)) for j in range(len(images))
+    )
+    return images
+
+
 def lattice_isometry(field, sign, gram_a, basis_a, gram_b, basis_b):
     r"""Return the images in `K^n` of ``basis_a`` under an `O_K`-isometry onto the span of ``basis_b``, or ``None`` (module docstring).
 
@@ -163,10 +201,7 @@ def lattice_isometry(field, sign, gram_a, basis_a, gram_b, basis_b):
         s = gamma * ratio.sqrt()
         return [(x[ja] / ta[ja]) * s * tb for x in basis_a]
     if sign == 0:
-        raise NotImplementedError(
-            f"isometry test of rank-{rank} O_K-lattices over {field} that are not totally definite: the commutant transporter route of "
-            f"commutant_groups.equivariant_transporter for the anisotropic indefinite case is needed (#54)"
-        )
+        return _commutant_isometry(field, gram_a, basis_a, gram_b, basis_b)
     forms_a = _trace_forms(field, gram_a, basis_a, sign)
     forms_b = _trace_forms(field, gram_b, basis_b, sign)
     scale = ZZ(1)

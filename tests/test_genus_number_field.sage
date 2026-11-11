@@ -56,3 +56,19 @@ def test_sqrt5_neighbour_of_three_squares_is_three_squares():
     _content, partner, complement, _even = cusps.frame(u)
     assert lattice.h(u, partner) == int(1)
     assert lattice_isometry(field, int(1), gram, list(lattice.z_basis), gram, complement) is not None
+
+
+def test_indefinite_binary_isometry_over_sqrt5():
+    r"""`M = \langle 1, -3 \rangle` over `O_K`, `K = Q(\sqrt 5)`: indefinite at both real places, so the trace-form commutant route decides
+    it. A unimodular basis change `T` gives an isometric lattice, and the returned images reproduce the Gram matrix. `\langle 1, -7 \rangle` is
+    not isometric: an isometry preserves the determinant ideal, and `(3) \ne (7)`."""
+    field = QuadraticField(int(5), "s")
+    gram = sage_matrix(field, [[int(1), int(0)], [int(0), int(-3)]])
+    phi = (int(1) + field.gen()) / int(2)
+    T = sage_matrix(field, [[int(1), phi], [int(0), int(1)]])
+    changed = T.transpose() * gram * T
+    basis = standard_z_basis(field, int(2))
+    images = lattice_isometry(field, int(0), gram, basis, changed, basis)
+    assert images is not None and len(images) == int(4)
+    other = sage_matrix(field, [[int(1), int(0)], [int(0), int(-7)]])
+    assert lattice_isometry(field, int(0), gram, basis, other, basis) is None
