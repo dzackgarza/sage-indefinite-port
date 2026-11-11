@@ -657,3 +657,20 @@ def isotropic_vector_orbits(lattice, constants):
     gram_b = _gram(lattice)
     bound = max(embedding_orbit_bound(gram_b, gram, constants) for gram in isotropic_pair_grams(lattice))
     return isotropic_vector_orbits_in_box(lattice, bound)
+
+
+def primitive_vector_orbits(lattice, square):
+    r"""Return one primitive vector of square ``square`` per `O(L)`-orbit, complete by the proved box.
+
+    The constants are :func:`default_constants` of the rank, so the box is the theorem's box and the result
+    is the full orbit set, not a statement about a chosen box. For ``square = 0`` the vectors are the cusps
+    of `L` (Li-Margulis, *Effective estimates on integral quadratic forms: Masser's conjecture, generators of
+    orthogonal groups, and bounds in reduction theory*, Geom. Funct. Anal. 26 (2016), Thm. 4 and Lemma 20,
+    through :func:`isotropic_vector_orbits`); otherwise they are the primitive embeddings of `<square>`
+    (:func:`embedding_orbits`). Both keep one member per orbit by the exact :func:`marked_transporter`.
+    No Witt-index hypothesis enters, so this covers rational Witt index one of every rank.
+    """
+    constants = default_constants(int(lattice.module_rank()))
+    if square == 0:
+        return isotropic_vector_orbits(lattice, constants)
+    return tuple(pair[0] for pair in embedding_orbits(lattice, ((int(square),),), constants))

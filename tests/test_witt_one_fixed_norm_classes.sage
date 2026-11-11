@@ -212,3 +212,29 @@ def test_recursion_uses_the_hilbert_cusps_at_witt_index_one():
     null = recursion.primitive_vector_classes(lattice, int(0))
     assert len(null) == int(1)
     assert int(lattice.b(null[0].representative, null[0].representative)) == int(0)
+
+
+def test_sqrt_ten_cusp_link_joins_the_two_cusps():
+    r"""The non-principal cusp vector e_c of Q(sqrt 10) is in the O(L)-orbit of e_O (comment above), but not in
+    its SL_2(O)-orbit, since its column ideal (2, sqrt 10) is not principal. So O(L) needs the link e_c -> e_O.
+    """
+    classes = _sqrt_ten_classes()
+    gram = HilbertWittOneLattice(int(10)).gram()
+    links = classes.cusp_links()
+    assert len(links) == int(1)
+    assert _is_transporter(links[int(0)], classes._cusp_vector(int(1)), _v(1, 0, 0, 0), gram)
+
+
+def test_sqrt_ten_public_generators_contain_the_cusp_link():
+    from sage.matrix.constructor import matrix as sage_matrix
+    from sage_indefinite_port.indefinite.witt_one_hilbert import recognized_generators
+
+    L = Lattices(ZZ)("U") + Lattices(ZZ)([[int(2), int(0)], [int(0), int(-20)]])
+    frame = tuple(L.module_generators())
+    gram = sage_matrix(SageZZ, [[int(L.b(x, y)) for y in frame] for x in frame])
+    generators = recognized_generators(L)
+    model_count = len(HilbertWittOneLattice(int(10)).generators())
+    assert len(generators) == model_count + int(1)
+    for g in generators:
+        assert g.transpose() * gram * g == gram
+        assert int(abs(g.det())) == int(1)

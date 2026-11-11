@@ -548,7 +548,11 @@ def _witt_zero_generators(lattice):
 
 
 def _witt_one_generators(lattice):
-    r"""Return isometries generating ``O(L)`` from the Hilbert modular model, or ``None``."""
+    r"""Return isometries generating ``O(L)`` from the Hilbert modular model, or ``None``.
+
+    For every real quadratic maximal order: Vaserstein's generation of ``SL_2(O)`` by elementary matrices plus
+    the exact cusp links (:func:`recognized_generators`).
+    """
     from sage_indefinite_port.indefinite.witt_one_hilbert import recognized_generators
 
     matrices = recognized_generators(lattice)
@@ -2224,13 +2228,21 @@ class EichlerRecursion:
         # rational hyperbolic pairs of the Eichler envelope.
         if square == 0 and not lattice.is_isotropic():
             return ()
-        # Rational Witt index one in rank four has no second hyperbolic pair
-        # for the Eichler envelope (#40); the Hilbert model decides its
-        # classes, isotropic ones included, by its cusps.
-        if int(lattice.module_rank()) == 4 and int(lattice.witt_index()) == 1:
+        # Rational Witt index one has no second hyperbolic pair for the
+        # Eichler envelope (#40). A recognized rank-four Hilbert model decides
+        # its classes, isotropic ones included, by the cusps of SL_2(O); every
+        # other Witt-index-one lattice uses the proved Li-Margulis box, whose
+        # isotropic orbits are its cusps.
+        if int(lattice.witt_index()) == 1:
+            from sage_indefinite_port.indefinite.li_margulis import primitive_vector_orbits
             from sage_indefinite_port.indefinite.witt_one_fixed_norm_classes import witt_one_fixed_norm_vector_classes
+            from sage_indefinite_port.indefinite.witt_one_hilbert import recognized_model
 
-            return tuple(VectorClass(v, ()) for v in witt_one_fixed_norm_vector_classes(lattice, int(square), True))
+            if int(lattice.module_rank()) == 4 and recognized_model(lattice) is not None:
+                vectors = witt_one_fixed_norm_vector_classes(lattice, int(square), True)
+            else:
+                vectors = primitive_vector_orbits(lattice, int(square))
+            return tuple(VectorClass(v, ()) for v in vectors)
         buckets: dict[VectorPrefilter, list[tuple[Lattices.ElementMethods, list[LatticeIsometryMethods]]]] = {}
         for candidate in self._model(profile.signed_view).primitive_covering_vectors(profile.sign * int(square)):
             bucket = buckets.setdefault(VectorPrefilter.from_vector(candidate), [])

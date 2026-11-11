@@ -7,9 +7,10 @@ maximal order ``O``; ``O`` need not be norm-Euclidean or principal. A vector is 
 **Assumptions.** ``O`` is the maximal order of ``E`` and ``L`` is the model itself (or a lattice that
 :func:`recognized_model` identifies with it). Only isometries of the following kinds are used, and each is an
 element of ``O(L)``: ``-1``; ``X -> g X conj(g)^t`` for ``g in GL_2(O)`` with ``N(det g) = 1``; and the
-generators of :meth:`HilbertWittOneLattice.generators`. They need not generate ``O(L)``: every orbit of the
-group they generate lies in one ``O(L)``-orbit, so a finite set meeting every such orbit meets every
-``O(L)``-orbit, and equal ``O(L)``-orbits are recognized by the exact decision below.
+generators of :meth:`HilbertWittOneLattice.generators`, which generate ``<SL_2(O), -1, Stab(e)>`` by
+Vaserstein's theorem (see :mod:`witt_one_hilbert`). With class number above one they need not generate
+``O(L)``: every orbit of the group they generate lies in one ``O(L)``-orbit, so a finite set meeting every such
+orbit meets every ``O(L)``-orbit, and equal ``O(L)``-orbits are recognized by the exact decision below.
 
 **Cusps.** For a nonzero ``w in O^2`` put ``h_X(w) = w X conj(w)^t``; for ``g in SL_2(O)`` the entry
 ``(g X conj(g)^t)_{11}`` is ``h_X(first row of g)``. Fix one integral ideal ``c`` in each ideal class, with
@@ -472,6 +473,14 @@ class HilbertFixedNormClasses:
                 root_of[j], to_root[j] = j, identity_matrix(ZZ, 4)
         self._isotropic = (root_of, to_root)
         return self._isotropic
+
+    def cusp_links(self):
+        r"""Return, for each cusp vector ``e_c != e`` in the ``O(L)``-orbit of ``e = e_O``, an isometry ``e_c -> e``.
+
+        With the model generators these generate ``O(L)`` (:mod:`witt_one_hilbert`).
+        """
+        root_of, to_root = self._isotropic_data()
+        return tuple(to_root[j] for j in sorted(root_of) if j != 0 and root_of[j] == 0)
 
     def _isotropic_transporter(self, x, y):
         content = gcd(*(int(c) for c in x))
