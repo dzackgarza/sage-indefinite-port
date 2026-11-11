@@ -392,7 +392,8 @@ class _DedekindModel:
     Topics*, Thm. 1.2.19), the class of `\mathfrak a_i` its only invariant. PARI ``nfhnf`` gives a pseudo-basis and ``rnfsteinitz`` puts it in
     the form `(v_1, \ldots, v_d; O, \ldots, O, \mathfrak a)`. With `\mathfrak a' = \gamma \mathfrak a`, the `K_i`-linear `v_j \mapsto v'_j`
     (`j < d`), `v_d \mapsto \gamma v'_d` maps `N_i` onto `N'_i`; when some class differs there is none. A lattice `X \subsetneq M` is decided
-    through a finite orbit (:meth:`isomorphism`)."""
+    through a finite orbit (:meth:`isomorphism`). A quaternion division component `B_i = D` with `V_i \cong D` contributes a maximal order `O`
+    of `D` to `\Gamma` and is decided by the left `O`-ideal `W^{-1}(\epsilon_i M)` (:meth:`_division_transport`)."""
 
     def __init__(self, theta, polynomial, algebra_basis):
         self.theta = theta
@@ -401,11 +402,14 @@ class _DedekindModel:
         self.fields = [_number_field(factor) for factor in self.factors]
         evaluate = lambda q: sum((QQ(c) * theta**i for i, c in enumerate(q.list())), matrix(QQ, k, k))
         self.evaluate = evaluate
-        self.idempotents, self.units, self.frames = [], [], []
+        self.idempotents, self.units, self.frames, self.division = [], [], [], {}
         for index, factor in enumerate(self.factors):
             cofactor = polynomial // factor
             self.idempotents.append(evaluate((cofactor * cofactor.inverse_mod(factor)) % polynomial))
             self.units.append(self._split(index, algebra_basis))
+            if index in self.division:
+                self.frames.append(None)
+                continue
             first = self.units[index][0][0]
             degree = factor.degree()
             columns, frame = [], []
@@ -436,7 +440,8 @@ class _DedekindModel:
 
         `n = 1`: `e_{11} = \epsilon_i`. `n = 2`: a noncentral `a` satisfies `a^2 = t a - s` over `K = K_i`, so `i = a - t/2` has `i^2 = \alpha \in K`;
         for `x` with `j = x - i x i^{-1} \ne 0`, `ij = -ji` and `j^2 = \beta \in K`, so `B_i = (\alpha, \beta)_K`. It is split exactly when the conic
-        `\alpha x^2 + \beta y^2 = z^2` has a `K`-point (Voight, *Quaternion Algebras*, Thm. 5.4.4); then `w = x i + y j` has `w^2 = z^2`, and
+        `\alpha x^2 + \beta y^2 = z^2` has a `K`-point (Voight, *Quaternion Algebras*, Thm. 5.4.4); otherwise it is a division algebra, recorded by
+        :meth:`_quaternion`, and ``None`` is returned. When split, `w = x i + y j` has `w^2 = z^2`, and
         `u = w + z \ne 0` is a zero divisor (`u (w - z) = 0`). Some `p = u y`, `y` in `\{1, i, j, ij\}` or the `Q`-basis of `B_i`, has nonzero
         reduced trace `\tau` (the trace form is nondegenerate and the `Q`-basis spans `B_i`) and reduced rank one, so `p^2 = \tau p` and `e_{11} = p / \tau` is a rank-one idempotent; `e_{22} = 1 - e_{11}`,
         `e_{12} = e_{11} x e_{22} \ne 0`, `f = e_{22} x' e_{11} \ne 0`, `e_{12} f = c e_{11}`, `e_{21} = c^{-1} f`."""
@@ -464,11 +469,8 @@ class _DedekindModel:
         (beta,) = self._solve(index, j * j, [idempotent])
         found, point = Conic(K, [alpha, beta, -1]).has_rational_point(point=True)
         if not found:
-            raise NotImplementedError(
-                f"Wedderburn component ({alpha}, {beta})_{K} of Q[F]|_X is a quaternion division algebra D: X is then a lattice over an order of "
-                f"D acting on D^d, whose isomorphism classes (ideal classes of quaternion orders and their Steinitz-type invariant) are not "
-                f"implemented for this route (#54)"
-            )
+            self._quaternion(index, alpha, beta, i, j)
+            return None
         x, y, z = (K(c) for c in point)
         u = self._embed(index, x) * i + self._embed(index, y) * j + self._embed(index, z)
         first = None
@@ -490,6 +492,83 @@ class _DedekindModel:
         assert all(units[p][q] * units[q2][r] == (units[p][r] if q == q2 else 0 * idempotent) for p in range(2) for q in range(2) for q2 in range(2) for r in range(2))
         return units
 
+    def _quaternion(self, index, alpha, beta, i, j):
+        r"""Record the division component `B_i = D = (\alpha, \beta)_K` (:meth:`_split`): the Sage algebra with integral `c^2 \alpha, c'^2 \beta`
+        for `c i, c' j`, a maximal order `O` containing `O_K \langle 1, ci, c'j, cc'ij \rangle`
+        (:func:`~sage_indefinite_port.indefinite.quaternion_orders_number_field.maximal_orders_containing`, discriminant `|d_K|^4 N(\mathfrak D)^2`)
+        and `W : D \to V_i`, `b \mapsto b w`, an isomorphism of left `D`-modules when `V_i \cong D` (`d = 1`)."""
+        from sage.algebras.quatalg.quaternion_algebra import QuaternionAlgebra
+        from sage_indefinite_port.indefinite.quaternion_orders_number_field import OrderLattices, maximal_orders_containing
+
+        K, degree, idempotent = self.fields[index], self.factors[index].degree(), self.idempotents[index]
+        if idempotent.rank() != 4 * degree:
+            raise NotImplementedError(
+                f"X (x) Q contains D^d, d = {idempotent.rank() // (4 * degree)} >= 2, for the quaternion division component ({alpha}, {beta})_{K}: "
+                f"deciding O X = O X' needs an explicit decomposition O X = O^(d-1) + I over the maximal order O (Eichler cancellation), "
+                f"which is not implemented (#54)"
+            )
+        c, c2 = alpha.denominator(), beta.denominator()
+        i, j = self._embed(index, K(c)) * i, self._embed(index, K(c2)) * j
+        algebra = QuaternionAlgebra(K, c**2 * alpha, c2**2 * beta)
+        units = [idempotent, i, j, i * j]
+        lattices = OrderLattices(algebra)
+        gens = [algebra(1), *algebra.gens()]
+        order = [algebra(K(w)) * g for w in K.ring_of_integers().basis() for g in gens]
+        norm = ZZ(1)
+        for prime in algebra.ramified_places(inf=False):
+            norm *= ZZ(prime.norm())
+        maximal = maximal_orders_containing(algebra, order, abs(ZZ(K.discriminant())) ** 4 * norm**2)[0]
+        k = idempotent.nrows()
+        w = next(matrix(QQ, k, 1, list(v)) for v in idempotent.columns() if not v.is_zero())
+        self.division[index] = (algebra, lattices, maximal, units, w, None)
+        image = block_matrix(QQ, [[self._quaternion_matrix(index, q) * w for q in lattices._q_basis]], subdivide=False)
+        assert image.rank() == 4 * degree
+        self.division[index] = (algebra, lattices, maximal, units, w, image)
+
+    def _quaternion_matrix(self, index, x):
+        r"""Return the matrix on `V` of `x \in D` (left multiplication on `V_i`, zero on the other `V_j`)."""
+        algebra, _lattices, _maximal, units, _w, _image = self.division[index]
+        return sum((self._embed(index, c) * u for c, u in zip(algebra(x).coefficient_tuple(), units)), 0 * units[0])
+
+    def _ideal(self, index, columns):
+        r"""Return a `Z`-basis of `I = W^{-1}(\epsilon_i M) \subset D` for `M` spanned by the columns of ``columns``, a left `O`-ideal."""
+        _algebra, lattices, _maximal, _units, _w, image = self.division[index]
+        coordinates = image.solve_right(self.idempotents[index] * columns)
+        return lattices.basis([lattices.element(c) for c in coordinates.columns()])
+
+    def _right_multiplication(self, index, delta):
+        r"""Return the `B`-linear map of `V` that is `W (b \mapsto b \delta) W^{-1}` on `V_i` and the identity on the other `V_j`."""
+        _algebra, lattices, _maximal, _units, w, image = self.division[index]
+        moved = block_matrix(QQ, [[self._quaternion_matrix(index, q * delta) * w for q in lattices._q_basis]], subdivide=False)
+        epsilon = self.idempotents[index]
+        return identity_matrix(QQ, epsilon.nrows()) - epsilon + moved * image.solve_right(epsilon)
+
+    def _division_transport(self, index, maximal, target_maximal):
+        r"""Return ``(phi, generators)`` for a division component with `d = 1`, or ``None`` when `\epsilon_i M \not\cong \epsilon_i M'`.
+
+        `\mathrm{End}_D(D) = D^{op}`, so the `B`-linear maps of `V_i` are `W (b \mapsto b \delta) W^{-1}`, and `\epsilon_i M \cong \epsilon_i M'` exactly
+        when `I' = I \delta` for the left `O`-ideals `I, I'` (:meth:`_ideal`). Then `\delta` lies in the colon `(I : I') = \{x : I x \subseteq I'\} =
+        I^{-1} I'`, an invertible left `O_R(I)`-ideal of reduced norm `\mathrm{nrd}(I') \mathrm{nrd}(I)^{-1}`, and any element of that reduced norm
+        generates it (Voight, *Quaternion Algebras*, Sec. 16.6, 17.4), so `I x = I I^{-1} I' = I'`. ``norm_generator`` of the unit engine of the
+        maximal order `O_R(I)` finds such an element or proves there is none. `\mathrm{Aut}_O(I)` is right multiplication by `O_R(I)^\times`."""
+        from sage_indefinite_port.indefinite.clifford_commutant import _reduced_norm_ideal
+        from sage_indefinite_port.indefinite.fuchsian_domain import quaternion_unit_engine
+
+        algebra, lattices, _maximal, _units, _w, _image = self.division[index]
+        K = self.fields[index]
+        source, target = self._ideal(index, maximal), self._ideal(index, target_maximal)
+        inverse = matrix(QQ, [lattices.coordinates(b) for b in target]).inverse()
+        rows = []
+        for b in source:
+            rows.extend((matrix(QQ, [lattices.coordinates(b * q) for q in lattices._q_basis]) * inverse).columns())
+        colon = lattices._dual(matrix(QQ, rows))
+        engine = quaternion_unit_engine(algebra, lattices.right_order(source))
+        delta = engine.norm_generator(colon, _reduced_norm_ideal(K, target) / _reduced_norm_ideal(K, source))
+        if delta is None:
+            return None
+        assert lattices.key([b * delta for b in source]) == lattices.key(target)
+        return self._right_multiplication(index, delta), [self._right_multiplication(index, u) for u in engine.unit_generators()]
+
     def _component_basis(self, index, vectors):
         r"""Return the columns `\Theta^j e_{a1} v_l` (`a, l, j`) spanning `V_i` for a `K_i`-basis ``vectors`` of `e_{11} V_i`."""
         degree = self.factors[index].degree()
@@ -508,11 +587,12 @@ class _DedekindModel:
         r"""Return a `Z`-basis (columns) of `M = \Gamma X` for `X` spanned by ``columns``."""
         generated = []
         for index, K in enumerate(self.fields):
-            for w in K.ring_of_integers().basis():
-                for row in self.units[index]:
-                    for unit in row:
-                        operator = self._embed(index, w) * unit
-                        generated.extend(operator * matrix(QQ, len(c), 1, list(c)) for c in columns)
+            if index in self.division:
+                operators = [self._quaternion_matrix(index, o) for o in self.division[index][2]]
+            else:
+                operators = [self._embed(index, w) * unit for w in K.ring_of_integers().basis() for row in self.units[index] for unit in row]
+            for operator in operators:
+                generated.extend(operator * matrix(QQ, len(c), 1, list(c)) for c in columns)
         return _lattice_basis([list(g.column(0)) for g in generated])
 
     def _steinitz(self, index, columns):
@@ -539,19 +619,14 @@ class _DedekindModel:
         r"""Return the matrix on `V` of the `B`-linear map restricting to the `K_i`-linear map with frame matrix ``g`` on `e_{11} V_i`, the
         identity on the other `V_j`."""
         k = self.theta.nrows()
-        images, bases = [], []
-        for other, (frame, _basis) in enumerate(self.frames):
-            basis = self._component_basis(other, frame)
-            bases.append(basis)
-            if other != index:
-                images.append(basis)
-                continue
-            mapped = [sum((self._embed(index, g[m, l]) * frame[m] for m in range(len(frame))), matrix(QQ, k, 1)) for l in range(len(frame))]
-            images.append(self._component_basis(index, mapped))
-        return block_matrix(QQ, [images], subdivide=False) * block_matrix(QQ, [bases], subdivide=False).inverse()
+        frame, _basis = self.frames[index]
+        basis = self._component_basis(index, frame)
+        mapped = [sum((self._embed(index, g[m, l]) * frame[m] for m in range(len(frame))), matrix(QQ, k, 1)) for l in range(len(frame))]
+        epsilon = self.idempotents[index]
+        return identity_matrix(QQ, k) - epsilon + self._component_basis(index, mapped) * basis.solve_right(epsilon)
 
-    def _automorphism_generators(self, pseudo):
-        r"""Return generators of `\mathrm{Aut}_{O_A}(M)` on `V`, ``pseudo[i] = (vectors, \mathfrak a)`` the Steinitz pseudo-basis of `e_i M`.
+    def _automorphism_generators(self, index, vectors, last):
+        r"""Return generators of `\mathrm{Aut}_{O_{K_i}}(N_i)` on `V`, ``(vectors, last)`` the Steinitz pseudo-basis of `N_i`.
 
         In the pseudo-basis `(v_j; \mathfrak a_j)` an automorphism of `e_i M` is a matrix with entries `g_{jl} \in \mathfrak a_j \mathfrak a_l^{-1}` and
         unit determinant. `\mathrm{SL}` is generated by the elementary `1 + b E_{jl}`, `b \in \mathfrak a_j \mathfrak a_l^{-1}` (Bass, Milnor, Serre,
@@ -560,28 +635,27 @@ class _DedekindModel:
         and `\mathrm{GL}` by these with `\mathrm{diag}(1, \ldots, u, \ldots, 1)` for generators `u` of `O_K^\times`. A `Z`-basis of
         `\mathfrak a_j \mathfrak a_l^{-1}` suffices, since `1 + (b + b') E_{jl} = (1 + b E_{jl})(1 + b' E_{jl})`."""
         result = []
-        for index, K in enumerate(self.fields):
-            vectors, last = pseudo[index]
-            d = vectors.nrows()
-            if d == 2 and K.degree() <= 2 and not K.is_totally_real() and abs(K.discriminant()) not in (3, 4, 7, 8, 11):
-                raise NotImplementedError(
-                    f"GL_2 of the order of {K}, imaginary quadratic and not Euclidean, is not generated by elementary and diagonal "
-                    f"matrices (Cohn 1966); its generators (Swan, Adv. Math. 6 (1971)) are not implemented (#54)"
-                )
-            ideals = [K.ideal(1)] * (d - 1) + [last]
-            frame = lambda g: vectors * g * vectors.inverse()
-            for j in range(d):
-                for u in K.unit_group().gens_values():
+        K = self.fields[index]
+        d = vectors.nrows()
+        if d == 2 and K.degree() <= 2 and not K.is_totally_real() and abs(K.discriminant()) not in (3, 4, 7, 8, 11):
+            raise NotImplementedError(
+                f"GL_2 of the order of {K}, imaginary quadratic and not Euclidean, is not generated by elementary and diagonal "
+                f"matrices (Cohn 1966); its generators (Swan, Adv. Math. 6 (1971)) are not implemented (#54)"
+            )
+        ideals = [K.ideal(1)] * (d - 1) + [last]
+        frame = lambda g: vectors * g * vectors.inverse()
+        for j in range(d):
+            for u in K.unit_group().gens_values():
+                g = matrix.identity(K, d)
+                g[j, j] = K(u)
+                result.append(self._rational(index, frame(g)))
+            for l in range(d):
+                if l == j:
+                    continue
+                for b in (ideals[j] / ideals[l]).basis():
                     g = matrix.identity(K, d)
-                    g[j, j] = K(u)
+                    g[j, l] = K(b)
                     result.append(self._rational(index, frame(g)))
-                for l in range(d):
-                    if l == j:
-                        continue
-                    for b in (ideals[j] / ideals[l]).basis():
-                        g = matrix.identity(K, d)
-                        g[j, l] = K(b)
-                        result.append(self._rational(index, frame(g)))
         return result
 
     def isomorphism(self, source_columns, target_columns):
@@ -591,13 +665,20 @@ class _DedekindModel:
         (class docstring), giving `\varphi_0 : M \to M'`. Every isomorphism is `\varphi_0 g`, `g \in \mathrm{Aut}_{O_A}(M)`, and it maps `X` onto
         `X'` exactly when `g X = \varphi_0^{-1} X'`. With `m M \subseteq X` and `m M \subseteq \varphi_0^{-1} X'`, `g X` depends only on `g` modulo
         `m \mathrm{End}(M)`, so the orbit of the finite submodule `X / m M \subseteq M / m M` under the generators of
-        :meth:`_automorphism_generators` is finite and its search decides (Eick, Hofmann, O'Brien, arXiv:1811.06190, Sec. 4)."""
+        :meth:`_automorphism_generators` and :meth:`_division_transport` is finite and its search decides (Eick, Hofmann, O'Brien, arXiv:1811.06190, Sec. 4)."""
         source = matrix(QQ, source_columns).transpose()
         target = matrix(QQ, target_columns).transpose()
         maximal = self._maximal_span(source_columns)
         target_maximal = self._maximal_span(target_columns)
-        pseudo, phi0 = [], []
+        phi0, generators = [], []
         for index, K in enumerate(self.fields):
+            if index in self.division:
+                found = self._division_transport(index, maximal, target_maximal)
+                if found is None:
+                    return None
+                phi0.append(found[0])
+                generators.extend(found[1])
+                continue
             vectors, ideal = self._steinitz(index, maximal.columns())
             target_vectors, target_ideal = self._steinitz(index, target_maximal.columns())
             ratio = target_ideal / ideal
@@ -607,7 +688,7 @@ class _DedekindModel:
             d = vectors.nrows()
             scale = matrix(K, d, d, lambda i, j: (gamma if i == d - 1 else K(1)) if i == j else K(0))
             phi0.append(self._rational(index, target_vectors * scale * vectors.inverse()))
-            pseudo.append((vectors, ideal))
+            generators.extend(self._automorphism_generators(index, vectors, ideal))
         transport = matrix.identity(QQ, source.nrows())
         for g in phi0:
             transport = g * transport
@@ -627,7 +708,6 @@ class _DedekindModel:
         orbit = {key(source): one}
         if goal in orbit:
             return transport
-        generators = self._automorphism_generators(pseudo)
         frontier = [one]
         while frontier:
             current = frontier.pop()
