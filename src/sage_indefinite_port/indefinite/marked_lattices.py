@@ -294,6 +294,12 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 case 1, 1:
                     return INDUCTION.line_isometry(INDUCTION.plane_vectors(source_sublattice)[0], INDUCTION.plane_vectors(target_sublattice)[0])
                 case source_rank, target_rank if source_rank == target_rank:
+                    # CombinedAlgorithms.h:1401-1404: unequal isotropic k-plane invariants
+                    # (INDEF_FORM_Invariant_IsotropicKplane, :2424-2428) decide inequivalence.
+                    if INDUCTION.flag_invariant(source.arrow().codomain(), INDUCTION.plane_vectors(source_sublattice), (source_rank,)) != INDUCTION.flag_invariant(
+                        target.arrow().codomain(), INDUCTION.plane_vectors(target_sublattice), (target_rank,)
+                    ):
+                        return None
                     return INDUCTION.plane_isometry(source_sublattice, target_sublattice)
                 case _:
                     return None
@@ -301,6 +307,12 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             source_dimensions, source_basis, _source_images = _flag_action(source)
             target_dimensions, target_basis, target_images = _flag_action(target)
             if source_dimensions != target_dimensions:
+                return None
+            # CombinedAlgorithms.h:1401-1404: unequal isotropic flag invariants
+            # (INDEF_FORM_Invariant_IsotropicKflag, :2429-2433) decide inequivalence.
+            if INDUCTION.flag_invariant(source_basis[0].parent(), source_basis, source_dimensions) != INDUCTION.flag_invariant(
+                target_basis[0].parent(), target_basis, target_dimensions
+            ):
                 return None
             return RECURSION.isotropic_subspace_isometry(source_basis, target_basis, target_images)
     raise ValueError(f"{category} is not a category of marked lattices this port decides: Lattices, a coslice <n>/Lattices, Ar(Lattices) or Fun([t], Lattices) for finite [t]")
