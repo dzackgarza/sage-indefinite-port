@@ -216,8 +216,9 @@ class WittOneLattice:
             raise NotImplementedError(
                 f"O(M) for the anisotropic M = {list(self.inner)} of rank {self.k} over {self.field} with real signs {self.signs}: "
                 f"rank 4 needs the Clifford algebra over the discriminant field K(sqrt(disc M)) as a quaternion algebra over a quartic "
-                f"field, whose unit group QuaternionOrderVoronoi (real quadratic centres only) does not compute; rank >= 5 has no proved "
-                f"reduction to rank <= 4 (the stabilizer of a splitting M_1 + M_2 has infinite index in O(M)) (#54)"
+                f"field, whose unit group QuaternionOrderVoronoi (real quadratic centres only) does not compute; rank >= 5: no published "
+                f"algorithm computes generators of a cocompact O(M) over O_K at rank >= 5 beyond Grunewald-Segal decidability, and the "
+                f"stabilizer of a splitting M_1 + M_2 has infinite index in O(M) (#54)"
             )
         self.sign = self.signs[0]
         omega = self.field.gen()
