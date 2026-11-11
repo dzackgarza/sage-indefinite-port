@@ -995,7 +995,7 @@ def test_witt_one_parabolic_generators_over_sqrt2():
 
     field = QuadraticField(int(2), "r")
     gram = sage_matrix(field, [[int(0), int(1), int(0)], [int(1), int(0), int(0)], [int(0), int(0), int(2)]])
-    model = WittOneLattice(field, gram)
+    model = WittOneLattice(field, gram, [field.ideal(int(1))] * int(3))
     generators = model.generators()
     assert all(g.transpose() * gram * g == gram and all(c.is_integral() for c in g.list()) for g in generators)
     one = sage_identity(field, int(3))
@@ -1017,13 +1017,40 @@ def test_witt_one_parabolic_generators_mixed_sign_rank_one():
     field = QuadraticField(int(5), "s")
     root = field.gen()
     gram = sage_matrix(field, [[int(0), int(1), int(0)], [int(1), int(0), int(0)], [int(0), int(0), int(2) * root]])
-    model = WittOneLattice(field, gram)
+    model = WittOneLattice(field, gram, [field.ideal(int(1))] * int(3))
     generators = model.generators()
     assert all(g.transpose() * gram * g == gram and all(c.is_integral() for c in g.list()) for g in generators)
     v = sage_vector(field, [root, int(-1), int(1)])
     assert (sage_matrix([v]) * gram * sage_matrix([v]).transpose())[int(0), int(0)] == int(0)
     g = model.reduce_isotropic(v)
     image = g * v
+    assert image[int(1)] == int(0) and image[int(2)] == int(0) and image[int(0)].is_unit()
+
+
+def test_witt_one_pseudo_basis_over_sqrt10():
+    r"""`\Lambda = O_K e + O_K f + \mathfrak p m` over `K = Q(\sqrt{10})` (class number `2`), `h(m, m) = 1`, `\mathfrak p = (2, \sqrt{10})`.
+    `\mathfrak p` is not principal, so `\Lambda` has Steinitz class `[\mathfrak p] \ne 1` and no free `O_K`-basis. `h(\mathfrak p m, \mathfrak p m) = \mathfrak p^2 = 2 O_K`,
+    so `\Lambda` is integral and `M` is even. Every generator preserves `\Lambda` (entries in `\mathfrak a_i \mathfrak a_j^{-1}`) and is an isometry.
+    `E(e, 2m)` (`2 \in \mathfrak p`) preserves `\Lambda`, is unipotent and not `1`, so the group is infinite. The image of `e` under a product of
+    the generators reduces back to a unit multiple of `e`."""
+    from sage_indefinite_port.indefinite.witt_one_number_field import WittOneLattice, eichler
+
+    field = QuadraticField(int(10), "t")
+    root = field.gen()
+    prime = field.ideal(int(2), root)
+    assert len(prime.gens_reduced()) == int(2)
+    gram = sage_matrix(field, [[int(0), int(1), int(0)], [int(1), int(0), int(0)], [int(0), int(0), int(1)]])
+    model = WittOneLattice(field, gram, [field.ideal(int(1)), field.ideal(int(1)), prime])
+    generators = model.generators()
+    assert all(g.transpose() * gram * g == gram and model.preserves(g) for g in generators)
+    one = sage_identity(field, int(3))
+    transvection = eichler(gram, sage_vector(field, [int(1), int(0), int(0)]), sage_vector(field, [int(0), int(0), int(2)]))
+    assert model.preserves(transvection) and transvection != one and (transvection - one) ** int(3) == int(0)
+    word = one
+    for g in generators:
+        word = word * g
+    v = word * sage_vector(field, [int(1), int(0), int(0)])
+    image = model.reduce_isotropic(v) * v
     assert image[int(1)] == int(0) and image[int(2)] == int(0) and image[int(0)].is_unit()
 
 

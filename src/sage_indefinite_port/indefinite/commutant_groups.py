@@ -1206,14 +1206,37 @@ class CentralFieldCommutant:
 
     def _witt_one_model(self, v, f, rest, scaled):
         r"""Return the model `\Lambda = (O_K v + O_K f) \perp M` with `M` of rank one or with no null vector found, and the parabolic
-        generators of :class:`witt_one_number_field.WittOneLattice` (Euclidean cusp transitivity; raises outside its certificate)."""
+        generators of :class:`witt_one_number_field.WittOneLattice` (Euclidean cusp transitivity; raises outside its certificate).
+
+        `M` is projective over `O_K`; its pseudo-basis `M = \bigoplus \mathfrak a_i m_i` is the pseudo-HNF (PARI ``nfhnf``, Cohen,
+        *Advanced Topics*, Algorithm 1.4.7) of the `Z`-generators ``rest`` in coordinates on a `K`-basis of their span. A principal
+        `\mathfrak a_i = \gamma O_K` is absorbed into `m_i`."""
         from sage_indefinite_port.indefinite.witt_one_number_field import WittOneLattice
 
         K = self.field
-        basis = [v, f, *self._free_basis(rest)]
+        frame = []
+        for x in rest:
+            if matrix(K, [*frame, x]).rank() > len(frame):
+                frame.append(x)
+        coordinates = [matrix(K, frame).solve_left(x) for x in rest]
+        nf = K.pari_nf()
+        generators = pari.matrix(len(frame), len(rest), [coordinates[j][i].__pari__() for i in range(len(frame)) for j in range(len(rest))])
+        hnf = nf.nfhnf([generators, pari([1] * len(rest))])
+        to_field = lambda c: K(nf.nfbasistoalg(c))
+        complement, ideals = [], []
+        for j in range(len(frame)):
+            hermite = nf.idealhnf(hnf[1][j])
+            ideal = K.ideal([to_field(hermite[i]) for i in range(len(hermite))])
+            m = sum((to_field(hnf[0][i, j]) * frame[i] for i in range(len(frame))), vector(K, len(v)))
+            generator = ideal.gens_reduced()
+            if len(generator) == 1:
+                m, ideal = generator[0] * m, K.ideal(1)
+            complement.append(m)
+            ideals.append(ideal)
+        basis = [v, f, *complement]
         change = matrix(K, basis).transpose()
         form = change.transpose() * scaled * change
-        return "orthogonal", K, WittOneLattice(K, form).generators(), form, basis, scaled
+        return "orthogonal", K, WittOneLattice(K, form, [K.ideal(1), K.ideal(1), *ideals]).generators(), form, basis, scaled
 
     def description(self):
         return (
