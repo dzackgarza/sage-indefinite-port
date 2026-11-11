@@ -139,6 +139,12 @@ jobs:
             test: test_gaussian_line_stabilizer_meets_a_joint_residue_and_determinant_preimage
           - file: test_commutant_groups.sage
             test: test_levi_transporter_to_the_inverse_on_one_summand
+          - file: test_li_margulis_box.sage
+            test: test_isotropic_orbits_of_u_plus_u2
+          - file: test_li_margulis_box.sage
+            test: test_isotropic_orbits_of_u_plus_u
+          - file: test_witt_one_fixed_norm_classes.sage
+            test: test_sqrt_ten_norm_two_transporter_and_divisor_obstruction
     steps:
       - uses: actions/checkout@v4
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"

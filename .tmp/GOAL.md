@@ -85,10 +85,10 @@ Rows that do not name a dependency proceed independently. Work on several at onc
 
 | Capability | First missing piece | Status |
 |---|---|---|
-| Li–Margulis generators and isometry decisions (#55) | Explicit Theorem 2 constant; box searches with exact verification | open |
-| Li–Margulis embedding orbits and isotropic reduction (#56) | Box, primitive filter and deduplication; requires #47 | open |
+| Li–Margulis generators and isometry decisions (#55) | Explicit Theorem 2 constant; box searches with exact verification | done |
+| Li–Margulis embedding orbits and isotropic reduction (#56) | Box, primitive filter and deduplication; requires #47 | done |
 | Clifford arithmetic in ranks 4, 5, 6 and order units (#57) | (-1,3) order and its isometry action on diag(2,2,-6,-6); order-unit generators; transfer to O(L) with missing cosets | done |
-| Low rational Witt index full outputs (#40) | Full O(L) generators, vector classes, Witt-one lines; recursive and boundary consumers | open |
+| Low rational Witt index full outputs (#40) | Full O(L) generators, vector classes, Witt-one lines; recursive and boundary consumers | done |
 | Hermitian groups over nonmaximal orders and commutants (#58) | Commutant linear algebra; full unitary groups | done |
 | Unitary centralizers, indefinite components (#51) | Generators of indefinite Hermitian unitary groups | done |
 | Grunewald–Segal groups, tensor orbit–stabilizer, arbitrary-isometry centralizers (#54) | Explicit Q-algebraic groups, then generation and orbit decisions | open |

@@ -163,15 +163,6 @@ def test_sqrt_ten_null_vectors_form_one_class():
     assert _is_transporter(classes.transporter(_v(1, 0, 0, 0), _v(2, -5, 0, -1)), _v(1, 0, 0, 0), _v(2, -5, 0, -1), gram)
 
 
-def test_sqrt_ten_norm_two_transporter_and_divisor_obstruction():
-    classes = _sqrt_ten_classes()
-    gram = HilbertWittOneLattice(int(10)).gram()
-    x, y = _v(1, -1, 0, 0), _v(19, -19, 0, -6)
-    assert int(y * gram * y) == int(2)
-    assert _is_transporter(classes.transporter(x, y), x, y, gram)
-    assert classes.transporter(x, _v(0, 0, 1, 0)) is None
-
-
 def test_sqrt_ten_norm_two_classes_separate_the_divisors():
     classes = _sqrt_ten_classes()
     gram = HilbertWittOneLattice(int(10)).gram()
