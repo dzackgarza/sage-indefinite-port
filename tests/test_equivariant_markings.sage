@@ -134,17 +134,66 @@ def test_glue_controls_the_sign():
     assert set(_closure(survivors, one)) == set([one.str(), _m([[0, 1], [1, 0]]).str()])
 
 
-def test_outside_the_routes_raises():
-    r"""F = E(e1, e2) on U + U and X = e1: C = SL_2(Z) x Z acts with infinite orbit on I."""
-    G = _m([[1, 0, 0, -1], [0, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 1]])
-    assert G.transpose() * _m(U2) * G == _m(U2)
-    marking = EquivariantMarking(U2, _m([[1], [0], [0], [0]]), [G], [_m([[1]])])
-    raised = False
-    try:
-        marking.pointwise_stabilizer_generators()
-    except NotImplementedError:
-        raised = True
-    assert raised
+MINUS4 = -ONE4
+
+
+def _quotient_image(g):
+    r"""The action of `g \in Stab(e1)` on `e1^\perp / e1 = <e2, f2>`."""
+    return g.submatrix(int(2), int(2), int(2), int(2))
+
+
+def test_degenerate_source_with_infinite_orbit_pointwise():
+    r"""F = -1 on U + U and X = e1, isotropic. C(F) = O(U + U) has an infinite orbit on primitive null
+    vectors. The radical is R = Z e1 with dual Z f1, so Stab(e1) = O(U) x| {E(e1, m) : m in <e2, f2>}:
+    the Levi image on e1^perp / e1 = U is O(U) = {+-1, +-swap}, every element of which lifts by
+    1 + h + 1, and E(e1, m) e2 = e2 - b(e2, m) e1 fixes e1 and is the identity on the quotient."""
+    marking = EquivariantMarking(U2, _m([[1], [0], [0], [0]]), [MINUS4], [_m([[-1]])])
+    generators = marking.pointwise_stabilizer_generators()
+    e1 = _m([[1], [0], [0], [0]])
+    assert all(g * e1 == e1 and g.transpose() * _m(U2) * g == _m(U2) for g in generators)
+    two = sage_identity(SageZZ, int(2))
+    images = _closure([_quotient_image(g) for g in generators], two)
+    assert set(images) == set(m.str() for m in (two, -two, _m([[0, 1], [1, 0]]), _m([[0, -1], [-1, 0]])))
+    unipotent = [g for g in generators if _quotient_image(g) == two and g != ONE4]
+    assert unipotent and all(((g - ONE4) ** int(3)).is_zero() for g in unipotent)
+
+
+def test_degenerate_source_transporters_through_the_radical():
+    r"""e1 -> e2 by the swap of the two planes; e1 -> e1 + 2 e2, primitive and null, by some isometry,
+    since O(U + U) is transitive on primitive null vectors; 2 e1 is not primitive, so no transporter."""
+    marking = EquivariantMarking(U2, _m([[1], [0], [0], [0]]), [MINUS4], [_m([[-1]])])
+    for target in (_m([[0], [0], [1], [0]]), _m([[1], [0], [2], [0]])):
+        g = marking.transporter(target)
+        assert g is not None and g * _m([[1], [0], [0], [0]]) == target
+        assert g.transpose() * _m(U2) * g == _m(U2)
+    assert marking.transporter(_m([[2], [0], [0], [0]])) is None
+
+
+def test_degenerate_source_transporter_needs_the_unipotent_correction():
+    r"""X = (e1, e2 + f2) has Gram diag(0, 2) and radical Z e1. Y = (e1, e2 + f2 + e1) agrees with X
+    modulo R, so a transporter is unipotent: E(e1, m) (e2 + f2) = e2 + f2 - b(e2 + f2, m) e1 needs
+    b(e2 + f2, m) = -1, solved by m = -e2. The quotient marking e2 + f2 -> -(e2 + f2) is -1 on U."""
+    X = _m([[1, 0], [0, 0], [0, 1], [0, 1]])
+    E = _m([[-1, 0], [0, -1]])
+    marking = EquivariantMarking(U2, X, [MINUS4], [E])
+    Y = _m([[1, 1], [0, 0], [0, 1], [0, 1]])
+    g = marking.transporter(Y)
+    assert g is not None and g * X == Y and g.transpose() * _m(U2) * g == _m(U2)
+    Z = _m([[1, 0], [0, 0], [0, -1], [0, -1]])
+    h = marking.transporter(Z)
+    assert h is not None and h * X == Z
+    assert all(s * X == X for s in marking.pointwise_stabilizer_generators())
+
+
+def test_degenerate_setwise_stabilizer_moves_the_radical():
+    r"""The setwise stabilizer of Z e1 under O(U + U) contains -1, which sends e1 to -e1, and the
+    unipotent E(e1, m), which fixes e1."""
+    e1 = _m([[1], [0], [0], [0]])
+    marking = EquivariantMarking(U2, e1, [MINUS4], [_m([[-1]])])
+    generators = marking.setwise_stabilizer_generators()
+    assert all((g * e1).column_module() == e1.column_module() for g in generators)
+    assert any(g * e1 == -e1 for g in generators)
+    assert any(g * e1 == e1 and g != ONE4 for g in generators)
 
 
 def test_invisible_source_factor_has_a_projection_kernel():

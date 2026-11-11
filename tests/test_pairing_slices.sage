@@ -258,3 +258,18 @@ def test_centralizer_stabilizers_of_the_fixed_line():
     setwise = group.setwise_stabilizer_generators((e3,))
     assert all(g(e3) in (e3, -e3) and g in group for g in setwise)
     assert any(g(e3) == -e3 for g in setwise)
+
+
+def test_centralizer_setwise_stabilizer_of_a_nonprimitive_invariant_sublattice():
+    r"""Lambda = <3 e1, e2> has Lambda_Q = <e1, e2>, which f preserves. f = [[3, 4], [2, 3]] is [[0, 1], [2, 0]]
+    modulo 3, so f(e2) = 4 e1 + 3 e2 leaves Lambda, while f^2 = -1 modulo 3 preserves it. Hence
+    Stab(Lambda) = (+-f^{2Z}) x {+-1 on e3}, of index 2 in C(f), and it contains elements of infinite order."""
+    L, e1, e2, e3, f, group = _pell_plus_two()
+    basis = (L.scalar_multiple(3, e1), e2)
+    generators = group.setwise_stabilizer_generators(basis)
+    span = lambda vectors: matrix(ZZ, [[int(c) for c in v] for v in vectors]).row_module()
+    assert span([f(v) for v in basis]) != span(basis)
+    assert span([f(f(v)) for v in basis]) == span(basis)
+    assert all(g in group and span([g(v) for v in basis]) == span(basis) for g in generators)
+    assert any(g(e3) == -e3 for g in generators)
+    assert any(not all(p.is_cyclotomic() for p, _e in group._matrix(g).charpoly().factor()) for g in generators)

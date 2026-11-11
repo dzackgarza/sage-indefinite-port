@@ -139,3 +139,35 @@ def test_unipotent_eichler_normalizer_contains_the_inversion():
     centralizer, inversion = infinite_cyclic_normalizer(lattice, F)
     assert inversion is not None and inversion * F * ~inversion == ~F
     assert all(g * F == F * g for g in centralizer)
+
+
+def test_free_abelian_normalizer_of_two_pell_units():
+    r"""L = (<1> + <-2>) + (<1> + <-3>), H = <F1, F2> with F1 = (3 + 2 sqrt 2) + 1 and F2 = 1 + (2 + sqrt 3),
+    free abelian of rank 2. The joint characters have logarithm vectors (+-log(3 + 2 sqrt 2), 0) and
+    (0, +-log(2 + sqrt 3)), of different lengths, so an automorphism F_i -> prod F_j^{Phi_ij} permuting them is
+    Phi = diag(+-1, +-1). Each is realized: y -> -y on a summand conjugates its unit to the inverse and fixes the
+    other summand. So N(H) / C(H) = (Z/2)^2."""
+    from sage_indefinite_port.indefinite.finite_normalizers import normalizer_generators
+
+    lattice = Lattices(ZZ)([[1, 0, 0, 0], [0, -2, 0, 0], [0, 0, 1, 0], [0, 0, 0, -3]])
+    F1 = _from_columns(lattice, [[3, 4, 0, 0], [2, 3, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+    F2 = _from_columns(lattice, [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 2, 3], [0, 0, 1, 2]])
+    assert F1 * F2 == F2 * F1
+    signs = set()
+    for g in normalizer_generators(lattice, (F1, F2)):
+        pair = []
+        for F in (F1, F2):
+            image = g * F * ~g
+            assert image in (F, ~F)
+            pair.append(int(1) if image == F else int(-1))
+        signs.add(tuple(pair))
+    closure = set([(int(1), int(1))])
+    frontier = list(closure)
+    while frontier:
+        current = frontier.pop()
+        for s in signs:
+            moved = (current[0] * s[0], current[1] * s[1])
+            if moved not in closure:
+                closure.add(moved)
+                frontier.append(moved)
+    assert closure == set([(int(1), int(1)), (int(-1), int(1)), (int(1), int(-1)), (int(-1), int(-1))])
