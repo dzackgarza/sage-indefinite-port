@@ -1066,3 +1066,20 @@ def test_factorwise_centralizer_and_transporter():
     t = equivariant_transporter(commutant, moved, [F])
     assert t is not None and _is_transporter(t, gram, moved, [F], [F])
     assert equivariant_transporter(commutant, int(3) * gram, [F]) is None
+
+
+def test_factorwise_centralizer_with_a_gl_type_pair():
+    r"""`L = (X + Y) + U` with `X = <e_1, e_2>`, `Y = <f_1, f_2>` paired by `B(e_i, f_j) = \\delta_{ij}`, and `F = A + A^{-t} + 1_U` with
+    `A = [[1, 1], [1, 0]]` (characteristic polynomial `x^2 - x - 1`, not self-reciprocal, so `X` and `Y` are non-isomorphic simple `Q[F]`-modules).
+    The commutant is `Q(sqrt 5) \\times Q(sqrt 5) \\times M_2(Q)`; the adjoint swaps the two field idempotents, a GL-type pair. `F` itself
+    centralizes `F` and acts on `X` by `A`, which is not `\\pm 1`."""
+    I2 = sage_identity(SageZZ, int(2))
+    Z2 = sage_matrix(SageZZ, int(2), int(2))
+    U = sage_matrix(SageZZ, [[int(0), int(1)], [int(1), int(0)]])
+    gram = block_matrix(SageZZ, [[Z2, I2, Z2], [I2, Z2, Z2], [Z2, Z2, U]], subdivide=False)
+    A = sage_matrix(SageZZ, [[int(1), int(1)], [int(1), int(0)]])
+    F = block_matrix(SageZZ, [[A, Z2, Z2], [Z2, A.inverse().transpose().change_ring(SageZZ), Z2], [Z2, Z2, I2]], subdivide=False)
+    assert F.transpose() * gram * F == gram
+    generators = centralizer_generators(IsometryCommutant(gram, [F]))
+    assert all(g.transpose() * gram * g == gram and g * F == F * g for g in generators)
+    assert any(g.submatrix(int(0), int(0), int(2), int(2)) not in (I2, -I2) for g in generators)
