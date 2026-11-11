@@ -171,3 +171,24 @@ def test_free_abelian_normalizer_of_two_pell_units():
                 closure.add(moved)
                 frontier.append(moved)
     assert closure == set([(int(1), int(1)), (int(-1), int(1)), (int(1), int(-1)), (int(-1), int(-1))])
+
+
+def test_infinite_dihedral_normalizer_is_the_orthogonal_group_of_the_pell_plane():
+    r"""L = <1> + <-2>, H = <f, r> with f = 3 + 2 sqrt 2 and r the conjugation y -> -y, so r f r = f^{-1} and H is
+    infinite dihedral, non-abelian. O(L) = {+-f^k, +-r f^k}, since an isometry of x^2 - 2 y^2 is multiplication by a
+    unit of norm one, +-(3 + 2 sqrt 2)^k, possibly composed with conjugation. H has index 2 in O(L), so N(H) = O(L).
+    The (1, 1) entry of f^k and of r f^k is positive and that of -f^k and -r f^k is negative, so g lies in H exactly
+    when that entry is positive. Hence N(H) normalizes H and contains an element with negative (1, 1) entry."""
+    from sage_indefinite_port.indefinite.finite_normalizers import normalizer_generators
+
+    lattice = Lattices(ZZ)([[1, 0], [0, -2]])
+    f = _from_columns(lattice, [[3, 4], [2, 3]])
+    r = _from_columns(lattice, [[1, 0], [0, -1]])
+    assert r * f * ~r == ~f and f * r != r * f
+    frame = tuple(lattice.module_generators())
+    corner = lambda g: int(list(g(frame[int(0)]))[int(0)])
+    generators = normalizer_generators(lattice, (f, r))
+    for g in generators:
+        assert g * f * ~g in (f, ~f)
+        assert corner(g * r * ~g) > 0
+    assert any(corner(g) < 0 for g in generators)

@@ -260,3 +260,22 @@ def test_pell_pair_setwise_stabilizer_moves_the_source():
     assert all((g * FIRST).column_module() == FIRST.column_module() for g in generators)
     assert any(g * FIRST != FIRST for g in generators)
     assert any(_infinite_order(g) and g * FIRST == FIRST for g in generators)
+
+
+def test_degenerate_setwise_stabilizer_with_a_non_scalar_radical_action():
+    r"""L = U + U with basis (e1, f1, e2, f2) and F = F2, the swap of the planes. R = <e1, e2> is totally isotropic and
+    F acts on it by the swap s, which is not scalar. g in C(F) with g R = R acts on R by a unit of
+    End(R, s) = {x + y s : x, y in Z} = Z[s], and the units of Z[s] (x + y = +-1, x - y = +-1) are {+-1, +-s}.
+    -1 and F realize -1 and s, so the restrictions to R generate exactly {+-1, +-s}."""
+    X = _m([[1, 0], [0, 0], [0, 1], [0, 0]])
+    s = _m([[0, 1], [1, 0]])
+    marking = EquivariantMarking(U2, X, [F2], [s])
+    generators = marking.setwise_stabilizer_generators()
+    restrictions = []
+    for g in generators:
+        assert g * F2 == F2 * g and g.transpose() * _m(U2) * g == _m(U2)
+        image = g * X
+        assert image.column_module() == X.column_module()
+        restrictions.append(_m(X.solve_right(image)))
+    two = sage_identity(SageZZ, int(2))
+    assert set(_closure(restrictions, two)) == set(m.str() for m in (two, -two, s, -s))

@@ -276,3 +276,56 @@ def test_centralizer_setwise_stabilizer_of_a_nonprimitive_invariant_sublattice()
     assert all(g in group and span([g(v) for v in basis]) == span(basis) for g in generators)
     assert any(g(e3) == -e3 for g in generators)
     assert any(not all(p.is_cyclotomic() for p, _e in group._matrix(g).charpoly().factor()) for g in generators)
+
+
+def _swap_of_copies(gram):
+    r"""L = N + N for the Gram matrix ``gram`` of N, with F the swap of the copies, in the centralizer subgroup."""
+    from sage_indefinite_port.indefinite.pairing_slices import CentralizerSubgroup
+
+    n = len(gram)
+    rows = [[int(gram[i][j]) if i < n and j < n else int(gram[i - n][j - n]) if i >= n and j >= n else int(0)
+             for j in range(int(2) * n)] for i in range(int(2) * n)]
+    L = Lattices(ZZ)(rows)
+    frame = tuple(L.module_generators())
+    labels = tuple(L.module_generating_set())
+    images = tuple(frame[(i + n) % (int(2) * n)] for i in range(int(2) * n))
+    F = L.O()(dict(zip(labels, images, strict=True)))
+    return L, frame, F, CentralizerSubgroup(L, (F,))
+
+
+def test_centralizer_setwise_stabilizer_of_a_summand_moved_by_the_swap():
+    r"""L = U + U, F the swap of the copies, Lambda = U + 0, indefinite and not F-invariant (F Lambda = 0 + U).
+
+    g in C(F) preserving Lambda also preserves F Lambda = 0 + U, so g = P + Q, and gF = Fg forces Q = P.
+    Hence Stab(Lambda) = {P + P : P in O(U)} = {1, -1, s + s, -s - s}, s the swap of e and f, of order 4."""
+    from sage.matrix.constructor import matrix as sage_matrix
+    from sage.rings.integer_ring import ZZ as SageZZ
+
+    L, frame, F, group = _swap_of_copies([[0, 1], [1, 0]])
+    generators = [group._matrix(g) for g in group.setwise_stabilizer_generators(frame[:int(2)])]
+    one = sage_matrix.identity(SageZZ, int(4))
+    seen = {one.str(): one}
+    frontier = [one]
+    while frontier:
+        current = frontier.pop()
+        for g in generators:
+            image = g * current
+            if image.str() not in seen:
+                seen[image.str()] = image
+                frontier.append(image)
+    s = sage_matrix(SageZZ, [[0, 1], [1, 0]])
+    two = sage_matrix.identity(SageZZ, int(2))
+    expected = [sage_matrix.block_diagonal([P, P]) for P in (two, -two, s, -s)]
+    assert set(seen) == set(m.str() for m in expected)
+
+
+def test_centralizer_setwise_stabilizer_of_a_moved_pell_summand_is_infinite():
+    r"""L = P + P, P = <1> + <-2>, F the swap and Lambda = P + 0. As above Stab(Lambda) = {h + h : h in O(P)}, and
+    O(P) contains -1 and f = 3 + 2 sqrt 2 of infinite order."""
+    L, frame, F, group = _swap_of_copies([[1, 0], [0, -2]])
+    generators = [group._matrix(g) for g in group.setwise_stabilizer_generators(frame[:int(2)])]
+    for g in generators:
+        assert g.submatrix(int(0), int(2), int(2), int(2)).is_zero() and g.submatrix(int(2), int(0), int(2), int(2)).is_zero()
+        assert g.submatrix(int(0), int(0), int(2), int(2)) == g.submatrix(int(2), int(2), int(2), int(2))
+    assert any(not all(p.is_cyclotomic() for p, _e in g.charpoly().factor()) for g in generators)
+    assert any(g[int(0), int(0)] < 0 for g in generators)
