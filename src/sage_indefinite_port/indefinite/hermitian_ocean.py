@@ -396,3 +396,28 @@ class HermitianOcean:
         for step in reduction.word:
             result *= pairing[step].element.inverse()
         return result * reduction.stabilizer * UNITS[reduction.scalar_power]
+
+
+def isometry(source, target):
+    r"""Return `g \in GL_2(A)` with `g^T H' \bar g = H`, ``source`` `= H`, ``target`` `= H'`, or ``None``.
+
+    An isometry `g` from `f` to `f'` (`f'(g v) = f(v)`) maps lax vectors to lax vectors with the same
+    values, so it maps ocean cells of `f` (Definition 1) bijectively onto ocean cells of `f'`. Let `\tau`
+    be one ocean cell of `f'`. Then `g^{-1} \tau` is an ocean cell of `f`, so `\gamma g^{-1} \tau` is a
+    cell orbit representative `\rho` for some `\gamma \in U(f)` (Theorem 5.1), and `g \gamma^{-1}` maps `\rho`
+    to `\tau`. Such a map is determined, up to `A^\times`, by the lax images of a lax basis of `\rho`, as in
+    :meth:`HermitianOcean._transporters`. So the finite search below decides the isometry.
+    """
+    first, second = HermitianOcean(source), HermitianOcean(target)
+    if discriminant(first.form) != discriminant(second.form):
+        return None
+    cell = _ordered(second.cells[0].representative)
+    for orbit in first.cells:
+        p, q = _ordered(orbit.representative)
+        inverse = matrix(FIELD, 2, 2, [p[0], q[0], p[1], q[1]]).inverse()
+        for p_image, q_image in ((cell[0], cell[1]), (cell[1], cell[0])):
+            for unit in UNITS:
+                g = matrix(FIELD, 2, 2, [p_image[0], unit * q_image[0], p_image[1], unit * q_image[1]]) * inverse
+                if g.transpose() * second.form * g.apply_map(lambda c: c.conjugate()) == first.form:
+                    return g
+    return None

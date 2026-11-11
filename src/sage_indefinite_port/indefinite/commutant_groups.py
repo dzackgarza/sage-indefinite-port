@@ -20,6 +20,9 @@ centralizers. This module adds the routes that need the port's arithmetic groups
 - `A` central simple over a number field `K \ne Q`: `A = End_K(W)` for a simple module `W`, the
   adjoint is the adjoint of a Hermitian, symmetric or alternating form `h` on `W`, and `C(Z)` is
   the subgroup of `U(\Lambda, h)` lying in `O`, `\Lambda = O_K O f` (:class:`CentralFieldCommutant`).
+  Hyperbolic forms use the port's unitary models; an anisotropic binary Hermitian form over `Z[i]`
+  uses the Bestvina-Savin ocean (:mod:`hermitian_ocean`). The transporter reduces both forms to one
+  model, composes the model isometry, and searches the coset representatives of `C(Z)` in `U(\Lambda, h)`.
 
 Other noncompact commutants raise :class:`NotImplementedError` naming the missing group.
 """
@@ -49,6 +52,7 @@ from sage_indefinite_port.indefinite import (
     eisenstein_hyperbolic_unitary,
     euclidean_picard,
     gaussian_picard,
+    hermitian_ocean,
 )
 from sage_indefinite_port.indefinite.quaternion_voronoi import QuaternionVoronoi
 from sage_indefinite_port.indefinite.witt_one_hilbert import HilbertWittOneLattice
@@ -564,6 +568,7 @@ class CentralFieldCommutant:
     `h` is `\lambda`-Hermitian; a scalar makes it Hermitian (second kind) or leaves it symmetric or
     alternating (first kind) (Knus-Merkurjev-Rost-Tignol, *The Book of Involutions*, Thm. 4.2).
     `\Lambda = O_K O f` is `O`-stable, so `C(Z) = U(\Lambda, h) \cap O`, of finite index in `U(\Lambda, h)`.
+    For a self-adjoint `m \in A` the form `h_m` is read from `y^\dagger m x` in the same way.
     """
 
     def __init__(self, commutant):
@@ -592,6 +597,7 @@ class CentralFieldCommutant:
         order = [m.change_ring(QQ) for m in commutant.order_basis]
         self._order = order
         f = self._rank_one_element()
+        self._f = f
         basis, span = [], matrix(QQ, 0, r * r)
         for x in (m * f for m in order):
             stacked = span.stack(matrix(QQ, [(p * x).list() for p in self._powers]))
@@ -607,13 +613,9 @@ class CentralFieldCommutant:
         adjoint_f = commutant.adjoint(f)
         line = next(v for v in (adjoint_f * m * f for m in [identity_matrix(QQ, r), *order]) if not v.is_zero())
         self._line_rows = matrix(QQ, [(p * line).list() for p in self._powers])
-        gram = matrix(self.field, [[self._pairing(b, c) for b in basis] for c in basis])
-        self.form_kind, self.gram = self._normalized(gram)
-        integers = self.field.ring_of_integers().basis()
-        rows = matrix(QQ, [self._q_coordinates(self.embed(k) * m * f) for k in integers for m in order])
-        hermite = matrix(ZZ, rows.denominator() * rows).hermite_form(include_zero_rows=False)
-        self._lattice = matrix(QQ, hermite) / rows.denominator()
-        self._lattice_vectors = tuple(self._k_vector(row) for row in self._lattice.rows())
+        self.form_kind, self._scale = self._normalization(self._raw_gram(identity_matrix(QQ, r)))
+        self.gram = self.gram_of(identity_matrix(QQ, r))
+        self._lattice = self._lattice_rows(order)
 
     def embed(self, k):
         return sum(QQ(c) * p for c, p in zip(self.field(k).list(), self._powers))
@@ -673,35 +675,51 @@ class CentralFieldCommutant:
         combination = vector(QQ, self._flatten(block)) * self._flat_inverse
         return sum(c * m for c, m in zip(combination, self._order))
 
-    def _pairing(self, x, y):
-        coordinates = self._line_rows.solve_left(vector(QQ, (self.commutant.adjoint(y) * x).list()))
+    def _lattice_rows(self, elements):
+        r"""Return the Hermite basis, in the `Q`-coordinates of `W`, of `O_K X f` for ``elements`` `= X`."""
+        integers = self.field.ring_of_integers().basis()
+        rows = matrix(QQ, [self._q_coordinates(self.embed(k) * m * self._f) for k in integers for m in elements])
+        hermite = matrix(ZZ, rows.denominator() * rows).hermite_form(include_zero_rows=False)
+        return matrix(QQ, hermite) / rows.denominator()
+
+    def _vectors(self, lattice):
+        return tuple(self._k_vector(row) for row in lattice.rows())
+
+    def _pairing(self, x, y, middle):
+        coordinates = self._line_rows.solve_left(vector(QQ, (self.commutant.adjoint(y) * middle * x).list()))
         return self.field(list(coordinates))
+
+    def _raw_gram(self, middle):
+        return matrix(self.field, [[self._pairing(b, c, middle) for b in self._basis] for c in self._basis])
+
+    def gram_of(self, middle):
+        r"""Return the Gram `G_{ij} = h_m(b_j, b_i)` of the normalized form `h_m`, `m =` ``middle``."""
+        return self._scale * self._raw_gram(middle)
 
     def _star(self, block):
         return block.apply_map(self.sigma).transpose()
 
-    def _normalized(self, gram):
-        r"""Return the kind and Gram `G` (`G_{ij} = h(b_j, b_i)`) after the scalar making `h` (skew-)Hermitian."""
+    def _normalization(self, gram):
+        r"""Return the kind of `h` and the scalar making it (skew-)Hermitian; `G_{ij} = h(b_j, b_i)`."""
         i, j = next((i, j) for i in range(self.n) for j in range(self.n) if gram[i, j] != 0)
         ratio = self._star(gram)[i, j] / gram[i, j]
         assert self._star(gram) == ratio * gram
         if self.kind == "first":
             assert ratio in (1, -1)
-            return ("symmetric" if ratio == 1 else "alternating"), gram
+            return ("symmetric" if ratio == 1 else "alternating"), self.field.one()
         z = self.field.gen()
         scalar = 1 + ratio if ratio != -1 else z - self.sigma(z)
-        gram = scalar * gram
-        assert self._star(gram) == gram
-        return "hermitian", gram
+        assert self._star(scalar * gram) == scalar * gram
+        return "hermitian", scalar
 
     def h(self, x, y, gram):
         return (self._star(matrix(self.field, [y]).transpose()) * gram * matrix(self.field, [x]).transpose())[0, 0]
 
-    def _span_is_lattice(self, vectors):
+    def _span_is_lattice(self, vectors, lattice):
         integers = self.field.ring_of_integers().basis()
         rows = matrix(QQ, [self._q_vector(k * v) for k in integers for v in vectors])
         hermite = matrix(ZZ, rows.denominator() * rows).hermite_form(include_zero_rows=False)
-        return rows.rank() == self._lattice.nrows() and matrix(QQ, hermite) / rows.denominator() == self._lattice
+        return rows.rank() == lattice.nrows() and matrix(QQ, hermite) / rows.denominator() == lattice
 
     def _integral_combination(self, values, target):
         r"""Return `x \in Z^N` with `\sum x_a` ``values[a]`` `=` ``target`` in `K`, or ``None``."""
@@ -710,9 +728,9 @@ class CentralFieldCommutant:
         equations = matrix(ZZ, scale * rows[:-1]).transpose()
         return _integer_solution(equations, vector(ZZ, scale * rows[-1]))
 
-    def _primitive(self, v):
+    def _primitive(self, v, lattice):
         r"""Return `\gamma v` with `I = \gamma O_K` the fractional ideal `\{k : k v \in \Lambda\}`."""
-        rows = matrix(QQ, [self._lattice.solve_left(self._q_vector(p * v)) for p in self.field.power_basis()])
+        rows = matrix(QQ, [lattice.solve_left(self._q_vector(p * v)) for p in self.field.power_basis()])
         span = matrix(ZZ, rows.denominator() * rows.transpose()).hermite_form(include_zero_rows=False)
         dual = (matrix(QQ, span) / rows.denominator()).inverse().transpose()
         ideal = self.field.ideal([self.field(list(row)) for row in dual.rows()])
@@ -720,13 +738,12 @@ class CentralFieldCommutant:
         assert len(generator) == 1
         return generator[0] * v
 
-    def _hyperbolic_pair(self, gram):
-        r"""Return `(v, f, G')` with `v, f` null, `h'(f, v) = 1`, `h'(\Lambda, v) = O_K`, `h' = h / q`, or ``None``.
+    def _isotropic_vector(self, lattice, gram):
+        r"""Return a primitive null vector of `\Lambda`, or ``None`` when `h` is anisotropic.
 
         Isotropy of `h` is isotropy of the trace form `Tr\, h(x, x) = 2 h(x, x)` (PARI ``qfsolve``).
-        `f_1` with `h'(f_1, v) = 1` is corrected to `f = f_1 - t v`, `t + \bar t = h'(f_1, f_1)`.
         """
-        vectors = self._lattice_vectors
+        vectors = self._vectors(lattice)
         trace = matrix(QQ, [[self.h(x, y, gram).trace() for y in vectors] for x in vectors])
         found = qfsolve(trace)
         if found in ZZ:
@@ -734,8 +751,16 @@ class CentralFieldCommutant:
         found = vector(QQ, found)
         found = found * found.denominator()
         found = found / gcd(list(found))
-        v = self._primitive(sum(c * x for c, x in zip(found, vectors)))
+        v = self._primitive(sum(c * x for c, x in zip(found, vectors)), lattice)
         assert self.h(v, v, gram) == 0
+        return v
+
+    def _hyperbolic_pair(self, lattice, gram, v):
+        r"""Return `(f, G')` with `f` null, `h'(f, v) = 1`, `h'(\Lambda, v) = O_K`, `h' = h / q`, or ``None``.
+
+        `f_1` with `h'(f_1, v) = 1` is corrected to `f = f_1 - t v`, `t + \bar t = h'(f_1, f_1)`.
+        """
+        vectors = self._vectors(lattice)
         ideal = self.field.ideal([self.h(x, v, gram) for x in vectors])
         norm = QQ(ideal.norm())
         if not norm.is_square() or ideal != self.field.ideal(norm.sqrt()):
@@ -753,7 +778,7 @@ class CentralFieldCommutant:
             return None
         f = first - sum(c * k for c, k in zip(shift, integers)) * v
         assert self.h(f, f, gram) == 0 and self.h(f, v, gram) == 1
-        return v, f, gram
+        return f, gram
 
     def _orthogonal(self, vectors, against, gram):
         r"""Return a `Z`-basis, as `K`-vectors, of the elements of span(``vectors``) orthogonal to ``against``."""
@@ -784,21 +809,25 @@ class CentralFieldCommutant:
             current = self._orthogonal(current, [unit], gram)
         return result
 
-    def _unitary_model(self):
-        r"""Return ``(field, generators, form, basis, gram)`` of a recognized unitary model of `(\Lambda, h)`."""
+    def _unitary_model(self, lattice, gram):
+        r"""Return ``(kind, field, generators, form, basis, gram)`` of a recognized unitary model of `(\Lambda, h)`."""
         d = _IMAGINARY_MODELS.get(self.field.discriminant())
         if self.form_kind != "hermitian" or d is None:
             return None
-        pair = self._hyperbolic_pair(self.gram)
+        v = self._isotropic_vector(lattice, gram)
+        if v is None:
+            return self._ocean_model(lattice, gram) if self.n == 2 and d == 1 else None
+        pair = self._hyperbolic_pair(lattice, gram, v)
         if pair is None:
             return None
-        v, f, gram = pair
+        f, gram = pair
         if self.n == 2:
             if d not in (1, 2, 3):
                 return None
             table = binary_hyperbolic_unitary.generators(d)
-            return binary_hyperbolic_unitary.field(d), tuple(table.values()), binary_hyperbolic_unitary.form(d), [v, f], gram
-        complement = self._orthogonal(self._lattice_vectors, [v, f], gram)
+            E = binary_hyperbolic_unitary.field(d)
+            return "hyperbolic", E, tuple(table.values()), binary_hyperbolic_unitary.form(d), [v, f], gram
+        complement = self._orthogonal(self._vectors(lattice), [v, f], gram)
         trace = matrix(QQ, [[self.h(x, y, gram).trace() for y in complement] for x in complement])
         if trace.is_negative_definite():
             gram, f = -gram, -f
@@ -807,22 +836,61 @@ class CentralFieldCommutant:
             return None
         if self.n == 3 and d == 1:
             generators = (*gaussian_picard.GENERATORS.values(), gaussian_picard.SCALAR)
-            return gaussian_picard.FIELD, generators, gaussian_picard.FORM, [v, *units, -f], gram
+            return "hyperbolic", gaussian_picard.FIELD, generators, gaussian_picard.FORM, [v, *units, -f], gram
         if self.n == 3 and d in (2, 7, 11):
             generators = euclidean_picard.full_unitary_generators(d)
-            return euclidean_picard.field(d), generators, euclidean_picard.form(d), [v, *units, f], gram
+            return "hyperbolic", euclidean_picard.field(d), generators, euclidean_picard.form(d), [v, *units, f], gram
         if d == 3 and self.n in (3, 4):
             m = self.n - 2
             generators = tuple(eisenstein_hyperbolic_unitary.generators(m).values())
-            return eisenstein_hyperbolic_unitary.FIELD, generators, eisenstein_hyperbolic_unitary.form(m), [v, *units, f], gram
+            E = eisenstein_hyperbolic_unitary.FIELD
+            return "hyperbolic", E, generators, eisenstein_hyperbolic_unitary.form(m), [v, *units, f], gram
         if d == 3 and self.n == 5:
             field = act_eisenstein.FIELD
             scalar = -act_eisenstein.OMEGA * identity_matrix(field, 5)
             generators = (*act_eisenstein.FULL_GENERATORS, scalar)
-            return field, generators, act_eisenstein.FORM, [*units, v, f], gram
+            return "hyperbolic", field, generators, act_eisenstein.FORM, [*units, v, f], gram
         return None
 
-    def _symplectic_model(self):
+    def _binary_basis(self, lattice):
+        r"""Return an `O_K`-basis `(\gamma_1 e_1, w)` of a rank-two `\Lambda` over a principal `O_K`.
+
+        The second coordinate maps `\Lambda` onto an ideal `\gamma_2 O_K`, and `w` is a preimage of `\gamma_2`;
+        the kernel is `\Lambda \cap K e_1 = \gamma_1 O_K e_1`. So `\Lambda = O_K \gamma_1 e_1 \oplus O_K w`.
+        """
+        vectors = self._vectors(lattice)
+        values = [x[1] for x in vectors]
+        second = self.field.ideal(values).gens_reduced()
+        assert len(second) == 1
+        w = sum(c * x for c, x in zip(self._integral_combination(values, second[0]), vectors))
+        rows = matrix(QQ, [self.field(value).list() for value in values])
+        kernel = matrix(ZZ, rows.denominator() * rows).left_kernel().basis()
+        first = self.field.ideal([sum(c * x for c, x in zip(k, vectors))[0] for k in kernel]).gens_reduced()
+        assert len(first) == 1
+        return [vector(self.field, [first[0], 0]), w]
+
+    def _pullback(self, block, embedding):
+        r"""Return the preimage of ``block`` under the isomorphism ``embedding`` of a quadratic field onto `K`."""
+        E = embedding.domain()
+        frame = matrix(QQ, [self.field.one().list(), embedding(E.gen()).list()])
+        return block.apply_map(lambda x: E(list(frame.solve_left(vector(QQ, self.field(x).list())))), E)
+
+    def _ocean_model(self, lattice, gram):
+        r"""Return the Bestvina-Savin model of an anisotropic `h` of rank two over `Z[i]`.
+
+        In an `O_K`-basis `C` of `\Lambda` with `S = C^* G C`, `g` preserves `S` exactly when `\bar g` preserves
+        `\bar S`, that is when `g^T H \bar g = H` for `H = q \bar S` and any `q \in Q^\times`; `q > 0` makes `H`
+        integral in the sense of :mod:`hermitian_ocean`, whose generators of `U(f)` are then those of `U(\Lambda, h)`.
+        """
+        basis = self._binary_basis(lattice)
+        E = hermitian_ocean.FIELD
+        embedding = E.embeddings(self.field)[0]
+        change = matrix(self.field, basis).transpose()
+        form = self._pullback(self._star(change) * gram * change, embedding)
+        ocean = hermitian_ocean.HermitianOcean(_ocean_forms(form)[0])
+        return "ocean", E, ocean.unitary_generators(), form, basis, gram
+
+    def _symplectic_model(self, lattice, gram):
         r"""Return the `SL_2(O_K)` model of an alternating `h` on `\Lambda` of rank two over a real quadratic `K`.
 
         For a primitive `v` and `\phi = h(\cdot, v)`, `\phi(\Lambda) = j O_K` and an `f` with `\phi(f) = j` give
@@ -845,16 +913,15 @@ class CentralFieldCommutant:
             matrix(E, 2, 2, [unit, zero, zero, ~unit]),
             -identity_matrix(E, 2),
         )
-        gram = self.gram
-        vectors = self._lattice_vectors
-        v = self._primitive(vectors[0])
+        vectors = self._vectors(lattice)
+        v = self._primitive(vectors[0], lattice)
         values = [self.h(x, v, gram) for x in vectors]
         ideal = self.field.ideal(values).gens_reduced()
         assert len(ideal) == 1
         solution = self._integral_combination(values, ideal[0])
         f = sum(c * x for c, x in zip(solution, vectors))
         form = matrix(E, 2, 2, [zero, one, -one, zero])
-        return E, generators, form, [v, f], gram / self.h(f, v, gram)
+        return "alternating", E, generators, form, [v, f], gram / self.h(f, v, gram)
 
     def description(self):
         return (
@@ -863,28 +930,137 @@ class CentralFieldCommutant:
             f"of the {self.kind} kind; no unitary model of the port matches it (#54)"
         )
 
-    def centralizer_generators(self):
-        r"""Return generators of `C(Z)`: model generators conjugated to `\Lambda`, then Schreier descent to `O`."""
-        model = self._unitary_model() if self.kind == "second" else self._symplectic_model()
+    def model(self, lattice, gram):
+        r"""Return ``(kind, field, generators, form, basis, gram')`` of `(\Lambda, h)`, `\Lambda =` ``lattice``.
+
+        The basis spans `\Lambda`, and in it `G' = s G` is the model ``form``, `s \in K^\times`.
+        """
+        model = self._unitary_model(lattice, gram) if self.kind == "second" else self._symplectic_model(lattice, gram)
         if model is None:
             raise NotImplementedError(self.description())
-        E, generators, form, basis, gram = model
-        if not self._span_is_lattice(basis):
+        _kind, E, _generators, form, basis, model_gram = model
+        if not self._span_is_lattice(basis, lattice):
             raise NotImplementedError(f"{self.description()}: the model basis does not span Lambda")
-        embedding = E.embeddings(self.field)[0]
         change = matrix(self.field, basis).transpose()
-        assert self._star(change) * gram * change == form.apply_map(embedding)
-        inverse = change.inverse()
-        moves = [self.element_of(change * g.apply_map(embedding) * inverse) for g in generators]
-        one = identity_matrix(QQ, self.commutant.rank)
-        assert all(self.commutant.adjoint(m) * m == one for m in moves)
-        return self.commutant._order_subgroup_generators(moves)
+        assert self._star(change) * model_gram * change == form.apply_map(E.embeddings(self.field)[0])
+        return model
+
+    def unitary_generators(self):
+        r"""Return the model generators of `U(\Lambda, h)`, conjugated to elements of `A`."""
+        if not hasattr(self, "_unitary"):
+            _kind, E, generators, _form, basis, _gram = self.model(self._lattice, self.gram)
+            embedding = E.embeddings(self.field)[0]
+            change = matrix(self.field, basis).transpose()
+            inverse = change.inverse()
+            moves = [self.element_of(change * g.apply_map(embedding) * inverse) for g in generators]
+            one = identity_matrix(QQ, self.commutant.rank)
+            assert all(self.commutant.adjoint(m) * m == one for m in moves)
+            self._unitary = tuple(moves)
+        return self._unitary
+
+    def centralizer_generators(self):
+        r"""Return generators of `C(Z)`: model generators conjugated to `\Lambda`, then Schreier descent to `O`."""
+        return self.commutant._order_subgroup_generators(list(self.unitary_generators()))
+
+    def coset_representatives(self):
+        r"""Return representatives `u` of the left cosets `u C(Z)` in `U(\Lambda, h)`.
+
+        `C(Z) = U(\Lambda, h) \cap O` has finite index, and `x C(Z) = y C(Z)` exactly when `y^{-1} x \in O`. Left
+        multiplication by the generators permutes the finite coset set transitively, so the orbit of `C(Z)`
+        is a Schreier transversal.
+        """
+        if not hasattr(self, "_cosets"):
+            representatives = [identity_matrix(QQ, self.commutant.rank)]
+            position = 0
+            while position < len(representatives):
+                current = representatives[position]
+                position += 1
+                for generator in self.unitary_generators():
+                    moved = generator * current
+                    if not any(self.commutant.in_order(known.inverse() * moved) for known in representatives):
+                        representatives.append(moved)
+            self._cosets = tuple(representatives)
+        return self._cosets
+
+    def _model_isometry(self, source, target, source_gram, target_gram):
+        r"""Return `D \in GL_n(O_K)` with `D^* T D = S` for the Grams `S, T` of the two model bases, or ``None``.
+
+        For the ocean, `D` is the image of :func:`hermitian_ocean.isometry`. Otherwise `S = \rho T` with `\rho \in K`
+        since both are scalings of one model form. Then `\rho = 1` gives `D = 1`; `\rho = -1` on the hyperbolic
+        plane gives `D = diag(1, -1)`; on `\rho J` alternating, `D = diag(\rho, 1)` for a unit `\rho`. Absence: for
+        Hermitian models `\det S = N(\det D) \det T = \det T` gives `\rho^n = 1`, `\rho` rational, and for `n \ge 3`
+        the model form `H \oplus I_{n-2}` and its negative have different signatures. For alternating ones
+        `\det(\rho J) = \det(D)^2` makes `\rho` a unit.
+        """
+        kind = source[0]
+        S = self._star(matrix(self.field, source[4]).transpose()) * source_gram * matrix(self.field, source[4]).transpose()
+        T = self._star(matrix(self.field, target[4]).transpose()) * target_gram * matrix(self.field, target[4]).transpose()
+        if kind == "ocean":
+            embedding = hermitian_ocean.FIELD.embeddings(self.field)[0]
+            found = hermitian_ocean.isometry(*_ocean_forms(self._pullback(S, embedding), self._pullback(T, embedding)))
+            return None if found is None else found.apply_map(embedding)
+        assert source[3] == target[3]
+        i, j = next((i, j) for i in range(self.n) for j in range(self.n) if T[i, j] != 0)
+        ratio = S[i, j] / T[i, j]
+        assert S == ratio * T
+        one = identity_matrix(self.field, self.n)
+        if ratio == 1:
+            return one
+        if kind == "hyperbolic" and self.n == 2 and ratio == -1:
+            return matrix(self.field, 2, 2, [1, 0, 0, -1])
+        integers = self.field.ring_of_integers()
+        if kind == "alternating" and ratio in integers and ~ratio in integers:
+            return matrix(self.field, 2, 2, [ratio, 0, 0, 1])
+        return None
+
+    def equivariant_transporter(self, target_gram, targets):
+        r"""Return an integral transporter to ``(target_gram, targets)``, or ``None`` as a proof of absence.
+
+        With `t_0`, `h = B^{-1} t_0^t B' t_0` and `X = \{a : t_0 a \in M_r(Z)\}`, every transporter is `t_0 a_1`
+        with `X = a_1 O`, so `\Lambda' = O_K X f = a_1 \Lambda` and `a_1` is an isometry of `(\Lambda, h)` onto
+        `(\Lambda', h_h)`. Conversely, with one such isometry `b_0` (decided in the models), the isometries are
+        `b_0 U(\Lambda, h)`, and `t_0 b_0 u` is integral exactly when `a_1^{-1} b_0 u \in U \cap O = C(Z)`. So the
+        transporters are found on the coset representatives of `U(\Lambda, h) / C(Z)`.
+        """
+        commutant = self.commutant
+        if abs(target_gram.det()) != abs(commutant.gram.det()):
+            return None
+        start = rational_intertwiner(commutant.isometries, targets)
+        if start is None:
+            return None
+        square = commutant.gram.change_ring(QQ).inverse() * start.transpose() * target_gram * start
+        assert commutant.contains(square)
+        target_lattice = self._lattice_rows(solution_lattice(commutant, start))
+        twisted = self.gram_of(square)
+        source = self.model(self._lattice, self.gram)
+        target = self.model(target_lattice, twisted)
+        block = self._model_isometry(source, target, self.gram, twisted)
+        if block is None:
+            return None
+        source_change = matrix(self.field, source[4]).transpose()
+        target_change = matrix(self.field, target[4]).transpose()
+        isometry = self.element_of(target_change * block * source_change.inverse())
+        one = identity_matrix(QQ, commutant.rank)
+        assert commutant.adjoint(isometry) * square * isometry == one
+        for representative in self.coset_representatives():
+            found = _verified(commutant, start * isometry * representative, target_gram, targets)
+            if found is not None:
+                return found
+        return None
+
+
+def _ocean_forms(*forms):
+    r"""Return `q \bar S` for the Hermitian ``forms`` `S` over `Q(i)`, with one `q > 0` making all integral.
+
+    :mod:`hermitian_ocean` requires `a, c \in Z` and `2 \nu \in Z[i]` for `H = [[a, \nu], [\bar\nu, c]]`.
+    """
+    q = lcm([QQ(c).denominator() for S in forms for c in (S[0, 0], S[1, 1], *(2 * S[0, 1]).list())])
+    return tuple(q * S.apply_map(lambda c: c.conjugate()) for S in forms)
 
 
 def _missing_group(commutant):
     r"""Return the description of the arithmetic group of a commutant with no implemented route."""
     center = commutant._center_basis()
-    kind = "first" if all(commutant.adjoint(z) == z for z in center) else "second"
     if len(center) == commutant.dimension():
         return (
             f"the integral transporter of the commutative commutant of dimension {commutant.dimension()} of "
@@ -896,17 +1072,9 @@ def _missing_group(commutant):
             f"{commutant.isometries}, with an involution of the first kind, has no implemented generation or "
             f"transporter route (#54)"
         )
-    generic = next(
-        z for values in product(range(-3, 4), repeat=len(center))
-        for z in (sum(c * m for c, m in zip(values, center)),)
-        if z.minimal_polynomial().degree() == len(center)
-    )
-    polynomial = generic.minimal_polynomial()
-    degree = ZZ(commutant.dimension() // len(center)).isqrt()
     return (
-        f"the transporter of {commutant.isometries} is an isometry of rank-{degree} forms over O_K, "
-        f"K = Q[x]/({polynomial}), with an involution of the {kind} kind on M_{degree}(K) or a K-division "
-        f"algebra; the unitary-model isometry decision is not implemented (#54)"
+        f"the semisimple commutant of dimension {commutant.dimension()} of {commutant.isometries}, with a centre of "
+        f"dimension {len(center)} that is not a field, needs the factor-wise unitary-group transporter (#54)"
     )
 
 
@@ -960,6 +1128,8 @@ def equivariant_transporter(commutant, target_gram, targets):
     model = _quaternion(commutant)
     if model is not None:
         return model.equivariant_transporter(target_gram, targets)
+    if _central_field(commutant):
+        return CentralFieldCommutant(commutant).equivariant_transporter(target_gram, targets)
     commutative = all(x * y == y * x for x in commutant.order_basis for y in commutant.order_basis)
     if not radical and commutative and commutant.dimension() == 2 and len(targets) == 1:
         return commutant.equivariant_transporter(target_gram, targets[0])

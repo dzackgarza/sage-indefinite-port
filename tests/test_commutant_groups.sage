@@ -35,6 +35,19 @@ alternating form, and F_i = 1 (x) g for g in E_12(1), E_21(1), diag(u, u^{-1}), 
 generate 1 (x) M_2(K), so A = M_2(K) (x) 1 with the symplectic adjoint of w and C(Z) = SL_2(O) (x) 1.
 The model generator diag(u, u^{-1}) has eigenvalues u, u^{-1} and their conjugates, each twice on Q^8,
 so characteristic polynomial (x^2 - 2x - 1)^2 (x^2 + 2x - 1)^2 for every choice of fundamental unit.
+
+Gaussian hyperbolic transporters. On the basis (1,0), (i,0), (0,1), (0,i) of Z[i]^2, complex conjugation c is
+diag(1, -1, 1, -1); it preserves b = Re h, since h(cx, cy) = conj h(x, y), and c F c^{-1} = -F. A Z[i]-linear
+P in GL_2(Z[i]) commutes with F, so P is a transporter from (B, F) to (P^{-t} B P^{-1}, F). The Gram 3B has
+determinant 81 != 1, so no transporter to it exists.
+
+Anisotropic Gaussian plane. L = Z[i]^2 with h = diag(1, -3), b = Re h = diag(1, 1, -3, -3), F the
+multiplication by i. h is anisotropic: |x|^2 = 3 |y|^2 has no nonzero solution, since 3 is not a sum of
+two rational squares. So C(Z) = U(h) over Z[i], from the Bestvina-Savin ocean. It contains [[2, 3], [1, 2]]
+(columns of h-values 1, -3 and orthogonal), of infinite order, so the generators include an element of
+infinite order; a finite-order element of GL_4(Z) has order at most 12. The vectors v = (1 + i, 1), w = (3, 1 - i)
+have h(v) = -1, h(w) = 3, h(v, w) = 0 and det [v w] = -1, so [v w] is an isometry of (Z[i]^2, h) onto
+(Z[i]^2, -h): a transporter to (Re(-h), F) = (diag(-1, -1, 3, 3), F) exists. As above c carries F to -F.
 """
 
 from sage_extensions.all import *
@@ -241,3 +254,65 @@ def test_real_quadratic_symplectic_centralizer():
     x = PolynomialRing(SageQQ, "x").gen()
     expected = (x**int(2) - int(2) * x - int(1)) ** int(2) * (x**int(2) + int(2) * x - int(1)) ** int(2)
     assert any(g.charpoly() == expected for g in generators)
+
+
+GAUSSIAN = QuadraticField(int(-1), "i")
+
+
+def _gaussian_linear(entries):
+    r"""Return the integral matrix of the Z[i]-linear map ``entries`` on the basis (1,0), (i,0), (0,1), (0,i)."""
+    g = sage_matrix(GAUSSIAN, int(2), int(2), entries)
+    i = GAUSSIAN.gen()
+    frame = [(int(1), int(0)), (i, int(0)), (int(0), int(1)), (int(0), i)]
+    columns = []
+    for x in frame:
+        image = g * sage_matrix(GAUSSIAN, int(2), int(1), list(x))
+        columns.append([SageZZ(c) for k in range(int(2)) for c in image[k, int(0)].list()])
+    return sage_matrix(SageZZ, columns).transpose()
+
+
+CONJUGATION = sage_matrix(SageZZ, int(4), int(4), [int(c) for c in (1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1)])
+
+
+def test_gaussian_hyperbolic_transporters():
+    gram, F = _gaussian_plane()
+    commutant = IsometryCommutant(gram, [F])
+    assert CONJUGATION * F * CONJUGATION.inverse() == -F
+    t = equivariant_transporter(commutant, gram, [-F])
+    assert t is not None and _is_transporter(t, gram, gram, [F], [-F])
+    i = GAUSSIAN.gen()
+    P = _gaussian_linear([int(1), int(1) + i, int(0), int(1)])
+    assert P * F == F * P
+    moved = (P.inverse().transpose() * gram * P.inverse()).change_ring(SageZZ)
+    t = equivariant_transporter(commutant, moved, [F])
+    assert t is not None and _is_transporter(t, gram, moved, [F], [F])
+    assert equivariant_transporter(commutant, int(3) * gram, [F]) is None
+
+
+def _ocean_plane():
+    gram = sage_matrix(SageZZ, int(4), int(4), int(0))
+    for k, value in enumerate((1, 1, -3, -3)):
+        gram[k, k] = int(value)
+    _hyperbolic, F = _gaussian_plane()
+    return gram, F
+
+
+def test_anisotropic_gaussian_centralizer_is_infinite():
+    gram, F = _ocean_plane()
+    generators = centralizer_generators(IsometryCommutant(gram, [F]))
+    one = sage_identity(SageZZ, int(4))
+    assert all(g * F == F * g and g.transpose() * gram * g == gram for g in generators)
+    assert any(all(g ** int(k) != one for k in range(int(1), int(13))) for g in generators)
+
+
+def test_anisotropic_gaussian_transporters():
+    gram, F = _ocean_plane()
+    commutant = IsometryCommutant(gram, [F])
+    t = equivariant_transporter(commutant, gram, [-F])
+    assert t is not None and _is_transporter(t, gram, gram, [F], [-F])
+    negative = -gram
+    i = GAUSSIAN.gen()
+    witness = _gaussian_linear([int(1) + i, int(3), int(1), int(1) - i])
+    assert witness.det() in (int(1), int(-1)) and witness.transpose() * negative * witness == gram
+    t = equivariant_transporter(commutant, negative, [F])
+    assert t is not None and _is_transporter(t, gram, negative, [F], [F])
