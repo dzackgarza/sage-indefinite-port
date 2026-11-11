@@ -516,6 +516,54 @@ class EquivariantMarking:
             return None
         return _schreier(generators, self.marking, lambda g, p: g * p, self._one)
 
+    def _reduced_transporter(self, target):
+        r"""Return `g \in C` with `g X = Y` for an infinite orbit, found by height reduction, or raise.
+
+        Grunewald-Segal reduce orbit problems of an arithmetic group `\Gamma` to points of bounded height
+        (Ann. of Math. 112 (1980), Sections 3-5; Borel, *Introduction aux groupes arithmetiques*, Sections 12-15).
+        The height `h(Z) = \mathrm{tr}(Z^t Z)` is the norm at the base point `1` of the symmetric space of
+        `GL_n(R)`; it is a nonnegative integer on integral markings, and only finitely many integral `Z` have
+        `h(Z) \le H`. Each of `X` and `Y` descends by the generators of `\Gamma` and their inverses while the
+        height decreases, which stops because the height is an integer. The `\Gamma`-graph on the orbit points of
+        height at most `H = \max(h(X_0), h(Y_0))` is then explored from `X_0`; it is finite. If it reaches `Y_0`,
+        the composed word is a transporter, checked by the caller.
+
+        The generators are not certified to connect that sublevel set (that needs Macbeath generators of a
+        Siegel-set fundamental domain), so a miss proves nothing and raises ``NotImplementedError``.
+        """
+        generators = [matrix(ZZ, g) for g in _commutant_groups().centralizer_generators(self._commutant)]
+        moves = [*generators, *(matrix(ZZ, g.inverse()) for g in generators)]
+        height = lambda Z: sum(c * c for c in Z.list())
+
+        def descend(Z):
+            word = self._one
+            while True:
+                better = min(((g * Z, g) for g in moves), key=lambda pair: height(pair[0]), default=None)
+                if better is None or height(better[0]) >= height(Z):
+                    return Z, word
+                Z, word = better[0], better[1] * word
+
+        start, start_word = descend(self.marking)
+        end, end_word = descend(matrix(ZZ, target))
+        bound = max(height(start), height(end))
+        known = {start.str(): self._one}
+        frontier = [start]
+        while frontier:
+            Z = frontier.pop()
+            word = known[Z.str()]
+            if Z == end:
+                return matrix(ZZ, end_word.inverse()) * word * start_word
+            for g in moves:
+                moved = g * Z
+                if height(moved) <= bound and moved.str() not in known:
+                    known[moved.str()] = g * word
+                    frontier.append(moved)
+        raise NotImplementedError(
+            f"the reduced representatives of the marking and the target are not joined by the centralizer generators "
+            f"within height {bound}; without Macbeath generators of a Siegel-set domain this does not prove that no "
+            f"transporter exists (#53)"
+        )
+
     def _subspace_stabilizer(self, subspaces):
         r"""Return generators of `C(F) \cap \bigcap_j \mathrm{Stab}(V_j)` for the rational column spaces `V_j`."""
         commutant = _SubspaceCommutant(self.gram, self.ambient_actions, subspaces)
@@ -860,13 +908,11 @@ class EquivariantMarking:
         else:
             orbit = self._finite_orbit()
             if orbit is None:
-                raise NotImplementedError(
-                    "the transporter of a marking whose radical extension does not split and whose orbit under the "
-                    "centralizer is infinite (#53)"
-                )
-            transversal, _stabilizer = orbit
-            found = transversal.get(target.str())
-            result = found[0] if found is not None else None
+                result = self._reduced_transporter(target)
+            else:
+                transversal, _stabilizer = orbit
+                found = transversal.get(target.str())
+                result = found[0] if found is not None else None
         assert result is None or self._is_stabilizer_element(result, target)
         return result
 

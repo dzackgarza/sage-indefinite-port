@@ -373,3 +373,12 @@ def test_orthogonal_source_kernel_with_an_infinite_orbit():
     generators = orthogonal_source_kernel_generators(U2, X)
     assert all(X * a == X and a.transpose() * A * a == A for a in generators)
     assert not MatrixGroup(list(generators)).is_finite()
+
+
+def test_reduced_transporter_finds_a_translate_of_the_marking():
+    r"""For the non-split marking X = e1 of U + U under F = EICHLER, -1 and F lie in C(F). Y = -F X = -e1 is in the
+    orbit, and the height reduction returns some g in C(F) with g X = Y."""
+    e1 = _m([[1], [0], [0], [0]])
+    marking = EquivariantMarking(U2, e1, [EICHLER], [_m([[1]])])
+    g = marking._reduced_transporter(-e1)
+    assert g * e1 == -e1 and g * EICHLER == EICHLER * g and g.transpose() * _m(U2) * g == _m(U2)
