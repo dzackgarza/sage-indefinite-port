@@ -289,7 +289,8 @@ class FuchsianDomain:
         integral = matrix(ZZ, m, m, lambda s, t: (gram[s, t] * scale).round())
         # |v^t (G - G') v| <= (m / 2 scale) |v|^2 <= (m / 2 scale) v^t G v / least; double the margin for the eigenvalue estimate.
         slack = 1 + self.R(2 * m) / (scale * self.R(least))
-        found = pari(integral).qfminim((bound * slack * scale).ceil())[2].sage()
+        # flag 2: Fincke-Pohst with exact arithmetic; the default floating Gram-Schmidt loses precision at entries near 2^64.
+        found = pari(integral).qfminim((bound * slack * scale).ceil(), flag=2)[2].sage()
         result = []
         for column in found.columns():
             v = vector(ZZ, column)
