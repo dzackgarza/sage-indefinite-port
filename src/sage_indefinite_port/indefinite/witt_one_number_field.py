@@ -151,15 +151,24 @@ class WittOneLattice:
 
         Rank one: `O(\langle c \rangle) = \{\pm 1\}` (`u^2 = 1`), whatever the signs of `c`. Totally definite `M` (all signs equal and nonzero):
         PARI ``qfauto`` on `\pm\mathrm{Tr}(h)` and `\mathrm{Tr}(\omega h)`. Otherwise `M` of rank `\ge 2` is indefinite or of mixed sign at the
-        real places; `O(M)` is then an arithmetic group of a torus (rank two) or a cocompact group (rank `\ge 3`) and raises."""
+        real places; rank two uses :class:`binary_orthogonal_number_field.BinaryOrthogonalGroup`; rank `\ge 3` is a cocompact group and raises."""
         if self.k == 1:
             minus = identity_matrix(self.field, 3)
             minus[2, 2] = -1
             return [minus]
+        if self.k == 2 and (0 in self.signs or len(set(self.signs)) != 1):
+            from sage_indefinite_port.indefinite.binary_orthogonal_number_field import BinaryOrthogonalGroup
+
+            result = []
+            for g in BinaryOrthogonalGroup(self.field, self.inner).generators():
+                full = identity_matrix(self.field, 4)
+                full.set_block(2, 2, g)
+                result.append(full)
+            return result
         if 0 in self.signs or len(set(self.signs)) != 1:
             raise NotImplementedError(
                 f"O(M) for the anisotropic M = {list(self.inner)} of rank {self.k} over {self.field} with real signs {self.signs}: "
-                f"rank two needs the integral norm-one torus of the binary form with its improper coset, rank >= 3 a cocompact "
+                f"rank >= 3 that is not totally definite is a cocompact "
                 f"arithmetic group (even Clifford algebra and Voronoi) (#54)"
             )
         self.sign = self.signs[0]

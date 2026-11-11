@@ -1025,3 +1025,20 @@ def test_witt_one_parabolic_generators_mixed_sign_rank_one():
     g = model.reduce_isotropic(v)
     image = g * v
     assert image[int(1)] == int(0) and image[int(2)] == int(0) and image[int(0)].is_unit()
+
+
+def test_binary_orthogonal_group_of_one_minus_three_over_sqrt5():
+    r"""`M = <1, -3>` over `Q(sqrt 5)`: `3` is not a square in `Q(sqrt 5)`, so `M` is anisotropic, of mixed sign at no place but indefinite at
+    both. `SO(M)` is the integral norm-one torus of `L = Q(sqrt 5, sqrt 3)`, totally real of degree `4`, whose relative norm-one units have rank
+    `3 - 1 = 2`, so `SO(M)` is infinite. The reflection in `m_1` (`h(m_1, m_1) = 1`) is integral and improper, so the improper coset is found."""
+    from sage_indefinite_port.indefinite.binary_orthogonal_number_field import BinaryOrthogonalGroup
+
+    field = QuadraticField(int(5), "s")
+    gram = sage_matrix(field, [[int(1), int(0)], [int(0), int(-3)]])
+    group = BinaryOrthogonalGroup(field, gram)
+    generators = group.generators()
+    assert all(g.transpose() * gram * g == gram and all(c.is_integral() for c in g.list()) for g in generators)
+    assert any(g.det() == int(-1) for g in generators)
+    assert any(not all(f.is_cyclotomic() for f, _m in g.change_ring(QQbar).charpoly().change_ring(QQbar).factor()) for g in generators if False) or any(
+        g ** int(12) != sage_identity(field, int(2)) for g in generators if g.det() == int(1)
+    )
