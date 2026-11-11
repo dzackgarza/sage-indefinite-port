@@ -853,14 +853,29 @@ def _lie_algebra(columns):
     for g in elements:
         closure_algebra(g)
     if not basis:
-        # All generators and commutators have finite order. Words of length up to dim so(L) are tried in order of
-        # length; the first of infinite order contributes its unipotent and torus parts.
-        words = [identity_matrix(ZZ, size)]
-        for _length in range(size * (size - 1) // 2):
-            words = [w * h for w in words for h in columns]
-            infinite = next((w for w in words if not has_finite_order(w)), None)
-            if infinite is not None:
-                closure_algebra(infinite)
+        # All generators and commutators have finite order. The group is enumerated breadth first: either the
+        # enumeration closes (H is finite and g = 0), or it reaches an element of infinite order, which exists in an
+        # infinite H because a finitely generated periodic linear group is finite (Burnside-Schur; Schur, Ber. Akad.
+        # Berlin 1911; Derksen-Jeandel-Koiran, J. Symbolic Comput. 39 (2005), section 3). Either way it terminates.
+        one = identity_matrix(ZZ, size)
+        one.set_immutable()
+        seen = set([one])
+        frontier = [one]
+        while frontier:
+            current = frontier.pop(0)
+            following = None
+            for h in columns:
+                candidate = current * h
+                candidate.set_immutable()
+                if candidate in seen:
+                    continue
+                if not has_finite_order(candidate):
+                    following = candidate
+                    break
+                seen.add(candidate)
+                frontier.append(candidate)
+            if following is not None:
+                closure_algebra(following)
                 break
     position = 0
     while position < len(basis):
@@ -1062,12 +1077,8 @@ def arithmetic_normalizer_generators(lattice, generators, level, algebra_normali
     columns = [_column_matrix(lattice, g) for g in generators]
     algebra = _lie_algebra(columns)
     if not algebra:
-        if MatrixGroup(list(columns)).is_finite():
-            return FiniteSubgroupNormalizer(lattice, generators).normalizer_generators()
-        raise NotImplementedError(
-            f"the generators {columns} and their commutators all have finite order but generate an infinite group: the "
-            f"Zariski closure is not reached from the closures of single elements (#50)"
-        )
+        # g = 0 only when the enumeration in _lie_algebra closed, so H is finite.
+        return FiniteSubgroupNormalizer(lattice, generators).normalizer_generators()
     B = gram.change_ring(QQ)
     assert all(X.transpose() * B + B * X == 0 for X in algebra), "the Lie algebra of H is not in so(L)"
     span = _span(algebra, size)
