@@ -1188,15 +1188,9 @@ class CentralFieldCommutant:
         if f is None:
             raise NotImplementedError(f"{self.description()}: the primitive null vector {v} spans no even hyperbolic plane")
         rest = self._orthogonal(vectors, [v, f], scaled)
-        if len(rest) < 2 * self.degree:
-            raise NotImplementedError(f"{self.description()}: the complement of one hyperbolic plane has rank one")
-        v2 = self._first_kind_isotropic(rest, scaled)
+        v2 = self._first_kind_isotropic(rest, scaled) if len(rest) >= 2 * self.degree else None
         if v2 is None:
-            raise NotImplementedError(
-                f"{self.description()}: Lambda = H + M and the diagonal null search of M found no null vector; for M anisotropic "
-                f"over K the Witt index of Lambda is one, the Eichler criterion (GHS Prop. 3.3) needs two hyperbolic planes, and "
-                f"O(Lambda) needs a reflective or Voronoi-type fundamental domain over O_K (#54)"
-            )
+            return self._witt_one_model(v, f, rest, scaled)
         v2 = self._primitive(v2, matrix(QQ, [self._q_vector(x) for x in rest]))
         if K.ideal([self.h(x, v2, scaled) for x in rest]) != K.ideal(1):
             raise NotImplementedError(f"{self.description()}: the second hyperbolic plane is not unimodular for h / gamma")
@@ -1209,6 +1203,17 @@ class CentralFieldCommutant:
         form = change.transpose() * scaled * change
         generators = eichler_orthogonal.generators(K, form)
         return "orthogonal", K, generators, form, basis, scaled
+
+    def _witt_one_model(self, v, f, rest, scaled):
+        r"""Return the model `\Lambda = (O_K v + O_K f) \perp M` with `M` of rank one or with no null vector found, and the parabolic
+        generators of :class:`witt_one_number_field.WittOneLattice` (Euclidean cusp transitivity; raises outside its certificate)."""
+        from sage_indefinite_port.indefinite.witt_one_number_field import WittOneLattice
+
+        K = self.field
+        basis = [v, f, *self._free_basis(rest)]
+        change = matrix(K, basis).transpose()
+        form = change.transpose() * scaled * change
+        return "orthogonal", K, WittOneLattice(K, form).generators(), form, basis, scaled
 
     def description(self):
         return (

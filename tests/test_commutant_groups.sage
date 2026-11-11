@@ -985,3 +985,24 @@ def test_maximal_orders_containing_the_lipschitz_order_over_sqrt2():
         assert lattices.discriminant(basis) == expected
         assert lattices.closure(basis) is not None and lattices.key(lattices.closure(basis)) == lattices.key(basis)
         assert lattices.key([*basis, *order]) == lattices.key(basis)
+
+
+def test_witt_one_parabolic_generators_over_sqrt2():
+    r"""`U + <2>` over `Q(sqrt 2)`. `<2>` is anisotropic and totally positive; `O(<2>) = \\{\\pm 1\\}` up to units of norm... every generator is an
+    integral isometry. `v = e - f + m` is primitive isotropic (`2 \\cdot 1 \\cdot (-1) + 2 = 0`), and the Euclidean reduction returns an integral
+    isometry `g` with `g v` a unit multiple of `e`. The transvection `E(e, m)` is unipotent and not `1`, so the group is infinite."""
+    from sage_indefinite_port.indefinite.witt_one_number_field import WittOneLattice, eichler
+
+    field = QuadraticField(int(2), "r")
+    gram = sage_matrix(field, [[int(0), int(1), int(0)], [int(1), int(0), int(0)], [int(0), int(0), int(2)]])
+    model = WittOneLattice(field, gram)
+    generators = model.generators()
+    assert all(g.transpose() * gram * g == gram and all(c.is_integral() for c in g.list()) for g in generators)
+    one = sage_identity(field, int(3))
+    transvection = eichler(gram, sage_vector(field, [int(1), int(0), int(0)]), sage_vector(field, [int(0), int(0), int(1)]))
+    assert transvection != one and (transvection - one) ** int(3) == int(0)
+    v = sage_vector(field, [int(1), int(-1), int(1)])
+    g = model.reduce_isotropic(v)
+    image = g * v
+    assert g.transpose() * gram * g == gram and all(c.is_integral() for c in g.list())
+    assert image[int(1)] == int(0) and image[int(2)] == int(0) and image[int(0)].is_unit()
