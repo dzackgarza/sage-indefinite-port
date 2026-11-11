@@ -436,7 +436,8 @@ class _DedekindModel:
         return [sum((solution[s * degree + j] * K.gen() ** j for j in range(degree)), K(0)) for s in range(len(elements))]
 
     def _split(self, index, algebra_basis):
-        r"""Return matrix units `[[e_{ab}]]` of `B_i \cong M_n(K_i)`.
+        r"""Return matrix units `[[e_{ab}]]` of `B_i \cong M_m(D)` (`D = K_i` when split; `[[\epsilon_i]]` for a quaternion division `B_i`).
+        `n = 3`: :meth:`_split_cubic`; `n \ge 4`: :meth:`_split_general`.
 
         `n = 1`: `e_{11} = \epsilon_i`. `n = 2`: a noncentral `a` satisfies `a^2 = t a - s` over `K = K_i`, so `i = a - t/2` has `i^2 = \alpha \in K`;
         for `x` with `j = x - i x i^{-1} \ne 0`, `ij = -ji` and `j^2 = \beta \in K`, so `B_i = (\alpha, \beta)_K`. It is split exactly when the conic
@@ -458,21 +459,12 @@ class _DedekindModel:
         if n == 3:
             return self._split_cubic(index, component)
         if n > 3:
-            raise NotImplementedError(
-                f"Wedderburn component of dimension {n}^2 over {K}: explicit matrix units of a central simple algebra of degree n >= 4 need the "
-                f"splitting algorithm of Ivanyos, Ronyai and Schicho (J. Algebra 2012), which is not implemented (#54)"
-            )
-        a = next(b for b in component if any(b * c != c * b for c in component))
-        t, s = self._solve(index, a * a, [a, idempotent])
-        i = a - self._embed(index, t / 2)
-        (alpha,) = self._solve(index, i * i, [idempotent])
-        i_inverse = self._embed(index, ~alpha) * i
-        j = next(m for m in (x - i * x * i_inverse for x in component) if not m.is_zero())
-        (beta,) = self._solve(index, j * j, [idempotent])
+            return self._split_general(index, component, n, algebra_basis)
+        alpha, beta, i, j = self._quaternion_presentation(index, component, idempotent)
         found, point = Conic(K, [alpha, beta, -1]).has_rational_point(point=True)
         if not found:
-            self._quaternion(index, alpha, beta, i, j)
-            return None
+            self._quaternion(index, alpha, beta, i, j, idempotent)
+            return [[idempotent]]
         x, y, z = (K(c) for c in point)
         u = self._embed(index, x) * i + self._embed(index, y) * j + self._embed(index, z)
         first = None
@@ -605,19 +597,153 @@ class _DedekindModel:
         w = self._field_matrix(index, x, ~L(y)) * u
         return self._units_from_zero_divisor(index, w - self.idempotents[index], component, 3)
 
-    def _quaternion(self, index, alpha, beta, i, j):
+    def _quaternion_presentation(self, index, corner, unit):
+        r"""Return `(\alpha, \beta, i, j)` with `i^2 = \alpha`, `j^2 = \beta`, `ij = -ji` in the quaternion algebra over `K_i` with unit ``unit``
+        spanned over `Q` by ``corner``: a noncentral `a` satisfies `a^2 = t a - s`, `i = a - t/2`, and `j = x - i x i^{-1} \ne 0` for some `x`."""
+        emb = lambda c: self._embed(index, c) * unit
+        a = next(b for b in corner if any(b * c != c * b for c in corner))
+        t, _s = self._solve(index, a * a, [a, unit])
+        i = a - emb(t / 2)
+        (alpha,) = self._solve(index, i * i, [unit])
+        i_inverse = emb(~alpha) * i
+        j = next(m for m in (x - i * x * i_inverse for x in corner) if not m.is_zero())
+        (beta,) = self._solve(index, j * j, [unit])
+        return alpha, beta, i, j
+
+    def _split_general(self, index, component, n, algebra_basis):
+        r"""Return matrix units `[[e_{ab}]]` of `B_i \cong M_m(D)` for a component of degree `n \ge 4`, `D` of index `s \le 2`.
+
+        `\Lambda` is a maximal order (:func:`~sage_indefinite_port.indefinite.quaternion_orders_number_field.maximal_order`) containing the order
+        `\epsilon_i Z[F]`. The index `s` of `B_i` is the lcm of its local indices (Albert-Brauer-Hasse-Noether; Pierce, *Associative Algebras*,
+        Sec. 18.6), read by :meth:`_local_indices`. A complete set of orthogonal primitive idempotents (:meth:`_primitive_idempotents`) is connected
+        into matrix units by :meth:`_connect`; for `s = 2` the corner `e_{11} B e_{11} = D` is a quaternion division algebra, recorded by
+        :meth:`_quaternion` for the Morita reduction to `D`-lattices."""
+        from sage_indefinite_port.indefinite.quaternion_orders_number_field import MatrixAlgebraLattices, maximal_order
+
+        K, epsilon = self.fields[index], self.idempotents[index]
+        lattices = MatrixAlgebraLattices(component, epsilon)
+        order = lattices.closure([epsilon * b for b in algebra_basis])
+        assert order is not None, "the projection of Z[F] to the component is not integral"
+        maximal = maximal_order(lattices, order)
+        s = lcm(self._local_indices(index, lattices, maximal, component, n))
+        if s > 2:
+            raise NotImplementedError(
+                f"Wedderburn component of degree {n} over {K} is M_m(D) with D a division algebra of index {s} > 2: lattices over orders of D "
+                f"need the unit groups of the degree-n Voronoi algorithm of Braun, Coulangeon, Nebe and Schoennenbeck, which is not implemented (#54)"
+            )
+        units = self._connect(index, self._primitive_idempotents(index, maximal, component, s), component)
+        if s == 2:
+            e = units[0][0]
+            alpha, beta, i, j = self._quaternion_presentation(index, [e * b * e for b in component], e)
+            self._quaternion(index, alpha, beta, i, j, e)
+        return units
+
+    def _local_indices(self, index, lattices, maximal, component, n):
+        r"""Return the local indices of `B_i` at its ramified places (and `1`).
+
+        Finite `P`: at `p` dividing the discriminant of the maximal `\Lambda`, the simple quotients `\Lambda / M` by the maximal two-sided ideals
+        `M \supseteq \mathrm{rad}` (:func:`_maximal_two_sided_ideals`) are `M_{n/s}(F_{q^s})`, `q = N(P)` for the prime `P` with `P \Lambda \subseteq M`
+        (Reiner, *Maximal Orders*, Thm. 14.3 and 17.3), so `\dim_{F_p} \Lambda / M = n^2 f_P / s_P`. Real `\sigma`: `B_i \otimes_\sigma R` is the eigenspace
+        of the central `\Theta` for `\sigma(\Theta)`, `M_n(R)` or `M_{n/2}(H)`, and the trace form `\mathrm{Tr}(xy)` has signature `+n` or `-n` (times
+        a positive multiplicity) there; the spaces of different places are orthogonal."""
+        from sage.rings.qqbar import AA
+        from sage_indefinite_port.indefinite.quaternion_orders_number_field import _maximal_two_sided_ideals, _p_radical
+
+        K = self.fields[index]
+        result = [ZZ(1)]
+        base = abs(matrix(QQ, [lattices.coordinates(o) for o in maximal]).det())
+        for p in ZZ(lattices.discriminant(maximal)).prime_divisors():
+            radical = _p_radical(lattices, maximal, p)
+            for ideal in _maximal_two_sided_ideals(lattices, maximal, radical, p):
+                dimension = ZZ(abs(matrix(QQ, [lattices.coordinates(x) for x in ideal]).det()) / base).exact_log(p)
+                prime = next(P for P in K.primes_above(p) if lattices.contains(ideal, [self._embed(index, K(g)) for g in P.gens()]))
+                numerator = n * n * prime.residue_class_degree()
+                assert numerator % dimension == 0
+                result.append(ZZ(numerator // dimension))
+        if n % 2 == 0:
+            size = len(component)
+            trace_form = matrix(QQ, size, size, [(b * c).trace() for b in component for c in component]).change_ring(AA)
+            theta = matrix(QQ, [lattices.coordinates(self.theta * b) for b in component]).change_ring(AA)
+            for root, _m in self.factors[index].roots(AA):
+                space = (theta - root * identity_matrix(AA, size)).left_kernel().basis_matrix()
+                eigenvalues = (space * trace_form * space.transpose()).charpoly().roots(AA)
+                signature = sum(m for r, m in eigenvalues if r > 0) - sum(m for r, m in eigenvalues if r < 0)
+                result.append(ZZ(1) if signature > 0 else ZZ(2))
+        return result
+
+    def _primitive_idempotents(self, index, maximal, component, s):
+        r"""Return orthogonal primitive idempotents summing to `\epsilon_i`: `e` is primitive exactly when `\dim_K e B e = s^2` (`e B e \cong D`);
+        otherwise :meth:`_smaller_idempotent` splits it as `f + (e - f)`."""
+        pending, result = [self.idempotents[index]], []
+        while pending:
+            e = pending.pop()
+            if self._k_rank(index, [e * b * e for b in component]) == s * s:
+                result.append(e)
+                continue
+            f = self._smaller_idempotent(index, e, maximal, component)
+            pending.extend([f, e - f])
+        return result
+
+    def _smaller_idempotent(self, index, e, maximal, component):
+        r"""Return an idempotent `0 \ne f \ne e` of `e B e \cong M_r(D)`, `r \ge 2`.
+
+        `e \Lambda e` is an order of `e B e`; it contains a nonzero noninvertible element (it contains `m E_{11}` in a splitting), so the search
+        through its lattice in boxes of growing height ends at a zero divisor `z` (rank on `V` below that of `e`). `e B e` is von Neumann regular:
+        `z y z = z` for some `y \in e B e` (linear over `Q`), and `f = z y` is an idempotent with `f B = z B`."""
+        generators = [e * o * e for o in maximal]
+        corner = [e * b * e for b in component]
+        rank = e.rank()
+        bound = 0
+        while True:
+            bound += 1
+            for coefficients in product(range(-bound, bound + 1), repeat=len(generators)):
+                if max(abs(c) for c in coefficients) != bound:
+                    continue
+                z = sum((c * g for c, g in zip(coefficients, generators)), 0 * e)
+                if z.is_zero() or z.rank() == rank:
+                    continue
+                columns = matrix(QQ, [(z * c * z).list() for c in corner]).transpose()
+                y = sum((c * b for c, b in zip(columns.solve_right(vector(QQ, z.list())), corner)), 0 * e)
+                f = z * y
+                assert f * f == f and not f.is_zero() and f != e
+                return f
+
+    def _connect(self, index, idempotents, component):
+        r"""Return matrix units `e_{ab}` with `e_{aa}` the orthogonal primitive ``idempotents``: `e_{1a} = e_1 x e_a \ne 0`, `f = e_a x' e_1 \ne 0`; the
+        product `e_{1a} f` is nonzero in the division algebra `e_1 B e_1` (both lie in one-dimensional `D`-spaces of `M_m(D)`), so `e_{1a} f y = e_1`
+        for some `y \in e_1 B e_1` (linear over `Q`), `e_{a1} = f y`, and `e_{ab} = e_{a1} e_{1b}`."""
+        first = idempotents[0]
+        corner = [first * b * first for b in component]
+        rows, columns = [first], [first]
+        for e in idempotents[1:]:
+            upper = next(x for x in (first * b * e for b in component) if not x.is_zero())
+            lower = next(x for x in (e * b * first for b in component) if not x.is_zero())
+            p = upper * lower
+            equations = matrix(QQ, [(p * c).list() for c in corner]).transpose()
+            y = sum((c * b for c, b in zip(equations.solve_right(vector(QQ, first.list())), corner)), 0 * first)
+            rows.append(upper)
+            columns.append(lower * y)
+        m = len(idempotents)
+        units = [[columns[a] * rows[b] for b in range(m)] for a in range(m)]
+        zero = 0 * first
+        assert sum(units[a][a] for a in range(m)) == self.idempotents[index]
+        assert all(units[a][b] * units[c][d] == (units[a][d] if b == c else zero) for a in range(m) for b in range(m) for c in range(m) for d in range(m))
+        return units
+
+    def _quaternion(self, index, alpha, beta, i, j, corner):
         r"""Record the division component `B_i = D = (\alpha, \beta)_K` (:meth:`_split`): the Sage algebra with integral `c^2 \alpha, c'^2 \beta`
         for `c i, c' j`, a maximal order `O` containing `O_K \langle 1, ci, c'j, cc'ij \rangle`
         (:func:`~sage_indefinite_port.indefinite.quaternion_orders_number_field.maximal_orders_containing`, discriminant `|d_K|^4 N(\mathfrak D)^2`)
-        and a `D`-basis `w_1, \ldots, w_d` of `V_i`, giving the isomorphism of left `D`-modules `W : D^d \to V_i`, `(b_t) \mapsto \sum_t b_t w_t`."""
+        and a `D`-basis `w_1, \ldots, w_d` of `e V_i`, giving the isomorphism of left `D`-modules `W : D^d \to e V_i`, `(b_t) \mapsto \sum_t b_t w_t`, for
+        the unit ``corner`` `e = e_{11}` of `D = e B_i e` (`e = \epsilon_i` when `B_i = D`)."""
         from sage.algebras.quatalg.quaternion_algebra import QuaternionAlgebra
         from sage_indefinite_port.indefinite.quaternion_orders_number_field import OrderLattices, maximal_orders_containing
 
-        K, degree, idempotent = self.fields[index], self.factors[index].degree(), self.idempotents[index]
+        K, degree = self.fields[index], self.factors[index].degree()
         c, c2 = alpha.denominator(), beta.denominator()
         i, j = self._embed(index, K(c)) * i, self._embed(index, K(c2)) * j
         algebra = QuaternionAlgebra(K, c**2 * alpha, c2**2 * beta)
-        units = [idempotent, i, j, i * j]
+        units = [corner, i, j, i * j]
         lattices = OrderLattices(algebra)
         gens = [algebra(1), *algebra.gens()]
         order = [algebra(K(w)) * g for w in K.ring_of_integers().basis() for g in gens]
@@ -625,17 +751,17 @@ class _DedekindModel:
         for prime in algebra.ramified_places(inf=False):
             norm *= ZZ(prime.norm())
         maximal = maximal_orders_containing(algebra, order, abs(ZZ(K.discriminant())) ** 4 * norm**2)[0]
-        k = idempotent.nrows()
+        k = corner.nrows()
         self.division[index] = (algebra, lattices, maximal, units, None, None)
         frame, columns = [], []
-        for v in idempotent.columns():
+        for v in corner.columns():
             w = matrix(QQ, k, 1, list(v))
             block = [self._quaternion_matrix(index, q) * w for q in lattices._q_basis]
             if matrix(QQ, [list(b.column(0)) for b in columns + block]).rank() == len(columns) + 4 * degree:
                 columns.extend(block)
                 frame.append(w)
         image = block_matrix(QQ, [columns], subdivide=False)
-        assert image.rank() == idempotent.rank()
+        assert image.rank() == corner.rank()
         self.division[index] = (algebra, lattices, maximal, units, frame, image)
 
     def _quaternion_matrix(self, index, x):
@@ -647,7 +773,7 @@ class _DedekindModel:
         r"""Return `W^{-1}(\epsilon_i m)` as `d`-tuples of elements of `D`, for the columns `m` of ``columns``."""
         _algebra, lattices, _maximal, _units, frame, image = self.division[index]
         size = 4 * self.factors[index].degree()
-        coordinates = image.solve_right(self.idempotents[index] * columns)
+        coordinates = image.solve_right(self.division[index][3][0] * columns)
         return [tuple(lattices.element(list(c)[t * size : (t + 1) * size]) for t in range(len(frame))) for c in coordinates.columns()]
 
     def _tuple_span(self, index, vectors):
@@ -661,13 +787,15 @@ class _DedekindModel:
 
     def _d_linear(self, index, sources, images):
         r"""Return the `B`-linear map of `V` that sends the `D`-basis ``sources`` of `D^d` to ``images`` (through `W`) on `V_i`, the identity on
-        the other `V_j`; a left `D`-linear map is determined by the images of a `D`-basis."""
+        the other `V_j`; a left `D`-linear map `h` of `e V_i` is determined by the images of a `D`-basis, and extends to `V_i = \bigoplus_a e_{a1} e V_i`
+        by `e_{a1} v \mapsto e_{a1} h v`."""
         _algebra, lattices, _maximal, _units, frame, _image = self.division[index]
         k = self.theta.nrows()
         place = lambda x: sum((self._quaternion_matrix(index, b) * w for b, w in zip(x, frame)), matrix(QQ, k, 1))
         span = lambda xs: block_matrix(QQ, [[place(tuple(q * b for b in x)) for x in xs for q in lattices._q_basis]], subdivide=False)
-        epsilon = self.idempotents[index]
-        return identity_matrix(QQ, k) - epsilon + span(images) * span(sources).solve_right(epsilon)
+        epsilon, units = self.idempotents[index], self.units[index]
+        h = span(images) * span(sources).solve_right(self.division[index][3][0])
+        return identity_matrix(QQ, k) - epsilon + sum((row[0] * h * units[0][a] for a, row in enumerate(units)), 0 * epsilon)
 
     def _colon(self, index, source, target):
         r"""Return a `Z`-basis of `(I : J) = \{x \in D : I x \subseteq J\}` for full lattices ``source`` `I` and ``target`` `J` of `D`."""
@@ -869,7 +997,8 @@ class _DedekindModel:
         generated = []
         for index, K in enumerate(self.fields):
             if index in self.division:
-                operators = [self._quaternion_matrix(index, o) for o in self.division[index][2]]
+                units = self.units[index]
+                operators = [row[0] * self._quaternion_matrix(index, o) * column for o in self.division[index][2] for row in units for column in units[0]]
             else:
                 operators = [self._embed(index, w) * unit for w in K.ring_of_integers().basis() for row in self.units[index] for unit in row]
             for operator in operators:
