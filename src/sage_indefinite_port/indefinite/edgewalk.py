@@ -1366,9 +1366,17 @@ class _Edgewalk:
             omitted = tuple(root for root in vertex.roots if cone.evaluate_covector(covector, root) != 0)
             if not omitted:
                 raise ArithmeticError("a root-cone facet must omit a wall")
-            # An ideal corner with several affine components can omit more
-            # than one wall. Any omitted wall fixes the same forward side.
-            directions.append((included, omitted[0]))
+            # edgewalk.h:525-539 GetAdjacencyDirection: v_disc is the last
+            # root outside the facet. An ideal vertex with several affine
+            # components has facets that omit several walls (U+<2>+<2>
+            # under K3 norms). Every omitted wall gives the same edge: the
+            # roots vanish at k, so a point x = a k + c d of the edge plane
+            # P = (included)^perp pairs with an omitted root r as
+            # b(r, x) = c b(r, d), where d spans the edge ray and
+            # b(r, d) < 0 because r is not a wall of that edge. The tests
+            # in edge_plane, vertex_from_root and isotropic_next_vertex
+            # read only this sign, which is -sign(c) for every omitted r.
+            directions.append((included, omitted[-1]))
         return tuple(directions)
 
     def coloured_family(self, pairs: tuple[tuple[_Vector, int], ...]) -> Element:
