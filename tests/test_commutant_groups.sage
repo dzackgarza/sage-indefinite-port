@@ -1006,3 +1006,22 @@ def test_witt_one_parabolic_generators_over_sqrt2():
     image = g * v
     assert g.transpose() * gram * g == gram and all(c.is_integral() for c in g.list())
     assert image[int(1)] == int(0) and image[int(2)] == int(0) and image[int(0)].is_unit()
+
+
+def test_witt_one_parabolic_generators_mixed_sign_rank_one():
+    r"""`U + <2 sqrt 5>` over `Q(sqrt 5)`: `2 sqrt 5` is positive at one real place and negative at the other, `M` is anisotropic (rank one)
+    and even. `|N(2 sqrt 5 z^2)| = 20 N(z)^2 < 4` needs `|N(z)| < 1/sqrt 5`, which the Euclidean minimum `1/4` of `Q(sqrt 5)` allows,
+    so the certificate holds. `v = sqrt 5 e - f + m` is isotropic (`2 sqrt 5 \\cdot (-1) + 2 sqrt 5 = 0`), primitive, and it reduces to a unit multiple of `e`."""
+    from sage_indefinite_port.indefinite.witt_one_number_field import WittOneLattice
+
+    field = QuadraticField(int(5), "s")
+    root = field.gen()
+    gram = sage_matrix(field, [[int(0), int(1), int(0)], [int(1), int(0), int(0)], [int(0), int(0), int(2) * root]])
+    model = WittOneLattice(field, gram)
+    generators = model.generators()
+    assert all(g.transpose() * gram * g == gram and all(c.is_integral() for c in g.list()) for g in generators)
+    v = sage_vector(field, [root, int(-1), int(1)])
+    assert (sage_matrix([v]) * gram * sage_matrix([v]).transpose())[int(0), int(0)] == int(0)
+    g = model.reduce_isotropic(v)
+    image = g * v
+    assert image[int(1)] == int(0) and image[int(2)] == int(0) and image[int(0)].is_unit()

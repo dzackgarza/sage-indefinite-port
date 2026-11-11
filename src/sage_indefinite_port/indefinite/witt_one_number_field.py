@@ -17,8 +17,9 @@ bisection of the fundamental box of `M_{ev}`), `|N(y)|` strictly decreases to `y
 certificate, cusp classes are not decided here and the module raises.
 
 `O(M)` for totally definite `M` is the finite group of `Z`-automorphisms of `M_Z` preserving `\mathrm{Tr}(h)` and `\mathrm{Tr}(\omega h)` (these
-determine `h`; such maps are `O_K`-linear by nondegeneracy), from PARI ``qfauto`` (Plesken-Souvignier). An `M` indefinite at some real place is
-anisotropic of `K`-rank `0` there and raises.
+determine `h`; such maps are `O_K`-linear by nondegeneracy), from PARI ``qfauto`` (Plesken-Souvignier); for rank one it is `\pm 1` at any
+signs. The covering certificate and the reduction use only `|N(h)|` and the anisotropy of `M`, so they hold at any real signature. `O(M)` of
+rank `\ge 2` that is not totally definite raises.
 """
 
 from itertools import product
@@ -60,21 +61,15 @@ class WittOneLattice:
         self.integers = field.ring_of_integers().basis()
         assert self.integers[0] == 1
         self.embeddings = field.embeddings(RealIntervalField(200))
-        signs = set()
+        self.signs = []
         for sigma in self.embeddings:
             eigen = self.inner.apply_map(lambda x: sigma(x).center()).change_ring(QQ)
             if eigen.is_positive_definite():
-                signs.add(1)
+                self.signs.append(1)
             elif (-eigen).is_positive_definite():
-                signs.add(-1)
+                self.signs.append(-1)
             else:
-                raise NotImplementedError(
-                    f"M = {list(self.inner)} over {field} is indefinite at a real place; anisotropic over K it has K-rank 0 there, "
-                    f"and O(U + M) needs O(M) of a cocompact arithmetic group (Clifford-Voronoi for rank <= 4) (#54)"
-                )
-        if len(signs) != 1:
-            raise NotImplementedError(f"M = {list(self.inner)} is positive at some real places and negative at others (#54)")
-        self.sign = signs.pop()
+                self.signs.append(0)
         self.m_basis = [vector(field, [0, 0, *(1 if i == j else 0 for i in range(self.k))]) for j in range(self.k)]
         self.z_basis = [w * m for m in self.m_basis for w in self.integers]
         self.even_basis = self._even_sublattice()
@@ -137,7 +132,22 @@ class WittOneLattice:
         return True
 
     def inner_automorphisms(self):
-        r"""Return generators of `O(M)` as matrices on `\Lambda` fixing `e, f` (PARI ``qfauto`` on `\mathrm{Tr}(h)`, `\mathrm{Tr}(\omega h)`)."""
+        r"""Return generators of `O(M)` as matrices on `\Lambda` fixing `e, f`.
+
+        Rank one: `O(\langle c \rangle) = \{\pm 1\}` (`u^2 = 1`), whatever the signs of `c`. Totally definite `M` (all signs equal and nonzero):
+        PARI ``qfauto`` on `\pm\mathrm{Tr}(h)` and `\mathrm{Tr}(\omega h)`. Otherwise `M` of rank `\ge 2` is indefinite or of mixed sign at the
+        real places; `O(M)` is then an arithmetic group of a torus (rank two) or a cocompact group (rank `\ge 3`) and raises."""
+        if self.k == 1:
+            minus = identity_matrix(self.field, 3)
+            minus[2, 2] = -1
+            return [minus]
+        if 0 in self.signs or len(set(self.signs)) != 1:
+            raise NotImplementedError(
+                f"O(M) for the anisotropic M = {list(self.inner)} of rank {self.k} over {self.field} with real signs {self.signs}: "
+                f"rank two needs the integral norm-one torus of the binary form with its improper coset, rank >= 3 a cocompact "
+                f"arithmetic group (even Clifford algebra and Voronoi) (#54)"
+            )
+        self.sign = self.signs[0]
         omega = self.field.gen()
         trace = lambda x: QQ(self.field(x).trace())
         first = matrix(QQ, [[self.sign * trace(self.h(x, y)) for y in self.z_basis] for x in self.z_basis])
