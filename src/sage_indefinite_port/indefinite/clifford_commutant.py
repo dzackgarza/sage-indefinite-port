@@ -12,7 +12,9 @@ splits `L \otimes Z = I \oplus \tau(I)`. Then `C = Z + I \subset A \otimes Z`, `
 `\sigma(\chi(c)) \chi(c) = N_{Z/Q}(\mathrm{nrd}\, c)`; `\chi` maps `SL_1(C)` onto `\mathrm{Spin} \to SO(A, \sigma)` with kernel `\pm 1`.
 
 Integral points. `O_C = C \cap M_r(O_Z)` is an order and `\chi(SL_1(O_C)) \subseteq C(Z)`; `SL_1(O_C)` comes from
-:class:`QuaternionOrderVoronoi`. A non-split `A` has no improper similitudes (KMRT, Sec. 13.A), so every `g \in C(Z)` is proper and acts on
+:class:`QuaternionOrderVoronoi`. A non-split `A` has only proper isometries: `O(A, \sigma) = O^+(A, \sigma)` (KMRT, Corollary (13.43), from Theorem (13.38): an improper
+similitude `g` makes `A` Brauer-equivalent to `(Z, \mu(g))_Q`, split when `\mu(g) = 1`; first observed by Kneser). Improper similitudes with
+`\mu \ne 1` may exist, but `C(Z)` consists of isometries, so every `g \in C(Z)` is proper and acts on
 `C` by an inner automorphism `x \mapsto n x n^{-1}`, `n \in C^\times`, preserving `O_C` (conjugation by `g \in GL_r(Z)` preserves `M_r(O_Z)`);
 then `g = \pm n \tau(n) / q`, `q^2 = N_{Z/Q}(\mathrm{nrd}\, n)`. For `O_C` maximal, `O_Z` principal and `C` without real ramification, the
 normalizer is `N(O_C) = Z^\times O_C^\times \langle n_P \rangle`, `n_P` a generator of the two-sided prime ideal `\mathfrak P` over each finite
@@ -22,7 +24,7 @@ units whose reduced norms represent `\mathrm{nrd}(O_C^\times) / (O_Z^\times)^2`.
 integral ones among the finitely many `\pm \chi(u n_T)/q`, `u` a product of the `u_i`, `n_T = \prod_{P \in T} n_P`.
 """
 
-from itertools import combinations
+from itertools import combinations, product
 
 from sage.algebras.quatalg.quaternion_algebra import QuaternionAlgebra
 from sage.matrix.constructor import matrix
@@ -33,8 +35,9 @@ from sage.rings.integer_ring import ZZ
 from sage.rings.number_field.number_field import NumberField
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.rational_field import QQ
+from sage.schemes.plane_conics.constructor import Conic
 from sage_extensions.algebras.isometry_commutant import IsometryCommutant, _short_vectors
-from sage_indefinite_port.indefinite.commutant_groups import _diagonal_null, _verified
+from sage_indefinite_port.indefinite.commutant_groups import _verified
 from sage_indefinite_port.indefinite.quaternion_voronoi_number_field import QuaternionOrderVoronoi
 
 
@@ -225,21 +228,40 @@ def _reduced_norm_ideal(field, elements):
 
 
 def _algebra_isomorphism(source_algebra, target_algebra):
-    r"""Return the images `x, y` in ``target_algebra`` of the generators `i, j` of ``source_algebra`` (same centre).
+    r"""Return the images `x, y` in ``target_algebra`` of the generators `i, j` of ``source_algebra`` (same centre), or ``None`` when the
+    algebras are not isomorphic.
 
-    `x` is a pure quaternion with `x^2 = a`: a null vector `(u, v, w, t)` of `\langle a', b', -a'b', -a \rangle` with `t \ne 0` (`t = 0` would
-    make the pure norm form isotropic, i.e. the algebra split, which a division algebra is not). `y` lies in the plane of pure quaternions
-    anticommuting with `x` and has `y^2 = b`: a null vector of the diagonalized ternary form, through the number-field conic (Voight,
-    *Quaternion Algebras*, Ch. 5 on standard generators: an isomorphism sends `i, j` to anticommuting pure elements of squares `a, b`)."""
+    Quaternion algebras over a number field are isomorphic exactly when they ramify at the same places (Albert-Brauer-Hasse-Noether;
+    Voight, *Quaternion Algebras*, Main Theorem 14.6.1), which decides. Then `x` is a pure quaternion with `x^2 = a`, a null vector
+    `(u, v, w, t)`, `t \ne 0`, of `\langle a', b', -a'b', -a \rangle`. Following Lam, *Introduction to Quadratic Forms over Fields*, I.3.4, it
+    is a value `c = a' u^2 + b' v^2` represented by `\langle -a'b', -a \rangle`, i.e. a point of the conic `\langle -a'b', -a, c \rangle`, decided
+    exactly by Sage's number-field conic for each `c`. Such `c` form a nonempty set open at finitely many places, so the enumeration of
+    `(u, v)` over growing boxes of `O_Z` ends. `t \ne 0` because the pure norm form of a division algebra is anisotropic. `y` lies in the
+    plane of pure quaternions anticommuting with `x` with `y^2 = b`, a point of a ternary conic, decided exactly."""
+    if set(source_algebra.ramified_places(inf=False)) != set(target_algebra.ramified_places(inf=False)) or sorted(
+        source_algebra.ramified_places(inf=True)[1], key=str
+    ) != sorted(target_algebra.ramified_places(inf=True)[1], key=str):
+        return None
     field = source_algebra.base_ring()
     a, b = source_algebra.invariants()
     a2, b2 = target_algebra.invariants()
     _one, i2, j2, k2 = target_algebra.basis()
-    null = _diagonal_null(field, [a2, b2, -a2 * b2, -a])
-    if null is None:
-        raise NotImplementedError(f"no pure quaternion of square {a} found in {target_algebra} by the bounded search (#54)")
-    assert null[3] != 0
-    x = (null[0] * i2 + null[1] * j2 + null[2] * k2) / null[3]
+    integers = field.ring_of_integers().basis()
+    x, bound = None, 1
+    while x is None:
+        box = [sum(c * g for c, g in zip(coefficients, integers)) for coefficients in product(range(-bound, bound + 1), repeat=len(integers))]
+        for u, v in product(box, repeat=2):
+            c = a2 * u**2 + b2 * v**2
+            if c == 0:
+                continue
+            found, point = Conic(field, [-a2 * b2, -a, c]).has_rational_point(point=True)
+            if not found:
+                continue
+            W, T, S = list(point)
+            if T != 0:
+                x = (S * u * i2 + S * v * j2 + W * k2) / T
+                break
+        bound += 1
     assert x * x == target_algebra(a)
     pure = [i2, j2, k2]
     equation = matrix(field, [[(x * p + p * x).coefficient_tuple()[0]] for p in pure])
@@ -250,9 +272,11 @@ def _algebra_isomorphism(source_algebra, target_algebra):
     g12 = (y1 * y2 + y2 * y1).coefficient_tuple()[0] / 2
     w2 = y2 - (g12 / g11) * y1
     g22 = (w2 * w2).coefficient_tuple()[0]
-    null = _diagonal_null(field, [g11, g22, -b])
-    assert null is not None and null[2] != 0
-    y = (null[0] * y1 + null[1] * w2) / null[2]
+    found, point = Conic(field, [g11, g22, -b]).has_rational_point(point=True)
+    assert found, "isomorphic algebras: the anticommuting plane represents b"
+    P, Q, T = list(point)
+    assert T != 0
+    y = (P * y1 + Q * w2) / T
     assert y * y == target_algebra(b) and x * y == -y * x
     return x, y
 
@@ -265,7 +289,8 @@ def clifford_transporter(source, start, square, target_gram, targets):
     composed with one of the two embeddings of the target discriminant field (the second swaps `C'` and `\tau(C')`). So: the discriminants
     agree; for each embedding, `C \cong C''` (:func:`_algebra_isomorphism`), corrected by the generator `\alpha` of the connecting ideal
     `\psi_0(O_C) O_{C''}` (Eichler, class number one) to an isomorphism of maximal orders; `b` is its unique lift to `A` up to `Q^\times`
-    (Skolem-Noether over `Z`, with `b` rational), a similitude with `\sigma(b) s b = \mu`. Every transporter is `\pm t_0 b \chi(n) / q` with `n`
+    (Skolem-Noether over `Z`, with `b` rational), a similitude with `\sigma(b) s b = \mu`. A transporter is an isometry, and whether it carries `C` to `C'` or to `\tau(C')` is
+    covered by the two embeddings, so no improper coset is missed. Every transporter is `\pm t_0 b \chi(n) / q` with `n`
     in the normalizer of `O_C`, `q^2 = \mu N(\mathrm{nrd}\, n)`, modulo `\chi(SL_1(O_C)) \subseteq C(Z)`, so the finite list of
     :meth:`CliffordModel.normalizer_representatives` decides."""
     commutant = source.commutant
@@ -284,7 +309,10 @@ def clifford_transporter(source, start, square, target_gram, targets):
         frame = [inverse * F.apply_map(embedding) * start for F in target.frame]
         order = [move(o) for o in target.order_basis]
         voronoi = QuaternionOrderVoronoi(algebra, order)
-        x, y = _algebra_isomorphism(source.algebra, algebra)
+        isomorphism = _algebra_isomorphism(source.algebra, algebra)
+        if isomorphism is None:
+            continue
+        x, y = isomorphism
         psi0 = lambda q: sum((c * g for c, g in zip(q.coefficient_tuple(), (algebra(1), x, y, x * y))), algebra(0))
         connecting = [psi0(o) * o2 for o in source.order_basis for o2 in order]
         alpha = _norm_generator(voronoi, connecting, _reduced_norm_ideal(source.field, connecting))
