@@ -437,8 +437,8 @@ class _DedekindModel:
         `n = 1`: `e_{11} = \epsilon_i`. `n = 2`: a noncentral `a` satisfies `a^2 = t a - s` over `K = K_i`, so `i = a - t/2` has `i^2 = \alpha \in K`;
         for `x` with `j = x - i x i^{-1} \ne 0`, `ij = -ji` and `j^2 = \beta \in K`, so `B_i = (\alpha, \beta)_K`. It is split exactly when the conic
         `\alpha x^2 + \beta y^2 = z^2` has a `K`-point (Voight, *Quaternion Algebras*, Thm. 5.4.4); then `w = x i + y j` has `w^2 = z^2`, and
-        `u = w + z \ne 0` is a zero divisor (`u (w - z) = 0`). Some `p = u y`, `y \in \{1, i, j, ij\}`, has nonzero reduced trace `\tau` (the
-        trace form is nondegenerate) and reduced rank one, so `p^2 = \tau p` and `e_{11} = p / \tau` is a rank-one idempotent; `e_{22} = 1 - e_{11}`,
+        `u = w + z \ne 0` is a zero divisor (`u (w - z) = 0`). Some `p = u y`, `y` in `\{1, i, j, ij\}` or the `Q`-basis of `B_i`, has nonzero
+        reduced trace `\tau` (the trace form is nondegenerate and the `Q`-basis spans `B_i`) and reduced rank one, so `p^2 = \tau p` and `e_{11} = p / \tau` is a rank-one idempotent; `e_{22} = 1 - e_{11}`,
         `e_{12} = e_{11} x e_{22} \ne 0`, `f = e_{22} x' e_{11} \ne 0`, `e_{12} f = c e_{11}`, `e_{21} = c^{-1} f`."""
         from sage.schemes.plane_conics.constructor import Conic
 
@@ -471,7 +471,8 @@ class _DedekindModel:
             )
         x, y, z = (K(c) for c in point)
         u = self._embed(index, x) * i + self._embed(index, y) * j + self._embed(index, z)
-        for factor in (idempotent, i, j, i * j):
+        first = None
+        for factor in (idempotent, i, j, i * j, *component):
             p = u * factor
             if p.is_zero():
                 continue
@@ -479,6 +480,7 @@ class _DedekindModel:
             if tau != 0:
                 first = self._embed(index, ~tau) * p
                 break
+        assert first is not None, f"no u y with nonzero reduced trace for the zero divisor u of ({alpha}, {beta})_{K}"
         second = idempotent - first
         upper = next(m for m in (first * b * second for b in component) if not m.is_zero())
         lower = next(m for m in (second * b * first for b in component) if not m.is_zero())
