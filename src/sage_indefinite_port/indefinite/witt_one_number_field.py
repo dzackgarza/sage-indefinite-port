@@ -238,12 +238,11 @@ class WittOneLattice:
         return w
 
     def generators(self):
+        links = ()
         if not self.covering_certificate():
-            raise NotImplementedError(
-                f"U + M with M = {list(self.inner)} over {self.field}: the Euclidean covering |N(h(z + a))| < 2^d N(a_e)^(+-2) by "
-                f"P(a_e^(+-1)) was not certified within {BOX_BUDGET} boxes, so transitivity on primitive isotropic lines is not proved; "
-                f"the cusp classes and their links over O_K are needed (#54)"
-            )
+            from sage_indefinite_port.indefinite.genus_number_field import cusp_links
+
+            links = cusp_links(self)
         n = self.k + 2
         weyl = self.weyl()
         result = [-identity_matrix(self.field, n), *([weyl] if weyl is not None else []), *self.inner_automorphisms()]
@@ -254,6 +253,7 @@ class WittOneLattice:
             scaling = identity_matrix(self.field, n)
             scaling[0, 0], scaling[1, 1] = u, ~u
             result.append(scaling)
+        result.extend(links)
         assert all(self.preserves(g) and g.transpose() * self.gram * g == self.gram for g in result)
         return tuple(result)
 
