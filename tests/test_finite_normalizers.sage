@@ -354,3 +354,22 @@ def test_decomposition_normalizer_of_glued_scaled_hyperbolic_planes():
     B = gram.change_ring(SageQQ)
     assert all(X.transpose() * B + B * X == int(0) for X in (h1, h2))
     assert _matrix_group_order(orthogonal_decomposition_normalizer(gram, [h1, h2])) == int(8)
+
+
+def test_virtually_abelian_normalizer_with_a_nonabelian_centralizer_of_the_kernel():
+    r"""L = (<1> + <-2>) + A2, H = <f + 1, 1 + rho, 1 + s> = <f> x O(A2) with f = 3 + 2 sqrt 2, rho of order 6 and s
+    the root swap: O(A2) is dihedral of order 12, so the centralizer of the congruence kernel <f^k> is all of H, not
+    abelian. The discriminant groups Z/2 and Z/3 admit no gluing, so O(L) = O(<1> + <-2>) x O(A2), and an element
+    (a, b) normalizes H exactly when a normalizes <f>. Every element of O(<1> + <-2>) = {+-f^k, +-r f^k} does, with
+    r (y -> -y) inverting f. So every returned generator conjugates f + 1 to its inverse or itself, and one inverts."""
+    from sage_indefinite_port.indefinite.finite_normalizers import normalizer_generators
+
+    lattice = Lattices(ZZ)([[1, 0, 0, 0], [0, -2, 0, 0], [0, 0, 2, -1], [0, 0, -1, 2]])
+    f = _from_columns(lattice, [[3, 4, 0, 0], [2, 3, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+    rho = _from_columns(lattice, [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, -1], [0, 0, 1, 0]])
+    swap = _from_columns(lattice, [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    assert rho * swap != swap * rho
+    generators = normalizer_generators(lattice, (f, rho, swap), int(3), orthogonal_decomposition_normalizer)
+    for g in generators:
+        assert g * f * ~g in (f, ~f)
+    assert any(g * f * ~g == ~f for g in generators)
