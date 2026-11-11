@@ -2079,7 +2079,22 @@ def centralizer_generators(commutant):
     model = _split_simple(commutant)
     if model is not None:
         return model.centralizer_generators()
+    if _factorwise(commutant):
+        from sage_indefinite_port.indefinite.factorwise_commutant import factorwise_centralizer_generators
+
+        return factorwise_centralizer_generators(commutant, centralizer_generators)
     return commutant.centralizer_generators()
+
+
+def _factorwise(commutant):
+    r"""Return whether `A` is semisimple, not commutative, with a centre that is not a field (the factor-wise route)."""
+    if commutant.radical_basis() or len(commutant._center_basis()) == 1:
+        return False
+    if all(x * y == y * x for x in commutant.order_basis for y in commutant.order_basis):
+        return False
+    from sage_indefinite_port.indefinite.factorwise_commutant import central_idempotents
+
+    return len(central_idempotents(commutant)) > 1
 
 
 def equivariant_transporter(commutant, target_gram, targets):
@@ -2107,6 +2122,13 @@ def equivariant_transporter(commutant, target_gram, targets):
         return model.equivariant_transporter(target_gram, targets)
     if all(x * y == y * x for x in commutant.order_basis for y in commutant.order_basis):
         return EtaleCommutant(commutant).equivariant_transporter(target_gram, targets)
+    if _factorwise(commutant):
+        from sage_indefinite_port.indefinite.factorwise_commutant import factorwise_transporter
+
+        start = rational_intertwiner(commutant.isometries, targets)
+        if start is None:
+            return None
+        return factorwise_transporter(commutant, target_gram, targets, start, equivariant_transporter, centralizer_generators)
     raise NotImplementedError(_missing_group(commutant))
 
 

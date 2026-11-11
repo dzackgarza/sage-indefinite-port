@@ -1,0 +1,162 @@
+r"""Centralizers and transporters of a semisimple commutant whose centre is not a field (#54).
+
+Let `A` be the commutant of the isometries `F_k` of `(L = Z^r, B)`, semisimple with centre `Z(A) = \prod_i Z_i`. Its primitive central
+idempotents `e_i` (from the factorization of the minimal polynomial of a generic central element and the Chinese remainder theorem) split
+`Q^r = \bigoplus e_i Q^r`. The adjoint `\dagger` permutes the `e_i`: if `e_i^\dagger = e_i`, the summand is `B`-orthogonal to the others; if
+`e_i^\dagger = e_j \ne e_i`, the pair `e_i + e_j` is one orthogonal summand of GL type. Group the idempotents into these `\dagger`-orbits
+`\epsilon_1, \ldots, \epsilon_s`; then `L_i = L \cap \epsilon_i Q^r` are orthogonal, `L \supseteq \bigoplus L_i` with finite glue, and every
+`F_k` preserves each `L_i`.
+
+Centralizer. An element of `C(Z)` preserves each `\epsilon_i Q^r` (it commutes with the centre), so it restricts to `c_i \in C_i`, the centralizer
+of the factor; conversely `\oplus c_i` lies in `C(Z)` exactly when it maps `L` to `L`, a subgroup of finite index of `\prod C_i`, whose Schreier
+generators (membership: integrality on `Z^r`) generate `C(Z)`.
+
+Transporter. A rational intertwiner `t_0` carries the `\epsilon_i` to the target's `\epsilon_i' = t_0 \epsilon_i t_0^{-1}`, so an integral transporter `t`
+restricts to factor transporters `t_i : L_i \to L_i'`, and `t_i \in t_i^0 C_i` for one factor transporter `t_i^0` (``None`` for one factor is a
+proof for `L`). `\oplus t_i` maps `L` onto `L'` exactly when its action on `\bigoplus L_i^\sharp / L_i` carries the glue of `L` to that of `L'`, which
+depends on each `c_i` only through its image in the finite group `\mathrm{Aut}(L_i^\sharp / L_i)`. So `t_i = t_i^0 c_i` with `c_i` over a transversal
+of `C_i` modulo the kernel of that action decides, through :func:`_verified`.
+"""
+
+from itertools import product
+
+from sage.matrix.constructor import block_matrix, matrix
+from sage.matrix.special import identity_matrix
+from sage.rings.integer_ring import ZZ
+from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
+from sage.rings.rational_field import QQ
+from sage_extensions.algebras.isometry_commutant import IsometryCommutant
+from sage_extensions.categories.lattice_centralizers import finite_preimage_generators
+
+
+def central_idempotents(commutant):
+    r"""Return the primitive central idempotents of the semisimple commutant (module docstring)."""
+    center = [c.change_ring(QQ) for c in commutant._center_basis()]
+    ring = PolynomialRing(QQ, "x")
+    for coefficients in product(range(1, len(center) + 3), repeat=len(center)):
+        x = sum(c * z for c, z in zip(coefficients, center))
+        minimal = ring(x.minimal_polynomial())
+        if minimal.degree() == len(center) and minimal.is_squarefree():
+            break
+    else:
+        raise AssertionError("no central element generates the centre")
+    result = []
+    for factor, _e in minimal.factor():
+        cofactor = minimal // factor
+        idempotent = ((cofactor * cofactor.inverse_mod(factor)) % minimal)(x)
+        result.append(idempotent)
+    one = identity_matrix(QQ, commutant.rank)
+    assert sum(result) == one and all(e * e == e for e in result)
+    return result
+
+
+def adjoint_orbits(commutant, idempotents):
+    r"""Group the idempotents into `\dagger`-orbits and return their sums `\epsilon_i`."""
+    remaining = list(idempotents)
+    result = []
+    while remaining:
+        e = remaining.pop(0)
+        image = commutant.adjoint(e)
+        if image == e:
+            result.append(e)
+            continue
+        assert image in remaining
+        remaining.remove(image)
+        result.append(e + image)
+    return result
+
+
+def _summand_basis(projector):
+    r"""Return an integral basis matrix (columns) of `\mathrm{image}(\epsilon) \cap Z^r`."""
+    r = projector.nrows()
+    complement = identity_matrix(QQ, r) - projector
+    scale = complement.denominator()
+    return matrix(ZZ, scale * complement).right_kernel_matrix().transpose()
+
+
+def _restrict(basis, element):
+    return basis.solve_right(element * basis)
+
+
+def _factor(gram, isometries, projector):
+    basis = _summand_basis(projector)
+    factor_gram = basis.transpose() * gram * basis
+    factor_isometries = [matrix(ZZ, _restrict(basis.change_ring(QQ), F.change_ring(QQ))) for F in isometries]
+    return basis, matrix(ZZ, factor_gram), factor_isometries
+
+
+def factorwise_centralizer_generators(commutant, centralizer_generators):
+    r"""Return generators of `C(Z)` (module docstring, Centralizer); ``centralizer_generators`` is the dispatcher for the factors."""
+    orbits = adjoint_orbits(commutant, central_idempotents(commutant))
+    r = commutant.rank
+    bases, moves = [], []
+    for projector in orbits:
+        basis, gram, isometries = _factor(commutant.gram, commutant.isometries, projector)
+        bases.append(basis)
+        for c in centralizer_generators(IsometryCommutant(gram, isometries)):
+            moves.append((len(bases) - 1, matrix(QQ, c)))
+    frame = block_matrix(QQ, [[b.change_ring(QQ) for b in bases]], subdivide=False)
+    assert frame.is_square() and frame.det() != 0
+    sizes = [b.ncols() for b in bases]
+
+    def embed(index, c):
+        blocks = [c if i == index else identity_matrix(QQ, sizes[i]) for i in range(len(sizes))]
+        return frame * block_matrix(QQ, [[blocks[i] if i == j else matrix(QQ, sizes[i], sizes[j]) for j in range(len(sizes))] for i in range(len(sizes))], subdivide=False) * frame.inverse()
+
+    embedded = [embed(i, c) for i, c in moves] + [-identity_matrix(QQ, r)]
+    integral = lambda g: all(x in ZZ for x in g.list())
+    subgroup, _index = finite_preimage_generators(embedded, lambda g: g, integral)
+    result = tuple(matrix(ZZ, g) for g in subgroup)
+    assert all(commutant.is_centralizer_element(g) for g in result)
+    return result
+
+
+def _discriminant_transversal(gram, generators):
+    r"""Return a transversal of the group generated by ``generators`` modulo the kernel of its action on `L^\sharp / L`."""
+    dual = gram.change_ring(QQ).inverse()
+    one = identity_matrix(QQ, gram.nrows())
+    same = lambda x, y: all(c in ZZ for c in ((~x * y - one) * dual).list())
+    reps, position = [one], 0
+    while position < len(reps):
+        current = reps[position]
+        position += 1
+        for g in generators:
+            moved = matrix(QQ, g) * current
+            if not any(same(known, moved) for known in reps):
+                reps.append(moved)
+    return reps
+
+
+def factorwise_transporter(commutant, target_gram, targets, start, transporter, centralizer_generators):
+    r"""Return an integral transporter to ``(target_gram, targets)`` or ``None`` as a proof (module docstring, Transporter)."""
+    from sage_indefinite_port.indefinite.commutant_groups import _verified
+
+    orbits = adjoint_orbits(commutant, central_idempotents(commutant))
+    factors = []
+    for projector in orbits:
+        basis, gram, isometries = _factor(commutant.gram, commutant.isometries, projector)
+        image = start * projector * start.inverse()
+        target_basis, factor_target_gram, factor_targets = _factor(target_gram, targets, image)
+        if abs(gram.det()) != abs(factor_target_gram.det()):
+            return None
+        factor_commutant = IsometryCommutant(gram, isometries)
+        t0 = transporter(factor_commutant, factor_target_gram, factor_targets)
+        if t0 is None:
+            return None
+        cosets = _discriminant_transversal(gram, centralizer_generators(factor_commutant))
+        factors.append((basis, target_basis, matrix(QQ, t0), cosets))
+    frame = block_matrix(QQ, [[f[0].change_ring(QQ) for f in factors]], subdivide=False)
+    target_frame = block_matrix(QQ, [[f[1].change_ring(QQ) for f in factors]], subdivide=False)
+    sizes = [f[0].ncols() for f in factors]
+    for choice in product(*(f[3] for f in factors)):
+        blocks = [f[2] * c for f, c in zip(factors, choice)]
+        diagonal = block_matrix(
+            QQ,
+            [[blocks[i] if i == j else matrix(QQ, sizes[i], sizes[j]) for j in range(len(sizes))] for i in range(len(sizes))],
+            subdivide=False,
+        )
+        candidate = target_frame * diagonal * frame.inverse()
+        found = _verified(commutant, candidate, target_gram, targets)
+        if found is not None:
+            return found
+    return None

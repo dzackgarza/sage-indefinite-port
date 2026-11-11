@@ -1041,3 +1041,28 @@ def test_binary_orthogonal_group_of_one_minus_three_over_sqrt5():
     assert any(g.det() == int(-1) for g in generators)
     one = sage_identity(field, int(2))
     assert any(g.det() == int(1) and g != one and g != -one for g in generators)
+
+
+def _hyperbolic_plus_pell():
+    r"""`L = U + <1> + <-2>` and `F = 1_U + P`, `P = [[3, 4], [2, 3]]` the Pell unit `3 + 2 sqrt 2` on `<1, -2>` (`P^t diag(1, -2) P =
+    diag(1, -2)`). The commutant is `M_2(Q) \\times Q(sqrt 2)`, semisimple with a centre `Q \\times Q(sqrt 2)` of dimension 3."""
+    gram = block_matrix(SageZZ, [[sage_matrix(SageZZ, [[int(0), int(1)], [int(1), int(0)]]), int(0)], [int(0), sage_matrix(SageZZ, [[int(1), int(0)], [int(0), int(-2)]])]], subdivide=False)
+    F = block_matrix(SageZZ, [[sage_identity(SageZZ, int(2)), int(0)], [int(0), sage_matrix(SageZZ, [[int(3), int(4)], [int(2), int(3)]])]], subdivide=False)
+    return gram, F
+
+
+def test_factorwise_centralizer_and_transporter():
+    gram, F = _hyperbolic_plus_pell()
+    assert F.transpose() * gram * F == gram
+    commutant = IsometryCommutant(gram, [F])
+    generators = centralizer_generators(commutant)
+    assert all(g.transpose() * gram * g == gram and g * F == F * g for g in generators)
+    one = sage_identity(SageZZ, int(4))
+    assert any(g.submatrix(int(2), int(2), int(2), int(2)) not in (sage_identity(SageZZ, int(2)), -sage_identity(SageZZ, int(2))) for g in generators)
+    P = block_matrix(SageZZ, [[sage_matrix(SageZZ, [[int(1), int(1)], [int(0), int(1)]]), int(0)], [int(0), sage_identity(SageZZ, int(2))]], subdivide=False)
+    assert P * F == F * P
+    moved = (P.inverse().transpose() * gram * P.inverse()).change_ring(SageZZ)
+    assert moved != gram
+    t = equivariant_transporter(commutant, moved, [F])
+    assert t is not None and _is_transporter(t, gram, moved, [F], [F])
+    assert equivariant_transporter(commutant, int(3) * gram, [F]) is None
