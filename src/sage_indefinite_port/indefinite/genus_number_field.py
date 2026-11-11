@@ -559,23 +559,40 @@ class Cusps:
         return False
 
     def links(self):
-        r"""Return links `g_i` with `\langle \mathrm{Stab}(e), g_i \rangle = O(\Lambda)`, raising the link height until the certificate holds."""
+        r"""Return links `g_i` with `\langle \mathrm{Stab}(e), g_i \rangle = O(\Lambda)`, raising the link height until the certificate holds.
+
+        Stopping rule. With `r` the least local-closure radius (or the least trial radius when no singular point is closed) and
+        `n = kd`, the covering of `[0, 1]^n` minus the punctured cubes needs at most `\lceil (2r)^{-1} \rceil^n` cubes of side `2r`, and the
+        height is raised at most that many times (the volume of the fundamental box divided by that of the least closure cube). Past it,
+        a singular point without a local closure has a degenerate tangency (no link through it, or link gradients that do not surround
+        `0`, so first-order closure fails) and the method raises naming it; it never returns a partial set of links."""
         grams = self.lattice._quadratic_intervals(self.lattice.even_e)
         polynomial = self._norm_polynomial()
-        links, singular, cubes = [], [], []
+        dimension = len(self.lattice.even_e)
+        links, singular = [], []
         height = 0
         while True:
             height += 1
             for kind, t, g, norm in self._cusps_of_height(height):
                 reduced = vector(QQ, [c - c.floor() for c in t])
                 (links if kind == "link" else singular).append((kind, reduced, g, norm))
-            cubes = []
+            cubes, open_points = [], []
             for _kind, t_s, _g, _norm in singular:
                 radius = self._local_radius(polynomial, t_s, links)
-                if radius is not None:
+                if radius is None:
+                    open_points.append(t_s)
+                else:
                     cubes.append((t_s, radius))
             if links and self._certified(grams, links, cubes):
                 return tuple(g for _kind, _t, g, _norm in links)
+            least = min([r for _t, r in cubes] + [_RADII[-1]])
+            bound = (1 / (2 * least)).ceil() ** dimension
+            if height > bound:
+                raise NotImplementedError(
+                    f"U + M with M = {list(self.lattice.inner)} over {self.field}: the cusp-link covering is not certified up to height "
+                    f"{bound} = ceil(1/(2 r))^{dimension}, r = {least}; the singular points {[list(t) for t in open_points]} (coordinates in "
+                    f"P(a_e)) have a degenerate tangency: no first-order local closure by the links through them (#54)"
+                )
 
 
 def cusp_links(lattice):
