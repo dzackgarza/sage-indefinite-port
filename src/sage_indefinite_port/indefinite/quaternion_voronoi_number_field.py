@@ -263,7 +263,7 @@ class QuaternionOrderVoronoi:
             n = self.center(n)
             return n.is_square() and n.sqrt() in integers
 
-        subgroup = finite_preimage_generators(self.unit_generators(), lambda u: u.reduced_norm(), square_unit)
+        subgroup, _index = finite_preimage_generators(self.unit_generators(), lambda u: u.reduced_norm(), square_unit)
         result = [self.algebra(-1)]
         for h in subgroup:
             eta = self.center(h.reduced_norm()).sqrt()
