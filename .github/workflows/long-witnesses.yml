@@ -147,6 +147,10 @@ jobs:
             test: test_sqrt_ten_norm_two_transporter_and_divisor_obstruction
           - file: test_commutant_groups.sage
             test: test_nonmaximal_levi_transporter
+          - file: test_commutant_groups.sage
+            test: test_hermitian_quaternion_transporters
+          - file: test_commutant_groups.sage
+            test: test_golden_orthogonal_transporters_rank_four
     steps:
       - uses: actions/checkout@v4
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"

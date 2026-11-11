@@ -1834,7 +1834,7 @@ class EtaleCommutant:
         self._generator = generator
         self._powers = matrix(QQ, [(generator**k).list() for k in range(size)])
         adjoint = self.polynomial(commutant.adjoint(generator))
-        self.thetas = tuple(K(list(adjoint)) for K in self.fields)
+        self.thetas = tuple(adjoint(K.gen()) for K in self.fields)
         self.partner = tuple(
             next(i for i, f in enumerate(self.factors) if f(theta) == 0) for theta in self.thetas
         )
@@ -1844,8 +1844,8 @@ class EtaleCommutant:
         return self.ring(list(self._powers.solve_left(vector(QQ, matrix(QQ, element).list()))))
 
     def components(self, element):
-        coefficients = list(self.polynomial(element))
-        return [K(coefficients) for K in self.fields]
+        value = self.polynomial(element)
+        return [value(K.gen()) for K in self.fields]
 
     def element(self, values):
         residues = [self.ring(list(v.polynomial())) for v in values]

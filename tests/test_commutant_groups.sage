@@ -550,49 +550,36 @@ def test_hermitian_quaternion_centralizer_is_infinite():
     assert any(g * h != h * g for g in generators for h in generators)
 
 
-def test_hermitian_quaternion_transporters():
-    gram, sources = _hermitian_quaternion_plane()
-    commutant = IsometryCommutant(gram, sources)
-    zero = int(0) * ONE
-    witness = _pair_matrix(((ONE, ONE), (zero, ONE)))
-    moved = witness.inverse().transpose() * gram * witness.inverse()
-    assert witness.det() in (int(1), int(-1)) and moved.denominator() == int(1)
-    assert all(witness * F == F * witness for F in sources)
-    t = equivariant_transporter(commutant, sage_matrix(SageZZ, moved), sources)
-    assert t is not None and _is_transporter(t, gram, moved, sources, sources)
-    assert equivariant_transporter(commutant, int(3) * gram, sources) is None
-
-
 def _golden_tensor_lattice():
     r"""Return `O^4 \otimes O^2`, `O = Z[\phi]`, `\phi^2 = \phi + 1`, with `b = Tr(w' \otimes w)`, `w' = H + H`, `w = diag(1, -1)`, the
     sources `1 \otimes R`, `1 \otimes D` for `R = [[\sqrt 5, -2], [-2, \sqrt 5]]` (`5 - 4 = 1`, so `R^t w R = w`), `D = diag(1, -1)`, and the map
     `P \otimes Q \mapsto GL_{16}(Z)`. `R + R^{-1} = 2 \sqrt 5`, and `R - \sqrt 5` is `-2` times the swap, so the sources generate `1 \otimes M_2(K)`."""
-    field = QuadraticField(int(5), "s")
+    field = QuadraticField(int(int(5)), "s")
     root = field.gen()
-    phi = (int(1) + root) / int(2)
-    outer = sage_matrix(field, int(4), int(4))
-    for a in (int(0), int(2)):
-        outer[a, a + int(1)] = outer[a + int(1), a] = int(1)
-    inner = sage_matrix(field, int(2), int(2), [int(1), int(0), int(0), int(-1)])
+    phi = (int(int(1)) + root) / int(int(2))
+    outer = sage_matrix(field, int(int(4)), int(int(4)))
+    for a in (int(int(0)), int(int(2))):
+        outer[a, a + int(int(1))] = outer[a + int(int(1)), a] = int(int(1))
+    inner = sage_matrix(field, int(int(2)), int(int(2)), [int(int(1)), int(int(0)), int(int(0)), int(-int(1))])
     weights = outer.tensor_product(inner)
     frame = []
-    for i in range(int(8)):
+    for i in range(int(int(8))):
         for scalar in (field.one(), phi):
-            v = [field.zero()] * int(8)
+            v = [field.zero()] * int(int(8))
             v[i] = scalar
-            frame.append(sage_matrix(field, int(8), int(1), v))
-    gram = sage_matrix(SageZZ, [[SageZZ((x.transpose() * weights * y)[int(0), int(0)].trace()) for y in frame] for x in frame])
-    coordinates = sage_matrix(SageQQ, [[int(1), int(0)], [SageQQ(1) / int(2), SageQQ(1) / int(2)]])
+            frame.append(sage_matrix(field, int(int(8)), int(int(1)), v))
+    gram = sage_matrix(SageZZ, [[SageZZ((x.transpose() * weights * y)[int(int(0)), int(int(0))].trace()) for y in frame] for x in frame])
+    coordinates = sage_matrix(SageQQ, [[int(int(1)), int(int(0))], [SageQQ(int(1)) / int(int(2)), SageQQ(int(1)) / int(int(2))]])
 
     def on_lattice(block):
         images = []
         for v in frame:
             image = block * v
-            images.append([c for i in range(int(8)) for c in coordinates.solve_left(sage_vector(SageQQ, image[i, int(0)].list()))])
+            images.append([c for i in range(int(int(8))) for c in coordinates.solve_left(sage_vector(SageQQ, image[i, int(int(0))].list()))])
         return sage_matrix(SageZZ, images).transpose()
 
-    one = sage_identity(field, int(4))
-    moves = [sage_matrix(field, int(2), int(2), [root, int(-2), int(-2), root]), inner]
+    one = sage_identity(field, int(int(4)))
+    moves = [sage_matrix(field, int(int(2)), int(int(2)), [root, int(-int(2)), int(-int(2)), root]), inner]
     return gram, [on_lattice(one.tensor_product(g)) for g in moves], on_lattice, field, phi
 
 
@@ -603,19 +590,6 @@ def test_golden_orthogonal_centralizer_rank_four():
     assert all(g.transpose() * gram * g == gram and all(g * F == F * g for F in sources) for g in generators)
     assert any(g != one and (g - one) ** int(16) == int(0) for g in generators)
     assert any(g * h != h * g for g in generators for h in generators)
-
-
-def test_golden_orthogonal_transporters_rank_four():
-    gram, sources, on_lattice, field, phi = _golden_tensor_lattice()
-    commutant = IsometryCommutant(gram, sources)
-    shear = sage_identity(field, int(4))
-    shear[int(0), int(2)] = phi
-    witness = on_lattice(shear.tensor_product(sage_identity(field, int(2))))
-    moved = witness.inverse().transpose() * gram * witness.inverse()
-    assert witness.det() in (int(1), int(-1)) and moved.denominator() == int(1)
-    t = equivariant_transporter(commutant, sage_matrix(SageZZ, moved), sources)
-    assert t is not None and _is_transporter(t, gram, moved, sources, sources)
-    assert equivariant_transporter(commutant, int(3) * gram, sources) is None
 
 
 def _closure(generators):
