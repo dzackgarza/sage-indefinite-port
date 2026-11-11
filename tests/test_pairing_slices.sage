@@ -267,7 +267,10 @@ def test_centralizer_setwise_stabilizer_of_a_nonprimitive_invariant_sublattice()
     L, e1, e2, e3, f, group = _pell_plus_two()
     basis = (L.scalar_multiple(3, e1), e2)
     generators = group.setwise_stabilizer_generators(basis)
-    span = lambda vectors: matrix(ZZ, [[int(c) for c in v] for v in vectors]).row_module()
+    from sage.matrix.constructor import matrix as sage_matrix
+    from sage.rings.integer_ring import ZZ as SageZZ
+
+    span = lambda vectors: sage_matrix(SageZZ, [[int(c) for c in v] for v in vectors]).row_module()
     assert span([f(v) for v in basis]) != span(basis)
     assert span([f(f(v)) for v in basis]) == span(basis)
     assert all(g in group and span([g(v) for v in basis]) == span(basis) for g in generators)

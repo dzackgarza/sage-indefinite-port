@@ -236,7 +236,7 @@ class _RadicalParabolic:
         B = gram.change_ring(QQ)
         R = radical.change_ring(QQ)
         k = R.ncols()
-        perp = (radical.transpose() * gram).right_kernel().basis_matrix().transpose().change_ring(QQ)
+        perp = matrix(ZZ, radical.transpose() * gram).right_kernel().basis_matrix().transpose().change_ring(QQ)
         start = B.inverse() * R
         pairing = R.transpose() * B * start
         width = perp.ncols()
