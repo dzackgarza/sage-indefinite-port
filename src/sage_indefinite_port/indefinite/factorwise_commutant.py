@@ -117,7 +117,10 @@ def _pair_unit_generators(actions, k):
     maximal = model._maximal_span(identity_matrix(QQ, k).columns())
     pseudo = [model._steinitz(index, maximal.columns()) for index in range(len(model.fields))]
     one = identity_matrix(QQ, k)
-    generators = [*model._automorphism_generators(pseudo), -one]
+    generators = [
+        *(g for index, (vectors, last) in enumerate(pseudo) for g in model._automorphism_generators(index, vectors, last)),
+        -one,
+    ]
     assert all(g * F == F * g for g in generators for F in actions)
     found, _index = finite_preimage_generators(generators, lambda g: g, lambda g: g.denominator() == 1)
     result = tuple(matrix(ZZ, g) for g in found)
