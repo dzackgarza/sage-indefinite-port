@@ -7,7 +7,8 @@ r"""Cusp classes, genus neighbours, lattice isometries and cusp links for `\Lamb
 Isometry test. For totally definite `M` of sign `s`, an `O_K`-isometry is a `Z`-isometry of the pairs of `Z`-lattices with the forms
 `s \mathrm{Tr}(h), \mathrm{Tr}(\theta h), \ldots, \mathrm{Tr}(\theta^{d-1} h)`, `\theta` a generator of `K`: these forms determine `h`, and a
 `Z`-map preserving `h` is `O_K`-linear by nondegeneracy (`h(g(\lambda x), g y) = \lambda h(x, y) = h(\lambda g x, g y)`). PARI ``qfisom``
-(Plesken-Souvignier) decides it. Rank one: `O_K t \cong O_K t'` iff `h(t, t)/h(t', t')` is the square of a unit.
+(Plesken-Souvignier) decides it. Rank one: `\mathfrak a t \cong \mathfrak b t'` iff `\mathfrak b \mathfrak a^{-1} = (\gamma)` is principal and
+`h(t, t) / (\gamma^2 h(t', t'))` is the square of a unit.
 
 Cusps. For a primitive isotropic `v \in \Lambda` of divisor `h(v, \Lambda) = O_K` there is `v'` with `h(v, v') = 1` (an integral solution
 of a `Z`-linear system), `\langle v, v' \rangle` is unimodular and `\Lambda = \langle v, v' \rangle \perp C_v` with `C_v \cong v^\perp / v`.
@@ -128,16 +129,12 @@ def _trace_forms(field, gram, basis, sign):
     return forms
 
 
-def _rank_one_generator(basis):
-    r"""Return `t` with `O_K t` the module spanned by ``basis`` (rank one), or ``None`` when that module is not free."""
-    t0 = basis[0]
-    j = next(i for i in range(len(t0)) if t0[i] != 0)
-    field = t0.base_ring()
-    ideal = field.ideal([x[j] / t0[j] for x in basis])
-    generators = ideal.gens_reduced()
-    if len(generators) != 1:
-        return None, j
-    return generators[0] * t0, j
+def _rank_one_module(basis):
+    r"""Return `(\mathfrak a, t, j)` with `\mathfrak a t` the rank-one module spanned by ``basis`` and `t_j \ne 0`."""
+    t = basis[0]
+    j = next(i for i in range(len(t)) if t[i] != 0)
+    field = t.base_ring()
+    return field.ideal([x[j] / t[j] for x in basis]), t, j
 
 
 def lattice_isometry(field, sign, gram_a, basis_a, gram_b, basis_b):
@@ -149,13 +146,17 @@ def lattice_isometry(field, sign, gram_a, basis_a, gram_b, basis_b):
     d = field.degree()
     rank = len(basis_a) // d
     if rank == 1:
-        (ta, ja), (tb, jb) = _rank_one_generator(basis_a), _rank_one_generator(basis_b)
-        if ta is None or tb is None:
-            raise NotImplementedError(f"isometry of non-free rank-one O_K-lattices over {field}: the ideal-class transporter is needed (#54)")
-        ratio = field(_pairing(gram_a, ta, ta) / _pairing(gram_b, tb, tb))
+        # phi(t_a) = s t_b is an isometry of a t_a onto b t_b iff s a = b and s^2 h(t_b) = h(t_a): b a^{-1} = (gamma), s = gamma u with
+        # u^2 = h(t_a) / (gamma^2 h(t_b)) a unit square.
+        (ia, ta, ja), (ib, tb, _jb) = _rank_one_module(basis_a), _rank_one_module(basis_b)
+        quotient = ib / ia
+        if not quotient.is_principal():
+            return None
+        gamma = quotient.gens_reduced()[0]
+        ratio = field(_pairing(gram_a, ta, ta) / (gamma**2 * _pairing(gram_b, tb, tb)))
         if not (ratio.is_integral() and ratio.is_unit() and ratio.is_square()):
             return None
-        s = ratio.sqrt()
+        s = gamma * ratio.sqrt()
         return [(x[ja] / ta[ja]) * s * tb for x in basis_a]
     if sign == 0:
         raise NotImplementedError(
