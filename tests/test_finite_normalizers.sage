@@ -123,7 +123,7 @@ def test_pell_isometry_normalizer_contains_the_inversion():
     centralizer, inversion = infinite_cyclic_normalizer(lattice, f)
     assert inversion is not None and inversion * f * ~inversion == ~f
     assert all(g * f == f * g for g in centralizer)
-    assert any(g * f * ~g == ~f for g in normalizer_generators(lattice, (f,)))
+    assert any(g * f * ~g == ~f for g in normalizer_generators(lattice, (f,), int(3)))
 
 
 def test_unipotent_eichler_normalizer_contains_the_inversion():
@@ -155,7 +155,7 @@ def test_free_abelian_normalizer_of_two_pell_units():
     F2 = _from_columns(lattice, [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 2, 3], [0, 0, 1, 2]])
     assert F1 * F2 == F2 * F1
     signs = set()
-    for g in normalizer_generators(lattice, (F1, F2)):
+    for g in normalizer_generators(lattice, (F1, F2), int(3)):
         pair = []
         for F in (F1, F2):
             image = g * F * ~g
@@ -188,7 +188,7 @@ def test_infinite_dihedral_normalizer_is_the_orthogonal_group_of_the_pell_plane(
     assert r * f * ~r == ~f and f * r != r * f
     frame = tuple(lattice.module_generators())
     corner = lambda g: int(list(g(frame[int(0)]))[int(0)])
-    generators = normalizer_generators(lattice, (f, r))
+    generators = normalizer_generators(lattice, (f, r), int(3))
     for g in generators:
         assert g * f * ~g in (f, ~f)
         assert corner(g * r * ~g) > 0
@@ -234,3 +234,38 @@ def test_congruence_normalizer_of_the_summand_swap_modulo_three():
         return m in closure
     assert all(contains(g) for g in (sigma, diagonal_swap, diagonal_minus, eichler_cube))
     assert not contains(left_swap)
+
+
+def _reduction_closure(lattice, isometries):
+    frame = tuple(lattice.module_generators())
+    images = [matrix(GF(int(3)), [[int(c) for c in g(x)] for x in frame]) for g in isometries]
+    identity = matrix.identity(GF(int(3)), len(frame))
+    identity.set_immutable()
+    closure = set([identity])
+    frontier = [identity]
+    while frontier:
+        current = frontier.pop()
+        for image in images:
+            following = current * image
+            following.set_immutable()
+            if following not in closure:
+                closure.add(following)
+                frontier.append(following)
+    return closure
+
+
+def test_arithmetic_normalizer_of_the_full_orthogonal_group_of_two_hyperbolic_planes():
+    r"""L = U + U, H = <O(L), E> = O(L) with E = E(e1, e2 + f2) unipotent. H contains SO(L) cap Gamma(3) and is
+    Zariski dense in O(L) (log E spans an Ad-orbit generating so(4) = sl2 + sl2, whose factors are swapped by the
+    summand swap), its congruence kernel is not abelian, and N(H) = O(L). So the returned generators lie in O(L)
+    and reduce modulo 3 onto the image of O(L), which contains -1 and the summand swap."""
+    from sage_indefinite_port.indefinite.finite_normalizers import normalizer_generators
+
+    lattice = Lattices(ZZ)([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    eichler = _from_columns(lattice, [[1, -1, -1, -1], [0, 1, 0, 0], [0, 1, 1, 0], [0, 1, 0, 1]])
+    ambient = tuple(lattice.O().group_generators())
+    generators = normalizer_generators(lattice, (*ambient, eichler), int(3))
+    target = _reduction_closure(lattice, ambient)
+    assert _reduction_closure(lattice, generators) == target
+    sigma = _from_columns(lattice, [[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]])
+    assert _reduction_closure(lattice, (sigma,)) <= target

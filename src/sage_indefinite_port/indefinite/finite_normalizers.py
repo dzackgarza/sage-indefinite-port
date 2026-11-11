@@ -738,27 +738,165 @@ def congruence_normalizer_generators(lattice, generators, level):
     on thin matrix groups*, 2014, \S 1).
     """
     assert int(level) >= 2, f"the level {level} of a congruence subgroup is at least 2"
-    frame = tuple(lattice.module_generators())
-    action = _ResidueAction(len(frame), int(level))
     ambient = [_column_matrix(lattice, g) for g in lattice.O().group_generators()]
-    one = action.permutation(identity_matrix(ZZ, len(frame)))
+    return _preimage_normalizer(lattice, ambient, [_column_matrix(lattice, g) for g in generators], int(level))
+
+
+def _preimage_normalizer(lattice, ambient, columns, level):
+    r"""Return generators of `\pi^{-1}(N_{\pi S}(\pi H))` in `S = \langle` ``ambient`` `\rangle`, `\pi` reduction mod ``level``."""
+    size = ambient[0].nrows()
+    action = _ResidueAction(size, level)
+    one = action.permutation(identity_matrix(ZZ, size))
     image = libgap.Group([one, *(action.permutation(g) for g in ambient)])
-    subgroup = libgap.Group([one, *(action.permutation(_column_matrix(lattice, g)) for g in generators)])
-    assert libgap.IsSubgroup(image, subgroup), f"{generators} do not reduce into the image of O(L) modulo {level}"
+    subgroup = libgap.Group([one, *(action.permutation(g) for g in columns)])
+    assert libgap.IsSubgroup(image, subgroup), f"the generators of H do not reduce into the image of S modulo {level}"
     normalizer = libgap.Normalizer(image, subgroup)
     found, _index = finite_preimage_generators(ambient, action.permutation, lambda p: bool(libgap.IsSubset(normalizer, [p])))
     return tuple(_from_columns(lattice, matrix(ZZ, g)) for g in found)
 
 
-def normalizer_generators(lattice, generators):
+def _semisimple_part(g):
+    r"""Return the semisimple part `g_s` of `g = g_s g_u` over `Q`.
+
+    Newton iteration `s \mapsto s - f(s) f'(s)^{-1}` on the squarefree part `f` of the minimal polynomial converges in
+    finitely many steps to the unique polynomial in `g` that is semisimple with `g - s` nilpotent (Chevalley; Couty,
+    Esterle, Zarouf, *Decomposition effective de Jordan-Chevalley*, Gaz. Math. 129 (2011)).
+    """
+    g = g.change_ring(QQ)
+    polynomial = g.minimal_polynomial()
+    f = polynomial // polynomial.gcd(polynomial.derivative())
+    s = g
+    while f(s) != 0:
+        s = s - f(s) * f.derivative()(s).inverse()
+    return s
+
+
+def _unipotent_logarithm(g):
+    r"""Return `\log g_u = \sum_{k \ge 1} (-1)^{k+1} (g_u - 1)^k / k`, a finite sum since `g_u - 1` is nilpotent."""
+    u = _semisimple_part(g).inverse() * g.change_ring(QQ)
+    nilpotent = u - 1
+    result = matrix(QQ, u.nrows())
+    power = nilpotent
+    k = 1
+    while power != 0:
+        result += (-1) ** (k + 1) * power / k
+        power = power * nilpotent
+        k += 1
+    return result
+
+
+def _lie_algebra(columns):
+    r"""Return a basis of the Lie algebra `\mathfrak g` spanned by `\log` of the unipotent parts of the generators and
+    of their commutators, closed under `\mathrm{Ad}(h)` for the generators `h` and under brackets.
+
+    For unipotent `u \in H` the Zariski closure of `\langle u \rangle` is `\exp(Q \log u)`, and the group generated
+    by connected subgroups is connected with the Lie algebra they generate (Borel, *Linear Algebraic Groups*, I.2.2
+    and I.7.5-7.6), so `\mathfrak g \subseteq \mathrm{Lie}(\bar H^\circ)`.
+    """
+    elements = list(columns) + [x * y * matrix(ZZ, x.inverse()) * matrix(ZZ, y.inverse()) for x in columns for y in columns]
+    size = columns[0].nrows()
+    space = (QQ ** (size * size)).subspace([])
+    basis = []
+
+    def add(x):
+        nonlocal space
+        v = vector(QQ, x.list())
+        if v in space:
+            return False
+        space = space + (QQ ** (size * size)).subspace([v])
+        basis.append(x)
+        return True
+
+    for g in elements:
+        add(_unipotent_logarithm(g))
+    position = 0
+    while position < len(basis):
+        x = basis[position]
+        position += 1
+        for h in columns:
+            h = h.change_ring(QQ)
+            add(h * x * h.inverse())
+        for y in list(basis):
+            add(x * y - y * x)
+    return basis
+
+
+def _support(algebra):
+    r"""Return a saturated integral basis (columns) of `W = \sum_{X \in \mathfrak g} X(V) \cap L`."""
+    images = matrix(QQ, [list(c) for X in algebra for c in X.columns()])
+    rows = images.row_space().basis_matrix()
+    scale = rows.denominator()
+    return matrix(ZZ, scale * rows).saturation().transpose()
+
+
+def arithmetic_normalizer_generators(lattice, generators, level):
+    r"""Return generators of `N_{O(L)}(H)` for `H` arithmetic in its Zariski closure `G`, with `H \supseteq G(Z) \cap \Gamma(m)`.
+
+    The hypotheses (input, not decidable from generators: Sarnak, *Notes on thin matrix groups*) are that `H` has
+    finite index in `G(Z)` and contains `G(Z) \cap \Gamma_L(m)` for `m = ` ``level``. The route is the Grunewald-Segal
+    reduction (Ann. of Math. 112 (1980), 531-617): `N(H)` normalizes `G`, so lies in `N_{O(L)}(G)`, and is read off
+    the finite quotient of `N_{O(L)}(G)` by its level-`m` congruence kernel.
+
+    `\mathfrak g` (:func:`_lie_algebra`) lies in `\mathrm{Lie}(\bar H^\circ)`. It is identified when it is `so(W_Q)` for its
+    support `W` (:func:`_support`) with `W` nondegenerate and `W^\perp` definite or zero, and every generator preserves
+    `W`: then `H` acts on `W^\perp` through the finite `O(W^\perp)`, so `\bar H^\circ \subseteq SO(W)`, hence
+    `G^\circ = SO(W)`, and `N_{O(L)}(G) = \{g : gW = W\}`, the setwise stabilizer
+    (:meth:`equivariant_markings.EquivariantMarking.setwise_stabilizer_generators`). For `g` in that stabilizer and in
+    `\Gamma_L(m)`, `m \ge 3`: `W^\perp` is primitive, so `g|_{W^\perp} \in \Gamma_{W^\perp}(m)` is of finite order and is `1`
+    (Minkowski), and `\det g \equiv 1` gives `\det g = 1`; so `N(G) \cap \Gamma_L(m) = G(Z) \cap \Gamma_L(m) \subseteq H`,
+    which is normal in `N(G)`, and `N(H) = \pi^{-1}(N_{\pi N(G)}(\pi H))` (:func:`_preimage_normalizer`).
+    """
+    from sage_indefinite_port.indefinite.equivariant_markings import EquivariantMarking
+
+    level = int(level)
+    assert level >= 3, f"the level {level} must be at least 3 so that the congruence kernel is torsion-free (Minkowski)"
+    frame = tuple(lattice.module_generators())
+    gram = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+    columns = [_column_matrix(lattice, g) for g in generators]
+    algebra = _lie_algebra(columns)
+    if not algebra:
+        raise NotImplementedError(
+            f"the generators {columns} and their commutators have trivial unipotent parts: the Lie algebra of the "
+            f"Zariski closure needs the algebraic hull of semisimple elements (#50)"
+        )
+    size = gram.nrows()
+    W = _support(algebra)
+    w = W.ncols()
+    form = W.transpose() * gram * W
+    assert form.det() != 0, f"the support {W} of the Lie algebra of H is degenerate"
+    if len(algebra) != w * (w - 1) // 2:
+        raise NotImplementedError(
+            f"the Lie algebra of H has dimension {len(algebra)}, not that of so(W) for its support of rank {w}: "
+            f"the normalizer of a proper semisimple Zariski closure in SO(W) is not implemented (#50)"
+        )
+    B = gram.change_ring(QQ)
+    assert all(X.transpose() * B + B * X == 0 for X in algebra), "the Lie algebra of H is not in so(L)"
+    assert all((F * W).column_module() == W.column_module() for F in columns), f"H does not preserve the support {W}"
+    if w == size:
+        stabilizer = [_column_matrix(lattice, g) for g in lattice.O().group_generators()]
+    else:
+        perp = (W.transpose() * gram).right_kernel().basis_matrix().transpose()
+        perp_form = perp.transpose() * gram * perp
+        assert perp_form.is_positive_definite() or (-perp_form).is_positive_definite(), (
+            f"the complement of the support {W} is indefinite: N(G) / (N(G) cap Gamma(m)) is not a quotient by a "
+            f"subgroup of H (#50)"
+        )
+        marking = EquivariantMarking(gram, W, [], [])
+        stabilizer = [matrix(ZZ, g) for g in marking.setwise_stabilizer_generators()]
+    assert all(g.transpose() * gram * g == gram and (g * W).column_module() == W.column_module() for g in stabilizer)
+    return _preimage_normalizer(lattice, stabilizer, columns, level)
+
+
+def normalizer_generators(lattice, generators, level):
     r"""Return generators of `N_{O(L)}(H)` for `H = \langle` ``generators`` `\rangle`.
 
     A finite `H` is decided by :class:`FiniteSubgroupNormalizer`. One generator of infinite order
     is decided by :func:`infinite_cyclic_normalizer`. Commuting generators are decided by
     :func:`free_abelian_normalizer`, which raises outside free abelian semisimple `H`. A non-abelian
     infinite `H` is decided by :func:`virtually_abelian_normalizer`, which raises a precise error when `H` is not
-    virtually abelian with a semisimple self-centralizing translation subgroup; a congruence `H` that is not virtually
-    abelian is decided by :func:`congruence_normalizer_generators` from its level.
+    virtually abelian with a semisimple self-centralizing translation subgroup. When the congruence kernel
+    `H \cap \Gamma(3)` is not abelian, `H` is not virtually abelian and is decided by
+    :func:`arithmetic_normalizer_generators`, whose hypothesis `H \supseteq G(Z) \cap \Gamma(m)` is the input ``level``.
     """
     generators = tuple(generators)
     columns = tuple(_column_matrix(lattice, g) for g in generators)
@@ -770,4 +908,7 @@ def normalizer_generators(lattice, generators):
         return centralizer if inversion is None else (*centralizer, inversion)
     if all(F * G == G * F for F in columns for G in columns):
         return free_abelian_normalizer(lattice, generators)
+    kernel = _congruence_kernel(columns)
+    if not all(x * y == y * x for x in kernel for y in kernel):
+        return arithmetic_normalizer_generators(lattice, generators, level)
     return virtually_abelian_normalizer(lattice, generators)
