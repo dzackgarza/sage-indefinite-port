@@ -919,3 +919,24 @@ def test_voronoi_sl1_of_lipschitz_order_over_sqrt2():
                 frontier.append(image)
     assert len(elements) == int(8)
     assert i in elements and j in elements and k in elements
+
+
+def test_anisotropic_skew_hermitian_quaternion_centralizer():
+    r"""`\Delta^2 \otimes Z^2` with `b = \mathrm{trd} \circ (h \otimes \omega)`, `h(x, y) = \bar y_1 i x_1 + \bar y_2 (3i + j) x_2` over `(-1, 3)_Q`.
+    `nrd(i) = 1`, `nrd(3i + j) = 9 - 3 = 6`, and `6` is not a rational square, so `h` has no null vector (a null vector forces
+    `nrd(u)^2 nrd(i) = nrd(3i + j)`). The sources are those of the hyperbolic fixture, so `A = M_2(D)` with the adjoint of `h`. Every generator
+    is an integral isometry commuting with the sources."""
+    alpha, beta = I, int(3) * I + J
+
+    def form(X, Y):
+        def h(x, y):
+            return y[int(0)].conjugate() * alpha * x[int(0)] + y[int(1)].conjugate() * beta * x[int(1)]
+
+        return (h(X[int(0)], Y[int(1)]) - h(X[int(1)], Y[int(0)])).reduced_trace()
+
+    gram = sage_matrix(SageZZ, [[int(form(X, Y)) for Y in QUADS] for X in QUADS])
+    assert gram == gram.transpose() and gram.det() != int(0)
+    _skew_gram, sources = _skew_hermitian_quaternion_lattice()
+    assert all(F.transpose() * gram * F == gram for F in sources)
+    generators = centralizer_generators(IsometryCommutant(gram, sources))
+    assert all(g.transpose() * gram * g == gram and all(g * F == F * g for F in sources) for g in generators)

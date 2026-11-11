@@ -51,7 +51,7 @@ Skew-Hermitian forms (`H_0^* = -H_0`). Then `h(x, x)` is pure and `h(y, x) = -\o
   `L(x)^{-1}` makes the column `e_1`, and the stabilizer of `e_1` is `n(Z)`. Hence `U(R^2, J) = \langle L(u), n(1), W \rangle`, `u` in generators of
   `R^\times`, with no covering certificate (the argument is the Euclidean algorithm on `P^1(Q)`, which parametrizes the null `D`-lines).
   Every primitive null vector of `\Lambda = q J` is in the `U`-orbit of `v`, so `h(\Lambda, v') = q R` for all of them, and `q J \cong q' J` exactly when
-  `q' = \pm q` (`diag(1, -1)` sends `J` to `-J`; reduced norms of determinants otherwise). An anisotropic skew-Hermitian `\Lambda` raises. There
+  `q' = \pm q` (`diag(1, -1)` sends `J` to `-J`; reduced norms of determinants otherwise). An anisotropic skew-Hermitian `\Lambda` is treated by :mod:`clifford_commutant` (generators; its transporters raise). There
   `\sigma_h` is an orthogonal involution of degree 4 with nontrivial discriminant (a trivial one makes `h` hyperbolic), so its Clifford
   algebra `C(A, \sigma_h)` is a quaternion algebra over `Z = Q(\sqrt \delta)` and `Spin(A, \sigma_h) \cong R_{Z/Q} SL_1(C)` (Knus-Merkurjev-
   Rost-Tignol, *The Book of Involutions*, Thm. 15.7, Cor. 15.12). The missing pieces are an integral model of `C(A, \sigma_h)` with the
@@ -523,15 +523,17 @@ class QuaternionMatrixCommutant:
         if hasattr(self, "_unitary"):
             return self._unitary
         H0, sign = self._hermitian_matrix()
-        kind = "Hermitian" if sign == 1 else "skew-Hermitian"
         self._lattice_rows = self._lattice(self._order)
         found = self.hyperbolic_model(self._lattice_rows, H0, sign)
+        if found is None and sign == -1:
+            from sage_indefinite_port.indefinite.clifford_commutant import CliffordModel
+
+            self._unitary = CliffordModel(self.commutant).centralizer_generators()
+            return self._unitary
         if found is None:
             raise NotImplementedError(
-                f"the {kind} Lambda over ({self.a}, {self.b})_Q of the commutant of {self.commutant.isometries} is not "
-                f"v R + f R with matrix q H (q J) for a rational q; for an anisotropic form Spin(A, sigma) = R_{{Z/Q}} SL_1(C) for the "
-                f"Clifford quaternion algebra C over a quadratic field Z (KMRT Thm. 15.7), and neither the integral Clifford model "
-                f"nor Voronoi generators of norm-one units of a quaternion order over a quadratic field are implemented (#54)"
+                f"the Hermitian Lambda over ({self.a}, {self.b})_Q of the commutant of {self.commutant.isometries} is not "
+                f"v R + f R with Gram q H for a rational q; its unitary group is not generated here (#54)"
             )
         v, f, q, order = found
         units, _search = self._units(order)
@@ -572,6 +574,11 @@ class QuaternionMatrixCommutant:
         square = commutant.gram.change_ring(QQ).inverse() * start.transpose() * target_gram * start
         assert commutant.contains(square)
         self.unitary_generators()
+        if not hasattr(self, "_model_data"):
+            raise NotImplementedError(
+                f"transporters of the anisotropic skew-Hermitian plane over ({self.a}, {self.b})_Q of the commutant of "
+                f"{self.commutant.isometries}: an isometry of the two Clifford models is not constructed (#54)"
+            )
         v, f, q = self._model_data
         H0, sign = self._hermitian_matrix()
         twisted = _mul(H0, self.block(square))
