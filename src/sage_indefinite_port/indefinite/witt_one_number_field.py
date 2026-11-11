@@ -48,6 +48,22 @@ def eichler(gram, c, a):
     return identity_matrix(K, n) - c.column() * ha + a.column() * hc - (_pairing(gram, a, a) / 2) * c.column() * hc
 
 
+def _basis_starting_at_one(order):
+    r"""Return a `Z`-basis of ``order`` whose first element is `1`.
+
+    `1` is primitive in the order, so its coordinate row `r` extends to a unimodular matrix: with `D = U r V` the Smith
+    form, `D = (1, 0, \ldots, 0)`, and the rows of `V^{-1}` form a basis whose first row is `\pm r`.
+    """
+    basis = order.basis()
+    row = matrix(ZZ, [order.coordinates(order(1))])
+    D, U, V = row.smith_form()
+    assert D[0, 0] == 1
+    change = V.inverse() * U[0, 0]
+    result = [sum((change[i, j] * basis[j] for j in range(len(basis))), order(0)) for i in range(len(basis))]
+    assert result[0] == 1
+    return result
+
+
 class WittOneLattice:
     r"""`\Lambda = U \perp M` over `O_K` in the basis `e, f, m_1, \ldots, m_k` (module docstring)."""
 
@@ -58,8 +74,7 @@ class WittOneLattice:
         assert self.gram.submatrix(0, 2, 2, n - 2).is_zero()
         self.k = n - 2
         self.inner = self.gram.submatrix(2, 2, self.k, self.k)
-        self.integers = field.ring_of_integers().basis()
-        assert self.integers[0] == 1
+        self.integers = _basis_starting_at_one(field.ring_of_integers())
         self.embeddings = field.embeddings(RealIntervalField(200))
         self.signs = []
         for sigma in self.embeddings:
