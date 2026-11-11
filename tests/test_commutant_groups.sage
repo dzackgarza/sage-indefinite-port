@@ -832,18 +832,6 @@ def test_skew_hermitian_quaternion_centralizer_is_infinite():
     assert any(g * h != h * g for g in generators for h in generators)
 
 
-def test_skew_hermitian_quaternion_transporters():
-    gram, sources = _skew_hermitian_quaternion_lattice()
-    commutant = IsometryCommutant(gram, sources)
-    P = _diagonal_left(((ONE, I), (int(0) * ONE, ONE)))
-    assert P.det() in (int(1), int(-1)) and all(P * F == F * P for F in sources)
-    moved = (P.inverse().transpose() * gram * P.inverse()).change_ring(SageZZ)
-    assert moved != gram
-    t = equivariant_transporter(commutant, moved, sources)
-    assert t is not None and _is_transporter(t, gram, moved, sources, sources)
-    assert equivariant_transporter(commutant, int(3) * gram, sources) is None
-
-
 def test_diagonal_null_vector_beyond_ternary_subforms():
     r"""`<1, 1, 1, 1, -7>` over `Q(sqrt 2)` is isotropic (`2^2 + 1 + 1 + 1 = 7`); `<1, 1, 1, -7>` over `Q` is not (`7` is not a sum of three
     rational squares), so a null vector needs all five coordinates or the quaternary reduction."""

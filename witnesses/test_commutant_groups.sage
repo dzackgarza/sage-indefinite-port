@@ -188,3 +188,62 @@ def test_definite_hermitian_quaternion_transporters():
     t = equivariant_transporter(commutant, target, sources)
     assert t is not None and _is_transporter(t, gram, target, sources, sources)
     assert equivariant_transporter(commutant, int(3) * gram, sources) is None
+
+
+BASIS = (ONE, I, J, K)
+
+
+QUADS = tuple((x, (int(0) * ONE, int(0) * ONE)) for x in PAIRS) + tuple(((int(0) * ONE, int(0) * ONE), x) for x in PAIRS)
+
+
+def _skew(x, y):
+    return y[int(0)].conjugate() * x[int(1)] - y[int(1)].conjugate() * x[int(0)]
+
+
+def _quad_coordinates(X):
+    return _pair_coordinates(X[int(0)]) + _pair_coordinates(X[int(1)])
+
+
+def _quad_matrix(move):
+    return sage_matrix(SageZZ, [_quad_coordinates(move(X)) for X in QUADS]).transpose()
+
+
+def _skew_hermitian_quaternion_lattice():
+    r"""Return `\Delta^2 \otimes Z^2` with `b = \mathrm{trd} \circ (h \otimes \omega)`, `h(x, y) = \bar y_1 x_2 - \bar y_2 x_1` skew-Hermitian,
+    `\omega` the standard alternating form, and sources generating `D^{op} \otimes M_2(Q)`: the right multiplications by `i`, `2 + j` and the
+    two shears of `SL_2(Z)` on the `Z^2` factor."""
+
+    def form(X, Y):
+        return (_skew(X[int(0)], Y[int(1)]) - _skew(X[int(1)], Y[int(0)])).reduced_trace()
+
+    gram = sage_matrix(SageZZ, [[int(form(X, Y)) for Y in QUADS] for X in QUADS])
+
+    def right(d):
+        return _quad_matrix(lambda X: tuple((x[int(0)] * d, x[int(1)] * d) for x in X))
+
+    def add(x, y):
+        return (x[int(0)] + y[int(0)], x[int(1)] + y[int(1)])
+
+    sources = [
+        right(I),
+        right(int(2) + J),
+        _quad_matrix(lambda X: (add(X[int(0)], X[int(1)]), X[int(1)])),
+        _quad_matrix(lambda X: (X[int(0)], add(X[int(1)], X[int(0)]))),
+    ]
+    return gram, sources
+
+
+def _diagonal_left(g):
+    return _quad_matrix(lambda X: (_act(g, X[int(0)]), _act(g, X[int(1)])))
+
+
+def test_skew_hermitian_quaternion_transporters():
+    gram, sources = _skew_hermitian_quaternion_lattice()
+    commutant = IsometryCommutant(gram, sources)
+    P = _diagonal_left(((ONE, I), (int(0) * ONE, ONE)))
+    assert P.det() in (int(1), int(-1)) and all(P * F == F * P for F in sources)
+    moved = (P.inverse().transpose() * gram * P.inverse()).change_ring(SageZZ)
+    assert moved != gram
+    t = equivariant_transporter(commutant, moved, sources)
+    assert t is not None and _is_transporter(t, gram, moved, sources, sources)
+    assert equivariant_transporter(commutant, int(3) * gram, sources) is None

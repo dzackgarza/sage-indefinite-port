@@ -155,6 +155,10 @@ jobs:
             test: test_arithmetic_normalizer_of_the_full_orthogonal_group_of_two_hyperbolic_planes
           - file: test_commutant_groups.sage
             test: test_definite_hermitian_quaternion_transporters
+          - file: test_commutant_groups.sage test_skew_hermitian_quaternion_transporters
+            test: ""
+          - file: test_equivariant_markings.sage test_unipotent_transporter_beyond_the_linear_step
+            test: ""
     steps:
       - uses: actions/checkout@v4
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
