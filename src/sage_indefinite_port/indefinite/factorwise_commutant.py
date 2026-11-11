@@ -22,6 +22,8 @@ of `C_i` modulo the kernel of that action decides, through :func:`_verified`.
 
 from itertools import product
 
+from sage.arith.functions import lcm
+
 from sage.libs.pari import pari
 from sage.matrix.constructor import block_matrix, matrix
 from sage.matrix.special import identity_matrix
@@ -358,7 +360,7 @@ class _DedekindModel:
     \mathfrak a_i` (Steinitz; Cohen, *Advanced Topics*, Thm. 1.2.19), with the class of `\mathfrak a_i` its only invariant. PARI ``nfhnf`` gives a
     pseudo-basis and ``rnfsteinitz`` puts it in the form `(v_1, \ldots, v_d; O, \ldots, O, \mathfrak a)`. With `\mathfrak a' = \gamma \mathfrak a`, the
     `K_i`-linear `g_i : v_j \mapsto v'_j` (`j < d`), `v_d \mapsto \gamma v'_d` maps `e_i X` onto `e_i X'`; when some class differs there is
-    none. An `A`-linear isomorphism preserves the multiplier ring, so when `X` is an `O_A`-module and `X'` is not, there is none."""
+    none. A lattice `X` with a non-maximal multiplier ring is decided through `O_A X` and a finite orbit (:meth:`isomorphism`)."""
 
     def __init__(self, theta, polynomial):
         self.theta = theta
@@ -391,17 +393,18 @@ class _DedekindModel:
         c = basis.solve_right(matrix(QQ, len(column), 1, list(column))).column(0)
         return [sum((c[l * degree + j] * K.gen() ** j for j in range(degree)), K(0)) for l in range(len(frame))]
 
-    def _is_maximal_module(self, columns):
-        lattice = matrix(QQ, columns).transpose()
+    def _maximal_span(self, columns):
+        r"""Return a `Z`-basis (columns) of `O_A X` for `X` spanned by ``columns``."""
+        generated = []
         for index, K in enumerate(self.fields):
             for w in K.ring_of_integers().basis():
                 operator = self.evaluate(self.factors[index].parent()(K(w).polynomial().list())) * self.idempotents[index]
-                if not all(c in ZZ for c in lattice.solve_right(operator * lattice).list()):
-                    return False
-        return True
+                generated.extend(operator * matrix(QQ, len(c), 1, list(c)) for c in columns)
+        return _lattice_basis([list(g.column(0)) for g in generated])
 
     def _steinitz(self, index, columns):
-        r"""Return ``(vectors, ideal)``: `K_i`-coordinate columns `v_1, \ldots, v_d` and `\mathfrak a` with `e_i X = \bigoplus_{j<d} O v_j \oplus \mathfrak a v_d`."""
+        r"""Return ``(vectors, ideal)``: `K_i`-coordinate columns `v_1, \ldots, v_d` and `\mathfrak a` with `e_i M = \bigoplus_{j<d} O v_j \oplus \mathfrak a v_d`
+        for the `O_A`-module `M` spanned by ``columns``."""
         K = self.fields[index]
         nf = K.pari_nf()
         projected = [self._coordinates(index, (self.idempotents[index] * matrix(QQ, len(c), 1, list(c))).column(0)) for c in columns]
@@ -418,41 +421,125 @@ class _DedekindModel:
         assert all(ideal == K.ideal(1) for ideal in ideals[:-1])
         return vectors, ideals[-1]
 
-    def isomorphism(self, source_columns, target_columns):
-        r"""Return the matrix on `V` of an `A`-linear `g` with `g X = X'` for the lattices spanned by the columns, or ``None`` (class docstring)."""
-        if not self._is_maximal_module(source_columns):
-            raise NotImplementedError(
-                f"the Z[F]-lattice X of rank d > 1 over the etale algebra Q[F]|_X is not a module over its maximal order; the reduction of "
-                f"Eick-Hofmann-O'Brien through the conductor for non-maximal multiplier rings of rank d > 1 is not implemented (#54)"
-            )
-        if not self._is_maximal_module(target_columns):
-            return None
+    def _rational(self, index, g):
+        r"""Return the matrix on `V` of the `K_i`-linear map with frame matrix ``g`` on `V_i`, the identity on the other `V_j`."""
         k = self.theta.nrows()
         images, bases = [], []
+        for other, (frame, basis) in enumerate(self.frames):
+            bases.append(basis)
+            if other != index:
+                images.append(basis)
+                continue
+            K, ring, degree = self.fields[index], self.factors[index].parent(), self.factors[index].degree()
+            columns = []
+            for l in range(len(frame)):
+                image = sum((self.evaluate(ring(K(g[m, l]).polynomial().list())) * frame[m] for m in range(len(frame))), matrix(QQ, k, 1))
+                columns.extend(self.theta**j * image for j in range(degree))
+            images.append(block_matrix(QQ, [columns], subdivide=False))
+        return block_matrix(QQ, [images], subdivide=False) * block_matrix(QQ, [bases], subdivide=False).inverse()
+
+    def _automorphism_generators(self, pseudo):
+        r"""Return generators of `\mathrm{Aut}_{O_A}(M)` on `V`, ``pseudo[i] = (vectors, \mathfrak a)`` the Steinitz pseudo-basis of `e_i M`.
+
+        In the pseudo-basis `(v_j; \mathfrak a_j)` an automorphism of `e_i M` is a matrix with entries `g_{jl} \in \mathfrak a_j \mathfrak a_l^{-1}` and
+        unit determinant. `\mathrm{SL}` is generated by the elementary `1 + b E_{jl}`, `b \in \mathfrak a_j \mathfrak a_l^{-1}` (Bass, Milnor, Serre,
+        Publ. IHES 33 (1967), for `d \ge 3`; Vaserstein, Ann. Math. 96 (1972), for `d = 2` and `O_K^\times` infinite; for `d = 2` with finitely many
+        units, i.e. `K = Q` (Euclidean) or imaginary quadratic, Cohn, Publ. IHES 30 (1966): only the Euclidean imaginary quadratic rings),
+        and `\mathrm{GL}` by these with `\mathrm{diag}(1, \ldots, u, \ldots, 1)` for generators `u` of `O_K^\times`. A `Z`-basis of
+        `\mathfrak a_j \mathfrak a_l^{-1}` suffices, since `1 + (b + b') E_{jl} = (1 + b E_{jl})(1 + b' E_{jl})`."""
+        result = []
         for index, K in enumerate(self.fields):
-            vectors, ideal = self._steinitz(index, source_columns)
-            target_vectors, target_ideal = self._steinitz(index, target_columns)
+            vectors, last = pseudo[index]
+            d = vectors.nrows()
+            if d == 2 and K.degree() <= 2 and not K.is_totally_real() and abs(K.discriminant()) not in (3, 4, 7, 8, 11):
+                raise NotImplementedError(
+                    f"GL_2 of the order of {K}, imaginary quadratic and not Euclidean, is not generated by elementary and diagonal "
+                    f"matrices (Cohn 1966); its generators (Swan, Adv. Math. 6 (1971)) are not implemented (#54)"
+                )
+            ideals = [K.ideal(1)] * (d - 1) + [last]
+            frame = lambda g: vectors * g * vectors.inverse()
+            for j in range(d):
+                for u in K.unit_group().gens_values():
+                    g = matrix.identity(K, d)
+                    g[j, j] = K(u)
+                    result.append(self._rational(index, frame(g)))
+                for l in range(d):
+                    if l == j:
+                        continue
+                    for b in (ideals[j] / ideals[l]).basis():
+                        g = matrix.identity(K, d)
+                        g[j, l] = K(b)
+                        result.append(self._rational(index, frame(g)))
+        return result
+
+    def isomorphism(self, source_columns, target_columns):
+        r"""Return the matrix on `V` of an `A`-linear `g` with `g X = X'` for the lattices spanned by the columns, or ``None``.
+
+        `M = O_A X`, `M' = O_A X'`. An isomorphism `X \to X'` extends to one `M \to M'`, so the Steinitz classes of the `e_i M` and `e_i M'` agree
+        (class docstring), giving `\varphi_0 : M \to M'`. Every isomorphism is `\varphi_0 g`, `g \in \mathrm{Aut}_{O_A}(M)`, and it maps `X` onto
+        `X'` exactly when `g X = \varphi_0^{-1} X'`. With `m M \subseteq X` and `m M \subseteq \varphi_0^{-1} X'`, `g X` depends only on `g` modulo
+        `m \mathrm{End}(M)`, so the orbit of the finite submodule `X / m M \subseteq M / m M` under the generators of
+        :meth:`_automorphism_generators` is finite and its search decides (Eick, Hofmann, O'Brien, arXiv:1811.06190, Sec. 4)."""
+        source = matrix(QQ, source_columns).transpose()
+        target = matrix(QQ, target_columns).transpose()
+        maximal = self._maximal_span(source_columns)
+        target_maximal = self._maximal_span(target_columns)
+        pseudo, phi0 = [], []
+        for index, K in enumerate(self.fields):
+            vectors, ideal = self._steinitz(index, maximal.columns())
+            target_vectors, target_ideal = self._steinitz(index, target_maximal.columns())
             ratio = target_ideal / ideal
             if not ratio.is_principal():
                 return None
             gamma = K(ratio.gens_reduced()[0])
             d = vectors.nrows()
             scale = matrix(K, d, d, lambda i, j: (gamma if i == d - 1 else K(1)) if i == j else K(0))
-            g = target_vectors * scale * vectors.inverse()
-            frame, basis = self.frames[index]
-            degree = self.factors[index].degree()
-            ring = self.factors[index].parent()
-            for l in range(d):
-                image = sum((self.evaluate(ring(K(g[m, l]).polynomial().list())) * frame[m] for m in range(d)), matrix(QQ, k, 1))
-                for j in range(degree):
-                    images.append(self.theta**j * image)
-            bases.append(basis)
-        action = block_matrix(QQ, [images], subdivide=False) * block_matrix(QQ, [bases], subdivide=False).inverse()
-        source = matrix(QQ, source_columns).transpose()
-        target = matrix(QQ, target_columns).transpose()
-        moved = target.solve_right(action * source)
+            phi0.append(self._rational(index, target_vectors * scale * vectors.inverse()))
+            pseudo.append((vectors, ideal))
+        transport = matrix.identity(QQ, source.nrows())
+        for g in phi0:
+            transport = g * transport
+        moved = target_maximal.solve_right(transport * maximal)
         assert all(c in ZZ for c in moved.list()) and moved.det() in (1, -1)
-        return action
+        pulled = transport.inverse() * target
+        exponent = lcm([source.solve_right(maximal).denominator(), pulled.solve_right(maximal).denominator()])
+
+        def key(lattice):
+            coordinates = maximal.solve_right(lattice)
+            assert all(c in ZZ for c in coordinates.list())
+            rows = matrix(ZZ, coordinates.transpose()).stack(exponent * matrix.identity(ZZ, maximal.ncols()))
+            return tuple(rows.hermite_form(include_zero_rows=False).list())
+
+        goal = key(pulled)
+        one = matrix.identity(QQ, source.nrows())
+        orbit = {key(source): one}
+        if goal in orbit:
+            return transport
+        generators = self._automorphism_generators(pseudo)
+        frontier = [one]
+        while frontier:
+            current = frontier.pop()
+            for g in generators:
+                element = g * current
+                point = key(element * source)
+                if point in orbit:
+                    continue
+                orbit[point] = element
+                if point == goal:
+                    action = transport * element
+                    image = target.solve_right(action * source)
+                    assert all(c in ZZ for c in image.list()) and image.det() in (1, -1)
+                    return action
+                frontier.append(element)
+        return None
+
+
+def _lattice_basis(vectors):
+    r"""Return the Hermite basis (columns) of the `Z`-span of the rational ``vectors``."""
+    rows = matrix(QQ, vectors)
+    scale = rows.denominator()
+    hermite = matrix(QQ, matrix(ZZ, scale * rows).hermite_form(include_zero_rows=False)) / scale
+    return hermite.transpose()
 
 
 def _dedekind_model(actions, k):
