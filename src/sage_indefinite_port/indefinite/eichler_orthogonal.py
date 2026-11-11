@@ -44,7 +44,7 @@ nothing to the `F_2`-span, so reflections are the only candidates this enumerati
 a reflection `\sigma_v` with `v_P(-2 h(v, v))` odd is searched in a box. When the found classes span `C`, the generators below generate `O(\Lambda)`.
 """
 
-from itertools import product
+from itertools import chain, product
 
 from sage.matrix.constructor import matrix
 from sage.matrix.special import identity_matrix
@@ -488,13 +488,25 @@ def generators(field, gram):
         classes = _Classes(field, odd)
         width = len(field.unit_group().gens())
         found = matrix(GF(2), 0, len(odd))
-        zbasis = [k * b for b in basis for k in integers]
+        complement = [k * b for b in basis[2:] for k in integers]
+        plane = [k * b for b in basis[:2] for k in integers]
         bound = 1
         while found.rank() < len(odd):
-            for coefficients in product(range(-bound, bound + 1), repeat=len(zbasis)):
-                if max(abs(c) for c in coefficients) != bound:
+            # Each shell visits the vectors of L_1 first, then those with a component in the first hyperbolic plane.
+            shell = (
+                (c, (0,) * len(plane)) for c in product(range(-bound, bound + 1), repeat=len(complement))
+            )
+            mixed = (
+                (c, d)
+                for d in product(range(-bound, bound + 1), repeat=len(plane))
+                if any(d)
+                for c in product(range(-bound, bound + 1), repeat=len(complement))
+            )
+            for c, d in chain(shell, mixed):
+                coefficients = (*c, *d)
+                if max(abs(e) for e in coefficients) != bound:
                     continue
-                v = sum(c * x for c, x in zip(coefficients, zbasis))
+                v = sum(e * x for e, x in zip(coefficients, complement + plane))
                 norm = _pairing(gram, v, v)
                 if norm == 0:
                     continue
