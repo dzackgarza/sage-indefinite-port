@@ -13,7 +13,8 @@ Integral points. `SO(M)` is the image of `G = \{c : c \Lambda_0 c^{-1} = \Lambda
 `G = \mathrm{Stab}_{N(R)}(\Lambda_0)`. `N(R)` preserves `R \cap Q^0`, which is commensurable with `\Lambda_0`, so the `N(R)`-orbit of `\Lambda_0`
 is finite and Schreier generators of the stabilizer generate `G`. `N(R)` comes from
 :func:`quaternion_orders_number_field.normalizer_generators` (units by :class:`QuaternionOrderVoronoi`, two-sided ideals by Eichler's
-norm theorem, which needs `Q` unramified at the real places, i.e. `M` indefinite at both). Rank three is odd, so
+norm theorem). When `M` is definite at every real place but one, `Q` is Fuchsian and both come from
+:class:`fuchsian_domain.FuchsianDomain`. Rank three is odd, so
 `O(M) = SO(M) \times \{\pm 1\}`.
 """
 
@@ -23,7 +24,9 @@ from sage.matrix.special import identity_matrix
 from sage.modules.free_module_element import vector
 from sage.rings.integer_ring import ZZ
 from sage.rings.rational_field import QQ
+from sage.rings.real_mpfr import RealField
 
+from sage_indefinite_port.indefinite.fuchsian_domain import fuchsian_places
 from sage_indefinite_port.indefinite.quaternion_orders_number_field import OrderLattices, maximal_orders_containing, normalizer_generators
 
 
@@ -79,11 +82,11 @@ class TernaryOrthogonalGroup:
     def proper_generators(self):
         r"""Return generators of `SO(M)` (module docstring)."""
         algebra = self.algebra
-        if algebra.ramified_places(inf=True)[1]:
+        if algebra.ramified_places(inf=True)[1] and fuchsian_places(algebra, RealField(64)) is None:
             raise NotImplementedError(
                 f"SO(M) for the anisotropic ternary M with Gram {list(self.gram)} over {self.field}: C_0(M) = {algebra} ramifies at a real "
-                f"place (M definite there), and the normalizer of a quaternion order needs generators of two-sided ideals, which Eichler's norm "
-                f"theorem gives only without real ramification (#54)"
+                f"place and is not split at exactly one real place (M definite at all, or indefinite at two or more and definite at some), "
+                f"so neither Voronoi nor the Fuchsian domain gives the units and the two-sided ideal generators of its order (#54)"
             )
         lattices = OrderLattices(algebra)
         base = [self.phi(x) for x in self.z_basis]

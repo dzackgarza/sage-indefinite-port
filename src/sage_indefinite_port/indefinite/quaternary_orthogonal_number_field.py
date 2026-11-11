@@ -26,8 +26,10 @@ from sage.modules.free_module_element import vector
 from sage.rings.integer_ring import ZZ
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.rational_field import QQ
+from sage.rings.real_mpfr import RealField
 from sage_extensions.categories.lattice_centralizers import finite_preimage_generators
 
+from sage_indefinite_port.indefinite.fuchsian_domain import fuchsian_places
 from sage_indefinite_port.indefinite.quaternion_orders_number_field import OrderLattices, maximal_orders_containing, normalizer_generators
 
 
@@ -129,10 +131,10 @@ class QuaternaryOrthogonalGroup:
     def generators(self):
         r"""Return generators of `O(M) = SO(M)` (module docstring)."""
         algebra = self.algebra
-        if algebra.ramified_places(inf=True)[1]:
+        if algebra.ramified_places(inf=True)[1] and fuchsian_places(algebra, RealField(64)) is None:
             raise NotImplementedError(
                 f"O(M) for the anisotropic quaternary M with Gram {list(self.gram)} over {self.field}: C_0(M) = {algebra} ramifies at a real "
-                f"place of Z, and the normalizer of its order needs generators of two-sided ideals beyond Eichler's norm theorem (#54)"
+                f"place of Z and is not split at exactly one, so neither Voronoi nor the Fuchsian domain gives the normalizer of its order (#54)"
             )
         lattices = OrderLattices(algebra)
         base = [self.psi(x) for x in self.z_basis]

@@ -256,6 +256,25 @@ class QuaternionOrderVoronoi:
         assert all(self.is_unit(u) for u in result)
         return tuple(result)
 
+    def norm_generator(self, elements, target):
+        r"""Return `x` in the `Z`-span of ``elements`` (a lattice of the algebra) with `\mathrm{nrd}(x) O_Z =` ``target``, by enumeration in the
+        positive form `\mathrm{Tr}(\iota(x) y)`; for a lattice that is an invertible left ideal of a maximal order, such an `x` generates it,
+        and one exists by Eichler's norm theorem (no real ramification), so the search ends."""
+        rows = matrix(QQ, [self.coordinates(x) for x in elements])
+        scale = rows.denominator()
+        basis = matrix(QQ, matrix(ZZ, scale * rows).hermite_form(include_zero_rows=False)) / scale
+        assert basis.nrows() == 4 * self.center.degree()
+        lattice = [self.element(row) for row in basis.rows()]
+        iota = self.involution
+        gram = matrix(QQ, [[(self.trace(iota(x) * y) + self.trace(iota(y) * x)) / 2 for y in lattice] for x in lattice])
+        bound = QQ(1)
+        while True:
+            for v in _short_vectors(gram, bound):
+                x = sum((ZZ(c) * b for c, b in zip(v, lattice)), self.algebra(0))
+                if self.center.ideal(x.reduced_norm()) == target:
+                    return x
+            bound *= 2
+
     def sl1_generators(self):
         r"""Return generators of `SL_1(O) = \{u \in O : \mathrm{nrd}(u) = 1\}` (module docstring, Generators)."""
         integers = self.center.ring_of_integers()
