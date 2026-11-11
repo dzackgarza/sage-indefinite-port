@@ -4,6 +4,8 @@ from sage_extensions.all import *
 from sage.matrix.constructor import matrix as sage_matrix
 from sage.matrix.special import block_diagonal_matrix, identity_matrix as sage_identity
 from sage.modules.free_module_element import vector as sage_vector
+from sage.rings.number_field.number_field import QuadraticField
+from sage.combinat.root_system.cartan_matrix import CartanMatrix
 from sage_indefinite_port.indefinite.genus_number_field import Cusps, lattice_isometry, standard_z_basis
 from sage_indefinite_port.indefinite.witt_one_number_field import WittOneLattice
 
