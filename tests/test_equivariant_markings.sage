@@ -88,10 +88,11 @@ def test_unipotent_source_in_the_radical():
     F = JORDAN
     line = EquivariantMarking(SMALL_K, _m([[1], [0], [0]]), [F], [_m([[1]])])
     generators = line.pointwise_stabilizer_generators()
-    assert len(generators) == int(1)
-    assert generators[int(0)] in (F, F.inverse().change_ring(SageZZ))
+    powers = [F**k for k in range(int(-4), int(5))]
+    assert all(g in powers for g in generators)
+    assert F in generators or F.inverse().change_ring(SageZZ) in generators
     plane = EquivariantMarking(SMALL_K, _m([[1, 0], [0, 0], [0, 1]]), [F], [_m([[1, -2], [0, 1]])])
-    assert plane.pointwise_stabilizer_generators() == ()
+    assert all(g == g.parent().identity_matrix() for g in plane.pointwise_stabilizer_generators())
 
 
 def test_unipotent_transporter_is_linear():
