@@ -248,7 +248,16 @@ def _neighbours(lattices, maximal, prime):
     z = zero_divisor()
     ideal = lambda y: lattices.basis([*(x * z * y for x in maximal), *reduced])
     base = ideal(algebra(1))
-    v = next((x for x in maximal if lattices.key(ideal(x)) != lattices.key(base)), None)
+    # v must be a unit modulo P with l_0 v != l_0: its ideal has the index of the base ideal and differs from it. A v in P gives P O_1.
+    size = lattices.discriminant(base)
+    v = next(
+        (
+            y
+            for y in (*maximal, *(x + algebra(t) for x in maximal for t in representatives))
+            if lattices.discriminant(ideal(y)) == size and lattices.key(ideal(y)) != lattices.key(base)
+        ),
+        None,
+    )
     assert v is not None, f"every element of {maximal} fixes the line of {z} modulo {prime}"
     ideals = [base, *(ideal(v + algebra(t)) for t in representatives)]
     assert len({lattices.key(i) for i in ideals}) == len(representatives) + 1
