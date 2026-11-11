@@ -140,13 +140,13 @@ class LiMargulisConstants:
 
     Section 1.7 states that each `\ll_n` constant is computable from its proof and gives no value.
     The proof of Theorem 1 (section 6) and Theorem 2 (section 9.5) compose explicit factors, which
-    this module evaluates, with the following implicit factors, which the caller supplies. Each
-    field is a rational number at least one that majorizes the constant in the quoted statement.
+    this module evaluates, with the following implicit factors, which :func:`default_constants`
+    derives. Each field is a rational number at least one that majorizes the constant in the quoted
+    statement.
 
     - ``theorem5``: equation (13), `\|h\| \le K \operatorname{vol}_H(H.x)^{13/5}
-      (\|g_1\| \|g_2\|)^{(13n/5)(1 + \dim H/2)}` for closed orbits. Its proof (section 4.4) uses
-      the constant of (12) [Shalom, Thm 2.1; Kontorovich-Oh, Prop 3.2], the `\delta \asymp_n
-      \|g\|^{-n}` of Lemma 11 and the bump-function constant of Lemma 12.
+      (\|g_1\| \|g_2\|)^{(13n/5)(1 + \dim H/2)}` for closed orbits, by :func:`theorem5_constant` from
+      the corrected (12) and the `\delta \asymp_n \|g\|^{-n}` of Lemma 11.
     - ``theorem5_compact``: the compact case of Theorem 5, `\|h\| \le K \operatorname{vol}_H(H.x)^{13/5}`,
       which also uses `\eta_0` of Lemma 10.
     - ``theorem6``: equation (18) for `N = 1`, `\operatorname{vol}_H(H.[g]) \le K
@@ -155,9 +155,9 @@ class LiMargulisConstants:
       `\epsilon_n = (4 n^3 6^n (n^3 + n)^{1/n^2})^{-n^2}` (appendix).
     - ``lemma18``: equation (30), `\|\gamma\| \le K |\det B|^{-(13n^3-39n^2+26n+52)/(20n)}
       \|B\|^{(13n^3-13n^2+62n)/20}`.
-    - ``corollary2``: Corollary 2 at `(\alpha, \beta) = (2, 1)`, `\|\gamma\| \le K` for
+    - ``corollary2``: Corollary 2 at `(\alpha, \beta) = (2, 1)`, from the corrected Lemma 24, `\|\gamma\| \le K` for
       `\gamma \in (S_{2,1}^{-1} S_{2,1}) \cap GL_n(\mathbb Z)`.
-    - ``corollary3``: Corollary 3, `\|B\| \le K |\det B|^{3n-1}` for `(2,1)`-reduced indefinite `B`.
+    - ``corollary3``: corrected Corollary 3, `\|B\| \le K |\det B|^{n+1}` for `(2,1)`-reduced indefinite `B`.
     - ``lemma20``: equation (31), `\|\gamma^t B \gamma\| \le K (|\det A|^{n-m} |\det B| + \|A\|)`.
     """
 
@@ -371,33 +371,140 @@ def matrix_coefficient_constant():
     return QQ(16) / 5
 
 
-def default_constants(n, theorem5, theorem5_compact, corollary2, corollary3):
-    r"""Return the constants of rank ``n`` with every derivable majorant computed here.
+def harish_chandra_decay_constant():
+    r"""Return 21: `\Xi(g_t)^{25/32} < 21 e^{-5|t|/13}` for `g_t` of (11), the explicit form of (16).
 
-    The arguments are the four constants with no derivable value in the cited sources:
-
-    - ``theorem5``, ``theorem5_compact``: (13) rests on (12), an absolute `K` with
-      `|\langle \pi(g_t) v, w \rangle| \le K \Xi(g_t)^{25/32} S(v) S(w)` for every unitary
-      representation of `SL_2(\mathbb R)` strongly `L^{64/25+\epsilon}` and a Sobolev norm `S`.
-      Kontorovich-Oh, Prop. 3.2, cite it as well known [CHH88, Kna86] without a constant, and as
-      printed (12) uses `\|D v\|` alone, which vanishes on `K`-fixed vectors with nonzero
-      coefficients. :func:`matrix_coefficient_constant` proves the corrected (12) with
-      `K = \pi \coth \pi` and exponent `25/32`; the bump-function constant of Lemma 12 and the
-      composition of section 4.4 must be re-derived in the norm `S` it uses.
-    - ``corollary2``, ``corollary3``: Lemma 24 as printed fails (`Q = \operatorname{diag}(\epsilon^2, 1)`
-      is `(\alpha, \beta)`-reduced and `k e_1`, `k \le 1/\epsilon`, satisfy `Q \le M`); the bound
-      holds for vectors realizing the successive minima [Cassels, Rational Quadratic Forms,
-      pp. 266-269], whose constant is not extracted.
+    `\Xi(g_t) = (2\pi)^{-1} \int_0^{2\pi} (e^t \cos^2\theta + e^{-t} \sin^2\theta)^{-1/2} d\theta`. For
+    `t \ge 0` the integrand is at most `\min(e^{t/2}, e^{-t/2} / \cos\theta)` and `\cos\theta \ge
+    2s/\pi` with `s = \pi/2 - \theta`, so `\Xi(g_t) \le (1 + |t|) e^{-|t|/2}`. Then `\Xi^{25/32}
+    e^{5|t|/13} \le ((1 + |t|) e^{-|t|/130})^{25/32} \le (130 e^{-129/130})^{25/32}`, and
+    `130 e^{-129/130} < 130 (10/27)(66/65) = 1320/27 < 21^{32/25}` (`e > 2.7`, `e^{1/130} < 66/65`).
     """
+    return QQ(21)
+
+
+def _dim_h(n):
+    r"""Return `\dim H = \dim SO(p, q) = n(n-1)/2`."""
+    return n * (n - 1) // 2
+
+
+def haar_ball_inverse_constant(n):
+    r"""Return `c^{-1} = 2^{D} D^{\lceil D/2 \rceil}`, `D = \dim H`: `m_H(B_H(\delta)) \ge c \delta^D` for `\delta \le 1/(2n)`.
+
+    With `m_H` of (9): `B_H(\delta)` contains `\exp` of the Frobenius ball of radius `r = \delta/2` in
+    `\mathfrak h`, since `\|\exp X - 1\| \le e^{\|X\|_{op}} - 1 \le e^{\delta/2} - 1 < \delta`; `\exp` is
+    injective there (`r < \log 2`). The eigenvalues of `\operatorname{ad}_{\mathfrak h} X` have modulus at
+    most `2r \le 1/(2n)`, and `|\phi(z) - 1| \le |z|` for `\phi(z) = (1 - e^{-z})/z`, so the Jacobian of
+    (9) is at least `2^{-D}`. The ball contains a cube of side `2r/\sqrt D`. Hence
+    `m_H(B_H(\delta)) \ge (\delta / (2\sqrt D))^D`.
+    """
+    d = _dim_h(n)
+    return QQ(2**d * d ** ((d + 1) // 2))
+
+
+def _theorem5_base(n, inverse_radius):
+    return harish_chandra_decay_constant() * matrix_coefficient_constant() * haar_ball_inverse_constant(n) * QQ(
+        inverse_radius
+    ) ** _dim_h(n)
+
+
+def theorem5_constant(n):
+    r"""Return a majorant of the constant of (13): `4 n^4 n^{\lceil 13n/5 \rceil} (21 K c^{-1} \kappa^{D})^3`.
+
+    Section 4.4 made explicit, with `K` of :func:`matrix_coefficient_constant`, `c` of
+    :func:`haar_ball_inverse_constant`, `\kappa` of :func:`lemma11_constant`, `D = \dim H`,
+    `V = \operatorname{vol}_H(H.x)`. Lemma 12 is replaced by `K`-invariant bumps, so no derivative enters.
+    Put `\delta_i = (\kappa \|g_i\|^n)^{-1} \le 1/(2n)` (Lemma 11; `\|g\| \ge n^{-1/2}` by Hadamard),
+    `\psi_i = \int_{\iota(K)} k.\mathbf 1_{B_H(\delta_i).x_i} dk` and `b_i = m_H(B_H(\delta_i)) \le V`. By (10),
+    `\mu(\psi_i) = b_i / V` and `\|\psi_i\| \le (b_i/V)^{1/2}`; `\psi_i - \mu(\psi_i)` is `K`-fixed in
+    `L^2_0`, strongly `L^{64/25+\epsilon}` by Lemmas 2 and 4, so the corrected (12) gives
+    `\langle a_t \psi_1, \psi_2 \rangle \ge b_1 b_2 / V^2 - K \Xi(g_t)^{25/32} (b_1 b_2)^{1/2} / V`.
+    With `X = 21 K V (b_1 b_2)^{-1/2} \ge 21 K` and `e^t = X^{13/5}` this is positive by
+    :func:`harish_chandra_decay_constant`, so `h = h_2^{-1} k_2^{-1} a_t k_1 h_1` with `h_i \in B_H(\delta_i)`,
+    `k_i \in \iota(K)` (rotations, entries at most one) carries `x_1` to `x_2`, and
+    `\|h\| \le n^4 \cdot 2 \cdot \cosh t \cdot 2 \le 4 n^4 X^{13/5}` (`\|h_2^{-1}\| \le 2` by Neumann).
+    `X \le 21 K c^{-1} \kappa^D V (\|g_1\| \|g_2\|)^{nD/2}`, and `(\|g_1\| \|g_2\|)^{-13n/5} \le n^{13n/5}`
+    converts the exponent `(13n/5)(D/2)` to the `(13n/5)(1 + D/2)` of (13).
+    """
+    return 4 * n**4 * _power_majorant(n, QQ(13 * n) / 5) * _power_majorant(_theorem5_base(n, lemma11_constant(n)), QQ(13) / 5)
+
+
+def theorem5_compact_constant(n):
+    r"""Return a majorant of the compact case of Theorem 5: `4 n^4 (21 K c^{-1} \eta_0^{-D})^3`.
+
+    As :func:`theorem5_constant` with `\delta_i = \eta_0` of :func:`lemma10_radius` for both points.
+    """
+    return 4 * n**4 * _power_majorant(_theorem5_base(n, 1 / lemma10_radius(n)), QQ(13) / 5)
+
+
+def lemma24_constant(n, alpha, beta, index):
+    r"""Return `n^n \beta'^n (1+\beta)^{n-1} d^{n+1} \alpha^{3n^2-2n+1}`, `\beta' = \max(1, \beta)`, `d` = ``index``.
+
+    Corrected Lemma 24 (with Lemma 25 as the case `d > 1`). Let `Q = (au)^t (au)` be
+    `(\alpha, \beta)`-reduced, `\alpha \ge 1`, `\Lambda \subseteq \mathbb Z^n` of index `d`, and
+    `v_1, \dots, v_n \in \Lambda` successive-minima vectors chosen greedily: `v_k` minimizes `Q` on
+    `\Lambda \setminus \operatorname{span}(v_1, \dots, v_{k-1})`. Then `\|v_k\| \le` this constant.
+
+    Proof. Write `y = u v`, `\lambda_k = Q(v_k)`. (i) Any `i` independent integral vectors include one with
+    top nonzero coordinate `j \ge i`, and `Q \ge a_j^2 \ge \alpha^{-2(n-1)} a_i^2` on it; Minkowski's
+    second theorem `\prod \lambda_i \le n^n d^2 \prod a_i^2` (`2^n/V_n \le n^{n/2}`) then gives
+    `\lambda_k \le C a_k^2`, `C = n^n d^2 \alpha^{2(n-1)^2}`. (ii) Call `l` a gap if `a_l < \theta a_{l+1}`,
+    `\theta^{-1} = d \sqrt n \beta' \alpha^{2n}`. Then `Q(d e_i) \le d^2 n \beta'^2 \alpha^{2n} a_l^2 < Q(w)`
+    for `i \le l` and every integral `w \notin E_l = \langle e_1, \dots, e_l \rangle`, so
+    `v_1, \dots, v_l` span `E_l`, and for `k > l` greedy choice makes `v_k` minimal on
+    `v_k + d\mathbb Z^l`. (iii) Bounds on `|y_m|`: for `m \ge k`, `\sqrt{\lambda_k}/a_m \le \sqrt C
+    \alpha^n`; for `m < k` with no gap in `[m, k)`, `\le \sqrt C \theta^{-n}`; otherwise let `l \ge m` be
+    the least gap, `l < k`; size reduction by `d e_i`, `i \le l`, gives a point of the coset with
+    `|y_i| \le d/2`, so `a_m^2 y_m^2 \le (d^2/4) \sum_{i \le l} a_i^2` and `|y_m| \le (d\sqrt n/2)
+    \alpha^n \theta^{-n}`. All three are at most `Y = \sqrt C \theta^{-n} = n^n d^{n+1} \beta'^n
+    \alpha^{3n^2-2n+1}`, and `v = u^{-1} y` gives `|v_m| \le Y (1+\beta)^{n-m}`.
+    """
+    alpha, beta, index = QQ(alpha), QQ(beta), ZZ(index)
+    return (
+        QQ(n) ** n
+        * max(QQ(1), beta) ** n
+        * (1 + beta) ** (n - 1)
+        * index ** (n + 1)
+        * alpha ** (3 * n * n - 2 * n + 1)
+    )
+
+
+def corollary2_constant(n):
+    r"""Return `n! P^n`, `P` = :func:`lemma24_constant` at `(2, 1)`, index one: Corollary 2 at `(2, 1)`.
+
+    `\gamma = \tau_2 \tau_1^{-1}` with `\tau_1 = (w_i)` greedy successive-minima vectors of `Q_1` and
+    `\tau_2 = (\gamma w_i)`, greedy for `Q_2`; `\|\tau_1^{-1}\| \le (n-1)! \|\tau_1\|^{n-1}` (Cramer,
+    `\det \tau_1 \in \mathbb Z \setminus 0`) and `\|\gamma\| \le n \|\tau_2\| \|\tau_1^{-1}\|`.
+    """
+    return factorial(n) * lemma24_constant(n, 2, 1, 1) ** n
+
+
+def corollary3_constant(n):
+    r"""Return `n! R P^{n-1}` with `\|B\| \le` it `\cdot |\det B|^{n+1}`: corrected Corollary 3.
+
+    `P` = :func:`lemma24_constant` at `(2, 1)`, index one, and `R d^{n+1}` = :func:`lemma24_constant`
+    at `(2, (n-1)!)`, index `d = |\det B|`. With `W = (w_i)` greedy for the `(2,1)`-reduced Hermite
+    majorant `A` and `T = JB`, `C = JA^{-1}J` (Lemmas 22, 23), `T^t C T = A`, so `T w_i` are greedy
+    successive-minima vectors of `Q_C` on `T \mathbb Z^n`, of index `d`. `\|B\| = \|T\| \le n \|TW\|
+    \|W^{-1}\|`, `\|W^{-1}\| \le (n-1)! P^{n-1}`. The exponent `n+1` replaces the printed `3n-1`.
+    """
+    unit = lemma24_constant(n, 2, 1, 1)
+    scaled = lemma24_constant(n, 2, factorial(n - 1), 1)
+    return factorial(n) * scaled * unit ** (n - 1)
+
+
+def default_constants(n):
+    r"""Return the constants of rank ``n``, every majorant computed by this module."""
     theorem6 = theorem6_constant(n)
+    theorem5 = theorem5_constant(n)
     return LiMargulisConstants(
         n,
-        QQ(theorem5),
-        QQ(theorem5_compact),
+        theorem5,
+        theorem5_compact_constant(n),
         theorem6,
         section6_constant(n, theorem5, theorem6),
-        QQ(corollary2),
-        QQ(corollary3),
+        corollary2_constant(n),
+        corollary3_constant(n),
         lemma20_constant(n),
     )
 
@@ -436,19 +543,19 @@ def theorem_two_constant(constants):
     r"""Return a majorant of `C_n` in Theorem 2, from the proof in section 9.5.
 
     With `a, b` the exponents of `\|A\|, \|B\|` in (3) and `e_{30} = (13n^3-13n^2+62n)/20`:
-    `\|\tau_i\| \le C_1 \|B\|^a K_{C3}^{b} |\det B|^{(3n-1)b}` (Theorem 1 for `\tau_i^t A_i \tau_i = B`
+    `\|\tau_i\| \le C_1 \|B\|^a K_{C3}^{b} |\det B|^{(n+1)b}` (Theorem 1 for `\tau_i^t A_i \tau_i = B`
     and Corollary 3 for `A_i`; the negative power of `|\det A_i| = |\det B|` is at most one),
     `\|\sigma_j\| \le K_{30} \|B\|^{e_{30}}` by (30), `G = n \|\tau_i\| \|\sigma_j\|` bounds `\gamma_l`,
     `\|\xi\| \le n^2 (n-1)! K_{C2} G^n` by Corollary 2 and Cramer, and each generator
     `\sigma_j \xi` has norm at most `n K_{30} \|B\|^{e_{30}} \|\xi\|`. The resulting exponents
-    `n(3n-1)b \le n^6` and `e_{30} + n(a + e_{30}) \le 3n^4` are checked, so the bound has the form
+    `n(n+1)b \le n^6` and `e_{30} + n(a + e_{30}) \le 3n^4` are checked, so the bound has the form
     of Theorem 2 with constant `n^3 (n-1)! K_{C2} K_{30} (n C_1 K_{C3}^{b} K_{30})^n`.
     """
     n = constants.rank
     a = QQ(13 * n**3 - 13 * n**2 + 52 * n + 20) / 40
     b = QQ(13 * n**3 - 13 * n**2 + 72 * n - 20) / 40
     e30 = QQ(13 * n**3 - 13 * n**2 + 62 * n) / 20
-    assert n * (3 * n - 1) * b <= n**6
+    assert n * (n + 1) * b <= n**6
     assert e30 + n * (a + e30) <= 3 * n**4
     inner = n * theorem_one_constant(constants) * _power_majorant(constants.corollary3, b) * QQ(constants.lemma18)
     return n**3 * factorial(n - 1) * QQ(constants.corollary2) * QQ(constants.lemma18) * inner**n
