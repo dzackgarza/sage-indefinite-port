@@ -988,8 +988,8 @@ def test_maximal_orders_containing_the_lipschitz_order_over_sqrt2():
 
 
 def test_witt_one_parabolic_generators_over_sqrt2():
-    r"""`U + <2>` over `Q(sqrt 2)`. `<2>` is anisotropic and totally positive; `O(<2>) = \\{\\pm 1\\}` up to units of norm... every generator is an
-    integral isometry. `v = e - f + m` is primitive isotropic (`2 \\cdot 1 \\cdot (-1) + 2 = 0`), and the Euclidean reduction returns an integral
+    r"""`U + <2>` over `Q(sqrt 2)`. `<2>` is anisotropic and totally positive, and `O(<2>) = \\{\\pm 1\\}` (`u^2 = 1`). Every generator is an integral
+    isometry. `v = e - f + m` is primitive isotropic (`2 \\cdot 1 \\cdot (-1) + 2 = 0`), and the Euclidean reduction returns an integral
     isometry `g` with `g v` a unit multiple of `e`. The transvection `E(e, m)` is unipotent and not `1`, so the group is infinite."""
     from sage_indefinite_port.indefinite.witt_one_number_field import WittOneLattice, eichler
 
