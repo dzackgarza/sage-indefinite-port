@@ -129,3 +129,86 @@ def test_u_plus_two_minus_four_has_two_classes_of_norm_two():
         int(1),
         int(2),
     ]
+
+
+# Q(sqrt 10): O = Z[sqrt 10], Disc = 40, class number 2, not norm-Euclidean. The fundamental unit
+# 3 + sqrt 10 has norm -1, so epsilon = 19 + 6 sqrt 10. The prime p = (2, sqrt 10) over 2 is not principal,
+# since x^2 - 10 y^2 = +-2 has no solution modulo 5. L = U + <2, -20> with b = -2ad + 2x^2 - 20y^2.
+#
+# Null vectors. SL_2(O) has two cusps, e_O = (1, 0, 0, 0) and the primitive vector on the line of
+# c^t conj(c), c = (2, sqrt 10): [[4, -2 sqrt 10], [2 sqrt 10, -10]] / 2 = (2, -5, 0, -1). Both have
+# divisor one: G e_O = (0, -1, 0, 0) and G (2, -5, 0, -1) = (5, -2, 0, 20). For e = (2, -5, 0, -1),
+# f = (5, -8, 0, -2) is null with b(e, f) = 1, and (e, f)^perp is spanned by (0, 0, 1, 0) and
+# (20, -40, 0, -9) with Gram diag(2, -20). For e_O, f = (0, -1, 0, 0) and the complement is
+# <2, -20> as well. An even L with b(e, f) = 1 splits as U + (e, f)^perp, so the isometry
+# U + <2, -20> -> U + <2, -20> of the two splittings carries e_O to e. Hence one class of null vectors.
+#
+# Norm 2. g = [[3, sqrt 10], [sqrt 10, 3]] has det -1 of norm one, and g X conj(g)^t sends
+# X = [[1, 0], [0, -1]] to [[19, -6 sqrt 10], [6 sqrt 10, -19]], i.e. (1, -1, 0, 0) to (19, -19, 0, -6).
+# (1, -1, 0, 0) has divisor one and (0, 0, 1, 0) has divisor two, so they are in different classes.
+
+
+def _sqrt_ten_classes():
+    return HilbertFixedNormClasses(HilbertWittOneLattice(int(10)))
+
+
+def _is_transporter(h, x, y, gram):
+    return h is not None and h * x == y and h.transpose() * gram * h == gram
+
+
+def test_sqrt_ten_null_vectors_form_one_class():
+    classes = _sqrt_ten_classes()
+    gram = HilbertWittOneLattice(int(10)).gram()
+    assert len(classes.classes(int(0), True)) == int(1)
+    assert _is_transporter(classes.transporter(_v(1, 0, 0, 0), _v(2, -5, 0, -1)), _v(1, 0, 0, 0), _v(2, -5, 0, -1), gram)
+
+
+def test_sqrt_ten_norm_two_transporter_and_divisor_obstruction():
+    classes = _sqrt_ten_classes()
+    gram = HilbertWittOneLattice(int(10)).gram()
+    x, y = _v(1, -1, 0, 0), _v(19, -19, 0, -6)
+    assert int(y * gram * y) == int(2)
+    assert _is_transporter(classes.transporter(x, y), x, y, gram)
+    assert classes.transporter(x, _v(0, 0, 1, 0)) is None
+
+
+def test_sqrt_ten_norm_two_classes_separate_the_divisors():
+    classes = _sqrt_ten_classes()
+    gram = HilbertWittOneLattice(int(10)).gram()
+    divisors = set([gcd(*(int(c) for c in gram * v)) for v in classes.classes(int(2), True)])
+    assert divisors == set([int(1), int(2)])
+
+
+# Q(sqrt 5) has class number one and -1 is in O(L), so the null vectors form one class; the swap
+# [[0, 1], [-1, 0]] sends E_11 = (1, 0, 0, 0) to E_22 = (0, 1, 0, 0).
+
+
+def test_sqrt_five_null_vectors_form_one_class():
+    classes = _classes()
+    gram = HilbertWittOneLattice(int(5)).gram()
+    assert len(classes.classes(int(0), True)) == int(1)
+    assert _is_transporter(classes.transporter(_v(1, 0, 0, 0), _v(0, 1, 0, 0)), _v(1, 0, 0, 0), _v(0, 1, 0, 0), gram)
+    assert classes.transporter(_v(1, 0, 0, 0), _v(2, 0, 0, 0)) is None
+
+
+def test_nonprimitive_null_vectors_are_not_a_finite_family():
+    try:
+        _classes().classes(int(0), False)
+    except ValueError:
+        return
+    raise AssertionError("the non-primitive null vectors were returned as finitely many classes")
+
+
+def test_recursion_uses_the_hilbert_cusps_at_witt_index_one():
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    lattice = Lattices(ZZ)("U") + Lattices(ZZ)([[int(2), int(0)], [int(0), int(-4)]])
+    recursion = EichlerRecursion()
+    norm_two = recursion.primitive_vector_classes(lattice, int(2))
+    assert sorted(gcd(*(int(lattice.b(c.representative, g)) for g in lattice.module_generators())) for c in norm_two) == [
+        int(1),
+        int(2),
+    ]
+    null = recursion.primitive_vector_classes(lattice, int(0))
+    assert len(null) == int(1)
+    assert int(lattice.b(null[0].representative, null[0].representative)) == int(0)

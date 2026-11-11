@@ -2224,6 +2224,13 @@ class EichlerRecursion:
         # rational hyperbolic pairs of the Eichler envelope.
         if square == 0 and not lattice.is_isotropic():
             return ()
+        # Rational Witt index one in rank four has no second hyperbolic pair
+        # for the Eichler envelope (#40); the Hilbert model decides its
+        # classes, isotropic ones included, by its cusps.
+        if int(lattice.module_rank()) == 4 and int(lattice.witt_index()) == 1:
+            from sage_indefinite_port.indefinite.witt_one_fixed_norm_classes import witt_one_fixed_norm_vector_classes
+
+            return tuple(VectorClass(v, ()) for v in witt_one_fixed_norm_vector_classes(lattice, int(square), True))
         buckets: dict[VectorPrefilter, list[tuple[Lattices.ElementMethods, list[LatticeIsometryMethods]]]] = {}
         for candidate in self._model(profile.signed_view).primitive_covering_vectors(profile.sign * int(square)):
             bucket = buckets.setdefault(VectorPrefilter.from_vector(candidate), [])
