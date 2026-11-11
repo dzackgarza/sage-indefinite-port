@@ -36,7 +36,10 @@ Bound on `\kappa(O(\Lambda))`. Put `c(g) = \theta(g) (-2)^{[\det g = -1]}`. At e
 
 As `O_K` is principal, `c(g)` lies in `C = \langle O_K^\times, \pi_P : P \in S \rangle K^{\times 2}`, where `S` consists of the non-dyadic
 `P \mid \det G` with an odd Jordan exponent and the dyadic `P` of the last case whose parity is free. For `P \in S` the parity is realized by
-an element of `O(\Lambda_P)`; a global integral reflection realizing it is searched below, and the search failing raises.
+an element of `O(\Lambda_P)`; integral reflections of `\Lambda` realizing the free parities are enumerated by height (shells of growing
+coefficient bound in a `Z`-basis of `\Lambda`) until their classes span the parity coordinates of `S`. The enumeration is unbounded: it ends
+when integral reflections realize every free parity. Eichler transvections have trivial spinor norm and products of found elements add
+nothing to the `F_2`-span, so reflections are the only candidates this enumeration needs.
 `\kappa(\sigma_{e - f}) = (-1, -2)`, `c(\sigma_{e-f} \sigma_{e - \varepsilon f}) = \varepsilon` for units `\varepsilon`; for `P \in S`
 a reflection `\sigma_v` with `v_P(-2 h(v, v))` odd is searched in a box. When the found classes span `C`, the generators below generate `O(\Lambda)`.
 """
@@ -485,27 +488,26 @@ def generators(field, gram):
         classes = _Classes(field, odd)
         width = len(field.unit_group().gens())
         found = matrix(GF(2), 0, len(odd))
-        zbasis = [k * b for b in basis[2:] for k in integers]
-        for coefficients in product((-1, 0, 1), repeat=len(zbasis)):
-            if found.rank() == len(odd):
-                break
-            v = sum(c * x for c, x in zip(coefficients, zbasis))
-            norm = _pairing(gram, v, v)
-            if norm == 0:
-                continue
-            g = reflection(gram, v)
-            if not _integral(g):
-                continue
-            image = classes(-2 * norm)[width:]
-            stacked = found.stack(matrix(GF(2), [image]))
-            if stacked.rank() > found.rank():
-                found = stacked
-                result.append(g)
-        if found.rank() < len(odd):
-            raise NotImplementedError(
-                f"O(Lambda) for Lambda = H + H + L_0 over O_K: odd spinor-norm parities at the primes {odd} occur in the local "
-                f"groups O(Lambda_P) (Kneser's Jordan bound; Beli's dyadic groups), but no integral reflection of L_1 with "
-                f"coefficients in {{-1, 0, 1}} realizes them globally (#54)"
-            )
+        zbasis = [k * b for b in basis for k in integers]
+        bound = 1
+        while found.rank() < len(odd):
+            for coefficients in product(range(-bound, bound + 1), repeat=len(zbasis)):
+                if max(abs(c) for c in coefficients) != bound:
+                    continue
+                v = sum(c * x for c, x in zip(coefficients, zbasis))
+                norm = _pairing(gram, v, v)
+                if norm == 0:
+                    continue
+                g = reflection(gram, v)
+                if not _integral(g):
+                    continue
+                image = classes(-2 * norm)[width:]
+                stacked = found.stack(matrix(GF(2), [image]))
+                if stacked.rank() > found.rank():
+                    found = stacked
+                    result.append(g)
+                    if found.rank() == len(odd):
+                        break
+            bound += 1
     assert all(_integral(g) and g.transpose() * gram * g == gram for g in result)
     return tuple(result)
