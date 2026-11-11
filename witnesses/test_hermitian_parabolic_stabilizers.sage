@@ -29,6 +29,38 @@ def _parameters(field, Z, T):
     return sage_matrix(field, 1, 1, [Z]), sage_matrix(field, 1, 1, [T])
 
 
+def _assert_unitary_integral(lattice, g):
+    form = lattice.gram_matrix().transpose()
+    assert g.conjugate_transpose() * form * g == form
+    assert all(entry.is_integral() for entry in g.list())
+    assert all(entry.is_integral() for entry in (~g).list())
+
+
+def _vector(field, *entries):
+    return sage_matrix(field, len(entries), int(1), [field(int(x)) if isinstance(x, int) else x for x in entries])
+
+
+def _split_rank_two():
+    field = SageCyclotomicField(int(4))
+    zero, one = field.zero(), field.one()
+    J = sage_matrix(field, int(5), int(5), [zero, zero, zero, one, zero, zero, zero, zero, zero, one, zero, zero, one, zero, zero, one, zero, zero, zero, zero, zero, one, zero, zero, zero])
+    lattice = HermitianLattice((one, field.gen()), J)
+    return field, lattice, HermitianWittFrame(lattice, J.parent().identity_matrix(), sage_matrix(field, int(1), int(1), [one]), int(2))
+
+
+def _glued_eisenstein():
+    field = SageCyclotomicField(int(3))
+    omega = field.gen()
+    theta = omega - omega.conjugate()
+    middle = field(int(9))
+    zero, one = field.zero(), field.one()
+    witt = sage_matrix(field, int(3), int(3), [zero, zero, one, zero, middle, zero, one, zero, zero])
+    basis = sage_matrix(field, int(3), int(3), [one, theta**int(-1), zero, zero, theta**int(-1), zero, zero, zero, theta])
+    gram = basis.conjugate_transpose() * witt * basis
+    lattice = HermitianLattice((one, omega), gram.transpose())
+    return field, theta, lattice, HermitianWittFrame(lattice, ~basis, sage_matrix(field, int(1), int(1), [middle]), int(1))
+
+
 def test_flag_stabilizers_based_and_setwise_on_the_split_frame():
     r"""Split Z[i]^5, flag <e1> < <e1,e2>. Pointwise: A = 1, and all four of U(1) lift.
 
