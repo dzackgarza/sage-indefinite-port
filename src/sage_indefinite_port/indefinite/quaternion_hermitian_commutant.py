@@ -51,8 +51,13 @@ Skew-Hermitian forms (`H_0^* = -H_0`). Then `h(x, x)` is pure and `h(y, x) = -\o
   `L(x)^{-1}` makes the column `e_1`, and the stabilizer of `e_1` is `n(Z)`. Hence `U(R^2, J) = \langle L(u), n(1), W \rangle`, `u` in generators of
   `R^\times`, with no covering certificate (the argument is the Euclidean algorithm on `P^1(Q)`, which parametrizes the null `D`-lines).
   Every primitive null vector of `\Lambda = q J` is in the `U`-orbit of `v`, so `h(\Lambda, v') = q R` for all of them, and `q J \cong q' J` exactly when
-  `q' = \pm q` (`diag(1, -1)` sends `J` to `-J`; reduced norms of determinants otherwise). An anisotropic skew-Hermitian `\Lambda` (a cocompact
-  `U`) needs the Voronoi algorithm of Braun-Coulangeon-Nebe-Schoennenbeck (J. Algebra 435 (2015)) and raises.
+  `q' = \pm q` (`diag(1, -1)` sends `J` to `-J`; reduced norms of determinants otherwise). An anisotropic skew-Hermitian `\Lambda` raises. There
+  `\sigma_h` is an orthogonal involution of degree 4 with nontrivial discriminant (a trivial one makes `h` hyperbolic), so its Clifford
+  algebra `C(A, \sigma_h)` is a quaternion algebra over `Z = Q(\sqrt \delta)` and `Spin(A, \sigma_h) \cong R_{Z/Q} SL_1(C)` (Knus-Merkurjev-
+  Rost-Tignol, *The Book of Involutions*, Thm. 15.7, Cor. 15.12). The missing pieces are an integral model of `C(A, \sigma_h)` with the
+  map `Spin \to U(\Lambda, h)`, and Voronoi generators of norm-one units of an order of a quaternion algebra over a quadratic field
+  (Braun-Coulangeon-Nebe-Schoennenbeck, J. Algebra 435 (2015), treat unit groups of orders; :class:`QuaternionVoronoi` covers only
+  indefinite quaternion algebras over `Q`).
 
 Transporters. As in :meth:`CentralFieldCommutant.equivariant_transporter`, `t_0 a_1` with `a_1 : (\Lambda, h) \to (\Lambda', h_m)`. All primitive null
 vectors of `\Lambda` lie in one `U`-orbit (the height reduction), so `\Lambda'` is `q' H` or no isometry exists; and `q' H \cong q H` exactly when `q' = \pm q`
@@ -524,8 +529,9 @@ class QuaternionMatrixCommutant:
         if found is None:
             raise NotImplementedError(
                 f"the {kind} Lambda over ({self.a}, {self.b})_Q of the commutant of {self.commutant.isometries} is not "
-                f"v R + f R with matrix q H (q J) for a rational q; an anisotropic form has a cocompact unitary group, whose "
-                f"generators need the Voronoi algorithm of Braun-Coulangeon-Nebe-Schoennenbeck, J. Algebra 435 (2015) (#54)"
+                f"v R + f R with matrix q H (q J) for a rational q; for an anisotropic form Spin(A, sigma) = R_{{Z/Q}} SL_1(C) for the "
+                f"Clifford quaternion algebra C over a quadratic field Z (KMRT Thm. 15.7), and neither the integral Clifford model "
+                f"nor Voronoi generators of norm-one units of a quaternion order over a quadratic field are implemented (#54)"
             )
         v, f, q, order = found
         units, _search = self._units(order)
