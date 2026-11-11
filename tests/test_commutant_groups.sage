@@ -876,3 +876,24 @@ def test_dyadic_spinor_norm_group_after_maximal_norm_splitting():
     theta = spinor_norm_group(field, gram, prime, classes)
     assert classes(int(2)) in theta
     assert theta == classes.space
+
+
+def _lipschitz_over_sqrt2():
+    r"""Return `(-1, -1)` over `Z = Q(sqrt 2)` and the order `Z[sqrt 2]<1, i, j, k>`. The algebra is totally definite (both real places
+    give the Hamilton quaternions), so the canonical involution is positive."""
+    from sage_indefinite_port.indefinite.quaternion_voronoi_number_field import QuaternionOrderVoronoi
+
+    field = QuadraticField(int(2), "w")
+    algebra = QuaternionAlgebra(field, int(-1), int(-1))
+    basis = [field.gen() ** p * g for g in algebra.basis() for p in (int(0), int(1))]
+    return algebra, QuaternionOrderVoronoi(algebra, basis)
+
+
+def test_voronoi_perfect_forms_over_real_quadratic_field():
+    algebra, voronoi = _lipschitz_over_sqrt2()
+    forms = voronoi.perfect_forms()
+    assert len(forms) >= int(1)
+    for s in forms:
+        assert voronoi.involution(s) == s
+        assert voronoi.gram(s).is_positive_definite()
+        assert voronoi.is_perfect(s)
