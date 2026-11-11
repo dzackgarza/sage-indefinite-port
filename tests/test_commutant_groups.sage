@@ -864,3 +864,21 @@ def test_diagonal_null_vector_beyond_ternary_subforms():
     null = _diagonal_null(field, values)
     assert null is not None and any(z != int(0) for z in null)
     assert sum(a * z**int(2) for a, z in zip(values, null)) == int(0)
+
+
+def test_dyadic_spinor_norm_groups_of_binary_two_adic_lattices():
+    r"""Over `K = Q(sqrt 17)`, where `2` splits and `K_P = Q_2`. `<1, 3>`: unit vectors of norms `1, 3, 7 = 2^2 + 3, 13 = 1 + 3 \cdot 2^2` give
+    integral symmetries, so products of two of them give every unit class; Beli (Def. 3 (III), `R = 0`, `d(-3) = 2 = 2e`) gives
+    `O^x F^2`, so `2 \notin \theta`. `<1, 2>`: `R = 1` gives `N(-2)`, the norms of `Q_2(sqrt -2)`: `2 = 0^2 + 2 \cdot 1^2` and `3 = 1 + 2` are
+    norms, while `(-2, -1)_2 = (-2, 5)_2 = -1`."""
+    from sage_indefinite_port.indefinite.eichler_orthogonal import LocalSquareClasses, spinor_norm_group
+
+    field = QuadraticField(int(17), "t")
+    prime = field.ideal(int(2)).factor()[int(0)][int(0)]
+    classes = LocalSquareClasses(field, prime)
+    odd = spinor_norm_group(field, sage_matrix(field, [[int(1), int(0)], [int(0), int(3)]]), prime, classes)
+    assert all(classes(x) in odd for x in (int(-1), int(3), int(5)))
+    assert classes(int(2)) not in odd
+    even = spinor_norm_group(field, sage_matrix(field, [[int(1), int(0)], [int(0), int(2)]]), prime, classes)
+    assert classes(int(2)) in even and classes(int(3)) in even
+    assert classes(int(-1)) not in even and classes(int(5)) not in even
