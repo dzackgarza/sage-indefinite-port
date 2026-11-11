@@ -180,7 +180,8 @@ class WittOneLattice:
         Rank one: `O(\mathfrak a_1 m_1) = \{\pm 1\}` (`u^2 = 1`), whatever the signs of `c`. Totally definite `M` (all signs equal and nonzero):
         PARI ``qfauto`` on `\pm\mathrm{Tr}(h)` and `\mathrm{Tr}(\omega h)` on the `Z`-basis of `M`. Otherwise `M` of rank `\ge 2` is indefinite or
         of mixed sign at the real places; rank two with a free pseudo-basis uses
-        :class:`binary_orthogonal_number_field.BinaryOrthogonalGroup`; rank `\ge 3` is a cocompact group and raises."""
+        :class:`binary_orthogonal_number_field.BinaryOrthogonalGroup`; rank three uses the even Clifford algebra
+        (:class:`ternary_orthogonal_number_field.TernaryOrthogonalGroup`); rank `\ge 4` raises."""
         if self.k == 1:
             minus = identity_matrix(self.field, 3)
             minus[2, 2] = -1
@@ -200,11 +201,23 @@ class WittOneLattice:
                 full.set_block(2, 2, g)
                 result.append(full)
             return result
+        if self.k == 3 and (0 in self.signs or len(set(self.signs)) != 1):
+            from sage_indefinite_port.indefinite.ternary_orthogonal_number_field import TernaryOrthogonalGroup
+
+            group = TernaryOrthogonalGroup(self.field, self.inner, [x[2:] for x in self.z_basis])
+            result = []
+            for g in group.generators():
+                full = identity_matrix(self.field, 5)
+                full.set_block(2, 2, g)
+                assert self.preserves(full)
+                result.append(full)
+            return result
         if 0 in self.signs or len(set(self.signs)) != 1:
             raise NotImplementedError(
                 f"O(M) for the anisotropic M = {list(self.inner)} of rank {self.k} over {self.field} with real signs {self.signs}: "
-                f"rank >= 3 that is not totally definite is a cocompact "
-                f"arithmetic group (even Clifford algebra and Voronoi) (#54)"
+                f"rank 4 needs the Clifford algebra over the discriminant field K(sqrt(disc M)) as a quaternion algebra over a quartic "
+                f"field, whose unit group QuaternionOrderVoronoi (real quadratic centres only) does not compute; rank >= 5 has no proved "
+                f"reduction to rank <= 4 (the stabilizer of a splitting M_1 + M_2 has infinite index in O(M)) (#54)"
             )
         self.sign = self.signs[0]
         omega = self.field.gen()
