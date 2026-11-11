@@ -28,7 +28,7 @@ An issue comment, a handoff or an earlier goal is a claim. Before you trust a ro
 | #18 | Public consumer and assertion for the flag invariant (`isotropic_induction.py:526`) | Equal on equivalent flags, separates two inequivalent flags | done |
 | #18 | Public assertion for spacelike squares at positive index 1 (`marked_lattices.py:540`) | A spacelike vector class on a signature-(1,n) lattice | done |
 | #68 | Negative isometry decisions through each port branch (Lorentzian, Eichler/approximate model), independent of the provider's spinor-genus prefilter | A same-genus non-isometric pair at index 1 and one at index ≥ 2, decided by the port route | index 1 done; index ≥ 2: no input found among 36100 diagonal (2,2) genera (comment on #68); needs a non-diagonal genus with several spinor genera |
-| #44 | Marked and flag transporters and orbit splitting under a nontrivial congruence subgroup at rank ≥ 2 | Preimage of {±Id} in O(2U mod 3): orbit splitting of null planes or flags, with Γ-transporters | open |
+| #44 | Marked and flag transporters and orbit splitting under a nontrivial congruence subgroup at rank ≥ 2 | Preimage of {±Id} in O(2U mod 3): orbit splitting of null planes or flags, with Γ-transporters | done |
 | #44 | Graded flag-quotient action honours the requested Γ; partial flag | `isotropic_orbits.py:459` hard-codes `O()` | done |
 | #44 | Oriented multi-block flags; oriented objects reachable through the marked-category API | 3U oriented complete flag | done |
 | #44 | Precise unsupported-algorithm error where the object exists and no backend does | One input that reaches it | done |
