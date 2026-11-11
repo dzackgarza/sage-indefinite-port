@@ -25,7 +25,7 @@ from sage_extensions.all import *
 from sage.matrix.constructor import matrix as sage_matrix
 from sage.matrix.special import identity_matrix as sage_identity
 from sage.rings.integer_ring import ZZ as SageZZ
-from sage_indefinite_port.indefinite.equivariant_markings import CentralizerTupleOrbit, _right_orbit_restriction, EquivariantMarking, _endomorphism_unit_generators, invisible_source_automorphism_generators, source_automorphism_kernel_generators
+from sage_indefinite_port.indefinite.equivariant_markings import CentralizerTupleOrbit, _right_orbit_restriction, EquivariantMarking, _endomorphism_unit_generators, orthogonal_source_kernel_generators, invisible_source_automorphism_generators, source_automorphism_kernel_generators
 
 
 def _m(rows):
@@ -360,3 +360,16 @@ def test_source_kernel_for_the_orthogonal_source_group_is_the_invisible_kernel()
     A = X.transpose() * _m(U2) * X
     for a in invisible_source_automorphism_generators(X):
         assert X * a == X and a.transpose() * A * a == A
+
+
+def test_orthogonal_source_kernel_with_an_infinite_orbit():
+    r"""X = (e1, e1, 0) in U + U, A = 0, so O(A) = GL_3(Z) and its orbit of X is infinite. ker X is spanned by
+    (1, -1, 0) and (0, 0, 1), and every a in GL(ker X), extended by the identity on a complement, fixes X; so the
+    kernel {a : X a = X} is infinite, and every generator fixes X and preserves A."""
+    from sage.groups.matrix_gps.finitely_generated import MatrixGroup
+
+    X = _m([[1, 1, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    A = X.transpose() * _m(U2) * X
+    generators = orthogonal_source_kernel_generators(U2, X)
+    assert all(X * a == X and a.transpose() * A * a == A for a in generators)
+    assert not MatrixGroup(list(generators)).is_finite()

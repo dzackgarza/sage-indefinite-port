@@ -1043,13 +1043,26 @@ def source_automorphism_kernel_generators(marking, source_generators):
     generators = tuple(matrix(ZZ, a) for a in source_generators)
     if not _is_finite(_right_orbit_restriction(marking, generators)):
         raise NotImplementedError(
-            "the orbit of the marking under the source group is infinite; the kernel of J needs a membership test "
-            "of J, available for J = GL_k(Z) and O(A) through invisible_source_automorphism_generators"
+            "the orbit of the marking under the source group given by generators is infinite, so the kernel is an "
+            "intersection of infinite subgroups; for J = O(A) or GL_k(Z) use orthogonal_source_kernel_generators"
         )
     one = identity_matrix(ZZ, marking.ncols())
     _transversal, kernel = _schreier(generators, marking, lambda a, x: x * a.inverse().change_ring(ZZ), one)
     assert all(marking * a == marking for a in kernel)
     return kernel
+
+
+def orthogonal_source_kernel_generators(gram, marking):
+    r"""Return generators of `\{a \in J : X a = X\}` for `J = O(A)`, `A = X^t B X`, or `J = GL_k(\mathbb Z)`.
+
+    `X a = X` gives `a^t A a = X^t B X = A`, so `\{a \in GL_k(\mathbb Z) : X a = X\} \subseteq O(A)` and both kernels
+    are that group, whatever the orbit of `X` under `J`; it is :func:`invisible_source_automorphism_generators`.
+    """
+    marking = matrix(ZZ, marking)
+    source_gram = marking.transpose() * matrix(ZZ, gram) * marking
+    result = invisible_source_automorphism_generators(marking)
+    assert all(a.transpose() * source_gram * a == source_gram and marking * a == marking for a in result)
+    return result
 
 
 def invisible_source_automorphism_generators(marking):
