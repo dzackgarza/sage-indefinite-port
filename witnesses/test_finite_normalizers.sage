@@ -21,6 +21,10 @@ from sage.rings.rational_field import QQ as SageQQ
 from sage_indefinite_port.indefinite.finite_normalizers import FiniteSubgroupNormalizer, orthogonal_decomposition_normalizer
 
 
+def _unreached_transporter(gram, sources, basis, target_basis):
+    raise AssertionError("this normalizer does not consult the commutant transporter")
+
+
 def _from_columns(lattice, columns):
     frame = tuple(lattice.module_generators())
     labels = tuple(lattice.module_generating_set())
@@ -60,7 +64,7 @@ def test_arithmetic_normalizer_of_the_full_orthogonal_group_of_two_hyperbolic_pl
     lattice = Lattices(ZZ)([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
     eichler = _from_columns(lattice, [[1, -1, -1, -1], [0, 1, 0, 0], [0, 1, 1, 0], [0, 1, 0, 1]])
     ambient = tuple(lattice.O().group_generators())
-    generators = normalizer_generators(lattice, (*ambient, eichler), int(3), orthogonal_decomposition_normalizer)
+    generators = normalizer_generators(lattice, (*ambient, eichler), int(3), orthogonal_decomposition_normalizer, _unreached_transporter)
     target = _reduction_closure(lattice, ambient)
     assert _reduction_closure(lattice, generators) == target
     sigma = _from_columns(lattice, [[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]])
