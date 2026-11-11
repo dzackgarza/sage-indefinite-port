@@ -590,21 +590,14 @@ class _DedekindModel:
         (a,) = self._solve(index, u * u * u, [self.idempotents[index]])
         found, y = K(a).is_norm(L, element=True)
         if not found:
-            return self._cubic_division(index, component, x, u, L, roots, a, algebra_basis)
+            return self._cubic_division(index, component, x, algebra_basis)
         w = self._field_matrix(index, x, ~L(y)) * u
         return self._units_from_zero_divisor(index, w - self.idempotents[index], component, 3)
 
-    def _cubic_division(self, index, component, x, u, L, roots, a, algebra_basis):
-        r"""Record the cubic division component `B_i = D = (L/K, \sigma, a)` and return `[[\epsilon_i]]`.
-
-        `D` is handled as matrices on `V` through :class:`~sage_indefinite_port.indefinite.quaternion_orders_number_field.MatrixAlgebraLattices`,
-        with a maximal order `O` containing `\epsilon_i Z[F]`
-        (:func:`~sage_indefinite_port.indefinite.quaternion_orders_number_field.maximal_order`) and a `D`-basis `w_1, \ldots, w_d` of `V_i`, as
-        in :meth:`_quaternion`. Unit groups of its orders come from
-        :class:`~sage_indefinite_port.indefinite.semisimple_voronoi.SemisimpleOrderVoronoi` in the split model of :class:`_CubicDivision`;
-        a degree-three algebra satisfies the Eichler condition and has no real ramification, so an invertible ideal is principal exactly
-        when its reduced norm is principal in `\mathrm{Cl}(K)` (Reiner, *Maximal Orders*, Thm. 34.9 and 35.14), which decides
-        :meth:`_division_transport`."""
+    def _cubic_division(self, index, component, x, algebra_basis):
+        r"""Record the cubic division component `B_i = D` and return `[[\epsilon_i]]`: a maximal order containing `\epsilon_i Z[F]`
+        (:func:`~sage_indefinite_port.indefinite.quaternion_orders_number_field.maximal_order`), split through the cyclic cubic subfield
+        `K(x)`, which is totally real (:meth:`_record_division`)."""
         from sage_indefinite_port.indefinite.quaternion_orders_number_field import MatrixAlgebraLattices, maximal_order
 
         epsilon = self.idempotents[index]
@@ -612,25 +605,61 @@ class _DedekindModel:
         order = lattices.closure([epsilon * b for b in algebra_basis])
         assert order is not None, "the projection of Z[F] to the component is not integral"
         maximal = maximal_order(lattices, order)
-        k = epsilon.nrows()
+        division = _SplitDivision.build(self, index, epsilon, component, x)
+        assert division is not None
+        self._record_division(index, epsilon, component, lattices, maximal, division)
+        return [[epsilon]]
+
+    def _division_corner(self, index, e, component, maximal_component, s):
+        r"""Record the division algebra `D = e B_i e` of index ``s`` `> 2` of `B_i \cong M_m(D)`, `e = e_{11}`: the order `e \Lambda e` of the
+        maximal ``maximal_component`` `\Lambda`, a maximal order containing it, and a maximal subfield `K(x)`, `x` in that order with
+        irreducible minimal polynomial of degree `s` over `K` and a real embedding over every real place of `K` (`D \otimes_v R = M_s(R)`
+        since the local index at a real place divides 2 and the global index `s > 2` gives no `H` factor of `M_s`; the `x` with these properties
+        form an open dense set, so the search through the order in boxes of growing height ends)."""
+        from sage_indefinite_port.indefinite.quaternion_orders_number_field import MatrixAlgebraLattices, maximal_order
+
+        k = e.nrows()
+        corner = [matrix(QQ, k, k, list(r)) for r in matrix(QQ, [(e * b * e).list() for b in component]).row_space().basis()]
+        lattices = MatrixAlgebraLattices(corner, e)
+        maximal = maximal_order(lattices, lattices.basis([e * o * e for o in maximal_component]))
+        bound = 0
+        division = None
+        while division is None:
+            bound += 1
+            for coefficients in product(range(-bound, bound + 1), repeat=len(maximal)):
+                if max(abs(c) for c in coefficients) != bound:
+                    continue
+                x = sum((c * o for c, o in zip(coefficients, maximal)), 0 * e)
+                division = _SplitDivision.build(self, index, e, corner, x)
+                if division is not None:
+                    break
+        assert division.degree == s
+        self._record_division(index, e, corner, lattices, maximal, division)
+
+    def _record_division(self, index, unit, corner, lattices, maximal, division):
+        r"""Store the division algebra `D` with unit ``unit`` and `Q`-basis ``corner`` and a `D`-basis `w_1, \ldots, w_d` of ``unit`` `V_i`,
+        giving `W : D^d \to` ``unit`` `V_i`, as in :meth:`_quaternion`. Unit groups of its orders come from
+        :class:`~sage_indefinite_port.indefinite.semisimple_voronoi.SemisimpleOrderVoronoi` in the split model of :class:`_SplitDivision`.
+        For index `s > 2` the Eichler condition holds and no real place ramifies, so an invertible ideal is principal exactly when its reduced
+        norm is principal in `\mathrm{Cl}(K)` (Reiner, *Maximal Orders*, Thm. 34.9 and 35.14), which decides :meth:`_division_transport`."""
+        k = unit.nrows()
         frame, columns = [], []
-        for v in epsilon.columns():
+        for v in unit.columns():
             w = matrix(QQ, k, 1, list(v))
-            block = [q * w for q in component]
-            if matrix(QQ, [list(b.column(0)) for b in columns + block]).rank() == len(columns) + len(component):
+            block = [q * w for q in corner]
+            if matrix(QQ, [list(b.column(0)) for b in columns + block]).rank() == len(columns) + len(corner):
                 columns.extend(block)
                 frame.append(w)
         image = block_matrix(QQ, [columns], subdivide=False)
-        assert image.rank() == epsilon.rank()
-        self.division[index] = (_CubicDivision(self, index, x, u, L, roots, a), lattices, maximal, [epsilon], frame, image)
-        return [[epsilon]]
+        assert image.rank() == unit.rank()
+        self.division[index] = (division, lattices, maximal, [unit], frame, image)
 
     def _unit_engine(self, index, order):
         r"""Return the unit-group engine of the order ``order`` of the division component."""
         from sage_indefinite_port.indefinite.fuchsian_domain import quaternion_unit_engine
 
         algebra = self.division[index][0]
-        if isinstance(algebra, _CubicDivision):
+        if isinstance(algebra, _SplitDivision):
             return algebra.engine(self.division[index][1].key(order), order)
         return quaternion_unit_engine(algebra, order)
 
@@ -639,7 +668,7 @@ class _DedekindModel:
         from sage_indefinite_port.indefinite.clifford_commutant import _reduced_norm_ideal
 
         algebra = self.division[index][0]
-        if isinstance(algebra, _CubicDivision):
+        if isinstance(algebra, _SplitDivision):
             return algebra.norm_ideal(lattice)
         return _reduced_norm_ideal(self.fields[index], lattice)
 
@@ -650,7 +679,7 @@ class _DedekindModel:
         from sage_indefinite_port.indefinite.fuchsian_domain import positive_generator, ramified_real_places
 
         algebra = self.division[index][0]
-        if isinstance(algebra, _CubicDivision):
+        if isinstance(algebra, _SplitDivision):
             return ratio.is_principal()
         return positive_generator(self.fields[index], ratio, ramified_real_places(algebra, RealField(256))) is not None
 
@@ -677,18 +706,15 @@ class _DedekindModel:
         :meth:`_quaternion` for the Morita reduction to `D`-lattices."""
         from sage_indefinite_port.indefinite.quaternion_orders_number_field import MatrixAlgebraLattices, maximal_order
 
-        K, epsilon = self.fields[index], self.idempotents[index]
+        epsilon = self.idempotents[index]
         lattices = MatrixAlgebraLattices(component, epsilon)
         order = lattices.closure([epsilon * b for b in algebra_basis])
         assert order is not None, "the projection of Z[F] to the component is not integral"
         maximal = maximal_order(lattices, order)
         s = lcm(self._local_indices(index, lattices, maximal, component, n))
-        if s > 2:
-            raise NotImplementedError(
-                f"Wedderburn component of degree {n} over {K} is M_m(D) with D a division algebra of index {s} > 2: lattices over orders of D "
-                f"need the unit groups of the degree-n Voronoi algorithm of Braun, Coulangeon, Nebe and Schoennenbeck, which is not implemented (#54)"
-            )
         units = self._connect(index, self._primitive_idempotents(index, maximal, component, s), component)
+        if s > 2:
+            self._division_corner(index, units[0][0], component, maximal, s)
         if s == 2:
             e = units[0][0]
             alpha, beta, i, j = self._quaternion_presentation(index, [e * b * e for b in component], e)
@@ -824,7 +850,7 @@ class _DedekindModel:
     def _quaternion_matrix(self, index, x):
         r"""Return the matrix on `V` of `x \in D` (left multiplication on `V_i`, zero on the other `V_j`)."""
         algebra, _lattices, _maximal, units, _frame, _image = self.division[index]
-        if isinstance(algebra, _CubicDivision):
+        if isinstance(algebra, _SplitDivision):
             return x
         return sum((self._embed(index, c) * u for c, u in zip(algebra(x).coefficient_tuple(), units)), 0 * units[0])
 
@@ -1186,77 +1212,105 @@ class _DedekindModel:
         return None
 
 
-class _CubicDivision:
-    r"""The split model of a cubic division component `D = (L/K, \sigma, a)` of :class:`_DedekindModel`, for
+class _SplitDivision:
+    r"""The split model of a division component `D` of index `s` over `K = K_i` (unit ``unit``, `Q`-basis ``corner``), for
     :class:`~sage_indefinite_port.indefinite.semisimple_voronoi.SemisimpleOrderVoronoi`.
 
-    `D = \bigoplus_{i < 3} L u^i` with `u \ell = \sigma(\ell) u` and `u^3 = a`. Left multiplication on the right `L`-space `D` with basis `1, u,
-    u^2` is the splitting `D \otimes_K L \cong M_3(L)`: since `\ell u^m = u^m \sigma^{-m}(\ell)`, `\ell u^i` sends `u^j` to `u^m \sigma^{-m}(\ell)`,
-    times `a` when `i + j \ge 3`, `m = i + j \bmod 3` (Pierce, *Associative Algebras*, Sec. 15.1). `L/K` is Galois of odd degree over the
-    totally real `K`, so `L` is totally real, and so is the Galois closure `N` of `L/Q`, embedded in `R`. Each real place of `K` extends to an
-    embedding `L \to N`; one of them for each place gives `h_v : D \to M_3(N)` with `D \otimes R \cong \prod_v M_3(R)`."""
+    For a maximal subfield `M = K(x)`, `D` is a right `M`-space of dimension `s` (right multiplication) with basis `d_1, \ldots, d_s`, and left
+    multiplication is `M`-linear: `D \otimes_K M \cong M_s(M)`, `y d_j = \sum_i d_i m_{ij}` (Pierce, *Associative Algebras*, Sec. 13.3). The
+    Galois closure `N` of `M / Q`, embedded at a real root, is a real field; when every real place of `K` extends to an embedding `M \to N`,
+    one per place gives `h_v : D \to M_s(N)` with `D \otimes R \cong \prod_v M_s(R)`. :meth:`build` returns ``None`` for an `x` that does not
+    generate a maximal subfield with that property."""
 
-    def __init__(self, model, index, x, u, L, roots, a):
+    @classmethod
+    def build(cls, model, index, unit, corner, x):
         from sage.rings.number_field.number_field import NumberField
         from sage.rings.qqbar import AA
 
-        self.model, self.index, self.L, self.a = model, index, L, a
-        K, epsilon = model.fields[index], model.idempotents[index]
-        powers_x, powers_u = [epsilon, x, x * x], [epsilon, u, u * u]
-        self.basis = [powers_x[t] * powers_u[i] for i in range(3) for t in range(3)]
-        # sigma(l) = roots[0] (the Skolem-Noether element u of _cubic_trial), so sigma^{-1}(l) = roots[1].
-        self.conjugates = [L.gen(), roots[1], roots[0]]
-        absolute = L.absolute_field("b")
-        _from_absolute, self.to_absolute = absolute.structure()
+        self = cls()
+        self.model, self.index, self.unit, self.corner = model, index, unit, corner
+        K = model.fields[index]
+        s = ZZ(model._k_rank(index, corner)).isqrt()
+        f = self.minimal_polynomial(x)
+        if f.degree() != s or not f.is_irreducible():
+            return None
+        self.degree = s
+        M = K.extension(f, "m")
+        powers = [unit]
+        for _t in range(s - 1):
+            powers.append(powers[-1] * x)
+        self.basis = []
+        for b in corner:
+            block = [b * p for p in powers]
+            if model._k_rank(index, self.basis + block) == len(self.basis) + s:
+                self.basis.extend(block)
+        assert len(self.basis) == s * s
+        absolute = M.absolute_field("b")
+        _from_absolute, to_absolute = absolute.structure()
         closure = absolute.galois_closure("c")
-        self.field = NumberField(closure.polynomial(), "c", embedding=closure.polynomial().roots(AA)[0][0])
+        roots = closure.polynomial().roots(AA, multiplicities=False)
+        if not roots:
+            return None
+        self.field = NumberField(closure.polynomial(), "c", embedding=roots[0])
         places, self.embeddings = [], []
         for phi in absolute.embeddings(self.field):
-            place = AA(phi(self.to_absolute(L(K.gen()))))
+            place = AA(phi(to_absolute(M(K.gen()))))
             if place not in places:
                 places.append(place)
-                self.embeddings.append(phi)
-        assert len(self.embeddings) == K.degree()
-        self.engines = {}
+                self.embeddings.append(lambda e, phi=phi: phi(to_absolute(e)))
+        if len(self.embeddings) != K.degree():
+            return None
+        self.M, self.engines = M, {}
+        return self
 
     def split(self, y):
-        r"""Return the matrix in `M_3(L)` of ``y`` `\in D` (class docstring)."""
-        L = self.L
-        c = self.model._solve(self.index, y, self.basis)
-        result = matrix(L, 3, 3)
-        for i in range(3):
-            for j in range(3):
-                m = (i + j) % 3
-                entry = sum((L(c[3 * i + t]) * self.conjugates[m] ** t for t in range(3)), L(0))
-                result[m, j] += entry * (L(self.a) if i + j >= 3 else L(1))
+        r"""Return the matrix `(m_{ij})` in `M_s(M)` of ``y`` `\in D` (class docstring)."""
+        s, M = self.degree, self.M
+        result = matrix(M, s, s)
+        for j in range(s):
+            c = self.model._solve(self.index, y * self.basis[s * j], self.basis)
+            for i in range(s):
+                result[i, j] = sum((M(c[s * i + t]) * M.gen() ** t for t in range(s)), M(0))
         return result
 
     def places(self):
-        return [lambda y, phi=phi: self.split(y).apply_map(lambda e: phi(self.to_absolute(e)), self.field) for phi in self.embeddings]
+        return [lambda y, phi=phi: self.split(y).apply_map(phi, self.field) for phi in self.embeddings]
 
     def engine(self, key, order):
         from sage_indefinite_port.indefinite.semisimple_voronoi import SemisimpleOrderVoronoi
 
         if key not in self.engines:
-            center = (self.model.fields[self.index], lambda c: self.model._embed(self.index, c))
+            center = (self.model.fields[self.index], lambda c: self.model._embed(self.index, c) * self.unit)
             self.engines[key] = SemisimpleOrderVoronoi(order, splitting=(self.field, self.places()), center=center)
         return self.engines[key]
 
+    def minimal_polynomial(self, y):
+        r"""Return the minimal polynomial of ``y`` `\in D` over `K`."""
+        model, index = self.model, self.index
+        ring = PolynomialRing(model.fields[index], "y")
+        powers = [self.unit]
+        while model._k_rank(index, powers + [powers[-1] * y]) > len(powers):
+            powers.append(powers[-1] * y)
+        coefficients = model._solve(index, powers[-1] * y, powers)
+        return ring.gen() ** len(powers) - sum(c * ring.gen() ** t for t, c in enumerate(coefficients))
+
     def reduced_norm(self, y):
-        r"""Return `\mathrm{nrd}(y)`: `-f(0)` for the cubic minimal polynomial `f` over `K`, `c^3` for `y = c \in K`."""
-        f = self.model._k_minimal_polynomial(self.index, y)
-        return -f[0] if f.degree() == 3 else (-f[0]) ** 3
+        r"""Return `\mathrm{nrd}(y) = ((-1)^r f(0))^{s/r}` for the minimal polynomial `f` of degree `r` (the reduced characteristic polynomial
+        is `f^{s/r}`)."""
+        f = self.minimal_polynomial(y)
+        r = f.degree()
+        return ((-1) ** r * f[0]) ** (self.degree // r)
 
     def norm_ideal(self, lattice):
         r"""Return the ideal generated by `\mathrm{nrd}` on the `Z`-span of ``lattice``, which is `\mathrm{nrd}(I)` for a locally principal `I`
-        (`\mathrm{nrd}(O_p^\times) = O_{K,p}^\times`). The values of the cubic form `t \mapsto \mathrm{nrd}(\sum t_s b_s)` on `Z^m` are integral
-        combinations of its finite differences at `0`, which are combinations of its values at the `t \ge 0` with `\sum t_s \le 3`."""
+        (`\mathrm{nrd}(O_p^\times) = O_{K,p}^\times`). The values of the degree-`s` form `t \mapsto \mathrm{nrd}(\sum t_j b_j)` on `Z^m` are integral
+        combinations of its finite differences at `0`, which are combinations of its values at the `t \ge 0` with `\sum t_j \le s`."""
         from itertools import combinations_with_replacement
 
         values = []
-        for size in range(1, 4):
+        for size in range(1, self.degree + 1):
             for chosen in combinations_with_replacement(range(len(lattice)), size):
-                value = self.reduced_norm(sum((lattice[s] for s in chosen), 0 * lattice[0]))
+                value = self.reduced_norm(sum((lattice[j] for j in chosen), 0 * lattice[0]))
                 if value != 0:
                     values.append(value)
         return self.model.fields[self.index].ideal(values)
