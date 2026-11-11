@@ -13,6 +13,7 @@ Improper coset. `\sigma`, the reflection in the first basis vector, is a rationa
 one unit `\varepsilon` making the norm `D^2` and `\eta \in O_L^1` modulo `SO(M)`, a finite transversal; integrality is tested on each.
 """
 
+from sage_indefinite_port.indefinite.commutant_groups import _ideal_divisors
 from sage.matrix.constructor import matrix
 from sage.matrix.special import identity_matrix
 from sage.modules.free_module_element import vector
@@ -110,7 +111,7 @@ class BinaryOrthogonalGroup:
         width = len(logs[0])
         transversal = self._transversal()
         target_norm = K.ideal(D**2)
-        for ideal in L.ideal(D**2).divisors():
+        for ideal in _ideal_divisors(L.ideal(D**2)):
             if ideal.relative_norm() != target_norm or not ideal.is_principal():
                 continue
             beta = ideal.gens_reduced()[0]
