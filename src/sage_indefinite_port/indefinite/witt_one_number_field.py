@@ -181,7 +181,8 @@ class WittOneLattice:
         PARI ``qfauto`` on `\pm\mathrm{Tr}(h)` and `\mathrm{Tr}(\omega h)` on the `Z`-basis of `M`. Otherwise `M` of rank `\ge 2` is indefinite or
         of mixed sign at the real places; rank two with a free pseudo-basis uses
         :class:`binary_orthogonal_number_field.BinaryOrthogonalGroup`; rank three uses the even Clifford algebra
-        (:class:`ternary_orthogonal_number_field.TernaryOrthogonalGroup`); rank `\ge 4` raises."""
+        (:class:`ternary_orthogonal_number_field.TernaryOrthogonalGroup`), rank four the Clifford algebra over the discriminant field
+        (:class:`quaternary_orthogonal_number_field.QuaternaryOrthogonalGroup`); rank `\ge 5` raises."""
         if self.k == 1:
             minus = identity_matrix(self.field, 3)
             minus[2, 2] = -1
@@ -212,11 +213,21 @@ class WittOneLattice:
                 assert self.preserves(full)
                 result.append(full)
             return result
+        if self.k == 4 and (0 in self.signs or len(set(self.signs)) != 1):
+            from sage_indefinite_port.indefinite.quaternary_orthogonal_number_field import QuaternaryOrthogonalGroup
+
+            group = QuaternaryOrthogonalGroup(self.field, self.inner, [x[2:] for x in self.z_basis])
+            result = []
+            for g in group.generators():
+                full = identity_matrix(self.field, 6)
+                full.set_block(2, 2, g)
+                assert self.preserves(full)
+                result.append(full)
+            return result
         if 0 in self.signs or len(set(self.signs)) != 1:
             raise NotImplementedError(
                 f"O(M) for the anisotropic M = {list(self.inner)} of rank {self.k} over {self.field} with real signs {self.signs}: "
-                f"rank 4 needs the Clifford algebra over the discriminant field K(sqrt(disc M)) as a quaternion algebra over a quartic "
-                f"field, whose unit group QuaternionOrderVoronoi (real quadratic centres only) does not compute; rank >= 5: no published "
+                f"rank >= 5: no published "
                 f"algorithm computes generators of a cocompact O(M) over O_K at rank >= 5 beyond Grunewald-Segal decidability, and the "
                 f"stabilizer of a splitting M_1 + M_2 has infinite index in O(M) (#54)"
             )
