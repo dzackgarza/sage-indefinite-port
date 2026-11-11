@@ -276,15 +276,17 @@ class LocalSquareClasses:
 
 
 def _dyadic_blocks(gram, prime):
-    r"""Return an orthogonal splitting of `\Lambda_P` into unary and modular binary blocks, in order of extraction.
+    r"""Return an orthogonal splitting of `\Lambda_P` into unary and modular binary blocks, as column bases in the coordinates of ``gram``.
 
     `m` is the least valuation of an entry (the scale). If a diagonal entry has valuation `m` (`n = s`) it is split off as a unary
     block; otherwise an off-diagonal `G_{ij}` of valuation `m` spans a `p^m`-modular binary block (`\mathrm{ord} \det = 2m`, the diagonals
     being of larger valuation) and the rest is projected away with the integral matrix `A^{-1} (G_{ik}, G_{jk})^t` (O'Meara 91:9, 93:15).
     """
-    G = matrix(gram.base_ring(), gram)
+    K = gram.base_ring()
+    basis = identity_matrix(K, gram.nrows())
     blocks = []
-    while G.nrows():
+    while basis.ncols():
+        G = basis.transpose() * gram * basis
         n = G.nrows()
         valuations = {(i, j): G[i, j].valuation(prime) for i in range(n) for j in range(n) if G[i, j] != 0}
         least = min(valuations.values())
@@ -292,26 +294,87 @@ def _dyadic_blocks(gram, prime):
         indices = [pivot] if pivot is not None else list(next(key for key, value in valuations.items() if value == least))
         A = G.matrix_from_rows_and_columns(indices, indices)
         rest = [k for k in range(n) if k not in indices]
-        T = identity_matrix(G.base_ring(), n)
+        T = identity_matrix(K, n)
         for k in rest:
             shift = A.solve_right(G.matrix_from_rows_and_columns(indices, [k]))
             assert all(c.valuation(prime) >= 0 for c in shift.list())
             for row, index in enumerate(indices):
                 T[index, k] = -shift[row, 0]
-        G = T.transpose() * G * T
-        blocks.append(G.matrix_from_rows_and_columns(indices, indices))
-        G = G.matrix_from_rows_and_columns(rest, rest)
+        basis = basis * T
+        blocks.append(basis.matrix_from_columns(indices))
+        basis = basis.matrix_from_columns(rest)
     return blocks
 
 
+def _norm_generator(gram, block, prime):
+    r"""Return a vector of the block spanned by the columns of ``block`` whose `Q` has the order of the block norm."""
+    _r, u = _block_invariants(block.transpose() * gram * block, prime)
+    columns = block.columns()
+    candidates = [*columns, *([columns[0] + columns[1]] if len(columns) == 2 else [])]
+    return next(x for x in candidates if (x * gram * x) != 0 and (x * gram * x).valuation(prime) == u)
+
+
+def _exchange(gram, first, second, prime):
+    r"""Lemma 1.4.5(i) (Beli thesis, p. 61): ``first`` binary `p^{r_1}`-modular with basis `x, y`, `\mathrm{ord} B(x, y) = r_1`,
+    `sL_1 \supseteq sL_2` and `nL_1 \subset nL_2`. With `z` a norm generator of `L_2`, `L_1' = O(x + z) + O y` is `p^{r_1}`-modular and
+    splits `L_1 \perp L_2 = L_1' \perp L_2'`, with `nL_1' = nL_2' = nL_2`. Returns the column bases of `L_1'` and `L_2'`."""
+    x, y = first.columns()
+    if (x * gram * y) == 0 or (x * gram * y).valuation(prime) != _block_invariants(first.transpose() * gram * first, prime)[0]:
+        x, y = x + y, y
+    z = _norm_generator(gram, second, prime)
+    new_first = matrix(gram.base_ring(), [x + z, y]).transpose()
+    A = new_first.transpose() * gram * new_first
+    columns = []
+    for w in second.columns():
+        shift = A.solve_right(new_first.transpose() * gram * w)
+        assert all(c.valuation(prime) >= 0 for c in shift)
+        columns.append(w - new_first * shift)
+    return new_first, matrix(gram.base_ring(), columns).transpose()
+
+
+def _dual(gram, block):
+    return block * (block.transpose() * gram * block).inverse()
+
+
+def maximal_norm_splitting(gram, prime):
+    r"""Return a maximal norm splitting of `\Lambda_P` (Definition 7, Beli thesis p. 51) as column bases, scales non-decreasing.
+
+    Lemma 1.4.6 (p. 62): starting from any splitting into unary and modular binary blocks, a pair `i < j` with `u_j < u_i` is repaired by
+    Lemma 1.4.5(i) on `(L_i, L_j)`, and a pair with `u_j - 2 r_j > u_i - 2 r_i` by Lemma 1.4.5(ii), i.e. 1.4.5(i) on the duals `(L_j^\#, L_i^\#)`
+    (`\mathrm{ord}\, n L^\# = u - 2r`). Each step keeps scales and ranks and lowers the number of blocks with `nL_k \subset nL^{sL_k}`.
+    (Xu's minimal norm Jordan splitting, Pacific J. Math. 167 (1995) 385-398, Thm. 1.1, is existential; Beli's exchange is the construction.)
+    """
+    blocks = _dyadic_blocks(gram, prime)
+    while True:
+        blocks.sort(key=lambda b: _block_invariants(b.transpose() * gram * b, prime)[0])
+        invariants = [_block_invariants(b.transpose() * gram * b, prime) for b in blocks]
+        pair = next(
+            (
+                (i, j)
+                for i in range(len(blocks))
+                for j in range(i + 1, len(blocks))
+                if not 0 <= invariants[j][1] - invariants[i][1] <= 2 * (invariants[j][0] - invariants[i][0])
+            ),
+            None,
+        )
+        if pair is None:
+            return blocks
+        i, j = pair
+        (ri, ui), (rj, uj) = invariants[i], invariants[j]
+        if uj < ui:
+            blocks[i], blocks[j] = _exchange(gram, blocks[i], blocks[j], prime)
+        else:
+            assert uj - 2 * rj > ui - 2 * ri
+            dual_j, dual_i = _exchange(gram, _dual(gram, blocks[j]), _dual(gram, blocks[i]), prime)
+            blocks[i], blocks[j] = _dual(gram, dual_i), _dual(gram, dual_j)
+
+
 def _block_invariants(block, prime):
-    r"""Return `(r, u)`: the orders of the scale and the norm of a unary or modular binary block."""
-    if block.nrows() == 1:
-        value = block[0, 0].valuation(prime)
-        return value, value
-    alpha, beta, gamma = block[0, 0], block[0, 1], block[1, 1]
-    norms = [x.valuation(prime) for x in (alpha, gamma, 2 * beta) if x != 0]
-    return beta.valuation(prime), min(norms)
+    r"""Return `(r, u)`: the orders of the scale and the norm of a unary or modular binary block Gram."""
+    n = block.nrows()
+    entries = [block[i, j] for i in range(n) for j in range(n) if block[i, j] != 0]
+    norms = [block[i, i] for i in range(n) if block[i, i] != 0] + [2 * block[i, j] for i in range(n) for j in range(n) if i != j and block[i, j] != 0]
+    return min(x.valuation(prime) for x in entries), min(x.valuation(prime) for x in norms)
 
 
 def _block_bong(block, prime):
@@ -328,11 +391,11 @@ def good_bong(gram, prime):
     r"""Return the lengths `a_1, \ldots, a_n` of a good BONG of `\Lambda_P` and whether `\Lambda_P` has property A.
 
     Property A (Definition 6, p. 51): a Jordan splitting with components of rank `\le 2` and `0 < u_j - u_i < 2 (r_j - r_i)` for `i < j`.
-    For such `\Lambda_P` every Jordan splitting is a maximal norm splitting (note to Definition 7, p. 51), so the test on the computed
-    splitting decides the property. A maximal norm splitting (Definition 7: unary or modular binary blocks with `0 \le u_j - u_i \le 2 (r_j - r_i)`)
-    gives a BONG by concatenating block BONGs (Lemma 1.4.1(i), p. 51), and it is good (Corollary 1.4.2(ii), Definition 8, p. 55).
+    For such `\Lambda_P` every Jordan splitting is a maximal norm splitting (note to Definition 7, p. 51), so the test on the Jordan
+    splitting grouped from :func:`maximal_norm_splitting` decides the property. A maximal norm splitting gives a BONG by concatenating block
+    BONGs (Lemma 1.4.1(i), p. 51), and it is good (Corollary 1.4.2(ii), Definition 8, p. 55).
     """
-    blocks = _dyadic_blocks(gram, prime)
+    blocks = [b.transpose() * gram * b for b in maximal_norm_splitting(gram, prime)]
     invariants = [_block_invariants(b, prime) for b in blocks]
     components = {}
     for (r, u), b in zip(invariants, blocks):
@@ -342,16 +405,6 @@ def good_bong(gram, prime):
     property_a = all(components[r][0] <= 2 for r in scales) and all(
         0 < components[s][1] - components[r][1] < 2 * (s - r) for k, r in enumerate(scales) for s in scales[k + 1 :]
     )
-    maximal = all(
-        0 <= invariants[j][1] - invariants[i][1] <= 2 * (invariants[j][0] - invariants[i][0])
-        for i in range(len(blocks))
-        for j in range(i + 1, len(blocks))
-    )
-    if not maximal:
-        raise NotImplementedError(
-            f"the block splitting {[list(b) for b in blocks]} at {prime} is not a maximal norm splitting; a good BONG needs Xu's "
-            f"minimal norm splitting (Xu, Pacific J. Math. 157 (1993); Beli thesis Lemma 1.4.3(iii), p. 56) (#54)"
-        )
     lengths = [a for b in blocks for a in _block_bong(b, prime)]
     orders = [a.valuation(prime) for a in lengths]
     assert all(orders[i] <= orders[i + 2] for i in range(len(orders) - 2))

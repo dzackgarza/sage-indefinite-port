@@ -872,3 +872,19 @@ def test_dyadic_spinor_norm_groups_of_binary_two_adic_lattices():
     even = spinor_norm_group(field, sage_matrix(field, [[int(1), int(0)], [int(0), int(2)]]), prime, classes)
     assert classes(int(2)) in even and classes(int(3)) in even
     assert classes(int(-1)) not in even and classes(int(5)) not in even
+
+
+def test_dyadic_spinor_norm_group_after_maximal_norm_splitting():
+    r"""`<1> + A(0, 0)` over `Q(sqrt 17)_P = Q_2`: the computed blocks `<1>`, `A(0, 0)` share the scale `O` with norms `O`, `2O`, so they are
+    not a maximal norm splitting and Beli's exchange (Lemma 1.4.5) is needed. The lattice is `<1, 1, -1>`; the symmetries of `e_1` (`Q = 1`)
+    and of `e + f` (`Q = 2`, `2 B(e + f, L) / 2 = Z_2`) are integral, so `2 \\in \\theta(O^+)`, and Lemma 1.7.2(ii) (`ord nH = 1`, `ord n<1> = 0`)
+    gives `\\theta(O^+) = Q_2^x`."""
+    from sage_indefinite_port.indefinite.eichler_orthogonal import LocalSquareClasses, spinor_norm_group
+
+    field = QuadraticField(int(17), "t")
+    prime = field.ideal(int(2)).factor()[int(0)][int(0)]
+    classes = LocalSquareClasses(field, prime)
+    gram = sage_matrix(field, [[int(1), int(0), int(0)], [int(0), int(0), int(1)], [int(0), int(1), int(0)]])
+    theta = spinor_norm_group(field, gram, prime, classes)
+    assert classes(int(2)) in theta
+    assert theta == classes.space
