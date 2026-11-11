@@ -28,7 +28,10 @@ from sage_extensions.categories.abstract_categories.products import (
 )
 from sage_extensions.categories.isotropic_orbits import (
     FlagType,
-    _oriented_isotropic_equivalence_witness,
+    _graded_orientation_signs,
+    _marked_isotropic_category,
+    _marked_isotropic_object,
+    _orientation_group_elements,
     _oriented_isotropic_stabilizer_generators,
 )
 from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
@@ -278,11 +281,22 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 (),
             )
         case OrientedIsotropicFlags():
-            source_flag, target_flag = source.functor().oriented_flag(), target.functor().oriented_flag()
-            assert source_flag.lattice() is target_flag.lattice(), (
-                f"oriented flags are compared under O(L) of one lattice, but {source_flag} and {target_flag} lie in different lattices"
-            )
-            return _oriented_isotropic_equivalence_witness(source_flag.lattice().O(), source_flag, target_flag)
+            # Any isometry g carrying the underlying flags, then a correction h in
+            # Stab(F') with the graded signs of g: h g has every sign +1. The
+            # orientation-preserving isometries are the coset Stab+(F') h g, so
+            # no h means the sign vector of g lies outside the Levi sign image
+            # of Stab(F'), and then no oriented isometry exists.
+            source_flag, target_flag = source.functor().oriented_flag().flag(), target.functor().oriented_flag().flag()
+            length = int(source_flag.flag_length())
+            if int(target_flag.flag_length()) != length:
+                return None
+            flags = _marked_isotropic_category(source_flag.lattice(), length)
+            witness = isometry(flags, _marked_isotropic_object(source_flag, flag=True), _marked_isotropic_object(target_flag, flag=True))
+            if witness is None:
+                return None
+            _generators, _signs, transversal = _orientation_group_elements(target_flag.lattice().O(), target_flag)
+            correction = transversal.get(_graded_orientation_signs(witness, source_flag, target_flag))
+            return None if correction is None else correction * witness
         case _ if category is LATTICES:
             return RECURSION.isometry(source, target)
         case _ if category is ARROWS and not source.arrow().is_primitive():
