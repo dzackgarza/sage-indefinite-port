@@ -275,3 +275,20 @@ def test_torus_of_two_independent_pell_units_is_two_dimensional():
 
     F = matrix(SageZZ, [[3, 4, 0, 0], [2, 3, 0, 0], [0, 0, 2, 3], [0, 0, 1, 2]])
     assert len(_torus_algebra(F)) == int(2)
+
+
+def test_orthogonal_pair_owner_gives_the_normalizer_of_sl2_times_sl2_on_two_hyperbolic_planes():
+    r"""L = U + U = (M_2(Z), det), SO(L)^0 = SL2 x SL2 / +-1 acting by X -> a X b^{-1}, so g = sl2 + sl2 = so(L_Q),
+    one isotypic piece, centralizer c = 0. H = <O(L), E(e1, e2 + f2)> = O(L) contains G(Z) cap Gamma(3). Its
+    normalizer is O(L): the owner returns O(L) for N(g), and the returned generators reduce modulo 3 onto the image
+    of O(L), which contains the summand swap."""
+    from sage_indefinite_port.indefinite.finite_normalizers import arithmetic_normalizer_generators
+
+    lattice = Lattices(ZZ)([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    eichler = _from_columns(lattice, [[1, -1, -1, -1], [0, 1, 0, 0], [0, 1, 1, 0], [0, 1, 0, 1]])
+    ambient = tuple(lattice.O().group_generators())
+    generators = arithmetic_normalizer_generators(lattice, (*ambient, eichler), int(3), None)
+    target = _reduction_closure(lattice, ambient)
+    assert _reduction_closure(lattice, generators) == target
+    sigma = _from_columns(lattice, [[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]])
+    assert _reduction_closure(lattice, (sigma,)) <= target

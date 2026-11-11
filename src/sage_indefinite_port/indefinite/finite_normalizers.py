@@ -860,37 +860,119 @@ def _lie_algebra(columns):
     return basis
 
 
-def _support(algebra):
-    r"""Return a saturated integral basis (columns) of `W = \sum_{X \in \mathfrak g} X(V) \cap L`."""
-    images = matrix(QQ, [list(c) for X in algebra for c in X.columns()])
-    rows = images.row_space().basis_matrix()
+def _flat(X):
+    return vector(QQ, X.list())
+
+
+def _span(matrices, size):
+    return (QQ ** (size * size)).subspace([_flat(X) for X in matrices])
+
+
+def _subalgebra(basis, size, conditions):
+    r"""Return the matrices `\sum c_i X_i` (``basis``) killed by every linear map in ``conditions``."""
+    if not basis:
+        return []
+    rows = []
+    for condition in conditions:
+        images = matrix(QQ, [_flat(condition(X)) for X in basis]).transpose()
+        rows.extend(images.rows())
+    if not rows:
+        return list(basis)
+    kernel = matrix(QQ, rows).right_kernel().basis()
+    return [sum((c * X for c, X in zip(k, basis, strict=True)), matrix(QQ, size)) for k in kernel]
+
+
+def _orthogonal_algebra(gram):
+    r"""Return a basis of `so(L_Q) = \{X : X^t B + B X = 0\}`."""
+    size = gram.nrows()
+    B = gram.change_ring(QQ)
+    units = [matrix(QQ, size, size, {(i, j): 1}) for i in range(size) for j in range(size)]
+    return _subalgebra(units, size, [lambda X: X.transpose() * B + B * X])
+
+
+def _saturated_columns(M):
+    rows = M.transpose().row_space().basis_matrix()
     scale = rows.denominator()
     return matrix(ZZ, scale * rows).saturation().transpose()
 
 
-def arithmetic_normalizer_generators(lattice, generators, level):
-    r"""Return generators of `N_{O(L)}(H)` for `H` arithmetic in its Zariski closure `G`, with `H \supseteq G(Z) \cap \Gamma(m)`.
+def orthogonal_pair_normalizer(gram, algebra):
+    r"""Return generators of `N_{O(L)}(\mathfrak g)` for `\mathfrak g = so(W) \oplus so(W')`, `L_Q = W \perp W'`.
 
-    The hypotheses (input, not decidable from generators: Sarnak, *Notes on thin matrix groups*) are that `H` has
-    finite index in `G(Z)` and contains `G(Z) \cap \Gamma_L(m)` for `m = ` ``level``. The route is the Grunewald-Segal
-    reduction (Ann. of Math. 112 (1980), 531-617): `N(H)` normalizes `G`, so lies in `N_{O(L)}(G)`, and is read off
-    the finite quotient of `N_{O(L)}(G)` by its level-`m` congruence kernel.
-
-    `\mathfrak g` (:func:`_lie_algebra`) lies in `\mathrm{Lie}(\bar H^\circ)`. It is identified when it is `so(W_Q)` for its
-    support `W` (:func:`_support`) with `W` nondegenerate and `W^\perp` definite or zero, and every generator preserves
-    `W`: then `H` acts on `W^\perp` through the finite `O(W^\perp)`, so `\bar H^\circ \subseteq SO(W)`, hence
-    `G^\circ = SO(W)`, and `N_{O(L)}(G) = \{g : gW = W\}`, the setwise stabilizer
-    (:meth:`equivariant_markings.EquivariantMarking.setwise_stabilizer_generators`). For `g` in that stabilizer and in
-    `\Gamma_L(m)`, `m \ge 3`: `W^\perp` is primitive, so `g|_{W^\perp} \in \Gamma_{W^\perp}(m)` is of finite order and is `1`
-    (Minkowski), and `\det g \equiv 1` gives `\det g = 1`; so `N(G) \cap \Gamma_L(m) = G(Z) \cap \Gamma_L(m) \subseteq H`,
-    which is normal in `N(G)`, and `N(H) = \pi^{-1}(N_{\pi N(G)}(\pi H))` (:func:`_preimage_normalizer`).
+    `W` and `W'` are the images of the primitive idempotents of the centre of the commutant
+    `A = \{M : M X = X M, X \in \mathfrak g\}` (one piece when `\mathfrak g = so(L_Q)`). The decomposition is accepted when
+    the centre splits over `Q` into at most two pieces and `\dim \mathfrak g = \dim so(W) + \dim so(W')`, so that
+    `\mathfrak g = so(W) \oplus so(W')`. An isometry normalizes `\mathfrak g` exactly when it permutes its isotypic pieces
+    `\{W, W'\}`; when `W` and `W'` differ in rank or determinant no isometry swaps them, and the normalizer is the
+    setwise stabilizer of `W \cap L` (:meth:`equivariant_markings.EquivariantMarking.setwise_stabilizer_generators`),
+    which also preserves `W' = W^\perp`.
     """
     from sage_indefinite_port.indefinite.equivariant_markings import EquivariantMarking
 
+    gram = matrix(ZZ, gram)
+    size = gram.nrows()
+    units = [matrix(QQ, size, size, {(i, j): 1}) for i in range(size) for j in range(size)]
+    commutant = _subalgebra(units, size, [lambda M, X=X: M * X - X * M for X in algebra])
+    centre = _subalgebra(commutant, size, [lambda M, Y=Y: M * Y - Y * M for Y in commutant])
+    z = sum((int(i + 1) * Z for i, Z in enumerate(centre)), matrix(QQ, size))
+    polynomial = z.minimal_polynomial()
+    roots = [r for r, _e in polynomial.roots(QQ)]
+    if len(roots) != len(centre) or polynomial.degree() != len(roots):
+        raise NotImplementedError(
+            f"the centre of the commutant of the Lie algebra {algebra} does not split over Q into its idempotents: "
+            f"g is not of the form so(W) + so(W') with an implemented normalizer (#50)"
+        )
+    if len(roots) > 2:
+        raise NotImplementedError(f"g has {len(roots)} isotypic pieces; only so(W) + so(W') is implemented (#50)")
+    pieces = []
+    for r in roots:
+        e = identity_matrix(QQ, size)
+        for t in roots:
+            if t != r:
+                e = e * (z - t) / (r - t)
+        pieces.append(_saturated_columns(e))
+    ranks = [W.ncols() for W in pieces]
+    if len(algebra) != sum(r * (r - 1) // 2 for r in ranks):
+        raise NotImplementedError(
+            f"the Lie algebra of dimension {len(algebra)} is not so(W) + so(W') for pieces of ranks {ranks}: its "
+            f"normalizer has no implemented owner (#50)"
+        )
+    if len(pieces) == 1:
+        lattice = Lattices(ZZ)([[int(c) for c in row] for row in gram.rows()])
+        return [_column_matrix(lattice, g) for g in lattice.O().group_generators()]
+    W, V = pieces
+    determinants = [abs((P.transpose() * gram * P).det()) for P in pieces]
+    if W.ncols() == V.ncols() and determinants[0] == determinants[1]:
+        raise NotImplementedError(
+            f"the pieces {W} and {V} have equal rank and determinant: the isometries exchanging them need a "
+            f"transporter between the two markings (#50)"
+        )
+    return [matrix(ZZ, g) for g in EquivariantMarking(gram, W, [], []).setwise_stabilizer_generators()]
+
+
+def arithmetic_normalizer_generators(lattice, generators, level, algebra_normalizer=None):
+    r"""Return generators of `N_{O(L)}(H)` for `H` arithmetic in its Zariski closure `G`.
+
+    Inputs and hypotheses (not decidable from generators: Sarnak, *Notes on thin matrix groups*): ``level`` `m` with
+    `H \supseteq \{x \in N(G^\circ) \cap \Gamma_L(m) : \mathrm{Ad}(x)|_{\mathfrak c} = 1\}`, which is `G(Z) \cap \Gamma_L(m)`
+    when that group lies in `G`; and ``algebra_normalizer``, generators of `N_{O(L)}(\mathfrak g)`, or ``None`` for
+    :func:`orthogonal_pair_normalizer`. This is the Grunewald-Segal reduction (Ann. of Math. 112 (1980), 531-617).
+
+    `\mathfrak g` (:func:`_lie_algebra`) lies in `\mathrm{Lie}(\bar H^\circ)`, `H` normalizes it, so `\bar H^\circ` lies in
+    `N(\mathfrak g)^\circ`, whose Lie algebra is the idealizer `\mathfrak n` of `\mathfrak g` in `so(L)`. Asserted: `\mathfrak n =
+    \mathfrak g \oplus \mathfrak c` with `\mathfrak c` the centralizer, `\mathfrak c` has trivial centre, and `H` acts
+    trivially on `\mathfrak c`. The kernel of `\mathrm{Ad}|_{\mathfrak c}` on `N(\mathfrak g)^\circ` has Lie algebra
+    `\mathfrak g \oplus z(\mathfrak c) = \mathfrak g`, and contains `\bar H^\circ`; so `\mathrm{Lie}(\bar H^\circ) = \mathfrak g`
+    and `N(H) \le N(\mathfrak g)`. On `S = N_{O(L)}(\mathfrak g)` let `\Psi(s) = (s \bmod m, \mathrm{Ad}(s)|_{\mathfrak c})`;
+    `\ker \Psi \subseteq H` by hypothesis and is normal in `S`, and `\Psi(H) = \pi(H) \times 1`. Hence `s` normalizes
+    `H` exactly when `\Psi(s)` normalizes `\Psi(H)`, exactly when `\pi(s)` normalizes `\pi(H)`, and
+    `N(H) = \pi^{-1}(N_{\pi S}(\pi H))` (:func:`_preimage_normalizer`).
+    """
     level = int(level)
-    assert level >= 3, f"the level {level} must be at least 3 so that the congruence kernel is torsion-free (Minkowski)"
+    assert level >= 2, f"the level {level} is at least 2"
     frame = tuple(lattice.module_generators())
     gram = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+    size = gram.nrows()
     columns = [_column_matrix(lattice, g) for g in generators]
     algebra = _lie_algebra(columns)
     if not algebra:
@@ -898,35 +980,36 @@ def arithmetic_normalizer_generators(lattice, generators, level):
             f"the generators {columns} and their commutators all have finite order: the Zariski closure of the infinite "
             f"group they generate is not reached from the closures of single elements (#50)"
         )
-    size = gram.nrows()
-    W = _support(algebra)
-    w = W.ncols()
-    form = W.transpose() * gram * W
-    assert form.det() != 0, f"the support {W} of the Lie algebra of H is degenerate"
-    if len(algebra) != w * (w - 1) // 2:
-        raise NotImplementedError(
-            f"the Lie algebra of H has dimension {len(algebra)}, not that of so(W) for its support of rank {w}: "
-            f"the normalizer of a proper semisimple Zariski closure in SO(W) is not implemented (#50)"
-        )
     B = gram.change_ring(QQ)
     assert all(X.transpose() * B + B * X == 0 for X in algebra), "the Lie algebra of H is not in so(L)"
-    assert all((F * W).column_module() == W.column_module() for F in columns), f"H does not preserve the support {W}"
-    if w == size:
-        stabilizer = [_column_matrix(lattice, g) for g in lattice.O().group_generators()]
+    span = _span(algebra, size)
+    so = _orthogonal_algebra(gram)
+    annihilator = matrix(QQ, [_flat(X) for X in algebra]).right_kernel_matrix()
+    centralizer = _subalgebra(so, size, [lambda X, Y=Y: X * Y - Y * X for Y in algebra])
+    idealizer = _subalgebra(
+        so, size, [lambda X, Y=Y: matrix(QQ, annihilator.nrows(), 1, list(annihilator * _flat(X * Y - Y * X))) for Y in algebra]
+    )
+    assert _span([*algebra, *centralizer], size).dimension() == len(algebra) + len(centralizer) == len(idealizer), (
+        f"the idealizer of g has dimension {len(idealizer)}, not dim g + dim c = {len(algebra)} + {len(centralizer)}"
+    )
+    assert not _subalgebra(centralizer, size, [lambda X, Y=Y: X * Y - Y * X for Y in centralizer]), (
+        "the centralizer c of g has nontrivial centre: Lie(closure of H) is not determined by Ad on c (#50)"
+    )
+    for h in columns:
+        h = h.change_ring(QQ)
+        assert all(h * X * h.inverse() == X for X in centralizer), f"{h} acts nontrivially on the centralizer of g"
+    if algebra_normalizer is None:
+        stabilizer = orthogonal_pair_normalizer(gram, algebra)
     else:
-        perp = (W.transpose() * gram).right_kernel().basis_matrix().transpose()
-        perp_form = perp.transpose() * gram * perp
-        assert perp_form.is_positive_definite() or (-perp_form).is_positive_definite(), (
-            f"the complement of the support {W} is indefinite: N(G) / (N(G) cap Gamma(m)) is not a quotient by a "
-            f"subgroup of H (#50)"
-        )
-        marking = EquivariantMarking(gram, W, [], [])
-        stabilizer = [matrix(ZZ, g) for g in marking.setwise_stabilizer_generators()]
-    assert all(g.transpose() * gram * g == gram and (g * W).column_module() == W.column_module() for g in stabilizer)
+        stabilizer = [_column_matrix(lattice, g) for g in algebra_normalizer]
+    for s in stabilizer:
+        assert s.transpose() * gram * s == gram, f"{s} is not an isometry"
+        t = s.change_ring(QQ)
+        assert all(_flat(t * X * t.inverse()) in span for X in algebra), f"{s} does not normalize g"
     return _preimage_normalizer(lattice, stabilizer, columns, level)
 
 
-def normalizer_generators(lattice, generators, level):
+def normalizer_generators(lattice, generators, level, algebra_normalizer=None):
     r"""Return generators of `N_{O(L)}(H)` for `H = \langle` ``generators`` `\rangle`.
 
     A finite `H` is decided by :class:`FiniteSubgroupNormalizer`. One generator of infinite order
@@ -935,7 +1018,7 @@ def normalizer_generators(lattice, generators, level):
     infinite `H` is decided by :func:`virtually_abelian_normalizer`, which raises a precise error when `H` is not
     virtually abelian with a semisimple self-centralizing translation subgroup. When the congruence kernel
     `H \cap \Gamma(3)` is not abelian, `H` is not virtually abelian and is decided by
-    :func:`arithmetic_normalizer_generators`, whose hypothesis `H \supseteq G(Z) \cap \Gamma(m)` is the input ``level``.
+    :func:`arithmetic_normalizer_generators`, whose hypotheses are the inputs ``level`` and ``algebra_normalizer``.
     """
     generators = tuple(generators)
     columns = tuple(_column_matrix(lattice, g) for g in generators)
@@ -949,5 +1032,5 @@ def normalizer_generators(lattice, generators, level):
         return free_abelian_normalizer(lattice, generators)
     kernel = _congruence_kernel(columns)
     if not all(x * y == y * x for x in kernel for y in kernel):
-        return arithmetic_normalizer_generators(lattice, generators, level)
+        return arithmetic_normalizer_generators(lattice, generators, level, algebra_normalizer)
     return virtually_abelian_normalizer(lattice, generators)
