@@ -18,7 +18,7 @@ from sage.matrix.constructor import matrix
 from sage.rings.finite_rings.finite_field_constructor import GF
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
-from sage_indefinite_port.indefinite.finite_normalizers import FiniteSubgroupNormalizer
+from sage_indefinite_port.indefinite.finite_normalizers import FiniteSubgroupNormalizer, orthogonal_decomposition_normalizer
 
 
 def _from_columns(lattice, columns):
@@ -60,7 +60,7 @@ def test_arithmetic_normalizer_of_the_full_orthogonal_group_of_two_hyperbolic_pl
     lattice = Lattices(ZZ)([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
     eichler = _from_columns(lattice, [[1, -1, -1, -1], [0, 1, 0, 0], [0, 1, 1, 0], [0, 1, 0, 1]])
     ambient = tuple(lattice.O().group_generators())
-    generators = normalizer_generators(lattice, (*ambient, eichler), int(3))
+    generators = normalizer_generators(lattice, (*ambient, eichler), int(3), orthogonal_decomposition_normalizer)
     target = _reduction_closure(lattice, ambient)
     assert _reduction_closure(lattice, generators) == target
     sigma = _from_columns(lattice, [[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]])
@@ -77,7 +77,7 @@ def test_orthogonal_pair_owner_gives_the_normalizer_of_sl2_times_sl2_on_two_hype
     lattice = Lattices(ZZ)([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
     eichler = _from_columns(lattice, [[1, -1, -1, -1], [0, 1, 0, 0], [0, 1, 1, 0], [0, 1, 0, 1]])
     ambient = tuple(lattice.O().group_generators())
-    generators = arithmetic_normalizer_generators(lattice, (*ambient, eichler), int(3), None)
+    generators = arithmetic_normalizer_generators(lattice, (*ambient, eichler), int(3), orthogonal_decomposition_normalizer)
     target = _reduction_closure(lattice, ambient)
     assert _reduction_closure(lattice, generators) == target
     sigma = _from_columns(lattice, [[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]])

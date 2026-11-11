@@ -38,6 +38,7 @@ select the candidate `\Phi`, whose action is then verified exactly.
 from itertools import combinations, product
 
 from sage.arith.functions import lcm
+from sage.combinat.permutation import Permutations
 from sage.groups.matrix_gps.finitely_generated import MatrixGroup
 from sage.libs.gap.libgap import libgap
 from sage.matrix.constructor import matrix
@@ -896,67 +897,118 @@ def _saturated_columns(M):
     return matrix(ZZ, scale * rows).saturation().transpose()
 
 
-def orthogonal_pair_normalizer(gram, algebra):
-    r"""Return generators of `N_{O(L)}(\mathfrak g)` for `\mathfrak g = so(W) \oplus so(W')`, `L_Q = W \perp W'`.
+def _isotypic_pieces(gram, algebra):
+    r"""Return saturated column bases of the isotypic pieces `W_f = \ker f(z)` of `L_Q` under `\mathfrak g`.
 
-    `W` and `W'` are the images of the primitive idempotents of the centre of the commutant
-    `A = \{M : M X = X M, X \in \mathfrak g\}` (one piece when `\mathfrak g = so(L_Q)`). The decomposition is accepted when
-    the centre splits over `Q` into at most two pieces and `\dim \mathfrak g = \dim so(W) + \dim so(W')`, so that
-    `\mathfrak g = so(W) \oplus so(W')`. An isometry normalizes `\mathfrak g` exactly when it permutes its isotypic pieces
-    `\{W, W'\}`; when `W` and `W'` differ in rank or determinant no isometry swaps them, and the normalizer is the
-    setwise stabilizer of `W \cap L` (:meth:`equivariant_markings.EquivariantMarking.setwise_stabilizer_generators`),
-    which also preserves `W' = W^\perp`.
+    The centre `Z` of the commutant `A = \{M : MX = XM, X \in \mathfrak g\}` is commutative semisimple, `Z \cong \prod K_f`,
+    and its primitive idempotents cut out the isotypic components. An element `z = \sum t^i Z_i` generates `Z` exactly
+    when its minimal polynomial has degree `\dim Z`; this fails for finitely many `t`, so increasing `t` terminates.
+    The pieces are the kernels of `f(z)` for the irreducible factors `f`.
     """
-    from sage_indefinite_port.indefinite.equivariant_markings import EquivariantMarking
-
-    gram = matrix(ZZ, gram)
     size = gram.nrows()
     units = [matrix(QQ, size, size, {(i, j): 1}) for i in range(size) for j in range(size)]
     commutant = _subalgebra(units, size, [lambda M, X=X: M * X - X * M for X in algebra])
     centre = _subalgebra(commutant, size, [lambda M, Y=Y: M * Y - Y * M for Y in commutant])
-    z = sum((int(i + 1) * Z for i, Z in enumerate(centre)), matrix(QQ, size))
-    polynomial = z.minimal_polynomial()
-    roots = [r for r, _e in polynomial.roots(QQ)]
-    if len(roots) != len(centre) or polynomial.degree() != len(roots):
-        raise NotImplementedError(
-            f"the centre of the commutant of the Lie algebra {algebra} does not split over Q into its idempotents: "
-            f"g is not of the form so(W) + so(W') with an implemented normalizer (#50)"
-        )
-    if len(roots) > 2:
-        raise NotImplementedError(f"g has {len(roots)} isotypic pieces; only so(W) + so(W') is implemented (#50)")
-    pieces = []
-    for r in roots:
-        e = identity_matrix(QQ, size)
-        for t in roots:
-            if t != r:
-                e = e * (z - t) / (r - t)
-        pieces.append(_saturated_columns(e))
+    t = 2
+    while True:
+        z = sum((t**i * Z for i, Z in enumerate(centre)), matrix(QQ, size))
+        polynomial = z.minimal_polynomial()
+        if polynomial.degree() == len(centre):
+            break
+        t += 1
+    return [_saturated_columns(f(z).right_kernel_matrix().transpose()) for f, _e in polynomial.factor()]
+
+
+def orthogonal_decomposition_normalizer(gram, algebra):
+    r"""Return generators of `N_{O(L)}(\mathfrak g)` for `\mathfrak g = \bigoplus so(W_i)`, `L_Q = \perp W_i`.
+
+    The `W_i` are the isotypic pieces of `\mathfrak g` (:func:`_isotypic_pieces`); the decomposition is accepted when
+    `\dim \mathfrak g = \sum \dim so(W_i)`, and since `\mathfrak g` preserves each `W_i` and lies in `so(L)`, then
+    `\mathfrak g = \bigoplus so(W_i)` (a rank-two piece contributes its abelian `so(2)`). An isometry normalizes
+    `\mathfrak g` exactly when it permutes the isotypic pieces. The pointwise stabilizer of the tuple `(W_i)` consists
+    of the `\bigoplus a_i`, `a_i \in O(W_i)`, that preserve `L \supseteq N = \bigoplus W_i`. With `P` the block frame and
+    `\delta = |\det P|`, `P a P^{-1}` is integral exactly when `P a \,\mathrm{adj}(P) \equiv 0 \bmod \delta`, a condition
+    on `a \bmod \delta`, so Schreier generators over the finite image decide it (Nikulin, *Integral symmetric bilinear
+    forms*, 1.5). For each permutation `\sigma` of pieces of equal rank and determinant, isometries
+    `\varphi_i : W_i \to W_{\sigma i}` (``commutant_groups._form_isometry``) give `\Phi`, and `\sigma` is realized exactly
+    when `\Phi a` glues for some class of `a \bmod \delta`; one realization is kept.
+    """
+    from sage_indefinite_port.indefinite.commutant_groups import _form_group_generators, _form_isometry
+
+    gram = matrix(ZZ, gram)
+    size = gram.nrows()
+    pieces = _isotypic_pieces(gram, algebra)
     ranks = [W.ncols() for W in pieces]
     if len(algebra) != sum(r * (r - 1) // 2 for r in ranks):
         raise NotImplementedError(
-            f"the Lie algebra of dimension {len(algebra)} is not so(W) + so(W') for pieces of ranks {ranks}: its "
-            f"normalizer has no implemented owner (#50)"
+            f"the Lie algebra of dimension {len(algebra)} is not the sum of so(W_i) over its isotypic pieces of ranks "
+            f"{ranks}: its normalizer has no implemented owner; pass algebra_normalizer (#50)"
         )
-    if len(pieces) == 1:
-        lattice = Lattices(ZZ)([[int(c) for c in row] for row in gram.rows()])
-        return [_column_matrix(lattice, g) for g in lattice.O().group_generators()]
-    W, V = pieces
-    determinants = [abs((P.transpose() * gram * P).det()) for P in pieces]
-    if W.ncols() == V.ncols() and determinants[0] == determinants[1]:
-        raise NotImplementedError(
-            f"the pieces {W} and {V} have equal rank and determinant: the isometries exchanging them need a "
-            f"transporter between the two markings (#50)"
-        )
-    return [matrix(ZZ, g) for g in EquivariantMarking(gram, W, [], []).setwise_stabilizer_generators()]
+    P = matrix(ZZ, pieces[0])
+    for W in pieces[1:]:
+        P = P.augment(W)
+    assert P.rank() == size
+    grams = [W.transpose() * gram * W for W in pieces]
+    offsets = [sum(ranks[:i]) for i in range(len(pieces))]
+    delta = abs(P.det())
+    adjugate = P.adjugate()
+
+    def block(i, a):
+        M = matrix(ZZ, size, size)
+        M.set_block(offsets[i], offsets[i], a)
+        for j in range(len(pieces)):
+            if j != i:
+                M.set_block(offsets[j], offsets[j], identity_matrix(ZZ, ranks[j]))
+        return M
+
+    local = [block(i, matrix(ZZ, a)) for i, G in enumerate(grams) for a in _form_group_generators(G)]
+    local = local or [identity_matrix(ZZ, size)]
+    glues = lambda M: all(c % delta == 0 for c in (P * matrix(ZZ, M) * adjugate).list())
+    if delta == 1:
+        stabilizer = local
+    else:
+        ring = Zmod(delta)
+        reduce = lambda M: matrix(ring, M)
+        found, _index = finite_preimage_generators(local, reduce, lambda m: glues(m.lift()))
+        stabilizer = [matrix(ZZ, g) for g in found]
+        classes = {reduce(identity_matrix(ZZ, size)).str(): identity_matrix(ZZ, size)}
+        frontier = list(classes.values())
+        while frontier:
+            current = frontier.pop()
+            for a in local:
+                following = current * a
+                key = reduce(following).str()
+                if key not in classes:
+                    classes[key] = following
+                    frontier.append(following)
+    result = [P * a * P.inverse() for a in stabilizer]
+    invariants = [(r, abs(G.det())) for r, G in zip(ranks, grams, strict=True)]
+    for sigma in Permutations(len(pieces)):
+        images = [sigma(i + 1) - 1 for i in range(len(pieces))]
+        if images == list(range(len(pieces))) or any(invariants[i] != invariants[j] for i, j in enumerate(images)):
+            continue
+        maps = [_form_isometry(grams[i], grams[j]) for i, j in enumerate(images)]
+        if any(m is None for m in maps):
+            continue
+        Phi = matrix(ZZ, size, size)
+        for i, (j, m) in enumerate(zip(images, maps, strict=True)):
+            Phi.set_block(offsets[j], offsets[i], m)
+        lifts = [identity_matrix(ZZ, size)] if delta == 1 else list(classes.values())
+        witness = next((Phi * a for a in lifts if glues(Phi * a)), None)
+        if witness is not None:
+            result.append(P * witness * P.inverse())
+    result = [matrix(ZZ, g) for g in result]
+    assert all(g.transpose() * gram * g == gram for g in result)
+    return result
 
 
-def arithmetic_normalizer_generators(lattice, generators, level, algebra_normalizer=None):
+def arithmetic_normalizer_generators(lattice, generators, level, algebra_normalizer):
     r"""Return generators of `N_{O(L)}(H)` for `H` arithmetic in its Zariski closure `G`.
 
     Inputs and hypotheses (not decidable from generators: Sarnak, *Notes on thin matrix groups*): ``level`` `m` with
     `H \supseteq \{x \in N(G^\circ) \cap \Gamma_L(m) : \mathrm{Ad}(x)|_{\mathfrak c} = 1\}`, which is `G(Z) \cap \Gamma_L(m)`
-    when that group lies in `G`; and ``algebra_normalizer``, generators of `N_{O(L)}(\mathfrak g)`, or ``None`` for
-    :func:`orthogonal_pair_normalizer`. This is the Grunewald-Segal reduction (Ann. of Math. 112 (1980), 531-617).
+    when that group lies in `G`; and ``algebra_normalizer``, a function of the Gram matrix and a basis of `\mathfrak g`
+    returning generators of `N_{O(L)}(\mathfrak g)` as column matrices, such as :func:`orthogonal_decomposition_normalizer`. This is the Grunewald-Segal reduction (Ann. of Math. 112 (1980), 531-617).
 
     `\mathfrak g` (:func:`_lie_algebra`) lies in `\mathrm{Lie}(\bar H^\circ)`, `H` normalizes it, so `\bar H^\circ` lies in
     `N(\mathfrak g)^\circ`, whose Lie algebra is the idealizer `\mathfrak n` of `\mathfrak g` in `so(L)`. Asserted: `\mathfrak n =
@@ -976,9 +1028,11 @@ def arithmetic_normalizer_generators(lattice, generators, level, algebra_normali
     columns = [_column_matrix(lattice, g) for g in generators]
     algebra = _lie_algebra(columns)
     if not algebra:
+        if MatrixGroup(list(columns)).is_finite():
+            return FiniteSubgroupNormalizer(lattice, generators).normalizer_generators()
         raise NotImplementedError(
-            f"the generators {columns} and their commutators all have finite order: the Zariski closure of the infinite "
-            f"group they generate is not reached from the closures of single elements (#50)"
+            f"the generators {columns} and their commutators all have finite order but generate an infinite group: the "
+            f"Zariski closure is not reached from the closures of single elements (#50)"
         )
     B = gram.change_ring(QQ)
     assert all(X.transpose() * B + B * X == 0 for X in algebra), "the Lie algebra of H is not in so(L)"
@@ -998,10 +1052,7 @@ def arithmetic_normalizer_generators(lattice, generators, level, algebra_normali
     for h in columns:
         h = h.change_ring(QQ)
         assert all(h * X * h.inverse() == X for X in centralizer), f"{h} acts nontrivially on the centralizer of g"
-    if algebra_normalizer is None:
-        stabilizer = orthogonal_pair_normalizer(gram, algebra)
-    else:
-        stabilizer = [_column_matrix(lattice, g) for g in algebra_normalizer]
+    stabilizer = [matrix(ZZ, g) for g in algebra_normalizer(gram, algebra)]
     for s in stabilizer:
         assert s.transpose() * gram * s == gram, f"{s} is not an isometry"
         t = s.change_ring(QQ)
@@ -1009,7 +1060,7 @@ def arithmetic_normalizer_generators(lattice, generators, level, algebra_normali
     return _preimage_normalizer(lattice, stabilizer, columns, level)
 
 
-def normalizer_generators(lattice, generators, level, algebra_normalizer=None):
+def normalizer_generators(lattice, generators, level, algebra_normalizer):
     r"""Return generators of `N_{O(L)}(H)` for `H = \langle` ``generators`` `\rangle`.
 
     A finite `H` is decided by :class:`FiniteSubgroupNormalizer`. One generator of infinite order

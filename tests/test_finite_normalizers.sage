@@ -18,7 +18,7 @@ from sage.matrix.constructor import matrix
 from sage.rings.finite_rings.finite_field_constructor import GF
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
-from sage_indefinite_port.indefinite.finite_normalizers import FiniteSubgroupNormalizer
+from sage_indefinite_port.indefinite.finite_normalizers import FiniteSubgroupNormalizer, orthogonal_decomposition_normalizer
 
 
 def _order(lattice, isometries):
@@ -123,7 +123,7 @@ def test_pell_isometry_normalizer_contains_the_inversion():
     centralizer, inversion = infinite_cyclic_normalizer(lattice, f)
     assert inversion is not None and inversion * f * ~inversion == ~f
     assert all(g * f == f * g for g in centralizer)
-    assert any(g * f * ~g == ~f for g in normalizer_generators(lattice, (f,), int(3)))
+    assert any(g * f * ~g == ~f for g in normalizer_generators(lattice, (f,), int(3), orthogonal_decomposition_normalizer))
 
 
 def test_unipotent_eichler_normalizer_contains_the_inversion():
@@ -155,7 +155,7 @@ def test_free_abelian_normalizer_of_two_pell_units():
     F2 = _from_columns(lattice, [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 2, 3], [0, 0, 1, 2]])
     assert F1 * F2 == F2 * F1
     signs = set()
-    for g in normalizer_generators(lattice, (F1, F2), int(3)):
+    for g in normalizer_generators(lattice, (F1, F2), int(3), orthogonal_decomposition_normalizer):
         pair = []
         for F in (F1, F2):
             image = g * F * ~g
@@ -188,7 +188,7 @@ def test_infinite_dihedral_normalizer_is_the_orthogonal_group_of_the_pell_plane(
     assert r * f * ~r == ~f and f * r != r * f
     frame = tuple(lattice.module_generators())
     corner = lambda g: int(list(g(frame[int(0)]))[int(0)])
-    generators = normalizer_generators(lattice, (f, r), int(3))
+    generators = normalizer_generators(lattice, (f, r), int(3), orthogonal_decomposition_normalizer)
     for g in generators:
         assert g * f * ~g in (f, ~f)
         assert corner(g * r * ~g) > 0
@@ -277,3 +277,49 @@ def test_torus_of_two_independent_pell_units_is_two_dimensional():
     assert len(_torus_algebra(F)) == int(2)
 
 
+
+
+def _matrix_group_order(generators):
+    identity = matrix.identity(SageZZ, generators[int(0)].nrows())
+    identity.set_immutable()
+    seen = set([identity])
+    frontier = [identity]
+    while frontier:
+        current = frontier.pop()
+        for g in generators:
+            following = current * g
+            following.set_immutable()
+            if following not in seen:
+                seen.add(following)
+                frontier.append(following)
+    return len(seen)
+
+
+def _rotation_algebra(blocks):
+    r"""Return so(A) + so(B) on A + B, each so of a binary definite block spanned by one matrix."""
+    from sage_indefinite_port.indefinite.finite_normalizers import _orthogonal_algebra
+
+    result = []
+    zero = matrix(SageQQ, int(2), int(2))
+    for i, block in enumerate(blocks):
+        (X,) = _orthogonal_algebra(matrix(SageZZ, block))
+        result.append(matrix.block_diagonal([X if j == i else zero for j in range(len(blocks))]))
+    return result
+
+
+def test_decomposition_normalizer_of_two_rotation_tori_on_a2_plus_a2_negative():
+    r"""L = A2 + A2(-1), g = so(A2) + so(A2(-1)), two anisotropic rank-two pieces. A definite and a negative definite
+    plane are not isometric, so N(g) = O(A2) x O(A2(-1)), dihedral of order 12 each: order 144."""
+    A2 = [[int(2), int(-1)], [int(-1), int(2)]]
+    negative = [[int(-2), int(1)], [int(1), int(-2)]]
+    gram = matrix.block_diagonal([matrix(SageZZ, A2), matrix(SageZZ, negative)])
+    generators = orthogonal_decomposition_normalizer(gram, _rotation_algebra([A2, negative]))
+    assert _matrix_group_order(generators) == int(144)
+
+
+def test_decomposition_normalizer_of_two_rotation_tori_on_a2_plus_a2_exchanges_the_planes():
+    r"""L = A2 + A2, g = so(A2) + so(A2). N(g) permutes the two planes: (O(A2) x O(A2)) . 2, order 288."""
+    A2 = [[int(2), int(-1)], [int(-1), int(2)]]
+    gram = matrix.block_diagonal([matrix(SageZZ, A2), matrix(SageZZ, A2)])
+    generators = orthogonal_decomposition_normalizer(gram, _rotation_algebra([A2, A2]))
+    assert _matrix_group_order(generators) == int(288)
