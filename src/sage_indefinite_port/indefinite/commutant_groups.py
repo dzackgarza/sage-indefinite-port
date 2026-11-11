@@ -24,6 +24,12 @@ centralizers. This module adds the routes that need the port's arithmetic groups
   uses the Bestvina-Savin ocean (:mod:`hermitian_ocean`). The transporter reduces both forms to one
   model, composes the model isometry, and searches the coset representatives of `C(Z)` in `U(\Lambda, h)`.
 
+  A symmetric form of rank two over `O_K` (first kind) is decided on the torus `K[c]^1` of the skew line
+  `K c` and one reflection coset, through relative norm equations (:meth:`CentralFieldCommutant._binary_orthogonal_generators`).
+
+:class:`VectorOrbit` decides the orbit of a vector under `C(Z)` and returns its stabilizer, through the
+marked transporter of the cyclic `F`-span of the vector.
+
 Other noncompact commutants raise :class:`NotImplementedError` naming the missing group.
 """
 
@@ -33,7 +39,7 @@ from sage.arith.functions import lcm
 from sage.arith.misc import binomial, gcd
 from sage.algebras.quatalg.quaternion_algebra import QuaternionAlgebra
 from sage.libs.pari import pari
-from sage.matrix.constructor import matrix
+from sage.matrix.constructor import block_matrix, matrix
 from sage.matrix.special import identity_matrix
 from sage.modules.free_module_element import vector
 from sage.quadratic_forms.binary_qf import BinaryQF
@@ -43,7 +49,7 @@ from sage.rings.number_field.number_field import NumberField
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.rational_field import QQ
 from sage.rings.real_double import RDF
-from sage_extensions.algebras.isometry_commutant import _form_generators, _integer_solution, _short_vectors
+from sage_extensions.algebras.isometry_commutant import IsometryCommutant, _form_generators, _integer_solution, _short_vectors
 from sage_extensions.categories.lattice_centralizers import finite_preimage_generators
 from sage_extensions.categories.lattices import Lattices
 from sage_indefinite_port.indefinite import (
@@ -54,6 +60,7 @@ from sage_indefinite_port.indefinite import (
     gaussian_picard,
     hermitian_ocean,
 )
+from sage_indefinite_port.indefinite.equivariant_markings import EquivariantMarking, _glue_action, _schreier
 from sage_indefinite_port.indefinite.quaternion_voronoi import QuaternionVoronoi
 from sage_indefinite_port.indefinite.witt_one_hilbert import HilbertWittOneLattice
 
@@ -957,7 +964,136 @@ class CentralFieldCommutant:
 
     def centralizer_generators(self):
         r"""Return generators of `C(Z)`: model generators conjugated to `\Lambda`, then Schreier descent to `O`."""
+        if self.kind == "first" and self.form_kind == "symmetric" and self.n == 2:
+            return self._binary_orthogonal_generators()
         return self.commutant._order_subgroup_generators(list(self.unitary_generators()))
+
+    def _to_field(self, element):
+        r"""Return the element of `K` acting as the central ``element``."""
+        rows = matrix(QQ, [p.list() for p in self._powers])
+        return self.field(list(rows.solve_left(vector(QQ, matrix(QQ, element).list()))))
+
+    def _left_transversal(self, moves):
+        r"""Return representatives of the left cosets of `\langle` ``moves`` `\rangle \cap O` in `\langle` ``moves`` `\rangle`."""
+        representatives = [identity_matrix(QQ, self.commutant.rank)]
+        position = 0
+        while position < len(representatives):
+            current = representatives[position]
+            position += 1
+            for move in moves:
+                moved = move * current
+                if not any(self.commutant.in_order(known.inverse() * moved) for known in representatives):
+                    representatives.append(moved)
+        return representatives
+
+    def _binary_orthogonal_generators(self):
+        r"""Return generators of `C(Z) = O(\Lambda, h) \cap O` for a symmetric `h` of rank two over `O_K`.
+
+        The skew elements of `A = M_2(K)` form a `K`-line `K c` with `c^2 = \delta \in K^\times`, and for a binary
+        form `g c g^{-1} = \det(g) c`. So `SO(h) = L^1` for the commutative algebra `L = K[c]` with the involution
+        `c \mapsto -c`, and `O(h) \setminus SO(h)` is the set of `w` with `wc = -cw`, `w^\dagger w = 1` (Knus-Merkurjev-Rost-
+        Tignol, *The Book of Involutions*, Prop. 7.4 for `n = 2`). `C(Z) \cap SO` is the subgroup in `O` of the norm-one
+        units of the maximal order of `L` (Schreier). Every anticommuting `w` is `x w_1` for one fixed `w_1` and `x \in L`,
+        and `w^\dagger w = N_{L/K}(x)\, q`, `q = w_1^\dagger w_1 \in K`. With `M = \{x : x w_1 \in O\}` and `m M \subseteq O_L`,
+        the solutions `x \in M` of `N(x) = 1/q` are `y u / m` with `y` among the finitely many elements of `O_L` of absolute
+        norm `N_{K/Q}(m^2/q)` modulo units, and `u` a unit of relative norm `m^2 / (q N(y))`, unique up to the norm-one
+        units `E`. `M` is stable under `E \cap O`, so a transversal of `E / (E \cap O)` finishes the decision.
+        """
+        commutant = self.commutant
+        one = identity_matrix(QQ, commutant.rank)
+        skew = _integral_kernel(self._order, lambda x: x + commutant.adjoint(x))
+        c = skew[0]
+        delta = self._to_field(c * c)
+        K = self.field
+        assert delta != 0
+        lattice_basis = [*self._powers, *(p * c for p in self._powers)]
+        if delta.is_square():
+            s = delta.sqrt()
+            e = (one + self.embed(~s) * c) / 2
+            split = lambda x1, x2: self.embed(x1) * e + self.embed(x2) * (one - e)
+            moves = [split(K(u), ~K(u)) for u in K.unit_group().gens()]
+        else:
+            L = K.extension(PolynomialRing(K, "t")([-delta, 0, 1]), "c")
+            M = L.absolute_field("b")
+            from_abs, to_abs = M.structure()
+            to_matrix = lambda x: sum(self.embed(k) * c**j for j, k in enumerate(from_abs(x).list()))
+            relative = from_abs(M.gen()).list()
+            theta = to_abs(L(relative[0]) - L(relative[1]) * L.gen())
+            norm_one = IsometryCommutant._norm_one_generators(M, theta, M.polynomial())
+            moves = [to_matrix(u) for u in norm_one]
+        moves = [-one, *moves]
+        rotations = commutant._order_subgroup_generators(moves)
+        anticommuting = _integral_kernel(self._order, lambda x: x * c + c * x)
+        rank = commutant.rank
+        w1 = next(
+            w
+            for values in product(range(rank + 1), repeat=len(anticommuting))
+            for w in (sum(a * x for a, x in zip(values, anticommuting)),)
+            if w.det() != 0
+        )
+        q = self._to_field(commutant.adjoint(w1) * w1)
+        nu = ~q
+        rows = matrix(QQ, [commutant.coordinates(x * w1) for x in lattice_basis])
+        scale = rows.denominator()
+        saturated = matrix(ZZ, scale * rows).saturation()
+        span = [rows.solve_left(vector(QQ, row)) for row in saturated.rows()]
+        d = self.degree
+        pairs = [(K(list(x[:d])), K(list(x[d:]))) for x in span]
+        integral_basis = K.integral_basis()
+        integral_rows = matrix(QQ, [k.list() for k in integral_basis])
+        denominator = lambda k: integral_rows.solve_left(vector(QQ, K(k).list())).denominator()
+        candidates = []
+        if delta.is_square():
+            m = lcm([denominator(a + b * s) for a, b in pairs] + [denominator(a - b * s) for a, b in pairs])
+            target = m**2 * nu
+            if target.is_integral():
+                for divisor in K.ideal(target).divisors():
+                    if divisor.is_principal():
+                        y1 = divisor.gens_reduced()[0]
+                        candidates.append(split(y1 / m, target / y1 / m))
+        else:
+            abs_rows = matrix(QQ, [b.list() for b in M.integral_basis()])
+            abs_denominator = lambda x: abs_rows.solve_left(vector(QQ, x.list())).denominator()
+            m = lcm([abs_denominator(to_abs(L(a) + L(b) * L.gen())) for a, b in pairs])
+            target = m**2 * nu
+            absolute = target.norm()
+            relative_units = K.unit_group()
+            units = M.unit_group()
+            values = [M(u) for u in units.gens()]
+            torsion = relative_units.torsion_generator().order()
+            logs = [list(relative_units.log(from_abs(u).relative_norm())) for u in values]
+            equations = matrix(ZZ, logs).transpose().augment(
+                matrix(ZZ, [[torsion]] + [[0]] * (len(logs[0]) - 1))
+            )
+            if absolute in ZZ:
+                for y in M.elements_of_norm(ZZ(absolute)):
+                    tau = target / from_abs(y).relative_norm()
+                    if not (tau.is_integral() and (~tau).is_integral()):
+                        continue
+                    exponents = _integer_solution(equations, vector(ZZ, list(relative_units.log(tau))))
+                    if exponents is None:
+                        continue
+                    u = M.one()
+                    for value, exponent in zip(values, exponents):
+                        u = u * value ** int(exponent)
+                    candidates.append(to_matrix(y * u / m))
+        assert all(self._to_field(commutant.adjoint(x) * x) == nu for x in candidates)
+        transversal = self._left_transversal(moves)
+        reflection = next(
+            (
+                w
+                for x in candidates
+                for t in transversal
+                for w in (x * t * w1,)
+                if commutant.is_centralizer_element(w)
+            ),
+            None,
+        )
+        result = [matrix(ZZ, g) for g in rotations]
+        if reflection is not None:
+            result.append(matrix(ZZ, reflection))
+        assert all(commutant.is_centralizer_element(g) for g in result)
+        return tuple(result)
 
     def coset_representatives(self):
         r"""Return representatives `u` of the left cosets `u C(Z)` in `U(\Lambda, h)`.
@@ -1131,3 +1267,119 @@ def equivariant_transporter(commutant, target_gram, targets):
     if not radical and commutative and commutant.dimension() == 2 and len(targets) == 1:
         return commutant.equivariant_transporter(target_gram, targets[0])
     raise NotImplementedError(_missing_group(commutant))
+
+
+def _cyclic_words(isometries, v):
+    r"""Return words `w_1 = 1, w_2, \ldots` in the `F_i` with `w_j v` a basis of the `Q\langle F \rangle`-module of `v`."""
+    one = identity_matrix(QQ, len(v))
+    words, span = [one], matrix(QQ, [v])
+    position = 0
+    while position < len(words):
+        current = words[position]
+        position += 1
+        for F in isometries:
+            moved = F.change_ring(QQ) * current
+            stacked = span.stack(matrix(QQ, [moved * v]))
+            if stacked.rank() > span.rank():
+                words.append(moved)
+                span = stacked
+    return words
+
+
+class VectorOrbit:
+    r"""The orbit of a vector `v \in L` under the centralizer `C(Z)` of isometries `F_i`, through the commutant.
+
+    `g \in C(Z)` commutes with every word `w` in the `F_i`, so `g v = v'` exactly when `g X = X'` for the markings
+    `X = [w_j v]`, `X' = [w_j v']` on the words of :func:`_cyclic_words` (the first word is `1`). With a primitive
+    basis `S = X C^{-1}` of the saturated span, `g S = S' = X' C^{-1}`, and `F_i S = S E_i`. This is the marked
+    transporter of :mod:`equivariant_markings`. When `S^t B S` is nonsingular, `L_Q = S_Q \oplus K_Q` with `K = S^\perp`,
+    and `g = 1 \oplus h` on the frames, `h \in GL(K)` an equivariant isometry `(K, F|_K) \to (K', F|_{K'})`: `h = h_0 c`
+    for one transporter `h_0` (:func:`equivariant_transporter`) and `c \in C_K(Z)` (:func:`centralizer_generators`).
+    `g` preserves `L` exactly when `S' p_S + K' h p_K` is integral, which depends only on the point `c p_K` of the
+    finite orbit of the glue `p_K` modulo `K`; Schreier's lemma on that orbit gives the stabilizer and the
+    transporter decision (Holt-Eick-O'Brien, *Handbook of Computational Group Theory*, Thm. 4.13). A degenerate span
+    is decided by :class:`EquivariantMarking`.
+    """
+
+    def __init__(self, gram, isometries, v):
+        self.gram = matrix(ZZ, gram)
+        self.isometries = tuple(matrix(ZZ, F) for F in isometries)
+        self.vector = vector(ZZ, v)
+        assert not self.vector.is_zero()
+        self.words = _cyclic_words(self.isometries, vector(QQ, self.vector))
+        columns = matrix(QQ, [w * self.vector for w in self.words]).transpose()
+        self.marking = matrix(ZZ, columns.transpose().change_ring(ZZ).saturation().transpose())
+        self._change = self.marking.change_ring(QQ).solve_right(columns)
+        self.source_actions = tuple(
+            matrix(ZZ, self.marking.change_ring(QQ).solve_right(F * self.marking)) for F in self.isometries
+        )
+        self.source_gram = self.marking.transpose() * self.gram * self.marking
+
+    def _target_marking(self, w):
+        columns = matrix(QQ, [word * vector(QQ, w) for word in self.words]).transpose()
+        target = columns * self._change.inverse()
+        if target.denominator() != 1:
+            return None
+        target = matrix(ZZ, target)
+        if target.transpose() * self.gram * target != self.source_gram:
+            return None
+        if any(F * target != target * E for F, E in zip(self.isometries, self.source_actions, strict=True)):
+            return None
+        return target
+
+    def _frame(self, marking):
+        basis = (marking.transpose() * self.gram).right_kernel().basis_matrix().transpose()
+        gram = basis.transpose() * self.gram * basis
+        actions = tuple(matrix(ZZ, basis.change_ring(QQ).solve_right(F * basis)) for F in self.isometries)
+        frame = block_matrix(QQ, [[marking, basis]], subdivide=False)
+        return basis, gram, actions, frame
+
+    def _glue(self):
+        basis, gram, actions, frame = self._frame(self.marking)
+        k = self.marking.ncols()
+        coordinates = frame.inverse()
+        generators = centralizer_generators(IsometryCommutant(gram, actions)) if basis.ncols() else ()
+        return basis, gram, actions, coordinates[:k], coordinates[k:], generators
+
+    def stabilizer_generators(self):
+        r"""Return generators of `\{g \in C(Z) : g v = v\}`."""
+        if self.source_gram.det() == 0:
+            marking = EquivariantMarking(self.gram, self.marking, self.isometries, self.source_actions)
+            return marking.pointwise_stabilizer_generators()
+        basis, _gram, _actions, to_source, to_complement, generators = self._glue()
+        if basis.ncols() == 0:
+            return ()
+        _transversal, stabilizer = _schreier(generators, to_complement, _glue_action, identity_matrix(ZZ, basis.ncols()))
+        result = tuple(
+            matrix(ZZ, self.marking * to_source + basis * h.change_ring(QQ) * to_complement) for h in stabilizer
+        )
+        assert all(g * self.vector == self.vector for g in result)
+        return result
+
+    def transporter(self, w):
+        r"""Return `g \in C(Z)` with `g v = w`, or ``None`` as a proof that `w` is not in the orbit of `v`."""
+        target = self._target_marking(w)
+        if target is None:
+            return None
+        if self.source_gram.det() == 0:
+            marking = EquivariantMarking(self.gram, self.marking, self.isometries, self.source_actions)
+            return marking.transporter(target)
+        basis, gram, actions, to_source, to_complement, generators = self._glue()
+        target_basis, target_gram, target_actions, _frame = self._frame(target)
+        found = None
+        if basis.ncols() == 0:
+            candidates = [target * to_source]
+        else:
+            start = equivariant_transporter(IsometryCommutant(gram, actions), target_gram, target_actions)
+            if start is None:
+                return None
+                transversal, _stabilizer = _schreier(generators, to_complement, _glue_action, identity_matrix(ZZ, basis.ncols()))
+            candidates = (
+                target * to_source + target_basis * start.change_ring(QQ) * c.change_ring(QQ) * to_complement
+                for c, _point in transversal.values()
+            )
+        found = next((matrix(ZZ, g) for g in candidates if g.denominator() == 1), None)
+        if found is not None:
+            assert IsometryCommutant(self.gram, self.isometries).is_centralizer_element(found)
+            assert found * self.vector == vector(ZZ, w)
+        return found

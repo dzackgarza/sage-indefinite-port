@@ -48,6 +48,14 @@ two rational squares. So C(Z) = U(h) over Z[i], from the Bestvina-Savin ocean. I
 infinite order; a finite-order element of GL_4(Z) has order at most 12. The vectors v = (1 + i, 1), w = (3, 1 - i)
 have h(v) = -1, h(w) = 3, h(v, w) = 0 and det [v w] = -1, so [v w] is an isometry of (Z[i]^2, h) onto
 (Z[i]^2, -h): a transporter to (Re(-h), F) = (diag(-1, -1, 3, 3), F) exists. As above c carries F to -F.
+
+Real quadratic orthogonal plane. L = O^2 (x) O^2, O = Z[sqrt 2], with b = Tr(w (x) w), w = diag(1, -1), and
+F_i = 1 (x) g for g = R = [[r, 1], [1, r]], r = sqrt 2, and D = diag(1, -1); both preserve w. R + R^{-1} = 2r, so
+the F_i generate 1 (x) M_2(K) and A = M_2(K) (x) 1 with the orthogonal adjoint of w: C(Z) = O(O^2, w) (x) 1.
+D R D = R^{-1} != R, so C(Z) is not abelian, and R has eigenvalues r +- 1, of infinite order.
+
+Vector orbits. L = U, F = -1, so C(Z) = O(U) = {+-1, +-swap}. The orbit of v = (1, 1) is {+-v}; its stabilizer
+is {1, swap}, and (1, -1) has another norm, so it is not in the orbit.
 """
 
 from sage_extensions.all import *
@@ -59,7 +67,7 @@ from sage.matrix.constructor import matrix as sage_matrix
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
 from sage_extensions.algebras.isometry_commutant import IsometryCommutant
-from sage_indefinite_port.indefinite.commutant_groups import centralizer_generators, equivariant_transporter
+from sage_indefinite_port.indefinite.commutant_groups import VectorOrbit, centralizer_generators, equivariant_transporter
 
 ALGEBRA = QuaternionAlgebra(SageQQ, int(-1), int(3))
 ONE, I, J, K = ALGEBRA.basis()
@@ -315,3 +323,55 @@ def test_anisotropic_gaussian_transporters():
     assert witness.det() in (int(1), int(-1)) and witness.transpose() * negative * witness == gram
     t = equivariant_transporter(commutant, negative, [F])
     assert t is not None and _is_transporter(t, gram, negative, [F], [F])
+
+
+def _orthogonal_tensor_lattice():
+    field = QuadraticField(int(2), "s")
+    root = field.gen()
+    signs = (int(1), int(-1))
+
+    def pairing(x, y):
+        return sum(x[int(2) * a + b] * y[int(2) * a + b] * signs[a] * signs[b] for a in range(int(2)) for b in range(int(2)))
+
+    frame = []
+    for i in range(int(4)):
+        for scalar in (field.one(), root):
+            v = [field.zero()] * int(4)
+            v[i] = scalar
+            frame.append(v)
+    gram = sage_matrix(SageZZ, [[SageZZ(pairing(x, y).trace()) for y in frame] for x in frame])
+
+    def on_lattice(block):
+        images = []
+        for v in frame:
+            image = block * sage_matrix(field, int(4), int(1), v)
+            images.append([SageQQ(c) for i in range(int(4)) for c in image[i, int(0)].list()])
+        return sage_matrix(SageZZ, images).transpose()
+
+    one = sage_identity(field, int(2))
+    moves = [
+        sage_matrix(field, int(2), int(2), [root, int(1), int(1), root]),
+        sage_matrix(field, int(2), int(2), [int(1), int(0), int(0), int(-1)]),
+    ]
+    return gram, [on_lattice(one.tensor_product(g)) for g in moves]
+
+
+def test_real_quadratic_orthogonal_centralizer():
+    gram, sources = _orthogonal_tensor_lattice()
+    generators = centralizer_generators(IsometryCommutant(gram, sources))
+    assert all(g.transpose() * gram * g == gram and all(g * F == F * g for F in sources) for g in generators)
+    assert any(g * h != h * g for g in generators for h in generators)
+    assert any(not all(f.is_cyclotomic() for f, _m in g.charpoly().factor()) for g in generators)
+
+
+def test_vector_orbit_in_the_hyperbolic_plane():
+    gram = sage_matrix(SageZZ, int(2), int(2), [int(0), int(1), int(1), int(0)])
+    F = -sage_identity(SageZZ, int(2))
+    orbit = VectorOrbit(gram, [F], [int(1), int(1)])
+    swap = sage_matrix(SageZZ, int(2), int(2), [int(0), int(1), int(1), int(0)])
+    stabilizer = orbit.stabilizer_generators()
+    assert all(g * orbit.vector == orbit.vector and g.transpose() * gram * g == gram for g in stabilizer)
+    assert swap in stabilizer
+    t = orbit.transporter([int(-1), int(-1)])
+    assert t is not None and t.transpose() * gram * t == gram and list(t * orbit.vector) == [int(-1), int(-1)]
+    assert orbit.transporter([int(1), int(-1)]) is None
