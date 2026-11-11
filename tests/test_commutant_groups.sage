@@ -78,6 +78,18 @@ infinite order. Coordinatewise conjugation c(x) = conj(x) preserves b and carrie
 u = (2, 1) have h(v) = -1, h(u) = 2, h(u, v) = 2 - 2 = 0 and det [v u] = -1, so [v u] is an isometry of (O^2, h) onto
 (O^2, -h): a transporter to (-b, F) exists. The Gram 3b has another determinant, so no transporter to it exists.
 
+Hermitian quaternion plane. L = Delta^2, Delta = Z<1,i,j,k> in D = (-1, 3)_Q, b(x, y) = trd(conj(y_1) x_2 + conj(y_2) x_1), and F_1, F_2
+the right multiplications by i and 2 + j (reduced norm one). They generate R_D, so A = M_2(D) acting on the left, with the adjoint
+of the Hermitian H = [[0, 1], [1, 0]], and C(Z) = U(Delta^2, H). It contains n(i) = [[1, i], [0, 1]] (i is pure), unipotent and not 1,
+and n(i), W = [[0, 1], [1, 0]] do not commute. The left matrix [[1, 1], [0, 1]] is in GL_2(Delta) and commutes with the F_i, so it is a
+transporter from (B, F) to its pushed-forward Gram; 3B has another determinant.
+
+Golden orthogonal rank four. L = O^4 (x) O^2, O = Z[phi], phi^2 = phi + 1, b = Tr(w' (x) w), w' = H + H, w = diag(1, -1), F_i = 1 (x) R,
+1 (x) D with R = [[sqrt 5, -2], [-2, sqrt 5]], D = diag(1, -1). Then A = M_4(K) (x) 1 with the orthogonal adjoint of w', C(Z) = O(O^4, H + H)
+(x) 1. 2 and 3 are inert in K (residue fields F_4, F_9), so the Kneser rank conditions are void, and H + H is even unimodular. C(Z)
+contains the Eichler transvections t(e, a), unipotent and not 1, and t(e, e_1), t(f, e_1) do not commute. P (x) 1 for the shear
+P = 1 + phi E_13 in GL_4(O) is a transporter from (B, F) to its pushed-forward Gram; 3B has another determinant.
+
 Vector orbits. L = U, F = -1, so C(Z) = O(U) = {+-1, +-swap}. The orbit of v = (1, 1) is {+-v}; its stabilizer
 is {1, swap}, and (1, -1) has another norm, so it is not in the orbit.
 """
@@ -88,6 +100,7 @@ from sage.matrix.special import identity_matrix as sage_identity
 from sage.rings.number_field.number_field import QuadraticField
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.matrix.constructor import matrix as sage_matrix
+from sage.modules.free_module_element import vector as sage_vector
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
 from sage_extensions.algebras.isometry_commutant import IsometryCommutant
@@ -488,3 +501,95 @@ def test_anisotropic_eisenstein_transporters():
     t = equivariant_transporter(commutant, negative, [F])
     assert t is not None and _is_transporter(t, gram, negative, [F], [F])
     assert equivariant_transporter(commutant, int(3) * gram, [F]) is None
+
+
+def _hermitian_quaternion_plane():
+    r"""Return `\Delta^2`, `\Delta = Z<1, i, j, k>` in `(-1, 3)_Q`, with `b(x, y) = trd(conj(y_1) x_2 + conj(y_2) x_1)` and the right
+    multiplications by `i` and `2 + j` (reduced norm one, so they preserve `b`; they generate `R_D`, whose commutant is `M_2(D)`)."""
+
+    def form(x, y):
+        return (y[int(0)].conjugate() * x[int(1)] + y[int(1)].conjugate() * x[int(0)]).reduced_trace()
+
+    gram = sage_matrix(SageZZ, [[int(form(x, y)) for y in PAIRS] for x in PAIRS])
+
+    def right(d):
+        return sage_matrix(SageZZ, [_pair_coordinates((x[int(0)] * d, x[int(1)] * d)) for x in PAIRS]).transpose()
+
+    return gram, [right(I), right(int(2) + J)]
+
+
+def test_hermitian_quaternion_centralizer_is_infinite():
+    gram, sources = _hermitian_quaternion_plane()
+    generators = centralizer_generators(IsometryCommutant(gram, sources))
+    one = sage_identity(SageZZ, int(8))
+    assert all(g.transpose() * gram * g == gram and all(g * F == F * g for F in sources) for g in generators)
+    assert any(g != one and (g - one) ** int(8) == int(0) for g in generators)
+    assert any(g * h != h * g for g in generators for h in generators)
+
+
+def test_hermitian_quaternion_transporters():
+    gram, sources = _hermitian_quaternion_plane()
+    commutant = IsometryCommutant(gram, sources)
+    zero = int(0) * ONE
+    witness = _pair_matrix(((ONE, ONE), (zero, ONE)))
+    moved = witness.inverse().transpose() * gram * witness.inverse()
+    assert witness.det() in (int(1), int(-1)) and moved.denominator() == int(1)
+    assert all(witness * F == F * witness for F in sources)
+    t = equivariant_transporter(commutant, sage_matrix(SageZZ, moved), sources)
+    assert t is not None and _is_transporter(t, gram, moved, sources, sources)
+    assert equivariant_transporter(commutant, int(3) * gram, sources) is None
+
+
+def _golden_tensor_lattice():
+    r"""Return `O^4 \otimes O^2`, `O = Z[\phi]`, `\phi^2 = \phi + 1`, with `b = Tr(w' \otimes w)`, `w' = H + H`, `w = diag(1, -1)`, the
+    sources `1 \otimes R`, `1 \otimes D` for `R = [[\sqrt 5, -2], [-2, \sqrt 5]]` (`5 - 4 = 1`, so `R^t w R = w`), `D = diag(1, -1)`, and the map
+    `P \otimes Q \mapsto GL_{16}(Z)`. `R + R^{-1} = 2 \sqrt 5`, and `R - \sqrt 5` is `-2` times the swap, so the sources generate `1 \otimes M_2(K)`."""
+    field = QuadraticField(int(5), "s")
+    root = field.gen()
+    phi = (int(1) + root) / int(2)
+    outer = sage_matrix(field, int(4), int(4))
+    for a in (int(0), int(2)):
+        outer[a, a + int(1)] = outer[a + int(1), a] = int(1)
+    inner = sage_matrix(field, int(2), int(2), [int(1), int(0), int(0), int(-1)])
+    weights = outer.tensor_product(inner)
+    frame = []
+    for i in range(int(8)):
+        for scalar in (field.one(), phi):
+            v = [field.zero()] * int(8)
+            v[i] = scalar
+            frame.append(sage_matrix(field, int(8), int(1), v))
+    gram = sage_matrix(SageZZ, [[SageZZ((x.transpose() * weights * y)[int(0), int(0)].trace()) for y in frame] for x in frame])
+    coordinates = sage_matrix(SageQQ, [[int(1), int(0)], [SageQQ(1) / int(2), SageQQ(1) / int(2)]])
+
+    def on_lattice(block):
+        images = []
+        for v in frame:
+            image = block * v
+            images.append([c for i in range(int(8)) for c in coordinates.solve_left(sage_vector(SageQQ, image[i, int(0)].list()))])
+        return sage_matrix(SageZZ, images).transpose()
+
+    one = sage_identity(field, int(4))
+    moves = [sage_matrix(field, int(2), int(2), [root, int(-2), int(-2), root]), inner]
+    return gram, [on_lattice(one.tensor_product(g)) for g in moves], on_lattice, field, phi
+
+
+def test_golden_orthogonal_centralizer_rank_four():
+    gram, sources, _on_lattice, _field, _phi = _golden_tensor_lattice()
+    generators = centralizer_generators(IsometryCommutant(gram, sources))
+    one = sage_identity(SageZZ, int(16))
+    assert all(g.transpose() * gram * g == gram and all(g * F == F * g for F in sources) for g in generators)
+    assert any(g != one and (g - one) ** int(16) == int(0) for g in generators)
+    assert any(g * h != h * g for g in generators for h in generators)
+
+
+def test_golden_orthogonal_transporters_rank_four():
+    gram, sources, on_lattice, field, phi = _golden_tensor_lattice()
+    commutant = IsometryCommutant(gram, sources)
+    shear = sage_identity(field, int(4))
+    shear[int(0), int(2)] = phi
+    witness = on_lattice(shear.tensor_product(sage_identity(field, int(2))))
+    moved = witness.inverse().transpose() * gram * witness.inverse()
+    assert witness.det() in (int(1), int(-1)) and moved.denominator() == int(1)
+    t = equivariant_transporter(commutant, sage_matrix(SageZZ, moved), sources)
+    assert t is not None and _is_transporter(t, gram, moved, sources, sources)
+    assert equivariant_transporter(commutant, int(3) * gram, sources) is None
