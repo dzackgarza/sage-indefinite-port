@@ -243,7 +243,8 @@ class QuaternionMatrixCommutant:
         if hasattr(self, "_H0"):
             return self._H0
         A = self.algebra
-        units = [A(1), *A.gens(), A.gens()[0] * A.gens()[1]]
+        units = [A(1), *A.gens()]
+        assert len(units) == 4
         zero = A(0)
         unknowns = []
         for i, j, d in product(range(2), range(2), units):
@@ -282,7 +283,7 @@ class QuaternionMatrixCommutant:
     def _right_order(self, lattice):
         r"""Return a `Z`-basis of `\{d \in D : \Lambda d \subseteq \Lambda\}`."""
         A = self.algebra
-        units = [A(1), *A.gens(), A.gens()[0] * A.gens()[1]]
+        units = [A(1), *A.gens()]
         vectors = [self._vector(row) for row in lattice.rows()]
         inverse = lattice.inverse()
         rows = matrix(QQ, [[c for x in vectors for c in vector(QQ, self._flat((x[0] * d, x[1] * d))) * inverse] for d in units])
@@ -335,7 +336,7 @@ class QuaternionMatrixCommutant:
         found = vector(QQ, found)
         found = found * found.denominator()
         v = tuple(sum((c * x[k] for c, x in zip(found, vectors)), A(0)) for k in range(2))
-        units = [A(1), *A.gens(), A.gens()[0] * A.gens()[1]]
+        units = [A(1), *A.gens()]
         inverse = lattice.inverse()
         rows = matrix(QQ, [list(vector(QQ, self._flat((v[0] * d, v[1] * d))) * inverse) for d in units])
         scale = rows.denominator()
