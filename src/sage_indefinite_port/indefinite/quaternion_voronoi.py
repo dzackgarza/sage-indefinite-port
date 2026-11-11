@@ -1,6 +1,7 @@
 r"""Voronoi generators of the unit group of an indefinite quaternion order.
 
-For ``A = (a, b)_QQ`` with ``a < 0 < b`` and ``b`` not a square, and ``Lambda = ZZ<1,i,j,k>``,
+For ``A = (a, b)_QQ`` with ``a < 0 < b`` and ``b`` not a square, and an order ``Lambda``
+(by default ``ZZ<1,i,j,k>``, otherwise given by a ``ZZ``-basis in the coordinates ``1, i, j, k``),
 ``A`` embeds in ``M_2(K)`` for ``K = QQ(sqrt b)``. Positive ``S`` in ``Sym^2(K)`` give forms
 ``phi_S(x) = Tr(x^t S x)`` on ``Lambda``. Following Braun, Coulangeon, Nebe and Schoennenbeck,
 J. Algebra 435 (2015), the perfect forms modulo ``Lambda^x`` are enumerated by flips across
@@ -24,18 +25,39 @@ from sage_extensions.algebras.norm_one_units import norm_one_generators
 
 
 class QuaternionVoronoi:
-    r"""Perfect forms and unit generators of ``ZZ<1, i, j, k>`` in ``(a, b)_QQ``."""
+    r"""Perfect forms and unit generators of an order ``Lambda`` of ``(a, b)_QQ``.
 
-    def __init__(self, a: int, b: int) -> None:
+    ``order`` is a ``4 x 4`` rational matrix whose rows are a ``ZZ``-basis of ``Lambda`` in the
+    coordinates ``1, i, j, k``. Element coordinates of the other methods are in that basis.
+    The flip algorithm of Braun, Coulangeon, Nebe and Schoennenbeck applies to every order.
+    """
+
+    def __init__(self, a: int, b: int, order=None) -> None:
         if a >= 0 or b <= 0 or QQ(b).is_square():
             raise ValueError("the model requires a < 0 < b with b not a square")
         self._field = QuadraticField(b, "s")
         root = self._field.gen()
         self._embedding = next(e for e in self._field.embeddings(RR) if e(root) > 0)
         self._algebra = QuaternionAlgebra(QQ, a, b)
-        self._basis = (self._algebra.one(), *self._algebra.gens())
+        self._order = matrix.identity(QQ, 4) if order is None else matrix(QQ, order)
+        assert self._order.dimensions() == (4, 4) and self._order.det() != 0
+        standard = (self._algebra.one(), *self._algebra.gens())
         i, j = matrix(self._field, [[0, a], [1, 0]]), matrix(self._field, [[root, 0], [0, -root]])
-        self._matrices = (matrix.identity(self._field, 2), i, j, i * j)
+        standard_matrices = (matrix.identity(self._field, 2), i, j, i * j)
+        self._basis = tuple(sum(c * q for c, q in zip(row, standard, strict=True)) for row in self._order.rows())
+        self._matrices = tuple(sum(c * m for c, m in zip(row, standard_matrices, strict=True)) for row in self._order.rows())
+        self._to_order = self._order.inverse()
+
+    def order_coordinates(self, element):
+        r"""Return the coordinates of a quaternion in the basis of the order."""
+        return list(vector(QQ, list(element)) * self._to_order)
+
+    def real_matrix(self, element):
+        r"""Return the image of a quaternion in ``M_2(R)`` under the fixed real embedding."""
+        return self._matrix_rational(self.order_coordinates(element)).apply_map(self._embedding)
+
+    def _matrix_rational(self, coordinates):
+        return sum(QQ(c) * m for c, m in zip(coordinates, self._matrices, strict=True))
 
     def _matrix(self, coordinates):
         return sum(int(c) * m for c, m in zip(coordinates, self._matrices, strict=True))
@@ -140,7 +162,7 @@ class QuaternionVoronoi:
         for candidate in target_vectors:
             for sign in (1, -1):
                 unit = self._element([sign * c for c in candidate]) * ~base
-                coordinates = list(unit)
+                coordinates = self.order_coordinates(unit)
                 if all(c in ZZ for c in coordinates) and abs(unit.reduced_norm()) == 1:
                     image = self._matrix(coordinates)
                     if image.transpose() * target * image == source:
@@ -184,7 +206,7 @@ class QuaternionVoronoi:
         r"""Return a word in ``generators`` and inverses ending in an element fixing ``phi_S``, by descent."""
         form = self.perfect_forms()[0]
         moves = [*generators, *(~g for g in generators)]
-        value = lambda element: self.form_value(form, list(element))
+        value = lambda element: self.form_value(form, self.order_coordinates(element))
         current = unit
         while True:
             best = min((move * current for move in moves), key=value)
@@ -224,6 +246,24 @@ class QuaternionVoronoi:
         r"""Return the area of ``Lambda^x / {1, -1}`` acting on the hyperbolic plane."""
         forms, _ = self._enumerate()
         return sum(self._cell_area(form) / (len(self._equivalences(form, form)) / 2) for form in forms)
+
+    def cell_trace_bound(self):
+        r"""Return `\max_P \max_v \mathrm{Tr}(v v^t) / \min_v |n(v)|` over the perfect representatives.
+
+        ``v`` runs over the real images of the minimal vectors of each representative ``P``. The
+        Voronoi domains, the cones on the ``v v^t``, and their translates `Y \mapsto u Y u^t` by the units
+        tile the positive cone (Braun, Coulangeon, Nebe, Schoennenbeck, J. Algebra 435 (2015); Koecher, Math. Ann. 141 (1960)).
+        As `\sqrt{\det}` is concave on the positive cone, an element ``y`` of a left ``Lambda``-module has a
+        unit translate ``u y`` with `\mathrm{Tr}((uy)(uy)^t) \le |n(y)|` times this bound.
+        """
+        bound = 0
+        for form in self.perfect_forms():
+            _, vectors = self._minimal_vectors(form)
+            images = [self._matrix(c) for c in vectors]
+            traces = max(self._embedding((x * x.transpose()).trace()) for x in images)
+            norms = min(abs(self._embedding(x.det())) for x in images)
+            bound = max(bound, traces / norms)
+        return bound
 
     def norm_one_generators(self):
         r"""Return generators of the reduced-norm-one units, with the central kernel."""

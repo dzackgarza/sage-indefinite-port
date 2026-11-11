@@ -27,6 +27,7 @@ from sage.rings.rational_field import QQ
 from sage_extensions.algebras.isometry_commutant import IsometryCommutant
 from sage_extensions.categories.lattice_centralizers import finite_preimage_generators
 from sage_extensions.categories.lattices import Lattices
+from sage_indefinite_port.indefinite.commutant_groups import centralizer_generators, equivariant_transporter
 
 
 def _frame_matrix(lattice, isometry):
@@ -165,7 +166,7 @@ class FiniteSubgroupNormalizer:
         r"""Return generators of `C_{O(R)}(H)` on `R`, in its basis and row convention."""
         if self.rest_definite:
             return self._rest_twisted(self.matrices)
-        return tuple(matrix(QQ, g).transpose() for g in self._rest_commutant().centralizer_generators())
+        return tuple(matrix(QQ, g).transpose() for g in centralizer_generators(self._rest_commutant()))
 
     def _rest_choices(self, images):
         r"""Return equivariant isometries `h` of `R` with `F h = h \varphi(F)`, one per discriminant class.
@@ -184,14 +185,7 @@ class FiniteSubgroupNormalizer:
         else:
             commutant = self._rest_commutant()
             columns = tuple(matrix(ZZ, T).transpose() for T in targets)
-            if commutant.is_compact():
-                witness = commutant.compact_equivariant_transporter(matrix(ZZ, gram), columns)
-            else:
-                assert len(columns) == 1, (
-                    f"the twisted transporter on the indefinite part of {self.lattice} for {len(columns)} "
-                    f"generators with a noncompact commutant is the general Grunewald-Segal orbit decision (#54)"
-                )
-                witness = commutant.equivariant_transporter(matrix(ZZ, gram), columns[0])
+            witness = equivariant_transporter(commutant, matrix(ZZ, gram), columns)
             if witness is None:
                 return ()
             start = matrix(QQ, witness).transpose()
