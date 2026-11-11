@@ -1097,12 +1097,14 @@ class CentralFieldCommutant:
         model = self._unitary_model(lattice, gram) if self.kind == "second" else self._symplectic_model(lattice, gram)
         if model is None and self.kind == "first" and self.form_kind == "symmetric":
             raise NotImplementedError(
-                f"{self.description()}: O(Lambda, h) of a symmetric O_K-lattice of rank {self.n} >= 3 needs (i) a decision "
-                f"whether Lambda splits a hyperbolic O_K-plane H, (ii) generation of O(Lambda) by the Eichler transformations "
-                f"E(e, u), O of the complement and spinor-norm and determinant coset representatives, which is proved when "
-                f"Lambda = H + H + L' (Hahn-O'Meara, The Classical Groups and K-Theory, Ch. 5-6), not for one hyperbolic "
-                f"plane, and (iii) the Eichler criterion for orbits of primitive vectors (same hypothesis) for the "
-                f"transporter recursion; none of these is implemented (#54)"
+                f"{self.description()}: O(Lambda, h) of a symmetric O_K-lattice of rank {self.n} >= 3 is not implemented. "
+                f"For Lambda = U + U_1 + L_0 over a principal O_K, Gritsenko-Hulek-Sankaran (J. Algebra 322 (2009), "
+                f"arXiv:0810.1614, Prop. 3.3 and Sec. 4.2 proof of Thm. 4.2) give the Eichler criterion and "
+                f"O(Lambda) = <E_U(L_1), O(L_1)>; with the Kneser conditions (Kneser 1956 Satz 4; GHS Thm. 4.1) "
+                f"O'(Lambda) lies in E(Lambda), so O(Lambda) / E(Lambda) embeds in det x spinor norm. The missing step "
+                f"is the spinor-norm image theta(O(Lambda)), which needs the local groups theta(O^+(Lambda_p)) at the "
+                f"dyadic primes (O'Meara-Pollak; Xu, Pacific J. Math. 167 (1995) Thm. 2.1; Beli), and generators of "
+                f"O(L_1), a lattice with one hyperbolic plane (#54)"
             )
         if model is None:
             raise NotImplementedError(self.description())
@@ -1473,7 +1475,11 @@ def _missing_group(commutant):
         return (
             f"the unitary group of the central simple commutant of dimension {commutant.dimension()} over Q of "
             f"{commutant.isometries}, with an involution of the first kind, has no implemented generation or "
-            f"transporter route (#54)"
+            f"transporter route. For A = M_2(D), D an indefinite division quaternion algebra over Q, every maximal "
+            f"order of D is norm-Euclidean (Cerri-Chaubert-Lezowski, Acta Arith. 165 (2014), Cor. 3.5), which supports "
+            f"the height reduction of eisenstein_hyperbolic_unitary.py for a hyperbolic form; the identification "
+            f"A = M_n(D) with a D-form, and the Voronoi route for other orders (Braun-Coulangeon-Nebe-Schoennenbeck, "
+            f"J. Algebra 435 (2015)), are not implemented (#54)"
         )
     return (
         f"the semisimple commutant of dimension {commutant.dimension()} of {commutant.isometries}, with a centre of "
