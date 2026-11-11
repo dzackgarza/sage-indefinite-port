@@ -90,6 +90,29 @@ Golden orthogonal rank four. L = O^4 (x) O^2, O = Z[phi], phi^2 = phi + 1, b = T
 contains the Eichler transvections t(e, a), unipotent and not 1, and t(e, e_1), t(f, e_1) do not commute. P (x) 1 for the shear
 P = 1 + phi E_13 in GL_4(O) is a transporter from (B, F) to its pushed-forward Gram; 3B has another determinant.
 
+Split orthogonal M_2(Q). L = U, F = -1: A = M_2(Q), O = M_2(Z), and the adjoint is the adjoint of the form U on the simple
+module Z^2, so C(Z) = O(U) = {+-1, +-swap}, a group of order four. On L = <1> + <1> + <-1> with F = -1, C(Z) = O(I_{2,1}),
+which contains the reflections s_v, s_{e_1} in v = (1, 1, 1) and e_1 (both of norm 1). s_{e_1} s_v = [[1, 2, -2], [-2, -1, 2],
+[-2, -2, 3]] lies in SO(2, 1) and has trace 3, so all its eigenvalues are 1; it is not 1, so it is a nontrivial unipotent
+element, of infinite order, and C(Z) is infinite.
+
+Split symplectic M_2(Q). L = Z^2 (x) Z^2 with B = J (x) J, J = [[0, 1], [-1, 0]], symmetric of determinant one, and F_i = 1 (x) g for
+g = [[1, 1], [0, 1]], [[1, 0], [1, 1]], which preserve J and generate 1 (x) M_2(Q). So A = M_2(Q) (x) 1 with the adjoint of J,
+symplectic, and C(Z) = Sp_2(Z) (x) 1 = SL_2(Z) (x) 1, which contains the unipotent transvections.
+
+Two Pell units. L = (<1> + <-2>) + (<1> + <-3>), F_1 = [[3, 4], [2, 3]] + 1 and F_2 = 1 + [[2, 3], [1, 2]] (rows), the
+multiplications by 3 + 2 sqrt 2 and 2 + sqrt 3. The F_i have distinct eigenvalues on the two summands, so
+A = Q(sqrt 2) x Q(sqrt 3), each factor fixed by the adjoint, which is the Galois conjugation. y -> -y on the first summand
+conjugates F_1 to F_1^{-1} and fixes F_2, so a transporter to (B, F_1^{-1}, F_2) exists; with y -> -y on both summands,
+to (B, F_1^{-1}, F_2^{-1}). A transporter to B' = (<1> + <-2>) + (<-1> + <3>) with the same F_i commutes with them, so it
+preserves both summands and maps <1> + <-3> isometrically onto <-1> + <3>: x^2 - 3 y^2 = -1 has no solution modulo 3,
+so there is none, although the determinants agree. 3B has another determinant.
+
+Swapped factors. L = U + U with basis (e_1, e_2, f_1, f_2), B = [[0, 1], [1, 0]] in 2 x 2 blocks, and F = M + M^{-t}, M = [[1, 1],
+[1, 0]], which preserves B. M has eigenvalues phi, -1/phi and M^{-t} = M^{-1} has 1/phi, -phi, so A = Q[M] x Q[M^{-1}] =
+Q(sqrt 5) x Q(sqrt 5), and the adjoint swaps the factors. The block swap s preserves B and carries F to s F s = M^{-1} + M,
+so a transporter to (B, s F s) exists.
+
 Vector orbits. L = U, F = -1, so C(Z) = O(U) = {+-1, +-swap}. The orbit of v = (1, 1) is {+-v}; its stabilizer
 is {1, swap}, and (1, -1) has another norm, so it is not in the orbit.
 """
@@ -99,7 +122,7 @@ from sage.algebras.quatalg.quaternion_algebra import QuaternionAlgebra
 from sage.matrix.special import identity_matrix as sage_identity
 from sage.rings.number_field.number_field import QuadraticField
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
-from sage.matrix.constructor import matrix as sage_matrix
+from sage.matrix.constructor import block_matrix, matrix as sage_matrix
 from sage.modules.free_module_element import vector as sage_vector
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
@@ -593,3 +616,85 @@ def test_golden_orthogonal_transporters_rank_four():
     t = equivariant_transporter(commutant, sage_matrix(SageZZ, moved), sources)
     assert t is not None and _is_transporter(t, gram, moved, sources, sources)
     assert equivariant_transporter(commutant, int(3) * gram, sources) is None
+
+
+def _closure(generators):
+    one = generators[int(0)] ** int(0)
+    elements, frontier = [one], [one]
+    while frontier:
+        current = frontier.pop()
+        for g in generators:
+            image = current * g
+            if image not in elements:
+                elements.append(image)
+                frontier.append(image)
+    return elements
+
+
+def test_split_orthogonal_centralizer_of_minus_one_on_U():
+    gram = sage_matrix(SageZZ, [[int(0), int(1)], [int(1), int(0)]])
+    generators = centralizer_generators(IsometryCommutant(gram, [-sage_identity(SageZZ, int(2))]))
+    one = sage_identity(SageZZ, int(2))
+    swap = sage_matrix(SageZZ, [[int(0), int(1)], [int(1), int(0)]])
+    group = _closure(list(generators))
+    assert len(group) == int(4)
+    assert all(g in (one, -one, swap, -swap) for g in group)
+
+
+def test_split_orthogonal_centralizer_rank_three_is_infinite():
+    from sage.groups.matrix_gps.finitely_generated import MatrixGroup
+
+    gram = sage_matrix(SageZZ, [[int(1), int(0), int(0)], [int(0), int(1), int(0)], [int(0), int(0), int(-1)]])
+    generators = centralizer_generators(IsometryCommutant(gram, [-sage_identity(SageZZ, int(3))]))
+    assert all(g.transpose() * gram * g == gram for g in generators)
+    assert not MatrixGroup(list(generators)).is_finite()
+
+
+def test_split_symplectic_centralizer_is_SL2():
+    J = sage_matrix(SageZZ, [[int(0), int(1)], [int(-1), int(0)]])
+    one = sage_identity(SageZZ, int(2))
+    gram = J.tensor_product(J)
+    sources = [one.tensor_product(sage_matrix(SageZZ, rows)) for rows in ([[int(1), int(1)], [int(0), int(1)]], [[int(1), int(0)], [int(1), int(1)]])]
+    generators = centralizer_generators(IsometryCommutant(gram, sources))
+    blocks = []
+    for g in generators:
+        P = g.matrix_from_rows_and_columns([int(0), int(2)], [int(0), int(2)])
+        assert g == P.tensor_product(one) and P.det() == int(1)
+        blocks.append(P)
+    assert any(P != one and (P - one) ** int(2) == int(0) for P in blocks)
+
+
+def _two_pell_lattice():
+    gram = sage_matrix(SageZZ, [[int(1), int(0), int(0), int(0)], [int(0), int(-2), int(0), int(0)], [int(0), int(0), int(1), int(0)], [int(0), int(0), int(0), int(-3)]])
+    F1 = sage_matrix(SageZZ, [[int(3), int(4), int(0), int(0)], [int(2), int(3), int(0), int(0)], [int(0), int(0), int(1), int(0)], [int(0), int(0), int(0), int(1)]])
+    F2 = sage_matrix(SageZZ, [[int(1), int(0), int(0), int(0)], [int(0), int(1), int(0), int(0)], [int(0), int(0), int(2), int(3)], [int(0), int(0), int(1), int(2)]])
+    return gram, [F1, F2]
+
+
+def test_two_pell_units_transporters():
+    gram, sources = _two_pell_lattice()
+    F1, F2 = sources
+    commutant = IsometryCommutant(gram, sources)
+    for targets in ([F1.inverse(), F2], [F1.inverse(), F2.inverse()]):
+        targets = [T.change_ring(SageZZ) for T in targets]
+        t = equivariant_transporter(commutant, gram, targets)
+        assert t is not None and _is_transporter(t, gram, gram, sources, targets)
+    other = sage_matrix(SageZZ, [[int(1), int(0), int(0), int(0)], [int(0), int(-2), int(0), int(0)], [int(0), int(0), int(-1), int(0)], [int(0), int(0), int(0), int(3)]])
+    assert all(F.transpose() * other * F == other for F in sources) and other.det() == gram.det()
+    assert equivariant_transporter(commutant, other, sources) is None
+    assert equivariant_transporter(commutant, int(3) * gram, sources) is None
+
+
+def test_swapped_factor_transporter():
+    zero, one = sage_matrix(SageZZ, int(2), int(2)), sage_identity(SageZZ, int(2))
+    gram = block_matrix(SageZZ, [[zero, one], [one, zero]], subdivide=False)
+    M = sage_matrix(SageZZ, [[int(1), int(1)], [int(1), int(0)]])
+    F = block_matrix(SageZZ, [[M, zero], [zero, M.inverse().transpose().change_ring(SageZZ)]], subdivide=False)
+    swap = block_matrix(SageZZ, [[zero, one], [one, zero]], subdivide=False)
+    assert F.transpose() * gram * F == gram
+    commutant = IsometryCommutant(gram, [F])
+    assert commutant.dimension() == int(4) and all(x * y == y * x for x in commutant.order_basis for y in commutant.order_basis)
+    target = swap * F * swap
+    t = equivariant_transporter(commutant, gram, [target])
+    assert t is not None and _is_transporter(t, gram, gram, [F], [target])
+    assert equivariant_transporter(commutant, int(3) * gram, [F]) is None

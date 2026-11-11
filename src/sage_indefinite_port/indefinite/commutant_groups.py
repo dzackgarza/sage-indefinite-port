@@ -36,6 +36,11 @@ centralizers. This module adds the routes that need the port's arithmetic groups
   hypotheses: `O_K` principal and totally real, `2` unramified, `\Lambda` even and unimodular at the dyadic primes, Kneser conditions).
 - `A \cong M_2(D)` for a quaternion division algebra `D` over `Q` with a Hermitian form over the right order of `\Lambda`
   (:mod:`quaternion_hermitian_commutant`).
+- `A \cong M_n(Q)` split: the adjoint is the adjoint of a symmetric or alternating form `b` over `Z` on a simple
+  `O`-lattice, and `C(Z)` is the subgroup of `O(b)` or `Sp(b)` lying in `O` (:class:`SplitSimpleCommutant`).
+- `A = \prod_j K_j` commutative: the transporter set is `t_0 \{a : \sigma(a) h a = 1\}`, decided factor by factor by
+  relative norm equations over `K_j^\sigma` and the coset representatives of `C(Z)` in the unitary units of the maximal
+  order (:class:`EtaleCommutant`).
 
 :class:`VectorOrbit` decides the orbit of a vector under `C(Z)` and returns its stabilizer, through the
 marked transporter of the cyclic `F`-span of the vector.
@@ -46,7 +51,7 @@ Other noncompact commutants raise :class:`NotImplementedError` naming the missin
 from itertools import combinations, product
 
 from sage.arith.functions import lcm
-from sage.arith.misc import binomial, gcd
+from sage.arith.misc import CRT_list, binomial, gcd
 from sage.algebras.quatalg.quaternion_algebra import QuaternionAlgebra
 from sage.libs.pari import pari
 from sage.matrix.constructor import block_matrix, matrix
@@ -60,7 +65,13 @@ from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.rational_field import QQ
 from sage.rings.real_double import RDF
 from sage.schemes.plane_conics.constructor import Conic
-from sage_extensions.algebras.isometry_commutant import IsometryCommutant, LeviQuotient, _integer_solution, _short_vectors
+from sage_extensions.algebras.isometry_commutant import (
+    IsometryCommutant,
+    LeviQuotient,
+    _integer_solution,
+    _short_vectors,
+    symplectic_generators,
+)
 from sage_extensions.categories.lattice_centralizers import finite_preimage_generators
 from sage_extensions.categories.lattices import Lattices
 from sage_indefinite_port.indefinite import (
@@ -1603,11 +1614,6 @@ def _ocean_forms(*forms):
 def _missing_group(commutant):
     r"""Return the description of the arithmetic group of a commutant with no implemented route."""
     center = commutant._center_basis()
-    if len(center) == commutant.dimension():
-        return (
-            f"the integral transporter of the commutative commutant of dimension {commutant.dimension()} of "
-            f"{commutant.isometries} needs the norm-one unit orbit decision of its etale algebra (#54)"
-        )
     if len(center) == 1:
         return (
             f"the unitary group of the central simple commutant of dimension {commutant.dimension()} over Q of "
@@ -1655,6 +1661,340 @@ def _quaternion_matrix(commutant):
     return model if model.is_division() else None
 
 
+def _form_group_generators(gram):
+    r"""Return generators of `O(Z^n, G)` (symmetric `G`) or `Sp(Z^n, G)` (alternating `G`) as matrices on columns.
+
+    A symmetric form uses the owned lattice group ``Lattices(ZZ)(G).O()`` (definite or indefinite); the image of each
+    framed generator is read through its coordinate function on the frame labels. An alternating form uses
+    :func:`symplectic_generators`.
+    """
+    gram = matrix(ZZ, gram)
+    if gram != gram.transpose():
+        assert gram == -gram.transpose(), f"the form {gram} is neither symmetric nor alternating"
+        return symplectic_generators(gram)
+    lattice = Lattices(ZZ)([[int(c) for c in row] for row in gram.rows()])
+    labels = tuple(lattice.module_generating_set())
+    result = []
+    for isometry in lattice.O().group_generators():
+        columns = []
+        for label in labels:
+            coordinates = isometry(lattice.module_generator(label)).to_vector()
+            columns.append([int(coordinates(inner)) for inner in labels])
+        g = matrix(ZZ, columns).transpose()
+        assert g.transpose() * gram * g == gram
+        result.append(g)
+    return tuple(result)
+
+
+class SplitSimpleCommutant:
+    r"""A central simple commutant `A \cong M_n(Q)`, `n \ge 2`, and its unitary group.
+
+    The adjoint is an involution of the first kind, so it is the adjoint of a symmetric or alternating bilinear form
+    `b` on the simple module (Knus, Merkurjev, Rost, Tignol, *The Book of Involutions*, Prop. 2.1). An element `x` of
+    rank `r / n` is regular: `x y x = x` for some `y \in A`, and `e = y x` is a primitive idempotent. `X = O e` is an
+    `O`-stable lattice in the simple module `A e`, `O' = \mathrm{End}_Z(X) \cong M_n(Z)` contains `O`, and on the
+    column `O' E_{11}` the line `E_{11}^\dagger A E_{11}` defines `b` by `x^\dagger y = b(x, y) t`. A unit `u` of `O'`
+    has `u^\dagger u = 1` exactly when it preserves `b`, so the unitary units of `O'` are `O(b)` or `Sp(b)` over `Z`.
+    `C(Z)` is the subgroup of those lying in `O`, of finite index (Platonov-Rapinchuk, *Algebraic Groups and Number
+    Theory*, Prop. 4.1), obtained by Schreier's lemma (Holt-Eick-O'Brien, *Handbook of Computational Group Theory*,
+    Thm. 4.13).
+
+    A central simple algebra with an involution of the first kind has exponent dividing `2` (KMRT, Thm. 3.1), so it is
+    split when `n` is odd; :func:`_split_simple` records which degrees are decided.
+    """
+
+    def __init__(self, commutant, element):
+        self.commutant = commutant
+        r = commutant.rank
+        self.degree = ZZ(commutant.dimension()).isqrt()
+        basis = [m.change_ring(QQ) for m in commutant.order_basis]
+        rows = matrix(QQ, [(element * m * element).list() for m in basis])
+        y = sum(c * m for c, m in zip(rows.solve_left(vector(QQ, element.list())), basis))
+        e = y * element
+        assert e * e == e and e.rank() * self.degree == r
+        images = matrix(QQ, [(m * e).list() for m in basis])
+        denominator = images.denominator()
+        span = matrix(QQ, matrix(ZZ, denominator * images).hermite_form(include_zero_rows=False)) / denominator
+        assert span.nrows() == self.degree
+        self._span = span
+        self._module = tuple(matrix(QQ, r, r, list(row)) for row in span.rows())
+        action_rows = matrix(QQ, [self.on_module(m).list() for m in basis])
+        assert action_rows.denominator() == 1, f"the order of {commutant.isometries} does not preserve O e"
+        self._index = abs(action_rows.det())
+        self._inverse = action_rows.inverse()
+        self._basis = basis
+
+    def on_module(self, element):
+        r"""Return the matrix of left multiplication by ``element`` on the basis of `X = O e`."""
+        return matrix(QQ, [self._span.solve_left(vector(QQ, (element * m).list())) for m in self._module]).transpose()
+
+    def element_of(self, block):
+        r"""Return the element of `A` acting on `X` by ``block``."""
+        combination = vector(QQ, matrix(QQ, block).list()) * self._inverse
+        return sum(c * m for c, m in zip(combination, self._basis))
+
+    def form(self):
+        r"""Return the integral Gram matrix of `b` on the column `O' E_{11}`, in the basis `E_{i1}`."""
+        n = self.degree
+
+        def unit(i, j):
+            block = matrix(QQ, n, n)
+            block[i, j] = 1
+            return self.element_of(block)
+
+        corner = unit(0, 0)
+        column = tuple(unit(i, 0) for i in range(n))
+        adjoint_corner = self.commutant.adjoint(corner)
+        line = next(
+            value
+            for value in (adjoint_corner * unit(i, j) * corner for i in range(n) for j in range(n))
+            if not value.is_zero()
+        )
+        generator = matrix(QQ, [line.list()])
+        values = matrix(
+            QQ,
+            [[generator.solve_left(vector(QQ, (self.commutant.adjoint(x) * y).list()))[0] for y in column] for x in column],
+        )
+        return matrix(ZZ, values.denominator() * values)
+
+    def centralizer_generators(self):
+        group = tuple(self.element_of(g) for g in _form_group_generators(self.form()))
+        one = identity_matrix(QQ, self.commutant.rank)
+        assert all(self.commutant.adjoint(u) * u == one for u in group)
+        if self._index == 1:
+            assert all(self.commutant.is_centralizer_element(u) for u in group)
+            return tuple(matrix(ZZ, u) for u in group)
+        return self.commutant._order_subgroup_generators(group)
+
+
+def _split_simple(commutant):
+    r"""Return the :class:`SplitSimpleCommutant` model when `A \cong M_n(Q)` is shown split, else ``None``.
+
+    Splitting is witnessed by an element of rank `r / n` among sparse integral combinations of the order basis. For
+    `n` odd `A` is split (KMRT, Thm. 3.1), so a failed search there raises; for `n = 2` the quaternion model decides it.
+    """
+    if commutant.radical_basis() or len(commutant._center_basis()) != 1:
+        return None
+    degree = ZZ(commutant.dimension()).isqrt()
+    if degree < 2 or degree**2 != commutant.dimension():
+        return None
+    if degree == 2 and QuaternionCommutant(commutant).is_division():
+        return None
+    target = commutant.rank // degree
+    basis = [m.change_ring(QQ) for m in commutant.order_basis]
+    for support in range(1, min(len(basis), 3) + 1):
+        for positions in combinations(range(len(basis)), support):
+            for values in product((-2, -1, 1, 2), repeat=support):
+                element = sum(c * basis[i] for c, i in zip(values, positions))
+                if element.rank() == target:
+                    return SplitSimpleCommutant(commutant, element)
+    if degree == 2 or degree % 2 == 1:
+        raise ArithmeticError(
+            f"the split commutant M_{degree}(Q) of {commutant.isometries} has no element of rank {target} in the search box"
+        )
+    return None
+
+
+class EtaleCommutant:
+    r"""A commutative semisimple commutant `A = \prod_j K_j` and its equivariant transporters.
+
+    A primitive integral `g \in O` identifies `A` with `Q[x] / \prod_j p_j`, `K_j = Q[x] / p_j`. The adjoint `\sigma`
+    sends `g` to a polynomial in `g` whose image `\theta_j \in K_j` is a root of `p_{\pi(j)}`, so
+    `\sigma(a)_j = \tau_j(a_{\pi(j)})` with `\tau_j : K_{\pi(j)} \to K_j`, `x \mapsto \theta_j`, and `\pi^2 = 1`.
+
+    Every transporter is `t_0 a` with `a^\dagger h a = 1`, `h = B^{-1} t_0^t B' t_0`, and `a \in X = \{a : t_0 a \in
+    M_r(Z)\}`. `X \subseteq D^{-1} O \subseteq D^{-1} O_{\max}` for `D` the denominator of `t_0^{-1}`, with `O_{\max} =
+    \prod_j O_{K_j}`, and `X O \subseteq X`. Factor by factor, with `\beta = D a_j \in O_{K_j}`:
+
+    - `\pi(j) = j`, `\sigma|_{K_j} \ne 1`: the relative norm equation `\beta \sigma(\beta) = D^2 / h_j` over
+      `K_j^\sigma`. The ideal `(\beta)` has `(\beta) \sigma(\beta) = (D^2 / h_j)` and absolute norm
+      `|N(D^2 / h_j)|^{1/2}`, so it is among finitely many ideals; a principal one gives `\beta_0`, and
+      `\beta_0 \varepsilon` is a solution exactly when the unit `\eta = D^2 / (h_j \beta_0 \sigma(\beta_0))` is
+      `\varepsilon \sigma(\varepsilon)`, a linear equation on the logarithms of the Dirichlet unit group. The solutions
+      of one ideal form one coset of the norm-one units (Cohen, *Advanced Topics in Computational Number Theory*,
+      GTM 193, Sec. 7.5; Simon, Math. Comp. 71 (2002), 1287-1305).
+    - `\pi(j) = j`, `\sigma|_{K_j} = 1`: `a_j^2 = h_j^{-1}`, two solutions or none.
+    - `\pi(j) = o \ne j`: `a_o = 1 / (h_o \tau_o(a_j))`, integral exactly when `(\beta)` divides `(D^2 / \tau_j(h_o))`;
+      the classes are the principal divisors, modulo all units of `O_{K_j}`.
+
+    The solutions in `D^{-1} O_{\max}` are therefore the finitely many class representatives times the unitary units
+    `T(Z)` of `O_{\max}`, and `a u \in X` depends only on the coset `u C(Z)`, `C(Z) = T(Z) \cap O`, a group of finite
+    index. The coset representatives are enumerated by membership of `k^{-1} x` in `O`, as in Schreier's lemma
+    (Holt-Eick-O'Brien, *Handbook of Computational Group Theory*, Thm. 4.13), and every representative pair is tested.
+    """
+
+    def __init__(self, commutant):
+        self.commutant = commutant
+        size = commutant.dimension()
+        generator = commutant._primitive_element().change_ring(QQ)
+        minimal = generator.minimal_polynomial()
+        self.ring = minimal.parent()
+        self.factors = tuple(f for f, _multiplicity in minimal.factor())
+        self.fields = tuple(NumberField(f, "a") for f in self.factors)
+        self._generator = generator
+        self._powers = matrix(QQ, [(generator**k).list() for k in range(size)])
+        adjoint = self.polynomial(commutant.adjoint(generator))
+        self.thetas = tuple(K(list(adjoint)) for K in self.fields)
+        self.partner = tuple(
+            next(i for i, f in enumerate(self.factors) if f(theta) == 0) for theta in self.thetas
+        )
+        assert all(self.partner[self.partner[j]] == j for j in range(len(self.factors)))
+
+    def polynomial(self, element):
+        return self.ring(list(self._powers.solve_left(vector(QQ, matrix(QQ, element).list()))))
+
+    def components(self, element):
+        coefficients = list(self.polynomial(element))
+        return [K(coefficients) for K in self.fields]
+
+    def element(self, values):
+        residues = [self.ring(list(v.polynomial())) for v in values]
+        combined = CRT_list(residues, list(self.factors)) if len(residues) > 1 else residues[0]
+        size = self._powers.nrows()
+        return sum(c * self._generator**k for k, c in enumerate(combined.padded_list(size)))
+
+    def tau(self, j):
+        r"""Return `\tau_j : K_{\pi(j)} \to K_j`, `\sigma(a)_j = \tau_j(a_{\pi(j)})`."""
+        return self.fields[self.partner[j]].hom([self.thetas[j]])
+
+    def _orbits(self):
+        done, orbits = set(), []
+        for j in range(len(self.factors)):
+            if j not in done:
+                done |= {j, self.partner[j]}
+                orbits.append(j)
+        return orbits
+
+    def unitary_unit_generators(self):
+        r"""Return generators of `T(Z) = \{u \in O_{\max}^\times : \sigma(u) u = 1\}` as matrices."""
+        ones = [K.one() for K in self.fields]
+        moves = []
+        for j in self._orbits():
+            K, o = self.fields[j], self.partner[j]
+            if o == j:
+                units = IsometryCommutant._norm_one_generators(K, self.thetas[j], self.factors[j])
+                pairs = [((j, K(u)),) for u in units]
+            else:
+                tau = self.tau(o)
+                pairs = [((j, K(u)), (o, ~tau(K(u)))) for u in K.unit_group().gens()]
+            for entries in pairs:
+                values = list(ones)
+                for position, value in entries:
+                    values[position] = value
+                moves.append(self.element(values))
+        one = identity_matrix(QQ, self.commutant.rank)
+        assert all(self.commutant.adjoint(u) * u == one for u in moves)
+        return moves
+
+    def coset_representatives(self):
+        r"""Return representatives of `T(Z) / C(Z)`."""
+        moves = self.unitary_unit_generators()
+        representatives = [identity_matrix(QQ, self.commutant.rank)]
+        position = 0
+        while position < len(representatives):
+            current = representatives[position]
+            position += 1
+            for move in moves:
+                image = current * move
+                if not any(self.commutant.in_order(known.inverse() * image) for known in representatives):
+                    representatives.append(image)
+        return representatives
+
+    @staticmethod
+    def _unit_with_norm(K, sigma, eta):
+        r"""Return a unit `\varepsilon` of `O_K` with `\varepsilon \sigma(\varepsilon) = \eta`, or ``None``."""
+        units = K.unit_group()
+        generators = [K(u) for u in units.gens()]
+        torsion = units.torsion_generator().order()
+        columns = [list(units.log(u * sigma(u))) for u in generators]
+        modulus = [torsion] + [0] * (len(columns[0]) - 1)
+        equations = matrix(ZZ, [*columns, modulus]).transpose()
+        solution = _integer_solution(equations, vector(ZZ, list(units.log(eta))))
+        if solution is None:
+            return None
+        epsilon = K.one()
+        for u, exponent in zip(generators, solution):
+            epsilon = epsilon * u ** int(exponent)
+        assert epsilon * sigma(epsilon) == eta
+        return epsilon
+
+    def _relative_norm_classes(self, j, value, D):
+        r"""Return one `x \in D^{-1} O_{K_j}` with `x \sigma(x) =` ``value`` per class modulo the norm-one units."""
+        K = self.fields[j]
+        sigma = K.hom([self.thetas[j]])
+        if self.thetas[j] == K.gen():
+            if not value.is_square():
+                return []
+            root = value.sqrt()
+            return [root] if (D * root).is_integral() else []
+        target = D**2 * value
+        ideal = K.ideal(target)
+        size = abs(QQ(target.norm()))
+        if not size.is_square() or not ideal.is_integral():
+            return []
+        norm = ZZ(size.sqrt())
+        result = []
+        for candidate in K.ideals_of_bdd_norm(norm)[norm]:
+            conjugate = K.ideal([sigma(x) for x in candidate.gens()])
+            if candidate * conjugate != ideal or not candidate.is_principal():
+                continue
+            beta = candidate.gens_reduced()[0]
+            epsilon = self._unit_with_norm(K, sigma, target / (beta * sigma(beta)))
+            if epsilon is not None:
+                result.append(beta * epsilon / D)
+        return result
+
+    def _pair_classes(self, j, square, D):
+        r"""Return the pairs `(a_j, a_o)` with `D a_j, D a_o` integral, one per principal divisor class."""
+        K, o = self.fields[j], self.partner[j]
+        bound = K.ideal(D**2 / self.tau(j)(square[o]))
+        if not bound.is_integral():
+            return []
+        tau = self.tau(o)
+        result = []
+        for divisor in _ideal_divisors(bound):
+            if divisor.is_principal():
+                x = divisor.gens_reduced()[0] / D
+                result.append(((j, x), (o, ~(square[o] * tau(x)))))
+        return result
+
+    def equivariant_transporter(self, target_gram, targets):
+        r"""Return an integral transporter to ``(target_gram, targets)``, or ``None`` as a proof of absence."""
+        commutant = self.commutant
+        if abs(target_gram.det()) != abs(commutant.gram.det()):
+            return None
+        start = rational_intertwiner(commutant.isometries, targets)
+        if start is None:
+            return None
+        h = commutant.gram.change_ring(QQ).inverse() * start.transpose() * target_gram * start
+        assert commutant.contains(h) and commutant.adjoint(h) == h
+        D = start.inverse().denominator()
+        square = self.components(h)
+        choices = []
+        for j in self._orbits():
+            if self.partner[j] == j:
+                classes = [((j, x),) for x in self._relative_norm_classes(j, ~square[j], D)]
+            else:
+                classes = self._pair_classes(j, square, D)
+            if not classes:
+                return None
+            choices.append(classes)
+        representatives = self.coset_representatives()
+        one = identity_matrix(QQ, commutant.rank)
+        for choice in product(*choices):
+            values = [K.one() for K in self.fields]
+            for entries in choice:
+                for position, value in entries:
+                    values[position] = value
+            a = self.element(values)
+            assert commutant.adjoint(a) * h * a == one
+            for u in representatives:
+                found = _verified(commutant, start * a * u, target_gram, targets)
+                if found is not None:
+                    return found
+        return None
+
+
 def centralizer_generators(commutant):
     r"""Return generators of `C(Z)`, dispatching on the structure of `A`."""
     if commutant.is_compact():
@@ -1665,6 +2005,9 @@ def centralizer_generators(commutant):
     if _central_field(commutant):
         return CentralFieldCommutant(commutant).centralizer_generators()
     model = _quaternion_matrix(commutant)
+    if model is not None:
+        return model.centralizer_generators()
+    model = _split_simple(commutant)
     if model is not None:
         return model.centralizer_generators()
     return commutant.centralizer_generators()
@@ -1690,9 +2033,8 @@ def equivariant_transporter(commutant, target_gram, targets):
     model = _quaternion_matrix(commutant)
     if model is not None:
         return model.equivariant_transporter(target_gram, targets)
-    commutative = all(x * y == y * x for x in commutant.order_basis for y in commutant.order_basis)
-    if not radical and commutative and commutant.dimension() == 2 and len(targets) == 1:
-        return commutant.equivariant_transporter(target_gram, targets[0])
+    if all(x * y == y * x for x in commutant.order_basis for y in commutant.order_basis):
+        return EtaleCommutant(commutant).equivariant_transporter(target_gram, targets)
     raise NotImplementedError(_missing_group(commutant))
 
 
