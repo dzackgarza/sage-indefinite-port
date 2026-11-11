@@ -29,6 +29,31 @@ Units and norm points. For indefinite `D` they come from :class:`QuaternionVoron
 definite on `R`, so `R^\times = \{d \in R : \mathrm{nrd}(d) = 1\}` is finite and it, like every norm-value search, is a Fincke-Pohst
 enumeration (:func:`_definite_points`); the height reduction above uses only multiplicativity of `\mathrm{nrd}` and holds unchanged.
 
+Skew-Hermitian forms (`H_0^* = -H_0`). Then `h(x, x)` is pure and `h(y, x) = -\overline{h(x, y)}`.
+
+- Isotropy. One of `e_1, e_2, e_1 + e_2 d` (`d \in \{1, i, j, k\}`) is anisotropic: if `e_1, e_2` are null then
+  `h(e_1 + e_2 d, e_1 + e_2 d) = r d - \overline{r d}` with `r = h(e_2, e_1) \ne 0`, and `r d \in Q` for all four `d` forces `r = 0`. Then `w' = w - x \alpha^{-1} h(w, x)` diagonalizes `h \cong \langle \alpha, \beta \rangle`,
+  `\alpha, \beta` pure. `x a + w' b` is null exactly when `\bar a \alpha a = -\bar b \beta b`; `b = 0` forces `a = 0`, so with `u = a b^{-1}` the
+  condition is `\bar u \alpha u = -\beta`. Taking reduced norms, `\mathrm{nrd}(u)^2 \mathrm{nrd}(\alpha) = \mathrm{nrd}(\beta)`, so `s = \mathrm{nrd}(u) = \pm c`
+  with `c^2 = \mathrm{nrd}(\beta) / \mathrm{nrd}(\alpha)`; and `\bar u \alpha u = s u^{-1} \alpha u = -\beta` says `u \in K_s = \{z : s \alpha z + z \beta = 0\}`, a
+  `Q`-plane (`s \alpha` and `-\beta` are pure of equal norm, conjugate by Skolem-Noether). Conversely `z \in K_s` with `\mathrm{nrd}(z) = s` gives a
+  null `x z + w'`. So `h` is isotropic exactly when one of the ternary forms `\mathrm{nrd}|_{K_{\pm c}} - (\pm c) t^2` is isotropic, which PARI
+  ``qfsolve`` decides (Scharlau, *Quadratic and Hermitian Forms*, Ch. 10, Sec. 3: a binary skew-Hermitian form is hyperbolic exactly when its
+  discriminant is trivial).
+- Model. With `v` primitive and `h(\Lambda, v) = q R` as above, `f = f_1 - v t` has `h(f, f) = h(f_1, f_1) + q (t - \bar t)`, and `f_1` is unique
+  modulo `v^\perp \cap \Lambda = v R`; so `f` exists exactly when `-h(f_1, f_1) / q \in \{t - \bar t : t \in R\}`, a linear equation over `Z`. Then
+  `\Lambda = v R \oplus f R` with matrix `q J`, `J = [[0, 1], [-1, 0]]` (`h(f, v) = q`, `h(v, f) = -q`).
+- Generation of `U(R^2, J)` (Euclidean reduction). `L(u) = diag(u, \bar u^{-1})`, `n(m) = [[1, m], [0, 1]]` and `W = [[0, 1], [-1, 0]]` preserve `J`; an
+  upper unipotent `[[1, p], [0, 1]]` preserves `J` exactly when `p = \bar p`, i.e. `p \in R \cap Q = Z`. A primitive null column `(x; y)` has
+  `\bar x y = \bar y x =: \rho \in Q`, so `\mathrm{nrd}(x) \mathrm{nrd}(y) = \rho^2` and
+  `\mathrm{nrd}(x + m y) = \mathrm{nrd}(y) (m + \rho / \mathrm{nrd}(y))^2`; the nearest integer `m` gives `|\mathrm{nrd}(x + m y)| \le |\mathrm{nrd}(y)| / 4`, and
+  `W n(m)` replaces `y` by `-(x + m y)`. The nonzero integer `|\mathrm{nrd}(y)|` (`D` is a division algebra) decreases to `y = 0`; then `x \in R^\times`,
+  `L(x)^{-1}` makes the column `e_1`, and the stabilizer of `e_1` is `n(Z)`. Hence `U(R^2, J) = \langle L(u), n(1), W \rangle`, `u` in generators of
+  `R^\times`, with no covering certificate (the argument is the Euclidean algorithm on `P^1(Q)`, which parametrizes the null `D`-lines).
+  Every primitive null vector of `\Lambda = q J` is in the `U`-orbit of `v`, so `h(\Lambda, v') = q R` for all of them, and `q J \cong q' J` exactly when
+  `q' = \pm q` (`diag(1, -1)` sends `J` to `-J`; reduced norms of determinants otherwise). An anisotropic skew-Hermitian `\Lambda` (a cocompact
+  `U`) needs the Voronoi algorithm of Braun-Coulangeon-Nebe-Schoennenbeck (J. Algebra 435 (2015)) and raises.
+
 Transporters. As in :meth:`CentralFieldCommutant.equivariant_transporter`, `t_0 a_1` with `a_1 : (\Lambda, h) \to (\Lambda', h_m)`. All primitive null
 vectors of `\Lambda` lie in one `U`-orbit (the height reduction), so `\Lambda'` is `q' H` or no isometry exists; and `q' H \cong q H` exactly when `q' = \pm q`
 (reduced norms of determinants), by `v \mapsto v'`, `f \mapsto \pm f'`.
@@ -318,15 +343,9 @@ class QuaternionMatrixCommutant:
             return None
         return found.conjugate()
 
-    def hyperbolic_model(self, lattice, middle):
-        r"""Return `(v, f, q)` with `\Lambda = v R \oplus f R` of Gram `q H` for `h(x, y) = y^*` ``middle`` `x`, or ``None`` if `\Lambda` is not of that type.
-
-        ``None`` is a proof (module docstring) once the covering certificate of `R` holds.
-        """
+    def _hermitian_null(self, vectors, middle):
+        r"""Return a null vector of `\Lambda` for Hermitian ``middle`` from PARI ``qfsolve`` on `h(x, x) \in Q`, or ``None`` if anisotropic."""
         A = self.algebra
-        vectors = [self._vector(row) for row in lattice.rows()]
-        order = self._right_order(lattice)
-        search = self._units(order)[1]
         form = lambda x: QQ(list(self.h(x, x, middle))[0])
         gram = matrix(QQ, 8, 8)
         for i in range(8):
@@ -338,7 +357,71 @@ class QuaternionMatrixCommutant:
             return None
         found = vector(QQ, found)
         found = found * found.denominator()
-        v = tuple(sum((c * x[k] for c, x in zip(found, vectors)), A(0)) for k in range(2))
+        return tuple(sum((c * x[k] for c, x in zip(found, vectors)), A(0)) for k in range(2))
+
+    def _skew_null(self, lattice, middle):
+        r"""Return a null vector of `\Lambda` for skew-Hermitian ``middle``, or ``None`` as a proof of anisotropy (module docstring)."""
+        A = self.algebra
+        zero, one = A(0), A(1)
+        units = [one, *A.gens()]
+        candidates = [(one, zero), (zero, one), *((one, d) for d in units)]
+        x = next(c for c in candidates if self.h(c, c, middle) != 0)
+        alpha = self.h(x, x, middle)
+        w = next(
+            w
+            for w in (
+                (c[0] - x[0] * ~alpha * self.h(c, x, middle), c[1] - x[1] * ~alpha * self.h(c, x, middle)) for c in candidates
+            )
+            if w != (zero, zero)
+        )
+        assert self.h(w, x, middle) == 0
+        beta = self.h(w, w, middle)
+        if beta == 0:
+            v = w
+        else:
+            ratio = beta.reduced_norm() / alpha.reduced_norm()
+            if not ratio.is_square():
+                return None
+            v = None
+            for s in (ratio.sqrt(), -ratio.sqrt()):
+                equations = matrix(QQ, [list(s * alpha * d + d * beta) for d in units])
+                plane = [sum((QQ(c) * d for c, d in zip(k, units)), zero) for k in equations.left_kernel().basis()]
+                assert len(plane) == 2
+                norms = matrix(
+                    QQ,
+                    2,
+                    2,
+                    lambda i, j: ((plane[i] + plane[j]).reduced_norm() - plane[i].reduced_norm() - plane[j].reduced_norm()) / 2,
+                )
+                ternary = matrix(QQ, 3, 3, [norms[0, 0], norms[0, 1], 0, norms[1, 0], norms[1, 1], 0, 0, 0, -s])
+                found = qfsolve(ternary)
+                if found in ZZ:
+                    continue
+                assert found[2] != 0
+                u = (found[0] * plane[0] + found[1] * plane[1]) / found[2]
+                assert u.reduced_norm() == s and u.conjugate() * alpha * u == -beta
+                v = (x[0] * u + w[0], x[1] * u + w[1])
+                break
+            if v is None:
+                return None
+        assert self.h(v, v, middle) == 0
+        coordinates = vector(QQ, self._flat(v)) * lattice.inverse()
+        scale = coordinates.denominator()
+        return (v[0] * scale, v[1] * scale)
+
+    def hyperbolic_model(self, lattice, middle, sign):
+        r"""Return `(v, f, q)` with `\Lambda = v R \oplus f R` of matrix `q H` (Hermitian, ``sign`` `= 1`) or `q J` (skew, ``sign`` `= -1`) for
+        `h(x, y) = y^*` ``middle`` `x`, or ``None`` if `\Lambda` is not of that type.
+
+        ``None`` is a proof (module docstring); in the Hermitian case once the covering certificate of `R` holds.
+        """
+        A = self.algebra
+        vectors = [self._vector(row) for row in lattice.rows()]
+        order = self._right_order(lattice)
+        search = self._units(order)[1]
+        v = self._hermitian_null(vectors, middle) if sign == 1 else self._skew_null(lattice, middle)
+        if v is None:
+            return None
         units = [A(1), *A.gens()]
         inverse = lattice.inverse()
         rows = matrix(QQ, [list(vector(QQ, self._flat((v[0] * d, v[1] * d))) * inverse) for d in units])
@@ -365,6 +448,19 @@ class QuaternionMatrixCommutant:
         solution = _integer_solution(matrix(ZZ, denominator * equations), vector(ZZ, denominator * target))
         assert solution is not None
         f = tuple(sum((c * x[k] for c, x in zip(solution, vectors)), A(0)) for k in range(2))
+        if sign == -1:
+            pure = -self.h(f, f, middle) / q
+            differences = matrix(QQ, [list(d - d.conjugate()) for d in order]).transpose()
+            target = vector(QQ, list(pure))
+            denominator = differences.denominator() * target.denominator()
+            shift = _integer_solution(matrix(ZZ, denominator * differences), vector(ZZ, denominator * target))
+            if shift is None:
+                return None
+            t = sum((c * d for c, d in zip(shift, order)), A(0))
+            f = (f[0] - v[0] * t, f[1] - v[1] * t)
+            assert self.h(v, v, middle) == 0 and self.h(f, f, middle) == 0 and self.h(f, v, middle) == q
+            assert self.h(v, f, middle) == -q
+            return v, f, q, order
         height = QQ(list(self.h(f, f, middle))[0]) / q
         traces = matrix(ZZ, [[ZZ(d.reduced_trace())] for d in order]).transpose()
         if height not in ZZ:
@@ -409,27 +505,34 @@ class QuaternionMatrixCommutant:
         result.append(((zero, one), (one, zero)))
         return result
 
+    def _skew_model_generators(self, units):
+        r"""Return `L(u)`, `n(1)`, `W` generating `U(R^2, J)` (module docstring, Euclidean reduction)."""
+        A = self.algebra
+        one, zero = A(1), A(0)
+        result = [((u, zero), (zero, ~u.conjugate())) for u in units]
+        result.append(((one, one), (zero, one)))
+        result.append(((zero, one), (-one, zero)))
+        return result
+
     def unitary_generators(self):
         if hasattr(self, "_unitary"):
             return self._unitary
         H0, sign = self._hermitian_matrix()
-        if sign != 1:
-            raise NotImplementedError(
-                f"the adjoint of the commutant of {self.commutant.isometries} is the adjoint of a skew-Hermitian form over "
-                f"({self.a}, {self.b})_Q; its unitary group is not generated here (#54)"
-            )
+        kind = "Hermitian" if sign == 1 else "skew-Hermitian"
         self._lattice_rows = self._lattice(self._order)
-        found = self.hyperbolic_model(self._lattice_rows, H0)
+        found = self.hyperbolic_model(self._lattice_rows, H0, sign)
         if found is None:
             raise NotImplementedError(
-                f"the Hermitian Lambda over ({self.a}, {self.b})_Q of the commutant of {self.commutant.isometries} is not "
-                f"v R + f R with Gram q H for a rational q; its unitary group is not generated here (#54)"
+                f"the {kind} Lambda over ({self.a}, {self.b})_Q of the commutant of {self.commutant.isometries} is not "
+                f"v R + f R with matrix q H (q J) for a rational q; an anisotropic form has a cocompact unitary group, whose "
+                f"generators need the Voronoi algorithm of Braun-Coulangeon-Nebe-Schoennenbeck, J. Algebra 435 (2015) (#54)"
             )
         v, f, q, order = found
         units, _search = self._units(order)
         P = _columns(v, f)
         Pi = _inverse(P)
-        moves = [self.element_of(_mul(_mul(P, g), Pi)) for g in self._model_generators(order, units)]
+        model = self._model_generators(order, units) if sign == 1 else self._skew_model_generators(units)
+        moves = [self.element_of(_mul(_mul(P, g), Pi)) for g in model]
         one = identity_matrix(QQ, self._r)
         assert all(self.commutant.adjoint(m) * m == one for m in moves)
         self._model_data = (v, f, q)
@@ -464,9 +567,9 @@ class QuaternionMatrixCommutant:
         assert commutant.contains(square)
         self.unitary_generators()
         v, f, q = self._model_data
-        H0, _sign = self._hermitian_matrix()
+        H0, sign = self._hermitian_matrix()
         twisted = _mul(H0, self.block(square))
-        target = self.hyperbolic_model(self._lattice(solution_lattice(commutant, start)), twisted)
+        target = self.hyperbolic_model(self._lattice(solution_lattice(commutant, start)), twisted, sign)
         if target is None:
             return None
         v2, f2, q2, _order = target
