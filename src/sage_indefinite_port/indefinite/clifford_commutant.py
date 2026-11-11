@@ -235,7 +235,7 @@ def _norm_generator(voronoi, elements, target):
     rows = matrix(QQ, [voronoi.coordinates(x) for x in elements])
     scale = rows.denominator()
     basis = matrix(QQ, matrix(ZZ, scale * rows).hermite_form(include_zero_rows=False)) / scale
-    assert basis.nrows() == 8
+    assert basis.nrows() == 4 * voronoi.center.degree()
     lattice = [voronoi.element(row) for row in basis.rows()]
     iota = voronoi.involution
     gram = matrix(QQ, [[(voronoi.trace(iota(x) * y) + voronoi.trace(iota(y) * x)) / 2 for y in lattice] for x in lattice])

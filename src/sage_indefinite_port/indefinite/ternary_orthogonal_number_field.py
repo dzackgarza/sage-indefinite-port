@@ -1,4 +1,4 @@
-r"""`O(M)` of an anisotropic ternary `O_K`-lattice `M`, `K` real quadratic, through its even Clifford algebra (#54).
+r"""`O(M)` of an anisotropic ternary `O_K`-lattice `M`, `K` totally real, through its even Clifford algebra (#54).
 
 Similitude. Diagonalize `h` over `K` by Gram-Schmidt: `b_1, b_2, b_3` with `h(b_i, b_i) = a_i`. In the even Clifford algebra,
 `i = b_1 b_2`, `j = b_1 b_3` satisfy `i^2 = -a_1 a_2`, `j^2 = -a_1 a_3`, `ij = -ji`, so `C_0(M \otimes K) \cong Q = (-a_1 a_2, -a_1 a_3)_K`. On
@@ -31,7 +31,7 @@ class TernaryOrthogonalGroup:
     r"""`O(M)` for ``gram`` on `K^3` and the `O_K`-lattice `M` with `Z`-basis ``z_basis`` (module docstring)."""
 
     def __init__(self, field, gram, z_basis):
-        assert field.degree() == 2 and field.is_totally_real()
+        assert field.is_totally_real()
         self.field, self.gram = field, matrix(field, gram)
         assert self.gram.nrows() == 3 and self.gram == self.gram.transpose()
         self.z_basis = [vector(field, x) for x in z_basis]

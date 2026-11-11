@@ -1,7 +1,6 @@
 r"""Maximal orders containing a quaternion order over a number field, and the normalizer of the order (#54).
 
-Let `A` be a quaternion algebra over a number field `Z` and `O` an order, given by a `Z`-basis of `8 = 4 [Z : Q]` elements (here
-`[Z : Q] = 2`). Orders are handled as `Z`-lattices in the `Q`-coordinates `z^p e_m`; a `Z`-order of `A` containing `O_Z` is an
+Let `A` be a quaternion algebra over a totally real field `Z` and `O` an order, given by a `Z`-basis of `4 [Z : Q]` elements. Orders are handled as `Z`-lattices in the `Q`-coordinates `z^p e_m`; a `Z`-order of `A` containing `O_Z` is an
 `O_Z`-order, so maximal `Z`-orders containing `O` are the maximal `O_Z`-orders containing it.
 
 Maximal orders. `O` is maximal exactly when `|\det \mathrm{Tr}_{A/Q}(o_i o_j)| = |d_Z|^4 N(\mathfrak D)^2`, `\mathfrak D` the product of the finite
