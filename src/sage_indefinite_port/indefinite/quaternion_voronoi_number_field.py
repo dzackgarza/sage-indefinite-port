@@ -47,7 +47,7 @@ class QuaternionOrderVoronoi:
     def __init__(self, algebra, order_basis):
         self.algebra = algebra
         self.center = algebra.base_ring()
-        assert self.center.is_totally_real()
+        assert self.center is QQ or self.center.is_totally_real()
         degree = self.center.degree()
         one = self.center.one()
         self._q_basis = [self.center.gen() ** p * g for g in algebra.basis() for p in range(degree)]
