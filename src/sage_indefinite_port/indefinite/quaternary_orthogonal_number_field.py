@@ -204,8 +204,10 @@ class SplitQuaternaryOrthogonalGroup:
     `R_1 = O_K[\Lambda_0 \bar\Lambda_0]`, `R_2 = O_K[\bar\Lambda_0 \Lambda_0]`. In `N(R_1) \times N(R_2)` the pairs with
     `\mathrm{nrd}(c_1) / \mathrm{nrd}(c_2) \in K^{\times 2}` have finite index (Schreier); `(c_1 / r, c_2)`, `r^2 = \mathrm{nrd}(c_1)/\mathrm{nrd}(c_2)`, is an
     isometry, determined up to `\pm 1`. The orbit of `\Lambda_0` is finite, and Schreier generators of its stabilizer with `-1` generate
-    `SO(M)`. Improper coset: an improper `g \in O(M)` is `a \circ \bar{\ }` with `a \in SO(M \otimes K)`; it is found when `\bar\Lambda_0` lies in
-    the computed orbit of `\Lambda_0` (`a` the inverse transversal element), and otherwise the method raises.
+    `SO(M)`. Improper coset: every improper isometry is `x \mapsto c_1 \bar x c_2^{-1}`, and preserving `\Lambda_0` forces
+    `c_1 R_2 c_1^{-1} = R_1`, `c_2 R_1 c_2^{-1} = R_2`. A conjugator `c_0` of `R_2` onto `R_1` is decided through the maximal orders (``_conjugator``);
+    none means the coset is empty. Otherwise `c_1 = n c_0`, `c_2 = m c_0^{-1}` with `(n, m)` in the square-ratio subgroup, and an improper element
+    exists exactly when `x \mapsto c_0 \bar x c_0 / \mathrm{nrd}(c_0)` carries `\Lambda_0` into the computed orbit of `\Lambda_0`.
     """
 
     def __init__(self, field, gram, z_basis):
@@ -265,15 +267,53 @@ class SplitQuaternaryOrthogonalGroup:
         scale = rows.denominator()
         return (scale, tuple(matrix(ZZ, scale * rows).hermite_form(include_zero_rows=False).list()))
 
-    def _normalizer(self, elements):
-        lattices = OrderLattices(self.algebra)
-        order = lattices.closure(elements)
-        assert order is not None
+    def _expected(self):
         reduced = ZZ(1)
         for prime in self.algebra.ramified_places(inf=False):
             reduced *= prime.norm()
-        expected = abs(self.field.discriminant()) ** 4 * reduced**2
-        return normalizer_generators(self.algebra, order, maximal_orders_containing(self.algebra, order, expected))
+        return abs(self.field.discriminant()) ** 4 * reduced**2
+
+    def _order(self, elements):
+        order = OrderLattices(self.algebra).closure(elements)
+        assert order is not None
+        return order, maximal_orders_containing(self.algebra, order, self._expected())
+
+    def _conjugator(self, source, target, target_maximal):
+        r"""Return `c` with `c\, \text{source}\, c^{-1} = \text{target}`, or ``None`` as a proof that none exists.
+
+        Fix a maximal `O_1 \supseteq` ``target``. A conjugator `c` makes `O' = c^{-1} O_1 c` a maximal order containing ``source``; for each such
+        `O'` the connecting ideal `O_1 O'` is principal exactly when its reduced norm is (Eichler's norm theorem, `B` unramified at the real
+        places), with generator `\alpha`, `\alpha O' \alpha^{-1} = O_1`; then `c \alpha^{-1} \in N(O_1)` carries `\alpha\, \text{source}\, \alpha^{-1}` to
+        ``target``, decided on the finite `N(O_1)`-orbit of suborders of `O_1`."""
+        from sage_indefinite_port.indefinite.clifford_commutant import _norm_generator, _reduced_norm_ideal
+        from sage_indefinite_port.indefinite.quaternion_voronoi_number_field import QuaternionOrderVoronoi
+
+        algebra = self.algebra
+        lattices = OrderLattices(algebra)
+        first = target_maximal[0]
+        normalizer = normalizer_generators(algebra, first, [first])
+        goal = lattices.key(target)
+        for other in maximal_orders_containing(algebra, source, self._expected()):
+            connecting = [x * y for x in first for y in other]
+            norm = _reduced_norm_ideal(self.field, connecting)
+            if not norm.is_principal():
+                continue
+            alpha = _norm_generator(QuaternionOrderVoronoi(algebra, other), connecting, norm)
+            assert lattices.key([~alpha * o * alpha for o in first]) == lattices.key(other)
+            start = alpha
+            seen = {lattices.key([start * x * ~start for x in source]): start}
+            queue = [start]
+            while queue:
+                current = queue.pop(0)
+                if lattices.key([current * x * ~current for x in source]) == goal:
+                    return current
+                for n in normalizer:
+                    moved = n * current
+                    key = lattices.key([moved * x * ~moved for x in source])
+                    if key not in seen:
+                        seen[key] = moved
+                        queue.append(moved)
+        return None
 
     def generators(self):
         r"""Return generators of `O(M)` (class docstring)."""
@@ -286,8 +326,10 @@ class SplitQuaternaryOrthogonalGroup:
             )
         base = [self.phi(x) for x in self.z_basis]
         one = algebra(1)
-        first = self._normalizer([x * y.conjugate() for x in base for y in base])
-        second = self._normalizer([x.conjugate() * y for x in base for y in base])
+        order_one, maximal_one = self._order([x * y.conjugate() for x in base for y in base])
+        order_two, maximal_two = self._order([x.conjugate() * y for x in base for y in base])
+        first = normalizer_generators(algebra, order_one, maximal_one)
+        second = normalizer_generators(algebra, order_two, maximal_two)
         pairs = [_Pair(n, one) for n in first] + [_Pair(one, n) for n in second]
         subgroup, _index = finite_preimage_generators(
             pairs, lambda p: self.field(p.first.reduced_norm() / p.second.reduced_norm()), lambda r: self.field(r).is_square()
@@ -318,15 +360,17 @@ class SplitQuaternaryOrthogonalGroup:
                 result.append(g)
         bar = self.bar()
         assert bar.transpose() * self.gram * bar == self.gram and bar.det() == -1
-        point = self._lattice_key(bar)
-        if point not in transversal:
-            raise NotImplementedError(
-                f"O(M) for the quaternary M with Gram {list(self.gram)} over {self.field}: the conjugate lattice bar(phi(M)) is not in the "
-                f"computed SO-orbit of phi(M), so the improper coset is not decided; it needs an element c_1 with c_1 R_2 c_1^-1 = R_1 (#54)"
-            )
-        improper = ~transversal[point] * bar
-        assert self.preserves(improper) and improper.det() == -1
-        result.append(improper)
+        # An improper g in O(M) is (x -> c_1 x c_2^-1) o bar with c_1 R_2 c_1^-1 = R_1 and c_2 R_1 c_2^-1 = R_2, so c_1 = n c_0,
+        # c_2 = m c_0^-1 with (n, m) in N(R_1) x N(R_2); the norm ratio of (c_0, c_0^-1) is a square, so (n, m) lies in the subgroup H
+        # and g exists iff the base action of (c_0 / nrd c_0, c_0^-1) carries bar(phi M) into the H-orbit of phi(M).
+        c0 = self._conjugator(order_two, order_one, maximal_one)
+        if c0 is not None:
+            base_action = self.action(_Pair(c0 / c0.reduced_norm(), ~c0))
+            point = self._lattice_key(base_action * bar)
+            if point in transversal:
+                improper = ~transversal[point] * base_action * bar
+                assert self.preserves(improper) and improper.det() == -1 and improper.transpose() * self.gram * improper == self.gram
+                result.append(improper)
         return tuple(result)
 
 
