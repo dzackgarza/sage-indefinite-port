@@ -29,9 +29,12 @@ Bound on `\kappa(O(\Lambda))`. Put `c(g) = \theta(g) (-2)^{[\det g = -1]}`. At e
   (O'Meara-Pollak, *Generation of local integral orthogonal groups* I, II, Math. Z. 87 (1965), 93 (1966)). An integral symmetry of a
   primitive `v` has `h(v, v) \mid 2` and `h(v, v) \in 2 O_P`, so `h(v, v) \in 2 O_P^\times`; Eichler transformations have `\theta = 1`.
   Hence `v_P(c(g))` is even.
+- `P` dyadic otherwise (`2` ramified, or `\Lambda_P` not unimodular): no parity bound is used, so `v_P(c(g))` is unrestricted.
 
-As `O_K` is principal, `c(g)` lies in `C = \langle O_K^\times, \pi_P : P \in S_{\rm odd} \rangle K^{\times 2}` for the non-dyadic `P \mid \det G` with
-an odd Jordan exponent. `\kappa(\sigma_{e - f}) = (-1, -2)`, `c(\sigma_{e-f} \sigma_{e - \varepsilon f}) = \varepsilon` for units `\varepsilon`; for `P \in S_{\rm odd}`
+As `O_K` is principal, `c(g)` lies in `C = \langle O_K^\times, \pi_P : P \in S \rangle K^{\times 2}`, where `S` consists of the non-dyadic
+`P \mid \det G` with an odd Jordan exponent and the dyadic `P` of the last case. This bound holds without any dyadic hypothesis; it is
+sharp at a dyadic `P` exactly when a reflection realizes its class, which the search below certifies.
+`\kappa(\sigma_{e - f}) = (-1, -2)`, `c(\sigma_{e-f} \sigma_{e - \varepsilon f}) = \varepsilon` for units `\varepsilon`; for `P \in S`
 a reflection `\sigma_v` with `v_P(-2 h(v, v))` odd is searched in a box. When the found classes span `C`, the generators below generate `O(\Lambda)`.
 """
 
@@ -53,13 +56,8 @@ def hypotheses_failure(field, gram):
         return f"K = Q[x]/({field.polynomial()}) is not totally real"
     if field.class_number() != 1:
         return f"O_K has class number {field.class_number()}; GHS Prop. 3.3 over O_K is stated for principal O_K"
-    two = field.ideal(2)
-    if any(e > 1 for _p, e in two.factor()):
-        return "2 ramifies in K; the dyadic spinor norms of O'Meara-Pollak used here need 2 unramified"
     if not all(c.is_integral() for c in gram.list()) or not all((gram[i, i] / 2).is_integral() for i in range(n)):
         return "Lambda is not even"
-    if not field.ideal(gram.det()).is_coprime(two):
-        return "Lambda is not unimodular at a dyadic prime; the dyadic spinor-norm image (Beli; Xu 1995) is not implemented"
     for p in (2, 3):
         for prime, _e in field.ideal(p).factor():
             if prime.residue_class_degree() != 1:
@@ -155,6 +153,20 @@ class _Classes:
         return vector(GF(2), units + parities)
 
 
+def _unbounded_primes(field, gram):
+    r"""Return the primes `S` of the module docstring: non-dyadic with an odd Jordan exponent, or dyadic outside O'Meara-Pollak."""
+    two = field.ideal(2)
+    unramified = all(e == 1 for _p, e in two.factor())
+    result = []
+    for prime, _e in field.ideal(2 * gram.det()).factor():
+        if prime.is_coprime(two):
+            if any(r % 2 for r in jordan_exponents(gram, prime)):
+                result.append(prime)
+        elif not unramified or gram.det().valuation(prime) != 0:
+            result.append(prime)
+    return result
+
+
 def generators(field, gram):
     r"""Return generators of `O(\Lambda)` as matrices in the basis of ``gram``; raise when a hypothesis fails."""
     failure = hypotheses_failure(field, gram)
@@ -167,12 +179,7 @@ def generators(field, gram):
     result = [eichler(gram, c, k * b) for c in (e, f) for b in basis[2:] for k in integers]
     units = [field(u) for u in field.unit_group().gens()]
     result.extend(reflection(gram, e - u * f) for u in [field.one(), *units])
-    two = field.ideal(2)
-    odd = [
-        prime
-        for prime, _e in field.ideal(gram.det()).factor()
-        if prime.is_coprime(two) and any(r % 2 for r in jordan_exponents(gram, prime))
-    ]
+    odd = _unbounded_primes(field, gram)
     if odd:
         classes = _Classes(field, odd)
         width = len(field.unit_group().gens())
@@ -196,7 +203,9 @@ def generators(field, gram):
         if found.rank() < len(odd):
             raise NotImplementedError(
                 f"O(Lambda) for Lambda = H + H + L_0 over O_K: the spinor-norm classes of the primes {odd} are allowed by "
-                f"the local bound but no integral reflection of L_1 with coefficients in {{-1, 0, 1}} realizes them (#54)"
+                f"the local bound but no integral reflection of L_1 with coefficients in {{-1, 0, 1}} realizes them; at a "
+                f"dyadic prime the bound may be strict, and deciding it needs the dyadic spinor norms of Beli, J. Number "
+                f"Theory 102 (2003) (#54)"
             )
     assert all(_integral(g) and g.transpose() * gram * g == gram for g in result)
     return tuple(result)

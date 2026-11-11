@@ -115,6 +115,25 @@ so a transporter to (B, s F s) exists.
 
 Vector orbits. L = U, F = -1, so C(Z) = O(U) = {+-1, +-swap}. The orbit of v = (1, 1) is {+-v}; its stabilizer
 is {1, swap}, and (1, -1) has another norm, so it is not in the orbit.
+
+Split orthogonal transporters. L = <1> + <-1>, F = -1, so A = M_2(Q) and every isometry commutes with F. For g = [[2, 1], [1, 1]]
+(det 1) the matrix g is a transporter from (B, F) to (g^{-t} B g^{-1}, F). The hyperbolic plane U has the same determinant -1, but
+it is even and B represents 1, so no transporter to (U, F) exists.
+
+Split symplectic transporters. On L = Z^2 (x) Z^2 with B = J (x) J and F_i = 1 (x) g, the matrix t = 1 (x) Q, Q = diag(1, -1), has
+Q J Q = -J, so it carries (B, F_i) to (-B, 1 (x) Q g Q).
+
+Definite Hermitian quaternion plane. As the Hermitian quaternion plane, for D = (-1, -1)_Q (definite, ramified at 2) and the Lipschitz
+order Delta = Z<1,i,j,k>; the right multiplications by i and j have reduced norm one and generate R_D. Delta^x = {+-1, +-i, +-j, +-k}
+is finite, and R^0 = Z i + Z j + Z k with nrd(x i + y j + z k) = x^2 + y^2 + z^2 has covering radius sqrt(3)/2 < 1 for the
+sup-nearest translate, so the height reduction applies. n(i) is unipotent and not 1, and does not commute with W. The left matrix
+[[1, 1], [0, 1]] commutes with the F_i, so it is a transporter from (B, F) to its pushed-forward Gram; 3B has another determinant.
+
+Ramified dyadic Eichler generators. K = Q(sqrt 2), where 2 = (sqrt 2)^2 ramifies; O_K = Z[sqrt 2] is principal and K totally real.
+Lambda = H + H + H + <2 sqrt 2> is even, and rank_P(Lambda) = 6 at P = (sqrt 2), residue field F_2; 3 is inert. The vector
+v = sqrt 2 b of the last basis vector b has h(v, v) = 4 sqrt 2 and h(v, Lambda) = 4 O_K, so 2 h(v, Lambda) / h(v, v) = sqrt 2 O_K is
+integral and sigma_v is an integral reflection with c = -2 h(v, v) = -8 sqrt 2 of odd P-valuation 7. So the spinor-norm bound
+at P is realized and generators are returned; one of them is a reflection whose norm has odd P-valuation.
 """
 
 from sage_extensions.all import *
@@ -672,3 +691,95 @@ def test_swapped_factor_transporter():
     t = equivariant_transporter(commutant, gram, [target])
     assert t is not None and _is_transporter(t, gram, gram, [F], [target])
     assert equivariant_transporter(commutant, int(3) * gram, [F]) is None
+
+
+def test_split_orthogonal_transporters():
+    gram = sage_matrix(SageZZ, [[int(1), int(0)], [int(0), int(-1)]])
+    minus = -sage_identity(SageZZ, int(2))
+    commutant = IsometryCommutant(gram, [minus])
+    g = sage_matrix(SageZZ, [[int(2), int(1)], [int(1), int(1)]])
+    target = (g.inverse().transpose() * gram * g.inverse()).change_ring(SageZZ)
+    t = equivariant_transporter(commutant, target, [minus])
+    assert t is not None and _is_transporter(t, gram, target, [minus], [minus])
+    hyperbolic = sage_matrix(SageZZ, [[int(0), int(1)], [int(1), int(0)]])
+    assert equivariant_transporter(commutant, hyperbolic, [minus]) is None
+
+
+def test_split_symplectic_transporters():
+    J = sage_matrix(SageZZ, [[int(0), int(1)], [int(-1), int(0)]])
+    one = sage_identity(SageZZ, int(2))
+    Q = sage_matrix(SageZZ, [[int(1), int(0)], [int(0), int(-1)]])
+    gram = J.tensor_product(J)
+    moves = [sage_matrix(SageZZ, rows) for rows in ([[int(1), int(1)], [int(0), int(1)]], [[int(1), int(0)], [int(1), int(1)]])]
+    sources = [one.tensor_product(m) for m in moves]
+    targets = [one.tensor_product(Q * m * Q) for m in moves]
+    commutant = IsometryCommutant(gram, sources)
+    t = equivariant_transporter(commutant, -gram, targets)
+    assert t is not None and _is_transporter(t, gram, -gram, sources, targets)
+    assert equivariant_transporter(commutant, int(3) * gram, sources) is None
+
+
+DEFINITE = QuaternionAlgebra(SageQQ, int(-1), int(-1))
+DEFINITE_BASIS = DEFINITE.basis()
+DEFINITE_PAIRS = tuple((b, int(0) * DEFINITE_BASIS[int(0)]) for b in DEFINITE_BASIS) + tuple(
+    (int(0) * DEFINITE_BASIS[int(0)], b) for b in DEFINITE_BASIS
+)
+
+
+def _definite_coordinates(x):
+    return [SageQQ(c) for c in list(x[int(0)])] + [SageQQ(c) for c in list(x[int(1)])]
+
+
+def _definite_hermitian_plane():
+    def form(x, y):
+        return (y[int(0)].conjugate() * x[int(1)] + y[int(1)].conjugate() * x[int(0)]).reduced_trace()
+
+    gram = sage_matrix(SageZZ, [[int(form(x, y)) for y in DEFINITE_PAIRS] for x in DEFINITE_PAIRS])
+
+    def right(d):
+        return sage_matrix(SageZZ, [_definite_coordinates((x[int(0)] * d, x[int(1)] * d)) for x in DEFINITE_PAIRS]).transpose()
+
+    _one, i, j, _k = DEFINITE_BASIS
+    shear = sage_matrix(SageZZ, [_definite_coordinates((x[int(0)] + x[int(1)], x[int(1)])) for x in DEFINITE_PAIRS]).transpose()
+    return gram, [right(i), right(j)], shear
+
+
+def test_definite_hermitian_quaternion_centralizer_is_infinite():
+    gram, sources, _shear = _definite_hermitian_plane()
+    generators = centralizer_generators(IsometryCommutant(gram, sources))
+    one = sage_identity(SageZZ, int(8))
+    assert all(g.transpose() * gram * g == gram and all(g * F == F * g for F in sources) for g in generators)
+    assert any(g != one and (g - one) ** int(8) == int(0) for g in generators)
+    assert any(g * h != h * g for g in generators for h in generators)
+
+
+def test_definite_hermitian_quaternion_transporters():
+    gram, sources, shear = _definite_hermitian_plane()
+    assert all(shear * F == F * shear for F in sources) and shear.det() in (int(1), int(-1))
+    commutant = IsometryCommutant(gram, sources)
+    target = (shear.inverse().transpose() * gram * shear.inverse()).change_ring(SageZZ)
+    t = equivariant_transporter(commutant, target, sources)
+    assert t is not None and _is_transporter(t, gram, target, sources, sources)
+    assert equivariant_transporter(commutant, int(3) * gram, sources) is None
+
+
+def test_ramified_dyadic_eichler_generators():
+    from sage_indefinite_port.indefinite import eichler_orthogonal
+
+    field = QuadraticField(int(2), "r")
+    root = field.gen()
+    gram = sage_matrix(field, int(7), int(7))
+    for a in (int(0), int(2), int(4)):
+        gram[a, a + int(1)] = gram[a + int(1), a] = int(1)
+    gram[int(6), int(6)] = int(2) * root
+    generators = eichler_orthogonal.generators(field, gram)
+    one = sage_identity(field, int(7))
+    prime = field.ideal(root)
+    assert all(g.transpose() * gram * g == gram and all(c.is_integral() for c in g.list()) for g in generators)
+    odd = []
+    for g in generators:
+        if (g - one).rank() == int(1) and g.det() == int(-1):
+            v = (g - one).column_space().basis()[int(0)]
+            norm = (sage_matrix(field, [v]) * gram * sage_matrix(field, [v]).transpose())[int(0), int(0)]
+            odd.append(norm.valuation(prime) % int(2) == int(1))
+    assert any(odd)

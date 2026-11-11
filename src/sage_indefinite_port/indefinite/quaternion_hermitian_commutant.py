@@ -25,6 +25,10 @@ column `(p; 1)` with `p + \bar p = 0`, so it is `n(p)`. Hence `U(R^2, H)` is gen
 `Z`-basis of `R^0`) and `W`. Every indefinite division quaternion algebra over `Q` is norm-Euclidean (Cerri-Chaubert-Lezowski, Acta Arith. 165
 (2014), Cor. 3.5); the covering of `R^0` needed here is a property of the order and is certified, not assumed.
 
+Units and norm points. For indefinite `D` they come from :class:`QuaternionVoronoi`. For definite `D` the reduced norm is positive
+definite on `R`, so `R^\times = \{d \in R : \mathrm{nrd}(d) = 1\}` is finite and it, like every norm-value search, is a Fincke-Pohst
+enumeration (:func:`_definite_points`); the height reduction above uses only multiplicativity of `\mathrm{nrd}` and holds unchanged.
+
 Transporters. As in :meth:`CentralFieldCommutant.equivariant_transporter`, `t_0 a_1` with `a_1 : (\Lambda, h) \to (\Lambda', h_m)`. All primitive null
 vectors of `\Lambda` lie in one `U`-orbit (the height reduction), so `\Lambda'` is `q' H` or no isometry exists; and `q' H \cong q H` exactly when `q' = \pm q`
 (reduced norms of determinants), by `v \mapsto v'`, `f \mapsto \pm f'`.
@@ -39,7 +43,7 @@ from sage.algebras.quatalg.quaternion_algebra import QuaternionAlgebra
 from sage.quadratic_forms.qfsolve import qfsolve
 from sage.rings.integer_ring import ZZ
 from sage.rings.rational_field import QQ
-from sage_extensions.algebras.isometry_commutant import _integer_solution
+from sage_extensions.algebras.isometry_commutant import _integer_solution, _short_vectors
 from sage_indefinite_port.indefinite.commutant_groups import (
     _reduced_norm_point,
     _verified,
@@ -297,10 +301,9 @@ class QuaternionMatrixCommutant:
         if self.a < 0 < self.b:
             voronoi = QuaternionVoronoi(int(self.a), int(self.b), rows)
             return voronoi.unit_generators(), lambda elements, value: _reduced_norm_point(voronoi, elements, value)
-        raise NotImplementedError(
-            f"D = ({self.a}, {self.b})_Q is definite: the Levi units are finite, and the definite unit and norm search is not "
-            f"implemented here (#54)"
-        )
+        assert self.a < 0 and self.b < 0
+        units = tuple(d for d in _definite_points(order, 1))
+        return units, lambda elements, value: next(iter(_definite_points(elements, value)), None)
 
     def _ideal_generator(self, elements, order, search):
         r"""Return `j` with `j R =` the right ideal spanned by ``elements``, or ``None`` when it is not principal over `R`."""
@@ -481,6 +484,27 @@ class QuaternionMatrixCommutant:
             if found is not None:
                 return found
         return None
+
+
+def _definite_points(elements, value):
+    r"""Return the elements of reduced norm ``value`` in the `Z`-span of ``elements``, `D` definite.
+
+    `\mathrm{nrd}` is a positive definite quadratic form on the span, so the finitely many points of norm `\le` ``value`` are
+    listed by Fincke-Pohst (provider :func:`_short_vectors`), and those of norm exactly ``value`` are kept.
+    """
+    value = QQ(value)
+    gram = matrix(
+        QQ,
+        len(elements),
+        len(elements),
+        lambda i, j: ((elements[i] + elements[j]).reduced_norm() - elements[i].reduced_norm() - elements[j].reduced_norm()) / 2,
+    )
+    result = []
+    for coordinates in _short_vectors(gram, value):
+        element = sum((c * d for c, d in zip(coordinates, elements)), elements[0] * 0)
+        if element.reduced_norm() == value:
+            result.append(element)
+    return result
 
 
 def _difference(X, Y):
