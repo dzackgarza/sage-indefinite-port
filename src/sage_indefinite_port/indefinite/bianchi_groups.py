@@ -73,7 +73,7 @@ class BianchiGroup:
 
     def coordinates(self, x):
         r"""Return `(a, b) \in Q^2` with `x = a + b \omega`."""
-        a, b = matrix(QQ, [list(self.field(x))]) * self._to_basis
+        a, b = (matrix(QQ, [list(self.field(x))]) * self._to_basis).row(0)
         return QQ(a), QQ(b)
 
     def element(self, a, b):

@@ -17,7 +17,7 @@ def test_swan_generators_of_gl2_over_sqrt_minus_five():
     K = QuadraticField(int(-5), "w")
     w = K.gen()
     group = BianchiGroup(K)
-    assert set(group._reduce(s)[0] for s in group.singular_points()) == set([(1 + w) / 2])
+    assert set(group._reduce(s)[0] for s in group.singular_points()) == set([group._reduce((int(1) + w) / int(2))[0]])
     generators = bianchi_generators(K)
     for g in generators:
         assert all(x.is_integral() for x in g.list())
