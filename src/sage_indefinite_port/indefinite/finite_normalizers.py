@@ -845,10 +845,23 @@ def _lie_algebra(columns):
         basis.append(x)
         return True
 
-    for g in elements:
+    def closure_algebra(g):
         add(_unipotent_logarithm(g))
         for x in _torus_algebra(g):
             add(x)
+
+    for g in elements:
+        closure_algebra(g)
+    if not basis:
+        # All generators and commutators have finite order. Words of length up to dim so(L) are tried in order of
+        # length; the first of infinite order contributes its unipotent and torus parts.
+        words = [identity_matrix(ZZ, size)]
+        for _length in range(size * (size - 1) // 2):
+            words = [w * h for w in words for h in columns]
+            infinite = next((w for w in words if not has_finite_order(w)), None)
+            if infinite is not None:
+                closure_algebra(infinite)
+                break
     position = 0
     while position < len(basis):
         x = basis[position]
@@ -903,7 +916,9 @@ def _isotypic_pieces(gram, algebra):
     The centre `Z` of the commutant `A = \{M : MX = XM, X \in \mathfrak g\}` is commutative semisimple, `Z \cong \prod K_f`,
     and its primitive idempotents cut out the isotypic components. An element `z = \sum t^i Z_i` generates `Z` exactly
     when its minimal polynomial has degree `\dim Z`; this fails for finitely many `t`, so increasing `t` terminates.
-    The pieces are the kernels of `f(z)` for the irreducible factors `f`.
+    The kernels of `f(z)` for the irreducible factors `f` are merged when the form pairs them nontrivially (an
+    isotropic weight space with its dual, e.g. the two eigenlines of a split torus on a hyperbolic plane), so the
+    pieces are mutually orthogonal and each is nondegenerate.
     """
     size = gram.nrows()
     units = [matrix(QQ, size, size, {(i, j): 1}) for i in range(size) for j in range(size)]
@@ -916,7 +931,26 @@ def _isotypic_pieces(gram, algebra):
         if polynomial.degree() == len(centre):
             break
         t += 1
-    return [_saturated_columns(f(z).right_kernel_matrix().transpose()) for f, _e in polynomial.factor()]
+    pieces = [f(z).right_kernel_matrix().transpose().change_ring(QQ) for f, _e in polynomial.factor()]
+    # Merge pieces that the form pairs (an isotropic weight space pairs with its dual weight), into orthogonal blocks.
+    B = gram.change_ring(QQ)
+    groups = [[i] for i in range(len(pieces))]
+    merged = True
+    while merged:
+        merged = False
+        for a, b in combinations(range(len(groups)), 2):
+            if any(pieces[i].transpose() * B * pieces[j] != 0 for i in groups[a] for j in groups[b]):
+                groups[a] = groups[a] + groups[b]
+                del groups[b]
+                merged = True
+                break
+    result = []
+    for group in groups:
+        M = pieces[group[0]]
+        for i in group[1:]:
+            M = M.augment(pieces[i])
+        result.append(_saturated_columns(M))
+    return result
 
 
 def orthogonal_decomposition_normalizer(gram, algebra):

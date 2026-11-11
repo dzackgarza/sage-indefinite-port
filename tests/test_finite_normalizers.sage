@@ -323,3 +323,34 @@ def test_decomposition_normalizer_of_two_rotation_tori_on_a2_plus_a2_exchanges_t
     gram = matrix.block_diagonal([matrix(SageZZ, A2), matrix(SageZZ, A2)])
     generators = orthogonal_decomposition_normalizer(gram, _rotation_algebra([A2, A2]))
     assert _matrix_group_order(generators) == int(288)
+
+
+def test_decomposition_normalizer_of_the_split_torus_on_two_hyperbolic_planes():
+    r"""L = U + U with basis (e1, f1, e2, f2), g = so(U) + so(U) spanned by diag(1, -1, 0, 0) and diag(0, 0, 1, -1). The
+    eigenlines Z e_i, Z f_i are isotropic and paired, so the pieces are the two planes U. O(U) = {+-1, +-s} has order
+    4, the planes are exchanged, and N(g) = (O(U) x O(U)) . 2 has order 32."""
+    gram = matrix(SageZZ, [[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    algebra = [matrix.diagonal(SageQQ, [1, -1, 0, 0]), matrix.diagonal(SageQQ, [0, 0, 1, -1])]
+    assert _matrix_group_order(orthogonal_decomposition_normalizer(gram, algebra)) == int(32)
+
+
+def test_decomposition_normalizer_with_a_rank_one_piece():
+    r"""L = A1 + U, g = so(U) spanned by diag(0, 1, -1). The pieces are the line A1 (trivial, so(1) = 0) and U, of
+    different ranks, so N(g) = O(A1) x O(U) of order 2 * 4 = 8."""
+    gram = matrix(SageZZ, [[2, 0, 0], [0, 0, 1], [0, 1, 0]])
+    algebra = [matrix.diagonal(SageQQ, [0, 1, -1])]
+    assert _matrix_group_order(orthogonal_decomposition_normalizer(gram, algebra)) == int(8)
+
+
+def test_decomposition_normalizer_of_glued_scaled_hyperbolic_planes():
+    r"""L = U(2) + U(2) + Z v, v = (e1 + e2) / 2, in the basis (v, e2, f1, f2) (b(e_i, f_i) = 2). g = so(U(2)) + so(U(2))
+    with h_i = +1 on e_i, -1 on f_i. The pieces are the saturated planes U(2)_i, of index 2 in L, so |det P| = 2.
+    (a_1, a_2) in O(U(2))^2 = {+-1, +-s}^2 preserves L exactly when (a_1 e1 + a_2 e2) / 2 lies in L, i.e. a_1, a_2 in
+    {+-1}: order 4. The exchange e1 <-> e2, f1 <-> f2 fixes v. So N(g) has order 8."""
+    gram = matrix(SageZZ, [[0, 0, 1, 1], [0, 0, 0, 2], [1, 0, 0, 0], [1, 2, 0, 0]])
+    half = SageQQ(1) / SageQQ(2)
+    h1 = matrix(SageQQ, [[1, 0, 0, 0], [-half, 0, 0, 0], [0, 0, -1, 0], [0, 0, 0, 0]])
+    h2 = matrix(SageQQ, [[0, 0, 0, 0], [half, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1]])
+    B = gram.change_ring(SageQQ)
+    assert all(X.transpose() * B + B * X == 0 for X in (h1, h2))
+    assert _matrix_group_order(orthogonal_decomposition_normalizer(gram, [h1, h2])) == int(8)
