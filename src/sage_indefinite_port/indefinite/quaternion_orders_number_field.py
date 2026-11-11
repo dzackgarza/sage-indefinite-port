@@ -125,11 +125,14 @@ def two_sided_generators(engine, order):
             product_ideal = field.ideal(1)
             for prime in chosen:
                 product_ideal *= prime
-            central = next((b for b in classes if positive_generator(field, product_ideal / b**2, ramified_real) is not None), None)
-            if central is None:
-                continue
-            elements = [algebra(g) * o for g in (central**-1).basis() for o in order]
-            result.append(engine.norm_generator(elements, product_ideal / central**2))
+            for central in classes:
+                if positive_generator(field, product_ideal / central**2, ramified_real) is None:
+                    continue
+                elements = [algebra(g) * o for g in (central**-1).basis() for o in order]
+                generator = engine.norm_generator(elements, product_ideal / central**2)
+                if generator is not None:
+                    result.append(generator)
+                    break
     return result
 
 
@@ -160,10 +163,32 @@ def normalizer_generators(algebra, order, maximal):
                 transversal[point] = moved
                 queue.append(moved)
     field = algebra.base_ring()
+    primes = list(algebra.ramified_places(inf=False))
+    classes = [c.ideal() for c in field.class_group()]
     extra = []
     for other in maximal[1:]:
         connecting = [x * y for x in other for y in first]
-        alpha = engine.norm_generator(connecting, _reduced_norm_ideal(field, connecting))
+        norm = _reduced_norm_ideal(field, connecting)
+        # An n with n O_1 n^-1 = O_i generates b^-1 O_i O_1 P_T for a central b and ramified primes T: in a definite algebra the connecting
+        # ideal itself need not be principal. At a ramified P the local order has one ideal of each norm, so it suffices to search
+        # b^-1 O_i O_1 for reduced norm b^-2 nrd(O_i O_1) prod_T P.
+        alpha = None
+        for t in range(len(primes) + 1):
+            for chosen in combinations(primes, t):
+                product_ideal = field.ideal(1)
+                for prime in chosen:
+                    product_ideal *= prime
+                for central in classes:
+                    lattice = [algebra(g) * x for g in (central**-1).basis() for x in connecting]
+                    alpha = engine.norm_generator(lattice, norm * product_ideal / central**2)
+                    if alpha is not None:
+                        break
+                if alpha is not None:
+                    break
+            if alpha is not None:
+                break
+        if alpha is None:
+            continue
         assert lattices.key([~alpha * o * alpha for o in other]) == lattices.key(first)
         point = act(~alpha)
         if point in transversal:

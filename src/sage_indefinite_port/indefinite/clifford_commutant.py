@@ -171,12 +171,14 @@ class CliffordModel:
                 product_ideal = self.field.ideal(1)
                 for prime in chosen:
                     product_ideal *= prime
-                central = next((b for b in classes if positive_generator(self.field, product_ideal / b**2, ramified_real) is not None), None)
-                if central is None:
-                    continue
-                inverse = central**-1
-                elements = [self.algebra(g) * o for g in inverse.basis() for o in self.order_basis]
-                ramified.append(self._generator(elements, product_ideal / central**2))
+                for central in classes:
+                    if positive_generator(self.field, product_ideal / central**2, ramified_real) is None:
+                        continue
+                    elements = [self.algebra(g) * o for g in (central**-1).basis() for o in self.order_basis]
+                    generator = self._generator(elements, product_ideal / central**2)
+                    if generator is not None:
+                        ramified.append(generator)
+                        break
         one = self.algebra(1)
         result = []
         for k in range(len(reps) + 1):
@@ -328,6 +330,7 @@ def clifford_transporter(source, start, square, target_gram, targets):
         psi0 = lambda q: sum((c * g for c, g in zip(q.coefficient_tuple(), (algebra(1), x, y, x * y))), algebra(0))
         connecting = [psi0(o) * o2 for o in source.order_basis for o2 in order]
         alpha = voronoi.norm_generator(connecting, _reduced_norm_ideal(source.field, connecting))
+        assert alpha is not None, f"the connecting ideal over {source.field} is not principal (#54)"
         psi = lambda q: ~alpha * psi0(q) * alpha
         assert all(voronoi.in_order(psi(o)) for o in source.order_basis)
         image = lambda q: sum((c * F for c, F in zip(q.coefficient_tuple(), frame)), 0 * frame[0])

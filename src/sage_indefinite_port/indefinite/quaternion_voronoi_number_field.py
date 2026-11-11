@@ -84,7 +84,8 @@ class QuaternionOrderVoronoi:
         return self._herm_rows.solve_left(vector(QQ, self.coordinates(s)))
 
     def trace(self, x):
-        return QQ(self.center(self.algebra(x).reduced_trace()).trace())
+        t = self.algebra(x).reduced_trace()
+        return QQ(t) if self.center is QQ else QQ(self.center(t).trace())
 
     def is_unit(self, x):
         return self.in_order(x) and self.in_order(~x)
@@ -103,7 +104,9 @@ class QuaternionOrderVoronoi:
             if gram.is_positive_definite():
                 return involution
         raise NotImplementedError(
-            f"no positive involution of {self.algebra} over Q among the canonical one and x -> t^-1 conj(x) t for small pure t; "
+            f"{self.algebra} is split at two or more real places and ramified at some: its norm-one group is an irreducible cocompact "
+            f"lattice in SL_2(R)^k, k >= 2, for which no practical algorithm is published (Voight 2009 treats k = 1 real; Page, "
+            f"'Computing arithmetic Kleinian groups', Math. Comp. 84 (2015), treats one complex place only). Search detail: no positive involution of {self.algebra} over Q among the canonical one and x -> t^-1 conj(x) t for small pure t; "
             f"by Albert's classification there is none unless the algebra is totally definite or totally indefinite, and the "
             f"cone of Hermitian forms then needs a splitting field (#54)"
         )
@@ -265,6 +268,8 @@ class QuaternionOrderVoronoi:
         basis = matrix(QQ, matrix(ZZ, scale * rows).hermite_form(include_zero_rows=False)) / scale
         assert basis.nrows() == 4 * self.center.degree()
         lattice = [self.element(row) for row in basis.rows()]
+        if self.is_totally_definite():
+            return self._definite_norm_generator(lattice, target)
         iota = self.involution
         gram = matrix(QQ, [[(self.trace(iota(x) * y) + self.trace(iota(y) * x)) / 2 for y in lattice] for x in lattice])
         bound = QQ(1)
@@ -274,6 +279,43 @@ class QuaternionOrderVoronoi:
                 if self.center.ideal(x.reduced_norm()) == target:
                     return x
             bound *= 2
+
+    def is_totally_definite(self):
+        from sage.rings.real_mpfr import RealField
+
+        from sage_indefinite_port.indefinite.fuchsian_domain import ramified_real_places
+
+        return len(ramified_real_places(self.algebra, RealField(64))) == self.center.degree()
+
+    def _definite_norm_generator(self, lattice, target):
+        r"""Return a generator of the one-sided ideal with `Z`-basis ``lattice`` and reduced norm ``target`` in a totally definite algebra,
+        or ``None`` when it is not principal.
+
+        A generator `x` has `\mathrm{nrd}(x) = g u` for a totally positive generator `g` of ``target`` and a totally positive unit `u`;
+        replacing `x` by `x \varepsilon`, `\varepsilon \in O_Z^\times`, multiplies `u` by `\varepsilon^2`, so `u` runs over representatives of the
+        totally positive units modulo squares. The trace form `\mathrm{Tr}_{Z/Q}\, \mathrm{nrd}` is positive definite and takes the value
+        `\mathrm{Tr}(g u)` at such `x`, so a Fincke-Pohst enumeration to that exact bound decides (Kirschmer, Voight, *Algorithmic
+        enumeration of ideal classes for quaternion orders*, SIAM J. Comput. 39 (2010), Sec. 6)."""
+        from sage.libs.pari import pari
+        from sage.rings.real_mpfr import RealField
+
+        from sage_indefinite_port.indefinite.fuchsian_domain import positive_generator, positive_unit_classes, ramified_real_places
+
+        places = ramified_real_places(self.algebra, RealField(64))
+        g = positive_generator(self.center, target, places)
+        if g is None:
+            return None
+        gram = matrix(QQ, [[self.trace(x * y.conjugate()) / 2 for y in lattice] for x in lattice])
+        denominator = gram.denominator()
+        integral = pari(matrix(ZZ, denominator * gram))
+        for unit in [self.center(1), *positive_unit_classes(self.center, places)]:
+            norm = g * self.center(unit)
+            bound = self.trace(self.algebra(norm)) / 2
+            for column in integral.qfminim(denominator * bound, flag=2)[2].sage().columns():
+                x = sum((ZZ(c) * b for c, b in zip(column, lattice)), self.algebra(0))
+                if x.reduced_norm() == norm:
+                    return x
+        return None
 
     def sl1_generators(self):
         r"""Return generators of `SL_1(O) = \{u \in O : \mathrm{nrd}(u) = 1\}` (module docstring, Generators)."""
