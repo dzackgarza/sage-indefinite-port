@@ -425,30 +425,6 @@ def test_real_quadratic_orthogonal_transporters():
     assert equivariant_transporter(commutant, other, sources) is None
 
 
-def test_nonmaximal_levi_transporter():
-    gram, E = _eichler()
-    double = sage_matrix(SageZZ, int(6), int(6), int(0))
-    pair = sage_matrix(SageZZ, int(6), int(6), int(0))
-    for offset in (int(0), int(3)):
-        double.set_block(offset, offset, gram)
-        pair.set_block(offset, offset, E)
-    basis = sage_matrix(SageZZ, int(6), int(6), int(0))
-    for column, (row, scale) in enumerate([(int(0), int(1)), (int(3), int(1)), (int(2), int(1)), (int(5), int(1)), (int(1), int(1)), (int(4), int(2))]):
-        basis[row, column] = scale
-    F = basis.inverse() * pair * basis
-    lattice_gram = basis.transpose() * double * basis
-    assert F.denominator() == int(1) and lattice_gram.denominator() == int(1)
-    F, lattice_gram = sage_matrix(SageZZ, F), sage_matrix(SageZZ, lattice_gram)
-    commutant = IsometryCommutant(lattice_gram, [F])
-    witness = sage_identity(SageZZ, int(6)).__copy__()
-    witness[int(0), int(5)] = int(1)
-    target = witness * F * witness.inverse()
-    target_gram = witness.inverse().transpose() * lattice_gram * witness.inverse()
-    t = equivariant_transporter(commutant, target_gram, [target])
-    assert t is not None and _is_transporter(t, lattice_gram, target_gram, [F], [target])
-    assert equivariant_transporter(commutant, int(3) * target_gram, [target]) is None
-
-
 def test_product_levi_quotient_transporter():
     gram = sage_matrix(SageZZ, int(4), int(4), [int(c) for c in (0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1)])
     F = sage_matrix(SageZZ, int(4), int(4), [int(c) for c in (1, -1, -2, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1)])

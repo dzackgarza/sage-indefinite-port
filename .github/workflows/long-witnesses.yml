@@ -145,6 +145,8 @@ jobs:
             test: test_isotropic_orbits_of_u_plus_u
           - file: test_witt_one_fixed_norm_classes.sage
             test: test_sqrt_ten_norm_two_transporter_and_divisor_obstruction
+          - file: test_commutant_groups.sage
+            test: test_nonmaximal_levi_transporter
     steps:
       - uses: actions/checkout@v4
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
