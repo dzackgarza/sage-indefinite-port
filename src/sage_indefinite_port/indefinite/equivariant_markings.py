@@ -46,6 +46,10 @@ Finite orbit. If the image of `C` on the `Q`-span of the orbit of `X` is finite,
 is finite and Schreier's lemma applies. The finiteness is decided by GAP. This route serves the
 degenerate sources whose radical extension does not split.
 
+Lines. Otherwise, for such sources, the stabilizer `G` in `C` of the lines `Q x_j` and `Q(x_1 + x_j)` acts on
+`X S` by `\pm 1`, and the pointwise stabilizer is the kernel of that character (:meth:`EquivariantMarking._line_stabilizer`).
+The transporter of an infinite orbit with a non-split radical extension raises ``NotImplementedError``.
+
 :class:`CentralizerTupleOrbit` reduces a tuple of vectors to the marking of the saturated
 `Q\langle F \rangle`-span of the tuple: `g` commutes with every word in the `F_i`, so it fixes
 the tuple exactly when it fixes that span pointwise.
@@ -506,14 +510,36 @@ class EquivariantMarking:
         return [matrix(ZZ, lattice.change_ring(QQ).solve_right(g * lattice)) for g in generators]
 
     def _finite_orbit(self):
-        r"""Return the transversal and stabilizer of `X` under `C`, or raise when the orbit is infinite."""
+        r"""Return the transversal and stabilizer of `X` under `C`, or ``None`` when the orbit is infinite."""
         generators = _commutant_groups().centralizer_generators(self._commutant)
         if not _is_finite(self._span_restriction(generators)):
-            raise NotImplementedError(
-                "the orbit of the marking under the centralizer is infinite, and the marking is outside the "
-                "nondegenerate-source, unipotent and split-radical routes: its radical extension does not split"
-            )
+            return None
         return _schreier(generators, self.marking, lambda g, p: g * p, self._one)
+
+    def _subspace_stabilizer(self, subspaces):
+        r"""Return generators of `C(F) \cap \bigcap_j \mathrm{Stab}(V_j)` for the rational column spaces `V_j`."""
+        commutant = _SubspaceCommutant(self.gram, self.ambient_actions, subspaces)
+        result = tuple(matrix(ZZ, g) for g in _commutant_groups().centralizer_generators(commutant))
+        assert all(commutant.contains(g) for g in result)
+        return result
+
+    def _line_stabilizer(self):
+        r"""Return generators of the pointwise stabilizer of `X` through the stabilizer of the lines of its columns.
+
+        Let `G = C(F) \cap \bigcap \mathrm{Stab}(\ell)` over the lines `\ell = Q x_j` and `Q (x_1 + x_j)`. An element
+        of `G` maps `x_j \mapsto \lambda_j x_j` and `x_1 + x_j \mapsto \mu (x_1 + x_j)`, so `\lambda_j = \lambda_1` for all `j`:
+        `G` acts on `X S_Q` by a scalar, which is `\pm 1` because `X` is primitive and `g` is integral and invertible.
+        Every `g` with `g X = X` lies in `G`, so the pointwise stabilizer is the kernel of the character
+        `G \to \{\pm 1\}`, of index at most two, with Schreier generators (Holt-Eick-O'Brien, Thm. 4.13). This
+        route needs no splitting of the radical extension and no finiteness of the orbit.
+        """
+        columns = [self.marking.matrix_from_columns([j]) for j in range(self.source_rank)]
+        lines = [*columns, *(columns[0] + c for c in columns[1:])]
+        generators = self._subspace_stabilizer(lines)
+        found, _index = finite_preimage_generators(
+            [*generators, self._one], lambda g: g, lambda g: matrix(ZZ, g) * self.marking == self.marking
+        )
+        return tuple(matrix(ZZ, g) for g in found)
 
     def _source_frame(self):
         r"""Return a unimodular `T` whose first `k` columns are a basis of `\mathrm{rad} A`, and `k`."""
@@ -657,9 +683,8 @@ class EquivariantMarking:
 
         Domain: `A = X^t B X` nonsingular with `C_K` in the implemented commutant types; or
         `A / rad A = Q` with abelian skew radical; or singular `A` whose radical extension splits,
-        with `C_M` in the implemented commutant types; or a finite orbit of `X` under `C(F)`.
-        Outside these, ``NotImplementedError`` is raised, and an unimplemented commutant type
-        raises from the commutant.
+        with `C_M` in the implemented commutant types; otherwise the finite-orbit or line route.
+        An unimplemented commutant type raises from the commutant.
         """
         if self.source_gram.det() != 0:
             result = self._nondegenerate_stabilizer()
@@ -667,7 +692,11 @@ class EquivariantMarking:
             result = self._unipotent_stabilizer()
         else:
             parabolic, rest = self._parabolic(self.marking)
-            result = self._finite_orbit()[1] if parabolic is None else self._parabolic_stabilizer(parabolic, rest)
+            if parabolic is not None:
+                result = self._parabolic_stabilizer(parabolic, rest)
+            else:
+                orbit = self._finite_orbit()
+                result = self._line_stabilizer() if orbit is None else orbit[1]
         assert all(self._is_stabilizer_element(g, self.marking) for g in result)
         return result
 
@@ -714,8 +743,9 @@ class EquivariantMarking:
     def setwise_stabilizer_generators(self):
         r"""Return generators of `\{g \in C(F_1, \dots, F_s) : g X S = X S\}`.
 
-        A singular `X^t B X` uses the radical parabolic (:meth:`_parabolic_setwise`) and raises
-        ``NotImplementedError`` when its radical extension does not split.
+        A singular `X^t B X` uses the radical parabolic (:meth:`_parabolic_setwise`). When its radical extension
+        does not split, `X` is primitive, so `g X S = X S` exactly when `g` preserves `X S_Q`, and the group is the
+        centralizer of :class:`_SubspaceCommutant` on `X S_Q`.
 
         Such `g` is `a \oplus h` on `[X \mid K]`, with `a \in O(A)` commuting with the `E_i` (from
         `F_i g X = g X E_i`) and `h \in C_K`. Conversely `a \oplus h` lies in `O(L)` exactly when it is
@@ -725,11 +755,9 @@ class EquivariantMarking:
         if self.source_gram.det() == 0:
             parabolic, rest = self._parabolic(self.marking)
             if parabolic is None:
-                raise NotImplementedError(
-                    f"the radical of the degenerate marking {self.marking} has no F-stable isotropic dual, so its "
-                    f"setwise stabilizer has no Levi decomposition over Q (#54)"
-                )
-            result = self._parabolic_setwise(parabolic, rest)
+                result = self._subspace_stabilizer([self.marking])
+            else:
+                result = self._parabolic_setwise(parabolic, rest)
             module = self.marking.column_module()
             assert all(
                 self._commutant.is_centralizer_element(g) and (g * self.marking).column_module() == module for g in result
@@ -757,28 +785,58 @@ class EquivariantMarking:
         return result
 
     def _unipotent_transporter(self, target):
-        r"""Return `\pm \exp(x)` with value ``target`` on `X`, or ``None``, where `x y X = 0` on `\Lambda`.
+        r"""Return `\pm \exp(x)`, `x \in \Lambda`, with value ``target`` on `X`, or ``None`` as a proof of absence.
 
-        Under that condition `\exp(x) X = X + x X`, so the equation is linear over `\mathbb{Z}`.
+        `\Lambda = \bigoplus Z x_i` is abelian, so `\exp(\sum n_i x_i) = \prod g_i^{n_i}` and the `x_i` generate a
+        commutative nilpotent ideal `I`. Put `W_k = I^k X`, a decreasing filtration ending at `0`. Lifting
+        `\exp(x) X = \pm Y` along it is linear at each step (solving along a central series, as in
+        Baumslag-Cannonito-Robinson-Segal, *J. Algebra* 142 (1991), Section 3; Segal, *Polycyclic Groups*, Ch. 6).
+        With `\Lambda_0 = \Lambda`, `X_0 = X`, at step `k \ge 1` the remaining solutions are `\exp(\Lambda_{k-1}) X_{k-1}`,
+        where `x X \in W_k` for `x \in \Lambda_{k-1}`. Then `\exp(x) X_{k-1} \equiv X_{k-1} + x X \pmod{W_{k+1}}`, since
+        `x^2 X \in x W_k` and `x (X_{k-1} - X) \in I W_k`. So `x X \equiv \pm Y - X_{k-1}` is an integral linear system
+        on `\Lambda_{k-1}`: no solution proves absence; a solution `n_k` gives `X_k = \exp(n_k) X_{k-1}`, and its integral
+        kernel is `\Lambda_k`. At `W_{k+1} = 0` the congruence is the equation.
         """
         generators = self._commutant.unipotent_kernel_generators()
         logarithms = [_logarithm(g) for g in generators]
-        if any(not (x * y * self.marking).is_zero() for x in logarithms for y in logarithms):
-            raise NotImplementedError(
-                "the transporter equation of the unipotent route is not linear on this marking"
-            )
-        images = [x * self.marking for x in logarithms]
+        assert all(x * y == y * x for x in logarithms for y in logarithms), "the skew radical is not abelian"
+        flat = lambda m: vector(QQ, m.list())
+        size = self.rank * self.source_rank
+        filtration, level = [], list(logarithms)
+        while True:
+            level = [m for m in level if not (m * self.marking).is_zero()]
+            if not level:
+                break
+            filtration.append([flat(m * self.marking) for m in level])
+            level = [x * m for x in logarithms for m in level]
+        spans = [matrix(QQ, [r for later in filtration[k:] for r in later]) for k in range(len(filtration))]
+        zero = matrix(QQ, self.rank, self.rank)
         for sign in (1, -1):
-            difference = (sign * target - self.marking).change_ring(QQ)
-            if not images:
-                if difference.is_zero():
-                    return sign * self._one
-                continue
-            equations = matrix(QQ, [m.list() for m in images]).transpose()
-            scale = lcm([equations.denominator(), difference.denominator()])
-            solution = _integer_solution(matrix(ZZ, scale * equations), vector(ZZ, (scale * difference).list()))
-            if solution is not None:
-                return sign * self._power_product(generators, list(solution))
+            wanted = sign * target.change_ring(QQ)
+            basis = identity_matrix(ZZ, len(generators))
+            current, element = self.marking.change_ring(QQ), self._one
+            solvable = True
+            for k in range(len(spans)):
+                quotient = spans[k + 1].right_kernel_matrix() if k + 1 < len(spans) else identity_matrix(QQ, size)
+                images = [flat(sum((c * x for c, x in zip(b, logarithms)), zero) * self.marking) for b in basis.rows()]
+                equations = quotient * (matrix(QQ, images).transpose() if images else matrix(QQ, size, 0))
+                values = quotient * flat(wanted - current)
+                if equations.ncols() == 0:
+                    solvable = values.is_zero()
+                    if not solvable:
+                        break
+                    continue
+                scale = lcm([equations.denominator(), values.denominator()])
+                integral = matrix(ZZ, scale * equations)
+                solution = _integer_solution(integral, vector(ZZ, scale * values))
+                if solution is None:
+                    solvable = False
+                    break
+                step = self._power_product(generators, list(vector(ZZ, solution) * basis))
+                current, element = step * current, step * element
+                basis = integral.right_kernel_matrix() * basis
+            if solvable and current == wanted:
+                return sign * element
         return None
 
     def transporter(self, target):
@@ -800,7 +858,13 @@ class EquivariantMarking:
         elif (split := self._parabolic(self.marking))[0] is not None:
             result = self._parabolic_transporter(*split, target)
         else:
-            transversal, _stabilizer = self._finite_orbit()
+            orbit = self._finite_orbit()
+            if orbit is None:
+                raise NotImplementedError(
+                    "the transporter of a marking whose radical extension does not split and whose orbit under the "
+                    "centralizer is infinite (#53)"
+                )
+            transversal, _stabilizer = orbit
             found = transversal.get(target.str())
             result = found[0] if found is not None else None
         assert result is None or self._is_stabilizer_element(result, target)
@@ -941,6 +1005,24 @@ class CentralizerTupleOrbit:
         return [matrix(ZZ, g) for g in found]
 
 
+def _right_orbit_restriction(marking, generators):
+    r"""Return the integral matrices of `x \mapsto x a^{-1}` on the saturated span of the orbit of ``marking``."""
+    flat = lambda m: vector(QQ, m.change_ring(QQ).list())
+    shape = (marking.nrows(), marking.ncols())
+    act = lambda r, a: flat(matrix(QQ, shape[0], shape[1], list(r)) * a.inverse())
+    if marking.is_zero():
+        return []
+    rows = matrix(QQ, [flat(marking)])
+    while True:
+        enlarged = rows.stack(matrix(QQ, [act(r, a) for a in generators for r in rows.rows()])) if generators else rows
+        enlarged = enlarged.echelon_form()[: enlarged.rank()]
+        if enlarged.nrows() == rows.nrows():
+            break
+        rows = enlarged
+    lattice = matrix(ZZ, rows.denominator() * rows).saturation().change_ring(QQ)
+    return [matrix(ZZ, [lattice.solve_left(act(r, a)) for r in lattice.rows()]) for a in generators]
+
+
 def source_automorphism_kernel_generators(marking, source_generators):
     r"""Return generators of the kernel of the projection of a diagram stabilizer to the ambient group.
 
@@ -948,12 +1030,22 @@ def source_automorphism_kernel_generators(marking, source_generators):
     stabilizer is `\{(g, a) \in \Gamma \times J : g X = X a\}`. Its projection to `\Gamma` has
     kernel `\{(1, a) : X a = X\}`, the source automorphisms invisible to `L`. A vertex with no
     arrow to `L` is modelled by zero columns of `X`, and a nonzero kernel shows that the
-    diagram stabilizer is not the ambient stabilizer. `J` must be finite.
+    diagram stabilizer is not the ambient stabilizer.
+
+    `J` may be infinite. `J` acts on integral matrices by `x \mapsto x a^{-1}`; the saturated `Z`-span `M` of the
+    orbit of `X` is `J`-stable, and the orbit is finite exactly when the image of `J` in `GL(M)` is finite (the
+    orbit spans `M_Q` and consists of integral points). Then Schreier's lemma on the orbit gives the kernel
+    (Holt-Eick-O'Brien, Thm. 4.13). An infinite orbit means the kernel has infinite index in `J`; for the source
+    groups `J = GL_k(\mathbb Z)` and `J = O(A)` of the diagram stabilizer the kernel is
+    :func:`invisible_source_automorphism_generators`, and for other `J` this raises.
     """
     marking = matrix(ZZ, marking)
     generators = tuple(matrix(ZZ, a) for a in source_generators)
-    if not _is_finite(generators):
-        raise NotImplementedError("the source automorphism group is not finite")
+    if not _is_finite(_right_orbit_restriction(marking, generators)):
+        raise NotImplementedError(
+            "the orbit of the marking under the source group is infinite; the kernel of J needs a membership test "
+            "of J, available for J = GL_k(Z) and O(A) through invisible_source_automorphism_generators"
+        )
     one = identity_matrix(ZZ, marking.ncols())
     _transversal, kernel = _schreier(generators, marking, lambda a, x: x * a.inverse().change_ring(ZZ), one)
     assert all(marking * a == marking for a in kernel)
