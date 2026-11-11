@@ -13,6 +13,7 @@ fail with the precise unsupported-algorithm error, not an incidental one.
 """
 import pytest
 
+from sage_indefinite_port.readiness import UnfinishedCapability
 from tests.acceptance.consumer import lattice
 
 
@@ -22,5 +23,5 @@ def test_line_stabilizer_with_an_anisotropic_rank_four_quotient_is_unsupported()
     e = next(iter(ambient.module_generators()))
     line = ambient.primitive_isotropic_subobject(e)
 
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(UnfinishedCapability, match="#69"):
         tuple(ambient.O().isotropic_stabilizer_generators(line))

@@ -1172,6 +1172,14 @@ class EichlerRecursion:
                     witt_one := _witt_one_generators(profile.signed_view)
                 ) is not None:
                     generators = witt_one
+                case _ if int(profile.signed_view.witt_index()) < 2:
+                    # The approximate model needs two hyperbolic planes; the source
+                    # stops below rational Witt index two (IndefiniteForms.g:830).
+                    raise UnfinishedCapability(
+                        f"O(L) generators for {profile.signed_view}: positive index {profile.positive_index}, "
+                        f"rational Witt index {profile.signed_view.witt_index()} and no recognized model; "
+                        "work unit #69 owns this case"
+                    )
                 case _:
                     generators = self._generation_step(profile.signed_view)
             reduced_generators = tuple(_untwisted(generator, profile) for generator in generators)
