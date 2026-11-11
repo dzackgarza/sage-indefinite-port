@@ -316,7 +316,7 @@ def test_centralizer_setwise_stabilizer_of_a_summand_moved_by_the_swap():
     s = sage_matrix(SageZZ, [[0, 1], [1, 0]])
     two = sage_matrix.identity(SageZZ, int(2))
     expected = [sage_matrix.block_diagonal([P, P]) for P in (two, -two, s, -s)]
-    assert set(seen) == set(m.str() for m in expected)
+    assert set(seen) == set(sage_matrix(SageZZ, m.rows()).str() for m in expected)
 
 
 def test_centralizer_setwise_stabilizer_of_a_moved_pell_summand_is_infinite():
@@ -328,4 +328,4 @@ def test_centralizer_setwise_stabilizer_of_a_moved_pell_summand_is_infinite():
         assert g.submatrix(int(0), int(2), int(2), int(2)).is_zero() and g.submatrix(int(2), int(0), int(2), int(2)).is_zero()
         assert g.submatrix(int(0), int(0), int(2), int(2)) == g.submatrix(int(2), int(2), int(2), int(2))
     assert any(not all(p.is_cyclotomic() for p, _e in g.charpoly().factor()) for g in generators)
-    assert any(g[int(0), int(0)] < 0 for g in generators)
+    assert any(g[int(0), int(0)] < int(0) for g in generators)
