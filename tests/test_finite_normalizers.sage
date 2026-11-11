@@ -252,3 +252,26 @@ def _reduction_closure(lattice, isometries):
                 closure.add(following)
                 frontier.append(following)
     return closure
+
+
+def test_torus_of_a_pell_unit_is_the_special_orthogonal_group():
+    r"""L = <1> + <-2>, f = 3 + 2 sqrt 2 on columns. Its closure is SO(L)^0, a one-dimensional split torus, whose Lie
+    algebra so(L) is spanned by X = [[0, 2], [1, 0]] (X^t B + B X = 0 for B = diag(1, -2)). -1 has finite order and
+    trivial torus."""
+    from sage_indefinite_port.indefinite.finite_normalizers import _torus_algebra
+
+    algebra = _torus_algebra(matrix(SageZZ, [[3, 4], [2, 3]]))
+    assert len(algebra) == int(1)
+    X = matrix(SageQQ, [[0, 2], [1, 0]])
+    assert matrix(SageQQ, [algebra[int(0)].list(), X.list()]).rank() == int(1)
+    assert _torus_algebra(matrix(SageZZ, [[-1, 0], [0, -1]])) == []
+
+
+def test_torus_of_two_independent_pell_units_is_two_dimensional():
+    r"""On (<1> + <-2>) + (<1> + <-3>), F = (3 + 2 sqrt 2) + (2 + sqrt 3). The units 3 + 2 sqrt 2 and 2 + sqrt 3 of
+    Q(sqrt 2, sqrt 3) are multiplicatively independent (they generate different quadratic fields), so the eigenvalues
+    have only the relations mu * mu' = 1 in each block and the closure of <F> is a two-dimensional torus."""
+    from sage_indefinite_port.indefinite.finite_normalizers import _torus_algebra
+
+    F = matrix(SageZZ, [[3, 4, 0, 0], [2, 3, 0, 0], [0, 0, 2, 3], [0, 0, 1, 2]])
+    assert len(_torus_algebra(F)) == int(2)

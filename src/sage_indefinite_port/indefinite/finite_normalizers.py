@@ -785,9 +785,46 @@ def _unipotent_logarithm(g):
     return result
 
 
+def _torus_algebra(g):
+    r"""Return a basis of the Lie algebra of the Zariski closure of `\langle g_s \rangle` for an integral `g`.
+
+    In an eigenbasis the closure of `\langle s \rangle` is `\{\mathrm{diag}(t) : \prod t_j^{e_j} = 1, e \in M\}` for the
+    lattice `M` of multiplicative relations among the distinct eigenvalues `\mu_j`, a torus times a finite group, with
+    Lie algebra `\{\sum x_j \pi_j : \sum e_j x_j = 0, e \in M\}` on the eigenprojections `\pi_j` (de Graaf,
+    *Computation with Linear Algebraic Groups*, 4.2; Derksen, Jeandel, Koiran, J. Symbolic Comput. 39 (2005)). The
+    `\mu_j` are units of the splitting field `K`, and their relations modulo roots of unity are the kernel of the
+    exact exponent map to the free part of `O_K^\times`; this kernel spans `M \otimes Q`. The algebra lies in `Q[s]`,
+    so `x_j = p(\mu_j)` for `p \in Q[t]` of degree below `\deg f`, and the conditions are `Q`-linear in `p` after
+    expanding each element of `K` in its power basis.
+    """
+    s = _semisimple_part(g)
+    polynomial = s.minimal_polynomial()
+    if all(f.degree() == 1 for f, _e in polynomial.factor()):
+        assert all(abs(r) == 1 for r, _e in polynomial.roots(QQ)), f"{g} is not invertible over Z"
+        return []
+    field = polynomial.splitting_field("a")
+    roots = [r for r, _e in polynomial.roots(field)]
+    assert len(roots) == polynomial.degree()
+    units = field.unit_group()
+    free = matrix(ZZ, [list(units.log(r))[1:] for r in roots])
+    relations = free.left_kernel().basis_matrix()
+    degree = polynomial.degree()
+    rows = []
+    for e in relations.rows():
+        values = [sum(int(c) * r**k for c, r in zip(e, roots, strict=True)) for k in range(degree)]
+        coordinates = [list(field(v).list()) for v in values]
+        rows.extend([[coordinates[k][t] for k in range(degree)] for t in range(field.degree())])
+    system = matrix(QQ, rows) if rows else matrix(QQ, 0, degree)
+    result = []
+    for p in system.right_kernel().basis():
+        result.append(sum((c * s**k for k, c in enumerate(p)), matrix(QQ, s.nrows())))
+    return result
+
+
 def _lie_algebra(columns):
-    r"""Return a basis of the Lie algebra `\mathfrak g` spanned by `\log` of the unipotent parts of the generators and
-    of their commutators, closed under `\mathrm{Ad}(h)` for the generators `h` and under brackets.
+    r"""Return a basis of the Lie algebra `\mathfrak g` spanned by the Lie algebras of the Zariski closures of the
+    generators and their commutators (the torus of the semisimple part, :func:`_torus_algebra`, and `\log` of the
+    unipotent part), closed under `\mathrm{Ad}(h)` for the generators `h` and under brackets.
 
     For unipotent `u \in H` the Zariski closure of `\langle u \rangle` is `\exp(Q \log u)`, and the group generated
     by connected subgroups is connected with the Lie algebra they generate (Borel, *Linear Algebraic Groups*, I.2.2
@@ -809,6 +846,8 @@ def _lie_algebra(columns):
 
     for g in elements:
         add(_unipotent_logarithm(g))
+        for x in _torus_algebra(g):
+            add(x)
     position = 0
     while position < len(basis):
         x = basis[position]
@@ -856,8 +895,8 @@ def arithmetic_normalizer_generators(lattice, generators, level):
     algebra = _lie_algebra(columns)
     if not algebra:
         raise NotImplementedError(
-            f"the generators {columns} and their commutators have trivial unipotent parts: the Lie algebra of the "
-            f"Zariski closure needs the algebraic hull of semisimple elements (#50)"
+            f"the generators {columns} and their commutators all have finite order: the Zariski closure of the infinite "
+            f"group they generate is not reached from the closures of single elements (#50)"
         )
     size = gram.nrows()
     W = _support(algebra)
