@@ -241,7 +241,8 @@ def _neighbours(lattices, maximal, prime):
         for x, x2 in combinations(maximal, 2):
             for a, b, c in product(representatives, repeat=3):
                 z = algebra(a) + algebra(b) * x + algebra(c) * x2
-                if not lattices.contains(reduced, [z]) and z.reduced_norm() in prime:
+                # nrd(z) is integral for z in the order; it lies in P exactly when its residue is 0.
+                if residue(z.reduced_norm()) == 0 and not lattices.contains(reduced, [z]):
                     return z
         raise AssertionError(f"no zero divisor of the residue algebra of {maximal} at {prime}")
 
