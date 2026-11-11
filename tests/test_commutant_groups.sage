@@ -69,6 +69,15 @@ Product Levi quotient. On M + <1> with basis e, f, g, h, F = E + 1 has A / rad =
 M and a fixed h). t_0 = 1 + E_{14} is a transporter from (B, F) to (t_0^{-t} B t_0^{-1}, t_0 F t_0^{-1}) by construction;
 3B has another determinant, so no transporter to it exists.
 
+Anisotropic Eisenstein plane. L = O^2, O = Z[w], w^2 + w + 1 = 0, with h = diag(1, -2) and b = Tr h; on the basis
+(1,0), (w,0), (0,1), (0,w), b = A_2 + A_2(-2), and F, the multiplication by w, is [[0, -1], [1, -1]] on each summand.
+h is anisotropic: 2 is inert in Q(w), so x conj(x) = 2 y conj(y) has no nonzero solution (compare 2-adic valuations).
+The commutant is M_2(Q(w)) with the adjoint of h, and C(Z) = U(O^2, h), from the quaternion order of SU(h). It contains
+X = [[a, 2 conj(c)], [c, conj(a)]] for a = 1 - w, c = 1, since N(a) - 2 N(c) = 3 - 2 = 1; its trace 3 exceeds 2, so X has
+infinite order. Coordinatewise conjugation c(x) = conj(x) preserves b and carries F to F^2. The vectors v = (1, 1),
+u = (2, 1) have h(v) = -1, h(u) = 2, h(u, v) = 2 - 2 = 0 and det [v u] = -1, so [v u] is an isometry of (O^2, h) onto
+(O^2, -h): a transporter to (-b, F) exists. The Gram 3b has another determinant, so no transporter to it exists.
+
 Vector orbits. L = U, F = -1, so C(Z) = O(U) = {+-1, +-swap}. The orbit of v = (1, 1) is {+-v}; its stabilizer
 is {1, swap}, and (1, -1) has another norm, so it is not in the orbit.
 """
@@ -450,4 +459,56 @@ def test_product_levi_quotient_transporter():
     target_gram = witness.inverse().transpose() * gram * witness.inverse()
     t = equivariant_transporter(commutant, target_gram, [target])
     assert t is not None and _is_transporter(t, gram, target_gram, [F], [target])
+    assert equivariant_transporter(commutant, int(3) * gram, [F]) is None
+
+
+EISENSTEIN = QuadraticField(int(-3), "s")
+OMEGA = (EISENSTEIN.gen() - int(1)) / int(2)
+
+
+def _eisenstein_linear(entries):
+    r"""Return the integral matrix of the O-linear map ``entries`` on the basis (1,0), (w,0), (0,1), (0,w)."""
+    g = sage_matrix(EISENSTEIN, int(2), int(2), entries)
+    frame = [(int(1), int(0)), (OMEGA, int(0)), (int(0), int(1)), (int(0), OMEGA)]
+    columns = []
+    for x in frame:
+        image = g * sage_matrix(EISENSTEIN, int(2), int(1), list(x))
+        for k in range(int(2)):
+            entry = image[k, int(0)]
+            second = (entry - entry.conjugate()) / (OMEGA - OMEGA.conjugate())
+            columns.append(SageZZ(entry - second * OMEGA))
+            columns.append(SageZZ(second))
+    return sage_matrix(SageZZ, int(4), int(4), columns).transpose()
+
+
+def _eisenstein_plane():
+    entries = (2, -1, 0, 0, -1, 2, 0, 0, 0, 0, -4, 2, 0, 0, 2, -4)
+    gram = sage_matrix(SageZZ, int(4), int(4), [int(c) for c in entries])
+    F = sage_matrix(SageZZ, int(4), int(4), [int(c) for c in (0, -1, 0, 0, 1, -1, 0, 0, 0, 0, 0, -1, 0, 0, 1, -1)])
+    assert F == _eisenstein_linear([OMEGA, int(0), int(0), OMEGA])
+    return gram, F
+
+
+def test_anisotropic_eisenstein_centralizer_is_infinite():
+    gram, F = _eisenstein_plane()
+    a = int(1) - OMEGA
+    X = _eisenstein_linear([a, int(2), int(1), a.conjugate()])
+    assert X * F == F * X and X.transpose() * gram * X == gram and X.trace() == int(6)
+    generators = centralizer_generators(IsometryCommutant(gram, [F]))
+    assert all(g * F == F * g and g.transpose() * gram * g == gram for g in generators)
+    assert any(abs((g * h).trace()) > int(4) for g in generators for h in generators)
+
+
+def test_anisotropic_eisenstein_transporters():
+    gram, F = _eisenstein_plane()
+    commutant = IsometryCommutant(gram, [F])
+    conjugation = sage_matrix(SageZZ, int(4), int(4), [int(c) for c in (1, -1, 0, 0, 0, -1, 0, 0, 0, 0, 1, -1, 0, 0, 0, -1)])
+    assert conjugation * F * conjugation.inverse() == F * F and conjugation.transpose() * gram * conjugation == gram
+    t = equivariant_transporter(commutant, gram, [F * F])
+    assert t is not None and _is_transporter(t, gram, gram, [F], [F * F])
+    negative = -gram
+    witness = _eisenstein_linear([int(1), int(2), int(1), int(1)])
+    assert witness.det() in (int(1), int(-1)) and witness.transpose() * negative * witness == gram
+    t = equivariant_transporter(commutant, negative, [F])
+    assert t is not None and _is_transporter(t, gram, negative, [F], [F])
     assert equivariant_transporter(commutant, int(3) * gram, [F]) is None

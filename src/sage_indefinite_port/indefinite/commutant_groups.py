@@ -22,7 +22,8 @@ centralizers. This module adds the routes that need the port's arithmetic groups
   adjoint is the adjoint of a Hermitian, symmetric or alternating form `h` on `W`, and `C(Z)` is
   the subgroup of `U(\Lambda, h)` lying in `O`, `\Lambda = O_K O f` (:class:`CentralFieldCommutant`).
   Hyperbolic forms use the port's unitary models; an anisotropic binary Hermitian form over `Z[i]`
-  uses the Bestvina-Savin ocean (:mod:`hermitian_ocean`). The transporter reduces both forms to one
+  uses the Bestvina-Savin ocean (:mod:`hermitian_ocean`), and over another imaginary quadratic `O_K` of
+  class number one the quaternion order of `SU(h)` (:class:`_BinaryHermitianOrder`). The transporter reduces both forms to one
   model, composes the model isometry, and searches the coset representatives of `C(Z)` in `U(\Lambda, h)`.
 
   A symmetric form of rank two over `O_K` (first kind) is decided on the torus `K[c]^1` of the skew line
@@ -274,32 +275,15 @@ class QuaternionCommutant:
         r"""Decide `\bar a h a = 1` on the lattice `M` of `a` with `t_0 a` integral.
 
         `h` is self-adjoint, hence a rational `\eta`, and the equation is `n(a) = \nu = 1/\eta`. `M` is a
-        right `O`-module, so `\bar M` is a left `O`-module. By :meth:`QuaternionVoronoi.cell_trace_bound`,
-        every `b \in \bar M` with `n(b) = \nu` has a unit translate `ub` with `\mathrm{Tr}(\beta\beta^t)` at most
-        `|\nu|` times the bound, `\beta` its real image, and `n(ub) = \pm\nu`. A unit of norm `-1`, if any, is
-        among the unit generators. So the finite enumeration decides existence.
+        right `O`-module, so `\bar M` is a left `O`-module, decided by :func:`_reduced_norm_point`.
         """
         eta = square[0, 0]
         assert square == eta * identity_matrix(QQ, self.commutant.rank)
-        value = 1 / eta
-        voronoi = self.voronoi()
         conjugates = [self.to_model(a).conjugate() for a in lattice]
-        images = [voronoi.real_matrix(q) for q in conjugates]
-        gram = matrix(RDF, [[float((x * y.transpose()).trace()) for y in images] for x in images])
-        bound = float(abs(value) * voronoi.cell_trace_bound()) * (1 + 1e-9)
-        found = pari(gram).qfminim(bound, None, 2)[2]
-        columns = int(pari(found).matsize()[1])
-        reversing = next((u for u in voronoi.unit_generators() if u.reduced_norm() == -1), None)
-        for column in range(columns):
-            coordinates = [int(round(float(found[row, column]))) for row in range(len(conjugates))]
-            element = sum(c * q for c, q in zip(coordinates, conjugates))
-            norm = element.reduced_norm()
-            if norm == -value and reversing is not None:
-                element, norm = reversing * element, value
-            if norm != value:
-                continue
-            return _verified(self.commutant, start * self.from_model(element.conjugate()), target_gram, targets)
-        return None
+        element = _reduced_norm_point(self.voronoi(), conjugates, 1 / eta)
+        if element is None:
+            return None
+        return _verified(self.commutant, start * self.from_model(element.conjugate()), target_gram, targets)
 
     def _orthogonal_transporter(self, start, square, lattice, target_gram, targets):
         r"""Decide `c^{-1} \bar a c h a = 1`, that is `\bar a g a = c` for `g = c h`.
@@ -507,6 +491,193 @@ def _ideal_divisors(ideal):
     return result
 
 
+def _reduced_norm_point(voronoi, elements, value):
+    r"""Return an element of reduced norm ``value`` in the left `\Lambda`-module spanned by ``elements``, or ``None``.
+
+    `\Lambda` is the order of ``voronoi``. By :meth:`QuaternionVoronoi.cell_trace_bound`, every `b` of the module
+    with `n(b) = \nu` has a unit translate `ub` with `\mathrm{Tr}(\beta\beta^t)` at most `|\nu|` times the bound, `\beta`
+    its real image, and `n(ub) = \pm\nu`. A unit of norm `-1`, if any, is among the unit generators. So the finite
+    enumeration decides existence.
+    """
+    value = QQ(value)
+    images = [voronoi.real_matrix(q) for q in elements]
+    gram = matrix(RDF, [[float((x * y.transpose()).trace()) for y in images] for x in images])
+    bound = float(abs(value) * voronoi.cell_trace_bound()) * (1 + 1e-9)
+    found = pari(gram).qfminim(bound, None, 2)[2]
+    columns = int(pari(found).matsize()[1])
+    reversing = next((u for u in voronoi.unit_generators() if u.reduced_norm() == -1), None)
+    for column in range(columns):
+        coordinates = [int(round(float(found[row, column]))) for row in range(len(elements))]
+        element = sum(c * q for c, q in zip(coordinates, elements))
+        norm = element.reduced_norm()
+        if norm == -value and reversing is not None:
+            element, norm = reversing * element, value
+        if norm == value:
+            return element
+    return None
+
+
+def _hermitian_binary_isometry(source, target, sigma):
+    r"""Return `P \in GL_2(K)` with `P^* T P = S` for anisotropic binary Hermitian ``source`` `S`, ``target`` `T`, or ``None``.
+
+    `S = Q^* \mathrm{diag}(\alpha_1, \alpha_2) Q` with `\alpha_1 = S_{11}`, `\alpha_2 = \det S / S_{11}`. A vector `x` with
+    `T(x) = \alpha_1` is a nonzero rational point of the quinary `Q`-form `\mathrm{Re}\, T(x) - \alpha_1 t^2` (PARI ``qfsolve``),
+    with `t \ne 0` because `T` is anisotropic. The `T`-orthogonal line of `x` is spanned by `y`, and `\lambda y` has value
+    `\alpha_2` exactly when `\alpha_2 / T(y)` is a norm from `K` (Witt cancellation; Scharlau, *Quadratic and Hermitian
+    Forms*, Ch. 7, Thm. 6.3).
+    """
+    K = source.base_ring()
+    star = lambda X: X.apply_map(sigma).transpose()
+    value = lambda x, y: (star(matrix(K, [y]).transpose()) * target * matrix(K, [x]).transpose())[0, 0]
+    a1 = QQ(source[0, 0])
+    a2 = QQ(source.det() / source[0, 0])
+    frame = matrix(K, 2, 2, [1, source[0, 1] / source[0, 0], 0, 1])
+    assert star(frame) * matrix(K, 2, 2, [a1, 0, 0, a2]) * frame == source
+    z = K.gen()
+    basis = [vector(K, [1, 0]), vector(K, [z, 0]), vector(K, [0, 1]), vector(K, [0, z])]
+    quinary = matrix(QQ, 5, 5, 0)
+    for p, x in enumerate(basis):
+        for q, y in enumerate(basis):
+            quinary[p, q] = QQ(value(x, y).trace()) / 2
+    quinary[4, 4] = -a1
+    found = qfsolve(quinary)
+    if found in ZZ:
+        return None
+    found = vector(QQ, found)
+    assert found[4] != 0
+    x = sum(found[p] / found[4] * basis[p] for p in range(4))
+    assert value(x, x) == a1
+    row = star(matrix(K, [x]).transpose()) * target
+    y = vector(K, [-row[0, 1], row[0, 0]])
+    assert value(y, x) == 0
+    is_norm, scale = QQ(a2 / QQ(value(y, y))).is_norm(K, element=True)
+    if not is_norm:
+        return None
+    result = matrix(K, [x, K(scale) * y]).transpose() * frame
+    assert star(result) * target * result == source
+    return result
+
+
+class _BinaryHermitianOrder:
+    r"""The quaternion order of `SU(\Lambda, S)` for an anisotropic binary Hermitian `S` over `O_K`, `K` imaginary quadratic.
+
+    `\Lambda = O_K^2` and `X^\dagger = S^{-1} X^* S`, a unitary involution of `M_2(K)`. There is a unique quaternion
+    `Q`-subalgebra `B` with `\dagger = \mathrm{adj} \otimes \sigma`, namely `B = \{X : X^\dagger = \mathrm{adj}\, X\}`
+    (Knus-Merkurjev-Rost-Tignol, *The Book of Involutions*, Prop. 2.22). On `B`, `X^\dagger X = \det X` is the reduced
+    norm, so `SU(S) = B^1` and `SU(\Lambda, S) = (B \cap M_2(O_K))^1`, generated by the Voronoi algorithm of
+    :class:`QuaternionVoronoi` for the order `B \cap M_2(O_K)` (Braun-Coulangeon-Nebe-Schoennenbeck).
+
+    `\det` maps `U(S)` onto a subgroup of `K^1`. For `\zeta \in K^1`, `\zeta = \mu / \bar\mu` with `\mu = 1 + \zeta`
+    (or `\mu = z - \bar z` when `\zeta = -1`), and `g` with `\det g = \zeta` lies in `U(S)` exactly when `g = \mu Z`,
+    `Z \in B`, `n(Z) = 1 / N(\mu)`: `(\mu Z)^* S (\mu Z) = N(\mu) n(Z) S` and `\det(\mu Z) = \mu^2 n(Z)`. The integral `Z`
+    form the right `B \cap M_2(O_K)`-module `\{Z : \mu Z \in M_2(O_K)\}`, decided by :func:`_reduced_norm_point`.
+    `U(\Lambda, S)` has `\det` in the roots of unity, so one such `g` per root of unity of the image completes `SU`.
+    """
+
+    def __init__(self, field, sigma, form):
+        self.field, self.sigma, self.form = field, sigma, form
+        identity = identity_matrix(field, 2)
+        star = lambda X: X.apply_map(sigma).transpose()
+        self._star = star
+        inverse = form.inverse()
+        self._integral_rows = matrix(QQ, [k.list() for k in field.integral_basis()])
+        cells = [
+            matrix(field, 2, 2, {(i, j): k}) for i in range(2) for j in range(2) for k in field.integral_basis()
+        ]
+        equation = lambda X: inverse * star(X) * form - X.adjugate()
+        rows = matrix(QQ, [self._flat(equation(X)) for X in cells])
+        kernel = matrix(ZZ, rows.denominator() * rows).left_kernel().basis()
+        order = [sum(c * X for c, X in zip(k, cells)) for k in kernel]
+        assert len(order) == 4
+        pure = lambda X: X - X.trace() / 2 * identity
+        first = next(pure(X) for X in order if not pure(X).is_zero())
+        first = first * QQ((first * first)[0, 0]).denominator()
+        second = next(c for c in (first * pure(X) - pure(X) * first for X in order) if not c.is_zero())
+        second = second * QQ((second * second)[0, 0]).denominator()
+        a, b = QQ((first * first)[0, 0]), QQ((second * second)[0, 0])
+        assert first * first == a * identity and second * second == b * identity and first * second == -second * first
+        if a > 0 and b > 0:
+            first, a = first * second, -a * b
+        elif a > 0 > b:
+            first, second, a, b = second, first, b, a
+        assert a < 0 < b, f"SU of the Hermitian form {list(form)} is compact: B = ({a}, {b})_Q"
+        self.algebra = QuaternionAlgebra(QQ, a, b)
+        self.frame = (identity, first, second, first * second)
+        self._frame_rows = matrix(QQ, [self._flat(X) for X in self.frame])
+        order_rows = matrix(QQ, [list(self.to_model(X)) for X in order])
+        self.voronoi = QuaternionVoronoi(int(ZZ(a)), int(ZZ(b)), order_rows)
+
+    def _flat(self, X):
+        return [c for e in X.list() for c in self.field(e).list()]
+
+    def to_model(self, X):
+        return self.algebra(list(self._frame_rows.solve_left(vector(QQ, self._flat(X)))))
+
+    def from_model(self, quaternion):
+        return sum(QQ(c) * X for c, X in zip(list(quaternion), self.frame))
+
+    def _integral_coordinates(self, X):
+        return [c for e in X.list() for c in self._integral_rows.solve_left(vector(QQ, self.field(e).list()))]
+
+    def module(self, prefix):
+        r"""Return a `Z`-basis, as quaternions, of the right module `\{Z \in B : \text{prefix}\, Z \in M_2(O_K)\}`."""
+        rows = matrix(QQ, [self._integral_coordinates(prefix * X) for X in self.frame])
+        saturated = matrix(ZZ, rows.denominator() * rows).saturation()
+        return [self.algebra(list(rows.solve_left(vector(QQ, row)))) for row in saturated.rows()]
+
+    def _hilbert_ninety(self, zeta):
+        z = self.field.gen()
+        mu = 1 + zeta if zeta != -1 else z - self.sigma(z)
+        assert mu / self.sigma(mu) == zeta
+        return mu
+
+    def _point(self, prefix, mu):
+        r"""Return `\mu\, \text{prefix}\, Z` integral with `n(Z) = 1 / N(\mu)`, `Z \in B`, or ``None``."""
+        conjugates = [q.conjugate() for q in self.module(mu * prefix)]
+        found = _reduced_norm_point(self.voronoi, conjugates, ~QQ(mu.norm()))
+        return None if found is None else mu * prefix * self.from_model(found.conjugate())
+
+    def unitary_generators(self):
+        r"""Return generators of `U(\Lambda, S)`: `SU(\Lambda, S)` and one element of each determinant in the image."""
+        if hasattr(self, "_generators"):
+            return self._generators
+        norm_one, central = self.voronoi.norm_one_generators()
+        result = [self.from_model(u) for u in (*norm_one, *central)]
+        assert all(X.det() == 1 for X in result)
+        identity = identity_matrix(self.field, 2)
+        for zeta in self.field.roots_of_unity():
+            if zeta == 1:
+                continue
+            found = self._point(identity, self._hilbert_ninety(zeta))
+            if found is not None:
+                assert found.det() == zeta
+                result.append(found)
+        assert all(self._star(X) * self.form * X == self.form for X in result)
+        self._generators = tuple(result)
+        return self._generators
+
+    def isometry_from(self, target):
+        r"""Return `D \in GL_2(O_K)` with `D^* T D = S` for ``target`` `T`, or ``None`` as a proof of absence.
+
+        Every `K`-isometry is `P_0 g`, `g \in U(S)`, with `P_0` from :func:`_hermitian_binary_isometry`. An integral one
+        has `\det D` a root of unity `\zeta'` (the units of `O_K`), so `\det g = \zeta = \zeta' / \det P_0` has norm one,
+        and `g = \mu Z` as in the class description, with `\mu P_0 Z` integral; this right module is searched.
+        """
+        start = _hermitian_binary_isometry(self.form, target, self.sigma)
+        if start is None:
+            return None
+        delta = start.det()
+        for root in self.field.roots_of_unity():
+            zeta = root / delta
+            if zeta * self.sigma(zeta) != 1:
+                return None
+            found = self._point(start, self._hilbert_ninety(zeta))
+            if found is not None:
+                assert self._star(found) * target * found == self.form and found.det() == root
+                return found
+        return None
+
+
 class CentralFieldCommutant:
     r"""An explicit identification of a central simple commutant over `K \ne Q` with a form over `O_K`.
 
@@ -597,8 +768,11 @@ class CentralFieldCommutant:
                     return value
         raise NotImplementedError(
             f"no element of rank {target} in the commutant of {self.commutant.isometries}: it is M_{self.n} over a "
-            f"division algebra over K = Q[x]/({self.field.polynomial()}), or the box missed its zero divisors; "
-            f"the unitary group of a K-division algebra has no implemented route (#54)"
+            f"division algebra D over K = Q[x]/({self.field.polynomial()}), or the box missed its zero divisors. "
+            f"Its centralizer is the unitary group of a form over an order of D, not SL_n of that order, so elementary "
+            f"generation (Bass-Milnor-Serre; Vaserstein) does not apply; the missing statement is a Voronoi generation "
+            f"of the unitary group of a D-form (Braun-Coulangeon-Nebe-Schoennenbeck, J. Algebra 435 (2015), for "
+            f"M_n(D)^x), not implemented (#54)"
         )
 
     def _q_coordinates(self, w):
@@ -761,12 +935,19 @@ class CentralFieldCommutant:
 
     def _unitary_model(self, lattice, gram):
         r"""Return ``(kind, field, generators, form, basis, gram)`` of a recognized unitary model of `(\Lambda, h)`."""
+        if self.form_kind != "hermitian":
+            return None
+        imaginary = self.degree == 2 and self.field.discriminant() < 0
+        if self.n == 2 and imaginary and self._isotropic_vector(lattice, gram) is None:
+            if self.field.discriminant() == -4:
+                return self._ocean_model(lattice, gram)
+            return self._quaternion_model(lattice, gram)
         d = _IMAGINARY_MODELS.get(self.field.discriminant())
-        if self.form_kind != "hermitian" or d is None:
+        if d is None:
             return None
         v = self._isotropic_vector(lattice, gram)
         if v is None:
-            return self._ocean_model(lattice, gram) if self.n == 2 and d == 1 else None
+            return None
         pair = self._hyperbolic_pair(lattice, gram, v)
         if pair is None:
             return None
@@ -840,6 +1021,33 @@ class CentralFieldCommutant:
         ocean = hermitian_ocean.HermitianOcean(_ocean_forms(form)[0])
         return "ocean", E, ocean.unitary_generators(), form, basis, gram
 
+    def _binary_hermitian_order(self, form):
+        key = tuple(form.list())
+        orders = self.__dict__.setdefault("_hermitian_orders", {})
+        if key not in orders:
+            orders[key] = _BinaryHermitianOrder(self.field, self.sigma, form)
+        return orders[key]
+
+    def _quaternion_model(self, lattice, gram):
+        r"""Return the quaternion model of an anisotropic binary Hermitian `h` over `O_K`, `K` imaginary quadratic.
+
+        In an `O_K`-basis `C` of `\Lambda` with `S = C^* G C`, `U(\Lambda, h) = U(O_K^2, S)`, generated through the
+        quaternion order of :class:`_BinaryHermitianOrder`.
+        """
+        if self.field.class_number() != 1:
+            raise NotImplementedError(
+                f"{self.description()}: O_K has class number {self.field.class_number()}, so Lambda need not be free, "
+                f"and the quaternion order of SU(h) is built on an O_K-basis of Lambda (#54)"
+            )
+        basis = self._binary_basis(lattice)
+        change = matrix(self.field, basis).transpose()
+        form = self._star(change) * gram * change
+        generators = self._binary_hermitian_order(form).unitary_generators()
+        return "quaternion", self.field, generators, form, basis, gram
+
+    def _model_embedding(self, E):
+        return self.field.hom([self.field.gen()]) if E is self.field else E.embeddings(self.field)[0]
+
     def _symplectic_model(self, lattice, gram):
         r"""Return the `SL_2(O_K)` model of an alternating `h` on `\Lambda` of rank two over a real quadratic `K`.
 
@@ -887,20 +1095,29 @@ class CentralFieldCommutant:
         The basis spans `\Lambda`, and in it `G' = s G` is the model ``form``, `s \in K^\times`.
         """
         model = self._unitary_model(lattice, gram) if self.kind == "second" else self._symplectic_model(lattice, gram)
+        if model is None and self.kind == "first" and self.form_kind == "symmetric":
+            raise NotImplementedError(
+                f"{self.description()}: O(Lambda, h) of a symmetric O_K-lattice of rank {self.n} >= 3 needs (i) a decision "
+                f"whether Lambda splits a hyperbolic O_K-plane H, (ii) generation of O(Lambda) by the Eichler transformations "
+                f"E(e, u), O of the complement and spinor-norm and determinant coset representatives, which is proved when "
+                f"Lambda = H + H + L' (Hahn-O'Meara, The Classical Groups and K-Theory, Ch. 5-6), not for one hyperbolic "
+                f"plane, and (iii) the Eichler criterion for orbits of primitive vectors (same hypothesis) for the "
+                f"transporter recursion; none of these is implemented (#54)"
+            )
         if model is None:
             raise NotImplementedError(self.description())
         _kind, E, _generators, form, basis, model_gram = model
         if not self._span_is_lattice(basis, lattice):
             raise NotImplementedError(f"{self.description()}: the model basis does not span Lambda")
         change = matrix(self.field, basis).transpose()
-        assert self._star(change) * model_gram * change == form.apply_map(E.embeddings(self.field)[0])
+        assert self._star(change) * model_gram * change == form.apply_map(self._model_embedding(E))
         return model
 
     def unitary_generators(self):
         r"""Return the model generators of `U(\Lambda, h)`, conjugated to elements of `A`."""
         if not hasattr(self, "_unitary"):
             _kind, E, generators, _form, basis, _gram = self.model(self._lattice, self.gram)
-            embedding = E.embeddings(self.field)[0]
+            embedding = self._model_embedding(E)
             change = matrix(self.field, basis).transpose()
             inverse = change.inverse()
             moves = [self.element_of(change * g.apply_map(embedding) * inverse) for g in generators]
@@ -1132,6 +1349,8 @@ class CentralFieldCommutant:
         kind = source[0]
         S = self._star(matrix(self.field, source[4]).transpose()) * source_gram * matrix(self.field, source[4]).transpose()
         T = self._star(matrix(self.field, target[4]).transpose()) * target_gram * matrix(self.field, target[4]).transpose()
+        if kind == "quaternion":
+            return self._binary_hermitian_order(S).isometry_from(T) if target[0] == "quaternion" else None
         if kind == "ocean":
             embedding = hermitian_ocean.FIELD.embeddings(self.field)[0]
             found = hermitian_ocean.isometry(*_ocean_forms(self._pullback(S, embedding), self._pullback(T, embedding)))
