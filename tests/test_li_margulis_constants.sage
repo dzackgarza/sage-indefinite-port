@@ -7,7 +7,7 @@ from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
 from sage_indefinite_port.indefinite.li_margulis import (
     appendix_inverse_epsilon, corollary1_constant, default_constants, lemma10_radius, lemma11_constant,
-    lemma14_constant, lemma15_constant_power, lemma15_inverse_radius, lemma1_constant, lemma20_constant,
+    lemma14_constant, lemma15_constant_power, lemma15_inverse_radius, lemma1_constant, lemma20_constant, matrix_coefficient_constant,
     section6_constant, theorem6_constant, zeta_product_majorant,
 )
 
@@ -71,3 +71,9 @@ def test_default_constants():
     assert (constants.theorem5, constants.theorem5_compact, constants.corollary2, constants.corollary3) == (
         int(5), int(7), int(11), int(13)
     )
+
+
+def test_matrix_coefficient_constant():
+    r"""sum_{m in Z} 1/(1+m^2) = pi coth pi; partial sum to |m| <= 2 is 1 + 2(1/2 + 1/5) = 12/5,
+    and the tail is below 2 * int_2^oo dx/x^2 = 1, so pi coth pi < 17/5; the sharper 3.1534 < 16/5."""
+    assert matrix_coefficient_constant() == SageQQ(int(16)) / int(5)

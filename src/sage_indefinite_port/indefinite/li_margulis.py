@@ -342,6 +342,35 @@ def section6_constant(n, theorem5, theorem6):
     )
 
 
+def matrix_coefficient_constant():
+    r"""Return `16/5 > \pi \coth \pi`, an explicit `K` for the corrected (12).
+
+    Corrected (12): for a unitary representation `\pi` of `SL_2(\mathbb R)` that is strongly
+    `L^{64/25+\epsilon}` for every `\epsilon > 0`, with `W` the generator of `K = SO(2)`
+    (`\exp(\theta W)` is rotation by `\theta`) and `S(v)^2 = \|v\|^2 + \|W v\|^2`,
+    `|\langle \pi(g) v, w \rangle| \le \pi \coth(\pi)\, \Xi(g)^{25/32} S(v) S(w)`.
+    The exponent `25/32` of the printed statement is unchanged.
+
+    Proof. Decompose `\pi` as a direct integral of irreducibles; a.e. component is tempered or a
+    complementary series `I(\theta\rho)` with `\phi_{\theta\rho}(a_t) \asymp e^{-(1-\theta)t}`
+    in `L^q` iff `q(1-\theta) > 2`, so `1 - \theta \ge 25/32`. Each `K`-type `m \in \mathbb Z` is
+    one-dimensional. Tempered: `|\langle \pi(g) v_m, w_n \rangle| \le \Xi(g) \|v_m\| \|w_n\|`
+    [Cowling-Haagerup-Howe 1988, Thm 2, with `\dim \langle K v \rangle = 1`]. Complementary: in the
+    compact picture the unitary product is `\langle A f_1, f_2 \rangle_{L^2(K)}` with `A e_m = c_m e_m`,
+    `c_m > 0`, and `A \pi_{\lambda}(g) = \pi_{-\lambda}(g) A`. The operator `\pi_{-\lambda}(g)`
+    multiplies by a positive function after a change of variable, so `|\langle \pi_{-\lambda}(g) e_m,
+    e_n \rangle_{L^2}| \le \langle \pi_{-\lambda}(g) 1, 1 \rangle = \phi_\lambda(g)` and the normalized
+    coefficient is at most `\sqrt{c_m / c_n}\, \phi_\lambda(g)`; applied to `g^{-1}` it is at most
+    `\sqrt{c_n / c_m}\, \phi_\lambda(g)`, hence at most `\phi_\lambda(g)`. Hoelder in `\lambda` for
+    `\phi_\lambda = \int_K e^{(\lambda - \rho) H}` with `\phi_0 = \Xi`, `\phi_\rho = 1` gives
+    `\phi_{\theta\rho} \le \Xi^{1-\theta} \le \Xi^{25/32}`. Integrating over components and summing
+    over `K`-types, `|\langle \pi(g) v, w \rangle| \le \Xi(g)^{25/32} \sum_m \|v_m\| \sum_n \|w_n\|`,
+    and Cauchy-Schwarz with `\sum_{m \in \mathbb Z} (1 + m^2)^{-1} = \pi \coth \pi < 3.1534` bounds each
+    sum by `(\pi \coth \pi)^{1/2} S`.
+    """
+    return QQ(16) / 5
+
+
 def default_constants(n, theorem5, theorem5_compact, corollary2, corollary3):
     r"""Return the constants of rank ``n`` with every derivable majorant computed here.
 
@@ -352,7 +381,9 @@ def default_constants(n, theorem5, theorem5_compact, corollary2, corollary3):
       representation of `SL_2(\mathbb R)` strongly `L^{64/25+\epsilon}` and a Sobolev norm `S`.
       Kontorovich-Oh, Prop. 3.2, cite it as well known [CHH88, Kna86] without a constant, and as
       printed (12) uses `\|D v\|` alone, which vanishes on `K`-fixed vectors with nonzero
-      coefficients. The bump-function constant of Lemma 12 is measured in that norm.
+      coefficients. :func:`matrix_coefficient_constant` proves the corrected (12) with
+      `K = \pi \coth \pi` and exponent `25/32`; the bump-function constant of Lemma 12 and the
+      composition of section 4.4 must be re-derived in the norm `S` it uses.
     - ``corollary2``, ``corollary3``: Lemma 24 as printed fails (`Q = \operatorname{diag}(\epsilon^2, 1)`
       is `(\alpha, \beta)`-reduced and `k e_1`, `k \le 1/\epsilon`, satisfy `Q \le M`); the bound
       holds for vectors realizing the successive minima [Cassels, Rational Quadratic Forms,
