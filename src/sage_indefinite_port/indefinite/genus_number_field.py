@@ -1,8 +1,12 @@
 r"""Cusp classes, genus neighbours, lattice isometries and cusp links for `\Lambda = U \perp M` over `O_K` (#54).
 
-`K` is totally real of degree `d`, `M` is anisotropic over `K`, and `\Lambda` is given by a free `O_K`-basis `e, f, m_1, \ldots, m_k`
-(:class:`witt_one_number_field.WittOneLattice` with trivial pseudo-basis ideals). Every lattice below is a `Z`-basis of an `O_K`-module in
-`K^n` with an ambient Gram matrix.
+`K` is totally real of degree `d`, `M` is anisotropic over `K`, and `\Lambda = \mathfrak a_e e \oplus \mathfrak a_e^{-1} f \oplus \bigoplus \mathfrak a_i m_i`
+is given on a pseudo-basis (:class:`witt_one_number_field.WittOneLattice`). Every lattice below is a `Z`-basis of an `O_K`-module in
+`K^n` with an ambient Gram matrix. An isotropic line is `\Lambda \cap K v = \mathfrak b v` (`\mathfrak b` the intersection of the
+`\mathfrak a_i v_i^{-1}`); its divisor is `\mathfrak b\, h(v, \Lambda)`, and the statements below for `v \in \Lambda` hold for `\mathfrak b v`
+with the partner in `\mathfrak b \Lambda`, parities read in `\mathfrak b^2`, and the neighbour taken in `\mathfrak b^{-1} C` with values in
+`\mathfrak b^{-2}`. The orbit of `\mathfrak a_e e` consists of the lines with `\mathfrak b \mathfrak a_e^{-1}` principal whose rescaled
+vector of content `\mathfrak a_e` passes the test below; the heights are `N(y \mathfrak a_e^2)`.
 
 Isometry test. For totally definite `M` of sign `s`, an `O_K`-isometry is a `Z`-isometry of the pairs of `Z`-lattices with the forms
 `s \mathrm{Tr}(h), \mathrm{Tr}(\theta h), \ldots, \mathrm{Tr}(\theta^{d-1} h)`, `\theta` a generator of `K`: these forms determine `h`, and a
@@ -181,57 +185,95 @@ def lattice_isometry(field, sign, gram_a, basis_a, gram_b, basis_b):
 
 
 class Cusps:
-    r"""Frames, classification, neighbours and links of primitive isotropic vectors of a free `U \perp M` (module docstring)."""
+    r"""Frames, classification, neighbours and links of isotropic lines of `U \perp M` on a pseudo-basis (module docstring)."""
 
     def __init__(self, lattice):
-        one = lattice.field.ideal(1)
-        if any(a != one for a in lattice.ideals):
-            raise NotImplementedError(
-                f"cusp classes of U + M over {lattice.field} on the pseudo-basis ideals {lattice.ideals}: the frame and link "
-                f"construction takes a free O_K-basis (#54)"
-            )
         self.lattice = lattice
         self.field = lattice.field
         self.n = lattice.k + 2
         self.coordinates = _Coordinates(self.field)
         self.d = self.coordinates.d
-        self.z_basis = standard_z_basis(self.field, self.n)
-        self.standard = [vector(self.field, [1 if i == j else 0 for i in range(self.n)]) for j in range(self.n)]
+        self.ae = lattice.ideals[0]
+        self.e, self.f = lattice.e, lattice.f
+        self.lam = self.scaled(self.field.ideal(1))
         signs = set(lattice.signs)
         self.sign = lattice.signs[0] if len(signs) == 1 and 0 not in signs else 0
 
     def h(self, x, y):
         return self.lattice.h(x, y)
 
+    def scaled(self, ideal):
+        r"""Return a `Z`-basis of `\mathfrak c \Lambda = \mathfrak c \mathfrak a_e e \oplus \mathfrak c \mathfrak a_e^{-1} f \oplus \mathfrak c M`."""
+        return (
+            [w * self.e for w in (ideal * self.ae).basis()]
+            + [w * self.f for w in (ideal / self.ae).basis()]
+            + self.lattice._scaled_z_basis(ideal)
+        )
+
+    def content(self, v):
+        r"""Return `\mathfrak b` with `\Lambda \cap K v = \mathfrak b v`: the intersection of the `\mathfrak a_i v_i^{-1}`, `v_i \ne 0`."""
+        result = None
+        for a, c in zip(self.lattice.ideals, v):
+            if c != 0:
+                term = a * self.field.ideal(c) ** -1
+                result = term if result is None else result.intersection(term)
+        return result
+
+    def divisor(self, v):
+        r"""Return the integral ideal `\mathfrak b\, h(v, \Lambda)` of the line `\mathfrak b v = \Lambda \cap K v`."""
+        return self.field.ideal([self.h(v, b) for b in self.lam]) * self.content(v)
+
+    def _parity(self, ideal, x):
+        r"""Return the coordinates of `x \in` ``ideal`` modulo 2 in the `Z`-basis of ``ideal``."""
+        basis = matrix(QQ, [self.field(w).list() for w in ideal.basis()])
+        coordinates = basis.solve_left(vector(QQ, self.field(x).list()))
+        assert all(c.is_integral() for c in coordinates)
+        return vector(GF(2), [ZZ(c) % 2 for c in coordinates])
+
+    def _in(self, x, ideal):
+        return x == 0 or (self.field.ideal(x) / ideal).is_integral()
+
     def frame(self, v):
-        r"""Return ``(partner, complement, even)`` for isotropic ``v`` of divisor `O_K`, or ``None`` when the divisor is not `O_K`."""
+        r"""Return ``(content, partner, complement, even)`` for isotropic ``v`` of divisor `O_K`, or ``None`` otherwise.
+
+        With `\Lambda \cap K v = \mathfrak b v`, the partner `v' \in \mathfrak b \Lambda` has `h(v, v') = 1`, so `\mathfrak b v \oplus \mathfrak b^{-1} v'`
+        is a unimodular hyperbolic summand; it is even when `h(v', v') \in 2 \mathfrak b^2` can be reached by `v' \mapsto v' + t`, `t \in v^\perp`."""
         assert self.h(v, v) == 0
-        if self.field.ideal([self.h(v, b) for b in self.standard]) != self.field.ideal(1):
-            return None
-        A = matrix(ZZ, [[ZZ(c) for c in self.coordinates.scalar(self.h(v, b))] for b in self.z_basis]).transpose()
+        b = self.content(v)
+        basis = self.scaled(b)
+        A = matrix(ZZ, [[ZZ(c) for c in self.coordinates.scalar(self.h(v, x))] for x in basis]).transpose()
         c = _integer_solution(A, [ZZ(x) for x in self.coordinates.scalar(1)])
-        assert c is not None
-        partner = sum((ci * b for ci, b in zip(c, self.z_basis)), vector(self.field, self.n))
+        if c is None:
+            return None
+        partner = sum((ci * x for ci, x in zip(c, basis)), vector(self.field, self.n))
         kernel = A.right_kernel_matrix()
-        perp = [sum((ZZ(r) * b for r, b in zip(row, self.z_basis)), vector(self.field, self.n)) for row in kernel.rows()]
-        beta = _gf2_solution([self.coordinates.mod2(self.h(t, t)) for t in perp], self.coordinates.mod2(self.h(partner, partner)))
+        perp = [sum((ZZ(r) * x for r, x in zip(row, basis)), vector(self.field, self.n)) for row in kernel.rows()]
+        square = b**2
+        beta = _gf2_solution([self._parity(square, self.h(t, t)) for t in perp], self._parity(square, self.h(partner, partner)))
         even = beta is not None
         if even:
-            partner = partner + sum((b * t for b, t in zip(beta, perp)), vector(self.field, self.n))
+            partner = partner + sum((ZZ(r) * t for r, t in zip(beta, perp)), vector(self.field, self.n))
             partner = partner - (self.h(partner, partner) / 2) * v
             assert self.h(partner, partner) == 0
         assert self.h(v, partner) == 1
         c0 = self.h(partner, partner)
-        projected = [x - (self.h(x, partner) - c0 * self.h(x, v)) * v - self.h(x, v) * partner for x in self.z_basis]
+        projected = [x - (self.h(x, partner) - c0 * self.h(x, v)) * v - self.h(x, v) * partner for x in self.lam]
         complement = _z_span(self.coordinates, projected, self.lattice.k * self.d, self.n)
-        return partner, complement, even
+        return b, partner, complement, even
 
     def link(self, v):
-        r"""Return `g \in O(\Lambda)` with `g e = v`, or ``None`` when `v \notin O(\Lambda) e` (module docstring)."""
-        framed = self.frame(v)
-        if framed is None or not framed[2]:
+        r"""Return `g \in O(\Lambda)` with `g e \in K^\times v`, or ``None`` when the line of `v` is not in `O(\Lambda) \cdot \mathfrak a_e e`.
+
+        The line `\mathfrak b v` is in the orbit iff `\mathfrak b \mathfrak a_e^{-1} = (c)` is principal and `c v` (content `\mathfrak a_e`) has an
+        even partner with complement isometric to `M` (module docstring)."""
+        quotient = self.content(v) / self.ae
+        if not quotient.is_principal():
             return None
-        partner, complement, _even = framed
+        v = quotient.gens_reduced()[0] * v
+        framed = self.frame(v)
+        if framed is None or not framed[3]:
+            return None
+        _b, partner, complement, _even = framed
         images = lattice_isometry(self.field, self.sign, self.lattice.gram, self.lattice.z_basis, self.lattice.gram, complement)
         if images is None:
             return None
@@ -247,13 +289,15 @@ class Cusps:
     # Kneser neighbours.
 
     def good_prime(self):
-        r"""Return `(\mathfrak p, \pi)`: a principal prime of least norm not dividing `2 \det M`."""
+        r"""Return `(\mathfrak p, \pi)`: a principal prime of least norm prime to `2 \det M \prod \mathfrak a_i^2`."""
         bad = self.field.ideal(2 * self.lattice.inner.det())
+        for a in self.lattice.ideals[2:]:
+            bad = bad * a**2
         bound = 2
         while True:
-            for norm, ideals in sorted(self.field.ideals_of_bdd_norm(bound).items()):
+            for _norm, ideals in sorted(self.field.ideals_of_bdd_norm(bound).items()):
                 for ideal in ideals:
-                    if ideal.is_prime() and ideal.is_principal() and not (bad / ideal).is_integral():
+                    if ideal.is_prime() and ideal.is_principal() and bad.valuation(ideal) == 0:
                         return ideal, ideal.gens_reduced()[0]
             bound *= 2
 
@@ -267,14 +311,22 @@ class Cusps:
         for r in product(*[range(D[i, i]) for i in range(len(basis))]):
             yield sum((ri * sum((c * b for c, b in zip(row, basis)), vector(self.field, self.n)) for ri, row in zip(r, rows)), vector(self.field, self.n))
 
-    def neighbour_vector(self, v, partner, complement, x0, prime, pi):
-        r"""Return the cusp `u = \pi v + \lambda v' + x` of the `\mathfrak p`-neighbour of ``complement`` at the line of ``x0``, or ``None``
-        when the mod-2 lift does not exist (module docstring). ``partner`` must be even."""
+    def scaled_complement(self, b, complement):
+        r"""Return a `Z`-basis of `\mathfrak b^{-1} C`."""
+        return _z_span(self.coordinates, [w * c for w in (b**-1).basis() for c in complement], len(complement), self.n)
+
+    def neighbour_vector(self, v, b, partner, tilde, x0, prime, pi):
+        r"""Return the cusp `u = \pi v + \lambda v' + x` of the `\mathfrak p`-neighbour at the line of ``x0`` `\in \tilde C = \mathfrak b^{-1} C`
+        (``tilde``), or ``None`` when the mod-2 lift does not exist (module docstring). ``partner`` must be even.
+
+        `\tilde C` carries values in `J = \mathfrak b^{-2}`; the conditions `h(x, x) \in 2\pi^2 J` and `\lambda = -h(x, x)/(2\pi) \in \pi J` make
+        `u \in \mathfrak b^{-1} \Lambda`."""
         h = self.h
-        assert h(partner, partner) == 0 and h(x0, x0) in prime
-        pivot = next(c for c in complement if h(x0, c) not in prime)
+        J = b**-2
+        assert h(partner, partner) == 0 and self._in(h(x0, x0), prime * J)
+        pivot = next(c for c in tilde if not self._in(h(x0, c), prime * J))
         residue = prime.residue_field()
-        s = residue.lift(residue(h(x0, x0) / pi) * -1 / residue(2 * h(x0, pivot)))
+        s = residue.lift(residue(-h(x0, x0) / (pi * 2 * h(x0, pivot))))
         A = 2 * residue.lift(1 / residue(2))
         B = 1 - A
         x1 = x0 + pi * A * s * pivot
@@ -282,46 +334,48 @@ class Cusps:
         rho = _gf2_solution([self.coordinates.mod2(square * w) for w in self.coordinates.basis], self.coordinates.mod2(1))
         assert rho is not None
         rho = sum((r * w for r, w in zip(rho, self.coordinates.basis)), self.field(0))
-        beta = _gf2_solution([self.coordinates.mod2(h(c, c)) for c in complement], self.coordinates.mod2(rho * h(x1, x1)))
+        beta = _gf2_solution([self._parity(J, h(c, c)) for c in tilde], self._parity(J, rho * h(x1, x1)))
         if beta is None:
             return None
-        x = x1 + pi * B * sum((b * c for b, c in zip(beta, complement)), vector(self.field, self.n))
-        assert (h(x, x) / (2 * square)).is_integral()
+        x = x1 + pi * B * sum((ZZ(r) * c for r, c in zip(beta, tilde)), vector(self.field, self.n))
+        assert self._in(h(x, x) / (2 * square), J)
         u = pi * v + (-h(x, x) / (2 * pi)) * partner + x
         assert h(u, u) == 0
         return u
 
     def cusp_classes(self, prime=None):
-        r"""Return the cusp classes reached by iterated `\mathfrak p`-neighbours from `e`, as dicts with the cusp ``vector``, ``partner``,
-        ``complement``, ``even`` and, when the cusp lies in `O(\Lambda) e`, its ``link``. Classes are distinct by the invariant
-        (parity of the partner, isometry class of `v^\perp/v`); the first is `e`."""
+        r"""Return the cusp classes reached by iterated `\mathfrak p`-neighbours from `\mathfrak a_e e`, as dicts with the cusp ``vector``, its
+        ``content``, ``partner``, ``complement``, ``even`` and, when the line lies in `O(\Lambda) \mathfrak a_e e`, its ``link``. Classes are
+        distinct by the invariant (parity of the partner, isometry class of `v^\perp/v`); the first is `e`."""
         if prime is None:
             prime, pi = self.good_prime()
         else:
             pi = prime.gens_reduced()[0]
-        e = self.standard[0]
-        classes = [dict(vector=e, partner=self.standard[1], complement=list(self.lattice.z_basis), even=True, link=identity_matrix(self.field, self.n))]
+        classes = [
+            dict(vector=self.e, content=self.ae, partner=self.f, complement=list(self.lattice.z_basis), even=True, link=identity_matrix(self.field, self.n))
+        ]
         queue = [0]
         while queue:
             current = classes[queue.pop()]
             if not current["even"]:
                 continue
-            complement = current["complement"]
-            for x0 in self._residues(complement, [pi * c for c in complement]):
-                if x0.is_zero() or self.h(x0, x0) not in prime:
+            tilde = self.scaled_complement(current["content"], current["complement"])
+            for x0 in self._residues(tilde, [pi * c for c in tilde]):
+                if x0.is_zero() or not self._in(self.h(x0, x0), prime * current["content"] ** -2):
                     continue
-                u = self.neighbour_vector(current["vector"], current["partner"], complement, x0, prime, pi)
+                u = self.neighbour_vector(current["vector"], current["content"], current["partner"], tilde, x0, prime, pi)
                 if u is None:
                     continue
                 framed = self.frame(u)
-                assert framed is not None
-                partner, new, even = framed
+                if framed is None:
+                    continue
+                content, partner, new, even = framed
                 if any(
                     c["even"] == even and lattice_isometry(self.field, self.sign, self.lattice.gram, c["complement"], self.lattice.gram, new) is not None
                     for c in classes
                 ):
                     continue
-                classes.append(dict(vector=u, partner=partner, complement=new, even=even, link=self.link(u)))
+                classes.append(dict(vector=u, content=content, partner=partner, complement=new, even=even, link=self.link(u)))
                 queue.append(len(classes) - 1)
         return classes
 
@@ -332,28 +386,30 @@ class Cusps:
         return even.solve_left(self.coordinates.flat(z))
 
     def _cusps_of_height(self, height):
-        r"""Yield ``(kind, t, g, norm)`` for the isotropic lines with `|N(y)| = ` ``height`` modulo `M_{ev}` and units: ``kind`` is
-        ``"link"`` (a vector of `O(\Lambda) e`, ``g e = v``) or ``"singular"``."""
+        r"""Yield ``(kind, t, g, norm)`` for the isotropic lines `\mathfrak b v`, `v = x e + y f + m \in \mathfrak a_e^{-1} \Lambda`, with
+        `N(y \mathfrak a_e^2) = ` ``height``, modulo `y P(\mathfrak a_e)` and units: ``kind`` is ``"link"`` (``g e`` spans the line,
+        ``norm`` `= |N(h(e, g e))|`) or ``"singular"`` (the line is not in `O(\Lambda) \mathfrak a_e e`)."""
         lattice = self.lattice
-        ideals = self.field.ideals_of_bdd_norm(height).get(height, [])
-        for ideal in ideals:
-            if not ideal.is_principal():
+        module = lattice._scaled_z_basis(self.ae**-1)
+        for ideal in self.field.ideals_of_bdd_norm(height).get(height, []):
+            scaled = ideal / self.ae**2
+            if not scaled.is_principal():
                 continue
-            y = ideal.gens_reduced()[0]
-            for m in self._residues(lattice.z_basis, [y * b for b in lattice.even_e]):
+            y = scaled.gens_reduced()[0]
+            for m in self._residues(module, [y * b for b in lattice.even_e]):
                 x = -lattice.h(m, m) / (2 * y)
                 if not x.is_integral():
                     continue
-                v = x * self.standard[0] + y * self.standard[1] + m
+                v = x * self.e + y * self.f + m
                 t = self._t_coordinates(m[2:] / y)
-                content = self.field.ideal(list(v))
-                if content != self.field.ideal(1):
-                    if content.is_principal():
+                content = self.content(v)
+                if content != self.ae:
+                    if (content / self.ae).is_principal():
                         continue
-                    yield "singular", t, None, height
+                    yield "singular", t, None, None
                     continue
                 g = self.link(v)
-                yield ("link", t, g, height) if g is not None else ("singular", t, None, height)
+                yield ("link", t, g, abs(g[1, 0].norm())) if g is not None else ("singular", t, None, None)
 
     def _norm_polynomial(self):
         r"""Return `Q(\tau) = N(q(\sum \tau_j b_j))` over `Q`, `b_j` the `Z`-basis of `M_{ev}`."""

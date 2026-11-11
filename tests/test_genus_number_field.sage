@@ -49,8 +49,10 @@ def test_sqrt5_neighbour_of_three_squares_is_three_squares():
     x0 = sage_vector(field, [int(0), int(0), int(1), int(2), int(0)])
     e = sage_vector(field, [int(1), int(0), int(0), int(0), int(0)])
     f = sage_vector(field, [int(0), int(1), int(0), int(0), int(0)])
-    u = cusps.neighbour_vector(e, f, list(lattice.z_basis), x0, prime, root)
+    one = field.ideal(int(1))
+    tilde = cusps.scaled_complement(one, list(lattice.z_basis))
+    u = cusps.neighbour_vector(e, one, f, tilde, x0, prime, root)
     assert u is not None and lattice.h(u, u) == int(0) and u[int(0)] == root
-    partner, complement, _even = cusps.frame(u)
+    _content, partner, complement, _even = cusps.frame(u)
     assert lattice.h(u, partner) == int(1)
     assert lattice_isometry(field, int(1), gram, list(lattice.z_basis), gram, complement) is not None
