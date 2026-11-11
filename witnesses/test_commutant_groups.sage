@@ -153,3 +153,38 @@ def test_golden_orthogonal_transporters_rank_four():
     t = equivariant_transporter(commutant, sage_matrix(SageZZ, moved), sources)
     assert t is not None and _is_transporter(t, gram, moved, sources, sources)
     assert equivariant_transporter(commutant, int(3) * gram, sources) is None
+
+
+DEFINITE = QuaternionAlgebra(SageQQ, int(-1), int(-1))
+DEFINITE_BASIS = DEFINITE.basis()
+DEFINITE_PAIRS = tuple((b, int(0) * DEFINITE_BASIS[int(0)]) for b in DEFINITE_BASIS) + tuple(
+    (int(0) * DEFINITE_BASIS[int(0)], b) for b in DEFINITE_BASIS
+)
+
+
+def _definite_coordinates(x):
+    return [SageQQ(c) for c in list(x[int(0)])] + [SageQQ(c) for c in list(x[int(1)])]
+
+
+def _definite_hermitian_plane():
+    def form(x, y):
+        return (y[int(0)].conjugate() * x[int(1)] + y[int(1)].conjugate() * x[int(0)]).reduced_trace()
+
+    gram = sage_matrix(SageZZ, [[int(form(x, y)) for y in DEFINITE_PAIRS] for x in DEFINITE_PAIRS])
+
+    def right(d):
+        return sage_matrix(SageZZ, [_definite_coordinates((x[int(0)] * d, x[int(1)] * d)) for x in DEFINITE_PAIRS]).transpose()
+
+    _one, i, j, _k = DEFINITE_BASIS
+    shear = sage_matrix(SageZZ, [_definite_coordinates((x[int(0)] + x[int(1)], x[int(1)])) for x in DEFINITE_PAIRS]).transpose()
+    return gram, [right(i), right(j)], shear
+
+
+def test_definite_hermitian_quaternion_transporters():
+    gram, sources, shear = _definite_hermitian_plane()
+    assert all(shear * F == F * shear for F in sources) and shear.det() in (int(1), int(-1))
+    commutant = IsometryCommutant(gram, sources)
+    target = (shear.inverse().transpose() * gram * shear.inverse()).change_ring(SageZZ)
+    t = equivariant_transporter(commutant, target, sources)
+    assert t is not None and _is_transporter(t, gram, target, sources, sources)
+    assert equivariant_transporter(commutant, int(3) * gram, sources) is None

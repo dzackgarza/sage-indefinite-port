@@ -753,16 +753,6 @@ def test_definite_hermitian_quaternion_centralizer_is_infinite():
     assert any(g * h != h * g for g in generators for h in generators)
 
 
-def test_definite_hermitian_quaternion_transporters():
-    gram, sources, shear = _definite_hermitian_plane()
-    assert all(shear * F == F * shear for F in sources) and shear.det() in (int(1), int(-1))
-    commutant = IsometryCommutant(gram, sources)
-    target = (shear.inverse().transpose() * gram * shear.inverse()).change_ring(SageZZ)
-    t = equivariant_transporter(commutant, target, sources)
-    assert t is not None and _is_transporter(t, gram, target, sources, sources)
-    assert equivariant_transporter(commutant, int(3) * gram, sources) is None
-
-
 def test_ramified_dyadic_eichler_generators():
     from sage_indefinite_port.indefinite import eichler_orthogonal
 

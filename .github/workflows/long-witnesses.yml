@@ -153,6 +153,8 @@ jobs:
             test: test_golden_orthogonal_transporters_rank_four
           - file: test_finite_normalizers.sage
             test: test_arithmetic_normalizer_of_the_full_orthogonal_group_of_two_hyperbolic_planes
+          - file: test_commutant_groups.sage
+            test: test_definite_hermitian_quaternion_transporters
     steps:
       - uses: actions/checkout@v4
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
