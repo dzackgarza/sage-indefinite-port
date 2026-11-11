@@ -49,12 +49,7 @@ class QuaternaryOrthogonalGroup:
         self.a = [self.h(r, r) for r in rows]
         a1, a2, a3, a4 = self.a
         self.delta = a1 * a2 * a3 * a4
-        if self.delta.is_square():
-            raise NotImplementedError(
-                f"SO(M) for the anisotropic quaternary M with Gram {list(self.gram)} over {field}: the discriminant is a square, so "
-                f"C_0(M) = B x B for a quaternion algebra B over K and SO(M) is commensurable with (B^1 x B^1)/(+-1); that product route is "
-                f"not implemented (#54)"
-            )
+        assert not self.delta.is_square(), "a square discriminant takes SplitQuaternaryOrthogonalGroup"
         x = PolynomialRing(field, "x").gen()
         relative = field.extension(x**2 - self.delta, "w")
         self.relative = relative
@@ -180,3 +175,164 @@ class QuaternaryOrthogonalGroup:
         scale = rows.denominator()
         hermite = matrix(ZZ, scale * rows).hermite_form(include_zero_rows=False)
         return (scale, tuple(hermite.list()))
+
+
+class _Pair:
+    r"""An element `(c_1, c_2)` of `B^\times \times B^\times`."""
+
+    def __init__(self, first, second):
+        self.first, self.second = first, second
+
+    def __mul__(self, other):
+        return _Pair(self.first * other.first, self.second * other.second)
+
+    def __invert__(self):
+        return _Pair(~self.first, ~self.second)
+
+
+class SplitQuaternaryOrthogonalGroup:
+    r"""`O(M)` for an anisotropic quaternary ``gram`` of square discriminant `\delta = s^2` over totally real `K`.
+
+    Model. With `b_l` orthogonal, `h(b_l, b_l) = a_l`, `B = (-a_1 a_2, -a_1 a_3)_K` has `\mathrm{nrd}(t + x i + y j + z k) = t^2 + a_1 a_2 x^2 +
+    a_1 a_3 y^2 + a_1^2 a_2 a_3 z^2`, so `\varphi(b_1) = a_1`, `\varphi(b_2) = i`, `\varphi(b_3) = j`, `\varphi(b_4) = (a_4 / s) k` gives
+    `\mathrm{nrd}\, \varphi(x) = a_1 h(x, x)`; `C_0(M) = B \times B` and `M` is anisotropic iff `B` is a division algebra. `SO(M \otimes K)` is
+    `\{x \mapsto c_1 x c_2^{-1} : \mathrm{nrd}\, c_1 = \mathrm{nrd}\, c_2\} / K^\times` and `x \mapsto \bar x` is improper (Voight, *Quaternion
+    Algebras*, Sec. 4.5; KMRT Sec. 15.B).
+
+    Integral points. If `x \mapsto c_1 x c_2^{-1}` preserves `\Lambda_0 = \varphi(M)` then `c_1 x \bar y c_1^{-1}` and `c_2 \bar x y c_2^{-1}` are again
+    such products (`\overline{c_1 y c_2^{-1}} = \bar c_2^{-1} \bar y \bar c_1` and `\mathrm{nrd}\, c_1 = \mathrm{nrd}\, c_2`), so `c_i \in N(R_i)` with
+    `R_1 = O_K[\Lambda_0 \bar\Lambda_0]`, `R_2 = O_K[\bar\Lambda_0 \Lambda_0]`. In `N(R_1) \times N(R_2)` the pairs with
+    `\mathrm{nrd}(c_1) / \mathrm{nrd}(c_2) \in K^{\times 2}` have finite index (Schreier); `(c_1 / r, c_2)`, `r^2 = \mathrm{nrd}(c_1)/\mathrm{nrd}(c_2)`, is an
+    isometry, determined up to `\pm 1`. The orbit of `\Lambda_0` is finite, and Schreier generators of its stabilizer with `-1` generate
+    `SO(M)`. Improper coset: an improper `g \in O(M)` is `a \circ \bar{\ }` with `a \in SO(M \otimes K)`; it is found when `\bar\Lambda_0` lies in
+    the computed orbit of `\Lambda_0` (`a` the inverse transversal element), and otherwise the method raises.
+    """
+
+    def __init__(self, field, gram, z_basis):
+        assert field.is_totally_real()
+        self.field, self.gram = field, matrix(field, gram)
+        assert self.gram.nrows() == 4 and self.gram == self.gram.transpose()
+        self.z_basis = [vector(field, x) for x in z_basis]
+        rows = []
+        for i in range(4):
+            b = vector(field, [1 if l == i else 0 for l in range(4)])
+            for c in rows:
+                b = b - (self.h(b, c) / self.h(c, c)) * c
+            rows.append(b)
+        self.P = matrix(field, rows)
+        self.a = [self.h(r, r) for r in rows]
+        a1, a2, a3, a4 = self.a
+        delta = a1 * a2 * a3 * a4
+        assert delta.is_square()
+        self.s = delta.sqrt()
+        self.algebra = QuaternionAlgebra(field, -a1 * a2, -a1 * a3)
+        _one, i, j, k = self.algebra.basis()
+        self.images = [self.algebra(a1), i, j, (a4 / self.s) * k]
+        assert all(self.phi(x).reduced_norm() == a1 * self.h(x, x) for x in self.z_basis)
+
+    def h(self, x, y):
+        return (matrix([x]) * self.gram * matrix([y]).transpose())[0, 0]
+
+    def phi(self, x):
+        u = self.P.solve_left(vector(self.field, x))
+        return sum((c * q for c, q in zip(u, self.images)), self.algebra(0))
+
+    def phi_inverse(self, y):
+        t, x, w, z = self.algebra(y).coefficient_tuple()
+        u = vector(self.field, [t / self.a[0], x, w, z * self.s / self.a[3]])
+        return u * self.P
+
+    def _matrix(self, map_):
+        columns = [self.phi_inverse(map_(self.phi(vector(self.field, [1 if l == j else 0 for l in range(4)])))) for j in range(4)]
+        return matrix(self.field, columns).transpose()
+
+    def action(self, pair):
+        left, right = pair.first, ~pair.second
+        return self._matrix(lambda y: left * y * right)
+
+    def bar(self):
+        return self._matrix(lambda y: y.conjugate())
+
+    def preserves(self, g):
+        flat = matrix(QQ, [[c for entry in x for c in self.field(entry).list()] for x in self.z_basis])
+        return all(
+            all(c in ZZ for c in flat.solve_left(vector(QQ, [c for entry in g * x for c in self.field(entry).list()])))
+            for x in self.z_basis
+        )
+
+    def _lattice_key(self, g):
+        rows = matrix(QQ, [[c for entry in g * x for c in self.field(entry).list()] for x in self.z_basis])
+        scale = rows.denominator()
+        return (scale, tuple(matrix(ZZ, scale * rows).hermite_form(include_zero_rows=False).list()))
+
+    def _normalizer(self, elements):
+        lattices = OrderLattices(self.algebra)
+        order = lattices.closure(elements)
+        assert order is not None
+        reduced = ZZ(1)
+        for prime in self.algebra.ramified_places(inf=False):
+            reduced *= prime.norm()
+        expected = abs(self.field.discriminant()) ** 4 * reduced**2
+        return normalizer_generators(self.algebra, order, maximal_orders_containing(self.algebra, order, expected))
+
+    def generators(self):
+        r"""Return generators of `O(M)` (class docstring)."""
+        algebra = self.algebra
+        if algebra.ramified_places(inf=True)[1]:
+            raise NotImplementedError(
+                f"O(M) for the anisotropic quaternary M with Gram {list(self.gram)} over {self.field} of square discriminant: B = {algebra} "
+                f"ramifies at a real place, and the normalizer of its orders needs generators of two-sided ideals beyond Eichler's norm "
+                f"theorem (#54)"
+            )
+        base = [self.phi(x) for x in self.z_basis]
+        one = algebra(1)
+        first = self._normalizer([x * y.conjugate() for x in base for y in base])
+        second = self._normalizer([x.conjugate() * y for x in base for y in base])
+        pairs = [_Pair(n, one) for n in first] + [_Pair(one, n) for n in second]
+        subgroup, _index = finite_preimage_generators(
+            pairs, lambda p: self.field(p.first.reduced_norm() / p.second.reduced_norm()), lambda r: self.field(r).is_square()
+        )
+        actions = []
+        for p in subgroup:
+            r = self.field(p.first.reduced_norm() / p.second.reduced_norm()).sqrt()
+            g = self.action(_Pair(p.first / r, p.second))
+            assert g.transpose() * self.gram * g == self.gram
+            actions.append(g)
+        identity = identity_matrix(self.field, 4)
+        transversal = {self._lattice_key(identity): identity}
+        queue, stabilizer = [identity], []
+        while queue:
+            current = queue.pop(0)
+            for g in actions:
+                moved = g * current
+                point = self._lattice_key(moved)
+                if point in transversal:
+                    stabilizer.append(~transversal[point] * moved)
+                else:
+                    transversal[point] = moved
+                    queue.append(moved)
+        result = [-identity]
+        for g in stabilizer:
+            assert self.preserves(g) and g.transpose() * self.gram * g == self.gram
+            if g != identity:
+                result.append(g)
+        bar = self.bar()
+        assert bar.transpose() * self.gram * bar == self.gram and bar.det() == -1
+        point = self._lattice_key(bar)
+        if point not in transversal:
+            raise NotImplementedError(
+                f"O(M) for the quaternary M with Gram {list(self.gram)} over {self.field}: the conjugate lattice bar(phi(M)) is not in the "
+                f"computed SO-orbit of phi(M), so the improper coset is not decided; it needs an element c_1 with c_1 R_2 c_1^-1 = R_1 (#54)"
+            )
+        improper = ~transversal[point] * bar
+        assert self.preserves(improper) and improper.det() == -1
+        result.append(improper)
+        return tuple(result)
+
+
+def quaternary_orthogonal_group(field, gram, z_basis):
+    r"""Return the `O(M)` model for a quaternary anisotropic ``gram``: split when the discriminant is a square."""
+    gram = matrix(field, gram)
+    if field(gram.det()).is_square():
+        return SplitQuaternaryOrthogonalGroup(field, gram, z_basis)
+    return QuaternaryOrthogonalGroup(field, gram, z_basis)

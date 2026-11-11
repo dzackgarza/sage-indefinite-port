@@ -214,9 +214,9 @@ class WittOneLattice:
                 result.append(full)
             return result
         if self.k == 4 and (0 in self.signs or len(set(self.signs)) != 1):
-            from sage_indefinite_port.indefinite.quaternary_orthogonal_number_field import QuaternaryOrthogonalGroup
+            from sage_indefinite_port.indefinite.quaternary_orthogonal_number_field import quaternary_orthogonal_group
 
-            group = QuaternaryOrthogonalGroup(self.field, self.inner, [x[2:] for x in self.z_basis])
+            group = quaternary_orthogonal_group(self.field, self.inner, [x[2:] for x in self.z_basis])
             result = []
             for g in group.generators():
                 full = identity_matrix(self.field, 6)
