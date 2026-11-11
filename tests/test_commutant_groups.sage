@@ -1083,3 +1083,23 @@ def test_factorwise_centralizer_with_a_gl_type_pair():
     generators = centralizer_generators(IsometryCommutant(gram, [F]))
     assert all(g.transpose() * gram * g == gram and g * F == F * g for g in generators)
     assert any(g.submatrix(int(0), int(0), int(2), int(2)) not in (I2, -I2) for g in generators)
+
+
+def test_factorwise_transporter_with_a_gl_type_pair():
+    r"""The fixture of the GL-type pair test. The shear `P = 1_{X + Y} + [[1, 1], [0, 1]]_U` commutes with `F` and is unimodular, so it is a
+    transporter to its pushed Gram; on the pair the Z[F]-lattices coincide (`O_K = Z[(1 + sqrt 5)/2]` is the multiplier of `Z^2` with `F = A`,
+    `Z[A] = Z[phi]` maximal). `3B` has another determinant."""
+    I2 = sage_identity(SageZZ, int(2))
+    Z2 = sage_matrix(SageZZ, int(2), int(2))
+    U = sage_matrix(SageZZ, [[int(0), int(1)], [int(1), int(0)]])
+    gram = block_matrix(SageZZ, [[Z2, I2, Z2], [I2, Z2, Z2], [Z2, Z2, U]], subdivide=False)
+    A = sage_matrix(SageZZ, [[int(1), int(1)], [int(1), int(0)]])
+    F = block_matrix(SageZZ, [[A, Z2, Z2], [Z2, A.inverse().transpose().change_ring(SageZZ), Z2], [Z2, Z2, I2]], subdivide=False)
+    commutant = IsometryCommutant(gram, [F])
+    shear = sage_matrix(SageZZ, [[int(1), int(1)], [int(0), int(1)]])
+    P = block_matrix(SageZZ, [[I2, Z2, Z2], [Z2, I2, Z2], [Z2, Z2, shear]], subdivide=False)
+    assert P * F == F * P
+    moved = (P.inverse().transpose() * gram * P.inverse()).change_ring(SageZZ)
+    t = equivariant_transporter(commutant, moved, [F])
+    assert t is not None and _is_transporter(t, gram, moved, [F], [F])
+    assert equivariant_transporter(commutant, int(3) * gram, [F]) is None
