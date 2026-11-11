@@ -1097,6 +1097,63 @@ def arithmetic_normalizer_generators(lattice, generators, level, algebra_normali
     return _preimage_normalizer(lattice, stabilizer, columns, level)
 
 
+def _rational_lattice_key(rows):
+    r"""Return the canonical Hermite form of the `Z`-span of rational ``rows``: `\mathrm{HNF}(d R) / d` is independent of `d`."""
+    scale = rows.denominator()
+    return (matrix(ZZ, scale * rows).hermite_form(include_zero_rows=False) / scale).str()
+
+
+def unipotent_abelian_normalizer(lattice, generators, algebra_normalizer):
+    r"""Return generators of `N_{O(L)}(H)` for `H` free abelian on commuting unipotent isometries.
+
+    For commuting unipotent `u, v`, `\log(uv) = \log u + \log v`, so `\log` maps `H` isomorphically onto the lattice
+    `\Lambda = \sum Z \log u_i` in the abelian nilpotent Lie algebra `\mathfrak n = Q \Lambda`, and `g H g^{-1} = H`
+    exactly when `\mathrm{Ad}(g) \Lambda = \Lambda`. So `N(H)` is the stabilizer of `\Lambda` in
+    `S = N_{O(L)}(\mathfrak n)`, the input ``algebra_normalizer(gram, basis of n)``. `H` is arithmetic in its Zariski
+    closure `\exp \mathfrak n` (Malcev; Raghunathan, *Discrete Subgroups of Lie Groups*, II.2.12), and `\mathrm{Ad}(S)`
+    preserves the full lattice `\mathfrak n \cap \mathrm{End}(L)`, which is commensurable with `\Lambda`; so the orbit
+    `\mathrm{Ad}(S) \Lambda` is finite. It is enumerated by canonical Hermite forms and Schreier's lemma gives the
+    stabilizer. When ``algebra_normalizer`` returns a proper subgroup of `N(\mathfrak n)`, the result is `N(H)` within it.
+    """
+    frame = tuple(lattice.module_generators())
+    gram = matrix(ZZ, [[int(lattice.b(x, y)) for y in frame] for x in frame])
+    size = gram.nrows()
+    columns = [_column_matrix(lattice, g) for g in generators]
+    one = identity_matrix(ZZ, size)
+    assert all((F - one) ** size == 0 for F in columns), f"{columns} are not all unipotent"
+    assert all(F * G == G * F for F in columns for G in columns), f"{columns} do not commute"
+    logs = [_unipotent_logarithm(F) for F in columns]
+    span = matrix(QQ, [_flat(X) for X in logs]).row_space().basis_matrix()
+    algebra = [matrix(QQ, size, size, list(row)) for row in span.rows()]
+    coordinates = lambda X: span.solve_left(_flat(X))
+    start = matrix(QQ, [coordinates(X) for X in logs])
+    stabilizer = [matrix(ZZ, g) for g in algebra_normalizer(gram, algebra)]
+
+    def adjoint(g):
+        t = g.change_ring(QQ)
+        return matrix(QQ, [coordinates(t * X * t.inverse()) for X in algebra])
+
+    actions = [adjoint(g) for g in stabilizer]
+    transversal = {_rational_lattice_key(start): one}
+    frontier = [(one, start)]
+    schreier = []
+    while frontier:
+        t, rows = frontier.pop()
+        for g, A in zip(stabilizer, actions, strict=True):
+            image = rows * A
+            k = _rational_lattice_key(image)
+            if k not in transversal:
+                transversal[k] = g * t
+                frontier.append((g * t, image))
+                continue
+            element = matrix(ZZ, transversal[k].inverse() * g * t)
+            if element != one and all(element != e for e in schreier):
+                schreier.append(element)
+    start_key = _rational_lattice_key(start)
+    assert all(_rational_lattice_key(start * adjoint(e)) == start_key for e in schreier)
+    return tuple(_from_columns(lattice, e) for e in schreier)
+
+
 def normalizer_generators(lattice, generators, level, algebra_normalizer):
     r"""Return generators of `N_{O(L)}(H)` for `H = \langle` ``generators`` `\rangle`.
 
@@ -1117,6 +1174,9 @@ def normalizer_generators(lattice, generators, level, algebra_normalizer):
         centralizer, inversion = infinite_cyclic_normalizer(lattice, generators[0])
         return centralizer if inversion is None else (*centralizer, inversion)
     if all(F * G == G * F for F in columns for G in columns):
+        one = identity_matrix(ZZ, columns[0].nrows())
+        if all((F - one) ** F.nrows() == 0 for F in columns):
+            return unipotent_abelian_normalizer(lattice, generators, algebra_normalizer)
         return free_abelian_normalizer(lattice, generators)
     kernel = _congruence_kernel(columns)
     if not all(x * y == y * x for x in kernel for y in kernel):

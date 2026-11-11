@@ -15,6 +15,7 @@ along Z/2. C(H) = O(U), and no automorphism other than the identity is realized.
 
 from sage_extensions.all import *
 from sage.matrix.constructor import matrix
+from sage.modules.free_module_element import vector
 from sage.rings.finite_rings.finite_field_constructor import GF
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage.rings.rational_field import QQ as SageQQ
@@ -373,3 +374,49 @@ def test_virtually_abelian_normalizer_with_a_nonabelian_centralizer_of_the_kerne
     for g in generators:
         assert g * f * ~g in (f, ~f)
     assert any(g * f * ~g == ~f for g in generators)
+
+
+def _eichler_columns(gram, e, a):
+    r"""Return the matrix (columns = images of the basis) of E(e, a): x -> x - b(x, e) a + b(x, a) e - b(a, a) b(x, e) e / 2."""
+    G = gram.change_ring(SageQQ)
+    e = vector(SageQQ, e)
+    a = vector(SageQQ, a)
+    images = []
+    for i in range(G.nrows()):
+        x = vector(SageQQ, [int(1) if j == i else int(0) for j in range(G.nrows())])
+        bxe, bxa, baa = x * G * e, x * G * a, a * G * a
+        images.append(x - bxe * a + bxa * e - baa * bxe * e / int(2))
+    return matrix(SageZZ, matrix(SageQQ, images).transpose())
+
+
+def test_unipotent_abelian_normalizer_of_two_eichler_transvections():
+    r"""L = U1 + U2 + U3 with basis (e1, f1, e2, f2, e3, f3), e = e1, H = <E(e, e2), E(e, f2)>. E(e, c) E(e, c') =
+    E(e, c + c') for c, c' in e^perp isotropic-paired with e, so H = {E(e, c) : c in U2} is free abelian of rank 2,
+    and log maps it onto Lambda = {X_{e,c} : c in U2}. The supplied group S = <swap e2 <-> f2, -1 on U2, -1,
+    E(e1, e3)> normalizes n = Q Lambda, since g X_{e,c} g^{-1} = X_{ge, gc} and each fixes e up to sign and maps U2
+    into U2 + Z e. Each preserves Lambda, so N(H) within S is S, and the swap conjugates E(e, e2) to E(e, f2)."""
+    from sage_indefinite_port.indefinite.finite_normalizers import normalizer_generators
+
+    gram = matrix(SageZZ, [[0, 1, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0], [0, 0, 1, 0, 0, 0],
+                           [0, 0, 0, 0, 0, 1], [0, 0, 0, 0, 1, 0]])
+    lattice = Lattices(ZZ)([[int(c) for c in row] for row in gram.rows()])
+    unit = lambda i: [int(1) if j == i else int(0) for j in range(int(6))]
+    first = _from_columns(lattice, _eichler_columns(gram, unit(int(0)), unit(int(2))))
+    second = _from_columns(lattice, _eichler_columns(gram, unit(int(0)), unit(int(3))))
+    assert first * second == second * first
+    supplied = [
+        matrix(SageZZ, [[1, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0], [0, 0, 1, 0, 0, 0],
+                        [0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 1]]),
+        matrix.diagonal(SageZZ, [1, 1, -1, -1, 1, 1]),
+        matrix.diagonal(SageZZ, [-1, -1, -1, -1, -1, -1]),
+        _eichler_columns(gram, unit(int(0)), unit(int(4))),
+    ]
+    for g in supplied:
+        assert g.transpose() * gram * g == gram
+    generators = normalizer_generators(lattice, (first, second), int(3), lambda _gram, _algebra: supplied)
+    image = lambda g, h: g * h * ~g
+    assert generators
+    small = [first**i * second**j for i in range(int(-1), int(2)) for j in range(int(-1), int(2))]
+    for g in generators:
+        assert image(g, first) in small and image(g, second) in small
+    assert any(image(g, first) == second for g in generators)
