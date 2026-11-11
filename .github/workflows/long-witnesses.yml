@@ -159,6 +159,8 @@ jobs:
             test: ""
           - file: test_equivariant_markings.sage test_unipotent_transporter_beyond_the_linear_step
             test: ""
+          - file: test_finite_normalizers.sage
+            test: test_orthogonal_pair_owner_gives_the_normalizer_of_sl2_times_sl2_on_two_hyperbolic_planes
     steps:
       - uses: actions/checkout@v4
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
