@@ -236,7 +236,7 @@ def _algebra_isomorphism(source_algebra, target_algebra):
     `(u, v, w, t)`, `t \ne 0`, of `\langle a', b', -a'b', -a \rangle`. Following Lam, *Introduction to Quadratic Forms over Fields*, I.3.4, it
     is a value `c = a' u^2 + b' v^2` represented by `\langle -a'b', -a \rangle`, i.e. a point of the conic `\langle -a'b', -a, c \rangle`, decided
     exactly by Sage's number-field conic for each `c`. Such `c` form a nonempty set open at finitely many places, so the enumeration of
-    `(u, v)` over growing boxes of `O_Z` ends. `t \ne 0` because the pure norm form of a division algebra is anisotropic. `y` lies in the
+    `(u, v) = (u_0, v_0) / m` over growing boxes of `O_Z` and growing denominators `m` (dense in every completion) ends. `t \ne 0` because the pure norm form of a division algebra is anisotropic. `y` lies in the
     plane of pure quaternions anticommuting with `x` with `y^2 = b`, a point of a ternary conic, decided exactly."""
     if set(source_algebra.ramified_places(inf=False)) != set(target_algebra.ramified_places(inf=False)) or sorted(
         source_algebra.ramified_places(inf=True)[1], key=str
@@ -250,7 +250,8 @@ def _algebra_isomorphism(source_algebra, target_algebra):
     x, bound = None, 1
     while x is None:
         box = [sum(c * g for c, g in zip(coefficients, integers)) for coefficients in product(range(-bound, bound + 1), repeat=len(integers))]
-        for u, v in product(box, repeat=2):
+        pairs = ((u / m, v / m) for m in range(1, bound + 1) for u, v in product(box, repeat=2))
+        for u, v in pairs:
             c = a2 * u**2 + b2 * v**2
             if c == 0:
                 continue
