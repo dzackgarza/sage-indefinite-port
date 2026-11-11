@@ -92,3 +92,25 @@ def test_rank_three_null_stabilizer_of_twisted_hyperbolic_sum_fixes_one_isotropi
     image = space.stabilizer_discriminant_image()
     assert image.cardinality() == cardinal(2)
     assert rho(minus) in image
+
+
+def test_gamma_three_line_stabilizer_has_schreier_generators_of_index_72():
+    r"""P = Stab(Ze) in O(2U) maps onto the stabilizer of the point <e> among the 16 isotropic
+    points of F_3^4: an element fixing <e> modulo 3 moves Ze inside its Gamma(3)-orbit, and a
+    Gamma(3) element brings it back. The image of O(2U) has order 1152 and is transitive on the
+    16 points, so [P : Gamma(3) meet P] = 1152 / 16 = 72.
+    """
+    from sage_extensions.categories.lattice_centralizers import finite_preimage_generators
+
+    hyperbolic = Lattices(ZZ)("U")
+    ambient = hyperbolic + hyperbolic
+    group = ambient.O()
+    gamma = group.congruence_preimage(3)
+    e, _f, _u, _v = tuple(ambient.module_generators())
+    line = ambient.primitive_isotropic_subobject(e)
+    stabilizer = gamma.stabilizer(line, action="setwise")
+    generators = tuple(stabilizer.group_generators())
+    assert all(g in gamma and line.stabilizes(g) for g in generators)
+    ambient_generators = tuple(group.stabilizer(line, action="setwise").group_generators())
+    _schreier, index = finite_preimage_generators(ambient_generators, lambda g: g, lambda g: g in gamma)
+    assert index == 72

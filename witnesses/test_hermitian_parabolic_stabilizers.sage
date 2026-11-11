@@ -68,3 +68,24 @@ def test_setwise_line_stabilizer_of_the_glued_lattice_induces_the_hand_levi_imag
                 known.add(image)
                 frontier.append(image)
     assert len(known) == int(18)
+
+
+def test_act_eisenstein_cusp_has_the_full_split_levi_image():
+    r"""E^{4,1} = H + I_3 over Z[omega], with rho in the hyperbolic plane H.
+
+    H is unimodular, so it splits off and every pair (a, u) in mu_6 x U(I_3) lifts.
+    U(I_3) is the monomial group mu_6 wr S_3, of order 6^3 * 6 = 1296, so the setwise Levi
+    image of the line Z[omega] rho has order 6 * 1296 = 7776.
+    """
+    field = SageCyclotomicField(int(3))
+    zero, one = field.zero(), field.one()
+    size = int(5)
+    witt = sage_matrix(field, size, size, 0)
+    witt[int(0), int(4)] = witt[int(4), int(0)] = one
+    for k in range(int(1), int(4)):
+        witt[k, k] = one
+    lattice = HermitianLattice((one, field.gen()), witt)
+    middle = _sage_identity(field, int(3))
+    frame = HermitianWittFrame(lattice, witt.parent().identity_matrix(), middle, int(1))
+    assert len(frame.levi_candidates()) == int(7776)
+    assert len(frame.levi_image()) == int(7776)

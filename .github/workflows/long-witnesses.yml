@@ -107,6 +107,36 @@ jobs:
             test: test_gamma_three_transporters_between_null_lines_of_two_hyperbolic_planes
           - file: test_orbits.sage
             test: test_rank_three_null_stabilizer_of_twisted_hyperbolic_sum_fixes_one_isotropic_line
+          - file: test_orbits.sage
+            test: test_gamma_three_line_stabilizer_has_schreier_generators_of_index_72
+          - file: test_hermitian_parabolic_stabilizers.sage
+            test: test_act_eisenstein_cusp_has_the_full_split_levi_image
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_based_null_vectors_split_into_thirty_two_gamma_three_orbits
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_a_based_vector_and_its_negative_under_gamma_three_and_gamma_two
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_based_vector_stabilizer_in_gamma_three_fixes_the_vector
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_null_vectors_under_the_preimage_of_a_non_normal_stabilizer
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_null_lines_split_into_sixteen_gamma_three_orbits
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_null_planes_split_into_eight_gamma_three_orbits_with_stabilizers
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_null_flags_split_into_thirty_two_gamma_three_orbits
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_hyperbolic_summands_split_into_seventy_two_gamma_three_orbits
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_based_pairs_of_prescribed_gram_split_into_288_gamma_three_orbits
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_complete_flags_of_rank_three_split_into_630_gamma_two_orbits
+          - file: test_congruence_orbit_splitting_across_markings.sage
+            test: test_joint_level_and_discriminant_image_on_u_plus_six
+          - file: test_hermitian_negative_transporter_and_preimages.sage
+            test: test_two_i_lines_with_isometric_quotients_have_no_transporter
+          - file: test_hermitian_negative_transporter_and_preimages.sage
+            test: test_gaussian_line_stabilizer_meets_a_joint_residue_and_determinant_preimage
     steps:
       - uses: actions/checkout@v4
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"

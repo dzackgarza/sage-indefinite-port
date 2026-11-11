@@ -70,7 +70,9 @@ def test_isotropic_pair_grams_of_u_plus_u_three():
 
 
 def _unit_constants(rank):
-    one = QQ(1)
+    from sage.rings.rational_field import QQ as SageQQ
+
+    one = SageQQ(int(1))
     return LiMargulisConstants(int(rank), one, one, one, one, one, one, one)
 
 
@@ -118,8 +120,11 @@ def test_quaternion_unit_of_issue_40():
 
     The box of size 3 is the smallest containing g; the theorem's box is out of reach.
     """
-    L = Lattices(ZZ)(matrix(ZZ, [[2, 0, 0, 0], [0, 2, 0, 0], [0, 0, -6, 0], [0, 0, 0, -6]]))
-    g = matrix(ZZ, [[2, 0, 3, 0], [0, 2, 0, -3], [1, 0, 2, 0], [0, -1, 0, 2]])
+    from sage.matrix.constructor import matrix as sage_matrix
+    from sage.rings.integer_ring import ZZ as SageZZ
+
+    L = Lattices(ZZ)([[2, 0, 0, 0], [0, 2, 0, 0], [0, 0, -6, 0], [0, 0, 0, -6]])
+    g = sage_matrix(SageZZ, [[int(c) for c in row] for row in [[2, 0, 3, 0], [0, 2, 0, -3], [1, 0, 2, 0], [0, -1, 0, 2]]])
     frame = tuple(L.module_generators())
     columns = set(tuple(int(c) for c in column) for column in g.columns())
     images = [set(tuple(int(c) for c in phi(x)) for x in frame) for phi in isometries_in_box(L, int(3))]
