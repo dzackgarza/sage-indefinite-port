@@ -27,6 +27,7 @@ from sage.arith.functions import lcm
 from sage.libs.pari import pari
 from sage.matrix.constructor import block_matrix, matrix
 from sage.matrix.special import identity_matrix
+from sage.modules.free_module_element import vector
 from sage.rings.integer_ring import ZZ
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.rational_field import QQ
@@ -191,7 +192,8 @@ def _pair_transporter(commutant, target_gram, targets, start, pair):
 
     The `Z[F]`-lattices `X` and `X'` (pulled back to `X \otimes Q` by `t_0`) are isomorphic exactly when one maps onto the other by `\alpha(F)`,
     `\alpha` a unit of the etale algebra `A = Q[F]|_X` when it has dimension `\dim X`; :class:`_EtaleModel` decides this for any multiplier
-    ring through the maximal order and a finite unit quotient (Eick, Hofmann, O'Brien, J. LMS 2019, arXiv:1811.06190, Sec. 3). The `Y`-part
+    ring through the maximal order and a finite unit quotient (Eick, Hofmann, O'Brien, J. LMS 2019, arXiv:1811.06190, Sec. 3). Otherwise
+    `A` is semisimple, commutative or not, and :class:`_DedekindModel` decides by the Morita reduction to `O_{K_i}`-lattices (Sec. 4). The `Y`-part
     is the contragredient `B_{X'Y'}^{-1} \alpha_X^{-t} B_{XY}`. All pair transporters are `t_0 \cdot \mathrm{diag}(a, b)` over the unitary group of the summand; the
     cosets modulo the elements preserving `X + Y` and trivial on its discriminant group decide integrality with the other factors."""
     e, image = pair
@@ -212,12 +214,6 @@ def _pair_transporter(commutant, target_gram, targets, start, pair):
         action = algebra.action(alpha)
     else:
         model = _dedekind_model(actions, k)
-        if model is None:
-            raise NotImplementedError(
-                f"GL-type summand of the commutant of {commutant.isometries}: Q[F] acting on X (x) Q is not commutative, so its Wedderburn "
-                f"components M_n(K) with n > 1 need explicit matrix units (a splitting of each component) before the Morita reduction of "
-                f"Eick-Hofmann-O'Brien (arXiv:1811.06190, Sec. 4) to O_K-lattices; that splitting is not implemented (#54)"
-            )
         action = model.isomorphism(source_columns, target_columns)
         if action is None:
             return None
@@ -352,41 +348,122 @@ def _etale_model(actions, k):
 
 
 class _DedekindModel:
-    r"""`V = X \otimes Q` as a module over the commutative etale `A = Q[F]|_X = Q[\Theta] = \prod_i K_i` of dimension `< \dim V`:
-    `V = \bigoplus_i V_i`, `V_i = e_i V \cong K_i^{d_i}`, `e_i = e_i(\Theta)` from the Chinese remainder theorem.
+    r"""`V = X \otimes Q` as a module over the semisimple `B = Q[F]|_X` with centre `Q[\Theta] = \prod_i K_i`: `V = \bigoplus_i V_i`,
+    `V_i = \epsilon_i V`, `\epsilon_i = \epsilon_i(\Theta)` from the Chinese remainder theorem, `B_i = \epsilon_i B \cong M_{n_i}(K_i)` with matrix
+    units `e_{ab}` (:meth:`_split`; `e_{11} = \epsilon_i` when `B_i = K_i`).
 
-    Isomorphism (Eick, Hofmann, O'Brien, arXiv:1811.06190, Sec. 4, the reduction to modules over Dedekind domains). When `X` is an
-    `O_A`-module, `X = \bigoplus_i e_i X` with `e_i X` a projective `O_{K_i}`-module of rank `d_i`, so `e_i X \cong O_{K_i}^{d_i - 1} \oplus
-    \mathfrak a_i` (Steinitz; Cohen, *Advanced Topics*, Thm. 1.2.19), with the class of `\mathfrak a_i` its only invariant. PARI ``nfhnf`` gives a
-    pseudo-basis and ``rnfsteinitz`` puts it in the form `(v_1, \ldots, v_d; O, \ldots, O, \mathfrak a)`. With `\mathfrak a' = \gamma \mathfrak a`, the
-    `K_i`-linear `g_i : v_j \mapsto v'_j` (`j < d`), `v_d \mapsto \gamma v'_d` maps `e_i X` onto `e_i X'`; when some class differs there is
-    none. A lattice `X` with a non-maximal multiplier ring is decided through `O_A X` and a finite orbit (:meth:`isomorphism`)."""
+    Morita reduction (Eick, Hofmann, O'Brien, *The conjugacy problem in GL(n, Z)*, J. LMS 2019, arXiv:1811.06190, Sec. 4).
+    `\Gamma = \bigoplus_{i, a, b} O_{K_i} e_{ab}` is an order (a maximal one, `\cong \prod M_{n_i}(O_{K_i})`), and `M = \Gamma X` is a
+    `\Gamma`-lattice with `M = \bigoplus_{i, a} e_{a1} N_i`, `N_i = e_{11} M` an `O_{K_i}`-lattice in the `K_i`-space `e_{11} V_i \cong K_i^{d_i}`.
+    `\mathrm{End}_B(V_i) \cong \mathrm{End}_{K_i}(e_{11} V_i)` by `h \mapsto (e_{a1} w \mapsto e_{a1} h w)`, and a `B`-linear `g` maps `M` onto `M'`
+    exactly when its restrictions map `N_i` onto `N'_i`. So `N_i \cong O_{K_i}^{d_i - 1} \oplus \mathfrak a_i` (Steinitz; Cohen, *Advanced
+    Topics*, Thm. 1.2.19), the class of `\mathfrak a_i` its only invariant. PARI ``nfhnf`` gives a pseudo-basis and ``rnfsteinitz`` puts it in
+    the form `(v_1, \ldots, v_d; O, \ldots, O, \mathfrak a)`. With `\mathfrak a' = \gamma \mathfrak a`, the `K_i`-linear `v_j \mapsto v'_j`
+    (`j < d`), `v_d \mapsto \gamma v'_d` maps `N_i` onto `N'_i`; when some class differs there is none. A lattice `X \subsetneq M` is decided
+    through a finite orbit (:meth:`isomorphism`)."""
 
-    def __init__(self, theta, polynomial):
+    def __init__(self, theta, polynomial, algebra_basis):
         self.theta = theta
         k = theta.nrows()
         self.factors = [factor for factor, _e in polynomial.factor()]
         self.fields = [_number_field(factor) for factor in self.factors]
         evaluate = lambda q: sum((QQ(c) * theta**i for i, c in enumerate(q.list())), matrix(QQ, k, k))
         self.evaluate = evaluate
-        self.idempotents, self.frames = [], []
-        for factor in self.factors:
+        self.idempotents, self.units, self.frames = [], [], []
+        for index, factor in enumerate(self.factors):
             cofactor = polynomial // factor
-            idempotent = evaluate((cofactor * cofactor.inverse_mod(factor)) % polynomial)
-            self.idempotents.append(idempotent)
+            self.idempotents.append(evaluate((cofactor * cofactor.inverse_mod(factor)) % polynomial))
+            self.units.append(self._split(index, algebra_basis))
+            first = self.units[index][0][0]
             degree = factor.degree()
             columns, frame = [], []
-            for w in idempotent.columns():
+            for w in first.columns():
                 w = matrix(QQ, k, 1, list(w))
                 block = [theta**j * w for j in range(degree)]
                 if matrix(QQ, [list(c.column(0)) for c in columns + block]).rank() == len(columns) + degree:
                     columns.extend(block)
                     frame.append(w)
-            assert len(columns) == idempotent.rank()
+            assert len(columns) == first.rank()
             self.frames.append((frame, block_matrix(QQ, [columns], subdivide=False)))
 
+    def _embed(self, index, c):
+        r"""Return the matrix of `c \in K_i` on `V`: `c(\Theta) \epsilon_i`."""
+        K, ring = self.fields[index], self.factors[index].parent()
+        return self.evaluate(ring(K(c).polynomial().list())) * self.idempotents[index]
+
+    def _solve(self, index, y, elements):
+        r"""Return `c_s \in K_i` with `y = \sum_s c_s m_s` for the ``elements`` `m_s \in B_i` (an exact solution is asserted)."""
+        K, degree = self.fields[index], self.factors[index].degree()
+        columns = matrix(QQ, [(self.theta**j * m).list() for m in elements for j in range(degree)]).transpose()
+        solution = columns.solve_right(vector(QQ, y.list()))
+        assert columns * solution == vector(QQ, y.list())
+        return [sum((solution[s * degree + j] * K.gen() ** j for j in range(degree)), K(0)) for s in range(len(elements))]
+
+    def _split(self, index, algebra_basis):
+        r"""Return matrix units `[[e_{ab}]]` of `B_i \cong M_n(K_i)`.
+
+        `n = 1`: `e_{11} = \epsilon_i`. `n = 2`: a noncentral `a` satisfies `a^2 = t a - s` over `K = K_i`, so `i = a - t/2` has `i^2 = \alpha \in K`;
+        for `x` with `j = x - i x i^{-1} \ne 0`, `ij = -ji` and `j^2 = \beta \in K`, so `B_i = (\alpha, \beta)_K`. It is split exactly when the conic
+        `\alpha x^2 + \beta y^2 = z^2` has a `K`-point (Voight, *Quaternion Algebras*, Thm. 5.4.4); then `w = x i + y j` has `w^2 = z^2`, and
+        `u = w + z \ne 0` is a zero divisor (`u (w - z) = 0`). Some `p = u y`, `y \in \{1, i, j, ij\}`, has nonzero reduced trace `\tau` (the
+        trace form is nondegenerate) and reduced rank one, so `p^2 = \tau p` and `e_{11} = p / \tau` is a rank-one idempotent; `e_{22} = 1 - e_{11}`,
+        `e_{12} = e_{11} x e_{22} \ne 0`, `f = e_{22} x' e_{11} \ne 0`, `e_{12} f = c e_{11}`, `e_{21} = c^{-1} f`."""
+        from sage.schemes.plane_conics.constructor import Conic
+
+        K, degree, idempotent = self.fields[index], self.factors[index].degree(), self.idempotents[index]
+        rows = matrix(QQ, [(idempotent * b).list() for b in algebra_basis]).row_space().basis()
+        k = idempotent.nrows()
+        component = [matrix(QQ, k, k, list(r)) for r in rows]
+        assert len(component) % degree == 0 and ZZ(len(component) // degree).is_square()
+        n = ZZ(len(component) // degree).isqrt()
+        if n == 1:
+            return [[idempotent]]
+        if n > 2:
+            raise NotImplementedError(
+                f"Wedderburn component of dimension {n}^2 over {K}: explicit matrix units of a central simple algebra of degree n >= 3 need the "
+                f"splitting algorithm of Ivanyos, Ronyai and Schicho (J. Algebra 2012), which is not implemented (#54)"
+            )
+        a = next(b for b in component if any(b * c != c * b for c in component))
+        t, s = self._solve(index, a * a, [a, idempotent])
+        i = a - self._embed(index, t / 2)
+        (alpha,) = self._solve(index, i * i, [idempotent])
+        i_inverse = self._embed(index, ~alpha) * i
+        j = next(m for m in (x - i * x * i_inverse for x in component) if not m.is_zero())
+        (beta,) = self._solve(index, j * j, [idempotent])
+        found, point = Conic(K, [alpha, beta, -1]).has_rational_point(point=True)
+        if not found:
+            raise NotImplementedError(
+                f"Wedderburn component ({alpha}, {beta})_{K} of Q[F]|_X is a quaternion division algebra D: X is then a lattice over an order of "
+                f"D acting on D^d, whose isomorphism classes (ideal classes of quaternion orders and their Steinitz-type invariant) are not "
+                f"implemented for this route (#54)"
+            )
+        x, y, z = (K(c) for c in point)
+        u = self._embed(index, x) * i + self._embed(index, y) * j + self._embed(index, z)
+        for factor in (idempotent, i, j, i * j):
+            p = u * factor
+            if p.is_zero():
+                continue
+            (tau,) = self._solve(index, p * p, [p])
+            if tau != 0:
+                first = self._embed(index, ~tau) * p
+                break
+        second = idempotent - first
+        upper = next(m for m in (first * b * second for b in component) if not m.is_zero())
+        lower = next(m for m in (second * b * first for b in component) if not m.is_zero())
+        (c,) = self._solve(index, upper * lower, [first])
+        lower = self._embed(index, ~c) * lower
+        units = [[first, upper], [lower, second]]
+        assert all(units[p][q] * units[q2][r] == (units[p][r] if q == q2 else 0 * idempotent) for p in range(2) for q in range(2) for q2 in range(2) for r in range(2))
+        return units
+
+    def _component_basis(self, index, vectors):
+        r"""Return the columns `\Theta^j e_{a1} v_l` (`a, l, j`) spanning `V_i` for a `K_i`-basis ``vectors`` of `e_{11} V_i`."""
+        degree = self.factors[index].degree()
+        columns = [self.theta**j * row[0] * v for row in self.units[index] for v in vectors for j in range(degree)]
+        return block_matrix(QQ, [columns], subdivide=False)
+
     def _coordinates(self, index, column):
-        r"""Return the `K_i`-coordinates of ``column`` `\in V_i` on the frame `w_1, \ldots, w_{d_i}`."""
+        r"""Return the `K_i`-coordinates of ``column`` `\in e_{11} V_i` on the frame `w_1, \ldots, w_{d_i}`."""
         K = self.fields[index]
         frame, basis = self.frames[index]
         degree = self.factors[index].degree()
@@ -394,20 +471,23 @@ class _DedekindModel:
         return [sum((c[l * degree + j] * K.gen() ** j for j in range(degree)), K(0)) for l in range(len(frame))]
 
     def _maximal_span(self, columns):
-        r"""Return a `Z`-basis (columns) of `O_A X` for `X` spanned by ``columns``."""
+        r"""Return a `Z`-basis (columns) of `M = \Gamma X` for `X` spanned by ``columns``."""
         generated = []
         for index, K in enumerate(self.fields):
             for w in K.ring_of_integers().basis():
-                operator = self.evaluate(self.factors[index].parent()(K(w).polynomial().list())) * self.idempotents[index]
-                generated.extend(operator * matrix(QQ, len(c), 1, list(c)) for c in columns)
+                for row in self.units[index]:
+                    for unit in row:
+                        operator = self._embed(index, w) * unit
+                        generated.extend(operator * matrix(QQ, len(c), 1, list(c)) for c in columns)
         return _lattice_basis([list(g.column(0)) for g in generated])
 
     def _steinitz(self, index, columns):
-        r"""Return ``(vectors, ideal)``: `K_i`-coordinate columns `v_1, \ldots, v_d` and `\mathfrak a` with `e_i M = \bigoplus_{j<d} O v_j \oplus \mathfrak a v_d`
-        for the `O_A`-module `M` spanned by ``columns``."""
+        r"""Return ``(vectors, ideal)``: `K_i`-coordinate columns `v_1, \ldots, v_d` and `\mathfrak a` with `N_i = \bigoplus_{j<d} O v_j \oplus \mathfrak a v_d`
+        for the `\Gamma`-module `M` spanned by ``columns``."""
         K = self.fields[index]
         nf = K.pari_nf()
-        projected = [self._coordinates(index, (self.idempotents[index] * matrix(QQ, len(c), 1, list(c))).column(0)) for c in columns]
+        first = self.units[index][0][0]
+        projected = [self._coordinates(index, (first * matrix(QQ, len(c), 1, list(c))).column(0)) for c in columns]
         d = len(projected[0])
         generators = pari.matrix(d, len(projected), [projected[j][i].__pari__() for i in range(d) for j in range(len(projected))])
         hnf = nf.nfhnf([generators, pari([1] * len(projected))])
@@ -422,20 +502,18 @@ class _DedekindModel:
         return vectors, ideals[-1]
 
     def _rational(self, index, g):
-        r"""Return the matrix on `V` of the `K_i`-linear map with frame matrix ``g`` on `V_i`, the identity on the other `V_j`."""
+        r"""Return the matrix on `V` of the `B`-linear map restricting to the `K_i`-linear map with frame matrix ``g`` on `e_{11} V_i`, the
+        identity on the other `V_j`."""
         k = self.theta.nrows()
         images, bases = [], []
-        for other, (frame, basis) in enumerate(self.frames):
+        for other, (frame, _basis) in enumerate(self.frames):
+            basis = self._component_basis(other, frame)
             bases.append(basis)
             if other != index:
                 images.append(basis)
                 continue
-            K, ring, degree = self.fields[index], self.factors[index].parent(), self.factors[index].degree()
-            columns = []
-            for l in range(len(frame)):
-                image = sum((self.evaluate(ring(K(g[m, l]).polynomial().list())) * frame[m] for m in range(len(frame))), matrix(QQ, k, 1))
-                columns.extend(self.theta**j * image for j in range(degree))
-            images.append(block_matrix(QQ, [columns], subdivide=False))
+            mapped = [sum((self._embed(index, g[m, l]) * frame[m] for m in range(len(frame))), matrix(QQ, k, 1)) for l in range(len(frame))]
+            images.append(self._component_basis(index, mapped))
         return block_matrix(QQ, [images], subdivide=False) * block_matrix(QQ, [bases], subdivide=False).inverse()
 
     def _automorphism_generators(self, pseudo):
@@ -543,10 +621,9 @@ def _lattice_basis(vectors):
 
 
 def _dedekind_model(actions, k):
-    r"""Return the :class:`_DedekindModel` when ``actions`` generate a commutative algebra on `Q^k`, else ``None``; `\Theta` is an integer
-    combination with squarefree minimal polynomial of degree the dimension of the algebra (a primitive element of the etale algebra)."""
-    if not all(x * y == y * x for x in actions for y in actions):
-        return None
+    r"""Return the :class:`_DedekindModel` of the semisimple algebra `B` generated by ``actions`` on `Q^k`. Its centre is the kernel of
+    `z \mapsto ([z, F])_F` on a `Q`-basis of `B`, and `\Theta` is an integer combination of a centre basis with squarefree minimal polynomial of
+    degree the dimension of the centre (a primitive element of the etale centre)."""
     one = identity_matrix(QQ, k)
     span, frontier = [one], [one]
     while frontier:
@@ -556,13 +633,15 @@ def _dedekind_model(actions, k):
             if matrix(QQ, [m.list() for m in span + [moved]]).rank() > len(span):
                 span.append(moved)
                 frontier.append(moved)
+    commutators = matrix(QQ, len(span), len(actions) * k * k, [c for m in span for F in actions for c in (m * F - F * m).list()])
+    center = [sum((c * m for c, m in zip(v, span)), matrix(QQ, k, k)) for v in commutators.left_kernel().basis()]
     bound = 1
     while True:
-        for coefficients in product(range(-bound, bound + 1), repeat=len(actions)):
-            theta = sum((c * F for c, F in zip(coefficients, actions)), matrix(QQ, k, k))
+        for coefficients in product(range(-bound, bound + 1), repeat=len(center)):
+            theta = sum((c * z for c, z in zip(coefficients, center)), matrix(QQ, k, k))
             polynomial = theta.minimal_polynomial()
-            if polynomial.degree() == len(span) and polynomial.is_squarefree():
-                return _DedekindModel(theta, polynomial)
+            if polynomial.degree() == len(center) and polynomial.is_squarefree():
+                return _DedekindModel(theta, polynomial, span)
         bound += 1
 
 
