@@ -65,6 +65,10 @@ f_1, 2 f_2 is stable under F = E + E (E e = e, E g = g - 2e, E f = f + g - e). I
 matrices in M_2(Z) that preserve Z + 2Z, the Eichler order of level 2, not M_2(Z). A unimodular t_0 = 1 + E_{16} is a
 transporter from (B', F) to (t_0^{-t} B' t_0^{-1}, t_0 F t_0^{-1}) by construction; the Gram 3 B' has another determinant.
 
+Product Levi quotient. On M + <1> with basis e, f, g, h, F = E + 1 has A / rad = Q x Q (one Jordan block of length three on
+M and a fixed h). t_0 = 1 + E_{14} is a transporter from (B, F) to (t_0^{-t} B t_0^{-1}, t_0 F t_0^{-1}) by construction;
+3B has another determinant, so no transporter to it exists.
+
 Vector orbits. L = U, F = -1, so C(Z) = O(U) = {+-1, +-swap}. The orbit of v = (1, 1) is {+-v}; its stabilizer
 is {1, swap}, and (1, -1) has another norm, so it is not in the orbit.
 """
@@ -434,3 +438,16 @@ def test_nonmaximal_levi_transporter():
     t = equivariant_transporter(commutant, target_gram, [target])
     assert t is not None and _is_transporter(t, lattice_gram, target_gram, [F], [target])
     assert equivariant_transporter(commutant, int(3) * target_gram, [target]) is None
+
+
+def test_product_levi_quotient_transporter():
+    gram = sage_matrix(SageZZ, int(4), int(4), [int(c) for c in (0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1)])
+    F = sage_matrix(SageZZ, int(4), int(4), [int(c) for c in (1, -1, -2, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1)])
+    commutant = IsometryCommutant(gram, [F])
+    witness = sage_identity(SageZZ, int(4)).__copy__()
+    witness[int(0), int(3)] = int(1)
+    target = witness * F * witness.inverse()
+    target_gram = witness.inverse().transpose() * gram * witness.inverse()
+    t = equivariant_transporter(commutant, target_gram, [target])
+    assert t is not None and _is_transporter(t, gram, target_gram, [F], [target])
+    assert equivariant_transporter(commutant, int(3) * gram, [F]) is None

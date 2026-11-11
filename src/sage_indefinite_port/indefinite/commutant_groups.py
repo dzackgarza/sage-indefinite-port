@@ -15,8 +15,9 @@ centralizers. This module adds the routes that need the port's arithmetic groups
   case `C(Z) = O^1`, generated from the Voronoi unit generators of `O`. In the orthogonal case
   `C(Z)` is the norm-one torus of `Q(c)` in `O` and at most one coset of anticommuting `w`.
 - `A / rad = Q`: the transporter coset `t_r (\pm N(Q))` is searched for an integral point.
-- `A / rad = M_n(Q)`, `n \ge 2`: the transporter is reduced to an isometry of integral forms on
-  the Levi module and a coset search in the unipotent radical (:func:`levi_transporter`).
+- `A / rad = \prod_k M_{n_k}(Q)` otherwise: the transporter is reduced, factor by factor along the adjoint
+  orbits, to isometries of integral forms (or `GL` pairs) on the Levi modules and a coset search in the
+  unipotent radical (:func:`levi_transporter`).
 - `A` central simple over a number field `K \ne Q`: `A = End_K(W)` for a simple module `W`, the
   adjoint is the adjoint of a Hermitian, symmetric or alternating form `h` on `W`, and `C(Z)` is
   the subgroup of `U(\Lambda, h)` lying in `O`, `\Lambda = O_K O f` (:class:`CentralFieldCommutant`).
@@ -52,7 +53,7 @@ from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.rational_field import QQ
 from sage.rings.real_double import RDF
 from sage.schemes.plane_conics.constructor import Conic
-from sage_extensions.algebras.isometry_commutant import IsometryCommutant, _form_generators, _integer_solution, _short_vectors
+from sage_extensions.algebras.isometry_commutant import IsometryCommutant, LeviQuotient, _integer_solution, _short_vectors
 from sage_extensions.categories.lattice_centralizers import finite_preimage_generators
 from sage_extensions.categories.lattices import Lattices
 from sage_indefinite_port.indefinite import (
@@ -411,148 +412,75 @@ def _sublattices(size, index):
             yield basis
 
 
-class LeviFrame:
-    r"""The Levi module of a commutant with `A / rad A \cong M_n(Q)` and `O / (O \cap rad) = M_n(Z)`.
+def _factor_initial_blocks(frame, j, image, twisted):
+    r"""Return representatives `\bar a_0` of the solutions on the orbit of factor `j`, modulo the right action of `H`.
 
-    This is the frame of :meth:`IsometryCommutant.radical_centralizer_generators`: an idempotent `e`
-    of rank `r / n`, the module `\bar M = O e / (rad\, e) \cong Z^n` on which `A / rad` acts faithfully,
-    and the form `b` with `\bar x^\dagger \bar y = b(x, y)\, t` modulo the radical. For a self-adjoint
-    `h \in A` the twisted form `b_h(x, y)` is read from `x^\dagger h y` in the same way.
-
-    The image `\bar O` of `O` in `End(\bar M) = M_n(Z)` may be a proper (nonmaximal) suborder of finite index. A rational
-    preimage of any `\bar a \in M_n(Q)` is then still unique modulo the radical, and :meth:`lift` decides the integral
-    points over it; the liftable isometries `\bar\Gamma` lie in `\bar O^\times \cap O(\bar M, b)`, which contains a principal
-    congruence subgroup of `O(\bar M, b)`, so the coset enumeration of :meth:`coset_representatives` is Schreier descent from
-    the maximal order `M_n(Z)` and stays finite.
+    ``image`` lists the bases of `Y_k = (\bar X \bar M)_k`, ``twisted`` the Grams `G^h_k` on `\bar M_k`. For `\pi(j) = j`,
+    `\bar a_j` is an isometry of `(\bar M_j, G_j)` onto a sublattice `Z \subseteq Y_j` of index `i` with
+    `i^2 \det G^h|_{Y_j} = \det G_j`; one isometry per `Z`. For a pair `k = \pi(j) \ne j`, `\bar a_j = Y_j X` and
+    `\bar a_k = Y_k W` with `X^t (Y_j^t G^h_j Y_k) W = G_j`; modulo `GL(\bar M_j)` the matrix `X` is a Hermite sublattice basis
+    of index dividing `\det G_j / \det(Y_j^t G^h_j Y_k)`, and `W` is forced and must be integral.
+    Returns pairs (block of `j`, block of `\pi(j)` or ``None``).
     """
-
-    def __init__(self, commutant):
-        self.commutant = commutant
-        radical = commutant.radical_basis()
-        assert radical
-        size = commutant.dimension()
-        radical_rows = matrix(QQ, [commutant.coordinates(x) for x in radical])
-        radical_lattice = matrix(ZZ, radical_rows.denominator() * radical_rows).saturation()
-        _diagonal, _left, change = radical_lattice.smith_form()
-        kernel_rank = radical_lattice.nrows()
-        self._project = lambda element: (commutant.coordinates(element) * change.change_ring(QQ))[kernel_rank:]
-        inverse_change = change.inverse().change_ring(QQ)
-        order = [m.change_ring(QQ) for m in commutant.order_basis]
-        self._section = tuple(
-            sum(c * m for c, m in zip(inverse_change.row(kernel_rank + i), order)) for i in range(size - kernel_rank)
-        )
-        quotient = size - kernel_rank
-        degree = ZZ(quotient).isqrt()
-        if degree**2 != quotient or degree < 2:
-            raise NotImplementedError(
-                f"the semisimple quotient of dimension {quotient} of the commutant of {commutant.isometries} is not "
-                f"M_n(Q) with n >= 2; its transporter needs the factor-wise Levi decision (#54)"
-            )
-        self.degree = degree
-        try:
-            e = commutant._primitive_idempotent(degree)
-        except ArithmeticError as error:
-            raise NotImplementedError(
-                f"the Levi quotient of the commutant of {commutant.isometries} has no idempotent of rank "
-                f"{commutant.rank // degree} in the sparse box; a division Levi quotient has no Levi-module "
-                f"transporter route (#54)"
-            ) from error
-        images = matrix(QQ, [self._project(m * e) for m in order])
-        hermite = matrix(ZZ, images.denominator() * images).hermite_form(include_zero_rows=False)
-        assert hermite.nrows() == degree
-        self._basis = matrix(QQ, hermite) / images.denominator()
-        self._lifts = [
-            sum(c * m for c, m in zip(images.solve_left(row), order)) * e for row in self._basis.rows()
-        ]
-        action_rows = matrix(QQ, [self.on_module(m).list() for m in self._section])
-        assert action_rows.denominator() == 1 and action_rows.det() != 0
-        self._action_inverse = action_rows.inverse()
-        adjoint_e = commutant.adjoint(e)
-        line = matrix(QQ, [self._project(adjoint_e * m * e) for m in order])
-        generator = matrix(QQ, matrix(ZZ, line.denominator() * line).hermite_form(include_zero_rows=False))
-        self._line = generator / line.denominator()
-        assert self._line.nrows() == 1
-        self.gram = matrix(ZZ, self.form(identity_matrix(QQ, commutant.rank)))
-
-    def on_module(self, element):
-        return matrix(QQ, [self._basis.solve_left(self._project(element * m)) for m in self._lifts]).transpose()
-
-    def form(self, middle):
-        r"""Return the Gram matrix of `b_h` on `\bar M`, `h =` ``middle``."""
-        adjoint = self.commutant.adjoint
-        return matrix(
-            QQ, [[self._line.solve_left(self._project(adjoint(x) * middle * y))[0] for y in self._lifts] for x in self._lifts]
-        )
-
-    def lift(self, start, middle, isometry):
-        r"""Return an integral `t_0 a` with `\bar a =` ``isometry`` and `a^\dagger h a = 1`, or ``None``.
-
-        A preimage `p` has `d = p^\dagger h p - 1` self-adjoint in the radical, so `a = p (1 + d)^{-1/2}`
-        solves the equation. All solutions over `\bar a` are `a N(Q)`, decided by `_integral_point`.
-        """
-        commutant = self.commutant
-        combination = vector(QQ, matrix(QQ, isometry).list()) * self._action_inverse
-        preimage = sum(c * m for c, m in zip(combination, self._section))
-        defect = commutant.adjoint(preimage) * middle * preimage - identity_matrix(QQ, commutant.rank)
-        nilpotency = commutant._radical_nilpotency()[0]
-        assert (defect ** (nilpotency + 1)).is_zero() and commutant.adjoint(defect) == defect
-        root = sum(binomial(QQ((-1, 2)), k) * defect**k for k in range(nilpotency + 1))
-        return commutant._integral_point(start * preimage * root, 1)
-
-    def coset_representatives(self):
-        r"""Return representatives of the left cosets of the image `\bar\Gamma` of `C(Z)` in `O(\bar M, b)`.
-
-        `\bar\Gamma` is the set of liftable isometries, of finite index (Platonov-Rapinchuk, Thm. 4.1).
-        `x \bar\Gamma = y \bar\Gamma` exactly when `y^{-1} x` lifts; generators permute the finite coset set.
-        """
-        if hasattr(self, "_cosets"):
-            return self._cosets
-        one = identity_matrix(QQ, self.commutant.rank)
-        generators = [matrix(QQ, g) for g in _form_generators(self.gram)]
-        representatives = [identity_matrix(QQ, self.degree)]
-        position = 0
-        while position < len(representatives):
-            current = representatives[position]
-            position += 1
-            for generator in generators:
-                moved = generator * current
-                if not any(self.lift(one, one, known.inverse() * moved) is not None for known in representatives):
-                    representatives.append(moved)
-        self._cosets = tuple(representatives)
-        return self._cosets
+    k = frame.partner[j]
+    gram = frame.grams[j]
+    restricted = image[j].transpose() * twisted[j] * image[k]
+    ratio = QQ(gram.det()) / restricted.det()
+    result = []
+    if k == j:
+        if ratio <= 0 or not ratio.is_square() or ratio.sqrt().denominator() != 1:
+            return result
+        for hermite in _sublattices(frame.degrees[j], ratio.sqrt()):
+            sublattice = image[j] * hermite
+            isometry = _form_isometry(gram, sublattice.transpose() * twisted[j] * sublattice)
+            if isometry is not None:
+                result.append((sublattice * isometry, None))
+        return result
+    if ratio.denominator() != 1:
+        return result
+    for index in ZZ(abs(ratio)).divisors():
+        for hermite in _sublattices(frame.degrees[j], index):
+            partner = restricted.inverse() * matrix(QQ, hermite).transpose().inverse() * gram
+            if partner.denominator() == 1:
+                result.append((image[j] * hermite, image[k] * partner))
+    return result
 
 
 def levi_transporter(commutant, target_gram, targets):
-    r"""Return an integral transporter when `A / rad A = M_n(Q)`, or ``None`` as a proof of absence.
+    r"""Return an integral transporter when `A / rad A = \prod_k M_{n_k}(Q)`, or ``None`` as a proof of absence.
 
-    Every transporter is `t_0 a` with `a \in X = \{a : t_0 a \in M_r(Z)\}` and `a^\dagger h a = 1`. With
-    `Y = \bar X \bar M`, every such `\bar a` maps `\bar M` into `Y` (for any Levi order `\bar O`). The equation makes `\bar a` an isometry of `(\bar M, b)` onto
-    a sublattice `Z \subseteq Y` for `b_h`, of index `k` with `k^2 \det b_h|_Y = \det b`. For each such
-    `Z` and one isometry `\bar a_0`, the integral solutions over `\bar a_0 O(\bar M)` are right
-    `C(Z)`-invariant, so one representative of each left `\bar\Gamma`-coset is lifted by :meth:`LeviFrame.lift`.
+    Every transporter is `t_0 a` with `a \in X = \{a : t_0 a \in M_r(Z)\}` and `a^\dagger h a = 1`, `h = B^{-1} t_0^t B' t_0`.
+    With `Y = \bar X \bar M = \bigoplus_k Y_k` (:class:`LeviQuotient` of the provider), `\bar a = (\bar a_k)` maps each
+    `\bar M_k` into `Y_k` and satisfies `\bar a_j^t G^h_j \bar a_{\pi(j)} = G_j`. These solutions are `\bar a_0 H` for the
+    finitely many `\bar a_0` of :func:`_factor_initial_blocks`, one product over the adjoint orbits of factors. The integral
+    solutions over `\bar a_0 g` are right `C(Z)`-invariant, so one representative of each left `\bar\Gamma`-coset of `H` is
+    lifted by :meth:`LeviQuotient.lift`. A nonmaximal Levi order `\bar O` only enlarges the coset set.
     """
     start = rational_intertwiner(commutant.isometries, targets)
     if start is None:
         return None
     square = commutant.gram.change_ring(QQ).inverse() * start.transpose() * target_gram * start
     assert commutant.contains(square)
-    frame = LeviFrame(commutant)
-    twisted = frame.form(square)
-    columns = [column for x in solution_lattice(commutant, start) for column in frame.on_module(x).columns()]
-    generators = matrix(QQ, columns)
-    span = matrix(ZZ, generators.denominator() * generators).hermite_form(include_zero_rows=False)
-    image = (matrix(QQ, span) / generators.denominator()).transpose()
-    assert image.nrows() == image.ncols() == frame.degree
-    ratio = QQ(frame.gram.det()) / (image.transpose() * twisted * image).det()
-    if ratio <= 0 or not ratio.is_square() or ratio.sqrt().denominator() != 1:
-        return None
-    for hermite in _sublattices(frame.degree, ratio.sqrt()):
-        sublattice = image * hermite
-        isometry = _form_isometry(frame.gram, sublattice.transpose() * twisted * sublattice)
-        if isometry is None:
-            continue
-        initial = sublattice * isometry
-        assert initial.transpose() * twisted * initial == frame.gram
+    frame = LeviQuotient(commutant)
+    factors = range(len(frame.degrees))
+    twisted = [frame.form(square, j) for j in factors]
+    actions = [frame.on_module(x) for x in solution_lattice(commutant, start)]
+    image = []
+    for k in factors:
+        o, n = frame.offsets[k], frame.degrees[k]
+        generators = matrix(QQ, [column for action in actions for column in action[o : o + n, o : o + n].columns()])
+        span = matrix(ZZ, generators.denominator() * generators).hermite_form(include_zero_rows=False)
+        image.append((matrix(QQ, span) / generators.denominator()).transpose())
+        assert image[-1].nrows() == image[-1].ncols() == n
+    orbits = [j for j in factors if frame.partner[j] >= j]
+    choices = [_factor_initial_blocks(frame, j, image, twisted) for j in orbits]
+    for selection in product(*choices):
+        blocks = [None] * len(frame.degrees)
+        for j, (block, partner) in zip(orbits, selection):
+            blocks[j] = block
+            if partner is not None:
+                blocks[frame.partner[j]] = partner
+        initial = frame.block_diagonal(blocks)
         for representative in frame.coset_representatives():
             found = frame.lift(start, square, initial * representative)
             if found is not None:
