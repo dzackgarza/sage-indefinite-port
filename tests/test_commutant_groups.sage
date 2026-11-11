@@ -897,3 +897,25 @@ def test_voronoi_perfect_forms_over_real_quadratic_field():
         assert voronoi.involution(s) == s
         assert voronoi.gram(s).is_positive_definite()
         assert voronoi.is_perfect(s)
+
+
+def test_voronoi_sl1_of_lipschitz_order_over_sqrt2():
+    r"""`SL_1` of `Z[sqrt 2]<1, i, j, k>` in the totally definite `(-1, -1)` over `Q(sqrt 2)`: `a^2 + b^2 + c^2 + d^2 = 1` at both real places
+    forces every coordinate `p + q sqrt 2` to satisfy `|p| <= 1` and `|q| sqrt 2 <= 1`, so `q = 0` and `SL_1 = Q_8 = \\{\\pm 1, \\pm i, \\pm j, \\pm k\\}`."""
+    algebra, voronoi = _lipschitz_over_sqrt2()
+    _one, i, j, k = algebra.basis()
+    units = voronoi.unit_generators()
+    assert all(voronoi.is_unit(u) for u in units)
+    generators = voronoi.sl1_generators()
+    assert all(voronoi.in_order(u) and u.reduced_norm() == int(1) for u in generators)
+    one = algebra(int(1))
+    elements, frontier = [one], [one]
+    while frontier:
+        current = frontier.pop()
+        for g in generators:
+            image = current * g
+            if image not in elements:
+                elements.append(image)
+                frontier.append(image)
+    assert len(elements) == int(8)
+    assert i in elements and j in elements and k in elements
