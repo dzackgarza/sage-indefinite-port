@@ -551,45 +551,59 @@ class _DedekindModel:
         return units
 
     def _split_cubic(self, index, component):
-        r"""Return matrix units of a degree-three component `B_i`, or raise when it is a division algebra or no cyclic maximal subfield is found.
+        r"""Return matrix units of a degree-three component `B_i`, or raise when it is a division algebra.
 
         For `x \in B_i` with minimal polynomial `f` over `K = K_i`: a reducible `f = g h` gives the zero divisor `g(x)`. An irreducible cubic `f`
         gives the maximal subfield `L = K(x)`; when `L / K` is cyclic (`f` has three roots in `L`), `\sigma(x) = s(x)` for a root `s \ne x`, and
         Skolem-Noether gives `u` with `u x = s(x) u` (a linear equation). Then `B_i = (L/K, \sigma, a)` with `a = u^3 \in K`, which splits exactly
         when `a = N_{L/K}(y)` (Pierce, *Associative Algebras*, Sec. 15.1), decided by PARI ``rnfisnorm``. Then `w = y^{-1} u` has
-        `w^3 = N(y)^{-1} a = 1` and `w \notin K`, so `w - 1` is a zero divisor (:meth:`_units_from_zero_divisor`). The trial elements are the
-        `Q`-basis of `B_i`, their pairwise sums and their products."""
+        `w^3 = N(y)^{-1} a = 1` and `w \notin K`, so `w - 1` is a zero divisor (:meth:`_units_from_zero_divisor`).
+
+        The trial elements run through the full lattice `\Gamma = \sum Z b_s` of the `Q`-basis `b_s` in boxes of growing size, so the search
+        ends. A degree-three central simple algebra is either `M_3(K)` or a division algebra, and it is cyclic (Wedderburn; Pierce Sec. 15.6):
+        some maximal subfield `L` is cyclic over `K`. `\Gamma \cap L` is a full lattice of `L`, and the elements of `L` generating it over `K`
+        are the complement of finitely many proper subspaces, so `\Gamma \cap L` contains one, and that element is either reached or an earlier
+        element with a reducible minimal polynomial or a cyclic one is."""
         K = self.fields[index]
-        candidates = [*component, *(b + c for s, b in enumerate(component) for c in component[s + 1 :]), *(b * c for b in component for c in component)]
-        for x in candidates:
-            if all(x * b == b * x for b in component):
-                continue
-            f = self._k_minimal_polynomial(index, x)
-            factors = f.factor()
-            if len(factors) > 1 or factors[0][1] > 1:
-                z = self._field_matrix(index, x, factors[0][0])
-                return self._units_from_zero_divisor(index, z, component, 3)
-            L = K.extension(f, "l")
-            roots = [r for r, _m in f.change_ring(L).roots() if r != L.gen()]
-            if len(roots) != 2:
-                continue
-            sigma = self._field_matrix(index, x, roots[0])
-            equations = matrix(QQ, [(b * x - sigma * b).list() for b in component])
-            kernel = equations.left_kernel().basis()
-            u = sum((c * b for c, b in zip(kernel[0], component)), 0 * x)
-            (a,) = self._solve(index, u * u * u, [self.idempotents[index]])
-            found, y = K(a).is_norm(L, element=True)
-            if not found:
-                raise NotImplementedError(
-                    f"Wedderburn component (L/K, sigma, {a}) with L = {L} is a cubic division algebra over {K}: lattices over its orders "
-                    f"are not classified by this route (#54)"
-                )
-            w = self._field_matrix(index, x, ~L(y)) * u
-            return self._units_from_zero_divisor(index, w - self.idempotents[index], component, 3)
-        raise NotImplementedError(
-            f"no cyclic maximal subfield of the degree-three component over {K} among the trial elements: explicit matrix units need the "
-            f"splitting algorithm of Ivanyos, Ronyai and Schicho (J. Algebra 2012), which is not implemented (#54)"
-        )
+        bound = 0
+        while True:
+            bound += 1
+            for coefficients in product(range(-bound, bound + 1), repeat=len(component)):
+                if max(abs(c) for c in coefficients) != bound:
+                    continue
+                x = sum((c * b for c, b in zip(coefficients, component)), 0 * component[0])
+                units = self._cubic_trial(index, component, x)
+                if units is not None:
+                    return units
+
+    def _cubic_trial(self, index, component, x):
+        r"""Return matrix units from the trial element ``x`` (:meth:`_split_cubic`), or ``None`` when ``x`` is central or `K(x) / K` is not
+        cyclic; raise for a division algebra."""
+        K = self.fields[index]
+        if all(x * b == b * x for b in component):
+            return None
+        f = self._k_minimal_polynomial(index, x)
+        factors = f.factor()
+        if len(factors) > 1 or factors[0][1] > 1:
+            z = self._field_matrix(index, x, factors[0][0])
+            return self._units_from_zero_divisor(index, z, component, 3)
+        L = K.extension(f, "l")
+        roots = [r for r, _m in f.change_ring(L).roots() if r != L.gen()]
+        if len(roots) != 2:
+            return None
+        sigma = self._field_matrix(index, x, roots[0])
+        equations = matrix(QQ, [(b * x - sigma * b).list() for b in component])
+        kernel = equations.left_kernel().basis()
+        u = sum((c * b for c, b in zip(kernel[0], component)), 0 * x)
+        (a,) = self._solve(index, u * u * u, [self.idempotents[index]])
+        found, y = K(a).is_norm(L, element=True)
+        if not found:
+            raise NotImplementedError(
+                f"Wedderburn component (L/K, sigma, {a}) with L = {L} is a cubic division algebra over {K}: lattices over its orders "
+                f"are not classified by this route (#54)"
+            )
+        w = self._field_matrix(index, x, ~L(y)) * u
+        return self._units_from_zero_divisor(index, w - self.idempotents[index], component, 3)
 
     def _quaternion(self, index, alpha, beta, i, j):
         r"""Record the division component `B_i = D = (\alpha, \beta)_K` (:meth:`_split`): the Sage algebra with integral `c^2 \alpha, c'^2 \beta`
