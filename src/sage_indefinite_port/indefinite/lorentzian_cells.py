@@ -5693,6 +5693,15 @@ def _search_initial_vectors(lattice: Lattices.ParentMethods, direction: tuple[Ra
     # maximum.  Increasing the bound cannot change those exact shells;
     # resume at the first previously unexamined multiplier instead of
     # repeatedly scanning the same empty prefix.
+    # Termination (Lorentzian.g:400-421, LORENTZ_SearchInitialVectorOpt).
+    # The enumerator accepts only t with q(t) > 0, and scaled_max starts at
+    # q(t) for the primitive t, so scaled_max > 0; the loop only increases
+    # it. Thus the scaled_max <= 0 guards here are unreachable invariants.
+    # With NONNEGATIVE_SQUARES, t itself lies in the fibre of multiplier
+    # q(t)/d <= scaled_max/d, so the first pass returns. With ZERO_SQUARES
+    # the lattice is isotropic (checked above): a primitive isotropic v has
+    # b(v, t) != 0, since t^perp is definite, so -v or v pairs positively
+    # with t, and the loop returns once scaled_max >= b(v, t).
     next_multiplier = 1
     while True:
         maximum = enumerator.max_multiplier()
@@ -5791,8 +5800,10 @@ def _upper_bound(gram: Matrix_rational_dense, base_normal: FreeModuleElement[Rat
         raise ArithmeticError("LORENTZ_Kernel_Flipping requires a positive-norm base normal")
     if direction_square >= 0:
         raise ArithmeticError("LORENTZ_Kernel_Flipping requires a negative-norm direction normal")
-    # Lorentzian.g:778-790. The required negative-norm direction guarantees
-    # eventual negativity, so the reference's doubling search terminates.
+    # Lorentzian.g:778-790. Termination: f(s) = A + 2Bs + Cs^2 with
+    # A = base_square > 0 and C = direction_square < 0, both checked above.
+    # The roots of f are real, and f(s) < 0 for every s > s+, the larger
+    # root. The doubling of s from 1 passes s+ after finitely many steps.
     shift = SageQQ.one()
     while base_square + 2 * cross * shift + direction_square * shift * shift >= 0:
         shift *= 2
