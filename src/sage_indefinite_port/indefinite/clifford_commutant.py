@@ -41,6 +41,7 @@ from sage.schemes.plane_conics.constructor import Conic
 from sage_extensions.algebras.isometry_commutant import IsometryCommutant
 from sage_extensions.categories.lattice_centralizers import finite_preimage_generators
 from sage_indefinite_port.indefinite.commutant_groups import _verified
+from sage_indefinite_port.indefinite.quaternion_orders_number_field import connecting_generator
 from sage_indefinite_port.indefinite.fuchsian_domain import positive_generator, quaternion_unit_engine, ramified_real_places
 
 
@@ -329,8 +330,9 @@ def clifford_transporter(source, start, square, target_gram, targets):
         x, y = isomorphism
         psi0 = lambda q: sum((c * g for c, g in zip(q.coefficient_tuple(), (algebra(1), x, y, x * y))), algebra(0))
         connecting = [psi0(o) * o2 for o in source.order_basis for o2 in order]
-        alpha = voronoi.norm_generator(connecting, _reduced_norm_ideal(source.field, connecting))
-        assert alpha is not None, f"the connecting ideal over {source.field} is not principal (#54)"
+        alpha = connecting_generator(voronoi, connecting)
+        if alpha is None:
+            continue
         psi = lambda q: ~alpha * psi0(q) * alpha
         assert all(voronoi.in_order(psi(o)) for o in source.order_basis)
         image = lambda q: sum((c * F for c, F in zip(q.coefficient_tuple(), frame)), 0 * frame[0])

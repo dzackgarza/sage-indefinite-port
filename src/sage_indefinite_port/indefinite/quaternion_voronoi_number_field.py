@@ -270,6 +270,9 @@ class QuaternionOrderVoronoi:
         lattice = [self.element(row) for row in basis.rows()]
         if self.is_totally_definite():
             return self._definite_norm_generator(lattice, target)
+        # No real ramification: by Eichler's norm theorem the ideal is principal exactly when its reduced norm is (Voight Sec. 28.5).
+        if not target.is_principal():
+            return None
         iota = self.involution
         gram = matrix(QQ, [[(self.trace(iota(x) * y) + self.trace(iota(y) * x)) / 2 for y in lattice] for x in lattice])
         bound = QQ(1)

@@ -575,11 +575,11 @@ class FuchsianDomain:
 
     def norm_generator(self, elements, target):
         r"""Return `x` in the `Z`-span of ``elements`` with `\mathrm{nrd}(x) O_F =` ``target``; for an invertible one-sided ideal of a maximal
-        order such `x` generates it, and it exists exactly when ``target`` has a generator positive at the ramified real places."""
+        order such `x` generates it, and it exists exactly when ``target`` has a generator positive at the ramified real places (Eichler's
+        norm theorem); otherwise return ``None``."""
         field = self.center
-        assert positive_generator(field, target, self.ramified) is not None, (
-            f"{target} has no generator positive at the ramified real places, so no ideal of that reduced norm is principal (Eichler)"
-        )
+        if positive_generator(field, target, self.ramified) is None:
+            return None
         basis = self.lattices.basis(elements)
         assert len(basis) == 4 * self.degree
         gram = self.absolute_gram(basis)
