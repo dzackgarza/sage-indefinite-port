@@ -1504,14 +1504,15 @@ class CentralFieldCommutant:
         r"""Return `D` with `D^t T D = S` for two models `S = \gamma F`, `T = \gamma' F'` of :meth:`_orthogonal_model`.
 
         With `F = F'` and `\rho = \gamma / \gamma'`: `\rho = 1` gives `D = 1`. For `F = H \perp H` (`n = 4`), `\det S = \rho^4 \det T = \det(D)^2 \det T`
-        makes `\rho` a unit, and then `D = diag(1, \rho, 1, \rho)`. Other pairs need the Eichler-criterion isometry of distinct complements.
+        makes `\rho` a unit, and then `D = diag(1, \rho, 1, \rho)`. For `F = F'` of any rank and `\rho = u^2`, `u \in O_K^\times`,
+        `D = u \cdot 1` gives `D^t T D = u^2 T = S`. Other pairs need the Eichler-criterion isometry of distinct complements.
         """
         if target[0] != "orthogonal":
             return None
         rho = S[0, 1] / T[0, 1]
         integers = self.field.ring_of_integers()
-        if source[3] == target[3] and rho == 1:
-            return identity_matrix(self.field, self.n)
+        if source[3] == target[3] and rho in integers and ~rho in integers and rho.is_square():
+            return rho.sqrt() * identity_matrix(self.field, self.n)
         if self.n == 4:
             if rho not in integers or ~rho not in integers:
                 return None
