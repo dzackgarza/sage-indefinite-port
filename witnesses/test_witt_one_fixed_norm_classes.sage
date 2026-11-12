@@ -6,6 +6,9 @@ from sage.modules.free_module_element import vector as sage_vector
 from sage.rings.integer_ring import ZZ as SageZZ
 from sage_indefinite_port.indefinite.witt_one_hilbert import HilbertWittOneLattice
 from sage_indefinite_port.indefinite.witt_one_fixed_norm_classes import (
+    HilbertFixedNormClasses,
+    witt_one_fixed_norm_vector_classes,
+)
 
 
 def _is_transporter(h, x, y, gram):
