@@ -2,7 +2,7 @@ r"""Li-Margulis isotropic reductions whose box searches need long runs (#56)."""
 
 from sage_extensions.all import *
 import pytest
-from sage_indefinite_port.indefinite.li_margulis import (
+from sage_indefinite_port.indefinite.li_margulis import isotropic_vector_orbits_in_box
 
 
 def test_isotropic_orbits_of_u_plus_u2():
