@@ -165,6 +165,10 @@ jobs:
             test: test_u2u2a2_stable_building_records
           - file: test_ternary_orthogonal_number_field.sage
             test: test_ternary_orthogonal_group_of_one_minus_eleven_minus_nineteen_over_sqrt5
+          - file: test_bianchi_groups.sage
+            test: test_swan_generators_of_gl2_over_sqrt_minus_five
+          - file: test_semisimple_voronoi_cubic_division.sage
+            test: test_units_are_integral_of_reduced_norm_plus_minus_one_and_one_has_infinite_order
     steps:
       - uses: actions/checkout@v4
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
