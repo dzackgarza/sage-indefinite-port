@@ -169,6 +169,8 @@ jobs:
             test: test_swan_generators_of_gl2_over_sqrt_minus_five
           - file: test_semisimple_voronoi_cubic_division.sage
             test: test_units_are_integral_of_reduced_norm_plus_minus_one_and_one_has_infinite_order
+          - file: test_split_quaternary_orthogonal_number_field.sage
+            test: test_split_quaternary_orthogonal_group_of_the_norm_form_of_eleven_nineteen_over_sqrt5
     steps:
       - uses: actions/checkout@v4
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
