@@ -45,3 +45,10 @@ Machine: 10 cores, 7 GB RAM, Sage in the `sage-research` container.
 | `test_based_isotropic_orbits` | provider | 1 min 01 s to 1 min 05 s | 5 passed |
 | Acceptance sample, CI run 43114552529 | port b5e5f54, provider 27be129 | dispatched 2026-11-11 about 19:55; still running 2026-11-12 10:06 | 67 success, 18 failure, 7 cancelled, 14 queued |
 | GitHub long-witness jobs, runs at f03ef36 and later | port | 6 h each | cancelled at the GitHub per-job limit |
+
+## Acceptance run 43114552529 failures (port b5e5f54, provider 27be129)
+
+| Shards | Error | Cause |
+|---|---|---|
+| boundaries 1, 2, 3, 11; isotropic_orbits 2, 3, 6 (Dawes 2U+<-2>+<-6> buildings, O_plus_N two lines and two planes) | `the plane's basis, its completion to P^perp and that to L must give a ZZ-basis of L` (determinant -3, -4) | Upstream 7b72780 (#326) completed the plane basis greedily by rank, which does not give a ZZ-basis; replaced by Smith completion of primitive sublattices |
+| vector_orbits 15-23; vector_stabilizers 0, 3 (E10 pointed classes, degree 14 and similar) | `PariError: the PARI stack overflows (current size: 1073741824)` in `QuadraticForm.number_of_automorphisms` of a definite lattice, reached from `Isom(L, M).is_empty()` through `lattice_morphisms.py:3357` and `:4246` | The PARI `qfauto` stack limit of the CI job; not a port defect |
