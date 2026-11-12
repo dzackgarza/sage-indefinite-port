@@ -161,6 +161,10 @@ jobs:
             test: ""
           - file: test_finite_normalizers.sage
             test: test_orthogonal_pair_owner_gives_the_normalizer_of_sl2_times_sl2_on_two_hyperbolic_planes
+          - file: test_dawes_u2u2a2_incidence_records.py
+            test: test_u2u2a2_stable_building_records
+          - file: test_ternary_orthogonal_number_field.sage
+            test: test_ternary_orthogonal_group_of_one_minus_eleven_minus_nineteen_over_sqrt5
     steps:
       - uses: actions/checkout@v4
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
