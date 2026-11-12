@@ -5,7 +5,7 @@
 Complete the open v1 issues of the port: #44, #15, #18, #68, #70 and #72. The ledger is #4. Its "Done when" is #64 together with #44.
 v2 issues (#40–#61, #69) are retained post-v1 work. They do not gate v1. Do not work on them under this goal.
 
-The status below was derived on 2026-11-11 by reading each issue and its comments against the source at port `9290d8d` and provider `1e58a2c`.
+The status below was derived on 2026-11-11 by reading each issue and its comments against the source at port `9290d8d` and sage-extensions `1e58a2c`.
 An issue comment, a handoff or an earlier goal is a claim. Before you trust a row, check it in the source.
 
 ## Working rule
@@ -27,7 +27,7 @@ An issue comment, a handoff or an earlier goal is a claim. Before you trust a ro
 | #18 | Orbit counts of norm-0, norm-2, plane and flag classes are invariant under a change of basis | 19_IndefiniteComp cases with a unimodular basis change | done |
 | #18 | Public consumer and assertion for the flag invariant (`isotropic_induction.py:526`) | Equal on equivalent flags, separates two inequivalent flags | done |
 | #18 | Public assertion for spacelike squares at positive index 1 (`marked_lattices.py:540`) | A spacelike vector class on a signature-(1,n) lattice | done |
-| #68 | Negative isometry decisions through each port branch (Lorentzian, Eichler/approximate model), independent of the provider's spinor-genus prefilter | A same-genus non-isometric pair at index 1 and one at index ≥ 2, decided by the port route | index 1 done; index ≥ 2: no input found among 36100 diagonal (2,2) genera (comment on #68); needs a non-diagonal genus with several spinor genera |
+| #68 | Negative isometry decisions through each port branch (Lorentzian, Eichler/approximate model), independent of the sage-extensions's spinor-genus prefilter | A same-genus non-isometric pair at index 1 and one at index ≥ 2, decided by the port route | index 1 done; index ≥ 2: no input found among 36100 diagonal (2,2) genera (comment on #68); needs a non-diagonal genus with several spinor genera |
 | #44 | Marked and flag transporters and orbit splitting under a nontrivial congruence subgroup at rank ≥ 2 | Preimage of {±Id} in O(2U mod 3): orbit splitting of null planes or flags, with Γ-transporters | done |
 | #44 | Graded flag-quotient action honours the requested Γ; partial flag | `isotropic_orbits.py:459` hard-codes `O()` | done |
 | #44 | Oriented multi-block flags; oriented objects reachable through the marked-category API | 3U oriented complete flag | done |
@@ -36,14 +36,14 @@ An issue comment, a handoff or an earlier goal is a claim. Before you trust a ro
 | #15 | `edge_directions` at multi-component cusps (`edgewalk.py:1358-1372`, takes `omitted[0]` without proof); tied candidates; unverified corner vertices; raw `int(entry)` (`edgewalk.py:1073`, `edgewalk_rank2.py:48`) | Red reproducer for each observed defect, then the source-faithful fix | done |
 | #15 | Loop defects: the `scaled_max ≤ 0` guard and the `_upper_bound` doubling (`lorentzian_cells.py:5789`) | Reproducer or termination proof | done |
 | #70 | Regression: line-stabilizer generators on the Enriques N lattice against the exact stabilizer | Generated group equals the stabilizer | done |
-| #4 | Generators of O⁺(L) and O^Ω(L) for the consumer, including O^Ω on T_Co; the O⁺ (2,2) reflection check (`prov/lattices.py:4131`) | Check the owning issue; then a small example of each | done |
+| #4 | Generators of O⁺(L) and O^Ω(L) for the consumer, including O^Ω on T_Co; the O⁺ (2,2) reflection check (`sage-extensions/lattices.py:4131`) | Check the owning issue; then a small example of each | done |
 
 ## Verification
 
 | Issue | Item | Status |
 |---|---|---|
-| #44 | Frozen rank-1 and rank-2 consumers at the final port/provider pair | open |
+| #44 | Frozen rank-1 and rank-2 consumers at the final port/sage-extensions pair | open |
 | #70 | I_1_1 and I_1_2 discriminant indices, O_plus_N two lines and two planes, sage-extensions #294, at the final pair | open |
 | #68 | Conway–Sloane and positive witnesses at the final pair | open |
 | #15 | `IsotropicCases_55` within its gate | open |
-| #64 | Remaining families at one port/provider pair | open |
+| #64 | Remaining families at one port/sage-extensions pair | open |

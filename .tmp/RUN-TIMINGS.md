@@ -9,13 +9,13 @@ Machine: 10 cores, 7 GB RAM, Sage in the `sage-research` container.
 | Test or run | Code | Duration | Outcome |
 |---|---|---|---|
 | `test_port_negative_isometry_index_two` (diag(1,-2,-64,128), #68) | port 7882647 | 10 h 15 min, not finished | Killed. Stack stayed in `EichlerEnvelope.right_coset_transversal` (eichler.py:514) the whole time: the orbit of phi(L) on integral structures is too large for det 16384 |
-| `test_congruence_isotropic_planes` (#44) | provider before 8a26ca5 | more than 1 h 45 min, not finished | Killed. Pairwise coset membership in `_orbit_words` |
-| `test_congruence_isotropic_planes` | provider 9ca46e7 | 1 min 37 s | 2 failed (CON-17 regression from the oriented-flag Mor change) |
-| `test_congruence_isotropic_planes` | provider 4ef62d6 | 1 h 07 min | 2 passed |
-| `test_congruence_isotropic_planes` | provider b9bdd1e, publish during the run | 37 min | 2 failed with `tokenize.TokenError` (source changed under the process) |
-| `test_congruence_isotropic_planes` | provider 27be129 | 59 min 39 s | 2 passed |
-| `test_isotropic_flag_graded_action` Gamma case | provider before 8a26ca5 | more than 40 min, not finished | Killed |
-| `test_isotropic_flag_graded_action` | provider 8a26ca5 and later | 2 min 14 s to 3 min 31 s | 3 passed |
+| `test_congruence_isotropic_planes` (#44) | sage-extensions before 8a26ca5 | more than 1 h 45 min, not finished | Killed. Pairwise coset membership in `_orbit_words` |
+| `test_congruence_isotropic_planes` | sage-extensions 9ca46e7 | 1 min 37 s | 2 failed (CON-17 regression from the oriented-flag Mor change) |
+| `test_congruence_isotropic_planes` | sage-extensions 4ef62d6 | 1 h 07 min | 2 passed |
+| `test_congruence_isotropic_planes` | sage-extensions b9bdd1e, publish during the run | 37 min | 2 failed with `tokenize.TokenError` (source changed under the process) |
+| `test_congruence_isotropic_planes` | sage-extensions 27be129 | 59 min 39 s | 2 passed |
+| `test_isotropic_flag_graded_action` Gamma case | sage-extensions before 8a26ca5 | more than 40 min, not finished | Killed |
+| `test_isotropic_flag_graded_action` | sage-extensions 8a26ca5 and later | 2 min 14 s to 3 min 31 s | 3 passed |
 | `test_ternary_orthogonal_number_field` (v2) | port 1a65bd6 | more than 1 h, not finished | Killed. p^8 candidate search in `maximal_orders_containing` |
 | `test_ternary_orthogonal_number_field` (v2) | port 699e64a | 1 min 46 s | Failed at the `_neighbours` count assertion |
 | `test_ternary_orthogonal_number_field` (v2) | port e3c34b7 | more than 35 min, not finished | Killed. Sage ideal membership in the zero-divisor loop |
@@ -31,22 +31,22 @@ Machine: 10 cores, 7 GB RAM, Sage in the `sage-research` container.
 | `test_li_margulis_box` | port | 33 min (1982 s) | 16 passed |
 | `test_orbit_counts_basis_change` (#18) | port 6f99942 | 14 min 33 s | 2 passed |
 | `test_enriques_line_stabilizers` (#70) | port fda734f | 21 min 12 s | 2 passed |
-| `test_dawes_2U_minus2_minus6_stabilizers` (#18) | provider 64f7a0b | 4 min 25 s | 3 passed (failed in 4 min 13 s before 84d54f0) |
-| `test_general_isotropic_markings` | provider 4ef62d6 and later | 11 min 04 s to 11 min 35 s | 23 passed |
-| `test_partial_isotropic_flag_orbits` | provider | 9 min 27 s to 9 min 59 s | 5 passed |
-| `test_oriented_isotropic_flags` | provider b9bdd1e + 1b617bc | 6 min 49 s | 5 passed, 1 test-literal failure, fixed |
+| `test_dawes_2U_minus2_minus6_stabilizers` (#18) | sage-extensions 64f7a0b | 4 min 25 s | 3 passed (failed in 4 min 13 s before 84d54f0) |
+| `test_general_isotropic_markings` | sage-extensions 4ef62d6 and later | 11 min 04 s to 11 min 35 s | 23 passed |
+| `test_partial_isotropic_flag_orbits` | sage-extensions | 9 min 27 s to 9 min 59 s | 5 passed |
+| `test_oriented_isotropic_flags` | sage-extensions b9bdd1e + 1b617bc | 6 min 49 s | 5 passed, 1 test-literal failure, fixed |
 | `test_generator_determinism` (#72) | port c6db72b | 2 min 17 s | 1 passed |
 | determinism + pinned Lorentzian + facet contracts | port c6db72b | 2 min 48 s | 75 passed |
 | `test_edgewalk_options` (#15) | port fd8b122 | 1 min 21 s | 6 passed |
 | `test_unsupported_quotient_group` (#44) | port 59a4a8e | 1 min 04 s | 1 passed |
 | `test_flag_invariant_consumer` (#18) | port 79f7e89 | 46 s | 2 passed |
 | `test_spacelike_vector_classes_index_one` (#18) | port ba7abdf | 40 s | 1 passed |
-| `test_marked_subgroup_transporter` | provider adc6814 | 31 s | 4 passed (4 failed in 27 s at 9ca46e7 and 51c8167) |
-| `test_based_isotropic_orbits` | provider | 1 min 01 s to 1 min 05 s | 5 passed |
-| Acceptance sample, CI run 43114552529 | port b5e5f54, provider 27be129 | dispatched 2026-11-11 about 19:55; still running 2026-11-12 10:06 | 67 success, 18 failure, 7 cancelled, 14 queued |
+| `test_marked_subgroup_transporter` | sage-extensions adc6814 | 31 s | 4 passed (4 failed in 27 s at 9ca46e7 and 51c8167) |
+| `test_based_isotropic_orbits` | sage-extensions | 1 min 01 s to 1 min 05 s | 5 passed |
+| Acceptance sample, CI run 43114552529 | port b5e5f54, sage-extensions 27be129 | dispatched 2026-11-11 about 19:55; still running 2026-11-12 10:06 | 67 success, 18 failure, 7 cancelled, 14 queued |
 | GitHub long-witness jobs, runs at f03ef36 and later | port | 6 h each | cancelled at the GitHub per-job limit |
 
-## Acceptance run 43114552529 failures (port b5e5f54, provider 27be129)
+## Acceptance run 43114552529 failures (port b5e5f54, sage-extensions 27be129)
 
 | Shards | Error | Cause |
 |---|---|---|
