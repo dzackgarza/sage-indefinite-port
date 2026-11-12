@@ -1236,7 +1236,23 @@ class EichlerRecursion:
         return witness
 
     def _indefinite_isometry(self, source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> LatticeIsometryMethods | None:
+        r"""An isometry between reduced indefinite lattices, or None.
+
+        source: IndefiniteForms.g:1320-1359 and ApproximateModels.h:1305-1390.
+
+        Documented departure (#68): over ZZ at rank at least 3 the verdict is
+        decided before the covering search by genus and spinor-genus equality.
+        Eichler-Kneser (Kneser 1956; Cassels, Rational Quadratic Forms, Ch. 11,
+        Thm. 1.3 and Cor.; Conway-Sloane, SPLAG Ch. 15 Sec. 9): an indefinite
+        genus of rank at least 3 has one class per spinor genus. The source
+        reaches a negative verdict only by exhausting the covering family; for
+        a same-genus pair of large 2-adic index (diag(1,-2,-64,128) and the
+        other class of its genus) its coset expansion exceeds 10^6 cosets and
+        does not finish. The positive witness keeps the source covering route,
+        which must then succeed.
+        """
         cacheable = source.base_ring() == ZZ and target.base_ring() == ZZ
+        spinor_decided = cacheable and source.module_rank() >= 3
         if cacheable:
             known, cached = self._groupoid.cached_isometry(source, target)
             if known:
@@ -1252,6 +1268,21 @@ class EichlerRecursion:
             if source.genus() != target.genus() or not isometric_within_genus(source, target):
                 return None
             return low_witt_isometry_witness(source, target)
+        if spinor_decided:
+            # Departure from IndefiniteForms.g:1320-1359 and
+            # ApproximateModels.h:1305-1390 (#68): the source decides a
+            # same-genus pair only by exhausting the covering family, whose
+            # coset expansion exceeds 10^6 cosets at large 2-adic index.
+            # Eichler-Kneser (Kneser 1956; Cassels, Rational Quadratic Forms,
+            # Ch. 11, Thm. 1.3 and Cor.; SPLAG Ch. 15 Sec. 9): an indefinite
+            # genus of rank >= 3 has one class per spinor genus. So distinct
+            # genera or spinor genera give None, and otherwise the covering
+            # search below must find a witness.
+            from sage_extensions.categories.lattice_engines import isometric_within_genus
+
+            if source.genus() != target.genus() or not isometric_within_genus(source, target):
+                self._groupoid.record_isometry(source, target, None)
+                return None
         match source_profile.positive_index:
             case 1:
                 witness = lorentzian_isometry(signed_source, signed_target)
@@ -1272,6 +1303,8 @@ class EichlerRecursion:
                     (isometry for candidate in covering if (isometry := self.pointed_isometry(vector, candidate)) is not None),
                     None,
                 )
+        if spinor_decided:
+            assert witness is not None, "Eichler-Kneser: one spinor genus is one class, so the covering search must find a witness"
         result = None if witness is None else _untwisted(witness, source_profile)
         if cacheable:
             self._groupoid.record_isometry(source, target, result)
