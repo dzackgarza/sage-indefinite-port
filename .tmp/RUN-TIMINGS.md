@@ -45,6 +45,8 @@ Machine: 10 cores, 7 GB RAM, Sage in the `sage-research` container.
 | `test_based_isotropic_orbits` | sage-extensions | 1 min 01 s to 1 min 05 s | 5 passed |
 | Acceptance sample, CI run 43114552529 | port b5e5f54, sage-extensions 27be129 | dispatched 2026-11-11 about 19:55; still running 2026-11-12 10:06 | 67 success, 18 failure, 7 cancelled, 14 queued |
 | GitHub long-witness jobs, runs at f03ef36 and later | port | 6 h each | cancelled at the GitHub per-job limit |
+| `test_u2u2a2_stable_building_records` (witness, #64), CI run 43274870964 | port 1f8c069, sage-extensions d2398ef | 35 min 34 s | Failed on the witness's own transposed expectation; the computed building (9 line classes, 6 plane classes, 18 edges) is the published figure. Fixture corrected at 26a11f2 |
+| `test_isotropic_orbits_of_u_plus_u` (witness), CI run 43274870964 | port 1f8c069 | collection only | SyntaxError from a truncated import in the witness file; repaired at 98ff459 |
 
 ## Acceptance run 43114552529 failures (port b5e5f54, sage-extensions 27be129)
 
