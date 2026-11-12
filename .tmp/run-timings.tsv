@@ -569,3 +569,4 @@ time	event	repository	revision	file	test	seconds	outcome
 2026-11-12T12:49:54	end	sage-indefinite-computations	fb92e37	tests/acceptance/test_isotropic_orbits.sage	test_isotropic_orbits.py::test_o_plus_n_has_two_line_and_two_plane_orbits	3388.2	passed
 2026-11-12T15:17:17	killed	sage-extensions	4ffa184	tests/enriques_polarization_rows_by_card.py	gamma-h-1	5000	not finished (#h row matched at 1208 s)
 2026-11-12T15:30:19	killed	sage-indefinite-computations	a035463	inc_small.sage (probe)	stable O+ building of U(2)+U(2)	600	not finished (timeout 600 s)
+2026-11-12T15:51:58	killed	sage-indefinite-computations	cc00810	inc_small.sage (probe)	stable O+ building of U(2)+U(2)	1200	not finished (timeout 1200 s)
