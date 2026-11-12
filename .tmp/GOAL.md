@@ -23,12 +23,12 @@ An issue comment, a handoff or an earlier goal is a claim. Before you trust a ro
 | #72 | Seed every random source on the generator path, or record the seed, so that two processes return the same family | Seed or determinize `ind/eichler.py:106-119,194-201`, `ind/indefinite_reduction.py:108-119,187`, `ind/lorentzian_cells.py:4946-4966,5997-6005`. Two runs of `automorphism_group_generators` on T_Co, or a small indefinite lattice, give the same family | done |
 | #18 | Isometry U⊕⟨−1⟩² ≅ [2 1; 1 0]⊕⟨−1⟩² | Witness carries the one Gram matrix to the other | done |
 | #18 | Non-isometry of the Allcock rank-3 lattices with equal invariants | Isom is empty | done |
-| #18 | Dawes §5 stabilizer and index data for 2U⊕⟨−2⟩⊕⟨−6⟩ | Dawes arXiv:2205.10601 §5 values | done |
+| #18 | Dawes §5 stabilizer and index data for U ⊕ U⊕⟨−2⟩⊕⟨−6⟩ | Dawes arXiv:2205.10601 §5 values | done |
 | #18 | Orbit counts of norm-0, norm-2, plane and flag classes are invariant under a change of basis | 19_IndefiniteComp cases with a unimodular basis change | done |
 | #18 | Public consumer and assertion for the flag invariant (`isotropic_induction.py:526`) | Equal on equivalent flags, separates two inequivalent flags | done |
 | #18 | Public assertion for spacelike squares at positive index 1 (`marked_lattices.py:540`) | A spacelike vector class on a signature-(1,n) lattice | done |
 | #68 | Negative isometry decisions through each port branch (Lorentzian, Eichler/approximate model), independent of the sage-extensions's spinor-genus prefilter | A same-genus non-isometric pair at index 1 and one at index ≥ 2, decided by the port route | done |
-| #44 | Marked and flag transporters and orbit splitting under a nontrivial congruence subgroup at rank ≥ 2 | Preimage of {±Id} in O(2U mod 3): orbit splitting of null planes or flags, with Γ-transporters | done |
+| #44 | Marked and flag transporters and orbit splitting under a nontrivial congruence subgroup at rank ≥ 2 | Preimage of {±Id} in O(U ⊕ U mod 3): orbit splitting of null planes or flags, with Γ-transporters | done |
 | #44 | Graded flag-quotient action honours the requested Γ; partial flag | `isotropic_orbits.py:459` hard-codes `O()` | done |
 | #44 | Oriented multi-block flags; oriented objects reachable through the marked-category API | 3U oriented complete flag | done |
 | #44 | Precise unsupported-algorithm error where the object exists and no backend does | One input that reaches it | done |

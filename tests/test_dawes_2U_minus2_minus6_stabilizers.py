@@ -1,4 +1,4 @@
-"""Index and stabilizer data of Dawes arXiv:2205.10601 section 5 for L = 2U + <-2> + <-6> (#18).
+"""Index and stabilizer data of Dawes arXiv:2205.10601 section 5 for L = U ⊕ U + <-2> + <-6> (#18).
 
 Source: references/vendor/arxiv/2205.10601/orbits_in_lattices.tex:1366-1444.
 

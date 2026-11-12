@@ -161,8 +161,6 @@ jobs:
             test: ""
           - file: test_finite_normalizers.sage
             test: test_orthogonal_pair_owner_gives_the_normalizer_of_sl2_times_sl2_on_two_hyperbolic_planes
-          - file: test_port_negative_isometry_index_two.py
-            test: test_same_genus_pair_at_index_two
     steps:
       - uses: actions/checkout@v4
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"

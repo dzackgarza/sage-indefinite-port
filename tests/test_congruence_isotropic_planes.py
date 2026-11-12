@@ -1,6 +1,6 @@
-r"""Null-plane classes and transporters of 2U under a nontrivial congruence subgroup.
+r"""Null-plane classes and transporters of U ⊕ U under a nontrivial congruence subgroup.
 
-Let L = 2U with hyperbolic basis e1, f1, e2, f2, let rho: O(L) -> O(L/2L) be the
+Let L = U ⊕ U with hyperbolic basis e1, f1, e2, f2, let rho: O(L) -> O(L/2L) be the
 reduction and Gamma the preimage of {+-Id}. Since -Id = Id modulo two, Gamma = Gamma(2),
 the kernel of rho; it is nontrivial and of finite index. L/2L with q(x) = x^2/2 mod 2 is
 the split quadratic space of dimension four over F_2, and |O^+_4(2)| = 2 q^2 (q^2 - 1)^2
