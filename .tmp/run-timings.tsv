@@ -1,1 +1,11 @@
 time	event	repository	revision	file	test	seconds	outcome
+2026-11-12T10:11:43	start	sage-indefinite-computations	ae0e33d	tests/acceptance/test_boundaries.sage	test_boundaries.py::test_dawes_buildings_have_the_published_counts[dawes_2U_minus2_minus6]		
+2026-11-12T10:22:58	start	sage-indefinite-computations	0c4b504	tests/test_orbit_counts_basis_change.py	test_orbit_counts_basis_change.py::test_2U_counts_are_basis_independent		
+2026-11-12T10:24:07	end	sage-indefinite-computations	0c4b504	tests/test_orbit_counts_basis_change.py	test_orbit_counts_basis_change.py::test_2U_counts_are_basis_independent	69.6	passed
+2026-11-12T10:24:19	start	sage-indefinite-computations	0c4b504	tests/test_congruence_isotropic_planes.py	test_congruence_isotropic_planes.py::test_null_planes_split_into_six_classes_under_the_plus_minus_identity_preimage		
+2026-11-12T10:32:32	end	sage-indefinite-computations	0c4b504	tests/test_congruence_isotropic_planes.py	test_congruence_isotropic_planes.py::test_null_planes_split_into_six_classes_under_the_plus_minus_identity_preimage	492.4	passed
+2026-11-12T10:32:32	start	sage-indefinite-computations	0c4b504	tests/test_congruence_isotropic_planes.py	test_congruence_isotropic_planes.py::test_gamma_transporters_join_exactly_the_planes_with_equal_reductions		
+2026-11-12T10:33:03	end	sage-indefinite-computations	ae0e33d	tests/acceptance/test_boundaries.sage	test_boundaries.py::test_dawes_buildings_have_the_published_counts[dawes_2U_minus2_minus6]	1279.4	passed
+2026-11-12T10:33:07	end	sage-indefinite-computations	0c4b504	tests/test_congruence_isotropic_planes.py	test_congruence_isotropic_planes.py::test_gamma_transporters_join_exactly_the_planes_with_equal_reductions	35.9	passed
+2026-11-12T10:35:16	start	sage-indefinite-computations	afae703	tests/test_orbit_counts_basis_change.py	test_orbit_counts_basis_change.py::test_U_U_A1_negative_counts_are_basis_independent		
+2026-11-12T10:37:31	end	sage-indefinite-computations	afae703	tests/test_orbit_counts_basis_change.py	test_orbit_counts_basis_change.py::test_U_U_A1_negative_counts_are_basis_independent	134.4	passed
