@@ -44,6 +44,6 @@ An issue comment, a handoff or an earlier goal is a claim. Before you trust a ro
 |---|---|---|
 | #44 | Frozen rank-1 and rank-2 consumers at the final port/sage-extensions pair | open |
 | #70 | I_1_1 and I_1_2 discriminant indices, O_plus_N two lines and two planes, sage-extensions #294, at the final pair | open |
-| #68 | Conway–Sloane and positive witnesses at the final pair | open |
+| #68 | Conway–Sloane and positive witnesses at the final pair | done |
 | #15 | `IsotropicCases_55` within its gate | done |
 | #64 | Remaining families at one port/sage-extensions pair | open |

@@ -543,3 +543,23 @@ time	event	repository	revision	file	test	seconds	outcome
 2026-11-12T11:03:43	end	sage-indefinite-computations	7a627c3	tests/acceptance/test_isotropic_orbits.sage	test_isotropic_orbits.py::test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors[IsotropicCases_8755]	84.7	passed
 2026-11-12T11:04:21	start	sage-indefinite-computations	7a627c3	tests/acceptance/test_isotropic_orbits.sage	test_isotropic_orbits.py::test_o_n_maps_onto_o_of_the_discriminant_form		
 2026-11-12T11:14:27	end	sage-indefinite-computations	7a627c3	tests/acceptance/test_isotropic_orbits.sage	test_isotropic_orbits.py::test_o_n_maps_onto_o_of_the_discriminant_form	605.5	passed
+2026-11-12T11:15:43	start	sage-indefinite-computations	7a627c3	tests/acceptance/test_isometry.sage	test_isometry.py::test_isometry_verdicts_match_certified_pairs[indefinite_jl_U_I3]		
+2026-11-12T11:15:48	end	sage-indefinite-computations	7a627c3	tests/acceptance/test_isometry.sage	test_isometry.py::test_isometry_verdicts_match_certified_pairs[indefinite_jl_U_I3]	4.9	passed
+2026-11-12T11:15:48	start	sage-indefinite-computations	7a627c3	tests/acceptance/test_isometry.sage	test_isometry.py::test_isometry_verdicts_match_certified_pairs[indefinite_jl_U_E8]		
+2026-11-12T11:16:19	end	sage-indefinite-computations	7a627c3	tests/acceptance/test_isometry.sage	test_isometry.py::test_isometry_verdicts_match_certified_pairs[indefinite_jl_U_E8]	31.0	passed
+2026-11-12T11:16:19	start	sage-indefinite-computations	7a627c3	tests/acceptance/test_isometry.sage	test_isometry.py::test_isometry_verdicts_match_certified_pairs[indefinite_jl_U_2U_2I3]		
+2026-11-12T11:17:53	end	sage-indefinite-computations	7a627c3	tests/acceptance/test_isometry.sage	test_isometry.py::test_isometry_verdicts_match_certified_pairs[indefinite_jl_U_2U_2I3]	94.0	passed
+2026-11-12T11:17:53	start	sage-indefinite-computations	7a627c3	tests/acceptance/test_isometry.sage	test_isometry.py::test_isometry_verdicts_match_certified_pairs[hecke_U2_A2_by_u]		
+2026-11-12T11:17:56	end	sage-indefinite-computations	7a627c3	tests/acceptance/test_isometry.sage	test_isometry.py::test_isometry_verdicts_match_certified_pairs[hecke_U2_A2_by_u]	3.4	passed
+2026-11-12T11:17:56	start	sage-indefinite-computations	7a627c3	tests/acceptance/test_isometry.sage	test_isometry.py::test_isometry_verdicts_match_certified_pairs[hecke_U_vs_U2]		
+2026-11-12T11:17:56	end	sage-indefinite-computations	7a627c3	tests/acceptance/test_isometry.sage	test_isometry.py::test_isometry_verdicts_match_certified_pairs[hecke_U_vs_U2]	0.1	passed
+2026-11-12T11:17:56	start	sage-indefinite-computations	7a627c3	tests/acceptance/test_isometry.sage	test_isometry.py::test_isometry_verdicts_match_certified_pairs[hecke_3x3_swapped_basis]		
+2026-11-12T11:18:14	end	sage-indefinite-computations	7a627c3	tests/acceptance/test_isometry.sage	test_isometry.py::test_isometry_verdicts_match_certified_pairs[hecke_3x3_swapped_basis]	17.1	passed
+2026-11-12T11:18:29	start	sage-indefinite-computations	2e8746f	tests/acceptance/test_isotropic_orbits.sage	test_isotropic_orbits.py::test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_1_1]		
+2026-11-12T11:33:16	end	sage-indefinite-computations	2e8746f	tests/acceptance/test_isotropic_orbits.sage	test_isotropic_orbits.py::test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_1_1]	886.9	passed
+2026-11-12T11:33:16	start	sage-indefinite-computations	2e8746f	tests/acceptance/test_isotropic_orbits.sage	test_isotropic_orbits.py::test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_1_2]		
+2026-11-12T11:36:55	end	sage-indefinite-computations	2e8746f	tests/acceptance/test_isotropic_orbits.sage	test_isotropic_orbits.py::test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_1_2]	218.9	passed
+2026-11-12T11:36:55	start	sage-indefinite-computations	2e8746f	tests/acceptance/test_isotropic_orbits.sage	test_isotropic_orbits.py::test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_2_1]		
+2026-11-12T11:44:50	end	sage-indefinite-computations	2e8746f	tests/acceptance/test_isotropic_orbits.sage	test_isotropic_orbits.py::test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_2_1]	474.8	passed
+2026-11-12T11:44:50	start	sage-indefinite-computations	2e8746f	tests/acceptance/test_isotropic_orbits.sage	test_isotropic_orbits.py::test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_2_2]		
+2026-11-12T11:51:49	end	sage-indefinite-computations	2e8746f	tests/acceptance/test_isotropic_orbits.sage	test_isotropic_orbits.py::test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_2_2]	418.6	passed
