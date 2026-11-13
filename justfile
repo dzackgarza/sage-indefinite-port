@@ -64,7 +64,7 @@ ci-provision-sage:
     export MESONPY_EDITABLE_VERBOSE=1
     "$SAGE_BIN" -c 'import sage.all; from sage.features.bliss import Bliss; Bliss().require(); from sage.interfaces.maxima_lib import maxima_lib; assert str(maxima_lib.eval("1+1")) == "2"'
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
-    uv pip install --quiet --python "$sage_python" "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard pytest-instafail PyNormaliz "pycddlib>=3.0.2"
+    uv pip install --quiet --python "$sage_python" "pytest>=9.1,<10" pyyaml "hypothesis>=6.165,<7" pytest-shard pytest-instafail "pytest-timeout>=2.4" "pytest-reportlog>=1.0" PyNormaliz "pycddlib>=3.0.2"
     "$sage_python" -c 'import cdd.gmp'
     # The acceptance contract is against the shared-library revision declared in
     # pyproject.toml; read it from there so the packaging pin and the CI pin
@@ -118,7 +118,7 @@ ci-witness file test:
     export PYTHONPATH="$PWD/{{ci_dir}}/ai-review-ci/tool-artifacts/pytest_plugins:$PWD/src:$PWD"
     "$sage_python" -c 'import sage.all, sys, pytest; sys.exit(pytest.main(sys.argv[1:]))' \
         -p qc_sage_session "witnesses/{{file}}::{{test}}" -vv -rA --tb=long --instafail \
-        --junitxml="$out/junit.xml" 2>&1 | tee "$out/log"
+        -p ci.test_budgets --timeout-method=signal --report-log="$out/report.jsonl" --junitxml="$out/junit.xml" 2>&1 | tee "$out/log"
     exit "${PIPESTATUS[0]}"
 
 # CI only: key Julia packages by the bridge project and shared image lock.
@@ -368,4 +368,4 @@ ci-acceptance family shard shards selection="":
     # cannot be what bounds a family. --kill-after escalates if pytest ignores the INT.
     timeout --signal=INT --kill-after=300 345m "$sage_python" -c 'import sage.all, sys, pytest; sys.exit(pytest.main(sys.argv[1:]))' \
         -p qc_sage_session "${tests[@]}" --runxfail -vv -rA --tb=long --instafail \
-        "${shard_args[@]}" --junitxml="$out/junit.xml" 2>&1 | tee "$out/log"
+        "${shard_args[@]}" -p ci.test_budgets --timeout-method=signal --report-log="$out/report.jsonl" --junitxml="$out/junit.xml" 2>&1 | tee "$out/log"

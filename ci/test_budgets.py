@@ -1,14 +1,18 @@
-"""Per-test time budgets for pytest-timeout under Sage.
+"""Per-test time budgets for pytest-timeout under Sage, with a durable per-test record.
 
-Budgets live in ``ci/test_budgets.json`` (one source of truth, keyed by node id;
-its ``rule`` field states how each value was set). Collection gives every test
-``pytest.mark.timeout(budget)``; pytest-timeout enforces it with SIGALRM.
+``ci/test_budgets.json`` maps every test node id to its estimated maximum CI
+seconds. It is versioned with the code, so a raised budget is visible in git
+history beside the change that slowed the test. A collected test without an
+entry stops the session at collection.
 
-Sage patch: when SIGALRM arrives inside a cysignals ``sig_on`` block (GAP,
-PARI, FLINT), cysignals raises ``AlarmInterrupt``, a ``KeyboardInterrupt``
-subclass, and pytest ends the whole session on it. The call wrapper turns that
-interrupt into pytest-timeout's ordinary per-test failure, keeping the stack, so
-the next test still runs.
+Each finished test prints one ``BUDGET`` line (node, outcome, duration, budget)
+to the log at once; ``--report-log`` keeps the same record as JSON lines.
+
+Sage patch: when pytest-timeout's SIGALRM arrives inside a cysignals ``sig_on``
+block (GAP, PARI, FLINT), cysignals raises ``AlarmInterrupt``, a
+``KeyboardInterrupt`` subclass, and pytest ends the whole session on it. The
+call wrapper turns that interrupt into pytest-timeout's per-test failure,
+keeping the stack, so the next test still runs.
 """
 
 import json
@@ -17,12 +21,15 @@ from pathlib import Path
 import pytest
 from cysignals.signals import AlarmInterrupt
 
-_TABLE = json.loads((Path(__file__).parent / "test_budgets.json").read_text())
+_BUDGETS = json.loads((Path(__file__).parent / "test_budgets.json").read_text())["budgets"]
 
 
 def pytest_collection_modifyitems(items):
+    missing = [item.nodeid for item in items if item.nodeid not in _BUDGETS]
+    if missing:
+        raise pytest.UsageError("tests without a budget in ci/test_budgets.json:\n" + "\n".join(missing))
     for item in items:
-        budget = _TABLE["budgets"].get(item.nodeid, _TABLE["default_seconds"])
+        budget = _BUDGETS[item.nodeid]
         item.add_marker(pytest.mark.timeout(budget))
         item.user_properties.append(("budget_seconds", budget))
 
@@ -32,5 +39,10 @@ def pytest_runtest_call(item):
     try:
         return (yield)
     except AlarmInterrupt as interrupt:
-        budget = item.get_closest_marker("timeout").args[0]
+        budget = _BUDGETS[item.nodeid]
         raise pytest.fail.Exception(f"Timeout (>{budget}s) inside a cysignals block", pytrace=True) from interrupt
+
+
+def pytest_runtest_logreport(report):
+    if report.when == "call" or report.outcome != "passed":
+        print(f"\nBUDGET\t{report.nodeid}\t{report.when}\t{report.outcome}\t{report.duration:.1f}s\t{_BUDGETS[report.nodeid]}s", flush=True)
