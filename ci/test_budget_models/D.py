@@ -2,7 +2,7 @@
 
 Derived by inspection only: no test was run and no measured duration was read.
 Each budget is: (branch taken) x (work fixed by that branch's mathematical invariants) x unit costs,
-times SAFETY. Paths cite src/sage_indefinite_port/indefinite/<file>:<line>.
+with no multiplicative factor. Paths cite src/sage_indefinite_port/indefinite/<file>:<line>.
 
 Branch rules used throughout:
   * facet_orbits.py:461-471 (POLY_Heuristics StandardHeuristicSplitting): direct Normaliz dual description
@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import statistics
 
-SAFETY = 3.0
 
 # Unit costs (runner: 4 vCPU GitHub ubuntu-latest, Sage 10.x).
 C_OWN = 2e-3  # one owned-category lattice element op (Python dispatch in sage_extensions)
@@ -29,7 +28,12 @@ C_NMZ = 0.05  # one Normaliz dual description, <= 64 rays, dim <= 8
 C_PPL = 0.1  # owned from_rays cone construction (PPL) <= 30 rays, dim <= 5
 C_PY = 1e-6  # one pure-Python set/tuple step
 C_TRANS3 = 0.5  # one O(L).transporter of a vertex configuration, hyperbolic rank 3-4
-SAGE_BOOT = 10.0  # fresh `python -c` importing sage.all + sage_extensions + port
+SAGE_BOOT = 8.0  # one real fresh `python -c` child importing sage.all + sage_extensions + port (only test_generator_determinism spawns these)
+C_LAT = 0.1  # one owned Lattices(ZZ)(gram) / HyperbolicLattices wrap with its first O() parent
+C_ISO = 0.05  # one owned isometry construction from images, rank <= 7
+C_VSTAB = 0.5  # one O(L).stabilizer(vertex configuration), hyperbolic rank 3-4
+C_EDGE = 0.3  # one edge_step (wall-crossing enumeration) in rank 3-4
+C_TINY = 0.01  # <= 10 exact arithmetic ops on <= 4x4 data
 SPECIMEN = {
     # Exact invariants of the initial NONNEGATIVE_SQUARES cell, computed in the Sage container
     # (facet-orbits.md "Exact invariants of the test specimens"): rank n, rays r, facets F, facet
@@ -41,12 +45,14 @@ SPECIMEN = {
     "A3_plus_1_plus_minus1": dict(n=5, r=89, F=24, k=11, G=384, g=5, c=1, O=1, split=True),
 }
 
+R0 = dict(n=3, r=4, F=4, k=3, G=8, g=2, c=1, O=1, split=False)  # Result_Enumeration_0, exact (test docstring)
+
 
 def _initial_cell(s) -> float:
     """lorentzian_cells.py:1243-1277: positive direction, initial vector search, then at most n-1
     _kernel_flipping steps (:6053), each a fixed-distance LDL enumeration over ~100*n candidates
     at ~n*C_OWN per candidate."""
-    return 0.5 + (s["n"] - 1) * 100 * s["n"] * s["n"] * C_OWN * 0.1
+    return 100 * s["n"] * C_OWN + (s["n"] - 1) * 100 * s["n"] * s["n"] * C_OWN * 0.1
 
 
 def _cell_cone(s) -> float:
@@ -61,7 +67,7 @@ def _stabilizer(s) -> float:
     import math
 
     gens = s["g"]
-    return 0.5 + s["n"] * s["r"] * s["r"] * C_PY * 50 + gens * (s["n"] ** 2 * C_OWN + s["r"] * s["n"] * C_OWN)
+    return s["n"] * s["r"] * s["r"] * C_PY * 50 + gens * (s["n"] ** 2 * C_OWN + s["r"] * s["n"] * C_OWN)
 
 
 def _ray_perms(s) -> float:
@@ -83,16 +89,16 @@ def _direct_walk(s) -> float:
 
 def _cone_facets_full(s) -> float:
     """facet_orbits.py:261-300 ridge closure: F facets x (n-1..F) ridges x pencil rank tests."""
-    return s["F"] * s["F"] * 3 * C_RANK + 0.05
+    return s["F"] * s["F"] * 3 * C_RANK
 
 
 def _flip(s) -> float:
     """flip_across (:1809): one pinned nullspace + one _kernel_flipping enumeration."""
-    return 100 * s["n"] * s["n"] * C_OWN * 0.1 + 0.05
+    return 100 * s["n"] * s["n"] * C_OWN * 0.1
 
 
 def _base(s) -> float:
-    return 4.0 + _initial_cell(s)  # 4 s: lattice construction + _lorentzian_view first touch
+    return C_LAT + _initial_cell(s)
 
 
 THEORY = "references/complexity/facet-orbits.md"
@@ -113,40 +119,40 @@ _CURRENT = [""]
 
 
 def b(seconds: float, text: str) -> tuple[float, str]:
-    return round(seconds * SAFETY, 2), f"{text}; theory {THEORY} {SECTION[_CURRENT[0]]}; x{SAFETY} safety"
+    return round(seconds, 3), f"{text}; theory {THEORY} {SECTION[_CURRENT[0]]}"
 
 
 def facet_orbits(name: str, param: str) -> tuple[float, str]:
     """tests/test_facet_orbits.py."""
     if name == "test_square_edge_stabilizer_has_the_exact_induced_action":
-        return b(1.0 + 5 * C_GAP, f"[{param}] D4 subgroup of order <=8 on 4 points; _stabilizer_on_facet GAP stabilizer; group construction")
+        return b(15 * C_GAP, f"[{param}] D4 subgroup of order <=8 on 4 points; _stabilizer_on_facet GAP stabilizer; group construction")
     if name in ("test_same_ray_contract_is_proportionality_and_positive_orientation",
                 "test_a_rational_coordinate_is_refused_rather_than_truncated"):
-        return b(0.5, "pure integer predicates on <=4-vectors; no lattice")
+        return b(C_TINY, "pure integer predicates on <=4-vectors; no lattice")
     if name == "test_the_walk_refuses_a_cone_it_cannot_certify":
-        return b(0.5, "3 rays dim 2: dimension==2 branch (:278), non-pointed pencil raises after one rank test")
+        return b(C_TINY + 2 * C_RANK, "3 rays dim 2: dimension==2 branch (:278), non-pointed pencil raises after one rank test")
     if name == "test_cube_cone_facets_and_orbits_match_the_closed_form":
         f = 2 * (6 + 8)  # n=4,5: 6 and 8 facets
-        return b(1.0 + f * 8 * 3 * C_RANK * 10, "ridge closure on 3-cube and 4-cube cones (8,16 rays; 6,8 facets), certify each")
+        return b(f * 8 * 3 * C_RANK, "ridge closure on 3-cube and 4-cube cones (8,16 rays; 6,8 facets), certify each")
     if name == "test_six_cube_facet_records_retain_the_complete_signed_permutation_action":
         r, n = 64, 7
         perms = 3 * r * n * C_OWN * 2  # stabilizer image on rows + test's own ray_permutations
         walk = 2 * C_GAP + 12 * C_NMZ + 12 * 32 * C_PY * 50  # B6 order 46080>5000 -> split; facets are 5-cubes (32 rays, r-d=26, B5 3840, r<40 -> direct)
-        return b(3.0 + perms + walk, "64 rays dim 7, B6 |G|=46080 -> adjacency-decomposition split (:466); one facet orbit of 12; 3 owned generators on 64 rays")
+        return b(C_LAT + 3 * C_ISO + perms + walk, "64 rays dim 7, B6 |G|=46080 -> adjacency-decomposition split (:466); one facet orbit of 12; 3 owned generators on 64 rays")
     if name == "test_null_quadrant_facets_retain_the_swap_transport":
-        return b(2.0, "U, 2 rays dim 2: dimension==2 branch; one swap generator; one orbit of 2")
+        return b(C_LAT + C_ISO + C_NMZ, "U, 2 rays dim 2: dimension==2 branch; one swap generator; one orbit of 2")
     if name == "test_signed_cube_facet_representatives_have_the_full_orbit_size":
         sign, d = param.split("-")
         d = int(d)
         r = 2 ** d
         if d < 6:
-            return b(0.5 + C_NMZ + 2 * d * 2 * C_RANK + 10 * C_GAP,
+            return b(10 * C_GAP + C_NMZ + 2 * d * 2 * C_RANK + 10 * C_GAP,
                      f"[{param}] {r} rays dim {d+1}, r-d<20 -> direct Normaliz; {2*d} facets; retain_words=False RepresentativeAction per pair")
         order = 46080 if sign == "True" else 720
         rule = ">5000 split" if sign == "True" else "r>=40 & order>=100 split"
         orbits = 1 if sign == "True" else 2
         sub = orbits * (C_NMZ + 10 * C_GAP)
-        return b(1.0 + sub + 2 * d * 4 * C_GAP + 2 * d * 2 * C_RANK,
+        return b(10 * C_GAP + sub + 2 * d * 4 * C_GAP + 2 * d * 2 * C_RANK,
                  f"[{param}] 64 rays dim 7, |G|={order} ({rule}); {orbits} orbit(s) recurse to 5-cube facet (32 rays, direct); GAP RepresentativeAction/Stabilizer per candidate")
     if name == "test_second_hypersimplex_has_the_complete_coordinate_facet_orbits":
         moving, words = param.split("-")
@@ -154,7 +160,7 @@ def facet_orbits(name: str, param: str) -> tuple[float, str]:
         orbits = 4 if moving == "7" else 2
         sub = orbits * (C_NMZ + 30 * C_RANK)
         gap = 0 if words == "True" else 16 * orbits * C_GAP
-        return b(1.0 + sub + gap + 16 * 28 * C_PY * 100,
+        return b(10 * C_GAP + sub + gap + 16 * 28 * C_PY,
                  f"[{param}] Delta(8,2): 28 rays dim 8, r-d=20, |S_{moving}|={order}>5000 -> split; {orbits} orbits; facets Delta(7,2) (21 rays) and simplex (7 rays) -> direct")
     s = SPECIMEN[param]
     common = _base(s)
@@ -184,12 +190,12 @@ def facet_certificates(name: str, param: str) -> tuple[float, str]:
             return b(common + _cell_cone(s) + s["F"] * (3 * C_RANK + s["n"] * 4 * C_OWN), f"[{param}] initial cell, owned cone F~{s['F']}, cofactor normal per facet")
         if name == "test_adjacency_certificate_matches_the_ridge_rank_criterion":
             pairs = s["F"] * (s["F"] - 1) // 2
-            return b(common + _cell_cone(s) + pairs * 2 * C_RANK * 5, f"[{param}] initial cell, F~{s['F']}, {pairs} facet pairs x 2 ranks")
+            return b(common + _cell_cone(s) + pairs * 2 * C_RANK, f"[{param}] initial cell, F~{s['F']}, {pairs} facet pairs x 2 ranks")
         if name == "test_pointedness_is_certified_by_the_constructor_hypothesis":
             return b(common + 2 * C_RANK, f"[{param}] initial cell + one augmented kernel")
     if name == "test_cube_cone_adjacency_matches_the_closed_form":
-        return b(0.5 + (15 + 45) * 2 * C_RANK * 5, "closed-form cube facets n=4,6; 15+45 pairs, one ridge rank each")
-    return b(0.5, "a handful of exact ranks/determinants on <=3x3 matrices; no lattice")
+        return b((15 + 45) * 2 * C_RANK, "closed-form cube facets n=4,6; 15+45 pairs, one ridge rank each")
+    return b(C_TINY, "a handful of exact ranks/determinants on <=3x3 matrices; no lattice")
 
 
 def facet_orbit_contracts(name: str, param: str) -> tuple[float, str]:
@@ -199,7 +205,7 @@ def facet_orbit_contracts(name: str, param: str) -> tuple[float, str]:
         return b(common + _cell_cone(s) + s["F"] * (s["n"] * 4 * C_OWN + C_RANK), f"[{param}] owned cone F~{s['F']}, rank per facet")
     if name.startswith("test_stabilizer_permutes"):
         return b(common + _stabilizer(s) + _ray_perms(s) * 2 + _cell_cone(s), f"[{param}] stabilizer |G|~{s['G']}, owned images of r~{s['r']} rays per generator")
-    return b(common + _cell_cone(s) + 1.0, f"[{param}] owned cone + _positive_direction short-vector search")
+    return b(common + _cell_cone(s) + 100 * s["n"] * C_OWN, f"[{param}] owned cone + _positive_direction short-vector search")
 
 
 def facet_traversal_seam(name: str, param: str) -> tuple[float, str]:
@@ -219,66 +225,67 @@ def facet_traversal_seam(name: str, param: str) -> tuple[float, str]:
 def cell_faces(name: str, param: str) -> tuple[float, str]:
     # Exact (test docstring, Result_Enumeration_0): 4 rays, 4 facets, |G|=8, 1 orbit, 1 flag.
     # Module fixture (Result_Enumeration_0, rank 3, 4 rays, 4 facets, |G|=8) charged to the first test.
-    fixture = 3.0 + 1.0 + 0.5 + 0.5
+    fixture = _base(R0) + _stabilizer(R0) + _cell_cone(R0)
     own = {
         "test_facet_set_and_incidences": fixture,
-        "test_cell_group_order": 0.1,
-        "test_facet_orbits_under_the_cell_group": 0.1,
-        "test_flag_count_under_the_cell_group": 0.3,
-        "test_facet_stabilizer_is_a_subgroup_of_the_cell_group": 0.1,
+        "test_cell_group_order": C_GAP,
+        "test_facet_orbits_under_the_cell_group": 4 * C_GAP,
+        "test_flag_count_under_the_cell_group": 3 * 2 * C_GAP + 3 * C_RANK,
+        "test_facet_stabilizer_is_a_subgroup_of_the_cell_group": 3 * C_GAP,
     }[name]
     return b(own, "rank-3 cell, 4 rays/4 facets, |G|=8, one facet orbit, one flag; fixture cost on first test")
 
 
 def lorentzian_flipping(name, param):
-    return b(2.0, "<1>+<-1>, two _kernel_flipping calls on a 1-ray face; slice x=1 has 3 vectors")
+    return b(C_LAT + 2 * 100 * 4 * C_OWN * 0.1, "<1>+<-1>, two _kernel_flipping calls on a 1-ray face; slice x=1 has 3 vectors")
 
 
 def edgewalk_options(name, param):
-    hyp = 2.0  # HyperbolicLattices wrap + first O() touch
+    hyp = C_LAT
+    walk_reflective = 2 * (C_VSTAB + 3 * C_EDGE) + C_NMZ  # <=2 vertices, 3 walls, one chamber certificate
     if name == "test_full_walk_on_u_plus_46_closes_every_edge":
         V, E = 4, 3  # nonreflective; early_termination=False walks until vertex quotient closes (>=3 vertices)
-        walk = V * (1.0 + E * (1.0 + V * C_TRANS3))
-        check = V * E * (0.5 + V * C_TRANS3)
-        return b(hyp + walk + 0.5 + check, f"U+<46> not reflective, full walk (early_termination False, edgewalk.py:1542): V~{V} vertex orbits, E~{E} edges/vertex, V*E*V transporters, recheck in test")
+        walk = V * (C_VSTAB + E * (C_EDGE + V * C_TRANS3))
+        check = V * E * (C_EDGE + V * C_TRANS3)
+        return b(hyp + walk + check, f"U+<46> not reflective, full walk (early_termination False, edgewalk.py:1542): V~{V} vertex orbits, E~{E} edges/vertex, V*E*V transporters, recheck in test")
     if name == "test_k3_norms_drop_the_norm_four_wall_of_u_plus_4":
-        return b(hyp + 2 * (2 * 3.0), "U+<4> reflective (all and K3 norms): certificate after <=2 vertices each, two walks")
+        return b(hyp + 2 * walk_reflective, "U+<4> reflective (all and K3 norms): certificate after <=2 vertices each, two walks")
     if name == "test_prescribed_initial_vertex_on_u_plus_2":
         V = 2
-        return b(hyp + 3.0 + V * 2 * 3.0, f"U+<2> reflective, chamber ~3 walls, V~{V} vertices; 1 + 2V reflective walks stopping at certificate")
+        return b(hyp + (1 + 2 * V) * walk_reflective, f"U+<2> reflective, chamber ~3 walls, V~{V} vertices; 1 + 2V reflective walks stopping at certificate")
     if name == "test_u_plus_46_reports_the_finiteness_reason":
-        return b(hyp + 4.0, "U+<46> early termination: stops at first infinite-order isometry (edgewalk.py:1584/1608), <=2 vertices")
+        return b(hyp + 2 * C_VSTAB + 2 * C_TRANS3, "U+<46> early termination: stops at first infinite-order isometry (edgewalk.py:1584/1608), <=2 vertices")
     if name == "test_edgewalk_isometry_of_u_plus_2_under_a_basis_change":
-        return b(2 * hyp + 2 * 3.0 + 2 * C_TRANS3 * 4, "edgewalk_isometry: two reflective walks of U+<2> (early_termination False, :119) + vertex transporters")
-    return b(hyp + 3.0 + 4 * 4 * 1.0, "U+<2>+<2> K3: isotropic cusp vertex with 4 roots (2 affine A1); 4 facets x 2 omitted walls edge_step")
+        return b(2 * hyp + 2 * walk_reflective + 2 * C_TRANS3 * 4, "edgewalk_isometry: two reflective walks of U+<2> (early_termination False, :119) + vertex transporters")
+    return b(hyp + C_VSTAB + C_NMZ + 4 * 2 * C_EDGE, "U+<2>+<2> K3: isotropic cusp vertex with 4 roots (2 affine A1); 4 facets x 2 omitted walls edge_step")
 
 
 def edgewalk_rank2(name, param):
     if name == "test_binary_cycle_form_uses_the_coordinate_label_order":
-        return b(3.0, "anisotropic binary form disc 2^2+1... cycle of reduced forms, period of length O(log); <=10 owned ops/step")
-    return b(1.5, "rank-2 lattice construction and coordinate frame only")
+        return b(C_LAT + 20 * 10 * C_OWN, "anisotropic binary form disc 2^2+1... cycle of reduced forms, period of length O(log); <=10 owned ops/step")
+    return b(C_LAT + 10 * C_OWN, "rank-2 lattice construction and coordinate frame only")
 
 
 def generator_determinism(name, param):
     # U(2)+U+<2>: rank 5, signature (3,2), positive index 3, Witt index 2 -> Eichler _generation_step
     # (recursive.py:1180). A_L = (Z/2)^3, |A_L|=8; covering vectors ~ |O(q_L)| orbits (<=6), one
     # pointed isometry + envelope stabilizer each, recursion into rank-4 U(2)+<..> complement.
-    compute = 8 * 3.0 + 10.0
+    compute = 8 * (C_TRANS3 + 2 * C_ISO) + 2.0  # 8 covering vectors x pointed isometry; reduction + envelope
     return b(2 * (SAGE_BOOT + compute), "two fresh Sage processes; U(2)+U+<2> Eichler generation step, |A_L|=8, ~8 covering vectors")
 
 
 def integral_schreier(name, param):
     if name == "test_eichler_envelope_retains_the_supplied_lattice_action":
-        return b(4.0 + 10.0 + 6 * 4 * 2 * 4 * C_OWN * 10, "U(2)+U envelope, |A_L|=4: stabilizer of the lattice in finite rep, Schreier gens <=6, 2*4 owned images each")
+        return b(C_LAT + 2.0 + 6 * 4 * 2 * 4 * C_OWN, "U(2)+U envelope, |A_L|=4: stabilizer of the lattice in finite rep, Schreier gens <=6, 2*4 owned images each")
     if param == "two_u":
-        return b(3.0 + 7 * 4 * 2 * 4 * C_OWN * 10 + 2.0, "U+U unimodular, bound = inclusion: index 1, one coset, 7 Schreier generators")
+        return b(C_LAT + 7 * C_ISO + 7 * 4 * 2 * 4 * C_OWN, "U+U unimodular, bound = inclusion: index 1, one coset, 7 Schreier generators")
     if param == "scaled_hyperbolic_line":
-        return b(3.0 + 4 * 3 * 3 * 2 * 3 * C_OWN * 10 + 3.0, "U(4)+<-8>, bound index 8 (1/4 e+1/2 w), <=4 cosets x 3 generators")
-    return b(3.0 + 18 * 3 * 4 * C_OWN * 10 + 2.0, "S3 x sign on <1>^3 with index-6 sublattice: 6 cosets, 18 Schreier generators")
+        return b(C_LAT + 3 * C_ISO + 4 * 3 * 3 * 2 * 3 * C_OWN, "U(4)+<-8>, bound index 8 (1/4 e+1/2 w), <=4 cosets x 3 generators")
+    return b(C_LAT + 3 * C_ISO + 18 * 3 * 4 * C_OWN, "S3 x sign on <1>^3 with index-6 sublattice: 6 cosets, 18 Schreier generators")
 
 
 def dual_lll(name, param):
-    return b(0.5, "5 solution tuples sorted by a 3x3 rational transform; pure ordering")
+    return b(C_TINY, "5 solution tuples sorted by a 3x3 rational transform; pure ordering")
 
 
 FILES = {

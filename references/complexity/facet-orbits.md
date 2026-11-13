@@ -207,4 +207,12 @@ produces the solutions; see `perfect-domains-and-lorentzian-cells.md`.
 | owned lattice element operation (`sage_extensions` dispatch) | 2 ms |
 | pure-Python set or tuple step $c_{\mathrm{py}}$ | 1 µs |
 | one `O(L).transporter` of a vertex configuration, rank 3–4 | 0.5 s |
-| fresh Sage interpreter import | 10 s |
+| one `O(L).stabilizer` of a vertex configuration, rank 3–4 | 0.5 s |
+| one edgewalk `edge_step`, rank 3–4 | 0.3 s |
+| owned lattice construction with its first `O()` parent | 0.1 s |
+| owned isometry from images, rank $\le 7$ | 50 ms |
+| fresh child interpreter importing Sage and the port (only where a test spawns one) | 8 s |
+
+A budget is the sum of these primitive costs over the work of the selected
+branch. It has no multiplicative factor and no floor. A budget that a run
+exceeds therefore shows extra work or a slower primitive.

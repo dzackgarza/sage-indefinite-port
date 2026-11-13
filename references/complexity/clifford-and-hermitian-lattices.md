@@ -136,12 +136,16 @@ the generic genus owner. Cost is
 
 | Primitive | Cost |
 | --- | --- |
-| Sage exact matrix operation, size at most 8 | 50 microseconds |
-| Number-field element operation, degree at most 2 | 50 microseconds |
-| Clifford monomial product | 20 microseconds |
+| Sage exact matrix operation over `Q` or `Z`, size at most 8 (FLINT) | 10 microseconds |
+| Number-field element operation, degree 2 | 2 microseconds |
+| Number-field element operation, degree 3 | 5 microseconds |
+| Clifford monomial product | 5 microseconds |
 | PARI `nfinit` or `bnfinit`, degree 2 | 10 milliseconds |
-| PARI `qfisom` or `qfauto`, rank at most 18, few minimal vectors | 5 seconds |
-| GAP `Size` of a classical group over `GF(3)`, degree at most 6 | 5 seconds |
+| PARI `qfisom`, rank 18, 18 minimal vectors | 2 seconds |
+| PARI `qfisom`, rank 6 | 0.5 seconds |
+| PARI `qfisom` or `qfauto` on `E_8` | 0.05 to 0.1 seconds |
+| GAP `Size` of a classical group over `GF(3)`, degree 6 | 2 seconds |
+| GAP `Size` of a classical group over `GF(3)`, degree 5 | 0.5 seconds |
 | Julia startup and Oscar load | 60 seconds |
 
 ## Semisimple Voronoi over a cubic division algebra

@@ -6,21 +6,20 @@ orthogonal-group-generators.md (B) and boundary-components.md (B); the constants
 below state the bound assumed from each branch. No measured duration is used.
 """
 
-SAFETY = 3.0
-C_MOR = 0.03  # DG §Unit costs: one morphism/marking operation
-C_LAT = 0.5  # DG §Unit costs: formed lattice with Smith form
-PURE = 0.2  # pure-Python fixture/CI check, no Sage computation
+C_MOR = 144 * 5e-5  # DG §Unit costs: one morphism operation on rank n <= 12 = n^2 element operations of B.U_ELT
+C_LAT = 0.5  # DG §Unit costs: formed lattice construction, B.T_NODE
+PURE = 0.05  # pure-Python fixture/CI check: pytest call and a few small JSON/XML files
 
 
 def c_ss(degree, gens=20):
     """DG §Unit costs: GAP randomized Schreier-Sims, nearly linear in degree (Seress Thm 4.5.5 / Sec. 4.5)."""
     from math import log2
-    return 1 + 1e-7 * gens * degree * max(1.0, log2(degree)) ** 2
+    return 0.1 + 1e-7 * gens * degree * max(1.0, log2(degree)) ** 2
 
 
 def c_tqf(order_a):
     """DG §Unit costs: O(q_L) via Sage fqf_orthogonal, per primary part."""
-    return 2 + 0.02 * order_a
+    return 0.5 + 2e-3 * order_a
 
 
 # Generator branches of O(L): agent B's model, imported unchanged
@@ -80,8 +79,10 @@ def gbranch(gram):
 
 
 def parabolic(rank):
-    """Levi + unipotent generators of an isotropic stabilizer (B: boundary-components.md), unimodular Levi."""
-    return 2.0 + 0.5 * rank
+    """DG §Markings by isotropic induction: the reduction lattice I^perp/I (C_LAT) and the generators of the Levi GL_j
+    and of the unipotent radical, at most n + n^2/4 isometries of n images each (C_MOR). O(I^perp/I) is added by the
+    caller through gens() where the test needs it."""
+    return C_LAT + (rank + rank * rank / 4) * C_MOR
 
 
 def finite_split(gram, levi_rank, order_f, orbits, n, m, per_rep=2 * C_MOR):
@@ -91,7 +92,7 @@ def finite_split(gram, levi_rank, order_f, orbits, n, m, per_rep=2 * C_MOR):
 
 
 def budget(raw, basis):
-    return (round(SAFETY * raw, 1), f"{basis}; raw {raw:.1f}s x safety {SAFETY}")
+    return (round(raw, 2), basis)
 
 
 W = "witnesses/test_congruence_orbit_splitting_across_markings.sage::"
@@ -160,7 +161,7 @@ def _estimates_first():
               "test_acceptance_summary_rejects_empty_or_malformed_matrix_includes"):
         e["tests/test_acceptance_ci.py::" + f] = budget(PURE, "no mathematics: CI summary script on tmp JSON/JUnit; subprocess monkeypatched")
     a = "tests/test_allcock_fixture_identity.py::"
-    parse = 0.3  # 4.9 MB JSON, 8595 entries
+    parse = 0.1  # 4.9 MB JSON, 8595 entries: CPython json at ~100 MB/s
     for f, k in (("test_fixture_keeps_every_case", 1), ("test_id_is_the_ambiguous_lattice_only_label", 1),
                  ("test_retained_source_identity_is_unique", 1), ("test_composed_id_is_injective_and_covers_every_case", 1),
                  ("test_no_two_cases_share_content_so_no_occurrence_counter_is_needed", 3), ("test_every_case_cites_its_source", 1),
@@ -243,9 +244,9 @@ G_PELL = [[1, 0], [0, -2]]
 U_ELT = B.U_ELT
 
 
-C_GAPZ = 1.0  # GAP order/IsFinite of a matrix group over ZZ of degree <= 5 (DG §Unit costs: invariant-form method)
+C_GAPZ = 0.3  # GAP order/IsFinite of a matrix group over ZZ of degree <= 5 (DG §Unit costs: invariant-form method)
 C_MM = 1e-4  # one dense product of matrices of size <= 8 over ZZ, QQ or GF(3) in Sage (DG §Unit costs)
-C_OP = 0.5  # one equivariant stabilizer/transporter step after the centralizer (DG §Equivariant markings)
+C_OP = 0.25  # one equivariant stabilizer/transporter step after the centralizer (DG §Equivariant markings)
 
 
 def _radical_rank(gram):

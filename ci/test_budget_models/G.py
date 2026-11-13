@@ -4,7 +4,7 @@ Scope: tests/test_commutant_groups.sage, witnesses/test_bianchi_groups.sage, tes
 tests/test_hermitian_ocean.sage, tests/test_quaternion_voronoi.sage,
 witnesses/test_split_quaternary_orthogonal_number_field.sage, witnesses/test_ternary_orthogonal_number_field.sage.
 
-Runner: GitHub ubuntu-latest, 4 vCPU, 16 GB. Every budget is (branch work) x 3. The work counts and the unit
+Runner: GitHub ubuntu-latest, 4 vCPU, 16 GB. Every budget is the derived maximum work of the branch. The work counts and the unit
 costs are derived in references/complexity/hermitian-and-arithmetic-groups.md; each basis string names the section
 in brackets. Rule: a pure computation on one model instance is charged once (a correct implementation computes
 the Voronoi tessellation of one order once), so repeated recomputation in the code is exposed, not absorbed.
@@ -15,7 +15,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-FACTOR = 3.0
 COMM = "tests/test_commutant_groups.sage"
 OCEAN = "tests/test_hermitian_ocean.sage"
 QV = "tests/test_quaternion_voronoi.sage"
@@ -135,7 +134,7 @@ def _scope_nodes() -> list[str]:
 
 def estimates() -> dict[str, tuple[float, str]]:
     return {
-        f"{path}::{name}": (round(work * FACTOR, 2), f"[{section}] {basis}; work {work:.2f} s x{FACTOR:g}")
+        f"{path}::{name}": (round(work, 2), f"[{section}] {basis}")
         for (path, name), (work, section, basis) in _WORK.items()
     }
 

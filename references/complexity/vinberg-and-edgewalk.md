@@ -22,16 +22,35 @@ a stated unit cost of a backend primitive.
 | Rank 2 (oriented binary cycle) | `two_dim_lorentzian.h` | `edgewalk_rank2.py`, `edgewalk.py:1484-1507` |
 | Algorithm | Allcock, arXiv:2110.03784 (`references/vendor/arxiv/2110.03784`) | |
 
+## Anchor
+
+`polyhedral_common@1592b246/.github/workflows/ci_20_reflective.yml` runs one
+job with `timeout-minutes: 120`. The job installs GAP, builds the C++ and runs
+`CI_tests/20_Reflective/TestReflectivity.g`, whose `FullTest` computes the
+simple roots and the isotropy of all 8821 `ListReflect` lattices (8602 of rank
+3). The C++ edgewalk therefore needs less than `120 * 60 / 8821 = 0.82 s` per
+lattice on average.
+
+The port factor is 10. The heavy primitives (Smith form, `qfauto`/`qfisom`,
+short vectors, LLL, double description) are the same PARI, FLINT and cdd C
+code in both implementations. Only the walk bookkeeping (vertex lists,
+candidate sorting, configuration keys) runs in interpreted Python, about ten
+times slower than the C++ loop. The sum of the per-case budgets over
+`ListReflect` must stay below `8821 * 0.82 * 10 s = 20.1 h`.
+
 ## Unit costs of backend primitives
 
-| Symbol | Primitive | Upper unit cost | Basis |
-| --- | --- | --- | --- |
-| `OP` | One category-wrapped element or morphism operation on a rank `n <= 18` lattice | 1e-3 s | FLINT/PARI exact arithmetic is about 5e-5 s at this size; the Python parent and coercion layer dominates |
-| `STAB(n)` | Stabilizer or transporter of a coloured finite family in `O(L)` | `0.2 * max(1, n^2/9) * (1 + log2|O(q_L)| / 64)` s | A positive-definite isometry problem (Plesken–Souvignier, PARI `qfauto`/`qfisom`) on the form restricted to the family's span plus a lift through `O(q_L)` |
-| `LP` | One halfspace-ray incidence in a dual description | 1e-4 s | cdd/Normaliz double description, Fukuda–Prodon 1996 |
-| `BASE` | Lattice construction, Smith form, root norms, one isotropic vector | 0.5 s | PARI `matsnf`, `qfsolve` (Simon 2005) |
+The units are the cost of each operation at the fixtures' sizes (rank `<= 18`,
+entries `< 2^25`) in one shared Sage session.
 
-The estimates module applies a safety factor of 4.
+| Symbol | Primitive | Unit cost | Basis |
+| --- | --- | --- | --- |
+| `OP` | One exact small linear-algebra or element operation | 2e-5 s | A FLINT or PARI call on a rank `<= 18` integer vector or matrix takes 1-5 us; the Python call and parent coercion around it 10-20 us |
+| `STAB(n)` | Stabilizer or transporter of a coloured family of `<= n+1` vectors | `5e-3 * max(1, n^2/9) * (1 + log2|O(q_L)| / 64)` s | Plesken–Souvignier backtrack (PARI `qfauto`/`qfisom`) over `O(10)` short vectors of a rank-3 definite form is below 1 ms, plus wrapping |
+| `LP` | One halfspace-ray incidence in a double description | 1e-6 s | cdd in C arithmetic, Fukuda–Prodon 1996 |
+| `BASE` | Lattice construction, Smith form, root norms, isotropy decision, one isotropic vector | 0.05 s | PARI `matsnf`, `qfsolve` (Simon 2005) |
+
+Each budget is the derived work of the branch with these units.
 
 ## Root norms
 
@@ -135,7 +154,7 @@ binary search (edgewalk.h:966-1061); the search length is
 `log2(2 exp(A_L) |A_L|)`. The cost per norm is `30 OP + 2 OP n log2(...)`.
 
 Per vertex orbit: at most one dual description with `R` halfspaces and `V`
-rays, `0.05 + LP R V` (edgewalk.py:1556-1567). The certificate can close
+rays, `50 OP + LP R V` (edgewalk.py:1556-1567). The certificate can close
 before all orbits are visited; the estimate does not take that credit.
 
 Total:
@@ -144,11 +163,11 @@ Total:
 T = BASE + T_start
   + V STAB(n) + (sum_v |S_v| |class(v)|) STAB(n) + E V 10 OP
   + E N (30 OP + 2 OP n log2(2 exp |A_L|))
-  + V (0.05 + LP R V)
+  + V (50 OP + LP R V)
 ```
 
 with `T_start = (1 + cusps) N 40 OP (n-2)^2` on the cusp branch and
-`T_start = N (40 OP n^2 + 1e-3 sqrt|A_L|)` on the cocompact branch.
+`T_start = N (40 OP n^2 + 1e-5 sqrt|A_L|)` on the cocompact branch.
 
 The dominant terms are the full transporter tests and the edge searches.
 `|A_L|` enters through `N`, the binary search length and `log2 |O(q_L)|` in
@@ -156,7 +175,7 @@ The dominant terms are the full transporter tests and the edge searches.
 more than a unimodular lattice of higher rank with the same `R`.
 
 The unrecorded rank-18 unimodular form (`ListReflect_8820`, `R = 22`) has the
-largest bound: `STAB(18) = 7.2 s` and up to `2 (n-1) R` full tests. With its
+largest bound: `STAB(18) = 0.18 s` and up to `2 (n-1) R` full tests. With its
 Coxeter diagram (not recorded in the fixtures) the vertex orbits and classes
 would be exact.
 

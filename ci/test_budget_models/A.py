@@ -4,17 +4,28 @@ Derived by inspection only; no measured duration is used. Each case is first cla
 into the branch the production code takes, then the work of that branch is estimated from
 the mathematical invariants that drive it.
 
-Unit costs on a GitHub ubuntu-latest runner (4 vCPU, 16 GB), Sage 10.x:
-  OP   = 1e-3 s   one category-wrapped sage_extensions element/morphism operation
-                  (parent coercion + exact QQ/ZZ arithmetic on rank <= 18 vectors; the
-                  bare FLINT matrix op is ~5e-5 s, the Python wrapping dominates).
-  STAB = 0.2 s    stabilizer/transporter of a coloured finite family in O(L)
-                  (positive-definite isometry problem in PARI qfauto/qfisom on a rank-n
-                  form of small minima, plus wrapping); grows ~n^2/9 above rank 3.
-  LP   = 1e-4 s   per (halfspace x ray) incidence in a dual description (cdd/Normaliz).
-  BASE = 0.5 s    lattice construction, possible_root_lengths (Smith form of the Gram),
-                  isotropy decision and one isotropic vector (PARI qfsolve).
-SAFETY = 4: an upper budget for a correct, non-pathological implementation.
+Anchor: polyhedral_common@1592b246 .github/workflows/ci_20_reflective.yml runs, in one job
+with timeout-minutes 120 that also installs GAP and builds the C++, the edgewalk
+reflectivity test (simple roots, isotropy) on all 8821 ListReflect lattices
+(CI_tests/20_Reflective/TestReflectivity.g FullTest). ci_09A_isotropic.yml decides isotropy
+and finds a vector for all 8821 forms under the same 120 min limit. So the C++ route needs
+< 120*60/8821 = 0.82 s per lattice on average. Port factor 10: the heavy primitives
+(Smith form, qfauto/qfisom, short vectors, LLL, dual description) are the same PARI/FLINT/
+cdd C code; only the walk bookkeeping is interpreted Python, about 10x the C++ loop.
+Family consistency: the sum of the ListReflect budgets must stay below 8821*0.82*10 s.
+
+Unit costs, derived from the operation at the fixtures' sizes (rank <= 18, entries < 2^25),
+in one shared Sage session (no per-case start-up):
+  OP   = 2e-5 s   one exact small linear-algebra or element operation: a FLINT/PARI call on
+                  a rank <= 18 integer vector/matrix is ~1-5 us; the Python call and parent
+                  coercion around it is ~10-20 us.
+  STAB = 5e-3 s   stabilizer/transporter of a coloured family of <= n+1 vectors at rank 3:
+                  PARI qfauto/qfisom on a 3-dimensional definite form with a handful of
+                  short vectors is < 1 ms (Plesken-Souvignier backtrack over O(10) vectors)
+                  plus wrapping; scaled by n^2/9 and log2|O(q_L)| above rank 3.
+  LP   = 1e-6 s   one halfspace-ray incidence in cdd's double description (C arithmetic).
+  BASE = 0.05 s   lattice construction, Smith form and root norms, isotropy decision and
+                  qfsolve, in the shared session.
 """
 
 from __future__ import annotations
@@ -32,7 +43,7 @@ NODES = ROOT / "ci" / "test_budget_models" / "nodes_initial.txt"
 REFL = "tests/acceptance/test_reflective.sage::"
 ISO = "tests/acceptance/test_isotropic_orbits.sage::"
 
-OP, STAB, LP, BASE, SAFETY = 1e-3, 0.2, 1e-4, 0.5, 4.0
+OP, STAB, LP, BASE = 2e-5, 5e-3, 1e-6, 0.05
 
 
 def _load(name):
@@ -265,15 +276,15 @@ def edgewalk_cost(gram, walls: int, isotropic: bool, cusps: int | None = None, r
     stab = STAB * max(1.0, n * n / 9) * (1 + log_oq / 64)
     t_vertices = v * stab + full_tests * stab + e * v * 10 * OP
     t_edges = e * norms * (30 * OP + search * 2 * OP * n)
-    t_cert = v * (0.05 + LP * walls * v)
+    t_cert = v * (50 * OP + LP * walls * v)
     if isotropic:
         c = max(1, ideal)
         t_start = (1 + c) * norms * 40 * OP * (n - 2) ** 2
         branch = f"cusp(isotropic) cusps={c}"
     else:
-        t_start = norms * (40 * OP * n * n + 1e-3 * math.sqrt(order))
+        t_start = norms * (40 * OP * n * n + 1e-5 * math.sqrt(order))
         branch = "cocompact(anisotropic)"
-    t = SAFETY * (BASE + t_start + t_vertices + t_edges + t_cert)
+    t = (BASE + t_start + t_vertices + t_edges + t_cert)
     basis = (f"[vinberg-and-edgewalk.md#edgewalk-branches] edgewalk {branch}: n={n} |A_L|={order} exp={exponent} "
              f"p-ranks={ranks} log2|O(q)|<={log_oq:.0f} norms={norms} walls={walls} {source} E={e} full-transporter-tests={full_tests}")
     return t, basis
@@ -307,7 +318,7 @@ def isotropic_line_cost(case) -> tuple[float, str]:
     primes = len(factor(2 * order))
     local = BASE + primes * 20 * OP
     if not case["has_isotropic"]:
-        return SAFETY * local, f"[isotropic-vector-search.md#branch-selection] anisotropic (Hasse-Minkowski, n={n}): primes|2|A_L|={primes} |A_L|={order}"
+        return local, f"[isotropic-vector-search.md#branch-selection] anisotropic (Hasse-Minkowski, n={n}): primes|2|A_L|={primes} |A_L|={order}"
     walls = REFLECTIVE_WALLS[json.dumps(gram)]
     roots = ROOTS.get(json.dumps(gram))
     if roots is not None:
@@ -323,7 +334,7 @@ def isotropic_line_cost(case) -> tuple[float, str]:
     # lorentzian_cells.py:3514-3560: one local stabilizer per quotient cell, one transport of
     # marks per adjacency (n facets per cell), identification within the cell's invariant
     # class (<= 2 representatives) owned by perfect-domains-and-lorentzian-cells.md.
-    t = SAFETY * (local + 0.2 * n + cells * (stab + 40 * OP * n) + cells * n * (2 * stab + 10 * OP))
+    t = (local + 10 * OP * n + cells * (stab + 40 * OP * n) + cells * n * (2 * stab + 10 * OP))
     return t, (f"[isotropic-vector-search.md#lorentzian-branch] isotropic Lorentzian perfect-cell orbits: n={n} |A_L|={order} "
                f"exp={exponent} reflective walls R={walls} {source}; quotient cells<=vertices, n adjacencies/cell, 2 reps/class")
 
@@ -336,40 +347,42 @@ def enriques_costs() -> dict[str, tuple[float, str]]:
     coset/double-coset step per resulting orbit; for the stable group the index is
     |O(q_N)| and the split orbits number 528 / 24242 / 72199 (fixture counts), each needing
     a stabilizer image in O(q_N) acting on 2^10 points (GAP Schreier-Sims, ~5 ms each with
-    wrapping; per-representative cost 0.58 s from B). O(q_N) order: Schreier-Sims on 1023 points, ~2 s.
+    wrapping; per-representative cost 0.042 s from B). O(q_N) order: Schreier-Sims on 1023 points, ~2 s.
     """
     q_order = 2.0
     image = 10.0  # generators of O(N), discriminant images, order of generated group
     # Constants from orthogonal-group-generators.md (owner B), sections "Isotropic
     # stabilizers" and "Lorentzian route": one line class = one Lorentzian traversal of
-    # e^perp/e (rank 10, C <= 2) = 79.6 s; one plane class = 39.0 s; one split-orbit output
-    # representative = one section lift at n = 12 = 0.58 s.
-    line_class, plane_class, split_rep = 79.6, 39.0, 0.58
+    # e^perp/e (rank 10, C <= 2) = 79.6 s; one plane class = 39.0 s; 
+    line_class, plane_class = 79.6, 39.0
+    # boundary-components.md (owner B), section "Splitting": one section lift per double
+    # coset via GAP DoubleCosets, word length 300 at degree 527 = 0.042 s per output representative.
+    split_rep = 0.042
     line = 2 * line_class    # 2 O(N)-classes of lines
     plane = 2 * plane_class  # 2 O(N)-classes of planes
     split_o_plus = 4 * split_rep  # O^+ split outputs 2 + 2 representatives
     out = {}
     out[ISO + "test_o_plus_n_has_two_line_and_two_plane_orbits"] = (
-        SAFETY * (BASE + line + plane + split_o_plus),
+        (BASE + line + plane + split_o_plus),
         "[isotropic-vector-search.md#eichler-branch] Enriques N rank12 A=(Z/2)^10: line+plane O(N)-classes then O^+ index-2 split of 4 orbits")
     flags = 2 * plane_class  # one plane-class traversal per line class (flags through a line)
     stable = (528 + 24242 + 72199) * split_rep
     out[ISO + "test_stable_o_plus_n_orbits_match_dutour_sikiric_hulek"] = (
-        SAFETY * (BASE + line + plane + flags + image + stable),
+        (BASE + line + plane + flags + image + stable),
         "[isotropic-vector-search.md#eichler-branch] Enriques N: classes of lines/planes/flags, split along stable group of index |O(q)|~4.7e13 "
-        "into 528+24242+72199 orbits x 0.58 s section lift (B: orthogonal-group-generators.md)")
+        "into 528+24242+72199 orbits x 0.042 s section lift (B: boundary-components.md#splitting)")
     out[ISO + "test_o_n_maps_onto_o_of_the_discriminant_form"] = (
-        SAFETY * (BASE + q_order + image),
+        (BASE + q_order + image),
         "[isotropic-vector-search.md#eichler-branch] Enriques N: |O(q_N)| by Schreier-Sims on 1023 points; image of O(N) generators")
     for rank_id in ("rank0", "rank1"):
         classes = line if rank_id == "rank0" else plane
         out[ISO + f"test_published_representatives_lie_in_distinct_o_plus_orbits[{rank_id}]"] = (
-            SAFETY * (BASE + classes + split_o_plus + 2 * 2 * 10.0),
-            f"[isotropic-vector-search.md#eichler-branch] Enriques N {rank_id}: classes (B: 79.6/39.0 s) + O^+ split (0.58 s/rep) + 2x2 marked isometry tests (10 s each)")
+            (BASE + classes + split_o_plus + 2 * 2 * 10.0),
+            f"[isotropic-vector-search.md#eichler-branch] Enriques N {rank_id}: classes (B: 79.6/39.0 s) + O^+ split (0.042 s/rep) + 2x2 marked isometry tests (10 s each)")
     for rep, idx in (("I_1_1", 1), ("I_1_2", 527), ("I_2_1", 527), ("I_2_2", 23715)):
         t = BASE + image + (line_class if rep.startswith("I_1") else plane_class) + 2 + math.log2(idx + 1) * 0.5
         out[ISO + f"test_stabilizer_images_have_dutour_sikiric_hulek_indices[{rep}]"] = (
-            SAFETY * t,
+            t,
             f"[isotropic-vector-search.md#eichler-branch] Enriques N {rep}: setwise stabilizer in O^+(N) (parabolic, rank12) + image subgroup order; index {idx}")
     return out
 
@@ -382,9 +395,9 @@ def i_2_10_costs() -> dict[str, tuple[float, str]]:
     """
     return {
         ISO + "test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank0-primitive_isotropic_vector_orbits]": (
-            SAFETY * (BASE + 2 * 3.0 + 1 * 5.0), "[isotropic-vector-search.md#eichler-branch] I_{2,10} unimodular isotropic: 2 line classes, reductions rank 10"),
+            (BASE + 2 * 3.0 + 1 * 5.0), "[isotropic-vector-search.md#eichler-branch] I_{2,10} unimodular isotropic: 2 line classes, reductions rank 10"),
         ISO + "test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank1-isotropic_plane_orbits]": (
-            SAFETY * (BASE + 2 * 8.0 + 1 * 8.0), "[isotropic-vector-search.md#eichler-branch] I_{2,10} unimodular isotropic: 2 plane classes, reductions rank 8"),
+            (BASE + 2 * 8.0 + 1 * 8.0), "[isotropic-vector-search.md#eichler-branch] I_{2,10} unimodular isotropic: 2 plane classes, reductions rank 8"),
     }
 
 
@@ -416,17 +429,17 @@ def estimates() -> dict[str, tuple[float, str]]:
     t, b = edgewalk_cost([[0, 1, 0], [1, 0, 0], [0, 0, 46]], 0, True, 1)
     # Nonreflective branch: three vertex orbits, then the finiteness test fails
     # (edgewalk.py:1538-1541): V=3, no certificate success.
-    t46 = SAFETY * (BASE + 3 * STAB * 4 + 3 * 2 * 5 * 0.1)
+    t46 = (BASE + 3 * STAB + 3 * 2 * 8 * (30 * OP + 2 * OP * 3 * 6))
     out[REFL + "test_u_plus_46_nonreflective_certificate_terminates_after_three_vertices"] = (
         t46, "[vinberg-and-edgewalk.md#worst-cases-and-nontermination] nonreflective U+<46>: |A_L|=46 norms=8, 3 vertex orbits then infinite-group stop")
     out[REFL + "test_promised_go_left_preserves_left_supplement"] = (
-        SAFETY * (BASE + 50 * OP), "[vinberg-and-edgewalk.md#binary-branch] rank-2 promised_step: constant number of binary-form ops")
+        (BASE + 50 * OP), "[vinberg-and-edgewalk.md#binary-branch] rank-2 promised_step: constant number of binary-form ops")
     out[REFL + "test_edgewalk_period_action_matrix_uses_coordinate_label_order"] = (
-        SAFETY * (2 * BASE + 100 * OP), "[vinberg-and-edgewalk.md#binary-branch] two rank-2 lattices, two isometries, coordinate matrices")
+        (2 * BASE + 100 * OP), "[vinberg-and-edgewalk.md#binary-branch] two rank-2 lattices, two isometries, coordinate matrices")
     out[REFL + "test_binary_cycle_coordinate_order_and_period_certificate"] = (
-        SAFETY * (2 * BASE + 2 * 200 * OP), "[vinberg-and-edgewalk.md#binary-branch] two rank-2 binary cycles (bound<=2): reduction cycle length <= 4")
+        (2 * BASE + 2 * 200 * OP), "[vinberg-and-edgewalk.md#binary-branch] two rank-2 binary cycles (bound<=2): reduction cycle length <= 4")
     out[REFL + "test_binary_cycle_period_respects_permuted_coordinate_basis"] = (
-        SAFETY * (2 * BASE + 2 * 200 * OP), "[vinberg-and-edgewalk.md#binary-branch] two rank-2 binary cycles bound 2")
+        (2 * BASE + 2 * 200 * OP), "[vinberg-and-edgewalk.md#binary-branch] two rank-2 binary cycles bound 2")
     allcock = _load("allcock_rank3_reflective")
     sample = [edgewalk_cost(c["gram"], c["num_simple_roots"], ISOTROPIC[json.dumps(c["gram"])])[0]
               for c in allcock if c["gram"] in ([[0, -1, 0], [-1, 0, 0], [0, 0, 1]], [[-3, 0, 0], [0, 1, 0], [0, 0, 1]])]
@@ -435,7 +448,7 @@ def estimates() -> dict[str, tuple[float, str]]:
              edgewalk_cost([[0, 1, 0], [1, 0, 0], [0, 0, 2]], 3, True)[0] * 2,
              t46,
              edgewalk_cost([[-1, 0, 0], [0, 3, 1], [0, 1, 7]], 6, False)[0] * 2,
-             SAFETY * (BASE + 2 * STAB) * 2]
+             (BASE + 2 * STAB) * 2]
     out[REFL + "test_edgewalk_branch_representative_sample"] = (
         sum(sample) + sum(extra), "sum of branch sample: 2 Allcock + polyhedral root system + U+<2> (x2) + U+<46> + compact hexagon (x2) + 2 binary")
     out.update(enriques_costs())

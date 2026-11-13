@@ -6,7 +6,7 @@ Scope: tests/test_pinned_lorentzian_cells.py, test_perfect_cell_transporter.py,
 test_perfect_cell_simultaneous_forms.py, test_large_cell_cone_route.py,
 test_target_cell_symmetries.py.
 
-Each budget = SAFETY * (branch work from mathematical invariants * unit costs).
+Each budget = branch work from mathematical invariants * unit costs (no multiplicative factor).
 Branches cited in src/sage_indefinite_port/indefinite/lorentzian_cells.py (LC):
   cell_transporter LC:1975-2160
     * identity shortcut       LC:2020  (same lattice, same rows)
@@ -22,27 +22,26 @@ Branches cited in src/sage_indefinite_port/indefinite/lorentzian_cells.py (LC):
     rows > 4096 -> linear-cost large route (no quadratic pairing graph).
 Upstream: Lorentzian.g:660-696 (transporter), polyhedral_common fund_domain_vertices.h:146.
 
-Unit costs (ubuntu-latest, 4 vCPU; Sage 10.x), stated generously:
-  LAT    0.3 s  owned sage-extensions lattice construction (category parent, Gram validation)
-  GAPI   3.0 s  first libgap use in a fresh worker (charged to any test that touches GAP,
-                since test order is unknown)
-  GAPOP  0.3 s  SymmetricGroup subgroup + order for |G| <= 48
-  NMZ    0.3 s  one PyNormaliz call on a <= rank-4 cone with a handful of extreme rays
-  ISOM   0.5 s  owned Isom.transporter, graph canonical labelling on n <= 16 vertices
-  INV    0.3 s  integral configuration invariants (Smith form, moment adjugate) rank <= 10
+Unit costs (ubuntu-latest, 4 vCPU; Sage 10.x), the primitive's cost at the stated size:
+  LAT    0.1 s  owned sage-extensions lattice construction (category parent, Gram validation)
+  GAPOP  0.1 s  libgap call (SymmetricGroup subgroup + order, NullspaceMat, LLL) at degree/dim <= 16;
+                libgap start-up is once per session, not per-test work
+  NMZ    0.1 s  one PyNormaliz cone, rank <= 4, few rays, incl. conversion to owned covectors
+  ISOM   0.2 s  owned Isom.transporter, graph canonical labelling on n <= 16 vertices
+  INV    0.05 s integral configuration invariants (Smith form, moment adjugate) rank <= 10
+  SHELL  0.2 s  one positive-vector shell (Fincke-Pohst tree of a few hundred nodes, rank <= 3)
+  FLIP   0.3 s  one flip: exact facet kernel + one shell
   LEAF   5 ms   one basis-search leaf certification (rank-r matrix congruence + row set)
   PYROW  30 us  per configuration row in a pure-Python linear pass (exact int ops, tuples)
-  QQOP   1 us   one Sage QQ arithmetic op in a Python loop (plus generator overhead x3)
+  QQOP   3 us   one Sage QQ arithmetic op inside a Python generator loop
   CALL   10 ms  one call of a small exact port routine (LLL / kernel / diagonalisation, dim <= 5)
-SAFETY = 3 on every budget.
 """
 from __future__ import annotations
 
 from statistics import median
 
-SAFETY = 3.0
-LAT, GAPI, GAPOP, NMZ, ISOM, INV, LEAF, PYROW, QQOP, CALL = (
-    0.3, 3.0, 0.3, 0.3, 0.5, 0.3, 0.005, 30e-6, 1e-6, 0.01)
+LAT, GAPOP, NMZ, ISOM, INV, SHELL, FLIP, LEAF, PYROW, QQOP, CALL = (
+    0.1, 0.1, 0.1, 0.2, 0.05, 0.2, 0.3, 0.005, 30e-6, 3e-6, 0.01)
 
 PIN = "tests/test_pinned_lorentzian_cells.py::"
 TRA = "tests/test_perfect_cell_transporter.py::"
@@ -52,7 +51,7 @@ SYM = "tests/test_target_cell_symmetries.py::"
 
 
 def _b(seconds: float, basis: str) -> tuple[float, str]:
-    return (round(SAFETY * seconds, 2), f"{basis}; x{SAFETY:g}")
+    return (round(seconds, 3), basis)
 
 
 def exact_routine(calls: int, lattices: int = 0, extra: float = 0.0, note: str = "") -> tuple[float, str]:
@@ -67,7 +66,7 @@ def brute_force_sphere(cases_by_rank: dict[int, int], box: int, calls: int) -> t
     (tests/test_pinned_lorentzian_cells.py:2049-2062, 2201-2212, 2310-2314); port side is the
     pinned Fincke-Pohst/dual-LLL recursion whose output is the (tiny) sphere."""
     points = sum(n * (2 * box + 1) ** r * (r * r + r) for r, n in cases_by_rank.items())
-    sec = points * QQOP * 3 + calls * CALL
+    sec = points * QQOP + calls * CALL
     return _b(sec, f"[§Positive-vector shell] CVP sphere branch, cases {cases_by_rank}, box {box}: {points} QQ ops + {calls} calls")
 
 
@@ -79,7 +78,7 @@ def transporter(n: int, branch: str, stab: int, lattices: int, gap: bool, extra:
         sec = ISOM
     else:
         sec = INV + stab * LEAF * 2 + n * n * PYROW
-    sec += lattices * LAT + (GAPI + GAPOP if gap else 0.0) + extra
+    sec += lattices * LAT + (GAPOP if gap else 0.0) + extra
     return _b(sec, f"[§Cell stabilizer and transporter] transporter {branch}, n={n}, |Stab|={stab}, gap={gap} {note}".strip())
 
 
@@ -96,8 +95,7 @@ def octahedral(case: str) -> tuple[float, str]:
     else:
         sec += INV + 48 * LEAF  # witness via basis_search, first certified leaf
     if retained != "neither":
-        sec += INV + 48 * LEAF * 2 + GAPI + GAPOP
-    sec += GAPI * 0  # GAP only when retained
+        sec += INV + 48 * LEAF * 2 + GAPOP
     return _b(sec, f"[§Cell stabilizer and transporter] basis_search/small_graph per LC:2022; |Stab|=48, n=6, rank 4, branch {case}")
 
 
@@ -129,7 +127,7 @@ def estimates() -> dict[str, tuple[float, str]]:
     t = {
         "test_group_generator_complex_does_not_alias_full_domain_cache": _b(LAT + 0.2, "[§Helpers without search] perfect_complex cache lookup only, no traversal"),
         "test_group_only_expansion_discards_facet_orbit_records": _b(2 * (LAT + INV + 0.2), "[§Helpers without search] two expansions with stubbed facets/flip; hash key on 2 rows"),
-        "test_orthogonal_group_generators_use_raw_h_rows": _b(LAT + 2 * (1.0 + INV + 6 * LEAF * 2 + 1.0 + ISOM + NMZ), "[§Traversal, §Worked tessellations U+A1(-2)] h=1 cell orbit C={e,f,e+f+g}, |G_C|=6 (S3), 1 facet orbit; two traversals (group generators + perfect_complex retain=False), each: initial shell + stabilizer + 1 flip + 1 transporter"),
+        "test_orthogonal_group_generators_use_raw_h_rows": _b(LAT + 2 * (SHELL + INV + 6 * LEAF * 2 + FLIP + ISOM + NMZ), "[§Traversal, §Worked tessellations U+A1(-2)] h=1 cell orbit C={e,f,e+f+g}, |G_C|=6 (S3), 1 facet orbit; two traversals (group generators + perfect_complex retain=False), each: initial shell + stabilizer + 1 flip + 1 transporter"),
         "test_owned_row_blocks_release_only_consumed_list_entries": _b(0.01, "[§Helpers without search] pure Python block iterator"),
         "test_owned_row_blocks_leave_immutable_sequences_unchanged": _b(0.01, "[§Helpers without search] pure Python block iterator"),
         "test_schreier_generator_indices_streams_nested_word_in_action_order": _b(0.01, "[§Helpers without search] pure Python word stream"),
@@ -145,7 +143,7 @@ def estimates() -> dict[str, tuple[float, str]]:
         "test_gram_component_sign_flips_are_exact_isometries": _b(LAT + 0.1, "[§Helpers without search] sign flips on small Gram"),
         "test_integral_basis_reflection_is_exact_or_rejected": _b(LAT + 0.1, "[§Helpers without search] single reflection check"),
         "test_configuration_pairing_diagonal_matches_exact_row_products": _b(0.1, "[§Helpers without search] few rows, exact products"),
-        "test_configuration_pairing_diagonal_crosses_temporary_block_boundary": _b(1025 * (PYROW + 20 * QQOP * 3) + 0.1, "[§Helpers without search] 1025 rows, test-side Sage vector products"),
+        "test_configuration_pairing_diagonal_crosses_temporary_block_boundary": _b(1025 * (PYROW + 20 * QQOP) + 0.1, "[§Helpers without search] 1025 rows, test-side Sage vector products"),
         "test_coarse_colours_preserve_changed_configuration_transporters": transporter(2, "basis_search", 2, 2, False),
         "test_configuration_signature_multisets_match_exact_columns": _b(0.1, "[§Helpers without search] small exact columns"),
         "test_packed_pairing_fibres_preserve_exact_position_partition": _b(0.1, "[§Helpers without search] small fibres"),
@@ -154,13 +152,13 @@ def estimates() -> dict[str, tuple[float, str]]:
         "test_normaliz_pairing_rows_match_owned_covectors": large_route(10_000, True, 3, "U, 10k duplicated rays -> 2 facets"),
         "test_group_only_facet_keys_do_not_construct_owned_cone": _b(LAT + INV + NMZ, f"raw facet keys on {U}"),
         "test_public_facet_orbit_permutations_keep_owned_cone_lazy": _b(LAT + INV + NMZ, f"facet orbit permutations on {U}"),
-        "test_perfect_traversal_keeps_owned_cone_lazy": _b(LAT + 1.0 + INV + 2 * LEAF * 2 + 2 * NMZ, "[§Traversal, §Worked tessellations U] h=1 cell {e,f}, |G_C|=2, both facets exit at cusps: no flips"),
+        "test_perfect_traversal_keeps_owned_cone_lazy": _b(LAT + SHELL + INV + 2 * LEAF * 2 + 2 * NMZ, "[§Traversal, §Worked tessellations U] h=1 cell {e,f}, |G_C|=2, both facets exit at cusps: no flips"),
         "test_raw_normaliz_facet_route_matches_owned_cone_orbits": _b(LAT + INV + 3 * NMZ, f"both facet routes on {U}"),
         "test_large_facet_keys_use_the_smaller_dense_incidence_side": large_route(10_000, True, 4, "distinct rows, 2 facets, dense incidence"),
         "test_large_perfect_form_hash_skips_quadratic_pairing_graph": large_route(10_000, False, 8, "hash key twice (coarse + refined gcd colours), LC:2876"),
         "test_complex_isometry_uses_cached_coarse_key_for_large_route": _b(LAT + 2 * (INV + 0.5), "[§Helpers without search] two complexes on U, coarse key with stubbed traversal"),
         "test_large_distinct_row_transporter_uses_exact_target_membership": transporter(2, "basis_search", 2, 2, False),
-        "test_large_transporter_invariant_rejection_returns_none_not_empty_tuple": transporter(513, "basis_search", 1, 1, False, note="rejected at invariant stage before backtracking"),
+        "test_large_transporter_invariant_rejection_returns_none_not_empty_tuple": _b(LAT + 2 * INV + 2 * 513 * PYROW, "[§Cell stabilizer and transporter] rejection branch LC:2079: rows (i,1) vs (2i,2) have Smith content 1 vs 2, rejected before the quadratic refinement; O(N r) invariants for N=513"),
         "test_large_transporter_matches_joint_gcd_colours_after_basis_change": transporter(8, "basis_search", 8, 2, False),
         "test_large_same_lattice_transporter_skips_counter_identity_probe": transporter(4, "basis_search", 4, 1, False),
         "test_repeated_row_transporter_retains_multiset_certificate": transporter(4, "basis_search", 4, 1, False),
@@ -172,18 +170,18 @@ def estimates() -> dict[str, tuple[float, str]]:
         "test_large_cell_ray_extraction_bypasses_normaliz_polyhedron_wrapper": large_route(10_000, True, 2, "Normaliz ray extraction"),
         "test_facet_incidence_streaming_preserves_exact_orbits": _b(LAT + 2 * INV + 2 * NMZ + 0.5, f"facet_orbits twice + permutation orbits on {U}"),
         "test_cell_faces_reuse_owned_halfspace_covectors_exactly": _b(LAT + 2 * NMZ + 0.3, "[§Cell cone] cell faces on small cell"),
-        "test_facet_flip_uses_pinned_gap_normals": _b(LAT + GAPI + 2 * GAPOP + NMZ + 1.0, "[§Facets and flips] flip_across diag(1,-1,-1) 3-ray cell: kernel + positive-vector search; libgap NullspaceMat"),
+        "test_facet_flip_uses_pinned_gap_normals": _b(LAT + 2 * GAPOP + NMZ + FLIP, "[§Facets and flips] flip_across diag(1,-1,-1) 3-ray cell: kernel + positive-vector search; libgap NullspaceMat"),
         "test_rank_three_minimized_halfspaces_pair_against_basis_elements": _b(LAT + 2 * NMZ + 0.5, "[§Cell cone] rank-3 isotropic cell, 4 facets, both modes"),
     }
     for k, v in t.items():
         e[TRA + k] = v
     # ---------------- pinned lorentzian cells (exact pinned routines on fixed small matrices)
     p = {
-        "test_gap_lll_transformation_uses_row_congruence_orientation": exact_routine(10, 0, GAPI, "(libgap LLL)"),
+        "test_gap_lll_transformation_uses_row_congruence_orientation": exact_routine(10, 0, GAPOP, "(libgap LLL)"),
         "test_dual_lll_candidates_sort_in_reduced_column_coordinates": exact_routine(10),
         "test_pinned_positive_gcd_dot_matches_exact_coefficients": exact_routine(5),
         "test_outside_ray_span_normalizes_each_source_direction_independently": exact_routine(5),
-        "test_initial_cell_nullspace_uses_pinned_gap_row_order": exact_routine(5, 0, GAPI),
+        "test_initial_cell_nullspace_uses_pinned_gap_row_order": exact_routine(5, 0, GAPOP),
         "test_pinned_column_reduction_matches_greedy_rank_increase": exact_routine(3 * 8 * 6, note="(random 8 per size, rank checks)"),
         "test_pinned_positive_diagonal_directions_follow_source_scan_and_l1_norm": exact_routine(10),
         "test_pinned_positive_eigen_directions_preserve_source_row_orientation": exact_routine(10),
@@ -198,7 +196,7 @@ def estimates() -> dict[str, tuple[float, str]]:
         "test_indefinite_reduction_integrates_source_radical_and_completion": exact_routine(30),
         "test_indefinite_gram_schmidt_rejects_invalid_form_or_basis": exact_routine(10),
         "test_indefinite_lll_nearest_integer_uses_source_half_tie_rule": exact_routine(10),
-        "test_source_integer_nullspace_reduces_and_completes_radical": exact_routine(20, 0, GAPI),
+        "test_source_integer_nullspace_reduces_and_completes_radical": exact_routine(20, 0, GAPOP),
         "test_source_subspace_completion_int_returns_unimodular_complements": exact_routine(20),
         "test_source_v2_honors_critical_norm_and_strictness": exact_routine(30, note="(isotropic/anisotropic shortcut branches)"),
         "test_source_integral_vector_allmeth_v2_returns_exact_positive_witness": exact_routine(40),
@@ -210,7 +208,7 @@ def estimates() -> dict[str, tuple[float, str]]:
         "test_integral_positive_vector_consumer_uses_pinned_diagonalization": exact_routine(20),
         "test_pinned_symmetric_diagonalization_returns_exact_congruence_witness": exact_routine(20),
         "test_pinned_diagonalizer_handles_deterministic_rational_symmetric_samples": exact_routine(4 * 10 * 3, note="(10 random per size)"),
-        "test_pinned_nullspace_preserves_gap_row_basis_order": exact_routine(4 * 12 * 2 + 10, 0, GAPI),
+        "test_pinned_nullspace_preserves_gap_row_basis_order": exact_routine(4 * 12 * 2 + 10, 0, GAPOP),
         "test_source_random_perturbations_match_pinned_matrices": exact_routine(20),
         "test_source_indefinite_short_positive_vector_integrates_pinned_search_loop": exact_routine(40, note="(scripted search loop)"),
         "test_source_indefinite_short_positive_vector_certifies_search_witnesses": exact_routine(20),

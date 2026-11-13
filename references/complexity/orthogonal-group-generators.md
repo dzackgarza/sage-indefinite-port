@@ -156,8 +156,8 @@ and "Lorentzian route": the quotient `e^⊥/e` is Lorentzian of rank 10 with a
 class costs `1 + T_traverse = 79.6` s. One plane class costs
 `h^2 T_definite(8) + 20 h (0.05 + 640 U_ELT) + h = 11.6` s with `h <= 4` and
 `E^⊥/E` of `E8(2)` type (`S = 240`, `|Aut| = |W(E8)|`).
-One section lift of a split orbit costs `80 n^2 U_ELT = 0.58` s. These
-values exclude the safety factor.
+One section lift of a split orbit costs `T_lift = 0.042` s, with word length
+`w = 300` (`boundary-components.md`, "Splitting").
 
 ## Finite images
 

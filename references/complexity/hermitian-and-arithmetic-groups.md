@@ -252,18 +252,21 @@ Hand counts of the candidates:
 
 | Primitive | Cost |
 | --- | --- |
-| Number-field or rational scalar operation | 50 microseconds |
-| `3 x 3` matrix product over a quadratic field | 1.5 milliseconds |
-| `5 x 5` matrix product over a quadratic field | 6 milliseconds |
+| Quadratic number-field scalar operation | 2 microseconds |
+| `3 x 3` matrix product over a quadratic field | 0.1 milliseconds |
+| `5 x 5` matrix product over a quadratic field | 0.4 milliseconds |
+| One `levi_lift` on rank 3 | 0.02 seconds |
+| One `levi_lift` on rank 5, split or unimodular | 0.05 to 0.1 seconds |
+| One `levi_lift` on rank 5, glued with denominator 3 | 0.3 seconds |
 | PARI `bnfinit` or `bnfisnorm`, degree 2 | 10 milliseconds |
 | PARI `qfminim`, rank at most 9 | 10 milliseconds |
-| Quaternion Voronoi over `Q`, one perfect class | 3 seconds |
-| Voronoi over a real quadratic field, cone of dimension 6 | 30 seconds (assumed class count) |
+| Quaternion Voronoi over `Q`, one perfect class | 0.5 seconds |
+| Voronoi over a real quadratic field, cone of dimension 6 | 5 seconds (assumed class count) |
 | Marked transporter, rank at most 4, indefinite | 0.3 to 0.8 seconds |
 
 ## Scope G pricing rule
 
-The budgets in `.tmp/probe/estimates/G.py` are the branch work times 3.
+The budgets in `.tmp/probe/estimates/G.py` are the derived maximum work of the branch.
 A pure computation on one model instance is charged once. Example: one
 Voronoi tessellation per order. The code sometimes repeats such a
 computation. `QuaternionVoronoi.perfect_forms`, `unit_generators` and

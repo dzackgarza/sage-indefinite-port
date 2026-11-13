@@ -18,7 +18,6 @@ Unit costs (target: GitHub ubuntu-latest, 4 vCPU, 16 GB, Sage 10.x):
                     Charged only where the route reaches the Oscar bridge: the
                     centralizer adapter (lattice_engines.py:1393). Definite
                     lattices over ZZ use PARI qfauto/qfisom, not the bridge.
-  SAFETY  = 3       multiplicative safety factor on every model.
 
 Stdlib only. Run as a script to verify key coverage and print statistics.
 """
@@ -42,7 +41,6 @@ U_PERM = 2e-6
 U_FP = 1e-6
 T_NODE = 0.5
 T_JULIA = 60.0
-SAFETY = 3.0
 
 
 def _load(name):
@@ -285,7 +283,7 @@ def t_oq(A, log2_o):
     Doc: discriminant-groups-and-congruence-orbits.md (agent F); orthogonal-group-generators.md "Finite images".
     """
     gens = max(2, math.ceil(log2_o))
-    return 0.2 + A * gens * U_PERM * 10 + 1e-7 * A * A + A * U_ELT
+    return 0.2 + A * gens * U_PERM + 1e-7 * A * A + A * U_ELT
 
 
 def log2_oq_bound(i):
@@ -351,7 +349,7 @@ def t_same_finite_images(gram, computed_gens, recorded_gens):
 
 
 def budget(model_seconds, julia=False):
-    return SAFETY * (T_NODE + model_seconds + (T_JULIA if julia else 0.0))
+    return T_NODE + model_seconds + (T_JULIA if julia else 0.0)
 
 
 def _fmt(i):
@@ -530,13 +528,34 @@ def _neg(b):
 U = [[0, 1], [1, 0]]
 
 
-def t_split(i, count, orbit_points, gens=12):
-    """Split O(L)-classes into Gamma-orbits: H-orbits on the finite G-set G/G_m of size `orbit_points`,
-    then one section lift (Schreier word, ~20 isometry products) per output representative.
-    Doc: boundary-components.md "Splitting" and discriminant-groups-and-congruence-orbits.md (agent F).
-    """
-    lift = 20 * i["n"] ** 2 * U_ELT * 4
-    return orbit_points * gens * U_PERM * 10 + count * lift
+U_PRODUCT = 1e-5 + 2 * U_ELT  # one 12x12 FLINT product plus the owned isometry wrapper
+
+
+def word_length(degree, log2_order):
+    """Length w of a GAP word-section word (orthogonal_quotients.py:176-191, PreImagesRepresentative
+    of a free-group epimorphism through the stabilizer chain). Base length b = ceil(log2|Q| / log2 deg);
+    each level contributes at most one Schreier-tree path of depth <= 2 ceil(log2 deg) (GAP's shallow
+    trees), and each strong generator is a word of length <= 2.5 in the family on average."""
+    b = math.ceil(log2_order / math.log2(degree))
+    return math.ceil(b * 2 * math.ceil(math.log2(degree)) * 2.5)
+
+
+def t_lift(i, degree, log2_order):
+    """One section lift (splitting_isometries_from_stabilizer_image, orthogonal_quotients.py:1600-1630):
+    PreImagesRepresentative in GAP, O(w + degree); _evaluate_letters, w products of n x n isometries;
+    _checked_lift, one character image (ell discriminant generators x n coordinates); one apex action."""
+    w = word_length(degree, log2_order)
+    return (w + degree) * U_PERM + w * U_PRODUCT + i["ell"] * i["n"] * U_ELT + 2 * i["n"] * U_ELT
+
+
+def t_split(i, count, orbit_points, gens=12, degree=None, log2_order=None):
+    """Split O(L)-classes into Gamma-orbits (split_orbit, lattice_morphisms.py:4638; DoubleCosets in the
+    permutation model, orthogonal_quotients.py:1600-1630): GAP double cosets ~ orbit_points * gens
+    permutation images, then exactly one section lift per double coset = per output representative
+    (`count`). Doc: boundary-components.md "Splitting"."""
+    deg = degree if degree is not None else max(i["A"] - 1, 2)
+    lo = log2_order if log2_order is not None else log2_oq_bound(i)
+    return orbit_points * gens * U_PERM + count * t_lift(i, deg, lo)
 
 
 def t_classes(i, k, complement=None):
@@ -566,7 +585,8 @@ def t_counts_enriques(i, counts, orbit_points):
     """t_counts with the plane complement E-perp/E of N: rank 8, 2-elementary, E8(2)-type (240 short, W(E8))."""
     lines, planes, flags = counts
     t = t_classes(i, 1) + 2 * t_classes(i, 2, (240, LOG2_W_E8)) + 2.0
-    return t + t_split(i, lines, orbit_points[0]) + t_split(i, planes, orbit_points[1]) + t_split(i, flags, orbit_points[2])
+    lo = math.log2(2 ** 21 * 3 ** 5 * 5 ** 2 * 7 * 17 * 31)
+    return t + sum(t_split(i, c, p, degree=527, log2_order=lo) for c, p in zip(counts, orbit_points))
 
 
 def isotropic_points_bound(A, k):
@@ -770,7 +790,7 @@ def vector_stabilizers():
             stab = t_traverse({"n": 9, "p": 1, "q": 8, "r": 0, "A": abs(s), "ell": 1, "even": True})
         else:
             classes, stab = t_traverse(i, 1) + 2.0 * k, t_definite(8, 240, LOG2_W_E8)
-        mod2 = 0.5 + 20 * 1023 * U_PERM * 10
+        mod2 = 0.5 + 20 * 1023 * U_PERM
         out[f"{VS}test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso[{s}]"] = (
             budget(classes + k * (stab + mod2)), f"{VO}#stabilizers E10 s={s} k={k}, v-perp {'definite' if s > 0 else 'Lorentzian' if s < 0 else 'E8 via e-perp/e'}, mod-2 image on 1023 vectors")
     reps = len(e10["orbit_representatives"])
@@ -844,7 +864,8 @@ def pending_constants():
     return {
         "line_class_seconds": t_classes(i, 1),
         "plane_class_seconds": t_classes(i, 2),
-        "split_orbit_lift_seconds": 80 * i["n"] ** 2 * U_ELT,
+        "split_orbit_lift_seconds": t_lift(i, 527, math.log2(2 ** 21 * 3 ** 5 * 5 ** 2 * 7 * 17 * 31)),
+        "word_length": word_length(527, math.log2(2 ** 21 * 3 ** 5 * 5 ** 2 * 7 * 17 * 31)),
     }
 
 
@@ -881,5 +902,5 @@ if __name__ == "__main__":
         functions.setdefault(key.split("[")[0], []).append(seconds)
     for name, values in sorted(functions.items()):
         print(f"{name.split('tests/', 1)[-1]}  n={len(values)} min={min(values):.1f} median={median(values):.1f} max={max(values):.1f}")
-    print("pending constants (unscaled seconds):", {k: round(v, 2) for k, v in pending_constants().items()})
+    print("pending constants (seconds):", {k: round(v, 2) for k, v in pending_constants().items()})
     assert not missing and not extra

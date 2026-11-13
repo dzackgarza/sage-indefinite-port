@@ -227,13 +227,18 @@ digits) on a 4-vCPU runner with Sage 10.x:
 
 | Primitive | Cost |
 | --- | --- |
-| owned lattice construction (sage-extensions parent, Gram check) | 0.3 s |
-| first libgap call in a process | 3 s |
-| GAP permutation-group order, degree `≤ 16`, order `≤ 48` | 0.3 s |
-| one PyNormaliz cone, rank `≤ 4`, few rays | 0.3 s |
-| owned `Isom.transporter`, graph on `≤ 16` vertices | 0.5 s |
-| configuration invariants (Smith form, adjugate), `r ≤ 10` | 0.3 s |
+| owned lattice construction (sage-extensions parent, Gram check) | 0.1 s |
+| one libgap call (group order, `NullspaceMat`, LLL), degree or dim `≤ 16` | 0.1 s |
+| one PyNormaliz cone, rank `≤ 4`, few rays, with conversion | 0.1 s |
+| owned `Isom.transporter`, graph on `≤ 16` vertices | 0.2 s |
+| configuration invariants (Smith form, adjugate), `r ≤ 10` | 0.05 s |
+| one positive-vector shell, rank `≤ 3`, a few hundred tree nodes | 0.2 s |
+| one flip (facet kernel and one shell) | 0.3 s |
 | one basis-search leaf certification | 5 ms |
 | one exact small-matrix routine (LLL, kernel, diagonalisation), dim `≤ 5` | 10 ms |
 | one row in a Python linear pass | 30 µs |
-| one Sage `QQ` operation in a Python loop | 1 µs |
+| one Sage `QQ` operation in a Python generator loop | 3 µs |
+
+Library start-up (libgap, Normaliz) happens once per session and is not part
+of the work of one test. A budget is the derived work of its branch, with no
+multiplicative factor.

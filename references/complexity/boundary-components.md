@@ -36,11 +36,36 @@ as the double cosets `ρ(Γ) \ ρ(O(L)) / ρ(O(L)_m)`, where `ρ` is the
 character map to `O(q_L)` (`lattice_morphisms.py:4638-4700`). It computes the
 `ρ(Γ)`-orbits on the finite set `ρ(O(L))/ρ(O(L)_m)`. The size of that set is
 at most the number of isotropic configurations of the same type in `A_L`:
-`<= |A|` for lines and `<= |A|^2` for planes and flags. Each output
-representative needs one section lift: a Schreier word of about 20 isometry
-products of `n x n` matrices.
+`<= |A|` for lines and `<= |A|^2` for planes and flags.
 
-`T_split = |G/G_m| * g * 10 U_PERM + (number of Γ-orbits) * 80 n^2 U_ELT`.
+`splitting_isometries_from_stabilizer_image` (sage-extensions
+`categories/orthogonal_quotients.py:1600-1630`) runs GAP `DoubleCosets` in the
+permutation model of the image. It then lifts exactly one element for each
+double coset, that is, for each output representative. It does not lift a
+transversal of `[O(q) : ρ(Γ)]`. One lift has these parts:
+
+- `PreImagesRepresentative` of the free-group epimorphism (`_GapWordSection`,
+  `orthogonal_quotients.py:60-191`) on the existing stabilizer chain. This
+  costs `O(w + deg)` permutation operations.
+- `_evaluate_letters`: `w` products of `n x n` integer isometries. Each
+  product is one FLINT product (`1e-5` s at `n = 12`) plus the owned wrapper
+  (`2 U_ELT`).
+- `_checked_lift`: one character image, `ell * n` element operations.
+- One apex action on the marking.
+
+The word length follows from the stabilizer chain of the image `Q` in degree
+`deg`. The base length is `b = ceil(log2|Q| / log2 deg)`. Each level adds at
+most one Schreier-tree path of depth `<= 2 ceil(log2 deg)`, and a strong
+generator is on average a word of length `<= 2.5` in the supplied family. So
+`w <= 5 b ceil(log2 deg)`.
+
+`T_lift = (w + deg) U_PERM + w (1e-5 + 2 U_ELT) + (ell + 2) n U_ELT`
+
+`T_split = |G/G_m| * g * U_PERM + (number of Γ-orbits) * T_lift`.
+
+For the Enriques lattice `N` the image is of `O^+(10, 2)` type on the
+`deg = 527` singular points, with `log2|Q| = 45.4`. This gives `b = 6`,
+`w = 300` and `T_lift = 0.042` s.
 
 The theory of the character quotient is in
 `discriminant-groups-and-congruence-orbits.md` (owner F), "Orbit splitting

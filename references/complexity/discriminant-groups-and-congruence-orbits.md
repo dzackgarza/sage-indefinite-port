@@ -19,18 +19,18 @@ a stated unit cost of a backend primitive.
 
 | Symbol | Primitive | Upper unit cost on a 4-vCPU runner | Basis |
 | --- | --- | --- | --- |
-| `c_mor` | One evaluation, composition or construction of a lattice morphism or marked object in the sage-extensions categorical layer (Python objects over a rank `n <= 12` free module) | 0.03 s | `O(n^2)` integer operations plus Python object construction of a few hundred attribute lookups |
-| `c_lat` | Construction of a formed lattice from a Gram matrix with its cached invariants (determinant, signature, Smith form) | 0.5 s | Smith form of an `n x n` integer matrix, `n <= 12`, in PARI/FLINT |
-| `c_ss(d)` | GAP randomized Schreier–Sims order of a permutation group of degree `d` with `k <= 50` generators | `1 + 1e-7 * k * d * log2(d)^2` s | Seress, *Permutation Group Algorithms*, Sec. 4.5 and Thm. 4.5.5: nearly linear time `O(k d log^c |G|)` for groups with small base; `log |G| = O(log^2 d)` for the classical groups here |
+| `c_mor` | One evaluation, composition or construction of a lattice morphism or marked object in the sage-extensions categorical layer (Python objects over a rank `n <= 12` free module) | `144 * U_ELT = 0.0072` s | `n^2 <= 144` element operations at B's `U_ELT = 5e-5` s (`orthogonal-group-generators.md`, unit costs) |
+| `c_lat` | Construction of a formed lattice from a Gram matrix with its cached invariants (determinant, signature, Smith form) | 0.5 s | B's `T_NODE`: Smith form in PARI (milliseconds) plus the construction of the preamble lattice objects |
+| `c_ss(d)` | GAP randomized Schreier–Sims order of a permutation group of degree `d` with `k <= 50` generators | `0.1 + 1e-7 * k * d * log2(d)^2` s | Seress, *Permutation Group Algorithms*, Sec. 4.5 and Thm. 4.5.5: nearly linear time `O(k d log^c |G|)` for groups with small base; `log |G| = O(log^2 d)` for the classical groups here |
 | `c_mat(p, n)` | Order of a matrix group in `GL_n(F_p)` | `c_ss(p^n)` for `p^n <= 10^3`; otherwise `t_reduction` of `orthogonal-group-generators.md` §Finite images | For small `p^n` GAP acts on the vectors. For large `p^n` the vector action has `(p^n - 1)/(p - 1)` points, and constructive recognition is polynomial in `n` and `log p` |
-| `c_tqf(A)` | `O(q_L)` for a finite quadratic form, Sage `TorsionQuadraticModule.orthogonal_group` | `2 + 0.02 * |A_L|` s per `p`-primary part | Sage `fqf_orthogonal.py` lifts generators of `O(L_p)` (Brandhorst–Veniani, *Hermitian lattices and K3 automorphisms*; Miranda–Morrison, *Embeddings of integral quadratic forms*, Ch. IV); the permutation action on `A_L` has degree `|A_L|` |
+| `c_tqf(A)` | `O(q_L)` for a finite quadratic form, Sage `TorsionQuadraticModule.orthogonal_group` | `0.5 + 0.002 * |A_L|` s per `p`-primary part | Sage `fqf_orthogonal.py` lifts generators of `O(L_p)` (Brandhorst–Veniani, *Hermitian lattices and K3 automorphisms*; Miranda–Morrison, *Embeddings of integral quadratic forms*, Ch. IV); the permutation action on `A_L` has degree `|A_L|` |
 
-| `C_GAPZ` | Order or finiteness of a matrix group over `ZZ` of degree at most 5 (Sage `MatrixGroup.order`, `is_finite`, through GAP) | 1 s | GAP decides finiteness from a positive definite invariant form, found by averaging over a finite group or refuted by an element of infinite order (Detinko–Flannery, *On deciding finiteness of matrix groups*, J. Symb. Comp. 44 (2009)); for degree at most 5 this is a few hundred small integer operations plus the GAP call overhead |
+| `C_GAPZ` | Order or finiteness of a matrix group over `ZZ` of degree at most 5 (Sage `MatrixGroup.order`, `is_finite`, through GAP) | 0.3 s | GAP decides finiteness from a positive definite invariant form, found by averaging over a finite group or refuted by an element of infinite order (Detinko–Flannery, *On deciding finiteness of matrix groups*, J. Symb. Comp. 44 (2009)); for degree at most 5 this is a few hundred small integer operations plus the GAP call overhead |
 | `C_MM` | One product of two dense matrices of size at most 8 over `ZZ`, `QQ` or `GF(3)` in Sage | `1e-4` s | `n^3 <= 512` scalar operations in FLINT plus the Sage object overhead |
-| `C_OP` | One stabilizer or transporter step of an equivariant marking or normalizer after its centralizer is known | 0.5 s | One unit-group computation of a real quadratic order (PARI `quadunit`, milliseconds) or one eigenspace decomposition over `QQbar` of size at most 8, plus at most 100 `C_MM` |
+| `C_OP` | One stabilizer or transporter step of an equivariant marking or normalizer after its centralizer is known | 0.25 s | One unit-group computation of a real quadratic order (PARI `quadunit`, milliseconds) or one eigenspace decomposition over `QQbar` of size at most 8, plus at most 100 `C_MM` |
 
-A safety factor of 3 is applied to every total in
-`.tmp/probe/estimates/F.py`.
+A budget is the derived maximum work of its branch, with these unit costs
+and no multiplicative factor (`ci/test_budget_models/F.py`).
 
 ## Discriminant group and its orthogonal group
 
@@ -294,3 +294,13 @@ without the bridge.
   `O^+_4(3)`, of order at most 1152. On `3U` the closure of the supplied group
   (one swap, two signs, two commuting transvections of order 3) has at most
   `2^3 * 9 * 8 = 576` elements.
+
+## Parabolic generators
+
+The generators of the stabilizer of a primitive isotropic sublattice `I` of
+rank `j` in a lattice of rank `n` are the Levi generators of `GL_j(Z)` (two) and
+the generators of the unipotent radical (at most `j(n - 2j) + j(j - 1)/2 <= n^2/4`).
+Each is an isometry given by `n` images. Cost: one construction of the
+reduction lattice `I^perp / I` (`c_lat`) plus `(n + n^2/4) * c_mor`. The
+generators of `O(I^perp / I)` are a separate term from
+`orthogonal-group-generators.md`.
