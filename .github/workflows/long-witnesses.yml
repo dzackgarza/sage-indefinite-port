@@ -196,3 +196,6 @@ jobs:
         with:
           name: witness-${{ matrix.test }}
           path: .tmp/ci/results/
+concurrency:
+  group: long-witnesses-${{ github.ref }}
+  cancel-in-progress: true
