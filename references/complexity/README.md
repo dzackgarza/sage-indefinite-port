@@ -40,3 +40,7 @@ collected node without an entry, and logs one `BUDGET` line per test.
 - Budgets catch order-of-magnitude regressions. Differences of seconds are noise.
 - A budget above 20 minutes for a test or witness this repository writes needs a
   smaller input reaching the same branch, or an optimization issue under #64.
+- Work shared by several cases (the same lattice's classes, generators or
+  permutation model) is charged once per session, not to every case.
+- A port factor over a reference implementation is a multiplicative factor too.
+  Price the interpreted bookkeeping by its own operation count instead.
