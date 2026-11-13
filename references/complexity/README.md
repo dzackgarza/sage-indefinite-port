@@ -48,3 +48,8 @@ collected node without an entry, and logs one `BUDGET` line per test.
   same work the reference implementation does; a budget above the reference
   implementation's bound means the model is wrong. Per-element interpreted work
   in a hot loop is a defect the budget exposes, not a cost it includes.
+- Every unit cost is a measured primitive from `ci/test_budget_models/unit_costs.json`
+  (written by `unit_costs.py`, which times primitives and never a test), or an
+  operation count from the theory times measured primitives. A unit cost typed in
+  by hand is a guess and is not allowed. A primitive the models need and the
+  benchmark lacks is added to the benchmark first.
