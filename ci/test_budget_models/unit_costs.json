@@ -1,0 +1,31 @@
+{
+ "source": "ci/test_budget_models/unit_costs.py",
+ "machine": "Linux-6.8.0-147-generic-x86_64-with-glibc2.41",
+ "seconds_per_call": {
+  "gap_order_matrix_group_so_plus_10_2": 0.04140148599011203,
+  "gap_permutation_image_527": 1.560372969834134e-05,
+  "lattice_construction_rank_3": 0.004232576000504196,
+  "lattice_element_add": 0.00011562358620576561,
+  "lattice_element_pairing": 0.001761770819593221,
+  "libgap_call": 9.00240610470064e-05,
+  "normaliz_cone_6_rays": 0.0005501595418900252,
+  "pari_lllgram_10": 0.00011599442921578885,
+  "pari_qfauto_a4": 0.0004580188589170575,
+  "pari_qfauto_e8": 0.00599275641143322,
+  "pari_qfisom_e8": 0.004293896816670894,
+  "pari_qfminim_e8_point": 9.651435151075324e-07,
+  "qq_rank_10": 2.1528477780520914e-05,
+  "qq_rank_12": 4.376513604074716e-05,
+  "qq_rank_18": 5.445995414629579e-05,
+  "qq_rank_3": 1.0383471846580507e-05,
+  "qq_rank_4": 1.0828464291989804e-05,
+  "qq_rank_8": 1.594894379377365e-05,
+  "zz_dot_12": 4.1245605098083614e-07,
+  "zz_matrix_product_10": 3.18024808075279e-06,
+  "zz_matrix_product_12": 4.491308005526662e-06,
+  "zz_matrix_product_18": 1.0945281013846398e-05,
+  "zz_matrix_product_3": 1.2509576044976712e-06,
+  "zz_matrix_product_4": 1.3879584148526191e-06,
+  "zz_matrix_product_8": 2.1271769655868413e-06
+ }
+}
