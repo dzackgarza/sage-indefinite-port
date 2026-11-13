@@ -1,7 +1,8 @@
 """Per-test time budgets for pytest-timeout under Sage, with a durable per-test record.
 
 ``ci/test_budgets.json`` maps every test node id to its estimated maximum CI
-seconds. It is versioned with the code, so a raised budget is visible in git
+seconds. A parametrized case has its own entry: two lattices of one family can
+differ in cost by orders of magnitude. It is versioned with the code, so a raised budget is visible in git
 history beside the change that slowed the test. A collected test without an
 entry stops the session at collection.
 
