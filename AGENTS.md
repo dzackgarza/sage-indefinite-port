@@ -176,6 +176,11 @@ operation is correct merely because its public name exists.
 
 ## Tests and acceptance
 
+Every collected test has a time budget derived from the complexity theory of
+its algorithm, never from a measured runtime. [references/complexity](references/complexity/README.md)
+states the rules for a budget and owns the theory; a new or changed test gets
+its budget there before it lands.
+
 The [frozen acceptance modules](tests/acceptance/) and
 [fixtures](tests/fixtures/) are not edited, deleted or weakened to make a
 port case pass. A legitimate fixture/API correction goes through #33 with its
