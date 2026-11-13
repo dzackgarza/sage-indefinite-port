@@ -36,7 +36,7 @@ The Lorentzian kernel is the perfect-domain traversal of
 | Branch | Condition | Kernel |
 | --- | --- | --- |
 | Degenerate | radical `R != 0` | radical extension (`IndefiniteForms.g:1496-1511`) |
-| Definite | `m = 0` | Plesken–Souvignier, through the Oscar bridge |
+| Definite | `m = 0` | PARI `qfauto` (Plesken–Souvignier) |
 | Binary | `n = 2`, indefinite | reduction cycle of the binary form |
 | Lorentzian | `m = 1`, `n >= 3` | perfect-domain traversal |
 | Rank-four low Witt | `n = 4`, Witt index 0 or 1 | quaternion / Clifford models |
@@ -57,13 +57,31 @@ generator. The test cases have `L_0 = <2>` (no search) or `L_0 = A2`
 
 ## Definite kernel
 
-The Plesken–Souvignier algorithm (Plesken and Souvignier, J. Symbolic
-Comput. 24 (1997), §3) enumerates the short vectors of the basis norms and
-runs a backtrack over them. For the definite lattices met here (rank `<= 18`,
-root-lattice summands) the short-vector sets have at most a few thousand
-elements, and the vector-sum invariants prune the backtrack to polynomial
-size. Budget per call: `0.5 + 0.02 n^2` seconds, plus the bridge start cost
-when the process has not used Oscar yet.
+For a definite lattice over `ZZ` the provider computes `O(L)` in
+`_engine_group` (sage-extensions `categories/lattice_morphisms.py:4278-4330`,
+reached from `:4447-4448`; the port reaches it from `recursive.py:1135-1148`).
+Rank one is solved directly from `a u^2 = a` (`:4294-4311`). Higher rank calls
+`QuadraticForm.automorphism_group`, which is PARI `qfauto`. The Oscar bridge is
+not used over `ZZ`.
+
+`qfauto` is the Plesken–Souvignier algorithm (Plesken and Souvignier,
+J. Symbolic Comput. 24 (1997), §3). Its candidate set is the set of `S`
+vectors of norm at most the largest diagonal entry of the LLL-reduced Gram
+matrix. The backtrack has depth `n`, and the stabilizer chain has length at
+most `log2 |Aut L|`. Budget:
+
+`T_definite = 0.05 + 2e-6 S n^2 + 1e-7 S n log2|Aut L|` seconds.
+
+Price a decomposable lattice on its orthogonal decomposition. A definite
+lattice is uniquely an orthogonal sum of indecomposable lattices (Eichler;
+Conway and Sloane, *SPLAG*, Ch. 15, §2), and `Aut` is the product of the
+components' groups extended by permutations of isometric components. For
+`E8 ⊕ <2d>` this gives `S = 242` and `|Aut| = 2 |W(E8)|`. A direct `qfauto`
+call on the undecomposed Gram matrix enumerates all `~65 d^4` vectors of `E8`
+of norm `<= 2d`. That route is pathological, and the budgets do not absorb it.
+
+When a case gives no definite lattice explicitly, the budget uses the `D_m`
+proxy: `S = 2m(m-1)` and `|Aut| = 2^m m!`.
 
 ## Binary forms
 
@@ -117,6 +135,30 @@ The cap 64 is the number of covering orbits that a correct model visits for
 the discriminant groups in this suite (`|A| <= 2^10`, at most `ell` cyclic
 factors); larger `K` occurs only when `A_L` has many isotropic classes.
 
+## Isotropic stabilizers
+
+The stabilizer of a primitive isotropic vector `e` or plane `E`
+(`EichlerRecursion.line_stabilizer_generators`,
+`pointed_automorphism_generators`; `isotropic_induction.py:744-750`; pinned
+`IndefiniteForms.g:1660-1723` and `INDEF_FORM_StabilizerIsotropicPlane.cpp`)
+is assembled from three parts: `O(e^⊥/e)`, the Witt extensions
+`Hom(e^⊥/e, Ze)`, and a finite correction for the cokernel of the pairing
+`L -> (Ze)^*`, whose order is `div(e)` (or `|det|` of the pairing for a plane).
+The correction acts on a module bounded by that cokernel, so its cost is
+proportional to `div(e)^k` for a rank-`k` isotropic sublattice. For rank `<= 4`
+the quotient `e^⊥/e` is binary or zero. Budget:
+`2 + k (T_binary + 200 n^3 U_ELT)` seconds.
+
+The Enriques constants requested by the boundary models
+(`N = U ⊕ U(2) ⊕ E8(-2)`, `|A| = 2^10`, `ell = 10`) follow from this section
+and "Lorentzian route": the quotient `e^⊥/e` is Lorentzian of rank 10 with a
+2-elementary discriminant of full length, so `d = 1` and `C <= 2`. One line
+class costs `1 + T_traverse = 79.6` s. One plane class costs
+`h^2 T_definite(8) + 20 h (0.05 + 640 U_ELT) + h = 11.6` s with `h <= 4` and
+`E^⊥/E` of `E8(2)` type (`S = 240`, `|Aut| = |W(E8)|`).
+One section lift of a split orbit costs `80 n^2 U_ELT = 0.58` s. These
+values exclude the safety factor.
+
 ## Finite images
 
 The acceptance cases compare generating sets by their images in `O(q_L)` and
@@ -150,4 +192,4 @@ in `O(L ⊗ F_p)` for the primes of `2 det L` and 3, 5, 7
 | `U_ELT`, one exact preamble element operation | `5e-5` s |
 | `U_PERM`, one GAP permutation image, degree `<= 10^3` | `2e-6` s |
 | `U_FP`, one lattice point in PARI `qfminim` | `1e-6` s |
-| Oscar bridge start (`juliacall`, `using Oscar`, first-call compilation) | `60` s, once per process |
+| Oscar bridge start (`juliacall`, `using Oscar`, first-call compilation) | `60` s, once per process; reached only by the centralizer adapter |

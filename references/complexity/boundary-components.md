@@ -91,5 +91,5 @@ case:
 ## Unit costs of backend primitives
 
 The unit costs are those of `orthogonal-group-generators.md`, "Unit costs of
-backend primitives". Every route through a definite complement uses the
-Oscar bridge.
+backend primitives". Definite complements over `ZZ` use PARI `qfauto` and
+`qfisom`, priced by `T_definite` of "Definite kernel" there.

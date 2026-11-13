@@ -25,6 +25,10 @@ a stated unit cost of a backend primitive.
 | `c_mat(p, n)` | Order of a matrix group in `GL_n(F_p)` | `c_ss(p^n)` for `p^n <= 10^3`; otherwise `t_reduction` of `orthogonal-group-generators.md` §Finite images | For small `p^n` GAP acts on the vectors. For large `p^n` the vector action has `(p^n - 1)/(p - 1)` points, and constructive recognition is polynomial in `n` and `log p` |
 | `c_tqf(A)` | `O(q_L)` for a finite quadratic form, Sage `TorsionQuadraticModule.orthogonal_group` | `2 + 0.02 * |A_L|` s per `p`-primary part | Sage `fqf_orthogonal.py` lifts generators of `O(L_p)` (Brandhorst–Veniani, *Hermitian lattices and K3 automorphisms*; Miranda–Morrison, *Embeddings of integral quadratic forms*, Ch. IV); the permutation action on `A_L` has degree `|A_L|` |
 
+| `C_GAPZ` | Order or finiteness of a matrix group over `ZZ` of degree at most 5 (Sage `MatrixGroup.order`, `is_finite`, through GAP) | 1 s | GAP decides finiteness from a positive definite invariant form, found by averaging over a finite group or refuted by an element of infinite order (Detinko–Flannery, *On deciding finiteness of matrix groups*, J. Symb. Comp. 44 (2009)); for degree at most 5 this is a few hundred small integer operations plus the GAP call overhead |
+| `C_MM` | One product of two dense matrices of size at most 8 over `ZZ`, `QQ` or `GF(3)` in Sage | `1e-4` s | `n^3 <= 512` scalar operations in FLINT plus the Sage object overhead |
+| `C_OP` | One stabilizer or transporter step of an equivariant marking or normalizer after its centralizer is known | 0.5 s | One unit-group computation of a real quadratic order (PARI `quadunit`, milliseconds) or one eigenspace decomposition over `QQbar` of size at most 8, plus at most 100 `C_MM` |
+
 A safety factor of 3 is applied to every total in
 `.tmp/probe/estimates/F.py`.
 
@@ -150,3 +154,143 @@ Witt index below 2 and no recognized rank-four model raise
 source `Indefinite.jl@374a5ebb` `IndefiniteForms.g:830`). That refusal costs
 one Witt-index computation: Hasse invariants at the primes dividing
 `2 det L`, a bounded number of `c_lat`.
+
+## Markings on degenerate lattices
+
+`L = C + R` with `R` the radical of rank `t` and `C` nondegenerate. `O(L)`
+consists of the block matrices `[A B; 0 D]` with `A in O(C)`,
+`B in Hom(C, R)` and `D in GL_t(Z)`
+(`src/sage_indefinite_port/indefinite/marked_lattices.py`, `_degenerate_pointed_classes`
+and `_radical_residues`; source `IndefiniteForms.g:1496-1511`, `ExtendIsometryGroup`).
+The generators are those of `O(C)` (branch of `orthogonal-group-generators.md`
+for `C`), `t * rank(C)` elementary shears and the generators of `GL_t(Z)`:
+two for `t >= 2`, one sign for `t = 1`.
+
+A primitive vector `v = (c, s)` with `c` of content `d` has orbit invariant
+(class of `c` under `O(C)`, class of `s` in `(Z/d)^t` under the image of
+`GL_t(Z)`). For `t = 1` that image is `{+-1}`, so the residue classes are
+`(Z/d)^* / {+-1}`, of size `phi(d)/2`. For `t >= 2`, `SL_t(Z) -> SL_t(Z/d)` is
+onto and transitive on unimodular residues: one class. A transporter is one
+congruence lift of a matrix in `GL_t(Z/d)` (strong approximation for `SL_t`,
+Newman, *Integral Matrices*, Thm. VII.21), computed by a Smith form of size
+`t`: `O(t^3 log d)` integer operations.
+
+Cost: one generation of `O(C)` plus `O(t * rank(C) + t^2)` morphism
+operations per stabilizer or transporter. A lazy enumeration of classes of
+square `n` with content bound `h` visits the divisors `d <= h` and, for each,
+`phi(d)/2` residues: `O(h^2)` candidates, each a canonicalization of constant
+cost. The quotient for `n = 0` is infinite (one class per content), so only a
+prefix is ever computed.
+
+## Markings by isotropic induction
+
+`primitive_marking_classes`, `basis_marking_classes`, `flag_invariant` and the
+transporters between isotropic markings use the induction of
+`IsotropicInduction` (`isotropic_induction.py`; source
+`IndefiniteForms.g:1700-1760`, `INDEF_FORM_GetOrbit_IsotropicKplane`). A
+rank-`k` isotropic marking is built from a rank-`(k-1)` marking `I` by the
+classes of isotropic lines in `I^perp / I` under the image of `Stab(I)`.
+The number of classes at each step is at most the number of isotropic
+classes of `A_{I^perp/I}` modulo the Levi image, bounded by `|A_L|`
+(Nikulin 1980, Prop. 1.15.1, for the gluing of `I^perp / I`). For unimodular
+`L` every step has one class, so a rank-`k` flag in `mU` has one `O(L)`-class
+and the induction costs `k` parabolic stabilizers.
+
+Cost: `sum_{j<k} (stabilizer of a rank-j marking + classes of lines in a
+rank-(n-2j) quotient)`. The stabilizer of a rank-`j` marking is the Levi
+`GL_j(Z) x O(I^perp/I)` and the unipotent radical of rank
+`j(n-2j) + j(j-1)/2`. When `k` exceeds the Witt index the induction stops at
+the first step with no isotropic line, after one Witt-index computation.
+
+The splitting of a marking class under `SO(L)` is the character-kernel branch
+of `split_orbit` with `|Q| = 2`.
+
+## Pointwise stabilizer of a null vector and its shell decision
+
+For `e` primitive isotropic in `L = U + U`, the pointwise stabilizer
+`Gamma = Stab(e)` is `O(e^perp/e) x` the translations `e^perp/e`
+(Eichler transvections). `O(e^perp / e) = O(U)` has order 4. A vector `v` in
+the isotropic cone has `Gamma`-invariant `(content, b(e, v), class)`; the
+decision of `Gamma`-equivalence is one invariant evaluation and one
+composite witness `u(rho, gam) . S` with `S` among the four symmetries.
+
+Cost per decision: `O(n^2)` element operations for the invariant plus at
+most four morphism compositions for the witness. A test over a set of `N`
+vectors that decides every pair costs `N(N-1)/2` decisions. The box
+`[-2, 2]^4` contains 129 isotropic vectors of `U + U` (direct count of
+`am + cd = 0`), so 8256 pairs.
+
+## Normalizers of subgroups of `O(L)`
+
+`normalizer_generators` (`finite_normalizers.py:1318-1343`) dispatches on the
+generated group `H`:
+
+| Branch | Condition | Cost driver |
+| --- | --- | --- |
+| Finite | every generator of finite order and `H` finite | `C(H)` from the commutant (owned by `centralizers.md`), plus one twisted transporter per automorphism of `H` that preserves the characters: at most `|Aut(H)|` |
+| Infinite cyclic | one generator of infinite order | Unit group of the commutant order `Z[f]`: one regulator computation of a real quadratic order, plus one inversion transporter |
+| Abelian | commuting generators | Torus algebra (rank of the Lie algebra of the Zariski closure), decomposition normalizer of that algebra |
+| Arithmetic | the congruence kernel modulo 3 is not abelian | Image of the supplied group in `GL_n(F_3)`, closure of size at most `|O_n(3)|`, and Schreier generators of the preimage |
+| Congruence kernel | kernel abelian, not semisimple | As above, with the unipotent kernel supplied |
+| Virtually abelian | otherwise | Torus normalizer and the finite quotient |
+
+The decomposition normalizer of an orthogonal splitting
+`L = L_1 + ... + L_r` is the product of the `O(L_i)` and the permutations of
+isometric summands: order `prod |O(L_i)| * prod (multiplicities)!` for
+definite summands.
+
+## Equivariant markings
+
+`EquivariantMarking(L, X, action, F)` computes the stabilizer and transporters
+of a matrix `X` under the centralizer of a finite family `F` of isometries.
+The centralizer is computed by `centralizers.md`. The stabilizer is the
+subgroup of the centralizer that preserves `X` and its glue in
+`A_K` for `K` the orthogonal complement of the image of `X`. Its cost is one
+centralizer, one glue stabilizer of degree `|A_K|`, and for an infinite
+centralizer one unit-group computation of the commutant order.
+
+## Definite lattices: route of the generators and of the isometry test
+
+The rule follows from the code of sage-extensions:
+
+- `O(L)` generators of a definite lattice over `ZZ`:
+  `_computed_group_generators` (`categories/lattice_morphisms.py:4447-4448`) calls
+  `_engine_group` (`:4278-4330`). Rank one uses the roots of `a u^2 = a`
+  (`:4294-4311`). Every higher rank uses PARI `qfauto` through
+  `QuadraticForm.automorphism_group` (`:4313-4330`). No Julia or Oscar call is made.
+  `RECURSION.orthogonal_group_generators` (`recursive.py:1135-1148`) reaches the
+  same engine through `lattice.O().group_generators()`.
+- Isometry of two definite lattices over `ZZ`: `_witness_matrix`
+  (`lattice_morphisms.py:5271-5330`) uses PARI `qflllgram` and `qfisom`
+  (`QuadraticForm.is_globally_equivalent_to`). The Oscar bridge
+  (`_oscar_lattices.definite_isometry`, `:5327-5331`) is reached only when a base
+  ring is not `ZZ`.
+
+Every definite lattice in this file's scope is over `ZZ`, so no budget here
+includes the Julia start-up cost. The definite cost is B's
+`t_definite(n) = 0.5 + 0.02 n^2` (`orthogonal-group-generators.md`, Definite kernel),
+without the bridge.
+
+## Derived counts used by the budgets
+
+- **Shell decision.** An invariant `(content, b(e, v), class)` reads 4
+  coordinates, forms the 16 products of `b(e, v)` and takes 4 gcd steps: 24
+  element operations. A decision evaluates two invariants. A witness is at most
+  four compositions of a morphism plus a check on the 4 basis vectors, which is
+  64 element operations. The box `[-2, 2]^4` has 129 isotropic vectors. At most
+  1150 pairs share `(content, b(e, v))`, and so at most 1150 pairs share a
+  class.
+- **Canonicalization.** The canonical form of a vector of height `h` on
+  `<2> + 0` scans the members of the same square with coordinates of absolute
+  value at most `h`: `x = +-h`, `y` in `[-h, h]`, `2(2h + 1)` candidates, each
+  one transporter.
+- **Radical congruence image.** `radical_congruence_image(L, m)` is a subgroup of
+  `GL_t(Z/m)` acting on the `m^t` residues: one Schreier–Sims of degree `m^t`.
+- **Normalizers.** The finite branch costs the centralizer
+  (`centralizers.md`, Cost) plus one twisted transporter per automorphism of
+  `H` that the test exercises: 6 for a Klein four-group (`|Aut| = |S_3|`), 2 for
+  `Z/6`. Each transporter is an isometry of a rank-2 commutant piece (B's
+  binary model). The congruence branch closes the image modulo 3 inside
+  `O^+_4(3)`, of order at most 1152. On `3U` the closure of the supplied group
+  (one swap, two signs, two commuting transvections of order 3) has at most
+  `2^3 * 9 * 8 = 576` elements.

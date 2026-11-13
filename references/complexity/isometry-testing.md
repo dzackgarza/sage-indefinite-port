@@ -21,7 +21,7 @@ Lorentzian kernel is `LORENTZ_TestEquivalence`
 | --- | --- | --- | --- |
 | Degenerate | radical `R != 0` | ranks, then nondegenerate quotients | radical extension |
 | Prefilter | always | `LatticePrefilter`, genus for even `L` | none |
-| Definite | `m = 0` | Plesken–Souvignier isometry | same |
+| Definite | `m = 0` | PARI `qflllgram`, then `qfisom` | same |
 | Low Witt | `m >= 2`, Witt index `< 2` | genus and spinor genus | `low_witt_isometry_witness` |
 | Lorentzian | `m = 1` | spinor genus when `n >= 3` | perfect-cell transporter |
 | Eichler | `m >= 2`, Witt index `>= 2` | spinor genus when `n >= 3` | covering search |
@@ -52,7 +52,33 @@ the local spinor norms at the same primes. Budget:
   one exists. The spinor-genus decision guarantees that one exists. Worst
   case `K` pointed tests; each one recurses into `v^⊥` of rank `n - 1`.
 - Binary: compare the reduction cycles of the two forms, `O(sqrt(D) log D)`.
-- Definite: one Plesken–Souvignier isometry search.
+- Definite over `ZZ`: `_witness_matrix` (sage-extensions
+  `categories/lattice_morphisms.py:5271-5330`) LLL-reduces both Gram matrices
+  with `qflllgram`. Equal reduced matrices give the witness at once; otherwise
+  PARI `qfisom` runs. The cost is `T_definite` of
+  `orthogonal-group-generators.md`, "Definite kernel". Oscar's
+  `definite_isometry` (`:5327-5331`) runs only when the base ring is not `ZZ`.
+
+## Pointed isometries
+
+`RECURSION.pointed_isometry` (`recursive.py:2014`) decides whether some
+isometry carries `v` to `w`. First it compares invariants: `q`, content,
+`div` and the class `v/div(v)` in `A_L`. For isotropic `v` it then
+transports through the isotropic-stabilizer construction
+(`orthogonal-group-generators.md`, "Isotropic stabilizers"). For
+anisotropic `v` it tests isometry of `v^⊥` with its gluing. A rejection by
+an invariant costs `O(n^3)`. A positive answer costs one isometry test of
+the complements.
+
+## Pairing slices
+
+`pairing_slices.py` enumerates orbits of tuples of vectors with prescribed
+Gram matrix, slice by slice in the values of a fixed pairing. Each slice is a
+finite set of lattice points, because the pairing bounds a positive
+definite quadratic form on that slice. An infinite family is separated
+when every slice is finite. The tests use rank `<= 4` and slice sizes below
+`10^2`. Budget: 4 s per test, 6 s with a centralizer (one extra finite
+image computation).
 
 ## Known worst cases and non-termination
 
