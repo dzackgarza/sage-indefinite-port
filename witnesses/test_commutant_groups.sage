@@ -19,7 +19,11 @@ from sage.matrix.constructor import block_matrix, matrix as sage_matrix
 from sage.modules.free_module_element import vector as sage_vector
 from sage_indefinite_port.indefinite.commutant_groups import VectorOrbit, centralizer_generators, equivariant_transporter
 
-PAIRS = tuple((b, int(0) * ONE) for b in BASIS) + tuple((int(0) * ONE, b) for b in BASIS)
+ALGEBRA = QuaternionAlgebra(SageQQ, int(-1), int(3))
+ONE, I, J, K = ALGEBRA.basis()
+BASIS = (ONE, I, J, K)
+
+PAIRS =tuple((b, int(0) * ONE) for b in BASIS) + tuple((int(0) * ONE, b) for b in BASIS)
 
 
 def _golden_tensor_lattice():
@@ -190,10 +194,7 @@ def test_definite_hermitian_quaternion_transporters():
     assert equivariant_transporter(commutant, int(3) * gram, sources) is None
 
 
-BASIS = (ONE, I, J, K)
-
-
-QUADS = tuple((x, (int(0) * ONE, int(0) * ONE)) for x in PAIRS) + tuple(((int(0) * ONE, int(0) * ONE), x) for x in PAIRS)
+QUADS =tuple((x, (int(0) * ONE, int(0) * ONE)) for x in PAIRS) + tuple(((int(0) * ONE, int(0) * ONE), x) for x in PAIRS)
 
 
 def _skew(x, y):
