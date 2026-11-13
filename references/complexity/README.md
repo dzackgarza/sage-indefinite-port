@@ -42,5 +42,9 @@ collected node without an entry, and logs one `BUDGET` line per test.
   smaller input reaching the same branch, or an optimization issue under #64.
 - Work shared by several cases (the same lattice's classes, generators or
   permutation model) is charged once per session, not to every case.
-- A port factor over a reference implementation is a multiplicative factor too.
-  Price the interpreted bookkeeping by its own operation count instead.
+- No port factor and no "interpreted Python is slow" pricing. Sage's arithmetic
+  is Cython over FLINT, PARI and GAP, and a correct implementation runs its hot
+  loops compiled or vectorized. Price every step at the compiled cost of the
+  same work the reference implementation does; a budget above the reference
+  implementation's bound means the model is wrong. Per-element interpreted work
+  in a hot loop is a defect the budget exposes, not a cost it includes.
