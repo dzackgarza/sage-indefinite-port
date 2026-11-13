@@ -28,7 +28,7 @@ def main():
             if node in budgets:
                 assert (group, owner[node]) in {("E", "F"), ("G", "E")}, (node, group, owner[node])
             assert seconds > 0, (node, seconds)
-            budgets[node], basis[node], owner[node] = round(seconds, 3), f"[{group}] {reason}", group
+            budgets[node], basis[node], owner[node] = float(f"{seconds:.3g}"), f"[{group}] {reason}", group
     nodes = (MODELS / "nodes.txt").read_text().splitlines()
     missing = [node for node in nodes if node not in budgets]
     assert not missing, missing[:20]
