@@ -222,23 +222,25 @@ plus `LAT` per owned lattice that the test builds.
 
 ## Unit costs of backend primitives
 
-These are the costs assumed for small inputs (`r ≤ 10`, entries of a few
-digits) on a 4-vCPU runner with Sage 10.x:
+Each unit is an operation count times measured primitives from
+`ci/test_budget_models/unit_costs.json`. The model reads the file and fails
+when a key is absent.
 
-| Primitive | Cost |
+| Unit | Operation count and json key |
 | --- | --- |
-| owned lattice construction (sage-extensions parent, Gram check) | 0.1 s |
-| one libgap call (group order, `NullspaceMat`, LLL), degree or dim `≤ 16` | 0.1 s |
-| one PyNormaliz cone, rank `≤ 4`, few rays, with conversion | 0.1 s |
-| owned `Isom.transporter`, graph on `≤ 16` vertices | 0.2 s |
-| configuration invariants (Smith form, adjugate), `r ≤ 10` | 0.05 s |
-| one positive-vector shell, rank `≤ 3`, a few hundred tree nodes | 0.2 s |
-| one flip (facet kernel and one shell) | 0.3 s |
-| one basis-search leaf certification | 5 ms |
-| one exact small-matrix routine (LLL, kernel, diagonalisation), dim `≤ 5` | 10 ms |
-| one row in a Python linear pass | 30 µs |
-| one Sage `QQ` operation in a Python generator loop | 3 µs |
+| owned lattice construction | `lattice_construction_rank_3` |
+| owned element or covector evaluation | `lattice_element_pairing` |
+| one integer dot product, row step of a linear pass | `zz_dot_12` |
+| one permutation image | `gap_permutation_image_527` |
+| GAP group order, degree `≤ 12`, order `≤ 48` | `gap_order_matrix_group_so_plus_10_2` (a larger group, so an upper bound) |
+| one Normaliz cone with conversion | `normaliz_cone_6_rays` + 10 × `lattice_element_pairing` |
+| one basis-search leaf, `N ≤ 12` | 2 × `zz_matrix_product_4` + 12 × `zz_dot_12` |
+| configuration invariants | 3 × `qq_rank_4` + `zz_matrix_product_4` |
+| small-graph transporter, `N ≤ 16` | 256 × `zz_dot_12` + 4 × `lattice_element_pairing` + one leaf |
+| one positive-vector shell, `≤ 300` tree nodes | 300 × `pari_qfminim_e8_point` + `pari_lllgram_10` |
+| one flip | `qq_rank_4` + one shell |
+| one small exact routine, dim `≤ 5` | `pari_lllgram_10` (LLL at dim 10, an upper bound) |
 
-Library start-up (libgap, Normaliz) happens once per session and is not part
-of the work of one test. A budget is the derived work of its branch, with no
+Library start-up (libgap, Normaliz) happens once per session and is not
+charged to a test. A budget is the derived work of its branch, with no
 multiplicative factor.

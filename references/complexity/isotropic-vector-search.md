@@ -19,18 +19,19 @@ No measured runtimes are used.
 | Eichler recursion, `k`-planes and flags | `CombinedAlgorithms.h:180-491, 822-1400` (`INDEF_FORM_Rec_IsotropicKplane`, `f_stab`, `f_equiv`) | `isotropic_induction.py:250-780`, `exact_isotropic.py` |
 | Public entry | | `tests/acceptance/consumer.py:212-230` (`primitive_marking_classes`) |
 
-## Unit costs and anchor
+## Unit costs and upstream check
 
 `OP`, `STAB(n)` and `BASE` are the units of `vinberg-and-edgewalk.md`. A local
 Hilbert symbol at one prime costs `20 OP`.
 
-Anchor: `polyhedral_common@1592b246/.github/workflows/ci_09A_isotropic.yml`
+Upstream check: `polyhedral_common@1592b246/.github/workflows/ci_09A_isotropic.yml`
 runs `CI_tests/09A_Isotropic/TestIsotropic.g` with `timeout-minutes: 120`. It
 decides isotropy and finds an isotropic vector for all 8821 forms, below
 `0.82 s` per form in C++. The decision branch of the port does the same work
 with the same PARI calls. The orbit classification of the Lorentzian branch
-goes beyond the upstream test; its anchor is the perfect-cell enumeration of
-`perfect-domains-and-lorentzian-cells.md`.
+goes beyond the upstream test; its cost is the perfect-cell enumeration of
+`perfect-domains-and-lorentzian-cells.md`. The bound is a check, not a
+multiplier.
 
 ## Branch selection
 

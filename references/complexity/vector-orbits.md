@@ -38,7 +38,7 @@ Fincke–Pohst search of the vectors of norm `s` with bounded pairing against
 the cell's interior vector (Cohen, GTM 138, Alg. 2.7.5). Its volume grows as
 `s^((n-1)/2)`. Budget, with one cell for `E10 = U ⊕ E8(-1)`:
 
-`T_traverse(L, 1) + 10 (s/2)^((n-1)/2) U_FP + k (0.05 n^2 + 0.2 T_definite(n-1))`,
+`T_traverse(L, 1) + 10 (s/2)^((n-1)/2) U_FP + k (T_CALL + n^3 U_ELT + 0.2 T_definite(n-1))`,
 
 `k` being the recorded number of orbits. Each orbit pays one stabilizer
 computation through the definite complement `v^⊥`, which is `E8 ⊕ <2d>` for
@@ -59,7 +59,7 @@ Prop. 1.15.1). The provider's native construction is
 a vector with `sign * s < 0` is Lorentzian of rank `n - 1`. It is an
 indefinite genus of rank `>= 3`, so it has one class per spinor genus. The
 cost is one genus symbol plus the glue double cosets in `O(q)`, of order
-`<= 2|s|`. Budget: `5 + 0.1 (n - 1)` seconds.
+`<= 2|s|`. Budget: `100 T_CALL + (n - 1) T_CALL` seconds.
 
 ## Eichler branch
 
@@ -67,7 +67,7 @@ When `L` contains `U ⊕ U`, the orbits of primitive vectors of square `s` are
 in bijection with the elements `x ∈ A_L` with `q(x) = s/2 mod 2Z` modulo
 `O(L)` (Eichler criterion; Gritsenko, Hulek and Sankaran, Compositio 143
 (2007), Lemma 3.5). For a unimodular lattice there is exactly one orbit for
-each represented `s`. The cost is the model construction, `0.01 n^3`, and one
+each represented `s`. The cost is the model construction, `10 n^3 U_ELT`, and one
 pointed check per class. For an odd lattice the port uses the even envelope
 (`EichlerEnvelope`, `eichler.py`).
 
@@ -92,7 +92,8 @@ When `m >= 2` and the rational Witt index is 1, the port uses
 are in bijection with the class group of `K`, so there are `h(K)` cusps
 (van der Geer, *Hilbert Modular Surfaces*, Prop. I.1.1). The reduction
 bound `C^2 = |δ| Disc_K / 2` gives `O(h(K) sqrt(Disc_K))` candidates per
-norm. Budget: `3 + 3 h(K) sqrt(Disc_K)` seconds. The cases are
+norm. Budget: `100 T_CALL (1 + h(K) sqrt(Disc_K))` seconds, each candidate one
+PARI number-field call. The cases are
 `d = 5, 2, 10` with `h = 1, 1, 2` and `Disc = 5, 8, 40`.
 
 ## Quaternion norm lattices

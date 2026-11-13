@@ -38,13 +38,14 @@ The genus symbol needs the local Jordan decomposition at each prime of
 `2 det L`: `O(n^3)` arithmetic per prime. The spinor-genus test
 (`isometric_within_genus`, sage-extensions `lattice_engines.py:1586`) adds
 the local spinor norms at the same primes. Budget:
-`0.1 + 0.05 n (1 + ell)` seconds per genus symbol.
+`T_CALL n (1 + ell)` seconds per genus symbol: one PARI local call per prime
+and Jordan block.
 
 ## Witness cost
 
 - Lorentzian: traverse the complex of the source (`C(L)` cells), compute the
   initial cell of the target, and test it against each source cell. Cost
-  `T_traverse(L) + T_cell + C(L) * 0.05 n`. The theory of `C(L)` and
+  `T_traverse(L) + T_cell + C(L) (T_CALL + n^4 U_ELT)`. The theory of `C(L)` and
   `T_cell` is in `orthogonal-group-generators.md`, "Lorentzian route", and in
   `perfect-domains-and-lorentzian-cells.md` (owner C).
 - Eichler: build the target model, enumerate at most `K` covering vectors at
@@ -79,6 +80,17 @@ definite quadratic form on that slice. An infinite family is separated
 when every slice is finite. The tests use rank `<= 4` and slice sizes below
 `10^2`. Budget: 4 s per test, 6 s with a centralizer (one extra finite
 image computation).
+
+## Shared work across cases
+
+The witness search memoizes the reduced source lattice and its complex
+(`IsometryGroupoidCache`, `groupoid_cache.py`; `recursive.py:1238-1252`). The
+145 cases of `test_lorentzian_pairs_are_isometric` use only 2 distinct source
+lattices `mat1`: 142 with `|A| = 2^8` and 3 with `|A| = 2^10`, both rank 10 and
+2-elementary. So `d = 4` or `d = 1`, and `C <= 8` or `C <= 5`. The source
+traversal is charged once, to the first case of each source lattice in
+collection order. Every case pays two genus symbols, the target's initial cell
+and `C` cell-transporter tests.
 
 ## Known worst cases and non-termination
 

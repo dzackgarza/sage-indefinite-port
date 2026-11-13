@@ -18,6 +18,9 @@ each basis string names its section in brackets.
 from __future__ import annotations
 
 from pathlib import Path
+import json
+
+_U = json.loads((Path(__file__).resolve().parent / "unit_costs.json").read_text())["seconds_per_call"]
 
 SRC = "src/sage_indefinite_port/indefinite/"
 
@@ -148,13 +151,24 @@ def _witt_one(name: str) -> tuple[float, str]:
     return 8e-05, "4x4 Gram from 16 NF pairings: 0.002 s (unit-corrected)"
 
 
-def _voronoi_cubic(name: str) -> tuple[float, str]:
-    """semisimple_voronoi.py split branch (l.131-150), division algebra (L/Q, sigma, 2), herm dim 6 over cubic L,
-    order rank 9. Per neighbour: ~15 probes x (9x9 Gram over L, ~2500 cubic-field ops = 0.13 s, + qfminim rank 9 0.01 s)
-    = 2 s. P ~ 7800 by Prasad covolume scaling from BCNS Sec. 6.4 (431 classes for ramification {2,3}); F <= 30 assumed."""
+def _voronoi_quaternion_division(name: str) -> tuple[float, str]:
+    """semisimple_voronoi.py split branch (l.131-150) for a maximal order of B = (-1,3)_Q, disc 6, one real place,
+    cone Sym_2 over Q(sqrt 3) (dim 3), order rank 4. Perfect classes P = 3: the same algebra Q_{2,3} has three perfect forms
+    for its maximal order (Nebe, "Computing unit groups of orders", 2014, example Q_{2,3}); 3 facets each (triangular
+    Voronoi domains in the affine section). Counts times measured unit costs (unit_costs.json); a 2x2 product over
+    Q(sqrt 3) is priced as zz_matrix_product_4 (no quadratic-field key is measured)."""
     if name == "test_split_model_is_a_homomorphism":
-        return 0.01, "one 9x9 QQ product + two _split images over L: ~200 ops = 0.01 s"
-    return 82000.0, "division branch, ramified {2,7}: P*F*(15 probes x (9x9 Gram over L, 2500 cubic-field ops at 5 us = 12 ms, + qfminim 10 ms)) = 7800*30*0.35 s = 8.2e4 s (P scaled from BCNS 6.4 431 forms by covolume ratio 18; F assumed)"
+        work = 16 * (1 + 3 * 4) * _U["zz_matrix_product_4"]
+        return work, "16 pairs x (one 4x4 product + 3 splits of 4 scaled 2x2 terms) x zz_matrix_product_4"
+    neighbours, probes = 3 * 3, 15
+    probe = 16 * _U["zz_matrix_product_4"] + 24 * _U["pari_qfminim_e8_point"] + _U["qq_rank_4"]
+    work = (
+        3 * _U["normaliz_cone_6_rays"]
+        + neighbours * probes * probe
+        + neighbours * 3 * 6 * 4 * _U["zz_matrix_product_4"]
+        + 20 * _U["qq_rank_4"]
+    )
+    return work, "P=3 forms x normaliz facets + 9 neighbours x 15 probes x (4x4 Gram of 2x2 traces + qfminim rank 4 + rank) + transporter candidates 9 x 3 forms x 6 minima x 4 products + maximal_order 20 ranks"
 
 
 def _isotropic_reduction(name: str) -> tuple[float, str]:
@@ -175,7 +189,7 @@ def _spacelike(name: str) -> tuple[float, str]:
     return 65.0, "spacelike Nikulin branch, A_L=Z/2, |O(q)|=1, tiny genus: ~5 s + Oscar load 60 s"
 
 
-SECTIONS = {'_clifford_even_rank': 'Even Clifford centre', '_clifford_o3u': 'Rank-five model and transfers', '_clifford_rank_five': 'Rank-five model and transfers', '_clifford_split_six': 'Rank-five model and transfers', '_clifford_uu2': 'Rank-five model and transfers', '_binary_unitary': 'Hermitian lattices', '_eisenstein': 'Hermitian lattices', '_quaternion': 'Quaternion norm lattices', '_genus_nf': 'Lattice isometry over a number field', '_voronoi': 'Semisimple Voronoi', '_witt_one': 'Witt-index-one Hilbert route', '_voronoi_cubic':'Semisimple Voronoi over a cubic division algebra', '_isotropic_reduction': 'isometry-testing.md (owner B)', '_spacelike': 'Spacelike vector classes'}
+SECTIONS = {'_clifford_even_rank': 'Even Clifford centre', '_clifford_o3u': 'Rank-five model and transfers', '_clifford_rank_five': 'Rank-five model and transfers', '_clifford_split_six': 'Rank-five model and transfers', '_clifford_uu2': 'Rank-five model and transfers', '_binary_unitary': 'Hermitian lattices', '_eisenstein': 'Hermitian lattices', '_quaternion': 'Quaternion norm lattices', '_genus_nf': 'Lattice isometry over a number field', '_voronoi': 'Semisimple Voronoi', '_witt_one': 'Witt-index-one Hilbert route', '_voronoi_quaternion_division':'Semisimple Voronoi over a quaternion division algebra', '_isotropic_reduction': 'isometry-testing.md (owner B)', '_spacelike': 'Spacelike vector classes'}
 
 MODELS = {
     "test_clifford_even_rank.sage": _clifford_even_rank,
@@ -190,7 +204,7 @@ MODELS = {
     "test_semisimple_voronoi.sage": _voronoi,
     "test_witt_one_hilbert.sage": _witt_one,
     "test_isotropic_reduction.sage": _isotropic_reduction,
-    "witnesses/test_semisimple_voronoi_cubic_division.sage": _voronoi_cubic,
+    "test_semisimple_voronoi_quaternion_division.sage": _voronoi_quaternion_division,
     "test_spacelike_vector_classes_index_one.py": _spacelike,
 }
 
@@ -397,7 +411,7 @@ def _missing_nodes() -> list[str]:
 
 
 def _scope_nodes() -> list[str]:
-    lines = (Path(__file__).resolve().parent / "nodes_initial.txt").read_text().splitlines()
+    lines = (Path(__file__).resolve().parent / "nodes.txt").read_text().splitlines()
     return [n for n in lines if _key(n.split("::")[0]) in MODELS]
 
 

@@ -31,7 +31,7 @@ the images of the centralizers of the cyclotomic components
   stabilizer of the glue subgroup in the product of the images. The
   stabilizer is a permutation-group computation of degree `|A|`.
 
-Budget: `2 + 0.5 n^2 + T_Oq(|A|, log2 |image|) + ord(f) n^3 U_ELT` seconds,
+Budget: `100 T_CALL + 10 T_CALL n^2 + T_Oq(|A|, log2 |image|) + ord(f) n^3 U_ELT` seconds,
 plus the Oscar bridge start. `T_Oq` is defined in
 `discriminant-groups-and-congruence-orbits.md` (owner F).
 

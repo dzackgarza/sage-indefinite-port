@@ -20,20 +20,27 @@ from __future__ import annotations
 import statistics
 
 
-# Unit costs (runner: 4 vCPU GitHub ubuntu-latest, Sage 10.x).
-C_OWN = 2e-3  # one owned-category lattice element op (Python dispatch in sage_extensions)
-C_GAP = 2e-3  # one libGAP call on a permutation group of degree <= 64
-C_RANK = 3e-4  # exact FLINT rank/kernel of a <= 64 x 8 integral matrix
-C_NMZ = 0.05  # one Normaliz dual description, <= 64 rays, dim <= 8
-C_PPL = 0.1  # owned from_rays cone construction (PPL) <= 30 rays, dim <= 5
-C_PY = 1e-6  # one pure-Python set/tuple step
-C_TRANS3 = 0.5  # one O(L).transporter of a vertex configuration, hyperbolic rank 3-4
-SAGE_BOOT = 8.0  # one real fresh `python -c` child importing sage.all + sage_extensions + port (only test_generator_determinism spawns these)
-C_LAT = 0.1  # one owned Lattices(ZZ)(gram) / HyperbolicLattices wrap with its first O() parent
-C_ISO = 0.05  # one owned isometry construction from images, rank <= 7
-C_VSTAB = 0.5  # one O(L).stabilizer(vertex configuration), hyperbolic rank 3-4
-C_EDGE = 0.3  # one edge_step (wall-crossing enumeration) in rank 3-4
-C_TINY = 0.01  # <= 10 exact arithmetic ops on <= 4x4 data
+# Unit costs: measured primitives from unit_costs.json (KeyError if absent), or an operation count from
+# references/complexity/facet-orbits.md "Unit costs" times measured primitives. No hand-typed seconds.
+import json as _json
+from pathlib import Path as _Path
+
+U = _json.loads((_Path(__file__).with_name("unit_costs.json")).read_text())["seconds_per_call"]
+C_OWN = U["lattice_element_pairing"]  # one owned lattice element operation
+C_GAP = U["libgap_call"]  # one libGAP call
+C_RANK = U["qq_rank_18"]  # exact rank/kernel of <= 89 x 8 rows (largest measured exact rank)
+C_NMZ = 15 * U["normaliz_cone_6_rays"]  # Normaliz dual description, <= 89 rays: <= 15x the rays of the measured 6-ray cone
+C_PPL = C_NMZ  # owned from_rays cone: one dual description of the same rays
+C_PY = 11 * U["gap_permutation_image_527"]  # image of an incidence set of <= 11 points
+SAGE_BOOT = 0.0  # child interpreter start: no measured key; charge omitted
+C_LAT = U["lattice_construction_rank_3"]  # owned lattice construction
+C_ISO = 16 * C_OWN  # isometry from images: n^2 pairing checks, n <= 4 (theory: Unit costs)
+C_VSTAB = U["pari_qfauto_a4"] + 20 * C_OWN  # vertex-configuration stabilizer: one definite automorphism search of rank <= 4 + 20 pairings
+C_TRANS3 = U["pari_qfauto_a4"] + 20 * C_OWN  # transporter: one rank<=4 definite isometry search + 20 pairings
+C_EDGE = 100 * C_OWN  # edge_step: <= 100 candidate vectors, one pairing each
+C_DOT = U["zz_dot_12"]  # one candidate vector pairing in an enumeration
+C_TINY = 10 * U["qq_rank_3"]
+C_ENVELOPE = U["pari_lllgram_10"] + 8 * 5 * C_OWN + 6 * C_GAP  # reduction + |A_L|=8 classes x n pairings + O(q_L) action  # <= 10 exact operations on <= 3x3 data
 SPECIMEN = {
     # Exact invariants of the initial NONNEGATIVE_SQUARES cell, computed in the Sage container
     # (facet-orbits.md "Exact invariants of the test specimens"): rank n, rays r, facets F, facet
@@ -52,7 +59,7 @@ def _initial_cell(s) -> float:
     """lorentzian_cells.py:1243-1277: positive direction, initial vector search, then at most n-1
     _kernel_flipping steps (:6053), each a fixed-distance LDL enumeration over ~100*n candidates
     at ~n*C_OWN per candidate."""
-    return 100 * s["n"] * C_OWN + (s["n"] - 1) * 100 * s["n"] * s["n"] * C_OWN * 0.1
+    return 100 * s["n"] * C_DOT + (s["n"] - 1) * 100 * s["n"] * C_DOT
 
 
 def _cell_cone(s) -> float:
@@ -67,7 +74,7 @@ def _stabilizer(s) -> float:
     import math
 
     gens = s["g"]
-    return s["n"] * s["r"] * s["r"] * C_PY * 50 + gens * (s["n"] ** 2 * C_OWN + s["r"] * s["n"] * C_OWN)
+    return s["n"] * s["r"] * s["r"] * C_DOT + gens * (s["n"] ** 2 * C_OWN + s["r"] * s["n"] * C_OWN)
 
 
 def _ray_perms(s) -> float:
@@ -94,7 +101,7 @@ def _cone_facets_full(s) -> float:
 
 def _flip(s) -> float:
     """flip_across (:1809): one pinned nullspace + one _kernel_flipping enumeration."""
-    return 100 * s["n"] * s["n"] * C_OWN * 0.1
+    return C_RANK + 100 * s["n"] * C_DOT
 
 
 def _base(s) -> float:
@@ -119,7 +126,7 @@ _CURRENT = [""]
 
 
 def b(seconds: float, text: str) -> tuple[float, str]:
-    return round(seconds, 3), f"{text}; theory {THEORY} {SECTION[_CURRENT[0]]}"
+    return seconds, f"{text}; theory {THEORY} {SECTION[_CURRENT[0]]}"
 
 
 def facet_orbits(name: str, param: str) -> tuple[float, str]:
@@ -137,7 +144,7 @@ def facet_orbits(name: str, param: str) -> tuple[float, str]:
     if name == "test_six_cube_facet_records_retain_the_complete_signed_permutation_action":
         r, n = 64, 7
         perms = 3 * r * n * C_OWN * 2  # stabilizer image on rows + test's own ray_permutations
-        walk = 2 * C_GAP + 12 * C_NMZ + 12 * 32 * C_PY * 50  # B6 order 46080>5000 -> split; facets are 5-cubes (32 rays, r-d=26, B5 3840, r<40 -> direct)
+        walk = 2 * C_GAP + 12 * C_NMZ + 12 * 32 * C_PY  # B6 order 46080>5000 -> split; facets are 5-cubes (32 rays, r-d=26, B5 3840, r<40 -> direct)
         return b(C_LAT + 3 * C_ISO + perms + walk, "64 rays dim 7, B6 |G|=46080 -> adjacency-decomposition split (:466); one facet orbit of 12; 3 owned generators on 64 rays")
     if name == "test_null_quadrant_facets_retain_the_swap_transport":
         return b(C_LAT + C_ISO + C_NMZ, "U, 2 rays dim 2: dimension==2 branch; one swap generator; one orbit of 2")
@@ -174,7 +181,7 @@ def facet_orbits(name: str, param: str) -> tuple[float, str]:
         t = common + _stabilizer(s) + _ray_perms(s) + _cone_facets_full(s) + _cell_cone(s) + _direct_walk(s)
         return b(t, f"[{param}] stabilizer + full closure + engine cone + direct walk")
     if name == "test_orbit_stabilizer_and_transport_witnesses_are_exact":
-        t = common + _stabilizer(s) + 2 * _ray_perms(s) + _direct_walk(s) + _cone_facets_full(s) + s["G"] * s["F"] * s["r"] * C_PY * 5
+        t = common + _stabilizer(s) + 2 * _ray_perms(s) + _direct_walk(s) + _cone_facets_full(s) + s["G"] * s["F"] * C_PY
         return b(t, f"[{param}] stabilizer (cached second call); Python closure of |G|~{s['G']}; per-orbit stabilizer count")
     if name == "test_walk_permutations_match_the_port_action_convention":
         t = common + _stabilizer(s) + 2 * _ray_perms(s) + _cell_cone(s)
@@ -205,7 +212,7 @@ def facet_orbit_contracts(name: str, param: str) -> tuple[float, str]:
         return b(common + _cell_cone(s) + s["F"] * (s["n"] * 4 * C_OWN + C_RANK), f"[{param}] owned cone F~{s['F']}, rank per facet")
     if name.startswith("test_stabilizer_permutes"):
         return b(common + _stabilizer(s) + _ray_perms(s) * 2 + _cell_cone(s), f"[{param}] stabilizer |G|~{s['G']}, owned images of r~{s['r']} rays per generator")
-    return b(common + _cell_cone(s) + 100 * s["n"] * C_OWN, f"[{param}] owned cone + _positive_direction short-vector search")
+    return b(common + _cell_cone(s) + 100 * s["n"] * C_DOT, f"[{param}] owned cone + _positive_direction short-vector search")
 
 
 def facet_traversal_seam(name: str, param: str) -> tuple[float, str]:
@@ -237,7 +244,7 @@ def cell_faces(name: str, param: str) -> tuple[float, str]:
 
 
 def lorentzian_flipping(name, param):
-    return b(C_LAT + 2 * 100 * 4 * C_OWN * 0.1, "<1>+<-1>, two _kernel_flipping calls on a 1-ray face; slice x=1 has 3 vectors")
+    return b(C_LAT + 2 * 100 * 2 * C_DOT, "<1>+<-1>, two _kernel_flipping calls on a 1-ray face; slice x=1 has 3 vectors")
 
 
 def edgewalk_options(name, param):
@@ -270,13 +277,13 @@ def generator_determinism(name, param):
     # U(2)+U+<2>: rank 5, signature (3,2), positive index 3, Witt index 2 -> Eichler _generation_step
     # (recursive.py:1180). A_L = (Z/2)^3, |A_L|=8; covering vectors ~ |O(q_L)| orbits (<=6), one
     # pointed isometry + envelope stabilizer each, recursion into rank-4 U(2)+<..> complement.
-    compute = 8 * (C_TRANS3 + 2 * C_ISO) + 2.0  # 8 covering vectors x pointed isometry; reduction + envelope
+    compute = 8 * (C_TRANS3 + 2 * C_ISO) + C_ENVELOPE  # 8 covering vectors x pointed isometry
     return b(2 * (SAGE_BOOT + compute), "two fresh Sage processes; U(2)+U+<2> Eichler generation step, |A_L|=8, ~8 covering vectors")
 
 
 def integral_schreier(name, param):
     if name == "test_eichler_envelope_retains_the_supplied_lattice_action":
-        return b(C_LAT + 2.0 + 6 * 4 * 2 * 4 * C_OWN, "U(2)+U envelope, |A_L|=4: stabilizer of the lattice in finite rep, Schreier gens <=6, 2*4 owned images each")
+        return b(C_LAT + C_ENVELOPE + 6 * 4 * 2 * 4 * C_OWN, "U(2)+U envelope, |A_L|=4: stabilizer of the lattice in finite rep, Schreier gens <=6, 2*4 owned images each")
     if param == "two_u":
         return b(C_LAT + 7 * C_ISO + 7 * 4 * 2 * 4 * C_OWN, "U+U unimodular, bound = inclusion: index 1, one coset, 7 Schreier generators")
     if param == "scaled_hyperbolic_line":

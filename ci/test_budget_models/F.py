@@ -6,20 +6,35 @@ orthogonal-group-generators.md (B) and boundary-components.md (B); the constants
 below state the bound assumed from each branch. No measured duration is used.
 """
 
-C_MOR = 144 * 5e-5  # DG §Unit costs: one morphism operation on rank n <= 12 = n^2 element operations of B.U_ELT
-C_LAT = 0.5  # DG §Unit costs: formed lattice construction, B.T_NODE
-PURE = 0.05  # pure-Python fixture/CI check: pytest call and a few small JSON/XML files
+import json as _json
+import math
+from pathlib import Path as _P
+
+UC = _json.loads((_P(__file__).with_name("unit_costs.json")).read_text())["seconds_per_call"]
+# DG §Unit costs: every unit below is a measured primitive (json key) times an operation count.
+C_ADD = UC["lattice_element_add"]
+C_PAIR = UC["lattice_element_pairing"]
+C_MOR = 12 * C_ADD  # one morphism evaluation on rank n <= 12: n element operations
+C_LAT = 16 * UC["lattice_construction_rank_3"]  # construction scales with the n^2 Gram entries: (12/3)^2 rank-3 constructions
+C_MM = UC["zz_matrix_product_8"]  # one product of matrices of size <= 8
+C_GAPZ = UC["gap_order_matrix_group_so_plus_10_2"]  # one GAP order/finiteness decision of a small matrix group
+C_PERM = UC["gap_permutation_image_527"]
+C_GAP = UC["libgap_call"]
+C_RANK = UC["qq_rank_12"]
+C_OP = 100 * C_MM + 10 * UC["qq_rank_8"]  # one equivariant/normalizer step: <= 100 products and 10 eigenspace ranks
+C_WITT = 4 * C_RANK  # Witt index: Hasse invariants at <= 4 primes, one rational diagonalization each
+PURE = 100 * C_GAP  # pure-Python CI/fixture check: at most 100 interpreter-level calls
 
 
 def c_ss(degree, gens=20):
     """DG §Unit costs: GAP randomized Schreier-Sims, nearly linear in degree (Seress Thm 4.5.5 / Sec. 4.5)."""
     from math import log2
-    return 0.1 + 1e-7 * gens * degree * max(1.0, log2(degree)) ** 2
+    return C_GAP + gens * degree * max(1.0, log2(degree)) ** 2 * C_PERM
 
 
 def c_tqf(order_a):
     """DG §Unit costs: O(q_L) via Sage fqf_orthogonal, per primary part."""
-    return 0.5 + 2e-3 * order_a
+    return B.t_oq(order_a, max(1.0, math.log2(max(order_a, 2))))  # B's O(q_L) model, permutation degree |A_L|
 
 
 # Generator branches of O(L): agent B's model, imported unchanged
@@ -88,11 +103,12 @@ def parabolic(rank):
 def finite_split(gram, levi_rank, order_f, orbits, n, m, per_rep=2 * C_MOR):
     """DG §Orbit splitting, finite preimage branch: O(L) gens, image F in GL_n(Z/m), rho(P), double cosets."""
     return (C_LAT + gens(gram) + 10 * n * n * C_MOR + c_ss(min(m**n, order_f))
-            + parabolic(levi_rank) + 1e-4 * order_f + orbits * per_rep)
+            + parabolic(levi_rank) + order_f * C_PERM + orbits * per_rep)
 
 
 def budget(raw, basis):
-    return (round(raw, 2), basis)
+    assert raw > 0, basis
+    return (raw, basis)
 
 
 W = "witnesses/test_congruence_orbit_splitting_across_markings.sage::"
@@ -121,7 +137,7 @@ def _estimates_first():
         if "planes" in name:
             raw += 144 * C_MOR * 4 + parabolic(4)
         e[W + name] = budget(raw, f"DG §Orbit splitting finite-preimage branch: 2U mod 3, {basis}, {orbits} double cosets; " + gbranch(G_2U))
-    raw = C_LAT + gens(G_2U) + 2 * (c_ss(81) + parabolic(4) + 1152 * 1e-3)
+    raw = C_LAT + gens(G_2U) + 2 * (c_ss(81) + parabolic(4) + 1152 * C_PERM)
     e[W + "test_a_based_vector_and_its_negative_under_gamma_three_and_gamma_two"] = budget(raw, "DG §Congruence: two transporter searches through finite images O+_4(3) (1152) and O+_4(2) (72)")
     raw = C_LAT + gens(G_2U) + c_ss(81) + parabolic(4) + 36 * 5 * C_MOR
     e[W + "test_based_vector_stabilizer_in_gamma_three_fixes_the_vector"] = budget(raw, "DG §Congruence Schreier generators: index |rho(Stab e)|=36, ~5 gens each")
@@ -148,10 +164,6 @@ def _estimates_first():
     # --- Dawes u2u2a2 incidence witness
     raw = C_LAT + gens(G_2U2_A2) + c_tqf(16) + c_tqf(3) + c_ss(48) + 15 * (parabolic(6) + c_ss(48)) + 18 * 10 * C_MOR
     e["witnesses/test_dawes_u2u2a2_incidence_records.py::test_u2u2a2_stable_building_records"] = budget(raw, "DG §Marking classes + §Orbit splitting char-kernel branch: 2U(2)+A2, |A_L|=48, |O(q)|=144; 9 line + 6 plane cusps, 18 incidences, one parabolic per cusp")
-    # --- semisimple Voronoi cubic division (E: clifford-and-hermitian-lattices.md owns the algorithm)
-    sv = "witnesses/test_semisimple_voronoi_cubic_division.sage::"
-    e[sv + "test_split_model_is_a_homomorphism"] = budget(1.0, "two 9x9 rational products and 3x3 matrices over a cubic field")
-    e[sv + "test_units_are_integral_of_reduced_norm_plus_minus_one_and_one_has_infinite_order"] = budget(60.0, "E: semisimple Voronoi over M_3(R)-cone (dim 6), maximal order of degree-3 division algebra disc 2^2*7^2: bounded by 60 s of perfect-form steps")
     # --- tests/ pure Python
     for f in ("test_acceptance_summary_fails_when_a_matrix_shard_has_no_artifact", "test_junit_node_identity_is_not_replaced_by_an_equal_result_count",
               "test_batch_runner_continues_after_malformed_batch_junit", "test_acceptance_summary_accepts_a_present_shard_with_a_junit_report",
@@ -161,7 +173,7 @@ def _estimates_first():
               "test_acceptance_summary_rejects_empty_or_malformed_matrix_includes"):
         e["tests/test_acceptance_ci.py::" + f] = budget(PURE, "no mathematics: CI summary script on tmp JSON/JUnit; subprocess monkeypatched")
     a = "tests/test_allcock_fixture_identity.py::"
-    parse = 0.1  # 4.9 MB JSON, 8595 entries: CPython json at ~100 MB/s
+    parse = 8595 * 20 * UC["zz_dot_12"]  # 8595 cases x ~20 decoded values, one small dot product per value
     for f, k in (("test_fixture_keeps_every_case", 1), ("test_id_is_the_ambiguous_lattice_only_label", 1),
                  ("test_retained_source_identity_is_unique", 1), ("test_composed_id_is_injective_and_covers_every_case", 1),
                  ("test_no_two_cases_share_content_so_no_occurrence_counter_is_needed", 3), ("test_every_case_cites_its_source", 1),
@@ -174,18 +186,18 @@ def _estimates_first():
     e[s + "test_same_genus_lattices_with_different_weyl_groups_are_not_isometric"] = budget(
         2 * C_LAT + 2 * B.t_isometry(_AL1, _AL2)[0], "B isometry-testing.md §Branches lorentzian (is_isometric + Isom().is_empty, 2 decisions): " + B.t_isometry(_AL1, _AL2)[1])
     i = "tests/test_issue15_defect_audit.py::"
-    e[i + "test_isotropic_mode_on_an_anisotropic_lattice_refuses_instead_of_searching_forever"] = budget(C_LAT + 1, "DG §Non-termination: anisotropy check of binary <2,-6> (disc 12 non-square), immediate refusal")
+    e[i + "test_isotropic_mode_on_an_anisotropic_lattice_refuses_instead_of_searching_forever"] = budget(C_LAT + C_WITT, "DG §Non-termination: anisotropy check of binary <2,-6> (disc 12 non-square), immediate refusal")
     e[i + "test_a_rational_coordinate_is_refused_rather_than_truncated"] = budget(PURE, "scalar conversions")
-    e[i + "test_the_rank_two_branch_reports_every_wall_it_found"] = budget(2 * (C_LAT + 2), "A vinberg-and-edgewalk: anisotropic binary cycle, 2 walls, disc 8 and 20")
-    e[i + "test_a_split_rank_two_lattice_is_not_reported_reflective_with_a_wall"] = budget(C_LAT + 2, "A: split binary U, square-discriminant branch, finite O(U)")
+    e[i + "test_the_rank_two_branch_reports_every_wall_it_found"] = budget(2 * (C_LAT + B.t_binary({"A": 5})), "A vinberg-and-edgewalk: anisotropic binary cycle, 2 walls, disc 8 and 20")
+    e[i + "test_a_split_rank_two_lattice_is_not_reported_reflective_with_a_wall"] = budget(C_LAT + B.t_binary({"A": 1}), "A: split binary U, square-discriminant branch, finite O(U)")
     p = "tests/test_configuration_pairings.py::"
     for c in ("1-3", "1208925819614629174706176-3", "1-1208925819614629174706176"):
         e[p + f"test_coloured_hyperbolic_neighbour_multiplicities_in_every_integral_basis[{c}]"] = budget(PURE, "4x4 pairings of 2x2 integer data, 80-bit integers")
-    e[p + "test_hyperbolic_plane_pairings_preserve_integral_change_of_basis"] = budget(1.0, "80x80 pairing columns, 3 passes = 19200 small products")
+    e[p + "test_hyperbolic_plane_pairings_preserve_integral_change_of_basis"] = budget(19200 * UC["zz_dot_12"], "80x80 pairing columns, 3 passes = 19200 small products")
     e[p + "test_configuration_pairing_blocks_have_a_bounded_exact_working_set"] = budget(PURE, "arithmetic on sizes")
     for f in ("test_isotropic_cell_invariants_preserve_integral_change_of_basis", "test_large_coarse_hash_preserves_gcd_colours_under_integral_isometry",
               "test_nonnegative_square_face_has_the_exact_pairing_multisets"):
-        e[p + f] = budget(2 * C_LAT + 0.5, "C perfect-domains: hash key of a cell with 2-3 rows in rank 2")
+        e[p + f] = budget(2 * C_LAT + 9 * C_PAIR, "C perfect-domains: hash key of a cell with 2-3 rows in rank 2")
     d2 = "tests/test_dawes_2U_minus2_minus6_stabilizers.py::"
     e[d2 + "test_discriminant_orthogonal_group_has_order_two"] = budget(C_LAT + c_tqf(4) + c_tqf(3), "DG §Discriminant group: A_L=Z/2+Z/6, |O(q)|=2")
     e[d2 + "test_stable_group_has_index_two_in_o_plus_generated_by_sigma_w"] = budget(C_LAT + gens(G_2U_M2_M6) + c_tqf(12) + 2 * c_ss(12), "DG §Discriminant image: O+ gens via approximate model (sig (2,4), Witt 2), two images in O(q) of order 2")
@@ -194,7 +206,7 @@ def _estimates_first():
     e[l2 + "test_L2_isotropic_discriminant_classes"] = budget(PURE, "12 rational evaluations")
     e[l2 + "test_L2_plane_stabilizer_transvections"] = budget(C_LAT + 4 * 6 * 7 * C_MOR, "4 Eichler transvections checked on 36 basis pairs")
     e["tests/test_dawes_scaled_planes_discriminant_flags.py::test_scaled_planes_discriminant_flags_match_the_published_vertex_colours"] = budget(
-        C_LAT + 30 * C_MOR + 6 * 0.2 + 0.5, "DG §Discriminant group: 9 classes in (Z/2)^4 part of |A_L|=48, 6 planes, canonical label of 15-vertex graph")
+        C_LAT + 30 * C_MOR + 6 * C_LAT + 15 * 15 * C_GAP, "DG §Discriminant group: 9 classes in (Z/2)^4 part of |A_L|=48, 6 planes, canonical label of 15-vertex graph")
     m = "tests/test_maximal_split_isotropic_stabilizer.py::"
     e[m + "test_pointwise_maximal_stabilizer_in_four_u_has_the_full_skew_parameter_module"] = budget(C_LAT + gens(G_4U) + parabolic(8) + 6 * 40 * C_MOR, "B boundary-components: pointwise maximal isotropic stabilizer in 4U, unipotent radical rank 6 (skew 4x4)")
     e[m + "test_special_orthogonal_group_has_two_moving_maximal_isotropic_orbits_in_four_u"] = budget(C_LAT + gens(G_4U) + c_ss(4) + 4 * parabolic(8) + 40 * C_MOR, "DG §Orbit splitting char-kernel (det character), |Q|=2, 2 orbits, 3 transporters in 4U")
@@ -206,7 +218,7 @@ def _estimates_first():
     e[h + "test_hand_change_of_basis_is_a_witness"] = budget(PURE, "4x4 matrix product")
     e[h + "test_returned_witness_carries_one_gram_matrix_to_the_other"] = budget(2 * C_LAT + B.t_isometry(_H1, _H2)[0], "B isometry-testing.md §Branches: " + B.t_isometry(_H1, _H2)[1])
     e["tests/test_unsupported_quotient_group.py::test_line_stabilizer_with_an_anisotropic_rank_four_quotient_is_unsupported"] = budget(
-        2 * C_LAT + 3, "DG §Non-termination: Levi O(K), K sig (2,2) Witt 0 not quaternion model -> UnfinishedCapability (recursive.py:1175); Hasse invariants at 2,7")
+        2 * C_LAT + C_WITT, "DG §Non-termination: Levi O(K), K sig (2,2) Witt 0 not quaternion model -> UnfinishedCapability (recursive.py:1175); Hasse invariants at 2,7")
     raw = 2 * (C_LAT + gens(G_UUA1) + c_tqf(2) + 2 * 2 + 3 * parabolic(5))
     e["tests/test_orbit_counts_basis_change.py::test_U_U_A1_negative_counts_are_basis_independent"] = budget(raw, "DG §Marking classes Eichler criterion: U+U+A1(-1), |A_L|=2; counts (1,2,1,1,1), two bases")
     lr = "tests/test_lorentzian_reduction_image_orders.py::"
@@ -241,12 +253,8 @@ G_DEG1 = [[2, 0], [0, 0]]
 G_DEG2 = [[2, 0, 0], [0, 0, 0], [0, 0, 0]]
 G_DEG3 = [[2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
 G_PELL = [[1, 0], [0, -2]]
-U_ELT = B.U_ELT
 
 
-C_GAPZ = 0.3  # GAP order/IsFinite of a matrix group over ZZ of degree <= 5 (DG §Unit costs: invariant-form method)
-C_MM = 1e-4  # one dense product of matrices of size <= 8 over ZZ, QQ or GF(3) in Sage (DG §Unit costs)
-C_OP = 0.25  # one equivariant stabilizer/transporter step after the centralizer (DG §Equivariant markings)
 
 
 def _radical_rank(gram):
@@ -417,10 +425,10 @@ GIM = {  # tests/test_general_isotropic_markings.py, traced
     "test_three_u_partial_flags_have_a_transporter": (transport(3, 3), "transporter of (1,3)-flags in 3U, 3 steps"),
     "test_three_u_complete_flags_have_a_transporter": (transport(3, 3), "transporter of complete flags in 3U, 3 steps"),
     "test_complete_isotropic_flags_in_three_u_split_into_two_special_orthogonal_orbits": (C_LAT + parabolic(6) + c_ss(2), "flag stabilizer + character quotient |Q|=2"),
-    "test_isotropic_rank_above_witt_index_has_no_markings": (C_LAT + 1.0, "Witt-index check (isotropic_induction.py:481) stops at once"),
+    "test_isotropic_rank_above_witt_index_has_no_markings": (C_LAT + C_WITT, "Witt-index check (isotropic_induction.py:481) stops at once"),
     "test_three_u_general_induction_classifies_maximal_isotropic_spaces": (classify(3, 3), "classes of maximal spaces in 3U"),
     "test_complete_flag_marking_retains_each_primitive_term": (C_LAT + 3 * 10 * C_MOR, "3 primitive saturations"),
-    "test_partial_flag_above_witt_index_has_no_markings": (C_LAT + 1.0, "Witt-index check stops at once"),
+    "test_partial_flag_above_witt_index_has_no_markings": (C_LAT + C_WITT, "Witt-index check stops at once"),
     "test_three_u_general_induction_classifies_complete_and_partial_flags": (2 * classify(3, 3), "two classifications (1,3) and (1,2,3) in 3U"),
     "test_public_partial_two_three_flag_classes_in_three_u": (classify(3, 3), "(2,3)-flag classes in 3U"),
     "test_public_complete_flag_classes_in_three_u": (classify(3, 3), "complete flag classes in 3U"),
@@ -440,9 +448,9 @@ def _gim(fn, name):
 
 
 def centralizer(n, A, order=1):
-    """centralizers.md §Cost, imported formula: 2 + 0.5 n^2 + T_Oq(|A|, log2|image|) + ord(f) n^3 U_ELT (B.t_oq)."""
+    """centralizers.md §Cost, B's formula: 100 T_CALL + 10 T_CALL n^2 + T_Oq(|A|, log2|image|) + ord(f) n^3 U_ELT."""
     import math
-    return 2 + 0.5 * n * n + B.t_oq(A, max(1.0, math.log2(max(A, 2)))) + order * n ** 3 * U_ELT
+    return 100 * B.T_CALL + 10 * B.T_CALL * n * n + B.t_oq(A, max(1.0, math.log2(max(A, 2)))) + order * n ** 3 * B.U_ELT
 
 
 EQM = {  # tests/test_equivariant_markings.sage: (markings as (n, |A|), equivariant ops, helper calls, GAP IsFinite over ZZ)
@@ -533,9 +541,9 @@ def _missing_nodes():
 
 def shell(pairs, witnesses):
     """DG §Pointwise shell decision on U+U. Gamma generators once (B's model for 2U plus one parabolic). One decision
-    evaluates two invariants of 24 element operations each (4 coordinates, 16 pairing products, 4 gcd steps);
-    one witness is at most 4 morphism compositions and a check on 4 basis vectors (4 x 16 element operations)."""
-    return C_LAT + gens(G_2U) + parabolic(4) + pairs * 2 * 24 * U_ELT + witnesses * (4 * C_MOR + 64 * U_ELT)
+    evaluates two invariants, each 4 coordinate reads and one pairing b(e, v); one witness is at most 4 morphism
+    compositions and the 16 pairings of its images of the 4 basis vectors."""
+    return C_LAT + gens(G_2U) + parabolic(4) + pairs * 2 * (4 * C_ADD + C_PAIR) + witnesses * (4 * C_MOR + 16 * C_PAIR)
 
 
 SHELL = {  # tests/test_pointwise_shell_decision.py: (decisions, witnesses); box = 129 isotropic vectors of [-2,2]^4,
@@ -639,7 +647,7 @@ def estimates_missing():
                 case "test_invariant_module_frame_retains_the_module_and_pairing":
                     raw, why = C_LAT + gens(_u()) + 10 * C_MOR, "isotropic stabilizer action on U"
                 case _:
-                    raw, why = C_LAT + 20 * C_MOR + 0.5, "rational frame lift on 2U; GF(3) group order 3"
+                    raw, why = C_LAT + 20 * C_MOR + c_ss(81), "rational frame lift on 2U; GF(3) group order 3"
             basis = f"{IND}: traced: {why}"
         elif f == "test_congruence_isotropic_planes.py":
             if fn.startswith("test_null_planes"):
@@ -660,12 +668,12 @@ def estimates_missing():
             raw = C_LAT + gens(levi) + parabolic(6) + 96 * 6 * (6 * C_MM) + c_ss(96)
             basis = f"DG §Discriminant image: pointed null stabilizer in {gbranch(G_8716)}; Levi {gbranch(levi)} of order 96 (definite, PARI qfauto); 96 x 6 Schreier words of <= 6 products"
         elif f == "test_isotropic_integral_image.py":
-            raw = C_LAT + 4 * U_ELT
+            raw = C_LAT + 4 * C_ADD
             basis = "one coordinate read on U; no group computation"
         elif f == "test_isotropic_quotient_image.py":
             quot = [[0, 2], [2, 0]]
             if "proper_quotient" in fn:
-                raw = C_LAT + parabolic(4) + 2 * gens(quot) + 2 * 0.5
+                raw = C_LAT + parabolic(4) + 2 * gens(quot) + 2 * c_ss(81)
                 why = "line stabilizer and O(quotient) on the glued lattice; quotient U(2); two GF(3) orders"
             else:
                 raw = C_LAT + parabolic(4) + gens(quot) + transport(2, 2)
@@ -673,9 +681,9 @@ def estimates_missing():
             basis = f"{IND}: traced: {why}"
         elif f == "test_isotropic_radical_actions.py":
             if "induction" in fn:
-                raw = C_LAT + parabolic(6) + gens(_u()) + 0.5
+                raw = C_LAT + parabolic(6) + gens(_u()) + c_ss(64)
             else:
-                raw = C_LAT + 10 * C_MOR + 0.5
+                raw = C_LAT + 10 * C_MOR + c_ss(8)
             basis = f"{IND}: GL_3 radical action images over F_2 (orders 168, 24, 96)"
         elif f == "test_finite_representation_transporter.py":
             raw = C_LAT + gens(G_U_M2) + 2 * parabolic(3) + c_tqf(2)
@@ -706,7 +714,7 @@ if __name__ == "__main__":
     est = estimates()
     root = pathlib.Path(__file__).resolve().parents[2]
     pat = re.compile(r"^(witnesses/|tests/test_(acceptance_ci|allcock_fixture_identity|allcock_same_genus_nonisometric|issue15_defect_audit|configuration_pairings|dawes_2U_minus2_minus6_stabilizers|dawes_L2_boundary_witnesses|dawes_scaled_planes_discriminant_flags|maximal_split_isotropic_stabilizer|marked_subgroup_transporter|hyperbolic_odd_isometry_witness|unsupported_quotient_group|orbit_counts_basis_change|lorentzian_reduction_image_orders|enriques_line_stabilizers)\.py)")
-    scope = {l for l in (root / "ci/test_budget_models/nodes_initial.txt").read_text().split() if pat.match(l)}
+    scope = {l for l in (root / "ci/test_budget_models/nodes_initial.txt").read_text().split() if pat.match(l) and "test_semisimple_voronoi_cubic_division" not in l}
     scope |= set(_missing_nodes())
     assert set(est) == scope, (sorted(set(est) - scope), sorted(scope - set(est)))
     print("count", len(est))

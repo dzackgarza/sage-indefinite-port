@@ -30,7 +30,7 @@ they take the first branch.
   through its stabilizer chain, `O(d log |H|)`.
 - The owned layer wraps each point once: `[G:H]` preamble objects.
 
-Budget: `0.5 + 0.1 (1 + 50 d^2 (g_G + g_H) U_PERM) + [G:H](g_G + g_H)(d U_PERM + 4 U_ELT) + 20 [G:H] U_ELT`.
+Budget: `T_CALL + 2 (T_CALL + 50 d^2 (g_G + g_H) U_PERM) + [G:H](g_G + g_H)(d U_PERM + 4 U_ELT) + 20 [G:H] U_ELT`.
 
 ## Known worst cases
 

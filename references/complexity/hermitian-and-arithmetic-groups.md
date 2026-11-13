@@ -420,3 +420,35 @@ determinant or norm ratio.
 - Definite Hermitian test: the units come from a Fincke-Pohst enumeration.
 - Golden test (`r = 16`): the commutant costs 3 s. Each call adds `H + H`
   models of both forms and a coset search over about 32 Eichler generators.
+
+## Unit costs of scope G
+
+Every unit cost in `ci/test_budget_models/G.py` comes from
+`ci/test_budget_models/unit_costs.json`. A derived unit is an operation count
+of this file times measured entries.
+
+| Unit | json key or count |
+| --- | --- |
+| quaternion product over Q | `qq_quaternion_product` |
+| reduced norm over Q | `qq_quaternion_reduced_norm` |
+| quaternion product over Q(sqrt 5) | `nf_quaternion_product_sqrt5` |
+| `2 x 2` product over Q(sqrt 3) (`M3`) | `nf_matrix_product_2_sqrt3` |
+| `2 x 2` product over Q(i) | `nf_matrix_product_2_gaussian` |
+| ideal equality over Q(sqrt -5) | `nf_ideal_equality_sqrt_minus5` |
+| `qfminim` of rank 4 (`Q4`) and rank 8 | `pari_qfminim_rank4_call`, `pari_qfminim_rank8_call` |
+| `bnfinit` of degree 2 and 4 | `pari_bnfinit_deg2`, `pari_bnfinit_deg4` |
+| Hermite key of 8 rows | `zz_hermite_8x12` |
+| commutant kernel, rank 8 and 16 | `zz_right_kernel_64`, `zz_right_kernel_256` |
+| `16 x 16` rational product | `qq_matrix_product_16` |
+| interval and 256-bit complex products | `rif128_mult`, `complex256_mult` |
+| facets of a 6-dimensional cone | `ppl_cone_dim6_12_rays` |
+| `_gram` over Q | `32 M3` |
+| `_minimal_vectors` | `3 x _gram + 2 Q4 + 20 M3` |
+| `_flip` | `_minimal_vectors + 2 (_short + 20 M3 + _minimal_vectors)` |
+| `V_Q` | `2 _flip + 6 (_flip + _minimal_vectors + _equivalences)` |
+| `is_unitary` over Z[i] | `3` Gaussian products |
+| Gram over Q(sqrt 5) | `64 x 2 x 4` quaternion products |
+| one neighbour over Q(sqrt 5) | `8` Grams `+ 3` rank-8 `qfminim` `+ 12 (2` products `+` Hermite key`)` |
+
+The seconds that earlier sections quote for these units are superseded by this
+table.

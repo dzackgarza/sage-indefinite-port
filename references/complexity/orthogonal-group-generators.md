@@ -70,7 +70,7 @@ vectors of norm at most the largest diagonal entry of the LLL-reduced Gram
 matrix. The backtrack has depth `n`, and the stabilizer chain has length at
 most `log2 |Aut L|`. Budget:
 
-`T_definite = 0.05 + 2e-6 S n^2 + 1e-7 S n log2|Aut L|` seconds.
+`T_definite = T_CALL + 2e-6 S n^2 + 1e-7 S n log2|Aut L|` seconds.
 
 Price a decomposable lattice on its orthogonal decomposition. A definite
 lattice is uniquely an orthogonal sum of indecomposable lattices (Eichler;
@@ -90,7 +90,7 @@ fundamental automorph, and an improper automorph when the form is ambiguous.
 The fundamental automorph comes from one period of the reduction cycle. The
 period length is `O(sqrt(D) log D)` (Buchmann and Vollmer, *Binary Quadratic
 Forms*, Thm. 6.10.3; the regulator bound). Budget:
-`0.3 + 0.002 sqrt(D) log2 D` seconds.
+`T_CALL + 10 sqrt(D) log2(D) U_ELT` seconds.
 
 ## Lorentzian route
 
@@ -100,19 +100,39 @@ the perfect complex. The cost is `C(L)` cells times the cost of one cell, plus
 in `perfect-domains-and-lorentzian-cells.md` (owner C), sections "Cell cone",
 "Facets and flips" and "Traversal".
 
-When a case does not record `C(L)`, this file uses the bound
-`C(L) <= 1 + ceil(sqrt d)`, with `d = min(|A|, |A_{L^v(e)}|)` and `e` the
+When a case does not record `C(L)`, this file uses the model
+`C(L) <= 1 + ceil(c_n sqrt d)`, with `d = min(|A|, |A_{L^v(e)}|)` and `e` the
 exponent of `A`. The complex and `O(L)` do not change when `L` is replaced by
 a rescaling or by `L^v(e)`. So a `p`-elementary lattice of length `ell` has
-`d = p^min(ell, n - ell)`. The bound agrees with every count recorded in
-`tests/fixtures/lorentzian_perfect_domains.json`. It is a model, not a
-theorem. No published bound on `C(L)` in terms of `A_L` is known to this file.
+`d = p^min(ell, n - ell)`. The coefficient `c_n` is the smallest value that
+covers every count recorded in `tests/fixtures/lorentzian_perfect_domains.json`
+for that rank:
+
+| `n` | Recorded counts | `c_n` |
+| --- | --- | --- |
+| 3 | `C <= 2` for `d <= 64` | `1/8` |
+| 4 | `C <= 2` for `d <= 20` | `1/4` |
+| 5 | `C = 5` at `d = 9` | `3/2` |
+| 6 | `C = 18` at `d = 28` | `13/4` |
+| `>= 7` | none | `13/4` |
+
+This is a calibration, not a theorem. This file knows no published bound on
+`C(L)` in terms of `A_L`.
 
 Per cell, with `V ~ n(n+1)/2` configuration vectors and `~V/2` facet orbits,
-each flip is one Fincke–Pohst search in rank `n - 1`
-(`LORENTZ_FindPositiveVectors`, `lorentzian_perfect.h:397`):
+each flip (`flip_across`, `lorentzian_cells.py:1809-1848`, then
+`_kernel_flipping`) enumerates the first nonempty shell of
+`_PositiveVectorEnumerator` (`lorentzian_cells.py:5387-5600`; source
+`LORENTZ_FindPositiveVectors`, `lorentzian_perfect.h:397`). A vector with
+`b(v, t) = m d` is `m h + x` with `x` in `K = t^⊥` of rank `n - 1`, and the
+admissible `x` are the close vectors of `m w` within `m^2 d^2 / q(t)`. The
+enumerator makes one PARI CVP call for each multiplier `m = 1, 2, ...` until
+a shell is nonempty. The returned shell is the new cell's configuration,
+about `V` vectors. The Fincke–Pohst tree visits about `n` nodes per returned
+vector. The model assumes two multipliers per flip. `|A_L|` does not drive one
+flip; it enters through `C(L)`.
 
-`T_cell(n, A) = 0.5 + (V/2)(0.1 n + 0.01 sqrt|A|) + V^2 n U_ELT` seconds.
+`T_cell(n) = T_NORMALIZ + (V/2)(2 T_PARI + n V U_FP) + V^2 n U_ELT`.
 
 ## Eichler route
 
@@ -129,7 +149,7 @@ The splitting vector is positive in the signed view, so `v^⊥` has positive
 index `m - 1`. When `m = 2`, `v^⊥` is Lorentzian after one step. A norm-2
 vector of `U` gives `|A_{v^⊥}| = 2|A_L|`. The recursion is
 
-`T(L) = 0.01 n^3 + K * 0.05 n^2 + T(v^⊥)`, with `K = min(|A|, 64)`.
+`T(L) = 10 n^3 U_ELT + K (T_CALL + 10 n^3 U_ELT) + T(v^⊥)`, with `K = min(|A|, 64)`.
 
 The cap 64 is the number of covering orbits that a correct model visits for
 the discriminant groups in this suite (`|A| <= 2^10`, at most `ell` cyclic
@@ -147,16 +167,16 @@ is assembled from three parts: `O(e^⊥/e)`, the Witt extensions
 The correction acts on a module bounded by that cokernel, so its cost is
 proportional to `div(e)^k` for a rank-`k` isotropic sublattice. For rank `<= 4`
 the quotient `e^⊥/e` is binary or zero. Budget:
-`2 + k (T_binary + 200 n^3 U_ELT)` seconds.
+`10 T_CALL + k (T_binary + 200 n^3 U_ELT)` seconds.
 
 The Enriques constants requested by the boundary models
 (`N = U ⊕ U(2) ⊕ E8(-2)`, `|A| = 2^10`, `ell = 10`) follow from this section
 and "Lorentzian route": the quotient `e^⊥/e` is Lorentzian of rank 10 with a
 2-elementary discriminant of full length, so `d = 1` and `C <= 2`. One line
-class costs `1 + T_traverse = 79.6` s. One plane class costs
-`h^2 T_definite(8) + 20 h (0.05 + 640 U_ELT) + h = 11.6` s with `h <= 4` and
+class costs `T_CALL + T_traverse = 1.46` s. One plane class costs
+`h^2 T_definite(8) + 20 h (T_CALL + 640 U_ELT) + h T_CALL = 0.41` s with `h <= 4` and
 `E^⊥/E` of `E8(2)` type (`S = 240`, `|Aut| = |W(E8)|`).
-One section lift of a split orbit costs `T_lift = 0.042` s, with word length
+One section lift of a split orbit costs `T_lift = 0.0032` s, with word length
 `w = 300` (`boundary-components.md`, "Splitting").
 
 ## Finite images
@@ -168,13 +188,14 @@ in `O(L ⊗ F_p)` for the primes of `2 det L` and 3, 5, 7
 - Image in `O(q_L)`: see `discriminant-groups-and-congruence-orbits.md`
   (owner F), sections "Discriminant group and its orthogonal group" and
   "Discriminant image of a set of isometries". Each discriminant morphism is
-  `|A|` images of `n`-coordinate elements: `g |A| n U_ELT`.
+  fixed by the images of the `ell` generators of `A`, `g ell n U_ELT`, and its
+  permutation on `|A|` points costs `g |A| U_PERM`.
 - Reduction images: the order of a subgroup of `O(n, F_p)`. GAP's default
   method acts on the `(p^n - 1)/(p - 1)` projective points. For `n = 10`,
   `p = 7` that is `4.7 * 10^7` points: this method is pathological.
   Constructive recognition (Neunhöffer–Seress recognition, GAP package
   `recog`) is polynomial in `n` and `log p`. Budget per group:
-  `1 + 0.002 n^3 log2 p * gens` seconds.
+  `100 T_CALL + 1e-4 n^3 log2(p) * gens` seconds.
 
 ## Known worst cases
 
@@ -187,9 +208,27 @@ in `O(L ⊗ F_p)` for the primes of `2 det L` and 3, 5, 7
 
 ## Unit costs of backend primitives
 
-| Primitive | Cost |
-| --- | --- |
-| `U_ELT`, one exact preamble element operation | `5e-5` s |
-| `U_PERM`, one GAP permutation image, degree `<= 10^3` | `2e-6` s |
-| `U_FP`, one lattice point in PARI `qfminim` | `1e-6` s |
-| Oscar bridge start (`juliacall`, `using Oscar`, first-call compilation) | `60` s, once per process; reached only by the centralizer adapter |
+Every unit is a measured median from `ci/test_budget_models/unit_costs.json`,
+written by `ci/test_budget_models/unit_costs.py` in the Sage container. The
+models read the file by key. Every other number in this directory's formulas
+is an operation count.
+
+| Unit | Primitive | `unit_costs.json` key |
+| --- | --- | --- |
+| `U_ELT` | one small exact vector operation (FLINT) | `zz_dot_12` |
+| `U_PERM` | one GAP permutation image through libgap | `gap_permutation_image_527` |
+| `U_FP` | one lattice point enumerated by PARI `qfminim` | `pari_qfminim_e8_point` |
+| `U_PRODUCT` | one `12 x 12` integer matrix product | `zz_matrix_product_12` |
+| `T_CALL` | one call across the libgap boundary | `libgap_call` |
+| `T_PARI` | one PARI call at rank 10 | `pari_lllgram_10` |
+| `T_NORMALIZ` | one Normaliz support-hyperplane call | `normaliz_cone_6_rays` |
+| `T_QFAUTO_E8` | PARI `qfauto` of `E8` | `pari_qfauto_e8` |
+| `T_SO10_2` | GAP order of `SO^+(10, 2)` from generators | `gap_order_matrix_group_so_plus_10_2` |
+| `T_NODE` | one lattice construction | `lattice_construction_rank_3` |
+
+`T_definite` scales the measured `E8` call by the Plesken–Souvignier work
+`S n^2`: `T_definite = T_QFAUTO_E8 * S n^2 / (240 * 64)`. The reduction
+order scales the measured `SO^+(10,2)` order by `(n/10)^3 log2 p * gens / 2`.
+
+Per-element interpreted work in a hot loop of the port is a defect that the
+budget exposes, not a cost it includes (`README.md`, "Rules for a budget").

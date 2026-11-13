@@ -48,8 +48,7 @@ transversal of `[O(q) : ρ(Γ)]`. One lift has these parts:
   `orthogonal_quotients.py:60-191`) on the existing stabilizer chain. This
   costs `O(w + deg)` permutation operations.
 - `_evaluate_letters`: `w` products of `n x n` integer isometries. Each
-  product is one FLINT product (`1e-5` s at `n = 12`) plus the owned wrapper
-  (`2 U_ELT`).
+  product is one FLINT product, `U_PRODUCT = 1e-5` s at `n = 12`.
 - `_checked_lift`: one character image, `ell * n` element operations.
 - One apex action on the marking.
 
@@ -59,13 +58,13 @@ most one Schreier-tree path of depth `<= 2 ceil(log2 deg)`, and a strong
 generator is on average a word of length `<= 2.5` in the supplied family. So
 `w <= 5 b ceil(log2 deg)`.
 
-`T_lift = (w + deg) U_PERM + w (1e-5 + 2 U_ELT) + (ell + 2) n U_ELT`
+`T_lift = (w + deg) U_PERM + w U_PRODUCT + (ell + 2) n U_ELT`
 
 `T_split = |G/G_m| * g * U_PERM + (number of Γ-orbits) * T_lift`.
 
 For the Enriques lattice `N` the image is of `O^+(10, 2)` type on the
 `deg = 527` singular points, with `log2|Q| = 45.4`. This gives `b = 6`,
-`w = 300` and `T_lift = 0.042` s.
+`w = 300` and `T_lift = 0.0032` s.
 
 The theory of the character quotient is in
 `discriminant-groups-and-congruence-orbits.md` (owner F), "Orbit splitting
@@ -106,6 +105,23 @@ case:
   The `ρ(Γ_h)`-orbits on these sets give the recorded line, plane and flag
   counts. The number of output representatives is the recorded sum, up to
   `96969` for the case of smallest `Γ_h`. The section lifts dominate there.
+
+## Shared work across the Enriques cases
+
+All 87 cases use the same lattice `N`. Its `O(N)` generators, its `O(N)`-classes
+of lines, planes and flags, the permutation model of `O(q_N)` and the transport
+setup are computed once per session and charged to `case_1`, the first case in
+collection order. Each case pays only its own work:
+
+- `Stab(h)` in `O(M)` through the definite rank-9 complement;
+- its image in `O(q_M)`;
+- at most 20 section lifts for the preimage generators;
+- the image of `Γ_h` from at most 40 generators, each fixed by the images of
+  the `ell = 10` generators of `A_N`;
+- the GAP double cosets and one `0.0032` s lift per output representative.
+
+The cost per case is therefore linear in the recorded number of orbits. It is
+largest for the case of smallest `Γ_h`, which has 96969 representatives.
 
 ## Known worst cases
 

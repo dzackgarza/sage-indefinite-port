@@ -22,7 +22,7 @@ a stated unit cost of a backend primitive.
 | Rank 2 (oriented binary cycle) | `two_dim_lorentzian.h` | `edgewalk_rank2.py`, `edgewalk.py:1484-1507` |
 | Algorithm | Allcock, arXiv:2110.03784 (`references/vendor/arxiv/2110.03784`) | |
 
-## Anchor
+## Upstream check
 
 `polyhedral_common@1592b246/.github/workflows/ci_20_reflective.yml` runs one
 job with `timeout-minutes: 120`. The job installs GAP, builds the C++ and runs
@@ -31,24 +31,33 @@ simple roots and the isotropy of all 8821 `ListReflect` lattices (8602 of rank
 3). The C++ edgewalk therefore needs less than `120 * 60 / 8821 = 0.82 s` per
 lattice on average.
 
-The port factor is 10. The heavy primitives (Smith form, `qfauto`/`qfisom`,
-short vectors, LLL, double description) are the same PARI, FLINT and cdd C
-code in both implementations. Only the walk bookkeeping (vertex lists,
-candidate sorting, configuration keys) runs in interpreted Python, about ten
-times slower than the C++ loop. The sum of the per-case budgets over
-`ListReflect` must stay below `8821 * 0.82 * 10 s = 20.1 h`.
+This bound is a check on the derived budgets, not a multiplier: the family
+average must be below it. Each step is priced at the compiled cost of its
+operation (Cython over FLINT, PARI and GAP; vectorized FLINT matrices), which
+is the work the C++ does. Interpreted per-element work in a hot loop of the
+port is not priced in; a run above the budget exposes it.
 
 ## Unit costs of backend primitives
 
 The units are the cost of each operation at the fixtures' sizes (rank `<= 18`,
 entries `< 2^25`) in one shared Sage session.
 
-| Symbol | Primitive | Unit cost | Basis |
+| Symbol | Operation | Unit cost | Basis |
 | --- | --- | --- | --- |
-| `OP` | One exact small linear-algebra or element operation | 2e-5 s | A FLINT or PARI call on a rank `<= 18` integer vector or matrix takes 1-5 us; the Python call and parent coercion around it 10-20 us |
-| `STAB(n)` | Stabilizer or transporter of a coloured family of `<= n+1` vectors | `5e-3 * max(1, n^2/9) * (1 + log2|O(q_L)| / 64)` s | Plesken–Souvignier backtrack (PARI `qfauto`/`qfisom`) over `O(10)` short vectors of a rank-3 definite form is below 1 ms, plus wrapping |
+| `OP` | One FLINT or PARI operation on a rank `<= 18` integer vector or matrix | 3e-6 s | At most 324 word-size entries; `O(n^2)` to `O(n^3)` word operations |
+| `STAB(n)` | Stabilizer or transporter of a coloured family of `<= n+1` vectors | `2e-4 * max(1, n^2/9) * (1 + log2|O(q_L)| / 64)` s | Plesken–Souvignier backtrack (PARI `qfauto`/`qfisom`) over `O(10)` short vectors of a rank-3 definite form, in C |
 | `LP` | One halfspace-ray incidence in a double description | 1e-6 s | cdd in C arithmetic, Fukuda–Prodon 1996 |
-| `BASE` | Lattice construction, Smith form, root norms, isotropy decision, one isotropic vector | 0.05 s | PARI `matsnf`, `qfsolve` (Simon 2005) |
+| `BASE` | Smith form, root norms, isotropy decision, one isotropic vector | 2e-3 s | PARI `matsnf`, `qfsolve` (Simon 2005) |
+
+**Compiled work per step** (from `edgewalk.py`):
+
+- per vertex orbit: the coloured configuration of `|S| + 1` vectors and its key
+  (edgewalk.py:1389-1402), `(n + 2) OP`;
+- per transporter comparison rejected by invariant (edgewalk.py:1584-1588):
+  one Gram-key comparison, `OP`;
+- per edge and root norm (edgewalk.py:1340-1356): the binary search of length
+  `s = log2(2 exp(A_L) |A_L|)`, one rank-`n` matrix-vector product per step,
+  plus setup: `(30 + 2 s n) OP`.
 
 Each budget is the derived work of the branch with these units.
 
@@ -140,8 +149,8 @@ and more than `R` vertices.
 **Transporter tests.** edgewalk.py:1584-1588 compares the neighbour of each
 edge with the known vertex configurations in order and stops at the first
 match. A known configuration with a different invariant (number of walls, the
-multiset of rows of the root Gram) is rejected by comparing Gram matrices,
-`10 OP`. A full transporter (`STAB`) happens only against configurations of the
+multiset of rows of the root Gram) is rejected by comparing Gram keys
+(`OP`). A full transporter (`STAB`) happens only against configurations of the
 same invariant class. So the walk makes at most
 `sum_v |S_v| * |class(v)|` full tests and `E V` cheap rejections.
 
@@ -150,8 +159,8 @@ configuration (edgewalk.py:1574).
 
 Per edge: one `finite_extensions` and one `extension_roots` call per root norm
 (edgewalk.py:1340-1356). The source takes the first integral candidate in a
-binary search (edgewalk.h:966-1061); the search length is
-`log2(2 exp(A_L) |A_L|)`. The cost per norm is `30 OP + 2 OP n log2(...)`.
+binary search (edgewalk.h:966-1061) of length `s`. The cost per norm is the
+compiled work listed under the unit costs.
 
 Per vertex orbit: at most one dual description with `R` halfspaces and `V`
 rays, `50 OP + LP R V` (edgewalk.py:1556-1567). The certificate can close
@@ -161,8 +170,8 @@ Total:
 
 ```
 T = BASE + T_start
-  + V STAB(n) + (sum_v |S_v| |class(v)|) STAB(n) + E V 10 OP
-  + E N (30 OP + 2 OP n log2(2 exp |A_L|))
+  + V (STAB(n) + (n + 2) OP) + (sum_v |S_v| |class(v)|) STAB(n) + E V OP
+  + E N (30 + 2 s n) OP
   + V (50 OP + LP R V)
 ```
 
@@ -175,7 +184,7 @@ The dominant terms are the full transporter tests and the edge searches.
 more than a unimodular lattice of higher rank with the same `R`.
 
 The unrecorded rank-18 unimodular form (`ListReflect_8820`, `R = 22`) has the
-largest bound: `STAB(18) = 0.18 s` and up to `2 (n-1) R` full tests. With its
+largest bound: `STAB(18) = 7.2e-3 s` and up to `2 (n-1) R` full tests. With its
 Coxeter diagram (not recorded in the fixtures) the vertex orbits and classes
 would be exact.
 

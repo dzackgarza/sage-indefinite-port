@@ -198,21 +198,26 @@ produces the solutions; see `perfect-domains-and-lorentzian-cells.md`.
 
 ## Unit costs
 
-| Primitive | Assumed cost on a 4-vCPU runner |
-| --- | --- |
-| $c_{\mathrm{rank}}$: FLINT exact rank/kernel, $\le 64\times 8$ | 0.3 ms |
-| $T_{\mathrm{Nmz}}$: Normaliz dual description, $r \le 64$, $d \le 8$ | 50 ms |
-| owned `from_rays` cone (PPL), $r \le 30$, $d \le 5$ | 100 ms |
-| $c_{\mathrm{gap}}$: libGAP call, degree $\le 64$ | 2 ms |
-| owned lattice element operation (`sage_extensions` dispatch) | 2 ms |
-| pure-Python set or tuple step $c_{\mathrm{py}}$ | 1 µs |
-| one `O(L).transporter` of a vertex configuration, rank 3–4 | 0.5 s |
-| one `O(L).stabilizer` of a vertex configuration, rank 3–4 | 0.5 s |
-| one edgewalk `edge_step`, rank 3–4 | 0.3 s |
-| owned lattice construction with its first `O()` parent | 0.1 s |
-| owned isometry from images, rank $\le 7$ | 50 ms |
-| fresh child interpreter importing Sage and the port (only where a test spawns one) | 8 s |
+Every unit is either an entry of `ci/test_budget_models/unit_costs.json`
+or an operation count times such entries. `unit_costs.py` measures them as
+the median over repeated calls in one warm Sage session.
 
-A budget is the sum of these primitive costs over the work of the selected
-branch. It has no multiplicative factor and no floor. A budget that a run
-exceeds therefore shows extra work or a slower primitive.
+| Unit | Definition | JSON key or count |
+| --- | --- | --- |
+| $c_{\mathrm{rank}}$ | exact rank or kernel of an incidence matrix | `qq_rank_18` |
+| $T_{\mathrm{Nmz}}$ | Normaliz dual description, $\le 89$ rays, $d \le 8$ | 15 × `normaliz_cone_6_rays` |
+| owned `from_rays` cone | PPL dual description | 15 × `normaliz_cone_6_rays` |
+| $c_{\mathrm{gap}}$ | one libGAP call | `libgap_call` |
+| $c_{\mathrm{py}}$ | image of one incidence set under a ray permutation | 11 × `gap_permutation_image_527` |
+| owned element operation | one owned pairing | `lattice_element_pairing` |
+| candidate test in an enumeration | one integral dot product | `zz_dot_12` |
+| lattice construction | owned `Lattices(ZZ)(gram)` | `lattice_construction_rank_3` |
+| isometry from images | $n^2$ pairing checks, $n \le 4$ | 16 × `lattice_element_pairing` |
+| vertex stabilizer or transporter, rank 3–4 | one definite automorphism or isometry search of rank $\le 4$ plus 20 pairings | `pari_qfauto_a4` + 20 × `lattice_element_pairing` |
+| edgewalk `edge_step` | at most 100 candidates, one pairing each | 100 × `lattice_element_pairing` |
+| Eichler envelope setup | one LLL reduction, $\lvert A_L\rvert \cdot n$ pairings, one GAP call per element of $O(q_L)$ ($\le 6$) | `pari_lllgram_10` + 40 × `lattice_element_pairing` + 6 × `libgap_call` |
+| child interpreter | a fresh process importing Sage, sage-extensions and the port (only where a test spawns one) | not measured; charge omitted |
+| small exact check | at most 10 operations on $\le 3\times 3$ data | 10 × `qq_rank_3` |
+
+A budget is the sum of these units over the work of the selected branch. It
+has no multiplicative factor and no floor.

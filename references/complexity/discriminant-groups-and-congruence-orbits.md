@@ -17,17 +17,24 @@ a stated unit cost of a backend primitive.
 
 ## Unit costs of backend primitives
 
-| Symbol | Primitive | Upper unit cost on a 4-vCPU runner | Basis |
-| --- | --- | --- | --- |
-| `c_mor` | One evaluation, composition or construction of a lattice morphism or marked object in the sage-extensions categorical layer (Python objects over a rank `n <= 12` free module) | `144 * U_ELT = 0.0072` s | `n^2 <= 144` element operations at B's `U_ELT = 5e-5` s (`orthogonal-group-generators.md`, unit costs) |
-| `c_lat` | Construction of a formed lattice from a Gram matrix with its cached invariants (determinant, signature, Smith form) | 0.5 s | B's `T_NODE`: Smith form in PARI (milliseconds) plus the construction of the preamble lattice objects |
-| `c_ss(d)` | GAP randomized Schreier–Sims order of a permutation group of degree `d` with `k <= 50` generators | `0.1 + 1e-7 * k * d * log2(d)^2` s | Seress, *Permutation Group Algorithms*, Sec. 4.5 and Thm. 4.5.5: nearly linear time `O(k d log^c |G|)` for groups with small base; `log |G| = O(log^2 d)` for the classical groups here |
-| `c_mat(p, n)` | Order of a matrix group in `GL_n(F_p)` | `c_ss(p^n)` for `p^n <= 10^3`; otherwise `t_reduction` of `orthogonal-group-generators.md` §Finite images | For small `p^n` GAP acts on the vectors. For large `p^n` the vector action has `(p^n - 1)/(p - 1)` points, and constructive recognition is polynomial in `n` and `log p` |
-| `c_tqf(A)` | `O(q_L)` for a finite quadratic form, Sage `TorsionQuadraticModule.orthogonal_group` | `0.5 + 0.002 * |A_L|` s per `p`-primary part | Sage `fqf_orthogonal.py` lifts generators of `O(L_p)` (Brandhorst–Veniani, *Hermitian lattices and K3 automorphisms*; Miranda–Morrison, *Embeddings of integral quadratic forms*, Ch. IV); the permutation action on `A_L` has degree `|A_L|` |
+Every unit is a measured primitive in `ci/test_budget_models/unit_costs.json`,
+named by its key, or an operation count times such primitives.
 
-| `C_GAPZ` | Order or finiteness of a matrix group over `ZZ` of degree at most 5 (Sage `MatrixGroup.order`, `is_finite`, through GAP) | 0.3 s | GAP decides finiteness from a positive definite invariant form, found by averaging over a finite group or refuted by an element of infinite order (Detinko–Flannery, *On deciding finiteness of matrix groups*, J. Symb. Comp. 44 (2009)); for degree at most 5 this is a few hundred small integer operations plus the GAP call overhead |
-| `C_MM` | One product of two dense matrices of size at most 8 over `ZZ`, `QQ` or `GF(3)` in Sage | `1e-4` s | `n^3 <= 512` scalar operations in FLINT plus the Sage object overhead |
-| `C_OP` | One stabilizer or transporter step of an equivariant marking or normalizer after its centralizer is known | 0.25 s | One unit-group computation of a real quadratic order (PARI `quadunit`, milliseconds) or one eigenspace decomposition over `QQbar` of size at most 8, plus at most 100 `C_MM` |
+| Symbol | Primitive | Unit cost | Basis |
+| --- | --- | --- | --- |
+| `c_add` | Addition of two lattice elements | `lattice_element_add` | measured |
+| `c_pair` | One pairing `b(x, y)` of lattice elements | `lattice_element_pairing` | measured |
+| `c_mor` | One morphism evaluation on rank `n <= 12` | `12 * lattice_element_add` | `n` element operations |
+| `c_lat` | Construction of a formed lattice of rank `n <= 12` | `16 * lattice_construction_rank_3` | the work scales with the `n^2` Gram entries: `(12/3)^2` rank-3 constructions |
+| `c_ss(d)` | GAP Schreier–Sims order of a permutation group of degree `d` with `k` generators | `libgap_call + k * d * log2(d)^2 * gap_permutation_image_527` | Seress, *Permutation Group Algorithms*, Sec. 4.5 and Thm. 4.5.5: nearly linear `O(k d log^c |G|)` permutation images |
+| `c_mat(p, n)` | Order of a matrix group in `GL_n(F_p)` | `c_ss(p^n)` for `p^n <= 10^3`; otherwise `t_reduction` of `orthogonal-group-generators.md` §Finite images | for large `p^n` the vector action has `(p^n - 1)/(p - 1)` points |
+| `c_tqf(A)` | `O(q_L)` of a finite quadratic form | `t_oq(|A_L|, log2 |A_L|)` of `orthogonal-group-generators.md` | permutation degree `|A_L|` |
+| `C_GAPZ` | Order or finiteness of a small matrix group in GAP | `gap_order_matrix_group_so_plus_10_2` | measured |
+| `C_MM` | One product of dense matrices of size at most 8 | `zz_matrix_product_8` | measured |
+| `C_OP` | One equivariant or normalizer step after the centralizer | `100 * zz_matrix_product_8 + 10 * qq_rank_8` | at most 100 products and 10 eigenspace ranks |
+| `C_WITT` | Rational Witt index | `4 * qq_rank_12` | Hasse invariants at the at most 4 primes involved, one rational diagonalization each |
+| `PURE` | Pure-Python check | `100 * libgap_call` | at most 100 interpreter-level calls |
+| fixture parse | `tests/fixtures/allcock_rank3_reflective.json` | `8595 * 20 * zz_dot_12` | 8595 cases of about 20 values |
 
 A budget is the derived maximum work of its branch, with these unit costs
 and no multiplicative factor (`ci/test_budget_models/F.py`).
