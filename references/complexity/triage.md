@@ -53,3 +53,13 @@ Sum of these rows: 242 h
 | 3 | `test_degree_two_k3_type_ii_components_and_root_types` | ≥ 0.3 | Not yet read |
 
 Unmeasured: the 145 Lorentzian isometry pairs, the 87 Enriques modular groups (every case errors before it computes), and the single-case tests.
+
+## Fix log, fire 1 (case allcock_rk3_30_w183_l30, local container, unprofiled)
+
+| sage-extensions | Per-case time | Change |
+| --- | --- | --- |
+| eac20b9 | 113 s (profiled) | baseline |
+| 6d8ed19 | 50-57 s | presented-extension preimage solver; indexed-family ranking cached |
+| c62175f | 45 s | Mor_C(A, B) arrow class built once per C, not per endpoint pair |
+
+At 45 s per case, the two edgewalk families still total about 2 x 8,600 x 45 s, roughly 210 h; the reference cost is under 1 s per lattice.
