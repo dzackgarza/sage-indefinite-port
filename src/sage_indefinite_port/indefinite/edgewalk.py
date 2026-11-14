@@ -974,7 +974,8 @@ class _Edgewalk:
         return self.lattice.subobject_on(list(roots)).orthogonal_complement()
 
     @cached_method
-    def edge_plane_for_divisor(self, roots: _Roots, discarded: _Vector, k: _Vector, divisor: int) -> _EdgePlane:
+    def edge_orientation(self, roots: _Roots, discarded: _Vector, k: _Vector) -> tuple[Matrix_rational_dense, _RationalRow]:
+        r"""The oriented basis of the edge plane and the orientation vector r0, computed once per edge (edgewalk.h:598-668)."""
         root_rows = tuple(self.row(root) for root in roots)
         plane_basis = self.perpendicular_rows(root_rows)
         if plane_basis.nrows() != 2:
@@ -994,7 +995,17 @@ class _Edgewalk:
                 positive = -positive
             oriented_basis = matrix(SageQQ, [positive, self.row(k)])
             r0 = -self.row(k)
+        return oriented_basis, r0
 
+    @cached_method
+    def plane_lattice(self, gram: tuple[tuple[Integer, Integer], tuple[Integer, Integer]]) -> Lattices.ParentMethods:
+        r"""The binary lattice of an integral Gram matrix, built once per walk and shared by the edges that produce it."""
+        return Lattices(ZZ)([[ZZ(int(entry)) for entry in row] for row in gram])
+
+    @cached_method
+    def edge_plane_for_divisor(self, roots: _Roots, discarded: _Vector, k: _Vector, divisor: int) -> _EdgePlane:
+        root_rows = tuple(self.row(root) for root in roots)
+        oriented_basis, r0 = self.edge_orientation(roots, discarded, k)
         constraint_rows, constraint_inverse = self.constraint_rows(divisor)
         wall_matrix = matrix(
             SageQQ,
@@ -1024,7 +1035,7 @@ class _Edgewalk:
         scale = SageZZ.one()
         for entry in work_gram.list():
             scale = scale.lcm(entry.denominator())
-        plane_lattice = Lattices(ZZ)([[ZZ(int(scale * work_gram[row, column])) for column in range(2)] for row in range(2)])
+        plane_lattice = self.plane_lattice(tuple(tuple(SageZZ(scale * work_gram[row, column]) for column in range(2)) for row in range(2)))
         r0_coordinates = basis.transpose().solve_right(r0.column()).column(0)
         r0_vector = self.plane_primitive(plane_lattice, r0_coordinates)
 
