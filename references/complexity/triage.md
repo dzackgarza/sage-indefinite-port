@@ -94,3 +94,14 @@ One representative node per family, cProfile under a 180 s or 240 s cutoff, port
 | test_dtower_boundary_component_counts and pictures, test_dawes_buildings and incidence graph | 7 + 4 (N_3, dawes_2U_A2_stable profiled) | > 180 s | c | SE/lattice_morphisms.py:4651 `split_orbit` -> SE/isotropic_parabolics.py:3243 `quotient_reflection_generators` -> SE/lattices.py:9871 `shortest_vectors` -> SE/lattice_engines.py:1265 `definite_minimum`, 1 call, 91 s (N_3) and 82 s (Dawes); 81 s of it in lattice_engines.py:1257 `_bridge`. | unchanged |
 | test_stabilizer_images_have_dutour_sikiric_hulek_indices | 2 (I_1_1 profiled) | > 180 s | c | SE/group/groups.py:5835 `group_generators` of a predicate subgroup: SE/group/predicate_subgroups.py:1119 `schreier_generating_morphism` -> `_preimage_coset_space` -> `_free_cover`, 110 s, 1 call. | unchanged |
 | test_degree_two/degree_four K3 type II, test_o_plus_n two line and plane orbits, test_i_2_10 rank1, distinct O+ orbits rank0, stable O+(N) | 6 (degree_two, O+(N), I_2_10 rank1 profiled) | > 180 s | c, with one port term | SE/rational_integral_stabilizers.py:861 `right_cosets` -> `finite_representation` -> SE/group/g_sets.py:325 `from_finite_orbits`, 135 s (O+(N)), 92 s (I_2_10); SE `split_covering_vectors` 58 s and lattice_engines.py:645 `_rational_witt_index` 30 s (K3 degree two). Port term: P/eichler.py:211 `_source_hyperbolic_pair` (GetHyperbolicPlane, ApproximateModels.h:996-1180), 64 s: 175 `_source_find_isotropic` calls, 45 `_indefinite_lll` runs with 5464 Gram-Schmidt passes. Replacing the scalar Gram-Schmidt by Sage's compiled LDL^T factorization gave identical output and no measurable gain (107 s against 110 s on 300 random forms), so the cost is the LLL iteration count the source also performs, not a translation departure; not committed. The source-level count is not yet in the model of boundary-components.md. | unchanged |
+
+## Correctness sinks fixed at sage-extensions 686a72a
+
+| Node | Before | After | Change |
+| --- | --- | --- | --- |
+| d-tower N_3 | over 300 s | 77 s, passes | definite minimum by PARI qfminim, not the Julia bridge |
+| Dawes dawes_2U_A2_stable | over 300 s | 144 s, passes | same |
+| equivalence witness r_0 | over 300 s | over 300 s | discriminant module removed from the decision; the remaining sink is PARI qfisom on a rank-9 definite complement inside the pointed-isometry recursion |
+| published representatives [4] | over 300 s | over 300 s | GAP orbits; still over the cutoff, not yet profiled again |
+
+Edgewalk cases at this revision: w183 20.3 s, w217 15.9 s, ListReflect_2917 121.8 s, branch sample 28.0 s; all pass.
