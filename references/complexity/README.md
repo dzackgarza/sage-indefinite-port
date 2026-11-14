@@ -54,24 +54,20 @@ collected node without an entry, and logs one `BUDGET` line per test.
   by hand is a guess and is not allowed. A primitive the models need and the
   benchmark lacks is added to the benchmark first.
 
-## Intended hard steps and steps that must be trivial
+## Classifying a step before pricing it
 
-Each algorithm has a few steps that are the real computational work. They may
-legitimately take minutes, and their cost is a function of invariants that are
-computable at once from the input. Everything else is bookkeeping and must cost
-what its stated linear algebra costs: microseconds to milliseconds at the ranks
-of this suite. A slow hard step whose time matches its model is a model fact. A
-slow bookkeeping step is a defect.
+Every step is priced as a function of invariants of its input. A time stated
+without that function is not a budget.
 
-| Algorithm (theory file) | Hard steps | Driving invariants |
+| Step | Class | Price |
 | --- | --- | --- |
-| Isometry testing (isometry-testing.md) | definite isometry search (PARI qfisom); covering search of the Eichler branch | rank, determinant, short-vector counts, the automorphism-group size (qfauto, or its root-system bound) |
-| Orthogonal-group generators (orthogonal-group-generators.md) | definite automorphism group (qfauto); Lorentzian perfect-cell walk; Eichler generator recursion | as above; perfect-cell count; Witt index |
-| Vinberg and edgewalk (vinberg-and-edgewalk.md) | root enumeration per vertex; termination test | number of simple roots and vertices; reflectivity |
-| Isotropic vector search (isotropic-vector-search.md) | indefinite LLL iterations; local solubility search | rank, determinant, Witt index |
-| Vector orbits, double cosets, centralizers, facet orbits | orbit enumeration and transversals in GAP | group order or index; orbit and coset counts |
-| Boundary components (boundary-components.md) | isotropic line and plane orbit enumeration; Γ section lifts | A_L, the size of O(q_L), cusp counts, the index of Γ |
-| Discriminant groups and congruence orbits | orbits of O(q_L) on A_L | the size of A_L and of O(q_L) |
-| Perfect domains, Clifford and Hermitian lattices, arithmetic groups | perfect-form enumeration (Voronoi) | perfect-form class count; covolume |
+| Constructing any object (lattice, sublattice, module, morphism, homset, finite set, group, category placement) | negligible | Construction is lazy: it stores the defining datum. Derived data is computed on first request and cached. |
+| Linear algebra over a field: rank, kernel, image, solving, products, determinants | negligible | Polynomial in the rank at compiled cost |
+| Checking that a given morphism is an isometry, an automorphism or an equivariant map | negligible | Linear algebra: compare b(f x, f y) with b(x, y) on generators |
+| Rational eigenspaces, invariant subspaces, fixed subspaces, orthogonal complements over a field | negligible | Linear algebra over the field |
+| The same constructions over ZZ (saturation, integral kernels, Smith and Hermite forms, sublattice indices) | depends on the algorithm | Module theory over ZZ: price the named algorithm, polynomial in rank and log of the entries |
+| Finding an isometry or an automorphism group; any search or enumeration (short vectors, orbits, cosets, perfect forms, roots) | hard | Price from the algorithm and the counts that bound its search: for example the number of vectors of a fixed norm in a bounded region, the size of the automorphism group, the class number of the genus, the orbit or coset count, the perfect-form count |
+| A procedure not known to terminate on its inputs (Vinberg on a non-reflective lattice, an unbounded walk) | hard | Price only with a proved termination bound for the case; otherwise state that the case has none |
+| A routine taken from the pinned upstream source | read it | Do the complexity analysis of that routine: its loops, their bounds, and the invariants that set the bounds |
 
-Must be trivial everywhere: construction of lattices, sublattices, modules, morphisms, homsets and finite sets; morphism evaluation, composition, kernels and pairings at finite rank; category placement and membership; caching of data fixed by an object. A profile in which these dominate is a defect in the code, whatever the algorithm.
+The invariants that set prices include the rank, signature and definiteness, the determinant and its factorization, the discriminant group A_L and the size of O(q_L), the primes of bad reduction and ramification, the size of the genus and which theorems apply (strong approximation, Eichler's criterion, Kneser's results on spinor genera), the Witt index, lengths of words and flags, and counts of vectors of fixed norm in bounded regions. A profile dominated by a negligible step is a defect in the code.
