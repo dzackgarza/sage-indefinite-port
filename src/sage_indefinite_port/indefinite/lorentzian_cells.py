@@ -207,8 +207,9 @@ NONNEGATIVE_SQUARES = RealSet.unbounded_above_closed(0)
 ZERO_SQUARES = RealSet.point(0)
 
 
+@cache
 def _binary_split_isotropic_basis(lattice: Lattices.ParentMethods) -> Matrix_integer_dense:
-    r"""The two primitive null lines of a split binary form, as row vectors.
+    r"""The two primitive null lines of a split binary form, as row vectors, computed once per lattice.
 
     The preamble's finite primitive-null-line enumeration replaces
     ``GetBasisIsotropicVectors_reduced`` in pinned
@@ -240,7 +241,9 @@ def _binary_split_isotropic_basis(lattice: Lattices.ParentMethods) -> Matrix_int
     # The pinned reduced null-line basis is integral and primitive.  Use
     # that exact arithmetic type for the determinant/index comparison and
     # perform the rational inverse only where the isometry is constructed.
-    return matrix(SageZZ, rays)
+    basis = matrix(SageZZ, rays)
+    basis.set_immutable()
+    return basis
 
 
 def _binary_split_isometries(source: Lattices.ParentMethods, target: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:

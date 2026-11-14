@@ -1071,19 +1071,17 @@ class _Edgewalk:
 
     @staticmethod
     def plane_primitive(plane: Lattices.ParentMethods, coordinates: _RationalRow) -> _Vector:
-        r"""The primitive vector of the plane lattice on the ray of nonzero rational coordinates."""
+        r"""The primitive vector of the plane lattice on the ray of nonzero rational coordinates (RemoveFractionVector)."""
         denominator = SageZZ.one()
         for entry in coordinates:
             denominator = denominator.lcm(_rational(entry).denominator())
-        scaled = _Edgewalk.plane_element(plane, vector(SageQQ, [denominator * entry for entry in coordinates]))
-        entries = _key(scaled)
-        content = SageZZ(int(scaled.content()))
+        integral = [SageZZ(denominator * entry) for entry in coordinates]
+        content = SageZZ(0)
+        for entry in integral:
+            content = content.gcd(entry)
         if content == 0:
             raise ValueError("the zero vector does not determine a primitive ray")
-        primitive = vector(SageZZ, (SageZZ(int(entry)).quo_rem(content)[0] for entry in entries))
-        if any(SageZZ(int(entry)) % content for entry in entries):
-            raise ArithmeticError("content does not divide the integral ray coordinates")
-        return _Edgewalk.plane_element(plane, primitive)
+        return _Edgewalk.plane_element(plane, vector(SageZZ, [entry // content for entry in integral]))
 
     @cached_method
     def _anisotropic_edge_candidate_family(

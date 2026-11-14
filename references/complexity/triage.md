@@ -64,5 +64,6 @@ Unmeasured: the 145 Lorentzian isometry pairs, the 87 Enriques modular groups (e
 | 7f9b6cb | 31 s (27 s warm) | port: cusp roots by ResolveLattEquation on the cached rows of C_N, not an affine fibre per call |
 | 7f9b6cb | 25 s | port: edge orientation once per edge; binary plane lattices shared by Gram |
 | b77866a | 23.5 s (session with 4 earlier cases; 29.8 s before) | divisible sublattice of a ZZ lattice as one integral kernel |
+| 05536b5 | 23.9 s (mean of six cases in one session: 27.0 s at b77866a) | lattice pairing as one engine product; port: split-plane null basis once per plane lattice, primitive plane vectors by integer gcd |
 
-At 45 s per case, the two edgewalk families still total about 2 x 8,600 x 45 s, roughly 210 h; the reference cost is under 1 s per lattice.
+At 24 s per case, the two edgewalk families still total about 2 x 8,600 x 24 s, roughly 115 h; the reference cost is under 1 s per lattice. The step counts match the source (one C_N per norm, one edge plane per edge and norm, one get_next per Dynkin extension, one ResolveLattEquation per parabolic extension); the remaining cost is the construction of owned objects, 2-100 ms each.
