@@ -370,12 +370,7 @@ class _Edgewalk:
         for norm in self.norms:
             # edgewalk.h:1951-1954: Latt_inter_NSP = IntersectionLattice(Latt, NSP),
             # the integral left kernel of B G k on the rows B of a basis of C_N.
-            constraint = self.constraint(_rational(norm))
-            constraint_domain = constraint.inclusion().domain()
-            constraint_basis = _coordinate_basis(constraint_domain)
-            constraint_rows = matrix(SageQQ, [self.row(constraint.inclusion()(generator)) for generator in constraint_basis])
-            if constraint_rows.nrows() != self.rank or constraint_rows.rank() != self.rank:
-                raise ArithmeticError("the module generators of C_N must be a basis of a full-rank sublattice")
+            constraint_rows, _inverse = self.constraint_rows(self.divisor(norm))
             equations = constraint_rows * k_column
             denominator = SageZZ.one()
             for entry in equations.list():
@@ -942,23 +937,32 @@ class _Edgewalk:
             roots_by_direction.setdefault(_primitive_positive_direction(_key(root)), root)
         return tuple(roots_by_direction[_primitive_positive_direction(_key(ray))] for ray in rays)
 
-    def constraint(self, norm: Rational) -> Parent:
-        r"""C = {v in L : 2 b(v, L) / norm in Z}, the vectors whose reflection of that norm is integral."""
+    @staticmethod
+    def divisor(norm: Rational) -> int:
+        r"""The divisor d with C_N = {v in L : b(v, L) in d Z}: N/2 for even N, N for odd N."""
         integral_norm = int(norm)
-        return self.constraint_for_divisor(integral_norm // 2 if integral_norm % 2 == 0 else integral_norm)
+        return integral_norm // 2 if integral_norm % 2 == 0 else integral_norm
 
     @cached_method
     def constraint_for_divisor(self, divisor: int) -> Parent:
+        r"""C = {v in L : 2 b(v, L) / norm in Z}, the vectors whose reflection of that norm is integral."""
         return self.lattice.divisible_sublattice(divisor)
 
+    @cached_method
+    def constraint_rows(self, divisor: int) -> tuple[Matrix_rational_dense, Matrix_rational_dense]:
+        r"""The rows of a basis of C_N and their inverse, computed once per norm (edgewalk.h:121-131 ComputeSublatticeInfos)."""
+        constraint = self.constraint_for_divisor(divisor)
+        inclusion = constraint.inclusion()
+        rows = matrix(SageQQ, [self.row(inclusion(generator)) for generator in _coordinate_basis(inclusion.domain())])
+        if rows.nrows() != self.rank or rows.rank() != self.rank:
+            raise ArithmeticError("the module generators of C_N must be a basis of a full-rank sublattice")
+        rows.set_immutable()
+        inverse = rows.inverse()
+        inverse.set_immutable()
+        return rows, inverse
+
     def edge_plane(self, roots: _Roots, discarded: _Vector, k: _Vector, norm: Rational) -> _EdgePlane:
-        integral_norm = int(norm)
-        return self.edge_plane_for_divisor(
-            roots,
-            discarded,
-            k,
-            integral_norm // 2 if integral_norm % 2 == 0 else integral_norm,
-        )
+        return self.edge_plane_for_divisor(roots, discarded, k, self.divisor(norm))
 
     @cached_method
     def edge_perpendicular(self, roots: _Roots) -> Parent:
@@ -991,10 +995,7 @@ class _Edgewalk:
             oriented_basis = matrix(SageQQ, [positive, self.row(k)])
             r0 = -self.row(k)
 
-        constraint = self.constraint_for_divisor(divisor)
-        constraint_domain = constraint.inclusion().domain()
-        constraint_basis = _coordinate_basis(constraint_domain)
-        constraint_rows = matrix(SageQQ, [self.row(constraint.inclusion()(generator)) for generator in constraint_basis])
+        constraint_rows, constraint_inverse = self.constraint_rows(divisor)
         wall_matrix = matrix(
             SageQQ,
             len(root_rows),
@@ -1032,8 +1033,6 @@ class _Edgewalk:
         # vector c * B of C (B the rows of a basis of C) lies in P exactly
         # when it pairs to zero with every edge wall, so the coefficient
         # lattice of C cap P is the integral left kernel of B G R^T.
-        if constraint_rows.nrows() != self.rank or constraint_rows.rank() != self.rank:
-            raise ArithmeticError("the module generators of C_N must be a basis of a full-rank sublattice")
         equations = constraint_rows * self.gram * wall_matrix.transpose()
         denominator = SageZZ.one()
         for entry in equations.list():
@@ -1046,7 +1045,7 @@ class _Edgewalk:
         if any(entry.denominator() != 1 for entry in intersection_coordinates.list()):
             raise ArithmeticError("the perpendicular intersection must be integral in the projected lattice")
         return _EdgePlane(
-            constraint_rows.inverse(),
+            constraint_inverse,
             basis,
             plane_lattice,
             scale,
@@ -1257,30 +1256,51 @@ class _Edgewalk:
         # the reference algorithm's subsequent extensions and stabilizers.
         return _Vertex(generator, (*roots, alpha))
 
-    def cusp_root(self, constraint: Parent, component: tuple[Rational, ...], k: _Vector) -> _Vector | None:
-        r"""The point u + c k of C on the line through the component u in direction k with the least c > 0."""
-        points = constraint.affine_line_points(self.rational_element(vector(SageQQ, component)), k)
-        if points is None:
+    def cusp_root(self, divisor: int, component: tuple[Rational, ...], k: _Vector) -> _Vector | None:
+        r"""The point u + c k of C on the line through the component u in direction k with the least c > 0.
+
+        lorentzian_linalg.h:160-215 ResolveLattEquation: express u and k in a
+        basis of C cap span(u, k), make the k coordinate a single gcd entry by
+        a unimodular change, and read the solvability condition and the least
+        positive parameter from the remaining entries.
+        """
+        rows, inverse = self.constraint_rows(divisor)
+        u = vector(SageQQ, component) * inverse
+        d = self.row(k) * inverse
+        span = matrix(SageQQ, [u, d])
+        if span.rank() != 2:
+            raise ArithmeticError("the parabolic component and the cusp must be independent")
+        denominator = SageZZ.one()
+        for entry in span.list():
+            denominator = denominator.lcm(entry.denominator())
+        # IntersectionLattice_VectorSpace(Latt, {u, k}): Z^n cap span in the
+        # coordinates of the basis of C.
+        intersection = (denominator * span).change_ring(SageZZ).saturation().change_ring(SageQQ)
+        u1, u2 = intersection.solve_left(u)
+        k1, k2 = intersection.solve_left(d)
+        # ComputePairGcd(k1, k2): a unimodular P with (k1, k2) P = (g, 0).
+        scale = k1.denominator().lcm(k2.denominator())
+        gcd, s, t = SageZZ(scale * k1).xgcd(SageZZ(scale * k2))
+        left, right = SageZZ(scale * k1) // gcd, SageZZ(scale * k2) // gcd
+        # P = [[s, -right], [t, left]] has determinant s*left + t*right = 1.
+        u1_norm = s * u1 + t * u2
+        u2_norm = -right * u1 + left * u2
+        k1_norm = gcd / scale
+        if u2_norm.denominator() != 1:
             return None
-        base, step = (constraint.inclusion()(point) for point in points)
-        position = next(index for index, entry in enumerate(_key(k)) if entry)
-
-        def coefficient(row: _RationalRow) -> Rational:
-            return row[position] / _key(k)[position]
-
-        offset = coefficient(self.row(base) - vector(SageQQ, component))
-        increment = coefficient(self.row(step))
-        threshold = -offset / increment
-        shift = threshold.floor() + 1 if increment > 0 else threshold.ceil() - 1
-        root = base + self.lattice.scalar_multiple(self.lattice.base_ring()(int(shift)), step)
-        if offset + shift * increment <= 0:
+        c0 = -u1_norm / k1_norm
+        step = 1 / k1_norm
+        threshold = -c0 / step
+        h = threshold.floor() + 1 if step > 0 else threshold.ceil() - 1
+        c = c0 + h * step
+        if c <= 0:
             raise ArithmeticError("the cusp equation must return c > 0")
-        return root
+        return self.element(tuple(vector(SageQQ, component) + c * self.row(k)))
 
     def cusp_roots(self, roots: _Roots, k: _Vector, previous: _Vector) -> _Roots:
         candidates: list[tuple[int, Rational, Rational, _Vector]] = []
         for extension in parabolic_extensions(self.lattice, roots, self.norms):
-            root = self.cusp_root(self.constraint(extension.norm), extension.u_component, k)
+            root = self.cusp_root(self.divisor(extension.norm), extension.u_component, k)
             if root is None:
                 continue
             scalar = -_rational(self.pairing(previous, root))

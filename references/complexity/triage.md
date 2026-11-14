@@ -61,5 +61,6 @@ Unmeasured: the 145 Lorentzian isometry pairs, the 87 Enriques modular groups (e
 | eac20b9 | 113 s (profiled) | baseline |
 | 6d8ed19 | 50-57 s | presented-extension preimage solver; indexed-family ranking cached |
 | c62175f | 45 s | Mor_C(A, B) arrow class built once per C, not per endpoint pair |
+| 7f9b6cb | 31 s (27 s warm) | port: cusp roots by ResolveLattEquation on the cached rows of C_N, not an affine fibre per call |
 
 At 45 s per case, the two edgewalk families still total about 2 x 8,600 x 45 s, roughly 210 h; the reference cost is under 1 s per lattice.
