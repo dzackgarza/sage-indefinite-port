@@ -53,3 +53,25 @@ collected node without an entry, and logs one `BUDGET` line per test.
   operation count from the theory times measured primitives. A unit cost typed in
   by hand is a guess and is not allowed. A primitive the models need and the
   benchmark lacks is added to the benchmark first.
+
+## Intended hard steps and steps that must be trivial
+
+Each algorithm has a few steps that are the real computational work. They may
+legitimately take minutes, and their cost is a function of invariants that are
+computable at once from the input. Everything else is bookkeeping and must cost
+what its stated linear algebra costs: microseconds to milliseconds at the ranks
+of this suite. A slow hard step whose time matches its model is a model fact. A
+slow bookkeeping step is a defect.
+
+| Algorithm (theory file) | Hard steps | Driving invariants |
+| --- | --- | --- |
+| Isometry testing (isometry-testing.md) | definite isometry search (PARI qfisom); covering search of the Eichler branch | rank, determinant, short-vector counts, the automorphism-group size (qfauto, or its root-system bound) |
+| Orthogonal-group generators (orthogonal-group-generators.md) | definite automorphism group (qfauto); Lorentzian perfect-cell walk; Eichler generator recursion | as above; perfect-cell count; Witt index |
+| Vinberg and edgewalk (vinberg-and-edgewalk.md) | root enumeration per vertex; termination test | number of simple roots and vertices; reflectivity |
+| Isotropic vector search (isotropic-vector-search.md) | indefinite LLL iterations; local solubility search | rank, determinant, Witt index |
+| Vector orbits, double cosets, centralizers, facet orbits | orbit enumeration and transversals in GAP | group order or index; orbit and coset counts |
+| Boundary components (boundary-components.md) | isotropic line and plane orbit enumeration; Γ section lifts | A_L, the size of O(q_L), cusp counts, the index of Γ |
+| Discriminant groups and congruence orbits | orbits of O(q_L) on A_L | the size of A_L and of O(q_L) |
+| Perfect domains, Clifford and Hermitian lattices, arithmetic groups | perfect-form enumeration (Voronoi) | perfect-form class count; covolume |
+
+Must be trivial everywhere: construction of lattices, sublattices, modules, morphisms, homsets and finite sets; morphism evaluation, composition, kernels and pairings at finite rank; category placement and membership; caching of data fixed by an object. A profile in which these dominate is a defect in the code, whatever the algorithm.
