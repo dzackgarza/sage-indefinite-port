@@ -54,20 +54,75 @@ collected node without an entry, and logs one `BUDGET` line per test.
   by hand is a guess and is not allowed. A primitive the models need and the
   benchmark lacks is added to the benchmark first.
 
-## Classifying a step before pricing it
+## How to price a step
 
-Every step is priced as a function of invariants of its input. A time stated
-without that function is not a budget.
+A price is derived, not stated. Do the analysis in this order.
 
-| Step | Class | Price |
-| --- | --- | --- |
-| Constructing any object (lattice, sublattice, module, morphism, homset, finite set, group, category placement) | negligible | Construction is lazy: it stores the defining datum. Derived data is computed on first request and cached. |
-| Linear algebra over a field: rank, kernel, image, solving, products, determinants | negligible | Polynomial in the rank at compiled cost |
-| Checking that a given morphism is an isometry, an automorphism or an equivariant map | negligible | Linear algebra: compare b(f x, f y) with b(x, y) on generators |
-| Rational eigenspaces, invariant subspaces, fixed subspaces, orthogonal complements over a field | negligible | Linear algebra over the field |
-| The same constructions over ZZ (saturation, integral kernels, Smith and Hermite forms, sublattice indices) | depends on the algorithm | Module theory over ZZ: price the named algorithm, polynomial in rank and log of the entries |
-| Finding an isometry or an automorphism group; any search or enumeration (short vectors, orbits, cosets, perfect forms, roots) | hard | Price from the algorithm and the counts that bound its search: for example the number of vectors of a fixed norm in a bounded region, the size of the automorphism group, the class number of the genus, the orbit or coset count, the perfect-form count |
-| A procedure not known to terminate on its inputs (Vinberg on a non-reflective lattice, an unbounded walk) | hard | Price only with a proved termination bound for the case; otherwise state that the case has none |
-| A routine taken from the pinned upstream source | read it | Do the complexity analysis of that routine: its loops, their bounds, and the invariants that set the bounds |
+1. **Name what the step does mathematically.** Constructing an object,
+   checking a given map, and computing over a field are different problems
+   from finding a map or enumerating a set. Start from these defaults, then
+   confirm them against the code:
+   - Constructing any object is negligible, because construction is lazy.
+   - Linear algebra over a field is negligible. So is checking that a given
+     map is an isometry, and so are rational eigenspaces and invariant
+     subspaces.
+   - The same constructions over ZZ are module theory. Their price is the
+     price of the integral algorithm used (Hermite or Smith form,
+     saturation).
+   - Finding a map, and every search or enumeration, is hard.
+   - A procedure that is not known to terminate needs a termination bound
+     for the case at hand.
+   - A routine taken from the pinned source is priced by reading it.
+2. **Find the loops and what bounds them.** For a search, name the set it
+   searches and the pruning that cuts it down. For an upstream routine, read
+   its loops in the pinned source.
+3. **Express each bound through invariants of the input.** For example: the
+   rank, signature and definiteness; the determinant and its primes; A_L and
+   the size of O(q_L); the genus size and the theorems that apply; the Witt
+   index; the counts of vectors of fixed norm in a bounded region; orbit and
+   coset counts. Compute the invariant when that costs less than the step.
+   Otherwise bound it with a theorem.
+4. **Check that the code computes the same thing the analysis prices.** A
+   different decomposition, a repeated computation or an eager construction
+   changes the invariants that the code actually pays for. Such a
+   difference is a defect in the code, not a fact about the step's cost.
+5. **Write down the function, the invariants used, and the measured unit
+   costs.** A bare time with no function behind it skips the analysis and is
+   not a price.
 
-The invariants that set prices include the rank, signature and definiteness, the determinant and its factorization, the discriminant group A_L and the size of O(q_L), the primes of bad reduction and ramification, the size of the genus and which theorems apply (strong approximation, Eichler's criterion, Kneser's results on spinor genera), the Witt index, lengths of words and flags, and counts of vectors of fixed norm in bounded regions. A profile dominated by a negligible step is a defect in the code.
+### Worked example: isometry of E10 vector complements
+
+The case is test_equivalence_witness_carries_a_representative_to_its_reflection.
+
+- **Step 1.** Finding an isometry of two definite rank-9 lattices is hard.
+- **Step 2.** The search is PARI qfisom, the Plesken-Souvignier backtrack.
+  Its candidate set is the S vectors of norm at most the largest diagonal
+  entry of the LLL-reduced Gram matrix. The search depth is the rank, and
+  the stabilizer chain is bounded by log2 of the size of Aut.
+- **Step 3.** The complement of v in E10 with v^2 = 2d is E8 + <2d>. On the
+  undecomposed Gram matrix the reduced diagonal contains 2d. The E8 theta
+  series then gives S(d) = 1 + sum over k <= d of 240 sigma_3(k), so
+  S(7) = 199,921, and S grows as d^4. On the orthogonal decomposition into
+  indecomposables, which is unique by Eichler, S = 242 for every d.
+- **Step 4.** The port decomposes the lattice before qfauto but not before
+  qfisom. The price of the code is therefore the d^4 search, while the price
+  of the algorithm is S = 242. The gap is a defect in the code.
+
+Details are in isometry-testing.md, "Pointed isometries".
+
+### Worked example: one vertex step of the rank-3 edgewalk
+
+- **Step 1.** Each step of the walk is integral linear algebra on rank 2
+  and rank 3 lattices: edge planes, cusp equations, divisible sublattices.
+  The exception is the root enumeration at each vertex, which is a search.
+- **Step 2.** The pinned loop counts are in vinberg-and-edgewalk.md. They
+  are one edge plane per edge and norm, and one cusp equation per parabolic
+  extension.
+- **Step 3.** The walk's counts are set by the number of vertices and of
+  simple roots of the lattice.
+- **Step 4.** A profile measured about 20 s per lattice, while the
+  operations in the step 2 counts total milliseconds. Most of the profile is
+  object construction and category dispatch, which is negligible by step 1.
+  That is a defect in the code, and the price stays the derived one.
+
+Details are in vinberg-and-edgewalk.md and triage.md.

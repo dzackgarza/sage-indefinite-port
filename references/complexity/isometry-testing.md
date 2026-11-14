@@ -69,7 +69,28 @@ transports through the isotropic-stabilizer construction
 (`orthogonal-group-generators.md`, "Isotropic stabilizers"). For
 anisotropic `v` it tests isometry of `v^⊥` with its gluing. A rejection by
 an invariant costs `O(n^3)`. A positive answer costs one isometry test of
-the complements.
+the complements and, when the rational extension of that isometry is not
+integral, one integral correction (`MatrixIntegral_Equivalence_Bis`,
+`CombinedAlgorithms.h:1813-1890`): the source computes `Aut(v^⊥)` for it on
+every positive answer, the port only when the correction is needed.
+
+Both hard steps are Plesken-Souvignier backtracks (Plesken and Souvignier,
+J. Symbolic Comput. 24 (1997), §3): `qfisom` for the isometry, `qfauto` for
+`Aut(v^⊥)`. Their cost is `T_definite(n, S, log2|Aut|)` of
+`orthogonal-group-generators.md`, "Definite kernel", where `S` is the number
+of vectors of norm at most the largest diagonal entry of the LLL-reduced
+Gram matrix. For E10 and `v^2 = 2d > 0` the complement is `E8 ⊕ <2d>`
+(negated). On the undecomposed Gram matrix the reduced diagonal contains
+`2d`, so `S(d) = 1 + sum_{k <= d} 240 sigma_3(k)` (the theta series of E8):
+`S(7) = 199,921`, and `S` grows as `d^4`.
+Measured `qfauto` there (14 November 2026, local container): 26.5 s at
+`d = 7`, 62.5 s at `d = 8`, 148 s at `d = 9`. On the decomposition into
+indecomposables (`E8` and `<2d>`, unique by Eichler) `S = 240 + 2` and
+`|Aut| = 2 |W(E8)|` for every `d`; sage-extensions computes `Aut` that way
+(`_indecomposable_summands`), measured 0.02 s at every `d` from 7 to 10.
+`qfisom` on the LLL-reduced pair measured 0.001-0.035 s for every E10
+representative: the reduced pair of a reflected representative is
+usually equal, so no backtrack runs.
 
 ## Pairing slices
 
