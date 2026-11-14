@@ -106,3 +106,11 @@ One representative node per family, cProfile under a 180 s or 240 s cutoff, port
 | published representatives [4] | over 300 s | over 300 s | GAP orbits; still over the cutoff, not yet profiled again |
 
 Edgewalk cases at this revision: w183 20.3 s, w217 15.9 s, ListReflect_2917 121.8 s, branch sample 28.0 s; all pass.
+
+## Correctness sinks fixed after 686a72a
+
+| sage-extensions | Node | Probe: operation, input, before -> after | Node before -> after | Change |
+| --- | --- | --- | --- | --- |
+| bbb6608 | test_published_representatives_are_one_per_orbit[4] | finite G-set stabilizer generators, S_12 on its 220 three-subsets: 8.53 s -> 0.96 s (440 -> 4 generators); 1000 owned permutation point images: 0.100 s -> 0.002 s | over 300 s -> 131 s, passes | stabilizer as GAP PreImage(rho, Stabilizer(rho(G), x)); integer points keyed by engine integers. Remaining: pointed_isometry 61 s (rational-to-integral transporter 22 s, _lattice_action 13 s, definite isometry 9 s), cell construction 28 s |
+
+Edgewalk gates at bbb6608: w183 18.9 s, w217 17.0 s, ListReflect_2917 99.7 s, branch sample 28.6 s; all pass.
