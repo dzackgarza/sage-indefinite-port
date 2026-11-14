@@ -41,7 +41,7 @@ Sum of these rows: 242 h
 
 | Rank | Fire | Hours | Lever |
 | --- | --- | --- | --- |
-| 1 | ListReflect, Allcock and IsotropicCases rank-3 cases: the same ≈ 8,600 lattices, run by three test functions | ≈ 236 | Compute each lattice's edgewalk and isotropic search once per session and share it across the three functions; remove the per-call construction overhead in sage-extensions (`Mor_C(A, B)` built per endpoint pair, sage-extensions#226) |
+| 1 | ListReflect and Allcock rank-3 cases: `allcock_edgewalk` runs on each of 8,595 Gram matrices twice, once per test function (the Allcock Gram matrices are a subset of ListReflect's); IsotropicCases runs `isotropic_classes` on the same 8,818 matrices | ≈ 236 | Run each edgewalk once per session: the two functions construct separate lattice objects from one Gram matrix, so the per-object cache never hits. Then remove the per-call construction overhead in sage-extensions (sage-extensions#226) |
 | 2 | IsotropicCases rank ≥ 9 | ≥ 3 | Isotropic search at high rank: compare with the pinned source's route |
 | 3 | `test_degree_two_k3_type_ii_components_and_root_types` | ≥ 0.3 | Not yet read |
 
