@@ -165,3 +165,20 @@ ci-acceptance family shard shards selection:
     mapfile -t tests < <(python3 ci/plan_acceptance.py nodes {{selection}} {{shard}})
     "$sage_python" ci/pytest_batches.py --python "$sage_python" --out "$out" --batch-size 10 -- "${tests[@]}" 2>&1 | tee "$out/log"
     exit "${PIPESTATUS[0]}"
+
+# Run one acceptance node with a fixed cutoff and no budget table, for timing probes
+# (.github/workflows/probe.yml); the report log records its outcome and duration.
+ci-probe node cutoff:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    out={{ci_dir}}/probe
+    mkdir -p "$out"
+    git rev-parse HEAD > "$out/commit"
+    git -C {{ci_dir}}/sage-extensions rev-parse HEAD > "$out/sage_extensions_commit"
+    printf '%s\n' '{{node}}' > "$out/node"
+    sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
+    export PYTHONPATH="$PWD/{{ci_dir}}/ai-review-ci/tool-artifacts/pytest_plugins:$PWD/src:$PWD"
+    "$sage_python" -c 'import sage.all, sys, pytest; sys.exit(pytest.main(sys.argv[1:]))' \
+        -p qc_sage_session -p no:cacheprovider -q --timeout={{cutoff}} --timeout-method=signal \
+        --durations=0 --durations-min=0 --report-log="$out/report.jsonl" '{{node}}' 2>&1 | tee "$out/log"
+    exit "${PIPESTATUS[0]}"
