@@ -8,6 +8,10 @@ The suite estimate (about 236 h, nearly all in one fire below) is the problem. A
 4. Fix the largest totals first: one large inefficiency, or a small one compounded over thousands of cases. After each fix, probe the same nodes again and update this file.
 5. Run the suite only when the probe-backed estimate is under 6 hours.
 
+## What establishes correctness
+
+Correctness of a family is established by a branch-representative sample: unchanged cases that together exercise every branch of the pinned algorithm (AGENTS.md, #33 amendment, for A_REFLECTIVE, A_GROUPS and A_ISOTROPIC). Thousands of cases on one branch add no evidence that the sample lacks. The full corpus is nonblocking long-tail evidence. The gating run is the sample, and its estimate must be small; the long tail runs only after its own estimate is under 6 hours.
+
 ## Measured families (port 1cbb692 era, sage-extensions before 731fad7)
 
 Source: `.tmp/probe/sample_report.jsonl` and `measure_report*.jsonl` (local container, 1200 s timeout). A stratum with timeouts is a lower bound.
