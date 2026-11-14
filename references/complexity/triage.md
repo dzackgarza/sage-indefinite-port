@@ -67,6 +67,7 @@ Unmeasured: the 145 Lorentzian isometry pairs, the 87 Enriques modular groups (e
 | 05536b5 | 23.9 s (mean of six cases in one session: 27.0 s at b77866a) | lattice pairing as one engine product; port: split-plane null basis once per plane lattice, primitive plane vectors by integer gcd |
 | a15ec92 | 24.1 s and 18.9 s (w183, w217; 23.9 s and 20.1 s at 05536b5 in the same container) | covectors and matrix-Mor sums, negatives, scalar multiples as engine matrices; to_covector as v^T G |
 | 1481da9 | 19.7 s and 16.1 s (w183, w217) | category graph signature, depth and provider order key retained per category, not re-derived per class linearization |
+| be530ea | 17.5 s and 17.0 s (w183, w217) | Witt extension raised from its engine matrix; the coisotropic solution admitted to its locus by construction; locus no longer a cached_method keyed by printing the inclusions |
 
 At 24 s per case, the two edgewalk families still total about 2 x 8,600 x 24 s, roughly 115 h; the reference cost is under 1 s per lattice. The step counts match the source (one C_N per norm, one edge plane per edge and norm, one get_next per Dynkin extension, one ResolveLattEquation per parabolic extension); the remaining cost is the construction of owned objects, 2-100 ms each.
 
