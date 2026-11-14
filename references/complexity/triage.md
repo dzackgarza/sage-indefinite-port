@@ -10,7 +10,10 @@ The suite estimate (about 236 h, nearly all in one fire below) is the problem. A
 
 ## What establishes correctness
 
-Correctness of a family is established by a branch-representative sample: unchanged cases that together exercise every branch of the pinned algorithm (AGENTS.md, #33 amendment, for A_REFLECTIVE, A_GROUPS and A_ISOTROPIC). Thousands of cases on one branch add no evidence that the sample lacks. The full corpus is nonblocking long-tail evidence. The gating run is the sample, and its estimate must be small; the long tail runs only after its own estimate is under 6 hours.
+Correctness of a family is established by a branch-representative sample: unchanged cases that together exercise every branch of the pinned algorithm (AGENTS.md, #33 amendment, for A_REFLECTIVE, A_GROUPS and A_ISOTROPIC). Thousands of cases on one branch add no evidence that the sample lacks. The full corpus is nonblocking long-tail evidence. Priorities:
+
+1. The minimal subset of tests that establishes the correctness of every capability (the branch-representative sample) passes, and runs fast.
+2. The long tail is still an extreme problem (about 236 h). Its fires are fixed next, by hours removed, until its estimate is under 6 hours; only then does it run.
 
 ## Measured families (port 1cbb692 era, sage-extensions before 731fad7)
 
