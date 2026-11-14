@@ -5,9 +5,10 @@ The suite estimate (about 236 h, nearly all in one fire below) is the problem. A
 1. Read the code of each family to find its time sinks (the theory files in this directory).
 2. Test the estimates with small probes: a few cases per stratum, short timeouts. Reuse existing timings; never measure a node again at the same revision.
 3. Total per family = measured mean per case × case count. Rank by total hours.
-4. Probe each sink directly: read the code to name the operation that costs the time, then time that one operation on its real input in a few lines that finish in seconds. The probe confirms the sink before a fix and its removal after; a whole test runs once, as the final check.
-5. Fix the largest totals first: one large inefficiency, or a small one compounded over thousands of cases. After each fix, probe the same nodes again and update this file.
-6. Run the suite only when the probe-backed estimate is under 6 hours.
+4. Classify each sink from the algorithm before running anything. The hard steps (isometry testing, automorphism groups, orbit enumeration) may legitimately take minutes; their cost is a function of invariants computable at once from the input (rank, determinant, short-vector counts, automorphism-group size or its root-system bound, discriminant group and |O(q)|). A sink in a hard step whose cost matches that function is a model correction, not a defect. A sink in bookkeeping around it is a defect.
+5. Probe each sink directly: read the code to name the operation that costs the time, then time that one operation on its real input in a few lines that finish in seconds. The probe confirms the sink before a fix and its removal after; a whole test runs once, as the final check.
+6. Fix the largest totals first: one large inefficiency, or a small one compounded over thousands of cases. After each fix, probe the same nodes again and update this file.
+7. Run the suite only when the probe-backed estimate is under 6 hours.
 
 ## What establishes correctness
 
