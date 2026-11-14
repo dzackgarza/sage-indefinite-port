@@ -176,6 +176,8 @@ operation is correct merely because its public name exists.
 
 ## Tests and acceptance
 
+Run-time work follows [the suite triage](references/complexity/triage.md): the probe-backed suite estimate is the problem, and a fix counts only by the hours it removes from it. A saving of seconds counts only when it compounds over enough cases to remove hours. The suite is not run whole while the estimate exceeds 6 hours.
+
 Every collected test has a time budget derived from the complexity theory of
 its algorithm, never from a measured runtime. [references/complexity](references/complexity/README.md)
 states the rules for a budget and owns the theory; a new or changed test gets

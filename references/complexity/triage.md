@@ -1,6 +1,6 @@
 # Suite run-time triage
 
-The suite is not run whole while its estimate exceeds 6 hours. Work proceeds in this order:
+The suite estimate (about 236 h, nearly all in one fire below) is the problem. A fix is worth doing only by the hours it removes from that estimate: a saving of seconds counts only when it compounds over enough cases to remove hours. The suite is not run whole while its estimate exceeds 6 hours. Work proceeds in this order:
 
 1. Read the code of each family to find its time sinks (the theory files in this directory).
 2. Test the estimates with small probes: a few cases per stratum, short timeouts. Reuse existing timings; never measure a node again at the same revision.
