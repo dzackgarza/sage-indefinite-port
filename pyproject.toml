@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Port of indefinite lattices and orthogonal groups to SageMath."
 requires-python = ">=3.14"
 dependencies = [
-    "sage-extensions @ git+https://github.com/dzackgarza/sage-extensions@0a4460d4f75b9229e0ac3ebb5c40e5a27f831838",
+    "sage-extensions @ git+https://github.com/dzackgarza/sage-extensions@5d408ca5b58fbcb16323274db33d1b6fc13bc554",
     "PyNormaliz",
     "pycddlib>=3.0.2",
 ]
