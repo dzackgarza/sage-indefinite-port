@@ -137,12 +137,14 @@ Sample nodes at 5d408ca (local container, wall time with Sage start-up, one node
 
 w217 passes at 6179cee (one session with the O+(N) node) and at the I_1_1 revision. The four edgewalk gates pass at 0c7f730 with port 162fd5a (one session).
 
-## Open sinks after 5d408ca
+## Open sinks after e4e901e
 
-| Node | Probe at 5d408ca | Sink | Class |
+Stack samples every 5 s (inclusive time), K3 type II degree two at sage-extensions e4e901e with port 11e0650: over 900 s, of which 780 s in O(K) of the Lorentzian quotient (`quotient_cells` traversal). The facet walk is now 100 s of it.
+
+| Node | State at e4e901e | Sink | Class |
 | --- | --- | --- | --- |
-| test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_1_1] | over the 90 s cap; 73.5 s inside the first selected resolution | P/recursive.py `isotropic_stabilizer_action`, 66 s: `_extend_perpendicular_isometry` 27.6 s (Witt extension 11 s, engine matrices raised per entry), orbit span 15.5 s, `orthogonal_group_generators` of the quotient 14.3 s. The predicate-subgroup `_free_cover` of the old diagnosis is only the caller | c: owned construction per generator; the linear algebra is rank-k over QQ |
-| test_o_plus_n_has_two_line_and_two_plane_orbits | over the 240 s cap; line classes finish | P/isotropic_induction.py `lift_invariant_frame` in `subspace_extensions` (plane classes), module morphism application per frame vector | c |
-| test_equivalence_witness_carries_a_representative_to_its_reflection[r_0] | transporter 3.3-5.1 s per call | owned ring-element raising (63k per call) and orbit-word evaluation (word products through `_signed_generator_image`, 0.2 s per letter) | c |
-| split_covering_vectors (P/eichler.py:749), `_rational_witt_index` (SE lattice_engines.py:645), K3 type II degree two | not probed at this revision | the K3 node exceeds the 60 s probe cap before these steps; a stack sample is the next probe | - |
-| ListReflect_2917 and the item-4 redesign (indexed families, Mor_C per endpoint pair, engine-data constructors, non-endomorphism composition) | not started | - | - |
+| test_degree_two_k3_type_ii_components_and_root_types, and the O(K) step of I_1_1 and O+(N) | over 900 s | P/lorentzian_cells.py `_traversal`: `cell_transporter` 380 s (SE lattice_morphisms.py `transporter` -> coloured_vector_families.py `_transporter`: owned morphism evaluation and owned ring equality per candidate), `flip_across` 230 s (`first_shell` 160 s, `_kernel_flipping` 145 s), `cell_stabilizer_permutations` 100 s. Price: one Lorentzian cell transporter is a coloured-vector-family isometry search on the cell's rays; the step counts are the source's | c: per-element owned construction in the transporter search; needs elements and morphisms that carry engine data (item-4 redesign) |
+| test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_1_1] | over 650 s at a106d23; not re-measured after the facet and square-shell fixes | the quotient O(K) above (37 s per action at a106d23), `_extend_perpendicular_isometry` 0.6-1.3 s per call, the orbit span | c |
+| test_o_plus_n_has_two_line_and_two_plane_orbits | over 950 s at 6179cee with the GIL released; not re-measured after the facet and square-shell fixes | the quotient O(K) above per line class; `_integral_generator_set` in representative descent | c |
+| test_equivalence_witness_carries_a_representative_to_its_reflection[r_0] | transporter 3.3-5.1 s per call (5d408ca) | owned ring-element raising and orbit-word evaluation | c |
+| Item-4 redesign | not done | indexed families and `binary_candidates`; Mor_C(A, B) per endpoint pair and Category objects built in loops (`Mor.Of` 3.4 s in ListReflect_2917); engine-data constructors for `subobject_on`, `kernel`, `divisible_sublattice` (4.0 s in ListReflect_2917), `_new_sparse_free_module` (1.7 s), `_lattice`, `finite_ordered_set`, cone. Done in this pass: isometry composition at distinct endpoints is the framed matrix product; raised sparse elements and raised rationals carry their engine values; family names are lazy | blocker: a cross-cutting change of the element and morphism constructors in sage-extensions; each constructor needs its own probe and the edgewalk gates |
