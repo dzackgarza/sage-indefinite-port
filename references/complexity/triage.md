@@ -132,7 +132,9 @@ Sample nodes at 5d408ca (local container, wall time with Sage start-up, one node
 | --- | --- | --- | --- | --- |
 | 874f431 (3239c91, 6179cee); port 8f95b7d | test_o_plus_n_has_two_line_and_two_plane_orbits | lift_invariant_frame, plane classes: 1.7 s -> 0.8-1.1 s per call (rank-n rational linear algebra; price negligible). Residue stabilizer of the lattice in Sym(X): GAP PreImage(rho, Stabilizer(rho(Sym(X)), x)) on the full symmetric group held the GIL for over 10 min (the in-process cap never fired) -> 0.03 s at \|X\| = 2000 | over 19 min with the GIL held -> over the 950 s cap with the GIL released; the plane classes now reach representative descent and the second line class | Sym(X)_x named as Sym(X - x) by a transposition and a cycle; isometry composition at distinct endpoints by framed matrix product; F E F^-1 retained as the composite; sparse engine images skip coefficient re-conversion; denominator ideal from the framed matrix. Remaining in the node: `_extend_perpendicular_isometry` 2-5 s per call and `isotropic_stabilizer_action` 44 s per line class (the I_1_1 sinks), Lorentzian quotient cells for O(K) |
 
-w217 passes at 6179cee (one session with the O+(N) node).
+| a106d23 (2b5d0b8 on the branch) | test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_1_1] | `_extend_perpendicular_isometry` (rank-n rational linear algebra and one Smith form; price negligible), six calls under the profiler: 12.0 s -> 3.7-7.6 s (0.6-1.3 s per call); the node's first `isotropic_stabilizer_action` profiled at over the 150 s cap (107 s of it in the action: extensions 53.7 s, quotient O(K) generators 37.3 s) | over 650 s -> over 650 s | elements of QQ raised from the engine retain the engine value, and a lowered element memoizes it; exact tensor equality on engine components; zero and one retained per localization. Remaining: O(K) of the rank-n Lorentzian quotient through `quotient_cells` (31 s, `_facet_orbit_records` 17 s, facet registration 14.5 s), the orbit span, and per-entry lowering of matrices built from owned images |
+
+w217 passes at 6179cee (one session with the O+(N) node) and at the I_1_1 revision.
 
 ## Open sinks after 5d408ca
 
