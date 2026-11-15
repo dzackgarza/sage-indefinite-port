@@ -47,8 +47,6 @@ from sage.modules.free_module_element import vector
 from sage.all import Permutation, PermutationGroup
 from sage.libs.gap.libgap import libgap
 
-assert libgap.LoadPackage("images"), "the GAP images package supplies MinimalImage for facet orbit names"
-
 from sage_indefinite_port.indefinite.facet_certificates import (
     _is_facet_certificate_from_pairings,
     is_facet_certificate,
@@ -376,6 +374,20 @@ def _orbit(incidence, permutations):
     return members
 
 
+def _orbit_members(incidence, permutations):
+    r"""The orbit of a facet incidence under the ray permutations, as a set."""
+    members = {incidence}
+    queue = deque([incidence])
+    while queue:
+        current = queue.popleft()
+        for permutation in permutations:
+            moved = frozenset(permutation[position] for position in current)
+            if moved not in members:
+                members.add(moved)
+                queue.append(moved)
+    return members
+
+
 def _stabilizer_on_facet(group, incidence, orbit_size):
     r"""The induced action of the exact set stabilizer on its facet.
 
@@ -428,15 +440,10 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
     records: list[FacetOrbitRecord] = []
     covered: set[frozenset[int]] = set()
     point_orbits = tuple(frozenset(int(point) - 1 for point in orbit) for orbit in group.orbits())
-    # The orbit of a facet is named by its lexicographically least image
-    # under G (GAP images package, MinimalImage(G, F, OnSets); Jefferson,
-    # Jonauskyte, Pfeiffer and Waldecker, J. Algebra 2019). Two facets have
-    # equal names exactly when RepresentativeAction(G, F, F', OnSets) is not
-    # fail, so this decides the source's orbit test (SetFunctionality.g:
-    # 174-201) with one computation per incidence, and without listing orbits.
-    orbit_names: set[tuple[int, ...]] = set()
+    # RepresentativeAction is asked only between facets of equal incidence
+    # size; an incidence met again in the walk keeps its earlier decision.
+    by_size: dict[int, list[FacetOrbitRecord]] = {}
     decided: set[frozenset[int]] = set()
-    gap_group = group.gap() if not retain_words else None
 
     def register(normal, incidence):
         if retain_words:
@@ -446,18 +453,29 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
             covered.update(members)
             record = FacetOrbitRecord(normal, incidence, len(members), tuple(members.items()))
         else:
-            # SetFunctionality.g:174-201,234-260: one record per orbit, with
-            # |G|/|Stab_G(F)| rather than an enumeration of the orbit.
-            if incidence in decided:
+            # SetFunctionality.g:174-201,234-260: compare orbit
+            # representatives by RepresentativeAction(..., OnSets), and
+            # retain |G|/|Stab_G(F)| rather than enumerating the orbit.
+            if incidence in decided or incidence in covered:
                 return None
             decided.add(incidence)
             positions = sorted(position + 1 for position in incidence)
-            name = tuple(int(point) for point in libgap.MinimalImage(gap_group, positions, libgap.OnSets))
-            if name in orbit_names:
-                return None
-            orbit_names.add(name)
+            key = len(incidence)
+            for previous in by_size.get(key, ()):
+                target = sorted(position + 1 for position in previous.incidence)
+                if libgap.RepresentativeAction(group, positions, target, libgap.OnSets) != libgap.eval("fail"):
+                    return None
             stabilizer_order = int(group.stabilizer(positions, action="OnSets").order())
             record = FacetOrbitRecord(normal, incidence, order // stabilizer_order, ())
+            by_size.setdefault(key, []).append(record)
+            # A listed orbit recognizes its later members by lookup instead
+            # of by RepresentativeAction; either test decides the same orbit.
+            # An orbit is listed when it has at most n d members, as many as
+            # the n x d ray matrix has entries, so each list holds at most
+            # n^2 d integers, polynomial in the input; a larger orbit keeps
+            # the source's |G|/|Stab_G(F)| record.
+            if record.orbit_size <= len(rays) * dimension:
+                covered.update(_orbit_members(incidence, permutations))
         records.append(record)
         return record
 
