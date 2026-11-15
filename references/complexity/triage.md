@@ -147,8 +147,17 @@ Probes are cProfile wraps of one function in the K3 type II degree-two node, ove
 | 4afe041b | 3d4a424 | `cell_transporter`, first 48 calls: 46.1 s -> 37.5 s. The integral-structure orbit search rebuilt each letter's residue automorphism at every orbit point | residue map per letter, built once; pairing-graph rankings read once |
 | 2f91a98d | 3d4a424 | `cell_transporter`, first 48 calls: 37.5 s -> 33.7 s. `rational_transformation` and the transport composite evaluated lambda morphisms per generator | T_sigma and the composite as framed matrix products; the rational family raised from the family's coordinate matrix |
 | 03c5997b | 5a53356 | `flip_across`, 190 calls: 161.9 s -> 114.4 s. Each shell target and bound raised to owned rationals and lowered again by the coordinate CVP (45 s); `_engine_component_matrix` as a cached_function compared equal Grams by value (9 ms per call) | engine rationals passed to the CVP lowering primitive; a tensor retains its engine component matrix |
-| eb3aec70 | 5a53356 | `cell_transporter`, first 48 calls: 33.7 s -> 25.8 s (65 s at e4e901e). `rational_transformation` built the |I| x |I| relabelling and the family section by owned evaluation (`_engine_matrix` 9 s) | section j B^-1 from the retained adjugate; relabelling as a column permutation |
+| eb3aec70 | 5a53356 | `cell_transporter`, first 48 calls: 33.7 s -> 25.8 s (65 s at e4e901e). `rational_transformation` built the I x I relabelling and the family section by owned evaluation (`_engine_matrix` 9 s) | section j B^-1 from the retained adjugate; relabelling as a column permutation |
+| 93021dfa | c7b0d82 | r_0 pointed isometry, `IntegralStructureAction.transporter`: 3.3-5.1 s per call at 5d408ca -> 1.9-2.5 s after 4afe041b -> 1.1-1.7 s. Preimages into the restriction of scalars of a free framing used an owned coordinate lift and a second owned preimage per query (420 queries, 4.7 s in six calls) | the free framing uses the presented case's retained Smith-form solver with P = 1 |
 | - | 8fc1e77 | Facet walk threshold (queue item 4): the constant 20000 is replaced by the size of the ray matrix, \|G F\| <= n d. On this node the orbit sizes are at most 256 or at least 43200 (n d from 289 to 7999), so the listed orbits are the same. Listing every orbit held 3.2 GB in one 8847360-facet orbit; GAP `MinimalImage` and `CanonicalImage` orbit names cost 150-175 s in the first 250-400 s of the walk | rule from the data: each listed orbit holds at most n^2 d integers |
+
+Nodes at sage-extensions eb3aec70 with port c7b0d82 (local container, wall time with Sage start-up, one node per session, private stack monitor every 5 s):
+
+| Node | Before | After | State |
+| --- | --- | --- | --- |
+| test_o_plus_n_has_two_line_and_two_plane_orbits | over 950 s (6179cee) | 1136 s | passes. Inclusive: `_integral_generator_set` 385 s (`split_orbit` in the plane classes), `splitting_isometries` 250 s, quotient O(K) traversal 120 s |
+| test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_1_1] | over 650 s (a106d23) | 726 s | passes. Inclusive: the predicate-subgroup Schreier cover of the line stabilizer 480 s, `_integral_generator_set` 410 s, discriminant morphisms 185 s |
+| test_degree_two_k3_type_ii_components_and_root_types | over 900 s (e4e901e) | over 1500 s (cap) | the quotient O(K) traversal is 1340 s of the 1500 s and has not finished: `cell_transporter` 630 s (coloured-family transporter 530 s), `flip_across` 395 s, facet walk 340 s, cell stabilizers 185 s. Per call the transporter is 2.5 times faster (first 48 calls 65 s -> 25.8 s) and `flip_across` 1.4 times |
 
 ## Open sinks after e4e901e
 
