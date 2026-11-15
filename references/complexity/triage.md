@@ -149,7 +149,7 @@ Probes are cProfile wraps of one function in the K3 type II degree-two node, ove
 | 03c5997b | 5a53356 | `flip_across`, 190 calls: 161.9 s -> 114.4 s. Each shell target and bound raised to owned rationals and lowered again by the coordinate CVP (45 s); `_engine_component_matrix` as a cached_function compared equal Grams by value (9 ms per call) | engine rationals passed to the CVP lowering primitive; a tensor retains its engine component matrix |
 | eb3aec70 | 5a53356 | `cell_transporter`, first 48 calls: 33.7 s -> 25.8 s (65 s at e4e901e). `rational_transformation` built the I x I relabelling and the family section by owned evaluation (`_engine_matrix` 9 s) | section j B^-1 from the retained adjugate; relabelling as a column permutation |
 | 93021dfa | c7b0d82 | r_0 pointed isometry, `IntegralStructureAction.transporter`: 3.3-5.1 s per call at 5d408ca -> 1.9-2.5 s after 4afe041b -> 1.1-1.7 s. Preimages into the restriction of scalars of a free framing used an owned coordinate lift and a second owned preimage per query (420 queries, 4.7 s in six calls) | the free framing uses the presented case's retained Smith-form solver with P = 1 |
-| 022f7a52 | 80ce6cc | ListReflect_2917 `edgewalk_fundamental_domain` under the profiler (queue item 2): 21.3 s -> 18.2 s. `owned_category_join` and `owned_parent_class` were rebuilt for every object made in a loop: `Mor.Of` 3.5 s -> 1.8 s, Mor classcall 3.2 s -> 1.5 s, `divisible_sublattice` 4.2 s -> 3.1 s | the join memoized per tuple of categories and the parent class per (implementation, category) pair, as Sage memoizes `Category.join` and `dynamic_class_internal` |
+| 022f7a52, 7eb5248 | 80ce6cc | ListReflect_2917 `edgewalk_fundamental_domain` under the profiler (queue item 2): 21.3 s -> 18.2 s with `owned_category_join` memoized per tuple and `owned_parent_class` per (implementation, category); 23.3 s at 0f7d1ad after the parent-class memo was withdrawn (7eb5248: later refinements set attributes on the shared class, and a set object became unhashable in a following test) | the join memo stays; the parent-class memo needs classes that refinement does not mutate (open) |
 | - | 8fc1e77 | Facet walk threshold (queue item 4): the constant 20000 is replaced by the size of the ray matrix, \|G F\| <= n d. On this node the orbit sizes are at most 256 or at least 43200 (n d from 289 to 7999), so the listed orbits are the same. Listing every orbit held 3.2 GB in one 8847360-facet orbit; GAP `MinimalImage` and `CanonicalImage` orbit names cost 150-175 s in the first 250-400 s of the walk | rule from the data: each listed orbit holds at most n^2 d integers |
 
 Nodes at sage-extensions eb3aec70 with port c7b0d82 (local container, wall time with Sage start-up, one node per session, private stack monitor every 5 s):
@@ -160,7 +160,18 @@ Nodes at sage-extensions eb3aec70 with port c7b0d82 (local container, wall time 
 | test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_1_1] | over 650 s (a106d23) | 726 s | passes. Inclusive: the predicate-subgroup Schreier cover of the line stabilizer 480 s, `_integral_generator_set` 410 s, discriminant morphisms 185 s |
 | test_degree_two_k3_type_ii_components_and_root_types | over 900 s (e4e901e) | over 1500 s (cap) | the quotient O(K) traversal is 1340 s of the 1500 s and has not finished: `cell_transporter` 630 s (coloured-family transporter 530 s), `flip_across` 395 s, facet walk 340 s, cell stabilizers 185 s. Per call the transporter is 2.5 times faster (first 48 calls 65 s -> 25.8 s) and `flip_across` 1.4 times |
 
-## Open sinks after 022f7a52
+## Unit tests touched since 78b7cf4 (queue item 5)
+
+The whole sage-extensions suite (`--no-time-gates --no-test-lint`) at 022f7a52: 487 failed, 775 passed in 5455 s. The 487 failing nodes at 78b7cf4 (worktree, its own tests): 431 failed, 56 passed. The 56 were bisected over the first-parent line with the same node list (7232ec0 and 78b7cf4: 50 of 50 pass):
+
+| Cause | Nodes | Fix |
+| --- | --- | --- |
+| 3239c91 `module_category` as a cached_method: RecursionError through `CachedMethod.__get__` during module construction | 43 (tests/algebras, tests/categories, tests/groups) | 3bbf92b |
+| 022f7a52 memoized `owned_parent_class`: a shared class mutated by a later refinement | 6 (order-dependent; pass alone) | 7eb5248 |
+| 5f65d2e residue restriction as B^-1 A B for a reference lattice not of full rank | 1 (test_commensurability_restriction) | d5a08df |
+| #531 hashing rules from origin/main (bc00bc1 side: finite ordered sets hash their points; a class over ZZ has no hash) | 6 (test_centralizer_gluing, test_commuting_involution_centralizers, test_cyclic_normalizers x2, test_cyclotomic_centralizer, test_de_rham rational dual numbers) | not from these fixes; owned by sage-extensions #531 |
+
+## Open sinks after 0f7d1ad
 
 | Node | State | Sink | Class |
 | --- | --- | --- | --- |
