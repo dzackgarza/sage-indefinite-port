@@ -491,13 +491,11 @@ def _conjugated(transport: LatticeIsometryMethods, generators: tuple[LatticeIsom
     r"""The generators ``h`` of O(R) carried to L by ``transport: R -> L``, each built once from ``P H P^-1``.
 
     source: IndefiniteForms.g:1487 ``Inverse(RecRed.B) * eGen1 * RecRed.B``.
-    Each conjugate is constructed from the images of the generators of L, so
-    later evaluations do not compose the three maps again.
+    Owned composition is the product of the framed matrices, so each
+    conjugate retains the matrix P H P^-1.
     """
-    lattice = transport.codomain()
-    change = _column_matrix(transport)
-    inverse = change.inverse().change_ring(SageZZ)
-    return tuple(_isometry_from_column_matrix(lattice, lattice, change * _column_matrix(generator) * inverse) for generator in generators)
+    inverse = ~transport
+    return tuple(transport * generator * inverse for generator in generators)
 
 
 def _transported(target_transport: LatticeIsometryMethods, witness: LatticeIsometryMethods, source_transport: LatticeIsometryMethods) -> LatticeIsometryMethods:
@@ -506,9 +504,7 @@ def _transported(target_transport: LatticeIsometryMethods, witness: LatticeIsome
     source: IndefiniteForms.g:1389 ``Inverse(RecRed2.B) * test * RecRed1.B`` and
     :1419 (the degenerate extension ``Inverse(FullBasis2) * TheEquivTest * FullBasis1``).
     """
-    source, target = source_transport.codomain(), target_transport.codomain()
-    columns = _column_matrix(target_transport) * _column_matrix(witness) * _column_matrix(source_transport).inverse().change_ring(SageZZ)
-    return _isometry_from_column_matrix(source, target, columns)
+    return target_transport * witness * ~source_transport
 
 
 def _witt_zero_generators(lattice):
@@ -1854,8 +1850,7 @@ class EichlerRecursion:
         correction = self._radical_pointed_isometry(image, target)
         if correction is None:
             return None
-        columns = _column_matrix(correction) * _column_matrix(transport)
-        composed = _isometry_from_column_matrix(source_lattice, target_lattice, columns)
+        composed = correction * transport
         if composed(source) != target:
             raise ArithmeticError("the composed radical isometry does not carry the marking onto its image")
         if composed.domain() is not source_lattice or composed.codomain() is not target_lattice:
