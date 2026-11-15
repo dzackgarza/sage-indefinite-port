@@ -2547,9 +2547,14 @@ class LorentzianPerfectLocalBackend:
                         fixer_key = (len(group_permutations), tuple(sorted(images.values())))
                         fixer = fixer_cache.get(fixer_key)
                         if fixer is None:
-                            fixer = subgroup
-                            for assigned_target in fixer_key[1]:
-                                fixer = fixer.stabilizer(assigned_target + 1)
+                            # One GAP pointwise stabilizer H_a = Stab_H(a, OnTuples)
+                            # on H's stabilizer chain, rather than one Sage
+                            # subgroup wrapper per assigned point.
+                            fixer = libgap.Stabilizer(
+                                subgroup.gap(),
+                                libgap([assigned_target + 1 for assigned_target in fixer_key[1]]),
+                                libgap.OnTuples,
+                            )
                             fixer_cache[fixer_key] = fixer
                             if len(fixer_cache) > 256:
                                 fixer_cache.pop(next(iter(fixer_cache)))
@@ -2557,7 +2562,7 @@ class LorentzianPerfectLocalBackend:
                         remaining_orbits = set(admissible)
                         while remaining_orbits:
                             candidate = min(remaining_orbits)
-                            orbit = {int(position) - 1 for position in fixer.orbit(candidate + 1)}
+                            orbit = {int(position) - 1 for position in libgap.Orbit(fixer, candidate + 1).sage()}
                             if not orbit <= admissible:
                                 raise ArithmeticError("an integral pointwise stabilizer does not preserve the admissible image class")
                             for member in orbit:
