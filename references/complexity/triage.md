@@ -126,6 +126,14 @@ Edgewalk gates at da0fa12: w183, w217_l26, ListReflect_2917 and branch sample pa
 
 Sample nodes at 5d408ca (local container, wall time with Sage start-up, one node per session): test_e10_stabilizer_indices [2] 53 s, [4] 58 s, [8] 57 s; equivalence witnesses r_0 209 s (at da0fa12), r_1 124 s, r_7 135 s, r_8 107 s; all pass. Edgewalk gates at 5d408ca: the four pass, 194 s in one session.
 
+## Sinks fixed after 5d408ca
+
+| sage-extensions | Node | Probe: operation, input, before -> after | Node before -> after | Change |
+| --- | --- | --- | --- | --- |
+| 874f431 (3239c91, 6179cee); port 8f95b7d | test_o_plus_n_has_two_line_and_two_plane_orbits | lift_invariant_frame, plane classes: 1.7 s -> 0.8-1.1 s per call (rank-n rational linear algebra; price negligible). Residue stabilizer of the lattice in Sym(X): GAP PreImage(rho, Stabilizer(rho(Sym(X)), x)) on the full symmetric group held the GIL for over 10 min (the in-process cap never fired) -> 0.03 s at \|X\| = 2000 | over 19 min with the GIL held -> over the 950 s cap with the GIL released; the plane classes now reach representative descent and the second line class | Sym(X)_x named as Sym(X - x) by a transposition and a cycle; isometry composition at distinct endpoints by framed matrix product; F E F^-1 retained as the composite; sparse engine images skip coefficient re-conversion; denominator ideal from the framed matrix. Remaining in the node: `_extend_perpendicular_isometry` 2-5 s per call and `isotropic_stabilizer_action` 44 s per line class (the I_1_1 sinks), Lorentzian quotient cells for O(K) |
+
+w217 passes at 6179cee (one session with the O+(N) node).
+
 ## Open sinks after 5d408ca
 
 | Node | Probe at 5d408ca | Sink | Class |
