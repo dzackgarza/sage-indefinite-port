@@ -4455,15 +4455,6 @@ def _ambient_element(lattice: Lattices.ParentMethods, coordinates: tuple[Integer
     return lattice.linear_combination({label: ring(int(entry)) for label, entry in zip(labels, coordinates, strict=True) if entry})
 
 
-def _owned_rational(
-    lattice: Lattices.ParentMethods, value: Rational, *, field: Parent | None = None
-) -> RingElement:
-    r"""Raise an exact rational through the selected fraction-field realization."""
-    if field is None:
-        field = lattice.base_ring().fraction_field()
-    return _owned_engine_element(field, SageQQ(value))
-
-
 def _pinned_diagonalize_symmetric_matrix(
     qgram: Matrix_rational_dense,
 ) -> tuple[Matrix_rational_dense, Matrix_rational_dense]:
@@ -5423,8 +5414,6 @@ class _PositiveVectorEnumerator:
         # iterator for the same finite gcd.
         pairing_coordinates = tuple(int(entry) for entry in self.timelike_covector.column(0))
         self.d = SageQQ(gcd(*pairing_coordinates))
-        fraction_map = lattice.base_ring().fraction_field_map()
-        self.rational_field = fraction_map.codomain()
         # Match the pinned ComputeGcdDot/PositivityNormalizeGcdDot coefficient
         # recurrence exactly: a different valid Bezout partner changes the
         # affine CVP center and therefore the first candidate used by flipping.
@@ -5557,18 +5546,12 @@ class _PositiveVectorEnumerator:
         r"""The coordinate rows of the shell vectors at this multiplier; elements are raised only for a returned cell."""
         if multiplier <= 0:
             raise ValueError("the positive-vector shell multiplier must be positive")
-        # Scale the cached exact coordinate vector directly. The generic
-        # scalar-action morphism repeatedly flattens owned categories here;
-        # this is the same module element as scalar_multiple, assembled once
-        # through the owning module's linear-combination constructor.
+        # The coordinate CVP engine reads exact rational carriers directly
+        # (its private lowering contract), so the scaled target and bound
+        # stay engine rationals instead of being raised and lowered again.
         scalar = SageQQ(multiplier)
-        target = tuple(
-            _owned_engine_element(self.rational_field, scalar * coordinate)
-            for coordinate in self.base_target_engine_coordinates
-        )
-        bound = _owned_rational(
-            self.lattice, (SageQQ(multiplier) ** 2) * self.base_bound, field=self.rational_field
-        )
+        target = tuple(scalar * coordinate for coordinate in self.base_target_engine_coordinates)
+        bound = (scalar**2) * SageQQ(self.base_bound)
         # Keep the same exact coordinate Gram, target, and squared-distance
         # bound as close_vectors. Isotropic mode uses the dedicated exact-sphere
         # recursion; total mode keeps PARI-backed bounded CVP and falls back to
