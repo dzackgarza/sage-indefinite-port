@@ -374,6 +374,24 @@ def _orbit(incidence, permutations):
     return members
 
 
+ENUMERATED_ORBIT_SIZE = 20000
+"""Largest facet orbit whose members the walk lists; the lists cost memory linear in the orbit."""
+
+
+def _orbit_members(incidence, permutations):
+    r"""The orbit of a facet incidence under the ray permutations, as a set."""
+    members = {incidence}
+    queue = deque([incidence])
+    while queue:
+        current = queue.popleft()
+        for permutation in permutations:
+            moved = frozenset(permutation[position] for position in current)
+            if moved not in members:
+                members.add(moved)
+                queue.append(moved)
+    return members
+
+
 def _stabilizer_on_facet(group, incidence, orbit_size):
     r"""The induced action of the exact set stabilizer on its facet.
 
@@ -425,6 +443,11 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
     order = int(group.order())
     records: list[FacetOrbitRecord] = []
     covered: set[frozenset[int]] = set()
+    point_orbits = tuple(frozenset(int(point) - 1 for point in orbit) for orbit in group.orbits())
+    # RepresentativeAction is asked only between facets of equal incidence
+    # size; an incidence met again in the walk keeps its earlier decision.
+    by_size: dict[int, list[FacetOrbitRecord]] = {}
+    decided: set[frozenset[int]] = set()
 
     def register(normal, incidence):
         if retain_words:
@@ -437,15 +460,23 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
             # SetFunctionality.g:174-201,234-260: compare orbit
             # representatives by RepresentativeAction(..., OnSets), and
             # retain |G|/|Stab_G(F)| rather than enumerating the orbit.
+            if incidence in decided or incidence in covered:
+                return None
+            decided.add(incidence)
             positions = sorted(position + 1 for position in incidence)
-            for previous in records:
-                if len(previous.incidence) != len(incidence):
-                    continue
+            key = len(incidence)
+            for previous in by_size.get(key, ()):
                 target = sorted(position + 1 for position in previous.incidence)
                 if libgap.RepresentativeAction(group, positions, target, libgap.OnSets) != libgap.eval("fail"):
                     return None
             stabilizer_order = int(group.stabilizer(positions, action="OnSets").order())
             record = FacetOrbitRecord(normal, incidence, order // stabilizer_order, ())
+            by_size.setdefault(key, []).append(record)
+            # An orbit of at most ENUMERATED_ORBIT_SIZE facets is listed, so
+            # its later members are recognized by lookup instead of by
+            # RepresentativeAction; either test decides the same orbit.
+            if record.orbit_size <= ENUMERATED_ORBIT_SIZE:
+                covered.update(_orbit_members(incidence, permutations))
         records.append(record)
         return record
 
@@ -500,7 +531,6 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
     # expand a pending facet of minimum incidence, rather than the last one
     # discovered. Equal incidences retain their discovery order.
     pending = [(len(seed), 0)]
-    point_orbits = tuple(frozenset(int(point) - 1 for point in orbit) for orbit in group.orbits())
     processed_any = False
     yield seed_record
     while pending:
