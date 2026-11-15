@@ -137,6 +137,19 @@ Sample nodes at 5d408ca (local container, wall time with Sage start-up, one node
 
 w217 passes at 6179cee (one session with the O+(N) node) and at the I_1_1 revision. The four edgewalk gates pass at 0c7f730 with port 162fd5a (one session).
 
+## Sinks fixed after e4e901e
+
+Probes are cProfile wraps of one function in the K3 type II degree-two node, over the first calls the walk reaches; per-call times vary with the cell, so the same call count is compared.
+
+| sage-extensions | Port | Probe: operation, input, before -> after | Change |
+| --- | --- | --- | --- |
+| 6bed0a6 | 3d4a424 | `cell_transporter`, first 60 calls: 102.9 s -> 75.6 s. Sage `PermutationGroup.stabilizer` chains in the basis-image search 29.6 s; generated-subgroup generators admitted by `membership_decision` 10.1 s; restricted Gram of `subobject_on` by rank^2 pairings 14.6 s; owned fraction equality 18 s | port: one GAP `Stabilizer(H, a, OnTuples)` per search node. sage-extensions: generators admitted by the free cover's range law; restricted Gram as one engine product B G B^t; sparse sums and negatives keep decided coefficients; fractions with retained engine values compare in the engine |
+| 4afe041b | 3d4a424 | `cell_transporter`, first 48 calls: 46.1 s -> 37.5 s. The integral-structure orbit search rebuilt each letter's residue automorphism at every orbit point | residue map per letter, built once; pairing-graph rankings read once |
+| 2f91a98d | 3d4a424 | `cell_transporter`, first 48 calls: 37.5 s -> 33.7 s. `rational_transformation` and the transport composite evaluated lambda morphisms per generator | T_sigma and the composite as framed matrix products; the rational family raised from the family's coordinate matrix |
+| 03c5997b | 5a53356 | `flip_across`, 190 calls: 161.9 s -> 114.4 s. Each shell target and bound raised to owned rationals and lowered again by the coordinate CVP (45 s); `_engine_component_matrix` as a cached_function compared equal Grams by value (9 ms per call) | engine rationals passed to the CVP lowering primitive; a tensor retains its engine component matrix |
+| eb3aec70 | 5a53356 | `cell_transporter`, first 48 calls: 33.7 s -> 25.8 s (65 s at e4e901e). `rational_transformation` built the |I| x |I| relabelling and the family section by owned evaluation (`_engine_matrix` 9 s) | section j B^-1 from the retained adjugate; relabelling as a column permutation |
+| - | 8fc1e77 | Facet walk threshold (queue item 4): the constant 20000 is replaced by the size of the ray matrix, \|G F\| <= n d. On this node the orbit sizes are at most 256 or at least 43200 (n d from 289 to 7999), so the listed orbits are the same. Listing every orbit held 3.2 GB in one 8847360-facet orbit; GAP `MinimalImage` and `CanonicalImage` orbit names cost 150-175 s in the first 250-400 s of the walk | rule from the data: each listed orbit holds at most n^2 d integers |
+
 ## Open sinks after e4e901e
 
 Stack samples every 5 s (inclusive time), K3 type II degree two at sage-extensions e4e901e with port 11e0650: over 900 s, of which 780 s in O(K) of the Lorentzian quotient (`quotient_cells` traversal). The facet walk is now 100 s of it.
