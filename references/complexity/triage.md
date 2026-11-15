@@ -123,3 +123,15 @@ Edgewalk gates at bbb6608: w183 18.9 s, w217 17.0 s, ListReflect_2917 99.7 s, br
 Edgewalk gates at 9b29712: w183 15.1 s, w217 14.9 s, ListReflect_2917 115.4 s, branch sample 36.0 s; all pass. published_representatives[4] at the same revision: 62.9 s.
 
 Edgewalk gates at da0fa12: w183, w217_l26, ListReflect_2917 and branch sample pass; 191 s for the four in one session.
+
+Sample nodes at 5d408ca (local container, wall time with Sage start-up, one node per session): test_e10_stabilizer_indices [2] 53 s, [4] 58 s, [8] 57 s; equivalence witnesses r_0 209 s (at da0fa12), r_1 124 s, r_7 135 s, r_8 107 s; all pass. Edgewalk gates at 5d408ca: the four pass, 194 s in one session.
+
+## Open sinks after 5d408ca
+
+| Node | Probe at 5d408ca | Sink | Class |
+| --- | --- | --- | --- |
+| test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_1_1] | over the 90 s cap; 73.5 s inside the first selected resolution | P/recursive.py `isotropic_stabilizer_action`, 66 s: `_extend_perpendicular_isometry` 27.6 s (Witt extension 11 s, engine matrices raised per entry), orbit span 15.5 s, `orthogonal_group_generators` of the quotient 14.3 s. The predicate-subgroup `_free_cover` of the old diagnosis is only the caller | c: owned construction per generator; the linear algebra is rank-k over QQ |
+| test_o_plus_n_has_two_line_and_two_plane_orbits | over the 240 s cap; line classes finish | P/isotropic_induction.py `lift_invariant_frame` in `subspace_extensions` (plane classes), module morphism application per frame vector | c |
+| test_equivalence_witness_carries_a_representative_to_its_reflection[r_0] | transporter 3.3-5.1 s per call | owned ring-element raising (63k per call) and orbit-word evaluation (word products through `_signed_generator_image`, 0.2 s per letter) | c |
+| split_covering_vectors (P/eichler.py:749), `_rational_witt_index` (SE lattice_engines.py:645), K3 type II degree two | not probed at this revision | the K3 node exceeds the 60 s probe cap before these steps; a stack sample is the next probe | - |
+| ListReflect_2917 and the item-4 redesign (indexed families, Mor_C per endpoint pair, engine-data constructors, non-endomorphism composition) | not started | - | - |
