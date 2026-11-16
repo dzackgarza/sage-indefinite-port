@@ -16,7 +16,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from dataclasses import dataclass
-from functools import cmp_to_key
+from functools import cache, cmp_to_key
 
 from sage_extensions.all import ZZ, HyperbolicLattices, Lattices
 from sage_extensions.categories.definite_lattices import _ExactCVPEngine
@@ -1497,7 +1497,14 @@ class _Edgewalk:
         r"""The coloured family i -> (v_i, c_i) in Sets().Mor(I, L x {0, 1})."""
         colours = Sets.Δ[1]
         points = Sets().product((self.lattice, colours))
-        return Sets().Mor(Sets.Δ[len(pairs) - 1], points)(lambda index: points((pairs[int(index)][0], colours[pairs[int(index)][1]])))
+
+        # The stabilizer and transporter read each value many times; each
+        # point of L x {0, 1} is built on its first reading only.
+        @cache
+        def point(index: int) -> Element:
+            return points((pairs[index][0], colours[pairs[index][1]]))
+
+        return Sets().Mor(Sets.Δ[len(pairs) - 1], points)(lambda index: point(int(index)))
 
     @cached_method
     def vertex_configuration(self, vertex: _Vertex) -> Element:
