@@ -258,8 +258,9 @@ class _Candidate:
 class _EdgePlane:
     r"""The rank-two lattice of an edge: the projection Pi of the root sublattice C onto the edge plane (span of the edge's roots)^perp.
 
-    ``plane`` is Pi with its form scaled by ``scale`` to be integral, in the oriented basis ``basis``
-    (rational rows of L tensor Q); ``r0`` is the edge's orientation vector in Pi.
+    ``form`` is the Gram coefficients (a, b, c) of Pi with its form scaled by ``scale`` to be integral,
+    in the oriented basis ``basis`` (rational rows of L tensor Q); ``r0`` is the coordinate pair of
+    the edge's primitive orientation vector in Pi (edgewalk.h:747, r0_work).
     ``constraint_inverse`` inverts the rows of a basis of C, so a row v of L tensor Q lies in C
     exactly when ``v * constraint_inverse`` is integral (edgewalk.h:905, SolutionIntMat(Latt, v_T)).
     ``intersection`` holds the rows, in the coordinates of ``basis``, of a basis of C cap P, the
@@ -268,9 +269,9 @@ class _EdgePlane:
 
     constraint_inverse: Matrix_rational_dense
     basis: Matrix_rational_dense
-    plane: Lattices.ParentMethods
+    form: tuple[int, int, int]
     scale: Integer
-    r0: _Vector
+    r0: _Key
     intersection: Matrix_rational_dense
 
 
@@ -1032,9 +1033,21 @@ class _Edgewalk:
         return oriented_basis, r0
 
     @cached_method
-    def plane_lattice(self, gram: tuple[tuple[Integer, Integer], tuple[Integer, Integer]]) -> Lattices.ParentMethods:
-        r"""The binary lattice of an integral Gram matrix, built once per walk and shared by the edges that produce it."""
-        return Lattices(ZZ)([[ZZ(int(entry)) for entry in row] for row in gram])
+    def plane_lattice(self, form: tuple[int, int, int]) -> Lattices.ParentMethods:
+        r"""The binary lattice of integral Gram coefficients (a, b, c), built once per walk and shared by the edges that produce it."""
+        a, b, c = form
+        return Lattices(ZZ)([[ZZ(a), ZZ(b)], [ZZ(b), ZZ(c)]])
+
+    @cached_method
+    def edge_is_isotropic(self, roots: _Roots, discarded: _Vector, k: _Vector) -> bool:
+        r"""Whether the edge plane P is isotropic, decided once per edge (edgewalk.h:871-889).
+
+        The source factors Gtest = Pplane G Pplane^T (GetIsotropicFactorization).
+        P is Lorentzian of rank two, so it is isotropic exactly when -det(Gtest)
+        is a square in QQ.
+        """
+        oriented_basis, _r0 = self.edge_orientation(roots, discarded, k)
+        return (-(oriented_basis * self.gram * oriented_basis.transpose()).det()).is_square()
 
     @cached_method
     def edge_plane_for_divisor(self, roots: _Roots, discarded: _Vector, k: _Vector, divisor: int) -> _EdgePlane:
@@ -1072,9 +1085,9 @@ class _Edgewalk:
             basis.rescale_row(0, -1)
         work_gram = basis * self.gram * basis.transpose()
         scale = work_gram.denominator()
-        plane_lattice = self.plane_lattice(tuple(tuple(SageZZ(scale * work_gram[row, column]) for column in range(2)) for row in range(2)))
+        form = (int(scale * work_gram[0, 0]), int(scale * work_gram[0, 1]), int(scale * work_gram[1, 1]))
         (r0_coordinates,) = _plane_coordinates(basis, (r0,))
-        r0_vector = self.plane_primitive(plane_lattice, r0_coordinates)
+        r0_work = self.primitive_coordinates(r0_coordinates)
 
         # edgewalk.h:763-764, Basis_P_inter_LN = IntersectionLattice_VectorSpace(Latt, Pplane):
         # C cap P on the same coordinate rows as the projection above. A
@@ -1095,9 +1108,9 @@ class _Edgewalk:
         return _EdgePlane(
             constraint_inverse,
             basis,
-            plane_lattice,
+            form,
             scale,
-            r0_vector,
+            r0_work,
             intersection_coordinates,
         )
 
@@ -1107,8 +1120,8 @@ class _Edgewalk:
         return plane.linear_combination({label: ring(_integer(entry)) for label, entry in zip(plane.module_generating_set(), coordinates, strict=True) if entry})
 
     @staticmethod
-    def plane_primitive(plane: Lattices.ParentMethods, coordinates: _RationalRow) -> _Vector:
-        r"""The primitive vector of the plane lattice on the ray of nonzero rational coordinates (RemoveFractionVector)."""
+    def primitive_coordinates(coordinates: _RationalRow) -> _Key:
+        r"""The coordinates of the primitive integral vector on the ray of nonzero rational coordinates (RemoveFractionVector)."""
         denominator = SageZZ.one()
         for entry in coordinates:
             denominator = denominator.lcm(_rational(entry).denominator())
@@ -1118,7 +1131,7 @@ class _Edgewalk:
             content = content.gcd(entry)
         if content == 0:
             raise ValueError("the zero vector does not determine a primitive ray")
-        return _Edgewalk.plane_element(plane, vector(SageZZ, [entry // content for entry in integral]))
+        return tuple(int(entry // content) for entry in integral)
 
     @cached_method
     def _anisotropic_edge_candidate_family(
@@ -1127,7 +1140,7 @@ class _Edgewalk:
         discarded: _Vector,
         k: _Vector,
         norm: Rational,
-    ) -> _Roots:
+    ) -> tuple[_Key, ...]:
         """The complete anisotropic edge-plane family for one root length.
 
         polyhedral_common edgewalk.h:753-845 computes Anisotropic once per
@@ -1138,23 +1151,21 @@ class _Edgewalk:
         original enumeration order.
         """
         edge = self.edge_plane(roots, discarded, k, norm)
-        plane, scale, r0 = edge.plane, edge.scale, edge.r0
-        cycle = anisotropic_cycle(plane, scale * _rational(norm), r0)
+        form, scale = edge.form, edge.scale
+        cycle = anisotropic_cycle(form, scale * _rational(norm), edge.r0)
         if cycle is None:
             return ()
-        automorph, representatives = cycle
+        action, representatives = cycle
+        a, b, c = form
         bound = _rational(scale * norm)
-        multiples: list[_Vector] = []
-        for item in representatives:
-            square = _rational(item.q())
+        multiples: list[_Key] = []
+        for x, y in representatives:
+            square = a * x * x + 2 * b * x * y + c * y * y
             if square <= 0:
                 raise ArithmeticError("Anisotropic must return primitive positive-square vectors")
             multiplier = 1
             while multiplier * multiplier * square <= bound:
-                candidate = plane.scalar_multiple(plane.base_ring()(multiplier), item)
-                if _rational(candidate.q()) != multiplier * multiplier * square:
-                    raise ArithmeticError("anisotropic scalar multiplication changed the square")
-                multiples.append(candidate)
+                multiples.append((multiplier * x, multiplier * y))
                 multiplier += 1
 
         # lorentzian_linalg.h:70-143,
@@ -1168,7 +1179,6 @@ class _Edgewalk:
         # With M the rows of a basis of S = C cap Pi, h preserves S exactly
         # when M h M^{-1} is integral, and acts trivially on Pi/S exactly
         # when (h - 1) M^{-1} is integral.
-        action = _isometry_row_matrix_in_coordinate_order(plane, automorph)
         sublattice = edge.intersection
         sublattice_inverse = sublattice.inverse()
         identity = identity_matrix(SageQQ, 2)
@@ -1188,9 +1198,10 @@ class _Edgewalk:
             quotient_order += 1
         period_order = preserving_order * quotient_order
 
+        (p00, p01), (p10, p11) = ((int(entry) for entry in row) for row in action.rows())
         family = list(multiples)
         for _ in range(1, period_order):
-            multiples = [automorph(item) for item in multiples]
+            multiples = [(x * p00 + y * p10, x * p01 + y * p11) for x, y in multiples]
             family.extend(multiples)
         return tuple(family)
 
@@ -1202,31 +1213,34 @@ class _Edgewalk:
         k: _Vector,
         norm: Rational,
         residual: Rational,
-    ) -> _Roots:
+    ) -> tuple[_Key, ...]:
         # The pinned fixed-norm factorization admits negative residual
         # squares as well as positive ones. Only the zero-square case lacks
         # a finite signed factor-pair enumeration.
         if residual == 0:
             return ()
         edge = self.edge_plane(roots, discarded, k, norm)
-        plane, scale, r0 = edge.plane, edge.scale, edge.r0
-        if plane.is_isotropic():
+        scale = edge.scale
+        if self.edge_is_isotropic(roots, discarded, k):
             square = scale * residual
             if square.denominator() != 1:
                 return ()
+            plane = self.plane_lattice(edge.form)
+            r0 = self.plane_element(plane, edge.r0)
             # Pinned edgewalk.h:921-961 uses the *entire* signed factor-pair
             # enumeration, including imprimitive vectors, before ordering
             # roots and checking their ambient integral reconstructions.
             # A vector-orbit representative family is not that candidate set.
-            vectors = [item for item in binary_split_vectors_of_square(plane, int(square)) if _oriented_determinant(_key(r0), _key(item)) > 0]
+            vectors = [item for item in binary_split_vectors_of_square(plane, int(square)) if _oriented_determinant(edge.r0, _key(item)) > 0]
             if self.norm(k) < 0:
                 vectors = [item for item in vectors if plane.b(r0, item) > 0]
             vectors.sort(key=lambda item: cmp_to_key(_orientation_compare)(_key(item)))
-            return tuple(vectors)
+            return tuple(_key(item) for item in vectors)
         target_square = _rational(scale * residual)
         if target_square <= 0 or target_square > _rational(scale * norm) or target_square.denominator() != 1:
             return ()
-        return tuple(item for item in self._anisotropic_edge_candidate_family(roots, discarded, k, norm) if _rational(item.q()) == target_square)
+        a, b, c = edge.form
+        return tuple((x, y) for x, y in self._anisotropic_edge_candidate_family(roots, discarded, k, norm) if a * x * x + 2 * b * x * y + c * y * y == target_square)
 
     def extension_roots(
         self,
@@ -1239,7 +1253,7 @@ class _Edgewalk:
         work_vectors = self.binary_candidates(roots, discarded, k, extension.norm, extension.residual_norm)
         component = vector(SageQQ, extension.u_component)
         for work_vector in work_vectors:
-            ambient = component + edge.basis.transpose() * vector(SageQQ, _key(work_vector))
+            ambient = component + edge.basis.transpose() * vector(SageQQ, work_vector)
             if any(entry.denominator() != 1 for entry in ambient):
                 continue
             # edgewalk.h:905,988 get_next_anisotropic/get_next_isotropic:
