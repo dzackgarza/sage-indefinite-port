@@ -210,6 +210,13 @@ Same three cases per family, unprofiled, each in its own process (`zk_price_base
 | Allcock | 8595 | w6_l7 5.7, w135_l21 14.0, w323_l4 26.3 | 15.3 | 6.3, 11.1, 23.8 | 13.7 | 36.6 -> 32.8 |
 | ListReflect rank 3 | 8602 | 99 7.0, 3999 22.7, 7999 31.9 | 20.5 | 4.4, 11.8, 21.2 | 12.5 | 49.1 -> 29.8 |
 
+Fix 4 (sage-extensions 766dd1e8, merged as c696bf9e): a sparse free-module vector computes its hash once (it decided every coefficient against zero per call; 8996 hashes per w323_l4 walk, 1.39 s -> 0.12 s profiled). Fix 5 (port eddfefc): the oriented binary cycle of a plane lattice is read once per lattice (468 calls on 292 lattices; `_OrientedBinaryCycle.__init__` 2.34 s -> 1.15 s profiled). The machine carried another Sage session and a Lean build (load average 8-18 on 10 cores), so the price is paired: each case at 17f2c5e8 and then at c696bf9e, back to back, both with port eddfefc (`zk_pair_base.log`, `zk_pair_head.log`). The pair measures fixes 3 and 4 together; fix 5 is priced by its profile only (about 0.5 s per case unprofiled, about 2 h). The c696bf9e side also holds origin/main eb5f1a3d (#552). Four edgewalk gates pass at c696bf9e (84 s); the touched unit files have the same results at b95b8f67 and after (52 passed).
+
+| Family | Cases | 17f2c5e8: s | Mean | c696bf9e: s | Mean | Total h before -> after |
+| --- | --- | --- | --- | --- | --- | --- |
+| Allcock | 8595 | w6_l7 9.0, w135_l21 15.6, w323_l4 28.6 | 17.7 | 5.8, 12.4, 27.1 | 15.1 | 42.3 -> 36.0 |
+| ListReflect rank 3 | 8602 | 99 7.2, 3999 14.8, 7999 27.6 | 16.5 | 9.2, 11.9, 20.5 | 13.9 | 39.5 -> 33.1 |
+
 
 Next sinks in the w323_l4 profile (46.7 s): `anisotropic_cycle` on the binary edge planes 6.6 s (468 calls), `plane_lattice` construction `Lattices(ZZ)(gram)` 3.9 s (292 lattices, 12 ms each: queue item 4, the lattice constructor), `is_isotropic` of binary planes 2.1 s, `initial_vertex` 4.9 s.
 
