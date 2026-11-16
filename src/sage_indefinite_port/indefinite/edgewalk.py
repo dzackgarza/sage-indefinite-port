@@ -1437,6 +1437,33 @@ class _Edgewalk:
         colours = [0] * len(vertex.roots) + [1]
         return self.coloured_family(tuple(zip(vectors, colours, strict=True)))
 
+    @cached_method
+    def configuration_invariant(self, vertex: _Vertex) -> tuple:
+        r"""An isometry invariant of the coloured configuration of ``vertex``.
+
+        # source: edgewalk.h:1457 func_insert_vertex tests LORENTZ_TestEquivalence
+        # only for known vertices of equal hash, the hash of the canonical
+        # weighted matrix (fund_domain_vertices.h:365, ComputeHashWeightMatrix_raw).
+
+        Each vector contributes its colour, its norm and the sorted coloured
+        pairings with the other vectors. An isometry carrying one
+        configuration to the other up to a colour-preserving reindexing
+        preserves every entry, so configurations with different invariants
+        have no transporter, and only equal invariants are tested.
+        """
+        vectors = (*vertex.roots, vertex.generator)
+        colours = (0,) * len(vertex.roots) + (1,)
+        return tuple(
+            sorted(
+                (
+                    colour,
+                    self.norm(vector_),
+                    tuple(sorted((colours[other], self.pairing(vector_, vectors[other])) for other in range(len(vectors)) if other != index)),
+                )
+                for index, (vector_, colour) in enumerate(zip(vectors, colours, strict=True))
+            )
+        )
+
     def isometry_key(self, isometry: LatticeIsometryMethods) -> tuple[_Key, ...]:
         return tuple(self.key(isometry(generator)) for generator in _coordinate_basis(self.lattice))
 
@@ -1625,7 +1652,12 @@ class _Edgewalk:
             for roots, discarded in self.edge_orbits(vertex, local_generators):
                 neighbour = self.edge_step(vertex, roots, discarded)
                 neighbour_configuration = self.vertex_configuration(neighbour)
-                isometries_to_neighbour = (self.lattice.O().transporter(known, neighbour_configuration) for known in configurations)
+                invariant_of_neighbour = self.configuration_invariant(neighbour)
+                isometries_to_neighbour = (
+                    self.lattice.O().transporter(known, neighbour_configuration)
+                    for known, known_vertex in zip(configurations, vertices, strict=True)
+                    if self.configuration_invariant(known_vertex) == invariant_of_neighbour
+                )
                 transporter = next(
                     (isometry for isometry in isometries_to_neighbour if isometry is not None),
                     None,

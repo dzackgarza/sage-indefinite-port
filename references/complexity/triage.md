@@ -600,3 +600,14 @@ Fix 13 (sage-extensions 891fee04): `FiniteGSets.from_finite_orbits` no longer bu
 About 1.6 h removed by count, 2.9 h by the pairs (noisy). Touched sage-extensions tests (groups: orbits, sweeps, Schreier families, double cosets, generator permutations, retained partition; lattices: pairing-form relabelling, orbit splitting, stable isotropic plane orbits): 43 passed at 081d4829 and 43 passed at 891fee04. Edgewalk gates at 891fee04 (`zk_gates_f13.log`): w183 9.9 s, w217_l26 11.3 s, ListReflect_2917 7.1 s, branch-representative sample 16.0 s, all pass.
 
 Repin sage-extensions 891fee04. Local tier-1 (`zk_t1_f13.log`, one process per node, killed at 60 s): 45 of 49 pass; test_o_n_maps_onto_o_of_the_discriminant_form, dawes_2U_A2_stable, I_1_2 and I_2_1 reach 60 s with no error.
+
+Fix 14 (port): the walk asks `O(L).transporter` of a known vertex only when its configuration invariant equals the new vertex's, as `func_insert_vertex` compares the canonical-form hash before `LORENTZ_TestEquivalence` (edgewalk.h:1457, fund_domain_vertices.h:365). `configuration_invariant` is the sorted tuple of (colour, norm, sorted coloured pairings with the other vectors) of the roots and the vertex, an isometry invariant up to colour-preserving reindexing, so a skipped pair has no transporter. Seeded sample (`zk_sample_tr.py`, seed 1, 25 cases per family, warm; port a244e12 against the fix, sage-extensions 891fee04): transporter calls that return None cost 0.487 s (Allcock) and 0.474 s (ListReflect) per case before and 0.128 s and 0.122 s after (two cases, ListReflect_8117 and ListReflect_7090, keep equal invariants without a transporter). The transporters found are the same in all 50 cases. By count about 0.36 s per case, 0.86 h + 0.84 h = 1.7 h removed.
+
+| Family | Cases | Base mean s (sample) | Head mean s | Total h before -> after (count) |
+| --- | --- | --- | --- | --- |
+| Allcock | 8595 | 5.53 | 5.39 | 13.2 -> 12.4 |
+| ListReflect rank 3 | 8602 | 5.38 | 5.79 (load rise in the last 12 cases of the head process: ListReflect_4363 3.98 -> 7.36 s at equal transporter count) | 12.9 -> 12.0 |
+
+Paired acceptance runs (`zk_pair_f14`, three cases per family): Allcock 7.43 -> 7.63 s, ListReflect 7.23 -> 6.97 s, inside the noise. Gates: w183, w217_l26, ListReflect_2917, branch-representative sample and the U ⊕ <46> nonreflective certificate pass (`zk_gates_f14.log`).
+
+The warm sample at 891fee04 (seed 1, same 50 cases as the first sample): Allcock 6.04 -> 5.53 s, ListReflect 5.66 -> 5.38 s, which corroborates fix 13 (1.2 h + 0.7 h).
