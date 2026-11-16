@@ -98,6 +98,13 @@ A price is derived, not stated. Do the analysis in this order.
    object, so count total against distinct by construction key) and the cost
    of one instance (it must only store engine data and its category). A
    profile that shows no large entry point says nothing about these totals. Take each unit cost from a run without the profiler (timeit or perf_counter): cProfile inflates many small calls two to three times, and a 20 h total priced from profiled unit costs measured 5.6 h without it.
+7. **Price a phase against its floor, not its call sites.** For each phase of
+   the source algorithm, count its source steps per case (the port's count
+   must equal the source's; more is a defect), measure the floor cost of one
+   step on engine data, and price the removable hours as
+   phase hours × (1 − steps × floor ÷ phase seconds). A list of call sites
+   that are each under an hour is not a blocker while a phase has removable
+   hours.
 
 ### Worked example: isometry of E10 vector complements
 
