@@ -252,6 +252,32 @@ Fix 7 (decision: lattice construction skips eager checks): `_gram_axiom_categori
 
 Blocker (long tail above 6 h, after fixes 7 and 8): the edgewalk families are about 49 h. The w323_l4 profile at 7d64d821 (24.5 s profiled) has no single owned sink above about 2 s: `edge_plane_for_divisor` 7.0 s inclusive, of which `plane_lattice` (owned `Lattices(ZZ)(gram)`: `_construct_form_module` 0.83 s, `_form_module_categories` 0.30 s, `_gram_axiom_categories` 0.37 s, `_nested_gram_tensor` 0.21 s) 2.3 s and Sage linear algebra (span, kernel, solve) about 2.5 s of pinned edgewalk.h steps; own time 1.0 s (one product for the projection of all constraint rows did not change it); `initial_vertex` 3.8 s (`vectors_of_square` 0.9 s, `_vinberg_decomposed_roots` 0.9 s, cone construction 1.1 s); `anisotropic_cycle` 2.7 s (`selected_module_resolution` realization 0.6 s in 70 calls, `Isom` construction 0.55 s in 55 calls). The remaining owned cost is the per-object construction chain (form module, Mor, realization of the selected resolution). The 6 h target needs about 8 times; that is the constructor redesign of OWN-22/OWN-24 for the form-module constructor, not a further local sink.
 
+
+### Price of the construction chain (sage-extensions fb742277, w323_l4)
+
+`zk_ew_prof.py w323_l4` at fb742277: 27.9 s profiled (17.2 s unprofiled in the fix 7-8 pair, ratio 0.62). Own time by owner (`zk_part.py`):
+
+| Owner | Profiled s | Share |
+| --- | --- | --- |
+| sage-extensions | 13.8 | 50 % |
+| Sage arithmetic (matrices, free modules, saturation) | 4.6 | 16 % |
+| port | 3.4 | 12 % |
+| Sage category and structure machinery | 3.1 | 11 % |
+| builtins and other | 3.0 | 11 % |
+
+The owned chain (sage-extensions plus the Sage category machinery it drives) is 16.9 s, 61 % of the walk. Its inclusive entry points (overlapping): `_object_of` 2.6 s in 1704 parents (1.5 ms each), `Mor_C(A, B)` classcall 1.7 s in 1053 Mor objects, `Lattices(ZZ)(gram)` 2.0 s in 293 lattices, `realize` of the selected resolution 1.4 s in 78 calls, ring-element construction 0.95 s in 47198 elements, set-map application 3.7 s in 13087 calls (the coloured family `colour` 1.6 s in 585 calls, the port's `coloured_family` lambda 1.1 s in 657 calls). No entry point is above 2.7 s. Price over the 17,200 edgewalk cases (49 h at load 4-5, the share taken as uniform over the families): the whole owned chain is about 30 h; parent and Mor construction about 11 h; the lattice constructor alone about 3.5 h (a direct probe, `zk_ctor.py`, 300 binary Grams: 2.8 ms per lattice unprofiled, 0.8 s of the 17 s case, about 2.4 h). With the owned chain at zero the families are about 19 h, so the 6 h target also needs the port arithmetic and the Sage linear algebra of `edge_plane_for_divisor` (7.8 s inclusive, 21503 `MatrixSpace` element constructions) reduced.
+
+Fix 9 (sage-extensions c67bdff9, merged as 54664c40): `Cat().meet` of a tuple and the group-algebra placement of a category are memoized per argument (categories are unique objects; no class is mutated), and a two-index tensor's engine matrix is read from its flat components. `zk_ctor.py` paired twice: 4.16 -> 3.62 and 3.65 -> 2.75 ms per lattice. Skipping the repeated alias pass on the shared element class (the analogue of fix 3) measured nothing (0.17 s in both profiles) and is not committed. Paired price at load 6-7 (`zk_pair_c3_base.log` at origin/main dc5b828b, `zk_pair_c3_head.log` at c67bdff9); w217 passes at the head (13.1 s):
+
+| Family | Cases | dc5b828b: s | Mean | c67bdff9: s | Mean | Total h before -> after |
+| --- | --- | --- | --- | --- | --- | --- |
+| Allcock | 8595 | w6_l7 4.3, w135_l21 9.5, w323_l4 19.0 | 10.9 | 4.4, 9.6, 18.4 | 10.8 | 26.1 -> 25.8 |
+| ListReflect rank 3 | 8602 | 99 4.0, 3999 10.2, 7999 18.5 | 10.9 | 4.2, 8.7, 20.0 | 11.0 | 26.0 -> 26.3 |
+
+Inside the noise: about 0 h removed.
+
+Blocker (after fix 9): the edgewalk families are about 52 h at this load. The cost is the per-object overhead of the sage-extensions object model, spread over thousands of constructions at 0.2-3 ms each; local memos move it by less than the noise. Removing it is an architecture decision in sage-extensions, with these alternatives: (a) a lattice, sublattice or morphism built from engine data is a light object that holds the engine matrix and its category, and builds the framed free module, Mor objects and owned elements on first request (OWN-22 read literally; the largest change, and it touches every consumer of `module_generating_set` and owned elements); (b) one parent class per (category, implementation) built once and never refined per object, so `_object_of` and Mor construction skip `realize_owned_category` and construction hooks after the first object (needs the class-mutation rule of 7eb5248 settled); (c) the port's per-walk hot loop (edge planes, anisotropic cycles, coloured families) works on engine matrices and raises owned objects only at the walk's result, which is a port decision under the OWN boundary rules (public results stay owned objects). Recommendation: (b) first, because it applies to every constructor and does not change the object model; (a) for lattices from Gram matrices after it. Either needs the owner's choice before implementation.
+
 Next sinks in the w323_l4 profile (46.7 s): `anisotropic_cycle` on the binary edge planes 6.6 s (468 calls), `plane_lattice` construction `Lattices(ZZ)(gram)` 3.9 s (292 lattices, 12 ms each: queue item 4, the lattice constructor), `is_isotropic` of binary planes 2.1 s, `initial_vertex` 4.9 s.
 
 Blocker (long tail above 6 h): after fixes 1 and 2 the probe-backed total is about 88 h (edgewalk about 82 h, IsotropicCases 5.5 h, Enriques >= 1.5 h, Lorentzian pairs 0.3 h). The 6 h target needs the edgewalk cases about 14 times faster. No single step is more than about 15 % of the w323_l4 walk: the remaining time is spread over owned rank-2 objects built per edge (`Lattices(ZZ)(gram)` 12 ms each, per-element `q`, `content`, `module_rank` and cardinality decisions in `anisotropic_cycle`, `vectors_of_square` in `initial_vertex`). Removing it is the constructor redesign of queue item 4 (engine-data constructors for `_lattice`, `divisible_sublattice`, kernels, finite ordered sets), each with its own sage-extensions engine-data contract (OWN-22, OWN-24) and probe; not started. K3 queue items 2-4 (flip LLL, remaining transporter sinks, the 600 s target) were withdrawn by the coordinator: the K3 node needs to pass once at about 950 s.
