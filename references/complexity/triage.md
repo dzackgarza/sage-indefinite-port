@@ -33,6 +33,8 @@ Probe-backed long-tail total: >= 98 h (was about 236 h). The two edgewalk famili
 
 Fix 1 (edgewalk `constraint_rows`, this commit): C_N = {v in L : b(v, L) in d Z} was built as the owned `divisible_sublattice` (ideal dual and its integral pullback, 0.22 s per divisor). It is now Sage's exact ZZ-module intersection of Z^n with d G^-1 Z^n, the pinned edgewalk.h:110-131 `ComputeLattice_LN`. Profiled w323_l4 edgewalk: `constraint_rows` 6.75 s -> 0.36 s in 30 divisors; whole edgewalk 46.7 s -> 43.3 s under the profiler. The four edgewalk gates pass (80 s). Re-probe of the same cases (unprofiled, the machine was loaded; spread is about +-20 %): Allcock 7.5, 13.9, 24.9 s (mean 15.4, 36.8 h); ListReflect 5.6, 15.6, 35.6 s (mean 18.9, 45.2 h). Edgewalk total about 82 h.
 
+Fix 2 (sage-extensions 17f2c5e8): the finite Gram contraction reads its rows into one cached engine space (Sage's generic vector constructor inferred a parent per call); w323_l4 profile: `Lattices.norm` 1.97 s -> 1.18 s in 1436 calls, about 2 % of the walk (about 1.6 h over the edgewalk families). Gates pass.
+
 Next sinks in the w323_l4 profile (46.7 s): `anisotropic_cycle` on the binary edge planes 6.6 s (468 calls), `plane_lattice` construction `Lattices(ZZ)(gram)` 3.9 s (292 lattices, 12 ms each: queue item 4, the lattice constructor), `is_isotropic` of binary planes 2.1 s, `initial_vertex` 4.9 s.
 
 ## Measured families (port 1cbb692 era, sage-extensions before 731fad7)
