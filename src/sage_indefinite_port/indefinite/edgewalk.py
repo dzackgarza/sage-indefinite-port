@@ -397,6 +397,7 @@ class _Edgewalk:
         perpendicular_rows = matrix(SageQQ, [self.row(perpendicular_inclusion(generator)) for generator in perpendicular_basis])
         quotient_rows = matrix(SageQQ, [_key(quotient_projection(generator)) for generator in perpendicular_basis])
         k_column = self.gram * self.row(k).column()
+        quotient_gram = _engine_component_matrix(reduction.gram_tensor()).change_ring(SageQQ)
 
         for norm in self.norms:
             # edgewalk.h:1951-1954: Latt_inter_NSP = IntersectionLattice(Latt, NSP),
@@ -416,11 +417,21 @@ class _Edgewalk:
             image_rank = hermite.rank()
             image_basis = hermite.matrix_from_rows(range(image_rank)).change_ring(SageQQ)
             lift_rows = transformation.matrix_from_rows(range(image_rank)).change_ring(SageQQ) * intersection_rows
-            image = reduction.subobject_on(tuple(self.plane_element(reduction, row) for row in image_basis.rows()))
-            for root in image.vectors_of_square(reduction.base_ring()(_integer(norm))):
-                projected = image.inclusion()(root)
+            # The norm shell of the image lattice (edgewalk.h:1969-2000) on its
+            # Gram matrix in the basis image_basis: PARI qfminim, the vectors
+            # of square exactly N, each followed by its negative, as the
+            # definite shell enumeration orders them.
+            image_gram = (image_basis * quotient_gram * image_basis.transpose()).change_ring(SageZZ)
+            if not image_gram.is_positive_definite():
+                raise ArithmeticError("the projected root lattice k^perp/k must be positive definite")
+            target = _integer(norm)
+            shell = []
+            for column in pari(image_gram).qfminim(target, None, 0)[2].sage().columns():
+                if column * image_gram * column == target:
+                    shell.extend((column, -column))
+            for coefficients in shell:
+                projected = self.plane_element(reduction, coefficients * image_basis)
                 # fr.GetOnePreimage (edgewalk.h:2010): one preimage in C_N cap k^perp.
-                coefficients = image_basis.solve_left(vector(SageQQ, _key(projected)))
                 lifted = self.element(tuple(coefficients * lift_rows))
                 if self.norm(lifted) != norm:
                     raise ArithmeticError("the isotropic-reduction lift changed a prescribed root norm")
