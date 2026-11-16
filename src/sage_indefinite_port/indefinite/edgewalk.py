@@ -29,6 +29,7 @@ from sage_extensions.tensors.tensor import _engine_component_matrix
 from sage.geometry.polyhedron.constructor import Polyhedron
 from sage.libs.pari import pari
 from sage.matrix.constructor import identity_matrix, matrix
+from sage.matrix.matrix_integer_dense import Matrix_integer_dense
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
 from sage.misc.cachefunc import cached_method
 from sage.modules.free_module_element import FreeModuleElement, vector
@@ -1550,11 +1551,17 @@ class _Edgewalk:
         """
         if not roots:
             return False
-        inequalities = tuple(self.wall_covector(root) for root in roots)
-        chamber = RationalPolyhedralCones(self.lattice).from_halfspaces(inequalities)
-        if not chamber.is_pointed():
+        # DualDescriptionStandard of ListIneq = -LVect * G (edgewalk.h:1721-1726)
+        # on the Gram matrix and the root coordinates: the cone
+        # {x : -b(root, x) >= 0} and its extreme rays.
+        chamber = Polyhedron(
+            ieqs=[(0, *(-(self.gram * self.row(root)))) for root in roots],
+            base_ring=SageQQ,
+            backend="ppl",
+        )
+        if chamber.lines():
             return False
-        rays = tuple(chamber.primitive_rays())
+        rays = tuple(vector(SageQQ, ray.vector()) for ray in chamber.rays())
         # The dual-description norm check alone is vacuous on the zero
         # cone.  A hyperbolic chamber must have full span and contain a
         # timelike vector.  Moreover, different nonspacelike rays must
@@ -1562,13 +1569,13 @@ class _Edgewalk:
         # span contains spacelike vectors despite each ray having q <= 0.
         # Pairwise nonpositive inner products make the entire positive span
         # nonspacelike by expanding the square of any positive combination.
-        if not rays or self.span_rank(rays) != self.rank:
+        if not rays or matrix(SageQQ, rays).rank() != self.rank:
             return False
-        if any(self.norm(ray) > 0 for ray in rays):
+        if any(self.pair(ray, ray) > 0 for ray in rays):
             return False
-        if any(self.pairing(left, right) > 0 for index, left in enumerate(rays) for right in rays[index + 1 :]):
+        if any(self.pair(left, right) > 0 for index, left in enumerate(rays) for right in rays[index + 1 :]):
             return False
-        return any(self.norm(ray) < 0 for ray in rays) or any(self.pairing(left, right) < 0 for index, left in enumerate(rays) for right in rays[index + 1 :])
+        return any(self.pair(ray, ray) < 0 for ray in rays) or any(self.pair(left, right) < 0 for index, left in enumerate(rays) for right in rays[index + 1 :])
 
     def report(
         self,
@@ -1640,6 +1647,9 @@ class _Edgewalk:
         configurations = [self.vertex_configuration(initial)]
         seen: set[tuple[_Key, ...]] = {self.identity_key}
         isometries: list[LatticeIsometryMethods] = []
+        # The rows of each admitted isometry are the coordinates of the
+        # images of the basis (isometry_key), so x |-> x * M is its action.
+        isometry_matrices: list[Matrix_integer_dense] = []
         invariant = self.lattice.subobject_on(list(_coordinate_basis(self.lattice)))
 
         finite = True
@@ -1652,9 +1662,11 @@ class _Edgewalk:
                 if key not in seen:
                     seen.add(key)
                     isometries.append(isometry)
+                    isometry_matrices.append(matrix(SageZZ, key))
                 return True
             seen.add(key)
             isometries.append(isometry)
+            isometry_matrices.append(matrix(SageZZ, key))
             fixed = self.common_fixed_space(invariant, isometry)
             if fixed is None:
                 finite = False
@@ -1665,12 +1677,32 @@ class _Edgewalk:
         def certified_roots() -> _Roots:
             # LORENTZ_RunEdgewalkAlgorithm::f_try_terminate: close the
             # accumulated walls under every discovered chamber symmetry.
-            group = self.lattice.O().subgroup(tuple(isometries))
-            seeds = tuple({self.key(root): root for vertex in vertices for root in vertex.roots}.values())
-            closure = FiniteGSets(group).from_finite_orbits(seeds, lambda isometry, root: isometry(root))
-            return tuple(sorted(closure, key=self.key))
+            # compute_full_root_orbit_iter (edgewalk.h:1216-1258): the
+            # orbits of the simple roots under the generators, on the
+            # coordinates of the roots and the integral matrices of the
+            # isometries; each root is wrapped once per walk.
+            for vertex in vertices:
+                for root in vertex.roots:
+                    root_elements.setdefault(self.key(root), root)
+            frontier = [vector(SageZZ, key) for key in root_elements]
+            closed = set(root_elements)
+            while frontier:
+                images = []
+                for row in frontier:
+                    for generator in isometry_matrices:
+                        image = row * generator
+                        key = tuple(image)
+                        if key not in closed:
+                            closed.add(key)
+                            images.append(image)
+                frontier = images
+            for key in closed:
+                if key not in root_elements:
+                    root_elements[key] = self.element(key)
+            return tuple(root_elements[key] for key in sorted(closed))
 
         certified_root_count = 0
+        root_elements: dict[_Key, _Vector] = {}
 
         def try_reflectivity_certificate() -> AllcockEdgewalkReport | None:
             # LORENTZ_RunEdgewalkAlgorithm::f_try_terminate tests the dual
