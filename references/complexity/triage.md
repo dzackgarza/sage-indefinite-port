@@ -716,3 +716,30 @@ Withdrawn, under an hour (`f18b.patch` in the probe directory): `Lattices(ZZ)(gr
 Lattice vectors as one engine vector: the bound (every vector operation free) is 1.1 h; an engine vector still costs a construction and a wrap per operation, so the realizable part is under an hour. The change touches 35 readers of the coefficient dict in `framed_free_modules.py` and about 150 in 20 other modules; not made.
 
 Blocker for the 6 h target (family totals unchanged, about 21.0 h): the three storage items sum to at most 4.1 h if each operation became free (0.2 + 1.1 + 2.8), and the measured realizable part of the largest is 0.4 h. Removing all of it leaves about 16.9 h; the remaining 10.9 h above the target is in the phases of the table after fixes 13-15, spread over sites below an hour each.
+
+## Phase floors (port f4ca6b2 -> 1e7adc0, sage-extensions 683716ad)
+
+Phase hours re-measured at f4ca6b2 (`zk_ph19_*.json`, `zk_ph19_table.md`; warm, line charges scaled to the family totals 10.6 h + 10.4 h). Steps per case are counted in one warm walk with the cached methods unwrapped (`zk_keys.py`) and read against edgewalk.h:868-889 and 753-845: per edge the source decides isotropy once (GetIsotropicFactorization of Pplane G Pplane^T), and per edge and root norm it builds one projected lattice and runs Anisotropic once on Gwork. Floors: `zk_floor19.py` (one step of each phase on captured arguments, timeit, callee caches warm) and `zk_epops.py` (each engine operation of one edge plane). Counts and seconds are w323_l4 / ListReflect_6219.
+
+| Phase | source steps per case | port steps per case | current per step | floor per step | removable hours |
+| --- | --- | --- | --- | --- | --- |
+| anisotropic family (cycle, period) | 468 / 312 Anisotropic runs | 468 / 312 | 2.9 / 3.5 ms (owned plane lattice, Isom, owned vectors) | 150 / 195 us (`_FormBinaryCycle` and the family on integers) | 3.8 x (1 - 0.07/1.34) = 3.6 |
+| `plane_lattice` | 0 (the source keeps Gwork) | 292 / 114 | 3.2 ms | 0 in the anisotropic branch | 1.8 |
+| is_isotropic of the plane | 13 / 13 (once per edge) | 524 / 361 (count defect) | 1.0 ms | 95 us | 1.1 |
+| edge plane | 390 / 234 planes + 30 / 18 C_N | same | 1.6 ms + 6.5 ms | about 0.75 ms (sum of `zk_epops.py`: left kernel by PARI 276 us, projection 130 us, HNF 93 us, products and constructions) + 0.15 ms (C_N by an HNF) | 1.2 + 0.7 |
+| initial vertex | not yet counted | | | | floor not measured (up to 2.7) |
+| reflectivity certificate | not yet counted | | | | floor not measured (up to 1.8) |
+
+Fix 19 (port 1e7adc0): the edge plane carries its form (a, b, c) and r0 as a coordinate pair; `_FormBinaryCycle` runs the same `_OrientedBinaryCycle` algorithm on the form and returns the source's data (integral period matrix, coordinate pairs); the lattice-backed class wraps the same result once for its own callers; the family and the candidates are coordinate pairs; isotropy is decided once per edge (`edge_is_isotropic`); the plane lattice is built only in the isotropic branch. This removes the first three rows together.
+
+| Operation | paired before -> after (seed 1, 25 cases) | hours removed | commit |
+| --- | --- | --- | --- |
+| anisotropic family, `plane_lattice`, isotropy per edge | Allcock 4.46 -> 3.77 s (base first), ListReflect rank 3 4.49 -> 3.55 s (head first) (`zk_wpair_f19.log`) | about 1.6 + 2.2 = 3.8 (the order effect of earlier pairs bounds Allcock at 0.2-0.7 s per case) | 1e7adc0 |
+
+Equality (`zk_eqwalk.py`, seed 7): 25 Allcock and 25 ListReflect rank 3 cases give the same reflectivity, vertex count and simple roots in report order at f4ca6b2 and at the fix. Gates at the fix (`zk_gates_f19.log`): w183, w217_l26, ListReflect_2917 and the branch-representative sample pass; tests/test_edgewalk_rank2.py and the frozen binary-cycle tests of test_reflective.sage pass (9 nodes, `zk_rank2_f19.log`). No repin, so tier-1 was not run.
+
+New family totals: Allcock 3.77 s x 8595 = 9.0 h, ListReflect rank 3 3.55 s x 8602 = 8.5 h, about 17.5 h.
+
+Phase table after fix 19 (`zk_ph20_*.json`, scaled to 9.0 h + 8.5 h; the line map of `zk_ph_group.py` for `_Edgewalk.walk` predates the current line numbers, so its transporter and stabilizer lines are charged to walk bookkeeping): edge plane 3.2 h, initial vertex 2.7 h, walk bookkeeping (transporter search and stabilizer) 2.1 h, reflectivity certificate 1.8 h, indefinite reduction 1.1 h, coordinate helpers 1.0 h, all others under 1 h.
+
+Remaining removable hours, in order: edge plane 1.2 h above its engine floor plus C_N 0.7 h (`constraint_rows` intersects ZZ-modules at 6.5 ms where an HNF of d G^-1 costs 0.15 ms, but the intersection with ZZ^n is not one HNF); initial vertex and reflectivity certificate, whose source step counts and floors are not yet measured; the walk line map of `zk_ph_group.py` must be updated before the transporter and stabilizer phases are priced again. Multiplied remainder: 17.5 h now; if every phase priced above reached its floor, about 17.5 - 1.9 = 15.6 h before the unmeasured phases.
