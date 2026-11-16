@@ -780,3 +780,16 @@ Phase table at 4d038e8 (`zk_ph24_*.json`, `zk_ph24_table.md`; scaled to 7.55 h +
 | sum | 3.35 | 3.60 | 4.56 | 2.98 | 14.9 |
 
 The anisotropic family is 0.5 h after fix 19 (468 / 312 runs per case on the form's integers), so its 3.6 h row of the phase-floor table is removed.
+
+## Fixes 24-25 (port 4a1cf5f, d9ac57b)
+
+The phase table above was measured with one case per process and two isotropic warm cases, so the first anisotropic case of each process paid one-time costs in the indefinite reduction (1.4 h in that table). In a warm process the reduction costs 0.038 s per case (ListReflect rank 3) and 0.037 s (Allcock) by a wrapper on `indefinite_reduced_presentation` (`zk_redwalk.py`, seed 1, 25 cases per family), about 0.2 h in total, against one source step per case (edgewalk.h:2077, IndefiniteReduction_opt in GetOneVertex). `zk_phase.py` now also warms two anisotropic cases (ListReflect_416, ListReflect_1674) and stores the measured source text, and `zk_ph_group.py` reads walk lines from that text.
+
+Phase table, warm (`zk_ph26_*.json`, port 4a1cf5f; scaled to 7.55 h + 7.34 h): edge plane 2.5 h, initial vertex 1.5 h (0.97 s of it in w323_l4, a case that reaches the Vinberg coset search), vertex transporter search 1.2 h, edge orbits 1.1 h, coordinate helpers 1.0 h, edge directions 1.0 h, vertex stabilizer generators 1.0 h, report transport 0.8 h, anisotropic family 0.7 h, all others 0.6 h or less (indefinite reduction 0.4 h).
+
+| Operation | paired before -> after, Allcock / ListReflect rank 3 (seed 1, 25 cases, means of both orders) | hours removed | commit |
+| --- | --- | --- | --- |
+| fix 24: edge-plane projection and wall pairings once per edge (edgewalk.h:598 Pplane per edge; only C_N varies with the norm) | 3.08 -> 3.05 s / 2.99 -> 3.02 s (`zk_price24.out`); edge-plane phase w323_l4 0.79 -> 0.61 s, ListReflect_6219 0.52 -> 0.50 s | under the pair noise; by the phase delta about 0.3 h | 4a1cf5f |
+| fix 25: edge orbits swept on root coordinates and the generators' integral matrices (edgewalk.h:1555 OrbitSplittingSet), not an owned subgroup and finite G-set per vertex | 3.14 -> 2.94 s / 3.32 -> 3.09 s (`zk_price25.out`); edge-orbit phase w323_l4 0.23 -> 0.00 s, ListReflect_6219 0.30 -> 0.01 s | 0.5 + 0.5 = 1.0 | d9ac57b |
+
+Fix 24 removes a count defect (the per-edge wall data was computed once per edge and root norm, 390 / 234 times per case instead of 13 / 13). Equality (`zk_eqwalk.py`, seed 7, `zk_eq25.log`, `zk_eq27.log`): the 50 cases are unchanged after each fix. Family totals: Allcock 2.96 s x 8595 = 7.1 h, ListReflect rank 3 2.84 s x 8602 = 6.8 h, about 13.9 h.
