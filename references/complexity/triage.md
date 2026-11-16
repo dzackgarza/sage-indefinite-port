@@ -863,3 +863,15 @@ Steps per case are the misses of each cached phase method and the outermost call
 Floor of the walk over 17,200 cases: by the sample means 0.205 s x 17,200 = 0.98 h; by the two price cases 0.500 s x 8595 + 0.293 s x 8602 = 1.9 h. The family totals are 12.9 h, so about 11-12 h of the walk is above the engine floor, and the 6 h target is reachable by making the owned operations cheap. Two thirds of the floor is the edge plane (0.75 ms per plane on Sage matrices), and its own floor on integer data is lower.
 
 The largest phases above their floors in the sample: binary candidates of isotropic edge planes 0.51 s per case against at most 17 ms (about 2.4 h; `binary_split_vectors_of_square` computes the null basis of the owned plane lattice for each residual norm, where the source factors the form once per edge and norm, `Factor_GP_LN` of get_sing_comp_isotropic, and it builds and checks each owned point), the coloured-family transporter and stabilizer 0.32 s against 1.2 ms (1.5 h), initial vertex 0.30 s against 0.8 ms (1.4 h), edge directions 0.15 s against 0.03 ms (0.7 h), edge plane 0.27 s against 0.125 s (0.7 h), report and coordinate helpers about 0.3 s against 0 (1.4 h).
+
+## Fix 30: coloured-family stabilizer and transporter on engine data (sage-extensions ebe46bb8, merged at bcad374a; port repin)
+
+sage-extensions `coloured_vector_families` searches a family of at most eight vectors as the weighted-matrix test of fund_domain_vertices.h:507-530, 711-839 on engine data (family rows, colours, pairing tables, a backtrack over colour- and table-preserving bijections, T_sigma as an integer row action, integrality and unimodularity on integers) and raises each returned isometry once. The port builds L x {0, 1} and its two colours once per walk (`coloured_points`). The contract text is in sage-extensions OWN-22, OWN-24 and AGENTS.md "Performance and search" (58322c5c).
+
+| Operation | paired before -> after (seed 1, 25 cases, means of both orders, `zk_wp_p38*.log`) | hours removed | commit |
+| --- | --- | --- | --- |
+| coloured-family stabilizer and transporter on engine data, colour points once per walk | Allcock 2.41 -> 2.19 s, ListReflect rank 3 2.56 -> 2.45 s | 0.5 + 0.3 = 0.8 | sage-extensions ebe46bb8, this repin |
+
+Equality: sage-extensions `zk_cvfeq.py` (seeds 3 and 11) 186 stabilizers equal as generated groups and 172 transporters equal in existence; `zk_eqwalk.py` seed 7 (`zk_eq38.log`): the 50 cases are identical to `zk_eq32.log`. sage-extensions owner tests (`zk_se_cvf36.log`): 13 pass; the two failures of test_full_orthogonal_integral_transporter.sage also fail at a3dac1de (`zk_se_prior36.log`). Tier-1 at bcad374a (`zk_t1_r38.log`): 46 of 49 pass; three nodes priced over 60 s reach the cap with no error. Edgewalk gates (`zk_gates_r38.log`) and owner tests (`zk_owner_r38.log`) pass.
+
+Family totals: Allcock 2.19 s x 8595 = 5.2 h, ListReflect rank 3 2.45 s x 8602 = 5.9 h, about 11.1 h.

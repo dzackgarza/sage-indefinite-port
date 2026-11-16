@@ -1499,10 +1499,15 @@ class _Edgewalk:
             directions.append((included, omitted[-1]))
         return tuple(directions)
 
+    @cached_method
+    def coloured_points(self) -> tuple[Parent, tuple[Element, Element]]:
+        r"""The product L x {0, 1} and its two colours, built once per walk."""
+        colours = Sets.Δ[1]
+        return Sets().product((self.lattice, colours)), (colours[0], colours[1])
+
     def coloured_family(self, pairs: tuple[tuple[_Vector, int], ...]) -> Element:
         r"""The coloured family i -> (v_i, c_i) in Sets().Mor(I, L x {0, 1})."""
-        colours = Sets.Δ[1]
-        points = Sets().product((self.lattice, colours))
+        points, colours = self.coloured_points()
 
         # The stabilizer and transporter read each value many times; each
         # point of L x {0, 1} is built on its first reading only.
