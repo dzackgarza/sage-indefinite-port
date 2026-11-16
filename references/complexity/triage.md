@@ -226,6 +226,19 @@ Fix 6 (sage-extensions 739dbc07, merged as 6f337e9a): the arrow-hash probe of a 
 
 The c696bf9e prices here are lower than in the fix 4 pair (15.1 s, 13.9 s) at the same revision: the machine load fell from 8-18 to 5-8. Only paired differences are evidence; the family totals carry the load of their run.
 
+Blocker (long tail above 6 h, after fixes 3 to 6): the edgewalk families are about 52 h (Allcock 26.1 h, ListReflect 26.4 h at load 5-8), with IsotropicCases 5.5 h and Enriques >= 1.5 h not re-priced. The 6 h target needs the edgewalk cases about 9 times faster. Price per profiled second of the w323_l4 walk (32.8 s profiled, 18.6 s unprofiled, family mean 0.6 of w323_l4): about 1.6 h over the two families. The remaining sinks at 6f337e9a, inclusive, profiled:
+
+| Sink | Profiled s | Calls | Hours if removed | What removing it needs |
+| --- | --- | --- | --- | --- |
+| `edge_plane_for_divisor` (port) | 8.9 | 390 | 14 (upper bound; includes the plane lattices and Sage linear algebra, 1.4 s own time) | pinned edgewalk.h steps; the owned share is the plane lattice and its elements |
+| `anisotropic_cycle` (port) | 4.3 | 468 | 7 | `cycle` builds each representative as an owned element (`linear_combination`, `to_vector`) and the period as an owned isometry; the stepping is integer arithmetic |
+| `initial_vertex` | 4.0 | 1 | 6.5 | `vectors_of_square` 1.1 s; the rest is owned element and Mor construction |
+| `Lattices(ZZ)(gram)` | 2.7 | 293 | 4.3 | the constructor redesign: `_gram_axiom_categories` decides nondegeneracy, unimodularity and evenness at construction (0.7 s; placement axioms, so making them lazy changes which category operations an object has: an architecture decision for sage-extensions), and `_construct_form_module` builds a fresh free-module parent through `_object_of` (1.05 s) |
+| `Mor_C(A, B)` classcall | 1.8 | 1137 | 2.9 | one Mor object per fresh endpoint pair; the arrow class is shared (c62175f), the object init chain is not |
+| `_new_sparse_free_module` | 1.6 | 458 | 2.6 (overlaps the lattice row) | the category meet and `_finitely_generated_free_placement` (0.5 s: membership tests on the label set) per module |
+
+No single row reaches the 9x factor, and the rows that are not port arithmetic are the per-object construction chain (`_object_of`, category meets, placement axioms). Removing that chain is the engine-data contract of OWN-22/OWN-24 for each constructor, with the placement-axiom question decided first in sage-extensions.
+
 
 Next sinks in the w323_l4 profile (46.7 s): `anisotropic_cycle` on the binary edge planes 6.6 s (468 calls), `plane_lattice` construction `Lattices(ZZ)(gram)` 3.9 s (292 lattices, 12 ms each: queue item 4, the lattice constructor), `is_isotropic` of binary planes 2.1 s, `initial_vertex` 4.9 s.
 
