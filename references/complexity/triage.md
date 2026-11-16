@@ -37,6 +37,8 @@ Fix 2 (sage-extensions 17f2c5e8): the finite Gram contraction reads its rows int
 
 Next sinks in the w323_l4 profile (46.7 s): `anisotropic_cycle` on the binary edge planes 6.6 s (468 calls), `plane_lattice` construction `Lattices(ZZ)(gram)` 3.9 s (292 lattices, 12 ms each: queue item 4, the lattice constructor), `is_isotropic` of binary planes 2.1 s, `initial_vertex` 4.9 s.
 
+Blocker (long tail above 6 h): after fixes 1 and 2 the probe-backed total is about 88 h (edgewalk about 82 h, IsotropicCases 5.5 h, Enriques >= 1.5 h, Lorentzian pairs 0.3 h). The 6 h target needs the edgewalk cases about 14 times faster. No single step is more than about 15 % of the w323_l4 walk: the remaining time is spread over owned rank-2 objects built per edge (`Lattices(ZZ)(gram)` 12 ms each, per-element `q`, `content`, `module_rank` and cardinality decisions in `anisotropic_cycle`, `vectors_of_square` in `initial_vertex`). Removing it is the constructor redesign of queue item 4 (engine-data constructors for `_lattice`, `divisible_sublattice`, kernels, finite ordered sets), each with its own sage-extensions engine-data contract (OWN-22, OWN-24) and probe; not started. K3 queue items 2-4 (flip LLL, remaining transporter sinks, the 600 s target) were withdrawn by the coordinator: the K3 node needs to pass once at about 950 s.
+
 ## Measured families (port 1cbb692 era, sage-extensions before 731fad7)
 
 Source: `.tmp/probe/sample_report.jsonl` and `measure_report*.jsonl` (local container, 1200 s timeout). A stratum with timeouts is a lower bound.
