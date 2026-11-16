@@ -743,3 +743,40 @@ New family totals: Allcock 3.77 s x 8595 = 9.0 h, ListReflect rank 3 3.55 s x 86
 Phase table after fix 19 (`zk_ph20_*.json`, scaled to 9.0 h + 8.5 h; the line map of `zk_ph_group.py` for `_Edgewalk.walk` predates the current line numbers, so its transporter and stabilizer lines are charged to walk bookkeeping): edge plane 3.2 h, initial vertex 2.7 h, walk bookkeeping (transporter search and stabilizer) 2.1 h, reflectivity certificate 1.8 h, indefinite reduction 1.1 h, coordinate helpers 1.0 h, all others under 1 h.
 
 Remaining removable hours, in order: edge plane 1.2 h above its engine floor plus C_N 0.7 h (`constraint_rows` intersects ZZ-modules at 6.5 ms where an HNF of d G^-1 costs 0.15 ms, but the intersection with ZZ^n is not one HNF); initial vertex and reflectivity certificate, whose source step counts and floors are not yet measured; the walk line map of `zk_ph_group.py` must be updated before the transporter and stabilizer phases are priced again. Multiplied remainder: 17.5 h now; if every phase priced above reached its floor, about 17.5 - 1.9 = 15.6 h before the unmeasured phases.
+
+## Gate and price of fixes 21-23 (port 54bd6b8 -> 4d038e8, sage-extensions 683716ad)
+
+Fixes: 21 bcb407f (ordinary vertex roots enumerate each norm shell on the complement's Gram matrix), 22 0b81dbe (the reflectivity certificate closes the roots and tests the chamber on engine data), 23 4d038e8 (the C_N basis from one integral kernel of [G | -d I]).
+
+Gate at 4d038e8. Equality (`zk_eqwalk.py`, seed 7, `zk_eqg_head.log`): 25 Allcock and 25 ListReflect rank 3 cases give the same reflectivity, vertex count and simple roots in report order as the fix-19 code (`zk_eq19_wt_base.log`; 54bd6b8 has no source change after 1e7adc0). Edgewalk gates (`zk_gates_g54.log`): w183, w217_l26, ListReflect_2917 and the branch-representative sample pass, 34 s for the four. tests/test_edgewalk_rank2.py and the two frozen binary-cycle tests of test_reflective.sage pass (6 nodes, `zk_owner_g54.log`). Tier-1 (`zk_t1_g54.log`, one process per node, killed at 60 s): 45 of 49 pass; test_o_n_maps_onto_o_of_the_discriminant_form, dawes_2U_A2_stable, I_1_2 and I_2_1 reach the cap with no error.
+
+Order-balanced paired warm runs (`zk_price3.out`, `zk_wp_*.log`; seed 1, 25 cases per family; each pair run once base first and once head first; means of the two orders):
+
+| Operation | Allcock before -> after s | ListReflect rank 3 before -> after s | hours removed | commit |
+| --- | --- | --- | --- | --- |
+| fixes 21-23 together (54bd6b8 -> 4d038e8) | 3.63 -> 3.16 | 3.87 -> 3.07 | 1.1 + 1.9 = 3.0 | bcb407f, 0b81dbe, 4d038e8 |
+| fix 21, ordinary vertex roots per norm shell | 3.63 -> 3.51 | 3.76 -> 3.38 | 0.3 + 0.9 = 1.2 | bcb407f |
+| fix 22, certificate on engine data | 3.31 -> 3.20 | 3.53 -> 3.10 | 0.2 + 1.0 = 1.2 | 0b81dbe |
+| fix 23, C_N from one integral kernel | 3.12 -> 3.07 | 3.16 -> 3.16 | 0.1 (inside the noise) | 4d038e8 |
+
+The same process gives 3.30-3.52 s for one revision in different runs, so a single delta under about 0.2 s per case is noise; the together row is the price. New family totals: Allcock 3.16 s x 8595 = 7.6 h, ListReflect rank 3 3.07 s x 8602 = 7.3 h, about 14.9 h.
+
+Phase table at 4d038e8 (`zk_ph24_*.json`, `zk_ph24_table.md`; scaled to 7.55 h + 7.34 h). The grouping map `zk_ph_group.py` now reads the measured source text: the indefinite reduction is the line that calls `indefinite_reduced_presentation`, isotropy is `edge_is_isotropic`, and `_FormBinaryCycle` is in the anisotropic family (it was charged to Dynkin extensions).
+
+| Phase | ListReflect_2917 | ListReflect_6219 | w323_l4 | w65_l29 | hours |
+| --- | --- | --- | --- | --- | --- |
+| edge plane | 0.59 | 0.52 | 0.79 | 0.64 | 2.6 |
+| indefinite reduction | 0.60 | 0.14 | 0.12 | 0.38 | 1.4 |
+| initial vertex | 0.17 | 0.14 | 0.93 | 0.14 | 1.3 |
+| vertex transporter search | 0.27 | 0.27 | 0.40 | 0.30 | 1.3 |
+| vertex stabilizer generators | 0.14 | 0.50 | 0.17 | 0.12 | 1.0 |
+| edge orbits under the stabilizer | 0.21 | 0.33 | 0.21 | 0.15 | 0.9 |
+| walker setup | 0.12 | 0.35 | 0.29 | 0.10 | 0.9 |
+| edge directions | 0.23 | 0.23 | 0.23 | 0.16 | 0.9 |
+| coordinate helpers | 0.19 | 0.25 | 0.25 | 0.14 | 0.8 |
+| report transport to the input lattice | 0.16 | 0.19 | 0.18 | 0.13 | 0.7 |
+| anisotropic family | 0.13 | 0.12 | 0.14 | 0.13 | 0.5 |
+| other phases (ten, each 0.5 h or less) | 0.55 | 0.58 | 0.85 | 0.57 | 2.8 |
+| sum | 3.35 | 3.60 | 4.56 | 2.98 | 14.9 |
+
+The anisotropic family is 0.5 h after fix 19 (468 / 312 runs per case on the form's integers), so its 3.6 h row of the phase-floor table is removed.
