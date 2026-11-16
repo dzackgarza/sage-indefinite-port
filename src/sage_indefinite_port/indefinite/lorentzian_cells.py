@@ -208,40 +208,74 @@ ZERO_SQUARES = RealSet.point(0)
 
 
 @cache
-def _binary_split_isotropic_basis(lattice: Lattices.ParentMethods) -> Matrix_integer_dense:
-    r"""The two primitive null lines of a split binary form, as row vectors, computed once per lattice.
+def binary_split_null_basis(form: tuple[int, int, int]) -> tuple[tuple[int, int], tuple[int, int]]:
+    r"""The two primitive null lines of the split binary form a x^2 + 2 b x y + c y^2, as integer rows.
 
-    The preamble's finite primitive-null-line enumeration replaces
-    ``GetBasisIsotropicVectors_reduced`` in pinned
-    ``src_lorentzian/two_dim_lorentzian.h:443–461``. The signs of its
-    two representatives are immaterial to the eight sign/permutation choices.
+    GetBasisIsotropicVectors_reduced (pinned two_dim_lorentzian.h:443-461):
+    each rational null vector is cleared of denominators and divided by its
+    content.  With s = sqrt(b^2 - a c), the null lines are a x + (b +- s) y = 0
+    for a != 0, and y = 0, 2 b x + c y = 0 for a = 0.  Each row is
+    normalized to a positive first nonzero entry and the two rows are sorted.
     """
-    # GetBasisIsotropicVectors_reduced clears denominators and divides by
-    # the content of each rational null vector.  Normalize explicitly so
-    # the index of the null-line sublattice is independent of which primitive
-    # isotropic representatives the preamble returns.
-    rays_by_line = {}
-    for point in lattice.primitive_isotropic_vectors():
-        row = _coordinate_row(lattice, point, SageQQ)
-        denominator = SageZZ(1)
-        for entry in row:
-            denominator = denominator.lcm(entry.denominator())
-        integral = vector(SageZZ, (denominator * entry for entry in row))
-        content = SageZZ(integral[0]).gcd(integral[1])
-        if content == 0:
-            raise ArithmeticError("a null-line generator must be nonzero")
-        primitive = vector(SageZZ, (entry // content for entry in integral))
-        first_nonzero = next(entry for entry in primitive if entry)
-        if first_nonzero < 0:
-            primitive = -primitive
-        rays_by_line[tuple(primitive)] = primitive
-    rays = tuple(sorted(rays_by_line.values(), key=lambda row: tuple(row)))
-    if len(rays) != 2:
-        raise ArithmeticError("a split nondegenerate binary lattice has exactly two rational null lines")
-    # The pinned reduced null-line basis is integral and primitive.  Use
-    # that exact arithmetic type for the determinant/index comparison and
-    # perform the rational inverse only where the isometry is constructed.
-    basis = matrix(SageZZ, rays)
+    a, b, c = (int(entry) for entry in form)
+    discriminant = b * b - a * c
+    root = isqrt(discriminant) if discriminant > 0 else -1
+    if root <= 0 or root * root != discriminant:
+        raise ValueError("a split nondegenerate binary form has a positive square discriminant")
+    directions = ((-(b + root), a), (-(b - root), a)) if a else ((1, 0), (-c, 2 * b))
+    rows = set()
+    for x, y in directions:
+        content = gcd(x, y)
+        x, y = x // content, y // content
+        if x < 0 or (x == 0 and y < 0):
+            x, y = -x, -y
+        rows.add((x, y))
+    if len(rows) != 2:
+        raise ArithmeticError("a split nondegenerate binary form has exactly two rational null lines")
+    first, second = sorted(rows)
+    return first, second
+
+
+def binary_split_form_vectors_of_square(form: tuple[int, int, int], square: int) -> tuple[tuple[int, int], ...]:
+    r"""All integral vectors (x, y) of nonzero square of the split binary form (a, b, c), in factor-pair order.
+
+    EnumerateVectorFixedNorm_Factorization (pinned two_dim_lorentzian.h:623-685).
+    With u, v the primitive null lines, k = det(u, v) and p = b(u, v),
+    q(z) = (2 p / k^2) det(z, v) det(u, z), so every solution is
+    z = (m1 u + m2 v) / k for a signed factor pair m1 m2 = square k^2 / (2 p).
+    """
+    a, b, c = (int(entry) for entry in form)
+    square = int(square)
+    if not square:
+        raise ValueError("the fixed-norm factorization requires nonzero square; zero has infinitely many integral vectors")
+    (u1, u2), (v1, v2) = binary_split_null_basis((a, b, c))
+    determinant = u1 * v2 - u2 * v1
+    pairing = a * u1 * v1 + b * (u1 * v2 + u2 * v1) + c * u2 * v2
+    if not determinant or not pairing:
+        raise ArithmeticError("primitive null generators must span a nondegenerate plane")
+    numerator, denominator = square * determinant * determinant, 2 * pairing
+    if numerator % denominator:
+        return ()
+    value = numerator // denominator
+    found: list[tuple[int, int]] = []
+    for divisor in SageZZ(abs(value)).divisors():
+        for sign in (-1, 1):
+            left = sign * int(divisor)
+            right = value // left
+            x, rx = divmod(u1 * left + v1 * right, determinant)
+            y, ry = divmod(u2 * left + v2 * right, determinant)
+            if rx or ry:
+                continue
+            if a * x * x + 2 * b * x * y + c * y * y != square:
+                raise ArithmeticError("fixed-norm factorization returned an incorrect square")
+            found.append((x, y))
+    return tuple(found)
+
+
+def _binary_split_isotropic_basis(lattice: Lattices.ParentMethods) -> Matrix_integer_dense:
+    r"""The two primitive null lines of a split binary lattice, as integer rows (``binary_split_null_basis`` of its Gram form)."""
+    gram = _gram_matrix(lattice)
+    basis = matrix(SageZZ, binary_split_null_basis((gram[0, 0], gram[0, 1], gram[1, 1])))
     basis.set_immutable()
     return basis
 
@@ -311,37 +345,15 @@ def binary_split_vectors_of_square(lattice: Lattices.ParentMethods, square: int)
     arises from one factor pair of square*k^2/(2c), followed by the
     exact integral-preimage check in the pinned routine.
     """
-    square = int(square)
-    if not square:
-        raise ValueError("the fixed-norm factorization requires nonzero square; zero has infinitely many integral vectors")
     if int(lattice.rank()) != 2 or tuple(map(int, lattice.signature_pair())) != (1, 1) or not lattice.is_isotropic():
         raise ValueError("fixed-norm null factorization requires a split Lorentzian plane")
-    null_basis = _binary_split_isotropic_basis(lattice)
-    first, second = null_basis.rows()
-    determinant = SageZZ(null_basis.det())
-    pairing = SageZZ((first * _gram_matrix(lattice) * second.column())[0])
-    if not determinant or not pairing:
-        raise ArithmeticError("primitive null generators must span a nondegenerate plane")
-    product_value = SageQQ(square) * determinant**2 / (2 * pairing)
-    if product_value.denominator() != 1:
-        return ()
-    value = SageZZ(product_value)
-    # Row coordinates recover z=(m1*u+m2*v)/det(u,v).
-    inverse_factor_forms = null_basis.transpose().change_ring(SageQQ) / determinant
+    gram = _gram_matrix(lattice)
     labels = tuple(lattice.module_generating_set())
-    found: list[Lattices.ElementMethods] = []
-    for divisor in SageZZ(abs(value)).divisors():
-        for sign in (-1, 1):
-            left = SageZZ(sign * divisor)
-            right = value // left
-            row = inverse_factor_forms * vector(SageQQ, (left, right))
-            if any(entry.denominator() != 1 for entry in row):
-                continue
-            point = lattice.linear_combination({label: lattice.base_ring()(int(entry)) for label, entry in zip(labels, row, strict=True) if entry})
-            if point.q() != lattice.base_ring()(square):
-                raise ArithmeticError("fixed-norm factorization returned an incorrect square")
-            found.append(point)
-    return tuple(found)
+    ring = lattice.base_ring()
+    return tuple(
+        lattice.linear_combination({label: ring(entry) for label, entry in zip(labels, row, strict=True) if entry})
+        for row in binary_split_form_vectors_of_square((gram[0, 0], gram[0, 1], gram[1, 1]), square)
+    )
 
 
 def binary_split_primitive_vector_classes(lattice: Lattices.ParentMethods, square: int) -> tuple[Lattices.ElementMethods, ...]:

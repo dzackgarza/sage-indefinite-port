@@ -47,7 +47,7 @@ from sage_indefinite_port.indefinite.edgewalk_extensions import (
 from sage_indefinite_port.indefinite.edgewalk_rank2 import anisotropic_cycle
 from sage_indefinite_port.indefinite.edgewalk_scalars import _integer, _rational
 from sage_indefinite_port.indefinite.lorentzian_cells import (
-    binary_split_vectors_of_square,
+    binary_split_form_vectors_of_square,
 )
 
 type _Vector = Lattices.ElementMethods
@@ -1066,12 +1066,6 @@ class _Edgewalk:
         return oriented_basis, r0
 
     @cached_method
-    def plane_lattice(self, form: tuple[int, int, int]) -> Lattices.ParentMethods:
-        r"""The binary lattice of integral Gram coefficients (a, b, c), built once per walk and shared by the edges that produce it."""
-        a, b, c = form
-        return Lattices(ZZ)([[ZZ(a), ZZ(b)], [ZZ(b), ZZ(c)]])
-
-    @cached_method
     def edge_is_isotropic(self, roots: _Roots, discarded: _Vector, k: _Vector) -> bool:
         r"""Whether the edge plane P is isotropic, decided once per edge (edgewalk.h:871-889).
 
@@ -1265,17 +1259,19 @@ class _Edgewalk:
             square = scale * residual
             if square.denominator() != 1:
                 return ()
-            plane = self.plane_lattice(edge.form)
-            r0 = self.plane_element(plane, edge.r0)
+            a, b, c = edge.form
+            x0, y0 = edge.r0
             # Pinned edgewalk.h:921-961 uses the *entire* signed factor-pair
             # enumeration, including imprimitive vectors, before ordering
             # roots and checking their ambient integral reconstructions.
             # A vector-orbit representative family is not that candidate set.
-            vectors = [item for item in binary_split_vectors_of_square(plane, int(square)) if _oriented_determinant(edge.r0, _key(item)) > 0]
+            # The source factors the form on integers (Factor_GP_LN); so does
+            # binary_split_form_vectors_of_square, with no plane lattice.
+            vectors = [item for item in binary_split_form_vectors_of_square(edge.form, int(square)) if _oriented_determinant(edge.r0, item) > 0]
             if self.norm(k) < 0:
-                vectors = [item for item in vectors if plane.b(r0, item) > 0]
-            vectors.sort(key=lambda item: cmp_to_key(_orientation_compare)(_key(item)))
-            return tuple(_key(item) for item in vectors)
+                vectors = [(x, y) for x, y in vectors if a * x0 * x + b * (x0 * y + y0 * x) + c * y0 * y > 0]
+            vectors.sort(key=cmp_to_key(_orientation_compare))
+            return tuple(vectors)
         target_square = _rational(scale * residual)
         if target_square <= 0 or target_square > _rational(scale * norm) or target_square.denominator() != 1:
             return ()
