@@ -25,10 +25,15 @@ from cysignals.signals import AlarmInterrupt
 _RECORD = json.loads((Path(__file__).parent / "test_budgets.json").read_text())
 # A model budget is the time a correct implementation needs, a target, not a
 # kill limit. A node with a recorded price (least measured passing time) is
-# killed at PRICE_FACTOR times that price; PRICE_FACTOR covers the gap between
-# the local measuring machine and the CI runner.
+# killed at PRICE_FACTOR times that price plus WARMUP_SECONDS. PRICE_FACTOR covers
+# the gap between the local measuring machine and the CI runner; WARMUP_SECONDS
+# covers runner jitter and the first GAP or PARI call in a process, which
+# dominate a sub-second node.
 PRICE_FACTOR = 3
-_BUDGETS = _RECORD["budgets"] | {node: PRICE_FACTOR * price for node, price in _RECORD["prices"].items()}
+WARMUP_SECONDS = 10
+_BUDGETS = _RECORD["budgets"] | {
+    node: PRICE_FACTOR * price + WARMUP_SECONDS for node, price in _RECORD["prices"].items()
+}
 
 
 def pytest_collection_modifyitems(items):
