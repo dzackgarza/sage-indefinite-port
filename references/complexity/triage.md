@@ -466,3 +466,32 @@ About 1 h removed (Allcock w323_l4 14.6 -> 12.6 and 11.7 s); the ListReflect cha
 Blocker (after fix 10): the edgewalk families are about 42 h at this load. The rest of `edge_plane_for_divisor` is `plane_lattice` (1.6 s profiled: `Lattices(ZZ)(gram)` at 4.1 ms profiled per lattice, spread over `_new_sparse_free_module` 1.3 ms, `_gram_axiom_categories` 0.8 ms, `_nested_gram_tensor` 0.5 ms, indexed families and tensor hashing) and Sage per-operation matrix overhead (MatrixSpace construction, about 0.5 s). Queue item 1 (one class per (implementation, category), built complete) is on sage-extensions branch perf/class-memo and removed nothing (fix 10 table above: 8.2 -> 8.4 s). Queue item 2 (a lattice from a Gram matrix holds the engine matrix and builds its free module on request) is not started: the lattice parent is itself the framed free module object (`_fresh_free_module_on` with the lattice categories), so a deferred free module needs a second object type for lattices whose module structure is unrealized, and every consumer of `module_generating_set`, owned elements and Mor objects must route through it; the measured gain bound is the 4.1 ms per lattice above, about 2.5 h of the 42 h.
 
 Correction to the blockers above ("no single sink", "spread over many small steps"): they priced entry points, not totals. Multiplied out over the 17,200 edgewalk cases (README "How to price a step", step 6), the per-object construction is hours: parents through `_object_of` 1704 per case × 1.5 ms ≈ 12 h; `Mor_C(A,B)` objects 1053 per case, 1.7 s ≈ 8 h; `Lattices(ZZ)(gram)` 293 × 2.8–4.1 ms ≈ 4–6 h, inside the parents row. About 20 h is parent and Mor construction, so it is the next fire, not a blocker. The levers are the count (total against distinct by construction key; intern equal constructions, one Mor object per endpoint pair) and the cost of one instance. The rejected class memo cached classes (under 1 s) and did not change the cost of an instance.
+
+## Construction count and instance cost (queue items 1 and 2, sage-extensions 87db29aa)
+
+Probe `zk_count.py` wraps `_object_of` (parents), `CategoricalMor.__init__` (Mor objects) and `_lattice_from_gram_tensor` (Gram lattices) during one edgewalk. A construction key is the category with the engine and data, read by value: matrices by entries, functions by code and closure values, elements by parent key and representation, parents by their defining construction. Rings, Sage fields and a few engine objects are keyed by identity. Times are the outermost construction only, measured with the key computation off (`ZK_TIMING_ONLY=1`), so a nested construction is counted once.
+
+| Construction | w323_l4 total | distinct | ListReflect_2917 total | distinct | duplicate cost per case | hours over 17,200 cases |
+| --- | --- | --- | --- | --- | --- | --- |
+| parents through `_object_of` | 1694 | 1209 | 997 | 694 | 0.21 s, 0.14 s | about 0.8 h |
+| `Mor_C(A,B)` objects | 1044 | 751 (1021 by endpoint identity) | 695 | 519 (678) | 0.07 s, 0.04 s | about 0.3 h |
+| `Lattices(ZZ)(gram)` | 294 | 294 | 106 | 106 | 0 | 0 |
+
+The Mor duplicates have distinct endpoint objects with equal construction keys: they follow from duplicate parents. The largest duplicate sites are `finite_ordered_set` on literal points (132 in w323_l4) and `_from_finite_members` (77), their `Sets().Mor` in `admits_arrow` (101) and `Mono` in `inclusion` (101), and indexed families of module-morphism generator images (about 150). Each site removes under 0.2 h; all duplicates together remove about 1.1 h. Interning is not done: no single site reaches an hour.
+
+Cost of all construction at sage-extensions 1f4b08c2 (outermost, without the profiler): w323_l4 1.41 s of a 13.9 s walk, ListReflect_2917 0.93 s of 7.4 s, so about 1.2 s × 17,200 ≈ 5.6 h. The earlier figure of about 20 h (1704 × 1.5 ms and 1.7 s of Mor) was read from cProfile, which inflates these many small calls by a factor of two to three.
+
+| Kind (w323_l4) | count | ms each | s per case | hours over 17,200 (both families, scaled by count) |
+| --- | --- | --- | --- | --- |
+| Gram lattices (binary plane lattices) | 294 | 0.65 | 0.19 | 0.6 |
+| `ModuleMor` objects | 75 | 2.3 | 0.18 | 0.7 |
+| finite ordered sets | 468 | 0.26 | 0.12 | 0.5 |
+| indexed families | 540 | 0.21 | 0.11 | 0.5 |
+| `SetMor` objects | 526 | 0.19 | 0.10 | 0.5 |
+| finite subgroups of O(L) | 69 | 1.1 | 0.08 | 0.4 |
+| generated subgroups | 16 | 4.2 | 0.07 | 0.3 |
+| rational polyhedral cones, before fix 11 | 36 | 22 (with derived data) | 0.79 | 1.9 |
+
+Isolated instance costs (`zk_inst.py`, 999 builds each, no profiler): finite ordered set 0.27 ms, indexed family 0.11 ms, `Sets().Mor(A, B)` on a fresh endpoint 0.33 ms, `Lattices(ZZ)(gram)` on a fresh binary Gram 2.2 ms. Profile of the lattice (4.4 ms under cProfile): `_gram_axiom_categories` 0.84 ms and `_form_module_categories` 0.42 ms (category resolution by `in` tests and category construction), 65 `Category.__classcall__` lookups per lattice 0.48 ms, `_engine_component_matrix` 0.39 ms, `_tensor_hash` 0.22 ms. Memoizing the two category resolutions removes about 0.6 ms of a lattice, 0.2 s per w323_l4 case, about 0.6 h: under an hour, not done.
+
+Fix 11 (sage-extensions 1f4b08c2): `RationalPolyhedralCones.ParentMethods.__init__` wrapped both covector families and the wall roots in finite ordered sets, lowered each covector through its owned coordinates and built Sage's polyhedron at construction. These are now lazy attributes. `_cone_from_engine_polyhedron` (the route of `from_rays`) gives the cone the polyhedron of its primitive integral rows, the same input that the lazy build gives the engine. Probe `zk_cone.py`: the rays and the H- and V-representations of all 36 and 27 recorded cones have equal digests before and after. Recorded-cone rebuild 21.4 -> 8.6 ms (w323_l4) and 17.6 -> 7.7 ms (ListReflect_2917); cone construction in the walk 0.87 -> 0.36 s and 0.60 -> 0.30 s. Priced by count: 36 × 13 ms × 8595 + 27 × 11 ms × 8602 ≈ 1.1 h + 0.7 h ≈ 1.8 h. A second lever in the same constructor, the owned covectors (`lattice.dual_module()({...})`, a module morphism with an indexed family of generator images and a set map, about 2 ms under the profiler each, 405 per 180 cones), is not changed: the covectors are the defining datum. Caching the scalar identity `Mor_Rings(R, R).identity()` of each linear map (0.6 ms of a covector under the profiler) changed nothing measurable (9.05 against 8.63 ms per cone) and is withdrawn.
