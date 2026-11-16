@@ -97,7 +97,7 @@ A price is derived, not stated. Do the analysis in this order.
    from the product: the count (equal constructions must be one interned
    object, so count total against distinct by construction key) and the cost
    of one instance (it must only store engine data and its category). A
-   profile that shows no large entry point says nothing about these totals.
+   profile that shows no large entry point says nothing about these totals. Take each unit cost from a run without the profiler (timeit or perf_counter): cProfile inflates many small calls two to three times, and a 20 h total priced from profiled unit costs measured 5.6 h without it.
 
 ### Worked example: isometry of E10 vector complements
 
