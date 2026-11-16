@@ -698,3 +698,21 @@ Withdrawn, under an hour (`f18.patch` in the probe directory): 4,577 of the rema
 New family totals (fix 17 by the order-balanced pairs): Allcock about 4.78 - 0.35 = 4.43 s x 8595 = 10.6 h, ListReflect rank 3 about 4.90 - 0.55 = 4.35 s x 8602 = 10.4 h, about 21.0 h.
 
 Blocker for the 6 h target: the owned-arithmetic entry points over an hour now sum to about 3.3 h (membership 2.2 h, raises into the rationals 1.1 h), and each is spread over sites below 0.2 h; removing all of it leaves about 17.7 h. The rest of the walk is the phases of the table after fixes 13-15 (anisotropic family, edge plane, initial vertex, `plane_lattice`, reflectivity certificate), whose owned-operation counts are near the source's. Reaching 6 h needs about 15 h more, which requires a change of representation, not removal of checks: the rationals stored as an engine rational (today a localization pair of owned integers, unreduced, decoded on every raise), lattice vectors stored as one engine vector (today a dict of owned ring elements), and `Lattices(ZZ)(gram)` (3.2 ms) built without category class calls. Each is a contract change to the localization and sparse free module classes under OWN-22 and OWN-24 in sage-extensions, priced together by the counts above at not more than the 3.3 h of entry-point time plus the share of the phase time spent in element wrapping, which no measurement here separates.
+
+## Storage changes: priced before implementation (port 4b88a37, sage-extensions 683716ad)
+
+Counts per case from one warm walk with wrappers on the storage entry points (`zk_store_count.py`, outermost calls, logs `zk_store_*.log`). Hours = w323_l4 seconds x 8595 + ListReflect_6219 seconds x 8602.
+
+| Item | count w323_l4 / ListReflect_6219 | unit cost (warm) | wall per case s | hours (upper bound: the operation made free) |
+| --- | --- | --- | --- | --- |
+| owned rationals: fraction construction, `_add_`, `_mul_`, raise, lower, equality | 174 / 168 constructions, 89 / 83 raises, 10 / 10 products, 75 / 75 equalities | 10-200 us | 0.04 / 0.03 | 0.2 |
+| lattice vectors: `__init__`, coordinate read, `_add_` (plus `evaluate_covector` 0.09 / 0.10 s from the fix-17 table) | 2598 + 2946 + 594 / 1514 + 2490 + 108 | 20-40 us | 0.26 / 0.22 | 1.1 |
+| `Lattices(ZZ)(gram)` | 293 / 115 | 2.0-2.9 ms (`zk_latctor.py`, distinct rank-2 Grams) | 0.83 / 0.34 | 2.8 |
+
+The rationals are not stored as a bottleneck in the walk: fewer than 200 fractions are built per case, so item 1 is under an hour and was not changed. The 8,522 raises of the fix-17 table are into the integers.
+
+Withdrawn, under an hour (`f18b.patch` in the probe directory): `Lattices(ZZ)(gram)` resolved the free-module placement once per (ring, label set) and the form-module placement once per (module, kind of form, extra categories), both fixed at construction (CON-07). Unit cost 2.0-2.35 ms -> 1.73 ms; equality (`zk_lat_eq.py`): 400 random Gram matrices of rank 1-5 over ZZ and QQ give the same category object and Gram tensor with the caches and resolved afresh. Paired warm runs (seed 1, 25 cases): Allcock 4.54 -> 4.37 s (base first, `zk_wse_f18.log`), ListReflect rank 3 4.44 -> 4.46 s (head first, `zk_wse_f18lr.log`); order-balanced about 0.08 s per case, 0.4 h. The remaining construction cost is per-parent data (parent `__init__` and module resolution 0.5 ms, Gram tensor from rows 0.45 ms, engine Gram matrix, rank and hash for the axioms 0.6 ms, all profiled), not category resolution.
+
+Lattice vectors as one engine vector: the bound (every vector operation free) is 1.1 h; an engine vector still costs a construction and a wrap per operation, so the realizable part is under an hour. The change touches 35 readers of the coefficient dict in `framed_free_modules.py` and about 150 in 20 other modules; not made.
+
+Blocker for the 6 h target (family totals unchanged, about 21.0 h): the three storage items sum to at most 4.1 h if each operation became free (0.2 + 1.1 + 2.8), and the measured realizable part of the largest is 0.4 h. Removing all of it leaves about 16.9 h; the remaining 10.9 h above the target is in the phases of the table after fixes 13-15, spread over sites below an hour each.
