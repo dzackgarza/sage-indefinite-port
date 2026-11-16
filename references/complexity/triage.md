@@ -508,3 +508,95 @@ About 1 h removed by the pairs, 1.8 h by count. New edgewalk total about 38.5 h 
 Repin sage-extensions 081d4829 (fix 11 merged with origin/main 2e2fa8b8). Local tier-1 (zk_t1_cone.log, one process per node, killed at 60 s): 45 of 49 pass; the four priced over the cap (test_o_n_maps_onto_o_of_the_discriminant_form, dawes_2U_A2_stable, I_1_2, I_2_1) reach 60 s with no error. Edgewalk gates (w183, w217_l26, ListReflect_2917, branch-representative sample) pass at 1f4b08c2 and at 081d4829. Touched sage-extensions tests (polyhedral cones, polytopes, dual point hash, polygon invariants, parabolic count, Vinberg facets, hyperbolic chambers, hyperbolic space): 8 failed, 44 passed, the same eight nodes as at 87db29aa.
 
 Blocker for the next hour item: after fix 11 all parent and Mor construction is about 5.6 h over 17,200 cases (table above), and no single construction kind reaches an hour; the duplicate constructions together are about 1.1 h over eight sites. The next measured items are port-side and owned-element arithmetic in the binary-plane step (w323_l4 profile at 1f4b08c2, ew_h1.prof: `extension_roots` 7.1 s of a 19 s profiled walk; `plane_lattice` 1.5 s, `is_isotropic` of the plane 0.75 s, `_OrientedBinaryCycle` construction 0.66 s and `cycle` 1.36 s, mostly owned `q()`, `b`, `to_vector` and `linear_combination` per vector). Unprofiled, they are about 3 s of a 13.5 s case, about 6 h for Allcock if the ratio holds; they are not yet priced by count.
+
+## Wall-clock phase table (queue item 1, port c435fd6, sage-extensions 081d4829)
+
+Probe `zk_phase.py` (probe directory): `sys.monitoring` PY_START/PY_RETURN events on the port edgewalk code (`edgewalk.py`, `edgewalk_rank2.py`, `edgewalk_extensions.py`) and LINE events on `walk`, `edgewalk_fundamental_domain`, `binary_candidates` and `edge_plane_for_divisor`. Each interval between two events is charged to the port function and line on top of the tracked stack, so the time of sage-extensions, Sage, PARI and GAP callees is charged to the port line that called them, and the charges sum to the walk time by construction. No profiler. Eight paired runs (plain, then instrumented, same case, separate processes): instrumented 58.6 s against plain 55.5 s, +5.5 %; single pairs differ by -3 % to +22 %, which is the load noise of one case.
+
+Correction to every earlier edgewalk total: they priced a cold process. The long tail runs thousands of cases per pytest process, so imports, class and category creation and the PARI/GAP start are paid once per shard, not per case. In a cold process the first walk pays about 1 s in the indefinite reduction alone (`_indefinite_reduction` 0.78 s on its first call, 0.024 s after). `zk_phase.py` and `zk_sample.py` therefore warm the process with two small walks (w6_l7, ListReflect_99) before the timed walk. Seeded random sample (`zk_sample.py`, seed 1, 25 cases per family, warm): Allcock mean 6.04 s, ListReflect rank 3 mean 5.66 s, so the families are 14.4 h + 13.5 h = 27.9 h, not 38.5 h. Medians of the sample: w65_l29 (6.8 s) and ListReflect_6219 (6.2 s).
+
+Seconds per case (mean of two instrumented runs). Hours: the phase's mean share of the cases of each family times the family's warm total.
+
+| Phase | w323_l4 | w65_l29 | ListReflect_2917 | ListReflect_6219 | hours over 17,200 |
+| --- | --- | --- | --- | --- | --- |
+| anisotropic family (`_OrientedBinaryCycle`, cycle, period unfolding) | 1.51 | 1.43 | 0.90 | 1.20 | 4.9 |
+| edge plane (`edge_plane_for_divisor`, `constraint_rows`, `plane_primitive`) | 1.59 | 1.46 | 0.84 | 0.93 | 4.6 |
+| reflectivity certificate (root closure `from_finite_orbits`, chamber rays) | 1.07 | 0.78 | 0.54 | 0.81 | 3.1 |
+| vertex transporter search (walk line 1629) | 0.88 | 0.55 | 0.49 | 0.88 | 2.7 |
+| initial vertex (Vinberg) | 1.49 | 0.54 | 0.31 | 0.30 | 2.3 |
+| `plane_lattice` (`Lattices(ZZ)(gram)`) | 0.89 | 0.66 | 0.30 | 0.38 | 2.1 |
+| `is_isotropic` of the plane (binary_candidates line 1183) | 0.52 | 0.38 | 0.18 | 0.22 | 1.2 |
+| edge directions (cone facets) | 0.35 | 0.25 | 0.24 | 0.36 | 1.2 |
+| coordinate helpers (key, row, pair, element) | 0.28 | 0.18 | 0.18 | 0.28 | 0.9 |
+| report transport to the input lattice | 0.23 | 0.20 | 0.14 | 0.19 | 0.7 |
+| vertex stabilizer generators (walk line 1616) | 0.12 | 0.07 | 0.10 | 0.43 | 0.7 |
+| edge orbits under the stabilizer | 0.17 | 0.12 | 0.13 | 0.29 | 0.7 |
+| indefinite reduction | 0.11 | 0.14 | 0.12 | 0.13 | 0.5 |
+| extension_roots (ambient reconstruction) | 0.15 | 0.13 | 0.08 | 0.10 | 0.5 |
+| report | 0.09 | 0.10 | 0.08 | 0.12 | 0.4 |
+| Dynkin extensions | 0.11 | 0.09 | 0.07 | 0.08 | 0.4 |
+| walker setup | 0.08 | 0.12 | 0.08 | 0.08 | 0.4 |
+| admit isometry (fixed lattice) | 0.19 | 0.19 | 0.01 | 0.02 | 0.3 |
+| binary candidates (isotropic split, filtering) | 0.06 | 0.06 | 0.03 | 0.04 | 0.2 |
+| vertex_from_root, candidate order; vertex configuration; walk bookkeeping | 0.07 | 0.07 | 0.06 | 0.08 | 0.3 |
+| sum = instrumented walk | 9.97 | 7.50 | 4.86 | 6.95 | 27.9 |
+
+## Unit operations per case and unit costs (queue item 2)
+
+Counts: `zk_phase.py count` (CALL events on port lines: every call a port line makes, keyed by line and callee). Unit costs: `zk_unit_ops.py`, `zk_unit_ops2.py`, `zk_unit_mat.py`, `zk_mem_unit.py` (10,000 operations each, fresh inputs, no profiler); totals of a named operation over one walk: `zk_sylv.py`, `zk_ringel.py`, `zk_member.py`, `zk_orbcl.py` (outermost wall time of the operation in a warm walk).
+
+| Owned operation | unit cost | engine reference |
+| --- | --- | --- |
+| `Lattices(ZZ)(gram)`, fresh binary Gram | 3.17 ms | the 2 x 2 matrix |
+| `is_isotropic`, first request (signature 1.04 ms, `qfsolve` witness 0.32 ms, rest 0.14 ms) | 1.63 ms | -det square test |
+| `signature_pair`, first request (Sage `QuadraticForm.signature_vector` 0.57 ms of it) | 1.04 ms | |
+| `_OrientedBinaryCycle(P)` (2 `module_generator`, 2 `q`, 1 `b`) | 1.23 ms | three integers |
+| `Isom(P)(images)`, rank 2 | 2.03 ms | |
+| isometry application, rank 2 / rank 3 | 1.02 / 1.40 ms | 2 x 2 / 3 x 3 product |
+| `linear_combination` (element construction) | 0.27 ms | |
+| `q()` / `b(x, y)` first request, rank 2 | 0.18 / 0.18 ms | 0.2 us (Python binary form) |
+| `scalar_multiple` | 0.52 ms | |
+| `module_generator` | 0.095 ms | |
+| `ZZ(int)`, preamble ring element | 0.052 ms | |
+| `x + y`, rank 3 | 0.10 ms | |
+| `content()` / `to_vector()` | 0.047 / 0.017 ms | |
+| category membership test (walk mean) | 8.3 us | 1.5 us (`P in Lattices(ZZ)` isolated) |
+
+Count x unit cost, w323_l4 / ListReflect_6219 (seconds per case):
+
+| Phase | operation | count | unit | seconds | phase seconds |
+| --- | --- | --- | --- | --- | --- |
+| anisotropic family | `_OrientedBinaryCycle` construction | 292 / 114 | 1.23 ms | 0.36 / 0.14 | 1.51 / 1.20 |
+| | isometry application (period unfolding, row matrix) | 220 / 264 | 1.0 ms | 0.22 / 0.26 | |
+| | `Isom(P)(images)` (closed cycles) | 55 / 66 | 2.0 ms | 0.11 / 0.13 | |
+| | `q()` of the start vector | 468 / 312 | 0.18 ms | 0.08 / 0.05 | |
+| | `linear_combination` (`point`) | 165 / 198 | 0.27 ms | 0.04 / 0.05 | |
+| | `content`, `to_vector`, coordinate reads, `ZZ(int)`, Sage matrix ops | 3742 / 3492 | | about 0.08 / 0.08 | |
+| | rest: Python integer loop (29,570 / 28,512 binary pairings), call overhead | | | 0.62 / 0.49 | |
+| edge plane | Sage matrix and vector operations | 15,712 / 9448 | | | 1.59 / 0.93 |
+| | `linear_combination` (`plane_primitive`) | 390 / 234 | 0.27 ms | 0.11 / 0.06 | |
+| | `ZZ(int)` | 714 / 347 | 0.052 ms | 0.04 / 0.02 | |
+| reflectivity certificate | `from_finite_orbits` (sweep 0.088 / 0.030 s, orbit G-sets per seed 0.66 / 0.47 s) | 9 / 9 | 83 / 56 ms | 0.75 / 0.50 | 1.07 / 0.81 |
+| vertex transporter | `O(L).transporter` of coloured families | 47 / 47 | 19 ms | 0.88 / 0.88 | 0.88 / 0.88 |
+| `plane_lattice` | `Lattices(ZZ)(gram)` | 292 / 114 | 3.17 ms | 0.93 / 0.36 | 0.89 / 0.38 |
+| `is_isotropic` | first requests | 292 / 114 | 1.63 ms | 0.48 / 0.19 | 0.52 / 0.22 |
+| initial vertex | Sage matrix ops; isometry application | 2498 / 0; 115 / 12 | 1.4 ms | 0.16 / 0.02 (isometries) | 1.49 / 0.30 |
+
+Across all phases: `ZZ(int)` 4509 / 2780 calls at 73 / 62 us in the walk (0.33 / 0.17 s), owned ring elements passed back to their ring 39,478 / 24,098 at 3.8 / 3.1 us (0.15 / 0.08 s); category membership 84,444 / 62,458 tests at 9.4 us (0.79 / 0.59 s, no site above 0.09 s); `_sylvester` 346 / 154 calls (0.38 / 0.18 s).
+
+Count against the source floor: the binary-plane counts (292 Gram lattices for 390 edge planes in w323_l4) are the source's edge planes, deduplicated by Gram. The transporter count is above the source's: `func_insert_vertex` (edgewalk.h:1449-1490) tests equivalence only against known vertices of equal canonical-form hash (`ComputeHashWeightMatrix_raw`, fund_domain_vertices.h:365), while the port asks `O(L).transporter` of every known configuration; sage-extensions `_transporter` rejects a mismatch by `pairing_graph().isomorphism` after building both realizations. The root closure was above the floor: `from_finite_orbits` built a G-set per seed orbit that the edgewalk never reads (fix 13).
+
+## Fixes after the phase table (queue item 3)
+
+Fix 12, withdrawn: `_OwnedRingParent._element_constructor_` returns an element of the ring and converts a Python `int` before its membership tests (each built `Modules(R)` and asked category membership). Unit cost of `ZZ(3)` 41.9 -> 7.2 us. In the walk: w323_l4 0.48 -> 0.12 s, ListReflect_6219 0.25 -> 0.07 s, about 3.2 % of a case, 0.9 h. Paired runs (`zk_pair_f12`): Allcock mean 6.93 -> 7.10 s, ListReflect 7.43 -> 7.43 s, inside the noise. Under an hour: not landed (patch kept as `f12.patch` in the probe directory).
+
+Fix 13 (sage-extensions 891fee04): `FiniteGSets.from_finite_orbits` no longer builds the orbit G-set, ranking and section of every seed before it returns. The set retains the finished sweep's table, and `_orbit_of` answers a seed from that table on its first question, with one orbit set per orbit and the section the eager loop wrote; a point that is not a seed keeps the permutation-representation sweep (its words differ from the table walk's, `test_the_same_action_presented_two_ways_presents_the_same_family`). No question sweeps a second time (`test_no_seed_of_one_sweep_is_searched_twice` passes). `from_finite_orbits` in the walk: w323_l4 0.745 -> 0.192 s, ListReflect_6219 0.502 -> 0.116 s; priced by count 5.8 % of a case, about 1.6 h.
+
+| Family | Cases | Base mean s (`zk_pair_f13`, 081d4829) | Head mean s (891fee04) | Total h before -> after (warm sample) |
+| --- | --- | --- | --- | --- |
+| Allcock | 8595 | 8.10 | 7.37 | 14.4 -> 13.6 (count) |
+| ListReflect rank 3 | 8602 | 7.73 | 7.23 | 13.5 -> 12.7 (count) |
+
+About 1.6 h removed by count, 2.9 h by the pairs (noisy). Touched sage-extensions tests (groups: orbits, sweeps, Schreier families, double cosets, generator permutations, retained partition; lattices: pairing-form relabelling, orbit splitting, stable isotropic plane orbits): 43 passed at 081d4829 and 43 passed at 891fee04. Edgewalk gates at 891fee04 (`zk_gates_f13.log`): w183 9.9 s, w217_l26 11.3 s, ListReflect_2917 7.1 s, branch-representative sample 16.0 s, all pass.
+
+Repin sage-extensions 891fee04. Local tier-1 (`zk_t1_f13.log`, one process per node, killed at 60 s): 45 of 49 pass; test_o_n_maps_onto_o_of_the_discriminant_form, dawes_2U_A2_stable, I_1_2 and I_2_1 reach 60 s with no error.
