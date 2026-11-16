@@ -203,7 +203,7 @@ the entire port correct. Long-tail exhaustive coverage does not gate the
 agreed milestones.
 
 GitHub [Acceptance](.github/workflows/acceptance.yml) runs only by manual
-dispatch (`gh workflow run Acceptance -f corpus=sample` or `-f corpus=full`).
+dispatch (`gh workflow run Acceptance -f corpus=tier1`, `-f corpus=tier2` or `-f corpus=full`).
 A result does not select the next task. It runs the frozen
 suite in sharded Sage jobs using the
 `ghcr.io/dzackgarza/sage:develop` research image; the run

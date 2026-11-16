@@ -1,16 +1,17 @@
 # Acceptance runs only by manual dispatch. A result does not select the next task.
-# The sample corpus runs the amended branch samples; the full corpus runs every file.
+# The tier1 corpus runs the smallest node per pinned branch, tier2 the published reproductions, full every file.
 # The summary job collates every executed shard into one failure list.
 name: Acceptance
 on:
   workflow_dispatch:
     inputs:
       corpus:
-        description: sample runs the amended branch samples; full runs every file
+        description: tier1 runs the smallest node per pinned branch; tier2 the published reproductions; full every file
         required: true
         type: choice
         options:
-          - sample
+          - tier1
+          - tier2
           - full
 concurrency:
   # A newer dispatch replaces a queued run but never cancels one in progress.

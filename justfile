@@ -129,7 +129,7 @@ ci-julia-key:
     env_dir="$("$sage_python" -c 'import pathlib, sage_julia_bridge; print(pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env")')"
     julia --startup-file=no --project="$env_dir" -e 'using Pkg, SHA; bridge_project = Base.active_project(); Pkg.activate("v$(VERSION.major).$(VERSION.minor)"; shared=true); shared_project = Base.active_project(); inputs = vcat(read(bridge_project), read(shared_project), read(joinpath(dirname(shared_project), "Manifest.toml"))); println("julia-depot-" * bytes2hex(sha256(inputs))[1:16])'
 
-# CI only: run job {{shard}} of the Acceptance plan for corpus {{selection}} (sample or full);
+# CI only: run job {{shard}} of the Acceptance plan for corpus {{selection}} (tier1, tier2 or full);
 # results land in .tmp/ci/results/<family>-<shard>.
 ci-acceptance family shard shards selection:
     #!/usr/bin/env bash

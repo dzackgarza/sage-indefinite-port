@@ -6,8 +6,12 @@ still has room (longest-processing-time scheduling, Graham 1969). A job holds at
 most JOB_BUDGET seconds of budget, so the number of jobs follows the work in
 the corpus. A node whose own budget exceeds JOB_BUDGET runs alone (#79).
 
-    python3 ci/plan_acceptance.py matrix sample|full   # workflow matrix
-    python3 ci/plan_acceptance.py nodes sample|full JOB  # the node ids of one job
+    python3 ci/plan_acceptance.py matrix tier1|tier2|full   # workflow matrix
+    python3 ci/plan_acceptance.py nodes tier1|tier2|full JOB  # the node ids of one job
+
+tier1 is ci/acceptance_tier1.txt (the smallest independent node per pinned
+branch), tier2 is ci/acceptance_tier2.txt (the published-result reproductions
+of #64), and full is every acceptance node (references/complexity/triage.md).
 """
 
 import heapq
@@ -24,12 +28,12 @@ JOB_LIMIT_MINUTES = 360
 
 def corpus_nodes(corpus):
     budgets = json.loads((CI / "test_budgets.json").read_text())["budgets"]
-    if corpus == "sample":
-        nodes = (CI / "acceptance_sample.txt").read_text().splitlines()
+    if corpus in ("tier1", "tier2"):
+        nodes = (CI / f"acceptance_{corpus}.txt").read_text().splitlines()
     elif corpus == "full":
         nodes = sorted(node for node in budgets if node.startswith("tests/acceptance/"))
     else:
-        raise SystemExit(f"unknown corpus {corpus!r}; expected sample or full")
+        raise SystemExit(f"unknown corpus {corpus!r}; expected tier1, tier2 or full")
     missing = [node for node in nodes if node not in budgets]
     assert not missing, f"nodes without a budget: {missing}"
     return {node: budgets[node] for node in nodes}
