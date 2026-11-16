@@ -1828,7 +1828,11 @@ class LorentzianPerfectLocalBackend:
         facet_positions = tuple(sorted(facet))
         selected = matrix(SageQQ, [vectors[position] for position in facet_positions])
         # LORENTZ_DoFlipping uses GAP NullspaceMat(TransposedMat(ListIso{eInc})).
-        facet_nullspace = _pinned_nullspace_matrix(selected.transpose())
+        # That kernel is one line, and the direction below is oriented
+        # towards a nonincident vector and made primitive, so every basis of
+        # the line gives the same normal: Sage's exact kernel of the rows
+        # replaces the per-entry GAP conversion.
+        facet_nullspace = selected.right_kernel_matrix()
         if facet_nullspace.nrows() != 1:
             raise ArithmeticError("a perfect-cell facet must have one normal direction")
         direction = facet_nullspace.row(0)
