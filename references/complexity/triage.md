@@ -217,6 +217,15 @@ Fix 4 (sage-extensions 766dd1e8, merged as c696bf9e): a sparse free-module vecto
 | Allcock | 8595 | w6_l7 9.0, w135_l21 15.6, w323_l4 28.6 | 17.7 | 5.8, 12.4, 27.1 | 15.1 | 42.3 -> 36.0 |
 | ListReflect rank 3 | 8602 | 99 7.2, 3999 14.8, 7999 27.6 | 16.5 | 9.2, 11.9, 20.5 | 13.9 | 39.5 -> 33.1 |
 
+Fix 6 (sage-extensions 739dbc07, merged as 6f337e9a): the arrow-hash probe of a domain and the hash of a module arrow are computed once (module-arrow hashes 1.01 s -> 0.25 s profiled); `is_isotropic` is a cached datum of the lattice (818 decisions on 294 lattices, 2.47 s -> 1.15 s); `signature_pairs()` and `signature_pair(p, q)` are built once (`_sylvester` 1.41 s -> 0.75 s). Gates pass at 6f337e9a (73 s); the touched unit files (arrow and set hashes, isotropic binary lattices) have the same results at c696bf9e and after (23 passed, 1 failed on both). Paired price, load average 5-8 (`zk_pair2_base.log` at c696bf9e, `zk_pair2_head.log` at 6f337e9a; the 6f337e9a side also holds origin/main 08322dee):
+
+| Family | Cases | c696bf9e: s | Mean | 6f337e9a: s | Mean | Total h before -> after |
+| --- | --- | --- | --- | --- | --- | --- |
+| Allcock | 8595 | w6_l7 4.4, w135_l21 9.6, w323_l4 20.3 | 11.4 | 4.2, 10.0, 18.6 | 10.9 | 27.3 -> 26.1 |
+| ListReflect rank 3 | 8602 | 99 5.4, 3999 10.1, 7999 19.6 | 11.7 | 4.9, 8.8, 19.4 | 11.0 | 28.0 -> 26.4 |
+
+The c696bf9e prices here are lower than in the fix 4 pair (15.1 s, 13.9 s) at the same revision: the machine load fell from 8-18 to 5-8. Only paired differences are evidence; the family totals carry the load of their run.
+
 
 Next sinks in the w323_l4 profile (46.7 s): `anisotropic_cycle` on the binary edge planes 6.6 s (468 calls), `plane_lattice` construction `Lattices(ZZ)(gram)` 3.9 s (292 lattices, 12 ms each: queue item 4, the lattice constructor), `is_isotropic` of binary planes 2.1 s, `initial_vertex` 4.9 s.
 
