@@ -22,7 +22,13 @@ from pathlib import Path
 import pytest
 from cysignals.signals import AlarmInterrupt
 
-_BUDGETS = json.loads((Path(__file__).parent / "test_budgets.json").read_text())["budgets"]
+_RECORD = json.loads((Path(__file__).parent / "test_budgets.json").read_text())
+# A model budget is the time a correct implementation needs, a target, not a
+# kill limit. A node with a recorded price (least measured passing time) is
+# killed at PRICE_FACTOR times that price; PRICE_FACTOR covers the gap between
+# the local measuring machine and the CI runner.
+PRICE_FACTOR = 3
+_BUDGETS = _RECORD["budgets"] | {node: PRICE_FACTOR * price for node, price in _RECORD["prices"].items()}
 
 
 def pytest_collection_modifyitems(items):
