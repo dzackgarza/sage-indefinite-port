@@ -27,6 +27,7 @@ from sage_extensions.categories.polyhedral_cones import RationalPolyhedralCones
 from sage_extensions.categories.sets.set_categories import Sets
 from sage_extensions.tensors.tensor import _engine_component_matrix
 from sage.geometry.polyhedron.constructor import Polyhedron
+from sage.libs.pari import pari
 from sage.matrix.constructor import identity_matrix, matrix
 from sage.matrix.matrix_rational_dense import Matrix_rational_dense
 from sage.misc.cachefunc import cached_method
@@ -937,16 +938,27 @@ class _Edgewalk:
         Lexicographic positivity is a regular ordering on this finite root
         system. Its positive-root cone has precisely the simple-root rays.
         """
+        # edgewalk.h:1845-1866: one FindFixedDistVectors per norm on the
+        # Gram matrix of the definite complement k^perp.  The complement's
+        # basis rows and Gram matrix are its engine data; PARI qfminim (the
+        # engine of the complement's vectors_of_square) returns one vector
+        # of each sign pair, in the order that shell lists them, and only
+        # the accepted roots are wrapped as lattice vectors.
         inclusion = timelike.orthogonal_complement().inclusion()
-        complement = inclusion.domain()
+        basis = matrix(SageZZ, [self.key(inclusion(generator)) for generator in _coordinate_basis(inclusion.domain())])
+        gram = self.gram.change_ring(SageZZ)
+        complement_gram = pari(basis * gram * basis.transpose())
         positive: list[_Vector] = []
         for norm in self.norms:
-            for point in complement.vectors_of_square(complement.base_ring()(_integer(norm))):
-                root = inclusion(point)
-                if next(entry for entry in _key(root) if entry) < 0:
+            for point in complement_gram.qfminim(norm, None, 0)[2].sage().columns():
+                root = point * basis
+                if root * gram * root != norm:
                     continue
-                if all((2 * int(self.pairing(root, basis))) % norm == 0 for basis in self.lattice.module_generators()):
-                    positive.append(root)
+                if next(entry for entry in root if entry) < 0:
+                    root = -root
+                if any((2 * entry) % norm for entry in gram * root):
+                    continue
+                positive.append(self.element(tuple(root)))
         if not positive:
             if require_full:
                 # The upstream ordinary-cone constructor rejects a root
