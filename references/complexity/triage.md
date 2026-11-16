@@ -832,3 +832,34 @@ Blocker for the 6 h target and for "every phase under 1 h removable": two phases
 - Edge plane (1.25 h): the per-plane steps already run on engine matrices; the excess over the floor is Sage matrix construction and Python glue spread over about ten statements of 40-110 us each (`zk_ph25_*.json` line charges). The largest step is the PARI left kernel of C G W^T at its floor. Reading C cap P from the unimodular transform of the projected Hermite form (removing two Cramer solves and one product) prices at about 0.15 ms per plane, 0.2 h; not made.
 - Coloured-family stabilizer and transporter (about 1.4 h): after fix 28 the profile (`zk_cvfprof2.log`) is spread over sage-extensions `integral_restriction` (22 %), the pairing-graph isomorphism (12 %), reading the family vectors through product projections (13 %; caching the projections removed nothing, so the cost is the owned morphism call), and the owned wraps of each rational transformation. The source step is one weighted-matrix test of a handful of vectors, so the realizable lever is a coloured-family equivalence and stabilizer on engine data (family rows, pairing matrix, permutation search, integrality of the induced matrix) inside sage-extensions `coloured_vector_families`, wrapped once; it is a change to that module's contract (OWN-22, OWN-24), not made here.
 - The initial-vertex Vinberg coset step (0.84 ms against an unmeasured floor) is not priced.
+
+## Walk floor (port b71f27b, sage-extensions a3dac1de)
+
+Steps per case are the misses of each cached phase method and the outermost calls of each plain one, in one warm process with no profiler (`zk_floorcount.py`, logs `zk_fc_w323.log`, `zk_fc_6219.log`, `zk_fc_a1.log` and `zk_fc_l1.log`; seed 1, 25 cases per family). The two seeded samples give the same counts to one decimal, because the Allcock table and the rank-3 ListReflect list hold the same lattices in nearly the same order. The source count is read from edgewalk.h and fund_domain_vertices.h. For each phase the port count equals the source count: one Pplane and one isotropy decision per edge (edgewalk.h:868-889), one projected lattice and one Anisotropic run per edge and root norm (753-845), one get_next per Dynkin extension (966-1061), one candidate list per edge, norm and residual norm (map_res_norm, 919-930), one stabilizer per vertex and one equivalence test per known vertex of equal hash (1449-1537), and one dual description per growth of the closed root orbit (f_try_terminate, 1700-1726). The floor of one step is the engine operation that does the source step, measured warm by timeit on rank-3 data (`zk_floorbench.py`, `zk_floorbench.log`; edge plane and isotropy from `zk_epops.py` and `zk_floor19.py`). Coordinate helpers, the report, its transport to the input lattice and walk bookkeeping have no source step: the source keeps its vectors as engine data.
+
+| Phase | source steps per case: sample / w323_l4 / ListReflect_6219 | floor per step (engine operation) | floor ms per case: sample / w323_l4 / ListReflect_6219 | current s per case, sample |
+| --- | --- | --- | --- | --- |
+| edge plane | 162.8 / 390 / 234 planes + 16.8 / 30 / 18 C_N | 750 us (PARI left kernel, projection, HNF) + 150 us (C_N by HNF) | 125 / 297 / 178 | 0.27 |
+| extension roots (reconstruction, integrality on C_N) | 243.9 / 524 / 361 | 125 us (u + B^T w and C^-1 on Sage QQ vectors) | 30 / 66 / 45 | 0.07 |
+| anisotropic family | 180.7 / 468 / 312 | 150-195 us (`_FormBinaryCycle` on integers) | 27 / 70 / 61 | 0.04 |
+| binary candidates (factor pairs, filter) | 243.9 / 524 / 361 | 70 us (PARI divisors, signed pairs) isotropic; 3 us filter anisotropic | 17 (bound: all isotropic) / 1.6 / 1.1 | 0.51 (isotropic branch, without the edge plane and `plane_lattice`) |
+| initial vertex | isotropic 0.4 / 0 / 0; ordinary roots 0.6 / 2 / 1; Vinberg coset steps 5.3 / 460 / 0 | 250 us (qfsolve, qfminim per norm, cone); 42 us (qfminim per norm); 126 us per coset step (Smith residual, qfminim) | 0.8 / 58 / 0.04 | 0.30 |
+| reflectivity certificate | 6.1 / 9 / 9 | 342 us (pplpy dual description, 8 halfspaces) | 2.1 / 3.1 / 3.1 | 0.04 |
+| is_isotropic of the plane | 8.2 / 13 / 13 | 95 us | 0.8 / 1.2 / 1.2 | 0.001 |
+| coloured-family stabilizer | 4.3 / 7 / 7 | 147 us (permutations of the pairing matrix, one QQ 3 x 3 solve per survivor) | 0.6 / 1.0 / 1.0 | 0.12 |
+| coloured-family transporter | 3.9 / 6 / 5 | 147 us (same search) | 0.6 / 0.9 / 0.7 | 0.20 |
+| vertex configuration and invariant | 8.4 / 13 / 13 | 50 us (pairings of four vectors) | 0.4 / 0.7 / 0.7 | 0.05 |
+| vertex_from_root, candidate order | 16.5 + 13.4 / 35 + 39 / 40 + 47 | 14 us (cross product of G r, G alpha, content) + 2 us | 0.3 / 0.6 / 0.7 | 0.06 |
+| cusp step (isotropic next vertex, cusp roots) | 1.0 / 0 / 0 | 200 us (null lines of a binary form, 4 cusp equations) | 0.2 / 0 / 0 | 0.08 |
+| walker setup (root norms, isotropy of L) | 1 / 1 / 1 | 175 us (matsnf, qfsolve) | 0.2 / 0.2 / 0.2 | 0.07 |
+| indefinite reduction | 0.6 / 1 / 1 | 90 us (qflllgram) | 0.05 / 0.09 / 0.09 | 0.03 |
+| edge directions | 4.3 / 7 / 7 | 7.5 us (3 x 3 inverse, cross products) | 0.03 / 0.05 / 0.05 | 0.15 |
+| edge orbits | 4.3 / 7 / 7 | 5 us | 0.02 / 0.04 / 0.04 | 0.005 |
+| Dynkin extensions | 5.2 / 8 / 8 edges | 2.6 us per edge (pairing types of about 30 extensions) | 0.01 / 0.02 / 0.02 | 0.06 |
+| admit isometry | 5.6 keys + 0.4 fixed spaces / 6 + 1 / 19 + 0 | 2.5 us (3 x 3 product) + 8.5 us (matker) | 0.02 / 0.02 / 0.05 | 0.07 |
+| report, transport, coordinate helpers, bookkeeping | 0 | 0 | 0 / 0 / 0 | about 0.3 |
+| total | | | 205 / 500 / 293 | 2.44 (walk) |
+
+Floor of the walk over 17,200 cases: by the sample means 0.205 s x 17,200 = 0.98 h; by the two price cases 0.500 s x 8595 + 0.293 s x 8602 = 1.9 h. The family totals are 12.9 h, so about 11-12 h of the walk is above the engine floor, and the 6 h target is reachable by making the owned operations cheap. Two thirds of the floor is the edge plane (0.75 ms per plane on Sage matrices), and its own floor on integer data is lower.
+
+The largest phases above their floors in the sample: binary candidates of isotropic edge planes 0.51 s per case against at most 17 ms (about 2.4 h; `binary_split_vectors_of_square` computes the null basis of the owned plane lattice for each residual norm, where the source factors the form once per edge and norm, `Factor_GP_LN` of get_sing_comp_isotropic, and it builds and checks each owned point), the coloured-family transporter and stabilizer 0.32 s against 1.2 ms (1.5 h), initial vertex 0.30 s against 0.8 ms (1.4 h), edge directions 0.15 s against 0.03 ms (0.7 h), edge plane 0.27 s against 0.125 s (0.7 h), report and coordinate helpers about 0.3 s against 0 (1.4 h).
