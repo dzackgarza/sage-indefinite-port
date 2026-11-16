@@ -620,3 +620,40 @@ Fix 15 (port): `edge_plane_for_divisor` solved three systems with Sage's general
 | ListReflect rank 3 | 8602 | 5.48, 5.08 | 4.84, 4.90 | 12.6 -> 11.6 (pairs, about 1.0 h; phase delta about 0.4 h) |
 
 The order effect is large (base first: 0.53 and 0.64 s; head first: 0.07 and 0.18 s), so the order-balanced pairs give about 1.7 h and the two-case phase delta about 0.9 h. Landed at the mean of the two prices, about 1.3 h. Gates (`zk_gates_f15.log`): w183, w217_l26, ListReflect_2917 and the branch-representative sample pass.
+
+Withdrawn, under an hour (`f16.patch` in the probe directory): `_OrientedBinaryCycle` read its form from the Gram tensor instead of two `module_generator`, two `q` and one `b` (`__init__` 0.425 -> 0.067 s in w323_l4, 0.155 -> 0.026 s in ListReflect_6219, about 3 % of a case, 0.7 h), and built its period isometry on the labels instead of enumerating `module_generators()` (3.2 ms per first request; the cost moved into the label-function isometry and `cycle` stayed at 0.91 / 0.76 s). `zk_cycle_eq.py`: the same forms, representatives and isometries on 400 random anisotropic planes.
+
+Phase table after fixes 13-15 (port 6f44af3, sage-extensions 891fee04; `zk_ph15_*.json`; hours on the warm totals below):
+
+| Phase | w323_l4 | ListReflect_6219 | hours over 17,200 |
+| --- | --- | --- | --- |
+| anisotropic family | 1.52 | 1.18 | 4.4 |
+| edge plane | 1.35 | 0.73 | 3.3 |
+| initial vertex | 1.67 | 0.30 | 2.8 |
+| `plane_lattice` | 0.90 | 0.35 | 1.9 |
+| reflectivity certificate | 0.56 | 0.37 | 1.5 |
+| edge directions | 0.37 | 0.35 | 1.2 |
+| `is_isotropic` of the plane | 0.51 | 0.19 | 1.1 |
+| vertex stabilizer generators | 0.13 | 0.45 | 1.1 |
+| coordinate helpers | 0.30 | 0.28 | 1.0 |
+| vertex transporter search | 0.37 | 0.22 | 0.9 |
+| edge orbits | 0.19 | 0.29 | 0.9 |
+| other phases | 1.09 | 0.82 | 3.3 |
+| sum | 8.96 | 5.53 | 23.1 |
+
+New family totals (warm seeded sample, seed 1, 25 cases per family, `zk_wpair_f15r.log`): Allcock 4.78 s x 8595 = 11.4 h, ListReflect rank 3 4.90 s x 8602 = 11.7 h, about 23.1 h (27.9 h at c435fd6 on the same 50 cases).
+
+Measured remainders of the phases over an hour, none an hour-sized single operation:
+
+| Phase | operation | count per case (w323_l4 / ListReflect_6219) | wall in the walk | hours |
+| --- | --- | --- | --- | --- |
+| anisotropic family | `_OrientedBinaryCycle.cycle` (start `content` and `q` 0.24 s; closed cycles: `Isom` and representative points 0.33 s) | 468 / 312 | 0.91 / 0.76 s | about 2.7 |
+| | `_OrientedBinaryCycle.__init__` | 292 / 114 | 0.43 / 0.16 s | 0.7 (withdrawn above) |
+| | lattice isometry applications, all sites (`zk_isoapp.py`) | 315 / 390 | 0.17 / 0.18 s | 0.6 |
+| edge directions | `evaluate_covector`, each (facet, root) pair read twice | 56 / 56 at 4.5 ms | 0.25 / 0.26 s | 0.9; halving the count in the port 0.45 |
+| `is_isotropic` | `_sylvester` (Sage `QuadraticForm.signature_vector`) + `qfsolve` witness | 346 + 294 / 154 + 116 | 0.47 / 0.22 s | about 0.9 |
+| `plane_lattice` | `Lattices(ZZ)(gram)`, 3.2 ms each | 292 / 114 | 0.90 / 0.35 s | 1.9 |
+| all phases | `ZZ(int)` and ring-element round trips | 4509 + 39,478 / 2780 + 24,098 | 0.48 / 0.25 s | 0.9 (fix 12, withdrawn) |
+| all phases | category membership tests, 8.3 us each, no site above 0.09 s | 84,444 / 62,458 | 0.70 / 0.59 s | about 2 |
+
+Blocker for the next hour item: every remaining item over an hour is the unit cost of owned arithmetic, spread over many sites. `zk_inside.py` on `_evaluate_covector` (4.5 ms for a dot product of two rank-3 vectors) charges its time to owned ring element construction, `_operand_in_ring`, category membership, `_MorCategoryOf.Of` and set-morphism calls, no function above 9 % of it; `Lattices(ZZ)(gram)` (3.2 ms) charges category classcalls, membership tests, ring hashing and tensor-shape checks in the same way. The lever is the one recorded as decided (owned elements carry engine data; an owned operation is engine arithmetic plus a constant-time wrap), applied to owned ring elements, covector evaluation and lattice construction in sage-extensions; it is not one fix but a change to the arithmetic of the owned ring and module element classes, with its own contract (CONTRIBUTING OWN-22, OWN-24). The largest single item is `plane_lattice` at 1.9 h; the next is the cycle itself (2.7 h), whose owned-operation counts are already near the source's (one start vector, one period isometry and its representatives per cycle).
