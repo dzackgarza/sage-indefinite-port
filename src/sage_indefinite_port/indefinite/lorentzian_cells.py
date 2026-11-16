@@ -1313,12 +1313,14 @@ class LorentzianPerfectLocalBackend:
         coordinate_rows: tuple[tuple[int, ...], ...],
     ) -> tuple[tuple[int, ...], ...]:
         r"""The same permutation certificate for points already in lattice coordinates."""
-        lattice = cell.lattice
-        labels = tuple(lattice.module_generating_set())
         positions = {row: position for position, row in enumerate(coordinate_rows)}
         if len(positions) != len(coordinate_rows):
             raise ArithmeticError("a stable point configuration contains repeated points")
         generators = self.cell_stabilizer(cell)
+        actions = self._stabilizer_actions[cell]
+        assert len(actions) == len(generators), (
+            "the cell stabilizer's generators were not computed with their row actions"
+        )
         if not coordinate_rows:
             # The unique action on the empty set is the empty permutation.
             # Sage represents matrix(ZZ, ()) as 0-by-0, which cannot be
@@ -1326,12 +1328,10 @@ class LorentzianPerfectLocalBackend:
             return tuple(() for _generator in generators)
         point_matrix = matrix(SageZZ, coordinate_rows)
         permutations = []
-        for generator in generators:
-            # The rows of this matrix are g(e_i). Linearity therefore gives
-            # g(x) = x * action for every row of point_matrix. Evaluate the
-            # categorical isometry only on the ambient basis, rather than
-            # separately on every vertex of a large perfect cell.
-            action = matrix(SageZZ, [_coordinate_row(lattice, generator(lattice.module_generator(label)), SageZZ) for label in labels])
+        for action in actions:
+            # The rows of the action are g(e_i), retained by the stabilizer
+            # search that built g. Linearity therefore gives g(x) = x * action
+            # for every row of point_matrix.
             images = point_matrix * action
             try:
                 permutation = tuple(positions[tuple(int(entry) for entry in row)] for row in images.rows())
@@ -2230,6 +2230,9 @@ class LorentzianPerfectLocalBackend:
         # Cache proper partial spans; full-rank leaves instead receive
         # the complete integral transporter certificate.
         stabilizer_elements: list[LatticeIsometryMethods] = []
+        # Each stabilizer generator's integral row action, x -> x * action,
+        # retained beside it so its permutation of the rays is one product.
+        stabilizer_actions: list[Matrix_integer_dense] = []
         first_witness: LatticeIsometryMethods | None = None
         first_only = not all_images
         # Lorentzian.g:660-696 supplies the target automorphism group to
@@ -2327,6 +2330,7 @@ class LorentzianPerfectLocalBackend:
                         }
                     )
                     stabilizer_elements.append(witness)
+                    stabilizer_actions.append(action)
                 group_permutations.append(permutation)
             # Construct the initial generated subgroup once, after all exact
             # seed candidates have been certified. Rebuilding a degree-n
@@ -2435,6 +2439,7 @@ class LorentzianPerfectLocalBackend:
                 if generators_only:
                     if permutation not in subgroup:
                         stabilizer_elements.append(witness)
+                        stabilizer_actions.append(action)
                         group_permutations.append(permutation)
                         subgroup = symmetric.subgroup(group_permutations)
                 elif first_only:
@@ -2675,6 +2680,8 @@ class LorentzianPerfectLocalBackend:
             return None
 
         backtrack({}, (), ())
+        if generators_only:
+            self.__dict__.setdefault("_stabilizer_actions", {})[source] = tuple(stabilizer_actions)
         return first_witness if first_only else tuple(stabilizer_elements)
 
 

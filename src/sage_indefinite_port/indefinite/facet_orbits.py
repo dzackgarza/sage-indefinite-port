@@ -437,6 +437,7 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
         domain=tuple(range(1, len(rays) + 1)),
     )
     order = int(group.order())
+    gap_group = libgap(group)
     records: list[FacetOrbitRecord] = []
     covered: set[frozenset[int]] = set()
     point_orbits = tuple(frozenset(int(point) - 1 for point in orbit) for orbit in group.orbits())
@@ -463,9 +464,11 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
             key = len(incidence)
             for previous in by_size.get(key, ()):
                 target = sorted(position + 1 for position in previous.incidence)
-                if libgap.RepresentativeAction(group, positions, target, libgap.OnSets) != libgap.eval("fail"):
+                if libgap.RepresentativeAction(gap_group, positions, target, libgap.OnSets) != libgap.eval("fail"):
                     return None
-            stabilizer_order = int(group.stabilizer(positions, action="OnSets").order())
+            # Only |Stab_G(F)| is read, so GAP's Stabilizer is not raised to
+            # a Sage permutation group.
+            stabilizer_order = int(libgap.Stabilizer(gap_group, positions, libgap.OnSets).Size())
             record = FacetOrbitRecord(normal, incidence, order // stabilizer_order, ())
             by_size.setdefault(key, []).append(record)
             # A listed orbit recognizes its later members by lookup instead
