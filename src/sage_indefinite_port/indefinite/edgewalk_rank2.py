@@ -6,6 +6,8 @@ the ordered search and the period stopping rule belong to the edgewalk.
 
 from __future__ import annotations
 
+from weakref import finalize, ref
+
 from sage_extensions.all import Lattices
 from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
 from sage.matrix.constructor import matrix
@@ -171,4 +173,14 @@ class _OrientedBinaryCycle:
 
 def anisotropic_cycle(lattice: Lattices.ParentMethods, bound: Rational, start: _Vector) -> tuple[LatticeIsometryMethods, tuple[_Vector, ...]] | None:
     """The positive oriented period and all primitive representatives after start."""
-    return _OrientedBinaryCycle(lattice).cycle(int(_rational(bound).floor()), start)
+    held = _ORIENTED_CYCLES.get(id(lattice))
+    if held is None or held[0]() is not lattice:
+        held = _ORIENTED_CYCLES[id(lattice)] = (ref(lattice), _OrientedBinaryCycle(lattice))
+        finalize(lattice, _ORIENTED_CYCLES.pop, id(lattice), None)
+    return held[1].cycle(int(_rational(bound).floor()), start)
+
+
+# The form coefficients and basis labels of a binary lattice, read once per
+# lattice: the walk shares one plane lattice between the edges of a Gram.
+# Keyed by identity: a lattice's own hash reads its construction data.
+_ORIENTED_CYCLES: dict[int, tuple[ref, _OrientedBinaryCycle]] = {}
