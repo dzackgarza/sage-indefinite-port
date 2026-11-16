@@ -875,3 +875,15 @@ sage-extensions `coloured_vector_families` searches a family of at most eight ve
 Equality: sage-extensions `zk_cvfeq.py` (seeds 3 and 11) 186 stabilizers equal as generated groups and 172 transporters equal in existence; `zk_eqwalk.py` seed 7 (`zk_eq38.log`): the 50 cases are identical to `zk_eq32.log`. sage-extensions owner tests (`zk_se_cvf36.log`): 13 pass; the two failures of test_full_orthogonal_integral_transporter.sage also fail at a3dac1de (`zk_se_prior36.log`). Tier-1 at bcad374a (`zk_t1_r38.log`): 46 of 49 pass; three nodes priced over 60 s reach the cap with no error. Edgewalk gates (`zk_gates_r38.log`) and owner tests (`zk_owner_r38.log`) pass.
 
 Family totals: Allcock 2.19 s x 8595 = 5.2 h, ListReflect rank 3 2.45 s x 8602 = 5.9 h, about 11.1 h.
+
+## Fix 31: isotropic binary candidates by factor pairs of the edge form (port 1bfbcc9)
+
+The isotropic branch of `binary_candidates` built an owned plane lattice per form and enumerated owned points (`binary_split_vectors_of_square`), 0.51 s per case against a floor of at most 17 ms (walk-floor table). The source factors the integer form once per edge and norm (edgewalk.h:921-961, Factor_GP_LN). `binary_split_form_vectors_of_square` runs the same factor-pair enumeration on (a, b, c), with the null lines read from the form; the lattice route of lorentzian_cells wraps it.
+
+| Operation | paired before -> after (seed 1, 25 cases, means of both orders, `zk_wpair_f31a.log`, `zk_wpair_f31b.log`) | hours removed | commit |
+| --- | --- | --- | --- |
+| isotropic binary candidates on the integer form | Allcock 2.09 -> 1.72 s, ListReflect rank 3 2.33 -> 1.72 s | 0.9 + 1.5 = 2.3 | 1bfbcc9 |
+
+Equality: `zk_split_eq.py` (150 random split forms, 450 squares: null basis and vectors in order) identical at 9f3a20a and 1bfbcc9; the 50 seed-7 walks (`zk_eq39.log`) identical to `zk_eq38.log`. Gates (`zk_gates_r39.log`) and owner tests (`zk_owner_r39.log`) pass. No repin.
+
+Family totals: Allcock 1.72 s x 8595 = 4.1 h, ListReflect rank 3 1.72 s x 8602 = 4.1 h, about 8.2 h.
