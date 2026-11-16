@@ -1023,23 +1023,25 @@ class _Edgewalk:
         # on an independent basis of that span, not the (possibly singular)
         # Gram matrix of every wall.  The edge plane is Lorentzian, so its
         # orthogonal complement must be positive definite and nondegenerate.
-        root_matrix = wall_matrix.row_space().basis_matrix()
+        # The reduced row echelon form is the basis Sage's QQ row space
+        # carries; the ZZ span of the projected rows is the Hermite normal
+        # form of their integral scaling, the echelon basis of Sage's ZZ
+        # span, both formed without constructing the free modules.
+        echelon = wall_matrix.echelon_form()
+        root_matrix = echelon.matrix_from_rows(range(echelon.rank()))
         root_gram = root_matrix * self.gram * root_matrix.transpose()
         if not root_gram.is_invertible():
             raise ArithmeticError("the edge-wall span must be nondegenerate")
-        projected = [row - (row * self.gram * root_matrix.transpose()) * root_gram.inverse() * root_matrix for row in constraint_rows.rows()]
-        basis = matrix(
-            SageQQ,
-            list((SageQQ**self.rank).span(projected, SageZZ).basis_matrix().rows()),
-        )
+        projected = constraint_rows - constraint_rows * self.gram * root_matrix.transpose() * root_gram.inverse() * root_matrix
+        projected_denominator = projected.denominator()
+        hermite = (projected_denominator * projected).change_ring(SageZZ).echelon_form()
+        basis = hermite.matrix_from_rows(range(hermite.rank())).change_ring(SageQQ) / projected_denominator
         if basis.nrows() != 2:
             raise ArithmeticError("the projected constraint lattice must have rank two")
         if oriented_basis.transpose().solve_right(basis.transpose()).transpose().det() < 0:
             basis.rescale_row(0, -1)
         work_gram = basis * self.gram * basis.transpose()
-        scale = SageZZ.one()
-        for entry in work_gram.list():
-            scale = scale.lcm(entry.denominator())
+        scale = work_gram.denominator()
         plane_lattice = self.plane_lattice(tuple(tuple(SageZZ(scale * work_gram[row, column]) for column in range(2)) for row in range(2)))
         r0_coordinates = basis.transpose().solve_right(r0.column()).column(0)
         r0_vector = self.plane_primitive(plane_lattice, r0_coordinates)
@@ -1050,10 +1052,10 @@ class _Edgewalk:
         # when it pairs to zero with every edge wall, so the coefficient
         # lattice of C cap P is the integral left kernel of B G R^T.
         equations = constraint_rows * self.gram * wall_matrix.transpose()
-        denominator = SageZZ.one()
-        for entry in equations.list():
-            denominator = denominator.lcm(entry.denominator())
-        coefficients = (denominator * equations).change_ring(SageZZ).left_kernel().basis_matrix()
+        # The Hermite normal form of a basis of the integral left kernel is the
+        # echelon basis Sage's left_kernel() carries (the form is unique for
+        # the kernel lattice), computed without the kernel module.
+        coefficients = (equations.denominator() * equations).change_ring(SageZZ).left_kernel_matrix(algorithm="pari").echelon_form()
         intersection_rows = coefficients.change_ring(SageQQ) * constraint_rows
         if intersection_rows.nrows() != 2:
             raise ArithmeticError("C cap P must have rank two")
