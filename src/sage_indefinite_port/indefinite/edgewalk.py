@@ -20,7 +20,6 @@ from functools import cmp_to_key
 
 from sage_extensions.all import ZZ, HyperbolicLattices, Lattices
 from sage_extensions.categories.definite_lattices import _ExactCVPEngine
-from sage_extensions.categories.group.g_sets import FiniteGSets
 from sage_extensions.categories.hyperbolic_lattices import AllcockEdgewalkReport
 from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
 from sage_extensions.categories.polyhedral_cones import RationalPolyhedralCones
@@ -1607,16 +1606,36 @@ class _Edgewalk:
         )
 
     def edge_orbits(self, vertex: _Vertex, local_generators: tuple[LatticeIsometryMethods, ...]) -> tuple[tuple[_Roots, _Vector], ...]:
-        """Outgoing edges modulo the supplied full vertex stabilizer."""
+        r"""Outgoing edges modulo the supplied full vertex stabilizer, the first direction of each orbit in facet order.
+
+        edgewalk.h:1555 OrbitSplittingSet(vf, GRP1_integral): the facets of
+        the root cone split into orbits of the stabilizer acting on the roots.
+        A generator acts on root coordinates by x -> x * M, M the rows of the
+        images of the basis (``isometry_key``), so the orbits are swept on the
+        root coordinates and the integral matrices of the generators.
+        """
         directions = self.edge_directions(vertex)
-        direction_positions = {frozenset(self.key(root) for root in roots): index for index, (roots, _discarded) in enumerate(directions)}
-
-        def act_on_direction(isometry: LatticeIsometryMethods, index: int) -> int:
-            return direction_positions[frozenset(self.key(isometry(root)) for root in directions[index][0])]
-
-        local_group = self.lattice.O().subgroup(local_generators)
-        direction_orbits = FiniteGSets(local_group)(tuple(range(len(directions))), act_on_direction).orbits()
-        return tuple(directions[int(orbit.representative())] for orbit in direction_orbits)
+        root_rows = [tuple(vector(SageZZ, self.key(root)) for root in roots) for roots, _discarded in directions]
+        position = {frozenset(tuple(row) for row in rows): index for index, rows in enumerate(root_rows)}
+        actions = tuple(matrix(SageZZ, self.isometry_key(generator)) for generator in local_generators)
+        reached = [False] * len(directions)
+        representatives = []
+        for start in range(len(directions)):
+            if reached[start]:
+                continue
+            reached[start] = True
+            representatives.append(start)
+            frontier = [start]
+            while frontier:
+                images = []
+                for index in frontier:
+                    for action in actions:
+                        image = position[frozenset(tuple(row * action) for row in root_rows[index])]
+                        if not reached[image]:
+                            reached[image] = True
+                            images.append(image)
+                frontier = images
+        return tuple(directions[index] for index in representatives)
 
     def binary_walk(self) -> AllcockEdgewalkReport:
         """The edgewalk of a binary lattice: a compact segment between two walls, or no finite chamber.
