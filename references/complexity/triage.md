@@ -201,6 +201,16 @@ Fix 1 (edgewalk `constraint_rows`, this commit): C_N = {v in L : b(v, L) in d Z}
 
 Fix 2 (sage-extensions 17f2c5e8): the finite Gram contraction reads its rows into one cached engine space (Sage's generic vector constructor inferred a parent per call); w323_l4 profile: `Lattices.norm` 1.97 s -> 1.18 s in 1436 calls, about 2 % of the walk (about 1.6 h over the edgewalk families). Gates pass.
 
+Fix 3 (sage-extensions 0e07fb40, merged as b95b8f67): `owned_parent_class` ran the final-category aliases and participant implementations again on the cached dynamic class at each refinement; a second run for the providers that last prepared the class is skipped (the returned class is the same, so no shared class is mutated, unlike 7eb5248). `cardinal(n)` for an exact nonnegative integer goes straight to the finite construction (50750 calls per w323_l4 walk through the category dispatch); `index_rank_family` is built once per tuple of ranks; the nested-rows Gram tensor no longer re-checks its valence. w323_l4 profile: `owned_parent_class` 2.66 s -> 0.63 s, `_nested_gram_tensor` 1.04 s -> 0.27 s. Four edgewalk gates pass (73 s); the touched sage-extensions unit files (cardinals, tensors, lattice construction routes, refine) have the same 14 failures at 17f2c5e8 and after.
+
+Same three cases per family, unprofiled, each in its own process (`zk_price_base3.log` at 17f2c5e8, `zk_price_f1.log` at 0e07fb40; one run each, spread about +-20 %):
+
+| Family | Cases | At 17f2c5e8: s | Mean | At 0e07fb40: s | Mean | Total h before -> after |
+| --- | --- | --- | --- | --- | --- | --- |
+| Allcock | 8595 | w6_l7 5.7, w135_l21 14.0, w323_l4 26.3 | 15.3 | 6.3, 11.1, 23.8 | 13.7 | 36.6 -> 32.8 |
+| ListReflect rank 3 | 8602 | 99 7.0, 3999 22.7, 7999 31.9 | 20.5 | 4.4, 11.8, 21.2 | 12.5 | 49.1 -> 29.8 |
+
+
 Next sinks in the w323_l4 profile (46.7 s): `anisotropic_cycle` on the binary edge planes 6.6 s (468 calls), `plane_lattice` construction `Lattices(ZZ)(gram)` 3.9 s (292 lattices, 12 ms each: queue item 4, the lattice constructor), `is_isotropic` of binary planes 2.1 s, `initial_vertex` 4.9 s.
 
 Blocker (long tail above 6 h): after fixes 1 and 2 the probe-backed total is about 88 h (edgewalk about 82 h, IsotropicCases 5.5 h, Enriques >= 1.5 h, Lorentzian pairs 0.3 h). The 6 h target needs the edgewalk cases about 14 times faster. No single step is more than about 15 % of the w323_l4 walk: the remaining time is spread over owned rank-2 objects built per edge (`Lattices(ZZ)(gram)` 12 ms each, per-element `q`, `content`, `module_rank` and cardinality decisions in `anisotropic_cycle`, `vectors_of_square` in `initial_vertex`). Removing it is the constructor redesign of queue item 4 (engine-data constructors for `_lattice`, `divisible_sublattice`, kernels, finite ordered sets), each with its own sage-extensions engine-data contract (OWN-22, OWN-24) and probe; not started. K3 queue items 2-4 (flip LLL, remaining transporter sinks, the 600 s target) were withdrawn by the coordinator: the K3 node needs to pass once at about 950 s.
