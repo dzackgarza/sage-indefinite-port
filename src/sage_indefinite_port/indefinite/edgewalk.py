@@ -944,18 +944,23 @@ class _Edgewalk:
         return integral_norm // 2 if integral_norm % 2 == 0 else integral_norm
 
     @cached_method
-    def constraint_for_divisor(self, divisor: int) -> Parent:
-        r"""C = {v in L : 2 b(v, L) / norm in Z}, the vectors whose reflection of that norm is integral."""
-        return self.lattice.divisible_sublattice(divisor)
-
-    @cached_method
     def constraint_rows(self, divisor: int) -> tuple[Matrix_rational_dense, Matrix_rational_dense]:
-        r"""The rows of a basis of C_N and their inverse, computed once per norm (edgewalk.h:121-131 ComputeSublatticeInfos)."""
-        constraint = self.constraint_for_divisor(divisor)
-        inclusion = constraint.inclusion()
-        rows = matrix(SageQQ, [self.row(inclusion(generator)) for generator in _coordinate_basis(inclusion.domain())])
+        r"""The rows of a basis of C = {v in L : b(v, L) in d Z} and their inverse, computed once per norm.
+
+        edgewalk.h:110-131 ComputeLattice_LN and ComputeSublatticeInfos:
+        C = IntersectionLattice(I, d G^-1), the integral vectors of the
+        lattice d L^# written in the framing of L.  Generic callees: the
+        intersection is Sage's exact ZZ-module intersection (echelon basis)
+        in place of the pinned IntersectionLattice, and the pinned
+        SublatticeBasisReduction (LLL) is not applied.  Every consumer
+        (the edge plane projection, C cap k^perp and the cusp root) reads
+        only the integral span of these rows, so the basis does not matter.
+        """
+        ambient = SageZZ**self.rank
+        dual = ambient.span((divisor * self.gram.inverse()).rows(), SageZZ)
+        rows = dual.intersection(ambient).basis_matrix().change_ring(SageQQ)
         if rows.nrows() != self.rank or rows.rank() != self.rank:
-            raise ArithmeticError("the module generators of C_N must be a basis of a full-rank sublattice")
+            raise ArithmeticError("C_N must be a full-rank sublattice")
         rows.set_immutable()
         inverse = rows.inverse()
         inverse.set_immutable()
