@@ -1067,34 +1067,41 @@ class _Edgewalk:
         return (-(oriented_basis * self.gram * oriented_basis.transpose()).det()).is_square()
 
     @cached_method
-    def edge_plane_for_divisor(self, roots: _Roots, discarded: _Vector, k: _Vector, divisor: int) -> _EdgePlane:
+    def edge_wall_data(self, roots: _Roots) -> tuple[Matrix_rational_dense, Matrix_rational_dense]:
+        r"""The projection of L (x) QQ onto the edge plane and the pairings G W^T with the edge walls, computed once per edge (edgewalk.h:598, Pplane).
+
+        The walls through an edge need not be linearly independent.  The
+        projection only depends on their rational span; invert the pairing
+        on an independent basis of that span (the reduced row echelon rows),
+        not the possibly singular Gram matrix of every wall.  The edge plane
+        is Lorentzian, so its orthogonal complement must be positive definite
+        and nondegenerate.  Row vectors x map to x * complement.
+        """
         root_rows = tuple(self.row(root) for root in roots)
-        oriented_basis, r0 = self.edge_orientation(roots, discarded, k)
-        constraint_rows, constraint_inverse = self.constraint_rows(divisor)
-        wall_matrix = matrix(
-            SageQQ,
-            len(root_rows),
-            self.rank,
-            [entry for row in root_rows for entry in row],
-        )
-        # The walls through an edge need not be linearly independent.  The
-        # projection only depends on their rational span; invert the pairing
-        # on an independent basis of that span, not the (possibly singular)
-        # Gram matrix of every wall.  The edge plane is Lorentzian, so its
-        # orthogonal complement must be positive definite and nondegenerate.
-        # The reduced row echelon form is the basis Sage's QQ row space
-        # carries; the ZZ span of the projected rows is the Hermite normal
-        # form of their integral scaling, the echelon basis of Sage's ZZ
-        # span, both formed without constructing the free modules.
+        wall_matrix = matrix(SageQQ, len(root_rows), self.rank, [entry for row in root_rows for entry in row])
         echelon = wall_matrix.echelon_form()
         root_matrix = echelon.matrix_from_rows(range(echelon.rank()))
         root_gram = root_matrix * self.gram * root_matrix.transpose()
         if not root_gram.is_invertible():
             raise ArithmeticError("the edge-wall span must be nondegenerate")
-        projected = constraint_rows - constraint_rows * self.gram * root_matrix.transpose() * root_gram.inverse() * root_matrix
+        complement = identity_matrix(SageQQ, self.rank) - self.gram * root_matrix.transpose() * root_gram.inverse() * root_matrix
+        wall_pairings = self.gram * wall_matrix.transpose()
+        complement.set_immutable()
+        wall_pairings.set_immutable()
+        return complement, wall_pairings
+
+    @cached_method
+    def edge_plane_for_divisor(self, roots: _Roots, discarded: _Vector, k: _Vector, divisor: int) -> _EdgePlane:
+        oriented_basis, r0 = self.edge_orientation(roots, discarded, k)
+        constraint_rows, constraint_inverse = self.constraint_rows(divisor)
+        complement, wall_pairings = self.edge_wall_data(roots)
+        # The ZZ span of the projected rows is the Hermite normal form of
+        # their integral scaling, the echelon basis of Sage's ZZ span,
+        # formed without constructing the free modules.
+        projected = constraint_rows * complement
         projected_denominator = projected.denominator()
-        hermite = (projected_denominator * projected).change_ring(SageZZ).echelon_form()
-        basis = hermite.matrix_from_rows(range(hermite.rank())).change_ring(SageQQ) / projected_denominator
+        hermite = (projected_denominator * projected).change_ring(SageZZ).hermite_form(include_zero_rows=False)
+        basis = hermite.change_ring(SageQQ) / projected_denominator
         if basis.nrows() != 2:
             raise ArithmeticError("the projected constraint lattice must have rank two")
         (first, second) = _plane_coordinates(oriented_basis, basis.rows())
@@ -1111,7 +1118,7 @@ class _Edgewalk:
         # vector c * B of C (B the rows of a basis of C) lies in P exactly
         # when it pairs to zero with every edge wall, so the coefficient
         # lattice of C cap P is the integral left kernel of B G R^T.
-        equations = constraint_rows * self.gram * wall_matrix.transpose()
+        equations = constraint_rows * wall_pairings
         # The Hermite normal form of a basis of the integral left kernel is the
         # echelon basis Sage's left_kernel() carries (the form is unique for
         # the kernel lattice), computed without the kernel module.
