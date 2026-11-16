@@ -361,6 +361,12 @@ class _Edgewalk:
         return matrix(SageQQ, [self.row(item) for item in vectors]).rank() if vectors else 0
 
     def perpendicular_rows(self, vectors: tuple[_RationalRow, ...]) -> Matrix_rational_dense:
+        r"""The echelon basis of the rational perpendicular of ``vectors``.
+
+        Sage's generic Gaussian elimination returns the same unique echelon
+        kernel basis as its default route through FLINT, without the
+        conversions that cost ten times as much on these small matrices.
+        """
         return (
             matrix(
                 SageQQ,
@@ -369,7 +375,7 @@ class _Edgewalk:
                 [entry for row in vectors for entry in row],
             )
             * self.gram
-        ).right_kernel_matrix()
+        ).right_kernel_matrix(algorithm="generic")
 
     def initial_isotropic_vertex(self, k: _Vector | None = None) -> _Vertex | None:
         r"""The ``isotropic_vinberg`` starting corner of pinned edgewalk.h:1880–2055.
@@ -407,7 +413,7 @@ class _Edgewalk:
             denominator = SageZZ.one()
             for entry in equations.list():
                 denominator = denominator.lcm(entry.denominator())
-            intersection_rows = (denominator * equations).change_ring(SageZZ).left_kernel().basis_matrix().change_ring(SageQQ) * constraint_rows
+            intersection_rows = (denominator * equations).change_ring(SageZZ).left_kernel_matrix(algorithm="pari").echelon_form().change_ring(SageQQ) * constraint_rows
             # fr.BasisProj (edgewalk.h:1955-1960): the projected generators,
             # read through the perpendicular basis and the quotient framing.
             projected_rows = perpendicular_rows.solve_left(intersection_rows) * quotient_rows
@@ -859,7 +865,7 @@ class _Edgewalk:
             if rank < self.rank - 1:
                 return None
             if rank == self.rank - 1:
-                generator = self.primitive(equations.right_kernel_matrix().row(0))
+                generator = self.primitive(equations.right_kernel_matrix(algorithm="generic").row(0))
                 if self.pairing(generator, timelike) > 0:
                     generator = -generator
                 if self.norm(generator) > 0 or self.pairing(generator, timelike) >= 0:
