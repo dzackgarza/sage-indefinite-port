@@ -189,6 +189,35 @@ def _signed_sqrt_compare(sign_left: int, square_left: Rational, sign_right: int,
     return -1 if square_left > square_right else 1
 
 
+def _plane_coordinates(basis: Matrix_rational_dense, rows) -> list[tuple[Rational, Rational]]:
+    r"""The coordinates ``(c_0, c_1)`` with ``c_0 b_0 + c_1 b_1 = row`` of rows in the span of a rank-two basis.
+
+    Cramer's rule on two columns ``i, j`` whose 2 x 2 minor of the basis is
+    nonzero (Hoffman and Kunze, *Linear Algebra*, 2nd ed., Section 5.4); every
+    other column is then checked, so a row outside the span raises. It
+    replaces Sage's general ``solve_right`` on the transposed basis, which
+    computes the same unique solution.
+    """
+    width = basis.ncols()
+    entries = basis.list()
+    top, bottom = entries[:width], entries[width:]
+    i, j, minor = next(
+        (i, j, top[i] * bottom[j] - top[j] * bottom[i])
+        for i in range(width)
+        for j in range(i + 1, width)
+        if top[i] * bottom[j] - top[j] * bottom[i]
+    )
+    coordinates = []
+    for row in rows:
+        x, y = row[i], row[j]
+        first = (x * bottom[j] - y * bottom[i]) / minor
+        second = (top[i] * y - top[j] * x) / minor
+        if any(first * top[k] + second * bottom[k] != row[k] for k in range(width)):
+            raise ArithmeticError("the row is not in the span of the plane basis")
+        coordinates.append((first, second))
+    return coordinates
+
+
 def _primitive_positive_direction(entries) -> tuple[int, ...]:
     """Primitive integral direction, retaining its orientation."""
     from functools import reduce
@@ -1038,12 +1067,13 @@ class _Edgewalk:
         basis = hermite.matrix_from_rows(range(hermite.rank())).change_ring(SageQQ) / projected_denominator
         if basis.nrows() != 2:
             raise ArithmeticError("the projected constraint lattice must have rank two")
-        if oriented_basis.transpose().solve_right(basis.transpose()).transpose().det() < 0:
+        (first, second) = _plane_coordinates(oriented_basis, basis.rows())
+        if first[0] * second[1] - first[1] * second[0] < 0:
             basis.rescale_row(0, -1)
         work_gram = basis * self.gram * basis.transpose()
         scale = work_gram.denominator()
         plane_lattice = self.plane_lattice(tuple(tuple(SageZZ(scale * work_gram[row, column]) for column in range(2)) for row in range(2)))
-        r0_coordinates = basis.transpose().solve_right(r0.column()).column(0)
+        (r0_coordinates,) = _plane_coordinates(basis, (r0,))
         r0_vector = self.plane_primitive(plane_lattice, r0_coordinates)
 
         # edgewalk.h:763-764, Basis_P_inter_LN = IntersectionLattice_VectorSpace(Latt, Pplane):
@@ -1059,7 +1089,7 @@ class _Edgewalk:
         intersection_rows = coefficients.change_ring(SageQQ) * constraint_rows
         if intersection_rows.nrows() != 2:
             raise ArithmeticError("C cap P must have rank two")
-        intersection_coordinates = basis.transpose().solve_right(intersection_rows.transpose()).transpose()
+        intersection_coordinates = matrix(SageQQ, _plane_coordinates(basis, intersection_rows.rows()))
         if any(entry.denominator() != 1 for entry in intersection_coordinates.list()):
             raise ArithmeticError("the perpendicular intersection must be integral in the projected lattice")
         return _EdgePlane(

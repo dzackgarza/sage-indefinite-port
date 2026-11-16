@@ -611,3 +611,12 @@ Fix 14 (port): the walk asks `O(L).transporter` of a known vertex only when its 
 Paired acceptance runs (`zk_pair_f14`, three cases per family): Allcock 7.43 -> 7.63 s, ListReflect 7.23 -> 6.97 s, inside the noise. Gates: w183, w217_l26, ListReflect_2917, branch-representative sample and the U ⊕ <46> nonreflective certificate pass (`zk_gates_f14.log`).
 
 The warm sample at 891fee04 (seed 1, same 50 cases as the first sample): Allcock 6.04 -> 5.53 s, ListReflect 5.66 -> 5.38 s, which corroborates fix 13 (1.2 h + 0.7 h).
+
+Fix 15 (port): `edge_plane_for_divisor` solved three systems with Sage's general `solve_right` on the transposed 2 x n plane basis (orientation sign, r0 coordinates, C cap P coordinates; 1170 of the 1260 `solve_right` calls of w323_l4, 0.59 ms each in isolation). `_plane_coordinates` reads the same unique solution by Cramer's rule on two columns with a nonzero minor and checks the other columns (`zk_plane_eq.py`: 3000 random rank-two bases and in-span rows over n = 3, 4, 5 equal to `solve_right`; a row outside the span raises). Edge-plane phase (`zk_ph15_*.json`): w323_l4 1.59 -> 1.35 s, ListReflect_6219 0.93 -> 0.73 s.
+
+| Family | Cases | Base mean s (65fb0a8), two orders | Head mean s | Total h before -> after |
+| --- | --- | --- | --- | --- |
+| Allcock | 8595 | 5.35, 4.84 | 4.82, 4.78 | 12.0 -> 11.5 (pairs, about 0.7 h; phase delta about 0.5 h) |
+| ListReflect rank 3 | 8602 | 5.48, 5.08 | 4.84, 4.90 | 12.6 -> 11.6 (pairs, about 1.0 h; phase delta about 0.4 h) |
+
+The order effect is large (base first: 0.53 and 0.64 s; head first: 0.07 and 0.18 s), so the order-balanced pairs give about 1.7 h and the two-case phase delta about 0.9 h. Landed at the mean of the two prices, about 1.3 h. Gates (`zk_gates_f15.log`): w183, w217_l26, ListReflect_2917 and the branch-representative sample pass.
