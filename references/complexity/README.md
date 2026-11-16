@@ -89,6 +89,15 @@ A price is derived, not stated. Do the analysis in this order.
 5. **Write down the function, the invariants used, and the measured unit
    costs.** A bare time with no function behind it skips the analysis and is
    not a price.
+6. **Multiply a diffuse cost out to its total.** When no single call is large,
+   the price of a kind of work is (objects or calls per case) × (cost of one)
+   × (case count). "The cost is spread over thousands of small constructions"
+   is a total to compute, never a blocker. For example, 1704 parents per
+   edgewalk case × 1.5 ms × 17,200 cases is about 12 h. Two levers follow
+   from the product: the count (equal constructions must be one interned
+   object, so count total against distinct by construction key) and the cost
+   of one instance (it must only store engine data and its category). A
+   profile that shows no large entry point says nothing about these totals.
 
 ### Worked example: isometry of E10 vector complements
 
