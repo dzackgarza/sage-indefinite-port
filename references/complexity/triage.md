@@ -17,6 +17,20 @@ Correctness of a family is established by a branch-representative sample: unchan
 1. The minimal subset of tests that establishes the correctness of every capability (the branch-representative sample) passes, and runs fast.
 2. The long tail is still an extreme problem (about 236 h). Its fires are fixed next, by hours removed, until its estimate is under 6 hours; only then does it run.
 
+## Long-tail families at port fee4bd3, sage-extensions 55defcb
+
+Three cases per family, each in its own process, killed 60 s after the test call starts (`zk_cases.sh`, `zk_case_cap.py` in the probe directory). Total = mean of the three × case count. A family with a killed case is a lower bound.
+
+| Family (test function) | Cases | Probed cases: seconds | Mean s | Total h |
+| --- | --- | --- | --- | --- |
+| `test_root_systems_match_allcock` | 8595 | allcock_rk3_7_w6_l7 5.9, allcock_rk3_21_w135_l21 24.9, allcock_rk3_4_w323_l4 30.9 | 20.6 | 49.1 |
+| `test_simple_root_counts_match_polyhedral_common` (rank 3) | 8602 | ListReflect_99 6.4, ListReflect_3999 16.1, ListReflect_7999 30.1 | 17.5 | 41.9 |
+| `test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors` | 8818 | IsotropicCases_99 4.9, IsotropicCases_3999 1.0, IsotropicCases_7999 0.8 | 2.2 | 5.5 |
+| `test_enriques_modular_groups_match_dutour_sikiric_hulek` | 87 | case_5, case_40, case_80: each killed at 60 | >= 60 | >= 1.5 |
+| `test_lorentzian_pairs_are_isometric` | 145 | LORENTZ_TestIsomorphism9 6.9, 69 6.8, 439 8.8 | 7.5 | 0.3 |
+
+Probe-backed long-tail total: >= 98 h (was about 236 h). The two edgewalk families are 91 h of it.
+
 ## Measured families (port 1cbb692 era, sage-extensions before 731fad7)
 
 Source: `.tmp/probe/sample_report.jsonl` and `measure_report*.jsonl` (local container, 1200 s timeout). A stratum with timeouts is a lower bound.
