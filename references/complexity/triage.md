@@ -809,3 +809,26 @@ Equality (`zk_eqwalk.py`, seed 7; `zk_eq28.log`, `zk_eq29.log`, `zk_eq30.log`): 
 Correction to the gate of fixes 21-23: `run.sh` defaulted to the sage-extensions-sample checkout (87db29aa), so `zk_gates_g54.log` and `zk_owner_g54.log` ran against 87db29aa, not 683716ad (tier-1 and equality used 683716ad). The gates at 14e7b42 above contain fixes 21-23 with the pinned sage-extensions. `run.sh` now defaults to the sage-extensions main checkout.
 
 Family totals (head processes of `zk_price28.out`): Allcock 2.66 s x 8595 = 6.4 h, ListReflect rank 3 2.82 s x 8602 = 6.7 h, about 13.1 h.
+
+## Fix 29 and the remaining phase floors (port 0048869, sage-extensions a3dac1de)
+
+Fix 29 (0048869): `perpendicular_rows` and the accepted-vertex kernel take Sage's generic elimination for the rational right kernel; it returns the same echelon basis as the default FLINT route in 0.14 ms instead of 1.57 ms (`zk_perpbench.py`, 80 random 1 x 3 and 2 x 3 matrices, timeit). The isotropic initial vertex reads C_N cap k^perp as the echelon form of the PARI kernel matrix. Wrappers (`zk_methwalk.py`, ListReflect rank 3, seed 1, 25 cases): `perpendicular_rows` 0.059 -> 0.014 s per case (36 calls), `initial_isotropic_vertex` 0.174 -> 0.160 s; about 0.06 s per case, 0.5 h over both families if Allcock matches. The order-balanced pairs (`zk_price29.out`: Allcock 2.57 -> 2.60 s, ListReflect 2.47 -> 2.55 s) are inside their noise (the second process of a pair gains about 0.2 s). Equality (`zk_eq32.log`): the 50 seed-7 cases are unchanged.
+
+Withdrawn, no measurable change: building the two projections of L x C once per coloured-family realization in sage-extensions (stabilizer + transporter 0.33 -> 0.33 s per case).
+
+Phase table at the repin 14e7b42 (`zk_ph31_*.json`, `zk_ph31_table.md`, warm with anisotropic warm cases; scaled to 6.36 h + 6.74 h), with each phase over 0.8 h priced against its floor:
+
+| Phase | hours | source steps per case (w323_l4 / ListReflect_6219) | port steps | current per step | floor per step | removable hours |
+| --- | --- | --- | --- | --- | --- | --- |
+| edge plane | 2.4 | 390 / 234 planes (13 edges x root norms) + 30 / 18 C_N | same | 1.5-1.8 ms | 0.75 ms (`zk_epops.py`; PARI left kernel 212 us of it, `zk_kerbench.py`) + 0.15 ms | 2.4 x 0.52 = 1.25 |
+| coloured-family stabilizer and transporter (two table rows, 1.0 + 0.8 h; 1.5 h by the wrappers of `zk_cvfprof.py`) | 1.5 | 4.6 stabilizers + 4.2 equivalence tests (fund_domain_vertices.h:507-530, 711-839) | same | 31 / 45 ms | a weighted-matrix automorphism test of four or five vectors, well under 1 ms (not measured) | about 1.4 |
+| initial vertex | 1.0 (wrapper: `initial_vertex` 0.33 s per Allcock case; the table's 1.4 h is weighted by w323_l4, a Vinberg coset search of 460 steps) | 1 vertex; w323_l4: 460 Vinberg coset steps | same | 0.84 ms per coset step | not measured | not priced |
+| coordinate helpers | 1.0 -> about 0.8 after fix 29 | (reads of owned vector coordinates) | | | | under 1 |
+| edge directions | 0.9 | | | | | under 1 |
+
+Family totals: Allcock about 2.66 s x 8595 = 6.4 h, ListReflect rank 3 about 2.82 - 0.06 = 2.76 s x 8602 = 6.6 h, about 12.9 h. Multiplied remainder if the two phases priced above reached their floors: 12.9 - 1.25 - 1.4 = about 10.3 h.
+
+Blocker for the 6 h target and for "every phase under 1 h removable": two phases remain above 1 h removable.
+- Edge plane (1.25 h): the per-plane steps already run on engine matrices; the excess over the floor is Sage matrix construction and Python glue spread over about ten statements of 40-110 us each (`zk_ph25_*.json` line charges). The largest step is the PARI left kernel of C G W^T at its floor. Reading C cap P from the unimodular transform of the projected Hermite form (removing two Cramer solves and one product) prices at about 0.15 ms per plane, 0.2 h; not made.
+- Coloured-family stabilizer and transporter (about 1.4 h): after fix 28 the profile (`zk_cvfprof2.log`) is spread over sage-extensions `integral_restriction` (22 %), the pairing-graph isomorphism (12 %), reading the family vectors through product projections (13 %; caching the projections removed nothing, so the cost is the owned morphism call), and the owned wraps of each rational transformation. The source step is one weighted-matrix test of a handful of vectors, so the realizable lever is a coloured-family equivalence and stabilizer on engine data (family rows, pairing matrix, permutation search, integrality of the induced matrix) inside sage-extensions `coloured_vector_families`, wrapped once; it is a change to that module's contract (OWN-22, OWN-24), not made here.
+- The initial-vertex Vinberg coset step (0.84 ms against an unmeasured floor) is not priced.
