@@ -4463,7 +4463,10 @@ def _transfer(target: Lattices.ParentMethods, element: Lattices.ElementMethods) 
 def _ambient_element(lattice: Lattices.ParentMethods, coordinates: tuple[Integer, ...]) -> Lattices.ElementMethods:
     ring = lattice.base_ring()
     labels = lattice.module_generating_set()
-    return lattice.linear_combination({label: ring(int(entry)) for label, entry in zip(labels, coordinates, strict=True) if entry})
+    # Each nonzero engine coordinate is raised once into the owned integers.
+    return lattice.linear_combination(
+        {label: _owned_engine_element(ring, entry) for label, entry in zip(labels, coordinates, strict=True) if entry}
+    )
 
 
 def _pinned_diagonalize_symmetric_matrix(
