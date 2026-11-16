@@ -999,9 +999,13 @@ class _Edgewalk:
         (the edge plane projection, C cap k^perp and the cusp root) reads
         only the integral span of these rows, so the basis does not matter.
         """
-        ambient = SageZZ**self.rank
-        dual = ambient.span((divisor * self.gram.inverse()).rows(), SageZZ)
-        rows = dual.intersection(ambient).basis_matrix().change_ring(SageQQ)
+        # C = {v in Z^n : G v in d Z^n}.  The integral kernel of [G | -d I]
+        # is {(v, w) : G v = d w}; G is nondegenerate, so w is determined
+        # by v and the projection to v is an isomorphism onto C.  Its
+        # Hermite form is the echelon basis of the ZZ-module intersection.
+        gram = self.gram.change_ring(SageZZ)
+        kernel = gram.augment(-divisor * identity_matrix(SageZZ, self.rank)).right_kernel_matrix(algorithm="pari")
+        rows = kernel.matrix_from_columns(range(self.rank)).hermite_form(include_zero_rows=False).change_ring(SageQQ)
         if rows.nrows() != self.rank or rows.rank() != self.rank:
             raise ArithmeticError("C_N must be a full-rank sublattice")
         rows.set_immutable()
