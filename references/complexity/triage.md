@@ -23,51 +23,54 @@ The Acceptance workflow takes three corpora (`ci/plan_acceptance.py`):
 
 | Tier | File | Nodes | Content |
 | --- | --- | --- | --- |
-| 1 | `ci/acceptance_tier1.txt` | 50 | For each dispatch branch of each pinned algorithm, the smallest frozen node (least rank, determinant or \|O(q)\| that reaches the branch) whose expected answer comes from an independent source or from a construction, not from a round trip of the port |
+| 1 | `ci/acceptance_tier1.txt` | 49 | For each dispatch branch of each pinned algorithm, the smallest frozen node (least rank, determinant or \|O(q)\| that reaches the branch) whose expected answer comes from an independent source or from a construction, not from a round trip of the port |
 | 2 | `ci/acceptance_tier2.txt` | 86 | The published-result reproductions that the #64 table requires |
 | 3 | `full` | 26907 | Every acceptance node; tier 3 is the full corpus less tiers 1 and 2 |
 
-Tier 1 is the correctness evidence (priority 1 above). Recorded tier-1 time: 879 s over 30 priced nodes; 20 nodes have no recorded time. Tier 2 has 7 priced nodes (6167 s) and 79 unpriced nodes.
+Tier 1 is the correctness evidence (priority 1 above). Recorded tier-1 time: 1015.9 s over all 49 nodes (call time, the least recorded passed run). Tier 2 has 7 priced nodes (6167 s) and 79 unpriced nodes. `ci/plan_acceptance.py` costs a tier node at its price ("prices" in `ci/test_budgets.json`), and an unpriced tier-2 node at its derived budget: the tier-1 job timeout went from 23 to 37 minutes, the tier-2 job timeout from 63 to 165 minutes.
+
+Probe of the 20 nodes unpriced before (one container process per node, `timeout -s KILL 60` inside the container, port 8208d1f, sage-extensions 6f337e9a): 16 passed. Three perfect-domain traversals (`Result_Enumeration_1`, `_3` total, `_3` isotropic) failed with TypeError: since sage-extensions 4d14cd55 a finite ordered set hashes its points, and `PerfectDomainOrbitAdjacency` is a `SageObject`, which is unhashable; fixed by an identity hash (sage-extensions 87b4335c; equality is identity). `test_large_cell_cone_uses_exact_normaliz_h_presentation` was killed at 60 s: its incidence check reads `covector.to_vector()` about 108000 times on three covectors (0.4-0.6 ms each); `to_vector` is now a cached_method (sage-extensions f7a03e96), and the node passes in 30.6 s.
+
+IsotropicCases re-selection with exact rational determinants and signatures (Sage `QuadraticForm(QQ, G).signature_vector()`, all 8821 cases): least (n, |det|) per branch is IsotropicCases_3 (lines, sig (2,1), det -1) and IsotropicCases_16 (anisotropic indefinite, sig (2,1), det -3). IsotropicCases_3261 is not definite: its exact signature is (2,1), det -63525, has_isotropic false, so it repeats the branch of _16 and leaves tier 1. The fixture has no definite case. Gap: the definite (empty) branch of isotropic classes has no frozen tier-1 node.
 
 A price is the least recorded passed call time of the node: a CI Acceptance BUDGET line (runs 43505668003 and 43494572338), a local pytest report under `.tmp/`, or a row of this file or of `.tmp/acceptance-coverage.md` with its revision. A node without such a record is unpriced. The derived budgets in `ci/test_budgets.json` are not prices. Tier-2 vector-orbit nodes are the remaining cases of `test_vector_orbits.sage` that #64 lists.
 
 | Node | Tier | Branch covered | Invariants | Recorded time |
 | --- | --- | --- | --- | --- |
 | `test_reflective.sage::test_edgewalk_branch_representative_sample` | 1 | Allcock edgewalk: binary walk, oriented binary cycle (go-left, shorter pair), cusp start, cocompact start and increasing-prefix corner search, ordinary, cusp and extension roots, isotropic next vertex, reflective stop, nonreflective stop | n=2..4; U+<2>, U+<46>, compact hexagon, allcock_rk3_4, allcock_rk3_2, ListSimpleRootSystem_0 | 59.8 s (.tmp/sample61/report_2.jsonl) |
-| `test_perfect_domains.sage::test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_3]` | 1 | Perfect domains, total mode: initial cell, one cell orbit, O(L) generation | n=3 sig (2,1) |det|=1, 1 cell | unpriced |
-| `test_perfect_domains.sage::test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_1]` | 1 | Perfect domains, total mode: flips, cell transporter, side pairings | n=3 sig (2,1) |det|=8, 2 cells | unpriced |
-| `test_perfect_domains.sage::test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_3]` | 1 | Perfect domains, isotropic mode | n=3 |det|=1, 1 cell | unpriced |
-| `test_perfect_domains.sage::test_non_diagonal_positive_shell_uses_the_pinned_cvp_center` | 1 | Perfect domains: positive-vector shell, CVP center | n=3, against exact enumeration | unpriced |
-| `test_perfect_domains.sage::test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center` | 1 | Perfect domains: isotropic shell, exact-sphere center | n=3, against exact enumeration | unpriced |
-| `test_perfect_domains.sage::test_large_pairing_graph_fallback_returns_exact_transporter` | 1 | Perfect domains: transporter above 256 rows (no graph canonization) | n=2, 257 rows | unpriced |
-| `test_perfect_domains.sage::test_large_cell_cone_uses_exact_normaliz_h_presentation` | 1 | Perfect domains: large-configuration cone (Normaliz) | 24000 rows | unpriced |
-| `test_isometry.sage::test_isometry_verdicts_match_certified_pairs[hecke_U_vs_U2]` | 1 | Isometry: binary, prefilter rejection | n=2 sig (1,1) |det|=1 | unpriced |
-| `test_isometry.sage::test_isometry_verdicts_match_certified_pairs[hecke_3x3_swapped_basis]` | 1 | Isometry: Lorentzian witness (perfect-cell transporter) | n=3 sig (1,2) |det|=1250 | unpriced |
-| `test_isometry.sage::test_conway_sloane_same_genus_pair_is_not_isometric` | 1 | Isometry: same genus, spinor-genus negative verdict | n=3 sig (2,1) |det|=128 | unpriced |
-| `test_isometry.sage::test_change_of_basis_gives_an_isometric_lattice[ci_indef_U_2U]` | 1 | Isometry: Eichler covering search witness | n=4 sig (2,2) |det|=4, U+U(2) | unpriced |
-| `test_isometry.sage::test_degenerate_isometry_witness_respects_complement_coordinates` | 1 | Isometry: degenerate, radical extension witness | n=3, A2 plus rank-1 radical | unpriced |
+| `test_perfect_domains.sage::test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_3]` | 1 | Perfect domains, total mode: initial cell, one cell orbit, O(L) generation | n=3 sig (2,1) |det|=1, 1 cell | 2.8 s (probe, sage-extensions f7a03e96) |
+| `test_perfect_domains.sage::test_perfect_domain_orbit_counts_match_polyhedral_common[Result_Enumeration_1]` | 1 | Perfect domains, total mode: flips, cell transporter, side pairings | n=3 sig (2,1) |det|=8, 2 cells | 2.7 s (probe, sage-extensions f7a03e96) |
+| `test_perfect_domains.sage::test_isotropic_mode_counts_match_polyhedral_common[Result_Enumeration_3]` | 1 | Perfect domains, isotropic mode | n=3 |det|=1, 1 cell | 2.9 s (probe, sage-extensions f7a03e96) |
+| `test_perfect_domains.sage::test_non_diagonal_positive_shell_uses_the_pinned_cvp_center` | 1 | Perfect domains: positive-vector shell, CVP center | n=3, against exact enumeration | 0.7 s (probe, sage-extensions 6f337e9a) |
+| `test_perfect_domains.sage::test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center` | 1 | Perfect domains: isotropic shell, exact-sphere center | n=3, against exact enumeration | 0.9 s (probe, sage-extensions 6f337e9a) |
+| `test_perfect_domains.sage::test_large_pairing_graph_fallback_returns_exact_transporter` | 1 | Perfect domains: transporter above 256 rows (no graph canonization) | n=2, 257 rows | 0.5 s (probe, sage-extensions 6f337e9a) |
+| `test_perfect_domains.sage::test_large_cell_cone_uses_exact_normaliz_h_presentation` | 1 | Perfect domains: large-configuration cone (Normaliz) | 24000 rows | 30.6 s (probe, sage-extensions f7a03e96) |
+| `test_isometry.sage::test_isometry_verdicts_match_certified_pairs[hecke_U_vs_U2]` | 1 | Isometry: binary, prefilter rejection | n=2 sig (1,1) |det|=1 | 0.5 s (probe, sage-extensions 6f337e9a) |
+| `test_isometry.sage::test_isometry_verdicts_match_certified_pairs[hecke_3x3_swapped_basis]` | 1 | Isometry: Lorentzian witness (perfect-cell transporter) | n=3 sig (1,2) |det|=1250 | 11.5 s (probe, sage-extensions 6f337e9a) |
+| `test_isometry.sage::test_conway_sloane_same_genus_pair_is_not_isometric` | 1 | Isometry: same genus, spinor-genus negative verdict | n=3 sig (2,1) |det|=128 | 1.4 s (probe, sage-extensions 6f337e9a) |
+| `test_isometry.sage::test_change_of_basis_gives_an_isometric_lattice[ci_indef_U_2U]` | 1 | Isometry: Eichler covering search witness | n=4 sig (2,2) |det|=4, U+U(2) | 12.5 s (probe, sage-extensions 6f337e9a) |
+| `test_isometry.sage::test_degenerate_isometry_witness_respects_complement_coordinates` | 1 | Isometry: degenerate, radical extension witness | n=3, A2 plus rank-1 radical | 8.7 s (probe, sage-extensions 6f337e9a) |
 | `test_orthogonal_group.sage::test_degenerate_orthogonal_group_contains_radical_shear_and_gl_action` | 1 | O(L): degenerate, radical extension | n=2, <2> plus radical | 0 s (CI Acceptance BUDGET line) |
 | `test_orthogonal_group.sage::test_zero_form_orthogonal_group_is_the_full_general_linear_group` | 1 | O(L): zero form, GL_2(Z) | n=2, q=0 | 0 s (CI Acceptance BUDGET line) |
 | `test_orthogonal_group.sage::test_degenerate_orthogonal_group_embeds_non_diagonal_complement` | 1 | O(L): definite kernel inside the radical extension | n=3, A2 plus radical | 0.4 s (CI Acceptance BUDGET line) |
 | `test_orthogonal_group.sage::test_orthogonal_group_of_the_hyperbolic_plane_has_order_four` | 1 | O(L): binary, isotropic | U, n=2 |det|=1, |O|=4 | 0 s (CI Acceptance BUDGET line) |
-| `test_orthogonal_group.sage::test_ambiguous_binary_form_has_an_improper_automorphism[hecke_binary_3_1_-3]` | 1 | O(L): binary, anisotropic reduction cycle | n=2 D=37 | unpriced |
+| `test_orthogonal_group.sage::test_ambiguous_binary_form_has_an_improper_automorphism[hecke_binary_3_1_-3]` | 1 | O(L): binary, anisotropic reduction cycle | n=2 D=37 | 3.0 s (probe, sage-extensions 6f337e9a) |
 | `test_orthogonal_group.sage::test_signed_discriminant_image_of_u_plus_minus_three_is_all_of_o_q` | 1 | O(L): Lorentzian route; image of O+ in O(q) | n=3 sig (1,2) |det|=3 | 0.8 s (CI Acceptance BUDGET line) |
 | `test_orthogonal_group.sage::test_mertens_omega_and_minus_one_generate_o_l` | 1 | O(L): Lorentzian route, generators against Mertens | n=3 sig (2,1) |det|=155 | 4.9 s (CI Acceptance BUDGET line) |
 | `test_isotropic_orbits.sage::test_o_n_maps_onto_o_of_the_discriminant_form` | 1 | O(L): Eichler route; discriminant image | N=U+U(2)+E8(-2), n=12 sig (2,10) |A|=2^10 | 468 s (.tmp/acceptance-coverage.md, provider 42d7361c) |
 | `test_vector_stabilizers.sage::test_isotropic_pointed_isometry_rejects_different_divisibility` | 1 | Pointed isometry: invariant rejection | n=4 | 0 s (CI Acceptance BUDGET line) |
 | `test_vector_stabilizers.sage::test_split_divisibility_one_pointed_isometry_carries_actual_negative_marking` | 1 | Pointed isometry: isotropic, div 1 | U, n=2 | 0.3 s (CI Acceptance BUDGET line) |
 | `test_vector_stabilizers.sage::test_divisibility_two_isotropic_pointed_isometry_has_exact_witness` | 1 | Pointed isometry: isotropic, div 2 | U(2)+U(2), n=4 | 0.8 s (CI Acceptance BUDGET line) |
-| `test_vector_stabilizers.sage::test_odd_lattice_isotropic_pointed_isometry_uses_general_divisibility_two_route` | 1 | Pointed isometry: isotropic, odd lattice, general div 2 route | odd binary, n=2 | unpriced |
+| `test_vector_stabilizers.sage::test_odd_lattice_isotropic_pointed_isometry_uses_general_divisibility_two_route` | 1 | Pointed isometry: isotropic, odd lattice, general div 2 route | odd binary, n=2 | 2.4 s (probe, sage-extensions 6f337e9a) |
 | `test_vector_stabilizers.sage::test_general_isotropic_pointed_isometry_carries_negative_marking` | 1 | Pointed isometry: isotropic, general route | U(2)+U(2), n=4 | 0.2 s (CI Acceptance BUDGET line) |
 | `test_vector_stabilizers.sage::test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound` | 1 | Isotropic line stabilizer: finite correction, cokernel 4 | U(4)+<-8>, n=3 | 1 s (CI Acceptance BUDGET line) |
 | `test_vector_stabilizers.sage::test_isotropic_pointed_automorphism_generators_preserve_marking_and_form` | 1 | Isotropic line and pointed stabilizer generators | U+U, n=4 | 1.7 s (CI Acceptance BUDGET line) |
 | `test_vector_stabilizers.sage::test_divisibility_four_isotropic_plane_stabilizer_constructs_exact_containing_bound` | 1 | Isotropic plane stabilizer: finite correction, cokernel 16 | U(4)+U(4), n=4 | 0.9 s (CI Acceptance BUDGET line) |
 | `test_vector_stabilizers.sage::test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks` | 1 | Isotropic plane and flag stabilizer generators | images 48 and 12 in O over F_3 | 2.7 s (CI Acceptance BUDGET line) |
-| `test_vector_stabilizers.sage::test_isotropic_plane_isometry_carries_changed_basis_plane` | 1 | Isotropic plane isometry | U(4)+U(4), n=4 | unpriced |
-| `test_vector_stabilizers.sage::test_isotropic_flag_isometry_preserves_line_inside_plane` | 1 | Isotropic flag isometry | U(4)+U(4), n=4 | unpriced |
+| `test_vector_stabilizers.sage::test_isotropic_plane_isometry_carries_changed_basis_plane` | 1 | Isotropic plane isometry | U(4)+U(4), n=4 | 2.9 s (probe, sage-extensions 6f337e9a) |
+| `test_vector_stabilizers.sage::test_isotropic_flag_isometry_preserves_line_inside_plane` | 1 | Isotropic flag isometry | U(4)+U(4), n=4 | 3.5 s (probe, sage-extensions 6f337e9a) |
 | `test_vector_stabilizers.sage::test_vector_stabilizer_has_oscars_order` | 1 | Anisotropic pointed stabilizer: v-perp with gluing | n=3 sig (1,2), v-perp binary, order 2 | 0.5 s (CI Acceptance BUDGET line) |
 | `test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection[r_5]` | 1 | Anisotropic pointed isometry: complement isometry and integral correction | E10, n=10 |det|=1 | 2.2 s (CI Acceptance BUDGET line) |
-| `test_isotropic_orbits.sage::test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors[IsotropicCases_3261]` | 1 | Isotropic classes: definite, empty | n=3 sig (3,0) | unpriced |
 | `test_isotropic_orbits.sage::test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors[IsotropicCases_16]` | 1 | Isotropic classes: anisotropic indefinite (Hasse-Minkowski) | n=3 sig (2,1) |det|=3 | 0.1 s (.tmp/probe/sample_report.jsonl) |
 | `test_isotropic_orbits.sage::test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors[IsotropicCases_3]` | 1 | Isotropic classes: Lorentzian lines | n=3 sig (2,1) |det|=1 | 4.3 s (.tmp/probe/sample_report.jsonl) |
 | `test_isotropic_orbits.sage::test_i_2_10_isotropic_classes_are_one_odd_and_one_even[rank0-primitive_isotropic_vector_orbits]` | 1 | Isotropic classes: Eichler lines, I-perp/I reduction | I_{2,10}, n=12 |det|=1 | 100.7 s (.tmp/sample61/report_2.jsonl) |
@@ -78,10 +81,10 @@ A price is the least recorded passed call time of the node: a CI Acceptance BUDG
 | `test_isotropic_orbits.sage::test_stabilizer_images_have_dutour_sikiric_hulek_indices[I_2_1]` | 1 | Setwise plane stabilizer in O+ and its discriminant image | Enriques N, n=12 |A|=2^10 | 34.7 s (CI Acceptance BUDGET line) |
 | `test_vector_orbits.sage::test_anisotropic_binary_vector_classes_use_primitive_embeddings` | 1 | Vector classes: anisotropic binary | n=2, <2>+<-3> | 0.1 s (CI Acceptance BUDGET line) |
 | `test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[0]` | 1 | Vector classes: isotropic, m=1 | E10, s=0 | 0 s (CI Acceptance BUDGET line) |
-| `test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[2]` | 1 | Vector classes: Lorentzian cone (marked cell orbits) | E10, s=2, 1 orbit | unpriced |
+| `test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[2]` | 1 | Vector classes: Lorentzian cone (marked cell orbits) | E10, s=2, 1 orbit | 32.5 s (probe, sage-extensions 6f337e9a) |
 | `test_vector_orbits.sage::test_i_2_10_is_transitive_on_norm_minus_one_vectors` | 1 | Vector classes: Eichler | I_{2,10}, n=12, s=-1 | 7.8 s (.tmp/sample61/report_0.jsonl) |
-| `test_centralizers.sage::test_centralizer_images_match_oscar[oscar_lattices_with_isometry_133]` | 1 | Centralizer image: Hermitian | n=3 sig (2,1) |A|=12, ord(f)=6 | unpriced |
-| `test_centralizers.sage::test_centralizer_images_match_oscar[oscar_lattices_with_isometry_118]` | 1 | Centralizer image: gluing | n=4 sig (2,2) |A|=5, ord(f)=5 | unpriced |
+| `test_centralizers.sage::test_centralizer_images_match_oscar[oscar_lattices_with_isometry_133]` | 1 | Centralizer image: Hermitian | n=3 sig (2,1) |A|=12, ord(f)=6 | 12.3 s (probe, sage-extensions 6f337e9a) |
+| `test_centralizers.sage::test_centralizer_images_match_oscar[oscar_lattices_with_isometry_118]` | 1 | Centralizer image: gluing | n=4 sig (2,2) |A|=5, ord(f)=5 | 4.6 s (probe, sage-extensions 6f337e9a) |
 | `test_double_cosets.sage::test_double_cosets_partition_the_rational_group[DoubleCoset_n55_big5760_sma960_vf47_idx0]` | 1 | Double cosets: finite right cosets | degree 55, |G|=5760, |H|=960 | 0 s (CI Acceptance BUDGET line) |
 | `test_boundaries.sage::test_degree_two_k3_type_ii_components_and_root_types` | 2 | published-result reproduction (#64) | | over 1500 s (cap, triage.md) |
 | `test_boundaries.sage::test_degree_four_k3_has_nine_type_ii_components` | 2 | published-result reproduction (#64) | | unpriced |

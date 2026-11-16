@@ -1,10 +1,15 @@
 """Plan the Acceptance jobs from the derived per-test budgets.
 
-The nodes of a corpus are packed into jobs by their budgets in
-ci/test_budgets.json, largest first, each node into the least-loaded job that
+The nodes of a corpus are packed into jobs by their costs, largest first, each node into the least-loaded job that
 still has room (longest-processing-time scheduling, Graham 1969). A job holds at
 most JOB_BUDGET seconds of budget, so the number of jobs follows the work in
 the corpus. A node whose own budget exceeds JOB_BUDGET runs alone (#79).
+
+The cost of a tier1 or tier2 node is its recorded price ("prices" in
+ci/test_budgets.json: the least recorded passed call time, the "Acceptance
+tiers" table of references/complexity/triage.md), so the tier job timeouts
+come from the recorded prices. Every tier1 node has a price. An unpriced tier2
+node and every full node cost their derived budget.
 
     python3 ci/plan_acceptance.py matrix tier1|tier2|full   # workflow matrix
     python3 ci/plan_acceptance.py nodes tier1|tier2|full JOB  # the node ids of one job
@@ -36,7 +41,12 @@ def corpus_nodes(corpus):
         raise SystemExit(f"unknown corpus {corpus!r}; expected tier1, tier2 or full")
     missing = [node for node in nodes if node not in budgets]
     assert not missing, f"nodes without a budget: {missing}"
-    return {node: budgets[node] for node in nodes}
+    if corpus == "full":
+        return {node: budgets[node] for node in nodes}
+    prices = json.loads((CI / "test_budgets.json").read_text())["prices"]
+    unpriced = [node for node in nodes if node not in prices]
+    assert corpus == "tier2" or not unpriced, f"tier1 nodes without a recorded price: {unpriced}"
+    return {node: prices.get(node, budgets[node]) for node in nodes}
 
 
 def plan(corpus):

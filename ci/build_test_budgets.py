@@ -32,12 +32,15 @@ def main():
     nodes = (MODELS / "nodes.txt").read_text().splitlines()
     missing = [node for node in nodes if node not in budgets]
     assert not missing, missing[:20]
+    path = Path(__file__).parent / "test_budgets.json"
     out = {
+        # Recorded prices are measurements, not derived budgets: they are kept.
+        "prices": json.loads(path.read_text())["prices"],
         "source": "ci/build_test_budgets.py over ci/test_budget_models, from references/complexity",
         "budgets": {node: budgets[node] for node in nodes},
         "basis": {node: basis[node] for node in nodes},
     }
-    (Path(__file__).parent / "test_budgets.json").write_text(json.dumps(out, indent=1, sort_keys=True) + "\n")
+    path.write_text(json.dumps(out, indent=1, sort_keys=True) + "\n")
     print(len(nodes), "budgets")
 
 
