@@ -11,6 +11,11 @@ def junit_key(nodeid):
     """Translate a collected pytest node ID to its JUnit classname/name pair."""
     parts = nodeid.split('::')
     classname = parts[0].replace('/', '.')
+    # Pytest's JUnit serializer removes the .py suffix from a Python module,
+    # but retains the .sage suffix for Sage tests collected by the port's
+    # plugin. Mirror that distinction; never drop the test or parameter ID.
+    if classname.endswith('.py'):
+        classname = classname[:-3]
     if len(parts) > 2:
         classname += '.' + '.'.join(parts[1:-1])
     return classname, parts[-1]

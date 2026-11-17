@@ -47,6 +47,36 @@ def test_junit_node_identity_is_not_replaced_by_an_equal_result_count() -> None:
     assert not batches.junit_nodes_match([node], [{"classname": expected[0], "name": expected[1]}] * 2)
 
 
+def test_junit_python_and_sage_nodes_use_their_exact_serialized_identities() -> None:
+    batches = _load_ci_module("pytest_batches")
+    nodes = (
+        "tests/test_general_isotropic_markings.py::test_public_partial_two_three_flag_classes_in_three_u",
+        "tests/test_general_isotropic_stabilizers.py::test_image[four_u]",
+        "tests/test_general_isotropic_stabilizers.py::TestStabilizer::test_image[three_u]",
+        "tests/acceptance/test_boundaries.sage::test_dawes_building[stable]",
+    )
+    expected = (
+        ("tests.test_general_isotropic_markings", "test_public_partial_two_three_flag_classes_in_three_u"),
+        ("tests.test_general_isotropic_stabilizers", "test_image[four_u]"),
+        ("tests.test_general_isotropic_stabilizers.TestStabilizer", "test_image[three_u]"),
+        ("tests.acceptance.test_boundaries.sage", "test_dawes_building[stable]"),
+    )
+    assert tuple(batches.junit_key(node) for node in nodes) == expected
+    assert batches.junit_nodes_match(nodes, [
+        {"classname": classname, "name": name} for classname, name in expected
+    ])
+    # Identical counts are insufficient: a missing parametrization or a
+    # dropped module/class boundary must still reject the batch.
+    wrong_parameter = [{"classname": cls, "name": name} for cls, name in expected]
+    wrong_parameter[1] = {"classname": expected[1][0], "name": "test_image[other_u]"}
+    assert not batches.junit_nodes_match(nodes, wrong_parameter)
+    wrong_module = [{"classname": cls, "name": name} for cls, name in expected]
+    wrong_module[0] = {"classname": "tests.test_other", "name": expected[0][1]}
+    assert not batches.junit_nodes_match(nodes, wrong_module)
+    assert not batches.junit_nodes_match(nodes, wrong_module[:-1])
+    assert not batches.junit_nodes_match(nodes, wrong_module + wrong_module[:1])
+
+
 def test_batch_runner_continues_after_malformed_batch_junit(tmp_path, monkeypatch, capsys) -> None:
     batches = _load_ci_module("pytest_batches")
     first = "tests/acceptance/test_reflective.sage::test_first"
