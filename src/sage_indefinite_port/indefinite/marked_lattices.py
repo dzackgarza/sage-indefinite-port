@@ -1569,10 +1569,12 @@ def pointed_nonzero_norm_classes(category: Category, lattice: Parent, square: in
     """
     from math import isqrt
 
-    if not lattice.is_nondegenerate() and square:
-        return _degenerate_nonzero_pointed_classes(category, lattice, square, acting_group=acting_group)
     if square == 0:
         raise ValueError("isotropic contents are unbounded; request pointed_content_classes with a prescribed positive content")
+    if int(lattice.rank()) == 0:
+        return finite_ordered_set(())
+    if not lattice.is_nondegenerate() and square:
+        return _degenerate_nonzero_pointed_classes(category, lattice, square, acting_group=acting_group)
     classes = (
         marking
         for content in range(1, isqrt(abs(int(square))) + 1)

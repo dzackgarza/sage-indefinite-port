@@ -182,6 +182,19 @@ def test_rank_zero_fixed_pointed_content_has_no_nonzero_vectors():
     assert tuple(iter_pointed_content_classes(category, ambient, 0, 2)) == ()
 
 
+def test_rank_zero_nonzero_norm_pointed_classes_are_empty():
+    import pytest
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import pointed_nonzero_norm_classes
+
+    ambient = Lattices(ZZ)(0)
+    source = Lattices(ZZ)([[2]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    assert tuple(pointed_nonzero_norm_classes(category, ambient, 2)) == ()
+    with pytest.raises(ValueError, match="isotropic contents are unbounded"):
+        pointed_nonzero_norm_classes(category, ambient, 0)
+
+
 def test_mixed_degenerate_anisotropic_quotient_has_one_radical_null_orbit_per_content():
     from sage_extensions.all import Lattices, ZZ, cardinal
     from sage_indefinite_port.indefinite.marked_lattices import (
