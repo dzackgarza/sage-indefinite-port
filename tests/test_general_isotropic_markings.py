@@ -744,6 +744,19 @@ def test_five_u_partial_flag_rank_jumps_one_three_five_transport():
         assert all(target.inclusion().is_in_image(witness(point)) for point in basis[::2][:rank])
 
 
+def test_public_five_u_partial_flag_rank_jumps_one_three_five_classes():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_arrows, _flag_marking_from_basis, primitive_marking_classes
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(10)] for i in range(10)])
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    source = category(_flag_marking_from_basis(ambient, tuple(ambient.module_generators())[::2], (1, 3, 5)))
+    classes = tuple(primitive_marking_classes(category, source, ambient))
+    assert len(classes) == 1
+    assert tuple(int(arrow.domain().rank()) for arrow in _flag_arrows(classes[0])) == (1, 3, 5)
+
+
 def test_public_partial_flag_classes_split_by_actual_special_orthogonal_group():
     from sage_extensions.all import Lattices, ZZ, cardinal
     from sage_indefinite_port.indefinite.marked_lattices import FLAGS, primitive_marking_classes
