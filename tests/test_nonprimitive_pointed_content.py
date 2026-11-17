@@ -202,3 +202,14 @@ def test_full_square_eight_strata_split_under_actual_gamma_three():
     classes = pointed_nonzero_norm_classes(category, plane, 8, acting_group=gamma)
     assert classes.cardinality() == cardinal(6)
     assert {int(marking.arrow()(source.module_generators()[0]).content()) for marking in classes} == {1, 2}
+
+
+def test_nonisotropic_line_orbits_split_under_gamma_three_without_fixing_sign():
+    from sage_extensions.all import cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import nonisotropic_line_classes
+
+    plane = lattice([[0, 1], [1, 0]])
+    gamma = plane.O().congruence_preimage(3)
+    classes = nonisotropic_line_classes(plane, 8, acting_group=gamma)
+    assert classes.cardinality() == cardinal(3)
+    assert {int(marked.arrow()(marked.arrow().domain().module_generators()[0]).content()) for marked in classes} == {1, 2}

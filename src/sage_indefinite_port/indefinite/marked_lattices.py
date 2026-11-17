@@ -753,7 +753,7 @@ def nonprimitive_isotropic_line_classes(lattice: Parent, content: int) -> Parent
 
 
 
-def nonisotropic_line_classes(lattice: Parent, square: int) -> Parent:
+def nonisotropic_line_classes(lattice: Parent, square: int, *, acting_group=None) -> Parent:
     r"""Moving rank-one sublattice orbits of nonzero generator square.
 
     First enumerate every pointed vector orbit, including imprimitive
@@ -761,7 +761,8 @@ def nonisotropic_line_classes(lattice: Parent, square: int) -> Parent:
     identifies exactly the orbits related by sign, as the source
     automorphism group is ``{+1,-1}``.  Decide that identification with
     the existing exact moving-arrow transporter, not with a heuristic
-    comparison of norms or divisibilities.
+    comparison of norms or divisibilities.  An ``acting_group`` splits
+    the resulting *line* orbits, retaining the source sign equivalence.
     """
     if not square:
         raise ValueError("use nonprimitive_isotropic_line_classes with prescribed index for square zero")
@@ -773,6 +774,11 @@ def nonisotropic_line_classes(lattice: Parent, square: int) -> Parent:
         moving = ARROWS.object(candidate.arrow())
         if all(isometry(ARROWS, moving, previous) is None for previous in kept):
             kept.append(moving)
+    if acting_group is not None:
+        # Split *moving* line orbits, not pointed vector orbits: source
+        # negation remains an allowed automorphism even when -id is not
+        # contained in the selected arithmetic subgroup.
+        kept = [split for moving in kept for split in lattice.O().split_orbit(moving, acting_group)]
     return finite_ordered_set(tuple(kept))
 
 
