@@ -2063,18 +2063,28 @@ class LorentzianPerfectLocalBackend:
                 for action in candidates:
                     if action * source_gram * action.transpose() != target_gram:
                         raise ArithmeticError("a proposed basis symmetry failed Gram preservation")
-                    if Counter(tuple(int(entry) for entry in row)
-                               for row in (source_matrix * action).rows()) != target_counts:
-                        continue
-                    source_labels = tuple(source.lattice.module_generating_set())
-                    target_labels = tuple(target.lattice.module_generating_set())
-                    return source.lattice.Isom(target.lattice)({
-                        label: target.lattice.linear_combination({
-                            target_label: target.lattice.base_ring()(int(entry))
-                            for target_label, entry in zip(target_labels, row, strict=True) if entry
+                    # Reject at the first missing/exhausted target row,
+                    # rather than allocating and counting an entire
+                    # transformed n-by-r matrix for every failed seed.
+                    remaining = target_counts.copy()
+                    for row in source_matrix.rows():
+                        image = tuple(int(entry) for entry in row * action)
+                        if not remaining[image]:
+                            break
+                        remaining[image] -= 1
+                    else:
+                        # Equal source/target cardinality plus successful
+                        # cancellation certifies the full multiset exactly.
+                        source_labels = tuple(source.lattice.module_generating_set())
+                        target_labels = tuple(target.lattice.module_generating_set())
+                        return source.lattice.Isom(target.lattice)({
+                            label: target.lattice.linear_combination({
+                                target_label: target.lattice.base_ring()(int(entry))
+                                for target_label, entry in zip(target_labels, image_row, strict=True) if entry
+                            })
+                            for label, image_row in zip(source_labels, action.rows(), strict=True)
                         })
-                        for label, row in zip(source_labels, action.rows(), strict=True)
-                    })
+                        continue
             if (
                 n <= _PAIRING_GRAPH_CANONICAL_LABEL_LIMIT
                 and not self.cell_stabilizer.is_in_cache(source)
