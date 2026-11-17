@@ -516,13 +516,48 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
         # POLY_DirectDualDesc.h:334-337 rejects an empty direct result.
         if not hyperplanes:
             raise ArithmeticError("the direct facet computation returned no facets")
+        direct_facets = {}
         for row in hyperplanes:
             normal, incidence, values = _orient(rays, _primitive(row))
             if not _is_facet_certificate_from_pairings(normal, incidence, rays, values):
                 raise ArithmeticError("a direct facet failed certification")
+            if not retain_words:
+                direct_facets.setdefault(incidence, normal)
+                continue
             record = register(normal, incidence)
             if record is not None:
                 yield record
+        if not retain_words:
+            # Direct dual description has already supplied *every* facet.
+            # The ray permutations therefore act on this finite set of
+            # incidences. Enumerate its generated orbits by closure, not by
+            # repeated RepresentativeAction/Stabilizer searches in the
+            # potentially enormous group of ray permutations. This performs
+            # one incidence image per (facet, supplied generator), regardless
+            # of the order of the ambient group.
+            #
+            # A generator is a permutation of the rays, so its inverse is a
+            # positive power; forward-generator closure is the full group
+            # orbit. The complete normalised facet domain must be invariant.
+            # Keep Normaliz's first facet for each orbit to preserve the
+            # historical representative and traversal order.
+            covered_facets: set[frozenset[int]] = set()
+            for incidence, normal in direct_facets.items():
+                if incidence in covered_facets:
+                    continue
+                orbit = {incidence}
+                pending = deque((incidence,))
+                while pending:
+                    current = pending.popleft()
+                    for permutation in permutations:
+                        moved = frozenset(permutation[position] for position in current)
+                        if moved not in direct_facets:
+                            raise ArithmeticError("the stabilizer action did not preserve the complete facet domain")
+                        if moved not in orbit:
+                            orbit.add(moved)
+                            pending.append(moved)
+                covered_facets.update(orbit)
+                yield FacetOrbitRecord(normal, incidence, len(orbit), ())
         return
     seed_normal, seed, values = _seed_facet(rays, dimension)
     if not _is_facet_certificate_from_pairings(seed_normal, seed, rays, values):
