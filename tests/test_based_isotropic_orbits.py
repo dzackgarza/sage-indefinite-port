@@ -95,3 +95,22 @@ def test_fixed_plane_transporters_retain_the_basis_divisibilities(exchange):
         assert second_arrow(forward.left()(point)) == forward.right()(first_arrow(point))
         assert backward.left()(forward.left()(point)) == point
     assert all(backward.right()(forward.right()(point)) == point for point in (e, f, u, v))
+
+
+def test_rank_three_fixed_basis_transport_preserves_each_marked_generator():
+    """The based rank-three marking requires the identity action on its source."""
+    from sage_extensions.all import Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, u, v, w, z = tuple(ambient.module_generators())
+    category = CosliceCategory(Lattices(ZZ), source)
+    first = category(source.hom([e, u, w], codomain=ambient))
+    second = category(source.hom([e + u, u, w], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert (witness(e), witness(u), witness(w)) == (e + u, u, w)
+    assert all((~witness)(witness(point)) == point for point in (e, f, u, v, w, z))
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y) for x in (e, f, u, v, w, z) for y in (e, f, u, v, w, z))
