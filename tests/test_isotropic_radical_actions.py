@@ -68,3 +68,12 @@ def test_extension_stabilizer_does_not_negate_a_pointwise_marked_plane():
     assert families
     assert all(images[:len(radical)] == radical for images in families)
     assert any(images != basis for images in families)
+    extension = ambient.primitive_isotropic_subobject(*radical, basis[len(radical)])
+    for images in families:
+        assert all(ambient.b(left, right) == ambient.b(image_left, image_right)
+                   for left, image_left in zip(basis, images, strict=True)
+                   for right, image_right in zip(basis, images, strict=True))
+        # The chosen quotient null line is the first quotient-frame vector.
+        # The entire primitive extension must be preserved setwise.
+        assert all(extension.inclusion().is_in_image(point)
+                   for point in images[:len(radical) + 1])
