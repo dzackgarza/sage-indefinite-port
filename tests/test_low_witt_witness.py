@@ -72,3 +72,12 @@ def test_low_witt_public_lazy_fixed_norm_orbit_iterator_returns_exact_vector():
     representative = next(ambient.O().exact_vector_orbit_iterator(2, primitive_only=True))
     assert representative.q() == ZZ(2)
     assert int(representative.content()) == 1
+
+
+def test_witt_one_primitive_isotropic_vector_lazy_stream():
+    from sage_extensions.all import Lattices, ZZ
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[2, 0], [0, -4]])
+    representative = next(ambient.O().exact_vector_orbit_iterator(0, primitive_only=True))
+    assert representative.q() == ZZ(0)
+    assert int(representative.content()) == 1
