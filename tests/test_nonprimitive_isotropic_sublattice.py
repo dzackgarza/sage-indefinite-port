@@ -230,6 +230,40 @@ def test_zero_form_index_two_sublattices_split_into_three_level_two_orbits():
     assert len(residue_lines) == 3
 
 
+def test_zero_form_moving_finite_index_submodule_transporter_decides_smith_type():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    first = ARROWS.object(source.hom([e, 2 * f], codomain=ambient))
+    second = ARROWS.object(source.hom([2 * e, f], codomain=ambient))
+    third = ARROWS.object(source.hom([2 * e, 2 * f], codomain=ambient))
+    witness = isometry(ARROWS, first, second)
+    assert witness is not None
+    target_subobject = ambient.subobject_on((2 * e, f))
+    assert all(target_subobject.inclusion().is_in_image(witness(x)) for x in (e, 2 * f))
+    assert isometry(ARROWS, first, third) is None
+
+
+def test_zero_form_primitive_moving_line_and_plane_stabilizers_are_full_gl_parabolics():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f = tuple(ambient.module_generators())
+    line_source = Lattices(ZZ)([[0]])
+    plane_source = Lattices(ZZ)([[0, 0], [0, 0]])
+    line = ARROWS.object(line_source.hom([e], codomain=ambient))
+    plane = ARROWS.object(plane_source.hom([e, f], codomain=ambient))
+    line_generators = tuple(automorphism_group_generators(ARROWS, line))
+    plane_generators = tuple(automorphism_group_generators(ARROWS, plane))
+    assert line_generators and plane_generators
+    assert all(g(e) in (e, -e) for g in line_generators)
+    assert any(g(e) == f for g in plane_generators)
+
+
 def test_zero_form_based_primitive_frames_have_one_class_at_each_attainable_rank():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import primitive_marking_classes

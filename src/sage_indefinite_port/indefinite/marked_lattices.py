@@ -780,6 +780,8 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             target_rank = int(target.arrow().domain().rank())
             if source_rank == 0 or target_rank == 0:
                 return RECURSION.isometry(source.arrow().codomain(), target.arrow().codomain()) if source_rank == target_rank else None
+            if source_rank != target_rank:
+                return None
             if source_rank == target_rank == 1:
                 source_arrow, target_arrow = source.arrow(), target.arrow()
                 source_point = source_arrow(next(iter(source_arrow.domain().module_generators())))
@@ -794,6 +796,25 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                     return RECURSION.isometry(source_point.parent(), target_point.parent())
                 return INDUCTION.line_isometry(source_point.primitive_part(), target_point.primitive_part())
             source_arrow, target_arrow = source.arrow(), target.arrow()
+            ambient = source_arrow.codomain()
+            if ambient is target_arrow.codomain() and all(
+                ambient.b(x, y) == 0 for x in ambient.module_generators() for y in ambient.module_generators()
+            ):
+                from sage.all import ZZ as SageZZ, matrix
+                from sage_indefinite_port.indefinite.recursive import _fair_unimodular_matrices, _isometry_from_row_matrix
+
+                labels = tuple(ambient.module_generating_set())
+                left = tuple(source_arrow(point) for point in source_arrow.domain().module_generators())
+                right = tuple(target_arrow(point) for point in target_arrow.domain().module_generators())
+                left_rows = matrix(SageZZ, [[int(point.to_vector()(label)) for label in labels] for point in left])
+                right_rows = matrix(SageZZ, [[int(point.to_vector()(label)) for label in labels] for point in right])
+                if left_rows.elementary_divisors() != right_rows.elementary_divisors():
+                    return None
+                target_subobject = ambient.subobject_on(right)
+                for rows in _fair_unimodular_matrices(int(ambient.rank())):
+                    witness = _isometry_from_row_matrix(ambient, ambient, rows)
+                    if all(target_subobject.inclusion().is_in_image(witness(point)) for point in left):
+                        return witness
             if source_arrow.domain().is_nondegenerate() and target_arrow.domain().is_nondegenerate():
                 return (_nondegenerate_embedding_isometry(source_arrow, target_arrow, based=False)
                         if source_arrow.is_primitive() and target_arrow.is_primitive()
@@ -906,6 +927,17 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                 generators = RECURSION.orthogonal_group_generators(marked.arrow().codomain())
             else:
                 arrow = marked.arrow()
+                if arrow.is_primitive() and all(
+                    arrow.codomain().b(x, y) == 0
+                    for x in arrow.codomain().module_generators()
+                    for y in arrow.codomain().module_generators()
+                ):
+                    ambient = arrow.codomain()
+                    subobject = ambient.primitive_isotropic_subobject(*(
+                        arrow(point) for point in arrow.domain().module_generators()
+                    ))
+                    generators = ambient.general_linear_group().flag_stabilizer((subobject,)).group_generators()
+                    return finite_ordered_set(tuple(generators))
                 if int(arrow.domain().rank()) > 1 and arrow.domain().is_nondegenerate():
                     generators = (_nondegenerate_stabilizer_generators(arrow, based=False)
                                   if arrow.is_primitive() else _finite_index_sublattice_stabilizer_generators(arrow))
