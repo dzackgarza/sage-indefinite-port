@@ -1031,9 +1031,10 @@ class IsotropicInduction:
             # The stabilizer of the zero subspace is all of O(L).
             return self.recursion.orthogonal_group_generators(ambient)
         if not ambient.is_nondegenerate():
-            from sage.matrix.constructor import identity_matrix
+            from sage.matrix.constructor import identity_matrix, matrix
             from sage.rings.integer_ring import ZZ as SageZZ
             from sage_extensions.categories.group.groups import OwnedGroups
+            from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
             from sage_indefinite_port.indefinite.recursive import (
                 _gram_in_label_order, _isometry_from_row_matrix, _conjugated,
             )
@@ -1098,6 +1099,92 @@ class IsotropicInduction:
                 return _conjugated(reduction.isometry, tuple(
                     _isometry_from_row_matrix(reduced, reduced, block) for block in blocks
                 ))
+            if n and k and not flag_dimensions:
+                # A primitive J with primitive projection I in C has
+                # radical intersection T=J∩R, and an integral shear
+                # identifies J with I⊕T. Its stabilizer has blocks
+                # A∈Stab_O(C)(I), D∈Stab_GL(R)(T), and B with I B⊂T.
+                rows = matrix(SageZZ, [[_integer((~reduction.isometry)(point).to_vector()(label))
+                                        for label in labels] for point in self.plane_vectors(plane)])
+                projection = rows[:, :n]
+                s = int(projection.rank())
+                smith, left, _right = projection.smith_form()
+                if s and all(abs(int(smith[i, i])) == 1 for i in range(s)):
+                    adapted_rows = left * rows
+                    xrows = adapted_rows[:s, :n]
+                    yrows = adapted_rows[:s, n:]
+                    trows = adapted_rows[s:, n:]
+                    t = int(trows.nrows())
+                    complement = reduced.lattice_category()([
+                        [int(gram[i, j]) for j in range(n)] for i in range(n)
+                    ])
+                    c_labels = tuple(complement.module_generating_set())
+                    quotient_points = tuple(complement.linear_combination({
+                        label: complement.base_ring()(int(row[j]))
+                        for j, label in enumerate(c_labels) if row[j]
+                    }) for row in xrows.rows())
+                    quotient = complement.primitive_isotropic_subobject(*quotient_points)
+                    radical_module = reduced.lattice_category()([[0] * k for _ in range(k)])
+                    r_labels = tuple(radical_module.module_generating_set())
+                    radical_points = tuple(radical_module.linear_combination({
+                        label: radical_module.base_ring()(int(row[j]))
+                        for j, label in enumerate(r_labels) if row[j]
+                    }) for row in trows.rows())
+                    radical_term = radical_module.primitive_isotropic_subobject(*radical_points)
+                    cframe = xrows.stack(_source_subspace_completion_int(xrows, n))
+                    inverse = cframe.inverse().change_ring(SageZZ)
+                    shear_target = matrix(SageZZ, n, k, 0)
+                    for i in range(s):
+                        for j in range(k):
+                            shear_target[i, j] = -yrows[i, j]
+                    shear = inverse * shear_target
+                    normalizer = identity_matrix(SageZZ, size)
+                    for i in range(n):
+                        for j in range(k):
+                            normalizer[i, n + j] = shear[i, j]
+                    blocks = []
+                    quotient_generators = (
+                        self.recursion.line_stabilizer_generators(self.plane_vectors(quotient)[0])
+                        if s == 1 else self.plane_automorphism_generators(quotient)
+                    )
+                    for generator in quotient_generators:
+                        block = identity_matrix(SageZZ, size)
+                        for i, point in enumerate(complement.module_generators()):
+                            image = generator(point).to_vector()
+                            for j, label in enumerate(c_labels):
+                                block[i, j] = _integer(image(label))
+                        blocks.append(block)
+                    linear = radical_module.general_linear_group()
+                    radical_generators = (
+                        linear.flag_stabilizer((radical_term,)).group_generators()
+                        if t else linear.group_generators()
+                    )
+                    for generator in radical_generators:
+                        block = identity_matrix(SageZZ, size)
+                        for i, point in enumerate(radical_module.module_generators()):
+                            image = generator(point).to_vector()
+                            for j, label in enumerate(r_labels):
+                                block[n + i, n + j] = _integer(image(label))
+                        blocks.append(block)
+                    for i in range(n):
+                        for j in range(t if i < s else k):
+                            adapted_shear = matrix(SageZZ, n, k, 0)
+                            if i < s:
+                                for col in range(k):
+                                    adapted_shear[i, col] = trows[j, col]
+                            else:
+                                adapted_shear[i, j] = 1
+                            shear_block = inverse * adapted_shear
+                            block = identity_matrix(SageZZ, size)
+                            for row in range(n):
+                                for col in range(k):
+                                    block[row, n + col] = shear_block[row, col]
+                            blocks.append(block)
+                    return _conjugated(reduction.isometry, tuple(
+                        _isometry_from_row_matrix(
+                            reduced, reduced, normalizer * block * normalizer.inverse().change_ring(SageZZ)
+                        ) for block in blocks
+                    ))
             radical = tuple(reduction.isometry(reduced.module_generator(label)) for label in labels[n:])
             if n and k and int(inclusion.domain().rank()) > k and all(
                 inclusion.is_in_image(point) for point in radical

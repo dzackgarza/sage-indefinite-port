@@ -501,6 +501,31 @@ def test_mixed_degenerate_primitive_projection_partial_radical_plane_transporter
     assert all(second.inclusion().is_in_image(public(point)) for point in (e + z, w))
 
 
+def test_mixed_degenerate_primitive_projection_partial_radical_plane_stabilizer():
+    from sage.all import GF, MatrixGroup, matrix
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION, ARROWS, automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    plane = ambient.primitive_isotropic_subobject(e + z, w)
+    generators = INDUCTION.plane_automorphism_generators(plane)
+    assert generators
+    assert all(plane.inclusion().is_in_image(generator(point))
+               for generator in generators for point in (e + z, w))
+    assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+               for generator in generators for x in (e, f, z, w) for y in (e, f, z, w))
+    labels = tuple(ambient.module_generating_set())[-2:]
+    actions = [matrix(GF(2), [
+        [int(generator(point).to_vector()(label)) for label in labels]
+        for point in (z, w)
+    ]) for generator in generators]
+    assert MatrixGroup(actions).order() == 2
+    public = tuple(automorphism_group_generators(ARROWS, ARROWS.object(plane.inclusion())))
+    assert public and all(plane.inclusion().is_in_image(generator(point))
+                          for generator in public for point in (e + z, w))
+
+
 def test_mixed_degenerate_plane_transporter_rejects_distinct_projection_smith_types():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import INDUCTION, ARROWS, isometry
@@ -527,6 +552,35 @@ def test_mixed_degenerate_rank_three_primitive_projection_and_proper_radical_tra
     assert all(second.inclusion().is_in_image(witness(point)) for point in (e + z, u, w))
     assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
                for x in (e, f, u, v, z, w) for y in (e, f, u, v, z, w))
+
+
+def test_mixed_degenerate_rank_three_primitive_projection_partial_radical_stabilizer():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, u, v, z, w = tuple(ambient.module_generators())
+    plane = ambient.primitive_isotropic_subobject(e + z, u, w)
+    generators = INDUCTION.plane_automorphism_generators(plane)
+    assert generators
+    assert all(plane.inclusion().is_in_image(generator(point))
+               for generator in generators for point in (e + z, u, w))
+    assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+               for generator in generators for x in (e, f, u, v, z, w)
+               for y in (e, f, u, v, z, w))
+
+
+def test_mixed_degenerate_primitive_projection_graph_plane_stabilizer_without_radical():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, u, v, z, w = tuple(ambient.module_generators())
+    plane = ambient.primitive_isotropic_subobject(e + z, u + w)
+    generators = INDUCTION.plane_automorphism_generators(plane)
+    assert generators
+    assert all(plane.inclusion().is_in_image(generator(point))
+               for generator in generators for point in (e + z, u + w))
 
 
 def test_mixed_degenerate_primitive_projection_transporter_across_presentations():
