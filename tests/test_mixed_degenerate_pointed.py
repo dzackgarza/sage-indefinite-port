@@ -640,6 +640,40 @@ def test_mixed_degenerate_radical_to_isotropic_plane_flag_stabilizer():
                    for generator in generators for point in basis)
 
 
+def test_mixed_degenerate_proper_radical_partial_flag_transporter():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, isometry, _flag_marking_from_basis
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, z, w, t = tuple(ambient.module_generators())
+    first = FLAGS(_flag_marking_from_basis(ambient, (z, w), (1, 2)))
+    second = FLAGS(_flag_marking_from_basis(ambient, (t, w), (1, 2)))
+    witness = isometry(FLAGS, first, second)
+    assert witness is not None
+    assert ambient.primitive_isotropic_subobject(t).inclusion().is_in_image(witness(z))
+    target_plane = ambient.primitive_isotropic_subobject(t, w)
+    assert all(target_plane.inclusion().is_in_image(witness(point)) for point in (z, w))
+
+
+def test_mixed_degenerate_proper_radical_three_stage_flag_transporter():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import isometry, _flag_marking_from_basis
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 4 for _ in range(4)])
+    e, f, z, w, t, s = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    first = category(_flag_marking_from_basis(ambient, (z, w, t), (1, 2, 3)))
+    second = category(_flag_marking_from_basis(ambient, (s, t, w), (1, 2, 3)))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    for source_points, target_points in (
+        ((z,), (s,)), ((z, w), (s, t)), ((z, w, t), (s, t, w))
+    ):
+        term = ambient.primitive_isotropic_subobject(*target_points)
+        assert all(term.inclusion().is_in_image(witness(point)) for point in source_points)
+
+
 def test_mixed_degenerate_full_radical_partial_quotient_flag_stabilizer():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import (

@@ -940,6 +940,50 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 return None
             ambient = source_basis[0].parent()
             target_ambient = target_basis[0].parent()
+            source_radical_flag = not ambient.is_nondegenerate() and all(
+                RECURSION.vector_lies_in_radical(point) for point in source_basis
+            )
+            target_radical_flag = not target_ambient.is_nondegenerate() and all(
+                RECURSION.vector_lies_in_radical(point) for point in target_basis
+            )
+            if source_radical_flag != target_radical_flag:
+                return None
+            if source_radical_flag:
+                # GL(rad L) is transitive on primitive flags with the
+                # same rank sequence. Complete both adapted flag bases
+                # to unimodular bases of the radical and lift the exact
+                # transporter with identity on the nondegenerate quotient.
+                from sage.matrix.constructor import identity_matrix, matrix
+                from sage.rings.integer_ring import ZZ as SageZZ
+                from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
+                from sage_indefinite_port.indefinite.recursive import _gram_in_label_order, _isometry_from_row_matrix
+
+                phi = RECURSION.isometry(ambient, target_ambient)
+                if phi is None:
+                    return None
+                reduction = indefinite_reduced_presentation(target_ambient)
+                reduced = reduction.reduced
+                gram = _gram_in_label_order(reduced)
+                n, size = int(gram.rank()), int(gram.nrows())
+                labels = tuple(reduced.module_generating_set())[n:]
+                completed = []
+                for points in (tuple(phi(point) for point in source_basis), target_basis):
+                    rows = matrix(SageZZ, [[int((~reduction.isometry)(point).to_vector()(label))
+                                            for label in labels] for point in points])
+                    completed.append(rows.stack(_source_subspace_completion_int(rows, size - n)))
+                action = completed[0].inverse().change_ring(SageZZ) * completed[1]
+                block = identity_matrix(SageZZ, size)
+                for i in range(size - n):
+                    for j in range(size - n):
+                        block[n + i, n + j] = action[i, j]
+                witness = reduction.isometry * _isometry_from_row_matrix(reduced, reduced, block) * (~reduction.isometry) * phi
+                target_terms = tuple(target_ambient.primitive_isotropic_subobject(*target_basis[:rank])
+                                     for rank in target_dimensions)
+                if not all(term.inclusion().is_in_image(witness(point))
+                           for rank, term in zip(source_dimensions, target_terms, strict=True)
+                           for point in source_basis[:rank]):
+                    raise ArithmeticError("the lifted radical-flag transporter does not preserve every term")
+                return witness
             if all(
                 not owner.is_nondegenerate()
                 and source_dimensions[0] >= int(owner.radical().rank())
