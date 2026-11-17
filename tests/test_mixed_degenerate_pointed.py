@@ -93,3 +93,28 @@ def test_mixed_isotropic_nonradical_vector_uses_shear_not_parabolic_reduction():
     assert witness is not None and witness(e + z) == e + 2 * z
     assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
                for x in (e, f, z) for y in (e, f, z))
+
+
+def test_public_degenerate_nonzero_norm_orbit_classes_split_by_radical_residue():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import pointed_nonzero_norm_classes
+
+    ambient = lattice([[2, 0], [0, 0]])
+    source = Lattices(ZZ)([[50]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    classes = pointed_nonzero_norm_classes(category, ambient, 50)
+    assert classes.cardinality() == cardinal(3)
+    assert all(marked.arrow()(source.module_generators()[0]).q() == ZZ(50) for marked in classes)
+    assert {int(marked.arrow()(source.module_generators()[0]).content()) for marked in classes} == {1, 5}
+
+
+def test_degenerate_fixed_content_fibres_separate_primitive_and_imprimitive():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import pointed_content_classes
+
+    ambient = lattice([[2, 0], [0, 0]])
+    source = Lattices(ZZ)([[50]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    assert pointed_content_classes(category, ambient, 50, 1).cardinality() == cardinal(2)
+    assert pointed_content_classes(category, ambient, 50, 5).cardinality() == cardinal(1)
+    assert pointed_content_classes(category, ambient, 50, 2).is_empty() is True

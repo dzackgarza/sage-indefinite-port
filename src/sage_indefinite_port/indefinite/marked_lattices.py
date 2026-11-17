@@ -778,6 +778,70 @@ def odd_primitive_pointed_classes_via_doubling(category: Category, lattice: Pare
     return finite_ordered_set(tuple(classes))
 
 
+
+def _degenerate_nonzero_pointed_classes(category: Category, lattice: Parent, square: int, *, acting_group=None) -> Parent:
+    r"""All nonzero-norm pointed orbits through C+rad(L) and exact finite residues.
+
+    A complement vector x of content c determines a finite radical
+    residue r modulo cR.  Shears change r by cR, while GL(R) acts through
+    its *actual* integral congruence image.  The full vector is primitive
+    precisely when gcd(c,r)=1; nonprimitive vectors are retained as well.
+    """
+    from itertools import product
+    from math import isqrt
+    from sage_indefinite_port.indefinite.indefinite_reduction import indefinite_reduced_presentation
+    from sage_indefinite_port.indefinite.recursive import _gram_in_label_order
+
+    if not square:
+        raise ValueError("zero norm requires content-indexed lazy radical and isotropic families")
+    reduction = indefinite_reduced_presentation(lattice)
+    reduced = reduction.reduced
+    gram = _gram_in_label_order(reduced)
+    n, k = int(gram.rank()), int(gram.nrows() - gram.rank())
+    if not n:
+        return finite_ordered_set(())
+    complement = reduced.lattice_category()([[int(gram[i, j]) for j in range(n)] for i in range(n)])
+    labels = tuple(reduced.module_generating_set())
+    classes = []
+    for content in range(1, isqrt(abs(square)) + 1):
+        if square % (content * content):
+            continue
+        complement_square = square // (content * content)
+        primitive = (
+            tuple(point for point in complement.O().vector_orbit_representatives(complement_square)
+                  if int(point.content()) == 1)
+            if complement.is_definite()
+            else complement.O().vector_orbit_representatives(complement_square, content=1)
+        )
+        if content == 1:
+            residues = ((0,) * k,)
+        else:
+            image = RECURSION.radical_congruence_image(lattice, content)
+            unseen = set(product(range(content), repeat=k))
+            residues = []
+            while unseen:
+                representative = min(unseen)
+                residues.append(representative)
+                unseen.difference_update(tuple(int(value) % content for value in row)
+                    for row in image.orbit_of(representative))
+        for point in primitive:
+            coordinates = point.to_vector()
+            complement_labels = tuple(complement.module_generating_set())
+            for residue in residues:
+                coefficients = (
+                    *(content * int(coordinates(label)) for label in complement_labels),
+                    *residue,
+                )
+                reduced_point = reduced.linear_combination({label: reduced.base_ring()(value)
+                    for label, value in zip(labels, coefficients, strict=True) if value})
+                classes.append(category.object(category.base_object().hom([
+                    reduction.isometry(reduced_point)
+                ], codomain=lattice)))
+    if acting_group is not None:
+        classes = [split for marked in classes for split in lattice.O().split_orbit(marked, acting_group)]
+    return finite_ordered_set(tuple(classes))
+
+
 def pointed_content_classes(category: Category, lattice: Parent, square: int, content: int, *, acting_group=None) -> Parent:
     r"""O(L)-classes of rank-one markings of square ``square`` and exact positive content.
 
@@ -798,6 +862,9 @@ def pointed_content_classes(category: Category, lattice: Parent, square: int, co
         raise ValueError("the pointed source form must have the requested square")
     if content < 1:
         raise ValueError("nonzero pointed-vector content must be positive")
+    if not lattice.is_nondegenerate() and square:
+        classes = _degenerate_nonzero_pointed_classes(category, lattice, square, acting_group=acting_group)
+        return finite_ordered_set(tuple(marked for marked in classes if int(_marked_vector(marked).content()) == content))
     if square % (content * content):
         return finite_ordered_set(())
     primitive_square = square // (content * content)
@@ -829,6 +896,8 @@ def pointed_nonzero_norm_classes(category: Category, lattice: Parent, square: in
     """
     from math import isqrt
 
+    if not lattice.is_nondegenerate() and square:
+        return _degenerate_nonzero_pointed_classes(category, lattice, square, acting_group=acting_group)
     if square == 0:
         raise ValueError("isotropic contents are unbounded; request pointed_content_classes with a prescribed positive content")
     classes = (
