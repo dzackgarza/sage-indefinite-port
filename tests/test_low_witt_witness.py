@@ -106,3 +106,18 @@ def test_low_witt_one_public_lazy_primitive_null_line_orbit_stream():
     assert vector.q() == ZZ(0)
     assert int(vector.content()) == 1
     assert arrow.is_primitive()
+
+
+def test_low_witt_one_primitive_null_line_moving_transporter_and_inverse():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[2, 0], [0, -4]])
+    e, f, u, v = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0]])
+    first = ARROWS(source.hom([e], codomain=ambient))
+    second = ARROWS(source.hom([f], codomain=ambient))
+    witness = isometry(ARROWS, first, second)
+    assert witness is not None
+    assert witness(e) in (f, -f)
+    assert (~witness)(witness(e)) == e
