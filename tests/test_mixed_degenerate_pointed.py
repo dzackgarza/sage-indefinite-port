@@ -474,6 +474,16 @@ def test_odd_rank_homothetic_maximal_null_plane_so_orbits_equal_full_orbits():
     assert len(full) == len(special) == 1
 
 
+def test_odd_rank_moving_nonisotropic_lines_do_not_split_under_so():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import nonisotropic_line_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    full = tuple(nonisotropic_line_classes(ambient, 2))
+    special = tuple(nonisotropic_line_classes(ambient, 2, acting_group=ambient.SO()))
+    assert len(full) == len(special) == 1
+
+
 @pytest.mark.parametrize("smith", ((1, 1, 2), (1, 2, 2)))
 def test_mixed_degenerate_maximal_rank_three_index_two_respects_radical_plane(smith):
     from sage_extensions.all import Lattices, ZZ
