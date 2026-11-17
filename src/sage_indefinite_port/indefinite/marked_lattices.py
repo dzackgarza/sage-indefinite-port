@@ -1648,7 +1648,11 @@ def iter_primitive_isotropic_line_classes(lattice: Parent, *, acting_group=None)
         return
     seen = []
     for vector in RECURSION.exact_vector_orbit_iterator(lattice, 0, primitive_only=True):
-        if any(RECURSION.pointed_isometry(vector, -previous) is not None for previous in seen):
+        if any(
+            RECURSION.pointed_isometry(vector, previous) is not None
+            or RECURSION.pointed_isometry(vector, -previous) is not None
+            for previous in seen
+        ):
             continue
         seen.append(vector)
         source = lattice.lattice_category()([[0]])

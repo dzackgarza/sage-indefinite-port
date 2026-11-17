@@ -208,6 +208,23 @@ def test_zero_form_rank_two_isotropic_sublattices_have_complete_smith_strata():
     assert len(tuple(nonprimitive_isotropic_sublattice_classes(ambient, 2, (1, 2), acting_group=ambient.O()))) == 1
 
 
+def test_primitive_null_line_stream_identifies_both_signs_and_same_sign(monkeypatch):
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        RECURSION, iter_primitive_isotropic_line_classes,
+    )
+
+    ambient = Lattices(ZZ)("U")
+    e = next(iter(ambient.module_generators()))
+    monkeypatch.setattr(
+        RECURSION, "exact_vector_orbit_iterator",
+        lambda *_args, **_kwargs: iter((e, e, -e)),
+    )
+    classes = tuple(iter_primitive_isotropic_line_classes(ambient))
+    assert len(classes) == 1
+    assert classes[0].arrow()(next(iter(classes[0].arrow().domain().module_generators()))) == e
+
+
 def test_mixed_degenerate_radical_smith_classes_use_integral_gl_action():
     from itertools import islice
     from sage_extensions.all import Lattices, ZZ
