@@ -197,7 +197,8 @@ def test_index_two_sublattices_respect_proper_integral_levi_image():
     ambient = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 2], [0, 0, 2, 0]])
     e, _f, u, _v = tuple(ambient.module_generators())
     saturated = ambient.primitive_isotropic_subobject(e, u)
-    classes = nonprimitive_sublattice_classes(saturated, (1, 2))
+    group = ambient.O().stabilizer(saturated)
+    classes = nonprimitive_sublattice_classes(saturated, (1, 2), stabilizer_group=group)
     assert len(classes) == 2
     assert all(arrow.codomain() is ambient for arrow in classes)
 
@@ -404,4 +405,54 @@ def test_proper_glue_levi_image_distinguishes_equal_norm_source_summands():
     # ambient isometry does.  Modulo two, the actual source image acts
     # trivially, leaving all three index-two submodules inequivalent.
     assert len(classes) == 3
+    assert all(arrow.codomain() is ambient for arrow in classes)
+
+
+def test_mixed_degenerate_saturation_index_two_submodules_under_actual_stabilizer():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_sublattice_classes
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    e, z, w = tuple(ambient.module_generators())
+    saturated = ambient.subobject_on([e, z])
+    classes = nonprimitive_sublattice_classes(saturated, (1, 2))
+    assert len(classes) == 2
+    assert all(arrow.codomain() is ambient for arrow in classes)
+
+
+def test_split_radical_saturation_full_hyperbolic_quotient_and_radical_line():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_sublattice_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    saturated = ambient.subobject_on([e, f, z])
+    classes = nonprimitive_sublattice_classes(saturated, (1, 1, 2))
+    assert len(classes) == 3
+    assert all(arrow.codomain() is ambient for arrow in classes)
+
+
+def test_nonprimitive_mixed_degenerate_sublattice_setwise_schreier_generators():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    e, z, w = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[8, 0], [0, 0]])
+    marked = ARROWS(source.hom([2 * e, z], codomain=ambient))
+    generators = tuple(automorphism_group_generators(ARROWS, marked))
+    assert all(marked.arrow().is_in_image(g(2 * e)) and marked.arrow().is_in_image(g(z))
+               for g in generators)
+    assert any(g(e) != e for g in generators)
+
+
+def test_split_radical_saturation_stabilizer_handles_nonstandard_graph():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_sublattice_classes
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    e, z, w = tuple(ambient.module_generators())
+    saturated = ambient.subobject_on([e + w, z + w])
+    classes = nonprimitive_sublattice_classes(saturated, (1, 2))
+    assert len(classes) == 2
     assert all(arrow.codomain() is ambient for arrow in classes)
