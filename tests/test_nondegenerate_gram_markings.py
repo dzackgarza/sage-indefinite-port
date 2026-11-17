@@ -66,3 +66,35 @@ def test_glued_nondegenerate_marking_has_identity_without_fictitious_split():
     witness = isometry(category, marked, marked)
     assert witness is not None
     assert all(witness(x) == x for x in (e, f, u, v))
+
+
+def test_split_nondegenerate_based_and_moving_stabilizer_generators():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
+
+    source = Lattices(ZZ)("U")
+    ambient = source + source
+    e, f, u, v = tuple(ambient.module_generators())
+    arrow = source.hom([e, f], codomain=ambient)
+    based = Lattices(ZZ).CosliceUnder(source)
+    fixed = tuple(automorphism_group_generators(based, based(arrow)))
+    moving = tuple(automorphism_group_generators(ARROWS, ARROWS(arrow)))
+    assert all(g(e) == e and g(f) == f for g in fixed)
+    assert all(arrow.is_in_image(g(e)) and arrow.is_in_image(g(f)) for g in moving)
+    assert ambient.O().subgroup(fixed).cardinality() == cardinal(4)
+    assert ambient.O().subgroup(moving).cardinality() == cardinal(16)
+
+
+def test_split_nondegenerate_noncoordinate_based_stabilizer_is_full_complement_group():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    source = Lattices(ZZ)("U")
+    ambient = source + source
+    e, f, u, v = tuple(ambient.module_generators())
+    arrow = source.hom([e + u, f], codomain=ambient)
+    category = Lattices(ZZ).CosliceUnder(source)
+    family = tuple(automorphism_group_generators(category, category(arrow)))
+    assert all(g(e + u) == e + u and g(f) == f for g in family)
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y) for g in family for x in (e, f, u, v) for y in (e, f, u, v))
+    assert ambient.O().subgroup(family).cardinality() == cardinal(4)

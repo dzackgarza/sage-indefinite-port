@@ -219,7 +219,7 @@ def _finite_index_isotropic_stabilizer_generators(arrow: Morphism) -> tuple[Latt
 
 
 
-def _split_nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow: Morphism, *, based: bool) -> LatticeIsometryMethods | None:
+def _split_nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow: Morphism, *, based: bool, source_action=None, complement_action=None) -> LatticeIsometryMethods | None:
     r"""Extend source and perpendicular isometries across an integral orthogonal direct sum.
 
     For L=S+S^perp as *integral* orthogonal summands, independent isometries
@@ -229,7 +229,7 @@ def _split_nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow
     from sage.all import ZZ as SageZZ, matrix
 
     source_lattice, target_lattice = source_arrow.codomain(), target_arrow.codomain()
-    if source_lattice is target_lattice and source_arrow.domain() is target_arrow.domain() and all(
+    if source_action is None and complement_action is None and source_lattice is target_lattice and source_arrow.domain() is target_arrow.domain() and all(
         source_arrow(point) == target_arrow(point) for point in source_arrow.domain().module_generators()
     ):
         return source_lattice.O().identity()
@@ -247,10 +247,10 @@ def _split_nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow
                             (target_lattice, (*target_points, *target_cpoints))):
         if int(lattice.subobject_on(points).inclusion().cokernel().cardinality()) != 1:
             raise ValueError("the primitive embedding has nontrivial complement glue")
-    source_iso = None if based else RECURSION.isometry(source_arrow.domain(), target_arrow.domain())
+    source_iso = source_action if source_action is not None else (None if based else RECURSION.isometry(source_arrow.domain(), target_arrow.domain()))
     if not based and source_iso is None:
         return None
-    complement_iso = RECURSION.isometry(source_complement.inclusion().domain(), target_complement.inclusion().domain())
+    complement_iso = complement_action if complement_action is not None else RECURSION.isometry(source_complement.inclusion().domain(), target_complement.inclusion().domain())
     if complement_iso is None:
         return None
     images = (
@@ -269,6 +269,28 @@ def _split_nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow
         return sum((target_lattice.scalar_multiple(target_basis(int(coefficient)), point)
                     for coefficient, point in zip(column, images, strict=True) if coefficient), target_lattice.zero())
     return source_lattice.Isom(target_lattice)(image)
+
+
+
+def _split_nondegenerate_stabilizer_generators(arrow: Morphism, *, based: bool) -> tuple[LatticeIsometryMethods, ...]:
+    r"""The split stabilizer O(S) x O(S^perp), or its based kernel O(S^perp)."""
+    lattice = arrow.codomain()
+    subobject = lattice.subobject_on(tuple(arrow(x) for x in arrow.domain().module_generators()))
+    complement = lattice.orthogonal_complement(subobject).inclusion().domain()
+    complement_identity = complement.O().identity()
+    source_identity = arrow.domain().O().identity()
+    family = []
+    if not based:
+        for action in RECURSION.orthogonal_group_generators(arrow.domain()):
+            family.append(_split_nondegenerate_embedding_isometry(
+                arrow, arrow, based=False, source_action=action, complement_action=complement_identity
+            ))
+    for action in RECURSION.orthogonal_group_generators(complement):
+        family.append(_split_nondegenerate_embedding_isometry(
+            arrow, arrow, based=based, source_action=source_identity,
+            complement_action=action
+        ))
+    return tuple(family)
 
 
 def _flag(marked: Parent) -> Flag:
@@ -400,6 +422,9 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                 generators = RECURSION.pointed_automorphism_generators(_marked_vector(marked))
             else:
                 arrow = marked.arrow()
+                if arrow.domain().is_nondegenerate():
+                    generators = _split_nondegenerate_stabilizer_generators(arrow, based=True)
+                    return finite_ordered_set(tuple(generators))
                 saturation = _isotropic_sublattice(arrow) if arrow.is_primitive() else _homothetic_isotropic_saturation(arrow)
                 if saturation is None:
                     raise ValueError("nonhomothetic based isotropic stabilizers require an integral source-module action")
@@ -412,6 +437,9 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                 generators = RECURSION.orthogonal_group_generators(marked.arrow().codomain())
             else:
                 arrow = marked.arrow()
+                if int(arrow.domain().rank()) > 1 and arrow.domain().is_nondegenerate():
+                    generators = _split_nondegenerate_stabilizer_generators(arrow, based=False)
+                    return finite_ordered_set(tuple(generators))
                 if int(arrow.domain().rank()) == 1:
                     # For any nonzero v, Stab(Zv) is generated by Stab(v)
                     # and, when it exists, one isometry taking v to -v.
