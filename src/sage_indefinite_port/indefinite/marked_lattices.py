@@ -142,6 +142,16 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             target_rank = int(target.arrow().domain().rank())
             if source_rank == 0 or target_rank == 0:
                 return RECURSION.isometry(source.arrow().codomain(), target.arrow().codomain()) if source_rank == target_rank else None
+            if source_rank == target_rank == 1:
+                source_arrow, target_arrow = source.arrow(), target.arrow()
+                source_point = source_arrow(next(iter(source_arrow.domain().module_generators())))
+                target_point = target_arrow(next(iter(target_arrow.domain().module_generators())))
+                if source_point.q() == source_point.parent().base_ring().zero() and target_point.q() == target_point.parent().base_ring().zero():
+                    if source_point.content() != target_point.content():
+                        return None
+                    # A rank-one arrow allows source automorphism +/-1;
+                    # saturation cancels the common content exactly.
+                    return INDUCTION.line_isometry(source_point.primitive_part(), target_point.primitive_part())
             source_sublattice = _isotropic_sublattice(source.arrow())
             target_sublattice = _isotropic_sublattice(target.arrow())
             match int(source_sublattice.inclusion().domain().rank()), int(target_sublattice.inclusion().domain().rank()):
