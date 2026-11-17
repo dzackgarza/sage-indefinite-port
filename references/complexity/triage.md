@@ -887,3 +887,27 @@ The isotropic branch of `binary_candidates` built an owned plane lattice per for
 Equality: `zk_split_eq.py` (150 random split forms, 450 squares: null basis and vectors in order) identical at 9f3a20a and 1bfbcc9; the 50 seed-7 walks (`zk_eq39.log`) identical to `zk_eq38.log`. Gates (`zk_gates_r39.log`) and owner tests (`zk_owner_r39.log`) pass. No repin.
 
 Family totals: Allcock 1.72 s x 8595 = 4.1 h, ListReflect rank 3 1.72 s x 8602 = 4.1 h, about 8.2 h.
+
+## Batch 1 after fix 31: engine data in the walk phases (port cffbc86 -> 4c0ef64, sage-extensions bcad374a)
+
+Phase probe (`zk_phaseprobe.py`, `zk_pp_batch.sh`, log `zk_pp_b1.log`): warm, seed 1, 15 cases per family, the method's seconds per call at the parent commit and at the change, on the same inputs (the walks are equal). Hours = delta per call x source steps per case (walk-floor table) x 17,200 cases.
+
+| Commit | Operation | ms per call before -> after, Allcock / ListReflect rank 3 | steps per case | hours |
+| --- | --- | --- | --- | --- |
+| cffbc86 | isotropic initial vertex: k^perp/k framed by the Smith transform of k's coordinates (the owned reduction's framing), shells and simple cone on engine data | 470 -> 107 / 539 -> 114 | 0.27 | 0.5 |
+| 8c6ac33 | edge directions: facets of the root cone from the engine polyhedron of `from_rays` | 42.1 -> 4.2 / 39.2 -> 4.7 | 4.3 | 0.7 |
+| bb6fa4a | ordinary vertex roots: k^perp rows and the simple rays on engine data | 101 -> 56 / 92 -> 29 | 0.87 | 0.2 |
+| aa93791 | isotropic next vertex: null lines of the edge plane's integer form | 72 -> 21 / 70 -> 29 | 1.1 | 0.25 |
+| 3b3b02e | common fixed space of the admitted isometries: left kernels over QQ and PARI qfsign | 148 -> 4.4 / 159 -> 3.5 | 0.47 | 0.3 |
+| 4c0ef64 | positive vector orienting an ideal edge plane from its 2 x 2 Gram matrix | 7.1 -> 1.7 / 6.2 -> 1.5 | 8.2 | 0.2 |
+| (not committed) | extension-root reconstruction as a row-vector product | `extension_roots` 0.372 -> 0.363 s per case | | no measured effect; removed |
+
+Each committed change moves its phase beyond the noise; the sum is about 2.2 h. Order-balanced family pair of the batch (1bfbcc9 against 4c0ef64, seed 1, 25 cases, both orders; `zk_wpair_b1a.log`, `zk_wpair_b1b.log`): Allcock 1.77 -> 1.34 s, ListReflect rank 3 1.98 -> 1.37 s (one base process at 2.14 s), about 1.0 + 1.5 = 2.5 h.
+
+Checks: each change gives the same 50 seed-7 walks as `zk_eq39.log` (`zk_eq41.log` .. `zk_eq49.log`); allcock w217_l26 and the other edgewalk gates pass at 4c0ef64 (`zk_gates_b1.log`); tier-1 at 4c0ef64 (`zk_t1_b1.log`): 45 of 49 pass, the four nodes priced over 60 s reach the cap with no error.
+
+Family totals at 4c0ef64: batch head processes Allcock 1.34 s x 8595 = 3.2 h, ListReflect rank 3 1.37 s x 8602 = 3.3 h, about 6.5 h; a head-only run on seed 2 (50 cases per family, `zk_wpair_tot50.log`) gives 1.24 s and 1.28 s, about 6.0 h. The tail is 6.0-6.5 h.
+
+Phase wrappers at 4c0ef64 (`zk_meth50.log`, seconds per case, Allcock / ListReflect): extension roots with the edge plane and binary candidates 0.37 / 0.39 (floor about 0.17: edge plane 0.125, reconstruction 0.03, candidates 0.017), initial vertex 0.13 / 0.11, report 0.11 / 0.11 (public cones of the vertices), edge step 0.07 / 0.08, reflectivity certificate 0.04 / 0.04, isotropic next vertex 0.03 / 0.03.
+
+Remaining above 1 h removable: the edge plane and extension roots, about 0.2 s per case above the floor, about 1.0 h. The per-plane statements are Sage matrix constructions (38,574 `MatrixSpace` lookups and 21,430 element constructions per 25 Allcock cases, `zk_callees48.log`) and `_plane_coordinates` (12,858 calls); the next change is the plane on integer 2 x n rows. Every other phase is under 1 h removable. Multiplied remainder if the edge plane reaches its floor: about 6.0-6.5 - 1.0 = 5.0-5.5 h.
