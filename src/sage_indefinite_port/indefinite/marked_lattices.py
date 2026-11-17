@@ -1556,6 +1556,37 @@ def nonprimitive_isotropic_sublattice_classes(lattice: Parent, rank: int, diviso
     """
     if rank < 1 or len(divisors) != rank:
         raise ValueError("positive isotropic rank and matching elementary-divisor tuple required")
+    if acting_group is lattice.O():
+        acting_group = None
+    if rank > int(lattice.rank()):
+        return finite_ordered_set(())
+    labels = tuple(lattice.module_generating_set())
+    if all(lattice.b(x, y) == 0 for x in lattice.module_generators() for y in lattice.module_generators()):
+        # A zero-form lattice has O(L)=GL(L), transitive on primitive
+        # rank-r direct summands. Its saturation stabilizer induces the
+        # *full* GL_r(ZZ) on the summand. This avoids calling the
+        # nondegenerate Witt-index recursion on a degenerate lattice.
+        saturated = lattice.primitive_isotropic_subobject(*(lattice.module_generator(label) for label in labels[:rank]))
+        inclusion = saturated.inclusion()
+        module = inclusion.domain()
+        if acting_group is None:
+            submodules = module.finite_index_submodule_orbits(divisors, module.general_linear_group().group_generators())
+            return finite_ordered_set(tuple(ARROWS.object(lattice.subobject_on(tuple(
+                inclusion(subobject(point)) for point in subobject.domain().module_generators()
+            )).inclusion()) for subobject in submodules))
+        source = lattice.lattice_category()([[0] * rank for _ in range(rank)])
+        primitive = lattice.O().split_orbit(ARROWS.object(source.hom(tuple(
+            inclusion(point) for point in module.module_generators()
+        ), codomain=lattice)), acting_group)
+        classes = []
+        for marked in primitive:
+            arrow = marked.arrow()
+            saturation = lattice.subobject_on(tuple(arrow(point) for point in arrow.domain().module_generators()))
+            stabilizer = acting_group.intersection(lattice.O().stabilizer(saturation))
+            classes.extend(ARROWS.object(embedding) for embedding in nonprimitive_sublattice_classes(
+                saturation, divisors, stabilizer_group=stabilizer
+            ))
+        return finite_ordered_set(tuple(classes))
     source = lattice.lattice_category()([[0] * rank for _ in range(rank)])
     primitive = primitive_marking_classes(ARROWS, source, lattice)
     group = lattice.O() if acting_group is None else acting_group
@@ -1707,6 +1738,20 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
             rank = int(source.rank())
             if rank == 0:
                 classes = (ARROWS.object(source.hom([], codomain=lattice)),)
+            elif rank > int(lattice.rank()):
+                classes = ()
+            elif (
+                rank <= int(lattice.rank())
+                and all(lattice.b(x, y) == 0 for x in lattice.module_generators() for y in lattice.module_generators())
+                and all(source.b(x, y) == 0 for x in source.module_generators() for y in source.module_generators())
+            ):
+                # Primitive rank-r direct summands of a zero-form lattice
+                # form one GL_n(ZZ)-orbit, by completion of a primitive
+                # frame to an integral basis.
+                labels = tuple(lattice.module_generating_set())
+                classes = (ARROWS.object(source.hom(tuple(
+                    lattice.module_generator(label) for label in labels[:rank]
+                ), codomain=lattice)),)
             elif source.is_nondegenerate():
                 # Moving sublattices allow the full source isometry group.
                 # The owned 'sub' classification quotients by both O(source)

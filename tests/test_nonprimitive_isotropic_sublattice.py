@@ -177,6 +177,39 @@ def test_unrestricted_isotropic_sublattice_iterator_terminates_above_degenerate_
     assert tuple(iter_all_isotropic_sublattice_classes(ambient, 2)) == ()
 
 
+def test_zero_form_rank_two_isotropic_sublattices_have_complete_smith_strata():
+    from itertools import islice
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        iter_all_isotropic_sublattice_classes, nonprimitive_isotropic_sublattice_classes,
+    )
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    classes = tuple(islice(iter_all_isotropic_sublattice_classes(ambient, 2), 3))
+    indices = []
+    for marked in classes:
+        arrow = marked.arrow()
+        saturated = arrow.saturation()
+        embedded = saturated.inclusion().domain().subobject_on(tuple(
+            saturated.inclusion().lift(arrow(x)) for x in arrow.domain().module_generators()
+        )).inclusion()
+        indices.append(int(embedded.cokernel().cardinality()))
+    assert indices == [1, 2, 4]
+    assert len(tuple(nonprimitive_isotropic_sublattice_classes(ambient, 2, (1, 2), acting_group=ambient.O()))) == 1
+
+
+def test_zero_form_primitive_moving_sublattices_have_one_class_at_each_attainable_rank():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    for rank, expected in ((1, 1), (2, 1), (3, 0)):
+        source = Lattices(ZZ)([[0] * rank for _ in range(rank)])
+        classes = tuple(primitive_marking_classes(ARROWS, source, ambient))
+        assert len(classes) == expected
+        assert all(marked.arrow().is_primitive() for marked in classes)
+
+
 def test_unrestricted_rank_two_null_sublattices_split_under_special_orthogonal_group():
     from itertools import islice
     from sage_extensions.all import Lattices, ZZ
