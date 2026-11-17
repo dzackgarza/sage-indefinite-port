@@ -365,6 +365,23 @@ def test_public_primitive_radical_flag_in_anisotropic_degenerate_lattice():
         primitive_marking_classes(FLAGS, first.inclusion(), isotropic_quotient)
 
 
+def test_mixed_degenerate_maximal_moving_null_plane_is_finite_despite_infinite_lines():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    classes = tuple(primitive_marking_classes(ARROWS, source, ambient))
+    assert len(classes) == 1
+    plane = classes[0].arrow()
+    assert plane.is_primitive()
+    assert plane.domain().rank() == 2
+    assert all(ambient.b(plane(x), plane(y)) == 0
+               for x in plane.domain().module_generators() for y in plane.domain().module_generators())
+    radical = ambient.radical().inclusion()
+    assert all(plane.is_in_image(radical(point)) for point in radical.domain().module_generators())
+
+
 def test_primitive_radical_markings_are_covariant_under_reordered_coordinate_labels():
     from itertools import islice
     from sage_extensions.all import Lattices, ZZ, cardinal
