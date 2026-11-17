@@ -2067,11 +2067,17 @@ class LorentzianPerfectLocalBackend:
                     # rather than allocating and counting an entire
                     # transformed n-by-r matrix for every failed seed.
                     remaining = target_counts.copy()
-                    for row in source_matrix.rows():
-                        image = tuple(int(entry) for entry in row * action)
-                        if not remaining[image]:
-                            break
-                        remaining[image] -= 1
+                    for start in range(0, n, _configuration_pairing_block_size(n)):
+                        stop = min(start + _configuration_pairing_block_size(n), n)
+                        transformed = source_matrix.matrix_from_rows(range(start, stop)) * action
+                        for row in transformed.rows():
+                            image = tuple(int(entry) for entry in row)
+                            if not remaining[image]:
+                                break
+                            remaining[image] -= 1
+                        else:
+                            continue
+                        break
                     else:
                         # Equal source/target cardinality plus successful
                         # cancellation certifies the full multiset exactly.
@@ -2084,7 +2090,6 @@ class LorentzianPerfectLocalBackend:
                             })
                             for label, image_row in zip(source_labels, action.rows(), strict=True)
                         })
-                        continue
             if (
                 n <= _PAIRING_GRAPH_CANONICAL_LABEL_LIMIT
                 and not self.cell_stabilizer.is_in_cache(source)
