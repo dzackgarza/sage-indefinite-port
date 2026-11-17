@@ -1470,6 +1470,11 @@ class EichlerRecursion:
     def line_stabilizer_generators(self, vector: Lattices.ElementMethods) -> tuple[LatticeIsometryMethods, ...]:
         r"""Generators of Aut((L, Zv)) for primitive isotropic v: Gamma = {+-1} on the line."""
         lattice = vector.parent()
+        if vector == lattice.zero() or vector.q() != lattice.base_ring().zero():
+            raise ValueError("a line stabilizer requires a nonzero isotropic vector")
+        if int(vector.content()) > 1:
+            # Stab(Z(c*v)) = Stab(Zv) for every nonzero integer c.
+            return self.line_stabilizer_generators(vector.primitive_part())
         action = self.isotropic_stabilizer_action((vector,), ((-vector,),))
         # The source supplies a stable containing module, so this is the
         # finite residue action (GroupAction.g:813-900), independently of

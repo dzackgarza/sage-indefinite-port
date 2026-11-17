@@ -882,6 +882,25 @@ def test_rank_zero_isotropic_subspace_transporter_is_ambient_isometry():
                                    definite.primitive_isotropic_subobject()) is None
 
 
+def test_line_stabilizer_rejects_nonnull_and_reduces_imprimitive_generator():
+    import pytest
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = Lattices(ZZ)("U")
+    e, f = tuple(ambient.module_generators())
+    recursion = EichlerRecursion()
+    induction = IsotropicInduction(recursion)
+    for invalid in (ambient.zero(), e + f):
+        with pytest.raises(ValueError, match="nonzero isotropic"):
+            recursion.line_stabilizer_generators(invalid)
+        with pytest.raises(ValueError, match="nonzero isotropic"):
+            induction.line_automorphism_generators(ambient, invalid)
+    assert recursion.line_stabilizer_generators(2 * e) == recursion.line_stabilizer_generators(e)
+    assert induction.line_automorphism_generators(ambient, 2 * e) == induction.line_automorphism_generators(ambient, e)
+
+
 def test_five_u_partial_flag_rank_jumps_one_three_five_transport():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory

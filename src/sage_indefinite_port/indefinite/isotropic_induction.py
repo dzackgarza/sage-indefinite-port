@@ -808,6 +808,10 @@ class IsotropicInduction:
         r"""Aut((L, Zu)): Gamma = {+-1} on the line (IndefiniteForms.g:1711-1725 with k = 1)."""
         if line.parent() is not lattice:
             raise ValueError(f"{line} is not a vector of {lattice}")
+        if line == lattice.zero() or line.q() != lattice.base_ring().zero():
+            raise ValueError("a line stabilizer requires a nonzero isotropic vector")
+        if int(line.content()) > 1:
+            return self.line_automorphism_generators(lattice, line.primitive_part())
         return self._stabilizer_generators((line,), ((-line,),))
 
     def plane_automorphism_generators(self, plane: Parent) -> tuple[LatticeIsometryMethods, ...]:
