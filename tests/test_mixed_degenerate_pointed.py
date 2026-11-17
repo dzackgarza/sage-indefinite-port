@@ -655,6 +655,19 @@ def test_zero_form_rank_two_moving_line_stabilizer_preserves_primitive_line():
                for generator in generators for point in (e, f))
 
 
+def test_public_moving_radical_line_stabilizer_contains_sign_reversal():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    marked = ARROWS.object(ambient.primitive_isotropic_subobject(z).inclusion())
+    generators = tuple(automorphism_group_generators(ARROWS, marked))
+    assert generators
+    assert all(generator(z) in (z, -z) for generator in generators)
+    assert any(generator(z) == -z for generator in generators)
+
+
 @pytest.mark.parametrize("smith", ((1, 1, 2), (1, 2, 2)))
 def test_mixed_degenerate_maximal_rank_three_index_two_respects_radical_plane(smith):
     from sage_extensions.all import Lattices, ZZ
