@@ -1492,14 +1492,17 @@ class EichlerRecursion:
             coordinates = (~reduction.isometry)(vector).to_vector()
             x = tuple(_integer(coordinates(label)) for label in labels[:n])
             r = tuple(_integer(coordinates(label)) for label in labels[n:])
-            if n and size - n == 1 and gcd(*x) > 1:
-                # Write v=(c*x0,r), x0 primitive, gcd(c,r)=1. For
-                # [A B;0 D] fixing v pointwise, x0*A=x0, D=+1 or -1,
-                # and c*x0*B=r*(1-D). Thus D=-1 is permitted exactly
-                # when c divides 2r; the remaining shear kernel is
-                # Hom(C/Zx0,R). Central -id_L adds the line reversal.
+            if n and gcd(*x) > 1:
+                # Write v=(c*x0,r), x0 primitive. Pointwise fixation is
+                # x0*A=x0, r*D=r (mod c), x0*B=(r-r*D)/c.
+                # The GL(R) congruence stabilizer has index at most c^k.
+                # Use the owned *integral* finite-index Schreier algorithm,
+                # not the finite residue-image stabilizer: the latter
+                # omits the infinite congruence kernel. The free shear
+                # kernel is Hom(C/Zx0,R); -id_L adds the line reversal.
                 c = gcd(*x)
                 x0 = tuple(entry // c for entry in x)
+                k = size - n
                 complement = reduced.lattice_category()([
                     [int(gram[i, j]) for j in range(n)] for i in range(n)
                 ])
@@ -1517,17 +1520,38 @@ class EichlerRecursion:
                         for j, label in enumerate(c_labels):
                             block[i, j] = _integer(image(label))
                     blocks.append(block)
+                linear = OwnedGroups().GL(k, reduced.base_ring())
+
+                def radical_matrix(generator):
+                    return linear._to_engine(generator).matrix()
+
+                def preserves_residue(generator):
+                    action = radical_matrix(generator)
+                    return all((sum(r[i] * _integer(action[i, j]) for i in range(k)) - r[j]) % c == 0
+                               for j in range(k))
+
+                stabilizer = linear.predicate_subgroup(
+                    preserves_residue, lambda: f"stabilizer of radical residue {r} modulo {c}"
+                )
+                for generator in stabilizer.finite_index_schreier_generators(
+                    index_bound=c ** k, generators=linear.group_generators()
+                ):
+                    action = radical_matrix(generator)
+                    block = identity_matrix(SageZZ, size)
+                    for i in range(k):
+                        for j in range(k):
+                            block[n + i, n + j] = _integer(action[i, j])
+                    for j in range(k):
+                        delta = (r[j] - sum(r[i] * _integer(action[i, j]) for i in range(k))) // c
+                        for row in range(n):
+                            block[row, n + j] = int(change[row, 0]) * delta
+                    blocks.append(block)
                 for i in range(1, n):
-                    block = identity_matrix(SageZZ, size)
-                    for row in range(n):
-                        block[row, n] = int(change[row, i])
-                    blocks.append(block)
-                if (2 * r[0]) % c == 0:
-                    block = identity_matrix(SageZZ, size)
-                    block[n, n] = -1
-                    for row in range(n):
-                        block[row, n] = int(change[row, 0]) * (2 * r[0] // c)
-                    blocks.append(block)
+                    for j in range(k):
+                        block = identity_matrix(SageZZ, size)
+                        for row in range(n):
+                            block[row, n + j] = int(change[row, i])
+                        blocks.append(block)
                 blocks.append(-identity_matrix(SageZZ, size))
                 return _conjugated(reduction.isometry, tuple(
                     _isometry_from_row_matrix(reduced, reduced, block) for block in blocks

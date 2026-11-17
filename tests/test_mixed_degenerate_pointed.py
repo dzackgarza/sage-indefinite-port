@@ -585,6 +585,31 @@ def test_mixed_degenerate_nonprimitive_projection_primitive_null_line_stabilizer
                    for generator in line for x in (e, f, z) for y in (e, f, z))
 
 
+def test_mixed_degenerate_rank_two_radical_nonprimitive_projection_exact_schreier():
+    from sage.all import GF, MatrixGroup, matrix
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    for c, vector, expected_order in (
+        (2, 2 * e + z, 2), (3, 3 * e + z + w, 6), (5, 5 * e + z + w, 10)
+    ):
+        line = RECURSION.line_stabilizer_generators(vector)
+        fixed = RECURSION.pointed_automorphism_generators(vector)
+        assert line and fixed
+        assert all(generator(vector) in (vector, -vector) for generator in line)
+        assert all(generator(vector) == vector for generator in fixed)
+        assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+                   for generator in line for x in (e, f, z, w) for y in (e, f, z, w))
+        labels = tuple(ambient.module_generating_set())[-2:]
+        actions = [matrix(GF(c), [
+            [int(generator(point).to_vector()(label)) for label in labels]
+            for point in (z, w)
+        ]) for generator in fixed]
+        assert MatrixGroup(actions).order() == expected_order
+
+
 def test_public_induction_mixed_degenerate_null_line_stabilizer_uses_exact_split():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import INDUCTION, RECURSION
@@ -622,6 +647,24 @@ def test_public_based_mixed_degenerate_null_vector_stabilizer_is_pointwise():
     generators = tuple(automorphism_group_generators(category, marked))
     assert generators
     assert all(generator(e + z) == e + z for generator in generators)
+
+
+def test_public_mixed_degenerate_projection_content_three_line_and_based_stabilizers():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    vector = 3 * e + z + w
+    moving = ARROWS.object(ambient.primitive_isotropic_subobject(vector).inclusion())
+    source = Lattices(ZZ)([[0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    based = category(source.hom([vector], codomain=ambient))
+    moving_generators = tuple(automorphism_group_generators(ARROWS, moving))
+    based_generators = tuple(automorphism_group_generators(category, based))
+    assert moving_generators and based_generators
+    assert all(generator(vector) in (vector, -vector) for generator in moving_generators)
+    assert all(generator(vector) == vector for generator in based_generators)
 
 
 def test_mixed_degenerate_radical_null_line_stabilizer_adds_exact_sign():
