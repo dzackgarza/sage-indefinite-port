@@ -294,28 +294,6 @@ def _split_nondegenerate_stabilizer_generators(arrow: Morphism, *, based: bool) 
 
 
 
-def _finite_glued_nondegenerate_stabilizer_generators(arrow: Morphism, *, based: bool) -> tuple[LatticeIsometryMethods, ...]:
-    r"""Glue-compatible stabilizer when both orthogonal factors are definite.
-
-    The port supplies the complete finite factor groups; the lattice
-    embedding owner performs the integral glue extension.
-    """
-    from sage_extensions.categories.lattice_embeddings import (
-        _glue_compatible_integral_extensions,
-    )
-
-    lattice = arrow.codomain()
-    subobject = lattice.subobject_on(tuple(arrow(x) for x in arrow.domain().module_generators()))
-    if not subobject.inclusion().is_primitive() or not subobject.inclusion().domain().is_nondegenerate():
-        raise ValueError("finite glue stabilization requires a primitive nondegenerate source")
-    complement = lattice.orthogonal_complement(subobject).inclusion().domain()
-    if not arrow.domain().is_definite() or not complement.is_definite():
-        raise ValueError("infinite orthogonal factors require the discriminant-image glue stabilizer")
-    source_actions = (arrow.domain().O().identity(),) if based else tuple(arrow.domain().O())
-    return _glue_compatible_integral_extensions(arrow, arrow, source_actions, tuple(complement.O()))
-
-
-
 def _nondegenerate_block_group(arrow: Morphism, *, based: bool):
     r"""Full glue stabilizer from exact finite-image preimage of block O(S)xO(K).
 
@@ -470,24 +448,7 @@ def _nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow: Morp
     target_index = int(target_lattice.subobject_on((*target_points, *target_cpoints)).inclusion().cokernel().cardinality())
     if source_index == target_index == 1:
         return _split_nondegenerate_embedding_isometry(source_arrow, target_arrow, based=based)
-    if not (source_arrow.domain().is_definite() and target_arrow.domain().is_definite()
-            and source_comp.inclusion().domain().is_definite() and target_comp.inclusion().domain().is_definite()):
-        return _glued_nondegenerate_embedding_isometry(source_arrow, target_arrow, based=based)
-    source_iso = None if based else RECURSION.isometry(source_arrow.domain(), target_arrow.domain())
-    if not based and source_iso is None:
-        return None
-    complement_iso = RECURSION.isometry(source_comp.inclusion().domain(), target_comp.inclusion().domain())
-    if complement_iso is None:
-        return None
-    source_actions = (
-        (source_arrow.domain().O().identity(),) if based
-        else tuple(g * source_iso for g in target_arrow.domain().O())
-    )
-    complement_actions = tuple(g * complement_iso for g in target_comp.inclusion().domain().O())
-    extensions = _glue_compatible_integral_extensions(
-        source_arrow, target_arrow, source_actions, complement_actions
-    )
-    return extensions[0] if extensions else None
+    return _glued_nondegenerate_embedding_isometry(source_arrow, target_arrow, based=based)
 
 
 def _flag(marked: Parent) -> Flag:
