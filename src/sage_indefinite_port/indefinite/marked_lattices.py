@@ -295,47 +295,24 @@ def _split_nondegenerate_stabilizer_generators(arrow: Morphism, *, based: bool) 
 
 
 def _finite_glued_nondegenerate_stabilizer_generators(arrow: Morphism, *, based: bool) -> tuple[LatticeIsometryMethods, ...]:
-    r"""Exact glue-compatible stabilizer when both orthogonal factors are definite.
+    r"""Glue-compatible stabilizer when both orthogonal factors are definite.
 
-    The finite groups O(S), O(S^perp) are exhausted, and a pair extends
-    precisely when its rational direct-sum action is integral on L.
-    No infinite factor is truncated or assumed finite.
+    The port supplies the complete finite factor groups; the lattice
+    embedding owner performs the integral glue extension.
     """
-    from sage.all import QQ as SageQQ, ZZ as SageZZ, matrix
+    from sage_extensions.categories.lattice_embeddings import (
+        _glue_compatible_integral_extensions,
+    )
 
     lattice = arrow.codomain()
     subobject = lattice.subobject_on(tuple(arrow(x) for x in arrow.domain().module_generators()))
     if not subobject.inclusion().is_primitive() or not subobject.inclusion().domain().is_nondegenerate():
         raise ValueError("finite glue stabilization requires a primitive nondegenerate source")
-    complement = lattice.orthogonal_complement(subobject)
-    if not arrow.domain().is_definite() or not complement.inclusion().domain().is_definite():
+    complement = lattice.orthogonal_complement(subobject).inclusion().domain()
+    if not arrow.domain().is_definite() or not complement.is_definite():
         raise ValueError("infinite orthogonal factors require the discriminant-image glue stabilizer")
-    s_basis = tuple(arrow(x) for x in arrow.domain().module_generators())
-    k_domain = complement.inclusion().domain()
-    k_basis = tuple(complement.inclusion()(x) for x in k_domain.module_generators())
-    labels = tuple(lattice.module_generating_set())
-    frame = matrix(SageQQ, [[int(point.to_vector()(label)) for label in labels]
-        for point in (*s_basis, *k_basis)])
-    inverse = frame.inverse()
-    family = []
     source_actions = (arrow.domain().O().identity(),) if based else tuple(arrow.domain().O())
-    for source_action in source_actions:
-        for complement_action in k_domain.O():
-            images = (
-                tuple(arrow(source_action(x)) for x in arrow.domain().module_generators())
-                + tuple(complement.inclusion()(complement_action(x)) for x in k_domain.module_generators())
-            )
-            target_frame = matrix(SageQQ, [[int(point.to_vector()(label)) for label in labels]
-                for point in images])
-            action = inverse * target_frame
-            if not all(coefficient in SageZZ for coefficient in action.list()):
-                continue
-            action = action.change_ring(SageZZ)
-            def image(label, rows=action):
-                return lattice.linear_combination({target_label: lattice.base_ring()(int(value))
-                    for target_label, value in zip(labels, rows.row(labels.index(label)), strict=True) if value})
-            family.append(lattice.Isom(lattice)(image))
-    return tuple(family)
+    return _glue_compatible_integral_extensions(arrow, arrow, source_actions, tuple(complement.O()))
 
 
 def _nondegenerate_stabilizer_generators(arrow: Morphism, *, based: bool) -> tuple[LatticeIsometryMethods, ...]:
@@ -353,7 +330,9 @@ def _nondegenerate_stabilizer_generators(arrow: Morphism, *, based: bool) -> tup
 
 def _nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow: Morphism, *, based: bool) -> LatticeIsometryMethods | None:
     r"""Split extension or exact finite-factor glue-compatible transporter."""
-    from sage.all import QQ as SageQQ, ZZ as SageZZ, matrix
+    from sage_extensions.categories.lattice_embeddings import (
+        _glue_compatible_integral_extensions,
+    )
 
     source_lattice, target_lattice = source_arrow.codomain(), target_arrow.codomain()
     if source_lattice is target_lattice and source_arrow.domain() is target_arrow.domain() and all(
@@ -381,31 +360,15 @@ def _nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow: Morp
     complement_iso = RECURSION.isometry(source_comp.inclusion().domain(), target_comp.inclusion().domain())
     if complement_iso is None:
         return None
-    source_actions = (None,) if based else tuple(target_arrow.domain().O())
-    source_labels = tuple(source_lattice.module_generating_set())
-    target_labels = tuple(target_lattice.module_generating_set())
-    frame = matrix(SageQQ, [[int(point.to_vector()(label)) for label in source_labels]
-        for point in (*source_points, *source_cpoints)])
-    inverse = frame.inverse()
-    for source_action in source_actions:
-        for complement_action in target_comp.inclusion().domain().O():
-            images = (
-                tuple(target_arrow(x if based else source_action(source_iso(x)))
-                      for x in source_arrow.domain().module_generators())
-                + tuple(target_comp.inclusion()(complement_action(complement_iso(x)))
-                        for x in source_comp.module_generators())
-            )
-            target_frame = matrix(SageQQ, [[int(point.to_vector()(label)) for label in target_labels]
-                for point in images])
-            action = inverse * target_frame
-            if not all(coefficient in SageZZ for coefficient in action.list()):
-                continue
-            integral = action.change_ring(SageZZ)
-            def image(label, rows=integral):
-                return target_lattice.linear_combination({target_label: target_lattice.base_ring()(int(value))
-                    for target_label, value in zip(target_labels, rows.row(source_labels.index(label)), strict=True) if value})
-            return source_lattice.Isom(target_lattice)(image)
-    return None
+    source_actions = (
+        (source_arrow.domain().O().identity(),) if based
+        else tuple(g * source_iso for g in target_arrow.domain().O())
+    )
+    complement_actions = tuple(g * complement_iso for g in target_comp.inclusion().domain().O())
+    extensions = _glue_compatible_integral_extensions(
+        source_arrow, target_arrow, source_actions, complement_actions
+    )
+    return extensions[0] if extensions else None
 
 
 def _flag(marked: Parent) -> Flag:
