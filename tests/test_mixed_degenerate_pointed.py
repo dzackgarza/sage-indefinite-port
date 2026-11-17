@@ -366,6 +366,18 @@ def test_public_primitive_radical_flag_in_anisotropic_degenerate_lattice():
         primitive_marking_classes(FLAGS, first.inclusion(), isotropic_quotient)
 
 
+def test_odd_rank_radical_flag_so_orbits_equal_full_orthogonal_orbits():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, primitive_marking_classes
+
+    ambient = Lattices(ZZ)([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    plane = Lattices(ZZ)([[0, 0], [0, 0]])
+    line = plane.primitive_isotropic_subobject(next(iter(plane.module_generators())))
+    full = tuple(primitive_marking_classes(FLAGS, line.inclusion(), ambient))
+    special = tuple(primitive_marking_classes(FLAGS, line.inclusion(), ambient, acting_group=ambient.SO()))
+    assert len(full) == len(special) == 1
+
+
 def test_mixed_degenerate_maximal_moving_null_plane_is_finite_despite_infinite_lines():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
