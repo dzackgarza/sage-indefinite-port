@@ -273,6 +273,22 @@ def test_integral_transporter_of_spanning_perfect_cells() -> None:
     assert set(map(tuple, source_rows * transform)) == set(map(tuple, target_rows))
 
 
+def test_large_reordered_identical_cell_has_immediate_integral_transporter() -> None:
+    ambient = lattice([[0, 1], [1, 0]])
+    rows = ((1, 0),) * 150 + ((0, 1),) * 150
+    source = LorentzianPerfectCell(ambient, rows, ZERO_SQUARES)
+    target = LorentzianPerfectCell(ambient, tuple(reversed(rows)), ZERO_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+    # The identity is already a complete multiset certificate; no expensive
+    # pairing-graph or basis-image computation is needed for this branch.
+    backend._integral_configuration_invariants = lambda cell: (_ for _ in ()).throw(
+        AssertionError("identical configurations must bypass signature search")
+    )
+    witness = backend.cell_transporter(source, target)
+    assert witness is not None
+    assert all(witness(x) == x for x in ambient.module_generators())
+
+
 def test_all_integral_transporters_extend_exact_anchor_signatures() -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)

@@ -2017,13 +2017,17 @@ class LorentzianPerfectLocalBackend:
         if not all_images:
             if source.lattice is target.lattice and source.rows == target.rows:
                 return source.lattice.Aut().identity()
+            # Equal configurations may arrive in different vertex orders or
+            # as distinct cell objects. Identity then transports the entire
+            # multiset, regardless of its size; do not enter the expensive
+            # exact basis-image search merely to rediscover that witness.
+            if source.lattice is target.lattice and Counter(source.rows) == Counter(target.rows):
+                return source.lattice.Aut().identity()
             if (
                 n <= _PAIRING_GRAPH_CANONICAL_LABEL_LIMIT
                 and not self.cell_stabilizer.is_in_cache(source)
                 and not self.cell_stabilizer.is_in_cache(target)
             ):
-                if source.lattice is target.lattice and Counter(source.rows) == Counter(target.rows):
-                    return source.lattice.Aut().identity()
                 source_family = source.vector_family
                 target_family = target.vector_family
                 return source.lattice.Isom(target.lattice).transporter(source_family, target_family)
