@@ -706,6 +706,9 @@ class IsotropicInduction:
         target_basis = self.plane_vectors(target)
         if len(source_basis) != len(target_basis):
             return None
+        if not source_basis:
+            # Every ambient isometry carries the zero subspace to zero.
+            return self.recursion.isometry(source.inclusion().codomain(), target.inclusion().codomain())
         return self.recursion.isotropic_subspace_isometry(
             source_basis,
             target_basis,

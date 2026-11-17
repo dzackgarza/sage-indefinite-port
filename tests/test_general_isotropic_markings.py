@@ -863,6 +863,25 @@ def test_rank_zero_isotropic_subspace_stabilizer_is_full_orthogonal_group():
                    for generator in generators)
 
 
+def test_rank_zero_isotropic_subspace_transporter_is_ambient_isometry():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    induction = IsotropicInduction(EichlerRecursion())
+    source = Lattices(ZZ)("U")
+    target = Lattices(ZZ)([[0, -1], [-1, 0]])
+    witness = induction.plane_isometry(source.primitive_isotropic_subobject(),
+                                      target.primitive_isotropic_subobject())
+    assert witness is not None
+    assert witness.domain() is source and witness.codomain() is target
+    assert all(target.b(witness(x), witness(y)) == source.b(x, y)
+               for x in source.module_generators() for y in source.module_generators())
+    definite = Lattices(ZZ)([[2, 0], [0, 2]])
+    assert induction.plane_isometry(source.primitive_isotropic_subobject(),
+                                   definite.primitive_isotropic_subobject()) is None
+
+
 def test_five_u_partial_flag_rank_jumps_one_three_five_transport():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
