@@ -193,3 +193,32 @@ def test_rank_four_pointwise_stabilizer_generates_all_six_skew_shears():
                 entries.append(a)
         parameters.append(sum((parameter_space.scalar_multiple(a, point) for a, point in zip(entries, parameter_basis, strict=True)), parameter_space.zero()))
     assert parameter_space.subobject_on(parameters).inclusion().cokernel().cardinality() == cardinal(1)
+
+
+def test_five_u_pointwise_isotropic_basis_generates_all_ten_skew_parameters():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(10)] for i in range(10)])
+    basis = tuple(ambient.module_generators())
+    null = basis[::2]
+    dual = basis[1::2]
+    source = Lattices(ZZ)([[0] * 5 for _ in range(5)])
+    category = Lattices(ZZ).CosliceUnder(source)
+    marked = category(source.hom(list(null), codomain=ambient))
+    generators = tuple(automorphism_group_generators(category, marked))
+    labels = tuple(ambient.module_generating_set())
+    parameter_space = ambient.base_ring().free_module(10)
+    parameter_basis = tuple(parameter_space.module_generators())
+    parameters = []
+    for g in generators:
+        assert all(g(point) == point for point in null)
+        entries = []
+        for i in range(5):
+            for j in range(i + 1, 5):
+                a = g(dual[i]).to_vector()(labels[2 * j])
+                assert a == -g(dual[j]).to_vector()(labels[2 * i])
+                entries.append(a)
+        parameters.append(sum((parameter_space.scalar_multiple(a, point)
+            for a, point in zip(entries, parameter_basis, strict=True)), parameter_space.zero()))
+    assert parameter_space.subobject_on(parameters).inclusion().cokernel().cardinality() == cardinal(1)

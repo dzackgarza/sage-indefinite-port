@@ -500,3 +500,20 @@ def test_isotropic_rank_above_rational_witt_index_is_empty_not_unsupported():
     source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
     classes = primitive_marking_classes(ARROWS, source, ambient)
     assert classes.cardinality() == cardinal(0)
+
+
+def test_five_u_partial_flag_rank_jumps_one_three_five_transport():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, isometry
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(10)] for i in range(10)])
+    basis = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    first = category(_flag_marking_from_basis(ambient, basis[::2], (1, 3, 5)))
+    second = category(_flag_marking_from_basis(ambient, basis[1::2], (1, 3, 5)))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    for rank in (1, 3, 5):
+        target = ambient.primitive_isotropic_subobject(*basis[1::2][:rank])
+        assert all(target.inclusion().is_in_image(witness(point)) for point in basis[::2][:rank])
