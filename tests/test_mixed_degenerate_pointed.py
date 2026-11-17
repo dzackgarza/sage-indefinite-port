@@ -452,6 +452,17 @@ def test_radical_plane_flags_have_exact_line_transporter():
     witness = isometry(FLAGS, source, target)
     assert witness is not None
     assert witness(z) in (2 * z + 3 * w, -2 * z - 3 * w)
+    target_ambient = lattice([[0, 0, 0], [0, 2, 0], [0, 0, 0]])
+    target_z, _, target_w = tuple(target_ambient.module_generators())
+    target_plane = target_ambient.primitive_isotropic_subobject(target_z, target_w)
+    target_inclusion = target_plane.inclusion()
+    target_line = target_inclusion.domain().primitive_isotropic_subobject(
+        target_inclusion.lift(2 * target_z + 3 * target_w)
+    )
+    cross = FLAGS((target_line.inclusion(), target_inclusion))
+    cross_witness = isometry(FLAGS, source, cross)
+    assert cross_witness is not None
+    assert cross_witness(z) in (2 * target_z + 3 * target_w, -2 * target_z - 3 * target_w)
 
 
 def test_moving_radical_lines_have_exact_integral_transporters():
@@ -476,6 +487,12 @@ def test_moving_full_radical_planes_have_exact_integral_transporters():
     witness = isometry(ARROWS, first, second)
     assert witness is not None
     assert all(witness(point) in ambient.radical() for point in (z, w))
+    target_ambient = lattice([[0, 0, 0], [0, 2, 0], [0, 0, 0]])
+    target_z, _, target_w = tuple(target_ambient.module_generators())
+    cross = ARROWS.object(target_ambient.primitive_isotropic_subobject(target_z, target_w).inclusion())
+    cross_witness = isometry(ARROWS, first, cross)
+    assert cross_witness is not None
+    assert all(cross_witness(point) in target_ambient.radical() for point in (z, w))
 
 
 def test_proper_radical_plane_stabilizer_in_rank_three_radical():
@@ -535,6 +552,17 @@ def test_nonhomothetic_based_radical_frames_have_exact_transporter():
     witness = isometry(category, first, second)
     assert witness is not None
     assert witness(2 * z) == 2 * (z + w) and witness(3 * w) == 3 * w
+
+
+def test_mixed_degenerate_isotropic_rank_above_rational_witt_index_is_empty():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    source = Lattices(ZZ)([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    assert primitive_marking_classes(category, source, ambient).is_empty()
+    assert primitive_marking_classes(ARROWS, source, ambient).is_empty()
     # Equal Smith invariants do not imply based equivalence: the source
     # frame's column lattice, rather than its unlabelled index, is fixed.
     incompatible = category.object(source.hom([3 * z, 2 * w], codomain=ambient))
