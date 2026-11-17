@@ -456,3 +456,25 @@ def test_split_radical_saturation_stabilizer_handles_nonstandard_graph():
     classes = nonprimitive_sublattice_classes(saturated, (1, 2))
     assert len(classes) == 2
     assert all(arrow.codomain() is ambient for arrow in classes)
+
+
+def test_split_radical_saturation_rank_two_radical_summand_complete_action():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_sublattice_classes
+
+    ambient = lattice([[2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+    e, z, w, t = tuple(ambient.module_generators())
+    saturated = ambient.subobject_on([e + t, z + t, w])
+    classes = nonprimitive_sublattice_classes(saturated, (1, 1, 2))
+    assert len(classes) == 2
+    assert all(arrow.codomain() is ambient for arrow in classes)
+
+
+def test_split_radical_full_saturation_recovers_complete_ambient_group_image():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_sublattice_classes
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    saturated = ambient.subobject_on(tuple(ambient.module_generators()))
+    classes = nonprimitive_sublattice_classes(saturated, (1, 1, 2))
+    assert len(classes) == 2
