@@ -13,6 +13,9 @@ requirements; each status there must be checked against its source and evidence.
 `references/complexity/README.md` defines runtime pricing and
 `references/complexity/triage.md` owns the measured costs.
 
+The coordinator executes all tests and Sage computations. Workers supply source
+changes and exact commands for that execution.
+
 ## Completion condition
 
 | Required behavior | Acceptance | Remaining verification |
@@ -28,9 +31,9 @@ its mathematical branch, not all unexecuted cases.
 ## Next work, ranked
 
 1. Finish the definite-isometry repair for the public square-26 orbit consumer.
-   Establish the actual PARI-overflow reproducer at the definite-isometry owner,
-   then verify the repaired public operation and unchanged consumer. The norm-10
-   test in the interrupted draft passed before that draft and is not red proof.
+   Verify the exact GAP minimal-vector enumeration at the definite-isometry
+   owner, then verify the unchanged public consumer at the final provider pair.
+   The square-26 owner regression is the established overflow reproducer.
 2. Finish the Enriques discriminant-form cost repair at its owner. Preserve the
    quadratic classifier and its quotient codomain; test quadratic values,
    bilinear pairing and classifier behavior against independent mathematics.

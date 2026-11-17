@@ -1045,7 +1045,7 @@ Machine gap: the same five ListReflect rank-3 nodes, warm in one local process, 
 | `test_isometry.sage::test_equal_gram_groupoid_identification_preserves_coordinate_labels` | 1 | 1: 0.0 | 0.0 | 0.00 |
 | `test_double_cosets.sage::test_the_recorded_case_families_are_all_present` | 1 | 1: 0.0 | 0.0 | 0.00 |
 
-Total: >= 5.25 h of runner time. Of it, 2.7 h is in the 16 strata with a node killed at 60 s, which are lower bounds. The 29 killed nodes and the one error:
+Total: >= 5.25 h of runner time. Of it, 2.7 h is in the 16 strata with a node killed at 60 s, which are lower bounds. The 28 timed-out nodes and the one error:
 
 - Enriques modular groups (87 nodes): all five probes killed, >= 1.45 h. It is a sink: the code must be read before it can be priced (see the blocker below).
 - IsotropicCases rank 6 (IsotropicCases_8716) and rank 7-18 (IsotropicCases_8812, IsotropicCases_8819): killed; >= 0.33 h and >= 0.25 h.
@@ -1056,4 +1056,26 @@ Changes after the probe revision (not in the table): eea09a9 (edge-plane Hermite
 
 Blocker (Enriques modular groups, 87 nodes, >= 1.45 h runner): no probe finishes in 60 s. Profile of case_24 for 55 s (`zk_sinkprof.py`, `zk_sink_enr24.log`): `_gamma_h` 54.7 s, of which sage-extensions `coinvariant_extension_subgroup` -> `_full_discriminant_glue_data` -> `Lattices.glue_map` 45.2 s. In `glue_map`, two `discriminant_quadratic_form` calls take 18.7 s (`_discriminant_module` 9.4 s each). Each value q(x) on the discriminant module is evaluated in the presented divided square of the module (`_divided_square`, `_presented_degree_power`, `_divided_relations`): 19 calls of `q` take 12.1 s, 0.64 s each. On engine data, q(x) is x G x^T mod 2Z for a representative x in L^#/L, a 22 x 22 rational product. The step is sage-extensions engine work (an owned operation computed through a constructed module, not engine arithmetic plus a constant-time wrap). It needs a sage-extensions change with its owner tests: the discriminant form's value and bilinear pairing on the Gram data of L^#/L, and the presented power built lazily. The remainder above 60 s per case is unpriced: >= 87 x 60 s = 1.45 h runner.
 
-Blocker (other killed strata, 2.7 h runner lower bound in all, Enriques included): IsotropicCases ranks 6 and 7-18, dtower counts and pictures, classical polarization indices, Dawes, K3 type II components, O_plus(N) orbits, and the A7 plus diagonal discriminant image. Each is priced at 60 s per node and has no measured upper price. Pricing them needs a kill limit above 60 s, which the probe rules do not allow. The PARI stack overflow of `test_published_representatives_are_one_per_orbit[26]` (8 GB) is a size defect of that node.
+Blocker (other killed strata, 2.7 h runner lower bound in all, Enriques included): IsotropicCases ranks 6 and 7-18, dtower counts and pictures, classical polarization indices, Dawes, K3 type II components, O_plus(N) orbits, and the A7 plus diagonal discriminant image. Each is priced at 60 s per node and has no measured upper price. The `probe_long` corpus selects these unfinished nodes with a 600 s base allowance, retaining any larger allowance supported by an existing completed price. Acceptance run 44012530790 measures this selection at port 8d8e848 and provider a6903d82. Its completed node reports must replace the censored observations before a full-run estimate can be used. The PARI stack overflow of `test_published_representatives_are_one_per_orbit[26]` (8 GB) is a size defect of that node.
+
+
+### Current Enriques cost repair
+
+Coordinator profiles of unchanged Enriques case 24 use the explicit
+`sage-indefinite-computations/src` and `sage-extensions/src` import paths.
+The earlier profile uses port 0d5fc91/provider a6903d82; the bulk-pairing
+profile uses port 8d8e848/provider a826464e. Both reach the diagnostic
+60 s call limit. These are cost attribution, not completion prices.
+
+| Operation | Before, profiled seconds | After, profiled seconds | Remaining work |
+| --- | --- | --- | --- |
+| Gram on supplied discriminant generators | 21.917 | 0.599 | Verify the independent owner assertions at the final provider |
+| Glue map | 47.064 | 20.103 | Includes remaining generator relations and discriminant construction |
+| Descended quadratic Gram | — | 7.408 | Inspect reuse of the existing bulk Gram operation |
+| Polar nondegeneracy | — | 7.224 | Inspect repeated bilinear evaluations |
+| Relations among generators | 11.765 | 6.929 | Retain the exact relation module |
+
+Profiles: `.tmp/enriques-case24-0d5fc91-a6903d82.pstats` and
+`.tmp/enriques-case24-8d8e848-a826464e-coordinator.pstats`. The Enriques
+aggregate remains unpriced above its censored lower bound until a complete
+consumer run supplies the elapsed time.
