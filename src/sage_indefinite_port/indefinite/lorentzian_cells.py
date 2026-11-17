@@ -2348,6 +2348,7 @@ class LorentzianPerfectLocalBackend:
         if reduce_basis_images:
             symmetric = None
             subgroup = None
+            gap_subgroup = None
             group_permutations = []
             # Seed the exact stabilizer subgroup with integral reflections in
             # the ambient basis vectors whenever they preserve this complete
@@ -2445,6 +2446,7 @@ class LorentzianPerfectLocalBackend:
             # construction until there is a nonidentity certified action.
             if group_permutations:
                 subgroup = symmetric.subgroup(group_permutations)
+                gap_subgroup = libgap(subgroup)
         # Pointwise stabilizers depend only on the generated subgroup version
         # and the set of already assigned target positions. Reusing them across
         # sibling search nodes avoids rebuilding the same GAP stabilizer chain.
@@ -2492,7 +2494,7 @@ class LorentzianPerfectLocalBackend:
         # configuration isomorphism. Retain both forms in each joint prefix
         # signature; their common determinant scaling was fixed above.
         def backtrack(images, source_columns, target_columns, certified_target_basis=None):
-            nonlocal subgroup, first_witness, symmetric
+            nonlocal subgroup, gap_subgroup, first_witness, symmetric
             if first_witness is not None:
                 return first_witness
             if len(images) == rank:
@@ -2557,6 +2559,7 @@ class LorentzianPerfectLocalBackend:
                         stabilizer_elements.append(witness)
                         group_permutations.append(permutation)
                         subgroup = symmetric.subgroup(group_permutations)
+                        gap_subgroup = libgap(subgroup)
                 elif first_only:
                     first_witness = witness
                     return witness
@@ -2670,9 +2673,15 @@ class LorentzianPerfectLocalBackend:
                             fixer_key = (len(group_permutations), tuple(sorted(images.values())))
                             fixer = fixer_cache.get(fixer_key)
                             if fixer is None:
-                                fixer = subgroup
-                                for assigned_target in fixer_key[1]:
-                                    fixer = fixer.stabilizer(assigned_target + 1)
+                                # Fixing an ordered tuple is precisely the
+                                # intersection of its point stabilizers.
+                                # One GAP OnTuples call replaces a chain of
+                                # degree-n Schreier stabilizer computations.
+                                fixer = libgap.Stabilizer(
+                                    gap_subgroup,
+                                    libgap([position + 1 for position in fixer_key[1]]),
+                                    libgap.OnTuples,
+                                ) if fixer_key[1] else gap_subgroup
                                 fixer_cache[fixer_key] = fixer
                                 if len(fixer_cache) > 256:
                                     fixer_cache.pop(next(iter(fixer_cache)))
@@ -2680,7 +2689,7 @@ class LorentzianPerfectLocalBackend:
                             remaining_orbits = set(admissible)
                             while remaining_orbits:
                                 candidate = min(remaining_orbits)
-                                orbit = {int(position) - 1 for position in fixer.orbit(candidate + 1)}
+                                orbit = {int(position) - 1 for position in libgap.Orbit(fixer, candidate + 1, libgap.OnPoints)}
                                 if not orbit <= admissible:
                                     raise ArithmeticError("an integral pointwise stabilizer does not preserve the admissible image class")
                                 for member in orbit:

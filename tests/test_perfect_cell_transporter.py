@@ -1301,6 +1301,23 @@ def test_facet_flip_nullspace_uses_only_independent_incident_rays(monkeypatch) -
     assert observed[0] == 2  # rank-1 independent rows, not three incident rows
 
 
+def test_gap_tuple_stabilizer_equals_successive_pointwise_stabilizers():
+    from sage.all import SymmetricGroup
+    from sage.libs.gap.libgap import libgap
+
+    group = SymmetricGroup(6)
+    for points in ((1,), (1, 3), (1, 3, 5)):
+        expected = group
+        for point in points:
+            expected = expected.stabilizer(point)
+        actual = libgap.Stabilizer(libgap(group), libgap(list(points)), libgap.OnTuples)
+        assert int(actual.Size()) == int(expected.order())
+        for candidate in range(1, 7):
+            assert {int(point) for point in libgap.Orbit(actual, candidate, libgap.OnPoints)} == {
+                int(point) for point in expected.orbit(candidate)
+            }
+
+
 def test_rank_three_minimized_halfspaces_pair_against_basis_elements() -> None:
     r"""Result_Enumeration_0: the minimized H-presentation is exact and every facet meets a ray.
 
