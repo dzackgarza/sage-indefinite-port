@@ -2504,9 +2504,16 @@ class LorentzianPerfectLocalBackend:
                             if permutation_images is not None:
                                 permutation_images.append(position + 1)
                     if permutation_images is not None:
-                        if symmetric is None:
-                            symmetric = SymmetricGroup(n)
-                        permutation = symmetric(permutation_images)
+                        # The identity action contributes no stabilizer
+                        # generator. In particular, a cell with trivial
+                        # stabilizer need not instantiate a degree-n
+                        # permutation parent merely to certify identity.
+                        if all(image == index + 1 for index, image in enumerate(permutation_images)):
+                            permutation = None
+                        else:
+                            if symmetric is None:
+                                symmetric = SymmetricGroup(n)
+                            permutation = symmetric(permutation_images)
                 else:
                     transformed_rows = source_rows * action
                     if target_multiset is None or Counter(tuple(row) for row in transformed_rows.rows()) != target_multiset:
@@ -2520,7 +2527,7 @@ class LorentzianPerfectLocalBackend:
                     }
                 )
                 if generators_only:
-                    if (subgroup is None and not permutation.is_one()) or (subgroup is not None and permutation not in subgroup):
+                    if permutation is not None and (subgroup is None or permutation not in subgroup):
                         stabilizer_elements.append(witness)
                         group_permutations.append(permutation)
                         subgroup = symmetric.subgroup(group_permutations)
