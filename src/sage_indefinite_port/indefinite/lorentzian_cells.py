@@ -2320,7 +2320,7 @@ class LorentzianPerfectLocalBackend:
             if len(positions) != n:
                 raise ArithmeticError("the exact row-position certificate requires distinct configuration vectors")
         if reduce_basis_images:
-            symmetric = SymmetricGroup(n)
+            symmetric = None
             subgroup = None
             group_permutations = []
             # Seed the exact stabilizer subgroup with integral reflections in
@@ -2362,6 +2362,7 @@ class LorentzianPerfectLocalBackend:
                 # Retain the full integral subgroup of the source's GRP2,
                 # certified on the complete configuration. This group
                 # contains every cheap seed.
+                symmetric = SymmetricGroup(n)
                 group_permutations.extend(
                     symmetric([image + 1 for image in permutation])
                     for permutation in self.cell_stabilizer_permutations(target)
@@ -2383,6 +2384,10 @@ class LorentzianPerfectLocalBackend:
                         break
                 if not preserves_configuration:
                     continue
+                if all(image == index + 1 for index, image in enumerate(permutation_images)):
+                    continue
+                if symmetric is None:
+                    symmetric = SymmetricGroup(n)
                 permutation = symmetric(list(permutation_images))
                 if permutation in group_permutations:
                     continue
@@ -2459,7 +2464,7 @@ class LorentzianPerfectLocalBackend:
         # configuration isomorphism. Retain both forms in each joint prefix
         # signature; their common determinant scaling was fixed above.
         def backtrack(images, source_columns, target_columns, certified_target_basis=None):
-            nonlocal subgroup, first_witness
+            nonlocal subgroup, first_witness, symmetric
             if first_witness is not None:
                 return first_witness
             if len(images) == rank:
@@ -2497,6 +2502,8 @@ class LorentzianPerfectLocalBackend:
                             if permutation_images is not None:
                                 permutation_images.append(position + 1)
                     if permutation_images is not None:
+                        if symmetric is None:
+                            symmetric = SymmetricGroup(n)
                         permutation = symmetric(permutation_images)
                 else:
                     transformed_rows = source_rows * action
