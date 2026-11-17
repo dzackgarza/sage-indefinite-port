@@ -233,6 +233,40 @@ Its name alone assigns no computation to research.
 Retain every finite-order case already present in the frozen suite.
 #18 remains accountable for full consumer acceptance and its indefinite dependency calls, while #397 tracks the reusable computation; neither issue is complete merely because work is routed to the other.
 
+### Degenerate zero-form branch
+
+For the zero bilinear form on a free rank-\(n\) integral lattice \(L\),
+\(O(L)=GL_n(\mathbb Z)\) as *abstract groups of integral linear maps*.
+The equality does **not** identify the research runtime's module-automorphism
+parent with its owned orthogonal-group parent: convert each integral
+\(GL_n\)-generator into an actual \(O(L)\)-isometry at the port boundary.
+
+Every primitive ordered rank-\(k\) frame extends to a unimodular basis.
+Consequently \(GL_n(\mathbb Z)\) acts transitively on primitive based
+frames, primitive moving rank-\(k\) sublattices, and primitive flags with
+any fixed strictly increasing rank profile. An exhaustive unimodular search
+for a transporter **terminates positively** on these inputs; each candidate
+must still be checked on every marked generator or flag stage. The
+pointwise stabilizer of a completed rank-\(k\) frame is, in its adapted
+coordinates, \(\mathbb Z^{(n-k)k}\rtimes GL_{n-k}(\mathbb Z)\): the first
+\(k\) rows are fixed, while the remaining rows have arbitrary lower-left
+shears and a unimodular lower-right block. Conjugate its generators through
+the *integral* completion, not a rational complement.
+
+For an unbased rank-\(k\) submodule, Smith normal form gives a complete
+\(GL_n(\mathbb Z)\)-orbit invariant: its positive elementary divisors
+\(d_1\mid\cdots\mid d_k\). Equality of these invariants guarantees an
+integral moving-sublattice transporter; inequality proves non-equivalence.
+Unbounded Smith-shell iterators must not infer that a finite quotient has
+ended merely because a search has not emitted another representative.
+
+**Arithmetic subgroups are different actions.** In particular, the three
+index-two sublattices of \(\mathbb Z^2\) form one full \(GL_2(\mathbb Z)\)
+orbit, but three separate orbits under the principal congruence kernel
+\(\Gamma(2)\), which acts trivially on their reductions modulo two. The
+full-group Smith classification is never a substitute for subgroup-correct
+orbit splitting, stabilizers or transporters.
+
 ## Boundary and acceptance
 
 Research imports this package at computational call sites.
