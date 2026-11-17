@@ -325,3 +325,23 @@ def test_finite_glue_orbit_transporter_rejects_incompatible_overlattice_indices(
     first = source.hom([e], codomain=source_lattice)
     second = source.hom([u + v], codomain=target_lattice)
     assert _glued_nondegenerate_embedding_isometry(first, second, based=True) is None
+
+
+def test_glued_pell_binary_factors_return_infinite_stabilizer_generators():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U").twist(2)
+    e, f, u, v = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[2, 0], [0, -4]])
+    arrow = source.hom([e + f, u - v], codomain=ambient)
+    category = Lattices(ZZ).CosliceUnder(source)
+    fixed = tuple(automorphism_group_generators(category, category(arrow)))
+    assert all(g(e + f) == e + f and g(u - v) == u - v for g in fixed)
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
+               for g in fixed for x in (e, f, u, v) for y in (e, f, u, v))
+    assert any(g(e - f) not in (e - f, -e + f) for g in fixed)
+    labels = tuple(ambient.module_generating_set())
+    def complement_trace(g):
+        return int(g(e - f).to_vector()(labels[0]) + g(u + v).to_vector()(labels[2]))
+    assert any(abs(complement_trace(g * h)) > 2 for g in fixed for h in fixed)
