@@ -305,6 +305,29 @@ def pointed_nonzero_norm_classes(category: Category, lattice: Parent, square: in
     return finite_ordered_set(tuple(classes))
 
 
+
+def iter_pointed_isotropic_classes(category: Category, lattice: Parent):
+    r"""Lazily enumerate every nonzero isotropic pointed orbit, by increasing content.
+
+    For a nondegenerate indefinite lattice admitting primitive isotropic
+    vectors, each positive content contributes the primitive zero-norm
+    orbit set, scaled by that content.  No finite bound on the content is
+    imposed and no finite cardinality is claimed.  If there is no rational
+    isotropic vector, the iterator is empty.
+    """
+    from itertools import count
+
+    if not isinstance(category, CosliceCategory) or int(category.base_object().rank()) != 1:
+        raise ValueError("isotropic content enumeration requires a rank-one pointed coslice")
+    source = category.base_object()
+    if source.q(next(iter(source.module_generators()))) != source.base_ring().zero():
+        raise ValueError("the source of an isotropic pointed marking must have zero square")
+    if not lattice.is_isotropic():
+        return
+    for content in count(1):
+        yield from pointed_content_classes(category, lattice, 0, content)
+
+
 def primitive_marking_classes(category: Category, source: Parent | Morphism, lattice: Parent) -> Parent:
     r"""One marked lattice for each isomorphism class of primitive markings of ``lattice`` of shape ``source``.
 
@@ -371,4 +394,5 @@ __all__ = [
     "primitive_marking_classes",
     "pointed_content_classes",
     "pointed_nonzero_norm_classes",
+    "iter_pointed_isotropic_classes",
 ]

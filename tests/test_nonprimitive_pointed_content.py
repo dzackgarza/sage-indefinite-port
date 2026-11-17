@@ -131,3 +131,28 @@ def test_negative_square_content_strata_are_not_lost():
     assert classes.cardinality() == cardinal(2)
     assert {int(marking.arrow()(source.module_generators()[0]).content()) for marking in classes} == {1, 2}
     assert all(marking.arrow()(source.module_generators()[0]).q() == ZZ(-8) for marking in classes)
+
+
+def test_lazy_isotropic_orbits_visit_unbounded_content_without_truncation():
+    from itertools import islice
+    from sage_extensions.all import Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import iter_pointed_isotropic_classes
+
+    plane = lattice([[0, 1], [1, 0]])
+    source = Lattices(ZZ)([[0]])
+    category = CosliceCategory(Lattices(ZZ), source)
+    iterator = iter_pointed_isotropic_classes(category, plane)
+    first = tuple(islice(iterator, 6))
+    assert tuple(int(marking.arrow()(source.module_generators()[0]).content()) for marking in first) == (1, 2, 3, 4, 5, 6)
+    assert int(next(iterator).arrow()(source.module_generators()[0]).content()) == 7
+
+
+def test_anisotropic_isotropic_iterator_is_empty():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import iter_pointed_isotropic_classes
+
+    plane = lattice([[1, 0], [0, -2]])
+    category = CosliceCategory(Lattices(ZZ), Lattices(ZZ)([[0]]))
+    assert tuple(iter_pointed_isotropic_classes(category, plane)) == ()
