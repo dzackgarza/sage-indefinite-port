@@ -671,6 +671,23 @@ def test_mixed_degenerate_line_stabilizer_on_non_split_integral_presentation():
                for y in twisted.module_generators())
 
 
+def test_mixed_degenerate_two_hyperbolic_planes_with_radical_line_stabilizer():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    hyperbolic = Lattices(ZZ)("U")
+    ambient = hyperbolic + hyperbolic + Lattices(ZZ)([[0]])
+    e, f, u, v, z = tuple(ambient.module_generators())
+    vector = e + u + z
+    line = RECURSION.line_stabilizer_generators(vector)
+    fixed = RECURSION.pointed_automorphism_generators(vector)
+    assert line and fixed
+    assert all(generator(vector) in (vector, -vector) for generator in line)
+    assert all(generator(vector) == vector for generator in fixed)
+    assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+               for generator in line for x in (e, f, u, v, z) for y in (e, f, u, v, z))
+
+
 def test_public_induction_mixed_degenerate_null_line_stabilizer_uses_exact_split():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import INDUCTION, RECURSION
