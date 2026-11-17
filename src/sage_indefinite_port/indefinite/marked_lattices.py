@@ -2116,7 +2116,7 @@ def iter_all_isotropic_sublattice_classes(lattice: Parent, rank: int, *, acting_
         # quotient can be rationally anisotropic, in which case an empty
         # rank-r stream must terminate rather than search every Smith shell.
         _reduction, _n, k, complement = _degenerate_quotient_and_radical(lattice)
-        quotient_witt = int(complement.witt_index()) if complement.is_isotropic() else 0
+        quotient_witt = int(complement.witt_index()) if complement is not None and complement.is_isotropic() else 0
         if rank > k + quotient_witt:
             return
     if rank == 1:
