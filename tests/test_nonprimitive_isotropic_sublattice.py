@@ -313,3 +313,17 @@ def test_supplied_group_must_preserve_the_saturation():
     saturated = ambient.primitive_isotropic_subobject(e, u)
     with pytest.raises(ValueError):
         nonprimitive_sublattice_classes(saturated, (1, 2), stabilizer_group=ambient.O().subgroup((exchange,)))
+
+
+def test_supplied_order_two_stabilizer_has_two_index_two_submodule_orbits():
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_sublattice_classes
+
+    ambient = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    e, f, u, v = tuple(ambient.module_generators())
+    labels = tuple(ambient.module_generating_set())
+    exchange = ambient.O()(dict(zip(labels, (u, v, e, f), strict=True)))
+    saturated = ambient.primitive_isotropic_subobject(e, u)
+    subgroup = ambient.O().subgroup((exchange,))
+    classes = nonprimitive_sublattice_classes(saturated, (1, 2), stabilizer_group=subgroup)
+    assert len(classes) == 2
+    assert all(arrow.codomain() is ambient and arrow.cokernel().is_finite() is False for arrow in classes)
