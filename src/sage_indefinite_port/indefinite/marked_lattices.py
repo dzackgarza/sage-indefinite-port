@@ -691,13 +691,20 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 classes = _pointed_classes(category, lattice, int(source.q(next(iter(source.module_generators())))))
             else:
                 source_basis = tuple(source.module_generators())
-                if any(source.b(left, right) != 0 for left in source_basis for right in source_basis):
-                    raise ValueError("fixed-source class induction requires a totally isotropic source")
-                classes = tuple(
-                    category.object(source.hom(list(images), codomain=lattice))
-                    for basis in INDUCTION.isotropic_flag_bases(lattice, (int(source.rank()),))
-                    for images in INDUCTION.basis_marking_classes(lattice, basis)
-                )
+                if source.is_nondegenerate():
+                    # The owned primitive-embedding classification='emb'
+                    # fixes the source marking pointwise.  Classification
+                    # 'sub' would silently quotient by O(source) instead.
+                    classes = tuple(category.object(embedding) for embedding in
+                        source.Emb(lattice).primitive_embedding_class_representatives(classification="emb"))
+                else:
+                    if any(source.b(left, right) != 0 for left in source_basis for right in source_basis):
+                        raise ValueError("mixed degenerate Gram markings require their radical/glue classification")
+                    classes = tuple(
+                        category.object(source.hom(list(images), codomain=lattice))
+                        for basis in INDUCTION.isotropic_flag_bases(lattice, (int(source.rank()),))
+                        for images in INDUCTION.basis_marking_classes(lattice, basis)
+                    )
         case _ if category is ARROWS:
             rank = int(source.rank())
             if rank == 0:
