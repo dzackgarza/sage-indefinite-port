@@ -607,6 +607,9 @@ def nonprimitive_sublattice_classes(saturated: Parent, divisors: tuple[int, ...]
     from math import prod
     from sage.all import ZZ as SageZZ, matrix
 
+    if isinstance(saturated, Morphism):
+        lattice = saturated.codomain()
+        saturated = lattice.subobject_on(tuple(saturated(point) for point in saturated.domain().module_generators()))
     inclusion = saturated.inclusion()
     lattice = inclusion.codomain()
     rank = int(inclusion.domain().rank())
@@ -614,8 +617,16 @@ def nonprimitive_sublattice_classes(saturated: Parent, divisors: tuple[int, ...]
     if len(divisors) != rank or any(d < 1 for d in divisors) or any(b % a for a, b in zip(divisors, divisors[1:])):
         raise ValueError("elementary divisors must be positive, ordered by divisibility, and match the saturation rank")
     basis = tuple(inclusion(point) for point in inclusion.domain().module_generators())
-    if any(lattice.b(x, y) != 0 for x in basis for y in basis) or not inclusion.is_primitive():
-        raise ValueError("the supplied saturation must be primitive and totally isotropic")
+    if not inclusion.is_primitive():
+        raise ValueError("the supplied saturation must be primitive")
+    isotropic = all(lattice.b(x, y) == 0 for x in basis for y in basis)
+    if not isotropic:
+        if not inclusion.domain().is_nondegenerate():
+            raise ValueError("nonisotropic degenerate saturation requires its radical stabilizer action")
+        complement = lattice.orthogonal_complement(saturated)
+        combined = lattice.subobject_on((*basis, *(complement.inclusion()(x) for x in complement.module_generators())))
+        if int(combined.inclusion().cokernel().cardinality()) != 1:
+            raise ValueError("nonsplit nondegenerate saturation requires the complement-glue stabilizer")
     labels = tuple(inclusion.domain().module_generating_set())
     index = prod(divisors)
 
@@ -642,12 +653,24 @@ def nonprimitive_sublattice_classes(saturated: Parent, divisors: tuple[int, ...]
                 candidates[tuple(tuple(int(v) for v in row) for row in h.rows())] = h
 
     actions = []
-    for generator in INDUCTION.plane_automorphism_generators(saturated):
-        rows = []
-        for point in basis:
-            coordinates = inclusion.lift(generator(point)).to_vector()
-            rows.append([int(coordinates(label)) for label in labels])
-        actions.append(matrix(SageZZ, rows))
+    if isotropic:
+        generators = INDUCTION.plane_automorphism_generators(saturated)
+        for generator in generators:
+            rows = []
+            for point in basis:
+                coordinates = inclusion.lift(generator(point)).to_vector()
+                rows.append([int(coordinates(label)) for label in labels])
+            actions.append(matrix(SageZZ, rows))
+    else:
+        # In an orthogonal *integral* direct sum L=S+S^perp,
+        # every O(S)-element extends by identity on the complement.
+        # Hence the actual image of Stab_O(L)(S) is exactly O(S).
+        for generator in RECURSION.orthogonal_group_generators(inclusion.domain()):
+            rows = []
+            for point in inclusion.domain().module_generators():
+                coordinates = generator(point).to_vector()
+                rows.append([int(coordinates(label)) for label in labels])
+            actions.append(matrix(SageZZ, rows))
     unseen = set(candidates)
     representatives = []
     while unseen:
