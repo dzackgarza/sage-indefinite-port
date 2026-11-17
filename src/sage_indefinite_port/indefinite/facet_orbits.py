@@ -370,7 +370,7 @@ def _orbit(incidence, permutations):
     return members
 
 
-def _stabilizer_on_facet(group, incidence, orbit_size):
+def _stabilizer_on_facet(group, incidence, orbit_size, *, orbit_words=None, permutations=()):
     r"""The induced action of the exact set stabilizer on its facet.
 
     Sage's PermutationGroup.stabilizer(..., action="OnSets") delegates
@@ -384,6 +384,36 @@ def _stabilizer_on_facet(group, incidence, orbit_size):
         return ()
     positions = tuple(sorted(incidence))
     local_position = {position + 1: index for index, position in enumerate(positions)}
+    if orbit_words is not None and permutations:
+        # Schreier's lemma for the action on subsets: if t_x takes the
+        # reference facet F to x, then t_x s t_(xs)^-1 fixes F. The BFS
+        # transversal is already available from the exact facet-orbit
+        # computation. Restrict these Schreier generators to F instead of
+        # invoking GAP's second, potentially costly OnSets stabilizer search.
+        inverses = []
+        for permutation in permutations:
+            inverse = [0] * len(permutation)
+            for index, image in enumerate(permutation):
+                inverse[image] = index
+            inverses.append(tuple(inverse))
+        local_generators = set()
+        for member, word in orbit_words.items():
+            for generator_index, generator in enumerate(permutations):
+                next_member = frozenset(generator[position] for position in member)
+                next_word = orbit_words[next_member]
+                images = []
+                for position in positions:
+                    image = position
+                    for step in word:
+                        image = permutations[step][image]
+                    image = generator[image]
+                    for step in reversed(next_word):
+                        image = inverses[step][image]
+                    images.append(local_position[image + 1])
+                action = tuple(images)
+                if action != tuple(range(len(positions))):
+                    local_generators.add(action)
+        return tuple(sorted(local_generators))
     stabilizer = group.stabilizer([position + 1 for position in positions], action="OnSets")
     return tuple(
         tuple(local_position[int(generator(position + 1))] for position in positions)
@@ -518,7 +548,11 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
         record = records[index]
         incidence, normal = record.incidence, record.normal
         positions = sorted(incidence)
-        local_permutations = _stabilizer_on_facet(group, incidence, record.orbit_size)
+        local_permutations = _stabilizer_on_facet(
+            group, incidence, record.orbit_size,
+            orbit_words=dict(record.words) if retain_words else None,
+            permutations=permutations,
+        )
         local_rays, local_dimension = _local_coordinates(rays, incidence)
         if local_dimension < 2:
             processed_any = True
