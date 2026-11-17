@@ -1866,8 +1866,10 @@ def homothetic_isotropic_sublattice_classes(lattice: Parent, rank: int, multipli
     stabilizer action and are not silently conflated with this family.
     An optional subgroup splits moving orbits without fixing source bases.
     """
+    if rank == 0 and multiplier >= 1:
+        return nonprimitive_isotropic_sublattice_classes(lattice, 0, (), acting_group=acting_group)
     if rank < 1 or multiplier < 1:
-        raise ValueError("rank and saturation multiplier must be positive")
+        raise ValueError("rank must be nonnegative and saturation multiplier positive")
     if acting_group is not None and int(lattice.rank()) % 2 and acting_group is lattice.SO():
         acting_group = None
     if rank > int(lattice.rank()):
@@ -2079,8 +2081,13 @@ def nonprimitive_isotropic_sublattice_classes(lattice: Parent, rank: int, diviso
     submodules under the stabilizer of each saturation.  Thus the finite
     quotient step does not replace the ambient arithmetic group by GL(S).
     """
+    if rank == 0 and divisors == ():
+        # The zero sublattice is primitive, has the unique empty Smith
+        # tuple, and is fixed by every subgroup of O(L).
+        source = lattice.lattice_category()(0)
+        return primitive_marking_classes(ARROWS, source, lattice)
     if rank < 1 or len(divisors) != rank:
-        raise ValueError("positive isotropic rank and matching elementary-divisor tuple required")
+        raise ValueError("nonnegative isotropic rank and matching elementary-divisor tuple required")
     if any(d < 1 for d in divisors) or any(right % left for left, right in pairwise(divisors)):
         raise ValueError("elementary divisors must be positive and ordered by divisibility")
     if acting_group is not None and int(lattice.rank()) % 2 and acting_group is lattice.SO():
@@ -2156,8 +2163,11 @@ def iter_all_isotropic_sublattice_classes(lattice: Parent, rank: int, *, acting_
     """
     from itertools import count, product
 
-    if rank < 1:
-        raise ValueError("isotropic sublattice rank must be positive")
+    if rank == 0:
+        yield from nonprimitive_isotropic_sublattice_classes(lattice, 0, (), acting_group=acting_group)
+        return
+    if rank < 0:
+        raise ValueError("isotropic sublattice rank must be nonnegative")
     if acting_group is not None and int(lattice.rank()) % 2 and acting_group is lattice.SO():
         acting_group = None
     if rank > int(lattice.rank()):

@@ -1009,6 +1009,33 @@ def test_public_nonprimitive_rank_two_sublattice_classes_use_actual_levi_image()
     assert all(marked.arrow().codomain() is mixed for marked in mixed_classes)
 
 
+def test_rank_zero_smith_class_and_unbounded_stream_are_singletons():
+    import pytest
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        nonprimitive_isotropic_sublattice_classes, iter_all_isotropic_sublattice_classes,
+        homothetic_isotropic_sublattice_classes,
+    )
+
+    for ambient in (Lattices(ZZ)(0), Lattices(ZZ)([[2]]), Lattices(ZZ)("U")):
+        for group in (None, ambient.SO()):
+            fixed = tuple(nonprimitive_isotropic_sublattice_classes(ambient, 0, (), acting_group=group))
+            stream = tuple(iter_all_isotropic_sublattice_classes(ambient, 0, acting_group=group))
+            assert len(fixed) == len(stream) == 1
+            assert fixed[0].arrow().domain().rank() == 0
+            assert stream[0].arrow().codomain() is ambient
+            for multiplier in (1, 3):
+                homothetic = tuple(homothetic_isotropic_sublattice_classes(
+                    ambient, 0, multiplier, acting_group=group
+                ))
+                assert len(homothetic) == 1
+                assert homothetic[0].arrow().domain().rank() == 0
+        with pytest.raises(ValueError, match="elementary-divisor tuple"):
+            nonprimitive_isotropic_sublattice_classes(ambient, 0, (1,))
+        with pytest.raises(ValueError, match="nonnegative"):
+            tuple(iter_all_isotropic_sublattice_classes(ambient, -1))
+
+
 def test_public_nonprimitive_sublattice_classes_retain_gamma_three_action():
     from sage_extensions.all import cardinal
     from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_isotropic_sublattice_classes
