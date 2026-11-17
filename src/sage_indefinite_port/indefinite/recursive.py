@@ -2323,6 +2323,26 @@ class EichlerRecursion:
         )
         return target_splitting.inverse() * split * source_splitting
 
+    def exact_vector_orbit_iterator(self, lattice: Lattices.ParentMethods, square: int, *, primitive_only: bool = False):
+        r"""Enumerate fixed-norm orbit representatives fairly without assuming finiteness.
+
+        Every integral vector occurs in one finite coordinate-height shell.
+        Exact pointed isometry decisions discard precisely those in an
+        earlier orbit.  The iterator may run forever after its last yield
+        when the orbit set is finite; it is not a finite-class certificate.
+        """
+        from itertools import count
+
+        seen = []
+        for height in count(0):
+            for coordinates in _coordinate_box(lattice, height):
+                point = _from_column(lattice, coordinates)
+                if int(point.q()) != int(square) or (primitive_only and int(point.content()) != 1):
+                    continue
+                if all(self.pointed_isometry(previous, point) is None for previous in seen):
+                    seen.append(point)
+                    yield point
+
     def primitive_vector_classes(self, lattice: Lattices.ParentMethods, square: int) -> tuple[VectorClass, ...]:
         r"""One class per O(L)-orbit of primitive vectors of the square, for L of positive index at least 2."""
         profile = AttackProfile.from_lattice(lattice)

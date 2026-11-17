@@ -63,3 +63,12 @@ def test_witt_zero_pointed_vector_transporter_swaps_positive_coordinates():
     assert witness is not None and witness(e) == f
     assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
                for x in (e, f, u, v) for y in (e, f, u, v))
+
+
+def test_low_witt_public_lazy_fixed_norm_orbit_iterator_returns_exact_vector():
+    from sage_extensions.all import Lattices, ZZ
+
+    ambient = lattice([[2, 0, 0, 0], [0, 2, 0, 0], [0, 0, -6, 0], [0, 0, 0, -6]])
+    representative = next(ambient.O().exact_vector_orbit_iterator(2, primitive_only=True))
+    assert representative.q() == ZZ(2)
+    assert int(representative.content()) == 1
