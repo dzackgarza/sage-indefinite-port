@@ -384,6 +384,30 @@ def nonprimitive_isotropic_line_classes(lattice: Parent, content: int) -> Parent
     return finite_ordered_set(tuple(classes))
 
 
+
+def nonisotropic_line_classes(lattice: Parent, square: int) -> Parent:
+    r"""Moving rank-one sublattice orbits of nonzero generator square.
+
+    First enumerate every pointed vector orbit, including imprimitive
+    contents.  Passing from pointed vectors to rank-one sublattices
+    identifies exactly the orbits related by sign, as the source
+    automorphism group is ``{+1,-1}``.  Decide that identification with
+    the existing exact moving-arrow transporter, not with a heuristic
+    comparison of norms or divisibilities.
+    """
+    if not square:
+        raise ValueError("use nonprimitive_isotropic_line_classes with prescribed index for square zero")
+    source = lattice.lattice_category()([[square]])
+    category = CosliceCategory(lattice.lattice_category(), source)
+    candidates = pointed_nonzero_norm_classes(category, lattice, square)
+    kept = []
+    for candidate in candidates:
+        moving = ARROWS.object(candidate.arrow())
+        if all(isometry(ARROWS, moving, previous) is None for previous in kept):
+            kept.append(moving)
+    return finite_ordered_set(tuple(kept))
+
+
 def primitive_marking_classes(category: Category, source: Parent | Morphism, lattice: Parent) -> Parent:
     r"""One marked lattice for each isomorphism class of primitive markings of ``lattice`` of shape ``source``.
 
@@ -452,4 +476,5 @@ __all__ = [
     "pointed_nonzero_norm_classes",
     "iter_pointed_isotropic_classes",
     "nonprimitive_isotropic_line_classes",
+    "nonisotropic_line_classes",
 ]

@@ -94,3 +94,16 @@ def test_nonisotropic_rank_one_setwise_stabilizer_contains_sign_reversal():
     assert all(g(2 * (e + 2 * f)) in (2 * (e + 2 * f), -2 * (e + 2 * f)) for g in family)
     assert any(g(e + 2 * f) == -(e + 2 * f) for g in family)
     assert all(plane.b(g(x), g(y)) == plane.b(x, y) for g in family for x in (e, f) for y in (e, f))
+
+
+def test_nonisotropic_moving_line_classes_retain_all_contents():
+    from sage_extensions.all import cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import nonisotropic_line_classes, ARROWS, isometry
+
+    plane = lattice([[0, 1], [1, 0]])
+    for square in (8, -8):
+        classes = nonisotropic_line_classes(plane, square)
+        assert classes.cardinality() == cardinal(2)
+        assert {int(marking.arrow()(marking.arrow().domain().module_generators()[0]).content()) for marking in classes} == {1, 2}
+        first, second = tuple(classes)
+        assert isometry(ARROWS, first, second) is None
