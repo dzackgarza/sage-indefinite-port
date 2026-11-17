@@ -48,6 +48,7 @@ from sage_indefinite_port.indefinite.edgewalk_rank2 import anisotropic_cycle
 from sage_indefinite_port.indefinite.edgewalk_scalars import _integer, _rational
 from sage_indefinite_port.indefinite.lorentzian_cells import (
     binary_split_form_vectors_of_square,
+    binary_split_null_basis,
 )
 
 type _Vector = Lattices.ElementMethods
@@ -1050,15 +1051,6 @@ class _Edgewalk:
         return self.edge_plane_for_divisor(roots, discarded, k, self.divisor(norm))
 
     @cached_method
-    def edge_perpendicular(self, roots: _Roots) -> Parent:
-        r"""The sublattice L cap P of the edge plane P = (span of the edge's roots)^perp.
-
-        edgewalk.h:598 computes Pplane once per edge; only Latt = C_N varies
-        with the root norm (edgewalk.h:761-764, IntersectionLattice_VectorSpace).
-        """
-        return self.lattice.subobject_on(list(roots)).orthogonal_complement()
-
-    @cached_method
     def edge_orientation(self, roots: _Roots, discarded: _Vector, k: _Vector) -> tuple[Matrix_rational_dense, _RationalRow]:
         r"""The oriented basis of the edge plane and the orientation vector r0, computed once per edge (edgewalk.h:598-668)."""
         root_rows = tuple(self.row(root) for root in roots)
@@ -1441,11 +1433,16 @@ class _Edgewalk:
         return tuple(accepted)
 
     def isotropic_next_vertex(self, roots: _Roots, discarded: _Vector, k: _Vector) -> _Vertex:
-        perpendicular = self.edge_perpendicular(roots)
-        plane = perpendicular.inclusion().domain()
+        # The two null lines of the split edge plane L cap P on engine rows:
+        # P is the integral left kernel of G R^T (R the rows of the walls),
+        # and each line is primitive in L cap P, which is saturated in L.
+        gram = self.gram.change_ring(SageZZ)
+        walls = matrix(SageZZ, [self.key(root) for root in roots])
+        plane_rows = (gram * walls.transpose()).left_kernel_matrix(algorithm="pari").echelon_form()
+        plane_gram = plane_rows * gram * plane_rows.transpose()
         choices: dict[_Key, _Vector] = {}
-        for isotropic in plane.primitive_isotropic_vectors():
-            candidate = perpendicular.inclusion()(isotropic)
+        for line in binary_split_null_basis((plane_gram[0, 0], plane_gram[0, 1], plane_gram[1, 1])):
+            candidate = self.element(tuple(vector(SageZZ, line) * plane_rows))
             # edgewalk.h:1094-1120, get_can_gen orients each isotropic
             # line by b(k, v) < 0 *before* testing the discarded wall.
             # Primitive-isotropic-line enumerators need not return the
