@@ -284,6 +284,31 @@ def test_zero_form_moving_cross_parent_transporter_preserves_finite_index_submod
     assert isometry(ARROWS, first, different) is None
 
 
+def test_zero_form_rank_one_moving_and_based_transporters_across_ambient_parents():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
+
+    first_ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    second_ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f = tuple(first_ambient.module_generators())
+    u, v = tuple(second_ambient.module_generators())
+    source = Lattices(ZZ)([[0]])
+    first = ARROWS.object(source.hom([2 * e], codomain=first_ambient))
+    second = ARROWS.object(source.hom([2 * (u + v)], codomain=second_ambient))
+    mismatched = ARROWS.object(source.hom([3 * v], codomain=second_ambient))
+    witness = isometry(ARROWS, first, second)
+    assert witness is not None and witness.domain() is first_ambient and witness.codomain() is second_ambient
+    assert witness(2 * e) in (2 * (u + v), -2 * (u + v))
+    assert all((~witness)(witness(x)) == x for x in (e, f))
+    assert isometry(ARROWS, first, mismatched) is None
+
+    category = Lattices(ZZ).CosliceUnder(source)
+    based_first = category.object(first.arrow())
+    based_second = category.object(second.arrow())
+    based_witness = isometry(category, based_first, based_second)
+    assert based_witness is not None and based_witness(2 * e) == 2 * (u + v)
+
+
 def test_zero_form_primitive_moving_line_and_plane_stabilizers_are_full_gl_parabolics():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
