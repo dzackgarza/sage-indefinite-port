@@ -15,6 +15,18 @@ def test_low_witt_nonprimitive_isotropic_line_stream_preserves_saturation_index(
         assert int(vector.content()) == content
 
 
+def test_low_witt_isotropic_line_stream_explicit_full_group():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_isotropic_line_content_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[2, 0], [0, -4]])
+    marked = next(iter_isotropic_line_content_classes(ambient, 2, acting_group=ambient.O()))
+    arrow = marked.arrow()
+    vector = arrow(next(iter(arrow.domain().module_generators())))
+    assert vector.q() == ZZ(0)
+    assert int(vector.content()) == 2
+
+
 def test_rank_four_witt_zero_and_one_changed_basis_witnesses():
     from sage.all import ZZ as SageZZ, matrix
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION

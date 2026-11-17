@@ -1176,13 +1176,14 @@ def iter_pointed_isotropic_classes(category: Category, lattice: Parent, *, inclu
 
 
 
-def iter_primitive_isotropic_line_classes(lattice: Parent):
+def iter_primitive_isotropic_line_classes(lattice: Parent, *, acting_group=None):
     r"""Fair exact moving primitive-null-line orbit stream.
 
     Every primitive null vector occurs in the coordinate-height walk.
     A moving rank-one isotropic sublattice is identified with the pair
     ``{v,-v}``; exact pointed transport decides equivalence of those
     generators.  The stream is exhaustive without a finite-class claim.
+    Supported finite-character arithmetic subgroups split each moving orbit.
     """
     if lattice.is_nondegenerate() and (lattice.is_definite() or int(lattice.witt_index()) == 0):
         return
@@ -1192,10 +1193,14 @@ def iter_primitive_isotropic_line_classes(lattice: Parent):
             continue
         seen.append(vector)
         source = lattice.lattice_category()([[0]])
-        yield ARROWS.object(source.hom([vector], codomain=lattice))
+        marked = ARROWS.object(source.hom([vector], codomain=lattice))
+        if acting_group is None:
+            yield marked
+        else:
+            yield from lattice.O().split_orbit(marked, acting_group)
 
 
-def iter_isotropic_line_content_classes(lattice: Parent, content: int):
+def iter_isotropic_line_content_classes(lattice: Parent, content: int, *, acting_group=None):
     r"""Exact exhaustive moving-null-line stream at fixed saturation index.
 
     Scaling by positive ``content`` is an equivariant bijection between
@@ -1206,7 +1211,7 @@ def iter_isotropic_line_content_classes(lattice: Parent, content: int):
         raise ValueError("rank-one sublattice index in saturation must be positive")
     source = lattice.lattice_category()([[0]])
     generator = next(iter(source.module_generators()))
-    for marking in iter_primitive_isotropic_line_classes(lattice):
+    for marking in iter_primitive_isotropic_line_classes(lattice, acting_group=acting_group):
         yield ARROWS.object(source.hom([
             lattice.scalar_multiple(lattice.base_ring()(content), marking.arrow()(generator))
         ], codomain=lattice))
