@@ -951,15 +951,15 @@ def test_e10_root_reflection_pointed_witness_avoids_pari_qfauto(monkeypatch):
     ambient = lattice(fixture["gram"])
     root = next(root for root in fixture["simple_roots"] if root["label"] == -1)
     reflection = ambient.reflection(element(ambient, vector(SageZZ, root["vector"])))
-    source = next(
-        point for record in fixture["orbit_representatives"]
-        if (point := element(ambient, vector(SageZZ, record["vector"]))) != reflection(point)
-    )
-    target = reflection(source)
-
     def forbidden(*args, **kwargs):
         raise AssertionError("E10 reflection witness must not request PARI qfauto")
 
     monkeypatch.setattr(RECURSION, "isometry", forbidden)
-    witness = RECURSION.pointed_isometry(source, target)
-    assert witness is not None and witness(source) == target
+    nonfixed = 0
+    for record in fixture["orbit_representatives"]:
+        source = element(ambient, vector(SageZZ, record["vector"]))
+        target = reflection(source)
+        nonfixed += source != target
+        witness = RECURSION.pointed_isometry(source, target)
+        assert witness is not None and witness(source) == target
+    assert nonfixed > 0
