@@ -2071,6 +2071,14 @@ def nonprimitive_isotropic_sublattice_classes(lattice: Parent, rank: int, diviso
         raise ValueError("positive isotropic rank and matching elementary-divisor tuple required")
     if any(d < 1 for d in divisors) or any(right % left for left, right in pairwise(divisors)):
         raise ValueError("elementary divisors must be positive and ordered by divisibility")
+    if acting_group is not None and int(lattice.rank()) % 2 and acting_group is lattice.SO():
+        # In odd ambient rank, central -id_L has determinant -1 and fixes
+        # every moving sublattice setwise. Hence every O(L)-orbit on
+        # sublattices is already one SO(L)-orbit: for g of determinant -1,
+        # (-id_L)g has determinant +1 and acts identically on sublattices.
+        # This is an equality of the *moving* orbit sets, not of the
+        # stabilizer groups or the based-vector orbit sets.
+        acting_group = None
     if acting_group is lattice.O():
         acting_group = None
     if rank > int(lattice.rank()):
@@ -2478,6 +2486,11 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 classes = tuple(category(_flag_marking_from_basis(lattice, basis, dimensions)) for basis in INDUCTION.isotropic_flag_bases(lattice, dimensions))
         case _:
             raise ValueError(f"{category} is not a category of marked lattices this port classifies: a coslice <n>/Lattices, Ar(Lattices) or Fun([t], Lattices) for finite [t]")
+    if category is ARROWS and acting_group is not None and int(lattice.rank()) % 2 and acting_group is lattice.SO():
+        # Central -id_L has determinant -1 in odd rank and preserves
+        # every moving sublattice. Consequently O(L) and SO(L) have
+        # identical orbits on arrows, unlike based or oriented markings.
+        acting_group = None
     if acting_group is not None and acting_group is not lattice.O():
         classes = tuple(split for marked in classes
                         for split in lattice.O().split_orbit(marked, acting_group))

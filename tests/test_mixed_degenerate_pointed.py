@@ -411,6 +411,31 @@ def test_mixed_degenerate_maximal_plane_index_two_uses_integral_radical_stabiliz
     assert all(marked.arrow().saturation().inclusion().domain().rank() == 2 for marked in classes)
 
 
+def test_mixed_degenerate_maximal_plane_index_two_preserves_requested_so_action():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_isotropic_sublattice_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    full = tuple(nonprimitive_isotropic_sublattice_classes(ambient, 2, (1, 2)))
+    special = tuple(nonprimitive_isotropic_sublattice_classes(
+        ambient, 2, (1, 2), acting_group=ambient.SO()
+    ))
+    assert len(full) == 2
+    assert len(special) == len(full)
+    assert all(marked.arrow().codomain() is ambient for marked in special)
+
+
+def test_odd_rank_moving_maximal_null_plane_has_identical_o_and_so_orbits():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    full = tuple(primitive_marking_classes(ARROWS, source, ambient))
+    special = tuple(primitive_marking_classes(ARROWS, source, ambient, acting_group=ambient.SO()))
+    assert len(full) == len(special) == 1
+
+
 @pytest.mark.parametrize("smith", ((1, 1, 2), (1, 2, 2)))
 def test_mixed_degenerate_maximal_rank_three_index_two_respects_radical_plane(smith):
     from sage_extensions.all import Lattices, ZZ
