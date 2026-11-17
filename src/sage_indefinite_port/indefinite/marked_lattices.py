@@ -2157,6 +2157,8 @@ def nonprimitive_nondegenerate_sublattice_classes(lattice: Parent, saturation_ty
         raise ValueError("use isotropic or radical marking classification for degenerate saturation")
     if len(divisors) != int(saturation_type.rank()):
         raise ValueError("elementary divisors must match the saturation rank")
+    if any(d < 1 for d in divisors) or any(right % left for left, right in pairwise(divisors)):
+        raise ValueError("elementary divisors must be positive and ordered by divisibility")
     primitive = primitive_marking_classes(ARROWS, saturation_type, lattice)
     group = lattice.O() if acting_group is None else acting_group
     if acting_group is not None:

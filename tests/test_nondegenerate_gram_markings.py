@@ -445,6 +445,19 @@ def test_public_nonprimitive_nondegenerate_classes_from_primitive_saturation():
     assert all(marked.arrow().codomain() is ambient for marked in classes)
 
 
+def test_nondegenerate_fixed_smith_classifier_validates_before_empty_orbit_dispatch():
+    import pytest
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_nondegenerate_sublattice_classes
+
+    ambient = Lattices(ZZ)("U")
+    source = ambient + ambient
+    assert tuple(nonprimitive_nondegenerate_sublattice_classes(ambient, source, (1, 1, 1, 1))) == ()
+    for smith in ((1, 1, 0, 1), (1, 2, 1, 2), (-1, 1, 1, 1)):
+        with pytest.raises(ValueError, match="elementary divisors"):
+            nonprimitive_nondegenerate_sublattice_classes(ambient, source, smith)
+
+
 def test_unrestricted_nondegenerate_saturation_index_iterator_retains_two_index_two_orbits():
     from itertools import islice
     from sage_extensions.all import Lattices, ZZ
