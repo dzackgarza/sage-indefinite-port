@@ -2154,6 +2154,13 @@ class LorentzianPerfectLocalBackend:
         # some incompatible configurations before the large image search.
         if source_moment.det() != target_moment.det():
             return () if all_images else None
+        # Congruence by an integral unimodular transporter also preserves
+        # the Smith invariant factors of the second-moment matrix. Equal
+        # determinants alone miss distinct integral congruence classes;
+        # these rank-sized factors reject such pairs before constructing
+        # auxiliary pairing columns or searching basis images.
+        if source_moment.elementary_divisors() != target_moment.elementary_divisors():
+            return () if all_images else None
         # The auxiliary configuration form used by GetQmatrix (see
         # fund_domain_vertices.h:146) is the inverse second moment.  If
         # target_rows = source_rows*A, then M_t = A^T*M_s*A. Thus

@@ -318,6 +318,21 @@ def test_large_distinct_cells_use_gram_compatible_coordinate_swap() -> None:
     assert witness(e) == f and witness(f) == e
 
 
+def test_cell_transporter_rejects_distinct_moment_smith_factors_with_equal_determinant() -> None:
+    ambient = lattice([[1, 0], [0, -1]])
+    source_rows = ((1, 0), (2, 2))
+    target_rows = ((1, 1), (1, -1))
+    source_moment = matrix(ZZ, source_rows).transpose() * matrix(ZZ, source_rows)
+    target_moment = matrix(ZZ, target_rows).transpose() * matrix(ZZ, target_rows)
+    assert source_moment.det() == target_moment.det() == 4
+    assert source_moment.elementary_divisors() != target_moment.elementary_divisors()
+    source = LorentzianPerfectCell(ambient, source_rows, NONNEGATIVE_SQUARES)
+    target = LorentzianPerfectCell(ambient, target_rows, NONNEGATIVE_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+    assert backend.cell_transporter(source, target) is None
+    assert backend.cell_transporter(source, target, all_images=True) == ()
+
+
 def test_equal_coordinate_cells_from_separate_parent_constructions_transport_exactly() -> None:
     source_lattice = lattice([[0, 1], [1, 0]])
     target_lattice = lattice([[0, 1], [1, 0]])
