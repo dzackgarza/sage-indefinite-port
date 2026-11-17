@@ -49,3 +49,19 @@ def test_nonprimitive_moving_line_transporter_cancels_common_content():
     assert witness is not None
     assert witness(e) in (f, -f)
     assert isometry(ARROWS, first, third) is None
+
+
+def test_moving_line_orbit_classes_retain_saturation_index():
+    from sage_extensions.all import cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_isotropic_line_classes, ARROWS, isometry
+
+    plane = lattice([[0, 1], [1, 0]])
+    first = nonprimitive_isotropic_line_classes(plane, 2)
+    second = nonprimitive_isotropic_line_classes(plane, 4)
+    assert first.cardinality() == cardinal(1)
+    assert second.cardinality() == cardinal(1)
+    a, b = tuple(first)[0], tuple(second)[0]
+    assert a.arrow().saturation().inclusion().is_primitive()
+    assert int(a.arrow()(a.arrow().domain().module_generators()[0]).content()) == 2
+    assert int(b.arrow()(b.arrow().domain().module_generators()[0]).content()) == 4
+    assert isometry(ARROWS, a, b) is None

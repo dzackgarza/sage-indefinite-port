@@ -352,6 +352,29 @@ def iter_pointed_isotropic_classes(category: Category, lattice: Parent, *, inclu
         yield from pointed_content_classes(category, lattice, 0, content)
 
 
+
+def nonprimitive_isotropic_line_classes(lattice: Parent, content: int) -> Parent:
+    r"""Moving rank-one isotropic sublattice orbits of prescribed index in saturation.
+
+    A rank-one sublattice of index ``content`` in its saturation is
+    ``content * S`` for a unique primitive isotropic line ``S``.  The
+    operation commutes with integral isometries, so the primitive moving
+    line classes determine these orbits without a second classification.
+    """
+    if content < 1:
+        raise ValueError("rank-one sublattice index in saturation must be positive")
+    source = lattice.lattice_category()([[0]])
+    primitive = primitive_marking_classes(ARROWS, source, lattice)
+    classes = (
+        ARROWS.object(source.hom([
+            lattice.scalar_multiple(lattice.base_ring()(content),
+                marking.arrow()(next(iter(marking.arrow().domain().module_generators()))))
+        ], codomain=lattice))
+        for marking in primitive
+    )
+    return finite_ordered_set(tuple(classes))
+
+
 def primitive_marking_classes(category: Category, source: Parent | Morphism, lattice: Parent) -> Parent:
     r"""One marked lattice for each isomorphism class of primitive markings of ``lattice`` of shape ``source``.
 
@@ -419,4 +442,5 @@ __all__ = [
     "pointed_content_classes",
     "pointed_nonzero_norm_classes",
     "iter_pointed_isotropic_classes",
+    "nonprimitive_isotropic_line_classes",
 ]
