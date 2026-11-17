@@ -329,6 +329,24 @@ def test_public_flag_shape_does_not_discard_a_nonambient_terminal_isotropic_term
         primitive_marking_classes(category, source, ambient)
 
 
+def test_full_flag_shape_from_a_distinct_ambient_parent_keeps_its_null_ranks():
+    from sage.all import ZZ as SageZZ, matrix
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_arrows, _flag_marking_from_basis, primitive_marking_classes
+
+    gram = matrix(SageZZ, [[int(i // 2 == j // 2 and i != j) for j in range(4)] for i in range(4)])
+    source_ambient = lattice(gram.rows())
+    change = matrix(SageZZ, [[1, 1, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+    target = lattice((change * gram * change.transpose()).rows())
+    assert source_ambient is not target
+    category = Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))
+    source = category(_flag_marking_from_basis(source_ambient, tuple(source_ambient.module_generators())[::2], (1, 2)))
+    classes = tuple(primitive_marking_classes(category, source, target))
+    assert len(classes) == 1
+    assert tuple(int(arrow.domain().rank()) for arrow in _flag_arrows(classes[0])) == (1, 2)
+
+
 def test_complete_isotropic_flags_in_three_u_split_into_two_special_orthogonal_orbits():
     r"""A maximal isotropic stabilizer has determinant det(A) det(A^-T)=1.
 

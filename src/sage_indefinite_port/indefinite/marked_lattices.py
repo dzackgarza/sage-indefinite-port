@@ -1575,7 +1575,11 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
             full_diagram_shape = (
                 not isinstance(source, Morphism)
                 and len(shape_arrows) == int(category.domain_category().object_set().cardinality()) - 1
-                and shape_arrows[-1].codomain() is lattice
+                and not all(
+                    shape_arrows[-1].codomain().b(left, right) == 0
+                    for left in shape_arrows[-1].codomain().module_generators()
+                    for right in shape_arrows[-1].codomain().module_generators()
+                )
             )
             last_shape_lattice = shape_arrows[-1].domain() if full_diagram_shape else shape_arrows[-1].codomain()
             if any(
