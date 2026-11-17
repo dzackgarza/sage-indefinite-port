@@ -522,6 +522,48 @@ def test_nonprimitive_based_radical_plane_stabilizer_fixes_saturation_pointwise(
     assert all(g(z) == z and g(w) == w for g in generators)
 
 
+def test_nonhomothetic_based_radical_frames_have_exact_transporter():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    z, w = tuple(ambient.module_generators())[1:]
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category.object(source.hom([2 * z, 3 * w], codomain=ambient))
+    second = category.object(source.hom([2 * (z + w), 3 * w], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert witness(2 * z) == 2 * (z + w) and witness(3 * w) == 3 * w
+    # Equal Smith invariants do not imply based equivalence: the source
+    # frame's column lattice, rather than its unlabelled index, is fixed.
+    incompatible = category.object(source.hom([3 * z, 2 * w], codomain=ambient))
+    assert isometry(category, first, incompatible) is None
+    target_ambient = lattice([[0, 0, 0], [0, 2, 0], [0, 0, 0]])
+    target_z, _, target_w = tuple(target_ambient.module_generators())
+    cross = category.object(source.hom([2 * target_z, 3 * target_w], codomain=target_ambient))
+    cross_witness = isometry(category, first, cross)
+    assert cross_witness is not None
+    assert cross_witness(2 * z) == 2 * target_z
+    assert cross_witness(3 * w) == 3 * target_w
+
+
+def test_rectangular_based_radical_frame_transporter_in_rank_three_radical():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = lattice([[2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+    z, w, u = tuple(ambient.module_generators())[1:]
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category.object(source.hom([2 * (z + w), 3 * (z + u)], codomain=ambient))
+    second = category.object(source.hom([2 * (z + w + u), 3 * (z + u)], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert witness(2 * (z + w)) == 2 * (z + w + u)
+    assert witness(3 * (z + u)) == 3 * (z + u)
+
+
 def test_mixed_radical_rank_one_stabilizers_respect_residue_and_shear():
     from sage_extensions.all import cardinal
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION

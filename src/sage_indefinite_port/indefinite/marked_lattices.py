@@ -530,6 +530,58 @@ def _nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow: Morp
 
 
 
+def _degenerate_radical_based_isometry(source_arrow: Morphism, target_arrow: Morphism):
+    r"""Exact based integral radical-frame transporter by column Hermite equivalence.
+
+    For row frames A,B in the saturated radical R, an ambient isometry
+    carrying each marked generator to its counterpart exists exactly when
+    A D = B for some D in GL(R).  This is equivalent to equality of the
+    column lattices of A and B in the source frame coordinates.  Hermite
+    transformations produce D and the reduced split extends it by the
+    identity on the nondegenerate quotient.
+    """
+    from sage.all import ZZ as SageZZ, identity_matrix, matrix
+    from sage_indefinite_port.indefinite.recursive import _isometry_from_row_matrix
+
+    source_ambient, target_ambient = source_arrow.codomain(), target_arrow.codomain()
+    ambient_transport = (source_ambient.O().identity() if source_ambient is target_ambient
+                         else RECURSION.isometry(source_ambient, target_ambient))
+    if ambient_transport is None:
+        return None
+    reduction, n, k, _quotient = _degenerate_quotient_and_radical(target_ambient)
+    labels = tuple(reduction.reduced.module_generating_set())
+    inverse = reduction.isometry.inverse()
+
+    def rows(arrow, *, transport=None):
+        vectors = tuple(arrow(point) for point in arrow.domain().module_generators())
+        if transport is not None:
+            vectors = tuple(transport(point) for point in vectors)
+        coordinates = tuple(tuple(int(inverse(point).to_vector()(label)) for label in labels)
+                            for point in vectors)
+        if any(any(row[:n]) for row in coordinates):
+            return None
+        return matrix(SageZZ, [row[n:] for row in coordinates])
+
+    left = rows(source_arrow, transport=ambient_transport)
+    right = rows(target_arrow)
+    if left is None or right is None or left.nrows() != right.nrows():
+        return None
+    left_hnf, left_change = left.transpose().hermite_form(transformation=True)
+    right_hnf, right_change = right.transpose().hermite_form(transformation=True)
+    if left_hnf != right_hnf:
+        return None
+    radical_action = left_change.transpose() * right_change.transpose().inverse()
+    if left * radical_action != right or abs(radical_action.det()) != 1:
+        raise ArithmeticError("the Hermite transporter failed its integral frame certificate")
+    block = identity_matrix(SageZZ, n + k)
+    for i in range(k):
+        for j in range(k):
+            block[n + i, n + j] = radical_action[i, j]
+    reduced_witness = _isometry_from_row_matrix(reduction.reduced, reduction.reduced, block)
+    correction = reduction.isometry * reduced_witness * reduction.isometry.inverse()
+    return correction * ambient_transport
+
+
 def _degenerate_full_quotient_based_isometry(source_arrow: Morphism, target_arrow: Morphism):
     r"""Exact based mixed-Gram transport for a full unimodular quotient frame.
 
@@ -743,38 +795,16 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 return RECURSION.pointed_isometry(_marked_vector(source), _marked_vector(target))
             source_arrow, target_arrow = source.arrow(), target.arrow()
             ambient = source_arrow.codomain()
-            if (
-                int(ambient.rank()) == int(target_arrow.codomain().rank())
-                and all(ambient.b(x, y) == 0 for x in ambient.module_generators() for y in ambient.module_generators())
-                and all(target_arrow.codomain().b(x, y) == 0
-                        for x in target_arrow.codomain().module_generators()
-                        for y in target_arrow.codomain().module_generators())
-                and all(source_arrow.domain().b(x, y) == 0
-                        for x in source_arrow.domain().module_generators()
-                        for y in source_arrow.domain().module_generators())
+            # Pure zero-form frames are included in the split-radical
+            # Hermite transporter below (with zero-dimensional quotient).
+            # No unbounded enumeration of GL_n(ZZ) is necessary.
+            if not ambient.is_nondegenerate() and all(
+                RECURSION.vector_lies_in_radical(source_arrow(point))
+                for point in source_arrow.domain().module_generators()
             ):
-                # For based k-frames A: ZZ^k -> ZZ^n, right GL_n(ZZ)
-                # equivalence is classified by the column lattice of A
-                # in ZZ^k (the row HNF of A^t). This retains all finite
-                # index data, unlike the moving Smith classification.
-                # Equal column lattices guarantee an integral transporter.
-                from sage.all import ZZ as SageZZ, matrix
-                from sage_indefinite_port.indefinite.recursive import _fair_unimodular_matrices, _isometry_from_row_matrix
-
-                source_points = tuple(source_arrow(x) for x in source_arrow.domain().module_generators())
-                target_points = tuple(target_arrow(x) for x in target_arrow.domain().module_generators())
-                source_labels = tuple(ambient.module_generating_set())
-                target_labels = tuple(target_arrow.codomain().module_generating_set())
-                source_rows = matrix(SageZZ, [[int(point.to_vector()(label)) for label in source_labels]
-                                                  for point in source_points])
-                target_rows = matrix(SageZZ, [[int(point.to_vector()(label)) for label in target_labels]
-                                                  for point in target_points])
-                if source_rows.transpose().hermite_form() != target_rows.transpose().hermite_form():
+                if target_arrow.codomain().is_nondegenerate():
                     return None
-                for rows in _fair_unimodular_matrices(int(ambient.rank())):
-                    witness = _isometry_from_row_matrix(ambient, target_arrow.codomain(), rows)
-                    if all(witness(left) == right for left, right in zip(source_points, target_points, strict=True)):
-                        return witness
+                return _degenerate_radical_based_isometry(source_arrow, target_arrow)
             if source_arrow.domain().is_nondegenerate():
                 return (_nondegenerate_embedding_isometry(source_arrow, target_arrow, based=True)
                         if source_arrow.is_primitive() and target_arrow.is_primitive()
@@ -1227,9 +1257,9 @@ def _degenerate_quotient_and_radical(lattice: Parent):
     reduction = indefinite_reduced_presentation(lattice)
     gram = _gram_in_label_order(reduction.reduced)
     n = int(gram.rank())
-    quotient = lattice.lattice_category()([
+    quotient = (lattice.lattice_category()([
         [int(gram[i, j]) for j in range(n)] for i in range(n)
-    ])
+    ]) if n else None)
     return reduction, n, int(gram.nrows()) - n, quotient
 
 
