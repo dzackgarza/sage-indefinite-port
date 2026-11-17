@@ -6,13 +6,14 @@ on:
   workflow_dispatch:
     inputs:
       corpus:
-        description: tier1 runs the smallest node per pinned branch; tier2 the published reproductions; full every file
+        description: tier1 runs the smallest node per pinned branch; tier2 the published reproductions; full every file; probe the pricing sample, each node killed at 60 s
         required: true
         type: choice
         options:
           - tier1
           - tier2
           - full
+          - probe
 concurrency:
   # A newer dispatch replaces a queued run but never cancels one in progress.
   group: acceptance-${{ github.ref }}

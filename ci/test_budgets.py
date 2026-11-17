@@ -17,6 +17,7 @@ keeping the stack, so the next test still runs.
 """
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -31,9 +32,14 @@ _RECORD = json.loads((Path(__file__).parent / "test_budgets.json").read_text())
 # dominate a sub-second node.
 PRICE_FACTOR = 3
 WARMUP_SECONDS = 10
+# The probe corpus is a pricing run, not acceptance: every node is killed at
+# one flat limit, and a killed node is priced as at least that many seconds.
+PROBE_KILL_SECONDS = 60
 _BUDGETS = _RECORD["budgets"] | {
     node: PRICE_FACTOR * price + WARMUP_SECONDS for node, price in _RECORD["prices"].items()
 }
+if os.environ["ACCEPTANCE_CORPUS"] == "probe":
+    _BUDGETS = {node: PROBE_KILL_SECONDS for node in _BUDGETS}
 
 
 def pytest_collection_modifyitems(items):

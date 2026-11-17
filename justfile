@@ -116,6 +116,7 @@ ci-witness file test:
     git -C {{ci_dir}}/sage-extensions rev-parse HEAD > "$out/provider_commit"
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     export PYTHONPATH="$PWD/{{ci_dir}}/ai-review-ci/tool-artifacts/pytest_plugins:$PWD/src:$PWD"
+    export ACCEPTANCE_CORPUS=witness
     "$sage_python" -c 'import sage.all, sys, pytest; sys.exit(pytest.main(sys.argv[1:]))' \
         -p qc_sage_session "witnesses/{{file}}::{{test}}" -vv -rA --tb=long --instafail \
         -p ci.test_budgets --timeout-method=signal --report-log="$out/report.jsonl" --junitxml="$out/junit.xml" 2>&1 | tee "$out/log"
@@ -129,7 +130,7 @@ ci-julia-key:
     env_dir="$("$sage_python" -c 'import pathlib, sage_julia_bridge; print(pathlib.Path(sage_julia_bridge.__file__).parent / "julia_env")')"
     julia --startup-file=no --project="$env_dir" -e 'using Pkg, SHA; bridge_project = Base.active_project(); Pkg.activate("v$(VERSION.major).$(VERSION.minor)"; shared=true); shared_project = Base.active_project(); inputs = vcat(read(bridge_project), read(shared_project), read(joinpath(dirname(shared_project), "Manifest.toml"))); println("julia-depot-" * bytes2hex(sha256(inputs))[1:16])'
 
-# CI only: run job {{shard}} of the Acceptance plan for corpus {{selection}} (tier1, tier2 or full);
+# CI only: run job {{shard}} of the Acceptance plan for corpus {{selection}} (tier1, tier2, full or probe);
 # results land in .tmp/ci/results/<family>-<shard>.
 ci-acceptance family shard shards selection:
     #!/usr/bin/env bash
@@ -161,6 +162,7 @@ ci-acceptance family shard shards selection:
     printf '%s\n' "$provider_head" > "$out/research_commit"
     sage_python="$("$SAGE_BIN" -c 'import sys; print(sys.executable)')"
     export PYTHONPATH="$PWD/{{ci_dir}}/ai-review-ci/tool-artifacts/pytest_plugins:$PWD/src:$PWD"
+    export ACCEPTANCE_CORPUS={{selection}}
     # ci/plan_acceptance.py packs the corpus's nodes into jobs by their derived budgets.
     mapfile -t tests < <(python3 ci/plan_acceptance.py nodes {{selection}} {{shard}})
     "$sage_python" ci/pytest_batches.py --python "$sage_python" --out "$out" --batch-size 10 -- "${tests[@]}" 2>&1 | tee "$out/log"

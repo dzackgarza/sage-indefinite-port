@@ -11,14 +11,20 @@ tiers" table of references/complexity/triage.md), so the tier job timeouts
 come from the recorded prices. Every tier1 node has a price. An unpriced tier2
 node and every full node cost their derived budget.
 
-    python3 ci/plan_acceptance.py matrix tier1|tier2|full   # workflow matrix
-    python3 ci/plan_acceptance.py nodes tier1|tier2|full JOB  # the node ids of one job
+    python3 ci/plan_acceptance.py matrix tier1|tier2|full|probe   # workflow matrix
+    python3 ci/plan_acceptance.py nodes tier1|tier2|full|probe JOB  # the node ids of one job
 
 tier1 is ci/acceptance_tier1.txt (the smallest independent node per pinned
 branch), tier2 is ci/acceptance_tier2.txt (the published-result reproductions
-of #64), and full is every acceptance node (references/complexity/triage.md).
+of #64), full is every acceptance node (references/complexity/triage.md), and
+probe is ci/acceptance_probe.txt, the seeded pricing sample of every family
+(up to five nodes per test function, the ListReflect and IsotropicCases
+functions split by rank). A probe node costs PROBE_KILL_SECONDS of
+ci/test_budgets.py, its flat kill limit, and a probe job holds at most
+PROBE_JOB_BUDGET seconds.
 """
 
+import ast
 import heapq
 import json
 import math
@@ -29,16 +35,32 @@ CI = Path(__file__).parent
 JOB_BUDGET = 5 * 3600  # GitHub ends a job at 6 hours; the rest is setup.
 SETUP_MINUTES = 20  # checkout, Sage and Julia provisioning, provider clone
 JOB_LIMIT_MINUTES = 360
+PROBE_JOB_BUDGET = 30 * 60
+
+
+def probe_kill_seconds():
+    # ci/test_budgets.py imports cysignals, absent on the plan runner; read its constant.
+    tree = ast.parse((CI / "test_budgets.py").read_text())
+    return next(
+        node.value.value
+        for node in tree.body
+        if isinstance(node, ast.Assign) and [target.id for target in node.targets] == ["PROBE_KILL_SECONDS"]
+    )
 
 
 def corpus_nodes(corpus):
     budgets = json.loads((CI / "test_budgets.json").read_text())["budgets"]
+    if corpus == "probe":
+        nodes = (CI / "acceptance_probe.txt").read_text().splitlines()
+        missing = [node for node in nodes if node not in budgets]
+        assert not missing, f"nodes without a budget: {missing}"
+        return {node: probe_kill_seconds() for node in nodes}
     if corpus in ("tier1", "tier2"):
         nodes = (CI / f"acceptance_{corpus}.txt").read_text().splitlines()
     elif corpus == "full":
         nodes = sorted(node for node in budgets if node.startswith("tests/acceptance/"))
     else:
-        raise SystemExit(f"unknown corpus {corpus!r}; expected tier1, tier2 or full")
+        raise SystemExit(f"unknown corpus {corpus!r}; expected tier1, tier2, full or probe")
     missing = [node for node in nodes if node not in budgets]
     assert not missing, f"nodes without a budget: {missing}"
     if corpus == "full":
@@ -51,11 +73,12 @@ def corpus_nodes(corpus):
 
 def plan(corpus):
     budgets = corpus_nodes(corpus)
+    job_budget = PROBE_JOB_BUDGET if corpus == "probe" else JOB_BUDGET
     jobs = []  # (load, index, nodes)
     heap = []
     for node in sorted(budgets, key=lambda n: (-budgets[n], n)):
         cost = budgets[node]
-        if heap and heap[0][0] + cost <= JOB_BUDGET:
+        if heap and heap[0][0] + cost <= job_budget:
             load, index = heapq.heappop(heap)
             jobs[index][0] += cost
             jobs[index][1].append(node)
