@@ -1577,17 +1577,22 @@ class _Edgewalk:
     def isometry_key(self, isometry: LatticeIsometryMethods) -> tuple[_Key, ...]:
         return tuple(self.key(isometry(generator)) for generator in _coordinate_basis(self.lattice))
 
-    @staticmethod
-    def common_fixed_space(invariant: Parent, isometry: LatticeIsometryMethods) -> Parent | None:
-        r"""The sublattice fixed by the group generated so far, or None once that group is infinite.
+    def common_fixed_space(self, invariant: Matrix_rational_dense, isometry_matrix: Matrix_integer_dense) -> Matrix_rational_dense | None:
+        r"""The rows of the rational space fixed by the group generated so far, or None once that group is infinite.
 
         A finite cone-preserving group fixes a timelike vector by averaging.
         Conversely its integral stabilizer is discrete in a compact real
-        orthogonal group, hence finite. The common fixed lattice decides both
+        orthogonal group, hence finite. The common fixed space decides both
         directions, without separate order computations for the generators.
+        An isometry acts on rows by x -> x M, so its fixed space is the left
+        kernel of M - 1; the negative index of the form on the intersection
+        is PARI qfsign of its Gram matrix.
         """
-        fixed = invariant.intersection(isometry.invariant_lattice())
-        _positive, negative = fixed.inclusion().domain().signature_pair()
+        fixed_rows = (isometry_matrix - 1).change_ring(SageQQ).left_kernel_matrix()
+        fixed = invariant.row_space().intersection(fixed_rows.row_space()).basis_matrix()
+        if not fixed.nrows():
+            return None
+        _positive, negative = pari(fixed * self.gram * fixed.transpose()).qfsign()
         return None if int(negative) == 0 else fixed
 
     @cached_method
@@ -1723,7 +1728,7 @@ class _Edgewalk:
         # The rows of each admitted isometry are the coordinates of the
         # images of the basis (isometry_key), so x |-> x * M is its action.
         isometry_matrices: list[Matrix_integer_dense] = []
-        invariant = self.lattice.subobject_on(list(_coordinate_basis(self.lattice)))
+        invariant = identity_matrix(SageQQ, self.rank)
 
         finite = True
 
@@ -1740,7 +1745,7 @@ class _Edgewalk:
             seen.add(key)
             isometries.append(isometry)
             isometry_matrices.append(matrix(SageZZ, key))
-            fixed = self.common_fixed_space(invariant, isometry)
+            fixed = self.common_fixed_space(invariant, isometry_matrices[-1])
             if fixed is None:
                 finite = False
                 return not self.early_termination
