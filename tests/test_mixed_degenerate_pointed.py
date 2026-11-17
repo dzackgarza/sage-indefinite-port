@@ -561,6 +561,42 @@ def test_mixed_degenerate_full_radical_partial_quotient_flag_stabilizer():
                for generator in generators for x in (e, f, u, v, z) for y in (e, f, u, v, z))
 
 
+def test_mixed_degenerate_full_radical_partial_quotient_flag_transporter():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        FLAGS, isometry, _flag_marking_from_basis,
+    )
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    e, f, u, v, z = tuple(ambient.module_generators())
+    first = FLAGS(_flag_marking_from_basis(ambient, (z, e, u), (2, 3)))
+    second = FLAGS(_flag_marking_from_basis(ambient, (z, u, e), (2, 3)))
+    witness = isometry(FLAGS, first, second)
+    assert witness is not None
+    first_target = ambient.primitive_isotropic_subobject(z, u)
+    top_target = ambient.primitive_isotropic_subobject(z, u, e)
+    assert all(first_target.inclusion().is_in_image(witness(point)) for point in (z, e))
+    assert all(top_target.inclusion().is_in_image(witness(point)) for point in (z, e, u))
+
+
+def test_mixed_degenerate_radical_first_flag_transporter_between_presentations():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, isometry, _flag_marking_from_basis
+
+    source = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    target = Lattices(ZZ)([[0, -1, 0], [-1, 0, 0], [0, 0, 0]])
+    e, f, z = tuple(source.module_generators())
+    a, b, r = tuple(target.module_generators())
+    first = FLAGS(_flag_marking_from_basis(source, (z, e), (1, 2)))
+    second = FLAGS(_flag_marking_from_basis(target, (r, b), (1, 2)))
+    witness = isometry(FLAGS, first, second)
+    assert witness is not None
+    assert witness.domain() is source and witness.codomain() is target
+    assert target.primitive_isotropic_subobject(r).inclusion().is_in_image(witness(z))
+    plane = target.primitive_isotropic_subobject(r, b)
+    assert all(plane.inclusion().is_in_image(witness(point)) for point in (z, e))
+
+
 def test_mixed_degenerate_full_radical_three_stage_flag_stabilizer():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
@@ -579,6 +615,26 @@ def test_mixed_degenerate_full_radical_three_stage_flag_stabilizer():
         term = ambient.primitive_isotropic_subobject(*points)
         assert all(term.inclusion().is_in_image(generator(point))
                    for generator in generators for point in points)
+
+
+def test_mixed_degenerate_full_radical_three_stage_flag_transporter():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import isometry, _flag_marking_from_basis
+
+    hyperbolic = Lattices(ZZ)("U")
+    ambient = hyperbolic + hyperbolic + hyperbolic + Lattices(ZZ)([[0]])
+    e, f, u, v, a, b, z = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    first = category(_flag_marking_from_basis(ambient, (z, e, u, a), (2, 3, 4)))
+    second = category(_flag_marking_from_basis(ambient, (z, a, e, u), (2, 3, 4)))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    for source_points, target_points in (
+        ((z, e), (z, a)), ((z, e, u), (z, a, e)), ((z, e, u, a), (z, a, e, u))
+    ):
+        term = ambient.primitive_isotropic_subobject(*target_points)
+        assert all(term.inclusion().is_in_image(witness(point)) for point in source_points)
 
 
 def test_mixed_degenerate_maximal_moving_rank_three_contains_full_radical():

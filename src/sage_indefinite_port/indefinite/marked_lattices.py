@@ -940,6 +940,21 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 return None
             ambient = source_basis[0].parent()
             target_ambient = target_basis[0].parent()
+            if all(
+                not owner.is_nondegenerate()
+                and source_dimensions[0] >= int(owner.radical().rank())
+                and source_dimensions[-1] > int(owner.radical().rank())
+                and all(owner.primitive_isotropic_subobject(*basis[:source_dimensions[0]]).inclusion().is_in_image(
+                    owner.radical().inclusion()(point)) for point in owner.radical().module_generators())
+                for owner, basis in ((ambient, source_basis), (target_ambient, target_basis))
+            ):
+                return INDUCTION.plane_isometry(
+                    ambient.primitive_isotropic_subobject(*source_basis),
+                    target_ambient.primitive_isotropic_subobject(*target_basis),
+                    flag_dimensions=source_dimensions,
+                    source_flag_basis=source_basis,
+                    target_flag_basis=target_basis,
+                )
             if (int(ambient.rank()) == int(target_ambient.rank())
                     and all(ambient.b(x, y) == 0 for x in ambient.module_generators() for y in ambient.module_generators())
                     and all(target_ambient.b(x, y) == 0 for x in target_ambient.module_generators()

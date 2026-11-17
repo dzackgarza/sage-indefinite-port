@@ -700,7 +700,7 @@ class IsotropicInduction:
             target_images,
         )
 
-    def plane_isometry(self, source: Parent, target: Parent) -> LatticeIsometryMethods | None:
+    def plane_isometry(self, source: Parent, target: Parent, *, flag_dimensions=(), source_flag_basis=(), target_flag_basis=()) -> LatticeIsometryMethods | None:
         r"""An isometry carrying the plane J onto J', or None (f_equiv_plane): the correction group acts on J' through GL(J')."""
         source_basis = self.plane_vectors(source)
         target_basis = self.plane_vectors(target)
@@ -743,7 +743,43 @@ class IsotropicInduction:
                         for label, entry in zip(c_labels, row, strict=True) if entry
                     }) for row in rows if any(row))
                     projected_subspaces.append(complement.primitive_isotropic_subobject(*points))
-                quotient_witness = self.plane_isometry(*projected_subspaces)
+                if flag_dimensions:
+                    if (not source_flag_basis or not target_flag_basis
+                            or flag_dimensions[-1] != len(source_flag_basis)
+                            or flag_dimensions[-1] != len(target_flag_basis)):
+                        raise ValueError("full-radical flag transport requires both adapted flag bases")
+                    quotient_terms = []
+                    for vectors, top in zip(
+                        (tuple(phi(point) for point in source_flag_basis), target_flag_basis),
+                        projected_subspaces, strict=True,
+                    ):
+                        terms = []
+                        for rank in flag_dimensions[:-1]:
+                            rows = tuple(tuple(_integer((~reduction.isometry)(point).to_vector()(label))
+                                               for label in labels[:n]) for point in vectors[:rank])
+                            points = tuple(complement.linear_combination({
+                                label: complement.base_ring()(entry)
+                                for label, entry in zip(c_labels, row, strict=True) if entry
+                            }) for row in rows if any(row))
+                            if not points:
+                                continue
+                            term = complement.primitive_isotropic_subobject(*points)
+                            domain = top.inclusion().domain()
+                            terms.append(domain.primitive_isotropic_subobject(*(
+                                top.inclusion().lift(term.inclusion()(point))
+                                for point in term.module_generators()
+                            )))
+                        quotient_terms.append(tuple(terms))
+                    if quotient_terms[0] or quotient_terms[1]:
+                        source_quotient_basis, _ = self.flag_action_data(projected_subspaces[0], quotient_terms[0])
+                        target_quotient_basis, target_images = self.flag_action_data(projected_subspaces[1], quotient_terms[1])
+                        quotient_witness = self.recursion.isotropic_subspace_isometry(
+                            source_quotient_basis, target_quotient_basis, target_images
+                        )
+                    else:
+                        quotient_witness = self.plane_isometry(*projected_subspaces)
+                else:
+                    quotient_witness = self.plane_isometry(*projected_subspaces)
                 if quotient_witness is None:
                     return None
                 block = identity_matrix(SageZZ, size)
