@@ -162,3 +162,19 @@ def test_glued_rank_two_based_transporter_exchanges_positive_generators():
     moving = isometry(ARROWS, ARROWS(first_arrow), ARROWS(second_arrow))
     assert moving is not None
     assert all(second_arrow.is_in_image(moving(x)) for x in (e + f, u + v))
+
+
+def test_glue_extension_rejects_integral_nonunimodular_rational_isometry():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_extensions.categories.lattice_embeddings import _glue_compatible_integral_extensions
+
+    source_lattice = Lattices(ZZ)([[2, 0], [0, 2]])
+    target_lattice = Lattices(ZZ)([[1, 0], [0, 1]])
+    source = Lattices(ZZ)([[2]])
+    source_arrow = source.hom([source_lattice.module_generators()[0]], codomain=source_lattice)
+    target_arrow = source.hom([target_lattice.module_generators()[0] + target_lattice.module_generators()[1]], codomain=target_lattice)
+    source_action = source.O().identity()
+    source_complement = source_lattice.orthogonal_complement(source_lattice.subobject_on([source_arrow(source.module_generators()[0])])).inclusion().domain()
+    target_complement = target_lattice.orthogonal_complement(target_lattice.subobject_on([target_arrow(source.module_generators()[0])])).inclusion().domain()
+    complement_action = source_complement.Isom(target_complement).an_element()
+    assert _glue_compatible_integral_extensions(source_arrow, target_arrow, (source_action,), (complement_action,)) == ()
