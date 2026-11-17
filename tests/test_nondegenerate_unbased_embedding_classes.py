@@ -61,3 +61,54 @@ def test_unimodular_nonisotropic_plane_in_two_u_has_one_unbased_class():
     assert ambient.q(arrow(first)) == 0 and ambient.q(arrow(second)) == 0
     assert ambient.b(arrow(first), arrow(second)) == 1
     assert arrow.orthogonal_complement().inclusion().domain().is_unimodular()
+
+
+def test_nonisotropic_embedding_transporter_between_equivalent_ambient_presentations():
+    """The basis change e->a-b, f->b maps e+f to a.
+
+    The Gram matrices of the source and target presentations are U and
+    [[2,1],[1,0]]. A legitimate moving-arrow transporter is an integral
+    *Isom(L,L')*, not a source-endomorphism in O(L).
+    """
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    source = lattice([[2]])
+    first_ambient = lattice([[0, 1], [1, 0]])
+    second_ambient = lattice([[2, 1], [1, 0]])
+    e, f = tuple(first_ambient.module_generators())
+    a, b = tuple(second_ambient.module_generators())
+    first = ARROWS.object(source.hom([e + f], codomain=first_ambient))
+    second = ARROWS.object(source.hom([a], codomain=second_ambient))
+    witness = isometry(ARROWS, first, second)
+    assert witness is not None
+    assert witness.domain() is first_ambient
+    assert witness.codomain() is second_ambient
+    assert witness(e + f) in (a, -a)
+    assert all((~witness)(witness(x)) == x for x in (e, f))
+    assert all(first_ambient.b(x, y) == second_ambient.b(witness(x), witness(y)) for x in (e, f) for y in (e, f))
+
+
+def test_fixed_source_embedding_transporter_between_integral_presentations():
+    """The coslice map fixes the named root, not merely its unbased line.
+
+    For U and its [[2,1],[1,0]] presentation, e+f -> a exactly,
+    while e -> a-b, f -> b is a form-preserving integral basis change.
+    """
+    from sage_extensions.all import Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+
+    source = lattice([[2]])
+    first_ambient = lattice([[0, 1], [1, 0]])
+    second_ambient = lattice([[2, 1], [1, 0]])
+    e, f = tuple(first_ambient.module_generators())
+    a, b = tuple(second_ambient.module_generators())
+    first_arrow = source.hom([e + f], codomain=first_ambient)
+    second_arrow = source.hom([a], codomain=second_ambient)
+    category = CosliceCategory(Lattices(ZZ), source)
+    first, second = category.object(first_arrow), category.object(second_arrow)
+    homset = category.Core().Mor(first, second)
+    assert homset.is_empty() is False
+    apex = homset.an_element().forward().right()
+    assert apex.domain() is first_ambient and apex.codomain() is second_ambient
+    assert apex(e + f) == a
+    assert all(first_ambient.b(x, y) == second_ambient.b(apex(x), apex(y)) for x in (e, f) for y in (e, f))
