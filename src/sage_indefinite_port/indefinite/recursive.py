@@ -2007,6 +2007,10 @@ class EichlerRecursion:
         exact description.
         """
         lattice = vector.parent()
+        if vector == lattice.zero():
+            # The zero vector imposes no stabilizer condition, including
+            # in the zero lattice and in degenerate ambient forms.
+            return self.orthogonal_group_generators(lattice)
         # Stab(c*v) = Stab(v) for every nonzero integer c: the
         # underlying free module is torsion-free.  In particular, do not
         # pass an imprimitive isotropic vector to a primitive line action.
@@ -2108,6 +2112,10 @@ class EichlerRecursion:
         if source_content > 1:
             return self.pointed_isometry(source.primitive_part(), target.primitive_part())
         source_lattice, target_lattice = source.parent(), target.parent()
+        if source == source_lattice.zero():
+            # Both vectors have content zero. Their pointed isometry
+            # problem is precisely the unmarked lattice isometry problem.
+            return self.isometry(source_lattice, target_lattice)
         if source_lattice is target_lattice and source == target:
             return source_lattice.O().identity()
         if source_lattice is target_lattice:

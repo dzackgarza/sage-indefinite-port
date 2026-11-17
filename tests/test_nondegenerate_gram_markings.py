@@ -533,6 +533,30 @@ def test_rank_zero_orthogonal_group_has_empty_complete_generator_family():
     assert witness.domain().rank() == witness.codomain().rank() == 0
 
 
+def test_zero_vector_pointwise_stabilizer_is_entire_orthogonal_group():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    for ambient in (Lattices(ZZ)(0), Lattices(ZZ)([[2]]), Lattices(ZZ)("U")):
+        assert RECURSION.pointed_automorphism_generators(ambient.zero()) == (
+            RECURSION.orthogonal_group_generators(ambient)
+        )
+
+
+def test_zero_vector_pointed_transporter_is_unmarked_lattice_transporter():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    source = Lattices(ZZ)("U")
+    target = Lattices(ZZ)([[0, -1], [-1, 0]])
+    witness = RECURSION.pointed_isometry(source.zero(), target.zero())
+    assert witness is not None
+    assert witness.domain() is source and witness.codomain() is target
+    assert witness(source.zero()) == target.zero()
+    assert all(target.b(witness(x), witness(y)) == source.b(x, y)
+               for x in source.module_generators() for y in source.module_generators())
+
+
 def test_nondegenerate_fixed_smith_classifier_validates_before_empty_orbit_dispatch():
     import pytest
     from sage_extensions.all import Lattices, ZZ
