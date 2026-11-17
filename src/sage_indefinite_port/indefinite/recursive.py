@@ -1475,6 +1475,14 @@ class EichlerRecursion:
         if int(vector.content()) > 1:
             # Stab(Z(c*v)) = Stab(Zv) for every nonzero integer c.
             return self.line_stabilizer_generators(vector.primitive_part())
+        if self.vector_lies_in_radical(vector):
+            # The radical is characteristic. Its exact pointed stabilizer
+            # is already the split C+R block group; central -id_L adds
+            # the missing sign and gives the entire moving-line group.
+            minus = _isometry_from_row_matrix(
+                lattice, lattice, -identity_matrix(SageZZ, int(lattice.rank()))
+            )
+            return (*self.pointed_automorphism_generators(vector), minus)
         if not lattice.is_nondegenerate():
             reduction = indefinite_reduced_presentation(lattice)
             reduced = reduction.reduced

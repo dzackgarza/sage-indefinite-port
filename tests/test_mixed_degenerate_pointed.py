@@ -624,6 +624,37 @@ def test_public_based_mixed_degenerate_null_vector_stabilizer_is_pointwise():
     assert all(generator(e + z) == e + z for generator in generators)
 
 
+def test_mixed_degenerate_radical_null_line_stabilizer_adds_exact_sign():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION, INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    fixed = RECURSION.pointed_automorphism_generators(z)
+    line = RECURSION.line_stabilizer_generators(z)
+    assert len(line) == len(fixed) + 1
+    assert all(generator(z) == z for generator in fixed)
+    assert line[-1](z) == -z
+    assert all(generator(z) in (z, -z) for generator in line)
+    assert RECURSION.line_stabilizer_generators(3 * z) == line
+    assert INDUCTION.line_automorphism_generators(ambient, z) == line
+
+
+def test_zero_form_rank_two_moving_line_stabilizer_preserves_primitive_line():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f = tuple(ambient.module_generators())
+    generators = RECURSION.line_stabilizer_generators(e)
+    assert generators
+    assert all(generator(e) in (e, -e) for generator in generators)
+    assert all(generator.domain() is ambient and generator.codomain() is ambient
+               for generator in generators)
+    assert all((~generator)(generator(point)) == point
+               for generator in generators for point in (e, f))
+
+
 @pytest.mark.parametrize("smith", ((1, 1, 2), (1, 2, 2)))
 def test_mixed_degenerate_maximal_rank_three_index_two_respects_radical_plane(smith):
     from sage_extensions.all import Lattices, ZZ
