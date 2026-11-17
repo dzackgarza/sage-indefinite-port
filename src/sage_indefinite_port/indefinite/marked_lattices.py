@@ -1509,6 +1509,8 @@ def pointed_content_classes(category: Category, lattice: Parent, square: int, co
         raise ValueError("the pointed source form must have the requested square")
     if content < 1:
         raise ValueError("nonzero pointed-vector content must be positive")
+    if int(lattice.rank()) == 0:
+        return finite_ordered_set(())
     if square == 0 and not lattice.is_nondegenerate() and any(
         lattice.b(x, y) != 0 for x in lattice.module_generators()
         for y in lattice.module_generators()

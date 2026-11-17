@@ -171,6 +171,17 @@ def test_rank_zero_pointed_null_stream_has_only_optional_zero_orbit():
     assert marked[0].arrow()(source.module_generators()[0]) == ambient.zero()
 
 
+def test_rank_zero_fixed_pointed_content_has_no_nonzero_vectors():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import pointed_content_classes, iter_pointed_content_classes
+
+    ambient = Lattices(ZZ)(0)
+    source = Lattices(ZZ)([[0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    assert tuple(pointed_content_classes(category, ambient, 0, 1)) == ()
+    assert tuple(iter_pointed_content_classes(category, ambient, 0, 2)) == ()
+
+
 def test_mixed_degenerate_anisotropic_quotient_has_one_radical_null_orbit_per_content():
     from sage_extensions.all import Lattices, ZZ, cardinal
     from sage_indefinite_port.indefinite.marked_lattices import (
