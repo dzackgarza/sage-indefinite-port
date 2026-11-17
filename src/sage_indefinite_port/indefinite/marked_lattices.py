@@ -788,7 +788,7 @@ def nonisotropic_line_classes(lattice: Parent, square: int, *, acting_group=None
 
 
 
-def homothetic_isotropic_sublattice_classes(lattice: Parent, rank: int, multiplier: int) -> Parent:
+def homothetic_isotropic_sublattice_classes(lattice: Parent, rank: int, multiplier: int, *, acting_group=None) -> Parent:
     r"""Moving isotropic sublattice classes ``J=multiplier*S`` for primitive rank-``rank`` ``S``.
 
     For a free rank-``rank`` saturation, ``S/J`` has elementary divisors
@@ -796,6 +796,7 @@ def homothetic_isotropic_sublattice_classes(lattice: Parent, rank: int, multipli
     under every integral isometry, so it induces a bijection of orbit sets.
     Other elementary-divisor types require the actual finite-module
     stabilizer action and are not silently conflated with this family.
+    An optional subgroup splits moving orbits without fixing source bases.
     """
     if rank < 1 or multiplier < 1:
         raise ValueError("rank and saturation multiplier must be positive")
@@ -809,6 +810,8 @@ def homothetic_isotropic_sublattice_classes(lattice: Parent, rank: int, multipli
             for point in arrow.domain().module_generators()
         )
         classes.append(ARROWS.object(source.hom(list(images), codomain=lattice)))
+    if acting_group is not None:
+        classes = [split for marked in classes for split in lattice.O().split_orbit(marked, acting_group)]
     return finite_ordered_set(tuple(classes))
 
 

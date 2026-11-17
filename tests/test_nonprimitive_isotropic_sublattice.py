@@ -339,3 +339,15 @@ def test_isotropic_lines_of_content_two_split_under_gamma_three():
     assert classes.cardinality() == cardinal(2)
     assert all(int(marking.arrow()(marking.arrow().domain().module_generators()[0]).content()) == 2
                for marking in classes)
+
+
+def test_homothetic_rank_one_sublattices_split_under_gamma_three():
+    from sage_extensions.all import cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import homothetic_isotropic_sublattice_classes
+
+    plane = lattice([[0, 1], [1, 0]])
+    gamma = plane.O().congruence_preimage(3)
+    classes = homothetic_isotropic_sublattice_classes(plane, 1, 2, acting_group=gamma)
+    assert classes.cardinality() == cardinal(2)
+    assert all(int(marking.arrow()(marking.arrow().domain().module_generators()[0]).content()) == 2
+               for marking in classes)
