@@ -91,6 +91,24 @@ def test_fixed_isotropic_content_strata_do_not_conflate_contents():
         assert all(int(marking.arrow()(source.module_generators()[0]).content()) == content for marking in classes)
 
 
+def test_zero_form_pointed_content_strata_use_integral_gl_orbits():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import pointed_content_classes, isometry
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    source = Lattices(ZZ)([[0]])
+    category = CosliceCategory(Lattices(ZZ), source)
+    for content in (1, 2, 5):
+        classes = pointed_content_classes(category, ambient, 0, content)
+        assert classes.cardinality() == cardinal(1)
+        representative = next(iter(classes))
+        assert int(representative.arrow()(source.module_generators()[0]).content()) == content
+    first = next(iter(pointed_content_classes(category, ambient, 0, 2)))
+    second = next(iter(pointed_content_classes(category, ambient, 0, 5)))
+    assert isometry(category, first, second) is None
+
+
 def test_all_nonzero_square_eight_orbits_have_exact_content_partition():
     from sage_extensions.all import Lattices, ZZ, cardinal
     from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory

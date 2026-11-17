@@ -1280,7 +1280,14 @@ def pointed_content_classes(category: Category, lattice: Parent, square: int, co
     primitive_square = square // (content * content)
     primitive_source = lattice.lattice_category()([[primitive_square]])
     primitive_category = CosliceCategory(lattice.lattice_category(), primitive_source)
-    primitive_classes = _pointed_classes(primitive_category, lattice, primitive_square)
+    if square == 0 and all(lattice.b(x, y) == 0 for x in lattice.module_generators()
+                           for y in lattice.module_generators()):
+        # GL_n(ZZ) is transitive on primitive nonzero vectors of a
+        # zero-form lattice. The indefinite Witt-index dispatcher is not
+        # defined for this degenerate form.
+        primitive_classes = tuple(primitive_marking_classes(primitive_category, primitive_source, lattice))
+    else:
+        primitive_classes = _pointed_classes(primitive_category, lattice, primitive_square)
     if acting_group is not None and acting_group is not lattice.O():
         primitive_classes = tuple(
             split for marking in primitive_classes

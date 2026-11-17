@@ -235,6 +235,12 @@ Retain every finite-order case already present in the frozen suite.
 
 ### Degenerate zero-form branch
 
+For fixed positive content \(c\), pointed zero-norm markings in a pure
+zero-form rank-\(n>0\) lattice have one full-\(GL_n(\mathbb Z)\) orbit,
+represented by \(c e_1\). The fixed-content public coslice operation
+constructs this orbit through primitive based-frame classification before
+scaling, not through the nondegenerate Witt-index vector classifier.
+
 For the zero bilinear form on a free rank-\(n\) integral lattice \(L\),
 \(O(L)=GL_n(\mathbb Z)\) as *abstract groups of integral linear maps*.
 The equality does **not** identify the research runtime's module-automorphism
