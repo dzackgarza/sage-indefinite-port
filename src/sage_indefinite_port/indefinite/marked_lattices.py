@@ -408,6 +408,31 @@ def nonisotropic_line_classes(lattice: Parent, square: int) -> Parent:
     return finite_ordered_set(tuple(kept))
 
 
+
+def homothetic_isotropic_sublattice_classes(lattice: Parent, rank: int, multiplier: int) -> Parent:
+    r"""Moving isotropic sublattice classes ``J=multiplier*S`` for primitive rank-``rank`` ``S``.
+
+    For a free rank-``rank`` saturation, ``S/J`` has elementary divisors
+    ``(multiplier,)*rank``.  The map ``S -> multiplier*S`` is equivariant
+    under every integral isometry, so it induces a bijection of orbit sets.
+    Other elementary-divisor types require the actual finite-module
+    stabilizer action and are not silently conflated with this family.
+    """
+    if rank < 1 or multiplier < 1:
+        raise ValueError("rank and saturation multiplier must be positive")
+    source = lattice.lattice_category()([[0] * rank for _ in range(rank)])
+    primitive = primitive_marking_classes(ARROWS, source, lattice)
+    classes = []
+    for marking in primitive:
+        arrow = marking.arrow()
+        images = tuple(
+            lattice.scalar_multiple(lattice.base_ring()(multiplier), arrow(point))
+            for point in arrow.domain().module_generators()
+        )
+        classes.append(ARROWS.object(source.hom(list(images), codomain=lattice)))
+    return finite_ordered_set(tuple(classes))
+
+
 def primitive_marking_classes(category: Category, source: Parent | Morphism, lattice: Parent) -> Parent:
     r"""One marked lattice for each isomorphism class of primitive markings of ``lattice`` of shape ``source``.
 
@@ -477,4 +502,5 @@ __all__ = [
     "iter_pointed_isotropic_classes",
     "nonprimitive_isotropic_line_classes",
     "nonisotropic_line_classes",
+    "homothetic_isotropic_sublattice_classes",
 ]

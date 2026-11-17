@@ -107,3 +107,19 @@ def test_nonisotropic_moving_line_classes_retain_all_contents():
         assert {int(marking.arrow()(marking.arrow().domain().module_generators()[0]).content()) for marking in classes} == {1, 2}
         first, second = tuple(classes)
         assert isometry(ARROWS, first, second) is None
+
+
+def test_rank_two_homothetic_saturation_strata_have_prescribed_index():
+    from sage_extensions.all import cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import homothetic_isotropic_sublattice_classes
+
+    plane = lattice([[0, 1], [1, 0]])
+    ambient = plane + plane
+    classes = homothetic_isotropic_sublattice_classes(ambient, 2, 2)
+    assert classes.cardinality() == cardinal(1)
+    marking = tuple(classes)[0]
+    arrow = marking.arrow()
+    saturation = arrow.saturation()
+    assert saturation.inclusion().is_primitive()
+    lifted = tuple(saturation.inclusion().lift(arrow(point)) for point in arrow.domain().module_generators())
+    assert saturation.inclusion().domain().subobject_on(lifted).inclusion().cokernel().cardinality() == cardinal(4)
