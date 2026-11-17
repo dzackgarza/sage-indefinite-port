@@ -897,7 +897,7 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                 generators = RECURSION.pointed_automorphism_generators(_marked_vector(marked))
             else:
                 arrow = marked.arrow()
-                if arrow.is_primitive() and all(
+                if all(
                     arrow.codomain().b(x, y) == 0
                     for x in arrow.codomain().module_generators()
                     for y in arrow.codomain().module_generators()
@@ -908,7 +908,11 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                     ambient = arrow.codomain()
                     n, k = int(ambient.rank()), int(arrow.domain().rank())
                     labels = tuple(ambient.module_generating_set())
-                    fixed = tuple(arrow(point) for point in arrow.domain().module_generators())
+                    # Pointwise fixation of an integral frame is equivalent
+                    # to pointwise fixation of its primitive saturation:
+                    # if m*x is fixed, torsion-freeness forces x fixed.
+                    frame_arrow = arrow if arrow.is_primitive() else arrow.saturation().inclusion()
+                    fixed = tuple(frame_arrow(point) for point in frame_arrow.domain().module_generators())
                     frame = tuple(tuple(int(point.to_vector()(label)) for label in labels) for point in fixed)
                     completion = next(rows for rows in _fair_unimodular_matrices(n)
                                       if tuple(tuple(int(entry) for entry in row) for row in rows.rows()[:k]) == frame)

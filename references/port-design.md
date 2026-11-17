@@ -251,7 +251,9 @@ pointwise stabilizer of a completed rank-\(k\) frame is, in its adapted
 coordinates, \(\mathbb Z^{(n-k)k}\rtimes GL_{n-k}(\mathbb Z)\): the first
 \(k\) rows are fixed, while the remaining rows have arbitrary lower-left
 shears and a unimodular lower-right block. Conjugate its generators through
-the *integral* completion, not a rational complement.
+the *integral* completion, not a rational complement. A nonprimitive based
+frame has the same pointwise stabilizer as its primitive saturation: if an
+integral linear map fixes \(m x\), torsion-freeness forces it to fix \(x\).
 
 For an unbased rank-\(k\) submodule, Smith normal form gives a complete
 \(GL_n(\mathbb Z)\)-orbit invariant: its positive elementary divisors

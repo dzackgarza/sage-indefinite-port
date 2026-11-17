@@ -376,6 +376,23 @@ def test_zero_form_changed_basis_pointwise_stabilizer_conjugates_correctly():
     assert any(g(u) != u for g in generators)
 
 
+def test_zero_form_based_nonprimitive_frame_stabilizer_equals_saturation_pointwise_stabilizer():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    ambient = Lattices(ZZ)([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    e, f, u = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    primitive = category.object(source.hom([e, f], codomain=ambient))
+    nonprimitive = category.object(source.hom([e, 2 * f], codomain=ambient))
+    first = tuple(automorphism_group_generators(category, primitive))
+    second = tuple(automorphism_group_generators(category, nonprimitive))
+    assert set(first) == set(second)
+    assert all(g(e) == e and g(2 * f) == 2 * f for g in second)
+    assert any(g(u) != u for g in second)
+
+
 def test_unrestricted_rank_two_null_sublattices_split_under_special_orthogonal_group():
     from itertools import islice
     from sage_extensions.all import Lattices, ZZ
