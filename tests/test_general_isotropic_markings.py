@@ -963,3 +963,17 @@ def test_e10_root_reflection_pointed_witness_avoids_pari_qfauto(monkeypatch):
         witness = RECURSION.pointed_isometry(source, target)
         assert witness is not None and witness(source) == target
     assert nonfixed > 0
+
+
+def test_flag_action_data_completes_noncoordinate_primitive_line_integrally():
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    z, w = tuple(ambient.module_generators())[1:]
+    plane = ambient.primitive_isotropic_subobject(z, w)
+    inclusion = plane.inclusion()
+    line = inclusion.domain().primitive_isotropic_subobject(inclusion.lift(2 * z + 3 * w))
+    basis, images = IsotropicInduction.flag_action_data(plane, (line,))
+    assert len(basis) == 2 and images
+    assert basis[0] in (2 * z + 3 * w, -2 * z - 3 * w)
+    assert all(image[0] in (basis[0], -basis[0]) for image in images)

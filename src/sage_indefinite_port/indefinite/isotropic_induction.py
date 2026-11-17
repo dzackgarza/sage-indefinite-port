@@ -709,17 +709,64 @@ class IsotropicInduction:
 
         CombinedAlgorithms.h:682-717 GetAutomorphismOfFlag: block GL
         generators and shears from later blocks into earlier blocks.
-        The provider constructs the adapted basis and the flag subgroup.
-        Terms are subobjects of the domain of the sublattice inclusion.
+        Terms are primitive subobjects of the domain of the sublattice
+        inclusion. Complete their nested integral bases by Smith-certified
+        unimodular complements, then use the provider's standard-coordinate
+        flag subgroup. This avoids treating a nonunimodular coordinate
+        matrix for a noncoordinate primitive flag as an invertible map.
         """
+        from sage.all import ZZ as SageZZ, matrix
+        from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
+
         inclusion = sublattice.inclusion()
         domain = inclusion.domain()
-        group = domain.general_linear_group().flag_stabilizer(terms)
-        change = group.basis_change()
-        basis = tuple(change(domain.module_generator(label)) for label in domain.module_generating_set())
+        labels = tuple(domain.module_generating_set())
+        adapted = []
+        dimensions = []
+        for term in terms:
+            term_inclusion = term.inclusion()
+            term_domain = term_inclusion.domain()
+            term_labels = tuple(term_domain.module_generating_set())
+            rank = len(term_labels)
+            if rank <= len(adapted):
+                raise ValueError("a primitive isotropic flag requires strictly increasing ranks")
+            previous = matrix(SageZZ, [
+                [int(term_inclusion.lift(point).to_vector()(label)) for label in term_labels]
+                for point in adapted
+            ]) if adapted else matrix(SageZZ, 0, rank)
+            completion = _source_subspace_completion_int(previous, rank)
+            for row in completion.rows():
+                point = term_domain.linear_combination({
+                    label: term_domain.base_ring()(int(row[i]))
+                    for i, label in enumerate(term_labels)
+                })
+                adapted.append(term_inclusion(point))
+            dimensions.append(rank)
+        previous = matrix(SageZZ, [
+            [int(point.to_vector()(label)) for label in labels] for point in adapted
+        ]) if adapted else matrix(SageZZ, 0, len(labels))
+        completion = _source_subspace_completion_int(previous, len(labels))
+        for row in completion.rows():
+            adapted.append(domain.linear_combination({
+                label: domain.base_ring()(int(row[i])) for i, label in enumerate(labels)
+            }))
+        standard = tuple(domain.module_generator(label) for label in labels)
+        standard_terms = tuple(domain.primitive_isotropic_subobject(*standard[:rank])
+                               for rank in dimensions)
+        group = domain.general_linear_group().flag_stabilizer(standard_terms)
+        basis = tuple(inclusion(point) for point in adapted)
+
+        def adapted_image(generator, standard_point):
+            coordinates = generator(standard_point).to_vector()
+            image = domain.zero()
+            for label, point in zip(labels, adapted, strict=True):
+                image += domain.scalar_multiple(domain.base_ring()(int(coordinates(label))), point)
+            return inclusion(image)
+
         return (
-            tuple(inclusion(point) for point in basis),
-            tuple(tuple(inclusion(generator(point)) for point in basis) for generator in group.group_generators()),
+            basis,
+            tuple(tuple(adapted_image(generator, point) for point in standard)
+                  for generator in group.group_generators()),
         )
 
     @staticmethod
