@@ -289,6 +289,22 @@ def test_large_reordered_identical_cell_has_immediate_integral_transporter() -> 
     assert all(witness(x) == x for x in ambient.module_generators())
 
 
+def test_equal_coordinate_cells_on_distinct_lattice_parents_transport_exactly() -> None:
+    source_lattice = lattice([[0, 1], [1, 0]])
+    target_lattice = lattice([[0, 1], [1, 0]])
+    source = LorentzianPerfectCell(source_lattice, ((1, 0), (0, 1)), ZERO_SQUARES)
+    target = LorentzianPerfectCell(target_lattice, ((0, 1), (1, 0)), ZERO_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+    backend._integral_configuration_invariants = lambda cell: (_ for _ in ()).throw(
+        AssertionError("coordinate identity must bypass configuration search")
+    )
+    witness = backend.cell_transporter(source, target)
+    assert witness is not None
+    assert all(witness(x) == y for x, y in zip(
+        source_lattice.module_generators(), target_lattice.module_generators(), strict=True
+    ))
+
+
 def test_all_integral_transporters_extend_exact_anchor_signatures() -> None:
     gram = matrix(ZZ, [[0, 1], [1, 0]])
     cell = LorentzianPerfectCell(lattice(gram.rows()), ((1, 0), (0, 1)), ZERO_SQUARES)

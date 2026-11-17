@@ -2021,8 +2021,19 @@ class LorentzianPerfectLocalBackend:
             # as distinct cell objects. Identity then transports the entire
             # multiset, regardless of its size; do not enter the expensive
             # exact basis-image search merely to rediscover that witness.
-            if source.lattice is target.lattice and Counter(source.rows) == Counter(target.rows):
-                return source.lattice.Aut().identity()
+            if Counter(source.rows) == Counter(target.rows) and source_gram == target_gram:
+                if source.lattice is target.lattice:
+                    return source.lattice.Aut().identity()
+                # The coordinate identity is an exact integral isometry
+                # between distinct lattice parents with the same Gram form.
+                # It transports the full configuration, not just a selected
+                # spanning frame; no class or sign identification is assumed.
+                labels = tuple(source.lattice.module_generating_set())
+                target_labels = tuple(target.lattice.module_generating_set())
+                return source.lattice.Isom(target.lattice)(
+                    {label: target.lattice.module_generator(target_label)
+                     for label, target_label in zip(labels, target_labels, strict=True)}
+                )
             if (
                 n <= _PAIRING_GRAPH_CANONICAL_LABEL_LIMIT
                 and not self.cell_stabilizer.is_in_cache(source)
