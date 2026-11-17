@@ -140,6 +140,26 @@ def test_unrestricted_rank_two_null_sublattices_enumerate_distinct_smith_types()
     assert tuple(iter_all_isotropic_sublattice_classes(ambient, 3)) == ()
 
 
+def test_unrestricted_rank_three_null_sublattices_preserve_smith_index():
+    from itertools import islice
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_all_isotropic_sublattice_classes
+
+    plane = Lattices(ZZ)("U")
+    ambient = plane + plane + plane
+    classes = tuple(islice(iter_all_isotropic_sublattice_classes(ambient, 3), 2))
+    assert len(classes) == 2
+    indices = []
+    for marked in classes:
+        arrow = marked.arrow()
+        saturation = arrow.saturation()
+        embedded = saturation.inclusion().domain().subobject_on(tuple(
+            saturation.inclusion().lift(arrow(x)) for x in arrow.domain().module_generators()
+        )).inclusion()
+        indices.append(int(embedded.cokernel().cardinality()))
+    assert indices == [1, 2]
+
+
 def test_canonical_moving_null_line_is_sign_invariant_and_retains_content():
     import pytest
     from sage_indefinite_port.indefinite.marked_lattices import canonical_moving_isotropic_line
