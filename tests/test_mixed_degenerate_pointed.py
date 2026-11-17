@@ -309,7 +309,7 @@ def test_primitive_radical_markings_are_covariant_under_reordered_coordinate_lab
     from sage_extensions.all import Lattices, ZZ, cardinal
     from sage_indefinite_port.indefinite.marked_lattices import (
         ARROWS, primitive_marking_classes, iter_pointed_isotropic_classes,
-        automorphism_group_generators,
+        automorphism_group_generators, FLAGS,
     )
 
     ambient = Lattices(ZZ)([[0, 0, 0], [0, 2, 0], [0, 0, 0]],
@@ -332,6 +332,12 @@ def test_primitive_radical_markings_are_covariant_under_reordered_coordinate_lab
                  for marked in radical_classes) == (1, 2, 3)
     assert all(marked.arrow()(pointed_source.module_generators()[0]) in ambient.radical()
                for marked in radical_classes)
+    plane = Lattices(ZZ)([[0, 0], [0, 0]])
+    line = plane.primitive_isotropic_subobject(next(iter(plane.module_generators())))
+    flag = next(iter(primitive_marking_classes(FLAGS, line.inclusion(), ambient)))
+    flag_arrows = tuple(flag.arrows())
+    first = flag_arrows[-1](flag_arrows[0](next(iter(flag_arrows[0].domain().module_generators()))))
+    assert all(g(first) in (first, -first) for g in automorphism_group_generators(FLAGS, flag))
 
 
 def test_full_radical_plane_moving_stabilizer_is_entire_orthogonal_group():
@@ -375,6 +381,59 @@ def test_full_radical_plane_based_stabilizer_fixes_each_radical_generator():
                   for g in generators]
     assert matrix(SageZZ, shear_rows).rank() == 2
     assert any(int(g(e).to_vector()(labels[0])) == -1 for g in generators)
+
+
+def test_full_radical_plane_flag_stabilizer_preserves_line_and_plane():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        FLAGS, primitive_marking_classes, automorphism_group_generators,
+    )
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    plane = Lattices(ZZ)([[0, 0], [0, 0]])
+    line = plane.primitive_isotropic_subobject(next(iter(plane.module_generators())))
+    marked = next(iter(primitive_marking_classes(FLAGS, line.inclusion(), ambient)))
+    generators = tuple(automorphism_group_generators(FLAGS, marked))
+    assert generators
+    arrows = tuple(marked.arrows())
+    first = arrows[-1](arrows[0](next(iter(arrows[0].domain().module_generators()))))
+    assert all(g(first) in (first, -first) for g in generators)
+    assert any(g(first) == -first for g in generators)
+
+
+def test_proper_radical_line_moving_stabilizer_preserves_its_saturation():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        ARROWS, automorphism_group_generators,
+    )
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    z, w = tuple(ambient.module_generators())[1:]
+    for radical_vector in (z, z + w, 2 * z + 3 * w):
+        line = ambient.primitive_isotropic_subobject(radical_vector)
+        marked = ARROWS.object(line.inclusion())
+        generators = tuple(automorphism_group_generators(ARROWS, marked))
+        assert generators
+        assert all(g(radical_vector) in (radical_vector, -radical_vector) for g in generators)
+        assert any(g(radical_vector) == -radical_vector for g in generators)
+
+
+def test_noncoordinate_radical_flag_stabilizer_preserves_primitive_line():
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        FLAGS, automorphism_group_generators,
+    )
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    z, w = tuple(ambient.module_generators())[1:]
+    for vector, companion in ((z + w, z), (2 * z + 3 * w, z + w)):
+        plane = ambient.primitive_isotropic_subobject(vector, companion)
+        inclusion = plane.inclusion()
+        line = inclusion.domain().primitive_isotropic_subobject(inclusion.lift(vector))
+        marked = FLAGS((line.inclusion(), inclusion))
+        generators = tuple(automorphism_group_generators(FLAGS, marked))
+        assert generators
+        assert all(g(vector) in (vector, -vector) for g in generators)
+        assert any(g(vector) == -vector for g in generators)
 
 
 def test_mixed_radical_rank_one_stabilizers_respect_residue_and_shear():

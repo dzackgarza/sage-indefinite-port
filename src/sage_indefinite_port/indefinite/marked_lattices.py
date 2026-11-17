@@ -1024,20 +1024,15 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                         ambient, ambient.general_linear_group().flag_stabilizer((subobject,)).group_generators()
                     )
                     return finite_ordered_set(tuple(generators))
-                if not arrow.codomain().is_nondegenerate() and arrow.is_primitive() and (
-                    int(arrow.domain().rank()) == int(arrow.codomain().radical().rank())
-                    and all(
-                        arrow.codomain().b(arrow(point), vector) == 0
-                        for point in arrow.domain().module_generators()
-                        for vector in arrow.codomain().module_generators()
-                    )
+                if not arrow.codomain().is_nondegenerate() and arrow.is_primitive() and all(
+                    RECURSION.vector_lies_in_radical(arrow(point))
+                    for point in arrow.domain().module_generators()
                 ):
-                    # A primitive sublattice of the same rank as rad(L),
-                    # contained in rad(L), is rad(L) itself. Every integral
-                    # isometry preserves the radical setwise, so its moving
-                    # stabilizer is the entire O(L), not a nondegenerate
-                    # parabolic stabilizer obtained from L -> I*.
-                    return finite_ordered_set(tuple(RECURSION.orthogonal_group_generators(arrow.codomain())))
+                    basis = tuple(arrow(point) for point in arrow.domain().module_generators())
+                    generators = _degenerate_radical_flag_generators(
+                        arrow.codomain(), (int(arrow.domain().rank()),), basis
+                    )
+                    return finite_ordered_set(tuple(generators))
                 if int(arrow.domain().rank()) > 1 and arrow.domain().is_nondegenerate():
                     generators = (_nondegenerate_stabilizer_generators(arrow, based=False)
                                   if arrow.is_primitive() else _finite_index_sublattice_stabilizer_generators(arrow))
@@ -1075,6 +1070,28 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                             case _:
                                 generators = INDUCTION.plane_automorphism_generators(sublattice)
         case _FiniteSequenceFunctorCategory() if category.codomain_category() is LATTICES:
+            arrows = _flag_arrows(marked)
+            if len(arrows) == 2 and tuple(int(arrow.domain().rank()) for arrow in arrows) == (1, 2):
+                first_arrow, last_arrow = arrows
+                ambient = last_arrow.codomain()
+                if not ambient.is_nondegenerate() and all(
+                    RECURSION.vector_lies_in_radical(last_arrow(point))
+                    for point in last_arrow.domain().module_generators()
+                ):
+                    from sage.all import ZZ as SageZZ, matrix
+
+                    plane = last_arrow.domain()
+                    labels = tuple(plane.module_generating_set())
+                    line = first_arrow(next(iter(first_arrow.domain().module_generators())))
+                    row = tuple(int(line.to_vector()(label)) for label in labels)
+                    _, _, change = matrix(SageZZ, [row]).smith_form()
+                    adapted = change.inverse()
+                    basis = tuple(last_arrow(plane.linear_combination({
+                        label: plane.base_ring()(int(adapted[i, j]))
+                        for j, label in enumerate(labels)
+                    })) for i in range(2))
+                    generators = _degenerate_radical_flag_generators(ambient, (1, 2), basis)
+                    return finite_ordered_set(tuple(generators))
             dimensions, basis, images = _flag_action(marked)
             ambient = basis[0].parent()
             if all(ambient.b(x, y) == 0 for x in ambient.module_generators() for y in ambient.module_generators()):
@@ -1082,6 +1099,10 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                 generators = _zero_form_orthogonal_generators(
                     ambient, ambient.general_linear_group().flag_stabilizer(terms).group_generators()
                 )
+            elif not ambient.is_nondegenerate() and all(
+                RECURSION.vector_lies_in_radical(point) for point in basis
+            ):
+                generators = _degenerate_radical_flag_generators(ambient, dimensions, basis)
             else:
                 generators = INDUCTION._stabilizer_generators(basis, images)
         case _:
@@ -1196,6 +1217,72 @@ def _degenerate_quotient_and_radical(lattice: Parent):
         [int(gram[i, j]) for j in range(n)] for i in range(n)
     ])
     return reduction, n, int(gram.nrows()) - n, quotient
+
+
+def _degenerate_radical_flag_generators(ambient: Parent, dimensions: tuple[int, ...], basis: tuple):
+    r"""Exact stabilizer of a primitive flag inside the saturated radical.
+
+    In the reduced split C + R, O(L) is (O(C) × GL(R)) ⋉ Hom(C,R).
+    The flag imposes precisely its GL(R)-stabilizer, leaving O(C) and
+    every shear unrestricted.  The pinned reduction transports the result.
+    """
+    from sage.all import ZZ as SageZZ, identity_matrix, matrix
+    from sage_indefinite_port.indefinite.recursive import _conjugated, _isometry_from_row_matrix
+
+    reduction, n, k, _quotient = _degenerate_quotient_and_radical(ambient)
+    reduced = reduction.reduced
+    labels = tuple(reduced.module_generating_set())
+    radical = ambient.lattice_category()([[0] * k for _ in range(k)])
+    radical_labels = tuple(radical.module_generating_set())
+    inverse = reduction.isometry.inverse()
+    radical_basis = tuple(radical.linear_combination({
+        label: radical.base_ring()(int(inverse(point).to_vector()(labels[n + i])))
+        for i, label in enumerate(radical_labels)
+    }) for point in basis)
+    terms = tuple(radical.primitive_isotropic_subobject(*radical_basis[:rank])
+                  for rank in dimensions)
+    radical_identity = identity_matrix(SageZZ, k)
+    first = reduced.module_generator(labels[n])
+    blocks = [block for block in RECURSION._radical_blocks(reduced, first)
+              if block.matrix_from_rows_and_columns(range(n, n + k), range(n, n + k))
+              == radical_identity]
+    if dimensions == (1,):
+        row = tuple(int(radical_basis[0].to_vector()(label)) for label in radical_labels)
+        _, _, change = matrix(SageZZ, [row]).smith_form()
+        reversal = identity_matrix(SageZZ, k)
+        reversal[0, 0] = -1
+        radical_actions = (*RECURSION._radical_stabilizer_of_row(row),
+                           change * reversal * change.inverse())
+    else:
+        adapted = matrix(SageZZ, [
+            [int(point.to_vector()(label)) for label in radical_labels]
+            for point in radical_basis
+        ])
+        if adapted.nrows() == k and abs(adapted.det()) == 1:
+            standard_basis = tuple(radical.module_generator(label) for label in radical_labels)
+            standard_terms = tuple(radical.primitive_isotropic_subobject(*standard_basis[:rank])
+                                   for rank in dimensions)
+            standard_actions = radical.general_linear_group().flag_stabilizer(standard_terms).group_generators()
+            radical_actions = tuple(adapted.inverse() * matrix(SageZZ, [
+                [int(action(radical.module_generator(label)).to_vector()(target_label))
+                 for target_label in radical_labels]
+                for label in radical_labels
+            ]) * adapted for action in standard_actions)
+        else:
+            radical_actions = tuple(matrix(SageZZ, [
+                [int(action(radical.module_generator(label)).to_vector()(target_label))
+                 for target_label in radical_labels]
+                for label in radical_labels
+            ]) for action in radical.general_linear_group().flag_stabilizer(terms).group_generators())
+    for action in radical_actions:
+        block = identity_matrix(SageZZ, n + k)
+        for i in range(k):
+            for j in range(k):
+                block[n + i, n + j] = action[i, j]
+        blocks.append(block)
+    return _conjugated(reduction.isometry, tuple(
+        _isometry_from_row_matrix(reduced, reduced, block) for block in blocks
+    ))
 
 
 def _degenerate_radical_residues(lattice: Parent, radical_rank: int, modulus: int):
