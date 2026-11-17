@@ -931,3 +931,123 @@ Every `edge_plane_for_divisor` call is a distinct (edge, discarded root, k, divi
 | eea09a9 | Hermite form of the projected rows and the C cap P left kernel on Python integers (`_hermite_rows`, Cohen Algorithm 2.4.4, Proposition 2.4.9) in place of three Sage matrix constructions and the PARI kernel | 1.181 -> 0.755 / 1.138 -> 0.707 | 0.29 + 0.29 = 0.6 |
 
 Equality: `_hermite_rows` equals `hermite_form` and the echelon form of the PARI left kernel on 3000 random integer matrices up to 5 x 5 of every rank (`zk_hnfeq.py`); the 50 seed-7 walks (`zk_eq_ep2.log`) are identical to `zk_eq39.log`; allcock w217_l26 passes.
+
+## Long-tail price
+
+Acceptance run 44000728665 (corpus probe, port 8278cf8, sage-extensions bcad374a; artifacts in the probe directory, `ci_probe_44000728665/`): the 236 nodes of `ci/acceptance_probe.txt`. These are up to five seeded nodes (seed 3) of each of the 104 strata of the 26,907 acceptance nodes. A stratum is a test function; the ListReflect and IsotropicCases functions are split by rank 3, 4, 5, 6 and 7-18. Each node is killed at 60 s (`PROBE_KILL_SECONDS`), ten nodes per process on GitHub runners, from the BUDGET lines. Total = mean seconds of the probed nodes x the node count of the stratum. A killed node is priced at 60 s, so a stratum with a killed node is a lower bound (">=").
+
+Machine gap: the same five ListReflect rank-3 nodes, warm in one local process, take 2.2, 1.2, 0.9, 0.8, 1.0 s; on the runner they take 0.3, 0.1, 0.1, 0.1, 0.1 s (same sage-extensions bcad374a; local load average about 6 on 10 cores). The local edgewalk prices in the batch tables above are therefore about 5-10 times the runner prices. This table prices runner time.
+
+| Family (test function; stratum) | Cases | Probed: seconds | Mean s | Total h |
+| --- | --- | --- | --- | --- |
+| `test_reflective.sage::test_root_systems_match_allcock` | 8595 | 5: 0.4, 0.2, 0.3, 2.6, 0.2 | 0.7 | 1.77 |
+| `test_boundaries.sage::test_enriques_modular_groups_match_dutour_sikiric_hulek` | 87 | 5: 60.0, 60.0, 60.0, 60.0, 60.0 | >= 60.0 | >= 1.45 |
+| `test_reflective.sage::test_simple_root_counts_match_polyhedral_common rank 3` | 8602 | 5: 0.3, 0.1, 0.1, 0.1, 0.1 | 0.1 | 0.33 |
+| `test_isotropic_orbits.sage::test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors rank 6` | 84 | 5: 2.0, 60.0, 5.1, 3.0, 1.0 | >= 14.2 | >= 0.33 |
+| `test_isotropic_orbits.sage::test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors rank 7-18` | 32 | 5: 1.0, 1.3, 20.6, 60.0, 60.0 | >= 28.6 | >= 0.25 |
+| `test_boundaries.sage::test_dtower_boundary_component_counts` | 18 | 5: 60.0, 60.0, 60.0, 4.2, 11.3 | >= 39.1 | >= 0.20 |
+| `test_vector_orbits.sage::test_published_representatives_are_one_per_orbit` | 15 | 5: 11.9, 25.6, 15.4, 68.3, 56.1 | >= 35.5 | >= 0.15 |
+| `test_isotropic_orbits.sage::test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors rank 3` | 8602 | 5: 0.0, 0.0, 0.3, 0.0, 0.0 | 0.1 | 0.14 |
+| `test_isotropic_orbits.sage::test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors rank 5` | 47 | 5: 0.3, 7.2, 2.6, 1.1, 16.3 | 5.5 | 0.07 |
+| `test_boundaries.sage::test_dtower_boundary_pictures` | 3 | 3: 60.0, 60.0, 60.0 | >= 60.0 | >= 0.05 |
+| `test_boundaries.sage::test_classical_polarization_indices` | 3 | 3: 60.0, 60.0, 60.0 | >= 60.0 | >= 0.05 |
+| `test_boundaries.sage::test_dawes_buildings_have_the_published_counts` | 4 | 4: 60.0, 7.1, 59.4, 23.8 | >= 37.6 | >= 0.04 |
+| `test_vector_orbits.sage::test_primitive_orbit_counts_in_u_plus_e8_match_dutour_sikiric_hulek` | 36 | 5: 5.1, 3.6, 3.6, 3.9, 3.8 | 4.0 | 0.04 |
+| `test_isotropic_orbits.sage::test_stabilizer_images_have_dutour_sikiric_hulek_indices` | 4 | 4: 60.0, 11.4, 24.8, 25.2 | >= 30.4 | >= 0.03 |
+| `test_isotropic_orbits.sage::test_published_representatives_lie_in_distinct_o_plus_orbits` | 2 | 2: 60.0, 60.0 | >= 60.0 | >= 0.03 |
+| `test_isometry.sage::test_lorentzian_pairs_are_isometric` | 145 | 5: 1.3, 0.9, 0.4, 0.9, 0.5 | 0.8 | 0.03 |
+| `test_reflective.sage::test_simple_root_counts_match_polyhedral_common rank 6` | 84 | 5: 0.1, 4.4, 1.5, 0.2, 0.5 | 1.3 | 0.03 |
+| `test_reflective.sage::test_simple_root_counts_match_polyhedral_common rank 7-18` | 32 | 5: 0.2, 0.2, 0.4, 1.8, 8.3 | 2.2 | 0.02 |
+| `test_isotropic_orbits.sage::test_i_2_10_isotropic_classes_are_one_odd_and_one_even` | 2 | 2: 59.1, 4.4 | 31.8 | 0.02 |
+| `test_orthogonal_group.sage::test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q` | 1 | 1: 60.0 | >= 60.0 | >= 0.02 |
+| `test_isotropic_orbits.sage::test_stable_o_plus_n_orbits_match_dutour_sikiric_hulek` | 1 | 1: 60.0 | >= 60.0 | >= 0.02 |
+| `test_isotropic_orbits.sage::test_o_plus_n_has_two_line_and_two_plane_orbits` | 1 | 1: 60.0 | >= 60.0 | >= 0.02 |
+| `test_boundaries.sage::test_degree_two_k3_type_ii_components_and_root_types` | 1 | 1: 60.0 | >= 60.0 | >= 0.02 |
+| `test_boundaries.sage::test_degree_four_k3_has_nine_type_ii_components` | 1 | 1: 60.0 | >= 60.0 | >= 0.02 |
+| `test_boundaries.sage::test_dawes_building_incidence_graph_is_the_published_figure` | 1 | 1: 60.0 | >= 60.0 | >= 0.02 |
+| `test_orthogonal_group.sage::test_discriminant_images_match_oscar` | 28 | 5: 0.8, 0.8, 0.8, 2.8, 4.2 | 1.9 | 0.01 |
+| `test_vector_stabilizers.sage::test_equivalence_witness_carries_a_representative_to_its_reflection` | 10 | 5: 7.2, 6.6, 2.6, 1.3, 7.2 | 5.0 | 0.01 |
+| `test_isotropic_orbits.sage::test_o_n_maps_onto_o_of_the_discriminant_form` | 1 | 1: 38.9 | 38.9 | 0.01 |
+| `test_perfect_domains.sage::test_isotropic_mode_counts_match_polyhedral_common` | 40 | 5: 3.2, 0.3, 0.1, 0.1, 0.1 | 0.8 | 0.01 |
+| `test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso` | 6 | 5: 8.1, 3.2, 3.1, 3.3, 3.1 | 4.2 | 0.01 |
+| `test_isometry.sage::test_change_of_basis_gives_an_isometric_lattice` | 6 | 5: 7.9, 2.2, 3.7, 2.8, 3.8 | 4.1 | 0.01 |
+| `test_orthogonal_group.sage::test_lorentzian_generators_match_polyhedral_common` | 3 | 3: 9.3, 12.0, 2.5 | 7.9 | 0.01 |
+| `test_vector_stabilizers.sage::test_e10_stabilizer_indices_match_brandhorst_gonzalez_alonso` | 6 | 5: 4.5, 3.2, 3.5, 3.9, 3.5 | 3.7 | 0.01 |
+| `test_isotropic_orbits.sage::test_isotropic_line_orbits_exist_exactly_when_polyhedral_common_finds_isotropic_vectors rank 4` | 56 | 5: 0.2, 0.1, 0.2, 0.5, 0.9 | 0.4 | 0.01 |
+| `test_reflective.sage::test_root_systems_match_polyhedral_common` | 103 | 5: 0.2, 0.2, 0.1, 0.1, 0.3 | 0.2 | 0.01 |
+| `test_vector_orbits.sage::test_k3_lattice_has_one_primitive_orbit_per_norm` | 5 | 5: 5.4, 1.1, 1.1, 1.4, 6.3 | 3.1 | 0.00 |
+| `test_double_cosets.sage::test_double_cosets_partition_the_rational_group` | 18 | 5: 0.0, 2.8, 0.1, 0.0, 0.1 | 0.6 | 0.00 |
+| `test_perfect_domains.sage::test_perfect_domain_orbit_counts_match_polyhedral_common` | 40 | 5: 0.7, 0.3, 0.1, 0.1, 0.1 | 0.3 | 0.00 |
+| `test_reflective.sage::test_simple_root_counts_match_polyhedral_common rank 5` | 47 | 5: 0.2, 0.1, 0.2, 0.2, 0.4 | 0.2 | 0.00 |
+| `test_reflective.sage::test_simple_root_counts_match_polyhedral_common rank 4` | 56 | 5: 0.1, 0.1, 0.1, 0.2, 0.2 | 0.1 | 0.00 |
+| `test_isometry.sage::test_isometry_verdicts_match_certified_pairs` | 6 | 5: 0.5, 0.0, 4.7, 0.9, 0.2 | 1.3 | 0.00 |
+| `test_vector_orbits.sage::test_i_2_10_is_transitive_on_norm_minus_one_vectors` | 1 | 1: 4.9 | 4.9 | 0.00 |
+| `test_centralizers.sage::test_centralizer_images_match_oscar` | 5 | 5: 1.6, 1.3, 0.5, 0.2, 0.9 | 0.9 | 0.00 |
+| `test_isometry.sage::test_two_u_full_generating_data_accepts_raw_sage_integer_norm` | 1 | 1: 3.4 | 3.4 | 0.00 |
+| `test_orthogonal_group.sage::test_mertens_omega_and_minus_one_generate_o_l` | 1 | 1: 3.3 | 3.3 | 0.00 |
+| `test_boundaries.sage::test_dawes_last_index_in_the_chain_is_the_discriminant_image_of_o_plus` | 1 | 1: 3.2 | 3.2 | 0.00 |
+| `test_perfect_domains.sage::test_large_cell_cone_uses_exact_normaliz_h_presentation` | 1 | 1: 2.3 | 2.3 | 0.00 |
+| `test_isometry.sage::test_degenerate_isometry_witness_respects_complement_coordinates` | 1 | 1: 2.2 | 2.2 | 0.00 |
+| `test_vector_stabilizers.sage::test_isotropic_pointed_automorphism_generators_preserve_marking_and_form` | 1 | 1: 1.3 | 1.3 | 0.00 |
+| `test_orthogonal_group.sage::test_binary_form_generators_match_hecke` | 4 | 4: 0.4, 0.4, 0.2, 0.2 | 0.3 | 0.00 |
+| `test_vector_stabilizers.sage::test_isotropic_plane_and_flag_automorphism_generators_preserve_their_marks` | 1 | 1: 1.0 | 1.0 | 0.00 |
+| `test_reflective.sage::test_edgewalk_branch_representative_sample` | 1 | 1: 1.0 | 1.0 | 0.00 |
+| `test_isometry.sage::test_odd_eichler_envelope_uses_declared_coordinate_order` | 1 | 1: 1.0 | 1.0 | 0.00 |
+| `test_reflective.sage::test_simple_root_counts_match_oscar_vinberg` | 4 | 4: 0.2, 0.1, 0.4, 0.2 | 0.2 | 0.00 |
+| `test_perfect_domains.sage::test_traversal_retains_only_adjacency_facet_orbits` | 1 | 1: 0.6 | 0.6 | 0.00 |
+| `test_reflective.sage::test_e10_simple_roots_match_dutour_sikiric_hulek` | 1 | 1: 0.5 | 0.5 | 0.00 |
+| `test_vector_orbits.sage::test_anisotropic_binary_vector_classes_use_primitive_embeddings` | 1 | 1: 0.4 | 0.4 | 0.00 |
+| `test_perfect_domains.sage::test_lazy_neighbor_cones_retain_exact_transformed_rays` | 1 | 1: 0.4 | 0.4 | 0.00 |
+| `test_orthogonal_group.sage::test_signed_discriminant_image_of_u_plus_minus_three_is_all_of_o_q` | 1 | 1: 0.4 | 0.4 | 0.00 |
+| `test_orthogonal_group.sage::test_degenerate_orthogonal_group_contains_radical_shear_and_gl_action` | 1 | 1: 0.4 | 0.4 | 0.00 |
+| `test_isometry.sage::test_large_cell_transporter_invariant_rejection_returns_none` | 1 | 1: 0.4 | 0.4 | 0.00 |
+| `test_isometry.sage::test_conway_sloane_same_genus_pair_is_not_isometric` | 1 | 1: 0.4 | 0.4 | 0.00 |
+| `test_vector_stabilizers.sage::test_vector_stabilizer_has_oscars_order` | 1 | 1: 0.3 | 0.3 | 0.00 |
+| `test_vector_stabilizers.sage::test_divisibility_four_isotropic_plane_stabilizer_constructs_exact_containing_bound` | 1 | 1: 0.3 | 0.3 | 0.00 |
+| `test_perfect_domains.sage::test_non_diagonal_isotropic_shell_uses_the_exact_sphere_center` | 1 | 1: 0.3 | 0.3 | 0.00 |
+| `test_isometry.sage::test_column_matrix_morphism_roundtrip_uses_coordinate_labels` | 1 | 1: 0.3 | 0.3 | 0.00 |
+| `test_vector_stabilizers.sage::test_isotropic_pointed_isometry_transports_between_changed_basis_parents` | 1 | 1: 0.2 | 0.2 | 0.00 |
+| `test_vector_stabilizers.sage::test_general_isotropic_pointed_isometry_carries_negative_marking` | 1 | 1: 0.2 | 0.2 | 0.00 |
+| `test_vector_stabilizers.sage::test_divisibility_two_isotropic_pointed_isometry_has_exact_witness` | 1 | 1: 0.2 | 0.2 | 0.00 |
+| `test_vector_stabilizers.sage::test_divisibility_four_isotropic_stabilizer_constructs_exact_containing_bound` | 1 | 1: 0.2 | 0.2 | 0.00 |
+| `test_isometry.sage::test_eichler_generator_families_preserve_nonlexical_complement` | 1 | 1: 0.2 | 0.2 | 0.00 |
+| `test_vector_stabilizers.sage::test_split_divisibility_one_pointed_isometry_carries_actual_negative_marking` | 1 | 1: 0.1 | 0.1 | 0.00 |
+| `test_vector_stabilizers.sage::test_odd_lattice_isotropic_pointed_isometry_uses_general_divisibility_two_route` | 1 | 1: 0.1 | 0.1 | 0.00 |
+| `test_vector_stabilizers.sage::test_isotropic_flag_isometry_transports_between_changed_basis_parents` | 1 | 1: 0.1 | 0.1 | 0.00 |
+| `test_vector_stabilizers.sage::test_isotropic_flag_isometry_preserves_line_inside_plane` | 1 | 1: 0.1 | 0.1 | 0.00 |
+| `test_reflective.sage::test_vinberg_roots_match_oscars_chamber_up_to_isometry` | 1 | 1: 0.1 | 0.1 | 0.00 |
+| `test_reflective.sage::test_vinberg_coxeter_diagram_has_oscars_edges` | 1 | 1: 0.1 | 0.1 | 0.00 |
+| `test_reflective.sage::test_u_plus_46_nonreflective_certificate_terminates_after_three_vertices` | 1 | 1: 0.1 | 0.1 | 0.00 |
+| `test_perfect_domains.sage::test_large_pairing_graph_fallback_returns_exact_transporter` | 1 | 1: 0.1 | 0.1 | 0.00 |
+| `test_orthogonal_group.sage::test_degenerate_orthogonal_group_respects_permuted_radical_coordinates` | 1 | 1: 0.1 | 0.1 | 0.00 |
+| `test_orthogonal_group.sage::test_degenerate_orthogonal_group_generates_permuted_rank_two_radical_action` | 1 | 1: 0.1 | 0.1 | 0.00 |
+| `test_orthogonal_group.sage::test_degenerate_orthogonal_group_embeds_non_diagonal_complement` | 1 | 1: 0.1 | 0.1 | 0.00 |
+| `test_orthogonal_group.sage::test_ambiguous_binary_form_has_an_improper_automorphism` | 1 | 1: 0.1 | 0.1 | 0.00 |
+| `test_vector_stabilizers.sage::test_isotropic_pointed_isometry_rejects_different_divisibility` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_vector_stabilizers.sage::test_isotropic_plane_isometry_transports_between_changed_basis_parents` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_vector_stabilizers.sage::test_isotropic_plane_isometry_carries_changed_basis_plane` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_reflective.sage::test_promised_go_left_preserves_left_supplement` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_reflective.sage::test_edgewalk_period_action_matrix_uses_coordinate_label_order` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_reflective.sage::test_binary_cycle_period_respects_permuted_coordinate_basis` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_reflective.sage::test_binary_cycle_coordinate_order_and_period_certificate` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_perfect_domains.sage::test_positive_shell_survives_a_permuted_gram_basis` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_perfect_domains.sage::test_positive_shell_scales_rational_direction_pairing_bound` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_perfect_domains.sage::test_non_diagonal_positive_shell_uses_the_pinned_cvp_center` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_perfect_domains.sage::test_non_diagonal_positive_shell_respects_explicit_coordinate_labels` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_perfect_domains.sage::test_non_diagonal_isotropic_shell_respects_explicit_coordinate_labels` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_perfect_domains.sage::test_isotropic_shell_survives_a_permuted_gram_basis` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_perfect_domains.sage::test_facet_orbit_permutation_view_materializes_exact_isometries` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_orthogonal_group.sage::test_zero_form_orthogonal_group_uses_permuted_coordinate_labels` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_orthogonal_group.sage::test_zero_form_orthogonal_group_is_the_full_general_linear_group` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_orthogonal_group.sage::test_orthogonal_group_of_the_hyperbolic_plane_has_order_four` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_orthogonal_group.sage::test_degenerate_orthogonal_group_generates_rank_two_radical_action` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_isometry.sage::test_row_matrix_morphism_roundtrip_uses_coordinate_labels` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_isometry.sage::test_equal_gram_groupoid_identification_preserves_coordinate_labels` | 1 | 1: 0.0 | 0.0 | 0.00 |
+| `test_double_cosets.sage::test_the_recorded_case_families_are_all_present` | 1 | 1: 0.0 | 0.0 | 0.00 |
+
+Total: >= 5.25 h of runner time. Of it, 2.7 h is in the 16 strata with a node killed at 60 s, which are lower bounds. The 29 killed nodes and the one error:
+
+- Enriques modular groups (87 nodes): all five probes killed, >= 1.45 h. It is a sink: the code must be read before it can be priced (see the blocker below).
+- IsotropicCases rank 6 (IsotropicCases_8716) and rank 7-18 (IsotropicCases_8812, IsotropicCases_8819): killed; >= 0.33 h and >= 0.25 h.
+- dtower component counts (N_14, N_17, N_19), dtower pictures (lambda_9, 10, 11), classical polarization indices (degree 2, 6, 10), Dawes counts and incidence (dawes_2U2_A2_stable), degree-two and degree-four K3 type II components, O_plus(N) line and plane orbits, stable O_plus(N) orbits, published representatives in distinct O_plus orbits (rank0, rank1), stabilizer images I_1_1, the discriminant image of A7 plus diagonal, published representatives one per orbit [24]: killed.
+- `test_published_representatives_are_one_per_orbit[26]`: error at 56.1 s, PariError (the PARI stack overflows at its maximum of 8 GB). This is a size defect, not a price.
