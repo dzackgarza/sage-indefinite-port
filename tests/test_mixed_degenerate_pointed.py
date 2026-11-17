@@ -775,6 +775,16 @@ def test_legacy_mixed_radical_first_flag_transporter_across_presentations():
     assert all(second.inclusion().is_in_image(witness(point)) for point in (z, e))
 
 
+def test_legacy_mixed_flag_transporter_rejects_radical_to_nonradical_line():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    e, f, z = tuple(ambient.module_generators())
+    plane = ambient.primitive_isotropic_subobject(e, z)
+    assert INDUCTION.flag_isometry((z, plane), (e, plane)) is None
+
+
 def test_mixed_degenerate_full_radical_partial_quotient_flag_transporter():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import (

@@ -696,6 +696,10 @@ class IsotropicInduction:
         target_basis, target_images = self.flag_action_data(target_space, (target_term,))
         source_ambient, target_ambient = source_line.parent(), target_line.parent()
         if (not source_ambient.is_nondegenerate() and not target_ambient.is_nondegenerate()
+                and self.recursion.vector_lies_in_radical(source_line)
+                != self.recursion.vector_lies_in_radical(target_line)):
+            return None
+        if (not source_ambient.is_nondegenerate() and not target_ambient.is_nondegenerate()
                 and int(source_ambient.radical().rank()) == int(target_ambient.radical().rank()) == 1
                 and int(source_space.inclusion().domain().rank()) == 2
                 and self.recursion.vector_lies_in_radical(source_line)
