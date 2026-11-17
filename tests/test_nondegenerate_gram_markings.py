@@ -17,3 +17,52 @@ def test_public_primitive_hyperbolic_plane_embedding_classes_in_two_u():
         assert arrow.is_primitive()
         assert all(ambient.b(arrow(x), arrow(y)) == source.b(x, y)
                    for x in source.module_generators() for y in source.module_generators())
+
+
+def test_split_nondegenerate_based_and_moving_transporters():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
+
+    source = Lattices(ZZ)("U")
+    ambient = source + source
+    e, f, u, v = tuple(ambient.module_generators())
+    first_arrow = source.hom([e, f], codomain=ambient)
+    second_arrow = source.hom([u, v], codomain=ambient)
+    based = Lattices(ZZ).CosliceUnder(source)
+    witness = isometry(based, based(first_arrow), based(second_arrow))
+    assert witness is not None
+    assert witness(e) == u and witness(f) == v
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y) for x in (e, f, u, v) for y in (e, f, u, v))
+    moving = isometry(ARROWS, ARROWS(first_arrow), ARROWS(second_arrow))
+    assert moving is not None
+    assert all(second_arrow.is_in_image(moving(x)) for x in (e, f))
+
+
+def test_split_nondegenerate_transporter_uses_unimodular_noncoordinate_frame():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    source = Lattices(ZZ)("U")
+    ambient = source + source
+    e, f, u, v = tuple(ambient.module_generators())
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category(source.hom([e + u, f], codomain=ambient))
+    second = category(source.hom([u, v], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert witness(e + u) == u and witness(f) == v
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y) for x in (e, f, u, v) for y in (e, f, u, v))
+
+
+def test_glued_nondegenerate_marking_has_identity_without_fictitious_split():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    e, f, u, v = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[2, 0], [0, 2]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    marked = category(source.hom([e + f, u + v], codomain=ambient))
+    witness = isometry(category, marked, marked)
+    assert witness is not None
+    assert all(witness(x) == x for x in (e, f, u, v))

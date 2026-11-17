@@ -218,6 +218,59 @@ def _finite_index_isotropic_stabilizer_generators(arrow: Morphism) -> tuple[Latt
     return tuple(schreier)
 
 
+
+def _split_nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow: Morphism, *, based: bool) -> LatticeIsometryMethods | None:
+    r"""Extend source and perpendicular isometries across an integral orthogonal direct sum.
+
+    For L=S+S^perp as *integral* orthogonal summands, independent isometries
+    of S and S^perp extend uniquely.  If the decomposition has nontrivial
+    glue, do not infer a nonexistent extension from rational splitting.
+    """
+    from sage.all import ZZ as SageZZ, matrix
+
+    source_lattice, target_lattice = source_arrow.codomain(), target_arrow.codomain()
+    if source_lattice is target_lattice and source_arrow.domain() is target_arrow.domain() and all(
+        source_arrow(point) == target_arrow(point) for point in source_arrow.domain().module_generators()
+    ):
+        return source_lattice.O().identity()
+    source_sub = source_lattice.subobject_on(tuple(source_arrow(x) for x in source_arrow.domain().module_generators()))
+    target_sub = target_lattice.subobject_on(tuple(target_arrow(x) for x in target_arrow.domain().module_generators()))
+    if not source_sub.inclusion().is_primitive() or not target_sub.inclusion().is_primitive():
+        raise ValueError("the split nondegenerate extension requires primitive embeddings")
+    source_complement = source_lattice.orthogonal_complement(source_sub)
+    target_complement = target_lattice.orthogonal_complement(target_sub)
+    source_points = tuple(source_arrow(x) for x in source_arrow.domain().module_generators())
+    target_points = tuple(target_arrow(x) for x in target_arrow.domain().module_generators())
+    source_cpoints = tuple(source_complement.inclusion()(x) for x in source_complement.module_generators())
+    target_cpoints = tuple(target_complement.inclusion()(x) for x in target_complement.module_generators())
+    for lattice, points in ((source_lattice, (*source_points, *source_cpoints)),
+                            (target_lattice, (*target_points, *target_cpoints))):
+        if int(lattice.subobject_on(points).inclusion().cokernel().cardinality()) != 1:
+            raise ValueError("the primitive embedding has nontrivial complement glue")
+    source_iso = None if based else RECURSION.isometry(source_arrow.domain(), target_arrow.domain())
+    if not based and source_iso is None:
+        return None
+    complement_iso = RECURSION.isometry(source_complement.inclusion().domain(), target_complement.inclusion().domain())
+    if complement_iso is None:
+        return None
+    images = (
+        tuple(target_arrow(x if based else source_iso(x)) for x in source_arrow.domain().module_generators())
+        + tuple(target_complement.inclusion()(complement_iso(x)) for x in source_complement.module_generators())
+    )
+    labels = tuple(source_lattice.module_generating_set())
+    source_matrix = matrix(SageZZ, [
+        [int(point.to_vector()(label)) for label in labels]
+        for point in (*source_points, *source_cpoints)
+    ])
+    inverse = source_matrix.inverse().change_ring(SageZZ)
+    target_basis = target_lattice.base_ring()
+    def image(label):
+        column = inverse.row(labels.index(label))
+        return sum((target_lattice.scalar_multiple(target_basis(int(coefficient)), point)
+                    for coefficient, point in zip(column, images, strict=True) if coefficient), target_lattice.zero())
+    return source_lattice.Isom(target_lattice)(image)
+
+
 def _flag(marked: Parent) -> Flag:
     first, second = _flag_arrows(marked)
     plane = _isotropic_sublattice(second)
@@ -265,6 +318,8 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             if rank == 1:
                 return RECURSION.pointed_isometry(_marked_vector(source), _marked_vector(target))
             source_arrow, target_arrow = source.arrow(), target.arrow()
+            if source_arrow.domain().is_nondegenerate():
+                return _split_nondegenerate_embedding_isometry(source_arrow, target_arrow, based=True)
             source_saturation = _isotropic_sublattice(source_arrow) if source_arrow.is_primitive() else _homothetic_isotropic_saturation(source_arrow)
             target_saturation = _isotropic_sublattice(target_arrow) if target_arrow.is_primitive() else _homothetic_isotropic_saturation(target_arrow)
             if source_saturation is None or target_saturation is None:
@@ -308,6 +363,8 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                     return RECURSION.isometry(source_point.parent(), target_point.parent())
                 return INDUCTION.line_isometry(source_point.primitive_part(), target_point.primitive_part())
             source_arrow, target_arrow = source.arrow(), target.arrow()
+            if source_arrow.domain().is_nondegenerate() and target_arrow.domain().is_nondegenerate():
+                return _split_nondegenerate_embedding_isometry(source_arrow, target_arrow, based=False)
             source_sublattice = _isotropic_sublattice(source_arrow) if source_arrow.is_primitive() else _homothetic_isotropic_saturation(source_arrow)
             target_sublattice = _isotropic_sublattice(target_arrow) if target_arrow.is_primitive() else _homothetic_isotropic_saturation(target_arrow)
             if source_sublattice is None or target_sublattice is None:
