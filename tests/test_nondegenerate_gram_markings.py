@@ -445,6 +445,35 @@ def test_public_nonprimitive_nondegenerate_classes_from_primitive_saturation():
     assert all(marked.arrow().codomain() is ambient for marked in classes)
 
 
+def test_odd_rank_nondegenerate_full_saturation_so_and_o_moving_orbits_agree():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_nondegenerate_sublattice_classes
+
+    ambient = Lattices(ZZ)([[2, 0, 0], [0, 2, 0], [0, 0, 2]])
+    full = tuple(nonprimitive_nondegenerate_sublattice_classes(ambient, ambient, (1, 1, 2)))
+    special = tuple(nonprimitive_nondegenerate_sublattice_classes(
+        ambient, ambient, (1, 1, 2), acting_group=ambient.SO()
+    ))
+    # O(<2>^3) is the signed permutation group. Modulo two its orbits
+    # on nonzero characters are classified by Hamming weight 1, 2, 3.
+    assert len(full) == len(special) == 3
+
+
+def test_odd_rank_nondegenerate_smith_stream_uses_moving_so_orbits():
+    from itertools import islice
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_all_nondegenerate_sublattice_index_classes
+
+    ambient = Lattices(ZZ)([[2, 0, 0], [0, 2, 0], [0, 0, 2]])
+    full = tuple(islice(iter_all_nondegenerate_sublattice_index_classes(ambient, ambient), 4))
+    special = tuple(islice(iter_all_nondegenerate_sublattice_index_classes(
+        ambient, ambient, acting_group=ambient.SO()
+    ), 4))
+    assert len(full) == len(special) == 4
+    assert all(left.arrow().codomain() is ambient and right.arrow().codomain() is ambient
+               for left, right in zip(full, special, strict=True))
+
+
 def test_nondegenerate_fixed_smith_classifier_validates_before_empty_orbit_dispatch():
     import pytest
     from sage_extensions.all import Lattices, ZZ

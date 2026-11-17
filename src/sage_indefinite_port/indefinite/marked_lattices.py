@@ -2210,6 +2210,12 @@ def nonprimitive_nondegenerate_sublattice_classes(lattice: Parent, saturation_ty
         raise ValueError("elementary divisors must match the saturation rank")
     if any(d < 1 for d in divisors) or any(right % left for left, right in pairwise(divisors)):
         raise ValueError("elementary divisors must be positive and ordered by divisibility")
+    if acting_group is not None and int(lattice.rank()) % 2 and acting_group is lattice.SO():
+        # In odd rank, -id_L is central, has determinant -1, and fixes
+        # every moving sublattice. Hence the O(L) and SO(L) orbit
+        # partitions agree, also for nondegenerate saturations and their
+        # finite-index sublattices.
+        acting_group = None
     primitive = primitive_marking_classes(ARROWS, saturation_type, lattice)
     group = lattice.O() if acting_group is None else acting_group
     if acting_group is not None:
