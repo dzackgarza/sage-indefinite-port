@@ -225,6 +225,26 @@ def test_primitive_null_line_stream_identifies_both_signs_and_same_sign(monkeypa
     assert classes[0].arrow()(next(iter(classes[0].arrow().domain().module_generators()))) == e
 
 
+def test_fixed_content_null_line_stream_preserves_exact_saturation_index(monkeypatch):
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        RECURSION, iter_isotropic_line_content_classes,
+    )
+
+    ambient = Lattices(ZZ)("U")
+    e, f = tuple(ambient.module_generators())
+    monkeypatch.setattr(
+        RECURSION, "exact_vector_orbit_iterator",
+        lambda *_args, **_kwargs: iter((e, f, -e)),
+    )
+    classes = tuple(iter_isotropic_line_content_classes(ambient, 3))
+    assert len(classes) == 1
+    arrow = classes[0].arrow()
+    point = arrow(next(iter(arrow.domain().module_generators())))
+    assert point.content() == 3
+    assert arrow.saturation().inclusion().is_primitive()
+
+
 def test_rank_zero_ambient_has_empty_primitive_and_unrestricted_null_line_streams():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import (
