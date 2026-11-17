@@ -30,20 +30,17 @@ its mathematical branch, not all unexecuted cases.
 
 ## Next work, ranked
 
-1. Complete the oriented complete-flag public consumer. Its timing label
-   converts `FlagType((1, 2, 3))` to an integer before the computation;
-   normalize the flag dimension sequence in the shared row-name operation.
-   The unchanged owner test reproduces this failure. The edgewalk option
-   and sign-convention public assertions now pass.
-2. Complete final-pair checks of the repaired exact definite-isometry and
-   discriminant-form operations, then price the Enriques boundary consumer.
-   The owner assertions establish the exercised mathematical contracts;
-   the profiled timeouts do not establish consumer completion.
-3. Complete minimal branch evidence. Existing tests cover general flags,
-   subgroup planes, oriented marked categories, graded quotient actions,
-   definite empty isotropic classes and finite-left double cosets. Strengthen
-   split-binary orbit completeness and verify the negative-square embedding
-   branch. Use the tests at their existing owners.
+1. Establish the published tier-1 result with the provider pin carrying the
+   exact definite-isometry, discriminant, edgewalk and flag-label repairs.
+   Its selection now includes the required existing public port branches.
+   Owner assertions for oriented flags and graded congruence actions pass.
+2. Finish Enriques cost triage from the actual generator request. The
+   discriminant setup is reduced; the current profile reaches full group
+   generation through the intersection resolution. Preserve the infinite
+   subgroup's generator obligation, not only its finite discriminant image.
+3. Complete the unchanged Enriques named-lattice line/plane consumer and the
+   final-pair boundary assertions. The original #70 reference to provider
+   #294 concerns known-family mathematical consumers now owned by #286.
 4. Price unfinished strata with the retained `probe_long` node selection.
    Separate timeouts from mathematical errors. Replace a censored price only
    with a completed measurement and retain its port/provider provenance.

@@ -23,11 +23,11 @@ The Acceptance workflow takes three corpora (`ci/plan_acceptance.py`):
 
 | Tier | File | Nodes | Content |
 | --- | --- | --- | --- |
-| 1 | `ci/acceptance_tier1.txt` | 49 | For each dispatch branch of each pinned algorithm, the smallest frozen node (least rank, determinant or \|O(q)\| that reaches the branch) whose expected answer comes from an independent source or from a construction, not from a round trip of the port |
+| 1 | `ci/acceptance_tier1.txt` | 81 | For each dispatch branch of each pinned algorithm, the smallest frozen node (least rank, determinant or \|O(q)\| that reaches the branch) whose expected answer comes from an independent source or from a construction, not from a round trip of the port |
 | 2 | `ci/acceptance_tier2.txt` | 86 | The published-result reproductions that the #64 table requires |
 | 3 | `full` | 26907 | Every acceptance node; tier 3 is the full corpus less tiers 1 and 2 |
 
-Tier 1 is the correctness evidence (priority 1 above). Recorded tier-1 time: 1015.9 s over all 49 nodes (call time, the least recorded passed run). Tier 2 has 7 priced nodes (6167 s) and 79 unpriced nodes. `ci/plan_acceptance.py` costs a tier node at its price ("prices" in `ci/test_budgets.json`), and an unpriced tier-2 node at its derived budget: the tier-1 job timeout went from 23 to 37 minutes, the tier-2 job timeout from 63 to 165 minutes.
+Tier 1 is the correctness evidence (priority 1 above). Historical tier-1 time before the additional public branches: 1015.9 s over its 49 nodes (call time, the least recorded passed run). Tier 2 has 7 priced nodes (6167 s) and 79 unpriced nodes. `ci/plan_acceptance.py` costs a tier node at its price ("prices" in `ci/test_budgets.json`), and an unpriced tier-2 node at its derived budget: the tier-1 job timeout went from 23 to 37 minutes, the tier-2 job timeout from 63 to 165 minutes.
 
 Probe of the 20 nodes unpriced before (one container process per node, `timeout -s KILL 60` inside the container, port 8208d1f, sage-extensions 6f337e9a): 16 passed. Three perfect-domain traversals (`Result_Enumeration_1`, `_3` total, `_3` isotropic) failed with TypeError: since sage-extensions 4d14cd55 a finite ordered set hashes its points, and `PerfectDomainOrbitAdjacency` is a `SageObject`, which is unhashable; fixed by an identity hash (sage-extensions 87b4335c; equality is identity). `test_large_cell_cone_uses_exact_normaliz_h_presentation` was killed at 60 s: its incidence check reads `covector.to_vector()` about 108000 times on three covectors (0.4-0.6 ms each); `to_vector` is now a cached_method (sage-extensions f7a03e96), and the node passes in 30.6 s.
 
@@ -1079,3 +1079,28 @@ Profiles: `.tmp/enriques-case24-0d5fc91-a6903d82.pstats` and
 `.tmp/enriques-case24-8d8e848-a826464e-coordinator.pstats`. The Enriques
 aggregate remains unpriced above its censored lower bound until a complete
 consumer run supplies the elapsed time.
+
+
+### Required public branches in tier 1
+
+`ci/acceptance_tier1.txt` also selects the existing public assertions for
+congruence-subgroup plane classes and transporters; general partial and complete
+flags; special-orthogonal splitting; based-plane divisibilities; parabolic
+stabilizer images; proper glued quotient images; negative-square classes;
+Allcock options and isometry; generator reproducibility; negative spinor-genus
+decisions; flag invariants; basis covariance; Dawes stabilizer images; and the
+explicit unsupported quotient branch. The assertions are unchanged.
+
+Their completion prices come from coordinator reports
+`.tmp/final-public-branches.jsonl`, `.tmp/remaining-public-branches.jsonl`, and
+`.tmp/edgewalk-options-coordinator.jsonl`. Only passed call reports supply
+prices. The initial edgewalk TypeError contributes no price; its repaired
+assertions supply the later measurements. The provider pin 8bee22ac includes
+the public edgewalk connection and full flag dimensions in timing labels.
+The published tier-1 run must establish the combined final pair.
+
+Separate owner assertions cover oriented complete marked flags, requested
+congruence graded actions, definite empty classes, finite-left double cosets,
+split-binary orbit completeness, and real character kernels. Their coordinator
+report is `sage-extensions/.tmp/owner-public-branches-repaired-coordinator.jsonl`.
+All assertions passed; disabled timing gates remain performance diagnostics.
