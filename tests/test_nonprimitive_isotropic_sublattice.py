@@ -168,6 +168,15 @@ def test_unrestricted_isotropic_sublattice_iterator_terminates_above_ambient_ran
     assert tuple(iter_all_isotropic_sublattice_classes(ambient, 3)) == ()
 
 
+def test_unrestricted_isotropic_sublattice_iterator_terminates_above_degenerate_witt_bound():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_all_isotropic_sublattice_classes
+
+    ambient = Lattices(ZZ)([[0, 0, 0], [0, 1, 0], [0, 0, 1]])
+    # The one-dimensional radical is the entire isotropic locus over QQ.
+    assert tuple(iter_all_isotropic_sublattice_classes(ambient, 2)) == ()
+
+
 def test_unrestricted_rank_two_null_sublattices_split_under_special_orthogonal_group():
     from itertools import islice
     from sage_extensions.all import Lattices, ZZ

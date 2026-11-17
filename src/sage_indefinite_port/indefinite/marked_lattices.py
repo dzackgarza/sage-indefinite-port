@@ -1591,6 +1591,13 @@ def iter_all_isotropic_sublattice_classes(lattice: Parent, rank: int, *, acting_
         raise ValueError("isotropic sublattice rank must be positive")
     if rank > int(lattice.rank()):
         return
+    positive, negative = (int(index) for index in lattice.signature_pair())
+    radical_rank = int(lattice.rank()) - positive - negative
+    if rank > radical_rank + min(positive, negative):
+        # Every totally isotropic rational subspace has dimension at most
+        # dim(radical) + min(p,q), even when the rational Witt index of the
+        # nondegenerate quotient is smaller than its real Witt index.
+        return
     if rank == 1:
         yield from iter_all_isotropic_line_classes(lattice, acting_group=acting_group)
         return
