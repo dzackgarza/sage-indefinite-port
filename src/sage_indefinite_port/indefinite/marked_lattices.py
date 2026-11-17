@@ -744,8 +744,11 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             source_arrow, target_arrow = source.arrow(), target.arrow()
             ambient = source_arrow.codomain()
             if (
-                ambient is target_arrow.codomain()
+                int(ambient.rank()) == int(target_arrow.codomain().rank())
                 and all(ambient.b(x, y) == 0 for x in ambient.module_generators() for y in ambient.module_generators())
+                and all(target_arrow.codomain().b(x, y) == 0
+                        for x in target_arrow.codomain().module_generators()
+                        for y in target_arrow.codomain().module_generators())
                 and all(source_arrow.domain().b(x, y) == 0
                         for x in source_arrow.domain().module_generators()
                         for y in source_arrow.domain().module_generators())
@@ -760,15 +763,16 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
 
                 source_points = tuple(source_arrow(x) for x in source_arrow.domain().module_generators())
                 target_points = tuple(target_arrow(x) for x in target_arrow.domain().module_generators())
-                labels = tuple(ambient.module_generating_set())
-                source_rows = matrix(SageZZ, [[int(point.to_vector()(label)) for label in labels]
+                source_labels = tuple(ambient.module_generating_set())
+                target_labels = tuple(target_arrow.codomain().module_generating_set())
+                source_rows = matrix(SageZZ, [[int(point.to_vector()(label)) for label in source_labels]
                                                   for point in source_points])
-                target_rows = matrix(SageZZ, [[int(point.to_vector()(label)) for label in labels]
+                target_rows = matrix(SageZZ, [[int(point.to_vector()(label)) for label in target_labels]
                                                   for point in target_points])
                 if source_rows.transpose().hermite_form() != target_rows.transpose().hermite_form():
                     return None
                 for rows in _fair_unimodular_matrices(int(ambient.rank())):
-                    witness = _isometry_from_row_matrix(ambient, ambient, rows)
+                    witness = _isometry_from_row_matrix(ambient, target_arrow.codomain(), rows)
                     if all(witness(left) == right for left, right in zip(source_points, target_points, strict=True)):
                         return witness
             if source_arrow.domain().is_nondegenerate():
@@ -828,22 +832,24 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 return INDUCTION.line_isometry(source_point.primitive_part(), target_point.primitive_part())
             source_arrow, target_arrow = source.arrow(), target.arrow()
             ambient = source_arrow.codomain()
-            if ambient is target_arrow.codomain() and all(
-                ambient.b(x, y) == 0 for x in ambient.module_generators() for y in ambient.module_generators()
-            ):
+            if (int(ambient.rank()) == int(target_arrow.codomain().rank())
+                    and all(ambient.b(x, y) == 0 for x in ambient.module_generators() for y in ambient.module_generators())
+                    and all(target_arrow.codomain().b(x, y) == 0 for x in target_arrow.codomain().module_generators()
+                            for y in target_arrow.codomain().module_generators())):
                 from sage.all import ZZ as SageZZ, matrix
                 from sage_indefinite_port.indefinite.recursive import _fair_unimodular_matrices, _isometry_from_row_matrix
 
-                labels = tuple(ambient.module_generating_set())
+                source_labels = tuple(ambient.module_generating_set())
+                target_labels = tuple(target_arrow.codomain().module_generating_set())
                 left = tuple(source_arrow(point) for point in source_arrow.domain().module_generators())
                 right = tuple(target_arrow(point) for point in target_arrow.domain().module_generators())
-                left_rows = matrix(SageZZ, [[int(point.to_vector()(label)) for label in labels] for point in left])
-                right_rows = matrix(SageZZ, [[int(point.to_vector()(label)) for label in labels] for point in right])
+                left_rows = matrix(SageZZ, [[int(point.to_vector()(label)) for label in source_labels] for point in left])
+                right_rows = matrix(SageZZ, [[int(point.to_vector()(label)) for label in target_labels] for point in right])
                 if left_rows.elementary_divisors() != right_rows.elementary_divisors():
                     return None
-                target_subobject = ambient.subobject_on(right)
+                target_subobject = target_arrow.codomain().subobject_on(right)
                 for rows in _fair_unimodular_matrices(int(ambient.rank())):
-                    witness = _isometry_from_row_matrix(ambient, ambient, rows)
+                    witness = _isometry_from_row_matrix(ambient, target_arrow.codomain(), rows)
                     if all(target_subobject.inclusion().is_in_image(witness(point)) for point in left):
                         return witness
             if source_arrow.domain().is_nondegenerate() and target_arrow.domain().is_nondegenerate():

@@ -247,6 +247,25 @@ def test_zero_form_moving_finite_index_submodule_transporter_decides_smith_type(
     assert isometry(ARROWS, first, third) is None
 
 
+def test_zero_form_moving_cross_parent_transporter_preserves_finite_index_submodule():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
+
+    first_ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    second_ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f = tuple(first_ambient.module_generators())
+    u, v = tuple(second_ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    first = ARROWS.object(source.hom([e, 2 * f], codomain=first_ambient))
+    second = ARROWS.object(source.hom([2 * u, v], codomain=second_ambient))
+    different = ARROWS.object(source.hom([2 * u, 2 * v], codomain=second_ambient))
+    witness = isometry(ARROWS, first, second)
+    assert witness is not None and witness.domain() is first_ambient and witness.codomain() is second_ambient
+    target_submodule = second_ambient.subobject_on((2 * u, v)).inclusion()
+    assert all(target_submodule.is_in_image(witness(point)) for point in (e, 2 * f))
+    assert isometry(ARROWS, first, different) is None
+
+
 def test_zero_form_primitive_moving_line_and_plane_stabilizers_are_full_gl_parabolics():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
@@ -396,6 +415,25 @@ def test_zero_form_based_nonprimitive_frames_use_column_hnf_not_moving_smith_typ
     inequivalent = category.object(source.hom([2 * e, f], codomain=ambient))
     witness = isometry(category, first, equivalent)
     assert witness is not None and witness(e) == e + f and witness(2 * f) == 2 * f
+    assert isometry(category, first, inequivalent) is None
+
+
+def test_zero_form_based_cross_parent_transporter_preserves_source_frame():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    first_ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    second_ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f = tuple(first_ambient.module_generators())
+    u, v = tuple(second_ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category.object(source.hom([e, 2 * f], codomain=first_ambient))
+    equivalent = category.object(source.hom([u + v, 2 * v], codomain=second_ambient))
+    inequivalent = category.object(source.hom([2 * u, v], codomain=second_ambient))
+    witness = isometry(category, first, equivalent)
+    assert witness is not None and witness.domain() is first_ambient and witness.codomain() is second_ambient
+    assert witness(e) == u + v and witness(2 * f) == 2 * v
     assert isometry(category, first, inequivalent) is None
 
 
