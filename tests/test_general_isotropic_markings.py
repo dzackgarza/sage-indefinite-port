@@ -469,3 +469,24 @@ def test_four_u_complete_flag_stabilizer_preserves_every_prefix():
         term = ambient.primitive_isotropic_subobject(*isotropic[:size])
         assert all(term.inclusion().is_in_image(g(point)) for g in family for point in isotropic[:size])
     assert all(ambient.b(g(x), g(y)) == ambient.b(x, y) for g in family for x in basis for y in basis)
+
+
+def test_four_u_partial_flag_with_rank_jump_has_integral_transporter_and_stabilizer():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, isometry, automorphism_group_generators
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    basis = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    source = category(_flag_marking_from_basis(ambient, basis[::2], (1, 3, 4)))
+    target = category(_flag_marking_from_basis(ambient, basis[1::2], (1, 3, 4)))
+    witness = isometry(category, source, target)
+    assert witness is not None
+    for size in (1, 3, 4):
+        target_term = ambient.primitive_isotropic_subobject(*basis[1::2][:size])
+        assert all(target_term.inclusion().is_in_image(witness(point)) for point in basis[::2][:size])
+    for g in automorphism_group_generators(category, source):
+        for size in (1, 3, 4):
+            term = ambient.primitive_isotropic_subobject(*basis[::2][:size])
+            assert all(term.inclusion().is_in_image(g(point)) for point in basis[::2][:size])
