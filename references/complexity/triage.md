@@ -111,7 +111,7 @@ A price is the least recorded passed call time of the node: a CI Acceptance BUDG
 | `test_orthogonal_group.sage::test_lorentzian_generators_match_polyhedral_common[LORENTZ_OrthogonalGroup0]` | 2 | published-result reproduction (#64) | | 102.9 s (.tmp/sample61/report_2.jsonl) |
 | `test_orthogonal_group.sage::test_lorentzian_generators_match_polyhedral_common[LORENTZ_OrthogonalGroup1]` | 2 | published-result reproduction (#64) | | unpriced |
 | `test_orthogonal_group.sage::test_lorentzian_generators_match_polyhedral_common[LORENTZ_OrthogonalGroup2]` | 2 | published-result reproduction (#64) | | 3.7 s (CI Acceptance BUDGET line) |
-| `test_orthogonal_group.sage::test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q` | 2 | published-result reproduction (#64) | | unpriced |
+| `test_orthogonal_group.sage::test_discriminant_image_of_a7_plus_diagonal_is_all_of_o_q` | 2 | published-result reproduction (#64) | | 662 s (local completed call at port 0d1fcb73/provider 42d7361c, `.tmp/acceptance-coverage.md`, job jmvzh3n3l; historical scheduling price) |
 | `test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[10]` | 2 | published-result reproduction (#64) | | unpriced |
 | `test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[4]` | 2 | published-result reproduction (#64) | | unpriced |
 | `test_vector_orbits.sage::test_e10_orbit_counts_match_brandhorst_gonzalez_alonso[6]` | 2 | published-result reproduction (#64) | | unpriced |
