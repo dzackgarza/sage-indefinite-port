@@ -1662,6 +1662,10 @@ def iter_primitive_isotropic_line_classes(lattice: Parent, *, acting_group=None)
     generators.  The stream is exhaustive without a finite-class claim.
     Supported finite-character arithmetic subgroups split each moving orbit.
     """
+    if acting_group is not None and int(lattice.rank()) % 2 and acting_group is lattice.SO():
+        # In odd rank, -id is a determinant-minus-one stabilizer of every
+        # moving line, so SO and O have identical moving-line orbits.
+        acting_group = None
     if int(lattice.rank()) == 0:
         return
     if lattice.is_nondegenerate() and (lattice.is_definite() or int(lattice.witt_index()) == 0):
@@ -1716,6 +1720,8 @@ def iter_all_isotropic_line_classes(lattice: Parent, *, acting_group=None):
     from itertools import count
     from sage_indefinite_port.indefinite.recursive import _coordinate_box, _coordinate_element
 
+    if acting_group is not None and int(lattice.rank()) % 2 and acting_group is lattice.SO():
+        acting_group = None
     if int(lattice.rank()) == 0:
         return
     if lattice.is_nondegenerate() and int(lattice.witt_index()) == 0:
@@ -1800,6 +1806,8 @@ def nonprimitive_isotropic_line_classes(lattice: Parent, content: int, *, acting
     """
     if content < 1:
         raise ValueError("rank-one sublattice index in saturation must be positive")
+    if acting_group is not None and int(lattice.rank()) % 2 and acting_group is lattice.SO():
+        acting_group = None
     source = lattice.lattice_category()([[0]])
     primitive = primitive_marking_classes(ARROWS, source, lattice)
     classes = (
@@ -1829,6 +1837,8 @@ def nonisotropic_line_classes(lattice: Parent, square: int, *, acting_group=None
     """
     if not square:
         raise ValueError("use nonprimitive_isotropic_line_classes with prescribed index for square zero")
+    if acting_group is not None and int(lattice.rank()) % 2 and acting_group is lattice.SO():
+        acting_group = None
     source = lattice.lattice_category()([[square]])
     category = CosliceCategory(lattice.lattice_category(), source)
     candidates = pointed_nonzero_norm_classes(category, lattice, square)
@@ -1858,6 +1868,8 @@ def homothetic_isotropic_sublattice_classes(lattice: Parent, rank: int, multipli
     """
     if rank < 1 or multiplier < 1:
         raise ValueError("rank and saturation multiplier must be positive")
+    if acting_group is not None and int(lattice.rank()) % 2 and acting_group is lattice.SO():
+        acting_group = None
     if rank > int(lattice.rank()):
         return finite_ordered_set(())
     source = lattice.lattice_category()([[0] * rank for _ in range(rank)])
@@ -2146,6 +2158,8 @@ def iter_all_isotropic_sublattice_classes(lattice: Parent, rank: int, *, acting_
 
     if rank < 1:
         raise ValueError("isotropic sublattice rank must be positive")
+    if acting_group is not None and int(lattice.rank()) % 2 and acting_group is lattice.SO():
+        acting_group = None
     if rank > int(lattice.rank()):
         return
     positive, negative = (int(index) for index in lattice.signature_pair())

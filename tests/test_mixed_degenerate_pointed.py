@@ -448,6 +448,32 @@ def test_even_rank_mixed_degenerate_maximal_plane_smith_two_so_orbits():
     assert len(full) == len(special) == 2
 
 
+def test_odd_rank_moving_null_line_stream_has_same_so_and_o_orbits():
+    from itertools import islice
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_all_isotropic_line_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    full = tuple(islice(iter_all_isotropic_line_classes(ambient), 3))
+    special = tuple(islice(iter_all_isotropic_line_classes(ambient, acting_group=ambient.SO()), 3))
+    assert len(full) == len(special) == 3
+    assert all(left.arrow().codomain() is ambient and right.arrow().codomain() is ambient
+               for left, right in zip(full, special, strict=True))
+    assert all(left.arrow()(next(iter(left.arrow().domain().module_generators()))) ==
+               right.arrow()(next(iter(right.arrow().domain().module_generators())))
+               for left, right in zip(full, special, strict=True))
+
+
+def test_odd_rank_homothetic_maximal_null_plane_so_orbits_equal_full_orbits():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import homothetic_isotropic_sublattice_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    full = tuple(homothetic_isotropic_sublattice_classes(ambient, 2, 3))
+    special = tuple(homothetic_isotropic_sublattice_classes(ambient, 2, 3, acting_group=ambient.SO()))
+    assert len(full) == len(special) == 1
+
+
 @pytest.mark.parametrize("smith", ((1, 1, 2), (1, 2, 2)))
 def test_mixed_degenerate_maximal_rank_three_index_two_respects_radical_plane(smith):
     from sage_extensions.all import Lattices, ZZ
