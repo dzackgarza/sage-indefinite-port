@@ -925,6 +925,8 @@ def test_pointed_reflection_witness_precedes_expensive_complement_group(monkeypa
     assert witness is not None and witness(source) == target
     assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
                for x in (e, f, r) for y in (e, f, r))
+    scaled = RECURSION.pointed_isometry(3 * source, 3 * target)
+    assert scaled is not None and scaled(3 * source) == 3 * target
 
 
 def test_nonintegral_difference_reflection_does_not_fake_a_pointed_transporter():
