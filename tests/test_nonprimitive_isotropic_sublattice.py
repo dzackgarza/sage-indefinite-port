@@ -351,3 +351,28 @@ def test_homothetic_rank_one_sublattices_split_under_gamma_three():
     assert classes.cardinality() == cardinal(2)
     assert all(int(marking.arrow()(marking.arrow().domain().module_generators()[0]).content()) == 2
                for marking in classes)
+
+
+def test_public_nonprimitive_rank_two_sublattice_classes_use_actual_levi_image():
+    from sage_extensions.all import cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_isotropic_sublattice_classes
+
+    unimodular = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    mixed = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 2], [0, 0, 2, 0]])
+    full_classes = nonprimitive_isotropic_sublattice_classes(unimodular, 2, (1, 2))
+    mixed_classes = nonprimitive_isotropic_sublattice_classes(mixed, 2, (1, 2))
+    assert full_classes.cardinality() == cardinal(1)
+    assert mixed_classes.cardinality() == cardinal(2)
+    assert all(marked.arrow().codomain() is mixed for marked in mixed_classes)
+
+
+def test_public_nonprimitive_sublattice_classes_retain_gamma_three_action():
+    from sage_extensions.all import cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_isotropic_sublattice_classes
+
+    plane = lattice([[0, 1], [1, 0]])
+    gamma = plane.O().congruence_preimage(3)
+    classes = nonprimitive_isotropic_sublattice_classes(plane, 1, (2,), acting_group=gamma)
+    assert classes.cardinality() == cardinal(2)
+    assert all(int(marked.arrow()(marked.arrow().domain().module_generators()[0]).content()) == 2
+               for marked in classes)

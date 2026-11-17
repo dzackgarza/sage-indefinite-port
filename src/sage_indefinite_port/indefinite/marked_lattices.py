@@ -864,6 +864,35 @@ def nonprimitive_sublattice_classes(saturated: Parent | Morphism, divisors: tupl
         for point in subobject.domain().module_generators())).inclusion() for subobject in submodules)
 
 
+
+def nonprimitive_isotropic_sublattice_classes(lattice: Parent, rank: int, divisors: tuple[int, ...], *, acting_group=None) -> Parent:
+    r"""Moving totally isotropic sublattices with prescribed saturation Smith type.
+
+    Enumerate primitive saturated sublattice orbits, split them under the
+    *actual* requested arithmetic group, and classify finite-index
+    submodules under the stabilizer of each saturation.  Thus the finite
+    quotient step does not replace the ambient arithmetic group by GL(S).
+    """
+    if rank < 1 or len(divisors) != rank:
+        raise ValueError("positive isotropic rank and matching elementary-divisor tuple required")
+    source = lattice.lattice_category()([[0] * rank for _ in range(rank)])
+    primitive = primitive_marking_classes(ARROWS, source, lattice)
+    group = lattice.O() if acting_group is None else acting_group
+    if acting_group is not None:
+        primitive = tuple(split for marked in primitive for split in lattice.O().split_orbit(marked, group))
+    classes = []
+    for marked in primitive:
+        arrow = marked.arrow()
+        saturated = lattice.subobject_on(tuple(arrow(point) for point in arrow.domain().module_generators()))
+        if acting_group is None:
+            submodules = nonprimitive_sublattice_classes(saturated, divisors)
+        else:
+            stabilizer = group.intersection(lattice.O().stabilizer(saturated))
+            submodules = nonprimitive_sublattice_classes(saturated, divisors, stabilizer_group=stabilizer)
+        classes.extend(ARROWS.object(embedding) for embedding in submodules)
+    return finite_ordered_set(tuple(classes))
+
+
 def primitive_marking_classes(category: Category, source: Parent | Morphism, lattice: Parent) -> Parent:
     r"""One marked lattice for each isomorphism class of primitive markings of ``lattice`` of shape ``source``.
 
@@ -949,4 +978,5 @@ __all__ = [
     "nonisotropic_line_classes",
     "homothetic_isotropic_sublattice_classes",
     "nonprimitive_sublattice_classes",
+    "nonprimitive_isotropic_sublattice_classes",
 ]
