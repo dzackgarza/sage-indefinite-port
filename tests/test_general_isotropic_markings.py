@@ -607,6 +607,18 @@ def test_flag_marking_constructor_rejects_inconsistent_rank_sequences():
             _flag_marking_from_basis(ambient, (generator,), dimensions)
 
 
+def test_public_flag_classifier_validates_zero_rank_before_impossible_ambient_bound():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, primitive_marking_classes
+
+    ambient = Lattices(ZZ)("U")
+    zero = Lattices(ZZ)(0)
+    oversized = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    invalid = zero.hom([], codomain=oversized)
+    with pytest.raises(ValueError, match="positive and strictly increasing"):
+        primitive_marking_classes(FLAGS, invalid, ambient)
+
+
 def test_mixed_degenerate_arrow_shape_is_not_misclassified_as_totally_isotropic():
     from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
 

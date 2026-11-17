@@ -2417,6 +2417,8 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 dimensions = (int(shape_arrows[0].domain().rank()), *(int(arrow.codomain().rank()) for arrow in shape_arrows))
             if len(dimensions) != int(category.domain_category().object_set().cardinality()) - 1:
                 raise ValueError("the isotropic source shape must specify exactly the target flag's ranks")
+            if dimensions[0] < 1 or any(left >= right for left, right in pairwise(dimensions)):
+                raise ValueError("isotropic flag ranks must be positive and strictly increasing")
             if dimensions[-1] > int(lattice.rank()):
                 classes = ()
             elif all(lattice.b(x, y) == 0 for x in lattice.module_generators() for y in lattice.module_generators()):
