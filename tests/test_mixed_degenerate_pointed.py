@@ -309,6 +309,7 @@ def test_primitive_radical_markings_are_covariant_under_reordered_coordinate_lab
     from sage_extensions.all import Lattices, ZZ, cardinal
     from sage_indefinite_port.indefinite.marked_lattices import (
         ARROWS, primitive_marking_classes, iter_pointed_isotropic_classes,
+        automorphism_group_generators,
     )
 
     ambient = Lattices(ZZ)([[0, 0, 0], [0, 2, 0], [0, 0, 0]],
@@ -319,6 +320,11 @@ def test_primitive_radical_markings_are_covariant_under_reordered_coordinate_lab
         assert classes.cardinality() == cardinal(1)
         arrow = next(iter(classes)).arrow()
         assert all(arrow(point) in ambient.radical() for point in arrow.domain().module_generators())
+        if category is not ARROWS:
+            generators = tuple(automorphism_group_generators(category, next(iter(classes))))
+            assert generators
+            assert all(all(g(arrow(point)) == arrow(point)
+                           for point in arrow.domain().module_generators()) for g in generators)
     pointed_source = Lattices(ZZ)([[0]])
     pointed_category = Lattices(ZZ).CosliceUnder(pointed_source)
     radical_classes = tuple(islice(iter_pointed_isotropic_classes(pointed_category, ambient), 3))
@@ -326,6 +332,49 @@ def test_primitive_radical_markings_are_covariant_under_reordered_coordinate_lab
                  for marked in radical_classes) == (1, 2, 3)
     assert all(marked.arrow()(pointed_source.module_generators()[0]) in ambient.radical()
                for marked in radical_classes)
+
+
+def test_full_radical_plane_moving_stabilizer_is_entire_orthogonal_group():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        ARROWS, primitive_marking_classes, automorphism_group_generators,
+    )
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    marked = next(iter(primitive_marking_classes(ARROWS, source, ambient)))
+    generators = tuple(automorphism_group_generators(ARROWS, marked))
+    assert generators
+    radical = ambient.radical()
+    assert all(all(radical.inclusion().is_in_image(g(radical.inclusion()(point)))
+                   for point in radical.module_generators()) for g in generators)
+    assert any(g(tuple(ambient.module_generators())[1]) != tuple(ambient.module_generators())[1]
+               for g in generators)
+
+
+def test_full_radical_plane_based_stabilizer_fixes_each_radical_generator():
+    from sage.all import ZZ as SageZZ, matrix
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        primitive_marking_classes, automorphism_group_generators,
+    )
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    marked = next(iter(primitive_marking_classes(category, source, ambient)))
+    generators = tuple(automorphism_group_generators(category, marked))
+    assert generators
+    fixed = tuple(marked.arrow()(point) for point in source.module_generators())
+    assert all(all(g(point) == point for point in fixed) for g in generators)
+    assert any(g(tuple(ambient.module_generators())[0]) != tuple(ambient.module_generators())[0]
+               for g in generators)
+    e = tuple(ambient.module_generators())[0]
+    labels = tuple(ambient.module_generating_set())
+    shear_rows = [tuple(int(g(e).to_vector()(label)) for label in labels[1:])
+                  for g in generators]
+    assert matrix(SageZZ, shear_rows).rank() == 2
+    assert any(int(g(e).to_vector()(labels[0])) == -1 for g in generators)
 
 
 def test_mixed_radical_rank_one_stabilizers_respect_residue_and_shear():

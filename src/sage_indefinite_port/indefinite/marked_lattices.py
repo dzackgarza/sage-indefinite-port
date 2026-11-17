@@ -958,6 +958,34 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                     generators = tuple(_isometry_from_row_matrix(ambient, ambient, inverse * block * completion)
                                        for block in blocks) or (ambient.O().identity(),)
                     return finite_ordered_set(tuple(generators))
+                if not arrow.codomain().is_nondegenerate() and arrow.is_primitive() and (
+                    int(arrow.domain().rank()) == int(arrow.codomain().radical().rank())
+                    and all(
+                        arrow.codomain().b(arrow(point), vector) == 0
+                        for point in arrow.domain().module_generators()
+                        for vector in arrow.codomain().module_generators()
+                    )
+                ):
+                    from sage.all import ZZ as SageZZ, identity_matrix
+                    from sage_indefinite_port.indefinite.recursive import _conjugated, _isometry_from_row_matrix
+
+                    ambient = arrow.codomain()
+                    reduction, n, k, _quotient = _degenerate_quotient_and_radical(ambient)
+                    reduced = reduction.reduced
+                    # The radical-last split has O(C) × GL(R) and Hom(C,R)
+                    # blocks.  Fixing an integral basis of the *whole*
+                    # radical kills exactly GL(R), retaining O(C) and every
+                    # shear.  Transport the generators through the pinned
+                    # integral reduction, without a Witt-index reduction.
+                    radical_identity = identity_matrix(SageZZ, k)
+                    radical_vector = reduced.module_generator(tuple(reduced.module_generating_set())[n])
+                    blocks = tuple(block for block in RECURSION._radical_blocks(reduced, radical_vector)
+                                   if block.matrix_from_rows_and_columns(range(n, n + k), range(n, n + k))
+                                   == radical_identity)
+                    generators = _conjugated(reduction.isometry, tuple(
+                        _isometry_from_row_matrix(reduced, reduced, block) for block in blocks
+                    ))
+                    return finite_ordered_set(tuple(generators))
                 elif arrow.domain().is_nondegenerate():
                     generators = (_nondegenerate_stabilizer_generators(arrow, based=True)
                                   if arrow.is_primitive() else _nondegenerate_stabilizer_generators(arrow.saturation().inclusion(), based=True))
@@ -996,6 +1024,20 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                         ambient, ambient.general_linear_group().flag_stabilizer((subobject,)).group_generators()
                     )
                     return finite_ordered_set(tuple(generators))
+                if not arrow.codomain().is_nondegenerate() and arrow.is_primitive() and (
+                    int(arrow.domain().rank()) == int(arrow.codomain().radical().rank())
+                    and all(
+                        arrow.codomain().b(arrow(point), vector) == 0
+                        for point in arrow.domain().module_generators()
+                        for vector in arrow.codomain().module_generators()
+                    )
+                ):
+                    # A primitive sublattice of the same rank as rad(L),
+                    # contained in rad(L), is rad(L) itself. Every integral
+                    # isometry preserves the radical setwise, so its moving
+                    # stabilizer is the entire O(L), not a nondegenerate
+                    # parabolic stabilizer obtained from L -> I*.
+                    return finite_ordered_set(tuple(RECURSION.orthogonal_group_generators(arrow.codomain())))
                 if int(arrow.domain().rank()) > 1 and arrow.domain().is_nondegenerate():
                     generators = (_nondegenerate_stabilizer_generators(arrow, based=False)
                                   if arrow.is_primitive() else _finite_index_sublattice_stabilizer_generators(arrow))
