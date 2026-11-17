@@ -1649,6 +1649,8 @@ def iter_all_nondegenerate_sublattice_index_classes(lattice: Parent, saturation_
     rank = int(saturation_type.rank())
     if rank < 1:
         raise ValueError("a positive-rank saturation type is required")
+    if rank > int(lattice.rank()):
+        return
     for maximum in count(1):
         for divisors in product(range(1, maximum + 1), repeat=rank - 1):
             smith = (*divisors, maximum)

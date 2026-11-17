@@ -482,3 +482,12 @@ def test_unrestricted_rank_one_nondegenerate_index_iterator_preserves_saturation
         vector = arrow(next(iter(arrow.domain().module_generators())))
         assert int(vector.content()) == content
         assert int(vector.q()) == 2 * content * content
+
+
+def test_unrestricted_nondegenerate_index_iterator_terminates_above_ambient_rank():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_all_nondegenerate_sublattice_index_classes
+
+    ambient = Lattices(ZZ)("U")
+    source = ambient + ambient
+    assert tuple(iter_all_nondegenerate_sublattice_index_classes(ambient, source)) == ()
