@@ -1886,6 +1886,11 @@ class EichlerRecursion:
         exact description.
         """
         lattice = vector.parent()
+        # Stab(c*v) = Stab(v) for every nonzero integer c: the
+        # underlying free module is torsion-free.  In particular, do not
+        # pass an imprimitive isotropic vector to a primitive line action.
+        if int(vector.content()) > 1:
+            return self.pointed_automorphism_generators(vector.primitive_part())
         if self.vector_lies_in_radical(vector):
             return self._degenerate_radical_pointed_generators(vector)
         action = self.isotropic_stabilizer_action((vector,), ()) if vector.q() == lattice.base_ring().zero() else self._lattice_action(vector)
@@ -1895,6 +1900,13 @@ class EichlerRecursion:
         r"""An element of Isom((L, v), (M, w)), or None."""
         if VectorPrefilter.from_vector(source) != VectorPrefilter.from_vector(target):
             return None
+        # An integral isometry preserves content, and cancelling the
+        # common nonzero content is equivalent over torsion-free lattices.
+        source_content, target_content = int(source.content()), int(target.content())
+        if source_content != target_content:
+            return None
+        if source_content > 1:
+            return self.pointed_isometry(source.primitive_part(), target.primitive_part())
         source_lattice, target_lattice = source.parent(), target.parent()
         if source_lattice is target_lattice and source == target:
             return source_lattice.O().identity()
