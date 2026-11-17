@@ -1896,6 +1896,82 @@ class EichlerRecursion:
         action = self.isotropic_stabilizer_action((vector,), ()) if vector.q() == lattice.base_ring().zero() else self._lattice_action(vector)
         return _integral_generator_set(lattice, action)
 
+    def _mixed_degenerate_pointed_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
+        r"""Construct a mixed radical/shear transporter in the reduced split presentation.
+
+        For row coordinates ``(x,r)``, ``(y,s)`` on ``C+R``, every isometry
+        has block form ``[[A,B],[0,D]]``.  First solve ``xA=y`` in O(C),
+        then the exact finite-image congruence ``rD=s mod c``, where
+        ``c=content(x)``.  A Bezout column ``u`` with ``x*u=c`` gives
+        ``B=u*(s-rD)/c``.  The resulting matrix is integral unimodular,
+        and its full form and marked-vector action are verified.
+        """
+        source_lattice, target_lattice = source.parent(), target.parent()
+        if source_lattice is not target_lattice:
+            transport = self.isometry(source_lattice, target_lattice)
+            if transport is None:
+                return None
+            correction = self._mixed_degenerate_pointed_isometry(transport(source), target)
+            if correction is None:
+                return None
+            return correction * transport
+        lattice = source_lattice
+        reduction = indefinite_reduced_presentation(lattice)
+        reduced = reduction.reduced
+        gram = _gram_in_label_order(reduced)
+        n = int(gram.rank())
+        k = int(gram.nrows()) - n
+        if not k:
+            raise ArithmeticError("mixed radical transport requires a nonzero radical")
+        labels = tuple(reduced.module_generating_set())
+        inverse = reduction.isometry.inverse()
+        x = tuple(int(inverse(source).to_vector()(label)) for label in labels)
+        y = tuple(int(inverse(target).to_vector()(label)) for label in labels)
+        x_c, r = x[:n], x[n:]
+        y_c, t = y[:n], y[n:]
+        c = 0
+        for value in x_c:
+            c = gcd(c, value)
+        if not c:
+            return self._radical_pointed_isometry(source, target)
+        complement = reduced.lattice_category()([[int(gram[i, j]) for j in range(n)] for i in range(n)])
+        c_labels = tuple(complement.module_generating_set())
+        x_vector = complement.linear_combination({label: complement.base_ring()(value)
+            for label, value in zip(c_labels, x_c, strict=True) if value})
+        y_vector = complement.linear_combination({label: complement.base_ring()(value)
+            for label, value in zip(c_labels, y_c, strict=True) if value})
+        a_isometry = self.pointed_isometry(x_vector, y_vector)
+        if a_isometry is None:
+            return None
+        a = matrix(SageZZ, [[int(a_isometry(complement.module_generator(label)).to_vector()(key))
+            for key in c_labels] for label in c_labels])
+        d = (self.radical_congruence_image(lattice, c).transporter(r, t)
+             if c > 1 else identity_matrix(SageZZ, k))
+        if d is None:
+            return None
+        residual = matrix(SageZZ, [list(t)]) - matrix(SageZZ, [list(r)]) * d
+        if any(int(value) % c for value in residual.list()):
+            raise ArithmeticError("the radical congruence witness does not satisfy its residue equation")
+        _, _, change = matrix(SageZZ, [list(x_c)]).smith_form()
+        bezout = change.column(0)
+        if sum(x_c[i] * int(bezout[i]) for i in range(n)) == -c:
+            bezout = -bezout
+        if sum(x_c[i] * int(bezout[i]) for i in range(n)) != c:
+            raise ArithmeticError("Smith form did not produce the required Bezout column")
+        block = identity_matrix(SageZZ, n + k)
+        for i in range(n):
+            for j in range(n):
+                block[i, j] = a[i, j]
+            for j in range(k):
+                block[i, n + j] = int(bezout[i]) * (int(residual[0, j]) // c)
+        for i in range(k):
+            for j in range(k):
+                block[n + i, n + j] = d[i, j]
+        witness = _conjugated(reduction.isometry, (_isometry_from_row_matrix(reduced, reduced, block),))[0]
+        if witness(source) != target:
+            raise ArithmeticError("the mixed radical/shear witness does not transport the marking")
+        return witness
+
     def pointed_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
         r"""An element of Isom((L, v), (M, w)), or None."""
         if VectorPrefilter.from_vector(source) != VectorPrefilter.from_vector(target):
@@ -1925,6 +2001,8 @@ class EichlerRecursion:
             # A proved obstruction: the radical residues cannot be matched modulo `content(x)`, so no isometry
             # carries one marking onto the other. Answering here is exact and skips the search below.
             return None
+        if not source_lattice.is_nondegenerate():
+            return self._mixed_degenerate_pointed_isometry(source, target)
         if source.q() == source_lattice.base_ring().zero():
             if source_lattice.is_even() and source.div() == source_lattice.base_ring().one():
                 return self._split_isotropic_isometry(source, target)
