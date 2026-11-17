@@ -327,6 +327,16 @@ def test_adapted_flag_action_rejects_inconsistent_rank_sequences():
             induction.basis_flag_action(ambient, (generator,), dimensions)
 
 
+def test_flag_marking_constructor_rejects_inconsistent_rank_sequences():
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis
+
+    ambient = lattice([[0, 1], [1, 0]])
+    generator = next(iter(ambient.module_generators()))
+    for dimensions in ((), (2,), (0, 1), (1, 1)):
+        with pytest.raises(ValueError, match="strictly increasing"):
+            _flag_marking_from_basis(ambient, (generator,), dimensions)
+
+
 def test_public_partial_two_three_flag_classes_in_three_u():
     r"""O(3U) has one primitive isotropic flag class of ranks (2,3).
 

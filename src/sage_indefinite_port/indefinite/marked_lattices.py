@@ -1576,6 +1576,10 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
 
 def _flag_marking_from_basis(lattice: Lattices.ParentMethods, basis: tuple[Lattices.ElementMethods, ...], dimensions: tuple[int, ...]) -> tuple[Morphism, ...]:
     r"""The chain of primitive isotropic prefix sublattices of an adapted basis."""
+    if not dimensions or dimensions[0] < 1 or dimensions[-1] != len(basis) or any(
+        left >= right for left, right in zip(dimensions, dimensions[1:])
+    ):
+        raise ValueError("flag ranks must be positive, strictly increasing, and end at the basis rank")
     space = lattice.primitive_isotropic_subobject(*basis)
     composite = space.inclusion()
     arrows = [composite]
