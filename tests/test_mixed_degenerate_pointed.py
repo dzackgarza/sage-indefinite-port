@@ -554,15 +554,6 @@ def test_nonhomothetic_based_radical_frames_have_exact_transporter():
     assert witness(2 * z) == 2 * (z + w) and witness(3 * w) == 3 * w
 
 
-def test_mixed_degenerate_isotropic_rank_above_rational_witt_index_is_empty():
-    from sage_extensions.all import Lattices, ZZ
-    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
-
-    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
-    source = Lattices(ZZ)([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
-    category = Lattices(ZZ).CosliceUnder(source)
-    assert primitive_marking_classes(category, source, ambient).is_empty()
-    assert primitive_marking_classes(ARROWS, source, ambient).is_empty()
     # Equal Smith invariants do not imply based equivalence: the source
     # frame's column lattice, rather than its unlabelled index, is fixed.
     incompatible = category.object(source.hom([3 * z, 2 * w], codomain=ambient))
@@ -574,6 +565,19 @@ def test_mixed_degenerate_isotropic_rank_above_rational_witt_index_is_empty():
     assert cross_witness is not None
     assert cross_witness(2 * z) == 2 * target_z
     assert cross_witness(3 * w) == 3 * target_w
+
+
+def test_mixed_degenerate_isotropic_rank_above_rational_witt_index_is_empty():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, FLAGS, primitive_marking_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    source = Lattices(ZZ)([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    assert primitive_marking_classes(category, source, ambient).is_empty()
+    assert primitive_marking_classes(ARROWS, source, ambient).is_empty()
+    first = source.primitive_isotropic_subobject(*tuple(source.module_generators())[:2])
+    assert primitive_marking_classes(FLAGS, first.inclusion(), ambient).is_empty()
 
 
 def test_rectangular_based_radical_frame_transporter_in_rank_three_radical():

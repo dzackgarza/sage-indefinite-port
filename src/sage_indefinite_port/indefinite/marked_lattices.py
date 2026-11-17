@@ -2183,13 +2183,14 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 ):
                     reduction, n, k, complement = _degenerate_quotient_and_radical(lattice)
                     reduced = reduction.reduced
-                    if not complement.is_definite() and complement.is_isotropic():
+                    quotient_witt = int(complement.witt_index()) if complement.is_isotropic() else 0
+                    if int(source.rank()) > k + quotient_witt:
+                        classes = ()
+                    elif quotient_witt:
                         raise ValueError(
                             "mixed degenerate primitive isotropic based-marking orbit sets may be infinite; "
                             "this finite-class interface cannot represent them"
                         )
-                    if int(source.rank()) > k:
-                        classes = ()
                     else:
                         basis = tuple(reduction.isometry(reduced.module_generator(label))
                                       for label in tuple(reduced.module_generating_set())[n:n + int(source.rank())])
@@ -2249,7 +2250,10 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
             ):
                 reduction, n, k, complement = _degenerate_quotient_and_radical(lattice)
                 reduced = reduction.reduced
-                if not complement.is_definite() and complement.is_isotropic():
+                quotient_witt = int(complement.witt_index()) if complement.is_isotropic() else 0
+                if rank > k + quotient_witt:
+                    classes = ()
+                elif quotient_witt:
                     raise ValueError(
                         "mixed degenerate primitive isotropic sublattice orbit sets may be infinite; "
                         "use iter_all_isotropic_sublattice_classes"
@@ -2257,8 +2261,6 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 # The anisotropic quotient forces every isotropic subspace
                 # into rad(L).  Since rad(L) is saturated, its primitive
                 # rank-r sublattices form one GL(rad L)-orbit for r <= k.
-                if rank > k:
-                    classes = ()
                 else:
                     basis = tuple(reduction.isometry(reduced.module_generator(label))
                                   for label in tuple(reduced.module_generating_set())[n:n + rank])
@@ -2327,15 +2329,16 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
             elif not lattice.is_nondegenerate():
                 reduction, n, k, complement = _degenerate_quotient_and_radical(lattice)
                 reduced = reduction.reduced
-                if not complement.is_definite() and complement.is_isotropic():
+                quotient_witt = int(complement.witt_index()) if complement.is_isotropic() else 0
+                if dimensions[0] < 1 or any(left >= right for left, right in pairwise(dimensions)):
+                    raise ValueError("isotropic flag ranks must be positive and strictly increasing")
+                if dimensions[-1] > k + quotient_witt:
+                    classes = ()
+                elif quotient_witt:
                     raise ValueError(
                         "mixed degenerate primitive isotropic flag orbit sets may be infinite; "
                         "this finite-class interface cannot represent them"
                     )
-                if dimensions[0] < 1 or any(left >= right for left, right in pairwise(dimensions)):
-                    raise ValueError("isotropic flag ranks must be positive and strictly increasing")
-                if dimensions[-1] > k:
-                    classes = ()
                 else:
                     basis = tuple(reduction.isometry(reduced.module_generator(label))
                                   for label in tuple(reduced.module_generating_set())[n:n + dimensions[-1]])
