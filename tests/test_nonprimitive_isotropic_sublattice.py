@@ -65,3 +65,18 @@ def test_moving_line_orbit_classes_retain_saturation_index():
     assert int(a.arrow()(a.arrow().domain().module_generators()[0]).content()) == 2
     assert int(b.arrow()(b.arrow().domain().module_generators()[0]).content()) == 4
     assert isometry(ARROWS, a, b) is None
+
+
+def test_moving_nonisotropic_rank_one_markings_use_signed_pointed_transport():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
+
+    plane = lattice([[0, 1], [1, 0]])
+    e, f = tuple(plane.module_generators())
+    source = Lattices(ZZ)([[16]])
+    first = ARROWS(source.hom([2 * (e + 2 * f)], codomain=plane))
+    second = ARROWS(source.hom([-2 * (2 * e + f)], codomain=plane))
+    witness = isometry(ARROWS, first, second)
+    assert witness is not None
+    assert witness(2 * (e + 2 * f)) in (2 * (2 * e + f), -2 * (2 * e + f))
+    assert isometry(ARROWS, first, ARROWS(source.hom([e + 8 * f], codomain=plane))) is None

@@ -146,12 +146,15 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 source_arrow, target_arrow = source.arrow(), target.arrow()
                 source_point = source_arrow(next(iter(source_arrow.domain().module_generators())))
                 target_point = target_arrow(next(iter(target_arrow.domain().module_generators())))
-                if source_point.q() == source_point.parent().base_ring().zero() and target_point.q() == target_point.parent().base_ring().zero():
-                    if source_point.content() != target_point.content():
-                        return None
-                    # A rank-one arrow allows source automorphism +/-1;
-                    # saturation cancels the common content exactly.
-                    return INDUCTION.line_isometry(source_point.primitive_part(), target_point.primitive_part())
+                if source_point.content() != target_point.content():
+                    return None
+                # The source automorphism group of a nonzero rank-one
+                # lattice is {+/-1}, whether its square is zero or not.
+                # Cancelling content reduces both permitted transports to
+                # primitive pointed isometries, preserving the original norm.
+                if not source_point.content():
+                    return RECURSION.isometry(source_point.parent(), target_point.parent())
+                return INDUCTION.line_isometry(source_point.primitive_part(), target_point.primitive_part())
             source_sublattice = _isotropic_sublattice(source.arrow())
             target_sublattice = _isotropic_sublattice(target.arrow())
             match int(source_sublattice.inclusion().domain().rank()), int(target_sublattice.inclusion().domain().rank()):
