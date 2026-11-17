@@ -174,3 +174,43 @@ def test_homothetic_rank_two_moving_transporter_uses_saturated_planes():
     assert second.arrow().saturation().inclusion().is_in_image(witness(u))
     assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y) for x in (e, f, u, v) for y in (e, f, u, v))
     assert isometry(ARROWS, first, third) is None
+
+
+def test_rank_two_index_two_submodules_are_quotiented_by_actual_levi_image():
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_sublattice_classes
+
+    plane = lattice([[0, 1], [1, 0]])
+    ambient = plane + plane
+    e, _f, u, _v = tuple(ambient.module_generators())
+    saturated = ambient.primitive_isotropic_subobject(e, u)
+    classes = nonprimitive_sublattice_classes(saturated, (1, 2))
+    assert len(classes) == 1
+    arrow = classes[0]
+    assert arrow.saturation().inclusion().is_primitive()
+    assert arrow.codomain() is ambient
+    assert arrow.saturation().inclusion().domain().subobject_on(tuple(arrow.saturation().inclusion().lift(arrow(x)) for x in arrow.domain().module_generators())).inclusion().cokernel().cardinality() == 2
+
+
+def test_index_two_sublattices_respect_proper_integral_levi_image():
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_sublattice_classes
+
+    ambient = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 2], [0, 0, 2, 0]])
+    e, _f, u, _v = tuple(ambient.module_generators())
+    saturated = ambient.primitive_isotropic_subobject(e, u)
+    classes = nonprimitive_sublattice_classes(saturated, (1, 2))
+    assert len(classes) == 2
+    assert all(arrow.codomain() is ambient for arrow in classes)
+
+
+def test_composite_index_four_submodules_keep_smith_type():
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_sublattice_classes
+
+    plane = lattice([[0, 1], [1, 0]])
+    ambient = plane + plane
+    e, _f, u, _v = tuple(ambient.module_generators())
+    saturated = ambient.primitive_isotropic_subobject(e, u)
+    cyclic = nonprimitive_sublattice_classes(saturated, (1, 4))
+    homothetic = nonprimitive_sublattice_classes(saturated, (2, 2))
+    assert len(cyclic) == len(homothetic) == 1
+    assert cyclic[0].saturation().inclusion().is_primitive()
+    assert homothetic[0].saturation().inclusion().is_primitive()

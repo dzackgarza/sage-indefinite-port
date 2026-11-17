@@ -473,6 +473,83 @@ def homothetic_isotropic_sublattice_classes(lattice: Parent, rank: int, multipli
     return finite_ordered_set(tuple(classes))
 
 
+
+def nonprimitive_sublattice_classes(saturated: Parent, divisors: tuple[int, ...]) -> tuple[Morphism, ...]:
+    r"""Finite-index sublattices of a primitive isotropic S, modulo its actual ambient stabilizer.
+
+    Enumerate row-Hermite sublattices of the prescribed Smith type and
+    quotient by the integral image of Stab_O(L)(S) in GL(S).  The returned
+    arrows are inclusions into the original ambient lattice, not merely
+    abstract finite modules or GL(S)-orbits.
+    """
+    from itertools import product
+    from math import prod
+    from sage.all import ZZ as SageZZ, matrix
+
+    inclusion = saturated.inclusion()
+    lattice = inclusion.codomain()
+    rank = int(inclusion.domain().rank())
+    divisors = tuple(int(d) for d in divisors)
+    if len(divisors) != rank or any(d < 1 for d in divisors) or any(b % a for a, b in zip(divisors, divisors[1:])):
+        raise ValueError("elementary divisors must be positive, ordered by divisibility, and match the saturation rank")
+    basis = tuple(inclusion(point) for point in inclusion.domain().module_generators())
+    if any(lattice.b(x, y) != 0 for x in basis for y in basis) or not inclusion.is_primitive():
+        raise ValueError("the supplied saturation must be primitive and totally isotropic")
+    labels = tuple(inclusion.domain().module_generating_set())
+    index = prod(divisors)
+
+    def diagonal_families(remaining, size):
+        if size == 0:
+            if remaining == 1:
+                yield ()
+            return
+        for d in range(1, remaining + 1):
+            if remaining % d == 0:
+                for tail in diagonal_families(remaining // d, size - 1):
+                    yield (d, *tail)
+
+    candidates = {}
+    for diagonal in diagonal_families(index, rank):
+        slots = tuple((i, j) for i in range(rank) for j in range(i + 1, rank))
+        for entries in product(*(range(diagonal[j]) for i, j in slots)):
+            h = matrix(SageZZ, rank, rank, 0)
+            for i, d in enumerate(diagonal):
+                h[i, i] = d
+            for (i, j), value in zip(slots, entries, strict=True):
+                h[i, j] = value
+            if tuple(abs(int(d)) for d in h.elementary_divisors()) == divisors:
+                candidates[tuple(tuple(int(v) for v in row) for row in h.rows())] = h
+
+    actions = []
+    for generator in INDUCTION.plane_automorphism_generators(saturated):
+        rows = []
+        for point in basis:
+            coordinates = inclusion.lift(generator(point)).to_vector()
+            rows.append([int(coordinates(label)) for label in labels])
+        actions.append(matrix(SageZZ, rows))
+    unseen = set(candidates)
+    representatives = []
+    while unseen:
+        start = min(unseen)
+        representatives.append(candidates[start])
+        frontier = [start]
+        unseen.remove(start)
+        while frontier:
+            current = candidates[frontier.pop()]
+            for action in actions:
+                moved = (current * action).hermite_form()
+                key = tuple(tuple(int(v) for v in row) for row in moved.rows())
+                if key in unseen:
+                    unseen.remove(key)
+                    frontier.append(key)
+    result = []
+    for h in representatives:
+        vectors = tuple(sum((lattice.scalar_multiple(lattice.base_ring()(int(coefficient)), basis[j])
+            for j, coefficient in enumerate(row) if coefficient), lattice.zero()) for row in h.rows())
+        result.append(lattice.subobject_on(vectors).inclusion())
+    return tuple(result)
+
+
 def primitive_marking_classes(category: Category, source: Parent | Morphism, lattice: Parent) -> Parent:
     r"""One marked lattice for each isomorphism class of primitive markings of ``lattice`` of shape ``source``.
 
@@ -543,4 +620,5 @@ __all__ = [
     "nonprimitive_isotropic_line_classes",
     "nonisotropic_line_classes",
     "homothetic_isotropic_sublattice_classes",
+    "nonprimitive_sublattice_classes",
 ]
