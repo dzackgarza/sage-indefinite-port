@@ -2,6 +2,19 @@
 from tests.acceptance.consumer import lattice
 
 
+def test_low_witt_nonprimitive_isotropic_line_stream_preserves_saturation_index():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_isotropic_line_content_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[2, 0], [0, -4]])
+    for content in (2, 3):
+        marking = next(iter_isotropic_line_content_classes(ambient, content))
+        arrow = marking.arrow()
+        vector = arrow(next(iter(arrow.domain().module_generators())))
+        assert vector.q() == ZZ(0)
+        assert int(vector.content()) == content
+
+
 def test_rank_four_witt_zero_and_one_changed_basis_witnesses():
     from sage.all import ZZ as SageZZ, matrix
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION

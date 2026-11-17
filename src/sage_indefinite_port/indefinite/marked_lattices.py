@@ -1195,6 +1195,23 @@ def iter_primitive_isotropic_line_classes(lattice: Parent):
         yield ARROWS.object(source.hom([vector], codomain=lattice))
 
 
+def iter_isotropic_line_content_classes(lattice: Parent, content: int):
+    r"""Exact exhaustive moving-null-line stream at fixed saturation index.
+
+    Scaling by positive ``content`` is an equivariant bijection between
+    primitive isotropic lines and rank-one isotropic sublattices with that
+    saturation index. No finite orbit count is asserted.
+    """
+    if content < 1:
+        raise ValueError("rank-one sublattice index in saturation must be positive")
+    source = lattice.lattice_category()([[0]])
+    generator = next(iter(source.module_generators()))
+    for marking in iter_primitive_isotropic_line_classes(lattice):
+        yield ARROWS.object(source.hom([
+            lattice.scalar_multiple(lattice.base_ring()(content), marking.arrow()(generator))
+        ], codomain=lattice))
+
+
 def nonprimitive_isotropic_line_classes(lattice: Parent, content: int, *, acting_group=None) -> Parent:
     r"""Moving rank-one isotropic sublattice orbits of prescribed index in saturation.
 
@@ -1579,6 +1596,7 @@ __all__ = [
     "odd_primitive_pointed_classes_via_doubling",
     "pointed_nonzero_norm_classes",
     "iter_pointed_isotropic_classes",
+    "iter_isotropic_line_content_classes",
     "nonprimitive_isotropic_line_classes",
     "nonisotropic_line_classes",
     "homothetic_isotropic_sublattice_classes",
