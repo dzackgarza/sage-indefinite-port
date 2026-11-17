@@ -452,6 +452,33 @@ def test_mixed_degenerate_full_radical_plane_transporter_between_presentations()
                for x in (e, f, z) for y in (e, f, z))
 
 
+def test_mixed_degenerate_plane_transporter_rejects_distinct_radical_intersection_ranks():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION, ARROWS, isometry
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    radical_plane = ambient.primitive_isotropic_subobject(z, w)
+    mixed_plane = ambient.primitive_isotropic_subobject(e, z)
+    assert INDUCTION.plane_isometry(radical_plane, mixed_plane) is None
+    assert isometry(ARROWS, ARROWS.object(radical_plane.inclusion()),
+                    ARROWS.object(mixed_plane.inclusion())) is None
+
+
+def test_isotropic_plane_transporter_rejects_nondegenerate_to_degenerate_ambient():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    nondegenerate = Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    degenerate = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, u, v = tuple(nondegenerate.module_generators())
+    a, b, z, w = tuple(degenerate.module_generators())
+    first = nondegenerate.primitive_isotropic_subobject(e, u)
+    second = degenerate.primitive_isotropic_subobject(a, z)
+    assert INDUCTION.plane_isometry(first, second) is None
+    assert INDUCTION.plane_isometry(second, first) is None
+
+
 def test_public_moving_full_radical_plane_transporter_between_presentations():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry

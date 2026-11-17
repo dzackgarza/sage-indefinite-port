@@ -710,7 +710,20 @@ class IsotropicInduction:
             # Every ambient isometry carries the zero subspace to zero.
             return self.recursion.isometry(source.inclusion().codomain(), target.inclusion().codomain())
         source_ambient, target_ambient = source.inclusion().codomain(), target.inclusion().codomain()
+        if source_ambient.is_nondegenerate() != target_ambient.is_nondegenerate():
+            return None
         if not source_ambient.is_nondegenerate() and not target_ambient.is_nondegenerate():
+            # An isometry preserves the ambient radical. In particular,
+            # dim(J ∩ rad L) is an exact obstruction even when J and J'
+            # have the same rank and zero Gram matrix.
+            intersection_ranks = []
+            for ambient, points in ((source_ambient, source_basis), (target_ambient, target_basis)):
+                radical = ambient.radical()
+                radical_points = tuple(radical.inclusion()(point) for point in radical.module_generators())
+                joined = ambient.subobject_on((*points, *radical_points))
+                intersection_ranks.append(len(points) + int(radical.rank()) - int(joined.rank()))
+            if intersection_ranks[0] != intersection_ranks[1]:
+                return None
             phi = self.recursion.isometry(source_ambient, target_ambient)
             if phi is None:
                 return None
