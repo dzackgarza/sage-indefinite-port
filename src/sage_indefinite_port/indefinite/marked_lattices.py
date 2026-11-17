@@ -379,6 +379,11 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
 
 
 def _pointed_classes(category: Category, lattice: Lattices.ParentMethods, square: int) -> tuple[Parent, ...]:
+    # The binary split primitive algorithm is even-form based.  For an odd
+    # split plane, double the pairing and transport full-group orbits back;
+    # never transport the doubled discriminant-kernel subgroup.
+    if not lattice.is_even() and int(lattice.rank()) == 2 and lattice.is_isotropic():
+        return tuple(odd_primitive_pointed_classes_via_doubling(category, lattice, square))
     profile = AttackProfile.from_lattice(lattice)
     if profile.positive_index == 1 and int(lattice.rank()) == 2 and tuple(map(int, lattice.signature_pair())) == (1, 1) and not lattice.is_isotropic():
         # An anisotropic binary plane has no isotropic cusp and therefore no
@@ -432,6 +437,35 @@ def _pointed_classes(category: Category, lattice: Lattices.ParentMethods, square
     base = category.base_object()
     return tuple(category.object(base.hom([vector_], codomain=lattice)) for vector_ in vectors)
 
+
+
+
+def odd_primitive_pointed_classes_via_doubling(category: Category, lattice: Parent, square: int) -> Parent:
+    r"""Primitive full-O(L) pointed classes on an odd lattice via its even double.
+
+    The underlying free module and the *full* integral isometry group are
+    unchanged by doubling the pairing.  Classify square ``2*square`` on
+    ``(L,2b)`` and transport each vector's unchanged coordinates back to
+    ``(L,b)``.  No discriminant-kernel, stable or congruence subgroup is
+    transported from the doubled lattice: those must be imposed on L.
+    """
+    if lattice.is_even():
+        raise ValueError("this reduction is specifically for odd integral lattices")
+    if not isinstance(category, CosliceCategory) or int(category.base_object().rank()) != 1:
+        raise ValueError("odd primitive pointed classes require a rank-one coslice")
+    source = category.base_object()
+    if int(source.q(next(iter(source.module_generators())))) != square:
+        raise ValueError("the source marking square must match the requested square")
+    doubled, _twist = lattice.doubled_form()
+    doubled_source = doubled.lattice_category()([[2 * square]])
+    doubled_category = CosliceCategory(doubled.lattice_category(), doubled_source)
+    labels = tuple(lattice.module_generating_set())
+    classes = []
+    for marking in _pointed_classes(doubled_category, doubled, 2 * square):
+        coordinates = _marked_vector(marking).to_vector()
+        point = lattice.linear_combination({label: coordinates(label) for label in labels if coordinates(label)})
+        classes.append(category.object(source.hom([point], codomain=lattice)))
+    return finite_ordered_set(tuple(classes))
 
 
 def pointed_content_classes(category: Category, lattice: Parent, square: int, content: int, *, acting_group=None) -> Parent:
@@ -759,6 +793,7 @@ __all__ = [
     "isometry",
     "primitive_marking_classes",
     "pointed_content_classes",
+    "odd_primitive_pointed_classes_via_doubling",
     "pointed_nonzero_norm_classes",
     "iter_pointed_isotropic_classes",
     "nonprimitive_isotropic_line_classes",
