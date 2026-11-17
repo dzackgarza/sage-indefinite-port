@@ -2314,7 +2314,7 @@ class LorentzianPerfectLocalBackend:
                 raise ArithmeticError("the exact row-position certificate requires distinct configuration vectors")
         if reduce_basis_images:
             symmetric = SymmetricGroup(n)
-            subgroup = symmetric.subgroup([])
+            subgroup = None
             group_permutations = []
             # Seed the exact stabilizer subgroup with integral reflections in
             # the ambient basis vectors whenever they preserve this complete
@@ -2399,7 +2399,12 @@ class LorentzianPerfectLocalBackend:
             # permutation subgroup for each of the rank basis reflections
             # repeats the same expensive Schreier setup on the 49,861-ray A7
             # configuration without changing its generated subgroup.
-            subgroup = symmetric.subgroup(group_permutations)
+            # The empty generating family acts trivially. In that case
+            # constructing a degree-n GAP group (and its point stabilizers)
+            # has no mathematical effect on the image search. Delay that
+            # construction until there is a nonidentity certified action.
+            if group_permutations:
+                subgroup = symmetric.subgroup(group_permutations)
         # Pointwise stabilizers depend only on the generated subgroup version
         # and the set of already assigned target positions. Reusing them across
         # sibling search nodes avoids rebuilding the same GAP stabilizer chain.
@@ -2499,7 +2504,7 @@ class LorentzianPerfectLocalBackend:
                     }
                 )
                 if generators_only:
-                    if permutation not in subgroup:
+                    if (subgroup is None and not permutation.is_one()) or (subgroup is not None and permutation not in subgroup):
                         stabilizer_elements.append(witness)
                         group_permutations.append(permutation)
                         subgroup = symmetric.subgroup(group_permutations)
@@ -2610,25 +2615,28 @@ class LorentzianPerfectLocalBackend:
                     # The current sibling list was fixed before that
                     # discovery, so recompute the H_a-orbit partition.
                     if version != len(group_permutations):
-                        fixer_key = (len(group_permutations), tuple(sorted(images.values())))
-                        fixer = fixer_cache.get(fixer_key)
-                        if fixer is None:
-                            fixer = subgroup
-                            for assigned_target in fixer_key[1]:
-                                fixer = fixer.stabilizer(assigned_target + 1)
-                            fixer_cache[fixer_key] = fixer
-                            if len(fixer_cache) > 256:
-                                fixer_cache.pop(next(iter(fixer_cache)))
-                        orbit_minima = {}
-                        remaining_orbits = set(admissible)
-                        while remaining_orbits:
-                            candidate = min(remaining_orbits)
-                            orbit = {int(position) - 1 for position in fixer.orbit(candidate + 1)}
-                            if not orbit <= admissible:
-                                raise ArithmeticError("an integral pointwise stabilizer does not preserve the admissible image class")
-                            for member in orbit:
-                                orbit_minima[member] = candidate
-                            remaining_orbits.difference_update(orbit)
+                        if subgroup is None:
+                            orbit_minima = {candidate: candidate for candidate in admissible}
+                        else:
+                            fixer_key = (len(group_permutations), tuple(sorted(images.values())))
+                            fixer = fixer_cache.get(fixer_key)
+                            if fixer is None:
+                                fixer = subgroup
+                                for assigned_target in fixer_key[1]:
+                                    fixer = fixer.stabilizer(assigned_target + 1)
+                                fixer_cache[fixer_key] = fixer
+                                if len(fixer_cache) > 256:
+                                    fixer_cache.pop(next(iter(fixer_cache)))
+                            orbit_minima = {}
+                            remaining_orbits = set(admissible)
+                            while remaining_orbits:
+                                candidate = min(remaining_orbits)
+                                orbit = {int(position) - 1 for position in fixer.orbit(candidate + 1)}
+                                if not orbit <= admissible:
+                                    raise ArithmeticError("an integral pointwise stabilizer does not preserve the admissible image class")
+                                for member in orbit:
+                                    orbit_minima[member] = candidate
+                                remaining_orbits.difference_update(orbit)
                         version = len(group_permutations)
                     if orbit_minima[j] != j:
                         continue
