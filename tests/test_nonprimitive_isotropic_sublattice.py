@@ -285,6 +285,21 @@ def test_zero_form_full_based_frame_has_trivial_pointwise_stabilizer():
     assert generators == (ambient.O().identity(),)
 
 
+def test_zero_form_changed_basis_pointwise_stabilizer_conjugates_correctly():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    ambient = Lattices(ZZ)([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    e, f, u = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    marked = category.object(source.hom([e + u, f], codomain=ambient))
+    generators = tuple(automorphism_group_generators(category, marked))
+    assert generators
+    assert all(g(e + u) == e + u and g(f) == f for g in generators)
+    assert any(g(u) != u for g in generators)
+
+
 def test_unrestricted_rank_two_null_sublattices_split_under_special_orthogonal_group():
     from itertools import islice
     from sage_extensions.all import Lattices, ZZ
