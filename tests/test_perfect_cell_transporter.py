@@ -289,7 +289,7 @@ def test_large_reordered_identical_cell_has_immediate_integral_transporter() -> 
     assert all(witness(x) == x for x in ambient.module_generators())
 
 
-def test_equal_coordinate_cells_on_distinct_lattice_parents_transport_exactly() -> None:
+def test_equal_coordinate_cells_from_separate_parent_constructions_transport_exactly() -> None:
     source_lattice = lattice([[0, 1], [1, 0]])
     target_lattice = lattice([[0, 1], [1, 0]])
     source = LorentzianPerfectCell(source_lattice, ((1, 0), (0, 1)), ZERO_SQUARES)
