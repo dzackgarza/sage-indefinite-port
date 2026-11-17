@@ -1,63 +1,56 @@
-# Complete indefinite-lattice implementation
+# V1 completion
 
 ## Ambient task
 
-Finish the pinned indefinite-lattice algorithms and public consumers, then deliver every retained arithmetic extension in #69. Functional implementation has priority. Each implemented branch needs a small independent mathematical example through its public operation.
+Deliver the v1 indefinite-lattice algorithms through their public consumers.
+Establish correctness with small, independent examples covering each mathematical
+branch. Then reduce the long-tail runtime by aggregate cost until its measured
+estimate permits a full run within six hours.
 
-**Work priority:** required functionality has absolute priority over performance. Performance work is the last phase of this project and begins only when every required capability works through the public interface. A slow run, timeout, resource budget or red CI job does not select work and does not block functional work. [Full rule](https://github.com/dzackgarza/sage-indefinite-port/issues/4#work-priority).
+The v1 obligation is the issue tree rooted at #4, especially #44, #15, #18,
+#68, #70, #72 and final acceptance #64. `.tmp/GOAL.md` lists the functional
+requirements; each status there must be checked against its source and evidence.
+`references/complexity/README.md` defines runtime pricing and
+`references/complexity/triage.md` owns the measured costs.
 
 ## Completion condition
 
-Return the specified mathematical objects through sage-extensions, with complete integral generators, actual finite images, subgroup restrictions, source automorphism actions and exact witnesses. The unchanged frozen assertions at one published port/provider pair are the last phase; they follow all functional rows below. Interrupted cases remain open.
+| Required behavior | Acceptance | Remaining verification |
+| --- | --- | --- |
+| General isotropic markings and flags (#44) | Full source-supported ranks, dimension sequences, based and oriented markings, stabilizers, transporters, actual quotient actions and requested subgroups | Verify public tests for these branches at the final port/provider pair; include unchanged rank-one and rank-two consumers |
+| Edgewalk and recursive public operations (#15, #18, #68, #72) | Independent branch assertions, exact positive and negative witnesses, source options and reproducible generation | Reconcile final branch selection with the source; the earlier successful tier-1 run does not establish a later pair |
+| Integral stabilizers and boundary computations (#70) | Exact I_1_1/I_1_2 indices, O_plus_N line/plane counts and the sage-extensions #294 consumer | Complete the consumer assertions at the final pair |
+| Runtime and release (#64) | A completion-based estimate below six hours, then the required frozen corpus at a common published pair | Short-probe timeouts are censored observations; obtain their completion times before using the estimate as a launch condition |
 
-| Required scope | Acceptance and current state |
-| --- | --- |
-| Isotropic source parity (#44) | Source `6692163` and provider `0b49d165` additionally supply exact prescribed Levi image sections, public lifts and image generators; null-sublattice restriction with its pointwise kernel; higher-rank quotient-kernel generators; and the joint unipotent kernel. Split quotient transvections, a glued lift requiring motion of the null basis, a proper binary quotient image, full pointwise skew parameters and the full split Hom-plus-central unipotent parameter lattices have small independent passing assertions. Quotient-kernel modulo-three image assertions pass; their owner call-time gate remains red. The odd-gluing infinite-quotient negative example remains unverified at its bound. Provider `74cb82dc` supplies public `FlagType` construction/enumeration/transport, marked-diagram flag stabilizers and rank-zero null objects/loci/orbits/cusps. Small flag membership/generator examples, rank-zero O/SO/stabilizer transporters and the order-two zero-stabilizer discriminant image on `<6>` pass normal owner gates. The direct public `(1,3)` O(3U) orbit result passes; SO splitting remains unverified. The positive-rank stabilizer discriminant-image accessor now uses the general source action; the nontrivial line example passes, while the rank-three `3U + <-6>` image example times out before its result. Cover every attainable rank and dimension sequence, based embeddings, moving sublattices, flags, pointwise/setwise stabilizers, exact transporters and inverses, the actual induced quotient image, impossible ranks and requested finite-index groups. Public partial/complete flags in 3U, SO splitting and transporters, proper glued-line quotient images and pointwise skew-shear stabilizers have small verified examples on the recorded issue/proof pairs. The U+2U fixed-basis transporter test distinguishes the divisor-one and divisor-two basis vectors, admits the integral Levi shear, and verifies moving-source naturality and inverses; both cases pass with provider 0150cc2b. The combined determinant/discriminant U(3) example has actual image order 4 and kernel index 4; its kernel splits the based vector orbit into 4 classes and the moving line orbit into 2, with all distinct-class transporter decisions negative. The one-term flag uses the canonical arrow category and the same 2-class result. The public pointwise maximal stabilizer in 4U generates the full integral skew-parameter module, with exact forward/inverse actions and trivial parameter cokernel, at 23810a7/8d72ad94; `.tmp/rank-four-pointwise-stabilizer-evidence.md` gives the independent proof and node. The provider public complete-flag adapter now uses the full finite-ordinal diagram; `.tmp/complete-flag-adapter-evidence.md` records the verified rank-one/two/three orbit/transporter, rank-three stabilizer-preservation and impossible-rank assertions, together with their unresolved owner time-gate failures. Complete branch coverage remains open. **No route exists for** k-plane and k-flag right cosets (`CombinedAlgorithms.h:1565-1628,2461-2471`), the induced action on successive flag quotients (`:682-717,776-817`) and oriented variants. Exact gaps, routes without a finished example and small examples are in the [source-coverage audit](https://github.com/dzackgarza/sage-indefinite-port/issues/44#issuecomment-6727208334). |
-| Edgewalk options (#15) | `EarlyTerminationIfNotReflective=false`, `OptionNorms="K3"`, `OptionInitialVertex`, `reason_non_reflective` and the edgewalk isomorphism route have no production route. Rows and examples are in the [edgewalk audit](https://github.com/dzackgarza/sage-indefinite-port/issues/15#issuecomment-6727208509). |
-| Public reduction surface (#18) | Invariant, `IndefiniteReduction` and `ApproxCanonicalForm` have port routes and no provider consumer. See the [public-surface audit](https://github.com/dzackgarza/sage-indefinite-port/issues/18#issuecomment-6727208683). |
-| Original public surface (#4, #18, #68) | Orthogonal, discriminant-kernel and component groups; isometry decisions; vector classes, stabilizers and transporters; isotropic markings and incidence; finite-order centralizers; perfect-domain quotients and Allcock outputs. Native split-genus coverage remains required beyond the verified Conway–Sloane specimen. |
-| Low rational Witt index (#69) | Effective orthogonal generators, isometries, fixed-norm operations and recursive consumers at higher real index with rational Witt index zero or one; isotropic lines at index one. Only the Boolean spinor-genus decision and the empty families exist; every constructive output is absent. Retain diag(2,2,-6,-6) and U plus <2,-4>. Explicit Li–Margulis constants, rank-four-through-six Clifford/order constructions and all-orbit primitive embedding bounds remain separate obligations. |
-| Finite-image subgroups (#69) | Joint finite representations with their actual image; exact preimages, subgroup generators, orbit splitting, stabilizers, transporters and combined discriminant/component/congruence/determinant/spinor/level conditions across supported markings. `.tmp/joint-character-representation-evidence.md` records the owned joint discriminant/sign map, exact finite-preimage cosets and independent proper-image/sign-action assertions at provider 2dfd20b6. The supplied-target-stabilizer correction also retains the actual character condition and native composition order; `.tmp/character-transporter-evidence.md` records a fixed nonnormal false-negative decision and the exact stable-component witnesses, with their unresolved owner call gates. **Congruence, level and residue conditions have no public construction; `OrthogonalCharacterQuotient` has only discriminant, determinant and real spinor factors.** General coverage remains open. |
-| Embeddings and markings (#69) | Complement and discriminant-glue constructions for nondegenerate embeddings and Gram configurations; content and saturation for nonprimitive markings; odd lattices; radical shear data for degenerate ambient lattices; degenerate/equivariant source diagrams. Null-vector content must retain its infinite parameter. **Indefinite non-isotropic and nonprimitive sublattice markings raise at `marked_lattices.py:67-75`.** General coverage remains open. |
-| Buildings and infinite quotients (#69) | Rational isotropic flag complexes with compatible face maps, incidence multiplicities and stabilizers; lazy representatives and pairing slices; exact equivalence witnesses; exhaustive duplicate-free enumeration and canonical representatives under the stated hypotheses. **Face maps exist only for (1,2) flags.** Canonical forms and infinite-index orbit sets are port-only, for vectors. General coverage remains open. |
-| Centralizers and normalizers (#69) | Joint involution eigensublattices and actual gluing stabilizers; cyclotomic integral unitary groups; realized finite-group automorphisms and equivariant transporter lifts; the retained infinite-cyclic case; simultaneous arithmetic centralizers. Only trace-definite and Hermitian rank-one cyclotomic components have generators; a definite-at-every-place component of rank at least two asserts. Full groups or the promised constructive interface remain required. |
-| Unitary/arithmetic backends (#69) | ACT Eisenstein (4,1) and cubic-surface consumers; Hermitian-ocean and Picard reductions; integral Hermitian parabolics/flags with their unipotent law and liftable Levi image; effective Grunewald–Segal generation and orbit decisions for the required orders and modules. No code exists for these backends; the only Hermitian code is a private discriminant-image engine. |
-| **Last phase, after all rows above:** original large computations (#64, #70) | Complete A7, Lorentzian groups, isotropic stabilizers and boundaries. The original I_1_2 index assertion passes at c342cd2/beea72b. Published frozen CI also establishes I_1_1, I_1_2, I_2_1 and I_2_2 at 23927db/16485a1; exact IDs are in `.tmp/acceptance-23927db-evidence.md`. LORENTZ_OrthogonalGroup0 and IsotropicCases_8716 pass at e3582d3/5493427. Mertens and LORENTZ_OrthogonalGroup1 pass at e66eb94/40642a1; exact nodes and assertions are in `.tmp/acceptance-e66eb94-evidence.md`. LORENTZ_OrthogonalGroup2 passes at b7ef2bf/16485a1; its exact assertion is in `.tmp/acceptance-b7ef2bf-evidence.md`. I_1_1 also passes at d22ee29/eba77164, afa1176/25288942, 2cdf004/bc6bd572 and 583b36d/16c798db. The Allcock rank-two primitive-plane parity assertion passes at 2e36cff/7960e1ae; its exact scope and retained JUnit are in `.tmp/acceptance-2e36cff-evidence.md`. A7, O_plus_N, Dawes and final-pair evidence remain open. |
+No stubs are permitted for these v1 behaviors. A successful specimen establishes
+its mathematical branch, not all unexecuted cases.
 
 ## Next work, ranked
 
-1. **Now: work the open rows of `.tmp/GOAL.md` in its dependency order.** `GOAL.md` owns the row list and each row's first example; its Status column changes in the commit that completes a row. Run examples with `sage` in the container, `PYTHONPATH` set to the provider and port `src` directories, with no time limit. Provider work happens at `/home/dzack/.local/share/docker/volumes/sage-repos/_data/sage-extensions-cardinality`, published to provider `main`; the port pin follows.
+1. Finish the definite-isometry repair for the public square-26 orbit consumer.
+   Establish the actual PARI-overflow reproducer at the definite-isometry owner,
+   then verify the repaired public operation and unchanged consumer. The norm-10
+   test in the interrupted draft passed before that draft and is not red proof.
+2. Finish the Enriques discriminant-form cost repair at its owner. Preserve the
+   quadratic classifier and its quotient codomain; test quadratic values,
+   bilinear pairing and classifier behavior against independent mathematics.
+   Price both evaluation and construction, then the actual boundary consumer.
+3. Complete minimal branch evidence. Existing tests cover general flags,
+   subgroup planes, oriented marked categories, graded quotient actions,
+   definite empty isotropic classes and finite-left double cosets. Strengthen
+   split-binary orbit completeness and verify the negative-square embedding
+   branch. Use the tests at their existing owners.
+4. Price unfinished strata with the retained `probe_long` node selection.
+   Separate timeouts from mathematical errors. Replace a censored price only
+   with a completed measurement and retain its port/provider provenance.
+   Rank subsequent repairs by aggregate hours in the triage table.
+5. Once the runtime condition holds, execute the required release evidence and
+   resolve every failed assertion through its owning operation.
 
-Before marking the "Routes with no finished example" row, confirm `tests/lattices/test_isotropic_routes_small_examples.sage` for the rank-three discriminant image and the (1,3) SO splitting. Before marking the #43 row, confirm the Γ(3) sixteen-orbit example in `tests/lattices/test_congruence_subgroups.sage`, then add stabilizer generators and the remaining markings. Row #48 has the content parameter and doubled form; the finite classification of families inside a saturation remains.
+Work in `sage-indefinite-computations`; generic operations belong in
+`sage-extensions`. Compare both working trees and remote heads before continuing.
+Retain existing work and use the shared Sage container. Read run artifacts for
+case outcomes and revisions; aggregate job status is not mathematical evidence.
 
-   **Witnesses.** A small independently derived witness runs locally. The true witness, if it needs hours, is a test in `witnesses/` and runs in the `Long witnesses` workflow with a 6-hour job limit. Read those runs before marking the routes, #43, #41 or #60 rows. The rank-two Levi indices 3 and 8 in `witnesses/test_hermitian_levi.sage` rest on the docstring arguments until a run confirms them.
-
-   **Semantic-layer debt.** `IsometryCommutant`, `witt_one_hilbert`, `binary_hyperbolic_unitary`, `li_margulis`, `pairing_slices` and the Picard modules compute on raw matrices and convert to owned isometries only at the edges. Move them onto the owned lattice, isometry and group objects; a faster path belongs inside those objects.
-
-   **Next units.** #54: glued products, nonsplit and nonmaximal commutants, proper images, nonabelian skew radicals, and orbit decisions; `IsometryCommutant.centralizer_generators` dispatches on the commutant type, and the route is on #54. #50: exact negatives for nonsemisimple commutants; noncyclic indefinite `H`. #51: indefinite Hermitian groups beyond `U(1,1)` over `d = 1, 2, 3`. #52: cubic-surface consumers. #53: setwise stabilizers of indefinite sublattices. #55, #56: a certified `C_r` traced through the Li-Margulis proof. #40: classes of fixed norm need a reduction bound; other Witt-index zero and one forms. #57: rank-five and rank-six images in the original lattice. #58: indefinite full groups, by #54. #59: Bestvina-Savin ocean. #60: flag transporters over orders with negative lifts. #61: items 5 and 7 and glued markings.
-
-2. **Then the families that consume those foundations**, in the order of the `GOAL.md` tables: the public Hermitian lattice object first, because #51, #52, #58, #59 and #60 need it.
-
-3. **Build the foundations that block several #69 families, and implement the families in the tier order at the top of #69.** The per-output status, first missing piece and real prerequisites are in the audits for [Tiers 0 and 1](https://github.com/dzackgarza/sage-indefinite-port/issues/69#issuecomment-6727207899) and [Tiers 2 to 4](https://github.com/dzackgarza/sage-indefinite-port/issues/69#issuecomment-6727208132). The foundations are the public L -> Aut(L/mL) representation with its actual image (#42, feeding #43); non-isotropic rank-r marking stabilizers and transporters (#47, feeding #46, #56 and part of #61); and a public Hermitian lattice object (feeding #51, #58, #59 and #60). The Grunewald–Segal backend (#54) is the last step for the full-domain claims of #50, #53 and #61. The families do not wait for the congruence example. Tier 0 has no absent dependency: the #42 congruence representation, #40 witness search and lazy O(L), #48 content and doubling, the #62 extension, the #51 definite branch, #52, #59 and the #60 unipotent kernel. Also in #44 and independent of item 1: public k-stuff right cosets and the induced action on successive flag quotients. Each unit supplies its public outputs and a small independent branch example. The completion table above retains every required family.
-
-4. **Repair only what stops the selected functional unit from working.** State its public operation, the exact missing or failing callee, and the small required example that cannot finish at all. Slowness alone is not a failure; raise or remove the time bound. Repair at the operation's owner and return to the selected unit. Existing large A7, O_plus_N and Dawes cases are release obligations on #64/#70; their cost alone does not establish a prerequisite for another capability.
-
-5. **Last phase: performance and final-release evidence, after every functional row is complete.** Do not start this item earlier. #64 retains every original frozen result and the final common port/provider pair. #70 retains exact integral stabilizer generation and its large consumers. Resolve oracle changes through #33. Preserve mathematical expectations, integral kernels, witnesses and the full functional domain. Existing passing records establish their stated revision-specific scope; interrupted computations remain unresolved release evidence.
-
-## Provider checkout
-
-Read the provider at the pin or on the branch above. The checkout at `sage-repos/_data/sage-extensions` is 565 commits behind.
-
-## Retired work
-
-- Profiling, optimizing or rerunning A7, O_plus_N, Dawes or any other large case.
-- Selecting work from a timeout, a stack sample or a red CI job. Acceptance runs only by manual dispatch.
-- Recording evidence per revision pair in this file, and committing this file after each step. Change it when the next unit changes.
-
-## Continuation boundary
-
-`.tmp/GOAL.md` is the current goal and its status list. This is the authoritative handoff; issue #4 owns the functional sequence and
-AGENTS.md owns work selection. Verify current source and provider revisions
-before using a recorded result. Preserve immutable proof worktrees and their native inputs. The terminal large-consumer outcomes are recorded under #64. Resume with the functional unit above.
-The active source checkout is `/home/dzack/gitclones/sage-indefinite-computations`;
-generic dependencies belong to sage-extensions at their owning interfaces.
+The retained v2 programme stays in #69 and its issues. It does not enter this
+v1 completion sequence. This file is the sole continuation handoff.
