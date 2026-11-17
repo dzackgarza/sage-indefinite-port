@@ -1600,6 +1600,8 @@ def iter_pointed_isotropic_classes(category: Category, lattice: Parent, *, inclu
         raise ValueError("the source of an isotropic pointed marking must have zero square")
     if include_zero:
         yield category.object(source.hom([lattice.zero()], codomain=lattice))
+    if int(lattice.rank()) == 0:
+        return
     if not lattice.is_nondegenerate():
         yield from _degenerate_isotropic_pointed_iterator(category, lattice, acting_group=acting_group)
         return

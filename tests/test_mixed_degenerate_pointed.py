@@ -158,6 +158,19 @@ def test_mixed_degenerate_primitive_null_content_has_infinitely_many_orbits():
                for i, first in enumerate(classes) for second in classes[i + 1:])
 
 
+def test_rank_zero_pointed_null_stream_has_only_optional_zero_orbit():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_pointed_isotropic_classes
+
+    ambient = Lattices(ZZ)(0)
+    source = Lattices(ZZ)([[0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    assert tuple(iter_pointed_isotropic_classes(category, ambient)) == ()
+    marked = tuple(iter_pointed_isotropic_classes(category, ambient, include_zero=True))
+    assert len(marked) == 1
+    assert marked[0].arrow()(source.module_generators()[0]) == ambient.zero()
+
+
 def test_mixed_degenerate_anisotropic_quotient_has_one_radical_null_orbit_per_content():
     from sage_extensions.all import Lattices, ZZ, cardinal
     from sage_indefinite_port.indefinite.marked_lattices import (
