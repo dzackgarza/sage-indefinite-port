@@ -2042,10 +2042,27 @@ class LorentzianPerfectLocalBackend:
             if source_gram == target_gram and n > _PAIRING_GRAPH_CANONICAL_LABEL_LIMIT:
                 target_counts = Counter(target.rows)
                 source_matrix = matrix(SageZZ, source.rows)
-                for action in (*_gram_component_sign_flips(source_gram), *(
+                candidates = [*_gram_component_sign_flips(source_gram), *(
                     reflection for index in range(rank)
                     if (reflection := _integral_basis_reflection(source_gram, index)) is not None
-                )):
+                )]
+                # The stabilizer seed search below already certifies these
+                # Gram-compatible coordinate swaps. Reuse that exact family
+                # for transporters between distinct cells as well.
+                for first in range(rank):
+                    for second in range(first + 1, rank):
+                        if source_gram[first, first] != source_gram[second, second]:
+                            continue
+                        if any(source_gram[first, other] != source_gram[second, other]
+                               for other in range(rank) if other not in (first, second)):
+                            continue
+                        action = identity_matrix(SageZZ, rank)
+                        action[first, first] = action[second, second] = 0
+                        action[first, second] = action[second, first] = 1
+                        candidates.append(action)
+                for action in candidates:
+                    if action * source_gram * action.transpose() != target_gram:
+                        raise ArithmeticError("a proposed basis symmetry failed Gram preservation")
                     if Counter(tuple(int(entry) for entry in row)
                                for row in (source_matrix * action).rows()) != target_counts:
                         continue
