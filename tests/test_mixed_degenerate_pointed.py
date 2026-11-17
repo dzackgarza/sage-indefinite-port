@@ -135,3 +135,29 @@ def test_degenerate_isotropic_orbit_iterator_is_fair_across_radical_and_mixed_co
     assert any(point in ambient.radical() for point in vectors[1:])
     assert any(point not in ambient.radical() for point in vectors[1:])
     assert {int(point.content()) for point in vectors[1:]} >= {1, 2}
+
+
+def test_mixed_radical_rank_one_stabilizers_respect_residue_and_shear():
+    from sage_extensions.all import cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = lattice([[2, 0], [0, 0]])
+    e, z = tuple(ambient.module_generators())
+    for point, expected in ((e + z, 2), (5 * e + z, 1), (5 * e, 2)):
+        family = tuple(RECURSION.pointed_automorphism_generators(point))
+        assert all(g(point) == point for g in family)
+        assert ambient.O().subgroup(family).cardinality() == cardinal(expected)
+
+
+def test_rank_two_radical_norm_fifty_orbits_use_actual_gl_two_mod_five():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import pointed_nonzero_norm_classes, isometry
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    source = Lattices(ZZ)([[50]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    classes = tuple(pointed_nonzero_norm_classes(category, ambient, 50))
+    assert len(classes) == 2
+    assert {int(marked.arrow()(source.module_generators()[0]).content()) for marked in classes} == {1, 5}
+    assert all(isometry(category, first, second) is None
+               for i, first in enumerate(classes) for second in classes[i + 1:])

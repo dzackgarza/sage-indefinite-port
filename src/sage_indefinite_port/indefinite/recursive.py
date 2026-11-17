@@ -470,6 +470,70 @@ def _isometry_from_column_matrix(source: Lattices.ParentMethods, target: Lattice
     return morphism_parent(tuple(images))
 
 
+
+def _fair_unimodular_matrices(n: int):
+    r"""Enumerate GL_n(Z) exactly by increasing elementary-generator word length.
+
+    Elementary row additions, basis swaps and a sign change generate
+    GL_n(Z).  Breadth-first enumeration is therefore exhaustive.  This
+    procedure must be called only after an independent *exact positive*
+    isometry decision; otherwise it need not terminate.
+    """
+    from collections import deque
+
+    identity = identity_matrix(SageZZ, n)
+    generators = []
+    for i in range(n):
+        for j in range(n):
+            if i != j:
+                for sign in (-1, 1):
+                    elementary = identity_matrix(SageZZ, n)
+                    elementary[i, j] = sign
+                    generators.append(elementary)
+    for i in range(n - 1):
+        swap = identity_matrix(SageZZ, n)
+        swap.swap_rows(i, i + 1)
+        generators.append(swap)
+    sign = identity_matrix(SageZZ, n)
+    sign[0, 0] = -1
+    generators.append(sign)
+    frontier = deque((identity,))
+    seen = {tuple(identity.list())}
+    while frontier:
+        candidate = frontier.popleft()
+        yield candidate
+        for generator in generators:
+            next_candidate = candidate * generator
+            key = tuple(next_candidate.list())
+            if key not in seen:
+                seen.add(key)
+                frontier.append(next_candidate)
+
+
+
+def _fair_unimodular_isometry_witness(source: Lattices.ParentMethods, target: Lattices.ParentMethods):
+    r"""First exact integral witness, after an independently certified positive decision."""
+    source_gram = _gram_in_label_order(source)
+    target_gram = _gram_in_label_order(target)
+    for candidate in _fair_unimodular_matrices(int(source_gram.nrows())):
+        if candidate * target_gram * candidate.transpose() == source_gram:
+            return _isometry_from_row_matrix(source, target, candidate)
+
+
+def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
+    r"""Fair, nontruncated enumeration of all integral isometries of a finite-rank lattice.
+
+    The output is a stream of owned O(L)-elements, not a finite generating
+    family.  Every GL_n(Z) element occurs once in the matrix stream, so
+    every integral isometry eventually occurs.  For an infinite orthogonal
+    group this stream is infinite; for a finite group it may never halt.
+    """
+    gram = _gram_in_label_order(lattice)
+    for candidate in _fair_unimodular_matrices(int(gram.nrows())):
+        if candidate * gram * candidate.transpose() == gram:
+            yield _isometry_from_row_matrix(lattice, lattice, candidate)
+
+
 def _coordinate_box(lattice: Lattices.ParentMethods, height: int):
     r"""The integer coordinate tuples of a lattice with `max |entry| = height`, in a fixed order.
 
@@ -1165,6 +1229,17 @@ class EichlerRecursion:
         source_profile = AttackProfile.from_lattice(source)
         target_profile = AttackProfile.from_lattice(target)
         signed_source, signed_target = source_profile.signed_view, target_profile.signed_view
+        if source_profile.positive_index >= 2 and (int(source.witt_index()) < 2 or int(target.witt_index()) < 2):
+            decision = source.Isom(target).is_empty()
+            if decision is True:
+                result = None
+            elif decision is False:
+                result = _fair_unimodular_isometry_witness(source, target)
+            else:
+                raise ArithmeticError("low-Witt integral isometry decision is not exact")
+            if cacheable:
+                self._groupoid.record_isometry(source, target, result)
+            return result
         match source_profile.positive_index:
             case 1:
                 witness = lorentzian_isometry(signed_source, signed_target)
