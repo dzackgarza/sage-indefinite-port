@@ -1272,6 +1272,11 @@ def pointed_content_classes(category: Category, lattice: Parent, square: int, co
         raise ValueError("the pointed source form must have the requested square")
     if content < 1:
         raise ValueError("nonzero pointed-vector content must be positive")
+    if square == 0 and not lattice.is_nondegenerate() and any(
+        lattice.b(x, y) != 0 for x in lattice.module_generators()
+        for y in lattice.module_generators()
+    ):
+        raise ValueError("mixed degenerate isotropic fixed-content orbit sets may be infinite; use iter_pointed_content_classes")
     if not lattice.is_nondegenerate() and square:
         classes = _degenerate_nonzero_pointed_classes(category, lattice, square, acting_group=acting_group)
         return finite_ordered_set(tuple(marked for marked in classes if int(_marked_vector(marked).content()) == content))
@@ -1355,6 +1360,26 @@ def iter_pointed_isotropic_classes(category: Category, lattice: Parent, *, inclu
         yield from pointed_content_classes(category, lattice, 0, content, acting_group=acting_group)
 
 
+
+
+def iter_pointed_content_classes(category: Category, lattice: Parent, square: int, content: int, *, acting_group=None):
+    r"""Enumerate exact pointed content even when its orbit set is infinite.
+
+    Mixed degenerate zero-norm lattices may have infinitely many primitive
+    orbits at content one. Filter the exhaustive fair stream by full-vector
+    content rather than asserting a finite classification.
+    """
+    if content < 1:
+        raise ValueError("nonzero pointed-vector content must be positive")
+    if square != 0 or lattice.is_nondegenerate() or all(
+        lattice.b(x, y) == 0 for x in lattice.module_generators()
+        for y in lattice.module_generators()
+    ):
+        yield from pointed_content_classes(category, lattice, square, content, acting_group=acting_group)
+        return
+    for marked in iter_pointed_isotropic_classes(category, lattice, acting_group=acting_group):
+        if int(_marked_vector(marked).content()) == content:
+            yield marked
 
 
 def iter_primitive_isotropic_line_classes(lattice: Parent, *, acting_group=None):
@@ -2058,6 +2083,7 @@ __all__ = [
     "odd_primitive_pointed_classes_via_doubling",
     "pointed_nonzero_norm_classes",
     "iter_pointed_isotropic_classes",
+    "iter_pointed_content_classes",
     "iter_isotropic_line_content_classes",
     "iter_all_isotropic_line_classes",
     "canonical_moving_isotropic_line",

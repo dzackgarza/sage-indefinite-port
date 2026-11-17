@@ -137,6 +137,27 @@ def test_degenerate_isotropic_orbit_iterator_is_fair_across_radical_and_mixed_co
     assert {int(point.content()) for point in vectors[1:]} >= {1, 2}
 
 
+def test_mixed_degenerate_primitive_null_content_has_infinitely_many_orbits():
+    from itertools import islice
+    import pytest
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        iter_pointed_content_classes, pointed_content_classes, isometry,
+    )
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    source = Lattices(ZZ)([[0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    with pytest.raises(ValueError, match="may be infinite"):
+        pointed_content_classes(category, ambient, 0, 1)
+    classes = tuple(islice(iter_pointed_content_classes(category, ambient, 0, 1), 6))
+    assert len(classes) == 6
+    vectors = tuple(marked.arrow()(source.module_generators()[0]) for marked in classes)
+    assert all(point.q() == 0 and int(point.content()) == 1 for point in vectors)
+    assert all(isometry(category, first, second) is None
+               for i, first in enumerate(classes) for second in classes[i + 1:])
+
+
 def test_mixed_radical_rank_one_stabilizers_respect_residue_and_shear():
     from sage_extensions.all import cardinal
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION
