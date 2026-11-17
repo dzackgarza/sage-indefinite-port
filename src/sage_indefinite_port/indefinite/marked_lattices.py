@@ -1631,6 +1631,32 @@ def nonprimitive_nondegenerate_sublattice_classes(lattice: Parent, saturation_ty
     return finite_ordered_set(tuple(classes))
 
 
+def iter_all_nondegenerate_sublattice_index_classes(lattice: Parent, saturation_type: Parent, *, acting_group=None):
+    r"""Unbounded Smith-type quotient for a fixed primitive saturation type.
+
+    Every finite-index sublattice has a unique saturation and a unique
+    elementary-divisor tuple d_1 | ... | d_r. Enumerate these tuples by
+    maximum divisor and retain the actual arithmetic saturation stabilizer
+    for each stratum. Completeness is relative to the fixed-saturation
+    primitive embedding classifier, as in the finite-index owner.
+    """
+    from itertools import count, product
+
+    if not saturation_type.is_nondegenerate():
+        raise ValueError("a nondegenerate saturation type is required")
+    rank = int(saturation_type.rank())
+    if rank < 1:
+        raise ValueError("a positive-rank saturation type is required")
+    for maximum in count(1):
+        for divisors in product(range(1, maximum + 1), repeat=rank - 1):
+            smith = (*divisors, maximum)
+            if any(right % left for left, right in pairwise(smith)):
+                continue
+            yield from nonprimitive_nondegenerate_sublattice_classes(
+                lattice, saturation_type, smith, acting_group=acting_group
+            )
+
+
 def primitive_marking_classes(category: Category, source: Parent | Morphism, lattice: Parent, *, acting_group=None) -> Parent:
     r"""One marked lattice for each isomorphism class of primitive markings of ``lattice`` of shape ``source``.
 
@@ -1769,4 +1795,5 @@ __all__ = [
     "nonprimitive_isotropic_sublattice_classes",
     "iter_all_isotropic_sublattice_classes",
     "nonprimitive_nondegenerate_sublattice_classes",
+    "iter_all_nondegenerate_sublattice_index_classes",
 ]

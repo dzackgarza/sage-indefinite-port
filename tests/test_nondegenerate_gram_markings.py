@@ -443,3 +443,26 @@ def test_public_nonprimitive_nondegenerate_classes_from_primitive_saturation():
     classes = nonprimitive_nondegenerate_sublattice_classes(ambient, source, (1, 2))
     assert classes.cardinality() == cardinal(2)
     assert all(marked.arrow().codomain() is ambient for marked in classes)
+
+
+def test_unrestricted_nondegenerate_saturation_index_iterator_retains_two_index_two_orbits():
+    from itertools import islice
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        ARROWS, isometry, iter_all_nondegenerate_sublattice_index_classes,
+    )
+
+    source = Lattices(ZZ)("U")
+    ambient = source + source
+    classes = tuple(islice(iter_all_nondegenerate_sublattice_index_classes(ambient, source), 3))
+    assert len(classes) == 3
+    indices = []
+    for marked in classes:
+        arrow = marked.arrow()
+        saturation = arrow.saturation()
+        embedded = saturation.inclusion().domain().subobject_on(tuple(
+            saturation.inclusion().lift(arrow(x)) for x in arrow.domain().module_generators()
+        )).inclusion()
+        indices.append(int(embedded.cokernel().cardinality()))
+    assert indices == [1, 2, 2]
+    assert isometry(ARROWS, classes[1], classes[2]) is None
