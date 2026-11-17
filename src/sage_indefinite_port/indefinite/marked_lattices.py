@@ -877,19 +877,21 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             if source_dimensions != target_dimensions:
                 return None
             ambient = source_basis[0].parent()
-            if ambient is target_basis[0].parent() and all(
-                ambient.b(x, y) == 0 for x in ambient.module_generators() for y in ambient.module_generators()
-            ):
+            target_ambient = target_basis[0].parent()
+            if (int(ambient.rank()) == int(target_ambient.rank())
+                    and all(ambient.b(x, y) == 0 for x in ambient.module_generators() for y in ambient.module_generators())
+                    and all(target_ambient.b(x, y) == 0 for x in target_ambient.module_generators()
+                            for y in target_ambient.module_generators())):
                 # On a zero-form lattice GL_n(ZZ) acts transitively on
                 # primitive flags of any fixed rank profile. A fair
                 # unimodular search therefore terminates positively; each
                 # candidate is certified against every marked flag term.
                 from sage_indefinite_port.indefinite.recursive import _fair_unimodular_matrices, _isometry_from_row_matrix
 
-                target_terms = tuple(ambient.primitive_isotropic_subobject(*target_basis[:rank])
+                target_terms = tuple(target_ambient.primitive_isotropic_subobject(*target_basis[:rank])
                                      for rank in source_dimensions)
                 for rows in _fair_unimodular_matrices(int(ambient.rank())):
-                    witness = _isometry_from_row_matrix(ambient, ambient, rows)
+                    witness = _isometry_from_row_matrix(ambient, target_ambient, rows)
                     if all(term.inclusion().is_in_image(witness(point))
                            for rank, term in zip(source_dimensions, target_terms, strict=True)
                            for point in source_basis[:rank]):
