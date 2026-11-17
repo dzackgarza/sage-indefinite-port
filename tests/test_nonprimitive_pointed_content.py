@@ -61,7 +61,7 @@ def test_public_imprimitive_pointed_coslice_uses_content_reduction():
 def test_fixed_content_orbit_strata_recover_distinct_square_eight_classes():
     from sage_extensions.all import Lattices, ZZ, cardinal
     from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
-    from sage_indefinite_port.indefinite.marked_lattices import pointed_content_classes
+    from sage_indefinite_port.indefinite.marked_lattices import pointed_content_classes, isometry
 
     plane = lattice([[0, 1], [1, 0]])
     source = Lattices(ZZ)([[8]])
@@ -72,6 +72,7 @@ def test_fixed_content_orbit_strata_recover_distinct_square_eight_classes():
     assert primitive.cardinality() == cardinal(1)
     assert doubled.cardinality() == cardinal(1)
     assert impossible.cardinality() == cardinal(0)
+    assert isometry(category, tuple(primitive)[0], tuple(doubled)[0]) is None
     assert all(int(marking.arrow()(source.module_generators()[0]).content()) == c
                for c, classes in ((1, primitive), (2, doubled)) for marking in classes)
 
