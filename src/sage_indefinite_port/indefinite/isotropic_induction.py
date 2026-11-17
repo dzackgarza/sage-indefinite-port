@@ -1175,6 +1175,70 @@ class IsotropicInduction:
             space = flag.top()
         else:
             _line, space = flag
+        ambient = space.inclusion().codomain()
+        points = self.plane_vectors(space)
+        if not ambient.is_nondegenerate() and all(self.recursion.vector_lies_in_radical(point) for point in points):
+            from sage.matrix.constructor import identity_matrix, matrix
+            from sage.rings.integer_ring import ZZ as SageZZ
+            from sage_extensions.categories.group.groups import OwnedGroups
+            from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
+            from sage_indefinite_port.indefinite.recursive import (
+                _gram_in_label_order, _isometry_from_row_matrix, _conjugated,
+            )
+
+            reduction = indefinite_reduced_presentation(ambient)
+            reduced = reduction.reduced
+            gram = _gram_in_label_order(reduced)
+            n, size = int(gram.rank()), int(gram.nrows())
+            k, r = size - n, len(points)
+            labels = tuple(reduced.module_generating_set())
+            rows = matrix(SageZZ, [[_integer((~reduction.isometry)(point).to_vector()(label))
+                                    for label in labels[n:]] for point in points])
+            adapted = rows.stack(_source_subspace_completion_int(rows, k))
+            inverse = adapted.inverse().change_ring(SageZZ)
+            blocks = []
+            if n:
+                complement = reduced.lattice_category()([
+                    [int(gram[i, j]) for j in range(n)] for i in range(n)
+                ])
+                c_labels = tuple(complement.module_generating_set())
+                for generator in self.recursion.orthogonal_group_generators(complement):
+                    block = identity_matrix(SageZZ, size)
+                    for i, point in enumerate(complement.module_generators()):
+                        image = generator(point).to_vector()
+                        for j, label in enumerate(c_labels):
+                            block[i, j] = _integer(image(label))
+                    blocks.append(block)
+            radical_blocks = []
+            if k > r:
+                linear = OwnedGroups().GL(k - r, reduced.base_ring())
+                for generator in linear.group_generators():
+                    action = linear._to_engine(generator).matrix()
+                    block = identity_matrix(SageZZ, k)
+                    for i in range(k - r):
+                        for j in range(k - r):
+                            block[r + i, r + j] = _integer(action[i, j])
+                    radical_blocks.append(block)
+                for i in range(r, k):
+                    for j in range(r):
+                        block = identity_matrix(SageZZ, k)
+                        block[i, j] = 1
+                        radical_blocks.append(block)
+            for radical_block in radical_blocks:
+                action = inverse * radical_block * adapted
+                block = identity_matrix(SageZZ, size)
+                for i in range(k):
+                    for j in range(k):
+                        block[n + i, n + j] = action[i, j]
+                blocks.append(block)
+            for i in range(n):
+                for j in range(k):
+                    block = identity_matrix(SageZZ, size)
+                    block[i, n + j] = 1
+                    blocks.append(block)
+            return _conjugated(reduction.isometry, tuple(
+                _isometry_from_row_matrix(reduced, reduced, block) for block in blocks
+            ))
         return self._stabilizer_generators(self.plane_vectors(space), ())
 
 
