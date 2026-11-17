@@ -191,35 +191,6 @@ def _signed_sqrt_compare(sign_left: int, square_left: Rational, sign_right: int,
     return -1 if square_left > square_right else 1
 
 
-def _plane_coordinates(basis: Matrix_rational_dense, rows) -> list[tuple[Rational, Rational]]:
-    r"""The coordinates ``(c_0, c_1)`` with ``c_0 b_0 + c_1 b_1 = row`` of rows in the span of a rank-two basis.
-
-    Cramer's rule on two columns ``i, j`` whose 2 x 2 minor of the basis is
-    nonzero (Hoffman and Kunze, *Linear Algebra*, 2nd ed., Section 5.4); every
-    other column is then checked, so a row outside the span raises. It
-    replaces Sage's general ``solve_right`` on the transposed basis, which
-    computes the same unique solution.
-    """
-    width = basis.ncols()
-    entries = basis.list()
-    top, bottom = entries[:width], entries[width:]
-    i, j, minor = next(
-        (i, j, top[i] * bottom[j] - top[j] * bottom[i])
-        for i in range(width)
-        for j in range(i + 1, width)
-        if top[i] * bottom[j] - top[j] * bottom[i]
-    )
-    coordinates = []
-    for row in rows:
-        x, y = row[i], row[j]
-        first = (x * bottom[j] - y * bottom[i]) / minor
-        second = (top[i] * y - top[j] * x) / minor
-        if any(first * top[k] + second * bottom[k] != row[k] for k in range(width)):
-            raise ArithmeticError("the row is not in the span of the plane basis")
-        coordinates.append((first, second))
-    return coordinates
-
-
 def _cone_of_rays(rank: int, rows) -> Polyhedron:
     r"""The cone spanned by coordinate rows, as the engine polyhedron of ``RationalPolyhedralCones.from_rays``.
 
@@ -280,14 +251,16 @@ class _EdgePlane:
     ``form`` is the Gram coefficients (a, b, c) of Pi with its form scaled by ``scale`` to be integral,
     in the oriented basis ``basis`` (rational rows of L tensor Q); ``r0`` is the coordinate pair of
     the edge's primitive orientation vector in Pi (edgewalk.h:747, r0_work).
-    ``constraint_inverse`` inverts the rows of a basis of C, so a row v of L tensor Q lies in C
-    exactly when ``v * constraint_inverse`` is integral (edgewalk.h:905, SolutionIntMat(Latt, v_T)).
+    ``basis`` holds integer rows h_0, h_1 with b_i = h_i / ``basis_denominator``.
+    ``constraint_inverse`` is (M, e) with M / e the inverse of the rows of a basis of C, so an
+    integral row v lies in C exactly when e divides v * M (edgewalk.h:905, SolutionIntMat(Latt, v_T)).
     ``intersection`` holds the rows, in the coordinates of ``basis``, of a basis of C cap P, the
     sublattice of Pi whose quotient controls the period (edgewalk.h:803, Expr_t).
     """
 
-    constraint_inverse: Matrix_rational_dense
-    basis: Matrix_rational_dense
+    constraint_inverse: tuple[tuple[tuple[int, ...], ...], int]
+    basis: tuple[_Key, _Key]
+    basis_denominator: int
     form: tuple[int, int, int]
     scale: Integer
     r0: _Key
@@ -1047,6 +1020,21 @@ class _Edgewalk:
         inverse.set_immutable()
         return rows, inverse
 
+    @cached_method
+    def constraint_engine(self, divisor: int) -> tuple[tuple[_Key, ...], tuple[tuple[tuple[int, ...], ...], int]]:
+        r"""The integer rows of the basis of C and (M, e) with M / e their inverse, read once per norm from ``constraint_rows``."""
+        rows, inverse = self.constraint_rows(divisor)
+        denominator = inverse.denominator()
+        return (
+            tuple(tuple(int(entry) for entry in row) for row in rows.rows()),
+            (tuple(tuple(int(entry) for entry in row) for row in (denominator * inverse).rows()), int(denominator)),
+        )
+
+    @cached_method
+    def gram_entries(self) -> tuple[tuple[Rational, ...], ...]:
+        r"""The rows of the Gram matrix as tuples of rationals, read once per walk."""
+        return tuple(tuple(row) for row in self.gram.rows())
+
     def edge_plane(self, roots: _Roots, discarded: _Vector, k: _Vector, norm: Rational) -> _EdgePlane:
         return self.edge_plane_for_divisor(roots, discarded, k, self.divisor(norm))
 
@@ -1101,7 +1089,7 @@ class _Edgewalk:
         return (-(oriented_basis * self.gram * oriented_basis.transpose()).det()).is_square()
 
     @cached_method
-    def edge_wall_data(self, roots: _Roots) -> tuple[Matrix_rational_dense, Matrix_rational_dense]:
+    def edge_wall_data(self, roots: _Roots) -> tuple[tuple[_Key, ...], int, tuple[_Key, ...]]:
         r"""The projection of L (x) QQ onto the edge plane and the pairings G W^T with the edge walls, computed once per edge (edgewalk.h:598, Pplane).
 
         The walls through an edge need not be linearly independent.  The
@@ -1109,7 +1097,10 @@ class _Edgewalk:
         on an independent basis of that span (the reduced row echelon rows),
         not the possibly singular Gram matrix of every wall.  The edge plane
         is Lorentzian, so its orthogonal complement must be positive definite
-        and nondegenerate.  Row vectors x map to x * complement.
+        and nondegenerate.  Row vectors x map to x * K / e for the integer
+        rows K and denominator e returned; the wall pairings are returned as
+        integer rows of a positive multiple of G W^T (only their integral
+        left kernel is read).
         """
         root_rows = tuple(self.row(root) for root in roots)
         wall_matrix = matrix(SageQQ, len(root_rows), self.rank, [entry for row in root_rows for entry in row])
@@ -1120,56 +1111,79 @@ class _Edgewalk:
             raise ArithmeticError("the edge-wall span must be nondegenerate")
         complement = identity_matrix(SageQQ, self.rank) - self.gram * root_matrix.transpose() * root_gram.inverse() * root_matrix
         wall_pairings = self.gram * wall_matrix.transpose()
-        complement.set_immutable()
-        wall_pairings.set_immutable()
-        return complement, wall_pairings
+        complement_denominator = complement.denominator()
+        wall_pairings = wall_pairings.denominator() * wall_pairings
+        return (
+            tuple(tuple(int(entry) for entry in row) for row in (complement_denominator * complement).rows()),
+            int(complement_denominator),
+            tuple(tuple(int(entry) for entry in row) for row in wall_pairings.rows()),
+        )
 
     @cached_method
     def edge_plane_for_divisor(self, roots: _Roots, discarded: _Vector, k: _Vector, divisor: int) -> _EdgePlane:
+        r"""The rank-two lattice Pi of an edge for one norm, on integer rows (edgewalk.h:747-803)."""
         oriented_basis, r0 = self.edge_orientation(roots, discarded, k)
-        constraint_rows, constraint_inverse = self.constraint_rows(divisor)
-        complement, wall_pairings = self.edge_wall_data(roots)
-        # The ZZ span of the projected rows is the Hermite normal form of
-        # their integral scaling, the echelon basis of Sage's ZZ span,
-        # formed without constructing the free modules.
-        projected = constraint_rows * complement
-        projected_denominator = projected.denominator()
-        hermite = (projected_denominator * projected).change_ring(SageZZ).hermite_form(include_zero_rows=False)
-        basis = hermite.change_ring(SageQQ) / projected_denominator
-        if basis.nrows() != 2:
+        constraint, constraint_inverse = self.constraint_engine(divisor)
+        complement, denominator, wall_pairings = self.edge_wall_data(roots)
+        columns = range(self.rank)
+        # The ZZ span of the projected rows C K / e is (1/e) times the span of
+        # the integer rows C K; the Hermite normal form is unique and scales
+        # with a positive factor, so this is the echelon basis of Sage's ZZ span.
+        hermite = matrix(SageZZ, [[sum(c * row[j] for c, row in zip(row_c, complement)) for j in columns] for row_c in constraint]).hermite_form(include_zero_rows=False)
+        if hermite.nrows() != 2:
             raise ArithmeticError("the projected constraint lattice must have rank two")
-        (first, second) = _plane_coordinates(oriented_basis, basis.rows())
-        if first[0] * second[1] - first[1] * second[0] < 0:
-            basis.rescale_row(0, -1)
-        work_gram = basis * self.gram * basis.transpose()
-        scale = work_gram.denominator()
-        form = (int(scale * work_gram[0, 0]), int(scale * work_gram[0, 1]), int(scale * work_gram[1, 1]))
-        (r0_coordinates,) = _plane_coordinates(basis, (r0,))
-        r0_work = self.primitive_coordinates(r0_coordinates)
+        first, second = (tuple(int(entry) for entry in row) for row in hermite.rows())
+        # The basis (h_0, h_1) / e is positively oriented against (o_0, o_1)
+        # exactly when the 2 x 2 minors of both on one pair of columns i, j
+        # (with nonzero minor of o) have one sign (Cramer's rule).
+        top, bottom = oriented_basis.row(0), oriented_basis.row(1)
+        i, j, oriented_minor = next((i, j, top[i] * bottom[j] - top[j] * bottom[i]) for i in columns for j in range(i + 1, self.rank) if top[i] * bottom[j] - top[j] * bottom[i])
+        if (first[i] * second[j] - first[j] * second[i] > 0) != (oriented_minor > 0):
+            first = tuple(-entry for entry in first)
+        i, j, minor = next((i, j, first[i] * second[j] - first[j] * second[i]) for i in columns for j in range(i + 1, self.rank) if first[i] * second[j] - first[j] * second[i])
+        gram = self.gram_entries()
+        gram_first = [sum(g * h for g, h in zip(row, first)) for row in gram]
+        gram_second = [sum(g * h for g, h in zip(row, second)) for row in gram]
+        square = denominator * denominator
+        work = [
+            SageQQ(sum(h * g for h, g in zip(first, gram_first))) / square,
+            SageQQ(sum(h * g for h, g in zip(first, gram_second))) / square,
+            SageQQ(sum(h * g for h, g in zip(second, gram_second))) / square,
+        ]
+        scale = work[0].denominator().lcm(work[1].denominator()).lcm(work[2].denominator())
+        form = (int(scale * work[0]), int(scale * work[1]), int(scale * work[2]))
+
+        def coordinates(row) -> tuple[Rational, Rational]:
+            # e * row = x h_0 + y h_1 on columns i, j.
+            x, y = denominator * row[i], denominator * row[j]
+            return (SageQQ(x * second[j] - y * second[i]) / minor, SageQQ(first[i] * y - first[j] * x) / minor)
+
+        r0_work = self.primitive_coordinates(coordinates(r0))
 
         # edgewalk.h:763-764, Basis_P_inter_LN = IntersectionLattice_VectorSpace(Latt, Pplane):
         # C cap P on the same coordinate rows as the projection above. A
         # vector c * B of C (B the rows of a basis of C) lies in P exactly
         # when it pairs to zero with every edge wall, so the coefficient
         # lattice of C cap P is the integral left kernel of B G R^T.
-        equations = constraint_rows * wall_pairings
+        equations = matrix(SageZZ, [[sum(c * row[w] for c, row in zip(row_c, wall_pairings)) for w in range(len(wall_pairings[0]))] for row_c in constraint])
         # The Hermite normal form of a basis of the integral left kernel is the
         # echelon basis Sage's left_kernel() carries (the form is unique for
         # the kernel lattice), computed without the kernel module.
-        coefficients = (equations.denominator() * equations).change_ring(SageZZ).left_kernel_matrix(algorithm="pari").echelon_form()
-        intersection_rows = coefficients.change_ring(SageQQ) * constraint_rows
-        if intersection_rows.nrows() != 2:
+        coefficients = equations.left_kernel_matrix(algorithm="pari").echelon_form()
+        if coefficients.nrows() != 2:
             raise ArithmeticError("C cap P must have rank two")
-        intersection_coordinates = matrix(SageQQ, _plane_coordinates(basis, intersection_rows.rows()))
-        if any(entry.denominator() != 1 for entry in intersection_coordinates.list()):
+        intersection_rows = [[sum(int(c) * row[j] for c, row in zip(row_c, constraint)) for j in columns] for row_c in coefficients.rows()]
+        intersection_coordinates = [entry for row in intersection_rows for entry in coordinates(row)]
+        if any(entry.denominator() != 1 for entry in intersection_coordinates):
             raise ArithmeticError("the perpendicular intersection must be integral in the projected lattice")
         return _EdgePlane(
             constraint_inverse,
-            basis,
+            (first, second),
+            denominator,
             form,
             scale,
             r0_work,
-            intersection_coordinates,
+            matrix(SageQQ, 2, 2, intersection_coordinates),
         )
 
     @staticmethod
@@ -1311,18 +1325,22 @@ class _Edgewalk:
     ) -> _Roots:
         edge = self.edge_plane(roots, discarded, k, extension.norm)
         work_vectors = self.binary_candidates(roots, discarded, k, extension.norm, extension.residual_norm)
-        component = vector(SageQQ, extension.u_component)
-        for work_vector in work_vectors:
-            ambient = component + edge.basis.transpose() * vector(SageQQ, work_vector)
+        first, second = edge.basis
+        denominator = edge.basis_denominator
+        inverse, inverse_denominator = edge.constraint_inverse
+        component = extension.u_component
+        for x, y in work_vectors:
+            ambient = [u + SageQQ(x * a + y * b) / denominator for u, a, b in zip(component, first, second, strict=True)]
             if any(entry.denominator() != 1 for entry in ambient):
                 continue
+            ambient = [int(entry) for entry in ambient]
             # edgewalk.h:905,988 get_next_anisotropic/get_next_isotropic:
             # SolutionIntMat(Latt, v_T), every integral candidate must
             # belong to the norm-specific lattice.
-            if any(entry.denominator() != 1 for entry in ambient * edge.constraint_inverse):
+            if any(sum(a * row[j] for a, row in zip(ambient, inverse)) % inverse_denominator for j in range(self.rank)):
                 continue
             root = self.element(tuple(ambient))
-            if self.pair(ambient, ambient) != extension.norm:
+            if sum(a * g * b for a, row in zip(ambient, self.gram_entries()) for g, b in zip(row, ambient)) != extension.norm:
                 raise ArithmeticError("rank-two reconstruction changed the root norm")
             # edgewalk.h get_next_anisotropic/get_next_isotropic returns the
             # FIRST integral member of this ordered family. Later members
