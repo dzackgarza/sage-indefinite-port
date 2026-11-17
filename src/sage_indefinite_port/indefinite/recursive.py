@@ -2089,6 +2089,22 @@ class EichlerRecursion:
         source_lattice, target_lattice = source.parent(), target.parent()
         if source_lattice is target_lattice and source == target:
             return source_lattice.O().identity()
+        if source_lattice is target_lattice:
+            # If q(x)=q(y), then for d=x-y one has
+            # 2 b(x,d)=q(d), hence s_d(x)=y whenever q(d)!=0.
+            # An integral reflection in the primitive line of d is
+            # therefore a complete transporter certificate.  Test it
+            # before constructing O(x^perp): in high-rank definite
+            # complements the latter can exhaust PARI's qfauto stack even
+            # when a single root reflection is already the answer.
+            difference = source - target
+            if difference.q() != source_lattice.base_ring().zero():
+                root = difference.primitive_part()
+                if root.is_integral_reflection_vector():
+                    reflection = source_lattice.reflection(root)
+                    if reflection(source) != target:
+                        raise ArithmeticError("the integral difference reflection failed to transport the marking")
+                    return reflection
         if source_lattice is not target_lattice and LatticePrefilter.from_lattice(source_lattice) != LatticePrefilter.from_lattice(target_lattice):
             return None
         if not source_lattice.is_nondegenerate() and self.vector_lies_in_radical(source):

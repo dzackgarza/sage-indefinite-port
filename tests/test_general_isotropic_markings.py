@@ -906,3 +906,33 @@ def test_induction_rank_five_pointwise_flag_stabilizer_fixes_top_basis():
     generators = tuple(INDUCTION.flag_pointwise_automorphism_generators(flag))
     assert generators
     assert all(g(point) == point for g in generators for point in basis)
+
+
+def test_pointed_reflection_witness_precedes_expensive_complement_group(monkeypatch):
+    """An integral root reflection is a complete witness without PARI qfauto."""
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = lattice([[0, 1, 0], [1, 0, 0], [0, 0, -2]])
+    e, f, r = tuple(ambient.module_generators())
+    source, target = e + 2 * f + r, e + 2 * f - r
+    assert source.q() == target.q() == 2
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("a direct reflection must not compute the perpendicular isometry group")
+
+    monkeypatch.setattr(RECURSION, "isometry", forbidden)
+    witness = RECURSION.pointed_isometry(source, target)
+    assert witness is not None and witness(source) == target
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in (e, f, r) for y in (e, f, r))
+
+
+def test_nonintegral_difference_reflection_does_not_fake_a_pointed_transporter():
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = lattice([[2, 0], [0, 2]])
+    e, f = tuple(ambient.module_generators())
+    source, target = e + 8 * f, 4 * e + 7 * f
+    assert source.q() == target.q() == 130
+    assert not (source - target).primitive_part().is_integral_reflection_vector()
+    assert RECURSION.pointed_isometry(source, target) is None
