@@ -290,6 +290,19 @@ def test_zero_form_unmarked_coslice_generators_agree_with_full_orthogonal_group(
     assert all(g in ambient.O() for g in coslice)
 
 
+def test_zero_form_empty_arrow_stabilizer_agrees_with_full_orthogonal_group():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    source = Lattices(ZZ)(0)
+    marked = ARROWS.object(source.hom([], codomain=ambient))
+    plain = tuple(automorphism_group_generators(Lattices(ZZ), ambient))
+    moving = tuple(automorphism_group_generators(ARROWS, marked))
+    assert set(moving) == set(plain)
+    assert all(g in ambient.O() for g in moving)
+
+
 def test_zero_form_based_primitive_frames_have_one_class_at_each_attainable_rank():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import primitive_marking_classes

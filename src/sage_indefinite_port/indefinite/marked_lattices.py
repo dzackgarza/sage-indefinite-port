@@ -956,7 +956,11 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                           else RECURSION.orthogonal_group_generators(marked))
         case _ if category is ARROWS:
             if int(marked.arrow().domain().rank()) == 0:
-                generators = RECURSION.orthogonal_group_generators(marked.arrow().codomain())
+                ambient = marked.arrow().codomain()
+                generators = (_zero_form_orthogonal_generators(ambient, ambient.general_linear_group().group_generators())
+                              if all(ambient.b(x, y) == 0 for x in ambient.module_generators()
+                                     for y in ambient.module_generators())
+                              else RECURSION.orthogonal_group_generators(ambient))
             else:
                 arrow = marked.arrow()
                 if arrow.is_primitive() and all(
