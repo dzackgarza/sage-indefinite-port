@@ -924,4 +924,10 @@ Phase probe (`zk_phaseprobe.py`, method `extension_roots`, warm, seed 1, 15 case
 
 Equality: the 50 seed-7 walks (`zk_eq_ep1.log`) are identical to `zk_eq39.log`; allcock w217_l26 passes (`zk_w217_ep1.log`).
 
-Remaining in `edge_plane_for_divisor` (profile `zk_callees_ep1.log`, 15 Allcock cases, 2732 calls): five Sage matrix constructions per call (the Hermite form input, the PARI left kernel, its echelon form, the 2 x 2 intersection), 13,660 `MatrixSpace` lookups in all, about 0.05 s per case or 0.2 h over 17,200 cases. Removing them needs the 3 x 3 integer Hermite form and left kernel on Python integers with Sage's row convention (a hand-rolled HNF, Cohen, *A Course in Computational Algebraic Number Theory*, Algorithm 2.4.5); not done: under 0.25 h.
+Every `edge_plane_for_divisor` call is a distinct (edge, discarded root, k, divisor): 2732 cache entries with 2732 distinct coordinate keys over 15 Allcock cases (`zk_epkeys.py`), 182 per case, so the count is the source's and the lever is the cost per call.
+
+| Commit | Operation | ms per `extension_roots` call before -> after, Allcock / ListReflect rank 3 (means of both orders, `zk_pp_ep2.log`) | hours |
+| --- | --- | --- | --- |
+| eea09a9 | Hermite form of the projected rows and the C cap P left kernel on Python integers (`_hermite_rows`, Cohen Algorithm 2.4.4, Proposition 2.4.9) in place of three Sage matrix constructions and the PARI kernel | 1.181 -> 0.755 / 1.138 -> 0.707 | 0.29 + 0.29 = 0.6 |
+
+Equality: `_hermite_rows` equals `hermite_form` and the echelon form of the PARI left kernel on 3000 random integer matrices up to 5 x 5 of every rank (`zk_hnfeq.py`); the 50 seed-7 walks (`zk_eq_ep2.log`) are identical to `zk_eq39.log`; allcock w217_l26 passes.
