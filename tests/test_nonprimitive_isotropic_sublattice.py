@@ -175,6 +175,16 @@ def test_unrestricted_isotropic_sublattice_iterator_terminates_above_degenerate_
     ambient = Lattices(ZZ)([[0, 0, 0], [0, 1, 0], [0, 0, 1]])
     # The one-dimensional radical is the entire isotropic locus over QQ.
     assert tuple(iter_all_isotropic_sublattice_classes(ambient, 2)) == ()
+    # An indefinite real-signature (2,2) quotient can nevertheless be
+    # anisotropic over QQ. It contributes no rational isotropic direction.
+    anisotropic = Lattices(ZZ)([
+        [2, 0, 0, 0, 0],
+        [0, 2, 0, 0, 0],
+        [0, 0, -6, 0, 0],
+        [0, 0, 0, -6, 0],
+        [0, 0, 0, 0, 0],
+    ])
+    assert tuple(iter_all_isotropic_sublattice_classes(anisotropic, 2)) == ()
 
 
 def test_zero_form_rank_two_isotropic_sublattices_have_complete_smith_strata():
@@ -196,6 +206,26 @@ def test_zero_form_rank_two_isotropic_sublattices_have_complete_smith_strata():
         indices.append(int(embedded.cokernel().cardinality()))
     assert indices == [1, 2, 4]
     assert len(tuple(nonprimitive_isotropic_sublattice_classes(ambient, 2, (1, 2), acting_group=ambient.O()))) == 1
+
+
+def test_mixed_degenerate_radical_smith_classes_use_integral_gl_action():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        ARROWS, automorphism_group_generators, nonprimitive_isotropic_sublattice_classes,
+        nonprimitive_sublattice_classes,
+    )
+
+    ambient = Lattices(ZZ)([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    _e, z, w = tuple(ambient.module_generators())
+    saturated = ambient.primitive_isotropic_subobject(z, w)
+    classes = tuple(nonprimitive_sublattice_classes(saturated, (1, 2)))
+    assert len(classes) == 1
+    assert len(tuple(nonprimitive_isotropic_sublattice_classes(ambient, 2, (1, 2)))) == 1
+    marked = ARROWS.object(classes[0])
+    generators = tuple(automorphism_group_generators(ARROWS, marked))
+    assert generators
+    points = tuple(classes[0](point) for point in classes[0].domain().module_generators())
+    assert all(classes[0].is_in_image(generator(point)) for generator in generators for point in points)
 
 
 def test_zero_form_fixed_saturation_submodule_classes_use_actual_gl_parabolic():

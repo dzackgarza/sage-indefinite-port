@@ -232,9 +232,13 @@ def _finite_index_sublattice_stabilizer_generators(arrow: Morphism) -> tuple[Lat
         ambient_generators = (
             _nondegenerate_stabilizer_generators(space.inclusion(), based=False)
             if space.inclusion().domain().is_nondegenerate()
-            else (_split_radical_saturation_stabilizer_generators(space)
-                  if not all(lattice.b(x, y) == 0 for x in basis for y in basis)
-                  else INDUCTION.plane_automorphism_generators(space))
+            else (_degenerate_radical_flag_generators(lattice, (len(basis),), basis)
+                  if not lattice.is_nondegenerate() and all(
+                      RECURSION.vector_lies_in_radical(point) for point in basis
+                  )
+                  else (_split_radical_saturation_stabilizer_generators(space)
+                        if not all(lattice.b(x, y) == 0 for x in basis for y in basis)
+                        else INDUCTION.plane_automorphism_generators(space)))
         )
     for generator in ambient_generators:
         rows = []
@@ -1978,6 +1982,16 @@ def nonprimitive_sublattice_classes(saturated: Parent | Morphism, divisors: tupl
                           if int(inclusion.domain().rank()) == int(lattice.rank())
                           else linear.flag_stabilizer((saturated,)).group_generators())
             ambient_generators = _zero_form_orthogonal_generators(lattice, preserving)
+        elif not lattice.is_nondegenerate() and all(
+            RECURSION.vector_lies_in_radical(point) for point in basis
+        ):
+            # The radical is preserved by every integral isometry and
+            # carries the full integral GL-action on its primitive summands.
+            # The nondegenerate perpendicular-lattice induction is not
+            # defined: L -> S* vanishes identically when S lies in rad(L).
+            ambient_generators = _degenerate_radical_flag_generators(
+                lattice, (int(inclusion.domain().rank()),), basis
+            )
         else:
             ambient_generators = INDUCTION.plane_automorphism_generators(saturated)
         module = inclusion.domain()
@@ -2094,6 +2108,17 @@ def iter_all_isotropic_sublattice_classes(lattice: Parent, rank: int, *, acting_
         # dim(radical) + min(p,q), even when the rational Witt index of the
         # nondegenerate quotient is smaller than its real Witt index.
         return
+    if not lattice.is_nondegenerate():
+        # Projection modulo the radical sends every rational totally
+        # isotropic subspace to one in the nondegenerate quotient. Its
+        # dimension is therefore at most dim(rad L) + witt(L/rad L).
+        # The real signature bound above is not sufficient: an indefinite
+        # quotient can be rationally anisotropic, in which case an empty
+        # rank-r stream must terminate rather than search every Smith shell.
+        _reduction, _n, k, complement = _degenerate_quotient_and_radical(lattice)
+        quotient_witt = int(complement.witt_index()) if complement.is_isotropic() else 0
+        if rank > k + quotient_witt:
+            return
     if rank == 1:
         yield from iter_all_isotropic_line_classes(lattice, acting_group=acting_group)
         return
