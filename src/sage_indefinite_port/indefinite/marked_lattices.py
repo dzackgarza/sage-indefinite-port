@@ -1574,6 +1574,36 @@ def nonprimitive_isotropic_sublattice_classes(lattice: Parent, rank: int, diviso
     return finite_ordered_set(tuple(classes))
 
 
+def iter_all_isotropic_sublattice_classes(lattice: Parent, rank: int, *, acting_group=None):
+    r"""Enumerate all moving isotropic rank-r sublattices by Smith type.
+
+    The elementary divisors of a finite-index sublattice of its primitive
+    saturation satisfy d_1 | ... | d_r. Every such tuple occurs in the
+    finite shell with d_r equal to its maximum. The fixed-Smith-type
+    classification supplies the exact stabilizer orbits, so these disjoint
+    shells exhaust the unrestricted moving quotient without an index bound,
+    in the domain where the fixed-Smith-type classifier is complete and
+    terminating. No finite cardinality is claimed for the unrestricted set.
+    """
+    from itertools import count, product
+
+    if rank < 1:
+        raise ValueError("isotropic sublattice rank must be positive")
+    if rank == 1:
+        yield from iter_all_isotropic_line_classes(lattice, acting_group=acting_group)
+        return
+    if lattice.is_nondegenerate() and rank > int(lattice.witt_index()):
+        return
+    for maximum in count(1):
+        for divisors in product(range(1, maximum + 1), repeat=rank - 1):
+            smith = (*divisors, maximum)
+            if any(right % left for left, right in pairwise(smith)):
+                continue
+            yield from nonprimitive_isotropic_sublattice_classes(
+                lattice, rank, smith, acting_group=acting_group
+            )
+
+
 
 def nonprimitive_nondegenerate_sublattice_classes(lattice: Parent, saturation_type: Parent, divisors: tuple[int, ...], *, acting_group=None) -> Parent:
     r"""Moving finite-index sublattices with a prescribed primitive nondegenerate saturation type.
@@ -1737,5 +1767,6 @@ __all__ = [
     "homothetic_isotropic_sublattice_classes",
     "nonprimitive_sublattice_classes",
     "nonprimitive_isotropic_sublattice_classes",
+    "iter_all_isotropic_sublattice_classes",
     "nonprimitive_nondegenerate_sublattice_classes",
 ]
