@@ -940,6 +940,21 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 return None
             ambient = source_basis[0].parent()
             target_ambient = target_basis[0].parent()
+            if not ambient.is_nondegenerate() and not target_ambient.is_nondegenerate():
+                # Each stage's intersection with the characteristic
+                # radical is invariant under ambient isometries. Test
+                # every stage, not just the terminal isotropic subspace.
+                intersection_profiles = []
+                for owner, basis in ((ambient, source_basis), (target_ambient, target_basis)):
+                    radical = owner.radical()
+                    radical_points = tuple(radical.inclusion()(point) for point in radical.module_generators())
+                    intersection_profiles.append(tuple(
+                        rank + int(radical.rank()) - int(owner.subobject_on(
+                            (*basis[:rank], *radical_points)
+                        ).rank()) for rank in source_dimensions
+                    ))
+                if intersection_profiles[0] != intersection_profiles[1]:
+                    return None
             source_radical_flag = not ambient.is_nondegenerate() and all(
                 RECURSION.vector_lies_in_radical(point) for point in source_basis
             )

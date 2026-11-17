@@ -655,6 +655,17 @@ def test_mixed_degenerate_proper_radical_partial_flag_transporter():
     assert all(target_plane.inclusion().is_in_image(witness(point)) for point in (z, w))
 
 
+def test_mixed_degenerate_flag_transporter_rejects_radical_intersection_profile():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, isometry, _flag_marking_from_basis
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    first = FLAGS(_flag_marking_from_basis(ambient, (z, e), (1, 2)))
+    second = FLAGS(_flag_marking_from_basis(ambient, (e, z), (1, 2)))
+    assert isometry(FLAGS, first, second) is None
+
+
 def test_mixed_degenerate_radical_flag_transporter_between_integral_presentations():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import FLAGS, isometry, _flag_marking_from_basis
