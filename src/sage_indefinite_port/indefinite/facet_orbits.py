@@ -390,28 +390,43 @@ def _stabilizer_on_facet(group, incidence, orbit_size, *, orbit_words=None, perm
         # transversal is already available from the exact facet-orbit
         # computation. Restrict these Schreier generators to F instead of
         # invoking GAP's second, potentially costly OnSets stabilizer search.
-        inverses = []
-        for permutation in permutations:
-            inverse = [0] * len(permutation)
-            for index, image in enumerate(permutation):
-                inverse[image] = index
-            inverses.append(tuple(inverse))
+        # Evaluate each transversal word on the facet only once while it
+        # remains in a bounded cache. A Schreier edge then takes one
+        # generator application and one inverse lookup per facet position.
+        transport_cache = {}
+        cache_limit = max(2, 250_000 // max(1, len(positions)))
         local_generators = set()
+        identity = tuple(range(len(positions)))
         for member, word in orbit_words.items():
+            source_data = transport_cache.get(member)
+            if source_data is None:
+                source_images = list(positions)
+                for step in word:
+                    generator = permutations[step]
+                    source_images = [generator[position] for position in source_images]
+                if set(source_images) != member:
+                    raise ArithmeticError("a facet Schreier word failed to transport its incidence")
+                source_data = (tuple(source_images), {image: index for index, image in enumerate(source_images)})
+                transport_cache[member] = source_data
+                if len(transport_cache) > cache_limit:
+                    transport_cache.pop(next(iter(transport_cache)))
+            source_images = source_data[0]
             for generator_index, generator in enumerate(permutations):
                 next_member = frozenset(generator[position] for position in member)
-                next_word = orbit_words[next_member]
-                images = []
-                for position in positions:
-                    image = position
-                    for step in word:
-                        image = permutations[step][image]
-                    image = generator[image]
-                    for step in reversed(next_word):
-                        image = inverses[step][image]
-                    images.append(local_position[image + 1])
-                action = tuple(images)
-                if action != tuple(range(len(positions))):
+                target_data = transport_cache.get(next_member)
+                if target_data is None:
+                    target_images = list(positions)
+                    for step in orbit_words[next_member]:
+                        target_generator = permutations[step]
+                        target_images = [target_generator[position] for position in target_images]
+                    if set(target_images) != next_member:
+                        raise ArithmeticError("a facet Schreier target word failed to transport its incidence")
+                    target_data = (tuple(target_images), {image: index for index, image in enumerate(target_images)})
+                    transport_cache[next_member] = target_data
+                    if len(transport_cache) > cache_limit:
+                        transport_cache.pop(next(iter(transport_cache)))
+                action = tuple(target_data[1][generator[position]] for position in source_images)
+                if action != identity:
                     local_generators.add(action)
         return tuple(sorted(local_generators))
     stabilizer = group.stabilizer([position + 1 for position in positions], action="OnSets")
