@@ -260,8 +260,20 @@ def test_zero_form_primitive_moving_line_and_plane_stabilizers_are_full_gl_parab
     line_generators = tuple(automorphism_group_generators(ARROWS, line))
     plane_generators = tuple(automorphism_group_generators(ARROWS, plane))
     assert line_generators and plane_generators
+    assert all(g in ambient.O() for g in (*line_generators, *plane_generators))
     assert all(g(e) in (e, -e) for g in line_generators)
     assert any(g(e) == f for g in plane_generators)
+
+
+def test_zero_form_full_orthogonal_generators_are_owned_isometries():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f = tuple(ambient.module_generators())
+    generators = tuple(automorphism_group_generators(Lattices(ZZ), ambient))
+    assert generators and all(g in ambient.O() for g in generators)
+    assert any(g(e) == f for g in generators)
 
 
 def test_zero_form_based_primitive_frames_have_one_class_at_each_attainable_rank():

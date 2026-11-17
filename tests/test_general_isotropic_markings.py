@@ -387,6 +387,7 @@ def test_zero_form_flag_stabilizer_is_actual_integral_parabolic():
     marked = category(_flag_marking_from_basis(ambient, (e, f), (1, 2)))
     generators = tuple(automorphism_group_generators(category, marked))
     assert generators
+    assert all(g in ambient.O() for g in generators)
     assert all(g(e) in (e, -e) for g in generators)
     assert all(ambient.b(g(x), g(y)) == 0 for g in generators for x in (e, f) for y in (e, f))
     assert any(g(f) != f for g in generators)

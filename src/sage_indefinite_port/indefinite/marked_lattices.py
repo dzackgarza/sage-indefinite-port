@@ -59,6 +59,18 @@ RECURSION = EichlerRecursion()
 INDUCTION = IsotropicInduction(RECURSION)
 
 
+def _zero_form_orthogonal_generators(ambient, linear_generators):
+    r"""Carry integral GL generators into the owned O(L) homset for q=0."""
+    from sage.all import ZZ as SageZZ, matrix
+    from sage_indefinite_port.indefinite.recursive import _isometry_from_row_matrix
+
+    labels = tuple(ambient.module_generating_set())
+    return tuple(_isometry_from_row_matrix(ambient, ambient, matrix(SageZZ, [
+        [int(generator(point).to_vector()(label)) for label in labels]
+        for point in ambient.module_generators()
+    ])) for generator in linear_generators)
+
+
 def _marked_vector(marked: Parent) -> Lattices.ElementMethods:
     arrow = marked.arrow()
     return arrow(next(iter(arrow.domain().module_generators())))
@@ -867,7 +879,11 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
         case CosliceCategory():
             rank = int(category.base_object().rank())
             if rank == 0:
-                generators = RECURSION.orthogonal_group_generators(marked.arrow().codomain())
+                ambient = marked.arrow().codomain()
+                generators = (_zero_form_orthogonal_generators(ambient, ambient.general_linear_group().group_generators())
+                              if all(ambient.b(x, y) == 0 for x in ambient.module_generators()
+                                     for y in ambient.module_generators())
+                              else RECURSION.orthogonal_group_generators(ambient))
             elif rank == 1:
                 generators = RECURSION.pointed_automorphism_generators(_marked_vector(marked))
             else:
@@ -921,7 +937,10 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                 basis = tuple(arrow(point).primitive_part() for point in category.base_object().module_generators())
                 generators = INDUCTION._stabilizer_generators(basis, ())
         case _ if category is LATTICES:
-            generators = RECURSION.orthogonal_group_generators(marked)
+            generators = (_zero_form_orthogonal_generators(marked, marked.general_linear_group().group_generators())
+                          if all(marked.b(x, y) == 0 for x in marked.module_generators()
+                                 for y in marked.module_generators())
+                          else RECURSION.orthogonal_group_generators(marked))
         case _ if category is ARROWS:
             if int(marked.arrow().domain().rank()) == 0:
                 generators = RECURSION.orthogonal_group_generators(marked.arrow().codomain())
@@ -936,7 +955,9 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                     subobject = ambient.primitive_isotropic_subobject(*(
                         arrow(point) for point in arrow.domain().module_generators()
                     ))
-                    generators = ambient.general_linear_group().flag_stabilizer((subobject,)).group_generators()
+                    generators = _zero_form_orthogonal_generators(
+                        ambient, ambient.general_linear_group().flag_stabilizer((subobject,)).group_generators()
+                    )
                     return finite_ordered_set(tuple(generators))
                 if int(arrow.domain().rank()) > 1 and arrow.domain().is_nondegenerate():
                     generators = (_nondegenerate_stabilizer_generators(arrow, based=False)
@@ -979,7 +1000,9 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
             ambient = basis[0].parent()
             if all(ambient.b(x, y) == 0 for x in ambient.module_generators() for y in ambient.module_generators()):
                 terms = tuple(ambient.primitive_isotropic_subobject(*basis[:rank]) for rank in dimensions)
-                generators = ambient.general_linear_group().flag_stabilizer(terms).group_generators()
+                generators = _zero_form_orthogonal_generators(
+                    ambient, ambient.general_linear_group().flag_stabilizer(terms).group_generators()
+                )
             else:
                 generators = INDUCTION._stabilizer_generators(basis, images)
         case _:
