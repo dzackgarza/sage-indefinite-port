@@ -1,12 +1,16 @@
-"""A same-genus non-isometric pair decided by the port's Lorentzian branch (#68).
+"""The port rejects a same-genus non-isometric pair of signature (2, 1).
 
-The public Isom of the provider can answer from its spinor-genus prefilter
-(sage-extensions lattice_morphisms.py, the indefinite rank >= 3 case). This test calls
-EichlerRecursion.isometry directly. The Conway--Sloane forms (51a) and (51b) are odd, so
-its even-genus check does not apply; the pair has signature (2, 1), so the decision is
-made by the positive-index-1 route of _indefinite_isometry (lorentzian_isometry on the
-signed view). Expected answer: Conway--Sloane, SPLAG 3rd ed., Ch. 15, section 11,
-(51a) and (51b) lie in one genus and are not integrally equivalent.
+EichlerRecursion.isometry calls _indefinite_isometry, whose genus and spinor-genus
+decision applies to integral lattices of rank at least three, including odd forms.
+The Conway--Sloane forms (51a) and (51b) are rejected there before the Lorentzian
+witness search. This tests the port entry point's negative decision.
+
+The departure from the source's exhaustive search is recorded at
+https://github.com/dzackgarza/sage-indefinite-port/issues/68#issuecomment-6821405364.
+By Eichler--Kneser, each indefinite spinor genus of rank at least three contains
+one integral isometry class. The independent negative expectation is
+Conway--Sloane, SPLAG 3rd ed., Ch. 15, section 11: (51a) and (51b) lie in one
+genus and are not integrally equivalent.
 """
 
 from tests.acceptance.consumer import lattice
