@@ -2154,6 +2154,29 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                     raise ValueError("isotropic flag ranks must be positive and strictly increasing")
                 basis = tuple(lattice.module_generators())[:dimensions[-1]]
                 classes = (category(_flag_marking_from_basis(lattice, basis, dimensions)),)
+            elif not lattice.is_nondegenerate():
+                from sage_indefinite_port.indefinite.recursive import _gram_in_label_order
+
+                reduction = indefinite_reduced_presentation(lattice)
+                reduced = reduction.reduced
+                gram = _gram_in_label_order(reduced)
+                n = int(gram.rank())
+                complement = lattice.lattice_category()([
+                    [int(gram[i, j]) for j in range(n)] for i in range(n)
+                ])
+                if not complement.is_definite() and complement.is_isotropic():
+                    raise ValueError(
+                        "mixed degenerate primitive isotropic flag orbit sets may be infinite; "
+                        "this finite-class interface cannot represent them"
+                    )
+                if dimensions[0] < 1 or any(left >= right for left, right in pairwise(dimensions)):
+                    raise ValueError("isotropic flag ranks must be positive and strictly increasing")
+                if dimensions[-1] > int(gram.nrows()) - n:
+                    classes = ()
+                else:
+                    basis = tuple(reduction.isometry(point)
+                                  for point in tuple(reduced.module_generators())[n:n + dimensions[-1]])
+                    classes = (category(_flag_marking_from_basis(lattice, basis, dimensions)),)
             else:
                 classes = tuple(category(_flag_marking_from_basis(lattice, basis, dimensions)) for basis in INDUCTION.isotropic_flag_bases(lattice, dimensions))
         case _:

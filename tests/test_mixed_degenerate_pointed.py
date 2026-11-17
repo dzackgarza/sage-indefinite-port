@@ -285,6 +285,25 @@ def test_public_primitive_based_radical_plane_in_anisotropic_degenerate_lattice(
         primitive_marking_classes(category, source, isotropic_quotient)
 
 
+def test_public_primitive_radical_flag_in_anisotropic_degenerate_lattice():
+    import pytest
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, primitive_marking_classes
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    plane = Lattices(ZZ)([[0, 0], [0, 0]])
+    first = plane.primitive_isotropic_subobject(next(iter(plane.module_generators())))
+    classes = primitive_marking_classes(FLAGS, first.inclusion(), ambient)
+    assert classes.cardinality() == cardinal(1)
+    arrows = tuple(next(iter(classes)).arrows())
+    assert tuple(int(arrow.domain().rank()) for arrow in arrows) == (1, 2)
+    assert arrows[-1].codomain() is ambient
+    assert primitive_marking_classes(FLAGS, first.inclusion(), lattice([[2, 0], [0, 0]])).is_empty()
+    isotropic_quotient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    with pytest.raises(ValueError, match="may be infinite"):
+        primitive_marking_classes(FLAGS, first.inclusion(), isotropic_quotient)
+
+
 def test_mixed_radical_rank_one_stabilizers_respect_residue_and_shear():
     from sage_extensions.all import cardinal
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION
