@@ -646,6 +646,31 @@ def test_mixed_degenerate_composite_modulus_radical_stabilizer_image():
     assert MatrixGroup(actions).order() == 8
 
 
+def test_mixed_degenerate_line_stabilizer_on_non_split_integral_presentation():
+    from sage.all import ZZ as SageZZ, matrix
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    standard = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    gram = matrix(SageZZ, [[0, 1, 0], [1, 0, 0], [0, 0, 0]])
+    change = matrix(SageZZ, [[1, 1, 0], [0, 1, 1], [1, 0, 0]])
+    assert abs(change.det()) == 1
+    twisted = Lattices(ZZ)([[int(entry) for entry in row]
+                            for row in (change * gram * change.transpose()).rows()])
+    labels = tuple(twisted.module_generating_set())
+    coordinates = matrix(SageZZ, [[2, 0, 1]]) * change.inverse()
+    vector = twisted.linear_combination({
+        label: twisted.base_ring()(int(coordinates[0, j]))
+        for j, label in enumerate(labels) if coordinates[0, j]
+    })
+    generators = RECURSION.line_stabilizer_generators(vector)
+    assert generators
+    assert all(generator(vector) in (vector, -vector) for generator in generators)
+    assert all(twisted.b(generator(x), generator(y)) == twisted.b(x, y)
+               for generator in generators for x in twisted.module_generators()
+               for y in twisted.module_generators())
+
+
 def test_public_induction_mixed_degenerate_null_line_stabilizer_uses_exact_split():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import INDUCTION, RECURSION
