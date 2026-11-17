@@ -166,6 +166,52 @@ def _isometry_row_matrix_in_coordinate_order(lattice: Lattices.ParentMethods, is
     )
 
 
+def _hermite_rows(rows: list[list[int]]) -> tuple[list[list[int]], list[list[int]]]:
+    r"""The nonzero rows of the row Hermite normal form H = U A of integer rows A, and the rows of U spanning the left kernel of A.
+
+    Cohen, *A Course in Computational Algebraic Number Theory*, Algorithm 2.4.4
+    (Hermite normal form by Euclidean row operations, transposed to rows) and
+    Proposition 2.4.9: with U unimodular and U A = [H; 0], the rows of U beside
+    the zero rows of U A are a basis of the integral left kernel of A. Pivots are
+    positive and the entries above a pivot lie in [0, pivot), Sage's convention
+    for ``hermite_form``; the form of a lattice is unique, so this is the basis
+    Sage computes.
+    """
+    a = [list(row) for row in rows]
+    u = [[int(i == j) for j in range(len(a))] for i in range(len(a))]
+    width = len(a[0]) if a else 0
+    pivot_row = 0
+    for column in range(width):
+        while True:
+            live = [i for i in range(pivot_row, len(a)) if a[i][column]]
+            if not live:
+                break
+            least = min(live, key=lambda i: abs(a[i][column]))
+            a[pivot_row], a[least] = a[least], a[pivot_row]
+            u[pivot_row], u[least] = u[least], u[pivot_row]
+            if len(live) == 1:
+                break
+            pivot = a[pivot_row][column]
+            for i in range(pivot_row + 1, len(a)):
+                if a[i][column]:
+                    q = a[i][column] // pivot
+                    a[i] = [x - q * y for x, y in zip(a[i], a[pivot_row])]
+                    u[i] = [x - q * y for x, y in zip(u[i], u[pivot_row])]
+        if pivot_row == len(a) or not a[pivot_row][column]:
+            continue
+        if a[pivot_row][column] < 0:
+            a[pivot_row] = [-x for x in a[pivot_row]]
+            u[pivot_row] = [-x for x in u[pivot_row]]
+        pivot = a[pivot_row][column]
+        for i in range(pivot_row):
+            q = a[i][column] // pivot
+            if q:
+                a[i] = [x - q * y for x, y in zip(a[i], a[pivot_row])]
+                u[i] = [x - q * y for x, y in zip(u[i], u[pivot_row])]
+        pivot_row += 1
+    return a[:pivot_row], u[pivot_row:]
+
+
 def _oriented_determinant(left: _Key, right: _Key) -> int:
     return left[0] * right[1] - left[1] * right[0]
 
@@ -1129,10 +1175,10 @@ class _Edgewalk:
         # The ZZ span of the projected rows C K / e is (1/e) times the span of
         # the integer rows C K; the Hermite normal form is unique and scales
         # with a positive factor, so this is the echelon basis of Sage's ZZ span.
-        hermite = matrix(SageZZ, [[sum(c * row[j] for c, row in zip(row_c, complement)) for j in columns] for row_c in constraint]).hermite_form(include_zero_rows=False)
-        if hermite.nrows() != 2:
+        hermite, _kernel = _hermite_rows([[sum(c * row[j] for c, row in zip(row_c, complement)) for j in columns] for row_c in constraint])
+        if len(hermite) != 2:
             raise ArithmeticError("the projected constraint lattice must have rank two")
-        first, second = (tuple(int(entry) for entry in row) for row in hermite.rows())
+        first, second = (tuple(row) for row in hermite)
         # The basis (h_0, h_1) / e is positively oriented against (o_0, o_1)
         # exactly when the 2 x 2 minors of both on one pair of columns i, j
         # (with nonzero minor of o) have one sign (Cramer's rule).
@@ -1165,14 +1211,14 @@ class _Edgewalk:
         # vector c * B of C (B the rows of a basis of C) lies in P exactly
         # when it pairs to zero with every edge wall, so the coefficient
         # lattice of C cap P is the integral left kernel of B G R^T.
-        equations = matrix(SageZZ, [[sum(c * row[w] for c, row in zip(row_c, wall_pairings)) for w in range(len(wall_pairings[0]))] for row_c in constraint])
+        _image, kernel = _hermite_rows([[sum(c * row[w] for c, row in zip(row_c, wall_pairings)) for w in range(len(wall_pairings[0]))] for row_c in constraint])
         # The Hermite normal form of a basis of the integral left kernel is the
         # echelon basis Sage's left_kernel() carries (the form is unique for
-        # the kernel lattice), computed without the kernel module.
-        coefficients = equations.left_kernel_matrix(algorithm="pari").echelon_form()
-        if coefficients.nrows() != 2:
+        # the kernel lattice).
+        coefficients, _zero = _hermite_rows(kernel)
+        if len(coefficients) != 2:
             raise ArithmeticError("C cap P must have rank two")
-        intersection_rows = [[sum(int(c) * row[j] for c, row in zip(row_c, constraint)) for j in columns] for row_c in coefficients.rows()]
+        intersection_rows = [[sum(c * row[j] for c, row in zip(row_c, constraint)) for j in columns] for row_c in coefficients]
         intersection_coordinates = [entry for row in intersection_rows for entry in coordinates(row)]
         if any(entry.denominator() != 1 for entry in intersection_coordinates):
             raise ArithmeticError("the perpendicular intersection must be integral in the projected lattice")
