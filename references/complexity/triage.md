@@ -911,3 +911,17 @@ Family totals at 4c0ef64: batch head processes Allcock 1.34 s x 8595 = 3.2 h, Li
 Phase wrappers at 4c0ef64 (`zk_meth50.log`, seconds per case, Allcock / ListReflect): extension roots with the edge plane and binary candidates 0.37 / 0.39 (floor about 0.17: edge plane 0.125, reconstruction 0.03, candidates 0.017), initial vertex 0.13 / 0.11, report 0.11 / 0.11 (public cones of the vertices), edge step 0.07 / 0.08, reflectivity certificate 0.04 / 0.04, isotropic next vertex 0.03 / 0.03.
 
 Remaining above 1 h removable: the edge plane and extension roots, about 0.2 s per case above the floor, about 1.0 h. The per-plane statements are Sage matrix constructions (38,574 `MatrixSpace` lookups and 21,430 element constructions per 25 Allcock cases, `zk_callees48.log`) and `_plane_coordinates` (12,858 calls); the next change is the plane on integer 2 x n rows. Every other phase is under 1 h removable. Multiplied remainder if the edge plane reaches its floor: about 6.0-6.5 - 1.0 = 5.0-5.5 h.
+
+## Batch 2: edge plane on integer rows (port 54a4851)
+
+Branch perf/edge-plane (worktree sic-edge; 79b356f, a0b5c55, f74557d): both of its edits (the projected rows' integral span as the Hermite form of their integral scaling without the free modules, and the C cap P coefficients as the PARI integral left kernel in Hermite form) are already in fix/acceptance-computations at bd23d0f, in `edge_wall_data` and `edge_plane_for_divisor`. Nothing remained to land. The local branch is deleted (it was never pushed) and the worktree is trashed.
+
+Phase probe (`zk_phaseprobe.py`, method `extension_roots`, warm, seed 1, 15 cases per family, 281.7 calls per case; both orders, `zk_pp_ep1.log`, `zk_pp_ep1b.log`):
+
+| Commit | Operation | ms per call before -> after, Allcock / ListReflect rank 3 (means of both orders) | hours |
+| --- | --- | --- | --- |
+| 54a4851 | edge plane on integer rows: projected Hermite basis, orientation by 2 x 2 minors, scaled form, r0 and C cap P coordinates by Cramer's rule on integers; candidate reconstruction and C membership on integer rows; `_plane_coordinates` removed | 1.417 -> 1.129 / 1.324 -> 1.100 | 0.19 + 0.15 = 0.3 |
+
+Equality: the 50 seed-7 walks (`zk_eq_ep1.log`) are identical to `zk_eq39.log`; allcock w217_l26 passes (`zk_w217_ep1.log`).
+
+Remaining in `edge_plane_for_divisor` (profile `zk_callees_ep1.log`, 15 Allcock cases, 2732 calls): five Sage matrix constructions per call (the Hermite form input, the PARI left kernel, its echelon form, the 2 x 2 intersection), 13,660 `MatrixSpace` lookups in all, about 0.05 s per case or 0.2 h over 17,200 cases. Removing them needs the 3 x 3 integer Hermite form and left kernel on Python integers with Sage's row convention (a hand-rolled HNF, Cohen, *A Course in Computational Algebraic Number Theory*, Algorithm 2.4.5); not done: under 0.25 h.
