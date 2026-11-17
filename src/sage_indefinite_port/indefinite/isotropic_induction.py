@@ -793,4 +793,21 @@ class IsotropicInduction:
         return self._stabilizer_generators(basis, images)
 
 
+    def flag_pointwise_automorphism_generators(self, flag: Flag) -> tuple[LatticeIsometryMethods, ...]:
+        r"""Complete integral generators fixing every vector of the top flag term.
+
+        The source radical image family is empty, so the common parabolic
+        construction fixes the adapted basis pointwise while retaining its
+        entire integral perpendicular/quotient kernel.  This is stronger
+        than merely preserving each flag sublattice setwise.
+        """
+        from sage_extensions.categories.isotropic_orbits import IsotropicFlag
+
+        if isinstance(flag, IsotropicFlag):
+            space = flag.top()
+        else:
+            _line, space = flag
+        return self._stabilizer_generators(self.plane_vectors(space), ())
+
+
 __all__ = ["IsotropicInduction", "UnsupportedRankError"]

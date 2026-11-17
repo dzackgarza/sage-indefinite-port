@@ -557,3 +557,28 @@ def test_induction_complete_rank_three_flag_stabilizer_generators_preserve_all_t
     assert all(all(term.inclusion().is_in_image(g(term.inclusion()(x)))
                    for x in term.module_generators())
                for g in generators for term in flag.terms())
+
+
+def test_induction_rank_five_partial_flag_stabilizer_generators_preserve_all_terms():
+    from sage_extensions.all import IsotropicFlag, FlagType, Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(10)] for i in range(10)])
+    flag = IsotropicFlag(ambient, tuple(ambient.module_generators())[::2], flag_type=FlagType((1, 3, 5)))
+    generators = tuple(INDUCTION.flag_automorphism_generators(flag))
+    assert generators
+    assert all(all(term.inclusion().is_in_image(g(term.inclusion()(x)))
+                   for x in term.module_generators())
+               for g in generators for term in flag.terms())
+
+
+def test_induction_rank_five_pointwise_flag_stabilizer_fixes_top_basis():
+    from sage_extensions.all import IsotropicFlag, FlagType, Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(10)] for i in range(10)])
+    basis = tuple(ambient.module_generators())[::2]
+    flag = IsotropicFlag(ambient, basis, flag_type=FlagType((1, 3, 5)))
+    generators = tuple(INDUCTION.flag_pointwise_automorphism_generators(flag))
+    assert generators
+    assert all(g(point) == point for g in generators for point in basis)
