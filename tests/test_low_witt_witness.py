@@ -91,6 +91,27 @@ def test_low_witt_exact_orthogonal_iterator_yields_distinct_integral_maps():
                for g in family)
 
 
+def test_quaternion_norm_one_unit_gives_explicit_integral_witt_zero_isometry():
+    """For B=(-1,3), left multiplication by 2+j has reduced norm one."""
+    from sage.all import ZZ as SageZZ, matrix
+
+    ambient = lattice([[2, 0, 0, 0], [0, 2, 0, 0], [0, 0, -6, 0], [0, 0, 0, -6]])
+    # Coordinates are (1,i,j,ij); the row matrix is the transpose of
+    # the usual column-action matrix for left multiplication by 2+j.
+    action = matrix(SageZZ, [[2, 0, 1, 0], [0, 2, 0, -1],
+                             [3, 0, 2, 0], [0, -3, 0, 2]])
+    gram = matrix(SageZZ, [[2, 0, 0, 0], [0, 2, 0, 0],
+                            [0, 0, -6, 0], [0, 0, 0, -6]])
+    assert abs(action.det()) == 1
+    assert action * gram * action.transpose() == gram
+    basis = tuple(ambient.module_generators())
+    witness = ambient.Aut()({label: sum((int(action[i, j]) * basis[j] for j in range(4)), ambient.zero())
+                             for i, label in enumerate(ambient.module_generating_set())})
+    assert witness in ambient.O()
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y) for x in basis for y in basis)
+    assert all((~witness)(witness(x)) == x for x in basis)
+
+
 def test_witt_zero_pointed_vector_transporter_swaps_positive_coordinates():
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION
 
