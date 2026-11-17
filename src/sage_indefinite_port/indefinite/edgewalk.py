@@ -219,6 +219,23 @@ def _plane_coordinates(basis: Matrix_rational_dense, rows) -> list[tuple[Rationa
     return coordinates
 
 
+def _cone_of_rays(rank: int, rows) -> Polyhedron:
+    r"""The cone spanned by coordinate rows, as the engine polyhedron of ``RationalPolyhedralCones.from_rays``.
+
+    The owned cone rebuilds the rays' polyhedron from the primitive integral
+    rows of its H-representation, which fixes the order of its facets and
+    its extreme rays; this is the same engine polyhedron, without the owned
+    covectors and vectors.
+    """
+    rays = Polyhedron(vertices=[(0,) * rank], rays=rows, base_ring=SageQQ)
+    return Polyhedron(
+        ambient_dim=rank,
+        ieqs=[[0, *_primitive_integral_coordinates(tuple(row.A()))] for row in rays.inequalities()],
+        eqns=[[0, *_primitive_integral_coordinates(tuple(row.A()))] for row in rays.equations()],
+        base_ring=SageQQ,
+    )
+
+
 def _primitive_positive_direction(entries) -> tuple[int, ...]:
     """Primitive integral direction, retaining its orientation."""
     from functools import reduce
@@ -960,9 +977,10 @@ class _Edgewalk:
         # engine of the complement's vectors_of_square) returns one vector
         # of each sign pair, in the order that shell lists them, and only
         # the accepted roots are wrapped as lattice vectors.
-        inclusion = timelike.orthogonal_complement().inclusion()
-        basis = matrix(SageZZ, [self.key(inclusion(generator)) for generator in _coordinate_basis(inclusion.domain())])
+        # The rows of k^perp: the echelon basis of the integral left kernel
+        # of G k, the basis of the owned orthogonal complement.
         gram = self.gram.change_ring(SageZZ)
+        basis = (gram * vector(SageZZ, self.key(timelike))).column().left_kernel_matrix(algorithm="pari").echelon_form()
         complement_gram = pari(basis * gram * basis.transpose())
         positive: list[_Vector] = []
         for norm in self.norms:
@@ -985,7 +1003,7 @@ class _Edgewalk:
         # roots from FindFixedDistVectors, not primitive multiples of them.
         # Use geometric rays only to identify which original roots span
         # the selected cone, retaining each root's prescribed norm.
-        rays = RationalPolyhedralCones(self.lattice).from_rays(positive).primitive_rays()
+        rays = tuple(_primitive_integral_coordinates(tuple(ray.vector())) for ray in _cone_of_rays(self.rank, [self.row(root) for root in positive]).rays())
         if require_full and len(rays) != self.rank - 1:
             # edgewalk.h get_simple_cone_from_lattice requires exactly
             # dimSpace selected walls for an ordinary starting vertex.
@@ -993,7 +1011,7 @@ class _Edgewalk:
         roots_by_direction = {}
         for root in positive:
             roots_by_direction.setdefault(_primitive_positive_direction(_key(root)), root)
-        return tuple(roots_by_direction[_primitive_positive_direction(_key(ray))] for ray in rays)
+        return tuple(roots_by_direction[_primitive_positive_direction(ray)] for ray in rays)
 
     @staticmethod
     def divisor(norm: Rational) -> int:
@@ -1474,17 +1492,8 @@ class _Edgewalk:
         r"""The walls along each outgoing edge and a wall orienting that edge."""
         if len(vertex.roots) == 1:
             return ()
-        # The facets of the root cone on engine rows, in the order of the
-        # owned cone (RationalPolyhedralCones.from_rays): the H-representation
-        # of the rays' polyhedron, rebuilt from its primitive integral rows.
         rows = [self.row(root) for root in vertex.roots]
-        rays = Polyhedron(vertices=[(0,) * self.rank], rays=rows, base_ring=SageQQ)
-        cone = Polyhedron(
-            ambient_dim=self.rank,
-            ieqs=[[0, *_primitive_integral_coordinates(tuple(row.A()))] for row in rays.inequalities()],
-            eqns=[[0, *_primitive_integral_coordinates(tuple(row.A()))] for row in rays.equations()],
-            base_ring=SageQQ,
-        )
+        cone = _cone_of_rays(self.rank, rows)
         if cone.dim() <= 0:
             return ()
         directions: list[tuple[_Roots, _Vector]] = []
