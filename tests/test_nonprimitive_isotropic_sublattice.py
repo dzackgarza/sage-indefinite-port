@@ -286,3 +286,30 @@ def test_homothetic_rank_two_based_transport_and_pointwise_stabilizer():
     assert isometry(category, first, third) is None
     family = tuple(automorphism_group_generators(category, first))
     assert all(g(2 * e) == 2 * e and g(2 * u) == 2 * u for g in family)
+
+
+def test_supplied_trivial_stabilizer_keeps_all_index_two_submodules():
+    from sage_extensions.all import cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_sublattice_classes
+
+    ambient = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    e, _f, u, _v = tuple(ambient.module_generators())
+    saturated = ambient.primitive_isotropic_subobject(e, u)
+    trivial = ambient.O().subgroup(())
+    classes = nonprimitive_sublattice_classes(saturated, (1, 2), stabilizer_group=trivial)
+    assert len(classes) == 3
+    assert all(arrow.codomain() is ambient for arrow in classes)
+
+
+def test_supplied_group_must_preserve_the_saturation():
+    import pytest
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_sublattice_classes
+
+    ambient = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    e, f, u, v = tuple(ambient.module_generators())
+    labels = tuple(ambient.module_generating_set())
+    exchange = ambient.O()(dict(zip(labels, (f, e, u, v), strict=True)))
+    saturated = ambient.primitive_isotropic_subobject(e, u)
+    with pytest.raises(ValueError):
+        nonprimitive_sublattice_classes(saturated, (1, 2), stabilizer_group=ambient.O().subgroup((exchange,)))

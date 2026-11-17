@@ -802,12 +802,14 @@ def homothetic_isotropic_sublattice_classes(lattice: Parent, rank: int, multipli
 
 
 
-def nonprimitive_sublattice_classes(saturated: Parent | Morphism, divisors: tuple[int, ...]) -> tuple[Morphism, ...]:
+def nonprimitive_sublattice_classes(saturated: Parent | Morphism, divisors: tuple[int, ...], *, stabilizer_group=None) -> tuple[Morphism, ...]:
     r"""Finite-index sublattice classes under the actual ambient stabilizer image.
 
     The port supplies the integral action on the primitive saturation.  The
     generic finite-index submodule orbit construction belongs to the module
-    owner and returns represented subobjects, not matrix surrogates.
+    owner and returns represented subobjects, not matrix surrogates.  When
+    ``stabilizer_group`` is supplied, it is used without enlargement to the
+    full ambient or abstract general linear group.
     """
     if isinstance(saturated, Morphism):
         lattice = saturated.codomain()
@@ -818,7 +820,17 @@ def nonprimitive_sublattice_classes(saturated: Parent | Morphism, divisors: tupl
         raise ValueError("the supplied saturation must be primitive")
     basis = tuple(inclusion(point) for point in inclusion.domain().module_generators())
     isotropic = all(lattice.b(x, y) == 0 for x in basis for y in basis)
-    if isotropic:
+    if stabilizer_group is not None:
+        # The supplied group is already the actual arithmetic stabilizer
+        # of S (or a subgroup thereof).  Never enlarge it to O(S).
+        ambient_generators = tuple(stabilizer_group.group_generators())
+        if any(not inclusion.is_in_image(g(point)) for g in ambient_generators for point in basis):
+            raise ValueError("the supplied group does not preserve the saturation")
+        module = inclusion.domain()
+        actions = tuple(module.Isom(module)(
+            lambda label, generator=g: inclusion.lift(generator(inclusion(module.module_generator(label))))
+        ) for g in ambient_generators)
+    elif isotropic:
         ambient_generators = INDUCTION.plane_automorphism_generators(saturated)
         module = inclusion.domain()
         actions = tuple(module.Isom(module)(
