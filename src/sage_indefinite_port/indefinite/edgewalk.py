@@ -383,27 +383,30 @@ class _Edgewalk:
         The source finds a primitive null vector, enumerates each admissible
         root-norm shell in the projection of C_N ∩ k-perp to k-perp/k,
         selects one simple cone, lifts its walls and completes the affine
-        cusp roots. The preamble supplies the isotropic reduction and exact
-        definite-lattice fixed-square enumeration.
+        cusp roots. The quotient k^perp/k, its norm shells (PARI qfminim) and
+        the simple cone (pplpy) are computed on engine data.
         """
         if k is None:
             k = self.lattice.isotropic_vector()
-        reduction = k.isotropic_reduction()
-        perpendicular = reduction.orthogonal_complement()
-        perpendicular_inclusion = perpendicular.inclusion()
-        quotient_projection = reduction.projection()
-        rank = int(reduction.rank())
-        projected_roots: list[tuple[_Vector, _Vector]] = []
-
-        # Coordinate rows, as for the edge planes: the rows of a basis of
-        # k^perp in L, and the rows of their images in the framing of the
-        # quotient k^perp/k (the projection pi of edgewalk.h:1955-1968,
-        # LatticeProjectionFramework onto the complement of k in k^perp).
-        perpendicular_basis = _coordinate_basis(perpendicular)
-        perpendicular_rows = matrix(SageQQ, [self.row(perpendicular_inclusion(generator)) for generator in perpendicular_basis])
-        quotient_rows = matrix(SageQQ, [_key(quotient_projection(generator)) for generator in perpendicular_basis])
+        # k^perp/k on engine data (edgewalk.h:1955-1968, LatticeProjectionFramework):
+        # the rows K of an integral basis of k^perp (the integral left kernel
+        # of G k), and the Smith transform U of the column c^T of the
+        # coordinates of k in K, U c^T = (+-1, 0, ..., 0)^T, as Sage frames
+        # the cokernel of k -> k^perp (the owned isotropic reduction's Smith
+        # generators).  A vector x K of k^perp projects to the last
+        # coordinates of U x^T; the columns of U^-1 after the first lift
+        # the quotient generators.
         k_column = self.gram * self.row(k).column()
-        quotient_gram = _engine_component_matrix(reduction.gram_tensor()).change_ring(SageQQ)
+        perpendicular_rows = (k_column.denominator() * k_column).change_ring(SageZZ).left_kernel_matrix(algorithm="pari").echelon_form().change_ring(SageQQ)
+        k_coordinates = perpendicular_rows.solve_left(self.row(k))
+        smith, unimodular, _right = matrix(SageZZ, [k_coordinates]).transpose().smith_form()
+        if smith[0, 0] != 1:
+            raise ArithmeticError("an isotropic vector must be primitive in k^perp")
+        rank = int(perpendicular_rows.nrows()) - 1
+        quotient_rows = unimodular.matrix_from_rows(range(1, rank + 1)).transpose().change_ring(SageQQ)
+        complement = unimodular.inverse().matrix_from_columns(range(1, rank + 1)).transpose().change_ring(SageQQ) * perpendicular_rows
+        quotient_gram = complement * self.gram * complement.transpose()
+        projected_roots: list[tuple[_RationalRow, _Vector]] = []
 
         for norm in self.norms:
             # edgewalk.h:1951-1954: Latt_inter_NSP = IntersectionLattice(Latt, NSP),
@@ -436,7 +439,7 @@ class _Edgewalk:
                 if column * image_gram * column == target:
                     shell.extend((column, -column))
             for coefficients in shell:
-                projected = self.plane_element(reduction, coefficients * image_basis)
+                projected = coefficients * image_basis
                 # fr.GetOnePreimage (edgewalk.h:2010): one preimage in C_N cap k^perp.
                 lifted = self.element(tuple(coefficients * lift_rows))
                 if self.norm(lifted) != norm:
@@ -447,13 +450,7 @@ class _Edgewalk:
             # get_simple_cone: an empty projected root system certifies
             # non-reflectivity, rather than an arithmetic failure.
             return None
-        labels = tuple(reduction.module_generating_set())
-
-        def quotient_row(point: _Vector) -> _RationalRow:
-            coordinates = point.to_vector()
-            return vector(SageQQ, [_rational(coordinates(label)) for label in labels])
-
-        projected_rows = tuple(quotient_row(projected) for projected, _root in projected_roots)
+        projected_rows = tuple(projected for projected, _root in projected_roots)
         if matrix(SageQQ, projected_rows).rank() != rank:
             # edgewalk.h: the projected roots must span the rank-(n-2)
             # quotient for a reflective cusp.
@@ -475,11 +472,13 @@ class _Edgewalk:
                 break
             parameter += 1
         positive = [(projected, root, row) for (projected, root), row in zip(projected_roots, projected_rows, strict=True) if splitting.dot_product(row) > 0]
-        cone = RationalPolyhedralCones(reduction).from_rays([projected for projected, _root, _row in positive])
+        # The extreme rays of the cone of the positive projected roots in
+        # k^perp/k (pplpy dual description, as the owned cone's engine).
+        cone = Polyhedron(rays=[row for _projected, _root, row in positive], base_ring=SageQQ, backend="ppl")
         simple_roots: list[_Vector] = []
         simple_projected_rows: list[_RationalRow] = []
-        for ray in cone.primitive_rays():
-            ray_row = quotient_row(ray)
+        for ray in cone.rays():
+            ray_row = vector(SageQQ, ray.vector())
             # get_one_root (edgewalk.h:2001-2022): the admissible root on this
             # ray, i.e. a positive multiple of it (the quotient is definite).
             for _projected, root, root_row in positive:
