@@ -254,6 +254,14 @@ def test_long_probe_plans_every_unfinished_pricing_node_once() -> None:
         nodes = result.stdout.splitlines()
         assert job["selection"] == "probe_long"
         assert job["timeout"] * 60 >= len(nodes) * 600 + 20 * 60
+        # This unchanged node already has a recorded completed call of 2475 s.
+        # A completion-pricing job must accommodate that observation as well
+        # as the other nodes, rather than censor it at the short retry limit.
+        incidence = (
+            "tests/acceptance/test_boundaries.sage::"
+            "test_dawes_building_incidence_graph_is_the_published_figure[dawes_2U2_A2_stable]"
+        )
+        assert job["timeout"] * 60 >= sum(2475 if node == incidence else 600 for node in nodes) + 20 * 60
         selected.extend(nodes)
     expected = (root / "ci/acceptance_probe_long.txt").read_text().splitlines()
     assert len(selected) == len(set(selected))
