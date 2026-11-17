@@ -474,6 +474,20 @@ def test_odd_rank_nondegenerate_smith_stream_uses_moving_so_orbits():
                for left, right in zip(full, special, strict=True))
 
 
+def test_odd_rank_proper_nondegenerate_saturation_so_and_o_orbits_agree():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_nondegenerate_sublattice_classes
+
+    source = Lattices(ZZ)("U")
+    ambient = source + Lattices(ZZ)([[2]])
+    full = tuple(nonprimitive_nondegenerate_sublattice_classes(ambient, source, (1, 2)))
+    special = tuple(nonprimitive_nondegenerate_sublattice_classes(
+        ambient, source, (1, 2), acting_group=ambient.SO()
+    ))
+    assert len(full) == len(special)
+    assert full
+
+
 def test_nondegenerate_fixed_smith_classifier_validates_before_empty_orbit_dispatch():
     import pytest
     from sage_extensions.all import Lattices, ZZ
