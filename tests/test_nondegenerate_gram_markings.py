@@ -432,3 +432,14 @@ def test_nonprimitive_nondegenerate_based_markings_distinguish_source_coordinate
     fixed = tuple(automorphism_group_generators(category, first))
     assert all(g(2 * e) == 2 * e and g(f) == f for g in fixed)
     assert ambient.O().subgroup(fixed).cardinality() == cardinal(4)
+
+
+def test_public_nonprimitive_nondegenerate_classes_from_primitive_saturation():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_nondegenerate_sublattice_classes
+
+    source = Lattices(ZZ)("U")
+    ambient = source + source
+    classes = nonprimitive_nondegenerate_sublattice_classes(ambient, source, (1, 2))
+    assert classes.cardinality() == cardinal(2)
+    assert all(marked.arrow().codomain() is ambient for marked in classes)

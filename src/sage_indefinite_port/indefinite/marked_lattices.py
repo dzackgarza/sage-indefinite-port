@@ -990,12 +990,14 @@ def nonprimitive_sublattice_classes(saturated: Parent | Morphism, divisors: tupl
     else:
         if not inclusion.domain().is_nondegenerate():
             raise ValueError("nonisotropic degenerate saturation requires its radical stabilizer action")
-        complement = lattice.orthogonal_complement(saturated)
-        combined = lattice.subobject_on((*basis, *(complement.inclusion()(x) for x in complement.module_generators())))
-        if int(combined.inclusion().cokernel().cardinality()) != 1:
-            raise ValueError("nonsplit nondegenerate saturation requires the complement-glue stabilizer")
-        # Every O(S)-element extends by identity on its orthogonal complement.
-        actions = RECURSION.orthogonal_group_generators(inclusion.domain())
+        # The actual stabilizer image can be smaller than O(S) when S and
+        # S^perp have nontrivial glue.  Its generators come from the full
+        # finite discriminant-image preimage, not a generator filter.
+        ambient_generators = _nondegenerate_stabilizer_generators(inclusion, based=False)
+        module = inclusion.domain()
+        actions = tuple(module.Isom(module)(
+            lambda label, generator=g: inclusion.lift(generator(inclusion(module.module_generator(label))))
+        ) for g in ambient_generators)
     submodules = inclusion.domain().finite_index_submodule_orbits(divisors, actions)
     return tuple(lattice.subobject_on(tuple(inclusion(subobject(point))
         for point in subobject.domain().module_generators())).inclusion() for subobject in submodules)
@@ -1027,6 +1029,33 @@ def nonprimitive_isotropic_sublattice_classes(lattice: Parent, rank: int, diviso
             stabilizer = group.intersection(lattice.O().stabilizer(saturated))
             submodules = nonprimitive_sublattice_classes(saturated, divisors, stabilizer_group=stabilizer)
         classes.extend(ARROWS.object(embedding) for embedding in submodules)
+    return finite_ordered_set(tuple(classes))
+
+
+
+def nonprimitive_nondegenerate_sublattice_classes(lattice: Parent, saturation_type: Parent, divisors: tuple[int, ...], *, acting_group=None) -> Parent:
+    r"""Moving finite-index sublattices with a prescribed primitive nondegenerate saturation type.
+
+    First classify primitive images of ``saturation_type`` up to source
+    isometry, then take the actual arithmetic stabilizer action on the
+    finite-index submodules.  No genus-isometry or full O(S) shortcut is
+    used in place of the embedded saturation's ambient stabilizer.
+    """
+    if not saturation_type.is_nondegenerate():
+        raise ValueError("use isotropic or radical marking classification for degenerate saturation")
+    if len(divisors) != int(saturation_type.rank()):
+        raise ValueError("elementary divisors must match the saturation rank")
+    primitive = primitive_marking_classes(ARROWS, saturation_type, lattice)
+    group = lattice.O() if acting_group is None else acting_group
+    if acting_group is not None:
+        primitive = tuple(split for marked in primitive for split in lattice.O().split_orbit(marked, group))
+    classes = []
+    for marked in primitive:
+        arrow = marked.arrow()
+        saturated = lattice.subobject_on(tuple(arrow(x) for x in arrow.domain().module_generators()))
+        stabilizer = None if acting_group is None else group.intersection(lattice.O().stabilizer(saturated))
+        classes.extend(ARROWS.object(embedding) for embedding in
+            nonprimitive_sublattice_classes(saturated, divisors, stabilizer_group=stabilizer))
     return finite_ordered_set(tuple(classes))
 
 
@@ -1116,4 +1145,5 @@ __all__ = [
     "homothetic_isotropic_sublattice_classes",
     "nonprimitive_sublattice_classes",
     "nonprimitive_isotropic_sublattice_classes",
+    "nonprimitive_nondegenerate_sublattice_classes",
 ]

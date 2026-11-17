@@ -376,3 +376,32 @@ def test_public_nonprimitive_sublattice_classes_retain_gamma_three_action():
     assert classes.cardinality() == cardinal(2)
     assert all(int(marked.arrow()(marked.arrow().domain().module_generators()[0]).content()) == 2
                for marked in classes)
+
+
+def test_nonsplit_nondegenerate_saturation_uses_glue_compatible_source_image():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_sublattice_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    e, f, u, v = tuple(ambient.module_generators())
+    saturated = ambient.subobject_on([e + f, u + v])
+    classes = nonprimitive_sublattice_classes(saturated, (1, 2))
+    assert len(classes) == 2
+    assert all(arrow.codomain() is ambient and arrow.saturation().inclusion().is_primitive()
+               for arrow in classes)
+
+
+def test_proper_glue_levi_image_distinguishes_equal_norm_source_summands():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_sublattice_classes
+
+    ambient = Lattices(ZZ)([[1, 0, 0, 0], [0, 2, 0, 0], [0, 0, 3, 0], [0, 0, 0, 1]])
+    e, f, u, v = tuple(ambient.module_generators())
+    saturated = ambient.subobject_on([e + f, u])
+    classes = nonprimitive_sublattice_classes(saturated, (1, 2))
+    # The first norm-three vector has ambient divisibility one, the
+    # second divisibility three.  O(S)=O(<3,3>) swaps them, but no
+    # ambient isometry does.  Modulo two, the actual source image acts
+    # trivially, leaving all three index-two submodules inequivalent.
+    assert len(classes) == 3
+    assert all(arrow.codomain() is ambient for arrow in classes)
