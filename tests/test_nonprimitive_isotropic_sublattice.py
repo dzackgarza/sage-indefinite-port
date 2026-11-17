@@ -151,6 +151,24 @@ def test_canonical_moving_null_line_on_degenerate_radical_has_exact_witness():
     assert second_witness(y) in (2 * f, -2 * f)
 
 
+def test_canonical_moving_null_line_under_level_three_subgroup_separates_lines():
+    from sage_indefinite_port.indefinite.marked_lattices import canonical_moving_isotropic_line
+
+    ambient = lattice([[0, 1], [1, 0]])
+    e, f = tuple(ambient.module_generators())
+    subgroup = ambient.O().congruence_preimage(3)
+    first, first_witness = canonical_moving_isotropic_line(2 * e, acting_group=subgroup)
+    negative, negative_witness = canonical_moving_isotropic_line(-2 * e, acting_group=subgroup)
+    second, second_witness = canonical_moving_isotropic_line(2 * f, acting_group=subgroup)
+    generator = next(iter(first.arrow().domain().module_generators()))
+    assert first.arrow()(generator) == negative.arrow()(generator)
+    assert first.arrow()(generator) != second.arrow()(generator)
+    for (marked, witness), target in zip(((first, first_witness), (negative, negative_witness), (second, second_witness)),
+                                         (2 * e, -2 * e, 2 * f), strict=True):
+        assert witness in subgroup
+        assert witness(marked.arrow()(generator)) in (target, -target)
+
+
 def test_moving_nonisotropic_rank_one_markings_use_signed_pointed_transport():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
