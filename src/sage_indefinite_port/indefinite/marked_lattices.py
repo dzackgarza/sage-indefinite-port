@@ -283,6 +283,28 @@ def pointed_content_classes(category: Category, lattice: Parent, square: int, co
     return finite_ordered_set(tuple(classes))
 
 
+
+def pointed_nonzero_norm_classes(category: Category, lattice: Parent, square: int) -> Parent:
+    r"""All pointed O(L)-orbits of nonzero square, partitioned by exact content.
+
+    The finite list of possible contents is precisely the positive integers
+    ``c`` with ``c*c`` dividing ``abs(square)``.  Each stratum uses the
+    existing primitive orbit classification, without losing nonprimitive
+    representatives or identifying different contents.
+    """
+    from math import isqrt
+
+    if square == 0:
+        raise ValueError("isotropic contents are unbounded; request pointed_content_classes with a prescribed positive content")
+    classes = (
+        marking
+        for content in range(1, isqrt(abs(int(square))) + 1)
+        if square % (content * content) == 0
+        for marking in pointed_content_classes(category, lattice, square, content)
+    )
+    return finite_ordered_set(tuple(classes))
+
+
 def primitive_marking_classes(category: Category, source: Parent | Morphism, lattice: Parent) -> Parent:
     r"""One marked lattice for each isomorphism class of primitive markings of ``lattice`` of shape ``source``.
 
@@ -348,4 +370,5 @@ __all__ = [
     "isometry",
     "primitive_marking_classes",
     "pointed_content_classes",
+    "pointed_nonzero_norm_classes",
 ]

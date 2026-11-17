@@ -89,3 +89,45 @@ def test_fixed_isotropic_content_strata_do_not_conflate_contents():
         classes = pointed_content_classes(category, plane, 0, content)
         assert classes.cardinality() == cardinal(1)
         assert all(int(marking.arrow()(source.module_generators()[0]).content()) == content for marking in classes)
+
+
+def test_all_nonzero_square_eight_orbits_have_exact_content_partition():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import pointed_nonzero_norm_classes, isometry
+
+    plane = lattice([[0, 1], [1, 0]])
+    source = Lattices(ZZ)([[8]])
+    category = CosliceCategory(Lattices(ZZ), source)
+    classes = pointed_nonzero_norm_classes(category, plane, 8)
+    assert classes.cardinality() == cardinal(2)
+    first, second = tuple(classes)
+    assert {int(marking.arrow()(source.module_generators()[0]).content()) for marking in classes} == {1, 2}
+    assert isometry(category, first, second) is None
+    assert pointed_nonzero_norm_classes(category, plane, 8).cardinality() == cardinal(2)
+
+
+def test_unbounded_isotropic_content_cannot_be_materialized_as_finite_orbits():
+    import pytest
+    from sage_extensions.all import Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import pointed_nonzero_norm_classes
+
+    plane = lattice([[0, 1], [1, 0]])
+    category = CosliceCategory(Lattices(ZZ), Lattices(ZZ)([[0]]))
+    with pytest.raises(ValueError):
+        pointed_nonzero_norm_classes(category, plane, 0)
+
+
+def test_negative_square_content_strata_are_not_lost():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import pointed_nonzero_norm_classes
+
+    plane = lattice([[0, 1], [1, 0]])
+    source = Lattices(ZZ)([[-8]])
+    category = CosliceCategory(Lattices(ZZ), source)
+    classes = pointed_nonzero_norm_classes(category, plane, -8)
+    assert classes.cardinality() == cardinal(2)
+    assert {int(marking.arrow()(source.module_generators()[0]).content()) for marking in classes} == {1, 2}
+    assert all(marking.arrow()(source.module_generators()[0]).q() == ZZ(-8) for marking in classes)
