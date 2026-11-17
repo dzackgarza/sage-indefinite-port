@@ -114,6 +114,15 @@ def test_large_recursive_facet_uses_exact_ridge_walk_beyond_depth_two():
     assert all(is_facet_certificate(normal, incidence, rays) for incidence, normal in records)
 
 
+def test_deep_low_symmetry_recursive_facet_avoids_complete_h_description():
+    rays = [(1, 0, 0)] * 10 + [(0, 1, 0)] * 10 + [(0, 0, 1)] * 5
+    records = tuple(orbit_representatives(rays, (), level=5))
+    assert len(records) == 3
+    assert {tuple(normal) for _incidence, normal in records} == {
+        (1, 0, 0), (0, 1, 0), (0, 0, 1)
+    }
+
+
 def _cell(gram):
     backend = LorentzianPerfectLocalBackend()
     return backend, backend.initial_cell(lattice(gram), NONNEGATIVE_SQUARES)

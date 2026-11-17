@@ -499,26 +499,16 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
             if record is not None:
                 yield record
         return
-    # POLY_Heuristics.h:320-328, StandardHeuristicSplitting, in rule order.
-    # LORENTZ_GetGeneratorsAutom_Reduced sets dimEXT = n + 1, so the
-    # initial n-dimensional cone has level one. Each facet lowers rank by
-    # one. Both source dispatches compute the complete exact facet set;
-    # these rules select computation, not a search bound.
-    if len(rays) - dimension < 20:
-        split = False
-    elif len(rays) >= 1000:
-        # A high-incidence recursive facet may still have thousands of
-        # extreme rays after the source's depth-two split. Submitting its
-        # complete H-description to Normaliz reinstates the very
-        # large-cone bottleneck that the exact ridge walk avoids. Continue
-        # the certified adjacency decomposition at deeper levels instead;
-        # dimension strictly decreases, and the two-dimensional base case
-        # is enumerated exactly.
-        split = True
-    elif order > 5000 and level < 3:
-        split = True
-    else:
-        split = len(rays) >= 40 and level <= 1 and order >= 100
+    # The pinned StandardHeuristicSplitting switches back to direct dual
+    # description at deeper levels or for small groups. On the frozen
+    # Lorentzian configurations that repeatedly submits large recursive
+    # faces to Normaliz, even though the exact ridge walk is already
+    # available. Use direct enumeration only for near-simplicial faces;
+    # otherwise continue the certified recursive walk regardless of the
+    # group's order or the depth. Each recursive face lowers dimension,
+    # and the two-dimensional base case terminates exactly. This changes
+    # the engine dispatch, not the facet set or its orbit equivalence.
+    split = len(rays) - dimension >= 20
     if not split:
         # POLY_RecursiveDualDesc.h:1465-1474, DirectFacetOrbitComputation.
         # Use the exact Normaliz cone backend already owned by the local
