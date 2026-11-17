@@ -109,6 +109,24 @@ def test_zero_form_pointed_content_strata_use_integral_gl_orbits():
     assert isometry(category, first, second) is None
 
 
+def test_zero_form_pointed_content_retains_congruence_subgroup_splitting():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import pointed_content_classes
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    source = Lattices(ZZ)([[0]])
+    category = CosliceCategory(Lattices(ZZ), source)
+    gamma = ambient.O().congruence_preimage(2)
+    classes = pointed_content_classes(category, ambient, 0, 3, acting_group=gamma)
+    assert classes.cardinality() == cardinal(3)
+    vectors = tuple(marked.arrow()(source.module_generators()[0]) for marked in classes)
+    labels = tuple(ambient.module_generating_set())
+    assert {tuple((int(v.to_vector()(label)) // 3) % 2 for label in labels) for v in vectors} == {
+        (1, 0), (0, 1), (1, 1)
+    }
+
+
 def test_all_nonzero_square_eight_orbits_have_exact_content_partition():
     from sage_extensions.all import Lattices, ZZ, cardinal
     from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
