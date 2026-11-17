@@ -977,3 +977,22 @@ def test_flag_action_data_completes_noncoordinate_primitive_line_integrally():
     assert len(basis) == 2 and images
     assert basis[0] in (2 * z + 3 * w, -2 * z - 3 * w)
     assert all(image[0] in (basis[0], -basis[0]) for image in images)
+
+
+def test_flag_action_data_completes_nested_noncoordinate_rank_three_flag():
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+
+    ambient = lattice([[2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+    z, w, u = tuple(ambient.module_generators())[1:]
+    first, second = 2 * z + 3 * w + 5 * u, z + w + 2 * u
+    full = ambient.primitive_isotropic_subobject(z, w, u)
+    inclusion = full.inclusion()
+    line = inclusion.domain().primitive_isotropic_subobject(inclusion.lift(first))
+    plane = inclusion.domain().primitive_isotropic_subobject(inclusion.lift(first), inclusion.lift(second))
+    basis, images = IsotropicInduction.flag_action_data(full, (line, plane))
+    assert len(basis) == 3 and images
+    assert basis[0] in (first, -first)
+    plane_inclusion = ambient.primitive_isotropic_subobject(first, second).inclusion()
+    assert plane_inclusion.is_in_image(basis[1])
+    assert all(image[0] in (basis[0], -basis[0])
+               and plane_inclusion.is_in_image(image[1]) for image in images)
