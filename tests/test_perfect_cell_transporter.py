@@ -63,15 +63,8 @@ def test_group_only_expansion_discards_facet_orbit_records(monkeypatch) -> None:
         complex_._traversal_representative_buckets = {key: [cell]}
         monkeypatch.setattr(
             backend,
-            "_facet_mask_data",
-            lambda _cell, *, use_owned_cone=True: (iter(()), (), None),
-        )
-        monkeypatch.setattr(
-            backend,
-            "_iter_facet_mask_orbits",
-            lambda _facets, _permutations, *, retain_words=True, canonical_keys=None: iter(
-                [[((True, (0,)), None)]]
-            ),
+            "_facet_mask_orbits_via_walk",
+            lambda _cell, *, retain_words=True: ((), [[((True, (0,)), None)]]),
         )
         monkeypatch.setattr(backend, "flip_across", lambda _cell, _facet: cell)
         monkeypatch.setattr(backend, "cell_transporter", lambda _source, _target: ambient.Aut().identity())
@@ -872,6 +865,9 @@ def test_complex_isometry_uses_cached_coarse_key_for_large_route(monkeypatch) ->
     ambient = lattice(gram.rows())
     source = LorentzianPerfectComplex(ambient, ZERO_SQUARES)
     target = LorentzianPerfectComplex(ambient, ZERO_SQUARES)
+    initial = source.local_backend().initial_cell(ambient, ZERO_SQUARES)
+    monkeypatch.setattr(source.local_backend(), "initial_cell", lambda _lattice, _squares: initial)
+    monkeypatch.setattr(target.local_backend(), "initial_cell", lambda _lattice, _squares: initial)
     monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_REFINEMENT_LIMIT", 0)
     monkeypatch.setattr(lorentzian_cells, "_PAIRING_GRAPH_CANONICAL_LABEL_LIMIT", 0)
     monkeypatch.setattr(

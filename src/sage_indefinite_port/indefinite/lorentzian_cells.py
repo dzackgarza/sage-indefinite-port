@@ -2021,19 +2021,36 @@ class LorentzianPerfectLocalBackend:
             # as distinct cell objects. Identity then transports the entire
             # multiset, regardless of its size; do not enter the expensive
             # exact basis-image search merely to rediscover that witness.
-            if Counter(source.rows) == Counter(target.rows) and source_gram == target_gram:
-                if source.lattice is target.lattice:
-                    return source.lattice.Aut().identity()
-                # The coordinate identity is an exact integral isometry
-                # between distinct lattice parents with the same Gram form.
-                # It transports the full configuration, not just a selected
-                # spanning frame; no class or sign identification is assumed.
-                labels = tuple(source.lattice.module_generating_set())
-                target_labels = tuple(target.lattice.module_generating_set())
-                return source.lattice.Isom(target.lattice)(
-                    {label: target.lattice.module_generator(target_label)
-                     for label, target_label in zip(labels, target_labels, strict=True)}
-                )
+            if source_gram == target_gram:
+                if n <= _PAIRING_GRAPH_CANONICAL_LABEL_LIMIT:
+                    same_configuration = Counter(source.rows) == Counter(target.rows)
+                else:
+                    # Large-cell transporters must not construct the two
+                    # complete Counter objects merely to try identity.
+                    # Cancel row multiplicities in one exact dictionary;
+                    # distinct rows and repeated rays are both supported.
+                    remaining_rows = {}
+                    for row in source.rows:
+                        remaining_rows[row] = remaining_rows.get(row, 0) + 1
+                    same_configuration = True
+                    for row in target.rows:
+                        if not remaining_rows.get(row, 0):
+                            same_configuration = False
+                            break
+                        remaining_rows[row] -= 1
+                    if same_configuration:
+                        same_configuration = not any(remaining_rows.values())
+                if same_configuration:
+                    if source.lattice is target.lattice:
+                        return source.lattice.Aut().identity()
+                    # Coordinate identity transports the complete multiset
+                    # between different parents with the same Gram form.
+                    labels = tuple(source.lattice.module_generating_set())
+                    target_labels = tuple(target.lattice.module_generating_set())
+                    return source.lattice.Isom(target.lattice)(
+                        {label: target.lattice.module_generator(target_label)
+                         for label, target_label in zip(labels, target_labels, strict=True)}
+                    )
             # Try certified ambient basis symmetries before constructing the
             # quadratic pairing data. This is a sufficient witness search,
             # never a rejection criterion: a miss falls through to the full
