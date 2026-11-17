@@ -1569,6 +1569,11 @@ def pointed_nonzero_norm_classes(category: Category, lattice: Parent, square: in
     """
     from math import isqrt
 
+    if not isinstance(category, CosliceCategory) or int(category.base_object().rank()) != 1:
+        raise ValueError("nonzero-norm pointed orbits require a rank-one coslice category")
+    source = category.base_object()
+    if int(source.q(next(iter(source.module_generators())))) != int(square):
+        raise ValueError("the pointed source form must have the requested square")
     if square == 0:
         raise ValueError("isotropic contents are unbounded; request pointed_content_classes with a prescribed positive content")
     if int(lattice.rank()) == 0:

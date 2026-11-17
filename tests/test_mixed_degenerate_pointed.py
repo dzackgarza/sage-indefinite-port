@@ -191,8 +191,20 @@ def test_rank_zero_nonzero_norm_pointed_classes_are_empty():
     source = Lattices(ZZ)([[2]])
     category = Lattices(ZZ).CosliceUnder(source)
     assert tuple(pointed_nonzero_norm_classes(category, ambient, 2)) == ()
-    with pytest.raises(ValueError, match="isotropic contents are unbounded"):
+    with pytest.raises(ValueError, match="source form"):
         pointed_nonzero_norm_classes(category, ambient, 0)
+
+
+def test_degenerate_nonzero_norm_orbit_classifier_rejects_incompatible_source():
+    import pytest
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import pointed_nonzero_norm_classes
+
+    ambient = Lattices(ZZ)([[2, 0], [0, 0]])
+    wrong_source = Lattices(ZZ)([[8]])
+    category = Lattices(ZZ).CosliceUnder(wrong_source)
+    with pytest.raises(ValueError, match="source form"):
+        pointed_nonzero_norm_classes(category, ambient, 50)
 
 
 def test_infinite_fixed_content_iterator_rejects_incompatible_pointed_source():
