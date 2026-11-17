@@ -812,6 +812,8 @@ class IsotropicInduction:
             raise ValueError("a line stabilizer requires a nonzero isotropic vector")
         if int(line.content()) > 1:
             return self.line_automorphism_generators(lattice, line.primitive_part())
+        if not lattice.is_nondegenerate():
+            return self.recursion.line_stabilizer_generators(line)
         return self._stabilizer_generators((line,), ((-line,),))
 
     def plane_automorphism_generators(self, plane: Parent) -> tuple[LatticeIsometryMethods, ...]:

@@ -1475,6 +1475,102 @@ class EichlerRecursion:
         if int(vector.content()) > 1:
             # Stab(Z(c*v)) = Stab(Zv) for every nonzero integer c.
             return self.line_stabilizer_generators(vector.primitive_part())
+        if not lattice.is_nondegenerate():
+            reduction = indefinite_reduced_presentation(lattice)
+            reduced = reduction.reduced
+            gram = _gram_in_label_order(reduced)
+            n, size = int(gram.rank()), int(gram.nrows())
+            labels = tuple(reduced.module_generating_set())
+            coordinates = (~reduction.isometry)(vector).to_vector()
+            x = tuple(_integer(coordinates(label)) for label in labels[:n])
+            r = tuple(_integer(coordinates(label)) for label in labels[n:])
+            if n and size - n == 1 and gcd(*x) > 1:
+                # Write v=(c*x0,r), x0 primitive, gcd(c,r)=1. For
+                # [A B;0 D] fixing v pointwise, x0*A=x0, D=+1 or -1,
+                # and c*x0*B=r*(1-D). Thus D=-1 is permitted exactly
+                # when c divides 2r; the remaining shear kernel is
+                # Hom(C/Zx0,R). Central -id_L adds the line reversal.
+                c = gcd(*x)
+                x0 = tuple(entry // c for entry in x)
+                complement = reduced.lattice_category()([
+                    [int(gram[i, j]) for j in range(n)] for i in range(n)
+                ])
+                c_labels = tuple(complement.module_generating_set())
+                projected = complement.linear_combination({
+                    label: complement.base_ring()(entry)
+                    for label, entry in zip(c_labels, x0, strict=True) if entry
+                })
+                _, _, change = matrix(SageZZ, [x0]).smith_form()
+                blocks = []
+                for generator in self.pointed_automorphism_generators(projected):
+                    block = identity_matrix(SageZZ, size)
+                    for i, point in enumerate(complement.module_generators()):
+                        image = generator(point).to_vector()
+                        for j, label in enumerate(c_labels):
+                            block[i, j] = _integer(image(label))
+                    blocks.append(block)
+                for i in range(1, n):
+                    block = identity_matrix(SageZZ, size)
+                    for row in range(n):
+                        block[row, n] = int(change[row, i])
+                    blocks.append(block)
+                if (2 * r[0]) % c == 0:
+                    block = identity_matrix(SageZZ, size)
+                    block[n, n] = -1
+                    for row in range(n):
+                        block[row, n] = int(change[row, 0]) * (2 * r[0] // c)
+                    blocks.append(block)
+                blocks.append(-identity_matrix(SageZZ, size))
+                return _conjugated(reduction.isometry, tuple(
+                    _isometry_from_row_matrix(reduced, reduced, block) for block in blocks
+                ))
+            if n and gcd(*x) == 1:
+                # For L=C+R, every isometry is [A B; 0 D]. If x is
+                # primitive, choose u with x*u=1. The shear T=[I u*r;
+                # 0 I] carries (x,0) to (x,r). Its line stabilizer is
+                # T^-1 (Stab_O(C)(Zx) x GL(R) semidirect Hom(C/Zx,R)) T.
+                # This is exact: xB=0 is the sole constraint on B for
+                # (x,0) to span its own line.
+                complement = reduced.lattice_category()([
+                    [int(gram[i, j]) for j in range(n)] for i in range(n)
+                ])
+                c_labels = tuple(complement.module_generating_set())
+                projected = complement.linear_combination({
+                    label: complement.base_ring()(entry)
+                    for label, entry in zip(c_labels, x, strict=True) if entry
+                })
+                _, _, change = matrix(SageZZ, [x]).smith_form()
+                shear = identity_matrix(SageZZ, size)
+                for i in range(n):
+                    for j, entry in enumerate(r):
+                        shear[i, n + j] = int(change[i, 0]) * entry
+                blocks = []
+                for generator in self.line_stabilizer_generators(projected):
+                    block = identity_matrix(SageZZ, size)
+                    for i, point in enumerate(complement.module_generators()):
+                        image = generator(point).to_vector()
+                        for j, label in enumerate(c_labels):
+                            block[i, j] = _integer(image(label))
+                    blocks.append(block)
+                radical_rank = size - n
+                general_linear = OwnedGroups().GL(radical_rank, reduced.base_ring())
+                for generator in general_linear.group_generators():
+                    action = general_linear._to_engine(generator).matrix()
+                    block = identity_matrix(SageZZ, size)
+                    for i in range(radical_rank):
+                        for j in range(radical_rank):
+                            block[n + i, n + j] = _integer(action[i, j])
+                    blocks.append(block)
+                for i in range(1, n):
+                    for j in range(radical_rank):
+                        block = identity_matrix(SageZZ, size)
+                        for row in range(n):
+                            block[row, n + j] = int(change[row, i])
+                        blocks.append(block)
+                reduced_generators = tuple(_isometry_from_row_matrix(
+                    reduced, reduced, shear.inverse() * block * shear
+                ) for block in blocks)
+                return _conjugated(reduction.isometry, reduced_generators)
         action = self.isotropic_stabilizer_action((vector,), ((-vector,),))
         # The source supplies a stable containing module, so this is the
         # finite residue action (GroupAction.g:813-900), independently of
@@ -2023,6 +2119,22 @@ class EichlerRecursion:
             return self.pointed_automorphism_generators(vector.primitive_part())
         if self.vector_lies_in_radical(vector):
             return self._degenerate_radical_pointed_generators(vector)
+        if not lattice.is_nondegenerate() and vector.q() == lattice.base_ring().zero():
+            # Central -id_L reverses every nonzero line generator. Thus
+            # Stab(Zv) = Stab(v) x < -id_L >, and correcting each complete
+            # line generator by its sign yields a complete generating
+            # family for the pointwise stabilizer, without attempting a
+            # Witt extension across the ambient radical.
+            minus = _isometry_from_row_matrix(
+                lattice, lattice, -identity_matrix(SageZZ, int(lattice.rank()))
+            )
+            result = []
+            for generator in self.line_stabilizer_generators(vector):
+                image = generator(vector)
+                if image not in (vector, -vector):
+                    raise ArithmeticError("a claimed line stabilizer generator does not preserve the marked line")
+                result.append(generator if image == vector else minus * generator)
+            return tuple(result)
         action = self.isotropic_stabilizer_action((vector,), ()) if vector.q() == lattice.base_ring().zero() else self._lattice_action(vector)
         return _integral_generator_set(lattice, action)
 

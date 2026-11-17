@@ -484,6 +484,146 @@ def test_odd_rank_moving_nonisotropic_lines_do_not_split_under_so():
     assert len(full) == len(special) == 1
 
 
+def test_mixed_degenerate_imprimitive_null_line_stabilizer_equals_primitive():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    e = next(iter(ambient.module_generators()))
+    primitive = RECURSION.line_stabilizer_generators(e)
+    imprimitive = RECURSION.line_stabilizer_generators(3 * e)
+    assert primitive == imprimitive
+    assert all(generator(3 * e) in (3 * e, -3 * e) for generator in imprimitive)
+
+
+def test_mixed_degenerate_primitive_projection_line_stabilizer_conjugates_radical_shear():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    e, f, z = tuple(ambient.module_generators())
+    for vector in (e, e + z, e + 3 * z):
+        generators = RECURSION.line_stabilizer_generators(vector)
+        assert generators
+        assert all(generator(vector) in (vector, -vector) for generator in generators)
+        assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+                   for generator in generators for x in (e, f, z) for y in (e, f, z))
+
+
+def test_mixed_degenerate_rank_two_radical_line_stabilizer_preserves_full_form():
+    from sage.all import GF, MatrixGroup, matrix
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    vector = e + 2 * z - 3 * w
+    generators = RECURSION.line_stabilizer_generators(vector)
+    assert generators
+    assert all(generator(vector) in (vector, -vector) for generator in generators)
+    assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+               for generator in generators for x in (e, f, z, w) for y in (e, f, z, w))
+    labels = tuple(ambient.module_generating_set())[-2:]
+    radical_images = [matrix(GF(2), [
+        [int(generator(point).to_vector()(label)) for label in labels]
+        for point in (z, w)
+    ]) for generator in generators]
+    assert MatrixGroup(radical_images).order() == 6
+
+
+def test_mixed_degenerate_pointwise_null_stabilizer_is_sign_kernel_of_line_stabilizer():
+    from sage.all import GF, MatrixGroup, matrix
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    vector = e + 2 * z - 3 * w
+    line = RECURSION.line_stabilizer_generators(vector)
+    fixed = RECURSION.pointed_automorphism_generators(vector)
+    assert len(line) == len(fixed)
+    assert all(generator(vector) == vector for generator in fixed)
+    assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+               for generator in fixed for x in (e, f, z, w) for y in (e, f, z, w))
+    labels = tuple(ambient.module_generating_set())[-2:]
+    actions = [matrix(GF(2), [
+        [int(generator(point).to_vector()(label)) for label in labels]
+        for point in (z, w)
+    ]) for generator in fixed]
+    assert MatrixGroup(actions).order() == 6
+
+
+def test_mixed_degenerate_scaled_hyperbolic_quotient_line_stabilizer():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = Lattices(ZZ)([[0, 2, 0], [2, 0, 0], [0, 0, 0]])
+    e, f, z = tuple(ambient.module_generators())
+    vector = e + z
+    line = RECURSION.line_stabilizer_generators(vector)
+    fixed = RECURSION.pointed_automorphism_generators(vector)
+    assert line and fixed
+    assert all(generator(vector) in (vector, -vector) for generator in line)
+    assert all(generator(vector) == vector for generator in fixed)
+
+
+def test_mixed_degenerate_nonprimitive_projection_primitive_null_line_stabilizer():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    e, f, z = tuple(ambient.module_generators())
+    for c in (2, 3, 4):
+        vector = c * e + z
+        line = RECURSION.line_stabilizer_generators(vector)
+        fixed = RECURSION.pointed_automorphism_generators(vector)
+        assert line and fixed
+        assert all(generator(vector) in (vector, -vector) for generator in line)
+        assert all(generator(vector) == vector for generator in fixed)
+        assert any(generator(z) == -z for generator in fixed) == (c == 2)
+        assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+                   for generator in line for x in (e, f, z) for y in (e, f, z))
+
+
+def test_public_induction_mixed_degenerate_null_line_stabilizer_uses_exact_split():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION, RECURSION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    e, f, z = tuple(ambient.module_generators())
+    vector = e + z
+    expected = RECURSION.line_stabilizer_generators(vector)
+    assert INDUCTION.line_automorphism_generators(ambient, vector) == expected
+    assert INDUCTION.line_automorphism_generators(ambient, 3 * vector) == expected
+
+
+def test_public_moving_arrow_mixed_degenerate_null_line_stabilizer():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    e, f, z = tuple(ambient.module_generators())
+    line = ambient.primitive_isotropic_subobject(e + z)
+    marked = ARROWS.object(line.inclusion())
+    generators = tuple(automorphism_group_generators(ARROWS, marked))
+    assert generators
+    assert all(generator(e + z) in (e + z, -e - z) for generator in generators)
+
+
+def test_public_based_mixed_degenerate_null_vector_stabilizer_is_pointwise():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    e, f, z = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    marked = category(source.hom([e + z], codomain=ambient))
+    generators = tuple(automorphism_group_generators(category, marked))
+    assert generators
+    assert all(generator(e + z) == e + z for generator in generators)
+
+
 @pytest.mark.parametrize("smith", ((1, 1, 2), (1, 2, 2)))
 def test_mixed_degenerate_maximal_rank_three_index_two_respects_radical_plane(smith):
     from sage_extensions.all import Lattices, ZZ
