@@ -2362,11 +2362,13 @@ class LorentzianPerfectLocalBackend:
                 # Retain the full integral subgroup of the source's GRP2,
                 # certified on the complete configuration. This group
                 # contains every cheap seed.
-                symmetric = SymmetricGroup(n)
-                group_permutations.extend(
-                    symmetric([image + 1 for image in permutation])
-                    for permutation in self.cell_stabilizer_permutations(target)
-                )
+                retained_permutations = self.cell_stabilizer_permutations(target)
+                if retained_permutations:
+                    symmetric = SymmetricGroup(n)
+                    group_permutations.extend(
+                        symmetric([image + 1 for image in permutation])
+                        for permutation in retained_permutations
+                    )
                 candidate_actions = []
             for action in candidate_actions:
                 permutation_images = array(permutation_typecode)
