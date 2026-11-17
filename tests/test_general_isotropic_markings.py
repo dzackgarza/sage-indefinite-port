@@ -392,6 +392,25 @@ def test_zero_form_flag_stabilizer_is_actual_integral_parabolic():
     assert any(g(f) != f for g in generators)
 
 
+def test_zero_form_rank_three_complete_flags_have_integral_transport_and_stabilizer():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, isometry, automorphism_group_generators
+
+    ambient = Lattices(ZZ)([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    e, f, u = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    first = category(_flag_marking_from_basis(ambient, (e, f, u), (1, 2, 3)))
+    second = category(_flag_marking_from_basis(ambient, (u, e, f), (1, 2, 3)))
+    witness = isometry(category, first, second)
+    assert witness is not None and witness(e) in (u, -u)
+    assert ambient.primitive_isotropic_subobject(u, e).inclusion().is_in_image(witness(f))
+    generators = tuple(automorphism_group_generators(category, first))
+    assert generators
+    assert all(g(e) in (e, -e) for g in generators)
+    assert all(ambient.primitive_isotropic_subobject(e, f).inclusion().is_in_image(g(f)) for g in generators)
+
+
 def test_two_stage_flag_accepts_a_single_isotropic_source_inclusion():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
