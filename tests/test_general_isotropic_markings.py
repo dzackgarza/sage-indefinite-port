@@ -237,6 +237,21 @@ def test_four_u_partial_one_four_flag_classes_preserve_intermediate_term():
         assert ambient.primitive_isotropic_subobject(*basis).inclusion().is_primitive()
 
 
+def test_four_u_maximal_null_plane_splits_into_two_special_orthogonal_orbits():
+    """The maximal-null stabilizer in O(4U) has determinant one."""
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    basis = tuple(ambient.module_generators())
+    marked = ARROWS(ambient.primitive_isotropic_subobject(*basis[::2]).inclusion())
+    representatives = tuple(ambient.O().split_orbit(marked, ambient.SO()))
+    assert len(representatives) == 2
+    for representative in representatives:
+        arrow = representative.arrow()
+        assert arrow.codomain() is ambient
+        assert arrow.is_primitive()
+
+
 def test_complete_isotropic_flags_in_three_u_split_into_two_special_orthogonal_orbits():
     r"""A maximal isotropic stabilizer has determinant det(A) det(A^-T)=1.
 
