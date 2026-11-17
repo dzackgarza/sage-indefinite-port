@@ -825,6 +825,18 @@ def test_isotropic_rank_above_rational_witt_index_is_empty_not_unsupported():
     assert classes.cardinality() == cardinal(0)
 
 
+def test_recursive_levi_image_uses_owned_integral_parabolic_image(monkeypatch):
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[2]])
+    vector = ambient.module_generators()[0]
+    reduction = ambient.primitive_isotropic_subobject(vector).isotropic_reduction()
+    image = RECURSION.levi_image(vector)
+    assert image is reduction.levi_image()
+    assert all(generator in image for generator in reduction.levi_image_generators())
+
+
 def test_five_u_partial_flag_rank_jumps_one_three_five_transport():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
