@@ -345,3 +345,21 @@ def test_glued_pell_binary_factors_return_infinite_stabilizer_generators():
     def complement_trace(g):
         return int(g(e - f).to_vector()(labels[0]) + g(u + v).to_vector()(labels[2]))
     assert any(abs(complement_trace(g * h)) > 2 for g in fixed for h in fixed)
+
+
+def test_glued_infinite_pell_complement_transporter_requires_glue_correction():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = Lattices(ZZ)([[1, 0], [0, 2]]) + Lattices(ZZ)("U")
+    e, f, u, v = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[3, 0], [0, 2]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category(source.hom([e + f, u + v], codomain=ambient))
+    second = category(source.hom([-e - f, u + v], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert witness(e + f) == -e - f and witness(u + v) == u + v
+    assert (~witness)(-e - f) == e + f
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in (e, f, u, v) for y in (e, f, u, v))
