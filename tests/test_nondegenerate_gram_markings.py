@@ -466,3 +466,19 @@ def test_unrestricted_nondegenerate_saturation_index_iterator_retains_two_index_
         indices.append(int(embedded.cokernel().cardinality()))
     assert indices == [1, 2, 2]
     assert isometry(ARROWS, classes[1], classes[2]) is None
+
+
+def test_unrestricted_rank_one_nondegenerate_index_iterator_preserves_saturation():
+    from itertools import islice
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_all_nondegenerate_sublattice_index_classes
+
+    ambient = Lattices(ZZ)("U")
+    source = Lattices(ZZ)([[2]])
+    classes = tuple(islice(iter_all_nondegenerate_sublattice_index_classes(ambient, source), 3))
+    assert len(classes) == 3
+    for content, marked in enumerate(classes, 1):
+        arrow = marked.arrow()
+        vector = arrow(next(iter(arrow.domain().module_generators())))
+        assert int(vector.content()) == content
+        assert int(vector.q()) == 2 * content * content
