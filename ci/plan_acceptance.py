@@ -22,6 +22,10 @@ probe is ci/acceptance_probe.txt, the seeded pricing sample of every family
 functions split by rank). A probe node costs PROBE_KILL_SECONDS of
 ci/test_budgets.py, its flat kill limit, and a probe job holds at most
 PROBE_JOB_BUDGET seconds.
+
+probe_long is ci/acceptance_probe_long.txt, the unfinished nodes of probe run
+44000728665. Each receives PROBE_LONG_KILL_SECONDS for completion pricing;
+another timeout remains a lower bound, never a completed measurement.
 """
 
 import ast
@@ -38,29 +42,30 @@ JOB_LIMIT_MINUTES = 360
 PROBE_JOB_BUDGET = 30 * 60
 
 
-def probe_kill_seconds():
+def probe_kill_seconds(corpus):
     # ci/test_budgets.py imports cysignals, absent on the plan runner; read its constant.
     tree = ast.parse((CI / "test_budgets.py").read_text())
+    constant = {"probe": "PROBE_KILL_SECONDS", "probe_long": "PROBE_LONG_KILL_SECONDS"}[corpus]
     return next(
         node.value.value
         for node in tree.body
-        if isinstance(node, ast.Assign) and [target.id for target in node.targets] == ["PROBE_KILL_SECONDS"]
+        if isinstance(node, ast.Assign) and [target.id for target in node.targets] == [constant]
     )
 
 
 def corpus_nodes(corpus):
     budgets = json.loads((CI / "test_budgets.json").read_text())["budgets"]
-    if corpus == "probe":
-        nodes = (CI / "acceptance_probe.txt").read_text().splitlines()
+    if corpus in ("probe", "probe_long"):
+        nodes = (CI / f"acceptance_{corpus}.txt").read_text().splitlines()
         missing = [node for node in nodes if node not in budgets]
         assert not missing, f"nodes without a budget: {missing}"
-        return {node: probe_kill_seconds() for node in nodes}
+        return {node: probe_kill_seconds(corpus) for node in nodes}
     if corpus in ("tier1", "tier2"):
         nodes = (CI / f"acceptance_{corpus}.txt").read_text().splitlines()
     elif corpus == "full":
         nodes = sorted(node for node in budgets if node.startswith("tests/acceptance/"))
     else:
-        raise SystemExit(f"unknown corpus {corpus!r}; expected tier1, tier2, full or probe")
+        raise SystemExit(f"unknown corpus {corpus!r}; expected tier1, tier2, full, probe or probe_long")
     missing = [node for node in nodes if node not in budgets]
     assert not missing, f"nodes without a budget: {missing}"
     if corpus == "full":
@@ -73,7 +78,7 @@ def corpus_nodes(corpus):
 
 def plan(corpus):
     budgets = corpus_nodes(corpus)
-    job_budget = PROBE_JOB_BUDGET if corpus == "probe" else JOB_BUDGET
+    job_budget = PROBE_JOB_BUDGET if corpus in ("probe", "probe_long") else JOB_BUDGET
     jobs = []  # (load, index, nodes)
     heap = []
     for node in sorted(budgets, key=lambda n: (-budgets[n], n)):

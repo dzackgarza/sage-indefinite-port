@@ -35,11 +35,16 @@ WARMUP_SECONDS = 10
 # The probe corpus is a pricing run, not acceptance: every node is killed at
 # one flat limit, and a killed node is priced as at least that many seconds.
 PROBE_KILL_SECONDS = 60
+# Completion pricing for nodes unfinished in Acceptance run 44000728665.
+# This is a retry limit, not a measured price or a correctness budget.
+PROBE_LONG_KILL_SECONDS = 600
 _BUDGETS = _RECORD["budgets"] | {
     node: PRICE_FACTOR * price + WARMUP_SECONDS for node, price in _RECORD["prices"].items()
 }
 if os.environ["ACCEPTANCE_CORPUS"] == "probe":
     _BUDGETS = {node: PROBE_KILL_SECONDS for node in _BUDGETS}
+elif os.environ["ACCEPTANCE_CORPUS"] == "probe_long":
+    _BUDGETS = {node: PROBE_LONG_KILL_SECONDS for node in _BUDGETS}
 
 
 def pytest_collection_modifyitems(items):
