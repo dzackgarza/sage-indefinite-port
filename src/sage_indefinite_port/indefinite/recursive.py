@@ -1971,7 +1971,7 @@ class EichlerRecursion:
         action = self.isotropic_stabilizer_action((vector,), ()) if vector.q() == lattice.base_ring().zero() else self._lattice_action(vector)
         return _integral_generator_set(lattice, action)
 
-    def _mixed_degenerate_pointed_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> LatticeIsometryMethods | None:
+    def _mixed_degenerate_pointed_isometry(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods, *, radical_action=None) -> LatticeIsometryMethods | None:
         r"""Construct a mixed radical/shear transporter in the reduced split presentation.
 
         For row coordinates ``(x,r)``, ``(y,s)`` on ``C+R``, every isometry
@@ -2020,12 +2020,15 @@ class EichlerRecursion:
             return None
         a = matrix(SageZZ, [[int(a_isometry(complement.module_generator(label)).to_vector()(key))
             for key in c_labels] for label in c_labels])
-        d = (self.radical_congruence_image(lattice, c).transporter(r, t)
-             if c > 1 else identity_matrix(SageZZ, k))
+        d = (radical_action if radical_action is not None else
+             (self.radical_congruence_image(lattice, c).transporter(r, t)
+              if c > 1 else identity_matrix(SageZZ, k)))
         if d is None:
             return None
         residual = matrix(SageZZ, [list(t)]) - matrix(SageZZ, [list(r)]) * d
         if any(int(value) % c for value in residual.list()):
+            if radical_action is not None:
+                return None
             raise ArithmeticError("the radical congruence witness does not satisfy its residue equation")
         _, _, change = matrix(SageZZ, [list(x_c)]).smith_form()
         bezout = change.column(0)

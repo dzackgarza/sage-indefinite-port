@@ -541,12 +541,20 @@ def _degenerate_rank_two_based_isometry(source_arrow: Morphism, target_arrow: Mo
     content = 0
     for label in labels:
         content = gcd(content, int(coordinates(label)))
-    if content != 1:
-        raise ValueError("mixed rank-two based transporter requires primitive nonradical quotient image")
+    radical_rank = int(gram.nrows()) - n
+    if content != 1 and radical_rank != 1:
+        raise ValueError("mixed rank-two based transporter with nonprimitive quotient needs its constrained radical stabilizer")
     first = RECURSION.pointed_isometry(left[r], right[r])
     if first is None:
         return None
-    correction = RECURSION.pointed_isometry(first(left[p]), right[p])
+    if content == 1:
+        correction = RECURSION.pointed_isometry(first(left[p]), right[p])
+    else:
+        from sage.matrix.constructor import identity_matrix
+        from sage.rings.integer_ring import ZZ as SageZZ
+        correction = RECURSION._mixed_degenerate_pointed_isometry(
+            first(left[p]), right[p], radical_action=identity_matrix(SageZZ, radical_rank)
+        )
     if correction is None:
         return None
     result = correction * first

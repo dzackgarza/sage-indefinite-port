@@ -192,3 +192,33 @@ def test_rank_two_based_mixed_gram_radical_generator_transport_and_obstruction()
     assert (~witness)(w) == z
     obstructed = category(source.hom([2 * w, e + 2 * z], codomain=ambient))
     assert isometry(category, first, obstructed) is None
+
+
+def test_rank_two_based_mixed_gram_nonprimitive_quotient_radical_sign_and_shear():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = lattice([[2, 0], [0, 0]])
+    e, z = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[8, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category(source.hom([2 * e + z, z], codomain=ambient))
+    second = category(source.hom([2 * e + 3 * z, z], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None and witness(2 * e + z) == 2 * e + 3 * z and witness(z) == z
+    impossible = category(source.hom([2 * e + 2 * z, z], codomain=ambient))
+    assert isometry(category, first, impossible) is None
+
+
+def test_rank_two_based_mixed_gram_nonprimitive_radical_negation():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = lattice([[2, 0], [0, 0]])
+    e, z = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[8, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category(source.hom([2 * e + z, z], codomain=ambient))
+    second = category(source.hom([2 * e + 3 * z, -z], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None and witness(2 * e + z) == 2 * e + 3 * z and witness(z) == -z
