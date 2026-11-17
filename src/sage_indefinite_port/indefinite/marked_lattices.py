@@ -1569,18 +1569,27 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 shape_arrows = _flag_arrows(source)
             if not shape_arrows:
                 raise ValueError("an isotropic flag shape requires at least one inclusion")
+            full_diagram_shape = not isinstance(source, Morphism) and len(shape_arrows) == int(category.domain_category().object_set().cardinality()) - 1
+            last_shape_lattice = shape_arrows[-1].domain() if full_diagram_shape else shape_arrows[-1].codomain()
             if any(
                 arrow.domain().b(left, right) != 0
                 for arrow in shape_arrows
                 for left in arrow.domain().module_generators()
                 for right in arrow.domain().module_generators()
             ) or any(
-                shape_arrows[-1].codomain().b(left, right) != 0
-                for left in shape_arrows[-1].codomain().module_generators()
-                for right in shape_arrows[-1].codomain().module_generators()
+                last_shape_lattice.b(left, right) != 0
+                for left in last_shape_lattice.module_generators()
+                for right in last_shape_lattice.module_generators()
             ):
                 raise ValueError("nonisotropic flag shapes require a general formed-diagram classification")
-            dimensions = (int(shape_arrows[0].domain().rank()), *(int(arrow.codomain().rank()) for arrow in shape_arrows))
+            if full_diagram_shape:
+                # A full marked diagram includes its final arrow into the
+                # ambient lattice; this arrow is not another flag rank.
+                dimensions = tuple(int(arrow.domain().rank()) for arrow in shape_arrows)
+            else:
+                # A shorter source diagram is precisely the source flag
+                # shape, with its last codomain the final isotropic term.
+                dimensions = (int(shape_arrows[0].domain().rank()), *(int(arrow.codomain().rank()) for arrow in shape_arrows))
             classes = tuple(category(_flag_marking_from_basis(lattice, basis, dimensions)) for basis in INDUCTION.isotropic_flag_bases(lattice, dimensions))
         case _:
             raise ValueError(f"{category} is not a category of marked lattices this port classifies: a coslice <n>/Lattices, Ar(Lattices) or Fun([t], Lattices) for finite [t]")

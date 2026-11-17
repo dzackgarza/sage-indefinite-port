@@ -252,6 +252,53 @@ def test_four_u_maximal_null_plane_splits_into_two_special_orthogonal_orbits():
         assert arrow.is_primitive()
 
 
+def test_four_u_complete_rank_four_flag_classes():
+    """Integral hyperbolic completion gives one O(4U)-orbit of complete null flags."""
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    representatives = IsotropicInduction(EichlerRecursion()).isotropic_flag_bases(ambient, (1, 2, 3, 4))
+    assert len(representatives) == 1
+    for basis in representatives:
+        assert len(basis) == 4
+        for rank in (1, 2, 3, 4):
+            term = ambient.primitive_isotropic_subobject(*basis[:rank]).inclusion()
+            assert int(term.domain().rank()) == rank and term.is_primitive()
+
+
+def test_public_four_u_complete_rank_four_flag_classes():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_arrows, _flag_marking_from_basis, primitive_marking_classes
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    zero_four = lattice([[0] * 4 for _ in range(4)])
+    category = Cat().Mor(FiniteOrdinalCategory(5), Lattices(ZZ))
+    shape_category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    shape_arrows = _flag_marking_from_basis(zero_four, tuple(zero_four.module_generators()), (1, 2, 3, 4))
+    shape = shape_category(shape_arrows[:-1])
+    representatives = tuple(primitive_marking_classes(category, shape, ambient))
+    assert len(representatives) == 1
+    for marked in representatives:
+        arrows = _flag_arrows(marked)
+        assert tuple(int(arrow.domain().rank()) for arrow in arrows) == (1, 2, 3, 4)
+        assert all(arrow.is_primitive() for arrow in arrows)
+
+
+def test_public_flag_classification_accepts_full_marked_diagram_as_shape():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_arrows, _flag_marking_from_basis, primitive_marking_classes
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(4)] for i in range(4)])
+    category = Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))
+    source = category(_flag_marking_from_basis(ambient, tuple(ambient.module_generators())[::2], (1, 2)))
+    classes = tuple(primitive_marking_classes(category, source, ambient))
+    assert len(classes) == 1
+    assert tuple(int(arrow.domain().rank()) for arrow in _flag_arrows(classes[0])) == (1, 2)
+
+
 def test_complete_isotropic_flags_in_three_u_split_into_two_special_orthogonal_orbits():
     r"""A maximal isotropic stabilizer has determinant det(A) det(A^-T)=1.
 
