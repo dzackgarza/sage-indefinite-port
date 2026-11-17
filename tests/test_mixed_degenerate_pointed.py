@@ -483,6 +483,52 @@ def test_moving_primitive_radical_planes_transport_by_unimodular_radical_action(
     assert all(second.inclusion().is_in_image(public(point)) for point in (z, w))
 
 
+def test_mixed_degenerate_primitive_projection_partial_radical_plane_transporter():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION, ARROWS, isometry
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    first = ambient.primitive_isotropic_subobject(e + z, w)
+    second = ambient.primitive_isotropic_subobject(f + w, z)
+    witness = INDUCTION.plane_isometry(first, second)
+    assert witness is not None
+    assert all(second.inclusion().is_in_image(witness(point)) for point in (e + z, w))
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in (e, f, z, w) for y in (e, f, z, w))
+    public = isometry(ARROWS, ARROWS.object(first.inclusion()), ARROWS.object(second.inclusion()))
+    assert public is not None
+    assert all(second.inclusion().is_in_image(public(point)) for point in (e + z, w))
+
+
+def test_mixed_degenerate_plane_transporter_rejects_distinct_projection_smith_types():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION, ARROWS, isometry
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    first = ambient.primitive_isotropic_subobject(e, w)
+    second = ambient.primitive_isotropic_subobject(2 * e + z, w)
+    assert INDUCTION.plane_isometry(first, second) is None
+    assert isometry(ARROWS, ARROWS.object(first.inclusion()),
+                    ARROWS.object(second.inclusion())) is None
+
+
+def test_mixed_degenerate_rank_three_primitive_projection_and_proper_radical_transporter():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, u, v, z, w = tuple(ambient.module_generators())
+    first = ambient.primitive_isotropic_subobject(e + z, u, w)
+    second = ambient.primitive_isotropic_subobject(f + w, v, z)
+    witness = INDUCTION.plane_isometry(first, second)
+    assert witness is not None
+    assert all(second.inclusion().is_in_image(witness(point)) for point in (e + z, u, w))
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in (e, f, u, v, z, w) for y in (e, f, u, v, z, w))
+
+
 def test_primitive_radical_plane_stabilizer_is_full_radical_parabolic():
     from sage.all import GF, MatrixGroup, matrix
     from sage_extensions.all import Lattices, ZZ

@@ -751,6 +751,15 @@ class IsotropicInduction:
             gram = _gram_in_label_order(reduced)
             n, size = int(gram.rank()), int(gram.nrows())
             k = size - n
+            labels = tuple(reduced.module_generating_set())[:n]
+            projection_smith = []
+            for points in (tuple(phi(point) for point in source_basis), target_basis):
+                projection = matrix(SageZZ, [[_integer((~reduction.isometry)(point).to_vector()(label))
+                                              for label in labels] for point in points])
+                projection_smith.append(tuple(abs(int(entry)) for entry in projection.elementary_divisors()
+                                              if entry))
+            if projection_smith[0] != projection_smith[1]:
+                return None
             if all(self.recursion.vector_lies_in_radical(point) for point in source_basis):
                 # Primitive radical submodules are direct summands of R.
                 # GL(R) is transitive on their ordered integral bases:
@@ -771,6 +780,73 @@ class IsotropicInduction:
                         block[n + i, n + j] = action[i, j]
                 reduced_witness = _isometry_from_row_matrix(reduced, reduced, block)
                 return reduction.isometry * reduced_witness * (~reduction.isometry) * phi
+            if n and k:
+                # For a primitive J whose projection I to C is also
+                # primitive, the split group O(C) ⋉ Hom(C,R) × GL(R)
+                # eliminates every graph I -> R/T, where T=J∩R.
+                # Thus the moving orbit is determined exactly by the
+                # O(C)-orbit of I and the rank of T. Smith row operations
+                # exhibit I, T and an integral graph-eliminating shear.
+                labels = tuple(reduced.module_generating_set())
+                complement = reduced.lattice_category()([
+                    [int(gram[i, j]) for j in range(n)] for i in range(n)
+                ])
+                c_labels = tuple(complement.module_generating_set())
+                normalizers = []
+                quotient_subspaces = []
+                radical_completions = []
+                primitive_projection = True
+                for points in (tuple(phi(point) for point in source_basis), target_basis):
+                    rows = matrix(SageZZ, [[_integer((~reduction.isometry)(point).to_vector()(label))
+                                            for label in labels] for point in points])
+                    projection = rows[:, :n]
+                    smith, left, _right = projection.smith_form()
+                    s = int(projection.rank())
+                    if any(abs(int(smith[i, i])) != 1 for i in range(s)):
+                        primitive_projection = False
+                        break
+                    adapted_rows = left * rows
+                    xrows = adapted_rows[:s, :n]
+                    yrows = adapted_rows[:s, n:]
+                    trows = adapted_rows[s:, n:]
+                    if int(trows.rank()) != len(points) - s:
+                        raise ArithmeticError("the Smith kernel does not span the radical intersection")
+                    quotient_points = tuple(complement.linear_combination({
+                        label: complement.base_ring()(int(row[j]))
+                        for j, label in enumerate(c_labels) if row[j]
+                    }) for row in xrows.rows())
+                    quotient_subspaces.append(complement.primitive_isotropic_subobject(*quotient_points))
+                    cframe = xrows.stack(_source_subspace_completion_int(xrows, n))
+                    radical_completions.append(trows.stack(_source_subspace_completion_int(trows, k)))
+                    target_shear = matrix(SageZZ, n, k, 0)
+                    for i in range(s):
+                        for j in range(k):
+                            target_shear[i, j] = -yrows[i, j]
+                    shear = cframe.inverse().change_ring(SageZZ) * target_shear
+                    normalizer = identity_matrix(SageZZ, size)
+                    for i in range(n):
+                        for j in range(k):
+                            normalizer[i, n + j] = shear[i, j]
+                    normalizers.append(normalizer)
+                if primitive_projection:
+                    quotient_witness = self.plane_isometry(*quotient_subspaces)
+                    if quotient_witness is None:
+                        return None
+                    block = identity_matrix(SageZZ, size)
+                    for i, point in enumerate(complement.module_generators()):
+                        image = quotient_witness(point).to_vector()
+                        for j, label in enumerate(c_labels):
+                            block[i, j] = _integer(image(label))
+                    radical_action = radical_completions[0].inverse().change_ring(SageZZ) * radical_completions[1]
+                    for i in range(k):
+                        for j in range(k):
+                            block[n + i, n + j] = radical_action[i, j]
+                    combined = normalizers[0] * block * normalizers[1].inverse().change_ring(SageZZ)
+                    reduced_witness = _isometry_from_row_matrix(reduced, reduced, combined)
+                    witness = reduction.isometry * reduced_witness * (~reduction.isometry) * phi
+                    if not all(target.inclusion().is_in_image(witness(point)) for point in source_basis):
+                        raise ArithmeticError("the primitive-projection transporter does not carry the source subspace onto the target")
+                    return witness
             radical = tuple(reduction.isometry(reduced.module_generator(label))
                             for label in tuple(reduced.module_generating_set())[n:])
             if n and k and len(source_basis) > k and all(
