@@ -434,3 +434,38 @@ def test_zero_isotropic_marking_is_the_unique_empty_embedding():
         basis = tuple(ambient.module_generators())
         assert all((~witness)(witness(point)) == point for point in basis)
         assert all(ambient.b(witness(left), witness(right)) == ambient.b(left, right) for left in basis for right in basis)
+
+
+def test_four_u_complete_flag_transporter_preserves_all_four_ranks():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, isometry
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    basis = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(5), Lattices(ZZ))
+    first = category(_flag_marking_from_basis(ambient, basis[::2], (1, 2, 3, 4)))
+    second = category(_flag_marking_from_basis(ambient, basis[1::2], (1, 2, 3, 4)))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    for size in (1, 2, 3, 4):
+        target = ambient.primitive_isotropic_subobject(*basis[1::2][:size])
+        assert all(target.inclusion().is_in_image(witness(point)) for point in basis[::2][:size])
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y) for x in basis for y in basis)
+
+
+def test_four_u_complete_flag_stabilizer_preserves_every_prefix():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, automorphism_group_generators
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    basis = tuple(ambient.module_generators())
+    isotropic = basis[::2]
+    category = Cat().Mor(FiniteOrdinalCategory(5), Lattices(ZZ))
+    marked = category(_flag_marking_from_basis(ambient, isotropic, (1, 2, 3, 4)))
+    family = tuple(automorphism_group_generators(category, marked))
+    for size in (1, 2, 3, 4):
+        term = ambient.primitive_isotropic_subobject(*isotropic[:size])
+        assert all(term.inclusion().is_in_image(g(point)) for g in family for point in isotropic[:size])
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y) for g in family for x in basis for y in basis)
