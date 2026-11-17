@@ -981,6 +981,19 @@ class IsotropicInduction:
                     for label, entry in zip(r_labels, row, strict=True) if entry
                 }) for row in rows)
                 term = radical_module.primitive_isotropic_subobject(*radical_points)
+                radical_terms = []
+                if flag_dimensions:
+                    if not flag_basis or flag_dimensions[-1] != len(flag_basis):
+                        raise ValueError("the radical flag requires an adapted basis and terminal rank")
+                    for rank in flag_dimensions[:-1]:
+                        rows = tuple(tuple(_integer((~reduction.isometry)(point).to_vector()(label))
+                                           for label in labels[n:]) for point in flag_basis[:rank])
+                        points = tuple(radical_module.linear_combination({
+                            label: radical_module.base_ring()(entry)
+                            for label, entry in zip(r_labels, row, strict=True) if entry
+                        }) for row in rows)
+                        radical_terms.append(radical_module.primitive_isotropic_subobject(*points))
+                radical_terms.append(term)
                 blocks = []
                 if n:
                     complement = reduced.lattice_category()([
@@ -994,7 +1007,7 @@ class IsotropicInduction:
                             for j, label in enumerate(c_labels):
                                 block[i, j] = _integer(image(label))
                         blocks.append(block)
-                for generator in radical_module.general_linear_group().flag_stabilizer((term,)).group_generators():
+                for generator in radical_module.general_linear_group().flag_stabilizer(tuple(radical_terms)).group_generators():
                     block = identity_matrix(SageZZ, size)
                     for i, point in enumerate(radical_module.module_generators()):
                         image = generator(point).to_vector()
@@ -1133,6 +1146,10 @@ class IsotropicInduction:
         basis, images = self.flag_action_data(space, terms)
         ambient = inclusion.codomain()
         dimensions = tuple(int(term.inclusion().domain().rank()) for term in terms) + (int(inclusion.domain().rank()),)
+        if not ambient.is_nondegenerate() and all(self.recursion.vector_lies_in_radical(point) for point in basis):
+            return self.plane_automorphism_generators(
+                space, flag_dimensions=dimensions, flag_basis=basis
+            )
         if (not ambient.is_nondegenerate() and terms
                 and dimensions[0] >= int(ambient.radical().rank())
                 and dimensions[-1] > int(ambient.radical().rank())

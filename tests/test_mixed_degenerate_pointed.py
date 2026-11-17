@@ -706,6 +706,42 @@ def test_mixed_degenerate_proper_radical_three_stage_flag_transporter():
         assert all(term.inclusion().is_in_image(witness(point)) for point in source_points)
 
 
+def test_provider_pure_radical_three_stage_flag_stabilizer_is_full_parabolic():
+    from sage.all import GF, MatrixGroup, matrix
+    from sage_extensions.all import IsotropicFlag, FlagType, Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 4 for _ in range(4)])
+    e, f, z, w, t, s = tuple(ambient.module_generators())
+    flag = IsotropicFlag(ambient, (z, w, t), flag_type=FlagType((1, 2, 3)))
+    generators = INDUCTION.flag_automorphism_generators(flag)
+    assert generators
+    for points in ((z,), (z, w), (z, w, t)):
+        term = ambient.primitive_isotropic_subobject(*points)
+        assert all(term.inclusion().is_in_image(generator(point))
+                   for generator in generators for point in points)
+    labels = tuple(ambient.module_generating_set())[-4:]
+    actions = [matrix(GF(2), [
+        [int(generator(point).to_vector()(label)) for label in labels]
+        for point in (z, w, t, s)
+    ]) for generator in generators]
+    assert MatrixGroup(actions).order() == 64
+
+
+def test_legacy_pure_radical_line_plane_flag_stabilizer():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    plane = ambient.primitive_isotropic_subobject(z, w)
+    generators = INDUCTION.flag_automorphism_generators((z, plane))
+    assert generators
+    assert all(generator(z) in (z, -z) for generator in generators)
+    assert all(plane.inclusion().is_in_image(generator(point))
+               for generator in generators for point in (z, w))
+
+
 def test_mixed_degenerate_full_radical_partial_quotient_flag_stabilizer():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import (
