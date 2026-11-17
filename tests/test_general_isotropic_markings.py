@@ -190,6 +190,25 @@ def test_three_u_complete_flags_have_a_transporter():
     assert all(ambient.b(witness(left), witness(right)) == ambient.b(left, right) for left in basis for right in basis)
 
 
+def test_four_u_rank_four_partial_flag_transporter_preserves_both_terms():
+    """Pair exchange on 4U carries an (1,4)-flag to its opposite flag."""
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    basis = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))
+    source = category(_flag_marking_from_basis(ambient, basis[::2], (1, 4)))
+    target = category(_flag_marking_from_basis(ambient, basis[1::2], (1, 4)))
+    witness = isometry(category, source, target)
+    assert witness is not None
+    for size in (1, 4):
+        target_term = ambient.primitive_isotropic_subobject(*basis[1::2][:size])
+        assert all(target_term.inclusion().is_in_image(witness(point)) for point in basis[::2][:size])
+    assert all((~witness)(witness(point)) == point for point in basis)
+
+
 def test_complete_isotropic_flags_in_three_u_split_into_two_special_orthogonal_orbits():
     r"""A maximal isotropic stabilizer has determinant det(A) det(A^-T)=1.
 
