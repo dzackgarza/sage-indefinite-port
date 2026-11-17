@@ -52,3 +52,14 @@ def test_low_witt_exact_orthogonal_iterator_yields_distinct_integral_maps():
     assert all(all(ambient.b(g(x), g(y)) == ambient.b(x, y)
                    for x in ambient.module_generators() for y in ambient.module_generators())
                for g in family)
+
+
+def test_witt_zero_pointed_vector_transporter_swaps_positive_coordinates():
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = lattice([[2, 0, 0, 0], [0, 2, 0, 0], [0, 0, -6, 0], [0, 0, 0, -6]])
+    e, f, u, v = tuple(ambient.module_generators())
+    witness = RECURSION.pointed_isometry(e, f)
+    assert witness is not None and witness(e) == f
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in (e, f, u, v) for y in (e, f, u, v))

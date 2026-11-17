@@ -502,6 +502,59 @@ def _nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow: Morp
     return _glued_nondegenerate_embedding_isometry(source_arrow, target_arrow, based=based)
 
 
+
+def _degenerate_rank_two_based_isometry(source_arrow: Morphism, target_arrow: Morphism):
+    r"""Based mixed rank-two markings with a radical generator and primitive quotient image.
+
+    Transport the radical generator first.  A primitive nonradical quotient
+    vector has complement content one, so its remaining radical difference
+    is corrected by a shear with D=1, fixing the already transported
+    radical generator.  Both factors are actual integral ambient maps.
+    """
+    from sage_indefinite_port.indefinite.indefinite_reduction import indefinite_reduced_presentation
+    from sage_indefinite_port.indefinite.recursive import _gram_in_label_order
+    source_lattice, target_lattice = source_arrow.codomain(), target_arrow.codomain()
+    if source_lattice is not target_lattice:
+        ambient = RECURSION.isometry(source_lattice, target_lattice)
+        if ambient is None:
+            return None
+        source_arrow = source_arrow.domain().hom(
+            [ambient(source_arrow(x)) for x in source_arrow.domain().module_generators()],
+            codomain=target_lattice)
+        correction = _degenerate_rank_two_based_isometry(source_arrow, target_arrow)
+        return None if correction is None else correction * ambient
+    lattice = source_lattice
+    left = tuple(source_arrow(x) for x in source_arrow.domain().module_generators())
+    right = tuple(target_arrow(x) for x in target_arrow.domain().module_generators())
+    radical = [i for i, (a, b) in enumerate(zip(left, right, strict=True))
+               if RECURSION.vector_lies_in_radical(a) and RECURSION.vector_lies_in_radical(b)]
+    if len(radical) != 1:
+        raise ValueError("mixed degenerate rank-two source requires exactly one marked radical generator")
+    r = radical[0]
+    p = 1 - r
+    reduction = indefinite_reduced_presentation(lattice)
+    gram = _gram_in_label_order(reduction.reduced)
+    n = int(gram.rank())
+    labels = tuple(reduction.reduced.module_generating_set())[:n]
+    coordinates = reduction.isometry.inverse()(left[p]).to_vector()
+    from math import gcd
+    content = 0
+    for label in labels:
+        content = gcd(content, int(coordinates(label)))
+    if content != 1:
+        raise ValueError("mixed rank-two based transporter requires primitive nonradical quotient image")
+    first = RECURSION.pointed_isometry(left[r], right[r])
+    if first is None:
+        return None
+    correction = RECURSION.pointed_isometry(first(left[p]), right[p])
+    if correction is None:
+        return None
+    result = correction * first
+    if result(left[r]) != right[r] or result(left[p]) != right[p]:
+        raise ArithmeticError("the mixed rank-two transporter must fix both marked generators")
+    return result
+
+
 def _flag(marked: Parent) -> Flag:
     first, second = _flag_arrows(marked)
     plane = _isotropic_sublattice(second)
@@ -553,6 +606,13 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 return (_nondegenerate_embedding_isometry(source_arrow, target_arrow, based=True)
                         if source_arrow.is_primitive() and target_arrow.is_primitive()
                         else _nonprimitive_nondegenerate_based_isometry(source_arrow, target_arrow))
+            if (not source_arrow.domain().is_nondegenerate()
+                    and any(source_arrow.domain().b(x, y) != 0
+                            for x in source_arrow.domain().module_generators()
+                            for y in source_arrow.domain().module_generators())):
+                if int(source_arrow.domain().rank()) == 2:
+                    return _degenerate_rank_two_based_isometry(source_arrow, target_arrow)
+                raise ValueError("mixed degenerate Gram markings require a radical-block transporter")
             source_saturation = _isotropic_sublattice(source_arrow) if source_arrow.is_primitive() else _homothetic_isotropic_saturation(source_arrow)
             target_saturation = _isotropic_sublattice(target_arrow) if target_arrow.is_primitive() else _homothetic_isotropic_saturation(target_arrow)
             if source_saturation is None or target_saturation is None:

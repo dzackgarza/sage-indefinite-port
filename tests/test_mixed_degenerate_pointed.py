@@ -161,3 +161,34 @@ def test_rank_two_radical_norm_fifty_orbits_use_actual_gl_two_mod_five():
     assert {int(marked.arrow()(source.module_generators()[0]).content()) for marked in classes} == {1, 5}
     assert all(isometry(category, first, second) is None
                for i, first in enumerate(classes) for second in classes[i + 1:])
+
+
+def test_rank_two_based_mixed_degenerate_gram_embedding_transporter():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    e, z, w = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[2, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category(source.hom([e, z], codomain=ambient))
+    second = category(source.hom([e + w, z], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None and witness(e) == e + w and witness(z) == z
+
+
+def test_rank_two_based_mixed_gram_radical_generator_transport_and_obstruction():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    e, z, w = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 2]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category(source.hom([z, e], codomain=ambient))
+    second = category(source.hom([w, e + 2 * z], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None and witness(z) == w and witness(e) == e + 2 * z
+    assert (~witness)(w) == z
+    obstructed = category(source.hom([2 * w, e + 2 * z], codomain=ambient))
+    assert isometry(category, first, obstructed) is None
