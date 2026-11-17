@@ -262,3 +262,36 @@ def test_glued_indefinite_rank_two_source_and_complement_use_full_preimage():
     assert all(arrow.is_in_image(g(e + f)) and arrow.is_in_image(g(u - v)) for g in moving)
     assert ambient.O().subgroup(fixed).cardinality() == cardinal(4)
     assert ambient.O().subgroup(moving).cardinality() == cardinal(16)
+
+
+def test_generic_finite_overlattice_isometry_extension_requires_both_integral_directions():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_extensions.categories.lattice_embeddings import _finite_overlattice_isometry_extension
+
+    plane = Lattices(ZZ)("U")
+    e, f = tuple(plane.module_generators())
+    scaled = plane.twist(2)
+    e2, f2 = tuple(scaled.module_generators())
+    inclusion = scaled.Emb(plane)([2 * e, f])
+    negation = scaled.O()(lambda label: -scaled.module_generator(label))
+    extension = _finite_overlattice_isometry_extension(inclusion, inclusion, negation)
+    assert extension is not None and extension(e) == -e and extension(f) == -f
+    swap = scaled.O()({0: f2, 1: e2})
+    assert _finite_overlattice_isometry_extension(inclusion, inclusion, swap) is None
+
+
+def test_glued_indefinite_rank_two_based_transporter_uses_finite_glue_orbit():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    e, f, u, v = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[2, 0], [0, -2]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category(source.hom([e + f, u - v], codomain=ambient))
+    second = category(source.hom([e + f, v - u], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert witness(e + f) == e + f and witness(u - v) == v - u
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in (e, f, u, v) for y in (e, f, u, v))

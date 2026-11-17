@@ -316,7 +316,7 @@ def _finite_glued_nondegenerate_stabilizer_generators(arrow: Morphism, *, based:
 
 
 
-def _glued_nondegenerate_stabilizer_generators(arrow: Morphism, *, based: bool) -> tuple[LatticeIsometryMethods, ...]:
+def _nondegenerate_block_group(arrow: Morphism, *, based: bool):
     r"""Full glue stabilizer from exact finite-image preimage of block O(S)xO(K).
 
     The block group may be infinite.  The finite-index embedding's owned
@@ -363,7 +363,13 @@ def _glued_nondegenerate_stabilizer_generators(arrow: Morphism, *, based: bool) 
     if not based:
         blocks.extend(block(g, comp_identity) for g in RECURSION.orthogonal_group_generators(arrow.domain()))
     blocks.extend(block(source_identity, g) for g in RECURSION.orthogonal_group_generators(comp_domain))
-    return tuple(inclusion.extended_subgroup(module.O().subgroup(tuple(blocks))).group_generators())
+    return inclusion, module.O().subgroup(tuple(blocks))
+
+
+
+def _glued_nondegenerate_stabilizer_generators(arrow: Morphism, *, based: bool) -> tuple[LatticeIsometryMethods, ...]:
+    inclusion, blocks = _nondegenerate_block_group(arrow, based=based)
+    return tuple(inclusion.extended_subgroup(blocks).group_generators())
 
 
 def _nondegenerate_stabilizer_generators(arrow: Morphism, *, based: bool) -> tuple[LatticeIsometryMethods, ...]:
@@ -377,6 +383,68 @@ def _nondegenerate_stabilizer_generators(arrow: Morphism, *, based: bool) -> tup
         return _split_nondegenerate_stabilizer_generators(arrow, based=based)
     return _glued_nondegenerate_stabilizer_generators(arrow, based=based)
 
+
+
+
+def _glued_nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow: Morphism, *, based: bool) -> LatticeIsometryMethods | None:
+    r"""Glue-compatible transporter via the actual finite target block action.
+
+    A base isometry of the two orthogonal sums transports source glue to a
+    subgroup of the target discriminant module.  The target block group
+    acts on the finite set of glue subgroups; its *actual* transporter
+    supplies the missing arithmetic factor word.  The resulting rational
+    map extends integrally exactly when the glue subgroups agree.
+    """
+    from sage.all import QQ as SageQQ, matrix
+    from sage_extensions.categories.group.g_sets import FiniteGSets
+    from sage_extensions.categories.lattice_embeddings import _finite_overlattice_isometry_extension
+
+    source_lattice, target_lattice = source_arrow.codomain(), target_arrow.codomain()
+    source_sub = source_lattice.subobject_on(tuple(source_arrow(x) for x in source_arrow.domain().module_generators()))
+    target_sub = target_lattice.subobject_on(tuple(target_arrow(x) for x in target_arrow.domain().module_generators()))
+    source_comp = source_lattice.orthogonal_complement(source_sub)
+    target_comp = target_lattice.orthogonal_complement(target_sub)
+    source_iso = source_arrow.domain().O().identity() if based else RECURSION.isometry(source_arrow.domain(), target_arrow.domain())
+    comp_iso = RECURSION.isometry(source_comp.inclusion().domain(), target_comp.inclusion().domain())
+    if source_iso is None or comp_iso is None:
+        return None
+    source_basis = (
+        *(source_arrow(x) for x in source_arrow.domain().module_generators()),
+        *(source_comp.inclusion()(x) for x in source_comp.module_generators()),
+    )
+    target_images = (
+        *(target_arrow(source_iso(x)) for x in source_arrow.domain().module_generators()),
+        *(target_comp.inclusion()(comp_iso(x)) for x in source_comp.module_generators()),
+    )
+    source_inclusion = source_lattice.subobject_on(source_basis).inclusion()
+    target_inclusion, target_blocks = _nondegenerate_block_group(target_arrow, based=based)
+    source_module, target_module = source_inclusion.domain(), target_inclusion.domain()
+    labels = tuple(source_lattice.module_generating_set())
+    frame = matrix(SageQQ, [[int(point.to_vector()(label)) for label in labels]
+        for point in source_basis]).inverse()
+
+    def base_image(label):
+        coordinates = source_inclusion(source_module.module_generator(label)).to_vector()
+        row = matrix(SageQQ, [[int(coordinates(key)) for key in labels]]) * frame
+        result = sum((target_lattice.scalar_multiple(target_lattice.base_ring()(int(value)), point)
+            for value, point in zip(row.row(0), target_images, strict=True) if value), target_lattice.zero())
+        return target_inclusion.lift(result)
+
+    base = source_module.Isom(target_module)(base_image)
+    source_glue = source_inclusion.gluing_subgroup().inclusion()
+    target_glue = target_inclusion.gluing_subgroup().inclusion()
+    target_form = target_module.discriminant_group()
+    points = target_form.elements()
+    action = FiniteGSets(target_blocks)(
+        points, lambda element, point: element.discriminant_isometry()(point)
+    )
+    source_discriminant_map = base.discriminant_isometry()
+    moved_source = tuple(source_discriminant_map(source_glue(x)) for x in source_glue.domain().elements())
+    target_members = tuple(target_glue(x) for x in target_glue.domain().elements())
+    correction = action.setwise_transporter_witness(moved_source, target_members)
+    if correction is None:
+        return None
+    return _finite_overlattice_isometry_extension(source_inclusion, target_inclusion, correction * base)
 
 
 def _nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow: Morphism, *, based: bool) -> LatticeIsometryMethods | None:
@@ -404,7 +472,7 @@ def _nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow: Morp
         return _split_nondegenerate_embedding_isometry(source_arrow, target_arrow, based=based)
     if not (source_arrow.domain().is_definite() and target_arrow.domain().is_definite()
             and source_comp.inclusion().domain().is_definite() and target_comp.inclusion().domain().is_definite()):
-        raise ValueError("nontrivial glue with an infinite orthogonal factor requires the finite discriminant-image transporter")
+        return _glued_nondegenerate_embedding_isometry(source_arrow, target_arrow, based=based)
     source_iso = None if based else RECURSION.isometry(source_arrow.domain(), target_arrow.domain())
     if not based and source_iso is None:
         return None
