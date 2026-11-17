@@ -257,3 +257,58 @@ def test_rank_two_radical_stabilizer_transporter_lifts_nontrivial_mod_five_word(
     assert witness(5 * e + w) == 5 * e + w + z and witness(z) == z
     assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
                for x in (e, z, w) for y in (e, z, w))
+
+
+def test_full_quotient_based_mixed_rank_three_gram_marking_transporter():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    e, z, w = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category(source.hom([e, z, w], codomain=ambient))
+    second = category(source.hom([e + z + w, z + w, w], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert witness(e) == e + z + w and witness(z) == z + w and witness(w) == w
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in (e, z, w) for y in (e, z, w))
+    nonprimitive = category(source.hom([e, 2 * z, w], codomain=ambient))
+    assert isometry(category, first, nonprimitive) is None
+
+
+def test_full_quotient_based_mixed_rank_four_gram_with_two_radical_generators():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    e, f, z, w, t = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category(source.hom([e, f, z, w], codomain=ambient))
+    second = category(source.hom([e + z, f + w, w, z + t], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert all(witness(first.arrow()(x)) == second.arrow()(x) for x in source.module_generators())
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in ambient.module_generators() for y in ambient.module_generators())
+
+
+def test_full_quotient_based_mixed_gram_across_distinct_presentations():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    source_lattice = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    target_lattice = lattice([[0, 0, 0], [0, 2, 0], [0, 0, 0]])
+    e, z, w = tuple(source_lattice.module_generators())
+    u, f, v = tuple(target_lattice.module_generators())
+    source = Lattices(ZZ)([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category(source.hom([e, z, w], codomain=source_lattice))
+    second = category(source.hom([f + u, u, v], codomain=target_lattice))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert all(witness(first.arrow()(x)) == second.arrow()(x) for x in source.module_generators())
+    assert all(target_lattice.b(witness(x), witness(y)) == source_lattice.b(x, y)
+               for x in source_lattice.module_generators() for y in source_lattice.module_generators())

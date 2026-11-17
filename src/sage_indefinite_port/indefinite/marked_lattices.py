@@ -507,6 +507,92 @@ def _nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow: Morp
 
 
 
+
+def _degenerate_full_quotient_based_isometry(source_arrow: Morphism, target_arrow: Morphism):
+    r"""Exact based mixed-Gram transport for a full unimodular quotient frame.
+
+    Write L=C+R in the reduced integral chart.  Suppose the marked
+    nonradical rows project to a Z-basis of C and the marked radical rows
+    form a primitive free direct summand of R.  Their images determine the
+    quotient action A and an integral radical completion D; the unique
+    shear B is X^-1(Y_rad-X_rad D).  The block [[A,B],[0,D]] is integral
+    unimodular and preserves the form precisely when the marked Gram
+    tensors agree.  This gives an actual ambient isometry, not a finite
+    search or a rational extension.
+    """
+    from sage.matrix.constructor import identity_matrix, matrix
+    from sage.rings.integer_ring import ZZ as SageZZ
+    from sage_indefinite_port.indefinite.indefinite_reduction import indefinite_reduced_presentation
+    from sage_indefinite_port.indefinite.recursive import _gram_in_label_order, _isometry_from_row_matrix, _conjugated
+
+    lattice = source_arrow.codomain()
+    if target_arrow.codomain() is not lattice:
+        transport = RECURSION.isometry(lattice, target_arrow.codomain())
+        if transport is None:
+            return None
+        moved = source_arrow.domain().hom([transport(source_arrow(x)) for x in source_arrow.domain().module_generators()],
+                                          codomain=target_arrow.codomain())
+        correction = _degenerate_full_quotient_based_isometry(moved, target_arrow)
+        return None if correction is None else correction * transport
+    reduction = indefinite_reduced_presentation(lattice)
+    reduced = reduction.reduced
+    gram = _gram_in_label_order(reduced)
+    n, k = int(gram.rank()), int(gram.nrows() - gram.rank())
+    labels = tuple(reduced.module_generating_set())
+    inverse = reduction.isometry.inverse()
+    left = tuple(source_arrow(x) for x in source_arrow.domain().module_generators())
+    right = tuple(target_arrow(x) for x in target_arrow.domain().module_generators())
+    if len(left) != len(right):
+        return None
+    radical_indices = tuple(i for i, point in enumerate(left) if RECURSION.vector_lies_in_radical(point))
+    nonradical_indices = tuple(i for i in range(len(left)) if i not in radical_indices)
+    r = len(radical_indices)
+    if len(nonradical_indices) != n or not 1 <= r <= k:
+        raise ValueError("mixed based Gram transport requires a full quotient basis and primitive radical frame")
+    if any(not RECURSION.vector_lies_in_radical(right[i]) for i in radical_indices):
+        return None
+
+    def coordinates(points):
+        return matrix(SageZZ, [[int(inverse(point).to_vector()(label)) for label in labels] for point in points])
+
+    left_non = coordinates(tuple(left[i] for i in nonradical_indices))
+    right_non = coordinates(tuple(right[i] for i in nonradical_indices))
+    left_rad = coordinates(tuple(left[i] for i in radical_indices))[:, n:]
+    right_rad = coordinates(tuple(right[i] for i in radical_indices))[:, n:]
+    x, y = left_non[:, :n], right_non[:, :n]
+    if abs(int(x.det())) != 1 or abs(int(y.det())) != 1:
+        raise ValueError("the nonradical marked vectors must project to integral quotient bases")
+    a = x.inverse().change_ring(SageZZ) * y
+    left_smith, u_left, v_left = left_rad.smith_form()
+    right_smith, u_right, v_right = right_rad.smith_form()
+    if left_smith != right_smith or any(int(left_smith[i, i]) != 1 for i in range(r)):
+        return None
+    middle = identity_matrix(SageZZ, k)
+    frame_change = u_left * u_right.inverse().change_ring(SageZZ)
+    for i in range(r):
+        for j in range(r):
+            middle[i, j] = frame_change[i, j]
+    d = v_left * middle * v_right.inverse().change_ring(SageZZ)
+    if left_rad * d != right_rad or abs(int(d.det())) != 1:
+        raise ArithmeticError("the integral radical completion does not carry the marked frame")
+    b = x.inverse().change_ring(SageZZ) * (right_non[:, n:] - left_non[:, n:] * d)
+    block = identity_matrix(SageZZ, n + k)
+    for i in range(n):
+        for j in range(n):
+            block[i, j] = a[i, j]
+        for j in range(k):
+            block[i, n + j] = b[i, j]
+    for i in range(k):
+        for j in range(k):
+            block[n + i, n + j] = d[i, j]
+    if block * gram * block.transpose() != gram:
+        return None
+    witness = _conjugated(reduction.isometry, (_isometry_from_row_matrix(reduced, reduced, block),))[0]
+    if any(witness(first) != second for first, second in zip(left, right, strict=True)):
+        raise ArithmeticError("the full-quotient mixed Gram isometry fails its based marking")
+    return witness
+
+
 def _degenerate_rank_two_based_isometry(source_arrow: Morphism, target_arrow: Morphism):
     r"""Based mixed rank-two markings with a radical generator and primitive quotient image.
 
@@ -626,7 +712,7 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                             for y in source_arrow.domain().module_generators())):
                 if int(source_arrow.domain().rank()) == 2:
                     return _degenerate_rank_two_based_isometry(source_arrow, target_arrow)
-                raise ValueError("mixed degenerate Gram markings require a radical-block transporter")
+                return _degenerate_full_quotient_based_isometry(source_arrow, target_arrow)
             source_saturation = _isotropic_sublattice(source_arrow) if source_arrow.is_primitive() else _homothetic_isotropic_saturation(source_arrow)
             target_saturation = _isotropic_sublattice(target_arrow) if target_arrow.is_primitive() else _homothetic_isotropic_saturation(target_arrow)
             if source_saturation is None or target_saturation is None:
