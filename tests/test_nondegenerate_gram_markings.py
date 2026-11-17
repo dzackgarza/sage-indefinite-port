@@ -98,3 +98,20 @@ def test_split_nondegenerate_noncoordinate_based_stabilizer_is_full_complement_g
     assert all(g(e + u) == e + u and g(f) == f for g in family)
     assert all(ambient.b(g(x), g(y)) == ambient.b(x, y) for g in family for x in (e, f, u, v) for y in (e, f, u, v))
     assert ambient.O().subgroup(family).cardinality() == cardinal(4)
+
+
+def test_glued_rank_one_hyperbolic_line_has_exact_setwise_and_based_stabilizers():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U")
+    e, f = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[2]])
+    arrow = source.hom([e + f], codomain=ambient)
+    based = Lattices(ZZ).CosliceUnder(source)
+    fixed = tuple(automorphism_group_generators(based, based(arrow)))
+    moving = tuple(automorphism_group_generators(ARROWS, ARROWS(arrow)))
+    assert all(g(e + f) == e + f for g in fixed)
+    assert all(g(e + f) in (e + f, -e - f) for g in moving)
+    assert ambient.O().subgroup(fixed).cardinality() == cardinal(2)
+    assert ambient.O().subgroup(moving).cardinality() == cardinal(4)
