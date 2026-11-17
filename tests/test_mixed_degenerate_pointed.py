@@ -118,3 +118,20 @@ def test_degenerate_fixed_content_fibres_separate_primitive_and_imprimitive():
     assert pointed_content_classes(category, ambient, 50, 1).cardinality() == cardinal(2)
     assert pointed_content_classes(category, ambient, 50, 5).cardinality() == cardinal(1)
     assert pointed_content_classes(category, ambient, 50, 2).is_empty() is True
+
+
+def test_degenerate_isotropic_orbit_iterator_is_fair_across_radical_and_mixed_contents():
+    from itertools import islice
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_pointed_isotropic_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    source = Lattices(ZZ)([[0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    classes = tuple(islice(iter_pointed_isotropic_classes(category, ambient, include_zero=True), 7))
+    vectors = tuple(marked.arrow()(source.module_generators()[0]) for marked in classes)
+    assert vectors[0] == ambient.zero()
+    assert all(point.q() == ZZ(0) for point in vectors)
+    assert any(point in ambient.radical() for point in vectors[1:])
+    assert any(point not in ambient.radical() for point in vectors[1:])
+    assert {int(point.content()) for point in vectors[1:]} >= {1, 2}

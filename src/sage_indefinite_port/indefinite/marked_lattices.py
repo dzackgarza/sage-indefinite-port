@@ -779,6 +779,68 @@ def odd_primitive_pointed_classes_via_doubling(category: Category, lattice: Pare
 
 
 
+
+def _degenerate_radical_residues(lattice: Parent, radical_rank: int, modulus: int):
+    """Canonical orbit representatives of (Z/modulus)^k under the actual GL_k(Z) image."""
+    from itertools import product
+
+    if modulus == 1:
+        return ((0,) * radical_rank,)
+    image = RECURSION.radical_congruence_image(lattice, modulus)
+    unseen = set(product(range(modulus), repeat=radical_rank))
+    representatives = []
+    while unseen:
+        representative = min(unseen)
+        representatives.append(representative)
+        unseen.difference_update(tuple(int(value) % modulus for value in row)
+            for row in image.orbit_of(representative))
+    return tuple(representatives)
+
+
+def _degenerate_isotropic_pointed_iterator(category: Category, lattice: Parent, *, acting_group=None):
+    r"""Fair infinite enumeration by complement content and finite radical residue orbits."""
+    from itertools import count
+    from sage_indefinite_port.indefinite.indefinite_reduction import indefinite_reduced_presentation
+    from sage_indefinite_port.indefinite.recursive import _gram_in_label_order
+
+    reduction = indefinite_reduced_presentation(lattice)
+    reduced = reduction.reduced
+    gram = _gram_in_label_order(reduced)
+    n, k = int(gram.rank()), int(gram.nrows() - gram.rank())
+    labels = tuple(reduced.module_generating_set())
+    primitive = ()
+    if n:
+        complement = reduced.lattice_category()([[int(gram[i, j]) for j in range(n)] for i in range(n)])
+        if not complement.is_definite() and complement.is_isotropic():
+            primitive = tuple(complement.O().vector_orbit_representatives(0, content=1))
+        c_labels = tuple(complement.module_generating_set())
+    source = category.base_object()
+
+    def emit(point):
+        marked = category.object(source.hom([reduction.isometry(point)], codomain=lattice))
+        if acting_group is None:
+            yield marked
+        else:
+            yield from lattice.O().split_orbit(marked, acting_group)
+
+    for content in count(1):
+        # The pure radical has exactly one GL(R)-orbit at each content.
+        radical = reduced.scalar_multiple(reduced.base_ring()(content), reduced.module_generators()[n])
+        yield from emit(radical)
+        if not primitive:
+            continue
+        for point in primitive:
+            coordinates = point.to_vector()
+            for residue in _degenerate_radical_residues(lattice, k, content):
+                values = (
+                    *(content * int(coordinates(label)) for label in c_labels),
+                    *residue,
+                )
+                reduced_point = reduced.linear_combination({label: reduced.base_ring()(value)
+                    for label, value in zip(labels, values, strict=True) if value})
+                yield from emit(reduced_point)
+
+
 def _degenerate_nonzero_pointed_classes(category: Category, lattice: Parent, square: int, *, acting_group=None) -> Parent:
     r"""All nonzero-norm pointed orbits through C+rad(L) and exact finite residues.
 
@@ -787,7 +849,6 @@ def _degenerate_nonzero_pointed_classes(category: Category, lattice: Parent, squ
     its *actual* integral congruence image.  The full vector is primitive
     precisely when gcd(c,r)=1; nonprimitive vectors are retained as well.
     """
-    from itertools import product
     from math import isqrt
     from sage_indefinite_port.indefinite.indefinite_reduction import indefinite_reduced_presentation
     from sage_indefinite_port.indefinite.recursive import _gram_in_label_order
@@ -813,17 +874,7 @@ def _degenerate_nonzero_pointed_classes(category: Category, lattice: Parent, squ
             if complement.is_definite()
             else complement.O().vector_orbit_representatives(complement_square, content=1)
         )
-        if content == 1:
-            residues = ((0,) * k,)
-        else:
-            image = RECURSION.radical_congruence_image(lattice, content)
-            unseen = set(product(range(content), repeat=k))
-            residues = []
-            while unseen:
-                representative = min(unseen)
-                residues.append(representative)
-                unseen.difference_update(tuple(int(value) % content for value in row)
-                    for row in image.orbit_of(representative))
+        residues = _degenerate_radical_residues(lattice, k, content)
         for point in primitive:
             coordinates = point.to_vector()
             complement_labels = tuple(complement.module_generating_set())
@@ -929,6 +980,9 @@ def iter_pointed_isotropic_classes(category: Category, lattice: Parent, *, inclu
         raise ValueError("the source of an isotropic pointed marking must have zero square")
     if include_zero:
         yield category.object(source.hom([lattice.zero()], codomain=lattice))
+    if not lattice.is_nondegenerate():
+        yield from _degenerate_isotropic_pointed_iterator(category, lattice, acting_group=acting_group)
+        return
     if not lattice.is_isotropic():
         return
     for content in count(1):
