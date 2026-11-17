@@ -1558,6 +1558,9 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 classes = tuple(ARROWS.object(embedding) for embedding in
                     source.Emb(lattice).primitive_embedding_class_representatives(classification="sub"))
             else:
+                source_basis = tuple(source.module_generators())
+                if any(source.b(left, right) != 0 for left in source_basis for right in source_basis):
+                    raise ValueError("mixed degenerate Gram sublattices require their radical/glue classification")
                 classes = tuple(ARROWS.object(lattice.primitive_isotropic_subobject(*basis).inclusion()) for basis in INDUCTION.isotropic_flag_bases(lattice, (rank,)))
         case _FiniteSequenceFunctorCategory() if category.codomain_category() is LATTICES:
             if isinstance(source, Morphism):

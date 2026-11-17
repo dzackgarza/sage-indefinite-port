@@ -337,6 +337,15 @@ def test_flag_marking_constructor_rejects_inconsistent_rank_sequences():
             _flag_marking_from_basis(ambient, (generator,), dimensions)
 
 
+def test_mixed_degenerate_arrow_shape_is_not_misclassified_as_totally_isotropic():
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
+
+    ambient = lattice([[0, 1, 0], [1, 0, 0], [0, 0, 1]])
+    mixed = lattice([[0, 0], [0, 1]])
+    with pytest.raises(ValueError, match="mixed degenerate Gram sublattices"):
+        tuple(primitive_marking_classes(ARROWS, mixed, ambient))
+
+
 def test_public_partial_two_three_flag_classes_in_three_u():
     r"""O(3U) has one primitive isotropic flag class of ranks (2,3).
 
