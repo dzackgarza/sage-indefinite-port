@@ -327,3 +327,15 @@ def test_supplied_order_two_stabilizer_has_two_index_two_submodule_orbits():
     classes = nonprimitive_sublattice_classes(saturated, (1, 2), stabilizer_group=subgroup)
     assert len(classes) == 2
     assert all(arrow.codomain() is ambient and arrow.cokernel().is_finite() is False for arrow in classes)
+
+
+def test_isotropic_lines_of_content_two_split_under_gamma_three():
+    from sage_extensions.all import cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_isotropic_line_classes
+
+    plane = lattice([[0, 1], [1, 0]])
+    gamma = plane.O().congruence_preimage(3)
+    classes = nonprimitive_isotropic_line_classes(plane, 2, acting_group=gamma)
+    assert classes.cardinality() == cardinal(2)
+    assert all(int(marking.arrow()(marking.arrow().domain().module_generators()[0]).content()) == 2
+               for marking in classes)

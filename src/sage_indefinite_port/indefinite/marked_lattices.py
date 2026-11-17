@@ -730,13 +730,15 @@ def iter_pointed_isotropic_classes(category: Category, lattice: Parent, *, inclu
 
 
 
-def nonprimitive_isotropic_line_classes(lattice: Parent, content: int) -> Parent:
+def nonprimitive_isotropic_line_classes(lattice: Parent, content: int, *, acting_group=None) -> Parent:
     r"""Moving rank-one isotropic sublattice orbits of prescribed index in saturation.
 
     A rank-one sublattice of index ``content`` in its saturation is
     ``content * S`` for a unique primitive isotropic line ``S``.  The
     operation commutes with integral isometries, so the primitive moving
     line classes determine these orbits without a second classification.
+    An optional arithmetic subgroup splits the *moving* line orbits and
+    retains source sign changes.
     """
     if content < 1:
         raise ValueError("rank-one sublattice index in saturation must be positive")
@@ -749,6 +751,9 @@ def nonprimitive_isotropic_line_classes(lattice: Parent, content: int) -> Parent
         ], codomain=lattice))
         for marking in primitive
     )
+    if acting_group is not None:
+        classes = tuple(split for marking in classes
+                        for split in lattice.O().split_orbit(marking, acting_group))
     return finite_ordered_set(tuple(classes))
 
 
