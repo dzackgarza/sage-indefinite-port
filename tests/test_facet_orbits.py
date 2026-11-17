@@ -103,6 +103,17 @@ def test_schreier_facet_stabilizer_matches_gap_onsets_for_nontrivial_orbits(gene
     assert actual_group == expected_group
 
 
+def test_large_recursive_facet_uses_exact_ridge_walk_beyond_depth_two():
+    """The complete orthant facet set survives deep splitting with many rays."""
+    rays = [(1, 0, 0)] * 340 + [(0, 1, 0)] * 340 + [(0, 0, 1)] * 340
+    records = tuple(orbit_representatives(rays, (), level=4))
+    assert len(records) == 3
+    assert {tuple(normal) for _incidence, normal in records} == {
+        (1, 0, 0), (0, 1, 0), (0, 0, 1)
+    }
+    assert all(is_facet_certificate(normal, incidence, rays) for incidence, normal in records)
+
+
 def _cell(gram):
     backend = LorentzianPerfectLocalBackend()
     return backend, backend.initial_cell(lattice(gram), NONNEGATIVE_SQUARES)

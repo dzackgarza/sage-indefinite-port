@@ -506,6 +506,15 @@ def _facet_orbit_records(rays, permutations, *, level: int = 1, retain_words: bo
     # these rules select computation, not a search bound.
     if len(rays) - dimension < 20:
         split = False
+    elif len(rays) >= 1000:
+        # A high-incidence recursive facet may still have thousands of
+        # extreme rays after the source's depth-two split. Submitting its
+        # complete H-description to Normaliz reinstates the very
+        # large-cone bottleneck that the exact ridge walk avoids. Continue
+        # the certified adjacency decomposition at deeper levels instead;
+        # dimension strictly decreases, and the two-dimensional base case
+        # is enumerated exactly.
+        split = True
     elif order > 5000 and level < 3:
         split = True
     else:
