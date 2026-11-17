@@ -293,6 +293,121 @@ def _split_nondegenerate_stabilizer_generators(arrow: Morphism, *, based: bool) 
     return tuple(family)
 
 
+
+def _finite_glued_nondegenerate_stabilizer_generators(arrow: Morphism, *, based: bool) -> tuple[LatticeIsometryMethods, ...]:
+    r"""Exact glue-compatible stabilizer when both orthogonal factors are definite.
+
+    The finite groups O(S), O(S^perp) are exhausted, and a pair extends
+    precisely when its rational direct-sum action is integral on L.
+    No infinite factor is truncated or assumed finite.
+    """
+    from sage.all import QQ as SageQQ, ZZ as SageZZ, matrix
+
+    lattice = arrow.codomain()
+    subobject = lattice.subobject_on(tuple(arrow(x) for x in arrow.domain().module_generators()))
+    if not subobject.inclusion().is_primitive() or not subobject.inclusion().domain().is_nondegenerate():
+        raise ValueError("finite glue stabilization requires a primitive nondegenerate source")
+    complement = lattice.orthogonal_complement(subobject)
+    if not arrow.domain().is_definite() or not complement.inclusion().domain().is_definite():
+        raise ValueError("infinite orthogonal factors require the discriminant-image glue stabilizer")
+    s_basis = tuple(arrow(x) for x in arrow.domain().module_generators())
+    k_domain = complement.inclusion().domain()
+    k_basis = tuple(complement.inclusion()(x) for x in k_domain.module_generators())
+    labels = tuple(lattice.module_generating_set())
+    frame = matrix(SageQQ, [[int(point.to_vector()(label)) for label in labels]
+        for point in (*s_basis, *k_basis)])
+    inverse = frame.inverse()
+    family = []
+    source_actions = (arrow.domain().O().identity(),) if based else tuple(arrow.domain().O())
+    for source_action in source_actions:
+        for complement_action in k_domain.O():
+            images = (
+                tuple(arrow(source_action(x)) for x in arrow.domain().module_generators())
+                + tuple(complement.inclusion()(complement_action(x)) for x in k_domain.module_generators())
+            )
+            target_frame = matrix(SageQQ, [[int(point.to_vector()(label)) for label in labels]
+                for point in images])
+            action = inverse * target_frame
+            if not all(coefficient in SageZZ for coefficient in action.list()):
+                continue
+            action = action.change_ring(SageZZ)
+            def image(label, rows=action):
+                return lattice.linear_combination({target_label: lattice.base_ring()(int(value))
+                    for target_label, value in zip(labels, rows.row(labels.index(label)), strict=True) if value})
+            family.append(lattice.Isom(lattice)(image))
+    return tuple(family)
+
+
+def _nondegenerate_stabilizer_generators(arrow: Morphism, *, based: bool) -> tuple[LatticeIsometryMethods, ...]:
+    lattice = arrow.codomain()
+    subobject = lattice.subobject_on(tuple(arrow(x) for x in arrow.domain().module_generators()))
+    complement = lattice.orthogonal_complement(subobject)
+    basis = tuple(arrow(x) for x in arrow.domain().module_generators())
+    complementary = tuple(complement.inclusion()(x) for x in complement.module_generators())
+    combined = lattice.subobject_on((*basis, *complementary))
+    if int(combined.inclusion().cokernel().cardinality()) == 1:
+        return _split_nondegenerate_stabilizer_generators(arrow, based=based)
+    return _finite_glued_nondegenerate_stabilizer_generators(arrow, based=based)
+
+
+
+def _nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow: Morphism, *, based: bool) -> LatticeIsometryMethods | None:
+    r"""Split extension or exact finite-factor glue-compatible transporter."""
+    from sage.all import QQ as SageQQ, ZZ as SageZZ, matrix
+
+    source_lattice, target_lattice = source_arrow.codomain(), target_arrow.codomain()
+    if source_lattice is target_lattice and source_arrow.domain() is target_arrow.domain() and all(
+        source_arrow(x) == target_arrow(x) for x in source_arrow.domain().module_generators()
+    ):
+        return source_lattice.O().identity()
+    source_sub = source_lattice.subobject_on(tuple(source_arrow(x) for x in source_arrow.domain().module_generators()))
+    target_sub = target_lattice.subobject_on(tuple(target_arrow(x) for x in target_arrow.domain().module_generators()))
+    source_comp = source_lattice.orthogonal_complement(source_sub)
+    target_comp = target_lattice.orthogonal_complement(target_sub)
+    source_points = tuple(source_arrow(x) for x in source_arrow.domain().module_generators())
+    target_points = tuple(target_arrow(x) for x in target_arrow.domain().module_generators())
+    source_cpoints = tuple(source_comp.inclusion()(x) for x in source_comp.module_generators())
+    target_cpoints = tuple(target_comp.inclusion()(x) for x in target_comp.module_generators())
+    source_index = int(source_lattice.subobject_on((*source_points, *source_cpoints)).inclusion().cokernel().cardinality())
+    target_index = int(target_lattice.subobject_on((*target_points, *target_cpoints)).inclusion().cokernel().cardinality())
+    if source_index == target_index == 1:
+        return _split_nondegenerate_embedding_isometry(source_arrow, target_arrow, based=based)
+    if not (source_arrow.domain().is_definite() and target_arrow.domain().is_definite()
+            and source_comp.inclusion().domain().is_definite() and target_comp.inclusion().domain().is_definite()):
+        raise ValueError("nontrivial glue with an infinite orthogonal factor requires the finite discriminant-image transporter")
+    source_iso = None if based else RECURSION.isometry(source_arrow.domain(), target_arrow.domain())
+    if not based and source_iso is None:
+        return None
+    complement_iso = RECURSION.isometry(source_comp.inclusion().domain(), target_comp.inclusion().domain())
+    if complement_iso is None:
+        return None
+    source_actions = (None,) if based else tuple(target_arrow.domain().O())
+    source_labels = tuple(source_lattice.module_generating_set())
+    target_labels = tuple(target_lattice.module_generating_set())
+    frame = matrix(SageQQ, [[int(point.to_vector()(label)) for label in source_labels]
+        for point in (*source_points, *source_cpoints)])
+    inverse = frame.inverse()
+    for source_action in source_actions:
+        for complement_action in target_comp.inclusion().domain().O():
+            images = (
+                tuple(target_arrow(x if based else source_action(source_iso(x)))
+                      for x in source_arrow.domain().module_generators())
+                + tuple(target_comp.inclusion()(complement_action(complement_iso(x)))
+                        for x in source_comp.module_generators())
+            )
+            target_frame = matrix(SageQQ, [[int(point.to_vector()(label)) for label in target_labels]
+                for point in images])
+            action = inverse * target_frame
+            if not all(coefficient in SageZZ for coefficient in action.list()):
+                continue
+            integral = action.change_ring(SageZZ)
+            def image(label, rows=integral):
+                return target_lattice.linear_combination({target_label: target_lattice.base_ring()(int(value))
+                    for target_label, value in zip(target_labels, rows.row(source_labels.index(label)), strict=True) if value})
+            return source_lattice.Isom(target_lattice)(image)
+    return None
+
+
 def _flag(marked: Parent) -> Flag:
     first, second = _flag_arrows(marked)
     plane = _isotropic_sublattice(second)
@@ -341,7 +456,7 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 return RECURSION.pointed_isometry(_marked_vector(source), _marked_vector(target))
             source_arrow, target_arrow = source.arrow(), target.arrow()
             if source_arrow.domain().is_nondegenerate():
-                return _split_nondegenerate_embedding_isometry(source_arrow, target_arrow, based=True)
+                return _nondegenerate_embedding_isometry(source_arrow, target_arrow, based=True)
             source_saturation = _isotropic_sublattice(source_arrow) if source_arrow.is_primitive() else _homothetic_isotropic_saturation(source_arrow)
             target_saturation = _isotropic_sublattice(target_arrow) if target_arrow.is_primitive() else _homothetic_isotropic_saturation(target_arrow)
             if source_saturation is None or target_saturation is None:
@@ -386,7 +501,7 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 return INDUCTION.line_isometry(source_point.primitive_part(), target_point.primitive_part())
             source_arrow, target_arrow = source.arrow(), target.arrow()
             if source_arrow.domain().is_nondegenerate() and target_arrow.domain().is_nondegenerate():
-                return _split_nondegenerate_embedding_isometry(source_arrow, target_arrow, based=False)
+                return _nondegenerate_embedding_isometry(source_arrow, target_arrow, based=False)
             source_sublattice = _isotropic_sublattice(source_arrow) if source_arrow.is_primitive() else _homothetic_isotropic_saturation(source_arrow)
             target_sublattice = _isotropic_sublattice(target_arrow) if target_arrow.is_primitive() else _homothetic_isotropic_saturation(target_arrow)
             if source_sublattice is None or target_sublattice is None:
@@ -423,7 +538,7 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
             else:
                 arrow = marked.arrow()
                 if arrow.domain().is_nondegenerate():
-                    generators = _split_nondegenerate_stabilizer_generators(arrow, based=True)
+                    generators = _nondegenerate_stabilizer_generators(arrow, based=True)
                     return finite_ordered_set(tuple(generators))
                 saturation = _isotropic_sublattice(arrow) if arrow.is_primitive() else _homothetic_isotropic_saturation(arrow)
                 if saturation is None:
@@ -438,7 +553,7 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
             else:
                 arrow = marked.arrow()
                 if int(arrow.domain().rank()) > 1 and arrow.domain().is_nondegenerate():
-                    generators = _split_nondegenerate_stabilizer_generators(arrow, based=False)
+                    generators = _nondegenerate_stabilizer_generators(arrow, based=False)
                     return finite_ordered_set(tuple(generators))
                 if int(arrow.domain().rank()) == 1:
                     # For any nonzero v, Stab(Zv) is generated by Stab(v)
