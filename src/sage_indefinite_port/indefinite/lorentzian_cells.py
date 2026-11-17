@@ -2034,6 +2034,30 @@ class LorentzianPerfectLocalBackend:
                     {label: target.lattice.module_generator(target_label)
                      for label, target_label in zip(labels, target_labels, strict=True)}
                 )
+            # Try certified ambient basis symmetries before constructing the
+            # quadratic pairing data. This is a sufficient witness search,
+            # never a rejection criterion: a miss falls through to the full
+            # exact transporter. Component flips and integral reflections
+            # preserve the Gram form by construction.
+            if source_gram == target_gram and n > _PAIRING_GRAPH_CANONICAL_LABEL_LIMIT:
+                target_counts = Counter(target.rows)
+                source_matrix = matrix(SageZZ, source.rows)
+                for action in (*_gram_component_sign_flips(source_gram), *(
+                    reflection for index in range(rank)
+                    if (reflection := _integral_basis_reflection(source_gram, index)) is not None
+                )):
+                    if Counter(tuple(int(entry) for entry in row)
+                               for row in (source_matrix * action).rows()) != target_counts:
+                        continue
+                    source_labels = tuple(source.lattice.module_generating_set())
+                    target_labels = tuple(target.lattice.module_generating_set())
+                    return source.lattice.Isom(target.lattice)({
+                        label: target.lattice.linear_combination({
+                            target_label: target.lattice.base_ring()(int(entry))
+                            for target_label, entry in zip(target_labels, row, strict=True) if entry
+                        })
+                        for label, row in zip(source_labels, action.rows(), strict=True)
+                    })
             if (
                 n <= _PAIRING_GRAPH_CANONICAL_LABEL_LIMIT
                 and not self.cell_stabilizer.is_in_cache(source)

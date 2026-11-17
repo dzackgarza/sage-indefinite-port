@@ -289,6 +289,20 @@ def test_large_reordered_identical_cell_has_immediate_integral_transporter() -> 
     assert all(witness(x) == x for x in ambient.module_generators())
 
 
+def test_large_distinct_cells_use_certified_basis_symmetry_before_pairing_search() -> None:
+    ambient = lattice([[0, 1], [1, 0]])
+    rows = ((1, 0),) * 150 + ((0, 1),) * 150
+    source = LorentzianPerfectCell(ambient, rows, ZERO_SQUARES)
+    target = LorentzianPerfectCell(ambient, tuple((-a, -b) for a, b in rows), ZERO_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+    backend._integral_configuration_invariants = lambda cell: (_ for _ in ()).throw(
+        AssertionError("certified basis symmetry must bypass signature search")
+    )
+    witness = backend.cell_transporter(source, target)
+    assert witness is not None
+    assert all(witness(x) == -x for x in ambient.module_generators())
+
+
 def test_equal_coordinate_cells_from_separate_parent_constructions_transport_exactly() -> None:
     source_lattice = lattice([[0, 1], [1, 0]])
     target_lattice = lattice([[0, 1], [1, 0]])
