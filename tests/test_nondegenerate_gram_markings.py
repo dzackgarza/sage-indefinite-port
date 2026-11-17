@@ -557,6 +557,19 @@ def test_zero_vector_pointed_transporter_is_unmarked_lattice_transporter():
                for x in source.module_generators() for y in source.module_generators())
 
 
+def test_zero_vector_pointed_transporter_across_mixed_degenerate_presentations():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    source = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    target = Lattices(ZZ)([[0, -1, 0], [-1, 0, 0], [0, 0, 0]])
+    witness = RECURSION.pointed_isometry(source.zero(), target.zero())
+    assert witness is not None
+    assert witness.domain() is source and witness.codomain() is target
+    assert all(target.b(witness(x), witness(y)) == source.b(x, y)
+               for x in source.module_generators() for y in source.module_generators())
+
+
 def test_nondegenerate_fixed_smith_classifier_validates_before_empty_orbit_dispatch():
     import pytest
     from sage_extensions.all import Lattices, ZZ
