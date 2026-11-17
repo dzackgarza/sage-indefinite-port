@@ -395,6 +395,49 @@ def test_mixed_degenerate_maximal_moving_null_plane_is_finite_despite_infinite_l
     assert all(plane.is_in_image(radical(point)) for point in radical.domain().module_generators())
 
 
+def test_mixed_degenerate_full_radical_maximal_isotropic_stabilizer_generators():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION, ARROWS, automorphism_group_generators
+
+    for radical_rank in (1, 2):
+        ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * radical_rank for _ in range(radical_rank)])
+        basis = tuple(ambient.module_generators())
+        e, f = basis[:2]
+        radical = basis[2:]
+        plane = ambient.primitive_isotropic_subobject(e, *radical)
+        generators = INDUCTION.plane_automorphism_generators(plane)
+        assert generators
+        assert all(plane.inclusion().is_in_image(generator(point))
+                   for generator in generators for point in (e, *radical))
+        assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+                   for generator in generators for x in basis for y in basis)
+        marked = ARROWS.object(plane.inclusion())
+        public = tuple(automorphism_group_generators(ARROWS, marked))
+        assert public
+        assert all(plane.inclusion().is_in_image(generator(point))
+                   for generator in public for point in (e, *radical))
+
+
+def test_full_radical_maximal_isotropic_stabilizer_has_full_levi_and_shear_images():
+    from sage.all import GF, MatrixGroup, matrix
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    plane = ambient.primitive_isotropic_subobject(e, z, w)
+    generators = INDUCTION.plane_automorphism_generators(plane)
+    labels = tuple(ambient.module_generating_set())[-2:]
+    radical_actions = [matrix(GF(2), [
+        [int(generator(point).to_vector()(label)) for label in labels]
+        for point in (z, w)
+    ]) for generator in generators]
+    assert MatrixGroup(radical_actions).order() == 6
+    assert any(generator(e) == e + z for generator in generators)
+    assert any(generator(f) == f + w for generator in generators)
+    assert any(generator(e) == -e for generator in generators)
+
+
 def test_mixed_degenerate_maximal_moving_rank_three_contains_full_radical():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
