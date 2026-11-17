@@ -1187,15 +1187,20 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                 RECURSION.vector_lies_in_radical(point) for point in basis
             ):
                 generators = _degenerate_radical_flag_generators(ambient, dimensions, basis)
-            elif (not ambient.is_nondegenerate() and len(dimensions) == 2
-                  and dimensions == (int(ambient.radical().rank()), int(ambient.radical().rank()) + 1)
-                  and all(RECURSION.vector_lies_in_radical(point) for point in basis[:dimensions[0]])):
-                # The first flag term is exactly rad(L), which every
-                # ambient isometry preserves. Thus stabilizing the flag
-                # rad(L) ⊂ J is equivalent to stabilizing J. The latter
-                # has the complete split-radical parabolic generators.
+            elif (not ambient.is_nondegenerate()
+                  and dimensions[0] >= int(ambient.radical().rank())
+                  and dimensions[-1] > int(ambient.radical().rank())
+                  and all(ambient.primitive_isotropic_subobject(*basis[:dimensions[0]]).inclusion().is_in_image(point)
+                          for point in (ambient.radical().inclusion()(x)
+                                        for x in ambient.radical().module_generators()))):
+                # Each flag term contains the characteristic radical R.
+                # Quotienting by R gives a primitive isotropic flag in C;
+                # the full stabilizer is its inverse image under the
+                # projection O(C+R) -> O(C), with unrestricted GL(R) and
+                # Hom(C,R) blocks. This includes the radical-first flag.
                 generators = INDUCTION.plane_automorphism_generators(
-                    ambient.primitive_isotropic_subobject(*basis)
+                    ambient.primitive_isotropic_subobject(*basis),
+                    flag_dimensions=dimensions, flag_basis=basis,
                 )
             else:
                 generators = INDUCTION._stabilizer_generators(basis, images)
