@@ -542,19 +542,21 @@ def _degenerate_rank_two_based_isometry(source_arrow: Morphism, target_arrow: Mo
     for label in labels:
         content = gcd(content, int(coordinates(label)))
     radical_rank = int(gram.nrows()) - n
-    if content != 1 and radical_rank != 1:
-        raise ValueError("mixed rank-two based transporter with nonprimitive quotient needs its constrained radical stabilizer")
     first = RECURSION.pointed_isometry(left[r], right[r])
     if first is None:
         return None
     if content == 1:
         correction = RECURSION.pointed_isometry(first(left[p]), right[p])
     else:
-        from sage.matrix.constructor import identity_matrix
-        from sage.rings.integer_ring import ZZ as SageZZ
-        correction = RECURSION._mixed_degenerate_pointed_isometry(
-            first(left[p]), right[p], radical_action=identity_matrix(SageZZ, radical_rank)
-        )
+        inverse = reduction.isometry.inverse()
+        all_labels = tuple(reduction.reduced.module_generating_set())
+        fixed = tuple(int(inverse(right[r]).to_vector()(label)) for label in all_labels[n:])
+        start = tuple(int(inverse(first(left[p])).to_vector()(label)) for label in all_labels[n:])
+        goal = tuple(int(inverse(right[p]).to_vector()(label)) for label in all_labels[n:])
+        d = RECURSION.radical_stabilizer_congruence_image(lattice, content, fixed).transporter(start, goal)
+        correction = (None if d is None else RECURSION._mixed_degenerate_pointed_isometry(
+            first(left[p]), right[p], radical_action=d
+        ))
     if correction is None:
         return None
     result = correction * first

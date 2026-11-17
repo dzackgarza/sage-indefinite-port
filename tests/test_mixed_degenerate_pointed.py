@@ -222,3 +222,38 @@ def test_rank_two_based_mixed_gram_nonprimitive_radical_negation():
     second = category(source.hom([2 * e + 3 * z, -z], codomain=ambient))
     witness = isometry(category, first, second)
     assert witness is not None and witness(2 * e + z) == 2 * e + 3 * z and witness(z) == -z
+
+
+def test_rank_two_based_mixed_gram_rank_two_radical_constrained_congruence():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    e, z, w = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[50, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category(source.hom([5 * e + w, z], codomain=ambient))
+    second = category(source.hom([5 * e + w + 5 * z, z], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None and witness(5 * e + w) == 5 * e + w + 5 * z and witness(z) == z
+    # Fixing z forces the radical matrix first row to be (1,0).
+    # The w-coordinate of the first marking is therefore a unit modulo 5.
+    third = category(source.hom([5 * e + 2 * w, z], codomain=ambient))
+    assert isometry(category, first, third) is None
+
+
+def test_rank_two_radical_stabilizer_transporter_lifts_nontrivial_mod_five_word():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    e, z, w = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[50, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category(source.hom([5 * e + w, z], codomain=ambient))
+    second = category(source.hom([5 * e + w + z, z], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert witness(5 * e + w) == 5 * e + w + z and witness(z) == z
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in (e, z, w) for y in (e, z, w))

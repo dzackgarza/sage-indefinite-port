@@ -1724,6 +1724,26 @@ class EichlerRecursion:
             general_linear_order=int(GL(radical_rank, residue_ring).order()),
         )
 
+    def radical_stabilizer_congruence_image(self, lattice, modulus: int, fixed_row):
+        r"""Actual mod-c image of the integral GL(R) stabilizer of a nonzero radical row.
+
+        Its finite generators are reductions of complete integral stabilizer
+        generators, with exact lifts retained for transporter words.  This
+        is generally smaller than the stabilizer of the row modulo c in
+        GL_k(Z/c), so using the latter would invent integral witnesses.
+        """
+        rank = len(fixed_row)
+        lifts = self._radical_stabilizer_of_row(fixed_row)
+        residue_ring = Zmod(modulus)
+        generators = tuple(matrix(residue_ring, [[int(g[i, j]) % modulus for j in range(rank)]
+            for i in range(rank)]) for g in lifts)
+        full = self.radical_congruence_image(lattice, modulus)
+        return RadicalCongruenceImage(
+            modulus=modulus, radical_rank=rank,
+            group=MatrixGroup(list(generators)), generators=generators,
+            lifts=lifts, general_linear_order=full.general_linear_order,
+        )
+
     def _mixed_marking_residue_obstruction(self, source: Lattices.ElementMethods, target: Lattices.ElementMethods) -> bool:
         r"""Whether the radical-residue condition admits a carrier; `False` is a **proved** obstruction (issue #41).
 
