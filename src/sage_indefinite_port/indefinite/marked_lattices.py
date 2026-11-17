@@ -560,9 +560,14 @@ def _degenerate_full_quotient_based_isometry(source_arrow: Morphism, target_arro
     left_rad = coordinates(tuple(left[i] for i in radical_indices))[:, n:]
     right_rad = coordinates(tuple(right[i] for i in radical_indices))[:, n:]
     x, y = left_non[:, :n], right_non[:, :n]
-    if abs(int(x.det())) != 1 or abs(int(y.det())) != 1:
-        raise ValueError("the nonradical marked vectors must project to integral quotient bases")
-    a = x.inverse().change_ring(SageZZ) * y
+    if not x.det() or not y.det():
+        raise ValueError("the nonradical marked vectors must span the rational nondegenerate quotient")
+    if (abs(int(x.det())) != 1 or abs(int(y.det())) != 1) and r != k:
+        raise ValueError("nonprimitive quotient with a proper radical frame requires constrained integral stabilizer action")
+    a_rational = x.inverse() * y
+    if abs(a_rational.det()) != 1 or any(value not in SageZZ for value in a_rational.list()):
+        return None
+    a = a_rational.change_ring(SageZZ)
     left_smith, u_left, v_left = left_rad.smith_form()
     right_smith, u_right, v_right = right_rad.smith_form()
     if left_smith != right_smith:
@@ -585,7 +590,10 @@ def _degenerate_full_quotient_based_isometry(source_arrow: Morphism, target_arro
     d = v_left * middle * v_right.inverse().change_ring(SageZZ)
     if left_rad * d != right_rad or abs(int(d.det())) != 1:
         raise ArithmeticError("the integral radical completion does not carry the marked frame")
-    b = x.inverse().change_ring(SageZZ) * (right_non[:, n:] - left_non[:, n:] * d)
+    b_rational = x.inverse() * (right_non[:, n:] - left_non[:, n:] * d)
+    if any(value not in SageZZ for value in b_rational.list()):
+        return None
+    b = b_rational.change_ring(SageZZ)
     block = identity_matrix(SageZZ, n + k)
     for i in range(n):
         for j in range(n):

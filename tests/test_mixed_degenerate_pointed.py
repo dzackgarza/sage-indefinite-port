@@ -329,3 +329,20 @@ def test_full_quotient_based_mixed_gram_nonprimitive_radical_frame_obstruction()
     assert all(witness(first.arrow()(x)) == second.arrow()(x) for x in source.module_generators())
     impossible = category(source.hom([e, 2 * z + w, w], codomain=ambient))
     assert isometry(category, first, impossible) is None
+
+
+def test_full_rank_based_mixed_gram_nonprimitive_quotient_exact_shear_integrality():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    e, z, w = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[8, 0, 0], [0, 0, 0], [0, 0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category(source.hom([2 * e + z, 2 * z, w], codomain=ambient))
+    second = category(source.hom([2 * e + 3 * z, 2 * z, w], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert all(witness(first.arrow()(x)) == second.arrow()(x) for x in source.module_generators())
+    impossible = category(source.hom([2 * e + 2 * z, 2 * z, w], codomain=ambient))
+    assert isometry(category, first, impossible) is None
