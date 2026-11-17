@@ -382,6 +382,21 @@ def test_mixed_degenerate_maximal_moving_null_plane_is_finite_despite_infinite_l
     assert all(plane.is_in_image(radical(point)) for point in radical.domain().module_generators())
 
 
+def test_mixed_degenerate_maximal_moving_rank_three_contains_full_radical():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    classes = tuple(primitive_marking_classes(ARROWS, source, ambient))
+    assert len(classes) == 1
+    embedding = classes[0].arrow()
+    assert embedding.is_primitive()
+    assert int(embedding.domain().rank()) == 3
+    radical = ambient.radical().inclusion()
+    assert all(embedding.is_in_image(radical(point)) for point in radical.domain().module_generators())
+
+
 def test_primitive_radical_markings_are_covariant_under_reordered_coordinate_labels():
     from itertools import islice
     from sage_extensions.all import Lattices, ZZ, cardinal
