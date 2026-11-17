@@ -210,6 +210,39 @@ def test_zero_form_primitive_moving_sublattices_have_one_class_at_each_attainabl
         assert all(marked.arrow().is_primitive() for marked in classes)
 
 
+def test_zero_form_index_two_sublattices_split_into_three_level_two_orbits():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_isotropic_sublattice_classes
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    full = tuple(nonprimitive_isotropic_sublattice_classes(ambient, 2, (1, 2)))
+    kernel = ambient.O().congruence_preimage(2)
+    split = tuple(nonprimitive_isotropic_sublattice_classes(ambient, 2, (1, 2), acting_group=kernel))
+    assert len(full) == 1 and len(split) == 3
+    # Index-two submodules correspond to the three lines in F_2^2.
+    # Gamma(2) fixes every residue class, hence fixes each of the three.
+    residue_lines = set()
+    for marked in split:
+        arrow = marked.arrow()
+        residue_lines.add(frozenset(tuple(int(x.to_vector()(label)) % 2
+                                          for label in ambient.module_generating_set())
+                                    for x in (arrow(point) for point in arrow.domain().module_generators())))
+    assert len(residue_lines) == 3
+
+
+def test_zero_form_based_primitive_frames_have_one_class_at_each_attainable_rank():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import primitive_marking_classes
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    for rank, expected in ((1, 1), (2, 1), (3, 0)):
+        source = Lattices(ZZ)([[0] * rank for _ in range(rank)])
+        category = Lattices(ZZ).CosliceUnder(source)
+        classes = tuple(primitive_marking_classes(category, source, ambient))
+        assert len(classes) == expected
+        assert all(marked.arrow().is_primitive() for marked in classes)
+
+
 def test_unrestricted_rank_two_null_sublattices_split_under_special_orthogonal_group():
     from itertools import islice
     from sage_extensions.all import Lattices, ZZ

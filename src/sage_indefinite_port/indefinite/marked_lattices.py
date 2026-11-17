@@ -1575,14 +1575,17 @@ def nonprimitive_isotropic_sublattice_classes(lattice: Parent, rank: int, diviso
                 inclusion(subobject(point)) for point in subobject.domain().module_generators()
             )).inclusion()) for subobject in submodules))
         source = lattice.lattice_category()([[0] * rank for _ in range(rank)])
-        primitive = lattice.O().split_orbit(ARROWS.object(source.hom(tuple(
+        standard = ARROWS.object(source.hom(tuple(
             inclusion(point) for point in module.module_generators()
-        ), codomain=lattice)), acting_group)
+        ), codomain=lattice))
+        # A full-rank primitive sublattice is the whole lattice: its
+        # moving orbit is a singleton under every arithmetic subgroup.
+        primitive = (standard,) if rank == int(lattice.rank()) else lattice.O().split_orbit(standard, acting_group)
         classes = []
         for marked in primitive:
             arrow = marked.arrow()
             saturation = lattice.subobject_on(tuple(arrow(point) for point in arrow.domain().module_generators()))
-            stabilizer = acting_group.intersection(lattice.O().stabilizer(saturation))
+            stabilizer = acting_group if rank == int(lattice.rank()) else acting_group.intersection(lattice.O().stabilizer(saturation))
             classes.extend(ARROWS.object(embedding) for embedding in nonprimitive_sublattice_classes(
                 saturation, divisors, stabilizer_group=stabilizer
             ))
@@ -1716,6 +1719,19 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
         case CosliceCategory():
             if int(source.rank()) == 0:
                 classes = (category.object(source.hom([], codomain=lattice)),)
+            elif int(source.rank()) > int(lattice.rank()):
+                classes = ()
+            elif (
+                all(lattice.b(x, y) == 0 for x in lattice.module_generators() for y in lattice.module_generators())
+                and all(source.b(x, y) == 0 for x in source.module_generators() for y in source.module_generators())
+            ):
+                # GL_n(ZZ) is transitive on ordered primitive r-frames:
+                # every such frame extends to a unimodular basis. Unlike
+                # the moving arrow, this based coslice fixes the source.
+                labels = tuple(lattice.module_generating_set())
+                classes = (category.object(source.hom(tuple(
+                    lattice.module_generator(label) for label in labels[:int(source.rank())]
+                ), codomain=lattice)),)
             elif int(source.rank()) == 1:
                 classes = _pointed_classes(category, lattice, int(source.q(next(iter(source.module_generators())))))
             else:
@@ -1773,10 +1789,13 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
             full_diagram_shape = (
                 not isinstance(source, Morphism)
                 and len(shape_arrows) == int(category.domain_category().object_set().cardinality()) - 1
-                and not all(
-                    shape_arrows[-1].codomain().b(left, right) == 0
-                    for left in shape_arrows[-1].codomain().module_generators()
-                    for right in shape_arrows[-1].codomain().module_generators()
+                and (
+                    shape_arrows[-1].codomain() is lattice
+                    or not all(
+                        shape_arrows[-1].codomain().b(left, right) == 0
+                        for left in shape_arrows[-1].codomain().module_generators()
+                        for right in shape_arrows[-1].codomain().module_generators()
+                    )
                 )
             )
             last_shape_lattice = shape_arrows[-1].domain() if full_diagram_shape else shape_arrows[-1].codomain()
@@ -1801,7 +1820,17 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 dimensions = (int(shape_arrows[0].domain().rank()), *(int(arrow.codomain().rank()) for arrow in shape_arrows))
             if len(dimensions) != int(category.domain_category().object_set().cardinality()) - 1:
                 raise ValueError("the isotropic source shape must specify exactly the target flag's ranks")
-            classes = tuple(category(_flag_marking_from_basis(lattice, basis, dimensions)) for basis in INDUCTION.isotropic_flag_bases(lattice, dimensions))
+            if dimensions[-1] > int(lattice.rank()):
+                classes = ()
+            elif all(lattice.b(x, y) == 0 for x in lattice.module_generators() for y in lattice.module_generators()):
+                # GL_n(ZZ) acts transitively on primitive integral flags
+                # with any fixed strictly increasing rank sequence.
+                if dimensions[0] < 1 or any(left >= right for left, right in pairwise(dimensions)):
+                    raise ValueError("isotropic flag ranks must be positive and strictly increasing")
+                basis = tuple(lattice.module_generators())[:dimensions[-1]]
+                classes = (category(_flag_marking_from_basis(lattice, basis, dimensions)),)
+            else:
+                classes = tuple(category(_flag_marking_from_basis(lattice, basis, dimensions)) for basis in INDUCTION.isotropic_flag_bases(lattice, dimensions))
         case _:
             raise ValueError(f"{category} is not a category of marked lattices this port classifies: a coslice <n>/Lattices, Ar(Lattices) or Fun([t], Lattices) for finite [t]")
     if acting_group is not None and acting_group is not lattice.O():

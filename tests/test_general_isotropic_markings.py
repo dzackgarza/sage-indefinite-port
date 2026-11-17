@@ -347,6 +347,19 @@ def test_full_flag_shape_from_a_distinct_ambient_parent_keeps_its_null_ranks():
     assert tuple(int(arrow.domain().rank()) for arrow in _flag_arrows(classes[0])) == (1, 2)
 
 
+def test_zero_form_primitive_full_flags_have_one_gl_orbit():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_arrows, _flag_marking_from_basis, primitive_marking_classes
+
+    ambient = Lattices(ZZ)([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    category = Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))
+    source = category(_flag_marking_from_basis(ambient, tuple(ambient.module_generators())[:2], (1, 2)))
+    classes = tuple(primitive_marking_classes(category, source, ambient))
+    assert len(classes) == 1
+    assert tuple(int(arrow.domain().rank()) for arrow in _flag_arrows(classes[0])) == (1, 2)
+
+
 def test_two_stage_flag_accepts_a_single_isotropic_source_inclusion():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
