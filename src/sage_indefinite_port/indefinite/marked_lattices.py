@@ -181,12 +181,23 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
             if int(marked.arrow().domain().rank()) == 0:
                 generators = RECURSION.orthogonal_group_generators(marked.arrow().codomain())
             else:
-                sublattice = _isotropic_sublattice(marked.arrow())
-                match int(sublattice.inclusion().domain().rank()):
-                    case 1:
-                        generators = INDUCTION.line_automorphism_generators(marked.arrow().codomain(), INDUCTION.plane_vectors(sublattice)[0])
-                    case _:
-                        generators = INDUCTION.plane_automorphism_generators(sublattice)
+                arrow = marked.arrow()
+                if int(arrow.domain().rank()) == 1 and not arrow.is_primitive():
+                    # A nonzero rank-one sublattice J=c*Ze and its saturation
+                    # S=Ze have exactly the same setwise integral stabilizer:
+                    # g(J)=J iff g(e)=+/-e iff g(S)=S.
+                    lattice = arrow.codomain()
+                    point = arrow(next(iter(arrow.domain().module_generators())))
+                    if point.q() != lattice.base_ring().zero():
+                        raise ValueError("nonisotropic sublattice stabilizers belong to the general complement/glue construction")
+                    generators = INDUCTION.line_automorphism_generators(lattice, point.primitive_part())
+                else:
+                    sublattice = _isotropic_sublattice(arrow)
+                    match int(sublattice.inclusion().domain().rank()):
+                        case 1:
+                            generators = INDUCTION.line_automorphism_generators(arrow.codomain(), INDUCTION.plane_vectors(sublattice)[0])
+                        case _:
+                            generators = INDUCTION.plane_automorphism_generators(sublattice)
         case _FiniteSequenceFunctorCategory() if category.codomain_category() is LATTICES:
             _dimensions, basis, images = _flag_action(marked)
             generators = INDUCTION._stabilizer_generators(basis, images)
