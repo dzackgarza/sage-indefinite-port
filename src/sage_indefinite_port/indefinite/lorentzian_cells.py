@@ -1823,7 +1823,16 @@ class LorentzianPerfectLocalBackend:
         facet_positions = tuple(sorted(facet))
         selected = matrix(SageQQ, [vectors[position] for position in facet_positions])
         # LORENTZ_DoFlipping uses GAP NullspaceMat(TransposedMat(ListIso{eInc})).
-        facet_nullspace = _pinned_nullspace_matrix(selected.transpose())
+        # A facet spans a codimension-one hyperplane. The nullspace is
+        # therefore one-dimensional and unchanged by replacing its many
+        # incident rays with any independent spanning subfamily. Select
+        # those rows exactly before the GAP call: the frozen large cells
+        # otherwise submit tens of thousands of dependent columns to
+        # NullspaceMat merely to obtain one normal direction.
+        independent_positions = tuple(int(i) for i in selected.transpose().pivots())
+        if len(independent_positions) != selected.ncols() - 1:
+            raise ArithmeticError("a perfect-cell facet must span a codimension-one hyperplane")
+        facet_nullspace = _pinned_nullspace_matrix(selected.matrix_from_rows(independent_positions).transpose())
         if facet_nullspace.nrows() != 1:
             raise ArithmeticError("a perfect-cell facet must have one normal direction")
         direction = facet_nullspace.row(0)

@@ -1281,6 +1281,26 @@ def test_facet_flip_uses_pinned_gap_normals(monkeypatch) -> None:
     assert base == lorentzian_cells._source_remove_fraction(pinned_base)
 
 
+def test_facet_flip_nullspace_uses_only_independent_incident_rays(monkeypatch) -> None:
+    from sage.all import QQ
+
+    ambient = lattice([[1, 0, 0], [0, -1, 0], [0, 0, -1]])
+    rows = ((1, 1, 0), (1, 0, 1), (1, -1, 0), (1, 1, 0))
+    cell = LorentzianPerfectCell(ambient, rows, ZERO_SQUARES)
+    backend = LorentzianPerfectLocalBackend()
+    observed = []
+    original = lorentzian_cells._pinned_nullspace_matrix
+
+    def record_nullspace(work):
+        observed.append(work.ncols())
+        return original(work)
+
+    monkeypatch.setattr(lorentzian_cells, "_pinned_nullspace_matrix", record_nullspace)
+    monkeypatch.setattr(lorentzian_cells, "_kernel_flipping", lambda _l, _c, base, direction, _s: (rows, base, direction, QQ.one()))
+    assert backend.flip_across(cell, frozenset((0, 1, 3))) is not None
+    assert observed[0] == 2  # rank-1 independent rows, not three incident rows
+
+
 def test_rank_three_minimized_halfspaces_pair_against_basis_elements() -> None:
     r"""Result_Enumeration_0: the minimized H-presentation is exact and every facet meets a ray.
 
