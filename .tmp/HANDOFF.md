@@ -30,14 +30,14 @@ its mathematical branch, not all unexecuted cases.
 
 ## Next work, ranked
 
-1. Finish the definite-isometry repair for the public square-26 orbit consumer.
-   Verify the exact GAP minimal-vector enumeration at the definite-isometry
-   owner, then verify the unchanged public consumer at the final provider pair.
-   The square-26 owner regression is the established overflow reproducer.
-2. Finish the Enriques discriminant-form cost repair at its owner. Preserve the
-   quadratic classifier and its quotient codomain; test quadratic values,
-   bilinear pairing and classifier behavior against independent mathematics.
-   Price both evaluation and construction, then the actual boundary consumer.
+1. Connect the implemented edgewalk options and isometry operation through
+   the provider's public HyperbolicLattices API. At port 7e28b04/provider
+   8309fed1, the unchanged full-walk test rejects `early_termination` before
+   reaching the port. Run all existing edgewalk-option assertions after repair.
+2. Complete final-pair checks of the repaired exact definite-isometry and
+   discriminant-form operations, then price the Enriques boundary consumer.
+   The owner assertions establish the exercised mathematical contracts;
+   the profiled timeouts do not establish consumer completion.
 3. Complete minimal branch evidence. Existing tests cover general flags,
    subgroup planes, oriented marked categories, graded quotient actions,
    definite empty isotropic classes and finite-left double cosets. Strengthen
