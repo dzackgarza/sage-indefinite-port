@@ -838,29 +838,35 @@ class IsotropicInduction:
             k = size - n
             labels = tuple(reduced.module_generating_set())
             radical = tuple(reduction.isometry(reduced.module_generator(label)) for label in labels[n:])
-            if n and k and int(inclusion.domain().rank()) == k + 1 and all(
+            if n and k and int(inclusion.domain().rank()) > k and all(
                 inclusion.is_in_image(point) for point in radical
             ):
                 # J contains the full ambient radical and projects onto a
-                # primitive isotropic line I of C. In L=C+R, preserving
+                # primitive isotropic subspace I of C. In L=C+R, preserving
                 # J is equivalent to preserving I under the A block of
                 # [A B;0 D]. The B and D blocks are unrestricted.
                 # Hence Stab_O(L)(J) = (Stab_O(C)(I) x GL(R)) ⋉ Hom(C,R).
                 reduced_points = tuple((~reduction.isometry)(point) for point in self.plane_vectors(plane))
-                projected_row = next((tuple(_integer(point.to_vector()(label)) for label in labels[:n])
-                                      for point in reduced_points if any(point.to_vector()(label) for label in labels[:n])), None)
-                if projected_row is None:
-                    raise ArithmeticError("a full-radical maximal isotropic subspace must project to a line")
+                projected_rows = tuple(tuple(_integer(point.to_vector()(label)) for label in labels[:n])
+                                       for point in reduced_points)
                 complement = reduced.lattice_category()([
                     [int(gram[i, j]) for j in range(n)] for i in range(n)
                 ])
                 c_labels = tuple(complement.module_generating_set())
-                projected = complement.linear_combination({
+                projected_points = tuple(complement.linear_combination({
                     label: complement.base_ring()(entry)
-                    for label, entry in zip(c_labels, projected_row, strict=True) if entry
-                }).primitive_part()
+                    for label, entry in zip(c_labels, row, strict=True) if entry
+                }) for row in projected_rows if any(row))
+                projected = complement.primitive_isotropic_subobject(*projected_points)
+                if int(projected.inclusion().domain().rank()) != int(inclusion.domain().rank()) - k:
+                    raise ArithmeticError("the full-radical isotropic subspace has incorrect quotient rank")
                 blocks = []
-                for generator in self.recursion.line_stabilizer_generators(projected):
+                quotient_generators = (
+                    self.recursion.line_stabilizer_generators(self.plane_vectors(projected)[0])
+                    if int(projected.inclusion().domain().rank()) == 1
+                    else self.plane_automorphism_generators(projected)
+                )
+                for generator in quotient_generators:
                     block = identity_matrix(SageZZ, size)
                     for i, point in enumerate(complement.module_generators()):
                         image = generator(point).to_vector()

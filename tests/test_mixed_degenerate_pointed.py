@@ -438,6 +438,40 @@ def test_full_radical_maximal_isotropic_stabilizer_has_full_levi_and_shear_image
     assert any(generator(e) == -e for generator in generators)
 
 
+def test_full_radical_rank_three_isotropic_stabilizer_over_two_hyperbolic_planes():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    e, f, u, v, z = tuple(ambient.module_generators())
+    plane = ambient.primitive_isotropic_subobject(e, u, z)
+    generators = INDUCTION.plane_automorphism_generators(plane)
+    assert generators
+    assert all(plane.inclusion().is_in_image(generator(point))
+               for generator in generators for point in (e, u, z))
+    assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+               for generator in generators for x in (e, f, u, v, z) for y in (e, f, u, v, z))
+    assert any(generator(e) == e + z for generator in generators)
+    assert any(generator(u) == u + z for generator in generators)
+
+
+def test_full_radical_nonmaximal_isotropic_plane_stabilizer_over_three_u():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    hyperbolic = Lattices(ZZ)("U")
+    ambient = hyperbolic + hyperbolic + hyperbolic + Lattices(ZZ)([[0]])
+    e, f, u, v, a, b, z = tuple(ambient.module_generators())
+    plane = ambient.primitive_isotropic_subobject(e, u, z)
+    generators = INDUCTION.plane_automorphism_generators(plane)
+    assert generators
+    assert all(plane.inclusion().is_in_image(generator(point))
+               for generator in generators for point in (e, u, z))
+    assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+               for generator in generators for x in (e, f, u, v, a, b, z)
+               for y in (e, f, u, v, a, b, z))
+
+
 def test_mixed_degenerate_maximal_moving_rank_three_contains_full_radical():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
