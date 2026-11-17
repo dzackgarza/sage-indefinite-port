@@ -156,3 +156,22 @@ def test_anisotropic_isotropic_iterator_is_empty():
     plane = lattice([[1, 0], [0, -2]])
     category = CosliceCategory(Lattices(ZZ), Lattices(ZZ)([[0]]))
     assert tuple(iter_pointed_isotropic_classes(category, plane)) == ()
+
+
+def test_zero_is_separate_from_all_nonzero_isotropic_orbits():
+    from itertools import islice
+    from sage_extensions.all import Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import iter_pointed_isotropic_classes, isometry
+
+    plane = lattice([[0, 1], [1, 0]])
+    source = Lattices(ZZ)([[0]])
+    category = CosliceCategory(Lattices(ZZ), source)
+    zero, first, second = tuple(islice(iter_pointed_isotropic_classes(category, plane, include_zero=True), 3))
+    assert zero.arrow()(source.module_generators()[0]) == plane.zero()
+    assert first.arrow()(source.module_generators()[0]).content() == ZZ(1)
+    assert second.arrow()(source.module_generators()[0]).content() == ZZ(2)
+    assert isometry(category, zero, first) is None
+
+    anisotropic = lattice([[1, 0], [0, -2]])
+    assert tuple(iter_pointed_isotropic_classes(category, anisotropic, include_zero=True))[0].arrow()(source.module_generators()[0]) == anisotropic.zero()

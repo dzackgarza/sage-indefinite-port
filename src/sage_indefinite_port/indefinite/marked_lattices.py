@@ -306,14 +306,15 @@ def pointed_nonzero_norm_classes(category: Category, lattice: Parent, square: in
 
 
 
-def iter_pointed_isotropic_classes(category: Category, lattice: Parent):
+def iter_pointed_isotropic_classes(category: Category, lattice: Parent, *, include_zero: bool = False):
     r"""Lazily enumerate every nonzero isotropic pointed orbit, by increasing content.
 
     For a nondegenerate indefinite lattice admitting primitive isotropic
     vectors, each positive content contributes the primitive zero-norm
     orbit set, scaled by that content.  No finite bound on the content is
-    imposed and no finite cardinality is claimed.  If there is no rational
-    isotropic vector, the iterator is empty.
+    imposed and no finite cardinality is claimed.  With ``include_zero``,
+    the zero marking is emitted first as its own orbit.  If there is no
+    nonzero rational isotropic vector, only the optional zero orbit remains.
     """
     from itertools import count
 
@@ -322,6 +323,8 @@ def iter_pointed_isotropic_classes(category: Category, lattice: Parent):
     source = category.base_object()
     if source.q(next(iter(source.module_generators()))) != source.base_ring().zero():
         raise ValueError("the source of an isotropic pointed marking must have zero square")
+    if include_zero:
+        yield category.object(source.hom([lattice.zero()], codomain=lattice))
     if not lattice.is_isotropic():
         return
     for content in count(1):
