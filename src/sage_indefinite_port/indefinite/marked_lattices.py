@@ -434,7 +434,7 @@ def _pointed_classes(category: Category, lattice: Lattices.ParentMethods, square
 
 
 
-def pointed_content_classes(category: Category, lattice: Parent, square: int, content: int) -> Parent:
+def pointed_content_classes(category: Category, lattice: Parent, square: int, content: int, *, acting_group=None) -> Parent:
     r"""O(L)-classes of rank-one markings of square ``square`` and exact positive content.
 
     Every vector in this stratum is uniquely ``content * primitive_part``.
@@ -442,7 +442,9 @@ def pointed_content_classes(category: Category, lattice: Parent, square: int, co
     square-``square/content**2`` orbit set.  In particular, specifying
     content makes the isotropic stratum finite when the primitive orbit
     algorithm is finite, without pretending that all nonzero isotropic
-    vectors have finitely many orbits across unbounded contents.
+    vectors have finitely many orbits across unbounded contents.  An
+    ``acting_group`` splits each primitive orbit under that *same* subgroup
+    before scaling; it is never silently replaced by the full O(L).
     """
     if not isinstance(category, CosliceCategory) or int(category.base_object().rank()) != 1:
         raise ValueError("content strata require a rank-one pointed coslice category")
@@ -458,6 +460,11 @@ def pointed_content_classes(category: Category, lattice: Parent, square: int, co
     primitive_source = lattice.lattice_category()([[primitive_square]])
     primitive_category = CosliceCategory(lattice.lattice_category(), primitive_source)
     primitive_classes = _pointed_classes(primitive_category, lattice, primitive_square)
+    if acting_group is not None and acting_group is not lattice.O():
+        primitive_classes = tuple(
+            split for marking in primitive_classes
+            for split in lattice.O().split_orbit(marking, acting_group)
+        )
     classes = (
         category.object(source.hom([lattice.scalar_multiple(lattice.base_ring()(content),
             _marked_vector(marking))], codomain=lattice))
@@ -467,13 +474,14 @@ def pointed_content_classes(category: Category, lattice: Parent, square: int, co
 
 
 
-def pointed_nonzero_norm_classes(category: Category, lattice: Parent, square: int) -> Parent:
+def pointed_nonzero_norm_classes(category: Category, lattice: Parent, square: int, *, acting_group=None) -> Parent:
     r"""All pointed O(L)-orbits of nonzero square, partitioned by exact content.
 
     The finite list of possible contents is precisely the positive integers
     ``c`` with ``c*c`` dividing ``abs(square)``.  Each stratum uses the
     existing primitive orbit classification, without losing nonprimitive
-    representatives or identifying different contents.
+    representatives or identifying different contents.  The optional
+    ``acting_group`` is retained across every content stratum.
     """
     from math import isqrt
 
@@ -483,13 +491,13 @@ def pointed_nonzero_norm_classes(category: Category, lattice: Parent, square: in
         marking
         for content in range(1, isqrt(abs(int(square))) + 1)
         if square % (content * content) == 0
-        for marking in pointed_content_classes(category, lattice, square, content)
+        for marking in pointed_content_classes(category, lattice, square, content, acting_group=acting_group)
     )
     return finite_ordered_set(tuple(classes))
 
 
 
-def iter_pointed_isotropic_classes(category: Category, lattice: Parent, *, include_zero: bool = False):
+def iter_pointed_isotropic_classes(category: Category, lattice: Parent, *, include_zero: bool = False, acting_group=None):
     r"""Lazily enumerate every nonzero isotropic pointed orbit, by increasing content.
 
     For a nondegenerate indefinite lattice admitting primitive isotropic
@@ -511,7 +519,7 @@ def iter_pointed_isotropic_classes(category: Category, lattice: Parent, *, inclu
     if not lattice.is_isotropic():
         return
     for content in count(1):
-        yield from pointed_content_classes(category, lattice, 0, content)
+        yield from pointed_content_classes(category, lattice, 0, content, acting_group=acting_group)
 
 
 

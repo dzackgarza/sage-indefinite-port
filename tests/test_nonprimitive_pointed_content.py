@@ -175,3 +175,30 @@ def test_zero_is_separate_from_all_nonzero_isotropic_orbits():
 
     anisotropic = lattice([[1, 0], [0, -2]])
     assert tuple(iter_pointed_isotropic_classes(category, anisotropic, include_zero=True))[0].arrow()(source.module_generators()[0]) == anisotropic.zero()
+
+
+def test_imprimitive_content_strata_use_the_actual_congruence_subgroup():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import pointed_content_classes
+
+    plane = lattice([[0, 1], [1, 0]])
+    category = CosliceCategory(Lattices(ZZ), Lattices(ZZ)([[0]]))
+    gamma = plane.O().congruence_preimage(3)
+    classes = pointed_content_classes(category, plane, 0, 2, acting_group=gamma)
+    assert classes.cardinality() == cardinal(4)
+    assert all(int(marking.arrow()(category.base_object().module_generators()[0]).content()) == 2 for marking in classes)
+
+
+def test_full_square_eight_strata_split_under_actual_gamma_three():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import pointed_nonzero_norm_classes
+
+    plane = lattice([[0, 1], [1, 0]])
+    source = Lattices(ZZ)([[8]])
+    category = CosliceCategory(Lattices(ZZ), source)
+    gamma = plane.O().congruence_preimage(3)
+    classes = pointed_nonzero_norm_classes(category, plane, 8, acting_group=gamma)
+    assert classes.cardinality() == cardinal(6)
+    assert {int(marking.arrow()(source.module_generators()[0]).content()) for marking in classes} == {1, 2}
