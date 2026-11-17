@@ -52,7 +52,6 @@ def test_nonprimitive_moving_line_transporter_cancels_common_content():
 
 
 def test_moving_line_orbit_classes_retain_saturation_index():
-    from sage_extensions.all import cardinal
     from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_isotropic_line_classes, ARROWS, isometry
 
     plane = lattice([[0, 1], [1, 0]])
@@ -65,6 +64,20 @@ def test_moving_line_orbit_classes_retain_saturation_index():
     assert int(a.arrow()(a.arrow().domain().module_generators()[0]).content()) == 2
     assert int(b.arrow()(b.arrow().domain().module_generators()[0]).content()) == 4
     assert isometry(ARROWS, a, b) is None
+
+
+def test_nonprimitive_moving_lines_split_under_actual_level_three_kernel():
+    from sage_extensions.all import cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_isotropic_line_classes, ARROWS, isometry
+
+    ambient = lattice([[0, 1], [1, 0]])
+    congruence = ambient.O().congruence_preimage(3)
+    classes = tuple(nonprimitive_isotropic_line_classes(ambient, 2, acting_group=congruence))
+    assert len(classes) == 2
+    assert all(int(marked.arrow()(next(iter(marked.arrow().domain().module_generators()))).content()) == 2
+               for marked in classes)
+    assert isometry(ARROWS, classes[0], classes[1]) is not None
+    assert len(tuple(ambient.O().split_orbit(classes[0], congruence))) == 2
 
 
 def test_moving_nonisotropic_rank_one_markings_use_signed_pointed_transport():
