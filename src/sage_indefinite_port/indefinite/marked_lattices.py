@@ -1217,6 +1217,49 @@ def iter_isotropic_line_content_classes(lattice: Parent, content: int, *, acting
         ], codomain=lattice))
 
 
+def iter_all_isotropic_line_classes(lattice: Parent, *, acting_group=None):
+    r"""Fair moving-null-line quotient, including all positive contents.
+
+    Walk complete finite coordinate-height shells and decide exact full
+    O(L)-equivalence for every new primitive null line. Split each new
+    full-group class by the supplied subgroup, then emit its content-c
+    multiple at height ``discovery_height+c-1``. Each shell is finite,
+    so every primitive orbit and every positive content is reached, provided
+    the exact pointed-equivalence backend terminates on each comparison.
+    Unlike an iterator that waits for the next *new* primitive class, this
+    remains productive when the primitive orbit quotient is finite but an
+    unbounded search cannot certify that no further classes exist.
+    """
+    from itertools import count
+    from sage_indefinite_port.indefinite.recursive import _coordinate_box, _coordinate_element
+
+    if lattice.is_nondegenerate() and int(lattice.witt_index()) == 0:
+        return
+    full_representatives = []
+    representatives = []
+    source = lattice.lattice_category()([[0]])
+    generator = next(iter(source.module_generators()))
+    for height in count(1):
+        for coordinates in _coordinate_box(lattice, height):
+            point = _coordinate_element(lattice, coordinates)
+            if point.q() != lattice.base_ring().zero() or int(point.content()) != 1:
+                continue
+            if any(RECURSION.pointed_isometry(point, prior) is not None or
+                   RECURSION.pointed_isometry(point, -prior) is not None
+                   for prior in full_representatives):
+                continue
+            full_representatives.append(point)
+            marked = ARROWS.object(source.hom([point], codomain=lattice))
+            split = (marked,) if acting_group is None else lattice.O().split_orbit(marked, acting_group)
+            representatives.extend((height, orbit) for orbit in split)
+        for discovery_height, marked in representatives:
+            content = height - discovery_height + 1
+            point = marked.arrow()(generator)
+            yield ARROWS.object(source.hom([
+                lattice.scalar_multiple(lattice.base_ring()(content), point)
+            ], codomain=lattice))
+
+
 def nonprimitive_isotropic_line_classes(lattice: Parent, content: int, *, acting_group=None) -> Parent:
     r"""Moving rank-one isotropic sublattice orbits of prescribed index in saturation.
 
@@ -1644,6 +1687,7 @@ __all__ = [
     "pointed_nonzero_norm_classes",
     "iter_pointed_isotropic_classes",
     "iter_isotropic_line_content_classes",
+    "iter_all_isotropic_line_classes",
     "nonprimitive_isotropic_line_classes",
     "nonisotropic_line_classes",
     "homothetic_isotropic_sublattice_classes",

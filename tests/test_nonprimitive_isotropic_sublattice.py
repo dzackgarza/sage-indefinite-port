@@ -52,6 +52,7 @@ def test_nonprimitive_moving_line_transporter_cancels_common_content():
 
 
 def test_moving_line_orbit_classes_retain_saturation_index():
+    from sage_extensions.all import cardinal
     from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_isotropic_line_classes, ARROWS, isometry
 
     plane = lattice([[0, 1], [1, 0]])
@@ -78,6 +79,32 @@ def test_nonprimitive_moving_lines_split_under_actual_level_three_kernel():
                for marked in classes)
     assert isometry(ARROWS, classes[0], classes[1]) is not None
     assert len(tuple(ambient.O().split_orbit(classes[0], congruence))) == 2
+
+
+def test_unrestricted_null_line_stream_dovetails_all_contents_and_subgroup_orbits():
+    from itertools import islice
+    from sage_indefinite_port.indefinite.marked_lattices import iter_all_isotropic_line_classes
+
+    ambient = lattice([[0, 1], [1, 0]])
+    full = tuple(islice(iter_all_isotropic_line_classes(ambient), 5))
+    assert [int(marked.arrow()(next(iter(marked.arrow().domain().module_generators()))).content())
+            for marked in full] == [1, 2, 3, 4, 5]
+
+    subgroup = ambient.O().congruence_preimage(3)
+    split = tuple(islice(iter_all_isotropic_line_classes(ambient, acting_group=subgroup), 9))
+    assert [int(marked.arrow()(next(iter(marked.arrow().domain().module_generators()))).content())
+            for marked in split] == [1, 1, 2, 2, 3, 3, 4, 4, 5]
+    assert len({(int(marked.arrow()(next(iter(marked.arrow().domain().module_generators()))).content()),
+                 tuple(int(v) for v in marked.arrow()(next(iter(marked.arrow().domain().module_generators()))).to_vector()))
+                for marked in split}) == 9
+
+
+def test_unrestricted_null_line_stream_terminates_for_anisotropic_lattice():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_all_isotropic_line_classes
+
+    ambient = Lattices(ZZ)([[1, 0], [0, 1]])
+    assert tuple(iter_all_isotropic_line_classes(ambient)) == ()
 
 
 def test_moving_nonisotropic_rank_one_markings_use_signed_pointed_transport():
