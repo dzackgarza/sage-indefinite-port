@@ -2019,6 +2019,29 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 classes = (ARROWS.object(source.hom(tuple(
                     lattice.module_generator(label) for label in labels[:rank]
                 ), codomain=lattice)),)
+            elif rank == 1 and not lattice.is_nondegenerate() and all(
+                source.b(x, y) == 0 for x in source.module_generators()
+                for y in source.module_generators()
+            ):
+                # The nondegenerate Witt-index flag induction is undefined
+                # for a lattice with radical.  Classify primitive pointed
+                # null vectors by exact content, then forget their signs to
+                # obtain moving lines.  In the anisotropic-quotient case
+                # there is exactly one radical line; an isotropic quotient
+                # can have infinitely many and the finite API refuses it.
+                pointed_category = CosliceCategory(lattice.lattice_category(), source)
+                try:
+                    pointed = pointed_content_classes(pointed_category, lattice, 0, 1)
+                except ValueError as exc:
+                    if "may be infinite" not in str(exc):
+                        raise
+                    raise ValueError(
+                        "mixed degenerate primitive null-line orbit sets may be infinite; "
+                        "use iter_primitive_isotropic_line_classes"
+                    ) from exc
+                classes = tuple(ARROWS.object(lattice.primitive_isotropic_subobject(
+                    _marked_vector(marking)
+                ).inclusion()) for marking in pointed)
             elif source.is_nondegenerate():
                 # Moving sublattices allow the full source isometry group.
                 # The owned 'sub' classification quotients by both O(source)

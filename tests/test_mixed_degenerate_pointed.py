@@ -231,6 +231,25 @@ def test_public_primitive_pointed_classifier_dispatches_degenerate_quotients():
         primitive_marking_classes(category, source, isotropic_quotient)
 
 
+def test_public_primitive_moving_null_line_classifier_dispatches_degenerate_quotients():
+    import pytest
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        ARROWS, primitive_marking_classes,
+    )
+
+    source = Lattices(ZZ)([[0]])
+    ambient = lattice([[2, 0], [0, 0]])
+    classes = primitive_marking_classes(ARROWS, source, ambient)
+    assert classes.cardinality() == cardinal(1)
+    arrow = next(iter(classes)).arrow()
+    point = arrow(next(iter(arrow.domain().module_generators())))
+    assert point in ambient.radical() and int(point.content()) == 1
+    isotropic_quotient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    with pytest.raises(ValueError, match="may be infinite"):
+        primitive_marking_classes(ARROWS, source, isotropic_quotient)
+
+
 def test_mixed_radical_rank_one_stabilizers_respect_residue_and_shear():
     from sage_extensions.all import cardinal
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION
