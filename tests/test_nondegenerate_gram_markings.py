@@ -178,3 +178,40 @@ def test_glue_extension_rejects_integral_nonunimodular_rational_isometry():
     target_complement = target_lattice.orthogonal_complement(target_lattice.subobject_on([target_arrow(source.module_generators()[0])])).inclusion().domain()
     complement_action = source_complement.Isom(target_complement).an_element()
     assert _glue_compatible_integral_extensions(source_arrow, target_arrow, (source_action,), (complement_action,)) == ()
+
+
+def test_odd_index_three_glue_rejects_independent_factor_signs():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
+
+    ambient = Lattices(ZZ)([[1, 0], [0, 2]])
+    e, f = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[3]])
+    arrow = source.hom([e + f], codomain=ambient)
+    saturated = ambient.subobject_on([e + f])
+    complement = ambient.orthogonal_complement(saturated)
+    combined = ambient.subobject_on([e + f, *(complement.inclusion()(x) for x in complement.module_generators())])
+    assert combined.inclusion().cokernel().cardinality() == cardinal(3)
+    based = Lattices(ZZ).CosliceUnder(source)
+    fixed = tuple(automorphism_group_generators(based, based(arrow)))
+    moving = tuple(automorphism_group_generators(ARROWS, ARROWS(arrow)))
+    assert ambient.O().subgroup(fixed).cardinality() == cardinal(1)
+    assert ambient.O().subgroup(moving).cardinality() == cardinal(2)
+    assert all(arrow.is_in_image(g(e + f)) for g in moving)
+
+
+def test_odd_index_three_glue_based_transporter_has_integral_inverse():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = Lattices(ZZ)([[1, 0], [0, 2]])
+    e, f = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[3]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category(source.hom([e + f], codomain=ambient))
+    second = category(source.hom([-e - f], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert witness(e + f) == -e - f
+    assert (~witness)(-e - f) == e + f
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y) for x in (e, f) for y in (e, f))
