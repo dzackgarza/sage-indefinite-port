@@ -520,6 +520,13 @@ def test_primitive_rank_zero_markings_are_singletons_for_every_arithmetic_group(
             ))
             assert len(classes) == 1
             assert classes[0].arrow().domain().rank() == 0
+    hyperbolic = Lattices(ZZ)("U")
+    congruence = hyperbolic.O().congruence_preimage(3)
+    for category in (ARROWS, Lattices(ZZ).CosliceUnder(source)):
+        classes = tuple(primitive_marking_classes(
+            category, source, hyperbolic, acting_group=congruence
+        ))
+        assert len(classes) == 1
 
 
 def test_rank_zero_orthogonal_group_has_empty_complete_generator_family():
