@@ -80,3 +80,17 @@ def test_moving_nonisotropic_rank_one_markings_use_signed_pointed_transport():
     assert witness is not None
     assert witness(2 * (e + 2 * f)) in (2 * (2 * e + f), -2 * (2 * e + f))
     assert isometry(ARROWS, first, ARROWS(source.hom([e + 8 * f], codomain=plane))) is None
+
+
+def test_nonisotropic_rank_one_setwise_stabilizer_contains_sign_reversal():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
+
+    plane = lattice([[0, 1], [1, 0]])
+    e, f = tuple(plane.module_generators())
+    source = Lattices(ZZ)([[16]])
+    marked = ARROWS(source.hom([2 * (e + 2 * f)], codomain=plane))
+    family = tuple(automorphism_group_generators(ARROWS, marked))
+    assert all(g(2 * (e + 2 * f)) in (2 * (e + 2 * f), -2 * (e + 2 * f)) for g in family)
+    assert any(g(e + 2 * f) == -(e + 2 * f) for g in family)
+    assert all(plane.b(g(x), g(y)) == plane.b(x, y) for g in family for x in (e, f) for y in (e, f))
