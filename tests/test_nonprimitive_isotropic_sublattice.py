@@ -266,3 +266,23 @@ def test_rank_three_index_two_finite_submodule_orbit():
     classes = nonprimitive_sublattice_classes(saturated, (1, 1, 2))
     assert len(classes) == 1
     assert classes[0].codomain() is ambient
+
+
+def test_homothetic_rank_two_based_transport_and_pointwise_stabilizer():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry, automorphism_group_generators
+
+    plane = lattice([[0, 1], [1, 0]])
+    ambient = plane + plane
+    e, f, u, v = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category(source.hom([2 * e, 2 * u], codomain=ambient))
+    second = category(source.hom([2 * f, 2 * v], codomain=ambient))
+    third = category(source.hom([3 * f, 3 * v], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert witness(2 * e) == 2 * f and witness(2 * u) == 2 * v
+    assert isometry(category, first, third) is None
+    family = tuple(automorphism_group_generators(category, first))
+    assert all(g(2 * e) == 2 * e and g(2 * u) == 2 * u for g in family)

@@ -264,8 +264,11 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 return RECURSION.isometry(source.arrow().codomain(), target.arrow().codomain())
             if rank == 1:
                 return RECURSION.pointed_isometry(_marked_vector(source), _marked_vector(target))
-            _isotropic_sublattice(source.arrow())
-            _isotropic_sublattice(target.arrow())
+            source_arrow, target_arrow = source.arrow(), target.arrow()
+            source_saturation = _isotropic_sublattice(source_arrow) if source_arrow.is_primitive() else _homothetic_isotropic_saturation(source_arrow)
+            target_saturation = _isotropic_sublattice(target_arrow) if target_arrow.is_primitive() else _homothetic_isotropic_saturation(target_arrow)
+            if source_saturation is None or target_saturation is None:
+                raise ValueError("nonhomothetic based isotropic markings require an integral source-module action")
             labels = tuple(category.base_object().module_generating_set())
             basis = tuple(category.base_object().module_generator(label) for label in labels)
             source_images = tuple(source.arrow()(point) for point in basis)
@@ -275,9 +278,15 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             # before constructing its rational reduction and correction group.
             if any(left.divisor() != right.divisor() for left, right in zip(source_images, target_images, strict=True)):
                 return None
-            # IndefiniteForms.g:1660-1694 with trivial action on the
-            # source: every supplied generator is fixed by the marking.
-            return RECURSION.isotropic_subspace_isometry(source_images, target_images, ())
+            source_contents = tuple(int(point.content()) for point in source_images)
+            target_contents = tuple(int(point.content()) for point in target_images)
+            if source_contents != target_contents:
+                return None
+            # For homothetic J=cS the marked generators become a primitive
+            # basis of S after cancelling c.  No source GL action is allowed.
+            source_primitive = tuple(point.primitive_part() for point in source_images)
+            target_primitive = tuple(point.primitive_part() for point in target_images)
+            return RECURSION.isotropic_subspace_isometry(source_primitive, target_primitive, ())
         case _ if category is LATTICES:
             return RECURSION.isometry(source, target)
         case _ if category is ARROWS:
@@ -333,10 +342,11 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
             elif rank == 1:
                 generators = RECURSION.pointed_automorphism_generators(_marked_vector(marked))
             else:
-                _isotropic_sublattice(marked.arrow())
-                # The same perpendicular extension as the setwise case,
-                # with trivial radical action (IndefiniteForms.g:1710-1723).
-                basis = tuple(marked.arrow()(point) for point in category.base_object().module_generators())
+                arrow = marked.arrow()
+                saturation = _isotropic_sublattice(arrow) if arrow.is_primitive() else _homothetic_isotropic_saturation(arrow)
+                if saturation is None:
+                    raise ValueError("nonhomothetic based isotropic stabilizers require an integral source-module action")
+                basis = tuple(arrow(point).primitive_part() for point in category.base_object().module_generators())
                 generators = INDUCTION._stabilizer_generators(basis, ())
         case _ if category is LATTICES:
             generators = RECURSION.orthogonal_group_generators(marked)
