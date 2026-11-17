@@ -2255,7 +2255,7 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 ):
                     reduction, n, k, complement = _degenerate_quotient_and_radical(lattice)
                     reduced = reduction.reduced
-                    quotient_witt = int(complement.witt_index()) if complement.is_isotropic() else 0
+                    quotient_witt = int(complement.witt_index()) if complement is not None and complement.is_isotropic() else 0
                     if int(source.rank()) > k + quotient_witt:
                         classes = ()
                     elif quotient_witt:
@@ -2322,7 +2322,7 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
             ):
                 reduction, n, k, complement = _degenerate_quotient_and_radical(lattice)
                 reduced = reduction.reduced
-                quotient_witt = int(complement.witt_index()) if complement.is_isotropic() else 0
+                quotient_witt = int(complement.witt_index()) if complement is not None and complement.is_isotropic() else 0
                 if rank > k + quotient_witt:
                     classes = ()
                 elif quotient_witt == 1 and rank == k + 1:
@@ -2429,7 +2429,7 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
             elif not lattice.is_nondegenerate():
                 reduction, n, k, complement = _degenerate_quotient_and_radical(lattice)
                 reduced = reduction.reduced
-                quotient_witt = int(complement.witt_index()) if complement.is_isotropic() else 0
+                quotient_witt = int(complement.witt_index()) if complement is not None and complement.is_isotropic() else 0
                 if dimensions[0] < 1 or any(left >= right for left, right in pairwise(dimensions)):
                     raise ValueError("isotropic flag ranks must be positive and strictly increasing")
                 if dimensions[-1] > k + quotient_witt:
