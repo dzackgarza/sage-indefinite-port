@@ -794,6 +794,12 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
             rank = int(source.rank())
             if rank == 0:
                 classes = (ARROWS.object(source.hom([], codomain=lattice)),)
+            elif source.is_nondegenerate():
+                # Moving sublattices allow the full source isometry group.
+                # The owned 'sub' classification quotients by both O(source)
+                # and O(target), unlike the based 'emb' classification.
+                classes = tuple(ARROWS.object(embedding) for embedding in
+                    source.Emb(lattice).primitive_embedding_class_representatives(classification="sub"))
             else:
                 classes = tuple(ARROWS.object(lattice.primitive_isotropic_subobject(*basis).inclusion()) for basis in INDUCTION.isotropic_flag_bases(lattice, (rank,)))
         case _FiniteSequenceFunctorCategory() if category.codomain_category() is LATTICES:

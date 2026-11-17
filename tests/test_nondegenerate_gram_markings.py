@@ -115,3 +115,14 @@ def test_glued_rank_one_hyperbolic_line_has_exact_setwise_and_based_stabilizers(
     assert all(g(e + f) in (e + f, -e - f) for g in moving)
     assert ambient.O().subgroup(fixed).cardinality() == cardinal(2)
     assert ambient.O().subgroup(moving).cardinality() == cardinal(4)
+
+
+def test_public_unbased_primitive_nondegenerate_embedding_classes():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
+
+    source = Lattices(ZZ)("U")
+    ambient = source + source
+    classes = primitive_marking_classes(ARROWS, source, ambient)
+    assert classes.cardinality() == cardinal(1)
+    assert all(marking.arrow().is_primitive() and marking.arrow().codomain() is ambient for marking in classes)
