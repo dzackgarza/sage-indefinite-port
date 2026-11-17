@@ -1036,6 +1036,25 @@ def test_rank_zero_smith_class_and_unbounded_stream_are_singletons():
             tuple(iter_all_isotropic_sublattice_classes(ambient, -1))
 
 
+def test_generic_finite_index_submodule_classifier_accepts_zero_saturation():
+    import pytest
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_sublattice_classes
+
+    for ambient in (Lattices(ZZ)(0), Lattices(ZZ)("U"), Lattices(ZZ)("U") + Lattices(ZZ)([[0]])):
+        zero = ambient.subobject_on(())
+        for group in (None, ambient.SO()):
+            classes = nonprimitive_sublattice_classes(zero, (), stabilizer_group=group)
+            assert len(classes) == 1
+            assert classes[0].domain().rank() == 0
+            assert classes[0].codomain() is ambient
+            arrow_classes = nonprimitive_sublattice_classes(zero.inclusion(), (), stabilizer_group=group)
+            assert len(arrow_classes) == 1
+            assert arrow_classes[0].domain().rank() == 0
+        with pytest.raises(ValueError, match="empty Smith type"):
+            nonprimitive_sublattice_classes(zero, (1,))
+
+
 def test_public_nonprimitive_sublattice_classes_retain_gamma_three_action():
     from sage_extensions.all import cardinal
     from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_isotropic_sublattice_classes

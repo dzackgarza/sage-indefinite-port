@@ -2005,6 +2005,10 @@ def nonprimitive_sublattice_classes(saturated: Parent | Morphism, divisors: tupl
     lattice = inclusion.codomain()
     if not inclusion.is_primitive():
         raise ValueError("the supplied saturation must be primitive")
+    if int(inclusion.domain().rank()) == 0:
+        if divisors != ():
+            raise ValueError("the zero saturation has the unique empty Smith type")
+        return (inclusion,)
     basis = tuple(inclusion(point) for point in inclusion.domain().module_generators())
     isotropic = all(lattice.b(x, y) == 0 for x in basis for y in basis)
     if stabilizer_group is not None:
