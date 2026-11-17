@@ -1184,7 +1184,7 @@ def iter_primitive_isotropic_line_classes(lattice: Parent):
     ``{v,-v}``; exact pointed transport decides equivalence of those
     generators.  The stream is exhaustive without a finite-class claim.
     """
-    if lattice.is_definite() or int(lattice.witt_index()) == 0:
+    if lattice.is_nondegenerate() and (lattice.is_definite() or int(lattice.witt_index()) == 0):
         return
     seen = []
     for vector in RECURSION.exact_vector_orbit_iterator(lattice, 0, primitive_only=True):

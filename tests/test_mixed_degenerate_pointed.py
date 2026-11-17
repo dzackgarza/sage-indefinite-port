@@ -346,3 +346,27 @@ def test_full_rank_based_mixed_gram_nonprimitive_quotient_exact_shear_integralit
     assert all(witness(first.arrow()(x)) == second.arrow()(x) for x in source.module_generators())
     impossible = category(source.hom([2 * e + 2 * z, 2 * z, w], codomain=ambient))
     assert isometry(category, first, impossible) is None
+
+
+def test_public_degenerate_primitive_radical_line_orbit_stream():
+    from sage_indefinite_port.indefinite.marked_lattices import iter_primitive_isotropic_line_classes
+    from sage_extensions.all import ZZ
+
+    ambient = lattice([[2, 0], [0, 0]])
+    representative = next(iter_primitive_isotropic_line_classes(ambient))
+    inclusion = representative.arrow()
+    vector = inclusion(next(iter(inclusion.domain().module_generators())))
+    assert vector.q() == ZZ(0) and vector.content() == ZZ(1)
+    assert vector in ambient.radical()
+
+
+def test_public_degenerate_rank_two_radical_line_orbit_stream():
+    from sage_indefinite_port.indefinite.marked_lattices import iter_primitive_isotropic_line_classes
+    from sage_extensions.all import ZZ
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    representative = next(iter_primitive_isotropic_line_classes(ambient))
+    inclusion = representative.arrow()
+    vector = inclusion(next(iter(inclusion.domain().module_generators())))
+    assert vector.q() == ZZ(0) and vector.content() == ZZ(1)
+    assert vector in ambient.radical()
