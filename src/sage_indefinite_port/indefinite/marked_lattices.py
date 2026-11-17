@@ -125,13 +125,16 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             _isotropic_sublattice(target.arrow())
             labels = tuple(category.base_object().module_generating_set())
             basis = tuple(category.base_object().module_generator(label) for label in labels)
+            source_images = tuple(source.arrow()(point) for point in basis)
+            target_images = tuple(target.arrow()(point) for point in basis)
+            # An integral isometry preserves the content/divisibility of each
+            # *marked* generator.  Reject an impossible based transporter
+            # before constructing its rational reduction and correction group.
+            if any(left.divisor() != right.divisor() for left, right in zip(source_images, target_images, strict=True)):
+                return None
             # IndefiniteForms.g:1660-1694 with trivial action on the
             # source: every supplied generator is fixed by the marking.
-            return RECURSION.isotropic_subspace_isometry(
-                tuple(source.arrow()(point) for point in basis),
-                tuple(target.arrow()(point) for point in basis),
-                (),
-            )
+            return RECURSION.isotropic_subspace_isometry(source_images, target_images, ())
         case _ if category is LATTICES:
             return RECURSION.isometry(source, target)
         case _ if category is ARROWS:
