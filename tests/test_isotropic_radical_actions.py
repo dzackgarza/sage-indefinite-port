@@ -77,3 +77,27 @@ def test_extension_stabilizer_does_not_negate_a_pointwise_marked_plane():
         # The entire primitive extension must be preserved setwise.
         assert all(extension.inclusion().is_in_image(point)
                    for point in images[:len(radical) + 1])
+
+
+def test_extension_stabilizer_preserves_a_proper_flag_on_the_radical():
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    vectors = tuple(ambient.module_generators())
+    space = ambient.primitive_isotropic_subobject(vectors[0], vectors[2], vectors[4])
+    inclusion = space.inclusion()
+    domain = inclusion.domain()
+    first = domain.primitive_isotropic_subobject(next(iter(domain.module_generators())))
+    induction = IsotropicInduction(EichlerRecursion())
+    radical, action = induction.flag_action_data(space, (first,))
+    reduction = space.isotropic_reduction()
+    quotient = reduction.quotient_lattice()
+    basis, families = induction.extension_stabilizer_images(
+        reduction, radical, action, next(iter(quotient.module_generators()))
+    )
+    line = ambient.primitive_isotropic_subobject(radical[0])
+    extension = ambient.primitive_isotropic_subobject(*radical, basis[len(radical)])
+    assert families
+    assert all(line.inclusion().is_in_image(images[0]) for images in families)
+    assert all(extension.inclusion().is_in_image(point)
+               for images in families for point in images[:len(radical) + 1])
