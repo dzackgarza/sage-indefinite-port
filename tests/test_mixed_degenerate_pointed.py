@@ -610,6 +610,24 @@ def test_mixed_degenerate_rank_two_radical_nonprimitive_projection_exact_schreie
         assert MatrixGroup(actions).order() == expected_order
 
 
+def test_mixed_degenerate_rank_three_radical_congruence_stabilizer_image_is_exact():
+    from sage.all import GF, MatrixGroup, matrix
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, z, w, t = tuple(ambient.module_generators())
+    vector = 2 * e + z + w
+    fixed = RECURSION.pointed_automorphism_generators(vector)
+    assert fixed and all(generator(vector) == vector for generator in fixed)
+    labels = tuple(ambient.module_generating_set())[-3:]
+    actions = [matrix(GF(2), [
+        [int(generator(point).to_vector()(label)) for label in labels]
+        for point in (z, w, t)
+    ]) for generator in fixed]
+    assert MatrixGroup(actions).order() == 24
+
+
 def test_public_induction_mixed_degenerate_null_line_stabilizer_uses_exact_split():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import INDUCTION, RECURSION
