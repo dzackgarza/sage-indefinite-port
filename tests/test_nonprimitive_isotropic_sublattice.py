@@ -215,10 +215,10 @@ def test_primitive_null_line_stream_identifies_both_signs_and_same_sign(monkeypa
     )
 
     ambient = Lattices(ZZ)("U")
-    e = next(iter(ambient.module_generators()))
+    e, f = tuple(ambient.module_generators())
     monkeypatch.setattr(
         RECURSION, "exact_vector_orbit_iterator",
-        lambda *_args, **_kwargs: iter((e, e, -e)),
+        lambda *_args, **_kwargs: iter((e, f, e, -e)),
     )
     classes = tuple(iter_primitive_isotropic_line_classes(ambient))
     assert len(classes) == 1
