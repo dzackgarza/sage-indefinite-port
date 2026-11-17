@@ -655,6 +655,27 @@ def test_mixed_degenerate_proper_radical_partial_flag_transporter():
     assert all(target_plane.inclusion().is_in_image(witness(point)) for point in (z, w))
 
 
+def test_mixed_degenerate_radical_flag_transporter_between_integral_presentations():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, isometry, _flag_marking_from_basis
+
+    source = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    target = Lattices(ZZ)([
+        [0, -1, 0, 0, 0], [-1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0],
+    ])
+    e, f, z, w, t = tuple(source.module_generators())
+    a, b, r, s, q = tuple(target.module_generators())
+    first = FLAGS(_flag_marking_from_basis(source, (z, w), (1, 2)))
+    second = FLAGS(_flag_marking_from_basis(target, (q, s), (1, 2)))
+    witness = isometry(FLAGS, first, second)
+    assert witness is not None
+    assert witness.domain() is source and witness.codomain() is target
+    assert target.primitive_isotropic_subobject(q).inclusion().is_in_image(witness(z))
+    plane = target.primitive_isotropic_subobject(q, s)
+    assert all(plane.inclusion().is_in_image(witness(point)) for point in (z, w))
+
+
 def test_mixed_degenerate_proper_radical_three_stage_flag_transporter():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
