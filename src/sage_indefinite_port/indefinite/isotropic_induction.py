@@ -727,15 +727,36 @@ class IsotropicInduction:
             phi = self.recursion.isometry(source_ambient, target_ambient)
             if phi is None:
                 return None
-            from sage.matrix.constructor import identity_matrix
+            from sage.matrix.constructor import identity_matrix, matrix
             from sage.rings.integer_ring import ZZ as SageZZ
             from sage_indefinite_port.indefinite.recursive import _gram_in_label_order, _isometry_from_row_matrix
+            from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
 
             reduction = indefinite_reduced_presentation(target_ambient)
             reduced = reduction.reduced
             gram = _gram_in_label_order(reduced)
             n, size = int(gram.rank()), int(gram.nrows())
             k = size - n
+            if all(self.recursion.vector_lies_in_radical(point) for point in source_basis):
+                # Primitive radical submodules are direct summands of R.
+                # GL(R) is transitive on their ordered integral bases:
+                # complete both bases unimodularly and take S^-1 T.
+                labels = tuple(reduced.module_generating_set())[n:]
+                completed = []
+                for points in (tuple(phi(point) for point in source_basis), target_basis):
+                    rows = matrix(SageZZ, [
+                        [int((~reduction.isometry)(point).to_vector()(label)) for label in labels]
+                        for point in points
+                    ])
+                    complement_rows = _source_subspace_completion_int(rows, k)
+                    completed.append(rows.stack(complement_rows))
+                action = completed[0].inverse().change_ring(SageZZ) * completed[1]
+                block = identity_matrix(SageZZ, size)
+                for i in range(k):
+                    for j in range(k):
+                        block[n + i, n + j] = action[i, j]
+                reduced_witness = _isometry_from_row_matrix(reduced, reduced, block)
+                return reduction.isometry * reduced_witness * (~reduction.isometry) * phi
             radical = tuple(reduction.isometry(reduced.module_generator(label))
                             for label in tuple(reduced.module_generating_set())[n:])
             if n and k and len(source_basis) > k and all(
