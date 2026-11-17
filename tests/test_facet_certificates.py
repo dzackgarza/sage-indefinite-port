@@ -80,6 +80,16 @@ def test_rank_certificate_is_a_nonzero_minor_and_never_over_claims() -> None:
     assert incidence_rank_certificate([[0, 0], [0, 0]], 1) is None
 
 
+def test_incidence_rank_certificate_exhausts_dependent_prefixes_without_cutoff():
+    rows = [(1, 0, 0)] * 1024 + [(0, 1, 0), (0, 0, 1)]
+    certificate = incidence_rank_certificate(rows, 3)
+    assert certificate is not None
+    row_indices, column_indices = certificate
+    assert max(row_indices) >= 1024
+    assert matrix(ZZ, rows).matrix_from_rows_and_columns(row_indices, column_indices).det() != 0
+    assert incidence_rank_certificate(rows[:-1], 3) is None
+
+
 @pytest.mark.parametrize("name", sorted(SPECIMENS))
 def test_every_engine_facet_normal_is_recovered_from_its_incidence(name) -> None:
     """Two independent routes to the same normal: Normaliz's H-description, and the incidence's cofactors."""
