@@ -1239,6 +1239,63 @@ class IsotropicInduction:
             return _conjugated(reduction.isometry, tuple(
                 _isometry_from_row_matrix(reduced, reduced, block) for block in blocks
             ))
+        if not ambient.is_nondegenerate():
+            from sage.matrix.constructor import identity_matrix, matrix
+            from sage.rings.integer_ring import ZZ as SageZZ
+            from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
+            from sage_indefinite_port.indefinite.recursive import (
+                _gram_in_label_order, _isometry_from_row_matrix, _conjugated,
+            )
+
+            reduction = indefinite_reduced_presentation(ambient)
+            reduced = reduction.reduced
+            gram = _gram_in_label_order(reduced)
+            n, size = int(gram.rank()), int(gram.nrows())
+            k = size - n
+            labels = tuple(reduced.module_generating_set())
+            radical = tuple(reduction.isometry(reduced.module_generator(label)) for label in labels[n:])
+            if n and k and len(points) > k and all(space.inclusion().is_in_image(point) for point in radical):
+                # J=I⊕R in the split presentation because J contains R.
+                # Pointwise fixation of J forces A|_I=id, D=id_R and
+                # B|_I=0. Thus the kernel is Hom(C/I,R), together with
+                # the pointwise isotropic stabilizer in O(C).
+                complement = reduced.lattice_category()([
+                    [int(gram[i, j]) for j in range(n)] for i in range(n)
+                ])
+                c_labels = tuple(complement.module_generating_set())
+                projected_points = []
+                for point in points:
+                    row = tuple(_integer((~reduction.isometry)(point).to_vector()(label))
+                                for label in labels[:n])
+                    if any(row):
+                        projected_points.append(complement.linear_combination({
+                            label: complement.base_ring()(entry)
+                            for label, entry in zip(c_labels, row, strict=True) if entry
+                        }))
+                projected = complement.primitive_isotropic_subobject(*projected_points)
+                basis = self.plane_vectors(projected)
+                s = len(basis)
+                rows = matrix(SageZZ, [[_integer(point.to_vector()(label)) for label in c_labels]
+                                        for point in basis])
+                adapted = rows.stack(_source_subspace_completion_int(rows, n))
+                inverse = adapted.inverse().change_ring(SageZZ)
+                blocks = []
+                for generator in self._stabilizer_generators(basis, ()):
+                    block = identity_matrix(SageZZ, size)
+                    for i, point in enumerate(complement.module_generators()):
+                        image = generator(point).to_vector()
+                        for j, label in enumerate(c_labels):
+                            block[i, j] = _integer(image(label))
+                    blocks.append(block)
+                for i in range(s, n):
+                    for j in range(k):
+                        block = identity_matrix(SageZZ, size)
+                        for row in range(n):
+                            block[row, n + j] = int(inverse[row, i])
+                        blocks.append(block)
+                return _conjugated(reduction.isometry, tuple(
+                    _isometry_from_row_matrix(reduced, reduced, block) for block in blocks
+                ))
         return self._stabilizer_generators(self.plane_vectors(space), ())
 
 

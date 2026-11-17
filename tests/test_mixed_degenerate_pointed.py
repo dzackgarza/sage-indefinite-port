@@ -775,6 +775,37 @@ def test_full_radical_flag_pointwise_stabilizer_has_unrestricted_shears():
     assert any(generator(f) == f + w for generator in generators)
 
 
+def test_full_radical_quotient_plane_pointwise_flag_stabilizer_fixes_top_frame():
+    from sage_extensions.all import IsotropicFlag, FlagType, Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    e, f, u, v, z = tuple(ambient.module_generators())
+    flag = IsotropicFlag(ambient, (z, e, u), flag_type=FlagType((2, 3)))
+    generators = INDUCTION.flag_pointwise_automorphism_generators(flag)
+    assert generators
+    assert all(generator(z) == z and generator(e) == e and generator(u) == u
+               for generator in generators)
+    assert any(generator(f) == f + z for generator in generators)
+    assert any(generator(v) == v + z for generator in generators)
+    assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+               for generator in generators for x in (e, f, u, v, z)
+               for y in (e, f, u, v, z))
+
+
+def test_full_radical_rank_two_pointwise_flag_stabilizer_over_u():
+    from sage_extensions.all import IsotropicFlag, FlagType, Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    e, f, z = tuple(ambient.module_generators())
+    flag = IsotropicFlag(ambient, (z, e), flag_type=FlagType((1, 2)))
+    generators = INDUCTION.flag_pointwise_automorphism_generators(flag)
+    assert generators
+    assert all(generator(e) == e and generator(z) == z for generator in generators)
+    assert any(generator(f) == f + z for generator in generators)
+
+
 def test_mixed_degenerate_full_radical_partial_quotient_flag_stabilizer():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import (
