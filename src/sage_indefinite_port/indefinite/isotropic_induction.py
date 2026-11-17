@@ -780,7 +780,7 @@ class IsotropicInduction:
                         block[n + i, n + j] = action[i, j]
                 reduced_witness = _isometry_from_row_matrix(reduced, reduced, block)
                 return reduction.isometry * reduced_witness * (~reduction.isometry) * phi
-            if n and k:
+            if n and k and not flag_dimensions:
                 # For a primitive J whose projection I to C is also
                 # primitive, the split group O(C) ⋉ Hom(C,R) × GL(R)
                 # eliminates every graph I -> R/T, where T=J∩R.
