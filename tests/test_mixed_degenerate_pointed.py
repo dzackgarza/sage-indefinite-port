@@ -758,6 +758,23 @@ def test_legacy_mixed_radical_first_flag_stabilizer_uses_top_parabolic():
                for generator in generators for point in (z, e))
 
 
+def test_legacy_mixed_radical_first_flag_transporter_across_presentations():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    source = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    target = Lattices(ZZ)([[0, -1, 0], [-1, 0, 0], [0, 0, 0]])
+    e, f, z = tuple(source.module_generators())
+    a, b, r = tuple(target.module_generators())
+    first = source.primitive_isotropic_subobject(z, e)
+    second = target.primitive_isotropic_subobject(r, b)
+    witness = INDUCTION.flag_isometry((z, first), (r, second))
+    assert witness is not None
+    assert witness.domain() is source and witness.codomain() is target
+    assert target.primitive_isotropic_subobject(r).inclusion().is_in_image(witness(z))
+    assert all(second.inclusion().is_in_image(witness(point)) for point in (z, e))
+
+
 def test_mixed_degenerate_full_radical_partial_quotient_flag_transporter():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import (

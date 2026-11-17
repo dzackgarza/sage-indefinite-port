@@ -694,6 +694,16 @@ class IsotropicInduction:
         target_term = target_space.inclusion().domain().primitive_isotropic_subobject(target_space.inclusion().lift(target_line))
         source_basis, _source_images = self.flag_action_data(source_space, (source_term,))
         target_basis, target_images = self.flag_action_data(target_space, (target_term,))
+        source_ambient, target_ambient = source_line.parent(), target_line.parent()
+        if (not source_ambient.is_nondegenerate() and not target_ambient.is_nondegenerate()
+                and int(source_ambient.radical().rank()) == int(target_ambient.radical().rank()) == 1
+                and int(source_space.inclusion().domain().rank()) == 2
+                and self.recursion.vector_lies_in_radical(source_line)
+                and self.recursion.vector_lies_in_radical(target_line)):
+            return self.plane_isometry(
+                source_space, target_space, flag_dimensions=(1, 2),
+                source_flag_basis=source_basis, target_flag_basis=target_basis,
+            )
         return self.recursion.isotropic_subspace_isometry(
             source_basis,
             target_basis,
