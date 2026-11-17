@@ -132,3 +132,19 @@ def test_rank_three_fixed_basis_rejects_divisibility_exchange():
     second = category(source.hom([u, e, w], codomain=ambient))
     assert int(e.divisor()) == 1 and int(u.divisor()) == 2
     assert isometry(category, first, second) is None
+
+
+def test_rank_three_fixed_basis_stabilizer_fixes_each_source_vector():
+    """The full based stabilizer fixes each of three isotropic generators pointwise."""
+    from sage_extensions.all import Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    e, f, u, v, w, z = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    category = CosliceCategory(Lattices(ZZ), source)
+    marked = category(source.hom([e, u, w], codomain=ambient))
+    family = tuple(automorphism_group_generators(category, marked))
+    assert all((g(e), g(u), g(w)) == (e, u, w) for g in family)
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y) for g in family for x in (e, f, u, v, w, z) for y in (e, f, u, v, w, z))
