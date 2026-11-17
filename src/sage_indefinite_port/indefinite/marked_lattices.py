@@ -1976,7 +1976,15 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                     lattice.module_generator(label) for label in labels[:int(source.rank())]
                 ), codomain=lattice)),)
             elif int(source.rank()) == 1:
-                classes = _pointed_classes(category, lattice, int(source.q(next(iter(source.module_generators())))))
+                square = int(source.q(next(iter(source.module_generators()))))
+                # The nondegenerate Witt-index dispatcher is not a
+                # classifier for degenerate ambient lattices.  At rank one
+                # primitive markings are precisely the content-one stratum;
+                # the radical/glue classifier handles its finite cases and
+                # explicitly refuses infinite mixed-null strata.
+                classes = (tuple(pointed_content_classes(category, lattice, square, 1))
+                           if not lattice.is_nondegenerate()
+                           else _pointed_classes(category, lattice, square))
             else:
                 source_basis = tuple(source.module_generators())
                 if source.is_nondegenerate():

@@ -211,6 +211,26 @@ def test_mixed_degenerate_nonprimitive_fixed_content_stream_is_exhaustive_across
                for i, left in enumerate(representatives) for right in representatives[i + 1:])
 
 
+def test_public_primitive_pointed_classifier_dispatches_degenerate_quotients():
+    import pytest
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import primitive_marking_classes
+
+    ambient = lattice([[2, 0], [0, 0]])
+    for square, expected in ((0, 1), (2, 1), (50, 2)):
+        source = Lattices(ZZ)([[square]])
+        category = Lattices(ZZ).CosliceUnder(source)
+        classes = primitive_marking_classes(category, source, ambient)
+        assert classes.cardinality() == cardinal(expected)
+        assert all(int(marked.arrow()(source.module_generators()[0]).content()) == 1
+                   for marked in classes)
+    isotropic_quotient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    source = Lattices(ZZ)([[0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    with pytest.raises(ValueError, match="may be infinite"):
+        primitive_marking_classes(category, source, isotropic_quotient)
+
+
 def test_mixed_radical_rank_one_stabilizers_respect_residue_and_shear():
     from sage_extensions.all import cardinal
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION
