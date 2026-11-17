@@ -472,6 +472,24 @@ def test_full_radical_nonmaximal_isotropic_plane_stabilizer_over_three_u():
                for y in (e, f, u, v, a, b, z))
 
 
+def test_mixed_degenerate_radical_to_isotropic_plane_flag_stabilizer():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        FLAGS, INDUCTION, automorphism_group_generators, _flag_marking_from_basis,
+    )
+
+    for k in (1, 2):
+        ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * k for _ in range(k)])
+        e, f, *radical = tuple(ambient.module_generators())
+        basis = (*radical, e)
+        flag = FLAGS(_flag_marking_from_basis(ambient, basis, (k, k + 1)))
+        generators = tuple(automorphism_group_generators(FLAGS, flag))
+        expected = INDUCTION.plane_automorphism_generators(ambient.primitive_isotropic_subobject(*basis))
+        assert generators == expected
+        assert all(ambient.primitive_isotropic_subobject(*basis).inclusion().is_in_image(generator(point))
+                   for generator in generators for point in basis)
+
+
 def test_mixed_degenerate_maximal_moving_rank_three_contains_full_radical():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes

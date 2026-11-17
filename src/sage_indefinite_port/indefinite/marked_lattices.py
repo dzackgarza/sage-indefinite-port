@@ -1187,6 +1187,16 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                 RECURSION.vector_lies_in_radical(point) for point in basis
             ):
                 generators = _degenerate_radical_flag_generators(ambient, dimensions, basis)
+            elif (not ambient.is_nondegenerate() and len(dimensions) == 2
+                  and dimensions == (int(ambient.radical().rank()), int(ambient.radical().rank()) + 1)
+                  and all(RECURSION.vector_lies_in_radical(point) for point in basis[:dimensions[0]])):
+                # The first flag term is exactly rad(L), which every
+                # ambient isometry preserves. Thus stabilizing the flag
+                # rad(L) ⊂ J is equivalent to stabilizing J. The latter
+                # has the complete split-radical parabolic generators.
+                generators = INDUCTION.plane_automorphism_generators(
+                    ambient.primitive_isotropic_subobject(*basis)
+                )
             else:
                 generators = INDUCTION._stabilizer_generators(basis, images)
         case _:
