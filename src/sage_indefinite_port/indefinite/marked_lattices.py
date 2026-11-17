@@ -1276,7 +1276,26 @@ def pointed_content_classes(category: Category, lattice: Parent, square: int, co
         lattice.b(x, y) != 0 for x in lattice.module_generators()
         for y in lattice.module_generators()
     ):
-        raise ValueError("mixed degenerate isotropic fixed-content orbit sets may be infinite; use iter_pointed_content_classes")
+        from sage_indefinite_port.indefinite.recursive import _gram_in_label_order
+
+        reduction = indefinite_reduced_presentation(lattice)
+        gram = _gram_in_label_order(reduction.reduced)
+        n = int(gram.rank())
+        complement = lattice.lattice_category()([
+            [int(gram[i, j]) for j in range(n)] for i in range(n)
+        ])
+        if not complement.is_definite() and complement.is_isotropic():
+            raise ValueError("mixed degenerate isotropic fixed-content orbit sets may be infinite; use iter_pointed_content_classes")
+        # An anisotropic nondegenerate quotient forces every null vector
+        # into the radical, where GL(rad L) is transitive at fixed content.
+        radical_generator = reduction.reduced.module_generators()[n]
+        vector = reduction.isometry(reduction.reduced.scalar_multiple(
+            reduction.reduced.base_ring()(content), radical_generator
+        ))
+        marked = category.object(source.hom([vector], codomain=lattice))
+        if acting_group is None:
+            return finite_ordered_set((marked,))
+        return finite_ordered_set(tuple(lattice.O().split_orbit(marked, acting_group)))
     if not lattice.is_nondegenerate() and square:
         classes = _degenerate_nonzero_pointed_classes(category, lattice, square, acting_group=acting_group)
         return finite_ordered_set(tuple(marked for marked in classes if int(_marked_vector(marked).content()) == content))
@@ -1375,6 +1394,17 @@ def iter_pointed_content_classes(category: Category, lattice: Parent, square: in
         lattice.b(x, y) == 0 for x in lattice.module_generators()
         for y in lattice.module_generators()
     ):
+        yield from pointed_content_classes(category, lattice, square, content, acting_group=acting_group)
+        return
+    from sage_indefinite_port.indefinite.recursive import _gram_in_label_order
+
+    reduction = indefinite_reduced_presentation(lattice)
+    gram = _gram_in_label_order(reduction.reduced)
+    n = int(gram.rank())
+    complement = lattice.lattice_category()([
+        [int(gram[i, j]) for j in range(n)] for i in range(n)
+    ])
+    if complement.is_definite() or not complement.is_isotropic():
         yield from pointed_content_classes(category, lattice, square, content, acting_group=acting_group)
         return
     for marked in iter_pointed_isotropic_classes(category, lattice, acting_group=acting_group):

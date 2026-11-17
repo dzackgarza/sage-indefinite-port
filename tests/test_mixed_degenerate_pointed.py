@@ -158,6 +158,25 @@ def test_mixed_degenerate_primitive_null_content_has_infinitely_many_orbits():
                for i, first in enumerate(classes) for second in classes[i + 1:])
 
 
+def test_mixed_degenerate_anisotropic_quotient_has_one_radical_null_orbit_per_content():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        pointed_content_classes, iter_pointed_content_classes,
+    )
+
+    ambient = lattice([[2, 0], [0, 0]])
+    source = Lattices(ZZ)([[0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    for content in (1, 2, 5):
+        classes = pointed_content_classes(category, ambient, 0, content)
+        assert classes.cardinality() == cardinal(1)
+        marked = next(iter(classes))
+        point = marked.arrow()(source.module_generators()[0])
+        assert point in ambient.radical()
+        assert int(point.content()) == content
+        assert len(tuple(iter_pointed_content_classes(category, ambient, 0, content))) == 1
+
+
 def test_mixed_radical_rank_one_stabilizers_respect_residue_and_shear():
     from sage_extensions.all import cardinal
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION
