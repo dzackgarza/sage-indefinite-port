@@ -257,6 +257,15 @@ For an unbased rank-\(k\) submodule, Smith normal form gives a complete
 \(GL_n(\mathbb Z)\)-orbit invariant: its positive elementary divisors
 \(d_1\mid\cdots\mid d_k\). Equality of these invariants guarantees an
 integral moving-sublattice transporter; inequality proves non-equivalence.
+For a **based** injective frame with row matrix \(A\in M_{k\times n}(\mathbb Z)\),
+the complete invariant under right multiplication by \(GL_n(\mathbb Z)\)
+is instead the column lattice \(A\mathbb Z^n\subseteq\mathbb Z^k\),
+canonically represented by the row Hermite form of \(A^t\). Indeed two
+surjections \(\mathbb Z^n\twoheadrightarrow H\) onto the same free
+subgroup \(H\subseteq\mathbb Z^k\) are related by an automorphism of
+\(\mathbb Z^n\): split both surjections and identify their free kernels.
+This distinction is essential: frames \((e,2f)\) and \((2e,f)\) have
+equal moving Smith type but different based column lattices.
 Unbounded Smith-shell iterators must not infer that a finite quotient has
 ended merely because a search has not emitted another representative.
 

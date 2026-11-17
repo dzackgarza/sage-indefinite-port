@@ -735,19 +735,28 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             ambient = source_arrow.codomain()
             if (
                 ambient is target_arrow.codomain()
-                and source_arrow.is_primitive() and target_arrow.is_primitive()
                 and all(ambient.b(x, y) == 0 for x in ambient.module_generators() for y in ambient.module_generators())
                 and all(source_arrow.domain().b(x, y) == 0
                         for x in source_arrow.domain().module_generators()
                         for y in source_arrow.domain().module_generators())
             ):
-                # GL_n(ZZ) acts transitively on ordered primitive frames.
-                # The finite-height integral search therefore terminates;
-                # check each *based* image exactly, without sign freedom.
+                # For based k-frames A: ZZ^k -> ZZ^n, right GL_n(ZZ)
+                # equivalence is classified by the column lattice of A
+                # in ZZ^k (the row HNF of A^t). This retains all finite
+                # index data, unlike the moving Smith classification.
+                # Equal column lattices guarantee an integral transporter.
+                from sage.all import ZZ as SageZZ, matrix
                 from sage_indefinite_port.indefinite.recursive import _fair_unimodular_matrices, _isometry_from_row_matrix
 
                 source_points = tuple(source_arrow(x) for x in source_arrow.domain().module_generators())
                 target_points = tuple(target_arrow(x) for x in target_arrow.domain().module_generators())
+                labels = tuple(ambient.module_generating_set())
+                source_rows = matrix(SageZZ, [[int(point.to_vector()(label)) for label in labels]
+                                                  for point in source_points])
+                target_rows = matrix(SageZZ, [[int(point.to_vector()(label)) for label in labels]
+                                                  for point in target_points])
+                if source_rows.transpose().hermite_form() != target_rows.transpose().hermite_form():
+                    return None
                 for rows in _fair_unimodular_matrices(int(ambient.rank())):
                     witness = _isometry_from_row_matrix(ambient, ambient, rows)
                     if all(witness(left) == right for left, right in zip(source_points, target_points, strict=True)):

@@ -318,6 +318,22 @@ def test_zero_form_based_primitive_frame_transporter_preserves_each_marked_gener
     assert all((~witness)(witness(x)) == x for x in (e, f))
 
 
+def test_zero_form_based_nonprimitive_frames_use_column_hnf_not_moving_smith_type():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category.object(source.hom([e, 2 * f], codomain=ambient))
+    equivalent = category.object(source.hom([e + f, 2 * f], codomain=ambient))
+    inequivalent = category.object(source.hom([2 * e, f], codomain=ambient))
+    witness = isometry(category, first, equivalent)
+    assert witness is not None and witness(e) == e + f and witness(2 * f) == 2 * f
+    assert isometry(category, first, inequivalent) is None
+
+
 def test_zero_form_based_primitive_frame_stabilizer_fixes_source_pointwise():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
