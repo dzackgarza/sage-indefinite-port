@@ -191,6 +191,26 @@ def test_mixed_degenerate_indefinite_anisotropic_quotient_has_only_radical_null_
     assert point in ambient.radical() and int(point.content()) == 3
 
 
+def test_mixed_degenerate_nonprimitive_fixed_content_stream_is_exhaustive_across_projection_contents():
+    from itertools import islice
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        iter_pointed_content_classes, isometry,
+    )
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    source = Lattices(ZZ)([[0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    representatives = tuple(islice(iter_pointed_content_classes(category, ambient, 0, 2), 5))
+    assert len(representatives) == 5
+    points = tuple(marked.arrow()(source.module_generators()[0]) for marked in representatives)
+    assert all(int(point.content()) == 2 and point.q() == 0 for point in points)
+    assert any(point in ambient.radical() for point in points)
+    assert any(point not in ambient.radical() for point in points)
+    assert all(isometry(category, left, right) is None
+               for i, left in enumerate(representatives) for right in representatives[i + 1:])
+
+
 def test_mixed_radical_rank_one_stabilizers_respect_residue_and_shear():
     from sage_extensions.all import cardinal
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION
