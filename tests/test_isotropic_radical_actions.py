@@ -101,3 +101,22 @@ def test_extension_stabilizer_preserves_a_proper_flag_on_the_radical():
     assert all(line.inclusion().is_in_image(images[0]) for images in families)
     assert all(extension.inclusion().is_in_image(point)
                for images in families for point in images[:len(radical) + 1])
+
+
+def test_pointwise_extension_stabilizer_has_quotient_sign_without_radical_sign():
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    e, _, f, _, _, _ = tuple(ambient.module_generators())
+    plane = ambient.primitive_isotropic_subobject(e, f)
+    induction = IsotropicInduction(EichlerRecursion())
+    reduction = plane.isotropic_reduction()
+    quotient = reduction.quotient_lattice()
+    radical = induction.plane_vectors(plane)
+    basis, families = induction.extension_stabilizer_images(
+        reduction, radical, (), next(iter(quotient.module_generators()))
+    )
+    sign = families[0]
+    assert sign[:len(radical)] == radical
+    assert sign[len(radical):] == tuple(-point for point in basis[len(radical):])
+    assert all(images[:len(radical)] == radical for images in families)
