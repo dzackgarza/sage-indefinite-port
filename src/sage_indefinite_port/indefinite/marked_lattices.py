@@ -851,7 +851,46 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                 generators = RECURSION.pointed_automorphism_generators(_marked_vector(marked))
             else:
                 arrow = marked.arrow()
-                if arrow.domain().is_nondegenerate():
+                if arrow.is_primitive() and all(
+                    arrow.codomain().b(x, y) == 0
+                    for x in arrow.codomain().module_generators()
+                    for y in arrow.codomain().module_generators()
+                ):
+                    from sage.all import ZZ as SageZZ, identity_matrix
+                    from sage_indefinite_port.indefinite.recursive import _fair_unimodular_matrices, _isometry_from_row_matrix
+
+                    ambient = arrow.codomain()
+                    n, k = int(ambient.rank()), int(arrow.domain().rank())
+                    labels = tuple(ambient.module_generating_set())
+                    fixed = tuple(arrow(point) for point in arrow.domain().module_generators())
+                    frame = tuple(tuple(int(point.to_vector()(label)) for label in labels) for point in fixed)
+                    completion = next(rows for rows in _fair_unimodular_matrices(n)
+                                      if tuple(tuple(int(entry) for entry in row) for row in rows.rows()[:k]) == frame)
+                    inverse = completion.inverse()
+                    # In the completed frame the pointwise stabilizer is
+                    # Z^((n-k)k) semidirect GL_(n-k)(Z): lower-left shears
+                    # and lower-right unimodular generators suffice.
+                    # Conjugation by the integral completion transports
+                    # these exact generators to the original coordinates.
+                    blocks = []
+                    for i in range(k, n):
+                        for j in range(k):
+                            shear = identity_matrix(SageZZ, n)
+                            shear[i, j] = 1
+                            blocks.append(shear)
+                    if n > k:
+                        complement = ambient.lattice_category()([[0] * (n - k) for _ in range(n - k)])
+                        complement_labels = tuple(complement.module_generating_set())
+                        for generator in complement.general_linear_group().group_generators():
+                            block = identity_matrix(SageZZ, n)
+                            for i, point in enumerate(complement.module_generators()):
+                                for j, label in enumerate(complement_labels):
+                                    block[k + i, k + j] = int(generator(point).to_vector()(label))
+                            blocks.append(block)
+                    generators = tuple(_isometry_from_row_matrix(ambient, ambient, inverse * block * completion)
+                                       for block in blocks) or (ambient.O().identity(),)
+                    return finite_ordered_set(tuple(generators))
+                elif arrow.domain().is_nondegenerate():
                     generators = (_nondegenerate_stabilizer_generators(arrow, based=True)
                                   if arrow.is_primitive() else _nondegenerate_stabilizer_generators(arrow.saturation().inclusion(), based=True))
                     return finite_ordered_set(tuple(generators))

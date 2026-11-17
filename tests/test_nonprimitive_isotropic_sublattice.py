@@ -258,6 +258,33 @@ def test_zero_form_based_primitive_frame_transporter_preserves_each_marked_gener
     assert all((~witness)(witness(x)) == x for x in (e, f))
 
 
+def test_zero_form_based_primitive_frame_stabilizer_fixes_source_pointwise():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    ambient = Lattices(ZZ)([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    e, f, u = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    marked = category.object(source.hom([e, f], codomain=ambient))
+    generators = tuple(automorphism_group_generators(category, marked))
+    assert generators
+    assert all(g(e) == e and g(f) == f for g in generators)
+    assert any(g(u) != u for g in generators)
+
+
+def test_zero_form_full_based_frame_has_trivial_pointwise_stabilizer():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    marked = category.object(source.hom(tuple(ambient.module_generators()), codomain=ambient))
+    generators = tuple(automorphism_group_generators(category, marked))
+    assert generators == (ambient.O().identity(),)
+
+
 def test_unrestricted_rank_two_null_sublattices_split_under_special_orthogonal_group():
     from itertools import islice
     from sage_extensions.all import Lattices, ZZ
