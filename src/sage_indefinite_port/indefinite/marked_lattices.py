@@ -315,6 +315,57 @@ def _finite_glued_nondegenerate_stabilizer_generators(arrow: Morphism, *, based:
     return _glue_compatible_integral_extensions(arrow, arrow, source_actions, tuple(complement.O()))
 
 
+
+def _glued_nondegenerate_stabilizer_generators(arrow: Morphism, *, based: bool) -> tuple[LatticeIsometryMethods, ...]:
+    r"""Full glue stabilizer from exact finite-image preimage of block O(S)xO(K).
+
+    The block group may be infinite.  The finite-index embedding's owned
+    ``extended_subgroup`` computes the *whole* preimage of the glue
+    stabilizer in the actual discriminant image, including Schreier kernel
+    generators.  Filtering block generators individually is insufficient.
+    """
+    from sage.all import QQ as SageQQ, matrix
+
+    lattice = arrow.codomain()
+    subobject = lattice.subobject_on(tuple(arrow(x) for x in arrow.domain().module_generators()))
+    complement = lattice.orthogonal_complement(subobject)
+    inclusion = lattice.subobject_on((
+        *(arrow(x) for x in arrow.domain().module_generators()),
+        *(complement.inclusion()(x) for x in complement.module_generators()),
+    )).inclusion()
+    module = inclusion.domain()
+    source_basis = tuple(arrow(x) for x in arrow.domain().module_generators())
+    comp_basis = tuple(complement.inclusion()(x) for x in complement.module_generators())
+    frame = (*source_basis, *comp_basis)
+    labels = tuple(lattice.module_generating_set())
+    coordinates = matrix(SageQQ, [[int(point.to_vector()(label)) for label in labels]
+        for point in frame]).inverse()
+    mlabels = tuple(module.module_generating_set())
+
+    def block(source_action, complement_action):
+        images = (
+            *(arrow(source_action(x)) for x in arrow.domain().module_generators()),
+            *(complement.inclusion()(complement_action(x)) for x in complement.module_generators()),
+        )
+        def image(label):
+            point = inclusion(module.module_generator(label))
+            coefficients = point.to_vector()
+            row = matrix(SageQQ, [[int(coefficients(key)) for key in labels]]) * coordinates
+            result = sum((lattice.scalar_multiple(lattice.base_ring()(int(value)), element)
+                for value, element in zip(row.row(0), images, strict=True) if value), lattice.zero())
+            return inclusion.lift(result)
+        return module.O()(image)
+
+    source_identity = arrow.domain().O().identity()
+    comp_domain = complement.inclusion().domain()
+    comp_identity = comp_domain.O().identity()
+    blocks = []
+    if not based:
+        blocks.extend(block(g, comp_identity) for g in RECURSION.orthogonal_group_generators(arrow.domain()))
+    blocks.extend(block(source_identity, g) for g in RECURSION.orthogonal_group_generators(comp_domain))
+    return tuple(inclusion.extended_subgroup(module.O().subgroup(tuple(blocks))).group_generators())
+
+
 def _nondegenerate_stabilizer_generators(arrow: Morphism, *, based: bool) -> tuple[LatticeIsometryMethods, ...]:
     lattice = arrow.codomain()
     subobject = lattice.subobject_on(tuple(arrow(x) for x in arrow.domain().module_generators()))
@@ -324,7 +375,7 @@ def _nondegenerate_stabilizer_generators(arrow: Morphism, *, based: bool) -> tup
     combined = lattice.subobject_on((*basis, *complementary))
     if int(combined.inclusion().cokernel().cardinality()) == 1:
         return _split_nondegenerate_stabilizer_generators(arrow, based=based)
-    return _finite_glued_nondegenerate_stabilizer_generators(arrow, based=based)
+    return _glued_nondegenerate_stabilizer_generators(arrow, based=based)
 
 
 

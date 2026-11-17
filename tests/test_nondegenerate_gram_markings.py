@@ -215,3 +215,33 @@ def test_odd_index_three_glue_based_transporter_has_integral_inverse():
     assert witness(e + f) == -e - f
     assert (~witness)(-e - f) == e + f
     assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y) for x in (e, f) for y in (e, f))
+
+
+def test_glued_positive_line_in_two_u_has_full_indefinite_complement_kernel():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import _nondegenerate_stabilizer_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    e, f, u, v = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[2]])
+    arrow = source.hom([e + f], codomain=ambient)
+    generators = tuple(_nondegenerate_stabilizer_generators(arrow, based=True))
+    assert all(g(e + f) == e + f for g in generators)
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
+               for g in generators for x in (e, f, u, v) for y in (e, f, u, v))
+    assert any(g(u) != u or g(v) != v for g in generators)
+
+
+def test_glued_positive_line_in_two_u_setwise_stabilizer_includes_negation():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import _nondegenerate_stabilizer_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    e, f, u, v = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[2]])
+    arrow = source.hom([e + f], codomain=ambient)
+    generators = tuple(_nondegenerate_stabilizer_generators(arrow, based=False))
+    assert all(g(e + f) in (e + f, -e - f) for g in generators)
+    assert any(g(e + f) == -e - f for g in generators)
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
+               for g in generators for x in (e, f, u, v) for y in (e, f, u, v))
