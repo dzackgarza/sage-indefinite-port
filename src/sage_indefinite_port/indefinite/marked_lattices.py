@@ -565,13 +565,23 @@ def _degenerate_full_quotient_based_isometry(source_arrow: Morphism, target_arro
     a = x.inverse().change_ring(SageZZ) * y
     left_smith, u_left, v_left = left_rad.smith_form()
     right_smith, u_right, v_right = right_rad.smith_form()
-    if left_smith != right_smith or any(int(left_smith[i, i]) != 1 for i in range(r)):
+    if left_smith != right_smith:
+        return None
+    # E M = U_left U_right^-1 E for E=diag(d_1,...,d_r).
+    # The top-left block of M is therefore uniquely forced to be
+    # diag(d)^-1 U_left U_right^-1 diag(d).  Integrality of that block
+    # is the exact obstruction to a based integral radical-frame map;
+    # equality of Smith invariants alone is insufficient.
+    from sage.rings.rational_field import QQ as SageQQ
+    frame_change = u_left * u_right.inverse().change_ring(SageZZ)
+    diagonal = matrix(SageQQ, r, r, lambda i, j: int(left_smith[i, i]) if i == j else 0)
+    required = diagonal.inverse() * frame_change.change_ring(SageQQ) * diagonal
+    if any(value not in SageZZ for value in required.list()):
         return None
     middle = identity_matrix(SageZZ, k)
-    frame_change = u_left * u_right.inverse().change_ring(SageZZ)
     for i in range(r):
         for j in range(r):
-            middle[i, j] = frame_change[i, j]
+            middle[i, j] = SageZZ(required[i, j])
     d = v_left * middle * v_right.inverse().change_ring(SageZZ)
     if left_rad * d != right_rad or abs(int(d.det())) != 1:
         raise ArithmeticError("the integral radical completion does not carry the marked frame")
