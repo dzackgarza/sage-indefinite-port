@@ -237,6 +237,21 @@ def test_four_u_partial_one_four_flag_classes_preserve_intermediate_term():
         assert ambient.primitive_isotropic_subobject(*basis).inclusion().is_primitive()
 
 
+def test_four_u_partial_two_four_flag_classes_preserve_rank_jump():
+    """GL(4,ZZ) acts transitively on primitive rank-two summands of a null 4-plane."""
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    representatives = IsotropicInduction(EichlerRecursion()).isotropic_flag_bases(ambient, (2, 4))
+    assert len(representatives) == 1
+    for basis in representatives:
+        assert len(basis) == 4
+        for rank in (2, 4):
+            term = ambient.primitive_isotropic_subobject(*basis[:rank]).inclusion()
+            assert int(term.domain().rank()) == rank and term.is_primitive()
+
+
 def test_four_u_maximal_null_plane_splits_into_two_special_orthogonal_orbits():
     """The maximal-null stabilizer in O(4U) has determinant one."""
     from sage_indefinite_port.indefinite.marked_lattices import ARROWS

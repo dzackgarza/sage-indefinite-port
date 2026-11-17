@@ -1521,7 +1521,10 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
     ``category`` is the category of the marking: the coslice under ``<n>`` for pointed
     lattices, ``Ar(Lattices)`` for sublattices, ``Fun([t], Lattices)`` for finite flags. ``source``
     is the shape: the lattice ``<n>``, a totally isotropic lattice of rank ``k`` (zero form),
-    or the chain of such lattices for a flag.  ``acting_group`` splits
+    or the chain of such lattices for a flag. A flag source may be a shorter
+    diagram of its isotropic terms or a full marked diagram in ``category``;
+    in the latter case its terminal arrow into the ambient lattice does not
+    contribute another isotropic rank. ``acting_group`` splits
     the full-group orbit set using the actual supplied arithmetic subgroup
     without changing the source marking category.
     """
