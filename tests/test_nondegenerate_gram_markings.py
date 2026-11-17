@@ -537,7 +537,8 @@ def test_zero_vector_pointwise_stabilizer_is_entire_orthogonal_group():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION
 
-    for ambient in (Lattices(ZZ)(0), Lattices(ZZ)([[2]]), Lattices(ZZ)("U")):
+    for ambient in (Lattices(ZZ)(0), Lattices(ZZ)([[2]]), Lattices(ZZ)("U"),
+                    Lattices(ZZ)("U") + Lattices(ZZ)([[0]])):
         assert RECURSION.pointed_automorphism_generators(ambient.zero()) == (
             RECURSION.orthogonal_group_generators(ambient)
         )
