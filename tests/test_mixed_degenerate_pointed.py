@@ -436,6 +436,92 @@ def test_noncoordinate_radical_flag_stabilizer_preserves_primitive_line():
         assert any(g(vector) == -vector for g in generators)
 
 
+def test_radical_plane_flags_have_exact_line_transporter():
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, isometry
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    z, w = tuple(ambient.module_generators())[1:]
+    plane = ambient.primitive_isotropic_subobject(z, w)
+    inclusion = plane.inclusion()
+
+    def flag(vector):
+        line = inclusion.domain().primitive_isotropic_subobject(inclusion.lift(vector))
+        return FLAGS((line.inclusion(), inclusion))
+
+    source, target = flag(z), flag(2 * z + 3 * w)
+    witness = isometry(FLAGS, source, target)
+    assert witness is not None
+    assert witness(z) in (2 * z + 3 * w, -2 * z - 3 * w)
+
+
+def test_moving_radical_lines_have_exact_integral_transporters():
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    z, w = tuple(ambient.module_generators())[1:]
+    first = ARROWS.object(ambient.primitive_isotropic_subobject(z).inclusion())
+    second = ARROWS.object(ambient.primitive_isotropic_subobject(2 * z + 3 * w).inclusion())
+    witness = isometry(ARROWS, first, second)
+    assert witness is not None
+    assert witness(z) in (2 * z + 3 * w, -2 * z - 3 * w)
+
+
+def test_moving_full_radical_planes_have_exact_integral_transporters():
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    z, w = tuple(ambient.module_generators())[1:]
+    first = ARROWS.object(ambient.primitive_isotropic_subobject(z, w).inclusion())
+    second = ARROWS.object(ambient.primitive_isotropic_subobject(z + w, z).inclusion())
+    witness = isometry(ARROWS, first, second)
+    assert witness is not None
+    assert all(witness(point) in ambient.radical() for point in (z, w))
+
+
+def test_proper_radical_plane_stabilizer_in_rank_three_radical():
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        ARROWS, automorphism_group_generators,
+    )
+
+    ambient = lattice([[2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+    z, w, u = tuple(ambient.module_generators())[1:]
+    plane = ambient.primitive_isotropic_subobject(z + w, z + u)
+    marked = ARROWS.object(plane.inclusion())
+    generators = tuple(automorphism_group_generators(ARROWS, marked))
+    assert generators
+    assert all(all(plane.inclusion().is_in_image(g(point)) for point in (z + w, z + u))
+               for g in generators)
+
+
+def test_proper_radical_based_plane_stabilizer_fixes_frame_pointwise():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    ambient = lattice([[2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+    z, w, u = tuple(ambient.module_generators())[1:]
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    marked = category.object(source.hom([z + w, z + u], codomain=ambient))
+    generators = tuple(automorphism_group_generators(category, marked))
+    assert generators
+    assert all(g(z + w) == z + w and g(z + u) == z + u for g in generators)
+    assert any(g(u) != u for g in generators)
+
+
+def test_nonprimitive_based_radical_plane_stabilizer_fixes_saturation_pointwise():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    z, w = tuple(ambient.module_generators())[1:]
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    marked = category.object(source.hom([2 * z, 3 * w], codomain=ambient))
+    generators = tuple(automorphism_group_generators(category, marked))
+    assert generators
+    assert all(g(z) == z and g(w) == w for g in generators)
+
+
 def test_mixed_radical_rank_one_stabilizers_respect_residue_and_shear():
     from sage_extensions.all import cardinal
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION

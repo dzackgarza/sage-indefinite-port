@@ -872,6 +872,34 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 case _:
                     return None
         case _FiniteSequenceFunctorCategory() if category.codomain_category() is LATTICES:
+            source_arrows = _flag_arrows(source)
+            target_arrows = _flag_arrows(target)
+            if len(source_arrows) == len(target_arrows) == 2 and all(
+                tuple(int(arrow.domain().rank()) for arrow in arrows) == (1, 2)
+                for arrows in (source_arrows, target_arrows)
+            ):
+                source_ambient = source_arrows[-1].codomain()
+                target_ambient = target_arrows[-1].codomain()
+                if all(
+                    not ambient.is_nondegenerate()
+                    and int(arrows[-1].domain().rank()) == int(ambient.radical().rank())
+                    and all(RECURSION.vector_lies_in_radical(arrows[-1](point))
+                            for point in arrows[-1].domain().module_generators())
+                    for ambient, arrows in ((source_ambient, source_arrows),
+                                            (target_ambient, target_arrows))
+                ):
+                    source_line = source_arrows[-1](source_arrows[0](
+                        next(iter(source_arrows[0].domain().module_generators()))
+                    ))
+                    target_line = target_arrows[-1](target_arrows[0](
+                        next(iter(target_arrows[0].domain().module_generators()))
+                    ))
+                    # The terminal planes are the whole radicals, hence
+                    # preserved by every ambient isometry. The flag
+                    # transporter is exactly a transporter of the two
+                    # primitive radical lines, up to source sign.
+                    witness = RECURSION.pointed_isometry(source_line, target_line)
+                    return witness if witness is not None else RECURSION.pointed_isometry(source_line, -target_line)
             source_dimensions, source_basis, _source_images = _flag_action(source)
             target_dimensions, target_basis, target_images = _flag_action(target)
             if source_dimensions != target_dimensions:
@@ -958,33 +986,19 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                     generators = tuple(_isometry_from_row_matrix(ambient, ambient, inverse * block * completion)
                                        for block in blocks) or (ambient.O().identity(),)
                     return finite_ordered_set(tuple(generators))
-                if not arrow.codomain().is_nondegenerate() and arrow.is_primitive() and (
-                    int(arrow.domain().rank()) == int(arrow.codomain().radical().rank())
-                    and all(
-                        arrow.codomain().b(arrow(point), vector) == 0
-                        for point in arrow.domain().module_generators()
-                        for vector in arrow.codomain().module_generators()
-                    )
+                if not arrow.codomain().is_nondegenerate() and all(
+                    RECURSION.vector_lies_in_radical(arrow(point))
+                    for point in arrow.domain().module_generators()
                 ):
-                    from sage.all import ZZ as SageZZ, identity_matrix
-                    from sage_indefinite_port.indefinite.recursive import _conjugated, _isometry_from_row_matrix
-
-                    ambient = arrow.codomain()
-                    reduction, n, k, _quotient = _degenerate_quotient_and_radical(ambient)
-                    reduced = reduction.reduced
-                    # The radical-last split has O(C) × GL(R) and Hom(C,R)
-                    # blocks.  Fixing an integral basis of the *whole*
-                    # radical kills exactly GL(R), retaining O(C) and every
-                    # shear.  Transport the generators through the pinned
-                    # integral reduction, without a Witt-index reduction.
-                    radical_identity = identity_matrix(SageZZ, k)
-                    radical_vector = reduced.module_generator(tuple(reduced.module_generating_set())[n])
-                    blocks = tuple(block for block in RECURSION._radical_blocks(reduced, radical_vector)
-                                   if block.matrix_from_rows_and_columns(range(n, n + k), range(n, n + k))
-                                   == radical_identity)
-                    generators = _conjugated(reduction.isometry, tuple(
-                        _isometry_from_row_matrix(reduced, reduced, block) for block in blocks
-                    ))
+                    # Pointwise fixation of a full-rank finite-index frame
+                    # is equivalent, over QQ, to pointwise fixation of its
+                    # primitive saturation; torsion-freeness gives the
+                    # integral equivalence.  No homothetic-index assumption.
+                    frame = arrow if arrow.is_primitive() else arrow.saturation().inclusion()
+                    basis = tuple(frame(point) for point in frame.domain().module_generators())
+                    generators = _degenerate_radical_flag_generators(
+                        arrow.codomain(), (int(frame.domain().rank()),), basis, pointwise=True
+                    )
                     return finite_ordered_set(tuple(generators))
                 elif arrow.domain().is_nondegenerate():
                     generators = (_nondegenerate_stabilizer_generators(arrow, based=True)
@@ -1219,7 +1233,7 @@ def _degenerate_quotient_and_radical(lattice: Parent):
     return reduction, n, int(gram.nrows()) - n, quotient
 
 
-def _degenerate_radical_flag_generators(ambient: Parent, dimensions: tuple[int, ...], basis: tuple):
+def _degenerate_radical_flag_generators(ambient: Parent, dimensions: tuple[int, ...], basis: tuple, *, pointwise: bool = False):
     r"""Exact stabilizer of a primitive flag inside the saturated radical.
 
     In the reduced split C + R, O(L) is (O(C) × GL(R)) ⋉ Hom(C,R).
@@ -1228,6 +1242,7 @@ def _degenerate_radical_flag_generators(ambient: Parent, dimensions: tuple[int, 
     """
     from sage.all import ZZ as SageZZ, identity_matrix, matrix
     from sage_indefinite_port.indefinite.recursive import _conjugated, _isometry_from_row_matrix
+    from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
 
     reduction, n, k, _quotient = _degenerate_quotient_and_radical(ambient)
     reduced = reduction.reduced
@@ -1239,41 +1254,48 @@ def _degenerate_radical_flag_generators(ambient: Parent, dimensions: tuple[int, 
         label: radical.base_ring()(int(inverse(point).to_vector()(labels[n + i])))
         for i, label in enumerate(radical_labels)
     }) for point in basis)
-    terms = tuple(radical.primitive_isotropic_subobject(*radical_basis[:rank])
-                  for rank in dimensions)
     radical_identity = identity_matrix(SageZZ, k)
     first = reduced.module_generator(labels[n])
     blocks = [block for block in RECURSION._radical_blocks(reduced, first)
               if block.matrix_from_rows_and_columns(range(n, n + k), range(n, n + k))
               == radical_identity]
-    if dimensions == (1,):
-        row = tuple(int(radical_basis[0].to_vector()(label)) for label in radical_labels)
-        _, _, change = matrix(SageZZ, [row]).smith_form()
-        reversal = identity_matrix(SageZZ, k)
-        reversal[0, 0] = -1
-        radical_actions = (*RECURSION._radical_stabilizer_of_row(row),
-                           change * reversal * change.inverse())
+    basis_rows = matrix(SageZZ, [
+        [int(point.to_vector()(label)) for label in radical_labels]
+        for point in radical_basis
+    ])
+    adapted = basis_rows.stack(_source_subspace_completion_int(basis_rows, k))
+    if abs(adapted.det()) != 1:
+        raise ArithmeticError("the primitive radical flag does not admit an integral adapted completion")
+    if pointwise:
+        if len(dimensions) != 1 or dimensions[0] != len(radical_basis):
+            raise ValueError("a based radical marking fixes its entire ordered frame")
+        rank = dimensions[0]
+        standard_matrices = []
+        for i in range(rank, k):
+            for j in range(rank):
+                shear = identity_matrix(SageZZ, k)
+                shear[i, j] = 1
+                standard_matrices.append(shear)
+        if k > rank:
+            quotient = radical.lattice_category()([[0] * (k - rank) for _ in range(k - rank)])
+            quotient_labels = tuple(quotient.module_generating_set())
+            for action in quotient.general_linear_group().group_generators():
+                block = identity_matrix(SageZZ, k)
+                for i, label in enumerate(quotient_labels):
+                    image = action(quotient.module_generator(label)).to_vector()
+                    for j, target_label in enumerate(quotient_labels):
+                        block[rank + i, rank + j] = int(image(target_label))
+                standard_matrices.append(block)
     else:
-        adapted = matrix(SageZZ, [
-            [int(point.to_vector()(label)) for label in radical_labels]
-            for point in radical_basis
-        ])
-        if adapted.nrows() == k and abs(adapted.det()) == 1:
-            standard_basis = tuple(radical.module_generator(label) for label in radical_labels)
-            standard_terms = tuple(radical.primitive_isotropic_subobject(*standard_basis[:rank])
-                                   for rank in dimensions)
-            standard_actions = radical.general_linear_group().flag_stabilizer(standard_terms).group_generators()
-            radical_actions = tuple(adapted.inverse() * matrix(SageZZ, [
-                [int(action(radical.module_generator(label)).to_vector()(target_label))
-                 for target_label in radical_labels]
-                for label in radical_labels
-            ]) * adapted for action in standard_actions)
-        else:
-            radical_actions = tuple(matrix(SageZZ, [
-                [int(action(radical.module_generator(label)).to_vector()(target_label))
-                 for target_label in radical_labels]
-                for label in radical_labels
-            ]) for action in radical.general_linear_group().flag_stabilizer(terms).group_generators())
+        standard_basis = tuple(radical.module_generator(label) for label in radical_labels)
+        standard_terms = tuple(radical.primitive_isotropic_subobject(*standard_basis[:rank])
+                               for rank in dimensions)
+        standard_matrices = [matrix(SageZZ, [
+            [int(action(radical.module_generator(label)).to_vector()(target_label))
+             for target_label in radical_labels]
+            for label in radical_labels
+        ]) for action in radical.general_linear_group().flag_stabilizer(standard_terms).group_generators()]
+    radical_actions = tuple(adapted.inverse() * action * adapted for action in standard_matrices)
     for action in radical_actions:
         block = identity_matrix(SageZZ, n + k)
         for i in range(k):
