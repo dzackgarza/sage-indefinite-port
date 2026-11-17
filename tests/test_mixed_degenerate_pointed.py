@@ -727,6 +727,37 @@ def test_mixed_degenerate_full_radical_partial_quotient_flag_stabilizer():
                for generator in generators for x in (e, f, u, v, z) for y in (e, f, u, v, z))
 
 
+def test_provider_isotropic_flag_full_radical_stabilizer_uses_quotient_parabolic():
+    from sage_extensions.all import IsotropicFlag, FlagType, Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    e, f, u, v, z = tuple(ambient.module_generators())
+    flag = IsotropicFlag(ambient, (z, e, u), flag_type=FlagType((2, 3)))
+    generators = INDUCTION.flag_automorphism_generators(flag)
+    assert generators
+    first = ambient.primitive_isotropic_subobject(z, e)
+    top = ambient.primitive_isotropic_subobject(z, e, u)
+    assert all(first.inclusion().is_in_image(generator(point))
+               for generator in generators for point in (z, e))
+    assert all(top.inclusion().is_in_image(generator(point))
+               for generator in generators for point in (z, e, u))
+
+
+def test_legacy_mixed_radical_first_flag_stabilizer_uses_top_parabolic():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    e, f, z = tuple(ambient.module_generators())
+    plane = ambient.primitive_isotropic_subobject(z, e)
+    generators = INDUCTION.flag_automorphism_generators((z, plane))
+    assert generators
+    assert all(generator(z) in (z, -z) for generator in generators)
+    assert all(plane.inclusion().is_in_image(generator(point))
+               for generator in generators for point in (z, e))
+
+
 def test_mixed_degenerate_full_radical_partial_quotient_flag_transporter():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import (

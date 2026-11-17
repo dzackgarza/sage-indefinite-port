@@ -1117,6 +1117,16 @@ class IsotropicInduction:
             inclusion = space.inclusion()
             terms = (inclusion.domain().primitive_isotropic_subobject(inclusion.lift(line)),)
         basis, images = self.flag_action_data(space, terms)
+        ambient = inclusion.codomain()
+        dimensions = tuple(int(term.inclusion().domain().rank()) for term in terms) + (int(inclusion.domain().rank()),)
+        if (not ambient.is_nondegenerate() and terms
+                and dimensions[0] >= int(ambient.radical().rank())
+                and dimensions[-1] > int(ambient.radical().rank())
+                and all(ambient.primitive_isotropic_subobject(*basis[:dimensions[0]]).inclusion().is_in_image(
+                    ambient.radical().inclusion()(point)) for point in ambient.radical().module_generators())):
+            return self.plane_automorphism_generators(
+                space, flag_dimensions=dimensions, flag_basis=basis
+            )
         return self._stabilizer_generators(basis, images)
 
 
