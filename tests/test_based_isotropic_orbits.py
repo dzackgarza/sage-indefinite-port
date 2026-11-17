@@ -114,3 +114,21 @@ def test_rank_three_fixed_basis_transport_preserves_each_marked_generator():
     assert (witness(e), witness(u), witness(w)) == (e + u, u, w)
     assert all((~witness)(witness(point)) == point for point in (e, f, u, v, w, z))
     assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y) for x in (e, f, u, v, w, z) for y in (e, f, u, v, w, z))
+
+
+def test_rank_three_fixed_basis_rejects_divisibility_exchange():
+    """A based lift cannot exchange primitive null vectors of divisibilities one and two."""
+    from sage_extensions.all import Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = lattice([[0, 1, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0],
+                       [0, 0, 0, 2, 0, 0], [0, 0, 2, 0, 0, 0],
+                       [0, 0, 0, 0, 0, 1], [0, 0, 0, 0, 1, 0]])
+    e, _f, u, _v, w, _z = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    category = CosliceCategory(Lattices(ZZ), source)
+    first = category(source.hom([e, u, w], codomain=ambient))
+    second = category(source.hom([u, e, w], codomain=ambient))
+    assert int(e.divisor()) == 1 and int(u.divisor()) == 2
+    assert isometry(category, first, second) is None
