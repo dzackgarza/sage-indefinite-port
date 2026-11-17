@@ -1468,7 +1468,7 @@ class EichlerRecursion:
         return result
 
     def line_stabilizer_generators(self, vector: Lattices.ElementMethods) -> tuple[LatticeIsometryMethods, ...]:
-        r"""Generators of Aut((L, Zv)) for primitive isotropic v: Gamma = {+-1} on the line."""
+        r"""Generators of Aut((L, Zv)) for nonzero isotropic v, via its primitive saturation."""
         lattice = vector.parent()
         if vector == lattice.zero() or vector.q() != lattice.base_ring().zero():
             raise ValueError("a line stabilizer requires a nonzero isotropic vector")
