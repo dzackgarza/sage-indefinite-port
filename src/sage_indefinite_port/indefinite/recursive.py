@@ -1148,7 +1148,20 @@ class EichlerRecursion:
                 cached = self._groupoid.cached_group(lattice)
                 if cached is not None:
                     return cached
-            definite_generators = tuple(lattice.O().group_generators())
+            # PARI qfauto is sensitive to the Gram presentation: a badly
+            # conditioned perpendicular complement can overflow its stack
+            # even though the lattice's finite orthogonal group is small.
+            # Reduce the *integral* definite Gram before invoking the
+            # provider's exact qfauto kernel, then conjugate its generators
+            # through the certified unimodular LLL isometry.
+            reduction = lattice.lll_reduction()
+            reduced = reduction.reduced
+            reduced_generators = self._groupoid.cached_group(reduced) if cacheable else None
+            if reduced_generators is None:
+                reduced_generators = tuple(reduced.O().group_generators())
+                if cacheable:
+                    self._groupoid.record_group(reduced, reduced_generators)
+            definite_generators = _conjugated(reduction.isometry, reduced_generators)
             if cacheable:
                 self._groupoid.record_group(lattice, definite_generators)
             return definite_generators
