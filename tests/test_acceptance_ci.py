@@ -5,6 +5,7 @@ import importlib.util
 import io
 import json
 import subprocess
+import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -236,3 +237,24 @@ def test_acceptance_summary_rejects_empty_or_malformed_matrix_includes(tmp_path)
             result = summary.main(tmp_path / "no-results", json.dumps(matrix))
         assert result == 1
         assert message in output.getvalue()
+
+
+def test_long_probe_plans_every_unfinished_pricing_node_once() -> None:
+    root = Path(__file__).resolve().parents[1]
+    command = [sys.executable, str(root / "ci/plan_acceptance.py")]
+    result = subprocess.run(command + ["matrix", "probe_long"], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    jobs = json.loads(result.stdout.removeprefix("matrix="))["include"]
+    selected = []
+    for job in jobs:
+        result = subprocess.run(
+            command + ["nodes", "probe_long", str(job["shard"])], capture_output=True, text=True
+        )
+        assert result.returncode == 0, result.stderr
+        nodes = result.stdout.splitlines()
+        assert job["selection"] == "probe_long"
+        assert job["timeout"] * 60 >= len(nodes) * 600 + 20 * 60
+        selected.extend(nodes)
+    expected = (root / "ci/acceptance_probe_long.txt").read_text().splitlines()
+    assert len(selected) == len(set(selected))
+    assert set(selected) == set(expected)
