@@ -938,3 +938,28 @@ def test_nonintegral_difference_reflection_does_not_fake_a_pointed_transporter()
     assert source.q() == target.q() == 130
     assert not (source - target).primitive_part().is_integral_reflection_vector()
     assert RECURSION.pointed_isometry(source, target) is None
+
+
+def test_e10_root_reflection_pointed_witness_avoids_pari_qfauto(monkeypatch):
+    """The pinned E10 reflection has an exact witness without its rank-nine complement group."""
+    from sage.all import ZZ as SageZZ, vector
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+    from tests.acceptance.consumer import element
+    from tests.fixtures.oracle_fixtures import load_e10_fundamental_domain
+
+    fixture = load_e10_fundamental_domain()
+    ambient = lattice(fixture["gram"])
+    root = next(root for root in fixture["simple_roots"] if root["label"] == -1)
+    reflection = ambient.reflection(element(ambient, vector(SageZZ, root["vector"])))
+    source = next(
+        point for record in fixture["orbit_representatives"]
+        if (point := element(ambient, vector(SageZZ, record["vector"]))) != reflection(point)
+    )
+    target = reflection(source)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("E10 reflection witness must not request PARI qfauto")
+
+    monkeypatch.setattr(RECURSION, "isometry", forbidden)
+    witness = RECURSION.pointed_isometry(source, target)
+    assert witness is not None and witness(source) == target
