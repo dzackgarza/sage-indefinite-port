@@ -250,6 +250,41 @@ def test_public_primitive_moving_null_line_classifier_dispatches_degenerate_quot
         primitive_marking_classes(ARROWS, source, isotropic_quotient)
 
 
+def test_public_primitive_radical_plane_in_anisotropic_degenerate_lattice():
+    import pytest
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    classes = primitive_marking_classes(ARROWS, source, ambient)
+    assert classes.cardinality() == cardinal(1)
+    arrow = next(iter(classes)).arrow()
+    assert all(arrow(point) in ambient.radical() for point in arrow.domain().module_generators())
+    assert primitive_marking_classes(ARROWS, source, lattice([[2, 0], [0, 0]])).is_empty()
+    isotropic_quotient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    with pytest.raises(ValueError, match="may be infinite"):
+        primitive_marking_classes(ARROWS, source, isotropic_quotient)
+
+
+def test_public_primitive_based_radical_plane_in_anisotropic_degenerate_lattice():
+    import pytest
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import primitive_marking_classes
+
+    ambient = lattice([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    classes = primitive_marking_classes(category, source, ambient)
+    assert classes.cardinality() == cardinal(1)
+    arrow = next(iter(classes)).arrow()
+    assert all(arrow(point) in ambient.radical() for point in source.module_generators())
+    assert primitive_marking_classes(category, source, lattice([[2, 0], [0, 0]])).is_empty()
+    isotropic_quotient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    with pytest.raises(ValueError, match="may be infinite"):
+        primitive_marking_classes(category, source, isotropic_quotient)
+
+
 def test_mixed_radical_rank_one_stabilizers_respect_residue_and_shear():
     from sage_extensions.all import cardinal
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION

@@ -1993,6 +1993,30 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                     # 'sub' would silently quotient by O(source) instead.
                     classes = tuple(category.object(embedding) for embedding in
                         source.Emb(lattice).primitive_embedding_class_representatives(classification="emb"))
+                elif not lattice.is_nondegenerate() and all(
+                    source.b(x, y) == 0 for x in source.module_generators()
+                    for y in source.module_generators()
+                ):
+                    from sage_indefinite_port.indefinite.recursive import _gram_in_label_order
+
+                    reduction = indefinite_reduced_presentation(lattice)
+                    reduced = reduction.reduced
+                    gram = _gram_in_label_order(reduced)
+                    n = int(gram.rank())
+                    complement = lattice.lattice_category()([
+                        [int(gram[i, j]) for j in range(n)] for i in range(n)
+                    ])
+                    if not complement.is_definite() and complement.is_isotropic():
+                        raise ValueError(
+                            "mixed degenerate primitive isotropic based-marking orbit sets may be infinite; "
+                            "this finite-class interface cannot represent them"
+                        )
+                    if int(source.rank()) > int(gram.nrows()) - n:
+                        classes = ()
+                    else:
+                        basis = tuple(reduction.isometry(point)
+                                      for point in tuple(reduced.module_generators())[n:n + int(source.rank())])
+                        classes = (category.object(source.hom(basis, codomain=lattice)),)
                 else:
                     if any(source.b(left, right) != 0 for left in source_basis for right in source_basis):
                         raise ValueError("mixed degenerate Gram markings require their radical/glue classification")
@@ -2042,6 +2066,33 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 classes = tuple(ARROWS.object(lattice.primitive_isotropic_subobject(
                     _marked_vector(marking)
                 ).inclusion()) for marking in pointed)
+            elif not lattice.is_nondegenerate() and all(
+                source.b(x, y) == 0 for x in source.module_generators()
+                for y in source.module_generators()
+            ):
+                from sage_indefinite_port.indefinite.recursive import _gram_in_label_order
+
+                reduction = indefinite_reduced_presentation(lattice)
+                reduced = reduction.reduced
+                gram = _gram_in_label_order(reduced)
+                n = int(gram.rank())
+                complement = lattice.lattice_category()([
+                    [int(gram[i, j]) for j in range(n)] for i in range(n)
+                ])
+                if not complement.is_definite() and complement.is_isotropic():
+                    raise ValueError(
+                        "mixed degenerate primitive isotropic sublattice orbit sets may be infinite; "
+                        "use iter_all_isotropic_sublattice_classes"
+                    )
+                # The anisotropic quotient forces every isotropic subspace
+                # into rad(L).  Since rad(L) is saturated, its primitive
+                # rank-r sublattices form one GL(rad L)-orbit for r <= k.
+                if rank > int(gram.nrows()) - n:
+                    classes = ()
+                else:
+                    basis = tuple(reduction.isometry(point)
+                                  for point in tuple(reduced.module_generators())[n:n + rank])
+                    classes = (ARROWS.object(lattice.primitive_isotropic_subobject(*basis).inclusion()),)
             elif source.is_nondegenerate():
                 # Moving sublattices allow the full source isometry group.
                 # The owned 'sub' classification quotients by both O(source)
