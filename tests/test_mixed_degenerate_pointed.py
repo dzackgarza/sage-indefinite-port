@@ -370,3 +370,14 @@ def test_public_degenerate_rank_two_radical_line_orbit_stream():
     vector = inclusion(next(iter(inclusion.domain().module_generators())))
     assert vector.q() == ZZ(0) and vector.content() == ZZ(1)
     assert vector in ambient.radical()
+
+
+def test_public_pure_radical_primitive_null_line_stream():
+    from sage_indefinite_port.indefinite.marked_lattices import iter_primitive_isotropic_line_classes
+    from sage_extensions.all import Lattices, ZZ
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    representative = next(iter_primitive_isotropic_line_classes(ambient))
+    arrow = representative.arrow()
+    vector = arrow(next(iter(arrow.domain().module_generators())))
+    assert vector.q() == ZZ(0) and vector.content() == ZZ(1)
