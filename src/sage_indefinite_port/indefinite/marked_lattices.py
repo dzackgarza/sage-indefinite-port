@@ -1644,6 +1644,8 @@ def iter_primitive_isotropic_line_classes(lattice: Parent, *, acting_group=None)
     generators.  The stream is exhaustive without a finite-class claim.
     Supported finite-character arithmetic subgroups split each moving orbit.
     """
+    if int(lattice.rank()) == 0:
+        return
     if lattice.is_nondegenerate() and (lattice.is_definite() or int(lattice.witt_index()) == 0):
         return
     seen = []
@@ -1696,6 +1698,8 @@ def iter_all_isotropic_line_classes(lattice: Parent, *, acting_group=None):
     from itertools import count
     from sage_indefinite_port.indefinite.recursive import _coordinate_box, _coordinate_element
 
+    if int(lattice.rank()) == 0:
+        return
     if lattice.is_nondegenerate() and int(lattice.witt_index()) == 0:
         return
     full_representatives = []

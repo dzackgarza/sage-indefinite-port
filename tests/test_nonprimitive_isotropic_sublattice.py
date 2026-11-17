@@ -225,6 +225,17 @@ def test_primitive_null_line_stream_identifies_both_signs_and_same_sign(monkeypa
     assert classes[0].arrow()(next(iter(classes[0].arrow().domain().module_generators()))) == e
 
 
+def test_rank_zero_ambient_has_empty_primitive_and_unrestricted_null_line_streams():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        iter_all_isotropic_line_classes, iter_primitive_isotropic_line_classes,
+    )
+
+    ambient = Lattices(ZZ)(0)
+    assert tuple(iter_primitive_isotropic_line_classes(ambient)) == ()
+    assert tuple(iter_all_isotropic_line_classes(ambient)) == ()
+
+
 def test_mixed_degenerate_radical_smith_classes_use_integral_gl_action():
     from itertools import islice
     from sage_extensions.all import Lattices, ZZ
