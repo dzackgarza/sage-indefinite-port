@@ -1840,6 +1840,8 @@ def homothetic_isotropic_sublattice_classes(lattice: Parent, rank: int, multipli
     """
     if rank < 1 or multiplier < 1:
         raise ValueError("rank and saturation multiplier must be positive")
+    if rank > int(lattice.rank()):
+        return finite_ordered_set(())
     source = lattice.lattice_category()([[0] * rank for _ in range(rank)])
     primitive = primitive_marking_classes(ARROWS, source, lattice)
     classes = []

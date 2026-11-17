@@ -759,6 +759,14 @@ def test_rank_two_homothetic_saturation_strata_have_prescribed_index():
     assert saturation.inclusion().domain().subobject_on(lifted).inclusion().cokernel().cardinality() == cardinal(4)
 
 
+def test_homothetic_isotropic_classes_terminate_for_impossible_rank():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import homothetic_isotropic_sublattice_classes
+
+    ambient = Lattices(ZZ)("U")
+    assert tuple(homothetic_isotropic_sublattice_classes(ambient, 3, 2)) == ()
+
+
 def test_rank_two_homothetic_stabilizer_is_saturation_stabilizer():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
