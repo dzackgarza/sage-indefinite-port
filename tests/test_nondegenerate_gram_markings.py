@@ -245,3 +245,20 @@ def test_glued_positive_line_in_two_u_setwise_stabilizer_includes_negation():
     assert any(g(e + f) == -e - f for g in generators)
     assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
                for g in generators for x in (e, f, u, v) for y in (e, f, u, v))
+
+
+def test_glued_indefinite_rank_two_source_and_complement_use_full_preimage():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    e, f, u, v = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[2, 0], [0, -2]])
+    arrow = source.hom([e + f, u - v], codomain=ambient)
+    category = Lattices(ZZ).CosliceUnder(source)
+    fixed = tuple(automorphism_group_generators(category, category(arrow)))
+    moving = tuple(automorphism_group_generators(ARROWS, ARROWS(arrow)))
+    assert all(g(e + f) == e + f and g(u - v) == u - v for g in fixed)
+    assert all(arrow.is_in_image(g(e + f)) and arrow.is_in_image(g(u - v)) for g in moving)
+    assert ambient.O().subgroup(fixed).cardinality() == cardinal(4)
+    assert ambient.O().subgroup(moving).cardinality() == cardinal(16)
