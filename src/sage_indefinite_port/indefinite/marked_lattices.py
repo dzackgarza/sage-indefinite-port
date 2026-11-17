@@ -1077,6 +1077,41 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                         arrow.codomain(), (int(arrow.domain().rank()),), basis
                     )
                     return finite_ordered_set(tuple(generators))
+                if not arrow.codomain().is_nondegenerate() and arrow.is_primitive():
+                    from sage.all import ZZ as SageZZ, identity_matrix
+                    from sage_indefinite_port.indefinite.recursive import _conjugated, _isometry_from_row_matrix
+
+                    ambient = arrow.codomain()
+                    reduction, n, k, quotient = _degenerate_quotient_and_radical(ambient)
+                    if quotient.is_isotropic() and int(quotient.witt_index()) == 1 and int(arrow.domain().rank()) == k + 1:
+                        reduced = reduction.reduced
+                        labels = tuple(reduced.module_generating_set())
+                        quotient_labels = tuple(quotient.module_generating_set())
+                        inverse = reduction.isometry.inverse()
+                        images = tuple(arrow(point) for point in arrow.domain().module_generators())
+                        projected = tuple(quotient.linear_combination({
+                            quotient_labels[i]: quotient.base_ring()(int(inverse(point).to_vector()(labels[i])))
+                            for i in range(n)
+                        }) for point in images)
+                        nonzero = next((point for point in projected if point != quotient.zero()), None)
+                        if nonzero is not None and all(quotient.b(nonzero, point) == 0 for point in projected):
+                            radical_basis = tuple(reduction.isometry(reduced.module_generator(label))
+                                                  for label in labels[n:])
+                            generators = [generator for generator in _degenerate_radical_flag_generators(
+                                ambient, (k,), radical_basis
+                            ) if all(arrow.is_in_image(generator(point)) for point in images)]
+                            line = quotient.primitive_isotropic_subobject(nonzero.primitive_part())
+                            quotient_marked = ARROWS.object(line.inclusion())
+                            for action in automorphism_group_generators(ARROWS, quotient_marked):
+                                block = identity_matrix(SageZZ, n + k)
+                                for i, label in enumerate(quotient_labels):
+                                    coordinates = action(quotient.module_generator(label)).to_vector()
+                                    for j, target_label in enumerate(quotient_labels):
+                                        block[i, j] = int(coordinates(target_label))
+                                generators.extend(_conjugated(reduction.isometry, (
+                                    _isometry_from_row_matrix(reduced, reduced, block),
+                                )))
+                            return finite_ordered_set(tuple(generators))
                 if int(arrow.domain().rank()) > 1 and arrow.domain().is_nondegenerate():
                     generators = (_nondegenerate_stabilizer_generators(arrow, based=False)
                                   if arrow.is_primitive() else _finite_index_sublattice_stabilizer_generators(arrow))
@@ -2253,6 +2288,34 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 quotient_witt = int(complement.witt_index()) if complement.is_isotropic() else 0
                 if rank > k + quotient_witt:
                     classes = ()
+                elif quotient_witt == 1 and rank == k + 1:
+                    # A maximal totally isotropic rational subspace of
+                    # C_Q + R_Q contains R_Q when C has Witt index one.
+                    # Primitivity then forces the whole integral radical
+                    # into the sublattice.  Modulo R its image is exactly a
+                    # primitive isotropic line in C; the radical shears
+                    # remove all choices of lift.  Thus moving maximal
+                    # null sublattices are classified by the quotient's
+                    # primitive moving null lines, with no infinite
+                    # mixed-content ambiguity.
+                    line_source = lattice.lattice_category()([[0]])
+                    quotient_lines = primitive_marking_classes(ARROWS, line_source, complement)
+                    reduced_labels = tuple(reduced.module_generating_set())
+                    complement_labels = tuple(complement.module_generating_set())
+                    radical_basis = tuple(reduction.isometry(reduced.module_generator(label))
+                                          for label in reduced_labels[n:])
+                    classes = []
+                    for line in quotient_lines:
+                        arrow = line.arrow()
+                        point = arrow(next(iter(arrow.domain().module_generators())))
+                        coordinates = point.to_vector()
+                        lift = reduced.linear_combination({
+                            reduced_labels[i]: reduced.base_ring()(int(coordinates(label)))
+                            for i, label in enumerate(complement_labels)
+                        })
+                        basis = (reduction.isometry(lift), *radical_basis)
+                        classes.append(ARROWS.object(lattice.primitive_isotropic_subobject(*basis).inclusion()))
+                    classes = tuple(classes)
                 elif quotient_witt:
                     raise ValueError(
                         "mixed degenerate primitive isotropic sublattice orbit sets may be infinite; "

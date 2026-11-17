@@ -597,6 +597,52 @@ def test_moving_maximal_null_plane_in_u_plus_radical_is_one_orbit():
                for point in radical.module_generators())
 
 
+def test_moving_maximal_null_three_plane_in_u_plus_rank_two_radical():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    classes = primitive_marking_classes(ARROWS, source, ambient)
+    assert classes.cardinality() == cardinal(1)
+    arrow = next(iter(classes)).arrow()
+    assert arrow.is_primitive()
+    radical = ambient.radical()
+    assert all(arrow.saturation().inclusion().is_in_image(radical.inclusion()(point))
+               for point in radical.module_generators())
+
+
+def test_moving_maximal_null_planes_in_u_plus_radical_have_transporter():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    e, f, z = tuple(ambient.module_generators())
+    first = ARROWS.object(ambient.primitive_isotropic_subobject(e, z).inclusion())
+    second = ARROWS.object(ambient.primitive_isotropic_subobject(f, z).inclusion())
+    witness = isometry(ARROWS, first, second)
+    assert witness is not None
+    assert all(second.arrow().is_in_image(witness(first.arrow()(point)))
+               for point in first.arrow().domain().module_generators())
+
+
+def test_moving_maximal_null_plane_in_u_plus_radical_has_exact_stabilizer():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    e, f, z = tuple(ambient.module_generators())
+    marked = ARROWS.object(ambient.primitive_isotropic_subobject(e, z).inclusion())
+    generators = tuple(automorphism_group_generators(ARROWS, marked))
+    assert generators
+    failures = tuple((g(e), g(z)) for g in generators
+                     if not (marked.arrow().is_in_image(g(e)) and marked.arrow().is_in_image(g(z))))
+    assert not failures, failures
+    assert any(g(e) == e + z for g in generators)
+    assert any(g(f) == f + z for g in generators)
+    assert any(g(z) == -z for g in generators)
+
+
 def test_rectangular_based_radical_frame_transporter_in_rank_three_radical():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import isometry
