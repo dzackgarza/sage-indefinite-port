@@ -166,18 +166,16 @@ def test_glued_rank_two_based_transporter_exchanges_positive_generators():
 
 def test_glue_extension_rejects_integral_nonunimodular_rational_isometry():
     from sage_extensions.all import Lattices, ZZ
-    from sage_extensions.categories.lattice_embeddings import _glue_compatible_integral_extensions
+    from sage_extensions.categories.lattice_embeddings import _finite_overlattice_isometry_extension
 
     source_lattice = Lattices(ZZ)([[2, 0], [0, 2]])
     target_lattice = Lattices(ZZ)([[1, 0], [0, 1]])
-    source = Lattices(ZZ)([[2]])
-    source_arrow = source.hom([source_lattice.module_generators()[0]], codomain=source_lattice)
-    target_arrow = source.hom([target_lattice.module_generators()[0] + target_lattice.module_generators()[1]], codomain=target_lattice)
-    source_action = source.O().identity()
-    source_complement = source_lattice.orthogonal_complement(source_lattice.subobject_on([source_arrow(source.module_generators()[0])])).inclusion().domain()
-    target_complement = target_lattice.orthogonal_complement(target_lattice.subobject_on([target_arrow(source.module_generators()[0])])).inclusion().domain()
-    complement_action = source_complement.Isom(target_complement).an_element()
-    assert _glue_compatible_integral_extensions(source_arrow, target_arrow, (source_action,), (complement_action,)) == ()
+    u, v = tuple(target_lattice.module_generators())
+    source_inclusion = source_lattice.subobject_on(source_lattice.module_generators()).inclusion()
+    target_inclusion = target_lattice.subobject_on([u + v, u - v]).inclusion()
+    source_module, target_module = source_inclusion.domain(), target_inclusion.domain()
+    isometry = source_module.Isom(target_module)(list(target_module.module_generators()))
+    assert _finite_overlattice_isometry_extension(source_inclusion, target_inclusion, isometry) is None
 
 
 def test_odd_index_three_glue_rejects_independent_factor_signs():
@@ -397,3 +395,40 @@ def test_public_nondegenerate_glued_transporter_between_distinct_ambient_present
     assert all(target_lattice.b(witness(x), witness(y)) == source_lattice.b(x, y)
                for x in (e, f, g) for y in (e, f, g))
     assert all((~witness)(witness(x)) == x for x in (e, f, g))
+
+
+def test_nonprimitive_nondegenerate_rank_two_moving_transport_and_stabilizer():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry, automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    e, f, u, v = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 2], [2, 0]])
+    first = ARROWS(source.hom([2 * e, f], codomain=ambient))
+    second = ARROWS(source.hom([e, 2 * f], codomain=ambient))
+    witness = isometry(ARROWS, first, second)
+    assert witness is not None
+    assert all(second.arrow().is_in_image(witness(first.arrow()(x))) for x in source.module_generators())
+    stabilizer = tuple(automorphism_group_generators(ARROWS, first))
+    assert all(first.arrow().is_in_image(g(2 * e)) and first.arrow().is_in_image(g(f)) for g in stabilizer)
+    assert ambient.O().subgroup(stabilizer).cardinality() == cardinal(8)
+
+
+def test_nonprimitive_nondegenerate_based_markings_distinguish_source_coordinates():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import isometry, automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    e, f, u, v = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 2], [2, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category(source.hom([2 * e, f], codomain=ambient))
+    second = category(source.hom([2 * f, e], codomain=ambient))
+    third = category(source.hom([e, 2 * f], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert witness(2 * e) == 2 * f and witness(f) == e
+    assert isometry(category, first, third) is None
+    fixed = tuple(automorphism_group_generators(category, first))
+    assert all(g(2 * e) == 2 * e and g(f) == f for g in fixed)
+    assert ambient.O().subgroup(fixed).cardinality() == cardinal(4)

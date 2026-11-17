@@ -107,7 +107,7 @@ def _homothetic_isotropic_saturation(arrow: Morphism) -> Parent | None:
 
 
 
-def _finite_index_isotropic_transporter(source_arrow: Morphism, target_arrow: Morphism) -> LatticeIsometryMethods | None:
+def _finite_index_sublattice_transporter(source_arrow: Morphism, target_arrow: Morphism) -> LatticeIsometryMethods | None:
     r"""Transport two finite-index isotropic markings using the actual saturated stabilizer.
 
     First carry the primitive saturations onto each other.  Then enumerate
@@ -121,9 +121,14 @@ def _finite_index_isotropic_transporter(source_arrow: Morphism, target_arrow: Mo
     target_saturation = target_arrow.saturation()
     source_basis = tuple(source_saturation.inclusion()(x) for x in source_saturation.module_generators())
     target_basis = tuple(target_saturation.inclusion()(x) for x in target_saturation.module_generators())
-    source_space = source_lattice.primitive_isotropic_subobject(*source_basis)
-    target_space = target_lattice.primitive_isotropic_subobject(*target_basis)
-    transport = INDUCTION.plane_isometry(source_space, target_space)
+    source_space = source_saturation
+    target_space = target_saturation
+    if source_space.inclusion().domain().is_nondegenerate() and target_space.inclusion().domain().is_nondegenerate():
+        transport = _nondegenerate_embedding_isometry(source_space.inclusion(), target_space.inclusion(), based=False)
+    else:
+        source_space = source_lattice.primitive_isotropic_subobject(*source_basis)
+        target_space = target_lattice.primitive_isotropic_subobject(*target_basis)
+        transport = INDUCTION.plane_isometry(source_space, target_space)
     if transport is None:
         return None
     inclusion = target_space.inclusion()
@@ -146,7 +151,12 @@ def _finite_index_isotropic_transporter(source_arrow: Morphism, target_arrow: Mo
     if key(start) == goal_key:
         return transport
     actions = []
-    for generator in INDUCTION.plane_automorphism_generators(target_space):
+    target_generators = (
+        _nondegenerate_stabilizer_generators(target_space.inclusion(), based=False)
+        if target_space.inclusion().domain().is_nondegenerate()
+        else INDUCTION.plane_automorphism_generators(target_space)
+    )
+    for generator in target_generators:
         rows = []
         for point in target_basis:
             coordinates = inclusion.lift(generator(point)).to_vector()
@@ -169,7 +179,7 @@ def _finite_index_isotropic_transporter(source_arrow: Morphism, target_arrow: Mo
 
 
 
-def _finite_index_isotropic_stabilizer_generators(arrow: Morphism) -> tuple[LatticeIsometryMethods, ...]:
+def _finite_index_sublattice_stabilizer_generators(arrow: Morphism) -> tuple[LatticeIsometryMethods, ...]:
     r"""Schreier generators of Stab(J) inside Stab(S), for S the isotropic saturation.
 
     The orbit of the finite-index submodule J in S is finite.  Retain an
@@ -183,7 +193,7 @@ def _finite_index_isotropic_stabilizer_generators(arrow: Morphism) -> tuple[Latt
     saturation = arrow.saturation()
     inclusion = saturation.inclusion()
     basis = tuple(inclusion(x) for x in inclusion.domain().module_generators())
-    space = lattice.primitive_isotropic_subobject(*basis)
+    space = saturation if inclusion.domain().is_nondegenerate() else lattice.primitive_isotropic_subobject(*basis)
     labels = tuple(inclusion.domain().module_generating_set())
     points = tuple(arrow(x) for x in arrow.domain().module_generators())
 
@@ -195,7 +205,12 @@ def _finite_index_isotropic_stabilizer_generators(arrow: Morphism) -> tuple[Latt
         for point in points
     ]).hermite_form()
     actions = []
-    for generator in INDUCTION.plane_automorphism_generators(space):
+    ambient_generators = (
+        _nondegenerate_stabilizer_generators(space.inclusion(), based=False)
+        if space.inclusion().domain().is_nondegenerate()
+        else INDUCTION.plane_automorphism_generators(space)
+    )
+    for generator in ambient_generators:
         rows = []
         for point in basis:
             coordinates = inclusion.lift(generator(point)).to_vector()
@@ -364,7 +379,7 @@ def _nondegenerate_stabilizer_generators(arrow: Morphism, *, based: bool) -> tup
 
 
 
-def _glued_nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow: Morphism, *, based: bool) -> LatticeIsometryMethods | None:
+def _glued_nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow: Morphism, *, based: bool, source_action=None) -> LatticeIsometryMethods | None:
     r"""Glue-compatible transporter via the actual finite target block action.
 
     A base isometry of the two orthogonal sums transports source glue to a
@@ -382,7 +397,8 @@ def _glued_nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow
     target_sub = target_lattice.subobject_on(tuple(target_arrow(x) for x in target_arrow.domain().module_generators()))
     source_comp = source_lattice.orthogonal_complement(source_sub)
     target_comp = target_lattice.orthogonal_complement(target_sub)
-    source_iso = source_arrow.domain().O().identity() if based else RECURSION.isometry(source_arrow.domain(), target_arrow.domain())
+    source_iso = (source_action if source_action is not None else
+                  (source_arrow.domain().O().identity() if based else RECURSION.isometry(source_arrow.domain(), target_arrow.domain())))
     comp_iso = RECURSION.isometry(source_comp.inclusion().domain(), target_comp.inclusion().domain())
     if source_iso is None or comp_iso is None:
         return None
@@ -425,12 +441,47 @@ def _glued_nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow
     return _finite_overlattice_isometry_extension(source_inclusion, target_inclusion, correction * base)
 
 
+
+def _nonprimitive_nondegenerate_based_isometry(source_arrow: Morphism, target_arrow: Morphism) -> LatticeIsometryMethods | None:
+    r"""Extend the unique rational saturation map determined by a fixed source basis.
+
+    A based isometry must send every generator of J to its corresponding
+    target generator.  Since J has full rank in its primitive saturation,
+    this determines a unique rational map S_Q -> T_Q.  It extends only
+    if its matrix on S,T is integral unimodular, and its ambient glue
+    admits a compatible complement action.
+    """
+    from sage.all import QQ as SageQQ, ZZ as SageZZ, matrix
+
+    source_saturation = source_arrow.saturation().inclusion()
+    target_saturation = target_arrow.saturation().inclusion()
+    source_module, target_module = source_saturation.domain(), target_saturation.domain()
+    source_labels = tuple(source_module.module_generating_set())
+    target_labels = tuple(target_module.module_generating_set())
+    source_points = tuple(source_arrow(x) for x in source_arrow.domain().module_generators())
+    target_points = tuple(target_arrow(x) for x in target_arrow.domain().module_generators())
+    if len(source_points) != len(target_points):
+        return None
+    a = matrix(SageQQ, [[int(source_saturation.lift(x).to_vector()(label)) for label in source_labels]
+        for x in source_points])
+    b = matrix(SageQQ, [[int(target_saturation.lift(x).to_vector()(label)) for label in target_labels]
+        for x in target_points])
+    if not a.is_square() or not a.det():
+        return None
+    action = a.inverse() * b
+    if abs(action.det()) != 1 or not all(entry in SageZZ for entry in action.list()):
+        return None
+    integral = action.change_ring(SageZZ)
+    def image(label):
+        return target_module.linear_combination({target_label: target_module.base_ring()(int(value))
+            for target_label, value in zip(target_labels, integral.row(source_labels.index(label)), strict=True) if value})
+    saturation_isometry = source_module.Isom(target_module)(image)
+    return _glued_nondegenerate_embedding_isometry(source_saturation, target_saturation,
+        based=True, source_action=saturation_isometry)
+
+
 def _nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow: Morphism, *, based: bool) -> LatticeIsometryMethods | None:
     r"""Split extension or exact finite-factor glue-compatible transporter."""
-    from sage_extensions.categories.lattice_embeddings import (
-        _glue_compatible_integral_extensions,
-    )
-
     source_lattice, target_lattice = source_arrow.codomain(), target_arrow.codomain()
     if source_lattice is target_lattice and source_arrow.domain() is target_arrow.domain() and all(
         source_arrow(x) == target_arrow(x) for x in source_arrow.domain().module_generators()
@@ -499,7 +550,9 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 return RECURSION.pointed_isometry(_marked_vector(source), _marked_vector(target))
             source_arrow, target_arrow = source.arrow(), target.arrow()
             if source_arrow.domain().is_nondegenerate():
-                return _nondegenerate_embedding_isometry(source_arrow, target_arrow, based=True)
+                return (_nondegenerate_embedding_isometry(source_arrow, target_arrow, based=True)
+                        if source_arrow.is_primitive() and target_arrow.is_primitive()
+                        else _nonprimitive_nondegenerate_based_isometry(source_arrow, target_arrow))
             source_saturation = _isotropic_sublattice(source_arrow) if source_arrow.is_primitive() else _homothetic_isotropic_saturation(source_arrow)
             target_saturation = _isotropic_sublattice(target_arrow) if target_arrow.is_primitive() else _homothetic_isotropic_saturation(target_arrow)
             if source_saturation is None or target_saturation is None:
@@ -544,11 +597,13 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 return INDUCTION.line_isometry(source_point.primitive_part(), target_point.primitive_part())
             source_arrow, target_arrow = source.arrow(), target.arrow()
             if source_arrow.domain().is_nondegenerate() and target_arrow.domain().is_nondegenerate():
-                return _nondegenerate_embedding_isometry(source_arrow, target_arrow, based=False)
+                return (_nondegenerate_embedding_isometry(source_arrow, target_arrow, based=False)
+                        if source_arrow.is_primitive() and target_arrow.is_primitive()
+                        else _finite_index_sublattice_transporter(source_arrow, target_arrow))
             source_sublattice = _isotropic_sublattice(source_arrow) if source_arrow.is_primitive() else _homothetic_isotropic_saturation(source_arrow)
             target_sublattice = _isotropic_sublattice(target_arrow) if target_arrow.is_primitive() else _homothetic_isotropic_saturation(target_arrow)
             if source_sublattice is None or target_sublattice is None:
-                return _finite_index_isotropic_transporter(source_arrow, target_arrow)
+                return _finite_index_sublattice_transporter(source_arrow, target_arrow)
             source_point = source_arrow(next(iter(source_arrow.domain().module_generators())))
             target_point = target_arrow(next(iter(target_arrow.domain().module_generators())))
             if (not source_arrow.is_primitive() or not target_arrow.is_primitive()) and source_point.content() != target_point.content():
@@ -581,7 +636,8 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
             else:
                 arrow = marked.arrow()
                 if arrow.domain().is_nondegenerate():
-                    generators = _nondegenerate_stabilizer_generators(arrow, based=True)
+                    generators = (_nondegenerate_stabilizer_generators(arrow, based=True)
+                                  if arrow.is_primitive() else _nondegenerate_stabilizer_generators(arrow.saturation().inclusion(), based=True))
                     return finite_ordered_set(tuple(generators))
                 saturation = _isotropic_sublattice(arrow) if arrow.is_primitive() else _homothetic_isotropic_saturation(arrow)
                 if saturation is None:
@@ -596,7 +652,8 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
             else:
                 arrow = marked.arrow()
                 if int(arrow.domain().rank()) > 1 and arrow.domain().is_nondegenerate():
-                    generators = _nondegenerate_stabilizer_generators(arrow, based=False)
+                    generators = (_nondegenerate_stabilizer_generators(arrow, based=False)
+                                  if arrow.is_primitive() else _finite_index_sublattice_stabilizer_generators(arrow))
                     return finite_ordered_set(tuple(generators))
                 if int(arrow.domain().rank()) == 1:
                     # For any nonzero v, Stab(Zv) is generated by Stab(v)
@@ -616,7 +673,7 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                 else:
                     sublattice = _isotropic_sublattice(arrow) if arrow.is_primitive() else _homothetic_isotropic_saturation(arrow)
                     if sublattice is None:
-                        generators = _finite_index_isotropic_stabilizer_generators(arrow)
+                        generators = _finite_index_sublattice_stabilizer_generators(arrow)
                     else:
                         match int(sublattice.inclusion().domain().rank()):
                             case 1:
