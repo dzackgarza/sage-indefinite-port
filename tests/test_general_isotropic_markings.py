@@ -837,6 +837,16 @@ def test_recursive_levi_image_uses_owned_integral_parabolic_image(monkeypatch):
     assert all(generator in image for generator in reduction.levi_image_generators())
 
 
+def test_isotropic_induction_rank_zero_is_unique_in_every_ambient_rank():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    induction = IsotropicInduction(EichlerRecursion())
+    for ambient in (Lattices(ZZ)(0), Lattices(ZZ)([[2]]), Lattices(ZZ)("U")):
+        assert induction.isotropic_flag_bases(ambient, (0,)) == ((),)
+
+
 def test_five_u_partial_flag_rank_jumps_one_three_five_transport():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory

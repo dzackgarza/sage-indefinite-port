@@ -480,6 +480,10 @@ class IsotropicInduction:
         each step is seq_dims_reduced (:594-613). Every candidate is tested
         by exact flag equivalence, as fInsert (:2238-2258) requires.
         """
+        if dimensions == (0,):
+            # The zero isotropic sublattice is unique, including in rank-zero
+            # ambient lattices. No null-vector orbit search is required.
+            return ((),)
         if not dimensions or dimensions[0] < 1 or any(left >= right for left, right in zip(dimensions, dimensions[1:])):
             raise ValueError("isotropic flag ranks must be positive and strictly increasing")
         if dimensions[-1] > int(lattice.witt_index()):
