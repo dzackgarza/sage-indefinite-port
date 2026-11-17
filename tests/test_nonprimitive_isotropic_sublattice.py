@@ -244,3 +244,25 @@ def test_nonhomothetic_rank_two_stabilizer_uses_actual_finite_orbit():
     assert all(arrow.is_in_image(g(2 * e)) and arrow.is_in_image(g(u)) for g in family)
     assert all(arrow.is_in_image((~g)(2 * e)) and arrow.is_in_image((~g)(u)) for g in family)
     assert all(ambient.b(g(x), g(y)) == ambient.b(x, y) for g in family for x in (e, f, u, v) for y in (e, f, u, v))
+
+
+def test_public_orthogonal_group_nonprimitive_sublattice_classes():
+    from sage_extensions.all import cardinal
+
+    ambient = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 2], [0, 0, 2, 0]])
+    e, _f, u, _v = tuple(ambient.module_generators())
+    saturated = ambient.primitive_isotropic_subobject(e, u)
+    classes = ambient.O().nonprimitive_sublattice_classes(saturated, (1, 2))
+    assert classes.cardinality() == cardinal(2)
+    assert all(arrow.codomain() is ambient for arrow in classes)
+
+
+def test_rank_three_index_two_finite_submodule_orbit():
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_sublattice_classes
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    e, _f, u, _v, w, _z = tuple(ambient.module_generators())
+    saturated = ambient.primitive_isotropic_subobject(e, u, w)
+    classes = nonprimitive_sublattice_classes(saturated, (1, 1, 2))
+    assert len(classes) == 1
+    assert classes[0].codomain() is ambient
