@@ -847,6 +847,22 @@ def test_isotropic_induction_rank_zero_is_unique_in_every_ambient_rank():
         assert induction.isotropic_flag_bases(ambient, (0,)) == ((),)
 
 
+def test_rank_zero_isotropic_subspace_stabilizer_is_full_orthogonal_group():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    recursion = EichlerRecursion()
+    induction = IsotropicInduction(recursion)
+    for ambient in (Lattices(ZZ)(0), Lattices(ZZ)([[2]]), Lattices(ZZ)("U")):
+        zero = ambient.primitive_isotropic_subobject()
+        generators = induction.plane_automorphism_generators(zero)
+        expected = recursion.orthogonal_group_generators(ambient)
+        assert generators == expected
+        assert all(generator.domain() is ambient and generator.codomain() is ambient
+                   for generator in generators)
+
+
 def test_five_u_partial_flag_rank_jumps_one_three_five_transport():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
