@@ -1,4 +1,5 @@
 """Exact split-radical mixed pointed transporters and congruence obstructions."""
+import pytest
 from tests.acceptance.consumer import lattice
 
 
@@ -410,15 +411,16 @@ def test_mixed_degenerate_maximal_plane_index_two_uses_integral_radical_stabiliz
     assert all(marked.arrow().saturation().inclusion().domain().rank() == 2 for marked in classes)
 
 
-def test_mixed_degenerate_maximal_rank_three_index_two_respects_radical_plane():
+@pytest.mark.parametrize("smith", ((1, 1, 2), (1, 2, 2)))
+def test_mixed_degenerate_maximal_rank_three_index_two_respects_radical_plane(smith):
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_isotropic_sublattice_classes
 
     ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
-    classes = tuple(nonprimitive_isotropic_sublattice_classes(ambient, 3, (1, 1, 2)))
+    classes = tuple(nonprimitive_isotropic_sublattice_classes(ambient, 3, smith))
     # The stabilizer of the full radical plane in the maximal null rank-three
-    # space has two mod-two orbits of index-two sublattices: those whose
-    # defining character vanishes on the radical and those where it does not.
+    # space has two mod-two orbits on lines and on hyperplanes: those
+    # distinguished by their incidence with the radical plane.
     assert len(classes) == 2
     assert all(marked.arrow().codomain() is ambient for marked in classes)
 
