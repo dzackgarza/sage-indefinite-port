@@ -2218,6 +2218,10 @@ def nonprimitive_nondegenerate_sublattice_classes(lattice: Parent, saturation_ty
         raise ValueError("use isotropic or radical marking classification for degenerate saturation")
     if len(divisors) != int(saturation_type.rank()):
         raise ValueError("elementary divisors must match the saturation rank")
+    if int(saturation_type.rank()) == 0:
+        # The zero lattice is nondegenerate, primitive in every L, and
+        # its empty Smith type has exactly one moving class.
+        return primitive_marking_classes(ARROWS, saturation_type, lattice)
     if any(d < 1 for d in divisors) or any(right % left for left, right in pairwise(divisors)):
         raise ValueError("elementary divisors must be positive and ordered by divisibility")
     if acting_group is not None and int(lattice.rank()) % 2 and acting_group is lattice.SO():
@@ -2254,8 +2258,11 @@ def iter_all_nondegenerate_sublattice_index_classes(lattice: Parent, saturation_
     if not saturation_type.is_nondegenerate():
         raise ValueError("a nondegenerate saturation type is required")
     rank = int(saturation_type.rank())
-    if rank < 1:
-        raise ValueError("a positive-rank saturation type is required")
+    if rank == 0:
+        yield from nonprimitive_nondegenerate_sublattice_classes(
+            lattice, saturation_type, (), acting_group=acting_group
+        )
+        return
     if rank > int(lattice.rank()):
         return
     for maximum in count(1):
@@ -2516,6 +2523,14 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 classes = tuple(category(_flag_marking_from_basis(lattice, basis, dimensions)) for basis in INDUCTION.isotropic_flag_bases(lattice, dimensions))
         case _:
             raise ValueError(f"{category} is not a category of marked lattices this port classifies: a coslice <n>/Lattices, Ar(Lattices) or Fun([t], Lattices) for finite [t]")
+    if (category is ARROWS or isinstance(category, CosliceCategory)) and classes and all(
+        int(marked.arrow().domain().rank()) == 0 for marked in classes
+    ):
+        # Every isometry fixes the unique zero embedding (and the unique
+        # rank-zero based marking). Splitting this singleton through a
+        # finite-character quotient would require computing O(0), which
+        # is unnecessary and is not supported by the definite engine.
+        acting_group = None
     if category is ARROWS and acting_group is not None and int(lattice.rank()) % 2 and acting_group is lattice.SO():
         # Central -id_L has determinant -1 in odd rank and preserves
         # every moving sublattice. Consequently O(L) and SO(L) have

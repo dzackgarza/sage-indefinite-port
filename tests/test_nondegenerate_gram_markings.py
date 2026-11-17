@@ -488,6 +488,40 @@ def test_odd_rank_proper_nondegenerate_saturation_so_and_o_orbits_agree():
     assert full
 
 
+def test_rank_zero_nondegenerate_saturation_has_unique_smith_class_and_stream():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        nonprimitive_nondegenerate_sublattice_classes, iter_all_nondegenerate_sublattice_index_classes,
+    )
+
+    source = Lattices(ZZ)(0)
+    for ambient in (source, Lattices(ZZ)([[2]]), Lattices(ZZ)("U")):
+        for group in (None, ambient.SO()):
+            fixed = tuple(nonprimitive_nondegenerate_sublattice_classes(
+                ambient, source, (), acting_group=group
+            ))
+            stream = tuple(iter_all_nondegenerate_sublattice_index_classes(
+                ambient, source, acting_group=group
+            ))
+            assert len(fixed) == len(stream) == 1
+            assert fixed[0].arrow().domain().rank() == 0
+            assert stream[0].arrow().codomain() is ambient
+
+
+def test_primitive_rank_zero_markings_are_singletons_for_every_arithmetic_group():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
+
+    source = Lattices(ZZ)(0)
+    for ambient in (source, Lattices(ZZ)([[2]]), Lattices(ZZ)("U")):
+        for category in (ARROWS, Lattices(ZZ).CosliceUnder(source)):
+            classes = tuple(primitive_marking_classes(
+                category, source, ambient, acting_group=ambient.SO()
+            ))
+            assert len(classes) == 1
+            assert classes[0].arrow().domain().rank() == 0
+
+
 def test_nondegenerate_fixed_smith_classifier_validates_before_empty_orbit_dispatch():
     import pytest
     from sage_extensions.all import Lattices, ZZ
