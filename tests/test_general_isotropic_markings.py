@@ -223,6 +223,20 @@ def test_four_u_maximal_rank_four_isotropic_class_induction():
         assert ambient.primitive_isotropic_subobject(*basis).inclusion().is_primitive()
 
 
+def test_four_u_partial_one_four_flag_classes_preserve_intermediate_term():
+    """Integral hyperbolic completion and GL(4,ZZ) give one (1,4)-flag orbit."""
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    representatives = IsotropicInduction(EichlerRecursion()).isotropic_flag_bases(ambient, (1, 4))
+    assert len(representatives) == 1
+    for basis in representatives:
+        assert len(basis) == 4
+        assert ambient.primitive_isotropic_subobject(*basis[:1]).inclusion().is_primitive()
+        assert ambient.primitive_isotropic_subobject(*basis).inclusion().is_primitive()
+
+
 def test_complete_isotropic_flags_in_three_u_split_into_two_special_orthogonal_orbits():
     r"""A maximal isotropic stabilizer has determinant det(A) det(A^-T)=1.
 
