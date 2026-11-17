@@ -646,6 +646,26 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
             rank = int(source.rank())
             if rank == 0:
                 classes = (ARROWS.object(source.hom([], codomain=lattice)),)
+            elif any(source.b(left, right) != 0 for left in source.module_generators() for right in source.module_generators()):
+                if source.is_nondegenerate() is not True:
+                    from sage_indefinite_port.readiness import UnfinishedCapability
+
+                    raise UnfinishedCapability(
+                        f"primitive embeddings of the degenerate, nonzero-gram source {source} "
+                        f"into {lattice} need the exact degenerate marking and source-isometry "
+                        "construction of #69/#61; isotropic induction does not classify this source"
+                    )
+                # A moving arrow identifies markings up to automorphisms of
+                # *both* source and target, unlike the coslice's fixed-source
+                # classification. The provider's full finite discriminant
+                # gluing solver already implements these 'sub' classes.
+                # Do not replace a nonzero source Gram form by a null plane.
+                classes = tuple(
+                    ARROWS.object(embedding)
+                    for embedding in source.Emb(lattice).primitive_embedding_class_representatives(
+                        classification="sub"
+                    )
+                )
             else:
                 classes = tuple(ARROWS.object(lattice.primitive_isotropic_subobject(*basis).inclusion()) for basis in INDUCTION.isotropic_flag_bases(lattice, (rank,)))
         case OrientedIsotropicFlags():
