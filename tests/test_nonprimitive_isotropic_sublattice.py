@@ -209,10 +209,11 @@ def test_zero_form_rank_two_isotropic_sublattices_have_complete_smith_strata():
 
 
 def test_mixed_degenerate_radical_smith_classes_use_integral_gl_action():
+    from itertools import islice
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import (
         ARROWS, automorphism_group_generators, nonprimitive_isotropic_sublattice_classes,
-        nonprimitive_sublattice_classes,
+        nonprimitive_sublattice_classes, iter_all_isotropic_sublattice_classes,
     )
 
     ambient = Lattices(ZZ)([[2, 0, 0], [0, 0, 0], [0, 0, 0]])
@@ -221,6 +222,12 @@ def test_mixed_degenerate_radical_smith_classes_use_integral_gl_action():
     classes = tuple(nonprimitive_sublattice_classes(saturated, (1, 2)))
     assert len(classes) == 1
     assert len(tuple(nonprimitive_isotropic_sublattice_classes(ambient, 2, (1, 2)))) == 1
+    stream = tuple(islice(iter_all_isotropic_sublattice_classes(ambient, 2), 3))
+    assert len(stream) == 3
+    assert [int(marking.arrow().saturation().inclusion().domain().subobject_on(tuple(
+        marking.arrow().saturation().inclusion().lift(marking.arrow()(point))
+        for point in marking.arrow().domain().module_generators()
+    )).inclusion().cokernel().cardinality()) for marking in stream] == [1, 2, 4]
     marked = ARROWS.object(classes[0])
     generators = tuple(automorphism_group_generators(ARROWS, marked))
     assert generators
