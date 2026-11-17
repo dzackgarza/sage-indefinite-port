@@ -553,7 +553,6 @@ def test_nonhomothetic_based_radical_frames_have_exact_transporter():
     assert witness is not None
     assert witness(2 * z) == 2 * (z + w) and witness(3 * w) == 3 * w
 
-
     # Equal Smith invariants do not imply based equivalence: the source
     # frame's column lattice, rather than its unlabelled index, is fixed.
     incompatible = category.object(source.hom([3 * z, 2 * w], codomain=ambient))
@@ -578,6 +577,24 @@ def test_mixed_degenerate_isotropic_rank_above_rational_witt_index_is_empty():
     assert primitive_marking_classes(ARROWS, source, ambient).is_empty()
     first = source.primitive_isotropic_subobject(*tuple(source.module_generators())[:2])
     assert primitive_marking_classes(FLAGS, first.inclusion(), ambient).is_empty()
+
+
+def test_moving_maximal_null_plane_in_u_plus_radical_is_one_orbit():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    classes = primitive_marking_classes(ARROWS, source, ambient)
+    assert classes.cardinality() == cardinal(1)
+    arrow = next(iter(classes)).arrow()
+    assert arrow.is_primitive()
+    assert all(ambient.b(arrow(x), arrow(y)) == 0
+               for x in arrow.domain().module_generators()
+               for y in arrow.domain().module_generators())
+    radical = ambient.radical()
+    assert all(arrow.saturation().inclusion().is_in_image(radical.inclusion()(point))
+               for point in radical.module_generators())
 
 
 def test_rectangular_based_radical_frame_transporter_in_rank_three_radical():
