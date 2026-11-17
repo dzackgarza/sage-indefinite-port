@@ -530,3 +530,30 @@ def test_public_partial_flag_classes_split_by_actual_special_orthogonal_group():
     special = tuple(primitive_marking_classes(FLAGS, first.inclusion(), ambient, acting_group=ambient.SO()))
     assert len(full) == 1
     assert len(special) == 2
+
+
+def test_induction_partial_rank_one_three_flag_stabilizer_generators_preserve_each_term():
+    from sage_extensions.all import IsotropicFlag, FlagType, Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    basis = tuple(ambient.module_generators())[::2]
+    flag = IsotropicFlag(ambient, basis, flag_type=FlagType((1, 3)))
+    generators = tuple(INDUCTION.flag_automorphism_generators(flag))
+    assert generators
+    assert all(all(term.inclusion().is_in_image(g(term.inclusion()(x)))
+                   for x in term.module_generators())
+               for g in generators for term in flag.terms())
+
+
+def test_induction_complete_rank_three_flag_stabilizer_generators_preserve_all_terms():
+    from sage_extensions.all import IsotropicFlag, FlagType, Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    flag = IsotropicFlag(ambient, tuple(ambient.module_generators())[::2], flag_type=FlagType((1, 2, 3)))
+    generators = tuple(INDUCTION.flag_automorphism_generators(flag))
+    assert generators
+    assert all(all(term.inclusion().is_in_image(g(term.inclusion()(x)))
+                   for x in term.module_generators())
+               for g in generators for term in flag.terms())
