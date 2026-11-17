@@ -490,3 +490,13 @@ def test_four_u_partial_flag_with_rank_jump_has_integral_transporter_and_stabili
         for size in (1, 3, 4):
             term = ambient.primitive_isotropic_subobject(*basis[::2][:size])
             assert all(term.inclusion().is_in_image(g(point)) for point in basis[::2][:size])
+
+
+def test_isotropic_rank_above_rational_witt_index_is_empty_not_unsupported():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    classes = primitive_marking_classes(ARROWS, source, ambient)
+    assert classes.cardinality() == cardinal(0)

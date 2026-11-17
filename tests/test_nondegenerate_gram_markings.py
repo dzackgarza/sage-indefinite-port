@@ -363,3 +363,37 @@ def test_glued_infinite_pell_complement_transporter_requires_glue_correction():
     assert (~witness)(-e - f) == e + f
     assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
                for x in (e, f, u, v) for y in (e, f, u, v))
+
+
+def test_public_nondegenerate_embedding_transporter_rejects_distinct_glue_indices():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
+
+    source_lattice = Lattices(ZZ)([[2, 0, 0], [0, 2, 0], [0, 0, 2]])
+    target_lattice = Lattices(ZZ)([[1, 0, 0], [0, 1, 0], [0, 0, 2]])
+    e, _f, g = tuple(source_lattice.module_generators())
+    u, v, w = tuple(target_lattice.module_generators())
+    source = Lattices(ZZ)([[2, 0], [0, 2]])
+    first = ARROWS(source.hom([e, g], codomain=source_lattice))
+    second = ARROWS(source.hom([u + v, w], codomain=target_lattice))
+    assert isometry(ARROWS, first, second) is None
+
+
+def test_public_nondegenerate_glued_transporter_between_distinct_ambient_presentations():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
+
+    source_lattice = Lattices(ZZ)([[1, 0, 0], [0, 2, 0], [0, 0, 2]])
+    target_lattice = Lattices(ZZ)([[2, 0, 0], [0, 1, 0], [0, 0, 2]])
+    e, f, g = tuple(source_lattice.module_generators())
+    u, v, w = tuple(target_lattice.module_generators())
+    source = Lattices(ZZ)([[3, 0], [0, 2]])
+    first = ARROWS(source.hom([e + f, g], codomain=source_lattice))
+    second = ARROWS(source.hom([u + v, w], codomain=target_lattice))
+    witness = isometry(ARROWS, first, second)
+    assert witness is not None
+    assert second.arrow().is_in_image(witness(e + f))
+    assert second.arrow().is_in_image(witness(g))
+    assert all(target_lattice.b(witness(x), witness(y)) == source_lattice.b(x, y)
+               for x in (e, f, g) for y in (e, f, g))
+    assert all((~witness)(witness(x)) == x for x in (e, f, g))
