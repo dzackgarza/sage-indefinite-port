@@ -304,6 +304,30 @@ def test_public_primitive_radical_flag_in_anisotropic_degenerate_lattice():
         primitive_marking_classes(FLAGS, first.inclusion(), isotropic_quotient)
 
 
+def test_primitive_radical_markings_are_covariant_under_reordered_coordinate_labels():
+    from itertools import islice
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        ARROWS, primitive_marking_classes, iter_pointed_isotropic_classes,
+    )
+
+    ambient = Lattices(ZZ)([[0, 0, 0], [0, 2, 0], [0, 0, 0]],
+                           module_generators=("radical_first", "positive", "radical_last"))
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    for category in (ARROWS, Lattices(ZZ).CosliceUnder(source)):
+        classes = primitive_marking_classes(category, source, ambient)
+        assert classes.cardinality() == cardinal(1)
+        arrow = next(iter(classes)).arrow()
+        assert all(arrow(point) in ambient.radical() for point in arrow.domain().module_generators())
+    pointed_source = Lattices(ZZ)([[0]])
+    pointed_category = Lattices(ZZ).CosliceUnder(pointed_source)
+    radical_classes = tuple(islice(iter_pointed_isotropic_classes(pointed_category, ambient), 3))
+    assert tuple(int(marked.arrow()(pointed_source.module_generators()[0]).content())
+                 for marked in radical_classes) == (1, 2, 3)
+    assert all(marked.arrow()(pointed_source.module_generators()[0]) in ambient.radical()
+               for marked in radical_classes)
+
+
 def test_mixed_radical_rank_one_stabilizers_respect_residue_and_shear():
     from sage_extensions.all import cardinal
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION

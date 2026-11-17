@@ -1139,6 +1139,23 @@ def odd_primitive_pointed_classes_via_doubling(category: Category, lattice: Pare
 
 
 
+def _degenerate_quotient_and_radical(lattice: Parent):
+    r"""The reduced nondegenerate quotient and integral radical coordinates.
+
+    The pinned unimodular reduction orders the nondegenerate block before
+    the saturated radical.  All marked classifiers use this same framing.
+    """
+    from sage_indefinite_port.indefinite.recursive import _gram_in_label_order
+
+    reduction = indefinite_reduced_presentation(lattice)
+    gram = _gram_in_label_order(reduction.reduced)
+    n = int(gram.rank())
+    quotient = lattice.lattice_category()([
+        [int(gram[i, j]) for j in range(n)] for i in range(n)
+    ])
+    return reduction, n, int(gram.nrows()) - n, quotient
+
+
 def _degenerate_radical_residues(lattice: Parent, radical_rank: int, modulus: int):
     """Canonical orbit representatives of (Z/modulus)^k under the actual GL_k(Z) image."""
     from itertools import product
@@ -1184,7 +1201,7 @@ def _degenerate_isotropic_pointed_iterator(category: Category, lattice: Parent, 
 
     for content in count(1):
         # The pure radical has exactly one GL(R)-orbit at each content.
-        radical = reduced.scalar_multiple(reduced.base_ring()(content), reduced.module_generators()[n])
+        radical = reduced.scalar_multiple(reduced.base_ring()(content), reduced.module_generator(labels[n]))
         yield from emit(radical)
         if not primitive:
             continue
@@ -1276,19 +1293,12 @@ def pointed_content_classes(category: Category, lattice: Parent, square: int, co
         lattice.b(x, y) != 0 for x in lattice.module_generators()
         for y in lattice.module_generators()
     ):
-        from sage_indefinite_port.indefinite.recursive import _gram_in_label_order
-
-        reduction = indefinite_reduced_presentation(lattice)
-        gram = _gram_in_label_order(reduction.reduced)
-        n = int(gram.rank())
-        complement = lattice.lattice_category()([
-            [int(gram[i, j]) for j in range(n)] for i in range(n)
-        ])
+        reduction, n, _k, complement = _degenerate_quotient_and_radical(lattice)
         if not complement.is_definite() and complement.is_isotropic():
             raise ValueError("mixed degenerate isotropic fixed-content orbit sets may be infinite; use iter_pointed_content_classes")
         # An anisotropic nondegenerate quotient forces every null vector
         # into the radical, where GL(rad L) is transitive at fixed content.
-        radical_generator = reduction.reduced.module_generators()[n]
+        radical_generator = reduction.reduced.module_generator(tuple(reduction.reduced.module_generating_set())[n])
         vector = reduction.isometry(reduction.reduced.scalar_multiple(
             reduction.reduced.base_ring()(content), radical_generator
         ))
@@ -1396,14 +1406,7 @@ def iter_pointed_content_classes(category: Category, lattice: Parent, square: in
     ):
         yield from pointed_content_classes(category, lattice, square, content, acting_group=acting_group)
         return
-    from sage_indefinite_port.indefinite.recursive import _gram_in_label_order
-
-    reduction = indefinite_reduced_presentation(lattice)
-    gram = _gram_in_label_order(reduction.reduced)
-    n = int(gram.rank())
-    complement = lattice.lattice_category()([
-        [int(gram[i, j]) for j in range(n)] for i in range(n)
-    ])
+    _reduction, _n, _k, complement = _degenerate_quotient_and_radical(lattice)
     if complement.is_definite() or not complement.is_isotropic():
         yield from pointed_content_classes(category, lattice, square, content, acting_group=acting_group)
         return
@@ -1997,25 +2000,18 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                     source.b(x, y) == 0 for x in source.module_generators()
                     for y in source.module_generators()
                 ):
-                    from sage_indefinite_port.indefinite.recursive import _gram_in_label_order
-
-                    reduction = indefinite_reduced_presentation(lattice)
+                    reduction, n, k, complement = _degenerate_quotient_and_radical(lattice)
                     reduced = reduction.reduced
-                    gram = _gram_in_label_order(reduced)
-                    n = int(gram.rank())
-                    complement = lattice.lattice_category()([
-                        [int(gram[i, j]) for j in range(n)] for i in range(n)
-                    ])
                     if not complement.is_definite() and complement.is_isotropic():
                         raise ValueError(
                             "mixed degenerate primitive isotropic based-marking orbit sets may be infinite; "
                             "this finite-class interface cannot represent them"
                         )
-                    if int(source.rank()) > int(gram.nrows()) - n:
+                    if int(source.rank()) > k:
                         classes = ()
                     else:
-                        basis = tuple(reduction.isometry(point)
-                                      for point in tuple(reduced.module_generators())[n:n + int(source.rank())])
+                        basis = tuple(reduction.isometry(reduced.module_generator(label))
+                                      for label in tuple(reduced.module_generating_set())[n:n + int(source.rank())])
                         classes = (category.object(source.hom(basis, codomain=lattice)),)
                 else:
                     if any(source.b(left, right) != 0 for left in source_basis for right in source_basis):
@@ -2070,15 +2066,8 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 source.b(x, y) == 0 for x in source.module_generators()
                 for y in source.module_generators()
             ):
-                from sage_indefinite_port.indefinite.recursive import _gram_in_label_order
-
-                reduction = indefinite_reduced_presentation(lattice)
+                reduction, n, k, complement = _degenerate_quotient_and_radical(lattice)
                 reduced = reduction.reduced
-                gram = _gram_in_label_order(reduced)
-                n = int(gram.rank())
-                complement = lattice.lattice_category()([
-                    [int(gram[i, j]) for j in range(n)] for i in range(n)
-                ])
                 if not complement.is_definite() and complement.is_isotropic():
                     raise ValueError(
                         "mixed degenerate primitive isotropic sublattice orbit sets may be infinite; "
@@ -2087,11 +2076,11 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 # The anisotropic quotient forces every isotropic subspace
                 # into rad(L).  Since rad(L) is saturated, its primitive
                 # rank-r sublattices form one GL(rad L)-orbit for r <= k.
-                if rank > int(gram.nrows()) - n:
+                if rank > k:
                     classes = ()
                 else:
-                    basis = tuple(reduction.isometry(point)
-                                  for point in tuple(reduced.module_generators())[n:n + rank])
+                    basis = tuple(reduction.isometry(reduced.module_generator(label))
+                                  for label in tuple(reduced.module_generating_set())[n:n + rank])
                     classes = (ARROWS.object(lattice.primitive_isotropic_subobject(*basis).inclusion()),)
             elif source.is_nondegenerate():
                 # Moving sublattices allow the full source isometry group.
@@ -2155,15 +2144,8 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 basis = tuple(lattice.module_generators())[:dimensions[-1]]
                 classes = (category(_flag_marking_from_basis(lattice, basis, dimensions)),)
             elif not lattice.is_nondegenerate():
-                from sage_indefinite_port.indefinite.recursive import _gram_in_label_order
-
-                reduction = indefinite_reduced_presentation(lattice)
+                reduction, n, k, complement = _degenerate_quotient_and_radical(lattice)
                 reduced = reduction.reduced
-                gram = _gram_in_label_order(reduced)
-                n = int(gram.rank())
-                complement = lattice.lattice_category()([
-                    [int(gram[i, j]) for j in range(n)] for i in range(n)
-                ])
                 if not complement.is_definite() and complement.is_isotropic():
                     raise ValueError(
                         "mixed degenerate primitive isotropic flag orbit sets may be infinite; "
@@ -2171,11 +2153,11 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                     )
                 if dimensions[0] < 1 or any(left >= right for left, right in pairwise(dimensions)):
                     raise ValueError("isotropic flag ranks must be positive and strictly increasing")
-                if dimensions[-1] > int(gram.nrows()) - n:
+                if dimensions[-1] > k:
                     classes = ()
                 else:
-                    basis = tuple(reduction.isometry(point)
-                                  for point in tuple(reduced.module_generators())[n:n + dimensions[-1]])
+                    basis = tuple(reduction.isometry(reduced.module_generator(label))
+                                  for label in tuple(reduced.module_generating_set())[n:n + dimensions[-1]])
                     classes = (category(_flag_marking_from_basis(lattice, basis, dimensions)),)
             else:
                 classes = tuple(category(_flag_marking_from_basis(lattice, basis, dimensions)) for basis in INDUCTION.isotropic_flag_bases(lattice, dimensions))
