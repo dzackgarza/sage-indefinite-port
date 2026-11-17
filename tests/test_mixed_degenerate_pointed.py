@@ -397,6 +397,19 @@ def test_mixed_degenerate_maximal_moving_rank_three_contains_full_radical():
     assert all(embedding.is_in_image(radical(point)) for point in radical.domain().module_generators())
 
 
+def test_mixed_degenerate_maximal_plane_index_two_uses_integral_radical_stabilizer():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_isotropic_sublattice_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    classes = tuple(nonprimitive_isotropic_sublattice_classes(ambient, 2, (1, 2)))
+    # The saturation stabilizer preserves the radical line. Its mod-2
+    # image has two orbits on the three index-two sublattices of Z^2.
+    assert len(classes) == 2
+    assert all(marked.arrow().codomain() is ambient for marked in classes)
+    assert all(marked.arrow().saturation().inclusion().domain().rank() == 2 for marked in classes)
+
+
 def test_primitive_radical_markings_are_covariant_under_reordered_coordinate_labels():
     from itertools import islice
     from sage_extensions.all import Lattices, ZZ, cardinal

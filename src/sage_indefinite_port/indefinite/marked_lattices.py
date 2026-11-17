@@ -1082,7 +1082,8 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                     )
                     return finite_ordered_set(tuple(generators))
                 if not arrow.codomain().is_nondegenerate() and arrow.is_primitive():
-                    from sage.all import ZZ as SageZZ, identity_matrix
+                    from sage.all import identity_matrix
+                    from sage.rings.integer_ring import ZZ as SageZZ
                     from sage_indefinite_port.indefinite.recursive import _conjugated, _isometry_from_row_matrix
 
                     ambient = arrow.codomain()
@@ -1309,7 +1310,8 @@ def _degenerate_radical_flag_generators(ambient: Parent, dimensions: tuple[int, 
     The flag imposes precisely its GL(R)-stabilizer, leaving O(C) and
     every shear unrestricted.  The pinned reduction transports the result.
     """
-    from sage.all import ZZ as SageZZ, identity_matrix, matrix
+    from sage.all import identity_matrix, matrix
+    from sage.rings.integer_ring import ZZ as SageZZ
     from sage_indefinite_port.indefinite.recursive import _conjugated, _isometry_from_row_matrix
     from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
 
@@ -2018,6 +2020,15 @@ def nonprimitive_sublattice_classes(saturated: Parent | Morphism, divisors: tupl
             ambient_generators = _degenerate_radical_flag_generators(
                 lattice, (int(inclusion.domain().rank()),), basis
             )
+        elif not lattice.is_nondegenerate():
+            # A mixed degenerate maximal null saturation meets rad(L)
+            # nontrivially. Witt extension for nondegenerate ambient spaces
+            # cannot extend arbitrary GL(S) actions across that intersection.
+            # The moving-arrow stabilizer owns the integral radical/glue
+            # constraints and supplies precisely the permitted action on S.
+            ambient_generators = tuple(automorphism_group_generators(
+                ARROWS, ARROWS.object(inclusion)
+            ))
         else:
             ambient_generators = INDUCTION.plane_automorphism_generators(saturated)
         module = inclusion.domain()
