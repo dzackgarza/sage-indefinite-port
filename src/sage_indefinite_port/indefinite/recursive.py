@@ -482,6 +482,11 @@ def _fair_unimodular_matrices(n: int):
     from collections import deque
 
     identity = identity_matrix(SageZZ, n)
+    if n == 0:
+        # GL_0(ZZ) is the trivial group. In particular there is no first
+        # basis coordinate on which to apply the sign generator below.
+        yield identity
+        return
     generators = []
     for i in range(n):
         for j in range(n):

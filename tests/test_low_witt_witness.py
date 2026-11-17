@@ -2,6 +2,18 @@
 from tests.acceptance.consumer import lattice
 
 
+def test_zero_rank_exact_integral_orthogonal_stream_has_one_identity():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.recursive import iter_exact_integral_orthogonal_isometries
+
+    ambient = Lattices(ZZ)(0)
+    stream = iter_exact_integral_orthogonal_isometries(ambient)
+    identity = next(stream)
+    assert identity.domain() is ambient and identity.codomain() is ambient
+    assert identity == ambient.O().identity()
+    assert tuple(stream) == ()
+
+
 def test_low_witt_nonprimitive_isotropic_line_stream_preserves_saturation_index():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import iter_isotropic_line_content_classes
