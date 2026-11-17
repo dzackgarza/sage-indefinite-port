@@ -58,3 +58,15 @@ def test_odd_split_nonprimitive_norm_four_orbit_preserves_original_square():
     point = marked.arrow()(source.module_generators()[0])
     assert point.q() == ZZ(4)
     assert point.content() == ZZ(2)
+
+
+def test_original_odd_stable_group_is_not_doubled_stable_group():
+    from sage_extensions.all import Lattices, ZZ
+
+    ambient = lattice([[1, 0, 0], [0, 1, 0], [0, 0, -1]])
+    doubled, functor = ambient.doubled_form()
+    labels = tuple(ambient.module_generating_set())
+    e, f, g = tuple(ambient.module_generators())
+    exchange = ambient.O()(dict(zip(labels, (f, e, g), strict=True)))
+    assert exchange in ambient.stable_orthogonal_group()
+    assert functor(exchange) not in doubled.stable_orthogonal_group()
