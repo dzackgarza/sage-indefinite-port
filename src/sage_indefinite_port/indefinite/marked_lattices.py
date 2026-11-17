@@ -219,13 +219,23 @@ def _finite_index_sublattice_stabilizer_generators(arrow: Morphism) -> tuple[Lat
         for point in points
     ]).hermite_form()
     actions = []
-    ambient_generators = (
-        _nondegenerate_stabilizer_generators(space.inclusion(), based=False)
-        if space.inclusion().domain().is_nondegenerate()
-        else (_split_radical_saturation_stabilizer_generators(space)
-              if not all(lattice.b(x, y) == 0 for x in basis for y in basis)
-              else INDUCTION.plane_automorphism_generators(space))
-    )
+    if all(lattice.b(x, y) == 0 for x in lattice.module_generators() for y in lattice.module_generators()):
+        # O(L)=GL(L).  The saturation stabilizer is the integral
+        # parabolic, even when J has nonconstant elementary divisors.
+        # Schreier below intersects it with the *actual* finite-index
+        # submodule stabilizer; a Witt-index induction is inapplicable.
+        linear = lattice.general_linear_group()
+        preserving = (linear.group_generators() if int(inclusion.domain().rank()) == int(lattice.rank())
+                      else linear.flag_stabilizer((saturation,)).group_generators())
+        ambient_generators = _zero_form_orthogonal_generators(lattice, preserving)
+    else:
+        ambient_generators = (
+            _nondegenerate_stabilizer_generators(space.inclusion(), based=False)
+            if space.inclusion().domain().is_nondegenerate()
+            else (_split_radical_saturation_stabilizer_generators(space)
+                  if not all(lattice.b(x, y) == 0 for x in basis for y in basis)
+                  else INDUCTION.plane_automorphism_generators(space))
+        )
     for generator in ambient_generators:
         rows = []
         for point in basis:
@@ -963,12 +973,14 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                               else RECURSION.orthogonal_group_generators(ambient))
             else:
                 arrow = marked.arrow()
-                if arrow.is_primitive() and all(
+                if all(
                     arrow.codomain().b(x, y) == 0
                     for x in arrow.codomain().module_generators()
                     for y in arrow.codomain().module_generators()
                 ):
                     ambient = arrow.codomain()
+                    if not arrow.is_primitive():
+                        return finite_ordered_set(tuple(_finite_index_sublattice_stabilizer_generators(arrow)))
                     subobject = ambient.primitive_isotropic_subobject(*(
                         arrow(point) for point in arrow.domain().module_generators()
                     ))

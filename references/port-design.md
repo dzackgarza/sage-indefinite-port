@@ -255,6 +255,14 @@ the *integral* completion, not a rational complement. A nonprimitive based
 frame has the same pointwise stabilizer as its primitive saturation: if an
 integral linear map fixes \(m x\), torsion-freeness forces it to fix \(x\).
 
+For a **moving** finite-index sublattice \(J\subset S\subset L\) in a
+zero-form ambient lattice, first generate the integral parabolic
+\(\operatorname{Stab}_{GL(L)}(S)\). Its orbit of \(J\) is finite; Schreier
+generators from this *actual* parabolic action generate precisely
+\(\operatorname{Stab}_{GL(L)}(J)\). This includes nonhomothetic Smith types,
+without invoking nondegenerate isotropic-plane induction. For rank one,
+\(J=mS\) has the same setwise parabolic stabilizer as \(S\).
+
 For an unbased rank-\(k\) submodule, Smith normal form gives a complete
 \(GL_n(\mathbb Z)\)-orbit invariant: its positive elementary divisors
 \(d_1\mid\cdots\mid d_k\). Equality of these invariants guarantees an

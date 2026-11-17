@@ -303,6 +303,58 @@ def test_zero_form_empty_arrow_stabilizer_agrees_with_full_orthogonal_group():
     assert all(g in ambient.O() for g in moving)
 
 
+def test_zero_form_nonprimitive_moving_index_two_stabilizer_has_exact_mod_two_image():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    marked = ARROWS.object(source.hom([e, 2 * f], codomain=ambient))
+    generators = tuple(automorphism_group_generators(ARROWS, marked))
+    submodule = ambient.subobject_on((e, 2 * f)).inclusion()
+    assert generators and all(g in ambient.O() for g in generators)
+    assert all(submodule.is_in_image(g(e)) and submodule.is_in_image(g(2 * f))
+               and submodule.is_in_image((~g)(e)) and submodule.is_in_image((~g)(2 * f))
+               for g in generators)
+    # Stabilizing the index-two submodule means preserving its reduction
+    # F_2 e, whose stabilizer in GL_2(F_2) has precisely two elements.
+    labels = tuple(ambient.module_generating_set())
+    matrices = [tuple(tuple(int(g(v).to_vector()(label)) % 2 for label in labels)
+                      for v in (e, f)) for g in generators]
+    identity = ((1, 0), (0, 1))
+    multiply = lambda a, b: tuple(tuple(sum(a[i][k] * b[k][j] for k in range(2)) % 2
+                                         for j in range(2)) for i in range(2))
+    generated = {identity}
+    pending = [identity]
+    while pending:
+        current = pending.pop()
+        for generator in matrices:
+            product = multiply(current, generator)
+            if product not in generated:
+                generated.add(product)
+                pending.append(product)
+    assert len(generated) == 2
+
+
+def test_zero_form_nonprimitive_moving_line_has_saturation_parabolic():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0]])
+    primitive = ARROWS.object(source.hom([e], codomain=ambient))
+    nonprimitive = ARROWS.object(source.hom([3 * e], codomain=ambient))
+    first = tuple(automorphism_group_generators(ARROWS, primitive))
+    second = tuple(automorphism_group_generators(ARROWS, nonprimitive))
+    assert first and second and all(g in ambient.O() for g in second)
+    assert all(g(e) in (e, -e) for g in second)
+    assert {tuple(g(v) for v in (e, f)) for g in first} == {
+        tuple(g(v) for v in (e, f)) for g in second
+    }
+
+
 def test_zero_form_based_primitive_frames_have_one_class_at_each_attainable_rank():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import primitive_marking_classes
