@@ -360,6 +360,38 @@ def test_zero_form_primitive_full_flags_have_one_gl_orbit():
     assert tuple(int(arrow.domain().rank()) for arrow in _flag_arrows(classes[0])) == (1, 2)
 
 
+def test_zero_form_primitive_flags_have_exact_integral_transporters():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, isometry
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))
+    first = category(_flag_marking_from_basis(ambient, (e, f), (1, 2)))
+    second = category(_flag_marking_from_basis(ambient, (f, e), (1, 2)))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert witness(e) in (f, -f)
+    assert all((~witness)(witness(x)) == x for x in (e, f))
+
+
+def test_zero_form_flag_stabilizer_is_actual_integral_parabolic():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, automorphism_group_generators
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(3), Lattices(ZZ))
+    marked = category(_flag_marking_from_basis(ambient, (e, f), (1, 2)))
+    generators = tuple(automorphism_group_generators(category, marked))
+    assert generators
+    assert all(g(e) in (e, -e) for g in generators)
+    assert all(ambient.b(g(x), g(y)) == 0 for g in generators for x in (e, f) for y in (e, f))
+    assert any(g(f) != f for g in generators)
+
+
 def test_two_stage_flag_accepts_a_single_isotropic_source_inclusion():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
