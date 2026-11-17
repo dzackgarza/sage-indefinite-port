@@ -107,6 +107,35 @@ def test_unrestricted_null_line_stream_terminates_for_anisotropic_lattice():
     assert tuple(iter_all_isotropic_line_classes(ambient)) == ()
 
 
+def test_unrestricted_null_line_stream_covers_degenerate_radical_contents():
+    from itertools import islice
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_all_isotropic_line_classes
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    markings = tuple(islice(iter_all_isotropic_line_classes(ambient), 4))
+    assert [int(marked.arrow()(next(iter(marked.arrow().domain().module_generators()))).content())
+            for marked in markings] == [1, 2, 3, 4]
+
+
+def test_canonical_moving_null_line_is_sign_invariant_and_retains_content():
+    import pytest
+    from sage_indefinite_port.indefinite.marked_lattices import canonical_moving_isotropic_line
+
+    ambient = lattice([[0, 1], [1, 0]])
+    e, f = tuple(ambient.module_generators())
+    outputs = [canonical_moving_isotropic_line(point) for point in (3 * e, -3 * e, 3 * f)]
+    canonical = [marked.arrow()(next(iter(marked.arrow().domain().module_generators())))
+                 for marked, _witness in outputs]
+    assert canonical[0] == canonical[1] == canonical[2]
+    assert int(canonical[0].content()) == 3
+    for (marked, witness), target in zip(outputs, (3 * e, -3 * e, 3 * f), strict=True):
+        generator = marked.arrow()(next(iter(marked.arrow().domain().module_generators())))
+        assert witness(generator) in (target, -target)
+    with pytest.raises(ValueError, match="nonzero null"):
+        canonical_moving_isotropic_line(ambient.zero())
+
+
 def test_moving_nonisotropic_rank_one_markings_use_signed_pointed_transport():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
