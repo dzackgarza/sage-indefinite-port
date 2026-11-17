@@ -123,3 +123,35 @@ def test_rank_two_homothetic_saturation_strata_have_prescribed_index():
     assert saturation.inclusion().is_primitive()
     lifted = tuple(saturation.inclusion().lift(arrow(point)) for point in arrow.domain().module_generators())
     assert saturation.inclusion().domain().subobject_on(lifted).inclusion().cokernel().cardinality() == cardinal(4)
+
+
+def test_rank_two_homothetic_stabilizer_is_saturation_stabilizer():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
+
+    plane = lattice([[0, 1], [1, 0]])
+    ambient = plane + plane
+    e, f, u, v = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    primitive = ARROWS(source.hom([e, u], codomain=ambient))
+    doubled = ARROWS(source.hom([2 * e, 2 * u], codomain=ambient))
+    generators = tuple(automorphism_group_generators(ARROWS, doubled))
+    assert all(doubled.arrow().is_in_image(g(2 * e)) for g in generators)
+    assert all(doubled.arrow().is_in_image(g(2 * u)) for g in generators)
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y) for g in generators for x in (e, f, u, v) for y in (e, f, u, v))
+    primitive_generators = tuple(automorphism_group_generators(ARROWS, primitive))
+    assert {tuple(g(x) for x in (e, f, u, v)) for g in generators} == {tuple(g(x) for x in (e, f, u, v)) for g in primitive_generators}
+
+
+def test_nonhomothetic_rank_two_is_not_misclassified_as_scalar_saturation():
+    import pytest
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
+
+    plane = lattice([[0, 1], [1, 0]])
+    ambient = plane + plane
+    e, _f, u, _v = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    marked = ARROWS(source.hom([2 * e, u], codomain=ambient))
+    with pytest.raises(ValueError):
+        tuple(automorphism_group_generators(ARROWS, marked))

@@ -75,6 +75,37 @@ def _isotropic_sublattice(arrow: Morphism) -> Parent:
     return lattice.primitive_isotropic_subobject(*vectors)
 
 
+
+def _homothetic_isotropic_saturation(arrow: Morphism) -> Parent | None:
+    r"""Primitive saturation of an isotropic ``J=cS``, or ``None`` otherwise.
+
+    The content of the inclusion ``J -> S`` is the gcd of all its
+    coordinates.  If this is ``c``, then ``J`` is contained in ``cS``;
+    equality holds precisely when ``[S:J]=c**rank``.  This is an exact
+    finite-index test, not an assumption that every sublattice is homothetic.
+    """
+    from math import gcd
+
+    lattice = arrow.codomain()
+    points = tuple(arrow(point) for point in arrow.domain().module_generators())
+    if not points or any(lattice.b(x, y) != 0 for x in points for y in points):
+        return None
+    saturation = arrow.saturation()
+    inclusion = saturation.inclusion()
+    lifts = tuple(inclusion.lift(point) for point in points)
+    labels = tuple(inclusion.domain().module_generating_set())
+    content = 0
+    for point in lifts:
+        for label in labels:
+            content = gcd(content, int(point.to_vector()(label)))
+    if content == 0:
+        return None
+    subobject = inclusion.domain().subobject_on(lifts)
+    if int(subobject.inclusion().cokernel().cardinality()) != content ** len(points):
+        return None
+    return lattice.primitive_isotropic_subobject(*(inclusion(point) for point in inclusion.domain().module_generators()))
+
+
 def _flag(marked: Parent) -> Flag:
     first, second = _flag_arrows(marked)
     plane = _isotropic_sublattice(second)
@@ -211,7 +242,9 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                         reversal = RECURSION.pointed_isometry(primitive, -primitive)
                         generators = (*fixed, *((reversal,) if reversal is not None else ()))
                 else:
-                    sublattice = _isotropic_sublattice(arrow)
+                    sublattice = _isotropic_sublattice(arrow) if arrow.is_primitive() else _homothetic_isotropic_saturation(arrow)
+                    if sublattice is None:
+                        raise ValueError("nonhomothetic nonprimitive isotropic stabilizers require the finite-module action on saturation")
                     match int(sublattice.inclusion().domain().rank()):
                         case 1:
                             generators = INDUCTION.line_automorphism_generators(arrow.codomain(), INDUCTION.plane_vectors(sublattice)[0])
