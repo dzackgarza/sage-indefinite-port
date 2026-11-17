@@ -209,6 +209,20 @@ def test_four_u_rank_four_partial_flag_transporter_preserves_both_terms():
     assert all((~witness)(witness(point)) == point for point in basis)
 
 
+def test_four_u_maximal_rank_four_isotropic_class_induction():
+    """A primitive maximal null summand of 4U has an integral hyperbolic completion."""
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(8)] for i in range(8)])
+    representatives = IsotropicInduction(EichlerRecursion()).isotropic_flag_bases(ambient, (4,))
+    assert len(representatives) == 1
+    for basis in representatives:
+        assert len(basis) == 4
+        assert all(ambient.b(left, right) == 0 for left in basis for right in basis)
+        assert ambient.primitive_isotropic_subobject(*basis).inclusion().is_primitive()
+
+
 def test_complete_isotropic_flags_in_three_u_split_into_two_special_orthogonal_orbits():
     r"""A maximal isotropic stabilizer has determinant det(A) det(A^-T)=1.
 
