@@ -177,6 +177,20 @@ def test_mixed_degenerate_anisotropic_quotient_has_one_radical_null_orbit_per_co
         assert len(tuple(iter_pointed_content_classes(category, ambient, 0, content))) == 1
 
 
+def test_mixed_degenerate_indefinite_anisotropic_quotient_has_only_radical_null_vectors():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import pointed_content_classes
+
+    # x^2 - 3y^2 = 0 has no nonzero rational solution.
+    ambient = lattice([[2, 0, 0], [0, -6, 0], [0, 0, 0]])
+    source = Lattices(ZZ)([[0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    classes = pointed_content_classes(category, ambient, 0, 3)
+    assert classes.cardinality() == cardinal(1)
+    point = next(iter(classes)).arrow()(source.module_generators()[0])
+    assert point in ambient.radical() and int(point.content()) == 3
+
+
 def test_mixed_radical_rank_one_stabilizers_respect_residue_and_shear():
     from sage_extensions.all import cardinal
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION
