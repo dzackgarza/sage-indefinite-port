@@ -1589,6 +1589,8 @@ def iter_all_isotropic_sublattice_classes(lattice: Parent, rank: int, *, acting_
 
     if rank < 1:
         raise ValueError("isotropic sublattice rank must be positive")
+    if rank > int(lattice.rank()):
+        return
     if rank == 1:
         yield from iter_all_isotropic_line_classes(lattice, acting_group=acting_group)
         return

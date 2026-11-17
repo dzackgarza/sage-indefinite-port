@@ -160,6 +160,14 @@ def test_unrestricted_rank_three_null_sublattices_preserve_smith_index():
     assert indices == [1, 2]
 
 
+def test_unrestricted_isotropic_sublattice_iterator_terminates_above_ambient_rank():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_all_isotropic_sublattice_classes
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    assert tuple(iter_all_isotropic_sublattice_classes(ambient, 3)) == ()
+
+
 def test_unrestricted_rank_two_null_sublattices_split_under_special_orthogonal_group():
     from itertools import islice
     from sage_extensions.all import Lattices, ZZ
