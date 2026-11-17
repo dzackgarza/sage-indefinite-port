@@ -43,3 +43,18 @@ def test_odd_split_doubling_preserves_zero_and_negative_square():
         classes = primitive_marking_classes(category, source, ambient)
         assert classes.cardinality() == cardinal(1)
         assert all(marked.arrow()(source.module_generators()[0]).q() == ZZ(square) for marked in classes)
+
+
+def test_odd_split_nonprimitive_norm_four_orbit_preserves_original_square():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import pointed_nonzero_norm_classes
+
+    ambient = lattice([[1, 0], [0, -1]])
+    source = Lattices(ZZ)([[4]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    classes = pointed_nonzero_norm_classes(category, ambient, 4)
+    assert classes.cardinality() == cardinal(1)
+    marked = tuple(classes)[0]
+    point = marked.arrow()(source.module_generators()[0])
+    assert point.q() == ZZ(4)
+    assert point.content() == ZZ(2)
