@@ -495,7 +495,7 @@ def test_rank_zero_nondegenerate_saturation_has_unique_smith_class_and_stream():
     )
 
     source = Lattices(ZZ)(0)
-    for ambient in (source, Lattices(ZZ)([[2]]), Lattices(ZZ)("U")):
+    for ambient in (source, Lattices(ZZ)([[2]]), Lattices(ZZ)("U"), Lattices(ZZ)("U") + Lattices(ZZ)([[0]])):
         for group in (None, ambient.SO()):
             fixed = tuple(nonprimitive_nondegenerate_sublattice_classes(
                 ambient, source, (), acting_group=group
@@ -513,7 +513,7 @@ def test_primitive_rank_zero_markings_are_singletons_for_every_arithmetic_group(
     from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
 
     source = Lattices(ZZ)(0)
-    for ambient in (source, Lattices(ZZ)([[2]]), Lattices(ZZ)("U")):
+    for ambient in (source, Lattices(ZZ)([[2]]), Lattices(ZZ)("U"), Lattices(ZZ)("U") + Lattices(ZZ)([[0]])):
         for category in (ARROWS, Lattices(ZZ).CosliceUnder(source)):
             classes = tuple(primitive_marking_classes(
                 category, source, ambient, acting_group=ambient.SO()

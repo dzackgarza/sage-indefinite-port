@@ -2153,6 +2153,7 @@ def nonprimitive_isotropic_sublattice_classes(lattice: Parent, rank: int, diviso
 def iter_all_isotropic_sublattice_classes(lattice: Parent, rank: int, *, acting_group=None):
     r"""Enumerate all moving isotropic rank-r sublattices by Smith type.
 
+    Rank zero is the unique zero sublattice, emitted once.
     The elementary divisors of a finite-index sublattice of its primitive
     saturation satisfy d_1 | ... | d_r. Every such tuple occurs in the
     finite shell with d_r equal to its maximum. The fixed-Smith-type
@@ -2247,7 +2248,8 @@ def nonprimitive_nondegenerate_sublattice_classes(lattice: Parent, saturation_ty
 def iter_all_nondegenerate_sublattice_index_classes(lattice: Parent, saturation_type: Parent, *, acting_group=None):
     r"""Unbounded Smith-type quotient for a fixed primitive saturation type.
 
-    Every finite-index sublattice has a unique saturation and a unique
+    The zero saturation contributes its unique zero sublattice once.
+    Every positive-rank finite-index sublattice has a unique saturation and a unique
     elementary-divisor tuple d_1 | ... | d_r. Enumerate these tuples by
     maximum divisor and retain the actual arithmetic saturation stabilizer
     for each stratum. Completeness is relative to the fixed-saturation
