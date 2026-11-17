@@ -44,7 +44,7 @@ _BUDGETS = _RECORD["budgets"] | {
 if os.environ["ACCEPTANCE_CORPUS"] == "probe":
     _BUDGETS = {node: PROBE_KILL_SECONDS for node in _BUDGETS}
 elif os.environ["ACCEPTANCE_CORPUS"] == "probe_long":
-    _BUDGETS = {node: PROBE_LONG_KILL_SECONDS for node in _BUDGETS}
+    _BUDGETS = {node: max(PROBE_LONG_KILL_SECONDS, limit) for node, limit in _BUDGETS.items()}
 
 
 def pytest_collection_modifyitems(items):

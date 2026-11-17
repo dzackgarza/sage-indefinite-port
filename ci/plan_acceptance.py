@@ -11,8 +11,8 @@ tiers" table of references/complexity/triage.md), so the tier job timeouts
 come from the recorded prices. Every tier1 node has a price. An unpriced tier2
 node and every full node cost their derived budget.
 
-    python3 ci/plan_acceptance.py matrix tier1|tier2|full|probe   # workflow matrix
-    python3 ci/plan_acceptance.py nodes tier1|tier2|full|probe JOB  # the node ids of one job
+    python3 ci/plan_acceptance.py matrix tier1|tier2|full|probe|probe_long
+    python3 ci/plan_acceptance.py nodes tier1|tier2|full|probe|probe_long JOB
 
 tier1 is ci/acceptance_tier1.txt (the smallest independent node per pinned
 branch), tier2 is ci/acceptance_tier2.txt (the published-result reproductions
@@ -24,8 +24,9 @@ ci/test_budgets.py, its flat kill limit, and a probe job holds at most
 PROBE_JOB_BUDGET seconds.
 
 probe_long is ci/acceptance_probe_long.txt, the unfinished nodes of probe run
-44000728665. Each receives PROBE_LONG_KILL_SECONDS for completion pricing;
-another timeout remains a lower bound, never a completed measurement.
+44000728665. Each receives at least PROBE_LONG_KILL_SECONDS for completion
+pricing, retaining the existing allowance when its recorded price requires
+more time. Another timeout remains a lower bound, never a completed measurement.
 """
 
 import ast
@@ -42,24 +43,29 @@ JOB_LIMIT_MINUTES = 360
 PROBE_JOB_BUDGET = 30 * 60
 
 
-def probe_kill_seconds(corpus):
+def probe_kill_seconds(corpus, node, prices):
     # ci/test_budgets.py imports cysignals, absent on the plan runner; read its constant.
     tree = ast.parse((CI / "test_budgets.py").read_text())
     constant = {"probe": "PROBE_KILL_SECONDS", "probe_long": "PROBE_LONG_KILL_SECONDS"}[corpus]
-    return next(
-        node.value.value
-        for node in tree.body
-        if isinstance(node, ast.Assign) and [target.id for target in node.targets] == [constant]
-    )
+    constants = {
+        assignment.targets[0].id: assignment.value.value
+        for assignment in tree.body
+        if isinstance(assignment, ast.Assign) and isinstance(assignment.value, ast.Constant)
+    }
+    limit = constants[constant]
+    if corpus == "probe_long" and node in prices:
+        return max(limit, constants["PRICE_FACTOR"] * prices[node] + constants["WARMUP_SECONDS"])
+    return limit
 
 
 def corpus_nodes(corpus):
-    budgets = json.loads((CI / "test_budgets.json").read_text())["budgets"]
+    record = json.loads((CI / "test_budgets.json").read_text())
+    budgets = record["budgets"]
     if corpus in ("probe", "probe_long"):
         nodes = (CI / f"acceptance_{corpus}.txt").read_text().splitlines()
         missing = [node for node in nodes if node not in budgets]
         assert not missing, f"nodes without a budget: {missing}"
-        return {node: probe_kill_seconds(corpus) for node in nodes}
+        return {node: probe_kill_seconds(corpus, node, record["prices"]) for node in nodes}
     if corpus in ("tier1", "tier2"):
         nodes = (CI / f"acceptance_{corpus}.txt").read_text().splitlines()
     elif corpus == "full":
