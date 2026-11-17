@@ -529,6 +529,27 @@ def test_mixed_degenerate_rank_three_primitive_projection_and_proper_radical_tra
                for x in (e, f, u, v, z, w) for y in (e, f, u, v, z, w))
 
 
+def test_mixed_degenerate_primitive_projection_transporter_across_presentations():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    source = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    target = Lattices(ZZ)([
+        [0, -1, 0, 0], [-1, 0, 0, 0],
+        [0, 0, 0, 0], [0, 0, 0, 0],
+    ])
+    e, f, z, w = tuple(source.module_generators())
+    a, b, r, s = tuple(target.module_generators())
+    first = source.primitive_isotropic_subobject(e + z, w)
+    second = target.primitive_isotropic_subobject(b + r, s)
+    witness = INDUCTION.plane_isometry(first, second)
+    assert witness is not None
+    assert witness.domain() is source and witness.codomain() is target
+    assert all(second.inclusion().is_in_image(witness(point)) for point in (e + z, w))
+    assert all(target.b(witness(x), witness(y)) == source.b(x, y)
+               for x in (e, f, z, w) for y in (e, f, z, w))
+
+
 def test_primitive_radical_plane_stabilizer_is_full_radical_parabolic():
     from sage.all import GF, MatrixGroup, matrix
     from sage_extensions.all import Lattices, ZZ
