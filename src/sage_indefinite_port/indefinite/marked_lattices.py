@@ -720,6 +720,26 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             if rank == 1:
                 return RECURSION.pointed_isometry(_marked_vector(source), _marked_vector(target))
             source_arrow, target_arrow = source.arrow(), target.arrow()
+            ambient = source_arrow.codomain()
+            if (
+                ambient is target_arrow.codomain()
+                and source_arrow.is_primitive() and target_arrow.is_primitive()
+                and all(ambient.b(x, y) == 0 for x in ambient.module_generators() for y in ambient.module_generators())
+                and all(source_arrow.domain().b(x, y) == 0
+                        for x in source_arrow.domain().module_generators()
+                        for y in source_arrow.domain().module_generators())
+            ):
+                # GL_n(ZZ) acts transitively on ordered primitive frames.
+                # The finite-height integral search therefore terminates;
+                # check each *based* image exactly, without sign freedom.
+                from sage_indefinite_port.indefinite.recursive import _fair_unimodular_matrices, _isometry_from_row_matrix
+
+                source_points = tuple(source_arrow(x) for x in source_arrow.domain().module_generators())
+                target_points = tuple(target_arrow(x) for x in target_arrow.domain().module_generators())
+                for rows in _fair_unimodular_matrices(int(ambient.rank())):
+                    witness = _isometry_from_row_matrix(ambient, ambient, rows)
+                    if all(witness(left) == right for left, right in zip(source_points, target_points, strict=True)):
+                        return witness
             if source_arrow.domain().is_nondegenerate():
                 return (_nondegenerate_embedding_isometry(source_arrow, target_arrow, based=True)
                         if source_arrow.is_primitive() and target_arrow.is_primitive()

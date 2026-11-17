@@ -243,6 +243,21 @@ def test_zero_form_based_primitive_frames_have_one_class_at_each_attainable_rank
         assert all(marked.arrow().is_primitive() for marked in classes)
 
 
+def test_zero_form_based_primitive_frame_transporter_preserves_each_marked_generator():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category.object(source.hom([e, f], codomain=ambient))
+    second = category.object(source.hom([f, -e], codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None and witness(e) == f and witness(f) == -e
+    assert all((~witness)(witness(x)) == x for x in (e, f))
+
+
 def test_unrestricted_rank_two_null_sublattices_split_under_special_orthogonal_group():
     from itertools import islice
     from sage_extensions.all import Lattices, ZZ
