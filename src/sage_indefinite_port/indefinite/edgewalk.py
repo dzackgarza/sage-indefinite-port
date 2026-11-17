@@ -22,7 +22,7 @@ from sage_extensions.all import ZZ, HyperbolicLattices, Lattices
 from sage_extensions.categories.definite_lattices import _ExactCVPEngine
 from sage_extensions.categories.hyperbolic_lattices import AllcockEdgewalkReport
 from sage_extensions.categories.lattice_morphisms import LatticeIsometryMethods
-from sage_extensions.categories.polyhedral_cones import RationalPolyhedralCones
+from sage_extensions.categories.polyhedral_cones import RationalPolyhedralCones, _primitive_integral_coordinates
 from sage_extensions.categories.sets.set_categories import Sets
 from sage_extensions.tensors.tensor import _engine_component_matrix
 from sage.geometry.polyhedron.constructor import Polyhedron
@@ -1474,11 +1474,24 @@ class _Edgewalk:
         r"""The walls along each outgoing edge and a wall orienting that edge."""
         if len(vertex.roots) == 1:
             return ()
-        cone = RationalPolyhedralCones(self.lattice).from_rays(vertex.roots)
+        # The facets of the root cone on engine rows, in the order of the
+        # owned cone (RationalPolyhedralCones.from_rays): the H-representation
+        # of the rays' polyhedron, rebuilt from its primitive integral rows.
+        rows = [self.row(root) for root in vertex.roots]
+        rays = Polyhedron(vertices=[(0,) * self.rank], rays=rows, base_ring=SageQQ)
+        cone = Polyhedron(
+            ambient_dim=self.rank,
+            ieqs=[[0, *_primitive_integral_coordinates(tuple(row.A()))] for row in rays.inequalities()],
+            eqns=[[0, *_primitive_integral_coordinates(tuple(row.A()))] for row in rays.equations()],
+            base_ring=SageQQ,
+        )
+        if cone.dim() <= 0:
+            return ()
         directions: list[tuple[_Roots, _Vector]] = []
-        for covector in cone.facet_covectors():
-            included = tuple(root for root in vertex.roots if cone.evaluate_covector(covector, root) == 0)
-            omitted = tuple(root for root in vertex.roots if cone.evaluate_covector(covector, root) != 0)
+        for inequality in cone.inequalities():
+            covector = vector(SageQQ, inequality.A())
+            included = tuple(root for root, row in zip(vertex.roots, rows, strict=True) if covector.dot_product(row) == 0)
+            omitted = tuple(root for root, row in zip(vertex.roots, rows, strict=True) if covector.dot_product(row) != 0)
             if not omitted:
                 raise ArithmeticError("a root-cone facet must omit a wall")
             # edgewalk.h:525-539 GetAdjacencyDirection: v_disc is the last
