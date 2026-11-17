@@ -30,10 +30,11 @@ its mathematical branch, not all unexecuted cases.
 
 ## Next work, ranked
 
-1. Connect the implemented edgewalk options and isometry operation through
-   the provider's public HyperbolicLattices API. At port 7e28b04/provider
-   8309fed1, the unchanged full-walk test rejects `early_termination` before
-   reaching the port. Run all existing edgewalk-option assertions after repair.
+1. Complete the oriented complete-flag public consumer. Its timing label
+   converts `FlagType((1, 2, 3))` to an integer before the computation;
+   normalize the flag dimension sequence in the shared row-name operation.
+   The unchanged owner test reproduces this failure. The edgewalk option
+   and sign-convention public assertions now pass.
 2. Complete final-pair checks of the repaired exact definite-isometry and
    discriminant-form operations, then price the Enriques boundary consumer.
    The owner assertions establish the exercised mathematical contracts;
