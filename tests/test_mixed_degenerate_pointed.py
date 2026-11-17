@@ -745,6 +745,22 @@ def test_mixed_degenerate_full_radical_partial_quotient_flag_transporter():
     assert all(top_target.inclusion().is_in_image(witness(point)) for point in (z, e, u))
 
 
+def test_full_radical_quotient_flag_transporter_rejects_distinct_line_divisibilities():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, isometry, _flag_marking_from_basis
+
+    ambient = Lattices(ZZ)([
+        [0, 2, 0, 0, 0], [2, 0, 0, 0, 0],
+        [0, 0, 0, 3, 0], [0, 0, 3, 0, 0],
+        [0, 0, 0, 0, 0],
+    ])
+    e, f, u, v, z = tuple(ambient.module_generators())
+    assert e.divisor() != u.divisor()
+    first = FLAGS(_flag_marking_from_basis(ambient, (z, e, u), (2, 3)))
+    second = FLAGS(_flag_marking_from_basis(ambient, (z, u, e), (2, 3)))
+    assert isometry(FLAGS, first, second) is None
+
+
 def test_mixed_degenerate_radical_first_flag_transporter_between_presentations():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import FLAGS, isometry, _flag_marking_from_basis
