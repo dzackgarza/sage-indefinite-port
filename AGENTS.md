@@ -124,7 +124,10 @@ active. Separate branch tips can contain unmerged work without an active owner.
 Never overwrite or discard another checkout's dirty source. Use a dedicated
 worktree/branch for parallel work and integrate only demonstrated relevant diffs.
 
-The issue tree rooted at #4 is the work plan. Use
+The issue tree rooted at #4 is the work plan; its live sub-issue order
+separates still-required functional mathematics from later final-pair
+acceptance (#64), while #69 retains required additional capabilities.
+Milestone deadlines are forecasts, not completion evidence. Use
 `uvx --from git+https://github.com/dzackgarza/itree itree next dzackgarza/sage-indefinite-port`
 only when selecting a new unit after completion or an evidenced dependency
 change. A unit closes only when its entire accepted obligation is discharged;

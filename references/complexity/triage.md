@@ -1,6 +1,8 @@
 # Suite run-time triage
 
-The suite estimate (about 236 h, nearly all in one fire below) is the problem. A fix is worth doing only by the hours it removes from that estimate: a saving of seconds counts only when it compounds over enough cases to remove hours. The suite is not run whole while its estimate exceeds 6 hours. Work proceeds in this order:
+**This is revision-specific performance history, not the current work selector.** The approximately 236-hour estimate was the **14 November 2026 baseline**, not a current total. Substantial source-faithful edgewalk repairs on 16–17 November reduced the sampled reflective cost. The 17 November short probe (`44000728665`, port `8278cf8` / provider `bcad374a`) gave a **censored lower bound of at least 5.25 runner-hours**, not a completed full-suite runtime estimate. The longer probe `44012530790` obtained 13 completed case passes, 13 timeouts and three missing cancelled-shard results, so **no valid final aggregate estimate below six hours is established**. The specific remaining computations are tracked on [#64](https://github.com/dzackgarza/sage-indefinite-port/issues/64) and its children #80–#83.
+
+[AGENTS.md](../../AGENTS.md) and [#4](https://github.com/dzackgarza/sage-indefinite-port/issues/4) prioritize **missing mathematical functionality over performance**. Once functional public capabilities are implemented, a performance fix is worth doing only by the aggregate hours it demonstrably removes without weakening exact computations. A saving of seconds counts only when multiplied over enough cases. The full suite is not run while its defensible estimate exceeds six hours. The historical performance procedure below applies *in that later phase*:
 
 1. Read the code of each family to find its time sinks (the theory files in this directory).
 2. Test the estimates with small probes: a few cases per stratum, short timeouts. Reuse existing timings; never measure a node again at the same revision.
@@ -12,10 +14,7 @@ The suite estimate (about 236 h, nearly all in one fire below) is the problem. A
 
 ## What establishes correctness
 
-Correctness of a family is established by a branch-representative sample (tier 1 in "Acceptance tiers" below): unchanged cases that together exercise every branch of the pinned algorithm (AGENTS.md, #33 amendment, for A_REFLECTIVE, A_GROUPS and A_ISOTROPIC). Thousands of cases on one branch add no evidence that the sample lacks. The full corpus is nonblocking long-tail evidence. Priorities:
-
-1. The minimal subset of tests that establishes the correctness of every capability (the branch-representative sample) passes, and runs fast.
-2. The long tail is still an extreme problem (about 236 h). Its fires are fixed next, by hours removed, until its estimate is under 6 hours; only then does it run.
+A branch-representative sample of unchanged, independently justified cases provides *development evidence* for the exercised branches of A_REFLECTIVE, A_GROUPS and A_ISOTROPIC ([AGENTS.md](../../AGENTS.md), [#33](https://github.com/dzackgarza/sage-indefinite-port/issues/33)). It does not prove unexercised ranks or branches and does not replace final frozen acceptance under #64. The published 17 November tier-1 run `44017425618` executed **81 passed, 0 mathematical failures**, but CI rejected some JUnit Python-module node IDs ([#84](https://github.com/dzackgarza/sage-indefinite-port/issues/84)). The historical family counts and timings below are attributable only to their labeled revisions.
 
 ## Acceptance tiers
 

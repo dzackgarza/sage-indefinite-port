@@ -1,57 +1,17 @@
-# V1 completion
+# V1 continuation: remaining mathematics (17 November 2026)
 
-## Ambient task
+Finish the source-supported indefinite-lattice algorithms through their **actual public consumers**, then satisfy the unchanged frozen acceptance requirements. Source-of-truth scope and issue order: [#4](https://github.com/dzackgarza/sage-indefinite-port/issues/4), [#44](https://github.com/dzackgarza/sage-indefinite-port/issues/44), final acceptance [#64](https://github.com/dzackgarza/sage-indefinite-port/issues/64). The retained functional programme [#69](https://github.com/dzackgarza/sage-indefinite-port/issues/69) is not cancelled by the v1 delivery boundary. See [AGENTS.md](../AGENTS.md) for functional-first priority and owner separation; do not select work from CI timeouts alone.
 
-Deliver the v1 indefinite-lattice algorithms through their public consumers.
-Establish correctness with small, independent examples covering each mathematical
-branch. Then reduce the long-tail runtime by aggregate cost until its measured
-estimate permits a full run within six hours.
+## Exact recent evidence (not completion)
 
-The v1 obligation is the issue tree rooted at #4, especially #44, #15, #18,
-#68, #70, #72 and final acceptance #64. `.tmp/GOAL.md` lists the functional
-requirements; each status there must be checked against its source and evidence.
-`references/complexity/README.md` defines runtime pricing and
-`references/complexity/triage.md` owns the measured costs.
+- Published port `a658061` / provider `8bee22ac`: tier-1 [run 44017425618](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/44017425618) executed **81 selected public assertions, all passed**. CI nonetheless failed JUnit Python-module identity reconciliation ([#84](https://github.com/dzackgarza/sage-indefinite-port/issues/84)). Tier 1 is not the frozen full corpus.
+- Long probe [44012530790](https://github.com/dzackgarza/sage-indefinite-port/actions/runs/44012530790), port `8d8e848` / provider `a6903d82`: 13 cases passed, 13 timed out at 600 s, three D-tower cases had no completed report (cancelled shard). A timeout establishes neither a mathematical failure nor completed runtime.
+- The earlier 11 November copied status checklist was retired. A published test result applies only to its precise port/provider pair; an accepted branch example does not establish unexecuted cases.
 
-The coordinator executes all tests and Sage computations. Workers supply source
-changes and exact commands for that execution.
+## Work order by actual mathematical dependencies
 
-## Completion condition
+1. Check remaining *required source-backed public functionality* in #44 and the Tier 0–4 dependency order of #69. Implement missing operations and their public connections **before** performance work or administrative evidence. The #15/#18/#68/#72/#70 algorithms and already-passing specimens do not waive any uncovered source-supported branch. A generic group, quotient or stabilizer belongs at its existing provider owner.
+2. Once required functionality is in place, complete the currently unfinished computations on the actual public inputs: [#80 Enriques Γ_h infinite-group generation and all 87 outputs](https://github.com/dzackgarza/sage-indefinite-port/issues/80); [#81 high-rank IsotropicCases 8812/8819](https://github.com/dzackgarza/sage-indefinite-port/issues/81); [#82 stable O⁺(N) orbits](https://github.com/dzackgarza/sage-indefinite-port/issues/82); [#83 K3/classical/D-tower boundaries](https://github.com/dzackgarza/sage-indefinite-port/issues/83). These are exact mathematical results, not requests for more reports.
+3. After functional coverage, reduce aggregate cost while preserving exact computation ([#78](https://github.com/dzackgarza/sage-indefinite-port/issues/78)); repair the separate JUnit report-identity bug ([#84](https://github.com/dzackgarza/sage-indefinite-port/issues/84)) without changing selection or weakening assertions; then complete the frozen 26,907-node corpus at one published port/provider pair under #64 with the required six-hour aggregate condition. The long-tail timeout observations are only lower bounds.
 
-| Required behavior | Acceptance | Remaining verification |
-| --- | --- | --- |
-| General isotropic markings and flags (#44) | Full source-supported ranks, dimension sequences, based and oriented markings, stabilizers, transporters, actual quotient actions and requested subgroups | Verify public tests for these branches at the final port/provider pair; include unchanged rank-one and rank-two consumers |
-| Edgewalk and recursive public operations (#15, #18, #68, #72) | Independent branch assertions, exact positive and negative witnesses, source options and reproducible generation | Reconcile final branch selection with the source; the earlier successful tier-1 run does not establish a later pair |
-| Integral stabilizers and boundary computations (#70) | Exact I_1_1/I_1_2 indices, O_plus_N line/plane counts and the sage-extensions #294 consumer | Complete the consumer assertions at the final pair |
-| Runtime and release (#64) | A completion-based estimate below six hours, then the required frozen corpus at a common published pair | Short-probe timeouts are censored observations; obtain their completion times before using the estimate as a launch condition |
-
-No stubs are permitted for these v1 behaviors. A successful specimen establishes
-its mathematical branch, not all unexecuted cases.
-
-## Next work, ranked
-
-1. Establish the published tier-1 result with the provider pin carrying the
-   exact definite-isometry, discriminant, edgewalk and flag-label repairs.
-   Its selection now includes the required existing public port branches.
-   Owner assertions for oriented flags and graded congruence actions pass.
-2. Finish Enriques cost triage from the actual generator request. The
-   discriminant setup is reduced; the current profile reaches full group
-   generation through the intersection resolution. Preserve the infinite
-   subgroup's generator obligation, not only its finite discriminant image.
-3. Complete the unchanged Enriques named-lattice line/plane consumer and the
-   final-pair boundary assertions. The original #70 reference to provider
-   #294 concerns known-family mathematical consumers now owned by #286.
-4. Price unfinished strata with the retained `probe_long` node selection.
-   Separate timeouts from mathematical errors. Replace a censored price only
-   with a completed measurement and retain its port/provider provenance.
-   Rank subsequent repairs by aggregate hours in the triage table.
-5. Once the runtime condition holds, execute the required release evidence and
-   resolve every failed assertion through its owning operation.
-
-Work in `sage-indefinite-computations`; generic operations belong in
-`sage-extensions`. Compare both working trees and remote heads before continuing.
-Retain existing work and use the shared Sage container. Read run artifacts for
-case outcomes and revisions; aggregate job status is not mathematical evidence.
-
-The retained v2 programme stays in #69 and its issues. It does not enter this
-v1 completion sequence. This file is the sole continuation handoff.
+The historical runtime/probe details live in `references/complexity/triage.md`. Milestones [T8](https://github.com/dzackgarza/sage-indefinite-port/milestone/9), [T9](https://github.com/dzackgarza/sage-indefinite-port/milestone/10) and [T10](https://github.com/dzackgarza/sage-indefinite-port/milestone/11) are forecast delivery partitions, not mathematical acceptance or scope reductions. Before implementation, fetch current remote heads and preserve unrelated unfinished work; the issue/source and completed case-level results outrank earlier handoffs.
