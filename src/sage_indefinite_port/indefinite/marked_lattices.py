@@ -186,8 +186,15 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 if not source_point.content():
                     return RECURSION.isometry(source_point.parent(), target_point.parent())
                 return INDUCTION.line_isometry(source_point.primitive_part(), target_point.primitive_part())
-            source_sublattice = _isotropic_sublattice(source.arrow())
-            target_sublattice = _isotropic_sublattice(target.arrow())
+            source_arrow, target_arrow = source.arrow(), target.arrow()
+            source_sublattice = _isotropic_sublattice(source_arrow) if source_arrow.is_primitive() else _homothetic_isotropic_saturation(source_arrow)
+            target_sublattice = _isotropic_sublattice(target_arrow) if target_arrow.is_primitive() else _homothetic_isotropic_saturation(target_arrow)
+            if source_sublattice is None or target_sublattice is None:
+                raise ValueError("nonhomothetic nonprimitive moving sublattices require finite-module stabilizer orbits")
+            source_point = source_arrow(next(iter(source_arrow.domain().module_generators())))
+            target_point = target_arrow(next(iter(target_arrow.domain().module_generators())))
+            if (not source_arrow.is_primitive() or not target_arrow.is_primitive()) and source_point.content() != target_point.content():
+                return None
             match int(source_sublattice.inclusion().domain().rank()), int(target_sublattice.inclusion().domain().rank()):
                 case 1, 1:
                     return INDUCTION.line_isometry(INDUCTION.plane_vectors(source_sublattice)[0], INDUCTION.plane_vectors(target_sublattice)[0])

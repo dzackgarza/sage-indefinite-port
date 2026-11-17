@@ -155,3 +155,22 @@ def test_nonhomothetic_rank_two_is_not_misclassified_as_scalar_saturation():
     marked = ARROWS(source.hom([2 * e, u], codomain=ambient))
     with pytest.raises(ValueError):
         tuple(automorphism_group_generators(ARROWS, marked))
+
+
+def test_homothetic_rank_two_moving_transporter_uses_saturated_planes():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
+
+    plane = lattice([[0, 1], [1, 0]])
+    ambient = plane + plane
+    e, f, u, v = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    first = ARROWS(source.hom([2 * e, 2 * u], codomain=ambient))
+    second = ARROWS(source.hom([2 * f, 2 * v], codomain=ambient))
+    third = ARROWS(source.hom([3 * f, 3 * v], codomain=ambient))
+    witness = isometry(ARROWS, first, second)
+    assert witness is not None
+    assert second.arrow().saturation().inclusion().is_in_image(witness(e))
+    assert second.arrow().saturation().inclusion().is_in_image(witness(u))
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y) for x in (e, f, u, v) for y in (e, f, u, v))
+    assert isometry(ARROWS, first, third) is None
