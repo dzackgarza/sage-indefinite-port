@@ -436,6 +436,18 @@ def test_odd_rank_moving_maximal_null_plane_has_identical_o_and_so_orbits():
     assert len(full) == len(special) == 1
 
 
+def test_even_rank_mixed_degenerate_maximal_plane_smith_two_so_orbits():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_isotropic_sublattice_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    full = tuple(nonprimitive_isotropic_sublattice_classes(ambient, 3, (1, 1, 2)))
+    special = tuple(nonprimitive_isotropic_sublattice_classes(
+        ambient, 3, (1, 1, 2), acting_group=ambient.SO()
+    ))
+    assert len(full) == len(special) == 2
+
+
 @pytest.mark.parametrize("smith", ((1, 1, 2), (1, 2, 2)))
 def test_mixed_degenerate_maximal_rank_three_index_two_respects_radical_plane(smith):
     from sage_extensions.all import Lattices, ZZ
