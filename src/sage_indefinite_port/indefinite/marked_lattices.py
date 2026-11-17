@@ -1369,13 +1369,15 @@ def nonprimitive_nondegenerate_sublattice_classes(lattice: Parent, saturation_ty
     return finite_ordered_set(tuple(classes))
 
 
-def primitive_marking_classes(category: Category, source: Parent | Morphism, lattice: Parent) -> Parent:
+def primitive_marking_classes(category: Category, source: Parent | Morphism, lattice: Parent, *, acting_group=None) -> Parent:
     r"""One marked lattice for each isomorphism class of primitive markings of ``lattice`` of shape ``source``.
 
     ``category`` is the category of the marking: the coslice under ``<n>`` for pointed
     lattices, ``Ar(Lattices)`` for sublattices, ``Fun([t], Lattices)`` for finite flags. ``source``
     is the shape: the lattice ``<n>``, a totally isotropic lattice of rank ``k`` (zero form),
-    or the chain of such lattices for a flag.
+    or the chain of such lattices for a flag.  ``acting_group`` splits
+    the full-group orbit set using the actual supplied arithmetic subgroup
+    without changing the source marking category.
     """
     match category:
         case CosliceCategory():
@@ -1420,6 +1422,9 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
             classes = tuple(category(_flag_marking_from_basis(lattice, basis, dimensions)) for basis in INDUCTION.isotropic_flag_bases(lattice, dimensions))
         case _:
             raise ValueError(f"{category} is not a category of marked lattices this port classifies: a coslice <n>/Lattices, Ar(Lattices) or Fun([t], Lattices) for finite [t]")
+    if acting_group is not None and acting_group is not lattice.O():
+        classes = tuple(split for marked in classes
+                        for split in lattice.O().split_orbit(marked, acting_group))
     return finite_ordered_set(classes)
 
 

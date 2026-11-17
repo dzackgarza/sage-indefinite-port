@@ -213,3 +213,15 @@ def test_nonisotropic_line_orbits_split_under_gamma_three_without_fixing_sign():
     classes = nonisotropic_line_classes(plane, 8, acting_group=gamma)
     assert classes.cardinality() == cardinal(3)
     assert {int(marked.arrow()(marked.arrow().domain().module_generators()[0]).content()) for marked in classes} == {1, 2}
+
+
+def test_primitive_isotropic_line_orbits_split_by_actual_so_subgroup():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
+
+    ambient = lattice([[0, 1], [1, 0]])
+    source = Lattices(ZZ)([[0]])
+    full = tuple(primitive_marking_classes(ARROWS, source, ambient))
+    special = tuple(primitive_marking_classes(ARROWS, source, ambient, acting_group=ambient.SO()))
+    assert len(full) == 1
+    assert len(special) == 2

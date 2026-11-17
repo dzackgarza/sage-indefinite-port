@@ -517,3 +517,16 @@ def test_five_u_partial_flag_rank_jumps_one_three_five_transport():
     for rank in (1, 3, 5):
         target = ambient.primitive_isotropic_subobject(*basis[1::2][:rank])
         assert all(target.inclusion().is_in_image(witness(point)) for point in basis[::2][:rank])
+
+
+def test_public_partial_flag_classes_split_by_actual_special_orthogonal_group():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, primitive_marking_classes
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    shape = lattice([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    first = shape.primitive_isotropic_subobject(*tuple(shape.module_generators())[:2])
+    full = tuple(primitive_marking_classes(FLAGS, first.inclusion(), ambient))
+    special = tuple(primitive_marking_classes(FLAGS, first.inclusion(), ambient, acting_group=ambient.SO()))
+    assert len(full) == 1
+    assert len(special) == 2
