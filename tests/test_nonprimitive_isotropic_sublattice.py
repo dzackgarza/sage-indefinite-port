@@ -144,7 +144,6 @@ def test_rank_two_homothetic_stabilizer_is_saturation_stabilizer():
 
 
 def test_nonhomothetic_rank_two_is_not_misclassified_as_scalar_saturation():
-    import pytest
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
 
@@ -153,8 +152,9 @@ def test_nonhomothetic_rank_two_is_not_misclassified_as_scalar_saturation():
     e, _f, u, _v = tuple(ambient.module_generators())
     source = Lattices(ZZ)([[0, 0], [0, 0]])
     marked = ARROWS(source.hom([2 * e, u], codomain=ambient))
-    with pytest.raises(ValueError):
-        tuple(automorphism_group_generators(ARROWS, marked))
+    family = tuple(automorphism_group_generators(ARROWS, marked))
+    assert all(marked.arrow().is_in_image(g(2 * e)) and marked.arrow().is_in_image(g(u)) for g in family)
+    assert all(marked.arrow().is_in_image((~g)(2 * e)) and marked.arrow().is_in_image((~g)(u)) for g in family)
 
 
 def test_homothetic_rank_two_moving_transporter_uses_saturated_planes():
@@ -214,3 +214,33 @@ def test_composite_index_four_submodules_keep_smith_type():
     assert len(cyclic) == len(homothetic) == 1
     assert cyclic[0].saturation().inclusion().is_primitive()
     assert homothetic[0].saturation().inclusion().is_primitive()
+
+
+def test_nonhomothetic_rank_two_transport_uses_actual_finite_levi_orbit():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
+
+    ambient = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 2], [0, 0, 2, 0]])
+    e, f, u, v = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    first = ARROWS(source.hom([e, 2 * u], codomain=ambient))
+    same = ARROWS(source.hom([e + u, 2 * u], codomain=ambient))
+    other = ARROWS(source.hom([2 * e, u], codomain=ambient))
+    witness = isometry(ARROWS, first, same)
+    assert witness is not None
+    assert all(same.arrow().is_in_image(witness(first.arrow()(x))) for x in first.arrow().domain().module_generators())
+    assert isometry(ARROWS, first, other) is None
+
+
+def test_nonhomothetic_rank_two_stabilizer_uses_actual_finite_orbit():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
+
+    ambient = lattice([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 2], [0, 0, 2, 0]])
+    e, f, u, v = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    arrow = source.hom([2 * e, u], codomain=ambient)
+    family = tuple(automorphism_group_generators(ARROWS, ARROWS(arrow)))
+    assert all(arrow.is_in_image(g(2 * e)) and arrow.is_in_image(g(u)) for g in family)
+    assert all(arrow.is_in_image((~g)(2 * e)) and arrow.is_in_image((~g)(u)) for g in family)
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y) for g in family for x in (e, f, u, v) for y in (e, f, u, v))

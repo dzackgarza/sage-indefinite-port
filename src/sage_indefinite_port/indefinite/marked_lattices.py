@@ -106,6 +106,118 @@ def _homothetic_isotropic_saturation(arrow: Morphism) -> Parent | None:
     return lattice.primitive_isotropic_subobject(*(inclusion(point) for point in inclusion.domain().module_generators()))
 
 
+
+def _finite_index_isotropic_transporter(source_arrow: Morphism, target_arrow: Morphism) -> LatticeIsometryMethods | None:
+    r"""Transport two finite-index isotropic markings using the actual saturated stabilizer.
+
+    First carry the primitive saturations onto each other.  Then enumerate
+    the finite orbit of the transported source submodule under the integral
+    Levi image, retaining an ambient isometry word for each visited member.
+    """
+    from sage.all import ZZ as SageZZ, matrix
+
+    source_lattice, target_lattice = source_arrow.codomain(), target_arrow.codomain()
+    source_saturation = source_arrow.saturation()
+    target_saturation = target_arrow.saturation()
+    source_basis = tuple(source_saturation.inclusion()(x) for x in source_saturation.module_generators())
+    target_basis = tuple(target_saturation.inclusion()(x) for x in target_saturation.module_generators())
+    source_space = source_lattice.primitive_isotropic_subobject(*source_basis)
+    target_space = target_lattice.primitive_isotropic_subobject(*target_basis)
+    transport = INDUCTION.plane_isometry(source_space, target_space)
+    if transport is None:
+        return None
+    inclusion = target_space.inclusion()
+    labels = tuple(inclusion.domain().module_generating_set())
+
+    def hnf(points):
+        rows = []
+        for point in points:
+            coordinates = inclusion.lift(point).to_vector()
+            rows.append([int(coordinates(label)) for label in labels])
+        return matrix(SageZZ, rows).hermite_form()
+
+    source_points = tuple(transport(source_arrow(x)) for x in source_arrow.domain().module_generators())
+    target_points = tuple(target_arrow(x) for x in target_arrow.domain().module_generators())
+    start, goal = hnf(source_points), hnf(target_points)
+    key = lambda h: tuple(tuple(int(v) for v in row) for row in h.rows())
+    if start.det() != goal.det() or start.elementary_divisors() != goal.elementary_divisors():
+        return None
+    goal_key = key(goal)
+    if key(start) == goal_key:
+        return transport
+    actions = []
+    for generator in INDUCTION.plane_automorphism_generators(target_space):
+        rows = []
+        for point in target_basis:
+            coordinates = inclusion.lift(generator(point)).to_vector()
+            rows.append([int(coordinates(label)) for label in labels])
+        actions.append((matrix(SageZZ, rows), generator))
+    identity = target_lattice.O().identity()
+    seen = {key(start)}
+    frontier = [(start, identity)]
+    while frontier:
+        current, word = frontier.pop()
+        for action, generator in actions:
+            moved = (current * action).hermite_form()
+            moved_key = key(moved)
+            if moved_key == goal_key:
+                return generator * word * transport
+            if moved_key not in seen:
+                seen.add(moved_key)
+                frontier.append((moved, generator * word))
+    return None
+
+
+
+def _finite_index_isotropic_stabilizer_generators(arrow: Morphism) -> tuple[LatticeIsometryMethods, ...]:
+    r"""Schreier generators of Stab(J) inside Stab(S), for S the isotropic saturation.
+
+    The orbit of the finite-index submodule J in S is finite.  Retain an
+    ambient word sending J to each orbit member; Schreier's lemma gives
+    generators ``w(gJ)^-1 * g * w(J)`` for its stabilizer.  This uses the
+    *actual* integral Levi image, never the full abstract GL(S).
+    """
+    from sage.all import ZZ as SageZZ, matrix
+
+    lattice = arrow.codomain()
+    saturation = arrow.saturation()
+    inclusion = saturation.inclusion()
+    basis = tuple(inclusion(x) for x in inclusion.domain().module_generators())
+    space = lattice.primitive_isotropic_subobject(*basis)
+    labels = tuple(inclusion.domain().module_generating_set())
+    points = tuple(arrow(x) for x in arrow.domain().module_generators())
+
+    def key(h):
+        return tuple(tuple(int(v) for v in row) for row in h.rows())
+
+    start = matrix(SageZZ, [
+        [int(inclusion.lift(point).to_vector()(label)) for label in labels]
+        for point in points
+    ]).hermite_form()
+    actions = []
+    for generator in INDUCTION.plane_automorphism_generators(space):
+        rows = []
+        for point in basis:
+            coordinates = inclusion.lift(generator(point)).to_vector()
+            rows.append([int(coordinates(label)) for label in labels])
+        actions.append((matrix(SageZZ, rows), generator))
+    identity = lattice.O().identity()
+    words = {key(start): identity}
+    frontier = [start]
+    schreier = []
+    while frontier:
+        current = frontier.pop()
+        source_word = words[key(current)]
+        for action, generator in actions:
+            moved = (current * action).hermite_form()
+            target_key = key(moved)
+            if target_key not in words:
+                words[target_key] = generator * source_word
+                frontier.append(moved)
+            schreier.append(words[target_key].inverse() * generator * source_word)
+    return tuple(schreier)
+
+
 def _flag(marked: Parent) -> Flag:
     first, second = _flag_arrows(marked)
     plane = _isotropic_sublattice(second)
@@ -190,7 +302,7 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             source_sublattice = _isotropic_sublattice(source_arrow) if source_arrow.is_primitive() else _homothetic_isotropic_saturation(source_arrow)
             target_sublattice = _isotropic_sublattice(target_arrow) if target_arrow.is_primitive() else _homothetic_isotropic_saturation(target_arrow)
             if source_sublattice is None or target_sublattice is None:
-                raise ValueError("nonhomothetic nonprimitive moving sublattices require finite-module stabilizer orbits")
+                return _finite_index_isotropic_transporter(source_arrow, target_arrow)
             source_point = source_arrow(next(iter(source_arrow.domain().module_generators())))
             target_point = target_arrow(next(iter(target_arrow.domain().module_generators())))
             if (not source_arrow.is_primitive() or not target_arrow.is_primitive()) and source_point.content() != target_point.content():
@@ -251,12 +363,13 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                 else:
                     sublattice = _isotropic_sublattice(arrow) if arrow.is_primitive() else _homothetic_isotropic_saturation(arrow)
                     if sublattice is None:
-                        raise ValueError("nonhomothetic nonprimitive isotropic stabilizers require the finite-module action on saturation")
-                    match int(sublattice.inclusion().domain().rank()):
-                        case 1:
-                            generators = INDUCTION.line_automorphism_generators(arrow.codomain(), INDUCTION.plane_vectors(sublattice)[0])
-                        case _:
-                            generators = INDUCTION.plane_automorphism_generators(sublattice)
+                        generators = _finite_index_isotropic_stabilizer_generators(arrow)
+                    else:
+                        match int(sublattice.inclusion().domain().rank()):
+                            case 1:
+                                generators = INDUCTION.line_automorphism_generators(arrow.codomain(), INDUCTION.plane_vectors(sublattice)[0])
+                            case _:
+                                generators = INDUCTION.plane_automorphism_generators(sublattice)
         case _FiniteSequenceFunctorCategory() if category.codomain_category() is LATTICES:
             _dimensions, basis, images = _flag_action(marked)
             generators = INDUCTION._stabilizer_generators(basis, images)
