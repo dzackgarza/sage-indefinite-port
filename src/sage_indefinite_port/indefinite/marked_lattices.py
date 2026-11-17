@@ -2537,10 +2537,11 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
         # finite-character quotient would require computing O(0), which
         # is unnecessary and is not supported by the definite engine.
         acting_group = None
-    if category is ARROWS and acting_group is not None and int(lattice.rank()) % 2 and acting_group is lattice.SO():
+    if (category is ARROWS or isinstance(category, _FiniteSequenceFunctorCategory)) and acting_group is not None and int(lattice.rank()) % 2 and acting_group is lattice.SO():
         # Central -id_L has determinant -1 in odd rank and preserves
-        # every moving sublattice. Consequently O(L) and SO(L) have
-        # identical orbits on arrows, unlike based or oriented markings.
+        # every moving sublattice and every term of an unoriented flag.
+        # Consequently O(L) and SO(L) have identical moving-arrow and
+        # unoriented-flag orbit sets, unlike based or oriented markings.
         acting_group = None
     if acting_group is not None and acting_group is not lattice.O():
         classes = tuple(split for marked in classes

@@ -944,6 +944,18 @@ def test_public_partial_flag_classes_split_by_actual_special_orthogonal_group():
     assert len(special) == 2
 
 
+def test_odd_rank_unoriented_isotropic_flag_so_and_o_moving_orbits_agree():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, primitive_marking_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[2]])
+    plane = Lattices(ZZ)([[0, 0], [0, 0]])
+    line = plane.primitive_isotropic_subobject(next(iter(plane.module_generators())))
+    full = tuple(primitive_marking_classes(FLAGS, line.inclusion(), ambient))
+    special = tuple(primitive_marking_classes(FLAGS, line.inclusion(), ambient, acting_group=ambient.SO()))
+    assert full and len(full) == len(special)
+
+
 def test_induction_partial_rank_one_three_flag_stabilizer_generators_preserve_each_term():
     from sage_extensions.all import IsotropicFlag, FlagType, Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
