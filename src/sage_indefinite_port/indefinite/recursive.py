@@ -1138,6 +1138,11 @@ class EichlerRecursion:
         return tuple(inclusion(kernel.module_generator(label)) for label in kernel.module_generating_set())
 
     def orthogonal_group_generators(self, lattice: Lattices.ParentMethods) -> tuple[LatticeIsometryMethods, ...]:
+        if int(lattice.rank()) == 0:
+            # O(0) is trivial. In particular, PARI's definite qfauto
+            # normalization divides by the gcd of the empty Gram matrix,
+            # so it is not an algorithm for this boundary object.
+            return ()
         if lattice.is_definite():
             # IndefiniteForms.g:1275-1310 INDEF_FORM_AutomorphismGroup_Memoize
             # covers the definite kernel (:1435) too: a group computed

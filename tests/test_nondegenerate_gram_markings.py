@@ -522,6 +522,17 @@ def test_primitive_rank_zero_markings_are_singletons_for_every_arithmetic_group(
             assert classes[0].arrow().domain().rank() == 0
 
 
+def test_rank_zero_orthogonal_group_has_empty_complete_generator_family():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = Lattices(ZZ)(0)
+    assert RECURSION.orthogonal_group_generators(ambient) == ()
+    witness = RECURSION.isometry(ambient, Lattices(ZZ)(0))
+    assert witness is not None
+    assert witness.domain().rank() == witness.codomain().rank() == 0
+
+
 def test_nondegenerate_fixed_smith_classifier_validates_before_empty_orbit_dispatch():
     import pytest
     from sage_extensions.all import Lattices, ZZ
