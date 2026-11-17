@@ -709,6 +709,53 @@ class IsotropicInduction:
         if not source_basis:
             # Every ambient isometry carries the zero subspace to zero.
             return self.recursion.isometry(source.inclusion().codomain(), target.inclusion().codomain())
+        source_ambient, target_ambient = source.inclusion().codomain(), target.inclusion().codomain()
+        if not source_ambient.is_nondegenerate() and not target_ambient.is_nondegenerate():
+            phi = self.recursion.isometry(source_ambient, target_ambient)
+            if phi is None:
+                return None
+            from sage.matrix.constructor import identity_matrix
+            from sage.rings.integer_ring import ZZ as SageZZ
+            from sage_indefinite_port.indefinite.recursive import _gram_in_label_order, _isometry_from_row_matrix
+
+            reduction = indefinite_reduced_presentation(target_ambient)
+            reduced = reduction.reduced
+            gram = _gram_in_label_order(reduced)
+            n, size = int(gram.rank()), int(gram.nrows())
+            k = size - n
+            radical = tuple(reduction.isometry(reduced.module_generator(label))
+                            for label in tuple(reduced.module_generating_set())[n:])
+            if n and k and len(source_basis) > k and all(
+                source.inclusion().is_in_image((~phi)(point))
+                and target.inclusion().is_in_image(point) for point in radical
+            ):
+                labels = tuple(reduced.module_generating_set())
+                complement = reduced.lattice_category()([
+                    [int(gram[i, j]) for j in range(n)] for i in range(n)
+                ])
+                c_labels = tuple(complement.module_generating_set())
+                projected_subspaces = []
+                for vectors in (tuple(phi(point) for point in source_basis), target_basis):
+                    rows = tuple(tuple(_integer((~reduction.isometry)(point).to_vector()(label))
+                                       for label in labels[:n]) for point in vectors)
+                    points = tuple(complement.linear_combination({
+                        label: complement.base_ring()(entry)
+                        for label, entry in zip(c_labels, row, strict=True) if entry
+                    }) for row in rows if any(row))
+                    projected_subspaces.append(complement.primitive_isotropic_subobject(*points))
+                quotient_witness = self.plane_isometry(*projected_subspaces)
+                if quotient_witness is None:
+                    return None
+                block = identity_matrix(SageZZ, size)
+                for i, point in enumerate(complement.module_generators()):
+                    image = quotient_witness(point).to_vector()
+                    for j, label in enumerate(c_labels):
+                        block[i, j] = _integer(image(label))
+                reduced_witness = _isometry_from_row_matrix(reduced, reduced, block)
+                witness = reduction.isometry * reduced_witness * (~reduction.isometry) * phi
+                if not all(target.inclusion().is_in_image(witness(point)) for point in source_basis):
+                    raise ArithmeticError("the lifted quotient-plane transporter does not preserve the full-radical marking")
+                return witness
         return self.recursion.isotropic_subspace_isometry(
             source_basis,
             target_basis,

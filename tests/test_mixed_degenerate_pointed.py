@@ -418,6 +418,56 @@ def test_mixed_degenerate_full_radical_maximal_isotropic_stabilizer_generators()
                    for generator in public for point in (e, *radical))
 
 
+def test_mixed_degenerate_full_radical_plane_transporter_lifts_quotient_isometry():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    for k in (1, 2):
+        ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * k for _ in range(k)])
+        e, f, *radical = tuple(ambient.module_generators())
+        first = ambient.primitive_isotropic_subobject(e, *radical)
+        second = ambient.primitive_isotropic_subobject(f, *radical)
+        witness = INDUCTION.plane_isometry(first, second)
+        assert witness is not None
+        assert all(second.inclusion().is_in_image(witness(point)) for point in (e, *radical))
+        assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+                   for x in (e, f, *radical) for y in (e, f, *radical))
+
+
+def test_mixed_degenerate_full_radical_plane_transporter_between_presentations():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    source = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    target = Lattices(ZZ)([[0, -1, 0], [-1, 0, 0], [0, 0, 0]])
+    e, f, z = tuple(source.module_generators())
+    a, b, r = tuple(target.module_generators())
+    first = source.primitive_isotropic_subobject(e, z)
+    second = target.primitive_isotropic_subobject(b, r)
+    witness = INDUCTION.plane_isometry(first, second)
+    assert witness is not None
+    assert witness.domain() is source and witness.codomain() is target
+    assert all(second.inclusion().is_in_image(witness(point)) for point in (e, z))
+    assert all(target.b(witness(x), witness(y)) == source.b(x, y)
+               for x in (e, f, z) for y in (e, f, z))
+
+
+def test_public_moving_full_radical_plane_transporter_between_presentations():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
+
+    source = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    target = Lattices(ZZ)([[0, -1, 0], [-1, 0, 0], [0, 0, 0]])
+    e, f, z = tuple(source.module_generators())
+    a, b, r = tuple(target.module_generators())
+    first = ARROWS.object(source.primitive_isotropic_subobject(e, z).inclusion())
+    second = ARROWS.object(target.primitive_isotropic_subobject(b, r).inclusion())
+    witness = isometry(ARROWS, first, second)
+    assert witness is not None
+    assert witness.domain() is source and witness.codomain() is target
+    assert all(second.arrow().is_in_image(witness(point)) for point in (e, z))
+
+
 def test_full_radical_maximal_isotropic_stabilizer_has_full_levi_and_shear_images():
     from sage.all import GF, MatrixGroup, matrix
     from sage_extensions.all import Lattices, ZZ
