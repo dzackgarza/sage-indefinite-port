@@ -1066,8 +1066,23 @@ class _Edgewalk:
         if self.norm(k) < 0:
             oriented_basis = matrix(SageQQ, [r0, self.row(k)])
         else:
-            plane = self.rational.subobject_on([self.rational_element(row) for row in plane_basis.rows()])
-            positive = self.rational_row(plane.inclusion()(plane.vector_of_sign(1)))
+            # A vector of positive square in the Lorentzian plane, on its
+            # basis rows b_0, b_1 with Gram g: b_0 if g_00 > 0; else, for
+            # g_00 < 0, b_1 - (g_01/g_00) b_0 of square det(g)/g_00 > 0; and for
+            # g_00 = 0, b_1 + t b_0 of square g_11 + 2 t g_01 = 1.  Every such
+            # vector with b(., k) < 0 lies in one component of the positive
+            # cone, which k bounds, so the orientation of (positive, k) and
+            # the isotropy of the plane do not depend on the choice.
+            first, second = plane_basis.rows()
+            g00, g01, g11 = self.pair(first, first), self.pair(first, second), self.pair(second, second)
+            if g00 > 0:
+                positive = first
+            elif g00 < 0:
+                positive = second - (g01 / g00) * first
+            else:
+                positive = second + ((1 - g11) / (2 * g01)) * first
+            if self.pair(positive, positive) <= 0:
+                raise ArithmeticError("the edge plane must contain a vector of positive square")
             if self.pair(positive, self.row(k)) > 0:
                 positive = -positive
             oriented_basis = matrix(SageQQ, [positive, self.row(k)])
