@@ -195,6 +195,18 @@ def test_rank_zero_nonzero_norm_pointed_classes_are_empty():
         pointed_nonzero_norm_classes(category, ambient, 0)
 
 
+def test_infinite_fixed_content_iterator_rejects_incompatible_pointed_source():
+    import pytest
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_pointed_content_classes
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0]])
+    wrong_source = Lattices(ZZ)([[2]])
+    wrong_category = Lattices(ZZ).CosliceUnder(wrong_source)
+    with pytest.raises(ValueError, match="source form"):
+        next(iter_pointed_content_classes(wrong_category, ambient, 0, 1))
+
+
 def test_mixed_degenerate_anisotropic_quotient_has_one_radical_null_orbit_per_content():
     from sage_extensions.all import Lattices, ZZ, cardinal
     from sage_indefinite_port.indefinite.marked_lattices import (

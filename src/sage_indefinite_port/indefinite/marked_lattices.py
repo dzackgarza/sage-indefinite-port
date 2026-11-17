@@ -1624,6 +1624,11 @@ def iter_pointed_content_classes(category: Category, lattice: Parent, square: in
     orbits at content one. Filter the exhaustive fair stream by full-vector
     content rather than asserting a finite classification.
     """
+    if not isinstance(category, CosliceCategory) or int(category.base_object().rank()) != 1:
+        raise ValueError("content strata require a rank-one pointed coslice category")
+    source = category.base_object()
+    if int(source.q(next(iter(source.module_generators())))) != int(square):
+        raise ValueError("the pointed source form must have the requested square")
     if content < 1:
         raise ValueError("nonzero pointed-vector content must be positive")
     if square != 0 or lattice.is_nondegenerate() or all(
