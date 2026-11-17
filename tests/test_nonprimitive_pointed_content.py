@@ -56,3 +56,35 @@ def test_public_imprimitive_pointed_coslice_uses_content_reduction():
     witness = isometry(category, first, second)
     assert witness is not None and witness(3 * e) == 3 * f
     assert all(g(3 * e) == 3 * e for g in automorphism_group_generators(category, first))
+
+
+def test_fixed_content_orbit_strata_recover_distinct_square_eight_classes():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import pointed_content_classes
+
+    plane = lattice([[0, 1], [1, 0]])
+    source = Lattices(ZZ)([[8]])
+    category = CosliceCategory(Lattices(ZZ), source)
+    primitive = pointed_content_classes(category, plane, 8, 1)
+    doubled = pointed_content_classes(category, plane, 8, 2)
+    impossible = pointed_content_classes(category, plane, 8, 3)
+    assert primitive.cardinality() == cardinal(1)
+    assert doubled.cardinality() == cardinal(1)
+    assert impossible.cardinality() == cardinal(0)
+    assert all(int(marking.arrow()(source.module_generators()[0]).content()) == c
+               for c, classes in ((1, primitive), (2, doubled)) for marking in classes)
+
+
+def test_fixed_isotropic_content_strata_do_not_conflate_contents():
+    from sage_extensions.all import Lattices, ZZ, cardinal
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import pointed_content_classes
+
+    plane = lattice([[0, 1], [1, 0]])
+    source = Lattices(ZZ)([[0]])
+    category = CosliceCategory(Lattices(ZZ), source)
+    for content in (1, 2, 4):
+        classes = pointed_content_classes(category, plane, 0, content)
+        assert classes.cardinality() == cardinal(1)
+        assert all(int(marking.arrow()(source.module_generators()[0]).content()) == content for marking in classes)

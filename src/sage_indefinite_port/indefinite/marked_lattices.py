@@ -250,6 +250,39 @@ def _pointed_classes(category: Category, lattice: Lattices.ParentMethods, square
     return tuple(category.object(base.hom([vector_], codomain=lattice)) for vector_ in vectors)
 
 
+
+def pointed_content_classes(category: Category, lattice: Parent, square: int, content: int) -> Parent:
+    r"""O(L)-classes of rank-one markings of square ``square`` and exact positive content.
+
+    Every vector in this stratum is uniquely ``content * primitive_part``.
+    Isometries commute with scaling, so its orbit set is the primitive
+    square-``square/content**2`` orbit set.  In particular, specifying
+    content makes the isotropic stratum finite when the primitive orbit
+    algorithm is finite, without pretending that all nonzero isotropic
+    vectors have finitely many orbits across unbounded contents.
+    """
+    if not isinstance(category, CosliceCategory) or int(category.base_object().rank()) != 1:
+        raise ValueError("content strata require a rank-one pointed coslice category")
+    source = category.base_object()
+    source_generator = next(iter(source.module_generators()))
+    if int(source.q(source_generator)) != int(square):
+        raise ValueError("the pointed source form must have the requested square")
+    if content < 1:
+        raise ValueError("nonzero pointed-vector content must be positive")
+    if square % (content * content):
+        return finite_ordered_set(())
+    primitive_square = square // (content * content)
+    primitive_source = lattice.lattice_category()([[primitive_square]])
+    primitive_category = CosliceCategory(lattice.lattice_category(), primitive_source)
+    primitive_classes = _pointed_classes(primitive_category, lattice, primitive_square)
+    classes = (
+        category.object(source.hom([lattice.scalar_multiple(lattice.base_ring()(content),
+            _marked_vector(marking))], codomain=lattice))
+        for marking in primitive_classes
+    )
+    return finite_ordered_set(tuple(classes))
+
+
 def primitive_marking_classes(category: Category, source: Parent | Morphism, lattice: Parent) -> Parent:
     r"""One marked lattice for each isomorphism class of primitive markings of ``lattice`` of shape ``source``.
 
@@ -314,4 +347,5 @@ __all__ = [
     "automorphism_group_generators",
     "isometry",
     "primitive_marking_classes",
+    "pointed_content_classes",
 ]
