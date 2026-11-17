@@ -954,6 +954,47 @@ class IsotropicInduction:
             n, size = int(gram.rank()), int(gram.nrows())
             k = size - n
             labels = tuple(reduced.module_generating_set())
+            if all(self.recursion.vector_lies_in_radical(point) for point in self.plane_vectors(plane)):
+                # A primitive T contained in R is fixed precisely when
+                # the D block belongs to Stab_GL(R)(T). The A block runs
+                # through O(C), and all B in Hom(C,R) are unrestricted.
+                radical_module = reduced.lattice_category()([[0] * k for _ in range(k)])
+                r_labels = tuple(radical_module.module_generating_set())
+                rows = tuple(tuple(_integer((~reduction.isometry)(point).to_vector()(label))
+                                   for label in labels[n:]) for point in self.plane_vectors(plane))
+                radical_points = tuple(radical_module.linear_combination({
+                    label: radical_module.base_ring()(entry)
+                    for label, entry in zip(r_labels, row, strict=True) if entry
+                }) for row in rows)
+                term = radical_module.primitive_isotropic_subobject(*radical_points)
+                blocks = []
+                if n:
+                    complement = reduced.lattice_category()([
+                        [int(gram[i, j]) for j in range(n)] for i in range(n)
+                    ])
+                    c_labels = tuple(complement.module_generating_set())
+                    for generator in self.recursion.orthogonal_group_generators(complement):
+                        block = identity_matrix(SageZZ, size)
+                        for i, point in enumerate(complement.module_generators()):
+                            image = generator(point).to_vector()
+                            for j, label in enumerate(c_labels):
+                                block[i, j] = _integer(image(label))
+                        blocks.append(block)
+                for generator in radical_module.general_linear_group().flag_stabilizer((term,)).group_generators():
+                    block = identity_matrix(SageZZ, size)
+                    for i, point in enumerate(radical_module.module_generators()):
+                        image = generator(point).to_vector()
+                        for j, label in enumerate(r_labels):
+                            block[n + i, n + j] = _integer(image(label))
+                    blocks.append(block)
+                for i in range(n):
+                    for j in range(k):
+                        block = identity_matrix(SageZZ, size)
+                        block[i, n + j] = 1
+                        blocks.append(block)
+                return _conjugated(reduction.isometry, tuple(
+                    _isometry_from_row_matrix(reduced, reduced, block) for block in blocks
+                ))
             radical = tuple(reduction.isometry(reduced.module_generator(label)) for label in labels[n:])
             if n and k and int(inclusion.domain().rank()) > k and all(
                 inclusion.is_in_image(point) for point in radical

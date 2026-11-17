@@ -483,6 +483,32 @@ def test_moving_primitive_radical_planes_transport_by_unimodular_radical_action(
     assert all(second.inclusion().is_in_image(public(point)) for point in (z, w))
 
 
+def test_primitive_radical_plane_stabilizer_is_full_radical_parabolic():
+    from sage.all import GF, MatrixGroup, matrix
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION, ARROWS, automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, z, w, t = tuple(ambient.module_generators())
+    plane = ambient.primitive_isotropic_subobject(z, w)
+    generators = INDUCTION.plane_automorphism_generators(plane)
+    assert generators
+    assert all(plane.inclusion().is_in_image(generator(point))
+               for generator in generators for point in (z, w))
+    assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+               for generator in generators for x in (e, f, z, w, t) for y in (e, f, z, w, t))
+    public = tuple(automorphism_group_generators(ARROWS, ARROWS.object(plane.inclusion())))
+    assert public
+    assert all(plane.inclusion().is_in_image(generator(point))
+               for generator in public for point in (z, w))
+    labels = tuple(ambient.module_generating_set())[-3:]
+    actions = [matrix(GF(2), [
+        [int(generator(point).to_vector()(label)) for label in labels]
+        for point in (z, w, t)
+    ]) for generator in generators]
+    assert MatrixGroup(actions).order() == 24
+
+
 def test_zero_form_rank_three_primitive_plane_transporter_uses_unimodular_completion():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
@@ -494,6 +520,10 @@ def test_zero_form_rank_three_primitive_plane_transporter_uses_unimodular_comple
     witness = INDUCTION.plane_isometry(first, second)
     assert witness is not None
     assert all(second.inclusion().is_in_image(witness(point)) for point in (e, f))
+    generators = INDUCTION.plane_automorphism_generators(first)
+    assert generators
+    assert all(first.inclusion().is_in_image(generator(point))
+               for generator in generators for point in (e, f))
 
 
 def test_full_radical_plane_self_transporter_uses_full_rank_completion():
