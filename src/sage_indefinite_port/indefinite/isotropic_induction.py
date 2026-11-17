@@ -460,6 +460,10 @@ class IsotropicInduction:
         CombinedAlgorithms.h:655-679 f_get_list_spaces, followed by
         GetAutomorphismOfFlag. The final rank is the whole sublattice.
         """
+        if not dimensions or dimensions[-1] != len(basis) or dimensions[0] < 1 or any(
+            left >= right for left, right in zip(dimensions, dimensions[1:])
+        ):
+            raise ValueError("an adapted flag requires strictly increasing positive ranks ending at its basis rank")
         space = lattice.primitive_isotropic_subobject(*basis)
         inclusion = space.inclusion()
         terms = tuple(

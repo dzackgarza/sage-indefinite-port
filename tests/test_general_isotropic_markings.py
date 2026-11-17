@@ -315,6 +315,18 @@ def test_three_u_general_induction_classifies_complete_and_partial_flags():
                 assert ambient.primitive_isotropic_subobject(*basis[:rank]).inclusion().domain().rank() == rank
 
 
+def test_adapted_flag_action_rejects_inconsistent_rank_sequences():
+    from sage_indefinite_port.indefinite.isotropic_induction import IsotropicInduction
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[0, 1], [1, 0]])
+    generator = next(iter(ambient.module_generators()))
+    induction = IsotropicInduction(EichlerRecursion())
+    for dimensions in ((), (2,), (0, 1), (1, 1)):
+        with pytest.raises(ValueError, match="strictly increasing positive ranks"):
+            induction.basis_flag_action(ambient, (generator,), dimensions)
+
+
 def test_public_partial_two_three_flag_classes_in_three_u():
     r"""O(3U) has one primitive isotropic flag class of ranks (2,3).
 
