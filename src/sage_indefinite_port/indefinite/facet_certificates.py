@@ -67,14 +67,16 @@ def incidence_rank_certificate(rows, wanted: int) -> tuple[tuple[int, ...], tupl
     if len(rows) < wanted or not rows:
         return None
     integer_matrix = matrix(ZZ, rows)
-    if integer_matrix.rank() < wanted:
-        return None
-    pivot_columns = tuple(int(column) for column in integer_matrix.pivots())[:wanted]
-    if len(pivot_columns) < wanted:
-        return None
-    restricted = integer_matrix.matrix_from_columns(pivot_columns)
-    pivot_rows = tuple(int(row) for row in restricted.transpose().pivots())[:wanted]
+    # Transposed pivot columns are independent original rows. Select them
+    # first, so the second elimination sees only `wanted` rows rather than
+    # the full potentially 49k-ray facet incidence. The determinant below
+    # remains the exact independent minor certificate.
+    pivot_rows = tuple(int(row) for row in integer_matrix.transpose().pivots())[:wanted]
     if len(pivot_rows) < wanted:
+        return None
+    restricted = integer_matrix.matrix_from_rows(pivot_rows)
+    pivot_columns = tuple(int(column) for column in restricted.pivots())[:wanted]
+    if len(pivot_columns) < wanted:
         return None
     square = integer_matrix.matrix_from_rows_and_columns(pivot_rows, pivot_columns)
     if square.det() == 0:
