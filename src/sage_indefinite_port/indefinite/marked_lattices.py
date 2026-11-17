@@ -1567,6 +1567,19 @@ def primitive_marking_classes(category: Category, source: Parent | Morphism, lat
                 shape_arrows = (source,)
             else:
                 shape_arrows = _flag_arrows(source)
+            if not shape_arrows:
+                raise ValueError("an isotropic flag shape requires at least one inclusion")
+            if any(
+                arrow.domain().b(left, right) != 0
+                for arrow in shape_arrows
+                for left in arrow.domain().module_generators()
+                for right in arrow.domain().module_generators()
+            ) or any(
+                shape_arrows[-1].codomain().b(left, right) != 0
+                for left in shape_arrows[-1].codomain().module_generators()
+                for right in shape_arrows[-1].codomain().module_generators()
+            ):
+                raise ValueError("nonisotropic flag shapes require a general formed-diagram classification")
             dimensions = (int(shape_arrows[0].domain().rank()), *(int(arrow.codomain().rank()) for arrow in shape_arrows))
             classes = tuple(category(_flag_marking_from_basis(lattice, basis, dimensions)) for basis in INDUCTION.isotropic_flag_bases(lattice, dimensions))
         case _:

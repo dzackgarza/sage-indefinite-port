@@ -346,6 +346,16 @@ def test_mixed_degenerate_arrow_shape_is_not_misclassified_as_totally_isotropic(
         tuple(primitive_marking_classes(ARROWS, mixed, ambient))
 
 
+def test_nonisotropic_flag_shape_is_not_classified_by_null_flag_induction():
+    from sage_indefinite_port.indefinite.marked_lattices import FLAGS, primitive_marking_classes
+
+    ambient = lattice([[0, 1, 0], [1, 0, 0], [0, 0, 1]])
+    formed_plane = lattice([[0, 0], [0, 1]])
+    line = formed_plane.primitive_isotropic_subobject(next(iter(formed_plane.module_generators())))
+    with pytest.raises(ValueError, match="nonisotropic flag shapes"):
+        tuple(primitive_marking_classes(FLAGS, line.inclusion(), ambient))
+
+
 def test_public_partial_two_three_flag_classes_in_three_u():
     r"""O(3U) has one primitive isotropic flag class of ranks (2,3).
 
