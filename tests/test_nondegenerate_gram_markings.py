@@ -295,3 +295,33 @@ def test_glued_indefinite_rank_two_based_transporter_uses_finite_glue_orbit():
     assert witness(e + f) == e + f and witness(u - v) == v - u
     assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
                for x in (e, f, u, v) for y in (e, f, u, v))
+
+
+def test_odd_glue_transporter_requires_nonidentity_finite_orbit_correction():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import _glued_nondegenerate_embedding_isometry
+
+    ambient = Lattices(ZZ)([[1, 0], [0, 2]])
+    e, f = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[3]])
+    first = source.hom([e + f], codomain=ambient)
+    second = source.hom([-e - f], codomain=ambient)
+    witness = _glued_nondegenerate_embedding_isometry(first, second, based=True)
+    assert witness is not None
+    assert witness(e + f) == -e - f
+    assert (~witness)(-e - f) == e + f
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y) for x in (e, f) for y in (e, f))
+
+
+def test_finite_glue_orbit_transporter_rejects_incompatible_overlattice_indices():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import _glued_nondegenerate_embedding_isometry
+
+    source_lattice = Lattices(ZZ)([[2, 0], [0, 2]])
+    target_lattice = Lattices(ZZ)([[1, 0], [0, 1]])
+    source = Lattices(ZZ)([[2]])
+    e, _f = tuple(source_lattice.module_generators())
+    u, v = tuple(target_lattice.module_generators())
+    first = source.hom([e], codomain=source_lattice)
+    second = source.hom([u + v], codomain=target_lattice)
+    assert _glued_nondegenerate_embedding_isometry(first, second, based=True) is None
