@@ -160,6 +160,20 @@ def test_unrestricted_rank_three_null_sublattices_preserve_smith_index():
     assert indices == [1, 2]
 
 
+def test_unrestricted_rank_two_null_sublattices_split_under_special_orthogonal_group():
+    from itertools import islice
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import iter_all_isotropic_sublattice_classes, ARROWS, isometry
+
+    plane = Lattices(ZZ)("U")
+    ambient = plane + plane
+    classes = tuple(islice(iter_all_isotropic_sublattice_classes(ambient, 2, acting_group=ambient.SO()), 2))
+    assert len(classes) == 2
+    assert all(marked.arrow().saturation().inclusion().domain().rank() == 2 for marked in classes)
+    assert isometry(ARROWS, classes[0], classes[1]) is not None
+    assert ARROWS.Core().Mor(classes[0], classes[1]).an_element_in(ambient.SO()) is None
+
+
 def test_canonical_moving_null_line_is_sign_invariant_and_retains_content():
     import pytest
     from sage_indefinite_port.indefinite.marked_lattices import canonical_moving_isotropic_line
