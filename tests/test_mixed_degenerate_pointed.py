@@ -655,6 +655,18 @@ def test_zero_form_rank_two_moving_line_stabilizer_preserves_primitive_line():
                for generator in generators for point in (e, f))
 
 
+def test_zero_form_rank_one_line_stabilizer_is_exact_sign_group():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = Lattices(ZZ)([[0]])
+    e = next(iter(ambient.module_generators()))
+    generators = RECURSION.line_stabilizer_generators(e)
+    assert generators
+    assert any(generator(e) == -e for generator in generators)
+    assert all(generator(e) in (e, -e) for generator in generators)
+
+
 def test_public_moving_radical_line_stabilizer_contains_sign_reversal():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import ARROWS, automorphism_group_generators
