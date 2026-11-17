@@ -1175,6 +1175,26 @@ def iter_pointed_isotropic_classes(category: Category, lattice: Parent, *, inclu
 
 
 
+
+def iter_primitive_isotropic_line_classes(lattice: Parent):
+    r"""Fair exact moving primitive-null-line orbit stream.
+
+    Every primitive null vector occurs in the coordinate-height walk.
+    A moving rank-one isotropic sublattice is identified with the pair
+    ``{v,-v}``; exact pointed transport decides equivalence of those
+    generators.  The stream is exhaustive without a finite-class claim.
+    """
+    if lattice.is_definite() or int(lattice.witt_index()) == 0:
+        return
+    seen = []
+    for vector in RECURSION.exact_vector_orbit_iterator(lattice, 0, primitive_only=True):
+        if any(RECURSION.pointed_isometry(vector, -previous) is not None for previous in seen):
+            continue
+        seen.append(vector)
+        source = lattice.lattice_category()([[0]])
+        yield ARROWS.object(source.hom([vector], codomain=lattice))
+
+
 def nonprimitive_isotropic_line_classes(lattice: Parent, content: int, *, acting_group=None) -> Parent:
     r"""Moving rank-one isotropic sublattice orbits of prescribed index in saturation.
 

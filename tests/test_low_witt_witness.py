@@ -81,3 +81,28 @@ def test_witt_one_primitive_isotropic_vector_lazy_stream():
     representative = next(ambient.O().exact_vector_orbit_iterator(0, primitive_only=True))
     assert representative.q() == ZZ(0)
     assert int(representative.content()) == 1
+
+
+def test_low_witt_one_primitive_null_pointed_transporter():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[2, 0], [0, -4]])
+    e, f, u, v = tuple(ambient.module_generators())
+    witness = RECURSION.pointed_isometry(e, f)
+    assert witness is not None and witness(e) == f
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in (e, f, u, v) for y in (e, f, u, v))
+
+
+def test_low_witt_one_public_lazy_primitive_null_line_orbit_stream():
+    from sage_indefinite_port.indefinite.marked_lattices import iter_primitive_isotropic_line_classes
+    from sage_extensions.all import Lattices, ZZ
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[2, 0], [0, -4]])
+    marked = next(iter_primitive_isotropic_line_classes(ambient))
+    arrow = marked.arrow()
+    vector = arrow(next(iter(arrow.domain().module_generators())))
+    assert vector.q() == ZZ(0)
+    assert int(vector.content()) == 1
+    assert arrow.is_primitive()
