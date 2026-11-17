@@ -2040,6 +2040,8 @@ def nonprimitive_isotropic_sublattice_classes(lattice: Parent, rank: int, diviso
     """
     if rank < 1 or len(divisors) != rank:
         raise ValueError("positive isotropic rank and matching elementary-divisor tuple required")
+    if any(d < 1 for d in divisors) or any(right % left for left, right in pairwise(divisors)):
+        raise ValueError("elementary divisors must be positive and ordered by divisibility")
     if acting_group is lattice.O():
         acting_group = None
     if rank > int(lattice.rank()):

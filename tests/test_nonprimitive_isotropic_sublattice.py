@@ -245,6 +245,18 @@ def test_fixed_content_null_line_stream_preserves_exact_saturation_index(monkeyp
     assert arrow.saturation().inclusion().is_primitive()
 
 
+def test_impossible_isotropic_rank_does_not_accept_invalid_smith_data():
+    import pytest
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_isotropic_sublattice_classes
+
+    ambient = Lattices(ZZ)("U")
+    assert tuple(nonprimitive_isotropic_sublattice_classes(ambient, 3, (1, 1, 1))) == ()
+    for smith in ((1, 0, 1), (1, 3, 2), (-1, 1, 1)):
+        with pytest.raises(ValueError, match="elementary divisors"):
+            nonprimitive_isotropic_sublattice_classes(ambient, 3, smith)
+
+
 def test_rank_zero_ambient_has_empty_primitive_and_unrestricted_null_line_streams():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import (
