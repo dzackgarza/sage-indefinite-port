@@ -262,6 +262,10 @@ generators from this *actual* parabolic action generate precisely
 \(\operatorname{Stab}_{GL(L)}(J)\). This includes nonhomothetic Smith types,
 without invoking nondegenerate isotropic-plane induction. For rank one,
 \(J=mS\) has the same setwise parabolic stabilizer as \(S\).
+The fixed-saturation classification of submodules of \(S\) likewise uses
+the action of this actual integral parabolic, transferred to the owned
+\(GL(S)\) action. In a pure zero-form ambient lattice it is the full
+\(GL(S)\), including when \(S\) is a proper summand of \(L\).
 
 For an unbased rank-\(k\) submodule, Smith normal form gives a complete
 \(GL_n(\mathbb Z)\)-orbit invariant: its positive elementary divisors

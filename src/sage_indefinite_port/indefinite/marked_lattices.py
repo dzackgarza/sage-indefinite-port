@@ -1691,7 +1691,14 @@ def nonprimitive_sublattice_classes(saturated: Parent | Morphism, divisors: tupl
             lambda label, generator=g: inclusion.lift(generator(inclusion(module.module_generator(label))))
         ) for g in ambient_generators)
     elif isotropic:
-        ambient_generators = INDUCTION.plane_automorphism_generators(saturated)
+        if all(lattice.b(x, y) == 0 for x in lattice.module_generators() for y in lattice.module_generators()):
+            linear = lattice.general_linear_group()
+            preserving = (linear.group_generators()
+                          if int(inclusion.domain().rank()) == int(lattice.rank())
+                          else linear.flag_stabilizer((saturated,)).group_generators())
+            ambient_generators = _zero_form_orthogonal_generators(lattice, preserving)
+        else:
+            ambient_generators = INDUCTION.plane_automorphism_generators(saturated)
         module = inclusion.domain()
         actions = tuple(module.Isom(module)(
             lambda label, generator=g: inclusion.lift(generator(inclusion(module.module_generator(label))))

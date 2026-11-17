@@ -198,6 +198,24 @@ def test_zero_form_rank_two_isotropic_sublattices_have_complete_smith_strata():
     assert len(tuple(nonprimitive_isotropic_sublattice_classes(ambient, 2, (1, 2), acting_group=ambient.O()))) == 1
 
 
+def test_zero_form_fixed_saturation_submodule_classes_use_actual_gl_parabolic():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import nonprimitive_sublattice_classes
+
+    ambient = Lattices(ZZ)([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    e, f, _u = tuple(ambient.module_generators())
+    saturated = ambient.primitive_isotropic_subobject(e, f)
+    classes = tuple(nonprimitive_sublattice_classes(saturated, (1, 2)))
+    assert len(classes) == 1
+    assert classes[0].codomain() is ambient
+    assert classes[0].saturation().inclusion().is_primitive()
+    submodule = classes[0].saturation().inclusion().domain().subobject_on(tuple(
+        classes[0].saturation().inclusion().lift(classes[0](x))
+        for x in classes[0].domain().module_generators()
+    )).inclusion()
+    assert int(submodule.cokernel().cardinality()) == 2
+
+
 def test_zero_form_primitive_moving_sublattices_have_one_class_at_each_attainable_rank():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import ARROWS, primitive_marking_classes
