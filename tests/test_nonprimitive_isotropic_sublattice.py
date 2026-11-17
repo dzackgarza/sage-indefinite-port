@@ -136,6 +136,21 @@ def test_canonical_moving_null_line_is_sign_invariant_and_retains_content():
         canonical_moving_isotropic_line(ambient.zero())
 
 
+def test_canonical_moving_null_line_on_degenerate_radical_has_exact_witness():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import canonical_moving_isotropic_line
+
+    ambient = Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f = tuple(ambient.module_generators())
+    first, first_witness = canonical_moving_isotropic_line(2 * e)
+    second, second_witness = canonical_moving_isotropic_line(2 * f)
+    x = first.arrow()(next(iter(first.arrow().domain().module_generators())))
+    y = second.arrow()(next(iter(second.arrow().domain().module_generators())))
+    assert x == y and int(x.content()) == 2
+    assert first_witness(x) in (2 * e, -2 * e)
+    assert second_witness(y) in (2 * f, -2 * f)
+
+
 def test_moving_nonisotropic_rank_one_markings_use_signed_pointed_transport():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
