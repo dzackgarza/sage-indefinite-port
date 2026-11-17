@@ -560,7 +560,9 @@ def _indefinite_reduction(gram, rng: Random):
     nondegenerate_rank = int(gram.rank())
     # Indefinite_LLL.h:841-857: NullspaceIntMat, LLL reduction of its row
     # lattice, and Smith-certified SubspaceCompletionInt in source order.
-    radical = _source_integer_nullspace(gram)
+    # A nondegenerate Gram matrix has the empty integer nullspace, the value
+    # NullspaceIntMat returns for it; rank is decided over QQ.
+    radical = matrix(SageZZ, 0, rank) if nondegenerate_rank == rank else _source_integer_nullspace(gram)
     complement = _source_subspace_completion_int(radical, rank)
     full_basis = complement.stack(radical)
     separated = full_basis * gram * full_basis.transpose()
