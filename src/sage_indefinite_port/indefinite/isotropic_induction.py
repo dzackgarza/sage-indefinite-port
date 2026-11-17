@@ -348,7 +348,12 @@ class IsotropicInduction:
         labels, lifts = self._frame_lifts(reduction)
         frame = tuple(lifts[label] for label in labels)
         basis = (*radical, *frame)
-        families = [tuple(-point for point in basis)]
+        # The extension stabilizer must retain the *specified* action on J.
+        # Negating all of J-perp is invalid for a pointwise or oriented
+        # marking unless -id_J belongs to the prescribed radical action.
+        # Negation on the quotient alone preserves the moving extension
+        # line while fixing J pointwise. The J action comes only from Gamma.
+        families = [(*radical, *(-point for point in frame))]
         for automorphism in self.recursion.pointed_automorphism_generators(isotropic):
             families.append((*radical, *(self._lift(lattice, labels, lifts, automorphism(quotient.module_generator(label))) for label in labels)))
         families.extend((*images, *frame) for images in radical_images)

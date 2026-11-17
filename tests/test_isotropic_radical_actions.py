@@ -50,3 +50,21 @@ def test_rank_two_induction_extension_stabilizer_has_expected_mod_two_image():
         rows = matrix(GF(2), [[int(point.to_vector()(label)) for label in labels] for point in family])
         generators.append(basis_matrix.transpose().solve_right(rows.transpose()).transpose())
     assert MatrixGroup(generators).order() == 96
+
+
+def test_extension_stabilizer_does_not_negate_a_pointwise_marked_plane():
+    from sage_indefinite_port.indefinite.recursive import EichlerRecursion
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j) for j in range(6)] for i in range(6)])
+    vectors = tuple(ambient.module_generators())
+    plane = ambient.primitive_isotropic_subobject(vectors[0], vectors[2])
+    induction = IsotropicInduction(EichlerRecursion())
+    reduction = plane.isotropic_reduction()
+    quotient = reduction.quotient_lattice()
+    radical = induction.plane_vectors(plane)
+    basis, families = induction.extension_stabilizer_images(
+        reduction, radical, (), next(iter(quotient.module_generators()))
+    )
+    assert families
+    assert all(images[:len(radical)] == radical for images in families)
+    assert any(images != basis for images in families)
