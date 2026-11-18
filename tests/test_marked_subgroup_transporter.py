@@ -62,6 +62,23 @@ def test_congruence_transporters_distinguish_based_null_vectors_mod_three():
             assert action(e) == -e
 
 
+def test_two_hyperbolic_planes_congruence_transporter_sign_obstruction():
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    source = lattice([[0]])
+    e = next(iter(ambient.module_generators()))
+    category = CosliceCategory(Lattices(ZZ), source)
+    positive = category.object(source.hom([e], codomain=ambient))
+    negative = category.object(source.hom([-e], codomain=ambient))
+    hom = category.Core().Mor(positive, negative)
+    for modulus, expected in ((2, True), (3, False)):
+        subgroup = ambient.O().congruence_preimage(modulus)
+        witness = hom.an_element_in(subgroup)
+        assert (witness is not None) is expected
+        if witness is not None:
+            action = witness.forward().right()
+            assert action in subgroup and action(e) == -e
+
+
 def test_nonnormal_finite_image_subgroup_splits_based_vector_orbits():
     # O(I_2) is the dihedral group of order eight; the subgroup generated
     # by the coordinate swap is not normal. Reduction modulo three is
