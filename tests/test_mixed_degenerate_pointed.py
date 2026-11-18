@@ -3685,6 +3685,34 @@ def test_based_mixed_primitive_rank_two_projection_with_radical_kernel():
     assert MatrixGroup(radical_actions).order() == 24
 
 
+def test_based_mixed_nonprimitive_rank_two_projection_integral_parabolic():
+    from sage.all import GF, MatrixGroup, matrix
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, u, v, z, w, t = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    category = Lattices(ZZ).CosliceUnder(source)
+    basis = (2 * e + z, u + w, z + w)
+    marking = category(source.hom(list(basis), codomain=ambient))
+    generators = tuple(automorphism_group_generators(category, marking))
+    assert generators
+    assert all(g(point) == point for g in generators for point in basis)
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
+               for g in generators for x in ambient.module_generators()
+               for y in ambient.module_generators())
+    labels = tuple(ambient.module_generating_set())
+    radical_actions = [matrix(GF(2), [
+        [int(g(point).to_vector()(labels[j])) for j in (4, 5, 6)]
+        for point in (z, w, t)
+    ]) for g in generators]
+    # The index-two projection forces D(z)=z mod 2; the fixed radical
+    # kernel z+w then forces D(w)=w mod 2. The remaining free column
+    # has four possibilities in GL_3(F_2), all realized integrally.
+    assert MatrixGroup(radical_actions).order() == 4
+
+
 def test_primitive_based_mixed_plane_with_hidden_radical_kernel_pointwise_stabilizer():
     from sage.all import GF, MatrixGroup, matrix
     from sage_extensions.all import Lattices, ZZ

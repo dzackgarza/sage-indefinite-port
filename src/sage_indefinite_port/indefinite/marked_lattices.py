@@ -1690,27 +1690,35 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                                 raise ArithmeticError("the mixed based pointwise stabilizer failed its frame certificate")
                             return finite_ordered_set(tuple(generators))
                         s = int(projected.rank())
-                        if n and k and s > 1 and all(abs(int(smith[i, i])) == 1 for i in range(s)):
-                            # A primitive projected plane splits off its graph
-                            # integrally.  Its pointwise Levi factor is the
+                        if n and k and s > 1:
+                            # The rational projected plane splits off its graph.
+                            # Intersect the resulting rational parabolic with
+                            # the integral lattice when projection has index.
+                            # Its pointwise Levi factor is the
                             # actual isotropic stabilizer of the quotient,
                             # not an assumed full orthogonal group.
                             adapted = left * rows
                             xrows, yrows = adapted[:s, :n], adapted[:s, n:]
                             radical_rows = adapted[s:, n:]
                             t = int(radical_rows.nrows())
-                            cframe = xrows.stack(_source_subspace_completion_int(xrows, n))
+                            divisors = tuple(abs(int(smith[i, i])) for i in range(s))
+                            primitive_rows = matrix(SageZZ, [
+                                [int(xrows[i, j]) // divisors[i] for j in range(n)]
+                                for i in range(s)])
+                            cframe = primitive_rows.stack(_source_subspace_completion_int(primitive_rows, n))
                             rframe = radical_rows.stack(_source_subspace_completion_int(radical_rows, k))
                             complement = reduced.lattice_category()([
                                 [int(gram[i, j]) for j in range(n)] for i in range(n)])
                             c_labels = tuple(complement.module_generating_set())
                             quotient_points = tuple(complement.linear_combination({
-                                label: complement.base_ring()(int(xrows[i, j]))
-                                for j, label in enumerate(c_labels) if xrows[i, j]
+                                label: complement.base_ring()(int(primitive_rows[i, j]))
+                                for j, label in enumerate(c_labels) if primitive_rows[i, j]
                             }) for i in range(s))
-                            normalizer = identity_matrix(SageZZ, size)
-                            graph = matrix(SageZZ, n, k, 0)
-                            graph[:s, :] = -yrows
+                            ring = SageZZ if all(d == 1 for d in divisors) else SageQQ
+                            normalizer = identity_matrix(ring, size)
+                            graph = matrix(ring, n, k, 0)
+                            for i in range(s):
+                                graph[i, :] = -yrows.row(i) / divisors[i]
                             normalizer[:n, n:] = cframe.inverse() * graph
                             blocks = []
                             for action in INDUCTION._stabilizer_generators(quotient_points, ()):
@@ -1744,16 +1752,38 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                                     block = identity_matrix(SageZZ, size)
                                     block[:n, n:] = cframe.inverse() * standard
                                     blocks.append(block)
-                            generators = _conjugated(reduction.isometry, tuple(
-                                _isometry_from_row_matrix(reduced, reduced,
-                                    normalizer * block * normalizer.inverse()) for block in blocks))
+                            if ring is SageQQ:
+                                rational = reduced.base_change(reduced.base_ring().fraction_field_map())
+                                inclusion_r = ModulesOverIntegralDomains(reduced.base_ring())(reduced).generic_fibre_map()
+                                conjugates = []
+                                for block in blocks:
+                                    conjugated = normalizer * block * normalizer.inverse()
+                                    conjugates.append(rational.Isom(rational)(tuple(
+                                        rational.linear_combination({label: rational.base_ring()(conjugated[i, j])
+                                            for j, label in enumerate(labels) if conjugated[i, j]})
+                                        for i in range(size))))
+                                action = IntegralStructureAction(rational.O().subgroup(tuple(conjugates)), inclusion_r)
+                                from math import lcm
+                                bound = lcm(*divisors) ** 2
+                                containing = Modules(reduced.base_ring()).Mono(reduced, inclusion_r.codomain())(
+                                    lambda label: inclusion_r.codomain().wrap(
+                                        rational.scalar_multiple(rational.base_ring().one() / rational.base_ring()(bound),
+                                            inclusion_r(reduced.module_generator(label)).underlying_element())))
+                                span = OrbitSpanConstructions(reduced.base_ring())(
+                                    action.ambient_action_functor(), inclusion_r, containing=containing)
+                                generators = _conjugated(reduction.isometry, tuple(_integral_generator_set(
+                                    reduced, action.with_stable_containing_bound(span.inclusion()))))
+                            else:
+                                generators = _conjugated(reduction.isometry, tuple(
+                                    _isometry_from_row_matrix(reduced, reduced,
+                                        normalizer * block * normalizer.inverse()) for block in blocks))
                             generators = generators or (ambient.O().identity(),)
                             if not all(generator(arrow(point)) == arrow(point)
                                        for generator in generators
                                        for point in arrow.domain().module_generators()):
                                 raise ArithmeticError("the primitive projected plane stabilizer failed its frame certificate")
                             return finite_ordered_set(tuple(generators))
-                        raise ValueError("based isotropic stabilizers require primitive higher-rank quotient projection")
+                        raise ValueError("based isotropic stabilizers require a nonzero quotient projection")
                 # Pointwise fixation of the marked finite-index frame is
                 # equivalent to pointwise fixation of its primitive
                 # saturation, since the ambient module is torsion-free.
