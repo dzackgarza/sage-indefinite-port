@@ -116,6 +116,16 @@ def test_definite_norm_orbits_use_generator_action_not_pointed_isometry(monkeypa
     assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 3, primitive_only=True))) == 1
 
 
+def test_definite_norm_orbits_respect_explicit_generator_labels():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = Lattices(ZZ)([[1, 0], [0, 2]], module_generators=("right", "left"))
+    representatives = tuple(RECURSION.exact_vector_orbit_iterator(ambient, 3))
+    assert len(representatives) == 1
+    assert int(representatives[0].q()) == 3
+
+
 def test_exact_vector_orbit_iterator_exhausts_primitive_zero_form_orbits():
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION
 
