@@ -3713,6 +3713,32 @@ def test_based_mixed_nonprimitive_rank_two_projection_integral_parabolic():
     assert MatrixGroup(radical_actions).order() == 4
 
 
+def test_based_mixed_rank_two_unequal_projection_indices_without_radical_kernel():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 2 for _ in range(2)])
+    e, f, u, v, z, w = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    basis = (2 * e + z, 3 * u + w)
+    marking = category(source.hom(list(basis), codomain=ambient))
+    generators = tuple(automorphism_group_generators(category, marking))
+    assert generators
+    assert all(g(point) == point for g in generators for point in basis)
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
+               for g in generators for x in ambient.module_generators()
+               for y in ambient.module_generators())
+    # Each generator must act unimodularly on the ambient radical;
+    # the distinct projection indices impose separate congruences.
+    from sage.all import matrix, ZZ as SageZZ
+    labels = tuple(ambient.module_generating_set())
+    assert all(abs(matrix(SageZZ, [
+        [int(g(point).to_vector()(labels[j])) for j in (4, 5)]
+        for point in (z, w)
+    ]).det()) == 1 for g in generators)
+
+
 def test_primitive_based_mixed_plane_with_hidden_radical_kernel_pointwise_stabilizer():
     from sage.all import GF, MatrixGroup, matrix
     from sage_extensions.all import Lattices, ZZ
