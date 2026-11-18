@@ -1586,8 +1586,13 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                     else:
                         from sage.matrix.constructor import identity_matrix, matrix
                         from sage.rings.integer_ring import ZZ as SageZZ
+                        from sage.rings.rational_field import QQ as SageQQ
+                        from sage_extensions.all import Modules
+                        from sage_extensions.categories.modules.orbit_spans import OrbitSpanConstructions
+                        from sage_extensions.categories.modules.pure.modules import ModulesOverIntegralDomains
+                        from sage_extensions.categories.rational_integral_stabilizers import IntegralStructureAction
                         from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
-                        from sage_indefinite_port.indefinite.recursive import _conjugated, _gram_in_label_order, _isometry_from_row_matrix
+                        from sage_indefinite_port.indefinite.recursive import _conjugated, _gram_in_label_order, _isometry_from_row_matrix, _integral_generator_set
 
                         ambient = arrow.codomain()
                         saturation = arrow.saturation()
@@ -1602,22 +1607,24 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                             for point in saturation.module_generators()])
                         projected = rows[:, :n]
                         smith, left, _right = projected.smith_form()
-                        if n and k and int(projected.rank()) == 1 and abs(int(smith[0, 0])) == 1:
+                        if n and k and int(projected.rank()) == 1:
                             adapted = left * rows
                             xrow, yrow = adapted.row(0)[:n], adapted.row(0)[n:]
                             radical_rows = adapted[1:, n:]
                             t = int(radical_rows.nrows())
-                            cframe = matrix(SageZZ, [list(xrow)]).stack(
-                                _source_subspace_completion_int(matrix(SageZZ, [list(xrow)]), n))
+                            content = abs(int(smith[0, 0]))
+                            primitive = matrix(SageZZ, [[int(entry) // content for entry in xrow]])
+                            cframe = primitive.stack(_source_subspace_completion_int(primitive, n))
                             rframe = radical_rows.stack(_source_subspace_completion_int(radical_rows, k))
                             complement = reduced.lattice_category()([
                                 [int(gram[i, j]) for j in range(n)] for i in range(n)])
                             c_labels = tuple(complement.module_generating_set())
-                            line = complement.linear_combination({label: complement.base_ring()(int(xrow[j]))
-                                for j, label in enumerate(c_labels) if xrow[j]})
-                            normalizer = identity_matrix(SageZZ, size)
-                            shear = matrix(SageZZ, n, k, 0)
-                            shear[0, :] = -yrow
+                            line = complement.linear_combination({label: complement.base_ring()(int(primitive[0, j]))
+                                for j, label in enumerate(c_labels) if primitive[0, j]})
+                            ring = SageZZ if content == 1 else SageQQ
+                            normalizer = identity_matrix(ring, size)
+                            shear = matrix(ring, n, k, 0)
+                            shear[0, :] = -yrow / content
                             normalizer[:n, n:] = cframe.inverse() * shear
                             blocks = []
                             for action in RECURSION.pointwise_stabilizer_generators(line):
@@ -1651,10 +1658,32 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                                     block = identity_matrix(SageZZ, size)
                                     block[:n, n:] = cframe.inverse() * standard
                                     blocks.append(block)
-                            generators = _conjugated(reduction.isometry, tuple(
-                                _isometry_from_row_matrix(reduced, reduced,
-                                    normalizer * block * normalizer.inverse())
-                                for block in blocks)) or (ambient.O().identity(),)
+                            if content > 1:
+                                rational = reduced.base_change(reduced.base_ring().fraction_field_map())
+                                inclusion_r = ModulesOverIntegralDomains(reduced.base_ring())(reduced).generic_fibre_map()
+                                conjugates = []
+                                for block in blocks:
+                                    conjugated = normalizer * block * normalizer.inverse()
+                                    conjugates.append(rational.Isom(rational)(tuple(
+                                        rational.linear_combination({label: rational.base_ring()(conjugated[i, j])
+                                            for j, label in enumerate(labels) if conjugated[i, j]})
+                                        for i in range(size))))
+                                action = IntegralStructureAction(rational.O().subgroup(tuple(conjugates)), inclusion_r)
+                                bound = content ** 2
+                                containing = Modules(reduced.base_ring()).Mono(reduced, inclusion_r.codomain())(
+                                    lambda label: inclusion_r.codomain().wrap(
+                                        rational.scalar_multiple(rational.base_ring().one() / rational.base_ring()(bound),
+                                            inclusion_r(reduced.module_generator(label)).underlying_element())))
+                                span = OrbitSpanConstructions(reduced.base_ring())(
+                                    action.ambient_action_functor(), inclusion_r, containing=containing)
+                                generators = _conjugated(reduction.isometry, tuple(_integral_generator_set(
+                                    reduced, action.with_stable_containing_bound(span.inclusion()))))
+                            else:
+                                generators = _conjugated(reduction.isometry, tuple(
+                                    _isometry_from_row_matrix(reduced, reduced,
+                                        normalizer * block * normalizer.inverse())
+                                    for block in blocks))
+                            generators = generators or (ambient.O().identity(),)
                             if not all(generator(arrow(point)) == arrow(point)
                                        for generator in generators
                                        for point in arrow.domain().module_generators()):

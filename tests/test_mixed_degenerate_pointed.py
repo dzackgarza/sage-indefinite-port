@@ -3696,6 +3696,36 @@ def test_primitive_based_mixed_plane_with_hidden_radical_kernel_pointwise_stabil
     assert MatrixGroup(radical_actions).order() == 96
 
 
+def test_based_mixed_nonprimitive_projected_line_pointwise_stabilizer_congruences():
+    from sage.all import GF, MatrixGroup, matrix
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    for index, radical_rank, expected in ((2, 2, 1), (3, 3, 18)):
+        ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * radical_rank for _ in range(radical_rank)])
+        e, f, *radical = tuple(ambient.module_generators())
+        z, w = radical[:2]
+        source = Lattices(ZZ)([[0, 0], [0, 0]])
+        category = Lattices(ZZ).CosliceUnder(source)
+        basis = (index * e + z, w)
+        marking = category(source.hom(list(basis), codomain=ambient))
+        generators = tuple(automorphism_group_generators(category, marking))
+        assert generators
+        assert all(g(point) == point for g in generators for point in basis)
+        assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
+                   for g in generators for x in ambient.module_generators()
+                   for y in ambient.module_generators())
+        labels = tuple(ambient.module_generating_set())
+        radical_actions = [matrix(GF(index), [
+            [int(g(point).to_vector()(labels[2 + j])) for j in range(radical_rank)]
+            for point in radical
+        ]) for g in generators]
+        # Fixing index*e+z forces D(z)=z modulo index, while D(w)=w
+        # exactly. For index 3 the remaining radical quotient contributes
+        # (F_3)^2 semidirect F_3^*, of order 18.
+        assert MatrixGroup(radical_actions).order() == expected
+
+
 def test_nonhomothetic_based_isotropic_transporter_in_nondegenerate_split_lattice():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import isometry
