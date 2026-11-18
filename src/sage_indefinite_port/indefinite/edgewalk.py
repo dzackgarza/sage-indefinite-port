@@ -119,6 +119,8 @@ def edgewalk_isometry(
     if (_engine_component_matrix(source.gram_tensor()).det()
             != _engine_component_matrix(target.gram_tensor()).det()):
         return None
+    if source.is_even() != target.is_even():
+        return None
     if int(source.rank()) == 2:
         # The rank-two edgewalk has a binary cycle rather than the
         # higher-dimensional finite vertex-orbit graph. A chosen initial

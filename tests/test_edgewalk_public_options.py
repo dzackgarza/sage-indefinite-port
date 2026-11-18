@@ -88,6 +88,10 @@ def test_public_edgewalk_isometry_uses_integral_vertex_transporters():
         [0, 1, 0], [1, 0, 0], [0, 0, 4],
     ]))
     assert source.edgewalk_isometry(nonisometric) is None
+    odd_same_determinant = HyperbolicLattices(ZZ)(Lattices(ZZ)([
+        [1, 0, 0], [0, 1, 0], [0, 0, -2],
+    ]))
+    assert source.edgewalk_isometry(odd_same_determinant) is None
 
     change = matrix([[1, 1, 0], [0, 1, 0], [0, 0, 1]])
     transformed = change * matrix(gram) * change.transpose()
