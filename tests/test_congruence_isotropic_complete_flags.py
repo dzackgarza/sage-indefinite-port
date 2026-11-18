@@ -73,3 +73,24 @@ def test_two_u_based_maximal_null_planes_under_gamma_two():
     assert len(rows) == 36
     assert all(marked.arrow().codomain() is ambient and marked.arrow().is_primitive()
                for marked in classes)
+
+
+def test_mixed_degeneration_rank_two_moving_transporter_skips_nondegenerate_invariant():
+    r"""For L=U⊕0, the full isotropic plane <e,r> is carried to
+    <f,r> by the integral swap e↔f. Since the characteristic radical r
+    lies in each plane, the pairing L→I* has rank one, not two: the
+    nondegenerate source invariant is undefined, but the degenerate
+    primitive-subobject transporter remains exact.
+    """
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
+
+    ambient = Lattices(ZZ)([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
+    e, f, radical = tuple(ambient.module_generators())
+    source = ARROWS(ambient.primitive_isotropic_subobject(e, radical).inclusion())
+    target = ARROWS(ambient.primitive_isotropic_subobject(f, radical).inclusion())
+    witness = isometry(ARROWS, source, target)
+    assert witness is not None
+    assert all(target.arrow().is_in_image(witness(point)) for point in (e, radical))
+    assert all(source.arrow().is_in_image((~witness)(point)) for point in (f, radical))
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in (e, f, radical) for y in (e, f, radical))
