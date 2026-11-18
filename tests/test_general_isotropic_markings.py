@@ -397,6 +397,26 @@ def test_zero_form_primitive_flags_transport_across_distinct_ambient_parents():
     assert all((~witness)(witness(point)) == point for point in (e, f, u))
 
 
+def test_zero_form_noncoordinate_three_stage_flag_transport_by_integral_frames():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, isometry
+
+    ambient = Lattices(ZZ)([[0] * 4 for _ in range(4)])
+    e, f, u, v = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    source_basis = (e + 3 * f, f + 2 * u, u + v)
+    target_basis = (f + 2 * u, u + v, e + 3 * f)
+    source = category(_flag_marking_from_basis(ambient, source_basis, (1, 2, 3)))
+    target = category(_flag_marking_from_basis(ambient, target_basis, (1, 2, 3)))
+    witness = isometry(category, source, target)
+    assert witness is not None
+    for rank in (1, 2, 3):
+        target_term = ambient.primitive_isotropic_subobject(*target_basis[:rank]).inclusion()
+        assert all(target_term.is_in_image(witness(point)) for point in source_basis[:rank])
+    assert all((~witness)(witness(point)) == point for point in (e, f, u, v))
+
+
 def test_zero_form_flag_stabilizer_is_actual_integral_parabolic():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
