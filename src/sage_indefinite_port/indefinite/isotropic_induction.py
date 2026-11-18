@@ -1040,7 +1040,8 @@ class IsotropicInduction:
         flag subgroup. This avoids treating a nonunimodular coordinate
         matrix for a noncoordinate primitive flag as an invertible map.
         """
-        from sage.all import ZZ as SageZZ, matrix
+        from sage.matrix.constructor import matrix
+        from sage.rings.integer_ring import ZZ as SageZZ
         from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
 
         inclusion = sublattice.inclusion()

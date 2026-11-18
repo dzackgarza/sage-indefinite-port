@@ -1043,6 +1043,23 @@ def test_nonprimitive_rank_two_projection_rank_two_radical_first_flag():
                for generator in generators for point in (z, w, 2 * e + t, u))
 
 
+def test_mixed_three_stage_flag_action_data_uses_sage_integer_matrices():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, u, v, z, w = tuple(ambient.module_generators())
+    plane = ambient.primitive_isotropic_subobject(z, 2 * e + w, u)
+    domain = plane.inclusion().domain()
+    first = domain.primitive_isotropic_subobject(plane.inclusion().lift(z))
+    second = domain.primitive_isotropic_subobject(
+        plane.inclusion().lift(z), plane.inclusion().lift(2 * e + w))
+    basis, images = INDUCTION.flag_action_data(plane, (first, second))
+    assert len(basis) == 3
+    assert images
+    assert all(len(image) == 3 for image in images)
+
+
 def test_mixed_flag_transporter_rejects_intermediate_projection_smith_difference():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
