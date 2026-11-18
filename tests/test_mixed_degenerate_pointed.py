@@ -816,6 +816,21 @@ def test_induction_legacy_flag_transporter_with_proper_radical_line():
     assert all(second[1].inclusion().is_in_image(witness(point)) for point in (z, e + w))
 
 
+def test_induction_legacy_flag_stabilizer_with_proper_radical_line():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    plane = ambient.primitive_isotropic_subobject(z, e + w)
+    generators = INDUCTION.flag_automorphism_generators((z, plane))
+    assert generators
+    assert all(plane.inclusion().is_in_image(generator(point))
+               for generator in generators for point in (z, e + w))
+    assert all(ambient.primitive_isotropic_subobject(z).inclusion().is_in_image(generator(z))
+               for generator in generators)
+
+
 def test_proper_radical_intersection_three_stage_flag_stabilizer():
     from sage.all import GF, MatrixGroup, matrix
     from sage_extensions.all import Cat, Lattices, ZZ
