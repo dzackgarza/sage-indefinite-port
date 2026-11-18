@@ -2,6 +2,17 @@
 from tests.acceptance.consumer import lattice
 
 
+def test_finite_primitive_classes_reject_impossible_norm_without_eichler_model(monkeypatch):
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    ambient = lattice([[2, 0, 0, 0], [0, 2, 0, 0], [0, 0, -6, 0], [0, 0, 0, -6]])
+    def forbidden(*args, **kwargs):
+        raise AssertionError("an impossible norm must not request a rational Eichler envelope")
+
+    monkeypatch.setattr(RECURSION, "_model", forbidden)
+    assert RECURSION.primitive_vector_classes(ambient, 1) == ()
+
+
 def test_exact_vector_orbit_iterator_terminates_on_certified_empty_and_singleton_null_fibres():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import RECURSION

@@ -2639,6 +2639,18 @@ class EichlerRecursion:
         # rational hyperbolic pairs of the Eichler envelope.
         if square == 0 and not lattice.is_isotropic():
             return ()
+        # Reject impossible integral norms before requesting an Eichler
+        # envelope.  In particular a rationally anisotropic rank-four
+        # lattice may have no two hyperbolic planes at all, yet its odd
+        # norm fibres can be certified empty by the integral value ideal.
+        gram = _gram_in_label_order(lattice)
+        value_ideal = 0
+        for i in range(int(gram.nrows())):
+            value_ideal = gcd(value_ideal, _integer(gram[i, i]))
+            for j in range(i + 1, int(gram.ncols())):
+                value_ideal = gcd(value_ideal, 2 * _integer(gram[i, j]))
+        if value_ideal and int(square) % value_ideal:
+            return ()
         buckets: dict[VectorPrefilter, list[tuple[Lattices.ElementMethods, list[LatticeIsometryMethods]]]] = {}
         for candidate in self._model(profile.signed_view).primitive_covering_vectors(profile.sign * int(square)):
             bucket = buckets.setdefault(VectorPrefilter.from_vector(candidate), [])
