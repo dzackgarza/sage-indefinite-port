@@ -3811,6 +3811,24 @@ def test_full_rank_based_mixed_gram_stabilizer_is_identity():
         assert all(generators[0](point) == point for point in basis)
 
 
+def test_noncoordinate_zero_form_based_frame_uses_integral_completion():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    ambient = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, z = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    basis = (2 * e + f, e + z)
+    marking = category(source.hom(list(basis), codomain=ambient))
+    generators = tuple(automorphism_group_generators(category, marking))
+    assert generators
+    assert all(g(point) == point for g in generators for point in basis)
+    assert any(g(z) != z for g in generators)
+    assert all((~g)(g(point)) == point for g in generators
+               for point in ambient.module_generators())
+
+
 def test_primitive_based_mixed_plane_with_hidden_radical_kernel_pointwise_stabilizer():
     from sage.all import GF, MatrixGroup, matrix
     from sage_extensions.all import Lattices, ZZ

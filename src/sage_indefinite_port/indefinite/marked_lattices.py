@@ -1512,7 +1512,9 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                     for y in arrow.codomain().module_generators()
                 ):
                     from sage.all import ZZ as SageZZ, identity_matrix
-                    from sage_indefinite_port.indefinite.recursive import _fair_unimodular_matrices, _isometry_from_row_matrix
+                    from sage.matrix.constructor import matrix
+                    from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
+                    from sage_indefinite_port.indefinite.recursive import _isometry_from_row_matrix
 
                     ambient = arrow.codomain()
                     n, k = int(ambient.rank()), int(arrow.domain().rank())
@@ -1523,8 +1525,8 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                     frame_arrow = arrow if arrow.is_primitive() else arrow.saturation().inclusion()
                     fixed = tuple(frame_arrow(point) for point in frame_arrow.domain().module_generators())
                     frame = tuple(tuple(int(point.to_vector()(label)) for label in labels) for point in fixed)
-                    completion = next(rows for rows in _fair_unimodular_matrices(n)
-                                      if tuple(tuple(int(entry) for entry in row) for row in rows.rows()[:k]) == frame)
+                    fixed_rows = matrix(SageZZ, frame)
+                    completion = fixed_rows.stack(_source_subspace_completion_int(fixed_rows, n))
                     inverse = completion.inverse()
                     # In the completed frame the pointwise stabilizer is
                     # Z^((n-k)k) semidirect GL_(n-k)(Z): lower-left shears
