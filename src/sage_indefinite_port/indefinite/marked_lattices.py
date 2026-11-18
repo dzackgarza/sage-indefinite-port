@@ -1305,10 +1305,9 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                 ))).rank())
                 for rank in dimensions[:-1]
             ):
-                # The initial term T is precisely J∩rad(L). It is
-                # characteristic inside J. For longer flags the remaining
-                # stages project to a quotient flag in C; its exact
-                # stabilizer lifts with the constrained radical shears.
+                # One stage T is precisely J∩rad(L), characteristic in J.
+                # Preserve both its preceding radical flag and its
+                # subsequent quotient flag in the integral parabolic.
                 generators = INDUCTION.plane_automorphism_generators(
                     ambient.primitive_isotropic_subobject(*basis),
                     flag_dimensions=dimensions if len(dimensions) > 2 else (),
