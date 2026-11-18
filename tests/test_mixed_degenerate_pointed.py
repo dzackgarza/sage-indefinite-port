@@ -1263,6 +1263,33 @@ def test_rank_three_radical_intersection_complete_flag_stabilizer_image():
     assert MatrixGroup(radical_actions).order() == 8
 
 
+def test_rank_three_radical_partial_flag_stabilizer_has_distinct_parabolic_image():
+    from sage.all import GF, MatrixGroup, matrix
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators, _flag_marking_from_basis
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, u, v, z, w, t = tuple(ambient.module_generators())
+    basis = (z, w, t, 2 * e + u)
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    marking = category(_flag_marking_from_basis(ambient, basis, (1, 3, 4)))
+    generators = tuple(automorphism_group_generators(category, marking))
+    assert generators
+    for rank in (1, 3, 4):
+        term = ambient.primitive_isotropic_subobject(*basis[:rank])
+        assert all(term.inclusion().is_in_image(generator(point))
+                   for generator in generators for point in basis[:rank])
+    labels = tuple(ambient.module_generating_set())
+    radical_actions = [matrix(GF(2), [
+        [int(generator(point).to_vector()(labels[j])) for j in (4, 5, 6)]
+        for point in (z, w, t)
+    ]) for generator in generators]
+    # Stabilizing one line in F_2^3 has index seven in GL_3(F_2),
+    # hence order 168/7 = 24, distinct from the complete-flag image 8.
+    assert MatrixGroup(radical_actions).order() == 24
+
+
 def test_rank_three_radical_intersection_complete_flag_transporter_moving_projection():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
