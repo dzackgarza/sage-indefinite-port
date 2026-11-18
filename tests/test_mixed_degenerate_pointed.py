@@ -1666,6 +1666,7 @@ def test_mixed_imprimitive_transverse_line_and_radical_have_equal_rank():
 
 
 def test_mixed_imprimitive_projected_first_line_with_nested_radical_quotient_flag():
+    from sage.all import GF, MatrixGroup, matrix
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
     from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators, _flag_marking_from_basis
@@ -1685,6 +1686,14 @@ def test_mixed_imprimitive_projected_first_line_with_nested_radical_quotient_fla
         assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
                    for generator in generators
                    for x in ambient.module_generators() for y in ambient.module_generators())
+        labels = tuple(ambient.module_generating_set())
+        radical_actions = [matrix(GF(index), [
+            [int(generator(point).to_vector()(labels[j])) for j in (2, 3, 4)]
+            for point in (z, w, t)
+        ]) for generator in generators]
+        # D fixes the line <z> inside T=<z,w>, and the image on T is
+        # the Borel subgroup of GL_2(F_p). The t quotient has sign +/-1.
+        assert MatrixGroup(radical_actions).order() == {2: 2, 3: 24}[index]
 
 
 def test_mixed_imprimitive_projected_first_complete_flag_in_radical_corank_four():
