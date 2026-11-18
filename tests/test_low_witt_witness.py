@@ -182,6 +182,38 @@ def test_exact_integral_orthogonal_stream_anisotropic_binary_uses_exact_generato
     assert tuple(recursive.iter_exact_integral_orthogonal_isometries(ambient)) == generators
 
 
+def test_exact_integral_orthogonal_stream_includes_inverse_pell_period(monkeypatch):
+    from itertools import islice
+    from sage.all import ZZ as SageZZ, matrix
+    from sage_indefinite_port.indefinite import recursive
+
+    ambient = lattice([[2, 0], [0, -6]])
+    period = recursive._isometry_from_row_matrix(
+        ambient, ambient, matrix(SageZZ, [[2, 1], [3, 2]])
+    )
+    monkeypatch.setattr(recursive, "lorentzian_orthogonal_group_generators", lambda _: (period,))
+    family = tuple(islice(recursive.iter_exact_integral_orthogonal_isometries(ambient), 3))
+    matrices = {tuple(recursive._column_matrix(g).list()) for g in family}
+    forward = recursive._column_matrix(period)
+    assert matrices == {
+        tuple(matrix(SageZZ, [[1, 0], [0, 1]]).list()),
+        tuple(forward.list()),
+        tuple(forward.inverse().list()),
+    }
+
+
+def test_exact_integral_orthogonal_stream_anisotropic_binary_actual_edgewalk():
+    from itertools import islice
+    from sage_indefinite_port.indefinite.recursive import iter_exact_integral_orthogonal_isometries, _column_matrix
+
+    ambient = lattice([[2, 0], [0, -6]])
+    family = tuple(islice(iter_exact_integral_orthogonal_isometries(ambient), 8))
+    assert len({_column_matrix(g).__repr__() for g in family}) == 8
+    assert all(g.domain() is ambient and g.codomain() is ambient for g in family)
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
+               for g in family for x in ambient.module_generators() for y in ambient.module_generators())
+
+
 def test_exact_integral_orthogonal_stream_binary_radical_parametrization():
     from itertools import islice
     from sage_indefinite_port.indefinite.recursive import iter_exact_integral_orthogonal_isometries, _column_matrix

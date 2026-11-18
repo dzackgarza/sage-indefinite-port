@@ -560,7 +560,12 @@ def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
         # duplicate-free without searching the much larger GL_2(ZZ).
         from collections import deque
 
-        generators = tuple(_column_matrix(g) for g in lorentzian_orthogonal_group_generators(lattice))
+        # A group generating family is not generally a *monoid*
+        # generating family.  In particular an infinite-order Pell period
+        # and its negative powers must both occur in the enumeration.
+        # Include inverse matrices explicitly before traversing words.
+        forward = tuple(_column_matrix(g) for g in lorentzian_orthogonal_group_generators(lattice))
+        generators = forward + tuple(g.inverse().change_ring(SageZZ) for g in forward)
         identity = identity_matrix(SageZZ, 2)
         frontier = deque((identity,))
         seen = {tuple(identity.list())}
