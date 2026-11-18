@@ -829,7 +829,31 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             nonhomothetic = source_saturation is None or target_saturation is None
             if nonhomothetic and (source_arrow.codomain().is_nondegenerate()
                                   or target_arrow.codomain().is_nondegenerate()):
-                raise ValueError("nonhomothetic based isotropic markings require an integral source-module action")
+                from sage.matrix.constructor import matrix
+                from sage.rings.integer_ring import ZZ as SageZZ
+                from sage.rings.rational_field import QQ as SageQQ
+
+                saturations = (source_arrow.saturation(), target_arrow.saturation())
+                inclusions = tuple(saturation.inclusion() for saturation in saturations)
+                frames = tuple(tuple(inclusion(point) for point in inclusion.domain().module_generators())
+                               for inclusion in inclusions)
+                coordinates = tuple(matrix(SageZZ, [[int(inclusion.lift(arrow(point)).to_vector()(label))
+                    for label in inclusion.domain().module_generating_set()]
+                    for point in arrow.domain().module_generators()])
+                    for arrow, inclusion in zip((source_arrow, target_arrow), inclusions, strict=True))
+                if coordinates[0].nrows() != coordinates[0].ncols() or coordinates[0].det() == 0:
+                    return None
+                action = coordinates[0].change_ring(SageQQ).inverse() * coordinates[1]
+                if any(entry.denominator() != 1 for entry in action.list()) or abs(action.det()) != 1:
+                    return None
+                target_images = tuple(sum((int(action[i, j]) * point
+                    for j, point in enumerate(frames[1])), target_arrow.codomain().zero())
+                    for i in range(len(frames[0])))
+                witness = RECURSION.isotropic_subspace_isometry(frames[0], target_images, ())
+                if witness is not None and all(witness(source_arrow(point)) == target_arrow(point)
+                    for point in source_arrow.domain().module_generators()):
+                    return witness
+                return None
             labels = tuple(category.base_object().module_generating_set())
             basis = tuple(category.base_object().module_generator(label) for label in labels)
             source_images = tuple(source.arrow()(point) for point in basis)

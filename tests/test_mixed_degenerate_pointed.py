@@ -3616,6 +3616,32 @@ def test_nonhomothetic_based_isotropic_stabilizer_in_nondegenerate_split_lattice
     assert all(g(e) == e and g(u) == u and g(a) == a for g in generators)
 
 
+def test_nonhomothetic_based_isotropic_transporter_in_nondegenerate_split_lattice():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    e, f, u, v, a, b = tuple(ambient.module_generators())
+    for source_basis, target_basis in (
+        ((2 * e, u), (2 * u, e)),
+        ((2 * e, u, 3 * a), (2 * u, a, 3 * e)),
+    ):
+        source = Lattices(ZZ)([[0] * len(source_basis) for _ in source_basis])
+        category = Lattices(ZZ).CosliceUnder(source)
+        first = category(source.hom(list(source_basis), codomain=ambient))
+        target = category(source.hom(list(target_basis), codomain=ambient))
+        witness = isometry(category, first, target)
+        assert witness is not None
+        assert all(witness(x) == y for x, y in zip(source_basis, target_basis, strict=True))
+        assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+                   for x in ambient.module_generators() for y in ambient.module_generators())
+    source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first = category(source.hom([2 * e, u, 3 * a], codomain=ambient))
+    impossible = category(source.hom([2 * u, a, 6 * e + 3 * u], codomain=ambient))
+    assert isometry(category, first, impossible) is None
+
+
 def test_nonhomothetic_rank_two_based_isotropic_embedding_transporter():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import isometry
