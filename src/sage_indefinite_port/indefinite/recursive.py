@@ -545,6 +545,31 @@ def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
         yield _isometry_from_row_matrix(lattice, lattice, identity_matrix(SageZZ, 1))
         yield _isometry_from_row_matrix(lattice, lattice, -identity_matrix(SageZZ, 1))
         return
+    if not gram:
+        # For the zero form, O(L)=GL(L).  Use the maintained integral
+        # general-linear generating family, with inverses, instead of
+        # constructing the exponentially branching GL_n word search.
+        # This is a genuine group enumeration: all words and their
+        # inverses occur at finite breadth-first distance.
+        from collections import deque
+
+        linear = OwnedGroups().GL(int(lattice.rank()), lattice.base_ring())
+        forward = tuple(linear._to_engine(g).matrix().change_ring(SageZZ)
+                        for g in linear.group_generators())
+        generators = forward + tuple(g.inverse().change_ring(SageZZ) for g in forward)
+        identity = identity_matrix(SageZZ, int(lattice.rank()))
+        frontier = deque((identity,))
+        seen = {tuple(identity.list())}
+        while frontier:
+            current = frontier.popleft()
+            yield _isometry_from_row_matrix(lattice, lattice, current)
+            for generator in generators:
+                successor = current * generator
+                key = tuple(successor.list())
+                if key not in seen:
+                    seen.add(key)
+                    frontier.append(successor)
+        return
     if int(gram.nrows()) == 2 and lattice.is_nondegenerate() and not lattice.is_definite() and lattice.is_isotropic():
         # Every rational isometry of a split binary plane permutes its two
         # rational null lines, scaling them by mutually inverse factors.
