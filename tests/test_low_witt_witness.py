@@ -276,6 +276,11 @@ def test_nonsplit_binary_norm_orbit_iterator_terminates_with_exact_pell_classes(
     changed_classes = tuple(RECURSION.exact_vector_orbit_iterator(changed, 8))
     assert len(changed_classes) == len(classes)
     assert all(int(point.q()) == 8 and int(point.content()) == 2 for point in changed_classes)
+    even = lattice([[2, 0], [0, -6]])
+    assert tuple(RECURSION.exact_vector_orbit_iterator(even, 1)) == ()
+    represented = tuple(RECURSION.exact_vector_orbit_iterator(even, 2))
+    assert represented and all(int(point.q()) == 2 for point in represented)
+    assert tuple(RECURSION.exact_vector_orbit_iterator(even, 0, primitive_only=True)) == ()
 
 
 def test_exact_vector_orbit_iterator_binary_rank_one_radical_classes():
