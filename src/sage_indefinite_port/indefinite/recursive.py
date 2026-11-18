@@ -605,23 +605,30 @@ def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
 
         yield from _binary_split_automorphisms(lattice)
         return
-    if lattice.is_nondegenerate() and not lattice.is_definite() and tuple(map(int, lattice.signature_pair())) in (
-        (1, int(lattice.rank()) - 1), (int(lattice.rank()) - 1, 1)
+    if lattice.is_nondegenerate() and not lattice.is_definite() and (
+        int(lattice.witt_index()) > 0 or int(lattice.rank()) == 2
     ):
-        # For Lorentzian lattices the pinned perfect-domain algorithm
-        # supplies the full integral orthogonal group, not merely an
-        # approximate subgroup.  Enumerate its Cayley graph instead of
-        # traversing the much larger GL_n(ZZ).  A negative-signature
-        # convention is handled by the existing signed-view machinery.
+        # The pinned indefinite generation step supplies the full integral
+        # orthogonal group in every supported signature: Lorentzian leaves
+        # use the perfect-domain algorithm; higher Witt index uses the
+        # approximate-model covering plus exact pointed stabilizer.  In
+        # either case enumerate the resulting Cayley graph, not GL_n(ZZ).
+        # The signed-view convention is undone on every generator below.
         from collections import deque
 
         # A group generating family is not generally a *monoid*
         # generating family.  In particular an infinite-order Pell period
         # and its negative powers must both occur in the enumeration.
         # Include inverse matrices explicitly before traversing words.
-        profile = AttackProfile.from_lattice(lattice)
-        forward = tuple(_column_matrix(_untwisted(g, profile))
-                        for g in lorentzian_orthogonal_group_generators(profile.signed_view))
+        if int(lattice.rank()) == 2:
+            # The rank-two arithmetic edgewalk is the exact provider for
+            # both split and anisotropic indefinite binary forms; the
+            # higher-rank Eichler generation step requires a rational
+            # isotropic vector and is not applicable to anisotropic planes.
+            forward = tuple(_column_matrix(g) for g in lorentzian_orthogonal_group_generators(lattice))
+        else:
+            forward = tuple(_column_matrix(g)
+                            for g in EichlerRecursion().orthogonal_group_generators(lattice))
         generators = forward + tuple(g.inverse().change_ring(SageZZ) for g in forward)
         identity = identity_matrix(SageZZ, int(lattice.rank()))
         frontier = deque((identity,))
