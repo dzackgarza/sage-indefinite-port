@@ -130,6 +130,20 @@ def test_public_edgewalk_isometry_of_isotropic_binary_lattices():
                for x in first.module_generators() for y in first.module_generators())
 
 
+def test_edgewalk_isometry_rejects_equal_determinant_distinct_discriminant_groups():
+    from sage.all import ZZ as SageZZ, matrix
+    from sage_extensions.all import HyperbolicLattices, Lattices, ZZ
+
+    first_gram = [[0, 1, 0], [1, 0, 0], [0, 0, 8]]
+    second_gram = [[0, 2, 0], [2, 0, 0], [0, 0, 2]]
+    first = HyperbolicLattices(ZZ)(Lattices(ZZ)(first_gram))
+    second = HyperbolicLattices(ZZ)(Lattices(ZZ)(second_gram))
+    assert matrix(SageZZ, first_gram).det() == matrix(SageZZ, second_gram).det() == -8
+    assert tuple(matrix(SageZZ, first_gram).elementary_divisors()) == (1, 1, 8)
+    assert tuple(matrix(SageZZ, second_gram).elementary_divisors()) == (2, 2, 2)
+    assert first.edgewalk_isometry(second) is None
+
+
 def test_public_edgewalk_isometry_of_anisotropic_binary_presentations():
     from sage.matrix.constructor import matrix
     from sage_extensions.all import HyperbolicLattices, Lattices, ZZ
