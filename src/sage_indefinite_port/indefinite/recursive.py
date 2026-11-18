@@ -2536,6 +2536,22 @@ class EichlerRecursion:
             if int(square) == 0 and not primitive_only:
                 yield lattice.zero()
             return
+        # On a zero-form lattice every vector has norm zero, and GL_n(ZZ)
+        # acts transitively on primitive vectors: Bezout completion extends
+        # each primitive column to an integral unimodular basis.  Thus the
+        # primitive null fibre has exactly one orbit, with a finite
+        # completion certificate even though the unmarked null fibre has
+        # infinitely many content strata.
+        if all(
+            lattice.b(x, y) == 0
+            for x in lattice.module_generators()
+            for y in lattice.module_generators()
+        ):
+            if int(square) != 0:
+                return
+            if primitive_only:
+                yield lattice.module_generator(next(iter(lattice.module_generating_set())))
+                return
         if int(square) == 0 and lattice.is_nondegenerate() and not lattice.is_isotropic():
             if not primitive_only:
                 yield lattice.zero()
