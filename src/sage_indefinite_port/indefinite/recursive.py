@@ -554,6 +554,26 @@ def iter_exact_integral_orthogonal_isometries(lattice: Lattices.ParentMethods):
 
         yield from _binary_split_automorphisms(lattice)
         return
+    if int(gram.nrows()) == 2 and lattice.is_nondegenerate() and not lattice.is_definite():
+        # The anisotropic binary edgewalk supplies a complete finite
+        # generating family.  Enumerating its Cayley graph is fair and
+        # duplicate-free without searching the much larger GL_2(ZZ).
+        from collections import deque
+
+        generators = tuple(_column_matrix(g) for g in lorentzian_orthogonal_group_generators(lattice))
+        identity = identity_matrix(SageZZ, 2)
+        frontier = deque((identity,))
+        seen = {tuple(identity.list())}
+        while frontier:
+            current = frontier.popleft()
+            yield _isometry_from_column_matrix(lattice, lattice, current)
+            for generator in generators:
+                successor = current * generator
+                key = tuple(successor.list())
+                if key not in seen:
+                    seen.add(key)
+                    frontier.append(successor)
+        return
     if int(gram.nrows()) == 2 and gram.rank() == 1:
         # A rank-one radical in a binary lattice is primitive.  Choose a
         # unimodular basis with the radical last; every isometry in that

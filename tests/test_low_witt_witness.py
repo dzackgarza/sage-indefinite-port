@@ -169,6 +169,19 @@ def test_exact_integral_orthogonal_stream_exhausts_split_binary_indefinite_group
         assert all(element.domain() is ambient and element.codomain() is ambient for element in elements)
 
 
+def test_exact_integral_orthogonal_stream_anisotropic_binary_uses_exact_generators(monkeypatch):
+    from itertools import islice
+    from sage_indefinite_port.indefinite import recursive
+
+    ambient = lattice([[2, 0], [0, -6]])
+    generators = (ambient.O().identity(),)
+    monkeypatch.setattr(recursive, "lorentzian_orthogonal_group_generators", lambda _: generators)
+    def forbidden(*args, **kwargs):
+        raise AssertionError("anisotropic binary enumeration must not traverse GL_2")
+    monkeypatch.setattr(recursive, "_fair_unimodular_matrices", forbidden)
+    assert tuple(recursive.iter_exact_integral_orthogonal_isometries(ambient)) == generators
+
+
 def test_exact_integral_orthogonal_stream_binary_radical_parametrization():
     from itertools import islice
     from sage_indefinite_port.indefinite.recursive import iter_exact_integral_orthogonal_isometries, _column_matrix
