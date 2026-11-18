@@ -3642,6 +3642,19 @@ def test_nonhomothetic_based_mixed_primitive_projection_pointwise_stabilizer():
         # leaves the two independent transvections of its complement.
         assert MatrixGroup(radical_actions).order() == 4
 
+    # The quotient-pointwise factor need not be trivial: in U+U the
+    # isotropic line has a nontrivial integral unipotent stabilizer.
+    higher = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, u, v, z, w, t = tuple(higher.module_generators())
+    marking = category(source.hom([e + t, 2 * z, w], codomain=higher))
+    generators = tuple(automorphism_group_generators(category, marking))
+    assert generators
+    assert all(g(e + t) == e + t and g(2 * z) == 2 * z and g(w) == w
+               for g in generators)
+    assert all(higher.b(g(x), g(y)) == higher.b(x, y)
+               for g in generators for x in higher.module_generators()
+               for y in higher.module_generators())
+
 
 def test_nonhomothetic_based_isotropic_transporter_in_nondegenerate_split_lattice():
     from sage_extensions.all import Lattices, ZZ
