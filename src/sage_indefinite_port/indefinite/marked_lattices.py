@@ -812,7 +812,7 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 # need to invoke general lattice isometry or glue induction.
                 from sage.matrix.constructor import matrix
                 from sage.rings.integer_ring import ZZ as SageZZ
-                from sage_indefinite_port.indefinite.recursive import _isometry_from_row_matrix
+                from sage_indefinite_port.indefinite.recursive import _gram_in_label_order, _isometry_from_row_matrix
 
                 left_labels = tuple(ambient.module_generating_set())
                 right_labels = tuple(target_arrow.codomain().module_generating_set())
@@ -826,11 +826,9 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 if any(not entry.is_integral() for entry in action.list()) or abs(action.det()) != 1:
                     return None
                 action = action.change_ring(SageZZ)
-                left_gram = matrix(SageZZ, [[int(ambient.b(x, y))
-                    for y in ambient.module_generators()] for x in ambient.module_generators()])
                 target_ambient = target_arrow.codomain()
-                right_gram = matrix(SageZZ, [[int(target_ambient.b(x, y))
-                    for y in target_ambient.module_generators()] for x in target_ambient.module_generators()])
+                left_gram = _gram_in_label_order(ambient)
+                right_gram = _gram_in_label_order(target_ambient)
                 if action * right_gram * action.transpose() != left_gram:
                     return None
                 return _isometry_from_row_matrix(ambient, target_ambient, action)
