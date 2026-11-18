@@ -3662,7 +3662,8 @@ def test_nonhomothetic_based_isotropic_transport_with_nonprimitive_radical_kerne
     first_basis = (2 * e + z, 2 * z, w)
     first = category(source.hom(list(first_basis), codomain=ambient))
     for target_basis in ((2 * e + z + 2 * w, 2 * z, w),
-                         (2 * e + w + 2 * z, 2 * w, z)):
+                         (2 * e + w + 2 * z, 2 * w, z),
+                         (2 * e + z + 2 * w, 2 * z, w + z)):
         target = category(source.hom(list(target_basis), codomain=ambient))
         witness = isometry(category, first, target)
         assert witness is not None
