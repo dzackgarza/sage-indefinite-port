@@ -1172,26 +1172,36 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             ambient = source_basis[0].parent()
             target_ambient = target_basis[0].parent()
             if ambient is target_ambient and len(source_basis) == len(target_basis):
-                # In a split hyperbolic coordinate chart, the exchange of
-                # disjoint paired isotropic generators is an integral
-                # isometry whenever it preserves the Gram form. Certify
-                # this directly before invoking the general arithmetic
-                # transporter, whose Levi computation can be expensive.
-                from sage.matrix.constructor import identity_matrix
+                # Extend the prescribed matching of coordinate generators
+                # to a permutation of the full coordinate basis. This
+                # includes overlapping frames and cyclic permutations, not
+                # only disjoint transpositions. Verify the full Gram form
+                # before accepting the resulting integral isometry.
+                from sage.matrix.constructor import matrix
                 from sage.rings.integer_ring import ZZ as SageZZ
                 from sage_indefinite_port.indefinite.recursive import _gram_in_label_order, _isometry_from_row_matrix
 
                 generators = tuple(ambient.module_generators())
-                if (all(point in generators for point in (*source_basis, *target_basis))
-                        and len(set((*source_basis, *target_basis))) == 2 * len(source_basis)):
-                    permutation = identity_matrix(SageZZ, len(generators))
-                    for left_point, right_point in zip(source_basis, target_basis, strict=True):
-                        i, j = generators.index(left_point), generators.index(right_point)
-                        permutation[i, i] = 0
-                        permutation[j, j] = 0
-                        permutation[i, j] = 1
-                        permutation[j, i] = 1
+                if all(point in generators for point in (*source_basis, *target_basis)):
+                    fixed = {generators.index(left): generators.index(right)
+                             for left, right in zip(source_basis, target_basis, strict=True)}
                     gram = _gram_in_label_order(ambient)
+                    # In a hyperbolic direct sum the Gram form determines
+                    # each coordinate's unique dual. Extend the prescribed
+                    # isotropic-coordinate action to these duals as well.
+                    for i, j in tuple(fixed.items()):
+                        source_duals = [p for p in range(len(generators)) if gram[i, p]]
+                        target_duals = [p for p in range(len(generators)) if gram[j, p]]
+                        if (len(source_duals) == len(target_duals) == 1
+                                and gram[i, source_duals[0]] == gram[j, target_duals[0]]):
+                            fixed.setdefault(source_duals[0], target_duals[0])
+                    if len(set(fixed.values())) != len(fixed):
+                        fixed = {}
+                    unused_sources = [i for i in range(len(generators)) if i not in fixed]
+                    unused_targets = [i for i in range(len(generators)) if i not in fixed.values()]
+                    fixed.update(zip(unused_sources, unused_targets, strict=True))
+                    permutation = matrix(SageZZ, len(generators), len(generators),
+                                         lambda i, j: int(fixed[i] == j))
                     if permutation * gram * permutation.transpose() == gram:
                         witness = _isometry_from_row_matrix(ambient, ambient, permutation)
                         if all(witness(point) == target for point, target in zip(

@@ -945,6 +945,28 @@ def test_five_u_partial_flag_rank_jumps_one_three_five_transport():
     assert action.det() == -1
 
 
+def test_three_u_cyclic_coordinate_flag_transporter_preserves_dual_pairs():
+    from sage.all import ZZ as SageZZ, matrix
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis, isometry
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j)
+                        for j in range(6)] for i in range(6)])
+    e, f, u, v, a, b = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    first = category(_flag_marking_from_basis(ambient, (e, u, a), (1, 2, 3)))
+    second = category(_flag_marking_from_basis(ambient, (u, a, e), (1, 2, 3)))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert (witness(e), witness(u), witness(a)) == (u, a, e)
+    assert (witness(f), witness(v), witness(b)) == (v, b, f)
+    labels = tuple(ambient.module_generating_set())
+    action = matrix(SageZZ, [[int(witness(point).to_vector()(label))
+        for label in labels] for point in ambient.module_generators()])
+    assert action.det() == 1
+
+
 def test_public_five_u_partial_flag_rank_jumps_one_three_five_classes():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
