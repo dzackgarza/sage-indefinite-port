@@ -1136,7 +1136,7 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                     source_flag_basis=source_basis,
                     target_flag_basis=target_basis,
                 )
-            if (len(source_dimensions) == 2 and source_dimensions[0] == 1
+            if (len(source_dimensions) >= 2 and source_dimensions[0] == 1
                     and not ambient.is_nondegenerate() and not target_ambient.is_nondegenerate()
                     and not RECURSION.vector_lies_in_radical(source_basis[0])
                     and not RECURSION.vector_lies_in_radical(target_basis[0])):
@@ -1148,13 +1148,68 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
                 from sage_indefinite_port.indefinite.recursive import _gram_in_label_order, _isometry_from_row_matrix
 
+                radical_tail = all(RECURSION.vector_lies_in_radical(point)
+                                   for point in (*source_basis[1:], *target_basis[1:]))
+                source_top = (*source_basis[1:], source_basis[0]) if radical_tail else source_basis
+                target_top = (*target_basis[1:], target_basis[0]) if radical_tail else target_basis
+                if not radical_tail:
+                    # The adapted basis of the requested flag need not
+                    # display its characteristic radical intersection:
+                    # e.g. (2u+t+z,w,2u+t) contains z as a difference.
+                    # Extract the integral kernel of projection on each
+                    # stage and adapt its nested radical flag exactly.
+                    radical_tops = []
+                    for owner, basis in ((ambient, source_basis), (target_ambient, target_basis)):
+                        reduction = indefinite_reduced_presentation(owner)
+                        reduced = reduction.reduced
+                        labels = tuple(reduced.module_generating_set())
+                        n = int(_gram_in_label_order(reduced).rank())
+                        rows = matrix(SageZZ, [[int((~reduction.isometry)(point).to_vector()(label))
+                                                for label in labels] for point in basis])
+                        if int(rows[:, :n].rank()) != 1:
+                            break
+                        radical_terms = []
+                        for rank in source_dimensions:
+                            prefix = rows[:rank, :]
+                            _diagonal, left, _right = prefix[:, :n].smith_form()
+                            kernel = (left * prefix)[int(prefix[:, :n].rank()):, :]
+                            points = tuple(reduction.isometry(reduced.linear_combination({
+                                label: reduced.base_ring()(int(row[j]))
+                                for j, label in enumerate(labels) if row[j]
+                            })) for row in kernel.rows())
+                            if points and (not radical_terms or len(points) > int(radical_terms[-1].rank())):
+                                radical_terms.append(owner.primitive_isotropic_subobject(*points))
+                        if not radical_terms or int(radical_terms[-1].rank()) != len(basis) - 1:
+                            break
+                        radical_top = radical_terms[-1]
+                        domain = radical_top.inclusion().domain()
+                        nested = tuple(domain.primitive_isotropic_subobject(*(
+                            radical_top.inclusion().lift(term.inclusion()(point))
+                            for point in term.module_generators()
+                        )) for term in radical_terms)
+                        radical_basis, _ = INDUCTION.flag_action_data(radical_top, nested)
+                        reordered = (*radical_basis, basis[0])
+                        reordered_top = owner.primitive_isotropic_subobject(*reordered)
+                        if not all(reordered_top.inclusion().is_in_image(point) for point in basis):
+                            break
+                        radical_tops.append(reordered)
+                    if len(radical_tops) == 2:
+                        source_top, target_top = radical_tops
+                        radical_tail = True
                 top_witness = INDUCTION.plane_isometry(
-                    ambient.primitive_isotropic_subobject(*source_basis),
-                    target_ambient.primitive_isotropic_subobject(*target_basis),
+                    ambient.primitive_isotropic_subobject(*source_top),
+                    target_ambient.primitive_isotropic_subobject(*target_top),
+                    flag_dimensions=tuple(range(1, len(source_basis) + 1)) if radical_tail else (),
+                    source_flag_basis=source_top if radical_tail else (),
+                    target_flag_basis=target_top if radical_tail else (),
                 )
                 if top_witness is not None:
                     target_line = target_ambient.primitive_isotropic_subobject(target_basis[0])
-                    if target_line.inclusion().is_in_image(top_witness(source_basis[0])):
+                    target_stages = tuple(target_ambient.primitive_isotropic_subobject(*target_basis[:rank])
+                                          for rank in source_dimensions)
+                    if all(stage.inclusion().is_in_image(top_witness(point))
+                           for rank, stage in zip(source_dimensions, target_stages, strict=True)
+                           for point in source_basis[:rank]):
                         return top_witness
                     reduction = indefinite_reduced_presentation(target_ambient)
                     reduced = reduction.reduced
