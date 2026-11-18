@@ -218,3 +218,22 @@ def test_edge_root_intersection_rejects_spacelike_nonvertices():
     alpha = -ambient.module_generators()[0] - ambient.module_generators()[1]
     assert alpha.q() == 2
     assert walk.vertex_from_root(vertex.generator, roots, discarded, alpha) is None
+
+
+def test_anisotropic_edge_without_finite_extension_is_a_nonreflective_boundary(monkeypatch):
+    from sage_extensions.all import HyperbolicLattices, Lattices, ZZ
+    from sage_indefinite_port.indefinite.edgewalk import _Edgewalk
+
+    ambient = HyperbolicLattices(ZZ)(Lattices(ZZ)([
+        [1, 0, 0], [0, 1, 0], [0, 0, -3],
+    ]))
+    walk = _Edgewalk(ambient)
+    vertex = walk.initial_vertex()
+    assert vertex is not None
+    roots, discarded = walk.edge_directions(vertex)[0]
+    assert not walk.edge_plane(roots, discarded, vertex.generator, walk.norms[0]).plane.is_isotropic()
+    monkeypatch.setattr(walk, "finite_extensions", lambda _roots: ())
+    assert walk.edge_step(vertex, roots, discarded) is None
+    report = walk.walk()
+    assert not report.is_reflective()
+    assert "anisotropic chamber edge" in report.reason_non_reflective()

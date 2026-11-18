@@ -155,6 +155,8 @@ def edgewalk_isometry(
         local_generators = tuple(source.O().stabilizer(configuration).group_generators())
         for roots, discarded in first.edge_orbits(vertex, local_generators):
             neighbour = first.edge_step(vertex, roots, discarded)
+            if neighbour is None:
+                continue
             next_configuration = first.vertex_configuration(neighbour)
             if any(source.O().transporter(previous, next_configuration) is not None
                    for previous in (*seen, *(first.vertex_configuration(item) for item in frontier))):
@@ -1351,7 +1353,7 @@ class _Edgewalk:
         return finite_type_extensions(self.lattice, roots, self.norms)
 
     @cached_method
-    def edge_step(self, vertex: _Vertex, roots: _Roots, discarded: _Vector) -> _Vertex:
+    def edge_step(self, vertex: _Vertex, roots: _Roots, discarded: _Vector) -> _Vertex | None:
         candidates: list[_Candidate] = []
         for extension in self.finite_extensions(roots):
             # edgewalk.h:966-1061 calls get_next(extension) once: it takes
@@ -1366,6 +1368,13 @@ class _Edgewalk:
         if candidates:
             candidates.sort(key=cmp_to_key(lambda left, right: self.candidate_compare(left, right, vertex.generator)))
             return candidates[0].vertex
+        # With no finite root extension, an anisotropic rational edge plane
+        # has no rational ideal endpoint either.  The chamber edge therefore
+        # has no vertex in the projective closure, so the reflection chamber
+        # cannot be a finite-volume fundamental polyhedron.  This is a
+        # nonreflective terminal edge, not a failed cusp computation.
+        if not self.edge_perpendicular(roots).is_isotropic():
+            return None
         return self.isotropic_next_vertex(roots, discarded, vertex.generator)
 
     @cached_method
@@ -1526,6 +1535,11 @@ class _Edgewalk:
             raise ValueError("a binary starting vertex must have exactly one wall root")
         (root,) = initial.roots
         neighbor = self.edge_step(initial, (), root)
+        if neighbor is None:
+            return self.report(
+                [initial], False, (), [],
+                "An anisotropic binary edge has no finite root extension or rational ideal endpoint",
+            )
         (neighbor_root,) = neighbor.roots
         symmetry = self.lattice.O().transporter(self.vertex_configuration(initial), self.vertex_configuration(neighbor))
         vertices = [initial] if symmetry is not None else [initial, neighbor]
@@ -1625,6 +1639,11 @@ class _Edgewalk:
                         return certificate
             for roots, discarded in self.edge_orbits(vertex, local_generators):
                 neighbour = self.edge_step(vertex, roots, discarded)
+                if neighbour is None:
+                    return self.report(
+                        vertices, False, (), isometries,
+                        "An anisotropic chamber edge has no finite root extension or rational ideal endpoint",
+                    )
                 neighbour_configuration = self.vertex_configuration(neighbour)
                 isometries_to_neighbour = (self.lattice.O().transporter(known, neighbour_configuration) for known in configurations)
                 transporter = next(
