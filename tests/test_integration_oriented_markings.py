@@ -56,3 +56,31 @@ def test_zero_form_full_flag_shape_from_distinct_ambient_parent():
     arrows = _flag_arrows(classes[0])
     assert tuple(int(arrow.domain().rank()) for arrow in arrows) == (1, 2)
     assert all(arrow.is_primitive() for arrow in arrows)
+
+
+def test_oriented_isotropic_rank_above_rational_witt_index_is_empty():
+    r"""An even unimodular 2U has Witt index 2: no oriented null
+    rank-three sublattice exists, regardless of orientation conventions.
+    """
+    lattices = Lattices(ZZ)
+    ambient = lattices("U") + lattices("U")
+    source = lattices([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    category = OrientedIsotropicFlags(lattices, 1)
+    assert len(tuple(primitive_marking_classes(category, source, ambient))) == 0
+
+
+def test_oriented_maximal_null_planes_split_under_special_orthogonal_group():
+    r"""For L=2U, an isometry of the maximal null plane is (A,A^-T)
+    and has determinant one on L. Thus its oriented stabilizer lies
+    inside SO(L), so each O(L)-orbit splits into two SO(L)-orbits.
+    """
+    lattices = Lattices(ZZ)
+    ambient = lattices("U") + lattices("U")
+    source = lattices([[0, 0], [0, 0]])
+    category = OrientedIsotropicFlags(lattices, 1)
+    ordinary = tuple(primitive_marking_classes(category, source, ambient))
+    restricted = tuple(primitive_marking_classes(
+        category, source, ambient, acting_group=ambient.SO()
+    ))
+    assert len(ordinary) == 1
+    assert len(restricted) == 2
