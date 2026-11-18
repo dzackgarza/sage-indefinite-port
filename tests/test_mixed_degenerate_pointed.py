@@ -3630,6 +3630,27 @@ def test_nonhomothetic_based_rank_three_moves_unequal_projection_indices():
     assert isometry(category, first, impossible) is None
 
 
+def test_nonhomothetic_based_isotropic_projection_full_rank_without_radical_kernel():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, u, v, z, w, t = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    first_basis = (2 * e + z, 3 * u + w)
+    target_basis = (2 * u + w, 3 * e + z)
+    first = category(source.hom(list(first_basis), codomain=ambient))
+    target = category(source.hom(list(target_basis), codomain=ambient))
+    witness = isometry(category, first, target)
+    assert witness is not None
+    assert all(witness(x) == y for x, y in zip(first_basis, target_basis, strict=True))
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in ambient.module_generators() for y in ambient.module_generators())
+    obstructed = category(source.hom([2 * u + w, 4 * e + z], codomain=ambient))
+    assert isometry(category, first, obstructed) is None
+
+
 def test_full_quotient_based_mixed_rank_four_gram_with_two_radical_generators():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import isometry
