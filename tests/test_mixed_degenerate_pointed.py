@@ -709,6 +709,25 @@ def test_zero_form_rank_one_arrow_transporter_respects_content_and_sign():
     assert isometry(ARROWS, first, obstructed) is None
 
 
+def test_nondegenerate_rank_one_arrow_transporter_allows_sign_but_not_norm_change():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import ARROWS, isometry
+
+    ambient = Lattices(ZZ)("U")
+    e, f = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[8]])
+    first = ARROWS.object(source.hom([2 * e + 2 * f], codomain=ambient))
+    second = ARROWS.object(source.hom([-2 * e - 2 * f], codomain=ambient))
+    witness = isometry(ARROWS, first, second)
+    assert witness is not None
+    assert witness(2 * e + 2 * f) in (2 * e + 2 * f, -2 * e - 2 * f)
+    # A different source lattice with a different norm cannot be an
+    # isomorphic arrow even when the image has the same content.
+    other_source = Lattices(ZZ)([[16]])
+    obstructed = ARROWS.object(other_source.hom([2 * e + 4 * f], codomain=ambient))
+    assert isometry(ARROWS, first, obstructed) is None
+
+
 def test_full_radical_plane_self_transporter_uses_full_rank_completion():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
