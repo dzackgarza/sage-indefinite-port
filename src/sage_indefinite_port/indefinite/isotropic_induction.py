@@ -780,7 +780,15 @@ class IsotropicInduction:
                         block[n + i, n + j] = action[i, j]
                 reduced_witness = _isometry_from_row_matrix(reduced, reduced, block)
                 return reduction.isometry * reduced_witness * (~reduction.isometry) * phi
-            if n and k and not flag_dimensions:
+            if n and k and (not flag_dimensions or (
+                source_flag_basis and target_flag_basis
+                and flag_dimensions[-1] == len(source_flag_basis) == len(target_flag_basis)
+                and all(self.recursion.vector_lies_in_radical(point)
+                        for point in source_flag_basis[:flag_dimensions[0]])
+                and all(self.recursion.vector_lies_in_radical(point)
+                        for point in target_flag_basis[:flag_dimensions[0]])
+                and flag_dimensions[0] == intersection_ranks[0]
+            )):
                 # For a primitive J whose projection I to C is also
                 # primitive, the split group O(C) ⋉ Hom(C,R) × GL(R)
                 # eliminates every graph I -> R/T, where T=J∩R.
@@ -829,7 +837,39 @@ class IsotropicInduction:
                             normalizer[i, n + j] = shear[i, j]
                     normalizers.append(normalizer)
                 if primitive_projection:
-                    quotient_witness = self.plane_isometry(*quotient_subspaces)
+                    if flag_dimensions:
+                        quotient_terms = []
+                        for points, top in zip(
+                            (tuple(phi(point) for point in source_flag_basis), target_flag_basis),
+                            quotient_subspaces, strict=True,
+                        ):
+                            terms = []
+                            for rank in flag_dimensions[:-1]:
+                                rows = tuple(tuple(_integer((~reduction.isometry)(point).to_vector()(label))
+                                                   for label in labels[:n]) for point in points[:rank])
+                                projected = tuple(complement.linear_combination({
+                                    label: complement.base_ring()(entry)
+                                    for label, entry in zip(c_labels, row, strict=True) if entry
+                                }) for row in rows if any(row))
+                                if not projected:
+                                    continue
+                                term = complement.primitive_isotropic_subobject(*projected)
+                                domain = top.inclusion().domain()
+                                terms.append(domain.primitive_isotropic_subobject(*(
+                                    top.inclusion().lift(term.inclusion()(point))
+                                    for point in term.module_generators()
+                                )))
+                            quotient_terms.append(tuple(terms))
+                        if quotient_terms[0] or quotient_terms[1]:
+                            left_basis, _ = self.flag_action_data(quotient_subspaces[0], quotient_terms[0])
+                            right_basis, right_images = self.flag_action_data(quotient_subspaces[1], quotient_terms[1])
+                            quotient_witness = self.recursion.isotropic_subspace_isometry(
+                                left_basis, right_basis, right_images
+                            )
+                        else:
+                            quotient_witness = self.plane_isometry(*quotient_subspaces)
+                    else:
+                        quotient_witness = self.plane_isometry(*quotient_subspaces)
                     if quotient_witness is None:
                         return None
                     block = identity_matrix(SageZZ, size)

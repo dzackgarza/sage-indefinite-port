@@ -999,7 +999,7 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                            for point in source_basis[:rank]):
                     raise ArithmeticError("the lifted radical-flag transporter does not preserve every term")
                 return witness
-            if len(source_dimensions) == 2 and all(
+            if len(source_dimensions) >= 2 and all(
                 not owner.is_nondegenerate()
                 and all(RECURSION.vector_lies_in_radical(point) for point in basis[:source_dimensions[0]])
                 and source_dimensions[0] == source_dimensions[-1] + int(owner.radical().rank())
@@ -1015,6 +1015,9 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 return INDUCTION.plane_isometry(
                     ambient.primitive_isotropic_subobject(*source_basis),
                     target_ambient.primitive_isotropic_subobject(*target_basis),
+                    flag_dimensions=source_dimensions if len(source_dimensions) > 2 else (),
+                    source_flag_basis=source_basis if len(source_dimensions) > 2 else (),
+                    target_flag_basis=target_basis if len(source_dimensions) > 2 else (),
                 )
             if all(
                 not owner.is_nondegenerate()
