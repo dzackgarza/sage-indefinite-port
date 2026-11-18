@@ -985,6 +985,23 @@ def test_nonprimitive_rank_two_projection_mixed_isotropic_subspace_stabilizer():
     assert any(generator(z) != z for generator in generators)
 
 
+def test_nonprimitive_rank_two_projection_graph_without_radical_intersection():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, u, v, z, w = tuple(ambient.module_generators())
+    graph = ambient.primitive_isotropic_subobject(2 * e + z, u + w)
+    assert graph.inclusion().is_primitive()
+    generators = INDUCTION.plane_automorphism_generators(graph)
+    assert generators
+    assert all(graph.inclusion().is_in_image(generator(point))
+               for generator in generators for point in (2 * e + z, u + w))
+    assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+               for generator in generators for x in (e, f, u, v, z, w)
+               for y in (e, f, u, v, z, w))
+
+
 def test_mixed_flag_transporter_rejects_intermediate_projection_smith_difference():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
