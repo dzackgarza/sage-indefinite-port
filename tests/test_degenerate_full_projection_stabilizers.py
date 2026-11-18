@@ -161,3 +161,48 @@ def test_full_projection_with_characteristic_radical_intersection(pointwise, exp
     if pointwise:
         assert all(int(g[3,2]) % 5 == 0 for g in generators)
         assert SageZZ.ideal([int(g[3,2]) // 5 for g in generators]) == SageZZ.ideal(1)
+
+
+@pytest.mark.parametrize("pointwise,expected_residue_order", [(True, 6), (False, 12)])
+def test_nonprimitive_proper_nondegenerate_projection_retains_perpendicular_shears(
+    pointwise, expected_residue_order
+):
+    # C=<2>+<4>, R=<0>, and S=<5e+r>. The projected subspace is
+    # the nondegenerate line Qe, but its integral image is 5Ze.
+    # Any ambient isometry preserving S has
+    # e -> s*e, r -> s*r, f -> t*f+b*r (s,t=+-1, b in Z).
+    # For pointwise S, s=1; for moving S, both s are permitted.
+    # Thus the reduction modulo 3 has exactly 2*3=6 and 2*2*3=12
+    # elements respectively, and the shear parameter ideal is Z.
+    from sage.rings.finite_rings.finite_field_constructor import GF
+
+    ambient = Lattices(ZZ)([[2, 0, 0], [0, 4, 0], [0, 0, 0]])
+    e, f, r = tuple(ambient.module_generators())
+    v = 5*e+r
+    s = ambient.subobject_on((v,))
+    assert s.inclusion().is_primitive()
+    generators = tuple(degenerate_marking_generators(ambient, (v,), pointwise))
+    gram = matrix(SageZZ, [[2,0,0],[0,4,0],[0,0,0]])
+    for g in generators:
+        assert abs(g.det()) == 1 and g.transpose()*gram*g == gram
+        assert g*vector(SageZZ,[5,0,1]) in (
+            (vector(SageZZ,[5,0,1]),) if pointwise
+            else (vector(SageZZ,[5,0,1]),vector(SageZZ,[-5,0,-1]))
+        )
+    assert SageZZ.ideal([int(g[2,1]) for g in generators]) == SageZZ.ideal(1)
+    field = GF(3)
+    reduced = tuple(g.change_ring(field) for g in generators)
+    one = identity_matrix(field,3)
+    key = lambda m: tuple(int(c) for c in m.list())
+    seen = {key(one)}
+    frontier = [one]
+    while frontier:
+        element = frontier.pop()
+        for generator in reduced:
+            moved = generator*element
+            item = key(moved)
+            if item not in seen:
+                seen.add(item)
+                frontier.append(moved)
+            assert len(seen) <= expected_residue_order
+    assert len(seen) == expected_residue_order
