@@ -1739,14 +1739,6 @@ class IsotropicInduction:
             if n and k and (not flag_dimensions or (
                 flag_basis and len(flag_dimensions) >= 2
                 and flag_dimensions[-1] == int(inclusion.domain().rank())
-                and any(all(self.recursion.vector_lies_in_radical(point)
-                            for point in flag_basis[:rank])
-                        and rank == int(inclusion.domain().rank())
-                        + int(ambient.radical().rank())
-                        - int(ambient.subobject_on((*self.plane_vectors(plane), *(
-                            ambient.radical().inclusion()(point)
-                            for point in ambient.radical().module_generators()
-                        ))).rank()) for rank in flag_dimensions[:-1])
             )):
                 # Nonprimitive projection: the graph of J over its saturated
                 # projection is rational, not necessarily an integral shear.
@@ -1780,14 +1772,9 @@ class IsotropicInduction:
                             for j, label in enumerate(labels) if row[j]})
                         for row in standard_rows.rows()))
                     if flag_dimensions:
-                        if int(trows.nrows()) not in flag_dimensions[:-1] or not all(
-                            self.recursion.vector_lies_in_radical(point)
-                            for point in flag_basis[:int(trows.nrows())]
-                        ):
-                            raise ValueError("the rational graph flag requires a stage equal to the radical intersection")
-                        # The radical stages precede the projected part.  Their
-                        # adapted basis is integral even when the graph shear
-                        # is rational; preserve every intermediate stage.
+                        # Normalize every requested stage, not just the
+                        # characteristic radical intersection. Its position
+                        # in the flag need not be a specified stage at all.
                         inverse_normalizer = normalizer.inverse()
                         original_rows = matrix(SageQQ, [[SageQQ(
                             _integer((~reduction.isometry)(point).to_vector()(label)))
@@ -1851,8 +1838,17 @@ class IsotropicInduction:
                             for j in range(t):
                                 block = identity_matrix(SageZZ, size)
                                 block[n + i, n + j] = 1
-                                integral_generators.append(_isometry_from_row_matrix(
-                                    reduced, reduced, inverse_frame * block * frame))
+                                supplemental = _isometry_from_row_matrix(
+                                    reduced, reduced, inverse_frame * block * frame)
+                                if flag_dimensions:
+                                    stages = tuple(ambient.primitive_isotropic_subobject(*flag_basis[:rank])
+                                                   for rank in flag_dimensions)
+                                    candidate = reduction.isometry * supplemental * (~reduction.isometry)
+                                    if not all(stage.inclusion().is_in_image(candidate(point))
+                                               for rank, stage in zip(flag_dimensions, stages, strict=True)
+                                               for point in flag_basis[:rank]):
+                                        continue
+                                integral_generators.append(supplemental)
                     return _conjugated(reduction.isometry, tuple(integral_generators))
             radical = tuple(reduction.isometry(reduced.module_generator(label)) for label in labels[n:])
             if n and k and int(inclusion.domain().rank()) > k and all(
