@@ -2655,6 +2655,30 @@ class EichlerRecursion:
             if int(square) == 0 and not primitive_only:
                 yield lattice.zero()
             return
+        if int(lattice.rank()) == 2 and lattice.is_nondegenerate() and not lattice.is_definite() and lattice.is_isotropic():
+            # The pinned binary factorization algorithm gives the complete
+            # finite primitive orbit set, including the two null rays.
+            # For nonprimitive vectors of nonzero square, content c obeys
+            # c^2 | square; each primitive class at square/c^2 scales to
+            # precisely one class of content c.  Null-vector contents are
+            # unbounded and are enumerated in increasing order.
+            from sage_indefinite_port.indefinite.lorentzian_cells import binary_split_primitive_vector_classes
+
+            if primitive_only:
+                yield from binary_split_primitive_vector_classes(lattice, int(square))
+                return
+            if int(square) == 0:
+                yield lattice.zero()
+                for content in count(1):
+                    for representative in binary_split_primitive_vector_classes(lattice, 0):
+                        yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
+                return
+            for content in range(1, isqrt(abs(int(square))) + 1):
+                if int(square) % (content * content):
+                    continue
+                for representative in binary_split_primitive_vector_classes(lattice, int(square) // (content * content)):
+                    yield lattice.scalar_multiple(lattice.base_ring()(content), representative)
+            return
         # On a zero-form lattice every vector has norm zero, and GL_n(ZZ)
         # acts transitively on primitive vectors: Bezout completion extends
         # each primitive column to an integral unimodular basis.  Thus the

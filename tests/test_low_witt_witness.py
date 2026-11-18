@@ -169,6 +169,21 @@ def test_exact_integral_orthogonal_stream_exhausts_split_binary_indefinite_group
         assert all(element.domain() is ambient and element.codomain() is ambient for element in elements)
 
 
+def test_exact_vector_orbit_iterator_split_binary_finite_and_content_classes():
+    from itertools import islice
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    for gram in ([[0, 1], [1, 0]], [[2, 0], [0, -2]]):
+        ambient = lattice(gram)
+        primitive = tuple(RECURSION.exact_vector_orbit_iterator(ambient, 0, primitive_only=True))
+        assert len(primitive) == 1
+        classes = tuple(islice(RECURSION.exact_vector_orbit_iterator(ambient, 0), 5))
+        assert [int(point.content()) for point in classes] == [0, 1, 2, 3, 4]
+        assert all(point.q() == 0 for point in classes)
+        assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, 1)) == ()
+        assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, 2, primitive_only=True))
+
+
 def test_exact_integral_orthogonal_stream_anisotropic_binary_uses_exact_generators(monkeypatch):
     from itertools import islice
     from sage_indefinite_port.indefinite import recursive
