@@ -1934,6 +1934,82 @@ def test_mixed_rank_two_projection_transporter_recovers_hidden_radical_basis():
                for x in ambient.module_generators() for y in ambient.module_generators())
 
 
+def test_mixed_imprimitive_based_rank_three_embedding_transport():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, u, v, z, w, t = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    category = CosliceCategory(Lattices(ZZ), source)
+    source_basis = (2 * e + t, z, 2 * u + w)
+    target_basis = (2 * u + t, w, 2 * e + z)
+    first = category.object(source.hom(list(source_basis), codomain=ambient))
+    second = category.object(source.hom(list(target_basis), codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert all(witness(left) == right for left, right in zip(source_basis, target_basis, strict=True))
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in ambient.module_generators() for y in ambient.module_generators())
+
+
+def test_mixed_based_embedding_rejects_unequal_projected_smith_invariants():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, u, v, z, w, t = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    category = CosliceCategory(Lattices(ZZ), source)
+    first = category.object(source.hom([2 * e + t, z, 2 * u + w], codomain=ambient))
+    second = category.object(source.hom([2 * e + t, z, 2 * e + 4 * u + w], codomain=ambient))
+    # The marked generators have equal individual divisibilities, but
+    # their projected rank-two sublattices have indices 4 and 8.
+    assert isometry(category, first, second) is None
+
+
+def test_mixed_based_embedding_uses_radical_congruence_lift_at_composite_index():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, u, v, z, w, t = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    category = CosliceCategory(Lattices(ZZ), source)
+    source_basis = (2 * e + t, z, 2 * e + 4 * u + w)
+    target_basis = (2 * e + t, z, 2 * e + 4 * u + w + z)
+    first = category.object(source.hom(list(source_basis), codomain=ambient))
+    second = category.object(source.hom(list(target_basis), codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert all(witness(left) == right for left, right in zip(source_basis, target_basis, strict=True))
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in ambient.module_generators() for y in ambient.module_generators())
+
+
+def test_mixed_based_embedding_moves_nonprimitive_projected_sublattice():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.arrow_categories import CosliceCategory
+    from sage_indefinite_port.indefinite.marked_lattices import isometry
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, u, v, z, w, t = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    category = CosliceCategory(Lattices(ZZ), source)
+    source_basis = (2 * e + t, z, 2 * e + 4 * u + w)
+    target_basis = (2 * u + t, w, 2 * u + 4 * e + z)
+    first = category.object(source.hom(list(source_basis), codomain=ambient))
+    second = category.object(source.hom(list(target_basis), codomain=ambient))
+    witness = isometry(category, first, second)
+    assert witness is not None
+    assert all(witness(left) == right for left, right in zip(source_basis, target_basis, strict=True))
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in ambient.module_generators() for y in ambient.module_generators())
+
+
 def test_mixed_imprimitive_rank_two_projection_flag_transporter():
     from sage_extensions.all import Cat, Lattices, ZZ
     from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory

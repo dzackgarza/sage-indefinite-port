@@ -843,6 +843,144 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             # basis of S after cancelling c.  No source GL action is allowed.
             source_primitive = tuple(point.primitive_part() for point in source_images)
             target_primitive = tuple(point.primitive_part() for point in target_images)
+            if (not source_arrow.codomain().is_nondegenerate()
+                    and not target_arrow.codomain().is_nondegenerate()
+                    and len(source_primitive) >= 2):
+                from sage.matrix.constructor import identity_matrix, matrix
+                from sage.rings.integer_ring import ZZ as SageZZ
+                from sage.rings.rational_field import QQ as SageQQ
+                from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
+                from sage_indefinite_port.indefinite.recursive import _gram_in_label_order, _isometry_from_row_matrix
+
+                source_ambient = source_arrow.codomain()
+                target_ambient = target_arrow.codomain()
+                ambient_witness = RECURSION.isometry(source_ambient, target_ambient)
+                if ambient_witness is None:
+                    return None
+                reduction = indefinite_reduced_presentation(target_ambient)
+                reduced = reduction.reduced
+                gram = _gram_in_label_order(reduced)
+                n, size = int(gram.rank()), int(gram.nrows())
+                k = size - n
+                labels = tuple(reduced.module_generating_set())
+                frames = tuple(matrix(SageZZ, [[int((~reduction.isometry)(point).to_vector()(label))
+                    for label in labels] for point in points]) for points in (
+                        tuple(ambient_witness(point) for point in source_primitive), target_primitive))
+                x0, x1 = (frame[:, :n] for frame in frames)
+                if n and k and int(x0.rank()) == int(x1.rank()) > 0:
+                    # Projection onto L/rad(L) is equivariant for every
+                    # ambient isometry. Its integral elementary divisors
+                    # are therefore a necessary invariant even for a
+                    # *based* marking with equal generator divisibilities.
+                    if tuple(abs(int(d)) for d in x0.elementary_divisors()) != tuple(
+                        abs(int(d)) for d in x1.elementary_divisors()
+                    ):
+                        return None
+                    smith, left, right = x0.smith_form()
+                    s = int(x0.rank())
+                    kernel = left[s:, :]
+                    if kernel * x1 != 0:
+                        return None
+                    complement = reduced.lattice_category()([
+                        [int(gram[i, j]) for j in range(n)] for i in range(n)])
+                    c_labels = tuple(complement.module_generating_set())
+                    projected = tuple(complement.subobject_on(tuple(
+                        complement.linear_combination({
+                            label: complement.base_ring()(int(row[j]))
+                            for j, label in enumerate(c_labels) if row[j]
+                        }) for row in rows.rows() if any(row))).saturation()
+                        for rows in (x0, x1))
+                    inclusions = tuple(term.inclusion() for term in projected)
+                    saturated_bases = tuple(tuple(inclusion(point)
+                        for point in inclusion.domain().module_generators())
+                        for inclusion in inclusions)
+                    coordinates = tuple(matrix(SageZZ, [[int(inclusion.lift(
+                        complement.linear_combination({
+                            label: complement.base_ring()(int(row[j]))
+                            for j, label in enumerate(c_labels) if row[j]
+                        })).to_vector()(label))
+                        for label in inclusion.domain().module_generating_set()]
+                        for row in rows.rows()]) for rows, inclusion in zip(
+                            (x0, x1), inclusions, strict=True))
+                    # The based map on the finite-index projections
+                    # extends to their saturations precisely when its
+                    # matrix in saturated bases is unimodular integral.
+                    saturated_action = coordinates[0].change_ring(SageQQ).solve_right(
+                        coordinates[1].change_ring(SageQQ))
+                    if any(entry.denominator() != 1 for entry in saturated_action.list()) or abs(saturated_action.det()) != 1:
+                        return None
+                    target_projected = tuple(sum((int(saturated_action[i, j]) * point
+                        for j, point in enumerate(saturated_bases[1])), complement.zero())
+                        for i in range(s))
+                    projected_witness = RECURSION.isotropic_subspace_isometry(
+                        saturated_bases[0], target_projected, ())
+                    if projected_witness is not None:
+                        action = matrix(SageZZ, [[int(projected_witness(point).to_vector()(label))
+                            for label in c_labels] for point in complement.module_generators()])
+                        if x0 * action == x1:
+                            r0, r1 = (kernel * frame[:, n:] for frame in frames)
+                            try:
+                                r0_frame = r0.stack(_source_subspace_completion_int(r0, k))
+                                r1_frame = r1.stack(_source_subspace_completion_int(r1, k))
+                            except ValueError:
+                                pass
+                            else:
+                                from math import lcm
+
+                                t = int(r0.nrows())
+                                modulus = lcm(*(abs(int(smith[i, i])) for i in range(s)))
+                                standard_generators = []
+                                for i in range(t, k):
+                                    for j in range(k):
+                                        if i == j:
+                                            continue
+                                        elementary = identity_matrix(SageZZ, k)
+                                        elementary[i, j] = 1
+                                        standard_generators.append(elementary)
+                                for i in range(t, k - 1):
+                                    swap = identity_matrix(SageZZ, k)
+                                    swap.swap_rows(i, i + 1)
+                                    standard_generators.append(swap)
+                                if t < k:
+                                    sign = identity_matrix(SageZZ, k)
+                                    sign[t, t] = -1
+                                    standard_generators.append(sign)
+                                # The pointwise stabilizer of the radical
+                                # kernel is Hom(Z^(k-t),Z^t) ⋊ GL_(k-t)(Z).
+                                # Its finite reduction modulo the Smith
+                                # exponent controls every shear congruence.
+                                frontier = [identity_matrix(SageZZ, k)]
+                                seen = set()
+                                while frontier:
+                                    word = frontier.pop()
+                                    key = tuple(int(entry) % modulus for entry in word.list())
+                                    if key in seen:
+                                        continue
+                                    seen.add(key)
+                                    radical_action = (r0_frame.inverse().change_ring(SageZZ)
+                                                      * word * r1_frame)
+                                    discrepancy = frames[1][:, n:] - frames[0][:, n:] * radical_action
+                                    corrected = left * discrepancy
+                                    if (all(corrected[i, j] == 0 for i in range(s, len(source_primitive))
+                                            for j in range(k))
+                                        and all(corrected[i, j] % smith[i, i] == 0
+                                                for i in range(s) for j in range(k))):
+                                        solution = matrix(SageZZ, n, k, 0)
+                                        for i in range(s):
+                                            for j in range(k):
+                                                solution[i, j] = corrected[i, j] // smith[i, i]
+                                        shear = right * solution
+                                        block = identity_matrix(SageZZ, size)
+                                        block[:n, :n] = action
+                                        block[:n, n:] = shear
+                                        block[n:, n:] = radical_action
+                                        witness = (reduction.isometry
+                                                   * _isometry_from_row_matrix(reduced, reduced, block)
+                                                   * (~reduction.isometry) * ambient_witness)
+                                        if all(witness(a) == b for a, b in zip(
+                                            source_primitive, target_primitive, strict=True)):
+                                            return witness
+                                    frontier.extend(generator * word for generator in standard_generators)
             return RECURSION.isotropic_subspace_isometry(source_primitive, target_primitive, ())
         case _ if category is LATTICES:
             return RECURSION.isometry(source, target)
