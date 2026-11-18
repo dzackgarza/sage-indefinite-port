@@ -209,6 +209,21 @@ def test_exact_vector_orbit_iterator_split_binary_finite_and_content_classes():
         assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, 2, primitive_only=True))
 
 
+def test_exact_vector_orbit_iterator_binary_rank_one_radical_classes():
+    from itertools import islice
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    for gram in ([[2, 0], [0, 0]], [[0, 0], [0, -6]]):
+        ambient = lattice(gram)
+        null_classes = tuple(islice(RECURSION.exact_vector_orbit_iterator(ambient, 0), 5))
+        assert [int(point.content()) for point in null_classes] == [0, 1, 2, 3, 4]
+        assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 0, primitive_only=True))) == 1
+    ambient = lattice([[2, 0], [0, 0]])
+    assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 8))) == 2
+    assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 8, primitive_only=True))) == 1
+    assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 2))) == 1
+
+
 def test_exact_integral_orthogonal_stream_anisotropic_binary_uses_exact_generators(monkeypatch):
     from itertools import islice
     from sage_indefinite_port.indefinite import recursive

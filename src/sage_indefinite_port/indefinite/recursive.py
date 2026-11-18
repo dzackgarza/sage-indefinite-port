@@ -2656,6 +2656,41 @@ class EichlerRecursion:
             if int(square) == 0 and not primitive_only:
                 yield lattice.zero()
             return
+        if int(lattice.rank()) == 2 and _gram_in_label_order(lattice).rank() == 1:
+            # In a reduced basis the form is diag(a,0), a != 0.  Its
+            # integral orthogonal group consists exactly of
+            # (x,y) -> (eps*x, b*x + delta*y), eps,delta=+/-1, b in ZZ.
+            # For x != 0, orbits are |x| together with y mod |x| up to
+            # sign; for x=0 they are |y|.  This gives a complete finite
+            # nonzero-norm classification and an ordered null-content stream.
+            reduction = indefinite_reduced_presentation(lattice)
+            reduced = reduction.reduced
+            reduced_gram = _gram_in_label_order(reduced)
+            coefficient = int(reduced_gram[0, 0])
+            if coefficient == 0 or any(reduced_gram[i, j] for i in range(2) for j in range(2) if (i, j) != (0, 0)):
+                raise ArithmeticError("binary radical reduction did not produce diag(a,0)")
+
+            def original_point(x: int, y: int):
+                return reduction.isometry(_from_column(reduced, (x, y)))
+
+            if int(square) == 0:
+                if primitive_only:
+                    yield original_point(0, 1)
+                    return
+                yield lattice.zero()
+                for content in count(1):
+                    yield original_point(0, content)
+                return
+            quotient = int(square) // coefficient if int(square) % coefficient == 0 else 0
+            if quotient <= 0 or isqrt(quotient) ** 2 != quotient:
+                return
+            x = isqrt(quotient)
+            for residue in range(x // 2 + 1):
+                y = min(residue, (-residue) % x)
+                if primitive_only and gcd(x, y) != 1:
+                    continue
+                yield original_point(x, y)
+            return
         if int(lattice.rank()) == 2 and lattice.is_nondegenerate() and not lattice.is_definite() and lattice.is_isotropic():
             # The pinned binary factorization algorithm gives the complete
             # finite primitive orbit set, including the two null rays.
