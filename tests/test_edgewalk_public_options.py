@@ -68,3 +68,22 @@ def test_public_nonreflective_edgewalk_can_complete_without_early_termination():
     complete = ambient.allcock_edgewalk(early_termination=False)
     assert not early.is_reflective() and not complete.is_reflective()
     assert len(complete.vertices()) >= len(early.vertices()) == 3
+
+
+def test_public_edgewalk_isometry_uses_integral_vertex_transporters():
+    from sage_extensions.all import HyperbolicLattices, Lattices, ZZ
+
+    gram = [[0, 1, 0], [1, 0, 0], [0, 0, 2]]
+    source = HyperbolicLattices(ZZ)(Lattices(ZZ)(gram))
+    target = HyperbolicLattices(ZZ)(Lattices(ZZ)(
+        gram, module_generators=("left", "right", "root")))
+    witness = source.edgewalk_isometry(target)
+    assert witness is not None
+    assert witness.domain() is source and witness.codomain() is target
+    assert all(target.b(witness(x), witness(y)) == source.b(x, y)
+               for x in source.module_generators() for y in source.module_generators())
+
+    nonisometric = HyperbolicLattices(ZZ)(Lattices(ZZ)([
+        [0, 1, 0], [1, 0, 0], [0, 0, 4],
+    ]))
+    assert source.edgewalk_isometry(nonisometric) is None

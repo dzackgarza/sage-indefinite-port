@@ -99,6 +99,54 @@ def edgewalk_fundamental_domain(
                      early_termination=early_termination, initial_vertex=initial_vertex).walk()
 
 
+def edgewalk_isometry(
+    source: HyperbolicLattices.ParentMethods,
+    target: HyperbolicLattices.ParentMethods,
+) -> LatticeIsometryMethods | None:
+    r"""Exact vertex-configuration equivalence along Allcock's edgewalk.
+
+    The source of ``LORENTZ_RunEdgewalkAlgorithm_Isomorphism`` traverses
+    vertex orbits of the first form and compares each coloured vertex
+    configuration with the initial vertex of the second form. Its positive
+    answer is a certified integral ambient isometry. Use the same finite
+    vertex-orbit traversal and the owned configuration transporter.
+    """
+    if (int(source.rank()) != int(target.rank())
+            or source.signature_pair() != target.signature_pair()):
+        return None
+    if source is target:
+        return source.O().identity()
+    if (_engine_component_matrix(source.gram_tensor()).det()
+            != _engine_component_matrix(target.gram_tensor()).det()):
+        return None
+    first, second = _Edgewalk(source), _Edgewalk(target)
+    first_vertex, second_vertex = first.initial_vertex(), second.initial_vertex()
+    if first_vertex is None or second_vertex is None:
+        return None
+    goal = second.vertex_configuration(second_vertex)
+    seen = []
+    frontier = [first_vertex]
+    while frontier:
+        vertex = frontier.pop(0)
+        configuration = first.vertex_configuration(vertex)
+        witness = source.Isom(target).transporter(configuration, goal)
+        if witness is not None:
+            if not all(target.b(witness(x), witness(y)) == source.b(x, y)
+                       for x in _coordinate_basis(source) for y in _coordinate_basis(source)):
+                raise ArithmeticError("the edgewalk vertex transporter is not an ambient isometry")
+            return witness
+        seen.append(configuration)
+        local_generators = tuple(source.O().stabilizer(configuration).group_generators())
+        for roots, discarded in first.edge_orbits(vertex, local_generators):
+            neighbour = first.edge_step(vertex, roots, discarded)
+            next_configuration = first.vertex_configuration(neighbour)
+            if any(source.O().transporter(previous, next_configuration) is not None
+                   for previous in (*seen, *(first.vertex_configuration(item) for item in frontier))):
+                continue
+            frontier.append(neighbour)
+    return None
+
+
 def _key(vector_: _Vector) -> _Key:
     coordinates = vector_.to_vector()
     return tuple(_integer(coordinates(label)) for label in vector_.parent().module_generating_set())
@@ -1578,4 +1626,4 @@ class _Edgewalk:
                            simple_roots, isometries)
 
 
-__all__ = ["edgewalk_fundamental_domain"]
+__all__ = ["edgewalk_fundamental_domain", "edgewalk_isometry"]
