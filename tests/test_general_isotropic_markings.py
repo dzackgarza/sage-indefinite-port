@@ -1060,6 +1060,27 @@ def test_induction_partial_rank_one_three_flag_stabilizer_generators_preserve_ea
                for g in generators for term in flag.terms())
 
 
+def test_rank_one_two_flag_stabilizer_descends_to_quotient_line_action():
+    from sage_extensions.all import IsotropicFlag, FlagType, Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = lattice([[int(i // 2 == j // 2 and i != j)
+                        for j in range(6)] for i in range(6)])
+    e, f, u, v, a, b = tuple(ambient.module_generators())
+    flag = IsotropicFlag(ambient, (e, u), flag_type=FlagType((1, 2)))
+    generators = tuple(INDUCTION.flag_automorphism_generators(flag))
+    assert generators
+    reduction = e.isotropic_reduction()
+    projection = reduction.projection()
+    quotient_line = reduction.quotient_lattice().primitive_isotropic_subobject(
+        projection(projection.domain().inclusion().lift(u)))
+    for generator in generators:
+        induced = reduction.levi_action()(generator)
+        assert induced.parent().domain() is reduction.quotient_lattice()
+        assert all(quotient_line.inclusion().is_in_image(induced(quotient_line.inclusion()(point)))
+                   for point in quotient_line.module_generators())
+
+
 def test_induction_complete_rank_three_flag_stabilizer_generators_preserve_all_terms():
     from sage_extensions.all import IsotropicFlag, FlagType, Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
