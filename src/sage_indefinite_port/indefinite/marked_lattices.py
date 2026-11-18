@@ -826,7 +826,9 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 return _degenerate_full_quotient_based_isometry(source_arrow, target_arrow)
             source_saturation = _isotropic_sublattice(source_arrow) if source_arrow.is_primitive() else _homothetic_isotropic_saturation(source_arrow)
             target_saturation = _isotropic_sublattice(target_arrow) if target_arrow.is_primitive() else _homothetic_isotropic_saturation(target_arrow)
-            if source_saturation is None or target_saturation is None:
+            nonhomothetic = source_saturation is None or target_saturation is None
+            if nonhomothetic and (source_arrow.codomain().is_nondegenerate()
+                                  or target_arrow.codomain().is_nondegenerate()):
                 raise ValueError("nonhomothetic based isotropic markings require an integral source-module action")
             labels = tuple(category.base_object().module_generating_set())
             basis = tuple(category.base_object().module_generator(label) for label in labels)
@@ -845,6 +847,11 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
             # basis of S after cancelling c.  No source GL action is allowed.
             source_primitive = tuple(point.primitive_part() for point in source_images)
             target_primitive = tuple(point.primitive_part() for point in target_images)
+            if nonhomothetic:
+                # A nonhomothetic finite-index marking has no common
+                # scalar to cancel. Its exact based rows, rather than
+                # individually primitive parts, determine the transporter.
+                source_primitive, target_primitive = source_images, target_images
             if (not source_arrow.codomain().is_nondegenerate()
                     and not target_arrow.codomain().is_nondegenerate()
                     and len(source_primitive) >= 2):
@@ -983,7 +990,8 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                                             source_primitive, target_primitive, strict=True)):
                                             return witness
                                     frontier.extend(generator * word for generator in standard_generators)
-            return RECURSION.isotropic_subspace_isometry(source_primitive, target_primitive, ())
+            return (None if nonhomothetic else RECURSION.isotropic_subspace_isometry(
+                source_primitive, target_primitive, ()))
         case _ if category is LATTICES:
             return RECURSION.isometry(source, target)
         case _ if category is ARROWS:
