@@ -795,8 +795,7 @@ class IsotropicInduction:
                     frames.append(matrix(SageZZ, [[_integer((~reduction.isometry)(point).to_vector()(label))
                                                    for label in reduced_labels] for point in points]))
                 x0, x1 = (frame[t:, :n] for frame in frames)
-                if (int(x0.rank()) == int(x0.nrows()) == int(x1.rank())
-                        and frames[0][:t, n:].row_module() == frames[1][:t, n:].row_module()):
+                if int(x0.rank()) == int(x0.nrows()) == int(x1.rank()):
                     projected = []
                     for x in (x0, x1):
                         projected.append(complement.subobject_on(tuple(

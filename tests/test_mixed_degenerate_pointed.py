@@ -1179,6 +1179,17 @@ def test_nonprimitive_projection_moving_top_and_radical_flag_transporter():
         assert all(term.inclusion().is_in_image(witness(point)) for point in source_basis[:rank])
     assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
                for x in ambient.module_generators() for y in ambient.module_generators())
+    # The characteristic radical intersection itself may move inside R;
+    # it is not an invariant submodule, only its rank is invariant.
+    target_basis = (z, t, 2 * e + w, u + e)
+    target = category(_flag_marking_from_basis(ambient, target_basis, (1, 2, 4)))
+    witness = isometry(category, source, target)
+    assert witness is not None
+    for rank in (1, 2, 4):
+        term = ambient.primitive_isotropic_subobject(*target_basis[:rank])
+        assert all(term.inclusion().is_in_image(witness(point)) for point in source_basis[:rank])
+    assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
+               for x in ambient.module_generators() for y in ambient.module_generators())
     source_basis = (z, w, 4 * e + t, u)
     target_basis = (z, w, 4 * e + t, u + e)
     source = category(_flag_marking_from_basis(ambient, source_basis, (1, 2, 4)))
