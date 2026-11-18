@@ -3657,6 +3657,7 @@ def test_nonhomothetic_based_mixed_primitive_projection_pointwise_stabilizer():
 
 
 def test_based_mixed_primitive_rank_two_projection_with_radical_kernel():
+    from sage.all import GF, MatrixGroup, matrix
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
 
@@ -3673,6 +3674,15 @@ def test_based_mixed_primitive_rank_two_projection_with_radical_kernel():
                for g in generators for x in ambient.module_generators()
                for y in ambient.module_generators())
     assert any(g(t) != t for g in generators)
+    labels = tuple(ambient.module_generating_set())
+    radical_actions = [matrix(GF(2), [
+        [int(g(point).to_vector()(labels[j])) for j in (4, 5, 6)]
+        for point in (z, w, t)
+    ]) for g in generators]
+    # The projected plane is primitive, so every integral radical action
+    # fixing z+w extends by a shear. Its mod-2 image is the stabilizer
+    # of one nonzero vector in GL_3(F_2), of order 168/7 = 24.
+    assert MatrixGroup(radical_actions).order() == 24
 
 
 def test_primitive_based_mixed_plane_with_hidden_radical_kernel_pointwise_stabilizer():
