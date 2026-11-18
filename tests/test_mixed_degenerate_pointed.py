@@ -1004,7 +1004,9 @@ def test_nonprimitive_rank_two_projection_graph_without_radical_intersection():
 
 def test_nonprimitive_rank_two_projection_radical_first_flag_stabilizer():
     from sage_extensions.all import Lattices, ZZ
-    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+    from sage_indefinite_port.indefinite.marked_lattices import (
+        INDUCTION, FLAGS, automorphism_group_generators, _flag_marking_from_basis,
+    )
 
     ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
     e, f, u, v, z, w = tuple(ambient.module_generators())
@@ -1014,6 +1016,12 @@ def test_nonprimitive_rank_two_projection_radical_first_flag_stabilizer():
     assert all(plane.inclusion().is_in_image(generator(point))
                for generator in generators for point in (z, 2 * e + w, u))
     assert all(generator(z) in (z, -z) for generator in generators)
+    flag = FLAGS(_flag_marking_from_basis(ambient, (z, 2 * e + w, u), (1, 3)))
+    public = tuple(automorphism_group_generators(FLAGS, flag))
+    assert public
+    assert all(generator(z) in (z, -z) for generator in public)
+    assert all(plane.inclusion().is_in_image(generator(point))
+               for generator in public for point in (z, 2 * e + w, u))
 
 
 def test_mixed_flag_transporter_rejects_intermediate_projection_smith_difference():
