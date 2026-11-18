@@ -296,6 +296,11 @@ def test_exact_integral_orthogonal_stream_lorentzian_rank_three_real_generators(
     assert len({tuple(_column_matrix(g).list()) for g in family}) == 6
     assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
                for g in family for x in ambient.module_generators() for y in ambient.module_generators())
+    opposite = lattice([[-1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    opposite_family = tuple(islice(iter_exact_integral_orthogonal_isometries(opposite), 6))
+    assert len({tuple(_column_matrix(g).list()) for g in opposite_family}) == 6
+    assert all(opposite.b(g(x), g(y)) == opposite.b(x, y)
+               for g in opposite_family for x in opposite.module_generators() for y in opposite.module_generators())
 
 
 def test_exact_integral_orthogonal_stream_binary_radical_parametrization():
