@@ -61,7 +61,8 @@ INDUCTION = IsotropicInduction(RECURSION)
 
 def _zero_form_orthogonal_generators(ambient, linear_generators):
     r"""Carry integral GL generators into the owned O(L) homset for q=0."""
-    from sage.all import ZZ as SageZZ, matrix
+    from sage.matrix.constructor import matrix
+    from sage.rings.integer_ring import ZZ as SageZZ
     from sage_indefinite_port.indefinite.recursive import _isometry_from_row_matrix
 
     labels = tuple(ambient.module_generating_set())
@@ -273,7 +274,8 @@ def _split_nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow
     of S and S^perp extend uniquely.  If the decomposition has nontrivial
     glue, do not infer a nonexistent extension from rational splitting.
     """
-    from sage.all import ZZ as SageZZ, matrix
+    from sage.matrix.constructor import matrix
+    from sage.rings.integer_ring import ZZ as SageZZ
 
     source_lattice, target_lattice = source_arrow.codomain(), target_arrow.codomain()
     if source_action is None and complement_action is None and source_lattice is target_lattice and source_arrow.domain() is target_arrow.domain() and all(
@@ -349,7 +351,8 @@ def _nondegenerate_block_group(arrow: Morphism, *, based: bool):
     stabilizer in the actual discriminant image, including Schreier kernel
     generators.  Filtering block generators individually is insufficient.
     """
-    from sage.all import QQ as SageQQ, matrix
+    from sage.matrix.constructor import matrix
+    from sage.rings.rational_field import QQ as SageQQ
 
     lattice = arrow.codomain()
     subobject = lattice.subobject_on(tuple(arrow(x) for x in arrow.domain().module_generators()))
@@ -420,7 +423,8 @@ def _glued_nondegenerate_embedding_isometry(source_arrow: Morphism, target_arrow
     supplies the missing arithmetic factor word.  The resulting rational
     map extends integrally exactly when the glue subgroups agree.
     """
-    from sage.all import QQ as SageQQ, matrix
+    from sage.matrix.constructor import matrix
+    from sage.rings.rational_field import QQ as SageQQ
     from sage_extensions.categories.group.g_sets import FiniteGSets
     from sage_extensions.categories.lattice_embeddings import _finite_overlattice_isometry_extension
 
@@ -483,7 +487,9 @@ def _nonprimitive_nondegenerate_based_isometry(source_arrow: Morphism, target_ar
     if its matrix on S,T is integral unimodular, and its ambient glue
     admits a compatible complement action.
     """
-    from sage.all import QQ as SageQQ, ZZ as SageZZ, matrix
+    from sage.matrix.constructor import matrix
+    from sage.rings.integer_ring import ZZ as SageZZ
+    from sage.rings.rational_field import QQ as SageQQ
 
     source_saturation = source_arrow.saturation().inclusion()
     target_saturation = target_arrow.saturation().inclusion()
@@ -1087,7 +1093,9 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                     and all(ambient.b(x, y) == 0 for x in ambient.module_generators() for y in ambient.module_generators())
                     and all(target_arrow.codomain().b(x, y) == 0 for x in target_arrow.codomain().module_generators()
                             for y in target_arrow.codomain().module_generators())):
-                from sage.all import ZZ as SageZZ, identity_matrix, matrix
+                from sage.matrix.constructor import matrix
+                from sage.matrix.special import identity_matrix
+                from sage.rings.integer_ring import ZZ as SageZZ
                 from sage_indefinite_port.indefinite.recursive import _isometry_from_row_matrix
 
                 source_labels = tuple(ambient.module_generating_set())
@@ -1570,7 +1578,8 @@ def isometry(category: Category, source: Parent, target: Parent) -> LatticeIsome
                 # An adapted integral basis of each primitive top flag
                 # gives an explicit GL_n(ZZ) transporter. No unbounded
                 # unimodular enumeration is necessary.
-                from sage.all import ZZ as SageZZ, matrix
+                from sage.matrix.constructor import matrix
+                from sage.rings.integer_ring import ZZ as SageZZ
                 from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
                 from sage_indefinite_port.indefinite.recursive import _isometry_from_row_matrix
 
@@ -1617,7 +1626,8 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                     for x in arrow.codomain().module_generators()
                     for y in arrow.codomain().module_generators()
                 ):
-                    from sage.all import ZZ as SageZZ, identity_matrix
+                    from sage.matrix.special import identity_matrix
+                    from sage.rings.integer_ring import ZZ as SageZZ
                     from sage.matrix.constructor import matrix
                     from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
                     from sage_indefinite_port.indefinite.recursive import _isometry_from_row_matrix
@@ -1993,7 +2003,8 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                     RECURSION.vector_lies_in_radical(last_arrow(point))
                     for point in last_arrow.domain().module_generators()
                 ):
-                    from sage.all import ZZ as SageZZ, matrix
+                    from sage.matrix.constructor import matrix
+                    from sage.rings.integer_ring import ZZ as SageZZ
 
                     plane = last_arrow.domain()
                     labels = tuple(plane.module_generating_set())
@@ -2261,7 +2272,8 @@ def _degenerate_radical_flag_generators(ambient: Parent, dimensions: tuple[int, 
     The flag imposes precisely its GL(R)-stabilizer, leaving O(C) and
     every shear unrestricted.  The pinned reduction transports the result.
     """
-    from sage.all import identity_matrix, matrix
+    from sage.matrix.constructor import matrix
+    from sage.matrix.special import identity_matrix
     from sage.rings.integer_ring import ZZ as SageZZ
     from sage_indefinite_port.indefinite.recursive import _conjugated, _isometry_from_row_matrix
     from sage_indefinite_port.indefinite.indefinite_reduction import _source_subspace_completion_int
