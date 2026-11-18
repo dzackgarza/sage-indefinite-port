@@ -802,6 +802,26 @@ def test_proper_radical_intersection_first_flag_transporter_uses_top_subspace():
     assert all(top.inclusion().is_in_image(witness(point)) for point in (z, e + w))
 
 
+def test_proper_radical_intersection_three_stage_flag_stabilizer():
+    from sage_extensions.all import Cat, Lattices, ZZ
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators, _flag_marking_from_basis
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, u, v, z, w = tuple(ambient.module_generators())
+    category = Cat().Mor(FiniteOrdinalCategory(4), Lattices(ZZ))
+    flag = category(_flag_marking_from_basis(ambient, (z, e + w, u), (1, 2, 3)))
+    generators = tuple(automorphism_group_generators(category, flag))
+    assert generators
+    for points in ((z,), (z, e + w), (z, e + w, u)):
+        term = ambient.primitive_isotropic_subobject(*points)
+        assert all(term.inclusion().is_in_image(generator(point))
+                   for generator in generators for point in points)
+    assert all(ambient.b(generator(x), generator(y)) == ambient.b(x, y)
+               for generator in generators for x in (e, f, u, v, z, w)
+               for y in (e, f, u, v, z, w))
+
+
 def test_mixed_degenerate_proper_radical_partial_flag_transporter():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import FLAGS, isometry, _flag_marking_from_basis

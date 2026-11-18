@@ -1099,7 +1099,17 @@ class IsotropicInduction:
                 return _conjugated(reduction.isometry, tuple(
                     _isometry_from_row_matrix(reduced, reduced, block) for block in blocks
                 ))
-            if n and k and not flag_dimensions:
+            if n and k and (not flag_dimensions or (
+                flag_basis and flag_dimensions[-1] == len(flag_basis)
+                and all(self.recursion.vector_lies_in_radical(point)
+                        for point in flag_basis[:flag_dimensions[0]])
+                and flag_dimensions[0] == int(inclusion.domain().rank())
+                + int(ambient.radical().rank())
+                - int(ambient.subobject_on((*self.plane_vectors(plane), *(
+                    ambient.radical().inclusion()(point)
+                    for point in ambient.radical().module_generators()
+                ))).rank())
+            )):
                 # A primitive J with primitive projection I in C has
                 # radical intersection T=J∩R, and an integral shear
                 # identifies J with I⊕T. Its stabilizer has blocks
@@ -1143,10 +1153,35 @@ class IsotropicInduction:
                         for j in range(k):
                             normalizer[i, n + j] = shear[i, j]
                     blocks = []
-                    quotient_generators = (
-                        self.recursion.line_stabilizer_generators(self.plane_vectors(quotient)[0])
-                        if s == 1 else self.plane_automorphism_generators(quotient)
-                    )
+                    if flag_dimensions:
+                        quotient_terms = []
+                        for rank in flag_dimensions[:-1]:
+                            projected_rows = tuple(tuple(_integer((~reduction.isometry)(point).to_vector()(label))
+                                                         for label in labels[:n]) for point in flag_basis[:rank])
+                            projected_points = tuple(complement.linear_combination({
+                                label: complement.base_ring()(entry)
+                                for label, entry in zip(c_labels, row, strict=True) if entry
+                            }) for row in projected_rows if any(row))
+                            if not projected_points:
+                                continue
+                            term = complement.primitive_isotropic_subobject(*projected_points)
+                            quotient_terms.append(quotient.inclusion().domain().primitive_isotropic_subobject(*(
+                                quotient.inclusion().lift(term.inclusion()(point))
+                                for point in term.module_generators()
+                            )))
+                        if quotient_terms:
+                            adapted_basis, images = self.flag_action_data(quotient, tuple(quotient_terms))
+                            quotient_generators = self._stabilizer_generators(adapted_basis, images)
+                        else:
+                            quotient_generators = (
+                                self.recursion.line_stabilizer_generators(self.plane_vectors(quotient)[0])
+                                if s == 1 else self.plane_automorphism_generators(quotient)
+                            )
+                    else:
+                        quotient_generators = (
+                            self.recursion.line_stabilizer_generators(self.plane_vectors(quotient)[0])
+                            if s == 1 else self.plane_automorphism_generators(quotient)
+                        )
                     for generator in quotient_generators:
                         block = identity_matrix(SageZZ, size)
                         for i, point in enumerate(complement.module_generators()):
