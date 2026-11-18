@@ -2571,6 +2571,27 @@ class EichlerRecursion:
                     if not primitive_only or any(value % prime for value in x)
                 ):
                     return
+        # A definite quadratic form has a finite norm fibre.  Cauchy--
+        # Schwarz for the positive definite form H=+/-G gives
+        # x_i^2 <= |square|*(H^-1)_ii.  This provides an exact finite
+        # search bound, rather than an iterator which hangs after its last
+        # representative.  The bound is computed in QQ, without floats.
+        if lattice.is_definite():
+            sign = 1 if int(gram[0, 0]) > 0 else -1
+            if sign * int(square) < 0:
+                return
+            inverse = (sign * gram).inverse()
+            bounds = tuple(isqrt(int((abs(int(square)) * inverse[i, i]).floor()))
+                           for i in range(int(lattice.rank())))
+            seen = []
+            for coordinates in itertools.product(*(range(-b, b + 1) for b in bounds)):
+                point = _from_column(lattice, coordinates)
+                if int(point.q()) != int(square) or (primitive_only and int(point.content()) != 1):
+                    continue
+                if all(self.pointed_isometry(previous, point) is None for previous in seen):
+                    seen.append(point)
+                    yield point
+            return
         seen = []
         for height in count(0):
             for coordinates in _coordinate_box(lattice, height):

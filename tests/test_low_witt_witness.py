@@ -49,6 +49,18 @@ def test_exact_vector_orbit_iterator_detects_prime_power_and_primitive_obstructi
     assert next(RECURSION.exact_vector_orbit_iterator(sums_of_two_squares, 4)).q() == 4
 
 
+def test_exact_vector_orbit_iterator_exhausts_definite_norm_fibres():
+    from sage_indefinite_port.indefinite.marked_lattices import RECURSION
+
+    for gram in ([[1, 0], [0, 1]], [[-1, 0], [0, -1]]):
+        ambient = lattice(gram)
+        sign = gram[0][0]
+        assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, sign))) == 1
+        assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, -sign)) == ()
+        assert len(tuple(RECURSION.exact_vector_orbit_iterator(ambient, 0))) == 1
+        assert tuple(RECURSION.exact_vector_orbit_iterator(ambient, 0, primitive_only=True)) == ()
+
+
 def test_zero_rank_exact_integral_orthogonal_stream_has_one_identity():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.recursive import iter_exact_integral_orthogonal_isometries
