@@ -700,10 +700,27 @@ class IsotropicInduction:
                 != self.recursion.vector_lies_in_radical(target_line)):
             return None
         if (not source_ambient.is_nondegenerate() and not target_ambient.is_nondegenerate()
-                and int(source_ambient.radical().rank()) == int(target_ambient.radical().rank()) == 1
                 and int(source_space.inclusion().domain().rank()) == 2
+                and int(target_space.inclusion().domain().rank()) == 2
                 and self.recursion.vector_lies_in_radical(source_line)
-                and self.recursion.vector_lies_in_radical(target_line)):
+                and self.recursion.vector_lies_in_radical(target_line)
+                and all(
+                    int(owner.subobject_on((line, *(
+                        owner.radical().inclusion()(point)
+                        for point in owner.radical().module_generators()
+                    ))).rank()) == int(owner.radical().rank())
+                    and int(owner.subobject_on((*self.plane_vectors(space), *(
+                        owner.radical().inclusion()(point)
+                        for point in owner.radical().module_generators()
+                    ))).rank()) == int(owner.radical().rank()) + 1
+                    for owner, line, space in (
+                        (source_ambient, source_line, source_space),
+                        (target_ambient, target_line, target_space),
+                    )
+                )):
+            # The first line is exactly the characteristic intersection
+            # of the top plane with the ambient radical, regardless of
+            # the radical's rank.
             return self.plane_isometry(
                 source_space, target_space, flag_dimensions=(1, 2),
                 source_flag_basis=source_basis, target_flag_basis=target_basis,

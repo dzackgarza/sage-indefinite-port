@@ -802,6 +802,20 @@ def test_proper_radical_intersection_first_flag_transporter_uses_top_subspace():
     assert all(top.inclusion().is_in_image(witness(point)) for point in (z, e + w))
 
 
+def test_induction_legacy_flag_transporter_with_proper_radical_line():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, z, w = tuple(ambient.module_generators())
+    first = (z, ambient.primitive_isotropic_subobject(z, e + w))
+    second = (w, ambient.primitive_isotropic_subobject(w, f + z))
+    witness = INDUCTION.flag_isometry(first, second)
+    assert witness is not None
+    assert witness(z) in (w, -w)
+    assert all(second[1].inclusion().is_in_image(witness(point)) for point in (z, e + w))
+
+
 def test_proper_radical_intersection_three_stage_flag_stabilizer():
     from sage.all import GF, MatrixGroup, matrix
     from sage_extensions.all import Cat, Lattices, ZZ
