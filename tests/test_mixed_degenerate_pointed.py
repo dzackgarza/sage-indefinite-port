@@ -3590,6 +3590,23 @@ def test_nonhomothetic_based_isotropic_embedding_requires_integral_shear_congrue
     assert isometry(category, first, obstructed) is None
 
 
+def test_nonhomothetic_based_isotropic_stabilizer_in_nondegenerate_split_lattice():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import automorphism_group_generators
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)("U")
+    e, f, u, v = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0, 0], [0, 0]])
+    category = Lattices(ZZ).CosliceUnder(source)
+    marking = category(source.hom([2 * e, u], codomain=ambient))
+    generators = tuple(automorphism_group_generators(category, marking))
+    assert generators
+    assert all(g(2 * e) == 2 * e and g(u) == u for g in generators)
+    assert all(ambient.b(g(x), g(y)) == ambient.b(x, y)
+               for g in generators for x in ambient.module_generators()
+               for y in ambient.module_generators())
+
+
 def test_nonhomothetic_rank_two_based_isotropic_embedding_transporter():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import isometry

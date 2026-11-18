@@ -1545,8 +1545,15 @@ def automorphism_group_generators(category: Category, marked: Parent) -> Parent:
                     return finite_ordered_set(tuple(generators))
                 saturation = _isotropic_sublattice(arrow) if arrow.is_primitive() else _homothetic_isotropic_saturation(arrow)
                 if saturation is None:
-                    raise ValueError("nonhomothetic based isotropic stabilizers require an integral source-module action")
-                basis = tuple(arrow(point).primitive_part() for point in category.base_object().module_generators())
+                    if arrow.codomain().is_nondegenerate():
+                        saturation = arrow.saturation()
+                    else:
+                        raise ValueError("nonhomothetic based isotropic stabilizers require an integral source-module action")
+                # Pointwise fixation of the marked finite-index frame is
+                # equivalent to pointwise fixation of its primitive
+                # saturation, since the ambient module is torsion-free.
+                inclusion = saturation.inclusion()
+                basis = tuple(inclusion(point) for point in inclusion.domain().module_generators())
                 generators = INDUCTION._stabilizer_generators(basis, ())
         case _ if category is LATTICES:
             generators = (_zero_form_orthogonal_generators(marked, marked.general_linear_group().group_generators())
