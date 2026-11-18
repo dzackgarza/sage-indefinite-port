@@ -3673,6 +3673,17 @@ def test_nonhomothetic_based_isotropic_transport_with_nonprimitive_radical_kerne
     obstructed = category(source.hom([2 * e + z + w, 2 * z, w], codomain=ambient))
     assert isometry(category, first, obstructed) is None
 
+    # The projection index and radical-kernel index are independent.
+    # In particular, the congruence modulus need not be a multiple of
+    # the kernel's elementary divisor.
+    source_basis = (3 * e + z, 2 * z, w)
+    target_basis = (3 * e + z + 3 * w, 2 * z, w)
+    source_marking = category(source.hom(list(source_basis), codomain=ambient))
+    target_marking = category(source.hom(list(target_basis), codomain=ambient))
+    witness = isometry(category, source_marking, target_marking)
+    assert witness is not None
+    assert all(witness(x) == y for x, y in zip(source_basis, target_basis, strict=True))
+
 
 def test_full_quotient_based_mixed_rank_four_gram_with_two_radical_generators():
     from sage_extensions.all import Lattices, ZZ
