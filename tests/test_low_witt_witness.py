@@ -458,6 +458,24 @@ def test_indefinite_quotient_degenerate_norm_orbits_are_finite_and_exact():
     for i, first in enumerate(lorentzian_classes):
         for second in lorentzian_classes[i + 1:]:
             assert RECURSION.pointed_isometry(first, second) is None
+    higher = lattice([[0, 1, 0, 0, 0], [1, 0, 0, 0, 0],
+                      [0, 0, 0, 1, 0], [0, 0, 1, 0, 0],
+                      [0, 0, 0, 0, 0]])
+    higher_classes = tuple(RECURSION.exact_vector_orbit_iterator(higher, 2))
+    assert higher_classes and all(int(point.q()) == 2 for point in higher_classes)
+    for i, first in enumerate(higher_classes):
+        for second in higher_classes[i + 1:]:
+            assert RECURSION.pointed_isometry(first, second) is None
+    from sage.all import ZZ as SageZZ, matrix
+    original = matrix(SageZZ, [[0, 1, 0, 0], [1, 0, 0, 0],
+                               [0, 0, -2, 0], [0, 0, 0, 0]])
+    change = matrix(SageZZ, [[1, 0, 0, 0], [0, 1, 0, 0],
+                             [0, 0, 1, 0], [1, 0, 1, 1]])
+    transformed = change * original * change.transpose()
+    twisted = lattice([[int(value) for value in row] for row in transformed.rows()])
+    twisted_classes = tuple(RECURSION.exact_vector_orbit_iterator(twisted, 2))
+    assert len(twisted_classes) == len(lorentzian_classes)
+    assert all(int(point.q()) == 2 for point in twisted_classes)
 
 
 def test_definite_quotient_radical_residue_orbit_transporters():
