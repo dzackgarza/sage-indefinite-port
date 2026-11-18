@@ -105,3 +105,59 @@ def test_rank_two_radical_full_projection_integral_gl_image(pointwise, expected_
                 frontier.append(moved)
             assert len(seen) <= expected_image
     assert len(seen) == expected_image
+
+
+@pytest.mark.parametrize("pointwise,expected_image", [(True, 1), (False, 20)])
+def test_full_projection_with_characteristic_radical_intersection(pointwise, expected_image):
+    # S=<e,5f+r1,r2> in U+<0>^2 is primitive. Its quotient
+    # projection <e,5f> has index five, and W=S cap rad(L)=<r2>.
+    # Pointwise S fixes r2. A shear r1 -> r1+a*r2 forces
+    # f -> f-(a/5)*r2, so integrality requires 5|a; every a/5
+    # is realized. Setwise S additionally permits arbitrary shifts
+    # of the marked vector by W, so the radical image is the
+    # 2*2*5-element triangular subgroup modulo five.
+    from sage.rings.finite_rings.finite_field_constructor import GF
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0, 0], [0, 0]])
+    e, f, r1, r2 = tuple(ambient.module_generators())
+    marked = (e, 5*f+r1, r2)
+    sub = ambient.subobject_on(marked)
+    inclusion = sub.inclusion()
+    assert inclusion.is_primitive()
+    assert int(inclusion.domain().rank()) == 3
+    basis = tuple(ambient.module_generators())
+    gram = matrix(SageZZ, [[int(ambient.b(x, y)) for y in basis] for x in basis])
+    generators = tuple(degenerate_marking_generators(ambient, marked, pointwise))
+    for g in generators:
+        assert abs(g.det()) == 1 and g.transpose()*gram*g == gram
+        images = tuple(g*vector(SageZZ, list(x)) for x in (
+            vector(SageZZ, [1, 0, 0, 0]),
+            vector(SageZZ, [0, 5, 1, 0]),
+            vector(SageZZ, [0, 0, 0, 1]),
+        ))
+        if pointwise:
+            assert images == tuple(vector(SageZZ, coords) for coords in (
+                (1,0,0,0), (0,5,1,0), (0,0,0,1)
+            ))
+        else:
+            lattice_span = matrix(SageZZ, [[1,0,0,0],[0,5,1,0],[0,0,0,1]]).row_module()
+            assert all(item in lattice_span for item in images)
+    field = GF(5)
+    residues = tuple(matrix(field, [[g[i,j] for j in (2,3)] for i in (2,3)]) for g in generators)
+    one = identity_matrix(field,2)
+    key = lambda m: tuple(int(c) for c in m.list())
+    seen = {key(one)}
+    frontier = [one]
+    while frontier:
+        value = frontier.pop()
+        for generator in residues:
+            moved = generator*value
+            item = key(moved)
+            if item not in seen:
+                seen.add(item)
+                frontier.append(moved)
+            assert len(seen) <= expected_image
+    assert len(seen) == expected_image
+    if pointwise:
+        assert all(int(g[3,2]) % 5 == 0 for g in generators)
+        assert SageZZ.ideal([int(g[3,2]) // 5 for g in generators]) == SageZZ.ideal(1)
