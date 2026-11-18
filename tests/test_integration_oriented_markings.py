@@ -84,3 +84,40 @@ def test_oriented_maximal_null_planes_split_under_special_orthogonal_group():
     ))
     assert len(ordinary) == 1
     assert len(restricted) == 2
+
+
+def test_oriented_full_marked_diagram_is_accepted_as_flag_shape():
+    """The marked oriented diagram includes the ambient leg, not an extra
+    flag rank; the split Levi's diagonal signs identify its orientations.
+    """
+    from sage_extensions.categories.isotropic_orbits import FlagType
+
+    lattices = Lattices(ZZ)
+    ambient = lattices("U") + lattices("U")
+    e, f, u, v = tuple(ambient.module_generators())
+    category = OrientedIsotropicFlags(lattices, 2)
+    source = category(OrientedIsotropicFlag(
+        ambient, (e, u), flag_type=FlagType((1, 2))
+    ))
+    classes = tuple(primitive_marking_classes(category, source, ambient))
+    assert len(classes) == 1
+
+
+def test_oriented_classes_accept_an_unoriented_full_flag_shape():
+    """The unoriented full diagram specifies two null ranks; orientation
+    is classified on the output, not imposed by the input shape.
+    """
+    from sage_extensions.all import Cat
+    from sage_extensions.categories.abstract_categories.products import FiniteOrdinalCategory
+    from sage_indefinite_port.indefinite.marked_lattices import _flag_marking_from_basis
+
+    lattices = Lattices(ZZ)
+    ambient = lattices("U") + lattices("U")
+    e, f, u, v = tuple(ambient.module_generators())
+    shape_category = Cat().Mor(FiniteOrdinalCategory(3), lattices)
+    shape = shape_category(_flag_marking_from_basis(ambient, (e, u), (1, 2)))
+    oriented = OrientedIsotropicFlags(lattices, 2)
+    classes = tuple(primitive_marking_classes(oriented, shape, ambient))
+    assert len(classes) == 1
+    assert classes[0] in oriented
+    assert classes[0].functor().oriented_flag().flag().flag_type().dimensions == (1, 2)
