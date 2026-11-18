@@ -1160,6 +1160,18 @@ def test_nonprimitive_projection_nested_radical_flag_moving_top_transporter():
         assert all(term.inclusion().is_in_image(witness(point)) for point in source_basis[:rank])
     assert all(ambient.b(witness(x), witness(y)) == ambient.b(x, y)
                for x in ambient.module_generators() for y in ambient.module_generators())
+    # The same graph-shear construction must work for a non-binary
+    # projection index; a single arbitrary projected transporter need not
+    # satisfy the graph congruence, so its finite stabilizer coset is used.
+    source_basis = (z, w, 3 * e + t, u)
+    target_basis = (z, w, 3 * e + t, u + e)
+    source = category(_flag_marking_from_basis(ambient, source_basis, (1, 2, 4)))
+    target = category(_flag_marking_from_basis(ambient, target_basis, (1, 2, 4)))
+    witness = isometry(category, source, target)
+    assert witness is not None
+    for rank in (1, 2, 4):
+        term = ambient.primitive_isotropic_subobject(*target_basis[:rank])
+        assert all(term.inclusion().is_in_image(witness(point)) for point in source_basis[:rank])
 
 
 def test_mixed_three_stage_flag_action_data_uses_sage_integer_matrices():

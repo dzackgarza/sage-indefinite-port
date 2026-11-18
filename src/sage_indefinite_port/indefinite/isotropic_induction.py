@@ -805,41 +805,67 @@ class IsotropicInduction:
                             for row in x.rows())).inclusion())
                     projected_witness = _finite_index_sublattice_transporter(*projected)
                     if projected_witness is not None:
-                        action = matrix(SageZZ, [[_integer(projected_witness(point).to_vector()(label))
-                            for label in c_labels] for point in complement.module_generators()])
-                        # Identify the transported projected basis in the
-                        # target projection. Its radical discrepancy must
-                        # be an integral shear, modulo the characteristic T.
-                        coefficients = x1.change_ring(SageQQ).transpose().solve_right(
-                            (x0 * action).change_ring(SageQQ).transpose()).transpose()
-                        if all(entry.denominator() == 1 for entry in coefficients.list()):
-                            discrepancy = coefficients * frames[1][t:, n:] - frames[0][t:, n:]
-                            radical_frame = frames[1][:t, n:].stack(
-                                _source_subspace_completion_int(frames[1][:t, n:], k))
-                            normalized = discrepancy * radical_frame.inverse()
-                            smith, left, right = x0.smith_form()
-                            corrected = left * normalized[:, t:]
-                            if all(corrected[i, j] % smith[i, i] == 0
-                                   for i in range(x0.nrows()) for j in range(k - t)):
-                                solution = matrix(SageZZ, n, k - t, 0)
-                                for i in range(x0.nrows()):
-                                    for j in range(k - t):
-                                        solution[i, j] = corrected[i, j] // smith[i, i]
-                                shear = right * solution
-                                full_shear = matrix(SageZZ, n, k, 0)
-                                full_shear[:, t:] = shear
-                                full_shear *= radical_frame
-                                block = identity_matrix(SageZZ, size)
-                                block[:n, :n] = action
-                                block[:n, n:] = full_shear
-                                candidate = (reduction.isometry * _isometry_from_row_matrix(reduced, reduced, block)
-                                             * (~reduction.isometry) * phi)
-                                target_terms = tuple(target_ambient.primitive_isotropic_subobject(*target_flag_basis[:rank])
-                                                     for rank in flag_dimensions)
-                                if all(term.inclusion().is_in_image(candidate(point))
-                                       for rank, term in zip(flag_dimensions, target_terms, strict=True)
-                                       for point in source_flag_basis[:rank]):
-                                    return candidate
+                        # The projected transporter is a coset of the exact
+                        # finite-index stabilizer. Distinct residue actions
+                        # can have different integral graph-shear obstructions.
+                        from sage_indefinite_port.indefinite.marked_lattices import _finite_index_sublattice_stabilizer_generators
+
+                        modulus = 1
+                        for divisor in x1.elementary_divisors():
+                            if divisor:
+                                modulus *= abs(int(divisor))
+                        saturation = projected[1].saturation()
+                        inclusion = saturation.inclusion()
+                        s_labels = tuple(inclusion.domain().module_generating_set())
+                        s_basis = tuple(inclusion(point) for point in inclusion.domain().module_generators())
+                        stabilizers = (_finite_index_sublattice_stabilizer_generators(projected[1])
+                                       if modulus > 1 else ())
+                        frontier = [complement.O().identity()]
+                        seen = set()
+                        while frontier:
+                            word = frontier.pop()
+                            key = tuple(_integer(inclusion.lift(word(point)).to_vector()(label)) % modulus
+                                        for point in s_basis for label in s_labels)
+                            if key in seen:
+                                continue
+                            seen.add(key)
+                            projected_action = word * projected_witness
+                            action = matrix(SageZZ, [[_integer(projected_action(point).to_vector()(label))
+                                for label in c_labels] for point in complement.module_generators()])
+                            # Identify the transported projected basis in the
+                            # target projection. Its radical discrepancy must
+                            # be an integral shear, modulo the characteristic T.
+                            coefficients = x1.change_ring(SageQQ).transpose().solve_right(
+                                (x0 * action).change_ring(SageQQ).transpose()).transpose()
+                            if all(entry.denominator() == 1 for entry in coefficients.list()):
+                                discrepancy = coefficients * frames[1][t:, n:] - frames[0][t:, n:]
+                                radical_frame = frames[1][:t, n:].stack(
+                                    _source_subspace_completion_int(frames[1][:t, n:], k))
+                                normalized = discrepancy * radical_frame.inverse()
+                                smith, left, right = x0.smith_form()
+                                corrected = left * normalized[:, t:]
+                                if all(corrected[i, j] % smith[i, i] == 0
+                                       for i in range(x0.nrows()) for j in range(k - t)):
+                                    solution = matrix(SageZZ, n, k - t, 0)
+                                    for i in range(x0.nrows()):
+                                        for j in range(k - t):
+                                            solution[i, j] = corrected[i, j] // smith[i, i]
+                                    shear = right * solution
+                                    full_shear = matrix(SageZZ, n, k, 0)
+                                    full_shear[:, t:] = shear
+                                    full_shear *= radical_frame
+                                    block = identity_matrix(SageZZ, size)
+                                    block[:n, :n] = action
+                                    block[:n, n:] = full_shear
+                                    candidate = (reduction.isometry * _isometry_from_row_matrix(reduced, reduced, block)
+                                                 * (~reduction.isometry) * phi)
+                                    target_terms = tuple(target_ambient.primitive_isotropic_subobject(*target_flag_basis[:rank])
+                                                         for rank in flag_dimensions)
+                                    if all(term.inclusion().is_in_image(candidate(point))
+                                           for rank, term in zip(flag_dimensions, target_terms, strict=True)
+                                           for point in source_flag_basis[:rank]):
+                                        return candidate
+                            frontier.extend(generator * word for generator in stabilizers)
             if flag_dimensions and k and intersection_ranks[0] in flag_dimensions[:-1]:
                 t = intersection_ranks[0]
                 source_flag = tuple(phi(point) for point in source_flag_basis)
