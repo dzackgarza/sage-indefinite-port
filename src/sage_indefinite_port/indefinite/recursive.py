@@ -2540,6 +2540,18 @@ class EichlerRecursion:
             if not primitive_only:
                 yield lattice.zero()
             return
+        # For an integral symmetric Gram matrix G, the integer values of
+        # q(x)=xGx generate the ideal (G_ii, 2G_ij : i<j).  A requested
+        # square outside that ideal has no integral representatives, even
+        # when the real quadratic space is indefinite and isotropic.
+        gram = _gram_in_label_order(lattice)
+        norm_content = 0
+        for i in range(int(gram.nrows())):
+            norm_content = gcd(norm_content, _integer(gram[i, i]))
+            for j in range(i + 1, int(gram.ncols())):
+                norm_content = gcd(norm_content, 2 * _integer(gram[i, j]))
+        if norm_content and int(square) % norm_content:
+            return
         seen = []
         for height in count(0):
             for coordinates in _coordinate_box(lattice, height):
