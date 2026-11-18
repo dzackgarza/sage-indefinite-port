@@ -777,6 +777,69 @@ class IsotropicInduction:
                                               if entry))
             if projection_smith[0] != projection_smith[1]:
                 return None
+            if (n and k and flag_dimensions and intersection_ranks[0] in flag_dimensions[:-1]
+                    and all(self.recursion.vector_lies_in_radical(point)
+                            for point in (*source_flag_basis[:intersection_ranks[0]],
+                                          *target_flag_basis[:intersection_ranks[0]]))):
+                from sage_indefinite_port.indefinite.marked_lattices import _finite_index_sublattice_transporter
+                from sage.rings.rational_field import QQ as SageQQ
+
+                complement = reduced.lattice_category()([
+                    [int(gram[i, j]) for j in range(n)] for i in range(n)
+                ])
+                c_labels = tuple(complement.module_generating_set())
+                reduced_labels = tuple(reduced.module_generating_set())
+                t = intersection_ranks[0]
+                frames = []
+                for points in (tuple(phi(point) for point in source_flag_basis), target_flag_basis):
+                    frames.append(matrix(SageZZ, [[_integer((~reduction.isometry)(point).to_vector()(label))
+                                                   for label in reduced_labels] for point in points]))
+                x0, x1 = (frame[t:, :n] for frame in frames)
+                if (int(x0.rank()) == int(x0.nrows()) == int(x1.rank())
+                        and frames[0][:t, n:].row_module() == frames[1][:t, n:].row_module()):
+                    projected = []
+                    for x in (x0, x1):
+                        projected.append(complement.subobject_on(tuple(
+                            complement.linear_combination({label: complement.base_ring()(int(row[j]))
+                                for j, label in enumerate(c_labels) if row[j]})
+                            for row in x.rows())).inclusion())
+                    projected_witness = _finite_index_sublattice_transporter(*projected)
+                    if projected_witness is not None:
+                        action = matrix(SageZZ, [[_integer(projected_witness(point).to_vector()(label))
+                            for label in c_labels] for point in complement.module_generators()])
+                        # Identify the transported projected basis in the
+                        # target projection. Its radical discrepancy must
+                        # be an integral shear, modulo the characteristic T.
+                        coefficients = x1.change_ring(SageQQ).transpose().solve_right(
+                            (x0 * action).change_ring(SageQQ).transpose()).transpose()
+                        if all(entry.denominator() == 1 for entry in coefficients.list()):
+                            discrepancy = coefficients * frames[1][t:, n:] - frames[0][t:, n:]
+                            radical_frame = frames[1][:t, n:].stack(
+                                _source_subspace_completion_int(frames[1][:t, n:], k))
+                            normalized = discrepancy * radical_frame.inverse()
+                            smith, left, right = x0.smith_form()
+                            corrected = left * normalized[:, t:]
+                            if all(corrected[i, j] % smith[i, i] == 0
+                                   for i in range(x0.nrows()) for j in range(k - t)):
+                                solution = matrix(SageZZ, n, k - t, 0)
+                                for i in range(x0.nrows()):
+                                    for j in range(k - t):
+                                        solution[i, j] = corrected[i, j] // smith[i, i]
+                                shear = right * solution
+                                full_shear = matrix(SageZZ, n, k, 0)
+                                full_shear[:, t:] = shear
+                                full_shear *= radical_frame
+                                block = identity_matrix(SageZZ, size)
+                                block[:n, :n] = action
+                                block[:n, n:] = full_shear
+                                candidate = (reduction.isometry * _isometry_from_row_matrix(reduced, reduced, block)
+                                             * (~reduction.isometry) * phi)
+                                target_terms = tuple(target_ambient.primitive_isotropic_subobject(*target_flag_basis[:rank])
+                                                     for rank in flag_dimensions)
+                                if all(term.inclusion().is_in_image(candidate(point))
+                                       for rank, term in zip(flag_dimensions, target_terms, strict=True)
+                                       for point in source_flag_basis[:rank]):
+                                    return candidate
             if flag_dimensions and k and intersection_ranks[0] in flag_dimensions[:-1]:
                 t = intersection_ranks[0]
                 source_flag = tuple(phi(point) for point in source_flag_basis)
