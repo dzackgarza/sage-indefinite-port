@@ -3829,6 +3829,13 @@ def isotropic_stabilizer_right_cosets(category: Category, marked: Parent) -> Par
     match category:
         case _ if category is ARROWS:
             sublattice = _isotropic_sublattice(marked.arrow())
+            if int(sublattice.inclusion().domain().rank()) == 0:
+                # For I=0, I-perp=L. The rational extension group already
+                # preserves the entire integral lattice, so G=G_L=O(L).
+                # There is one right coset, represented by the identity;
+                # the rank-zero general linear engine is not needed.
+                ambient = marked.arrow().codomain()
+                return finite_ordered_set((ambient.O().identity(),))
             basis, images = INDUCTION.plane_vectors(sublattice), INDUCTION.sublattice_action_images(sublattice)
         case _FiniteSequenceFunctorCategory() if category.codomain_category() is LATTICES:
             _dimensions, basis, images = _flag_action(marked)
@@ -3836,7 +3843,10 @@ def isotropic_stabilizer_right_cosets(category: Category, marked: Parent) -> Par
             raise ValueError(f"{category} is not Ar(Lattices) or Fun([t], Lattices): the source defines these cosets for k-planes and k-flags")
     cosets = RECURSION.isotropic_stabilizer_action(basis, images).right_cosets()
     representative = cosets.representative_map()
-    return finite_ordered_set(tuple(~representative(coset) for coset in cosets))
+    # The selected orbit is G/G_L, with G_L acting on the RIGHT.
+    # Inverting its section produces left-coset representatives instead;
+    # for a nonnormal stabilizer they can duplicate right cosets.
+    return finite_ordered_set(tuple(representative(coset) for coset in cosets))
 
 
 __all__ = [
