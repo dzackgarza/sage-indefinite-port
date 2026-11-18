@@ -797,6 +797,55 @@ class IsotropicInduction:
                         block[n + i, n + j] = action[i, j]
                 reduced_witness = _isometry_from_row_matrix(reduced, reduced, block)
                 return reduction.isometry * reduced_witness * (~reduction.isometry) * phi
+            if n and k and intersection_ranks[0] > 0 and len(source_basis) - intersection_ranks[0] == 1:
+                # J/T is a primitive line in L/T for T=J∩rad(L).
+                # Complete T integrally on each side. The exact line
+                # transporter in the common quotient C⊕R/T lifts to L
+                # by identity on T, with the two radical frames providing
+                # the required integral change of presentation.
+                t = intersection_ranks[0]
+                q = k - t
+                quotient_indices = (*range(n), *range(n + t, size))
+                quotient_gram = [[int(gram[i, j]) if i < n and j < n else 0
+                                  for j in range(n + q)] for i in range(n + q)]
+                quotient = reduced.lattice_category()(quotient_gram)
+                q_labels = tuple(quotient.module_generating_set())
+                frames = []
+                quotient_vectors = []
+                for points in (tuple(phi(point) for point in source_basis), target_basis):
+                    rows = matrix(SageZZ, [[_integer((~reduction.isometry)(point).to_vector()(label))
+                                            for label in tuple(reduced.module_generating_set())]
+                                           for point in points])
+                    _smith, left, _right = rows[:, :n].smith_form()
+                    adapted_rows = left * rows
+                    trows = adapted_rows[1:, n:]
+                    radical_frame = trows.stack(_source_subspace_completion_int(trows, k))
+                    frame = identity_matrix(SageZZ, size)
+                    for i in range(k):
+                        for j in range(k):
+                            frame[n + i, n + j] = radical_frame[i, j]
+                    frames.append(frame)
+                    line = adapted_rows[0, :] * frame.inverse().change_ring(SageZZ)
+                    quotient_vectors.append(quotient.linear_combination({
+                        label: quotient.base_ring()(int(line[0, index]))
+                        for label, index in zip(q_labels, quotient_indices, strict=True)
+                        if line[0, index]
+                    }))
+                if any(int(point.content()) != 1 for point in quotient_vectors):
+                    raise ArithmeticError("primitive isotropic subspaces induce primitive quotient lines")
+                quotient_witness = self.line_isometry(*quotient_vectors)
+                if quotient_witness is None:
+                    return None
+                block = identity_matrix(SageZZ, size)
+                for i, point in enumerate(quotient.module_generators()):
+                    image = quotient_witness(point).to_vector()
+                    for j, label in enumerate(q_labels):
+                        block[quotient_indices[i], quotient_indices[j]] = _integer(image(label))
+                lifted = frames[0].inverse().change_ring(SageZZ) * block * frames[1]
+                witness = reduction.isometry * _isometry_from_row_matrix(reduced, reduced, lifted) * (~reduction.isometry) * phi
+                if not all(target.inclusion().is_in_image(witness(point)) for point in source_basis):
+                    raise ArithmeticError("the quotient-line lift does not transport the primitive isotropic subspace")
+                return witness
             if n and k and (not flag_dimensions or (
                 source_flag_basis and target_flag_basis
                 and flag_dimensions[-1] == len(source_flag_basis) == len(target_flag_basis)

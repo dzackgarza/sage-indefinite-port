@@ -833,6 +833,38 @@ def test_nonprimitive_projection_proper_radical_flag_transporter():
     assert all(target.inclusion().is_in_image(witness(point)) for point in (z, 2 * e + w))
 
 
+def test_nonprimitive_projection_radical_rank_three_quotient_line_transporter():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION, ARROWS, isometry
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, z, w, t = tuple(ambient.module_generators())
+    for c in (2, 3, 5):
+        source = ambient.primitive_isotropic_subobject(z, c * e + w)
+        target = ambient.primitive_isotropic_subobject(t, c * f + w + z)
+        witness = INDUCTION.plane_isometry(source, target)
+        assert witness is not None
+        assert all(target.inclusion().is_in_image(witness(point))
+                   for point in (z, c * e + w))
+        public = isometry(ARROWS, ARROWS.object(source.inclusion()),
+                          ARROWS.object(target.inclusion()))
+        assert public is not None
+
+
+def test_nonprimitive_projection_rank_two_radical_intersection_transporter():
+    from sage_extensions.all import Lattices, ZZ
+    from sage_indefinite_port.indefinite.marked_lattices import INDUCTION
+
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    e, f, z, w, t = tuple(ambient.module_generators())
+    source = ambient.primitive_isotropic_subobject(z, w, 3 * e + t)
+    target = ambient.primitive_isotropic_subobject(w, t, 3 * f + z)
+    witness = INDUCTION.plane_isometry(source, target)
+    assert witness is not None
+    assert all(target.inclusion().is_in_image(witness(point))
+               for point in (z, w, 3 * e + t))
+
+
 def test_nonprimitive_projection_proper_radical_flag_stabilizer():
     from sage_extensions.all import Lattices, ZZ
     from sage_indefinite_port.indefinite.marked_lattices import FLAGS, automorphism_group_generators, _flag_marking_from_basis
