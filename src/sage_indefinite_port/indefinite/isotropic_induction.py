@@ -818,6 +818,11 @@ class IsotropicInduction:
                         inclusion = saturation.inclusion()
                         s_labels = tuple(inclusion.domain().module_generating_set())
                         s_basis = tuple(inclusion(point) for point in inclusion.domain().module_generators())
+                        source_radical_frame = frames[0][:t, n:].stack(
+                            _source_subspace_completion_int(frames[0][:t, n:], k))
+                        target_radical_frame = frames[1][:t, n:].stack(
+                            _source_subspace_completion_int(frames[1][:t, n:], k))
+                        radical_action = source_radical_frame.inverse().change_ring(SageZZ) * target_radical_frame
                         stabilizers = (_finite_index_sublattice_stabilizer_generators(projected[1])
                                        if modulus > 1 else ())
                         frontier = [complement.O().identity()]
@@ -838,10 +843,8 @@ class IsotropicInduction:
                             coefficients = x1.change_ring(SageQQ).transpose().solve_right(
                                 (x0 * action).change_ring(SageQQ).transpose()).transpose()
                             if all(entry.denominator() == 1 for entry in coefficients.list()):
-                                discrepancy = coefficients * frames[1][t:, n:] - frames[0][t:, n:]
-                                radical_frame = frames[1][:t, n:].stack(
-                                    _source_subspace_completion_int(frames[1][:t, n:], k))
-                                normalized = discrepancy * radical_frame.inverse()
+                                discrepancy = coefficients * frames[1][t:, n:] - frames[0][t:, n:] * radical_action
+                                normalized = discrepancy * target_radical_frame.inverse()
                                 smith, left, right = x0.smith_form()
                                 corrected = left * normalized[:, t:]
                                 if all(corrected[i, j] % smith[i, i] == 0
@@ -853,10 +856,11 @@ class IsotropicInduction:
                                     shear = right * solution
                                     full_shear = matrix(SageZZ, n, k, 0)
                                     full_shear[:, t:] = shear
-                                    full_shear *= radical_frame
+                                    full_shear *= target_radical_frame
                                     block = identity_matrix(SageZZ, size)
                                     block[:n, :n] = action
                                     block[:n, n:] = full_shear
+                                    block[n:, n:] = radical_action
                                     candidate = (reduction.isometry * _isometry_from_row_matrix(reduced, reduced, block)
                                                  * (~reduction.isometry) * phi)
                                     target_terms = tuple(target_ambient.primitive_isotropic_subobject(*target_flag_basis[:rank])
