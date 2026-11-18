@@ -3725,6 +3725,23 @@ def test_based_mixed_nonprimitive_projected_line_pointwise_stabilizer_congruence
         # (F_3)^2 semidirect F_3^*, of order 18.
         assert MatrixGroup(radical_actions).order() == expected
 
+    ambient = Lattices(ZZ)("U") + Lattices(ZZ)([[0] * 4 for _ in range(4)])
+    e, f, z, w, t, s = tuple(ambient.module_generators())
+    source = Lattices(ZZ)([[0] * 3 for _ in range(3)])
+    category = Lattices(ZZ).CosliceUnder(source)
+    basis = (3 * e + z, w, t)
+    marking = category(source.hom(list(basis), codomain=ambient))
+    generators = tuple(automorphism_group_generators(category, marking))
+    assert generators
+    assert all(g(point) == point for g in generators for point in basis)
+    labels = tuple(ambient.module_generating_set())
+    radical_actions = [matrix(GF(3), [
+        [int(g(point).to_vector()(labels[j])) for j in (2, 3, 4, 5)]
+        for point in (z, w, t, s)
+    ]) for g in generators]
+    # The final quotient has rank one: (F_3)^3 semidirect F_3^*.
+    assert MatrixGroup(radical_actions).order() == 54
+
 
 def test_nonhomothetic_based_isotropic_transporter_in_nondegenerate_split_lattice():
     from sage_extensions.all import Lattices, ZZ
