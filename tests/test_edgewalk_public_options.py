@@ -161,6 +161,12 @@ def test_public_edgewalk_handles_opposite_signature_convention():
     assert report.is_reflective()
     assert len(report.simple_roots()) == 3
     assert all(int(root.q()) == -2 for root in report.simple_roots())
+    start = report.vertices()[0]
+    explicit = source.allcock_edgewalk(
+        initial_vertex=(start.primitive_rays()[0], tuple(start.wall_roots()))
+    )
+    assert explicit.is_reflective()
+    assert len(explicit.simple_roots()) == 3
     witness = source.edgewalk_isometry(target)
     assert witness is not None
     assert all(target.b(witness(x), witness(y)) == source.b(x, y)
